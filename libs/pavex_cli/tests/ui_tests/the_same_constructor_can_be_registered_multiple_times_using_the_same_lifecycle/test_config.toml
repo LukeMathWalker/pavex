@@ -1,0 +1,5 @@
+description = "The same constructor can be registered multiple times and later registrations override previous ones"
+
+[dependencies]
+http = "0.2"
+hyper = { version = "0.14", features = ["server", "http1", "http2"] }

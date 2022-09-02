@@ -1,0 +1,80 @@
+(
+    constructors: [
+        (
+            registered_at: "app_blueprint",
+            import_path: "crate :: http_client",
+        ),
+        (
+            registered_at: "app_blueprint",
+            import_path: "crate :: extract_path",
+        ),
+        (
+            registered_at: "app_blueprint",
+            import_path: "crate :: logger",
+        ),
+    ],
+    handlers: [
+        (
+            registered_at: "app_blueprint",
+            import_path: "crate :: stream_file",
+        ),
+    ],
+    component_lifecycles: {
+        (
+            registered_at: "app_blueprint",
+            import_path: "crate :: extract_path",
+        ): RequestScoped,
+        (
+            registered_at: "app_blueprint",
+            import_path: "crate :: http_client",
+        ): Singleton,
+        (
+            registered_at: "app_blueprint",
+            import_path: "crate :: logger",
+        ): Transient,
+    },
+    router: {
+        "/home": (
+            registered_at: "app_blueprint",
+            import_path: "crate :: stream_file",
+        ),
+    },
+    handler_locations: {
+        (
+            registered_at: "app_blueprint",
+            import_path: "crate :: stream_file",
+        ): [
+            (
+                line: 40,
+                column: 10,
+                file: "examples/app_blueprint/src/lib.rs",
+            ),
+        ],
+    },
+    constructor_locations: {
+        (
+            registered_at: "app_blueprint",
+            import_path: "crate :: extract_path",
+        ): (
+            line: 38,
+            column: 10,
+            file: "examples/app_blueprint/src/lib.rs",
+        ),
+        (
+            registered_at: "app_blueprint",
+            import_path: "crate :: logger",
+        ): (
+            line: 39,
+            column: 10,
+            file: "examples/app_blueprint/src/lib.rs",
+        ),
+        (
+            registered_at: "app_blueprint",
+            import_path: "crate :: http_client",
+        ): (
+            line: 37,
+            column: 10,
+            file: "examples/app_blueprint/src/lib.rs",
+        ),
+    },
+)

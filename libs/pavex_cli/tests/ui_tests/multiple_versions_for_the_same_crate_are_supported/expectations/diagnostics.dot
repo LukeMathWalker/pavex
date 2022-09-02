@@ -1,0 +1,10 @@
+digraph "/home" {
+    0 [ label = "app::stream_file(http_0::header::name::HeaderName, http_1::header::name::HeaderName) -> http_1::response::Response<hyper::body::body::Body>"]
+    1 [ label = "http_1::header::name::HeaderName"]
+    2 [ label = "http_0::header::name::HeaderName"]
+    1 -> 0 [ ]
+    2 -> 0 [ ]
+}
+digraph app_state {
+    0 [ label = "crate::ApplicationState() -> crate::ApplicationState"]
+}

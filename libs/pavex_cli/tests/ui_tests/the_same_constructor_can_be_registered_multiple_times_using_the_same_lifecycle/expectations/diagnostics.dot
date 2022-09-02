@@ -1,0 +1,8 @@
+digraph "/home" {
+    0 [ label = "app::Streamer::stream_file(app::Logger) -> http::response::Response<hyper::body::body::Body>"]
+    1 [ label = "app::Logger"]
+    1 -> 0 [ ]
+}
+digraph app_state {
+    0 [ label = "crate::ApplicationState() -> crate::ApplicationState"]
+}

@@ -1,0 +1,15 @@
+[package]
+name = "pavex_builder"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+indexmap = { version = "1.9.1", features = ["serde-1"] }
+anyhow = "1"
+serde = { version = "1.0.139", features = ["derive"] }
+fs-err = "2.7.0"
+ron = "0.7"
+# This ensures that pavex_runtime is part of the dependency tree for the workspace
+# as soon as the build-side of pavex is used.
+# It's not ideal, but...
+pavex_runtime = { path = "../pavex_runtime" }

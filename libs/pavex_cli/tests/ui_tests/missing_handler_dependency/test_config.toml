@@ -1,0 +1,8 @@
+description = "Verify the error returned by pavex when a handler depends on a non-singleton type for which we have no registered constructor"
+
+[expectations]
+codegen = "fail"
+
+[dependencies]
+http = "0.2"
+hyper = { version = "0.14", features = ["server", "http1", "http2"] }

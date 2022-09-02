@@ -1,0 +1,20 @@
+Error: 
+  × One of the input parameters for `app::Streamer::stream_file` has a type
+  │ that I cannot handle.
+    ╭─[src/lib.rs:10:1]
+ 10 │ pub fn blueprint() -> AppBlueprint {
+ 11 │     AppBlueprint::new().route(f!(crate::Streamer::stream_file), "/home")
+    ·                               ────────────────┬───────────────
+    ·                                               ╰── The callable was registered here
+ 12 │ }
+    ╰────
+
+Error: 
+  × 
+   ╭─[src/lib.rs:5:1]
+ 5 │ impl Streamer {
+ 6 │     pub fn stream_file(&self) -> http::Response<hyper::body::Body> {
+   ·                        ──┬──
+   ·                          ╰── The parameter type that I cannot handle
+ 7 │         todo!()
+   ╰────
