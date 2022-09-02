@@ -13,36 +13,32 @@ A `pavex` project goes through three stages in order to generate runnable applic
 
 In a diagram:
 
-```puml
-@startuml
+```mermaid
+flowchart TB
+    subgraph A["Stage 1 / Define behaviour"]
+        direction LR
+        app_b[AppBlueprint] -->|Using| pavex_builder[pavex_builder]
+    end
 
-frame " Define behaviour / Stage 1" {
-  storage AppBlueprint as app_b
-  storage pavex_builder
-}
+    subgraph B["Stage 2 / Serialize the blueprint"]
+        direction LR
+        app_b_json["app_blueprint.ron"]
+    end
 
-app_b ..r..> pavex_builder: "Using"
+    A -->|Serialized to| B
 
-frame " Serialize the blueprint / Stage 2" {
-  storage "app_blueprint.ron" as app_b_json
-}
+    B -->|Input file for pavex_cli| C
+    app_crate[Application library crate] -->|Using| pavex_runtime[pavex_runtime]
 
-app_b -d-> app_b_json: " Serialized to"
 
-frame " Generate the application source code / Stage 3" {
-  storage "Application library crate" as app_crate
-  storage pavex_runtime
-}
+    subgraph C["Stage 3 / Generate application source code"]
+        direction LR
+        app_crate
+        pavex_runtime
+    end
 
-app_b_json -d-> app_crate: " Input file for `pavex_cli`"
-app_crate ..r..> pavex_runtime: "Using"
-storage "Application binary" as app_binary
-storage "Black-box tests" as tests
-
-app_crate -d-> app_binary: " Consumed by"
-app_crate -d-> tests: " Consumed by"
-
-@enduml
+    C -->|Consumed by| app_binary[Application binary]
+    C -->|Consumed by| tests[Black-box tests]
 ```
 
 As you can see in the diagram, the `pavex` project is actually underpinned by three user-facing components:
@@ -239,23 +235,20 @@ have everything mapped out as a graph with graph edges used to keep track of the
 
 To put in an image, we want to build something like this for each route:
 
-```puml
-@startuml
+```mermaid
+flowchart TB
+    handler["app::stream_file(std::path::Pathbuf, app::Logger, reqwest::Client)"]
+    client[reqwest::Client]
+    logger[app::Logger]
+    config[app::Config]
+    path[std::path::PathBuf]
+    request[http::request::Request]
 
-storage "app::stream_file(std::path::Pathbuf, app::Logger, reqwest::Client)" as handler
-storage "reqwest::Client" as client
-storage "app::Logger" as logger
-storage "app::Config" as config
-storage "std::path::PathBuf" as path
-storage "http::request::Request" as request
-
-config -d-> client
-client -d-> handler
-logger -d-> handler
-path -d-> handler
-request -d-> path
-
-@enduml
+    config --> client
+    client --> handler
+    logger --> handler
+    path --> handler
+    request --> path
 ```
 
 This information is encoded in the `CallableDependencyGraph` struct.  
@@ -267,23 +260,20 @@ from scratch every time it is needed?
 By taking into account these additional pieces of information, we build a `HandlerCallGraph` for each handler function,
 starting from its respective `CallableDependencyGraph`. It looks somewhat like this:
 
-```puml
-@startuml
+```mermaid
+flowchart TB
+    handler["app::stream_file(std::path::Pathbuf, app::Logger, reqwest::Client)"]
+    client[reqwest::Client]
+    logger[app::Logger]
+    state[ServerState]
+    path[std::path::PathBuf]
+    request[http::request::Request]
 
-storage "app::stream_file(std::path::Pathbuf, app::Logger, reqwest::Client)" as handler
-storage "reqwest::Client" as client
-storage "app::Logger" as logger
-storage "std::path::PathBuf" as path
-storage "http::request::Request" as request
-storage "app::ServerState" as state
-
-state -d-> client
-client -d-> handler
-logger -d-> handler
-path -d-> handler
-request -d-> path
-
-@enduml
+    state --> client
+    client --> handler
+    logger --> handler
+    path --> handler
+    request --> path
 ```
 
 You can spot how `reqwest::Client` is now fetched from `app::ServerState` instead of being built from scratch
