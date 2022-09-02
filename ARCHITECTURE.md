@@ -236,22 +236,19 @@ have everything mapped out as a graph with graph edges used to keep track of the
 To put in an image, we want to build something like this for each route:
 
 ```puml
-@startuml
+flowchart TB
+    handler["app::stream_file(std::path::Pathbuf, app::Logger, reqwest::Client)"]
+    client[reqwest::Client]
+    logger[app::Logger]
+    config[app::Config]
+    path[std::path::PathBuf]
+    request[http::request::Request]
 
-storage "app::stream_file(std::path::Pathbuf, app::Logger, reqwest::Client)" as handler
-storage "reqwest::Client" as client
-storage "app::Logger" as logger
-storage "app::Config" as config
-storage "std::path::PathBuf" as path
-storage "http::request::Request" as request
-
-config -d-> client
-client -d-> handler
-logger -d-> handler
-path -d-> handler
-request -d-> path
-
-@enduml
+    config --> client
+    client --> handler
+    logger --> handler
+    path --> handler
+    request --> path
 ```
 
 This information is encoded in the `CallableDependencyGraph` struct.  
@@ -264,22 +261,19 @@ By taking into account these additional pieces of information, we build a `Handl
 starting from its respective `CallableDependencyGraph`. It looks somewhat like this:
 
 ```puml
-@startuml
+flowchart TB
+    handler["app::stream_file(std::path::Pathbuf, app::Logger, reqwest::Client)"]
+    client[reqwest::Client]
+    logger[app::Logger]
+    state[ServerState]
+    path[std::path::PathBuf]
+    request[http::request::Request]
 
-storage "app::stream_file(std::path::Pathbuf, app::Logger, reqwest::Client)" as handler
-storage "reqwest::Client" as client
-storage "app::Logger" as logger
-storage "std::path::PathBuf" as path
-storage "http::request::Request" as request
-storage "app::ServerState" as state
-
-state -d-> client
-client -d-> handler
-logger -d-> handler
-path -d-> handler
-request -d-> path
-
-@enduml
+    state --> client
+    client --> handler
+    logger --> handler
+    path --> handler
+    request --> path
 ```
 
 You can spot how `reqwest::Client` is now fetched from `app::ServerState` instead of being built from scratch
