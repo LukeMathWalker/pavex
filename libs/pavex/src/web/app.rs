@@ -63,8 +63,7 @@ impl GeneratedApp {
 
         Self::inject_app_into_workspace_members(&workspace, &directory)?;
 
-        let lib_rs = prettyplease::unparse(&syn::parse2(self.lib_rs)?)
-            .replace("hyper::body::body::Body", "hyper::body::Body");
+        let lib_rs = prettyplease::unparse(&syn::parse2(self.lib_rs)?);
 
         if let Some(dependencies) = &mut self.cargo_toml.dependencies {
             for dependency in dependencies.values_mut() {
