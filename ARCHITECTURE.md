@@ -235,7 +235,7 @@ have everything mapped out as a graph with graph edges used to keep track of the
 
 To put in an image, we want to build something like this for each route:
 
-```puml
+```mermaid
 flowchart TB
     handler["app::stream_file(std::path::Pathbuf, app::Logger, reqwest::Client)"]
     client[reqwest::Client]
@@ -260,7 +260,7 @@ from scratch every time it is needed?
 By taking into account these additional pieces of information, we build a `HandlerCallGraph` for each handler function,
 starting from its respective `CallableDependencyGraph`. It looks somewhat like this:
 
-```puml
+```mermaid
 flowchart TB
     handler["app::stream_file(std::path::Pathbuf, app::Logger, reqwest::Client)"]
     client[reqwest::Client]
