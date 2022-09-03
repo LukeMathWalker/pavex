@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap};
 use std::default::Default;
 use std::fmt::{Display, Formatter};
 use std::path::Path;
@@ -162,6 +162,7 @@ pub struct Crate {
     package_id: PackageId,
     krate: rustdoc_types::Crate,
     path_index: HashMap<Vec<String>, rustdoc_types::Id>,
+    public_local_path_index: HashMap<rustdoc_types::Id, BTreeSet<Vec<String>>>,
 }
 
 impl Crate {
@@ -169,23 +170,26 @@ impl Crate {
         let mut path_index: HashMap<_, _> = krate
             .paths
             .iter()
-            .filter_map(|(id, summary)| {
-                if let Some(item) = krate.index.get(&id) {
-                    // Local items are manually index later via `index_local_items`
-                    // This gives us precise paths for types that were re-exported from third-party
-                    // crates or private modules.
-                    if item.visibility == Visibility::Public && item.crate_id != 0 {
-                        return Some((summary.path.clone(), id.to_owned()));
-                    }
-                }
-                None
-            })
+            .map(|(id, summary)| (summary.path.clone(), id.to_owned()))
             .collect();
-        index_local_items(&krate, vec![], &mut path_index, &krate.root);
+
+        let mut public_local_path_index = HashMap::new();
+        index_local_items(&krate, vec![], &mut public_local_path_index, &krate.root);
+
+        path_index.reserve(public_local_path_index.len());
+        for (id, public_paths) in &public_local_path_index {
+            for public_path in public_paths {
+                if path_index.get(public_path).is_none() {
+                    path_index.insert(public_path.to_owned(), id.to_owned());
+                }
+            }
+        }
+
         Self {
             package_id,
             krate,
             path_index,
+            public_local_path_index,
         }
     }
 
@@ -255,12 +259,34 @@ impl Crate {
         let id = self.get_id_by_path(path)?;
         Ok(self.get_type_by_id(id))
     }
+
+    pub fn get_importable_path(&self, id: &rustdoc_types::Id) -> &[String] {
+        if let Some(path) = self.public_local_path_index.get(id) {
+            return path.iter().next().unwrap();
+        }
+
+        let item = self.get_type_by_id(id);
+        if item.crate_id != 0 {
+            let external_crate = &self.krate.external_crates[&item.crate_id];
+            panic!(
+                "You can only retrieve a path that is guaranteed to be public for local types. \
+                `{}` is not local. That id belongs to {} (crate_id={}).",
+                &item.id.0, &external_crate.name, item.crate_id
+            )
+        }
+
+        panic!(
+            "Failed to find a publicly importable path for the type id `{}`. \
+             This is likely to be a bug in our handling of rustdoc's JSON output.",
+            id.0
+        )
+    }
 }
 
 fn index_local_items<'a>(
     krate: &'a rustdoc_types::Crate,
     mut current_path: Vec<&'a str>,
-    path_index: &mut HashMap<Vec<String>, rustdoc_types::Id>,
+    path_index: &mut HashMap<rustdoc_types::Id, BTreeSet<Vec<String>>>,
     current_item_id: &rustdoc_types::Id,
 ) {
     // TODO: the way we handle `current_path` is extremely wasteful,
@@ -310,10 +336,11 @@ fn index_local_items<'a>(
                 .as_deref()
                 .expect("All 'struct' items have a 'name' property");
             current_path.push(struct_name);
-            path_index.insert(
-                current_path.into_iter().map(|s| s.to_string()).collect(),
-                current_item_id.to_owned(),
-            );
+            let path = current_path.into_iter().map(|s| s.to_string()).collect();
+            path_index
+                .entry(current_item_id.to_owned())
+                .or_default()
+                .insert(path);
         }
         ItemEnum::Enum(_) => {
             let enum_name = current_item
@@ -321,10 +348,11 @@ fn index_local_items<'a>(
                 .as_deref()
                 .expect("All 'enum' items have a 'name' property");
             current_path.push(enum_name);
-            path_index.insert(
-                current_path.into_iter().map(|s| s.to_string()).collect(),
-                current_item_id.to_owned(),
-            );
+            let path = current_path.into_iter().map(|s| s.to_string()).collect();
+            path_index
+                .entry(current_item_id.to_owned())
+                .or_default()
+                .insert(path);
         }
         ItemEnum::Function(_) => {
             let function_name = current_item
@@ -332,10 +360,11 @@ fn index_local_items<'a>(
                 .as_deref()
                 .expect("All 'function' items have a 'name' property");
             current_path.push(function_name);
-            path_index.insert(
-                current_path.into_iter().map(|s| s.to_string()).collect(),
-                current_item_id.to_owned(),
-            );
+            let path = current_path.into_iter().map(|s| s.to_string()).collect();
+            path_index
+                .entry(current_item_id.to_owned())
+                .or_default()
+                .insert(path);
         }
         _ => {}
     }

@@ -1,5 +1,4 @@
-use std::collections::BTreeMap;
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fmt::Debug;
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
@@ -21,7 +20,7 @@ use pavex_builder::{AppBlueprint, RawCallableIdentifiers};
 
 use crate::language::{Callable, ParseError, ResolvedType};
 use crate::language::{EncodedResolvedPath, ResolvedPath, UnknownPath};
-use crate::rustdoc::{CannotGetCrateData, Crate, CrateCollection};
+use crate::rustdoc::{CannotGetCrateData, CrateCollection};
 use crate::web::application_state_call_graph::ApplicationStateCallGraph;
 use crate::web::dependency_graph::CallableDependencyGraph;
 use crate::web::diagnostic::{
@@ -689,8 +688,11 @@ fn process_handlers(
 
 fn process_type(
     type_: &rustdoc_types::Type,
-    krate: &Crate,
-    package_graph: &guppy::graph::PackageGraph,
+    // The package id where the type we are trying to process has been referenced (e.g. as an
+    // input/output parameter).
+    used_by_package_id: &PackageId,
+    package_graph: &PackageGraph,
+    krate_collection: &mut CrateCollection,
 ) -> Result<ResolvedType, anyhow::Error> {
     match type_ {
         Type::ResolvedPath(rustdoc_types::Path { id, args, .. }) => {
@@ -708,8 +710,9 @@ fn process_type(
                                 GenericArg::Type(generic_type) => {
                                     generics.push(process_type(
                                         generic_type,
-                                        krate,
+                                        used_by_package_id,
                                         package_graph,
+                                        krate_collection,
                                     )?);
                                 }
                                 GenericArg::Const(_) => {
@@ -728,18 +731,19 @@ fn process_type(
                     }
                 }
             }
-            let type_summary = krate.get_summary_by_id(id)?;
+            let used_by_krate = krate_collection.get_or_compute_by_id(used_by_package_id)?;
+            let type_summary = used_by_krate.get_summary_by_id(id)?;
             let type_package_id = if type_summary.crate_id == 0 {
-                krate.package_id().to_owned()
+                used_by_krate.package_id().to_owned()
             } else {
-                let (owning_crate, owning_crate_version) = krate
+                let (owning_crate, owning_crate_version) = used_by_krate
                     .get_external_crate_name(type_summary.crate_id)
                     .unwrap();
                 if owning_crate.name == "std" {
                     PackageId::new(STD_PACKAGE_ID)
                 } else {
                     let transitive_dependencies = package_graph
-                        .query_forward([krate.package_id()])
+                        .query_forward([used_by_krate.package_id()])
                         .unwrap()
                         .resolve();
                     let mut iterator =
@@ -764,9 +768,19 @@ fn process_type(
                         .to_owned()
                 }
             };
+            let referenced_base_type_path = type_summary.path.clone();
+            let base_type = if type_summary.crate_id == 0 {
+                used_by_krate.get_importable_path(id)
+            } else {
+                // The crate where the type is actually defined.
+                let source_crate = krate_collection.get_or_compute_by_id(&type_package_id)?;
+                let type_definition_id = source_crate.get_id_by_path(&referenced_base_type_path)?;
+                source_crate.get_importable_path(type_definition_id)
+            }
+            .to_owned();
             Ok(ResolvedType {
                 package_id: type_package_id,
-                base_type: type_summary.path.clone(),
+                base_type,
                 generic_arguments: generics,
             })
         }
@@ -780,10 +794,10 @@ fn process_type(
 fn process_callable(
     krate_collection: &mut CrateCollection,
     callable_path: &ResolvedPath,
-    package_graph: &guppy::graph::PackageGraph,
+    package_graph: &PackageGraph,
 ) -> Result<Callable, CallableResolutionError> {
     let type_ = callable_path.find_type(krate_collection)?;
-    let krate = krate_collection.get_or_compute_by_id(&callable_path.package_id)?;
+    let used_by_package_id = &callable_path.package_id;
     let decl = match &type_.inner {
         ItemEnum::Function(f) => &f.decl,
         ItemEnum::Method(m) => &m.decl,
@@ -800,7 +814,12 @@ fn process_callable(
 
     let mut parameter_paths = Vec::with_capacity(decl.inputs.len());
     for (parameter_index, (_, parameter_type)) in decl.inputs.iter().enumerate() {
-        match process_type(parameter_type, krate, package_graph) {
+        match process_type(
+            parameter_type,
+            used_by_package_id,
+            package_graph,
+            krate_collection,
+        ) {
             Ok(p) => parameter_paths.push(p),
             Err(e) => {
                 return Err(ParameterResolutionError {
@@ -823,7 +842,12 @@ fn process_callable(
         },
         Some(output_type) => {
             // TODO: distinguish between output and parameters
-            match process_type(output_type, krate, package_graph) {
+            match process_type(
+                output_type,
+                used_by_package_id,
+                package_graph,
+                krate_collection,
+            ) {
                 Ok(p) => p,
                 Err(e) => {
                     return Err(OutputTypeResolutionError {
