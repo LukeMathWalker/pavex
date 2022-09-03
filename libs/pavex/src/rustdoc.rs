@@ -6,7 +6,7 @@ use std::path::Path;
 use anyhow::{anyhow, Context};
 use guppy::graph::{PackageGraph, PackageMetadata, PackageSource};
 use guppy::{PackageId, Version};
-use rustdoc_types::ItemEnum;
+use rustdoc_types::{ItemEnum, Visibility};
 
 use crate::language::ImportPath;
 
@@ -138,7 +138,7 @@ impl PackageIdSpecification {
     }
 }
 
-impl std::fmt::Display for PackageIdSpecification {
+impl Display for PackageIdSpecification {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         if let Some(source) = &self.source {
             write!(f, "{}#", source)?;
@@ -169,9 +169,19 @@ impl Crate {
         let mut path_index: HashMap<_, _> = krate
             .paths
             .iter()
-            .map(|(id, summary)| (summary.path.clone(), id.to_owned()))
+            .filter_map(|(id, summary)| {
+                if let Some(item) = krate.index.get(&id) {
+                    // Local items are manually index later via `index_local_items`
+                    // This gives us precise paths for types that were re-exported from third-party
+                    // crates or private modules.
+                    if item.visibility == Visibility::Public && item.crate_id != 0 {
+                        return Some((summary.path.clone(), id.to_owned()));
+                    }
+                }
+                None
+            })
             .collect();
-        index_re_exports(&krate, vec![], &mut path_index, &krate.root);
+        index_local_items(&krate, vec![], &mut path_index, &krate.root);
         Self {
             package_id,
             krate,
@@ -192,7 +202,7 @@ impl Crate {
                 url.trim_end_matches('/')
                     .split('/')
                     .last()
-                    .map(guppy::Version::parse)
+                    .map(Version::parse)
                     .and_then(|x| x.ok())
             } else {
                 None
@@ -247,16 +257,23 @@ impl Crate {
     }
 }
 
-fn index_re_exports<'a>(
+fn index_local_items<'a>(
     krate: &'a rustdoc_types::Crate,
     mut current_path: Vec<&'a str>,
     path_index: &mut HashMap<Vec<String>, rustdoc_types::Id>,
     current_item_id: &rustdoc_types::Id,
 ) {
-    // TODO: handle visibility
     // TODO: the way we handle `current_path` is extremely wasteful,
     // we can likely reuse the same buffer throughout.
     let current_item = &krate.index[current_item_id];
+
+    // We do not want to index private items.
+    if let Visibility::Default | Visibility::Crate | Visibility::Restricted { .. } =
+        current_item.visibility
+    {
+        return;
+    }
+
     match &current_item.inner {
         ItemEnum::Module(m) => {
             let current_path_segment = current_item
@@ -265,7 +282,7 @@ fn index_re_exports<'a>(
                 .expect("All 'module' items have a 'name' property");
             current_path.push(current_path_segment);
             for item_id in &m.items {
-                index_re_exports(krate, current_path.clone(), path_index, item_id);
+                index_local_items(krate, current_path.clone(), path_index, item_id);
             }
         }
         ItemEnum::Import(i) => {
@@ -282,7 +299,7 @@ fn index_re_exports<'a>(
                         if let ItemEnum::Module(_) = imported_item.inner {
                             current_path.push(&i.name);
                         }
-                        index_re_exports(krate, current_path.clone(), path_index, imported_id);
+                        index_local_items(krate, current_path.clone(), path_index, imported_id);
                     }
                 }
             }
