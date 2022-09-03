@@ -1,12 +1,14 @@
-use crate::language::{Callable, ResolvedType};
-use crate::web::dependency_graph::DependencyGraphNode;
+use std::collections::HashMap;
+
 use bimap::BiHashMap;
 use petgraph::stable_graph::{NodeIndex, StableDiGraph};
 use petgraph::Direction;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
-use std::collections::HashMap;
 use syn::parse_quote;
+
+use crate::language::{Callable, ResolvedType};
+use crate::web::dependency_graph::DependencyGraphNode;
 
 pub(crate) enum Fragment {
     VariableReference(syn::Ident),

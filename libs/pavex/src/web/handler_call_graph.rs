@@ -191,7 +191,7 @@ pub(crate) fn codegen<'a>(
     let mut parameter_bindings = HashMap::new();
     let mut variable_generator = VariableNameGenerator::default();
 
-    let mut scoped_constructors = HashMap::<NodeIndex, TokenStream>::new();
+    let mut scoped_constructors = IndexMap::<NodeIndex, TokenStream>::new();
     let mut blocks = HashMap::<NodeIndex, Fragment>::new();
 
     while let Some(node_index) = dfs.next(Reversed(call_graph)) {
