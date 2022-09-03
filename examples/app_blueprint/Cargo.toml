@@ -7,14 +7,6 @@ edition = "2021"
 path = "src/bin.rs"
 name = "bp"
 
-[[bin]]
-path = "src/app.rs"
-name = "app"
-
 [dependencies]
 pavex_builder = { path = "../../libs/pavex_builder" }
-http = "0.2"
-hyper = { version = "0.14", features = ["server", "http1", "http2", "runtime"] }
-matchit = "0.6.0"
-tokio = { version = "1"}
-anyhow = { version = "<=1.0.59"}
+pavex_runtime = { path = "../../libs/pavex_runtime" }
