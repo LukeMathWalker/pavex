@@ -599,13 +599,14 @@ fn framework_bindings(
             RawCallableIdentifiers::from_raw_parts(raw_path.into(), "pavex_runtime".into());
         let path = ResolvedPath::parse(&identifiers, package_graph).unwrap();
         let type_ = path.find_type(krate_collection).unwrap();
-        let krate = krate_collection
-            .get_or_compute_by_id(&path.package_id)
+        let package_id = krate_collection
+            .get_defining_package_id_for_item(&path.package_id, &type_.id)
             .unwrap();
-        let summary = krate.get_summary_by_id(&type_.id).unwrap();
-        let type_base_path = summary.path.clone();
+        let type_base_path = krate_collection
+            .get_canonical_import_path(&path.package_id, &type_.id)
+            .unwrap();
         ResolvedType {
-            package_id: path.package_id,
+            package_id,
             base_type: type_base_path,
             generic_arguments: vec![],
         }
@@ -731,53 +732,9 @@ fn process_type(
                     }
                 }
             }
-            let used_by_krate = krate_collection.get_or_compute_by_id(used_by_package_id)?;
-            let type_summary = used_by_krate.get_summary_by_id(id)?;
-            let type_package_id = if type_summary.crate_id == 0 {
-                used_by_krate.package_id().to_owned()
-            } else {
-                let (owning_crate, owning_crate_version) = used_by_krate
-                    .get_external_crate_name(type_summary.crate_id)
-                    .unwrap();
-                if owning_crate.name == "std" {
-                    PackageId::new(STD_PACKAGE_ID)
-                } else {
-                    let transitive_dependencies = package_graph
-                        .query_forward([used_by_krate.package_id()])
-                        .unwrap()
-                        .resolve();
-                    let mut iterator =
-                        transitive_dependencies.links(guppy::graph::DependencyDirection::Forward);
-                    iterator
-                        .find(|link| {
-                            link.to().name() == owning_crate.name
-                                && owning_crate_version
-                                    .as_ref()
-                                    .map(|v| link.to().version() == v)
-                                    .unwrap_or(true)
-                        })
-                        .ok_or_else(|| {
-                            anyhow!(
-                            "I could not find the package id for the crate where `{}` is defined",
-                            type_summary.path.join("::")
-                        )
-                        })
-                        .unwrap()
-                        .to()
-                        .id()
-                        .to_owned()
-                }
-            };
-            let referenced_base_type_path = type_summary.path.clone();
-            let base_type = if type_summary.crate_id == 0 {
-                used_by_krate.get_importable_path(id)
-            } else {
-                // The crate where the type is actually defined.
-                let source_crate = krate_collection.get_or_compute_by_id(&type_package_id)?;
-                let type_definition_id = source_crate.get_id_by_path(&referenced_base_type_path)?;
-                source_crate.get_importable_path(type_definition_id)
-            }
-            .to_owned();
+            let type_package_id =
+                krate_collection.get_defining_package_id_for_item(used_by_package_id, id)?;
+            let base_type = krate_collection.get_canonical_import_path(used_by_package_id, id)?;
             Ok(ResolvedType {
                 package_id: type_package_id,
                 base_type,
