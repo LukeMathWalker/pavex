@@ -49,7 +49,7 @@ fn get_toolchain_crate_data(
 ) -> Result<rustdoc_types::Crate, anyhow::Error> {
     // TODO: determine the correct path to the files using `rustup show home`,
     // `rustup show active-toolchain` and `rustup component list --installed --toolchain <...>`.
-    let root_folder = PathBuf::from_str("/Users/luca/code/pavex/").unwrap();
+    let root_folder = PathBuf::from_str("/Users/luca/code/pavex/json-docs").unwrap();
     let json_path = root_folder.join(format!("{}.json", package_id_spec.name));
     let json = fs_err::read_to_string(json_path).with_context(|| {
         format!(
