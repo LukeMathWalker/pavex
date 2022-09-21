@@ -25,17 +25,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let expected_path = expectations_dir.join(expected_filename);
                 let expected_snapshot = fs_err::read_to_string(&expected_path)?;
 
-                terminal.clear_screen()?;
-                println!(
-                    "{}{}\n{}{}",
-                    style("Test name: ").bold(),
-                    style(format!("{}", &test_name)).yellow().bold(),
-                    style("Snapshot name: ").bold(),
-                    style(format!("{}", &expected_filename)).green().bold(),
-                );
-                print_changeset(&expected_snapshot, &actual_snapshot);
-
-                match prompt(&terminal)? {
+                match review_snapshot(
+                    &terminal,
+                    &test_name,
+                    expected_filename,
+                    &expected_snapshot,
+                    &actual_snapshot,
+                )? {
                     Decision::Accept => {
                         fs_err::rename(file.path(), &expected_path)?;
                     }
@@ -49,6 +45,26 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     Ok(())
+}
+
+fn review_snapshot(
+    terminal: &console::Term,
+    test_name: &str,
+    snapshot_name: &str,
+    expected_snapshot: &str,
+    actual_snapshot: &str,
+) -> std::io::Result<Decision> {
+    terminal.clear_screen()?;
+    println!(
+        "{}{}\n{}{}",
+        style("Test name: ").bold(),
+        style(format!("{}", &test_name)).yellow().bold(),
+        style("Snapshot name: ").bold(),
+        style(format!("{}", &snapshot_name)).green().bold(),
+    );
+    print_changeset(&expected_snapshot, &actual_snapshot);
+
+    prompt(&terminal)
 }
 
 fn prompt(terminal: &console::Term) -> std::io::Result<Decision> {
