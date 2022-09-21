@@ -63,8 +63,8 @@ fn route_request(
 }
 pub fn route_handler_0(
     v0: app::HttpClient,
-    v1: http::request::Request<hyper::body::Body>,
-) -> http::response::Response<hyper::body::Body> {
+    v1: http::Request<hyper::Body>,
+) -> http::Response<hyper::Body> {
     let v2 = app::extract_path(v1);
     let v3 = app::logger();
     app::stream_file(v2, v3, v0)

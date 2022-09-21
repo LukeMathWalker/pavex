@@ -58,6 +58,6 @@ fn route_request(
         _ => panic!("This is a bug, no route registered for a route id"),
     }
 }
-pub fn route_handler_0() -> http::response::Response<hyper::body::Body> {
+pub fn route_handler_0() -> http::Response<hyper::Body> {
     app::Streamer::stream_file()
 }

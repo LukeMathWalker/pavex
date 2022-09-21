@@ -8,6 +8,8 @@ use libtest_mimic::Conclusion;
 use libtest_mimic::Outcome;
 use toml::toml;
 
+pub use snapshot::print_changeset;
+
 use crate::snapshot::SnapshotTest;
 
 mod snapshot;
