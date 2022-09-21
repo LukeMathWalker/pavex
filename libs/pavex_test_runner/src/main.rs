@@ -34,9 +34,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     style(format!("{}", &expected_filename)).green().bold(),
                 );
                 print_changeset(&expected_snapshot, &actual_snapshot);
-                let decision = prompt(&terminal)?;
 
-                match decision {
+                match prompt(&terminal)? {
                     Decision::Accept => {
                         fs_err::rename(file.path(), &expected_path)?;
                     }
