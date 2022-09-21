@@ -29,7 +29,7 @@ In a nutshell:
 
 ## Test runtime environment
 
-For each, a runtime environment is created as a sub-folder of `ui_test_envs`, which is in turn generated at the root of `pavex`'s workspace.  
+For each test, a runtime environment is created as a sub-folder of `ui_test_envs`, which is in turn generated at the root of `pavex`'s workspace.  
 We use a consistent folder to leverage `cargo` caching and speed up successive test runs. It also allows you to easily inspect the artifacts generated during the test run.  
 If you suspect that something funny is going on due to cross-run contamination, delete the `ui_test_envs` folder to get a clean slate.
 
@@ -39,6 +39,7 @@ The generated code or the graph diagnostics may not match our expectations.
 The test runner will save the unexpected output in a file named like the expectation file with an additional `.snap` suffix. You can then choose to update the saved snapshot via our utility CLI:
 
 ```bash
+# It must be run from the root folder of the workspace
 cargo r --bin snaps
 ```
 
