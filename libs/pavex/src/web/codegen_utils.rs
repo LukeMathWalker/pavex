@@ -1,12 +1,14 @@
-use crate::language::{Callable, ResolvedType};
-use crate::web::dependency_graph::DependencyGraphNode;
+use std::collections::HashMap;
+
 use bimap::BiHashMap;
+use guppy::PackageId;
 use petgraph::stable_graph::{NodeIndex, StableDiGraph};
 use petgraph::Direction;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
-use std::collections::HashMap;
-use syn::parse_quote;
+
+use crate::language::{Callable, ResolvedType};
+use crate::web::dependency_graph::DependencyGraphNode;
 
 pub(crate) enum Fragment {
     VariableReference(syn::Ident),
@@ -44,6 +46,7 @@ pub(crate) fn codegen_call_block(
     node_index: NodeIndex,
     blocks: &mut HashMap<NodeIndex, Fragment>,
     variable_generator: &mut VariableNameGenerator,
+    package_id2name: &BiHashMap<&PackageId, String>,
 ) -> Result<Fragment, anyhow::Error> {
     let dependencies = call_graph.neighbors_directed(node_index, Direction::Incoming);
     let mut block = quote! {};
@@ -74,13 +77,14 @@ pub(crate) fn codegen_call_block(
             blocks.remove(&dependency_index);
         }
     }
-    let constructor_invocation = codegen_call(callable, &dependency_bindings)?;
-    let block: syn::Block = parse_quote! {
+    let constructor_invocation = codegen_call(callable, &dependency_bindings, package_id2name)?;
+    let block: syn::Block = syn::parse2(quote! {
         {
             #block
             #constructor_invocation
         }
-    };
+    })
+    .unwrap();
     if block.stmts.len() == 1 {
         Ok(Fragment::Statement(Box::new(
             block.stmts.first().unwrap().to_owned(),
@@ -93,13 +97,16 @@ pub(crate) fn codegen_call_block(
 pub(crate) fn codegen_call(
     callable: &Callable,
     variable_bindings: &BiHashMap<ResolvedType, syn::Ident>,
+    package_id2name: &BiHashMap<&PackageId, String>,
 ) -> Result<syn::ExprCall, anyhow::Error> {
-    let callable_path = callable.callable_fq_path.as_ref();
+    let callable_path: syn::ExprPath =
+        syn::parse_str(&callable.callable_fq_path.render_path(package_id2name)).unwrap();
     let parameters = callable
         .inputs
         .iter()
         .map(|i| variable_bindings.get_by_left(i).unwrap());
-    Ok(parse_quote! {
+    Ok(syn::parse2(quote! {
         #callable_path(#(#parameters),*)
     })
+    .unwrap())
 }

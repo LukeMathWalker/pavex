@@ -1,9 +1,10 @@
-use pavex_builder::{f, AppBlueprint, Lifecycle};
 use std::path::PathBuf;
+
+use pavex_builder::{f, AppBlueprint, Lifecycle};
 
 pub struct Logger;
 
-pub fn extract_path(_inner: http::Request<hyper::body::Body>) -> PathBuf {
+pub fn extract_path(_inner: pavex_runtime::http::Request<pavex_runtime::hyper::Body>) -> PathBuf {
     todo!()
 }
 
@@ -15,7 +16,7 @@ pub fn stream_file(
     _inner: PathBuf,
     _logger: Logger,
     _http_client: HttpClient,
-) -> http::Response<hyper::body::Body> {
+) -> pavex_runtime::http::Response<pavex_runtime::hyper::Body> {
     todo!()
 }
 

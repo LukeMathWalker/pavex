@@ -9,11 +9,11 @@ use petgraph::visit::{DfsPostOrder, Reversed};
 use petgraph::Direction;
 use proc_macro2::{Ident, TokenStream};
 use quote::{quote, ToTokens};
-use syn::{parse_quote, ExprStruct, ItemFn};
+use syn::{ExprStruct, ItemFn};
 
 use pavex_builder::Lifecycle;
 
-use crate::language::{CallPath, Callable, ResolvedPath, ResolvedType};
+use crate::language::{Callable, ResolvedPath, ResolvedPathSegment, ResolvedType};
 use crate::web::app::GENERATED_APP_PACKAGE_ID;
 use crate::web::codegen_utils::{codegen_call_block, Fragment, VariableNameGenerator};
 use crate::web::dependency_graph::{CallableDependencyGraph, DependencyGraphNode};
@@ -43,7 +43,16 @@ impl ApplicationStateCallGraph {
                 generic_arguments: vec![],
             },
             callable_fq_path: ResolvedPath {
-                path: CallPath(syn::parse_str("crate::ApplicationState").unwrap()),
+                segments: vec![
+                    ResolvedPathSegment {
+                        ident: "crate".into(),
+                        generic_arguments: vec![],
+                    },
+                    ResolvedPathSegment {
+                        ident: "ApplicationState".into(),
+                        generic_arguments: vec![],
+                    },
+                ],
                 package_id: PackageId::new(GENERATED_APP_PACKAGE_ID),
             },
             inputs: runtime_singleton_bindings.right_values().cloned().collect(),
@@ -150,6 +159,7 @@ impl ApplicationStateCallGraph {
                                         node_index,
                                         &mut blocks,
                                         &mut variable_generator,
+                                        package_id2name,
                                     )?;
                                     let block = quote! {
                                         let #parameter_name = #block;
@@ -167,6 +177,7 @@ impl ApplicationStateCallGraph {
                                 node_index,
                                 &mut blocks,
                                 &mut variable_generator,
+                                package_id2name,
                             )?;
                             blocks.insert(node_index, block);
                         }
@@ -181,6 +192,7 @@ impl ApplicationStateCallGraph {
                         node_index,
                         &mut blocks,
                         &mut variable_generator,
+                        package_id2name,
                     )?;
                     blocks.insert(node_index, block);
                 }
@@ -211,12 +223,13 @@ impl ApplicationStateCallGraph {
                     }
                     Fragment::Statement(s) => s.to_token_stream(),
                 };
-                parse_quote! {
+                syn::parse2(quote! {
                     pub fn build_application_state(#(#inputs),*) -> #output_type {
                         #(#singleton_constructors)*
                         #b
                     }
-                }
+                })
+                .unwrap()
             }
         };
         Ok(code)
@@ -252,14 +265,15 @@ impl ApplicationStateCallGraph {
 pub(crate) fn codegen_struct_init_block(
     call_graph: &StableDiGraph<DependencyGraphNode, ()>,
     callable: &Callable,
-    struct_fields: &BiHashMap<syn::Ident, ResolvedType>,
+    struct_fields: &BiHashMap<Ident, ResolvedType>,
     node_index: NodeIndex,
     blocks: &mut HashMap<NodeIndex, Fragment>,
     variable_generator: &mut VariableNameGenerator,
+    package_id2name: &BiHashMap<&PackageId, String>,
 ) -> Result<Fragment, anyhow::Error> {
     let dependencies = call_graph.neighbors_directed(node_index, Direction::Incoming);
     let mut block = quote! {};
-    let mut dependency_bindings: BiHashMap<ResolvedType, syn::Ident> = BiHashMap::new();
+    let mut dependency_bindings: BiHashMap<ResolvedType, Ident> = BiHashMap::new();
     for dependency_index in dependencies {
         let fragment = &blocks[&dependency_index];
         let dependency_type = match &call_graph[dependency_index] {
@@ -290,13 +304,15 @@ pub(crate) fn codegen_struct_init_block(
         &callable.callable_fq_path,
         struct_fields,
         &dependency_bindings,
+        package_id2name,
     )?;
-    let block: syn::Block = parse_quote! {
+    let block: syn::Block = syn::parse2(quote! {
         {
             #block
             #constructor_invocation
         }
-    };
+    })
+    .unwrap();
     if block.stmts.len() == 1 {
         Ok(Fragment::Statement(Box::new(
             block.stmts.first().unwrap().to_owned(),
@@ -308,21 +324,23 @@ pub(crate) fn codegen_struct_init_block(
 
 pub(crate) fn codegen_struct_init(
     struct_path: &ResolvedPath,
-    struct_fields: &BiHashMap<syn::Ident, ResolvedType>,
-    variable_bindings: &BiHashMap<ResolvedType, syn::Ident>,
+    struct_fields: &BiHashMap<Ident, ResolvedType>,
+    variable_bindings: &BiHashMap<ResolvedType, Ident>,
+    id2name: &BiHashMap<&PackageId, String>,
 ) -> Result<ExprStruct, anyhow::Error> {
-    let struct_path = struct_path.as_ref();
+    let struct_path: syn::ExprPath = syn::parse_str(&struct_path.render_path(id2name)).unwrap();
     let fields = struct_fields.iter().map(|(field_name, field_type)| {
         let binding = variable_bindings.get_by_left(field_type).unwrap();
         quote! {
             #field_name: #binding
         }
     });
-    Ok(parse_quote! {
+    Ok(syn::parse2(quote! {
         #struct_path {
             #(#fields),*
         }
     })
+    .unwrap())
 }
 
 /// Return the set of types that must be provided as input to build the application state.

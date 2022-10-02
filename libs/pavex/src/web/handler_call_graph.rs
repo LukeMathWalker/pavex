@@ -9,7 +9,7 @@ use petgraph::visit::Reversed;
 use petgraph::Direction;
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
-use syn::{parse_quote, ItemFn};
+use syn::ItemFn;
 
 use pavex_builder::Lifecycle;
 
@@ -191,7 +191,7 @@ pub(crate) fn codegen<'a>(
     let mut parameter_bindings = HashMap::new();
     let mut variable_generator = VariableNameGenerator::default();
 
-    let mut scoped_constructors = HashMap::<NodeIndex, TokenStream>::new();
+    let mut scoped_constructors = IndexMap::<NodeIndex, TokenStream>::new();
     let mut blocks = HashMap::<NodeIndex, Fragment>::new();
 
     while let Some(node_index) = dfs.next(Reversed(call_graph)) {
@@ -216,6 +216,7 @@ pub(crate) fn codegen<'a>(
                             node_index,
                             &mut blocks,
                             &mut variable_generator,
+                            package_id2name,
                         )?;
                         blocks.insert(node_index, block);
                     }
@@ -232,6 +233,7 @@ pub(crate) fn codegen<'a>(
                                     node_index,
                                     &mut blocks,
                                     &mut variable_generator,
+                                    package_id2name,
                                 )?;
                                 let block = quote! {
                                     let #parameter_name = #block;
@@ -250,6 +252,7 @@ pub(crate) fn codegen<'a>(
                     node_index,
                     &mut blocks,
                     &mut variable_generator,
+                    package_id2name,
                 )?;
                 blocks.insert(node_index, block);
             }
@@ -280,12 +283,13 @@ pub(crate) fn codegen<'a>(
                 }
                 Fragment::Statement(s) => s.to_token_stream(),
             };
-            parse_quote! {
+            syn::parse2(quote! {
                 pub fn handler(#(#inputs),*) -> #output_type {
                     #(#scoped_constructors)*
                     #b
                 }
-            }
+            })
+            .unwrap()
         }
     };
     Ok(code)

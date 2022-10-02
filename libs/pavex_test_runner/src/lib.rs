@@ -1,11 +1,16 @@
-use crate::snapshot::SnapshotTest;
+use std::collections::HashMap;
+use std::path::PathBuf;
+use std::process::Output;
+
 use anyhow::Context;
 use console::style;
 use libtest_mimic::Conclusion;
 use libtest_mimic::Outcome;
-use std::collections::HashMap;
-use std::path::PathBuf;
 use toml::toml;
+
+pub use snapshot::print_changeset;
+
+use crate::snapshot::SnapshotTest;
 
 mod snapshot;
 
@@ -249,13 +254,24 @@ fn run_test(test: &libtest_mimic::Test<TestData>) -> Outcome {
     match test.data.load_configuration() {
         // Ensure that the test description is always injected on top of the failure message
         Ok(c) => match _run_test(&c, test) {
-            Ok(Outcome::Failed { msg }) => Outcome::Failed {
-                msg: msg.map(|msg| enrich_failure_message(&c, msg)),
+            Ok(TestOutcome {
+                outcome: Outcome::Failed { msg },
+                source_generation_output,
+            }) => Outcome::Failed {
+                msg: msg.map(|msg| {
+                    enrich_failure_message(
+                        &c,
+                        format!(
+                            "{msg}\n\n--- STDOUT:\n{}\n--- STDERR:\n{}",
+                            source_generation_output.stdout, source_generation_output.stderr
+                        ),
+                    )
+                }),
             },
             Err(e) => Outcome::Failed {
                 msg: Some(enrich_failure_message(&c, unexpected_failure_message(&e))),
             },
-            Ok(o) => o,
+            Ok(o) => o.outcome,
         },
         // We do not have the test description if we fail to load the test configuration, so...
         Err(e) => Outcome::Failed {
@@ -267,7 +283,7 @@ fn run_test(test: &libtest_mimic::Test<TestData>) -> Outcome {
 fn _run_test(
     test_config: &TestConfig,
     test: &libtest_mimic::Test<TestData>,
-) -> Result<Outcome, anyhow::Error> {
+) -> Result<TestOutcome, anyhow::Error> {
     test.data
         .seed_test_filesystem(test_config)
         .context("Failed to seed the filesystem for the test runtime folder")?;
@@ -280,44 +296,44 @@ fn _run_test(
         .current_dir(&test.data.runtime_directory)
         .output()
         .unwrap();
+    let source_generation_output: CommandOutput = (&output).try_into()?;
 
     let expectations_directory = test.data.definition_directory.join("expectations");
 
     if !output.status.success() {
-        let stdout = std::str::from_utf8(&output.stdout)
-            .context("The application printed invalid UTF8 data to stdout")?;
-        let stderr = std::str::from_utf8(&output.stderr)
-            .context("The application printed invalid UTF8 data to stderr")?;
         return match test_config.expectations.codegen {
-            ExpectedOutcome::Pass => {
-                Ok(Outcome::Failed {
-                    msg: Some(format!(
-                        "We failed to generate the application code.\n\n--- STDOUT:\n{}\n--- STDERR:\n{}",
-                        stdout, stderr
-                    )),
-                })
-            }
+            ExpectedOutcome::Pass => Ok(TestOutcome {
+                outcome: Outcome::Failed {
+                    msg: Some(format!("We failed to generate the application code.",)),
+                },
+                source_generation_output,
+            }),
             ExpectedOutcome::Fail => {
                 let stderr_snapshot = SnapshotTest::new(expectations_directory.join("stderr.txt"));
-                if stderr_snapshot.verify(stderr).is_err() {
-                    return Ok(Outcome::Failed {
-                        msg: Some(
-                            "The failure message returned by code generation does not match what we expected".into()),
+                if stderr_snapshot
+                    .verify(&source_generation_output.stderr)
+                    .is_err()
+                {
+                    return Ok(TestOutcome {
+                        outcome: Outcome::Failed {
+                            msg: Some(
+                                "The failure message returned by code generation does not match what we expected".into())
+                        },
+                        source_generation_output,
                     });
                 }
-                Ok(Outcome::Passed)
+                Ok(TestOutcome {
+                    outcome: Outcome::Passed,
+                    source_generation_output,
+                })
             }
         };
     } else if ExpectedOutcome::Fail == test_config.expectations.codegen {
-        let stdout = std::str::from_utf8(&output.stdout)
-            .context("The application printed invalid UTF8 data to stdout")?;
-        let stderr = std::str::from_utf8(&output.stderr)
-            .context("The application printed invalid UTF8 data to stderr")?;
-        return Ok(Outcome::Failed {
-            msg: Some(format!(
-                "We expected code generation to fail, but it succeeded!\n\n--- STDOUT:\n{}\n--- STDERR:\n{}",
-                stdout, stderr
-            )),
+        return Ok(TestOutcome {
+            outcome: Outcome::Failed {
+                msg: Some("We expected code generation to fail, but it succeeded!".into()),
+            },
+            source_generation_output,
         });
     };
 
@@ -325,10 +341,14 @@ fn _run_test(
     let actual_diagnostics =
         fs_err::read_to_string(test.data.runtime_directory.join("diagnostics.dot"))?;
     if diagnostics_snapshot.verify(&actual_diagnostics).is_err() {
-        return Ok(Outcome::Failed {
-            msg: Some(
-                "Diagnostics for the generated application do not match what we expected".into(),
-            ),
+        return Ok(TestOutcome {
+            outcome: Outcome::Failed {
+                msg: Some(
+                    "Diagnostics for the generated application do not match what we expected"
+                        .into(),
+                ),
+            },
+            source_generation_output,
         });
     }
 
@@ -342,12 +362,44 @@ fn _run_test(
     )
     .unwrap();
     if app_code_snapshot.verify(&actual_app_code).is_err() {
-        return Ok(Outcome::Failed {
-            msg: Some("The generated application code does not match what we expected".into()),
+        return Ok(TestOutcome {
+            outcome: Outcome::Failed {
+                msg: Some("The generated application code does not match what we expected".into()),
+            },
+            source_generation_output,
         });
     }
 
-    Ok(Outcome::Passed)
+    Ok(TestOutcome {
+        outcome: Outcome::Passed,
+        source_generation_output,
+    })
+}
+
+struct TestOutcome {
+    outcome: Outcome,
+    source_generation_output: CommandOutput,
+}
+
+/// A refined `std::process::Output` that assumes that both stderr and stdout are valid UTF8.
+struct CommandOutput {
+    stdout: String,
+    stderr: String,
+}
+
+impl TryFrom<&Output> for CommandOutput {
+    type Error = anyhow::Error;
+
+    fn try_from(o: &Output) -> Result<Self, Self::Error> {
+        let stdout = std::str::from_utf8(&o.stdout)
+            .context("The application printed invalid UTF8 data to stdout")?;
+        let stderr = std::str::from_utf8(&o.stderr)
+            .context("The application printed invalid UTF8 data to stderr")?;
+        Ok(Self {
+            stdout: stdout.to_string(),
+            stderr: stderr.to_string(),
+        })
+    }
 }
 
 fn unexpected_failure_message(e: &anyhow::Error) -> String {

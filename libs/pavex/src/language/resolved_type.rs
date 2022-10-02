@@ -12,6 +12,8 @@ use crate::language::ImportPath;
 pub struct ResolvedType {
     #[serde(serialize_with = "serialize_package_id")]
     #[serde(deserialize_with = "deserialize_package_id")]
+    // `PackageId` does not implement serde::Deserialize/serde::Serialize, therefore we must
+    // manually specify deserializer and serializer for make the whole `ResolvedType` (de)serializable.
     pub package_id: PackageId,
     pub base_type: ImportPath,
     pub generic_arguments: Vec<ResolvedType>,
