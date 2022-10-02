@@ -25,7 +25,7 @@ use crate::web::application_state_call_graph::ApplicationStateCallGraph;
 use crate::web::dependency_graph::CallableDependencyGraph;
 use crate::web::diagnostic::{
     convert_rustdoc_span, convert_span, read_source_file, CompilerDiagnosticBuilder,
-    ParsedSourceFile, SourceSpanExt,
+    OptionalSourceSpanExt, ParsedSourceFile, SourceSpanExt,
 };
 use crate::web::handler_call_graph::HandlerCallGraph;
 use crate::web::{codegen, diagnostic};
@@ -163,49 +163,42 @@ impl App {
                     Ok(p) => {
                         map.entry(p).or_default().insert(raw_identifier.to_owned());
                     }
-                    Err(ParseError::InvalidPath(e)) => {
+                    Err(e) => {
+                        let identifiers = match &e {
+                            ParseError::InvalidPath(e) => &e.raw_identifiers,
+                            ParseError::PathMustBeAbsolute(e) => &e.raw_identifiers,
+                        };
                         let location = app_blueprint
                             .constructor_locations
-                            .get(&e.raw_identifiers)
-                            .or_else(|| app_blueprint.handler_locations[raw_identifier].first())
+                            .get(identifiers)
+                            .or_else(|| app_blueprint.handler_locations[identifiers].first())
                             .unwrap();
                         let source = ParsedSourceFile::new(
                             location.file.as_str().into(),
                             &package_graph.workspace(),
                         )
                         .map_err(miette::MietteError::IoError)?;
-                        let label = diagnostic::get_f_macro_invocation_span(
+                        let source_span = diagnostic::get_f_macro_invocation_span(
                             &source.contents,
                             &source.parsed,
                             location,
-                        )
-                        .map(|s| s.labeled("The invalid import path was registered here".into()));
-                        let diagnostic = CompilerDiagnosticBuilder::new(source, e)
-                            .optional_label(label)
-                            .build();
-                        return Err(diagnostic.into());
-                    }
-                    Err(ParseError::PathMustBeAbsolute(e)) => {
-                        let location = app_blueprint
-                            .constructor_locations
-                            .get(&e.raw_identifiers)
-                            .or_else(|| app_blueprint.handler_locations[raw_identifier].first())
-                            .unwrap();
-                        let source = ParsedSourceFile::new(
-                            location.file.as_str().into(),
-                            &package_graph.workspace(),
-                        )
-                        .map_err(miette::MietteError::IoError)?;
-                        let label = diagnostic::get_f_macro_invocation_span(
-                            &source.contents,
-                            &source.parsed,
-                            location,
-                        )
-                        .map(|s| s.labeled("The invalid import path was registered here".into()));
-                        let diagnostic = CompilerDiagnosticBuilder::new(source, e)
-                            .optional_label(label)
-                            .help("If it is a local import, the path must start with `crate::`.\nIf it is an import from a dependency, the path must start with the dependency name (e.g. `dependency::`).".into())
-                            .build();
+                        );
+                        let diagnostic_builder = CompilerDiagnosticBuilder::new(source, e);
+                        let diagnostic = match e {
+                            ParseError::InvalidPath(_) => {
+                                let label = source_span
+                                    .labeled("The invalid import path was registered here".into());
+                                diagnostic_builder
+                                    .optional_label(label)
+                            }
+                            ParseError::PathMustBeAbsolute(_) => {
+                                let label = source_span
+                                    .labeled("The relative import path was registered here".into());
+                                diagnostic_builder
+                                    .optional_label(label)
+                                    .help("If it is a local import, the path must start with `crate::`.\nIf it is an import from a dependency, the path must start with the dependency name (e.g. `dependency::`).".into())
+                            }
+                        }.build();
                         return Err(diagnostic.into());
                     }
                 }
