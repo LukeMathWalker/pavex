@@ -258,11 +258,32 @@ impl App {
                 Ok((resolver, constructors)) => (resolver, constructors),
                 Err(e) => {
                     return match e {
-                        ConstructorResolutionError::CallableResolutionError(_)
-                        | ConstructorResolutionError::ConstructorsCannotReturnTheUnitType => {
-                            Err(miette!(e))
+                        ConstructorResolutionError::CallableResolutionError(_) => Err(miette!(e)),
+                        ConstructorResolutionError::ConstructorsCannotReturnTheUnitType(
+                            ref constructor_path,
+                        ) => {
+                            let raw_identifier = resolved_paths2identifiers[constructor_path]
+                                .iter()
+                                .next()
+                                .unwrap();
+                            let location = &app_blueprint.constructor_locations[raw_identifier];
+                            let source = ParsedSourceFile::new(
+                                location.file.as_str().into(),
+                                &package_graph.workspace(),
+                            )
+                            .map_err(miette::MietteError::IoError)?;
+                            let label = diagnostic::get_callable_invocation_span(
+                                &source.contents,
+                                &source.parsed,
+                                location,
+                            )
+                            .map(|s| s.labeled("The constructor was registered here".into()));
+                            let diagnostic = CompilerDiagnosticBuilder::new(source, e)
+                                .optional_label(label)
+                                .build();
+                            Err(diagnostic.into())
                         }
-                    }
+                    };
                 }
             };
 
@@ -668,7 +689,11 @@ fn process_constructor(
 ) -> Result<Callable, ConstructorResolutionError> {
     let constructor = process_callable(krate_collection, constructor_path, package_graph)?;
     if constructor.output_fq_path.base_type == vec!["()"] {
-        return Err(ConstructorResolutionError::ConstructorsCannotReturnTheUnitType);
+        return Err(
+            ConstructorResolutionError::ConstructorsCannotReturnTheUnitType(
+                constructor_path.to_owned(),
+            ),
+        );
     }
     Ok(constructor)
 }
@@ -831,8 +856,8 @@ fn process_callable(
 pub(crate) enum ConstructorResolutionError {
     #[error(transparent)]
     CallableResolutionError(#[from] CallableResolutionError),
-    #[error("I expect all constructors to return *something*. This constructor doesn't, it returns the unit type, `()`.")]
-    ConstructorsCannotReturnTheUnitType,
+    #[error("I expect all constructors to return *something*.\nThis constructor doesn't, it returns the unit type - `()`.")]
+    ConstructorsCannotReturnTheUnitType(ResolvedPath),
 }
 
 #[derive(thiserror::Error, Debug)]
