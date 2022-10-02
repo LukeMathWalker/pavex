@@ -315,7 +315,7 @@ impl App {
                             &source.parsed,
                             location,
                         )
-                        .map(|s| s.labeled("The callable we cannot resolve".into()));
+                        .map(|s| s.labeled("The handler that we cannot resolve".into()));
                         let diagnostic = CompilerDiagnosticBuilder::new(source, e)
                             .optional_label(label)
                             .help("This is most likely a bug in `pavex` or `rustdoc`.\nPlease file a GitHub issue!".into())
@@ -402,7 +402,7 @@ impl App {
                             &source.parsed,
                             location,
                         )
-                        .map(|s| s.labeled("The callable was registered here".into()));
+                        .map(|s| s.labeled("The handler was registered here".into()));
                         let diagnostic = CompilerDiagnosticBuilder::new(source, e)
                             .optional_label(label)
                             .optional_related_error(sub_diagnostic)
