@@ -4,7 +4,7 @@ Error:
  14 │     AppBlueprint::new()
  15 │         .constructor(f!(crate::new_logger::<String>), Lifecycle::Singleton)
     ·                      ───────────────┬───────────────
-    ·                                     ╰── The invalid import path was registered here
+    ·                                     ╰── The relative import path was registered here
  16 │         .route(f!(crate::handler::<std::string::String>), "/home")
     ╰────
   help: If it is a local import, the path must start with `crate::`.
