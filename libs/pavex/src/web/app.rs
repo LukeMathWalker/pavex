@@ -164,10 +164,7 @@ impl App {
                         map.entry(p).or_default().insert(raw_identifier.to_owned());
                     }
                     Err(e) => {
-                        let identifiers = match &e {
-                            ParseError::InvalidPath(e) => &e.raw_identifiers,
-                            ParseError::PathMustBeAbsolute(e) => &e.raw_identifiers,
-                        };
+                        let identifiers = e.raw_identifiers();
                         let location = app_blueprint
                             .constructor_locations
                             .get(identifiers)
@@ -183,18 +180,17 @@ impl App {
                             &source.parsed,
                             location,
                         );
-                        let diagnostic_builder = CompilerDiagnosticBuilder::new(source, e);
                         let diagnostic = match e {
                             ParseError::InvalidPath(_) => {
                                 let label = source_span
                                     .labeled("The invalid import path was registered here".into());
-                                diagnostic_builder
+                                CompilerDiagnosticBuilder::new(source, e)
                                     .optional_label(label)
                             }
                             ParseError::PathMustBeAbsolute(_) => {
                                 let label = source_span
                                     .labeled("The relative import path was registered here".into());
-                                diagnostic_builder
+                                CompilerDiagnosticBuilder::new(source, e)
                                     .optional_label(label)
                                     .help("If it is a local import, the path must start with `crate::`.\nIf it is an import from a dependency, the path must start with the dependency name (e.g. `dependency::`).".into())
                             }
