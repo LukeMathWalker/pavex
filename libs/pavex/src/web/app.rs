@@ -254,8 +254,17 @@ impl App {
         };
 
         let (constructor_resolver, constructors) =
-            process_constructors(&constructor_paths, &mut krate_collection, &package_graph)
-                .map_err(|e| miette!(e))?;
+            match process_constructors(&constructor_paths, &mut krate_collection, &package_graph) {
+                Ok((resolver, constructors)) => (resolver, constructors),
+                Err(e) => {
+                    return match e {
+                        ConstructorResolutionError::CallableResolutionError(_)
+                        | ConstructorResolutionError::ConstructorsCannotReturnTheUnitType => {
+                            Err(miette!(e))
+                        }
+                    }
+                }
+            };
 
         let (handler_resolver, handlers) = match process_handlers(
             &handler_paths,
@@ -638,14 +647,13 @@ fn process_constructors(
         BiHashMap<ResolvedPath, Callable>,
         IndexMap<ResolvedType, Callable>,
     ),
-    anyhow::Error,
+    ConstructorResolutionError,
 > {
     let mut resolution_map = BiHashMap::with_capacity(constructor_paths.len());
     let mut constructors = IndexMap::with_capacity(constructor_paths.len());
     for constructor_identifiers in constructor_paths {
         let constructor =
             process_constructor(constructor_identifiers, krate_collection, package_graph)?;
-        // TODO: raise an error if multiple constructors are registered for the same type
         constructors.insert(constructor.output_fq_path.clone(), constructor.clone());
         resolution_map.insert(constructor_identifiers.to_owned(), constructor);
     }
@@ -657,12 +665,10 @@ fn process_constructor(
     constructor_path: &ResolvedPath,
     krate_collection: &mut CrateCollection,
     package_graph: &PackageGraph,
-) -> Result<Callable, anyhow::Error> {
+) -> Result<Callable, ConstructorResolutionError> {
     let constructor = process_callable(krate_collection, constructor_path, package_graph)?;
     if constructor.output_fq_path.base_type == vec!["()"] {
-        return Err(anyhow::anyhow!(
-            "A constructor cannot return the unit type!"
-        ));
+        return Err(ConstructorResolutionError::ConstructorsCannotReturnTheUnitType);
     }
     Ok(constructor)
 }
@@ -819,6 +825,14 @@ fn process_callable(
         callable_fq_path: callable_path.to_owned(),
         inputs: parameter_paths,
     })
+}
+
+#[derive(thiserror::Error, Debug)]
+pub(crate) enum ConstructorResolutionError {
+    #[error(transparent)]
+    CallableResolutionError(#[from] CallableResolutionError),
+    #[error("I expect all constructors to return *something*. This constructor doesn't, it returns the unit type, `()`.")]
+    ConstructorsCannotReturnTheUnitType,
 }
 
 #[derive(thiserror::Error, Debug)]
