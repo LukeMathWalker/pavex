@@ -1,12 +1,13 @@
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap};
 use std::default::Default;
 use std::fmt::{Display, Formatter};
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use std::str::FromStr;
 
 use anyhow::{anyhow, Context};
 use guppy::graph::{PackageGraph, PackageMetadata, PackageSource};
 use guppy::{PackageId, Version};
-use rustdoc_types::ItemEnum;
+use rustdoc_types::{ItemEnum, Visibility};
 
 use crate::language::ImportPath;
 
@@ -18,14 +19,53 @@ pub struct CannotGetCrateData {
     pub source: anyhow::Error,
 }
 
+pub const STD_PACKAGE_ID: &str = "std";
+pub const TOOLCHAIN_CRATES: [&str; 3] = ["std", "core", "alloc"];
+
 pub fn get_crate_data(
     root_folder: &Path,
     package_id_spec: &PackageIdSpecification,
 ) -> Result<rustdoc_types::Crate, CannotGetCrateData> {
-    _get_crate_data(root_folder, package_id_spec).map_err(|e| CannotGetCrateData {
+    // Some crates are not compiled as part of the dependency tree of the current workspace.
+    // They are instead bundled as part of Rust's toolchain and automatically available for import
+    // and usage in your crate: the standard library (`std`), `core` (a smaller subset of `std`
+    // that does not require an allocator), `alloc` (a smaller subset of `std` that assumes you
+    // can allocate).
+    // Since those crates are pre-compiled (and somewhat special), we can't generate their
+    // documentation on the fly. We assume that their JSON docs have been pre-computed and are
+    // available for us to look at.
+    if TOOLCHAIN_CRATES.contains(&package_id_spec.name.as_str()) {
+        get_toolchain_crate_data(package_id_spec)
+    } else {
+        _get_crate_data(root_folder, package_id_spec)
+    }
+    .map_err(|e| CannotGetCrateData {
         package_spec: package_id_spec.to_string(),
         source: e,
     })
+}
+
+fn get_toolchain_crate_data(
+    package_id_spec: &PackageIdSpecification,
+) -> Result<rustdoc_types::Crate, anyhow::Error> {
+    // TODO: determine the correct path to the files using `rustup show home`,
+    // `rustup show active-toolchain` and `rustup component list --installed --toolchain <...>`.
+    let root_folder = PathBuf::from_str("/Users/luca/code/pavex/json-docs").unwrap();
+    let json_path = root_folder.join(format!("{}.json", package_id_spec.name));
+    let json = fs_err::read_to_string(json_path).with_context(|| {
+        format!(
+            "Failed to retrieve the JSON docs for {}",
+            package_id_spec.name
+        )
+    })?;
+    serde_json::from_str::<rustdoc_types::Crate>(&json)
+        .with_context(|| {
+            format!(
+                "Failed to deserialize the JSON docs for {}",
+                package_id_spec.name
+            )
+        })
+        .map_err(Into::into)
 }
 
 fn _get_crate_data(
@@ -74,8 +114,16 @@ impl CrateCollection {
         &mut self,
         package_id: &PackageId,
     ) -> Result<&Crate, CannotGetCrateData> {
-        let package_metadata = self.1.metadata(package_id).expect("Unknown package ID");
-        let package_spec = PackageIdSpecification::new(&package_metadata);
+        let package_spec = if TOOLCHAIN_CRATES.contains(&package_id.repr()) {
+            PackageIdSpecification {
+                source: None,
+                name: package_id.repr().to_string(),
+                version: None,
+            }
+        } else {
+            let package_metadata = self.1.metadata(package_id).expect("Unknown package ID");
+            PackageIdSpecification::new(&package_metadata)
+        };
         if self.0.get(&package_spec.to_string()).is_none() {
             let krate = get_crate_data(
                 self.1.workspace().target_directory().as_std_path(),
@@ -85,6 +133,78 @@ impl CrateCollection {
             self.0.insert(package_spec.to_string(), krate);
         }
         Ok(&self.0[&package_spec.to_string()])
+    }
+
+    /// Retrieve the package id where a certain item was originally defined.
+    pub fn get_defining_package_id_for_item(
+        &mut self,
+        used_by_package_id: &PackageId,
+        item_id: &rustdoc_types::Id,
+    ) -> Result<PackageId, anyhow::Error> {
+        let package_graph = self.1.clone();
+        let used_by_krate = self.get_or_compute_by_id(used_by_package_id)?;
+        let type_summary = used_by_krate.get_summary_by_id(item_id)?;
+
+        let type_package_id = if type_summary.crate_id == 0 {
+            used_by_krate.package_id().to_owned()
+        } else {
+            let (owning_crate, owning_crate_version) = used_by_krate
+                .get_external_crate_name(type_summary.crate_id)
+                .unwrap();
+            if TOOLCHAIN_CRATES.contains(&owning_crate.name.as_str()) {
+                PackageId::new(owning_crate.name.clone())
+            } else {
+                let transitive_dependencies = package_graph
+                    .query_forward([used_by_package_id])
+                    .unwrap()
+                    .resolve();
+                let mut iterator =
+                    transitive_dependencies.links(guppy::graph::DependencyDirection::Forward);
+                iterator
+                    .find(|link| {
+                        link.to().name() == owning_crate.name
+                            && owning_crate_version
+                                .as_ref()
+                                .map(|v| link.to().version() == v)
+                                .unwrap_or(true)
+                    })
+                    .ok_or_else(|| {
+                        anyhow!(
+                            "I could not find the package id for the crate where `{}` is defined",
+                            type_summary.path.join("::")
+                        )
+                    })
+                    .unwrap()
+                    .to()
+                    .id()
+                    .to_owned()
+            }
+        };
+        Ok(type_package_id)
+    }
+
+    pub fn get_canonical_import_path(
+        &mut self,
+        used_by_package_id: &PackageId,
+        item_id: &rustdoc_types::Id,
+    ) -> Result<Vec<String>, anyhow::Error> {
+        let definition_package_id =
+            self.get_defining_package_id_for_item(used_by_package_id, item_id)?;
+
+        let used_by_krate = self.get_or_compute_by_id(used_by_package_id)?;
+        let type_summary = used_by_krate.get_summary_by_id(item_id)?;
+        let referenced_base_type_path = type_summary.path.clone();
+        let base_type = if type_summary.crate_id == 0 {
+            self.get_or_compute_by_id(used_by_package_id)?
+                .get_importable_path(item_id)
+        } else {
+            // The crate where the type is actually defined.
+            let source_crate = self.get_or_compute_by_id(&definition_package_id)?;
+            let type_definition_id = source_crate.get_id_by_path(&referenced_base_type_path)?;
+            source_crate.get_importable_path(type_definition_id)
+        }
+        .to_owned();
+        Ok(base_type)
     }
 }
 
@@ -138,7 +258,7 @@ impl PackageIdSpecification {
     }
 }
 
-impl std::fmt::Display for PackageIdSpecification {
+impl Display for PackageIdSpecification {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         if let Some(source) = &self.source {
             write!(f, "{}#", source)?;
@@ -162,6 +282,7 @@ pub struct Crate {
     package_id: PackageId,
     krate: rustdoc_types::Crate,
     path_index: HashMap<Vec<String>, rustdoc_types::Id>,
+    public_local_path_index: HashMap<rustdoc_types::Id, BTreeSet<Vec<String>>>,
 }
 
 impl Crate {
@@ -171,11 +292,24 @@ impl Crate {
             .iter()
             .map(|(id, summary)| (summary.path.clone(), id.to_owned()))
             .collect();
-        index_re_exports(&krate, vec![], &mut path_index, &krate.root);
+
+        let mut public_local_path_index = HashMap::new();
+        index_local_items(&krate, vec![], &mut public_local_path_index, &krate.root);
+
+        path_index.reserve(public_local_path_index.len());
+        for (id, public_paths) in &public_local_path_index {
+            for public_path in public_paths {
+                if path_index.get(public_path).is_none() {
+                    path_index.insert(public_path.to_owned(), id.to_owned());
+                }
+            }
+        }
+
         Self {
             package_id,
             krate,
             path_index,
+            public_local_path_index,
         }
     }
 
@@ -192,7 +326,7 @@ impl Crate {
                 url.trim_end_matches('/')
                     .split('/')
                     .last()
-                    .map(guppy::Version::parse)
+                    .map(Version::parse)
                     .and_then(|x| x.ok())
             } else {
                 None
@@ -245,18 +379,47 @@ impl Crate {
         let id = self.get_id_by_path(path)?;
         Ok(self.get_type_by_id(id))
     }
+
+    pub fn get_importable_path(&self, id: &rustdoc_types::Id) -> &[String] {
+        if let Some(path) = self.public_local_path_index.get(id) {
+            return path.iter().next().unwrap();
+        }
+
+        let item = self.get_type_by_id(id);
+        if item.crate_id != 0 {
+            let external_crate = &self.krate.external_crates[&item.crate_id];
+            panic!(
+                "You can only retrieve a path that is guaranteed to be public for local types. \
+                `{}` is not local. That id belongs to {} (crate_id={}).",
+                &item.id.0, &external_crate.name, item.crate_id
+            )
+        }
+
+        panic!(
+            "Failed to find a publicly importable path for the type id `{}`. \
+             This is likely to be a bug in our handling of rustdoc's JSON output.",
+            id.0
+        )
+    }
 }
 
-fn index_re_exports<'a>(
+fn index_local_items<'a>(
     krate: &'a rustdoc_types::Crate,
     mut current_path: Vec<&'a str>,
-    path_index: &mut HashMap<Vec<String>, rustdoc_types::Id>,
+    path_index: &mut HashMap<rustdoc_types::Id, BTreeSet<Vec<String>>>,
     current_item_id: &rustdoc_types::Id,
 ) {
-    // TODO: handle visibility
     // TODO: the way we handle `current_path` is extremely wasteful,
     // we can likely reuse the same buffer throughout.
     let current_item = &krate.index[current_item_id];
+
+    // We do not want to index private items.
+    if let Visibility::Default | Visibility::Crate | Visibility::Restricted { .. } =
+        current_item.visibility
+    {
+        return;
+    }
+
     match &current_item.inner {
         ItemEnum::Module(m) => {
             let current_path_segment = current_item
@@ -265,7 +428,7 @@ fn index_re_exports<'a>(
                 .expect("All 'module' items have a 'name' property");
             current_path.push(current_path_segment);
             for item_id in &m.items {
-                index_re_exports(krate, current_path.clone(), path_index, item_id);
+                index_local_items(krate, current_path.clone(), path_index, item_id);
             }
         }
         ItemEnum::Import(i) => {
@@ -275,14 +438,15 @@ fn index_re_exports<'a>(
                         if let Some(imported_summary) = krate.paths.get(imported_id) {
                             debug_assert!(imported_summary.crate_id != 0);
                         } else {
-                            panic!("The imported id is not listed in the index nor in the path section of rustdoc's JSON output")
+                            // TODO: this is firing for std's JSON docs. File a bug report.
+                            // panic!("The imported id ({}) is not listed in the index nor in the path section of rustdoc's JSON output", imported_id.0)
                         }
                     }
                     Some(imported_item) => {
                         if let ItemEnum::Module(_) = imported_item.inner {
                             current_path.push(&i.name);
                         }
-                        index_re_exports(krate, current_path.clone(), path_index, imported_id);
+                        index_local_items(krate, current_path.clone(), path_index, imported_id);
                     }
                 }
             }
@@ -293,10 +457,11 @@ fn index_re_exports<'a>(
                 .as_deref()
                 .expect("All 'struct' items have a 'name' property");
             current_path.push(struct_name);
-            path_index.insert(
-                current_path.into_iter().map(|s| s.to_string()).collect(),
-                current_item_id.to_owned(),
-            );
+            let path = current_path.into_iter().map(|s| s.to_string()).collect();
+            path_index
+                .entry(current_item_id.to_owned())
+                .or_default()
+                .insert(path);
         }
         ItemEnum::Enum(_) => {
             let enum_name = current_item
@@ -304,10 +469,11 @@ fn index_re_exports<'a>(
                 .as_deref()
                 .expect("All 'enum' items have a 'name' property");
             current_path.push(enum_name);
-            path_index.insert(
-                current_path.into_iter().map(|s| s.to_string()).collect(),
-                current_item_id.to_owned(),
-            );
+            let path = current_path.into_iter().map(|s| s.to_string()).collect();
+            path_index
+                .entry(current_item_id.to_owned())
+                .or_default()
+                .insert(path);
         }
         ItemEnum::Function(_) => {
             let function_name = current_item
@@ -315,10 +481,11 @@ fn index_re_exports<'a>(
                 .as_deref()
                 .expect("All 'function' items have a 'name' property");
             current_path.push(function_name);
-            path_index.insert(
-                current_path.into_iter().map(|s| s.to_string()).collect(),
-                current_item_id.to_owned(),
-            );
+            let path = current_path.into_iter().map(|s| s.to_string()).collect();
+            path_index
+                .entry(current_item_id.to_owned())
+                .or_default()
+                .insert(path);
         }
         _ => {}
     }

@@ -1,5 +1,5 @@
 digraph "/home" {
-    0 [ label = "app::Streamer::stream_file(app::Logger) -> http::response::Response<hyper::body::body::Body>"]
+    0 [ label = "app::Streamer::stream_file(app::Logger) -> http::Response<hyper::Body>"]
     1 [ label = "app::Logger"]
     1 -> 0 [ ]
 }

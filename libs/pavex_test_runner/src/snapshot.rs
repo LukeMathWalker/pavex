@@ -1,8 +1,9 @@
-use console::style;
-use similar::{Algorithm, ChangeTag, TextDiff};
 use std::io::ErrorKind;
 use std::path::PathBuf;
 use std::time::Duration;
+
+use console::style;
+use similar::{Algorithm, ChangeTag, TextDiff};
 
 fn term_width() -> usize {
     console::Term::stdout().size().1 as usize
@@ -46,7 +47,7 @@ impl SnapshotTest {
     }
 }
 
-fn print_changeset(old: &str, new: &str) {
+pub fn print_changeset(old: &str, new: &str) {
     let width = term_width();
     let diff = TextDiff::configure()
         .algorithm(Algorithm::Patience)

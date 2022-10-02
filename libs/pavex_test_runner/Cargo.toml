@@ -3,6 +3,10 @@ name = "pavex_test_runner"
 version = "0.1.0"
 edition = "2021"
 
+[[bin]]
+path = "src/main.rs"
+name = "snaps"
+
 [dependencies]
 anyhow = "1.0.59"
 console = "0.15.1"
@@ -12,3 +16,4 @@ serde = { version = "1.0.141", features = ["derive"] }
 similar = { version = "2.2.0", features = ["inline"] }
 textwrap = "0.15.0"
 toml = { version = "0.5.9", features = ["preserve_order"] }
+miette = "5"

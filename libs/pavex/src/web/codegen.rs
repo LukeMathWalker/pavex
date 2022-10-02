@@ -8,11 +8,12 @@ use guppy::{PackageId, Version};
 use indexmap::{IndexMap, IndexSet};
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote};
-use syn::{parse_quote, ItemFn, ItemStruct};
+use syn::{ItemFn, ItemStruct};
 
 use crate::language::ResolvedPath;
 use crate::language::{Callable, ResolvedType};
-use crate::web::app::{GENERATED_APP_PACKAGE_ID, STD_PACKAGE_ID};
+use crate::rustdoc::STD_PACKAGE_ID;
+use crate::web::app::GENERATED_APP_PACKAGE_ID;
 use crate::web::application_state_call_graph::ApplicationStateCallGraph;
 use crate::web::dependency_graph::DependencyGraphNode;
 use crate::web::handler_call_graph::{codegen, HandlerCallGraph};
@@ -82,7 +83,7 @@ pub(crate) fn codegen_app(
 }
 
 fn server_startup() -> ItemFn {
-    parse_quote! {
+    syn::parse2(quote! {
         pub async fn run(
             server_builder: pavex_runtime::hyper::server::Builder<pavex_runtime::hyper::server::conn::AddrIncoming>,
             application_state: ApplicationState
@@ -102,7 +103,7 @@ fn server_startup() -> ItemFn {
             });
             server_builder.serve(make_service).await.map_err(Into::into)
         }
-    }
+    }).unwrap()
 }
 
 fn define_application_state(
@@ -113,20 +114,22 @@ fn define_application_state(
         let field_type = type_.syn_type(package_id2name);
         quote! { #field_name: #field_type }
     });
-    parse_quote! {
+    syn::parse2(quote! {
         pub struct ApplicationState {
             #(#singleton_fields),*
         }
-    }
+    })
+    .unwrap()
 }
 
 fn define_server_state() -> ItemStruct {
-    parse_quote! {
+    syn::parse2(quote! {
         struct ServerState {
             router: pavex_runtime::routing::Router<u32>,
             application_state: ApplicationState
         }
-    }
+    })
+    .unwrap()
 }
 
 fn get_application_state_init(
@@ -148,12 +151,12 @@ fn get_router_init(route_id2path: &BiHashMap<u32, String>) -> ItemFn {
             router.insert(#path, #route_id)?;
         };
     }
-    parse_quote! {
+    syn::parse2(quote! {
         fn build_router() -> Result<pavex_runtime::routing::Router<u32>, pavex_runtime::routing::InsertError> {
             #router_init
             Ok(router)
         }
-    }
+    }).unwrap()
 }
 
 fn get_request_dispatcher(
@@ -183,7 +186,7 @@ fn get_request_dispatcher(
         }
     }
 
-    parse_quote! {
+    syn::parse2(quote! {
         fn route_request(request: pavex_runtime::http::Request<pavex_runtime::hyper::body::Body>, server_state: std::sync::Arc<ServerState>) -> pavex_runtime::http::Response<pavex_runtime::hyper::body::Body> {
             let route_id = server_state.router.at(request.uri().path()).expect("Failed to match incoming request path");
             match route_id.value {
@@ -191,7 +194,7 @@ fn get_request_dispatcher(
                 _ => panic!("This is a bug, no route registered for a route id"),
             }
         }
-    }
+    }).unwrap()
 }
 
 pub(crate) fn codegen_manifest<'a>(

@@ -1,5 +1,4 @@
-use std::collections::BTreeMap;
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fmt::Debug;
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
@@ -11,7 +10,7 @@ use guppy::PackageId;
 use indexmap::{IndexMap, IndexSet};
 use miette::{miette, NamedSource, SourceSpan};
 use proc_macro2::{Ident, TokenStream};
-use quote::{format_ident, quote};
+use quote::format_ident;
 use rustdoc_types::{GenericArg, GenericArgs, ItemEnum, Type};
 use syn::spanned::Spanned;
 use syn::FnArg;
@@ -20,8 +19,8 @@ use pavex_builder::Lifecycle;
 use pavex_builder::{AppBlueprint, RawCallableIdentifiers};
 
 use crate::language::{Callable, ParseError, ResolvedType};
-use crate::language::{EncodedResolvedPath, ResolvedPath, UnknownPath};
-use crate::rustdoc::{CannotGetCrateData, Crate, CrateCollection};
+use crate::language::{ResolvedPath, UnknownPath};
+use crate::rustdoc::{CannotGetCrateData, CrateCollection, STD_PACKAGE_ID};
 use crate::web::application_state_call_graph::ApplicationStateCallGraph;
 use crate::web::dependency_graph::CallableDependencyGraph;
 use crate::web::diagnostic::{
@@ -31,7 +30,6 @@ use crate::web::diagnostic::{
 use crate::web::handler_call_graph::HandlerCallGraph;
 use crate::web::{codegen, diagnostic};
 
-pub(crate) const STD_PACKAGE_ID: &str = "std";
 pub(crate) const GENERATED_APP_PACKAGE_ID: &str = "crate";
 
 pub struct App {
@@ -63,8 +61,7 @@ impl GeneratedApp {
 
         Self::inject_app_into_workspace_members(&workspace, &directory)?;
 
-        let lib_rs = prettyplease::unparse(&syn::parse2(self.lib_rs)?)
-            .replace("hyper::body::body::Body", "hyper::body::Body");
+        let lib_rs = prettyplease::unparse(&syn::parse2(self.lib_rs)?);
 
         if let Some(dependencies) = &mut self.cargo_toml.dependencies {
             for dependency in dependencies.values_mut() {
@@ -272,11 +269,9 @@ impl App {
                         // We only report a single registration site in the error report even though
                         // the same callable might have been registered in multiple locations.
                         // We may or may not want to change this in the future.
-                        let type_path = e.0.decode();
-                        let raw_identifier = resolved_paths2identifiers[&type_path]
-                            .iter()
-                            .next()
-                            .unwrap();
+                        let type_path = &e.0;
+                        let raw_identifier =
+                            resolved_paths2identifiers[type_path].iter().next().unwrap();
                         let location = app_blueprint.handler_locations[raw_identifier]
                             .first()
                             .unwrap();
@@ -359,8 +354,8 @@ impl App {
                             }
                         };
 
-                        let callable_path = e.callable_path.decode();
-                        let raw_identifier = resolved_paths2identifiers[&callable_path]
+                        let callable_path = &e.callable_path;
+                        let raw_identifier = resolved_paths2identifiers[callable_path]
                             .iter()
                             .next()
                             .unwrap();
@@ -601,13 +596,14 @@ fn framework_bindings(
             RawCallableIdentifiers::from_raw_parts(raw_path.into(), "pavex_runtime".into());
         let path = ResolvedPath::parse(&identifiers, package_graph).unwrap();
         let type_ = path.find_type(krate_collection).unwrap();
-        let krate = krate_collection
-            .get_or_compute_by_id(&path.package_id)
+        let package_id = krate_collection
+            .get_defining_package_id_for_item(&path.package_id, &type_.id)
             .unwrap();
-        let summary = krate.get_summary_by_id(&type_.id).unwrap();
-        let type_base_path = summary.path.clone();
+        let type_base_path = krate_collection
+            .get_canonical_import_path(&path.package_id, &type_.id)
+            .unwrap();
         ResolvedType {
-            package_id: path.package_id,
+            package_id,
             base_type: type_base_path,
             generic_arguments: vec![],
         }
@@ -636,7 +632,7 @@ pub(crate) enum BuildError {
 fn process_constructors(
     constructor_paths: &IndexSet<ResolvedPath>,
     krate_collection: &mut CrateCollection,
-    package_graph: &guppy::graph::PackageGraph,
+    package_graph: &PackageGraph,
 ) -> Result<
     (
         BiHashMap<ResolvedPath, Callable>,
@@ -660,7 +656,7 @@ fn process_constructors(
 fn process_constructor(
     constructor_path: &ResolvedPath,
     krate_collection: &mut CrateCollection,
-    package_graph: &guppy::graph::PackageGraph,
+    package_graph: &PackageGraph,
 ) -> Result<Callable, anyhow::Error> {
     let constructor = process_callable(krate_collection, constructor_path, package_graph)?;
     if constructor.output_fq_path.base_type == vec!["()"] {
@@ -676,7 +672,7 @@ fn process_constructor(
 fn process_handlers(
     handler_paths: &IndexSet<ResolvedPath>,
     krate_collection: &mut CrateCollection,
-    package_graph: &guppy::graph::PackageGraph,
+    package_graph: &PackageGraph,
 ) -> Result<(HashMap<ResolvedPath, Callable>, IndexSet<Callable>), CallableResolutionError> {
     let mut handlers = IndexSet::with_capacity(handler_paths.len());
     let mut handler_resolver = HashMap::new();
@@ -689,9 +685,12 @@ fn process_handlers(
 }
 
 fn process_type(
-    type_: &rustdoc_types::Type,
-    krate: &Crate,
-    package_graph: &guppy::graph::PackageGraph,
+    type_: &Type,
+    // The package id where the type we are trying to process has been referenced (e.g. as an
+    // input/output parameter).
+    used_by_package_id: &PackageId,
+    package_graph: &PackageGraph,
+    krate_collection: &mut CrateCollection,
 ) -> Result<ResolvedType, anyhow::Error> {
     match type_ {
         Type::ResolvedPath(rustdoc_types::Path { id, args, .. }) => {
@@ -709,8 +708,9 @@ fn process_type(
                                 GenericArg::Type(generic_type) => {
                                     generics.push(process_type(
                                         generic_type,
-                                        krate,
+                                        used_by_package_id,
                                         package_graph,
+                                        krate_collection,
                                     )?);
                                 }
                                 GenericArg::Const(_) => {
@@ -729,45 +729,12 @@ fn process_type(
                     }
                 }
             }
-            let type_summary = krate.get_summary_by_id(id)?;
-            let type_package_id = if type_summary.crate_id == 0 {
-                krate.package_id().to_owned()
-            } else {
-                let (owning_crate, owning_crate_version) = krate
-                    .get_external_crate_name(type_summary.crate_id)
-                    .unwrap();
-                if owning_crate.name == "std" {
-                    PackageId::new(STD_PACKAGE_ID)
-                } else {
-                    let transitive_dependencies = package_graph
-                        .query_forward([krate.package_id()])
-                        .unwrap()
-                        .resolve();
-                    let mut iterator =
-                        transitive_dependencies.links(guppy::graph::DependencyDirection::Forward);
-                    iterator
-                        .find(|link| {
-                            link.to().name() == owning_crate.name
-                                && owning_crate_version
-                                    .as_ref()
-                                    .map(|v| link.to().version() == v)
-                                    .unwrap_or(true)
-                        })
-                        .ok_or_else(|| {
-                            anyhow!(
-                            "I could not find the package id for the crate where `{}` is defined",
-                            type_summary.path.join("::")
-                        )
-                        })
-                        .unwrap()
-                        .to()
-                        .id()
-                        .to_owned()
-                }
-            };
+            let type_package_id =
+                krate_collection.get_defining_package_id_for_item(used_by_package_id, id)?;
+            let base_type = krate_collection.get_canonical_import_path(used_by_package_id, id)?;
             Ok(ResolvedType {
                 package_id: type_package_id,
-                base_type: type_summary.path.clone(),
+                base_type,
                 generic_arguments: generics,
             })
         }
@@ -781,17 +748,16 @@ fn process_type(
 fn process_callable(
     krate_collection: &mut CrateCollection,
     callable_path: &ResolvedPath,
-    package_graph: &guppy::graph::PackageGraph,
+    package_graph: &PackageGraph,
 ) -> Result<Callable, CallableResolutionError> {
     let type_ = callable_path.find_type(krate_collection)?;
-    let krate = krate_collection.get_or_compute_by_id(&callable_path.package_id)?;
+    let used_by_package_id = &callable_path.package_id;
     let decl = match &type_.inner {
         ItemEnum::Function(f) => &f.decl,
         ItemEnum::Method(m) => &m.decl,
         kind => {
-            let path = &callable_path.path.0;
             return Err(UnsupportedCallableKind {
-                import_path: quote! { #path }.to_string(),
+                import_path: callable_path.to_string(),
                 // TODO: review how this gets formatted
                 item_kind: format!("{:?}", kind),
             }
@@ -801,7 +767,12 @@ fn process_callable(
 
     let mut parameter_paths = Vec::with_capacity(decl.inputs.len());
     for (parameter_index, (_, parameter_type)) in decl.inputs.iter().enumerate() {
-        match process_type(parameter_type, krate, package_graph) {
+        match process_type(
+            parameter_type,
+            used_by_package_id,
+            package_graph,
+            krate_collection,
+        ) {
             Ok(p) => parameter_paths.push(p),
             Err(e) => {
                 return Err(ParameterResolutionError {
@@ -824,7 +795,12 @@ fn process_callable(
         },
         Some(output_type) => {
             // TODO: distinguish between output and parameters
-            match process_type(output_type, krate, package_graph) {
+            match process_type(
+                output_type,
+                used_by_package_id,
+                package_graph,
+                krate_collection,
+            ) {
                 Ok(p) => p,
                 Err(e) => {
                     return Err(OutputTypeResolutionError {
@@ -869,9 +845,9 @@ pub(crate) struct UnsupportedCallableKind {
 #[derive(Debug, thiserror::Error)]
 #[error("One of the input parameters for `{callable_path}` has a type that I cannot handle.")]
 pub(crate) struct ParameterResolutionError {
-    pub callable_path: EncodedResolvedPath,
+    pub callable_path: ResolvedPath,
     pub callable_item: rustdoc_types::Item,
-    pub parameter_type: rustdoc_types::Type,
+    pub parameter_type: Type,
     pub parameter_index: usize,
     #[source]
     pub source: anyhow::Error,
@@ -880,9 +856,9 @@ pub(crate) struct ParameterResolutionError {
 #[derive(Debug, thiserror::Error)]
 #[error("I do not know how to handle the type returned by `{callable_path}`.")]
 pub(crate) struct OutputTypeResolutionError {
-    pub callable_path: EncodedResolvedPath,
+    pub callable_path: ResolvedPath,
     pub callable_item: rustdoc_types::Item,
-    pub output_type: rustdoc_types::Type,
+    pub output_type: Type,
     #[source]
     pub source: anyhow::Error,
 }

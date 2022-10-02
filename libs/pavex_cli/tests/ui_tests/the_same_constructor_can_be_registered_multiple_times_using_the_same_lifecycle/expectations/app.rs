@@ -58,7 +58,7 @@ fn route_request(
         _ => panic!("This is a bug, no route registered for a route id"),
     }
 }
-pub fn route_handler_0() -> http::response::Response<hyper::body::Body> {
+pub fn route_handler_0() -> http::Response<hyper::Body> {
     let v0 = app::new_logger();
     app::Streamer::stream_file(v0)
 }
