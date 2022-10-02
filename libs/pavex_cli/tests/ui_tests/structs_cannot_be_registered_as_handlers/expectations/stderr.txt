@@ -1,0 +1,11 @@
+Error: 
+  × I can work with functions and static methods, but `app::Streamer` is
+  │ neither.
+  │ It is a struct and I do not know how to handle it here.
+   ╭─[src/lib.rs:5:1]
+ 5 │ pub fn blueprint() -> AppBlueprint {
+ 6 │     AppBlueprint::new().route(f!(crate::Streamer), "/home")
+   ·                               ─────────┬─────────
+   ·                                        ╰── It was registered as a handler here
+ 7 │ }
+   ╰────

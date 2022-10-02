@@ -23,7 +23,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             if let Some(expected_filename) = file_name.strip_suffix(".snap") {
                 let actual_snapshot = fs_err::read_to_string(file.path())?;
                 let expected_path = expectations_dir.join(expected_filename);
-                let expected_snapshot = fs_err::read_to_string(&expected_path)?;
+                let expected_snapshot = match fs_err::read_to_string(&expected_path) {
+                    Ok(s) => s,
+                    Err(e) if e.kind() == std::io::ErrorKind::NotFound => "".to_string(),
+                    Err(e) => return Err(e.into()),
+                };
 
                 match review_snapshot(
                     &terminal,

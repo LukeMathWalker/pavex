@@ -404,8 +404,30 @@ impl App {
                             .build();
                         Err(diagnostic.into())
                     }
-                    CallableResolutionError::UnsupportedCallableKind(_)
-                    | CallableResolutionError::CannotGetCrateData(_)
+                    CallableResolutionError::UnsupportedCallableKind(e) => {
+                        let type_path = &e.import_path;
+                        let raw_identifier =
+                            resolved_paths2identifiers[type_path].iter().next().unwrap();
+                        let location = app_blueprint.handler_locations[raw_identifier]
+                            .first()
+                            .unwrap();
+                        let source = ParsedSourceFile::new(
+                            location.file.as_str().into(),
+                            &package_graph.workspace(),
+                        )
+                        .map_err(miette::MietteError::IoError)?;
+                        let label = diagnostic::get_f_macro_invocation_span(
+                            &source.contents,
+                            &source.parsed,
+                            location,
+                        )
+                        .map(|s| s.labeled("It was registered as a handler here".into()));
+                        let diagnostic = CompilerDiagnosticBuilder::new(source, e)
+                            .optional_label(label)
+                            .build();
+                        Err(diagnostic.into())
+                    }
+                    CallableResolutionError::CannotGetCrateData(_)
                     | CallableResolutionError::OutputTypeResolutionError(_) => Err(miette!(e)),
                 };
             }
@@ -782,10 +804,35 @@ fn process_callable(
         ItemEnum::Function(f) => &f.decl,
         ItemEnum::Method(m) => &m.decl,
         kind => {
+            let item_kind = match kind {
+                ItemEnum::Module(_) => "a module",
+                ItemEnum::ExternCrate { .. } => "an external crate",
+                ItemEnum::Import(_) => "an import",
+                ItemEnum::Union(_) => "a union",
+                ItemEnum::Struct(_) => "a struct",
+                ItemEnum::StructField(_) => "a struct field",
+                ItemEnum::Enum(_) => "an enum",
+                ItemEnum::Variant(_) => "an enum variant",
+                ItemEnum::Function(_) => "a function",
+                ItemEnum::Trait(_) => "a trait",
+                ItemEnum::TraitAlias(_) => "a trait alias",
+                ItemEnum::Method(_) => "a method",
+                ItemEnum::Impl(_) => "an impl block",
+                ItemEnum::Typedef(_) => "a type definition",
+                ItemEnum::OpaqueTy(_) => "an opaque type",
+                ItemEnum::Constant(_) => "a constant",
+                ItemEnum::Static(_) => "a static",
+                ItemEnum::ForeignType => "a foreign type",
+                ItemEnum::Macro(_) => "a macro",
+                ItemEnum::ProcMacro(_) => "a procedural macro",
+                ItemEnum::PrimitiveType(_) => "a primitive type",
+                ItemEnum::AssocConst { .. } => "an associated constant",
+                ItemEnum::AssocType { .. } => "an associated type",
+            }
+            .to_string();
             return Err(UnsupportedCallableKind {
-                import_path: callable_path.to_string(),
-                // TODO: review how this gets formatted
-                item_kind: format!("{:?}", kind),
+                import_path: callable_path.to_owned(),
+                item_kind,
             }
             .into());
         }
@@ -870,9 +917,9 @@ pub(crate) enum CallableResolutionError {
 }
 
 #[derive(Debug, thiserror::Error)]
-#[error("I know how to work with non-generic free functions or static methods, but `{import_path:?}` is neither ({item_kind}).")]
+#[error("I can work with functions and static methods, but `{import_path}` is neither.\nIt is {item_kind} and I do not know how to handle it here.")]
 pub(crate) struct UnsupportedCallableKind {
-    pub import_path: String,
+    pub import_path: ResolvedPath,
     pub item_kind: String,
 }
 
