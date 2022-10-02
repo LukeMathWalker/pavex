@@ -174,7 +174,7 @@ impl App {
                             &package_graph.workspace(),
                         )
                         .map_err(miette::MietteError::IoError)?;
-                        let label = diagnostic::get_callable_invocation_span(
+                        let label = diagnostic::get_f_macro_invocation_span(
                             &source.contents,
                             &source.parsed,
                             location,
@@ -196,7 +196,7 @@ impl App {
                             &package_graph.workspace(),
                         )
                         .map_err(miette::MietteError::IoError)?;
-                        let label = diagnostic::get_callable_invocation_span(
+                        let label = diagnostic::get_f_macro_invocation_span(
                             &source.contents,
                             &source.parsed,
                             location,
@@ -258,7 +258,13 @@ impl App {
                 Ok((resolver, constructors)) => (resolver, constructors),
                 Err(e) => {
                     return match e {
-                        ConstructorResolutionError::CallableResolutionError(_) => Err(miette!(e)),
+                        ConstructorResolutionError::CallableResolutionError(e) => match e {
+                            CallableResolutionError::UnsupportedCallableKind(_)
+                            | CallableResolutionError::UnknownCallable(_)
+                            | CallableResolutionError::ParameterResolutionError(_)
+                            | CallableResolutionError::OutputTypeResolutionError(_)
+                            | CallableResolutionError::CannotGetCrateData(_) => Err(miette!(e)),
+                        },
                         ConstructorResolutionError::ConstructorsCannotReturnTheUnitType(
                             ref constructor_path,
                         ) => {
@@ -272,7 +278,7 @@ impl App {
                                 &package_graph.workspace(),
                             )
                             .map_err(miette::MietteError::IoError)?;
-                            let label = diagnostic::get_callable_invocation_span(
+                            let label = diagnostic::get_f_macro_invocation_span(
                                 &source.contents,
                                 &source.parsed,
                                 location,
@@ -310,7 +316,7 @@ impl App {
                             &package_graph.workspace(),
                         )
                         .map_err(miette::MietteError::IoError)?;
-                        let label = diagnostic::get_callable_invocation_span(
+                        let label = diagnostic::get_f_macro_invocation_span(
                             &source.contents,
                             &source.parsed,
                             location,
@@ -397,7 +403,7 @@ impl App {
                             &package_graph.workspace(),
                         )
                         .map_err(miette::MietteError::IoError)?;
-                        let label = diagnostic::get_callable_invocation_span(
+                        let label = diagnostic::get_f_macro_invocation_span(
                             &source.contents,
                             &source.parsed,
                             location,

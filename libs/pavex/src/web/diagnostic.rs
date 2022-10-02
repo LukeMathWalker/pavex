@@ -147,7 +147,7 @@ impl miette::Diagnostic for CompilerDiagnostic {
 /// There are going to be multiple nodes that match if we are dealing with chained method calls.
 /// Luckily enough, the visit is pre-order, therefore the latest node that contains `location`
 /// is also the smallest node that contains it - exactly what we are looking for.
-pub fn get_callable_invocation_span(
+pub fn get_f_macro_invocation_span(
     raw_source: &str,
     parsed_source: &syn::File,
     location: &Location,
