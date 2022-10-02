@@ -1,10 +1,12 @@
-use miette::{Diagnostic, LabeledSpan, NamedSource, SourceCode, SourceOffset, SourceSpan};
-use pavex_builder::Location;
 use std::fmt::Display;
 use std::path::Path;
+
+use miette::{Diagnostic, LabeledSpan, NamedSource, SourceCode, SourceOffset, SourceSpan};
 use syn::spanned::Spanned;
 use syn::visit::Visit;
 use syn::{ExprMethodCall, Stmt};
+
+use pavex_builder::Location;
 
 pub struct CompilerDiagnosticBuilder {
     source_code: NamedSource,
@@ -243,6 +245,7 @@ pub fn convert_rustdoc_span(source: &str, span: rustdoc_types::Span) -> miette::
     SourceSpan::from((start.offset(), len))
 }
 
+#[derive(Debug)]
 pub(crate) struct ParsedSourceFile {
     pub(crate) path: std::path::PathBuf,
     pub(crate) contents: String,

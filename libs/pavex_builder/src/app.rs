@@ -53,9 +53,10 @@ impl AppBlueprint {
     /// If a constructor for the same type has already been registered, it will be overwritten.
     pub fn constructor(mut self, import_path: &'static str, lifecycle: Lifecycle) -> Self {
         let callable_identifiers = RawCallableIdentifiers::new(import_path);
+        let location = std::panic::Location::caller();
         self.constructor_locations
             .entry(callable_identifiers.clone())
-            .or_insert_with(|| std::panic::Location::caller().into());
+            .or_insert(location.into());
         self.component_lifecycles
             .insert(callable_identifiers.clone(), lifecycle);
         self.constructors.insert(callable_identifiers);
