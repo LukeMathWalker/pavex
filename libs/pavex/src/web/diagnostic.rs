@@ -132,7 +132,7 @@ impl miette::Diagnostic for CompilerDiagnostic {
 /// ```rust,ignore
 /// App::builder()
 ///   .route(f!(crate::stream_file::<std::path::PathBuf>), "/home")
-/// //       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/// //       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 /// //       We want a SourceSpan that points at this!
 /// ```
 ///
