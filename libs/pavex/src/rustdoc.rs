@@ -19,7 +19,8 @@ pub struct CannotGetCrateData {
     pub source: anyhow::Error,
 }
 
-const TOOLCHAIN_CRATES: [&str; 3] = ["std", "core", "alloc"];
+pub const STD_PACKAGE_ID: &str = "std";
+pub const TOOLCHAIN_CRATES: [&str; 3] = ["std", "core", "alloc"];
 
 pub fn get_crate_data(
     root_folder: &Path,

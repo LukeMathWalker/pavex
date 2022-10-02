@@ -10,7 +10,7 @@ use guppy::PackageId;
 use indexmap::{IndexMap, IndexSet};
 use miette::{miette, NamedSource, SourceSpan};
 use proc_macro2::{Ident, TokenStream};
-use quote::{format_ident, quote};
+use quote::format_ident;
 use rustdoc_types::{GenericArg, GenericArgs, ItemEnum, Type};
 use syn::spanned::Spanned;
 use syn::FnArg;
@@ -19,8 +19,8 @@ use pavex_builder::Lifecycle;
 use pavex_builder::{AppBlueprint, RawCallableIdentifiers};
 
 use crate::language::{Callable, ParseError, ResolvedType};
-use crate::language::{EncodedResolvedPath, ResolvedPath, UnknownPath};
-use crate::rustdoc::{CannotGetCrateData, CrateCollection};
+use crate::language::{ResolvedPath, UnknownPath};
+use crate::rustdoc::{CannotGetCrateData, CrateCollection, STD_PACKAGE_ID};
 use crate::web::application_state_call_graph::ApplicationStateCallGraph;
 use crate::web::dependency_graph::CallableDependencyGraph;
 use crate::web::diagnostic::{
@@ -30,7 +30,6 @@ use crate::web::diagnostic::{
 use crate::web::handler_call_graph::HandlerCallGraph;
 use crate::web::{codegen, diagnostic};
 
-pub(crate) const STD_PACKAGE_ID: &str = "std";
 pub(crate) const GENERATED_APP_PACKAGE_ID: &str = "crate";
 
 pub struct App {
@@ -270,11 +269,9 @@ impl App {
                         // We only report a single registration site in the error report even though
                         // the same callable might have been registered in multiple locations.
                         // We may or may not want to change this in the future.
-                        let type_path = e.0.decode();
-                        let raw_identifier = resolved_paths2identifiers[&type_path]
-                            .iter()
-                            .next()
-                            .unwrap();
+                        let type_path = &e.0;
+                        let raw_identifier =
+                            resolved_paths2identifiers[type_path].iter().next().unwrap();
                         let location = app_blueprint.handler_locations[raw_identifier]
                             .first()
                             .unwrap();
@@ -357,8 +354,8 @@ impl App {
                             }
                         };
 
-                        let callable_path = e.callable_path.decode();
-                        let raw_identifier = resolved_paths2identifiers[&callable_path]
+                        let callable_path = &e.callable_path;
+                        let raw_identifier = resolved_paths2identifiers[callable_path]
                             .iter()
                             .next()
                             .unwrap();
@@ -635,7 +632,7 @@ pub(crate) enum BuildError {
 fn process_constructors(
     constructor_paths: &IndexSet<ResolvedPath>,
     krate_collection: &mut CrateCollection,
-    package_graph: &guppy::graph::PackageGraph,
+    package_graph: &PackageGraph,
 ) -> Result<
     (
         BiHashMap<ResolvedPath, Callable>,
@@ -659,7 +656,7 @@ fn process_constructors(
 fn process_constructor(
     constructor_path: &ResolvedPath,
     krate_collection: &mut CrateCollection,
-    package_graph: &guppy::graph::PackageGraph,
+    package_graph: &PackageGraph,
 ) -> Result<Callable, anyhow::Error> {
     let constructor = process_callable(krate_collection, constructor_path, package_graph)?;
     if constructor.output_fq_path.base_type == vec!["()"] {
@@ -675,7 +672,7 @@ fn process_constructor(
 fn process_handlers(
     handler_paths: &IndexSet<ResolvedPath>,
     krate_collection: &mut CrateCollection,
-    package_graph: &guppy::graph::PackageGraph,
+    package_graph: &PackageGraph,
 ) -> Result<(HashMap<ResolvedPath, Callable>, IndexSet<Callable>), CallableResolutionError> {
     let mut handlers = IndexSet::with_capacity(handler_paths.len());
     let mut handler_resolver = HashMap::new();
@@ -688,7 +685,7 @@ fn process_handlers(
 }
 
 fn process_type(
-    type_: &rustdoc_types::Type,
+    type_: &Type,
     // The package id where the type we are trying to process has been referenced (e.g. as an
     // input/output parameter).
     used_by_package_id: &PackageId,
@@ -759,9 +756,8 @@ fn process_callable(
         ItemEnum::Function(f) => &f.decl,
         ItemEnum::Method(m) => &m.decl,
         kind => {
-            let path = &callable_path.path.0;
             return Err(UnsupportedCallableKind {
-                import_path: quote! { #path }.to_string(),
+                import_path: callable_path.to_string(),
                 // TODO: review how this gets formatted
                 item_kind: format!("{:?}", kind),
             }
@@ -849,9 +845,9 @@ pub(crate) struct UnsupportedCallableKind {
 #[derive(Debug, thiserror::Error)]
 #[error("One of the input parameters for `{callable_path}` has a type that I cannot handle.")]
 pub(crate) struct ParameterResolutionError {
-    pub callable_path: EncodedResolvedPath,
+    pub callable_path: ResolvedPath,
     pub callable_item: rustdoc_types::Item,
-    pub parameter_type: rustdoc_types::Type,
+    pub parameter_type: Type,
     pub parameter_index: usize,
     #[source]
     pub source: anyhow::Error,
@@ -860,9 +856,9 @@ pub(crate) struct ParameterResolutionError {
 #[derive(Debug, thiserror::Error)]
 #[error("I do not know how to handle the type returned by `{callable_path}`.")]
 pub(crate) struct OutputTypeResolutionError {
-    pub callable_path: EncodedResolvedPath,
+    pub callable_path: ResolvedPath,
     pub callable_item: rustdoc_types::Item,
-    pub output_type: rustdoc_types::Type,
+    pub output_type: Type,
     #[source]
     pub source: anyhow::Error,
 }
