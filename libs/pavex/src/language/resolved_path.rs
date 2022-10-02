@@ -85,11 +85,11 @@ impl ResolvedPath {
             // parsed `ExprPath`.
             first_segment.ident = format_ident!("{}", identifiers.registered_at());
         }
-        Self::parse_call_path(path, identifiers, graph)
+        Self::parse_call_path(&path, identifiers, graph)
     }
 
     fn parse_call_path(
-        path: CallPath,
+        path: &CallPath,
         identifiers: &RawCallableIdentifiers,
         graph: &guppy::graph::PackageGraph,
     ) -> Result<Self, ParseError> {
@@ -97,10 +97,10 @@ impl ResolvedPath {
         let krate_name_candidate = path.leading_path_segment().to_string();
 
         let mut segments = vec![];
-        for raw_segment in path.segments {
+        for raw_segment in &path.segments {
             let generic_arguments = raw_segment
                 .generic_arguments
-                .into_iter()
+                .iter()
                 .map(|arg| Self::parse_call_path(arg, identifiers, graph))
                 .collect::<Result<Vec<_>, _>>()?;
             let segment = ResolvedPathSegment {
@@ -125,6 +125,7 @@ impl ResolvedPath {
         } else {
             return Err(PathMustBeAbsolute {
                 raw_identifiers: identifiers.to_owned(),
+                relative_path: path.to_string(),
             }
             .into());
         };
@@ -265,12 +266,16 @@ pub(crate) enum ParseError {
 #[derive(Debug, thiserror::Error)]
 pub(crate) struct PathMustBeAbsolute {
     pub raw_identifiers: RawCallableIdentifiers,
+    pub relative_path: String,
 }
 
 impl Display for PathMustBeAbsolute {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let path = self.raw_identifiers.raw_path();
-        write!(f, "`{path}` is not a fully-qualified import path.")
+        write!(
+            f,
+            "`{}` is not a fully-qualified import path.",
+            self.relative_path
+        )
     }
 }
 

@@ -1,0 +1,12 @@
+Error: 
+  × `new_logger` is not a fully-qualified import path.
+    ╭─[src/lib.rs:9:1]
+  9 │     AppBlueprint::new()
+ 10 │         .constructor(f!(new_logger), Lifecycle::Singleton)
+    ·                      ───────┬──────
+    ·                             ╰── The invalid import path was registered here
+ 11 │         .route(f!(crate::handler), "/home")
+    ╰────
+  help: If it is a local import, the path must start with `crate::`.
+        If it is an import from a dependency, the path must start with the
+        dependency name (e.g. `dependency::`).

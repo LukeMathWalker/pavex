@@ -166,7 +166,7 @@ impl App {
                     Err(ParseError::InvalidPath(e)) => {
                         let location = app_blueprint
                             .constructor_locations
-                            .get(raw_identifier)
+                            .get(&e.raw_identifiers)
                             .or_else(|| app_blueprint.handler_locations[raw_identifier].first())
                             .unwrap();
                         let source = ParsedSourceFile::new(
@@ -188,7 +188,7 @@ impl App {
                     Err(ParseError::PathMustBeAbsolute(e)) => {
                         let location = app_blueprint
                             .constructor_locations
-                            .get(raw_identifier)
+                            .get(&e.raw_identifiers)
                             .or_else(|| app_blueprint.handler_locations[raw_identifier].first())
                             .unwrap();
                         let source = ParsedSourceFile::new(
