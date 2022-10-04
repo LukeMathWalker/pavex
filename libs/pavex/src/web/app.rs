@@ -243,7 +243,7 @@ impl App {
         };
 
         let (constructor_resolver, constructors) =
-            match process_constructors(&constructor_paths, &mut krate_collection, &package_graph) {
+            match resolve_constructors(&constructor_paths, &mut krate_collection, &package_graph) {
                 Ok((resolver, constructors)) => (resolver, constructors),
                 Err(e) => {
                     return match e {
@@ -254,35 +254,38 @@ impl App {
                             | CallableResolutionError::OutputTypeResolutionError(_)
                             | CallableResolutionError::CannotGetCrateData(_) => Err(miette!(e)),
                         },
-                        ConstructorResolutionError::ConstructorsCannotReturnTheUnitType(
-                            ref constructor_path,
-                        ) => {
-                            let raw_identifier = resolved_paths2identifiers[constructor_path]
-                                .iter()
-                                .next()
-                                .unwrap();
-                            let location = &app_blueprint.constructor_locations[raw_identifier];
-                            let source = ParsedSourceFile::new(
-                                location.file.as_str().into(),
-                                &package_graph.workspace(),
-                            )
-                            .map_err(miette::MietteError::IoError)?;
-                            let label = diagnostic::get_f_macro_invocation_span(
-                                &source.contents,
-                                &source.parsed,
-                                location,
-                            )
-                            .map(|s| s.labeled("The constructor was registered here".into()));
-                            let diagnostic = CompilerDiagnosticBuilder::new(source, e)
-                                .optional_label(label)
-                                .build();
-                            Err(diagnostic.into())
-                        }
                     };
                 }
             };
 
-        let (handler_resolver, handlers) = match process_handlers(
+        if let Err(e) = validate_constructors(&constructors) {
+            return match e {
+                ConstructorValidationError::CannotReturnTheUnitType(ref constructor_path) => {
+                    let raw_identifier = resolved_paths2identifiers[constructor_path]
+                        .iter()
+                        .next()
+                        .unwrap();
+                    let location = &app_blueprint.constructor_locations[raw_identifier];
+                    let source = ParsedSourceFile::new(
+                        location.file.as_str().into(),
+                        &package_graph.workspace(),
+                    )
+                    .map_err(miette::MietteError::IoError)?;
+                    let label = diagnostic::get_f_macro_invocation_span(
+                        &source.contents,
+                        &source.parsed,
+                        location,
+                    )
+                    .map(|s| s.labeled("The constructor was registered here".into()));
+                    let diagnostic = CompilerDiagnosticBuilder::new(source, e)
+                        .optional_label(label)
+                        .build();
+                    Err(diagnostic.into())
+                }
+            };
+        }
+
+        let (handler_resolver, handlers) = match resolve_handlers(
             &handler_paths,
             &mut krate_collection,
             &package_graph,
@@ -760,7 +763,7 @@ pub(crate) enum BuildError {
 
 /// Extract the input type paths, the output type path and the callable path for each
 /// registered type constructor.
-fn process_constructors(
+fn resolve_constructors(
     constructor_paths: &IndexSet<ResolvedPath>,
     krate_collection: &mut CrateCollection,
     package_graph: &PackageGraph,
@@ -775,33 +778,36 @@ fn process_constructors(
     let mut constructors = IndexMap::with_capacity(constructor_paths.len());
     for constructor_identifiers in constructor_paths {
         let constructor =
-            process_constructor(constructor_identifiers, krate_collection, package_graph)?;
+            resolve_callable(krate_collection, constructor_identifiers, package_graph)?;
         constructors.insert(constructor.output_fq_path.clone(), constructor.clone());
         resolution_map.insert(constructor_identifiers.to_owned(), constructor);
     }
     Ok((resolution_map, constructors))
 }
 
-/// Extract the input type paths, the output type path and the callable path for a type constructor.
-fn process_constructor(
-    constructor_path: &ResolvedPath,
-    krate_collection: &mut CrateCollection,
-    package_graph: &PackageGraph,
-) -> Result<Callable, ConstructorResolutionError> {
-    let constructor = process_callable(krate_collection, constructor_path, package_graph)?;
-    if constructor.output_fq_path.base_type == vec!["()"] {
-        return Err(
-            ConstructorResolutionError::ConstructorsCannotReturnTheUnitType(
-                constructor_path.to_owned(),
-            ),
-        );
+/// Validate the signature of all registered constructors.
+fn validate_constructors(
+    constructors: &IndexMap<ResolvedType, Callable>,
+) -> Result<(), ConstructorValidationError> {
+    for (_output_type, constructor) in constructors.iter() {
+        validate_constructor(&constructor)?;
     }
-    Ok(constructor)
+    Ok(())
+}
+
+/// Validate the signature of a constructor
+fn validate_constructor(constructor: &Callable) -> Result<(), ConstructorValidationError> {
+    if constructor.output_fq_path.base_type == vec!["()"] {
+        return Err(ConstructorValidationError::CannotReturnTheUnitType(
+            constructor.callable_fq_path.to_owned(),
+        ));
+    }
+    Ok(())
 }
 
 /// Extract the input type paths, the output type path and the callable path for each
 /// registered handler.
-fn process_handlers(
+fn resolve_handlers(
     handler_paths: &IndexSet<ResolvedPath>,
     krate_collection: &mut CrateCollection,
     package_graph: &PackageGraph,
@@ -809,7 +815,7 @@ fn process_handlers(
     let mut handlers = IndexSet::with_capacity(handler_paths.len());
     let mut handler_resolver = HashMap::new();
     for callable_path in handler_paths {
-        let handler = process_callable(krate_collection, callable_path, package_graph)?;
+        let handler = resolve_callable(krate_collection, callable_path, package_graph)?;
         handlers.insert(handler.clone());
         handler_resolver.insert(callable_path.to_owned(), handler);
     }
@@ -877,7 +883,7 @@ fn process_type(
     }
 }
 
-fn process_callable(
+fn resolve_callable(
     krate_collection: &mut CrateCollection,
     callable_path: &ResolvedPath,
     package_graph: &PackageGraph,
@@ -981,8 +987,12 @@ fn process_callable(
 pub(crate) enum ConstructorResolutionError {
     #[error(transparent)]
     CallableResolutionError(#[from] CallableResolutionError),
+}
+
+#[derive(thiserror::Error, Debug)]
+pub(crate) enum ConstructorValidationError {
     #[error("I expect all constructors to return *something*.\nThis constructor doesn't, it returns the unit type - `()`.")]
-    ConstructorsCannotReturnTheUnitType(ResolvedPath),
+    CannotReturnTheUnitType(ResolvedPath),
 }
 
 #[derive(thiserror::Error, Debug)]
