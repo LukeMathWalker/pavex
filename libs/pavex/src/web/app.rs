@@ -13,7 +13,7 @@ use proc_macro2::{Ident, TokenStream};
 use quote::format_ident;
 use rustdoc_types::{GenericArg, GenericArgs, ItemEnum, Type};
 use syn::spanned::Spanned;
-use syn::FnArg;
+use syn::{FnArg, ReturnType};
 
 use pavex_builder::Lifecycle;
 use pavex_builder::{AppBlueprint, RawCallableIdentifiers};
@@ -427,8 +427,92 @@ impl App {
                             .build();
                         Err(diagnostic.into())
                     }
-                    CallableResolutionError::CannotGetCrateData(_)
-                    | CallableResolutionError::OutputTypeResolutionError(_) => Err(miette!(e)),
+                    CallableResolutionError::OutputTypeResolutionError(e) => {
+                        let sub_diagnostic = {
+                            if let Some(definition_span) = &e.callable_item.span {
+                                let source_contents = read_source_file(
+                                    &definition_span.filename,
+                                    &package_graph.workspace(),
+                                )
+                                .map_err(miette::MietteError::IoError)?;
+                                let span = convert_rustdoc_span(
+                                    &source_contents,
+                                    definition_span.to_owned(),
+                                );
+                                let span_contents =
+                                    &source_contents[span.offset()..(span.offset() + span.len())];
+                                let output = match &e.callable_item.inner {
+                                    ItemEnum::Function(_) => {
+                                        let item: syn::ItemFn =
+                                            syn::parse_str(span_contents).unwrap();
+                                        item.sig.output
+                                    }
+                                    ItemEnum::Method(_) => {
+                                        let item: syn::ImplItemMethod =
+                                            syn::parse_str(span_contents).unwrap();
+                                        item.sig.output
+                                    }
+                                    _ => unreachable!(),
+                                };
+                                let source_span = match output {
+                                    ReturnType::Default => None,
+                                    ReturnType::Type(_, type_) => Some(type_.span()),
+                                }
+                                .map(|s| {
+                                    let s = convert_span(span_contents, s);
+                                    SourceSpan::new(
+                                        // We must shift the offset forward because it's the
+                                        // offset from the beginning of the file slice that
+                                        // we deserialized, instead of the entire file
+                                        (s.offset() + span.offset()).into(),
+                                        s.len().into(),
+                                    )
+                                });
+                                let label = source_span
+                                    .labeled("The output type that I cannot handle".into());
+                                let source_code = NamedSource::new(
+                                    &definition_span.filename.to_str().unwrap(),
+                                    source_contents,
+                                );
+                                Some(
+                                    CompilerDiagnosticBuilder::new(
+                                        source_code,
+                                        anyhow::anyhow!(""),
+                                    )
+                                    .optional_label(label)
+                                    .build(),
+                                )
+                            } else {
+                                None
+                            }
+                        };
+
+                        let callable_path = &e.callable_path;
+                        let raw_identifier = resolved_paths2identifiers[callable_path]
+                            .iter()
+                            .next()
+                            .unwrap();
+                        let location = app_blueprint.handler_locations[raw_identifier]
+                            .first()
+                            .unwrap();
+                        let source = ParsedSourceFile::new(
+                            location.file.as_str().into(),
+                            &package_graph.workspace(),
+                        )
+                        .map_err(miette::MietteError::IoError)?;
+                        let label = diagnostic::get_f_macro_invocation_span(
+                            &source.contents,
+                            &source.parsed,
+                            location,
+                        )
+                        .map(|s| s.labeled("The handler was registered here".into()));
+                        let diagnostic = CompilerDiagnosticBuilder::new(source, e)
+                            .optional_label(label)
+                            .optional_related_error(sub_diagnostic)
+                            .build();
+                        Err(diagnostic.into())
+                    }
+                    CallableResolutionError::CannotGetCrateData(_) => Err(miette!(e)),
                 };
             }
         };
@@ -867,7 +951,6 @@ fn process_callable(
             generic_arguments: vec![],
         },
         Some(output_type) => {
-            // TODO: distinguish between output and parameters
             match process_type(
                 output_type,
                 used_by_package_id,
