@@ -512,7 +512,7 @@ impl App {
                             .build();
                         Err(diagnostic.into())
                     }
-                    CallableResolutionError::CannotGetCrateData(_) => Err(miette!(e)),
+                    CallableResolutionError::CannotGetCrateData(e) => Err(miette!(e)),
                 };
             }
         };
