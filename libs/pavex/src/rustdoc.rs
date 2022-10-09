@@ -86,19 +86,33 @@ fn _get_crate_data(
         .arg("-Zunstable-options")
         .arg("-wjson");
 
-    let status = cmd.status().context("Failed to run rustdoc")?;
+    let status = cmd
+        .status()
+        .with_context(|| format!("Failed to run `cargo rustdoc`.\n{:?}", cmd))?;
 
     if !status.success() {
-        anyhow::bail!("rustdoc exited with non-zero status code");
+        anyhow::bail!(
+            "An invocation of `cargo rustdoc` exited with non-zero status code.\n{:?}",
+            cmd
+        );
     }
 
     let json_path = target_directory
         .join("doc")
         .join(format!("{}.json", &package_id_spec.name));
 
-    let json = fs_err::read_to_string(json_path).context("Failed to read rustdoc output")?;
-    let krate = serde_json::from_str::<rustdoc_types::Crate>(&json)
-        .context("Failed to deserialize rustdoc output")?;
+    let json = fs_err::read_to_string(json_path).with_context(|| {
+        format!(
+            "Failed to read the output of a `cargo rustdoc` invocation.\n{:?}",
+            cmd
+        )
+    })?;
+    let krate = serde_json::from_str::<rustdoc_types::Crate>(&json).with_context(|| {
+        format!(
+            "Failed to deserialize the output of a `cargo rustdoc` invocation.\n{:?}",
+            cmd
+        )
+    })?;
     Ok(krate)
 }
 

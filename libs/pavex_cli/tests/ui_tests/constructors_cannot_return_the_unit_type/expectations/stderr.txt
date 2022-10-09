@@ -1,0 +1,10 @@
+Error: 
+  × I expect all constructors to return *something*.
+  │ This constructor doesn't, it returns the unit type - `()`.
+    ╭─[src/lib.rs:12:1]
+ 12 │     AppBlueprint::new()
+ 13 │         .constructor(f!(crate::bogus_constructor), Lifecycle::Singleton)
+    ·                      ──────────────┬─────────────
+    ·                                    ╰── The constructor was registered here
+ 14 │         .route(f!(crate::handler), "/home")
+    ╰────
