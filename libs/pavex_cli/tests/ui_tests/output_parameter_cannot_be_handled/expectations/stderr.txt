@@ -1,0 +1,19 @@
+Error: 
+  × I do not know how to handle the type returned by `app::c`.
+   ╭─[src/lib.rs:7:1]
+ 7 │ pub fn blueprint() -> AppBlueprint {
+ 8 │     AppBlueprint::new().route(f!(crate::c), "/home")
+   ·                               ──────┬─────
+   ·                                     ╰── The handler was registered here
+ 9 │ }
+   ╰────
+
+Error: 
+  × 
+   ╭─[src/lib.rs:2:1]
+ 2 │ 
+ 3 │ pub fn c() -> (usize, usize) {
+   ·               ───────┬──────
+   ·                      ╰── The output type that I cannot handle
+ 4 │     todo!()
+   ╰────

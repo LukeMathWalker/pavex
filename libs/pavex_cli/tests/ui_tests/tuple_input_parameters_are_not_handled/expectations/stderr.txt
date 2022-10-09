@@ -5,7 +5,7 @@ Error:
  7 │ pub fn blueprint() -> AppBlueprint {
  8 │     AppBlueprint::new().route(f!(crate::stream_file), "/home")
    ·                               ───────────┬──────────
-   ·                                          ╰── The callable was registered here
+   ·                                          ╰── The handler was registered here
  9 │ }
    ╰────
 

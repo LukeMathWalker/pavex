@@ -1,5 +1,5 @@
 use std::collections::{BTreeMap, HashMap, HashSet};
-use std::fmt::Debug;
+use std::fmt::{Debug, Display, Formatter};
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 
@@ -13,10 +13,10 @@ use proc_macro2::{Ident, TokenStream};
 use quote::format_ident;
 use rustdoc_types::{GenericArg, GenericArgs, ItemEnum, Type};
 use syn::spanned::Spanned;
-use syn::FnArg;
+use syn::{FnArg, ReturnType};
 
-use pavex_builder::Lifecycle;
 use pavex_builder::{AppBlueprint, RawCallableIdentifiers};
+use pavex_builder::{Lifecycle, Location};
 
 use crate::language::{Callable, ParseError, ResolvedType};
 use crate::language::{ResolvedPath, UnknownPath};
@@ -25,7 +25,7 @@ use crate::web::application_state_call_graph::ApplicationStateCallGraph;
 use crate::web::dependency_graph::CallableDependencyGraph;
 use crate::web::diagnostic::{
     convert_rustdoc_span, convert_span, read_source_file, CompilerDiagnosticBuilder,
-    ParsedSourceFile, SourceSpanExt,
+    OptionalSourceSpanExt, ParsedSourceFile, SourceSpanExt,
 };
 use crate::web::handler_call_graph::HandlerCallGraph;
 use crate::web::{codegen, diagnostic};
@@ -163,49 +163,38 @@ impl App {
                     Ok(p) => {
                         map.entry(p).or_default().insert(raw_identifier.to_owned());
                     }
-                    Err(ParseError::InvalidPath(e)) => {
+                    Err(e) => {
+                        let identifiers = e.raw_identifiers();
                         let location = app_blueprint
                             .constructor_locations
-                            .get(&e.raw_identifiers)
-                            .or_else(|| app_blueprint.handler_locations[raw_identifier].first())
+                            .get(identifiers)
+                            .or_else(|| app_blueprint.handler_locations[identifiers].first())
                             .unwrap();
                         let source = ParsedSourceFile::new(
                             location.file.as_str().into(),
                             &package_graph.workspace(),
                         )
                         .map_err(miette::MietteError::IoError)?;
-                        let label = diagnostic::get_callable_invocation_span(
+                        let source_span = diagnostic::get_f_macro_invocation_span(
                             &source.contents,
                             &source.parsed,
                             location,
-                        )
-                        .map(|s| s.labeled("The invalid import path was registered here".into()));
-                        let diagnostic = CompilerDiagnosticBuilder::new(source, e)
-                            .optional_label(label)
-                            .build();
-                        return Err(diagnostic.into());
-                    }
-                    Err(ParseError::PathMustBeAbsolute(e)) => {
-                        let location = app_blueprint
-                            .constructor_locations
-                            .get(&e.raw_identifiers)
-                            .or_else(|| app_blueprint.handler_locations[raw_identifier].first())
-                            .unwrap();
-                        let source = ParsedSourceFile::new(
-                            location.file.as_str().into(),
-                            &package_graph.workspace(),
-                        )
-                        .map_err(miette::MietteError::IoError)?;
-                        let label = diagnostic::get_callable_invocation_span(
-                            &source.contents,
-                            &source.parsed,
-                            location,
-                        )
-                        .map(|s| s.labeled("The invalid import path was registered here".into()));
-                        let diagnostic = CompilerDiagnosticBuilder::new(source, e)
-                            .optional_label(label)
-                            .help("If it is a local import, the path must start with `crate::`.\nIf it is an import from a dependency, the path must start with the dependency name (e.g. `dependency::`).".into())
-                            .build();
+                        );
+                        let diagnostic = match e {
+                            ParseError::InvalidPath(_) => {
+                                let label = source_span
+                                    .labeled("The invalid import path was registered here".into());
+                                CompilerDiagnosticBuilder::new(source, e)
+                                    .optional_label(label)
+                            }
+                            ParseError::PathMustBeAbsolute(_) => {
+                                let label = source_span
+                                    .labeled("The relative import path was registered here".into());
+                                CompilerDiagnosticBuilder::new(source, e)
+                                    .optional_label(label)
+                                    .help("If it is a local import, the path must start with `crate::`.\nIf it is an import from a dependency, the path must start with the dependency name (e.g. `dependency::`).".into())
+                            }
+                        }.build();
                         return Err(diagnostic.into());
                     }
                 }
@@ -254,137 +243,66 @@ impl App {
         };
 
         let (constructor_resolver, constructors) =
-            process_constructors(&constructor_paths, &mut krate_collection, &package_graph)
-                .map_err(|e| miette!(e))?;
+            match resolve_constructors(&constructor_paths, &mut krate_collection, &package_graph) {
+                Ok((resolver, constructors)) => (resolver, constructors),
+                Err(e) => {
+                    return Err(e
+                        .into_diagnostic(
+                            &resolved_paths2identifiers,
+                            |identifiers| app_blueprint.constructor_locations[identifiers].clone(),
+                            &package_graph,
+                            CallableType::Constructor,
+                        )?
+                        .into());
+                }
+            };
 
-        let (handler_resolver, handlers) = match process_handlers(
-            &handler_paths,
-            &mut krate_collection,
-            &package_graph,
-        ) {
-            Ok(h) => h,
-            Err(e) => {
-                return match e {
-                    CallableResolutionError::UnknownCallable(e) => {
-                        // We only report a single registration site in the error report even though
-                        // the same callable might have been registered in multiple locations.
-                        // We may or may not want to change this in the future.
-                        let type_path = &e.0;
-                        let raw_identifier =
-                            resolved_paths2identifiers[type_path].iter().next().unwrap();
-                        let location = app_blueprint.handler_locations[raw_identifier]
-                            .first()
-                            .unwrap();
-                        let source = ParsedSourceFile::new(
-                            location.file.as_str().into(),
-                            &package_graph.workspace(),
-                        )
-                        .map_err(miette::MietteError::IoError)?;
-                        let label = diagnostic::get_callable_invocation_span(
-                            &source.contents,
-                            &source.parsed,
-                            location,
-                        )
-                        .map(|s| s.labeled("The callable we cannot resolve".into()));
-                        let diagnostic = CompilerDiagnosticBuilder::new(source, e)
-                            .optional_label(label)
-                            .help("This is most likely a bug in `pavex` or `rustdoc`.\nPlease file a GitHub issue!".into())
-                            .build();
-                        Err(diagnostic.into())
-                    }
-                    CallableResolutionError::ParameterResolutionError(e) => {
-                        let sub_diagnostic = {
-                            if let Some(definition_span) = &e.callable_item.span {
-                                let source_contents = read_source_file(
-                                    &definition_span.filename,
-                                    &package_graph.workspace(),
-                                )
-                                .map_err(miette::MietteError::IoError)?;
-                                let span = convert_rustdoc_span(
-                                    &source_contents,
-                                    definition_span.to_owned(),
-                                );
-                                let span_contents =
-                                    &source_contents[span.offset()..(span.offset() + span.len())];
-                                let input = match &e.callable_item.inner {
-                                    ItemEnum::Function(_) => {
-                                        let item: syn::ItemFn =
-                                            syn::parse_str(span_contents).unwrap();
-                                        let mut inputs = item.sig.inputs.iter();
-                                        inputs.nth(e.parameter_index).cloned()
-                                    }
-                                    ItemEnum::Method(_) => {
-                                        let item: syn::ImplItemMethod =
-                                            syn::parse_str(span_contents).unwrap();
-                                        let mut inputs = item.sig.inputs.iter();
-                                        inputs.nth(e.parameter_index).cloned()
-                                    }
-                                    _ => unreachable!(),
-                                }
-                                .unwrap();
-                                let s = convert_span(
-                                    span_contents,
-                                    match input {
-                                        FnArg::Typed(typed) => typed.ty.span(),
-                                        FnArg::Receiver(r) => r.span(),
-                                    },
-                                );
-                                let label = SourceSpan::new(
-                                    // We must shift the offset forward because it's the
-                                    // offset from the beginning of the file slice that
-                                    // we deserialized, instead of the entire file
-                                    (s.offset() + span.offset()).into(),
-                                    s.len().into(),
-                                )
-                                .labeled("The parameter type that I cannot handle".into());
-                                let source_code = NamedSource::new(
-                                    &definition_span.filename.to_str().unwrap(),
-                                    source_contents,
-                                );
-                                Some(
-                                    CompilerDiagnosticBuilder::new(
-                                        source_code,
-                                        anyhow::anyhow!(""),
-                                    )
-                                    .label(label)
-                                    .build(),
-                                )
-                            } else {
-                                None
-                            }
-                        };
+        if let Err(e) = validate_constructors(&constructors) {
+            return match e {
+                ConstructorValidationError::CannotReturnTheUnitType(ref constructor_path) => {
+                    let raw_identifier = resolved_paths2identifiers[constructor_path]
+                        .iter()
+                        .next()
+                        .unwrap();
+                    let location = &app_blueprint.constructor_locations[raw_identifier];
+                    let source = ParsedSourceFile::new(
+                        location.file.as_str().into(),
+                        &package_graph.workspace(),
+                    )
+                    .map_err(miette::MietteError::IoError)?;
+                    let label = diagnostic::get_f_macro_invocation_span(
+                        &source.contents,
+                        &source.parsed,
+                        location,
+                    )
+                    .map(|s| s.labeled("The constructor was registered here".into()));
+                    let diagnostic = CompilerDiagnosticBuilder::new(source, e)
+                        .optional_label(label)
+                        .build();
+                    Err(diagnostic.into())
+                }
+            };
+        }
 
-                        let callable_path = &e.callable_path;
-                        let raw_identifier = resolved_paths2identifiers[callable_path]
-                            .iter()
-                            .next()
-                            .unwrap();
-                        let location = app_blueprint.handler_locations[raw_identifier]
-                            .first()
-                            .unwrap();
-                        let source = ParsedSourceFile::new(
-                            location.file.as_str().into(),
-                            &package_graph.workspace(),
-                        )
-                        .map_err(miette::MietteError::IoError)?;
-                        let label = diagnostic::get_callable_invocation_span(
-                            &source.contents,
-                            &source.parsed,
-                            location,
-                        )
-                        .map(|s| s.labeled("The callable was registered here".into()));
-                        let diagnostic = CompilerDiagnosticBuilder::new(source, e)
-                            .optional_label(label)
-                            .optional_related_error(sub_diagnostic)
-                            .build();
-                        Err(diagnostic.into())
-                    }
-                    CallableResolutionError::UnsupportedCallableKind(_)
-                    | CallableResolutionError::CannotGetCrateData(_)
-                    | CallableResolutionError::OutputTypeResolutionError(_) => Err(miette!(e)),
-                };
-            }
-        };
+        let (handler_resolver, handlers) =
+            match resolve_handlers(&handler_paths, &mut krate_collection, &package_graph) {
+                Ok(h) => h,
+                Err(e) => {
+                    return Err(e
+                        .into_diagnostic(
+                            &resolved_paths2identifiers,
+                            |identifiers| {
+                                app_blueprint.handler_locations[identifiers]
+                                    .first()
+                                    .unwrap()
+                                    .clone()
+                            },
+                            &package_graph,
+                            CallableType::Handler,
+                        )?
+                        .into());
+                }
+            };
 
         let mut router = BTreeMap::new();
         for (route, callable_identifiers) in app_blueprint.router {
@@ -629,7 +547,7 @@ pub(crate) enum BuildError {
 
 /// Extract the input type paths, the output type path and the callable path for each
 /// registered type constructor.
-fn process_constructors(
+fn resolve_constructors(
     constructor_paths: &IndexSet<ResolvedPath>,
     krate_collection: &mut CrateCollection,
     package_graph: &PackageGraph,
@@ -638,38 +556,42 @@ fn process_constructors(
         BiHashMap<ResolvedPath, Callable>,
         IndexMap<ResolvedType, Callable>,
     ),
-    anyhow::Error,
+    CallableResolutionError,
 > {
     let mut resolution_map = BiHashMap::with_capacity(constructor_paths.len());
     let mut constructors = IndexMap::with_capacity(constructor_paths.len());
     for constructor_identifiers in constructor_paths {
         let constructor =
-            process_constructor(constructor_identifiers, krate_collection, package_graph)?;
-        // TODO: raise an error if multiple constructors are registered for the same type
+            resolve_callable(krate_collection, constructor_identifiers, package_graph)?;
         constructors.insert(constructor.output_fq_path.clone(), constructor.clone());
         resolution_map.insert(constructor_identifiers.to_owned(), constructor);
     }
     Ok((resolution_map, constructors))
 }
 
-/// Extract the input type paths, the output type path and the callable path for a type constructor.
-fn process_constructor(
-    constructor_path: &ResolvedPath,
-    krate_collection: &mut CrateCollection,
-    package_graph: &PackageGraph,
-) -> Result<Callable, anyhow::Error> {
-    let constructor = process_callable(krate_collection, constructor_path, package_graph)?;
+/// Validate the signature of all registered constructors.
+fn validate_constructors(
+    constructors: &IndexMap<ResolvedType, Callable>,
+) -> Result<(), ConstructorValidationError> {
+    for (_output_type, constructor) in constructors.iter() {
+        validate_constructor(&constructor)?;
+    }
+    Ok(())
+}
+
+/// Validate the signature of a constructor
+fn validate_constructor(constructor: &Callable) -> Result<(), ConstructorValidationError> {
     if constructor.output_fq_path.base_type == vec!["()"] {
-        return Err(anyhow::anyhow!(
-            "A constructor cannot return the unit type!"
+        return Err(ConstructorValidationError::CannotReturnTheUnitType(
+            constructor.callable_fq_path.to_owned(),
         ));
     }
-    Ok(constructor)
+    Ok(())
 }
 
 /// Extract the input type paths, the output type path and the callable path for each
 /// registered handler.
-fn process_handlers(
+fn resolve_handlers(
     handler_paths: &IndexSet<ResolvedPath>,
     krate_collection: &mut CrateCollection,
     package_graph: &PackageGraph,
@@ -677,7 +599,7 @@ fn process_handlers(
     let mut handlers = IndexSet::with_capacity(handler_paths.len());
     let mut handler_resolver = HashMap::new();
     for callable_path in handler_paths {
-        let handler = process_callable(krate_collection, callable_path, package_graph)?;
+        let handler = resolve_callable(krate_collection, callable_path, package_graph)?;
         handlers.insert(handler.clone());
         handler_resolver.insert(callable_path.to_owned(), handler);
     }
@@ -745,7 +667,7 @@ fn process_type(
     }
 }
 
-fn process_callable(
+fn resolve_callable(
     krate_collection: &mut CrateCollection,
     callable_path: &ResolvedPath,
     package_graph: &PackageGraph,
@@ -756,10 +678,35 @@ fn process_callable(
         ItemEnum::Function(f) => &f.decl,
         ItemEnum::Method(m) => &m.decl,
         kind => {
+            let item_kind = match kind {
+                ItemEnum::Module(_) => "a module",
+                ItemEnum::ExternCrate { .. } => "an external crate",
+                ItemEnum::Import(_) => "an import",
+                ItemEnum::Union(_) => "a union",
+                ItemEnum::Struct(_) => "a struct",
+                ItemEnum::StructField(_) => "a struct field",
+                ItemEnum::Enum(_) => "an enum",
+                ItemEnum::Variant(_) => "an enum variant",
+                ItemEnum::Function(_) => "a function",
+                ItemEnum::Trait(_) => "a trait",
+                ItemEnum::TraitAlias(_) => "a trait alias",
+                ItemEnum::Method(_) => "a method",
+                ItemEnum::Impl(_) => "an impl block",
+                ItemEnum::Typedef(_) => "a type definition",
+                ItemEnum::OpaqueTy(_) => "an opaque type",
+                ItemEnum::Constant(_) => "a constant",
+                ItemEnum::Static(_) => "a static",
+                ItemEnum::ForeignType => "a foreign type",
+                ItemEnum::Macro(_) => "a macro",
+                ItemEnum::ProcMacro(_) => "a procedural macro",
+                ItemEnum::PrimitiveType(_) => "a primitive type",
+                ItemEnum::AssocConst { .. } => "an associated constant",
+                ItemEnum::AssocType { .. } => "an associated type",
+            }
+            .to_string();
             return Err(UnsupportedCallableKind {
-                import_path: callable_path.to_string(),
-                // TODO: review how this gets formatted
-                item_kind: format!("{:?}", kind),
+                import_path: callable_path.to_owned(),
+                item_kind,
             }
             .into());
         }
@@ -794,7 +741,6 @@ fn process_callable(
             generic_arguments: vec![],
         },
         Some(output_type) => {
-            // TODO: distinguish between output and parameters
             match process_type(
                 output_type,
                 used_by_package_id,
@@ -822,6 +768,12 @@ fn process_callable(
 }
 
 #[derive(thiserror::Error, Debug)]
+pub(crate) enum ConstructorValidationError {
+    #[error("I expect all constructors to return *something*.\nThis constructor doesn't, it returns the unit type - `()`.")]
+    CannotReturnTheUnitType(ResolvedPath),
+}
+
+#[derive(thiserror::Error, Debug)]
 pub(crate) enum CallableResolutionError {
     #[error(transparent)]
     UnsupportedCallableKind(#[from] UnsupportedCallableKind),
@@ -835,10 +787,240 @@ pub(crate) enum CallableResolutionError {
     CannotGetCrateData(#[from] CannotGetCrateData),
 }
 
+#[derive(Debug, Copy, Clone)]
+pub enum CallableType {
+    Handler,
+    Constructor,
+}
+
+impl Display for CallableType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            CallableType::Handler => "handler",
+            CallableType::Constructor => "constructor",
+        };
+        write!(f, "{}", s)
+    }
+}
+
+impl CallableResolutionError {
+    pub fn into_diagnostic<LocationProvider>(
+        self,
+        resolved_paths2identifiers: &HashMap<ResolvedPath, HashSet<RawCallableIdentifiers>>,
+        identifiers2location: LocationProvider,
+        package_graph: &PackageGraph,
+        callable_type: CallableType,
+    ) -> Result<miette::Error, miette::Error>
+    where
+        LocationProvider: Fn(&RawCallableIdentifiers) -> Location,
+    {
+        let diagnostic = match self {
+            Self::UnknownCallable(e) => {
+                // We only report a single registration site in the error report even though
+                // the same callable might have been registered in multiple locations.
+                // We may or may not want to change this in the future.
+                let type_path = &e.0;
+                let raw_identifier = resolved_paths2identifiers[type_path].iter().next().unwrap();
+                let location = identifiers2location(raw_identifier);
+                let source = ParsedSourceFile::new(
+                    location.file.as_str().into(),
+                    &package_graph.workspace(),
+                )
+                .map_err(miette::MietteError::IoError)?;
+                let label = diagnostic::get_f_macro_invocation_span(
+                    &source.contents,
+                    &source.parsed,
+                    &location,
+                )
+                .map(|s| s.labeled(format!("The {callable_type} that we cannot resolve")));
+                let diagnostic = CompilerDiagnosticBuilder::new(source, e)
+                    .optional_label(label)
+                    .help("This is most likely a bug in `pavex` or `rustdoc`.\nPlease file a GitHub issue!".into())
+                    .build();
+                diagnostic.into()
+            }
+            CallableResolutionError::ParameterResolutionError(e) => {
+                let sub_diagnostic = {
+                    if let Some(definition_span) = &e.callable_item.span {
+                        let source_contents =
+                            read_source_file(&definition_span.filename, &package_graph.workspace())
+                                .map_err(miette::MietteError::IoError)?;
+                        let span =
+                            convert_rustdoc_span(&source_contents, definition_span.to_owned());
+                        let span_contents =
+                            &source_contents[span.offset()..(span.offset() + span.len())];
+                        let input = match &e.callable_item.inner {
+                            ItemEnum::Function(_) => {
+                                let item: syn::ItemFn = syn::parse_str(span_contents).unwrap();
+                                let mut inputs = item.sig.inputs.iter();
+                                inputs.nth(e.parameter_index).cloned()
+                            }
+                            ItemEnum::Method(_) => {
+                                let item: syn::ImplItemMethod =
+                                    syn::parse_str(span_contents).unwrap();
+                                let mut inputs = item.sig.inputs.iter();
+                                inputs.nth(e.parameter_index).cloned()
+                            }
+                            _ => unreachable!(),
+                        }
+                        .unwrap();
+                        let s = convert_span(
+                            span_contents,
+                            match input {
+                                FnArg::Typed(typed) => typed.ty.span(),
+                                FnArg::Receiver(r) => r.span(),
+                            },
+                        );
+                        let label = SourceSpan::new(
+                            // We must shift the offset forward because it's the
+                            // offset from the beginning of the file slice that
+                            // we deserialized, instead of the entire file
+                            (s.offset() + span.offset()).into(),
+                            s.len().into(),
+                        )
+                        .labeled("The parameter type that I cannot handle".into());
+                        let source_code = NamedSource::new(
+                            &definition_span.filename.to_str().unwrap(),
+                            source_contents,
+                        );
+                        Some(
+                            CompilerDiagnosticBuilder::new(source_code, anyhow::anyhow!(""))
+                                .label(label)
+                                .build(),
+                        )
+                    } else {
+                        None
+                    }
+                };
+
+                let callable_path = &e.callable_path;
+                let raw_identifier = resolved_paths2identifiers[callable_path]
+                    .iter()
+                    .next()
+                    .unwrap();
+                let location = identifiers2location(raw_identifier);
+                let source = ParsedSourceFile::new(
+                    location.file.as_str().into(),
+                    &package_graph.workspace(),
+                )
+                .map_err(miette::MietteError::IoError)?;
+                let label = diagnostic::get_f_macro_invocation_span(
+                    &source.contents,
+                    &source.parsed,
+                    &location,
+                )
+                .map(|s| s.labeled(format!("The {callable_type} was registered here")));
+                let diagnostic = CompilerDiagnosticBuilder::new(source, e)
+                    .optional_label(label)
+                    .optional_related_error(sub_diagnostic)
+                    .build();
+                diagnostic.into()
+            }
+            CallableResolutionError::UnsupportedCallableKind(e) => {
+                let type_path = &e.import_path;
+                let raw_identifier = resolved_paths2identifiers[type_path].iter().next().unwrap();
+                let location = identifiers2location(raw_identifier);
+                let source = ParsedSourceFile::new(
+                    location.file.as_str().into(),
+                    &package_graph.workspace(),
+                )
+                .map_err(miette::MietteError::IoError)?;
+                let label = diagnostic::get_f_macro_invocation_span(
+                    &source.contents,
+                    &source.parsed,
+                    &location,
+                )
+                .map(|s| s.labeled(format!("It was registered as a {callable_type} here")));
+                let diagnostic = CompilerDiagnosticBuilder::new(source, e)
+                    .optional_label(label)
+                    .build();
+                diagnostic.into()
+            }
+            CallableResolutionError::OutputTypeResolutionError(e) => {
+                let sub_diagnostic = {
+                    if let Some(definition_span) = &e.callable_item.span {
+                        let source_contents =
+                            read_source_file(&definition_span.filename, &package_graph.workspace())
+                                .map_err(miette::MietteError::IoError)?;
+                        let span =
+                            convert_rustdoc_span(&source_contents, definition_span.to_owned());
+                        let span_contents =
+                            &source_contents[span.offset()..(span.offset() + span.len())];
+                        let output = match &e.callable_item.inner {
+                            ItemEnum::Function(_) => {
+                                let item: syn::ItemFn = syn::parse_str(span_contents).unwrap();
+                                item.sig.output
+                            }
+                            ItemEnum::Method(_) => {
+                                let item: syn::ImplItemMethod =
+                                    syn::parse_str(span_contents).unwrap();
+                                item.sig.output
+                            }
+                            _ => unreachable!(),
+                        };
+                        let source_span = match output {
+                            ReturnType::Default => None,
+                            ReturnType::Type(_, type_) => Some(type_.span()),
+                        }
+                        .map(|s| {
+                            let s = convert_span(span_contents, s);
+                            SourceSpan::new(
+                                // We must shift the offset forward because it's the
+                                // offset from the beginning of the file slice that
+                                // we deserialized, instead of the entire file
+                                (s.offset() + span.offset()).into(),
+                                s.len().into(),
+                            )
+                        });
+                        let label =
+                            source_span.labeled("The output type that I cannot handle".into());
+                        let source_code = NamedSource::new(
+                            &definition_span.filename.to_str().unwrap(),
+                            source_contents,
+                        );
+                        Some(
+                            CompilerDiagnosticBuilder::new(source_code, anyhow::anyhow!(""))
+                                .optional_label(label)
+                                .build(),
+                        )
+                    } else {
+                        None
+                    }
+                };
+
+                let callable_path = &e.callable_path;
+                let raw_identifier = resolved_paths2identifiers[callable_path]
+                    .iter()
+                    .next()
+                    .unwrap();
+                let location = identifiers2location(raw_identifier);
+                let source = ParsedSourceFile::new(
+                    location.file.as_str().into(),
+                    &package_graph.workspace(),
+                )
+                .map_err(miette::MietteError::IoError)?;
+                let label = diagnostic::get_f_macro_invocation_span(
+                    &source.contents,
+                    &source.parsed,
+                    &location,
+                )
+                .map(|s| s.labeled(format!("The {callable_type} was registered here")));
+                let diagnostic = CompilerDiagnosticBuilder::new(source, e)
+                    .optional_label(label)
+                    .optional_related_error(sub_diagnostic)
+                    .build();
+                diagnostic.into()
+            }
+            CallableResolutionError::CannotGetCrateData(e) => miette!(e),
+        };
+        Ok(diagnostic)
+    }
+}
+
 #[derive(Debug, thiserror::Error)]
-#[error("I know how to work with non-generic free functions or static methods, but `{import_path:?}` is neither ({item_kind}).")]
+#[error("I can work with functions and static methods, but `{import_path}` is neither.\nIt is {item_kind} and I do not know how to handle it here.")]
 pub(crate) struct UnsupportedCallableKind {
-    pub import_path: String,
+    pub import_path: ResolvedPath,
     pub item_kind: String,
 }
 

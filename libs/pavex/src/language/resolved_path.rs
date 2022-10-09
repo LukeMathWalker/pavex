@@ -263,6 +263,15 @@ pub(crate) enum ParseError {
     PathMustBeAbsolute(#[from] PathMustBeAbsolute),
 }
 
+impl ParseError {
+    pub(crate) fn raw_identifiers(&self) -> &RawCallableIdentifiers {
+        match self {
+            ParseError::InvalidPath(e) => &e.raw_identifiers,
+            ParseError::PathMustBeAbsolute(e) => &e.raw_identifiers,
+        }
+    }
+}
+
 #[derive(Debug, thiserror::Error)]
 pub(crate) struct PathMustBeAbsolute {
     pub raw_identifiers: RawCallableIdentifiers,
