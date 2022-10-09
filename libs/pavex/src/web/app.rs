@@ -246,18 +246,14 @@ impl App {
             match resolve_constructors(&constructor_paths, &mut krate_collection, &package_graph) {
                 Ok((resolver, constructors)) => (resolver, constructors),
                 Err(e) => {
-                    return match e {
-                        ConstructorResolutionError::CallableResolutionError(e) => Err(e
-                            .into_diagnostic(
-                                &resolved_paths2identifiers,
-                                |identifiers| {
-                                    app_blueprint.constructor_locations[identifiers].clone()
-                                },
-                                &package_graph,
-                                CallableType::Constructor,
-                            )?
-                            .into()),
-                    };
+                    return Err(e
+                        .into_diagnostic(
+                            &resolved_paths2identifiers,
+                            |identifiers| app_blueprint.constructor_locations[identifiers].clone(),
+                            &package_graph,
+                            CallableType::Constructor,
+                        )?
+                        .into());
                 }
             };
 
@@ -560,7 +556,7 @@ fn resolve_constructors(
         BiHashMap<ResolvedPath, Callable>,
         IndexMap<ResolvedType, Callable>,
     ),
-    ConstructorResolutionError,
+    CallableResolutionError,
 > {
     let mut resolution_map = BiHashMap::with_capacity(constructor_paths.len());
     let mut constructors = IndexMap::with_capacity(constructor_paths.len());
@@ -769,12 +765,6 @@ fn resolve_callable(
         callable_fq_path: callable_path.to_owned(),
         inputs: parameter_paths,
     })
-}
-
-#[derive(thiserror::Error, Debug)]
-pub(crate) enum ConstructorResolutionError {
-    #[error(transparent)]
-    CallableResolutionError(#[from] CallableResolutionError),
 }
 
 #[derive(thiserror::Error, Debug)]
