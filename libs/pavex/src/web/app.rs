@@ -15,8 +15,8 @@ use rustdoc_types::{GenericArg, GenericArgs, ItemEnum, Type};
 use syn::spanned::Spanned;
 use syn::{FnArg, ReturnType};
 
-use pavex_builder::Lifecycle;
 use pavex_builder::{AppBlueprint, RawCallableIdentifiers};
+use pavex_builder::{Lifecycle, Location};
 
 use crate::language::{Callable, ParseError, ResolvedType};
 use crate::language::{ResolvedPath, UnknownPath};
@@ -247,13 +247,15 @@ impl App {
                 Ok((resolver, constructors)) => (resolver, constructors),
                 Err(e) => {
                     return match e {
-                        ConstructorResolutionError::CallableResolutionError(e) => match e {
-                            CallableResolutionError::UnsupportedCallableKind(_)
-                            | CallableResolutionError::UnknownCallable(_)
-                            | CallableResolutionError::ParameterResolutionError(_)
-                            | CallableResolutionError::OutputTypeResolutionError(_)
-                            | CallableResolutionError::CannotGetCrateData(_) => Err(miette!(e)),
-                        },
+                        ConstructorResolutionError::CallableResolutionError(e) => Err(e
+                            .into_diagnostic(
+                                &resolved_paths2identifiers,
+                                |identifiers| {
+                                    app_blueprint.constructor_locations[identifiers].clone()
+                                },
+                                &package_graph,
+                            )?
+                            .into()),
                     };
                 }
             };
@@ -285,240 +287,24 @@ impl App {
             };
         }
 
-        let (handler_resolver, handlers) = match resolve_handlers(
-            &handler_paths,
-            &mut krate_collection,
-            &package_graph,
-        ) {
-            Ok(h) => h,
-            Err(e) => {
-                return match e {
-                    CallableResolutionError::UnknownCallable(e) => {
-                        // We only report a single registration site in the error report even though
-                        // the same callable might have been registered in multiple locations.
-                        // We may or may not want to change this in the future.
-                        let type_path = &e.0;
-                        let raw_identifier =
-                            resolved_paths2identifiers[type_path].iter().next().unwrap();
-                        let location = app_blueprint.handler_locations[raw_identifier]
-                            .first()
-                            .unwrap();
-                        let source = ParsedSourceFile::new(
-                            location.file.as_str().into(),
-                            &package_graph.workspace(),
-                        )
-                        .map_err(miette::MietteError::IoError)?;
-                        let label = diagnostic::get_f_macro_invocation_span(
-                            &source.contents,
-                            &source.parsed,
-                            location,
-                        )
-                        .map(|s| s.labeled("The handler that we cannot resolve".into()));
-                        let diagnostic = CompilerDiagnosticBuilder::new(source, e)
-                            .optional_label(label)
-                            .help("This is most likely a bug in `pavex` or `rustdoc`.\nPlease file a GitHub issue!".into())
-                            .build();
-                        Err(diagnostic.into())
-                    }
-                    CallableResolutionError::ParameterResolutionError(e) => {
-                        let sub_diagnostic = {
-                            if let Some(definition_span) = &e.callable_item.span {
-                                let source_contents = read_source_file(
-                                    &definition_span.filename,
-                                    &package_graph.workspace(),
-                                )
-                                .map_err(miette::MietteError::IoError)?;
-                                let span = convert_rustdoc_span(
-                                    &source_contents,
-                                    definition_span.to_owned(),
-                                );
-                                let span_contents =
-                                    &source_contents[span.offset()..(span.offset() + span.len())];
-                                let input = match &e.callable_item.inner {
-                                    ItemEnum::Function(_) => {
-                                        let item: syn::ItemFn =
-                                            syn::parse_str(span_contents).unwrap();
-                                        let mut inputs = item.sig.inputs.iter();
-                                        inputs.nth(e.parameter_index).cloned()
-                                    }
-                                    ItemEnum::Method(_) => {
-                                        let item: syn::ImplItemMethod =
-                                            syn::parse_str(span_contents).unwrap();
-                                        let mut inputs = item.sig.inputs.iter();
-                                        inputs.nth(e.parameter_index).cloned()
-                                    }
-                                    _ => unreachable!(),
-                                }
-                                .unwrap();
-                                let s = convert_span(
-                                    span_contents,
-                                    match input {
-                                        FnArg::Typed(typed) => typed.ty.span(),
-                                        FnArg::Receiver(r) => r.span(),
-                                    },
-                                );
-                                let label = SourceSpan::new(
-                                    // We must shift the offset forward because it's the
-                                    // offset from the beginning of the file slice that
-                                    // we deserialized, instead of the entire file
-                                    (s.offset() + span.offset()).into(),
-                                    s.len().into(),
-                                )
-                                .labeled("The parameter type that I cannot handle".into());
-                                let source_code = NamedSource::new(
-                                    &definition_span.filename.to_str().unwrap(),
-                                    source_contents,
-                                );
-                                Some(
-                                    CompilerDiagnosticBuilder::new(
-                                        source_code,
-                                        anyhow::anyhow!(""),
-                                    )
-                                    .label(label)
-                                    .build(),
-                                )
-                            } else {
-                                None
-                            }
-                        };
-
-                        let callable_path = &e.callable_path;
-                        let raw_identifier = resolved_paths2identifiers[callable_path]
-                            .iter()
-                            .next()
-                            .unwrap();
-                        let location = app_blueprint.handler_locations[raw_identifier]
-                            .first()
-                            .unwrap();
-                        let source = ParsedSourceFile::new(
-                            location.file.as_str().into(),
-                            &package_graph.workspace(),
-                        )
-                        .map_err(miette::MietteError::IoError)?;
-                        let label = diagnostic::get_f_macro_invocation_span(
-                            &source.contents,
-                            &source.parsed,
-                            location,
-                        )
-                        .map(|s| s.labeled("The handler was registered here".into()));
-                        let diagnostic = CompilerDiagnosticBuilder::new(source, e)
-                            .optional_label(label)
-                            .optional_related_error(sub_diagnostic)
-                            .build();
-                        Err(diagnostic.into())
-                    }
-                    CallableResolutionError::UnsupportedCallableKind(e) => {
-                        let type_path = &e.import_path;
-                        let raw_identifier =
-                            resolved_paths2identifiers[type_path].iter().next().unwrap();
-                        let location = app_blueprint.handler_locations[raw_identifier]
-                            .first()
-                            .unwrap();
-                        let source = ParsedSourceFile::new(
-                            location.file.as_str().into(),
-                            &package_graph.workspace(),
-                        )
-                        .map_err(miette::MietteError::IoError)?;
-                        let label = diagnostic::get_f_macro_invocation_span(
-                            &source.contents,
-                            &source.parsed,
-                            location,
-                        )
-                        .map(|s| s.labeled("It was registered as a handler here".into()));
-                        let diagnostic = CompilerDiagnosticBuilder::new(source, e)
-                            .optional_label(label)
-                            .build();
-                        Err(diagnostic.into())
-                    }
-                    CallableResolutionError::OutputTypeResolutionError(e) => {
-                        let sub_diagnostic = {
-                            if let Some(definition_span) = &e.callable_item.span {
-                                let source_contents = read_source_file(
-                                    &definition_span.filename,
-                                    &package_graph.workspace(),
-                                )
-                                .map_err(miette::MietteError::IoError)?;
-                                let span = convert_rustdoc_span(
-                                    &source_contents,
-                                    definition_span.to_owned(),
-                                );
-                                let span_contents =
-                                    &source_contents[span.offset()..(span.offset() + span.len())];
-                                let output = match &e.callable_item.inner {
-                                    ItemEnum::Function(_) => {
-                                        let item: syn::ItemFn =
-                                            syn::parse_str(span_contents).unwrap();
-                                        item.sig.output
-                                    }
-                                    ItemEnum::Method(_) => {
-                                        let item: syn::ImplItemMethod =
-                                            syn::parse_str(span_contents).unwrap();
-                                        item.sig.output
-                                    }
-                                    _ => unreachable!(),
-                                };
-                                let source_span = match output {
-                                    ReturnType::Default => None,
-                                    ReturnType::Type(_, type_) => Some(type_.span()),
-                                }
-                                .map(|s| {
-                                    let s = convert_span(span_contents, s);
-                                    SourceSpan::new(
-                                        // We must shift the offset forward because it's the
-                                        // offset from the beginning of the file slice that
-                                        // we deserialized, instead of the entire file
-                                        (s.offset() + span.offset()).into(),
-                                        s.len().into(),
-                                    )
-                                });
-                                let label = source_span
-                                    .labeled("The output type that I cannot handle".into());
-                                let source_code = NamedSource::new(
-                                    &definition_span.filename.to_str().unwrap(),
-                                    source_contents,
-                                );
-                                Some(
-                                    CompilerDiagnosticBuilder::new(
-                                        source_code,
-                                        anyhow::anyhow!(""),
-                                    )
-                                    .optional_label(label)
-                                    .build(),
-                                )
-                            } else {
-                                None
-                            }
-                        };
-
-                        let callable_path = &e.callable_path;
-                        let raw_identifier = resolved_paths2identifiers[callable_path]
-                            .iter()
-                            .next()
-                            .unwrap();
-                        let location = app_blueprint.handler_locations[raw_identifier]
-                            .first()
-                            .unwrap();
-                        let source = ParsedSourceFile::new(
-                            location.file.as_str().into(),
-                            &package_graph.workspace(),
-                        )
-                        .map_err(miette::MietteError::IoError)?;
-                        let label = diagnostic::get_f_macro_invocation_span(
-                            &source.contents,
-                            &source.parsed,
-                            location,
-                        )
-                        .map(|s| s.labeled("The handler was registered here".into()));
-                        let diagnostic = CompilerDiagnosticBuilder::new(source, e)
-                            .optional_label(label)
-                            .optional_related_error(sub_diagnostic)
-                            .build();
-                        Err(diagnostic.into())
-                    }
-                    CallableResolutionError::CannotGetCrateData(e) => Err(miette!(e)),
-                };
-            }
-        };
+        let (handler_resolver, handlers) =
+            match resolve_handlers(&handler_paths, &mut krate_collection, &package_graph) {
+                Ok(h) => h,
+                Err(e) => {
+                    return Err(e
+                        .into_diagnostic(
+                            &resolved_paths2identifiers,
+                            |identifiers| {
+                                app_blueprint.handler_locations[identifiers]
+                                    .first()
+                                    .unwrap()
+                                    .clone()
+                            },
+                            &package_graph,
+                        )?
+                        .into());
+                }
+            };
 
         let mut router = BTreeMap::new();
         for (route, callable_identifiers) in app_blueprint.router {
@@ -1007,6 +793,219 @@ pub(crate) enum CallableResolutionError {
     OutputTypeResolutionError(#[from] OutputTypeResolutionError),
     #[error(transparent)]
     CannotGetCrateData(#[from] CannotGetCrateData),
+}
+
+impl CallableResolutionError {
+    pub fn into_diagnostic<LocationProvider>(
+        self,
+        resolved_paths2identifiers: &HashMap<ResolvedPath, HashSet<RawCallableIdentifiers>>,
+        identifiers2location: LocationProvider,
+        package_graph: &PackageGraph,
+    ) -> Result<miette::Error, miette::Error>
+    where
+        LocationProvider: Fn(&RawCallableIdentifiers) -> Location,
+    {
+        let diagnostic = match self {
+            Self::UnknownCallable(e) => {
+                // We only report a single registration site in the error report even though
+                // the same callable might have been registered in multiple locations.
+                // We may or may not want to change this in the future.
+                let type_path = &e.0;
+                let raw_identifier = resolved_paths2identifiers[type_path].iter().next().unwrap();
+                let location = identifiers2location(raw_identifier);
+                let source = ParsedSourceFile::new(
+                    location.file.as_str().into(),
+                    &package_graph.workspace(),
+                )
+                .map_err(miette::MietteError::IoError)?;
+                let label = diagnostic::get_f_macro_invocation_span(
+                    &source.contents,
+                    &source.parsed,
+                    &location,
+                )
+                .map(|s| s.labeled("The handler that we cannot resolve".into()));
+                let diagnostic = CompilerDiagnosticBuilder::new(source, e)
+                    .optional_label(label)
+                    .help("This is most likely a bug in `pavex` or `rustdoc`.\nPlease file a GitHub issue!".into())
+                    .build();
+                diagnostic.into()
+            }
+            CallableResolutionError::ParameterResolutionError(e) => {
+                let sub_diagnostic = {
+                    if let Some(definition_span) = &e.callable_item.span {
+                        let source_contents =
+                            read_source_file(&definition_span.filename, &package_graph.workspace())
+                                .map_err(miette::MietteError::IoError)?;
+                        let span =
+                            convert_rustdoc_span(&source_contents, definition_span.to_owned());
+                        let span_contents =
+                            &source_contents[span.offset()..(span.offset() + span.len())];
+                        let input = match &e.callable_item.inner {
+                            ItemEnum::Function(_) => {
+                                let item: syn::ItemFn = syn::parse_str(span_contents).unwrap();
+                                let mut inputs = item.sig.inputs.iter();
+                                inputs.nth(e.parameter_index).cloned()
+                            }
+                            ItemEnum::Method(_) => {
+                                let item: syn::ImplItemMethod =
+                                    syn::parse_str(span_contents).unwrap();
+                                let mut inputs = item.sig.inputs.iter();
+                                inputs.nth(e.parameter_index).cloned()
+                            }
+                            _ => unreachable!(),
+                        }
+                        .unwrap();
+                        let s = convert_span(
+                            span_contents,
+                            match input {
+                                FnArg::Typed(typed) => typed.ty.span(),
+                                FnArg::Receiver(r) => r.span(),
+                            },
+                        );
+                        let label = SourceSpan::new(
+                            // We must shift the offset forward because it's the
+                            // offset from the beginning of the file slice that
+                            // we deserialized, instead of the entire file
+                            (s.offset() + span.offset()).into(),
+                            s.len().into(),
+                        )
+                        .labeled("The parameter type that I cannot handle".into());
+                        let source_code = NamedSource::new(
+                            &definition_span.filename.to_str().unwrap(),
+                            source_contents,
+                        );
+                        Some(
+                            CompilerDiagnosticBuilder::new(source_code, anyhow::anyhow!(""))
+                                .label(label)
+                                .build(),
+                        )
+                    } else {
+                        None
+                    }
+                };
+
+                let callable_path = &e.callable_path;
+                let raw_identifier = resolved_paths2identifiers[callable_path]
+                    .iter()
+                    .next()
+                    .unwrap();
+                let location = identifiers2location(raw_identifier);
+                let source = ParsedSourceFile::new(
+                    location.file.as_str().into(),
+                    &package_graph.workspace(),
+                )
+                .map_err(miette::MietteError::IoError)?;
+                let label = diagnostic::get_f_macro_invocation_span(
+                    &source.contents,
+                    &source.parsed,
+                    &location,
+                )
+                .map(|s| s.labeled("The handler was registered here".into()));
+                let diagnostic = CompilerDiagnosticBuilder::new(source, e)
+                    .optional_label(label)
+                    .optional_related_error(sub_diagnostic)
+                    .build();
+                diagnostic.into()
+            }
+            CallableResolutionError::UnsupportedCallableKind(e) => {
+                let type_path = &e.import_path;
+                let raw_identifier = resolved_paths2identifiers[type_path].iter().next().unwrap();
+                let location = identifiers2location(raw_identifier);
+                let source = ParsedSourceFile::new(
+                    location.file.as_str().into(),
+                    &package_graph.workspace(),
+                )
+                .map_err(miette::MietteError::IoError)?;
+                let label = diagnostic::get_f_macro_invocation_span(
+                    &source.contents,
+                    &source.parsed,
+                    &location,
+                )
+                .map(|s| s.labeled("It was registered as a handler here".into()));
+                let diagnostic = CompilerDiagnosticBuilder::new(source, e)
+                    .optional_label(label)
+                    .build();
+                diagnostic.into()
+            }
+            CallableResolutionError::OutputTypeResolutionError(e) => {
+                let sub_diagnostic = {
+                    if let Some(definition_span) = &e.callable_item.span {
+                        let source_contents =
+                            read_source_file(&definition_span.filename, &package_graph.workspace())
+                                .map_err(miette::MietteError::IoError)?;
+                        let span =
+                            convert_rustdoc_span(&source_contents, definition_span.to_owned());
+                        let span_contents =
+                            &source_contents[span.offset()..(span.offset() + span.len())];
+                        let output = match &e.callable_item.inner {
+                            ItemEnum::Function(_) => {
+                                let item: syn::ItemFn = syn::parse_str(span_contents).unwrap();
+                                item.sig.output
+                            }
+                            ItemEnum::Method(_) => {
+                                let item: syn::ImplItemMethod =
+                                    syn::parse_str(span_contents).unwrap();
+                                item.sig.output
+                            }
+                            _ => unreachable!(),
+                        };
+                        let source_span = match output {
+                            ReturnType::Default => None,
+                            ReturnType::Type(_, type_) => Some(type_.span()),
+                        }
+                        .map(|s| {
+                            let s = convert_span(span_contents, s);
+                            SourceSpan::new(
+                                // We must shift the offset forward because it's the
+                                // offset from the beginning of the file slice that
+                                // we deserialized, instead of the entire file
+                                (s.offset() + span.offset()).into(),
+                                s.len().into(),
+                            )
+                        });
+                        let label =
+                            source_span.labeled("The output type that I cannot handle".into());
+                        let source_code = NamedSource::new(
+                            &definition_span.filename.to_str().unwrap(),
+                            source_contents,
+                        );
+                        Some(
+                            CompilerDiagnosticBuilder::new(source_code, anyhow::anyhow!(""))
+                                .optional_label(label)
+                                .build(),
+                        )
+                    } else {
+                        None
+                    }
+                };
+
+                let callable_path = &e.callable_path;
+                let raw_identifier = resolved_paths2identifiers[callable_path]
+                    .iter()
+                    .next()
+                    .unwrap();
+                let location = identifiers2location(raw_identifier);
+                let source = ParsedSourceFile::new(
+                    location.file.as_str().into(),
+                    &package_graph.workspace(),
+                )
+                .map_err(miette::MietteError::IoError)?;
+                let label = diagnostic::get_f_macro_invocation_span(
+                    &source.contents,
+                    &source.parsed,
+                    &location,
+                )
+                .map(|s| s.labeled("The handler was registered here".into()));
+                let diagnostic = CompilerDiagnosticBuilder::new(source, e)
+                    .optional_label(label)
+                    .optional_related_error(sub_diagnostic)
+                    .build();
+                diagnostic.into()
+            }
+            CallableResolutionError::CannotGetCrateData(e) => miette!(e),
+        };
+        Ok(diagnostic)
+    }
 }
 
 #[derive(Debug, thiserror::Error)]
