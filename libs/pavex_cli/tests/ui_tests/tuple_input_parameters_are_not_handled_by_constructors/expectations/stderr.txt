@@ -1,20 +1,20 @@
 Error: 
   × One of the input parameters for `app::stream_file` has a type that I
   │ cannot handle.
-   ╭─[src/lib.rs:7:1]
- 7 │ pub fn blueprint() -> AppBlueprint {
- 8 │     AppBlueprint::new().constructor(f!(crate::stream_file), Lifecycle::Singleton)
-   ·                                     ───────────┬──────────
-   ·                                                ╰── The constructor was registered here
- 9 │ }
-   ╰────
+    ╭─[src/lib.rs:9:1]
+  9 │ pub fn blueprint() -> AppBlueprint {
+ 10 │     AppBlueprint::new().constructor(f!(crate::stream_file), Lifecycle::Singleton)
+    ·                                     ───────────┬──────────
+    ·                                                ╰── The constructor was registered here
+ 11 │ }
+    ╰────
 
 Error: 
   × 
-   ╭─[src/lib.rs:2:1]
- 2 │ 
- 3 │ pub fn stream_file(input: (usize, isize)) -> http::Response<hyper::body::Body> {
+   ╭─[src/lib.rs:4:1]
+ 4 │ 
+ 5 │ pub fn stream_file(input: (usize, isize)) -> Logger {
    ·                           ───────┬──────
    ·                                  ╰── The parameter type that I cannot handle
- 4 │     todo!()
+ 6 │     todo!()
    ╰────

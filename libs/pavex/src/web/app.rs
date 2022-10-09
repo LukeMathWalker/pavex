@@ -1,5 +1,5 @@
 use std::collections::{BTreeMap, HashMap, HashSet};
-use std::fmt::Debug;
+use std::fmt::{Debug, Display, Formatter};
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 
@@ -254,6 +254,7 @@ impl App {
                                     app_blueprint.constructor_locations[identifiers].clone()
                                 },
                                 &package_graph,
+                                CallableType::Constructor,
                             )?
                             .into()),
                     };
@@ -301,6 +302,7 @@ impl App {
                                     .clone()
                             },
                             &package_graph,
+                            CallableType::Handler,
                         )?
                         .into());
                 }
@@ -795,12 +797,29 @@ pub(crate) enum CallableResolutionError {
     CannotGetCrateData(#[from] CannotGetCrateData),
 }
 
+#[derive(Debug, Copy, Clone)]
+pub enum CallableType {
+    Handler,
+    Constructor,
+}
+
+impl Display for CallableType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            CallableType::Handler => "handler",
+            CallableType::Constructor => "constructor",
+        };
+        write!(f, "{}", s)
+    }
+}
+
 impl CallableResolutionError {
     pub fn into_diagnostic<LocationProvider>(
         self,
         resolved_paths2identifiers: &HashMap<ResolvedPath, HashSet<RawCallableIdentifiers>>,
         identifiers2location: LocationProvider,
         package_graph: &PackageGraph,
+        callable_type: CallableType,
     ) -> Result<miette::Error, miette::Error>
     where
         LocationProvider: Fn(&RawCallableIdentifiers) -> Location,
@@ -823,7 +842,7 @@ impl CallableResolutionError {
                     &source.parsed,
                     &location,
                 )
-                .map(|s| s.labeled("The handler that we cannot resolve".into()));
+                .map(|s| s.labeled(format!("The {callable_type} that we cannot resolve")));
                 let diagnostic = CompilerDiagnosticBuilder::new(source, e)
                     .optional_label(label)
                     .help("This is most likely a bug in `pavex` or `rustdoc`.\nPlease file a GitHub issue!".into())
@@ -900,7 +919,7 @@ impl CallableResolutionError {
                     &source.parsed,
                     &location,
                 )
-                .map(|s| s.labeled("The handler was registered here".into()));
+                .map(|s| s.labeled(format!("The {callable_type} was registered here")));
                 let diagnostic = CompilerDiagnosticBuilder::new(source, e)
                     .optional_label(label)
                     .optional_related_error(sub_diagnostic)
@@ -921,7 +940,7 @@ impl CallableResolutionError {
                     &source.parsed,
                     &location,
                 )
-                .map(|s| s.labeled("It was registered as a handler here".into()));
+                .map(|s| s.labeled(format!("It was registered as a {callable_type} here")));
                 let diagnostic = CompilerDiagnosticBuilder::new(source, e)
                     .optional_label(label)
                     .build();
@@ -995,7 +1014,7 @@ impl CallableResolutionError {
                     &source.parsed,
                     &location,
                 )
-                .map(|s| s.labeled("The handler was registered here".into()));
+                .map(|s| s.labeled(format!("The {callable_type} was registered here")));
                 let diagnostic = CompilerDiagnosticBuilder::new(source, e)
                     .optional_label(label)
                     .optional_related_error(sub_diagnostic)
