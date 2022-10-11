@@ -699,7 +699,7 @@ fn resolve_callable(
                 ItemEnum::ForeignType => "a foreign type",
                 ItemEnum::Macro(_) => "a macro",
                 ItemEnum::ProcMacro(_) => "a procedural macro",
-                ItemEnum::PrimitiveType(_) => "a primitive type",
+                ItemEnum::Primitive(_) => "a primitive type",
                 ItemEnum::AssocConst { .. } => "an associated constant",
                 ItemEnum::AssocType { .. } => "an associated type",
             }
