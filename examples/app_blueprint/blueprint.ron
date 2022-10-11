@@ -22,16 +22,16 @@
     component_lifecycles: {
         (
             registered_at: "app_blueprint",
-            import_path: "crate :: http_client",
-        ): Singleton,
+            import_path: "crate :: logger",
+        ): Transient,
         (
             registered_at: "app_blueprint",
             import_path: "crate :: extract_path",
         ): RequestScoped,
         (
             registered_at: "app_blueprint",
-            import_path: "crate :: logger",
-        ): Transient,
+            import_path: "crate :: http_client",
+        ): Singleton,
     },
     router: {
         "/home": (
@@ -56,25 +56,25 @@
             registered_at: "app_blueprint",
             import_path: "crate :: extract_path",
         ): (
-            line: 58,
-            column: 32,
-            file: "libs/pavex_builder/src/app.rs",
+            line: 39,
+            column: 10,
+            file: "examples/app_blueprint/src/lib.rs",
         ),
         (
             registered_at: "app_blueprint",
             import_path: "crate :: logger",
         ): (
-            line: 58,
-            column: 32,
-            file: "libs/pavex_builder/src/app.rs",
+            line: 40,
+            column: 10,
+            file: "examples/app_blueprint/src/lib.rs",
         ),
         (
             registered_at: "app_blueprint",
             import_path: "crate :: http_client",
         ): (
-            line: 58,
-            column: 32,
-            file: "libs/pavex_builder/src/app.rs",
+            line: 38,
+            column: 10,
+            file: "examples/app_blueprint/src/lib.rs",
         ),
     },
 )
