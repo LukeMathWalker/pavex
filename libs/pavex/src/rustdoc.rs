@@ -2,7 +2,6 @@ use std::collections::{BTreeSet, HashMap};
 use std::default::Default;
 use std::fmt::{Display, Formatter};
 use std::path::{Path, PathBuf};
-use std::str::FromStr;
 
 use anyhow::{anyhow, Context};
 use guppy::graph::{PackageGraph, PackageMetadata, PackageSource};
@@ -48,9 +47,7 @@ pub fn get_crate_data(
 fn get_toolchain_crate_data(
     package_id_spec: &PackageIdSpecification,
 ) -> Result<rustdoc_types::Crate, anyhow::Error> {
-    // TODO: determine the correct path to the files using `rustup show home`,
-    // `rustup show active-toolchain` and `rustup component list --installed --toolchain <...>`.
-    let root_folder = PathBuf::from_str("/Users/luca/code/pavex/json-docs").unwrap();
+    let root_folder = get_json_docs_root_folder_via_rustup()?;
     let json_path = root_folder.join(format!("{}.json", package_id_spec.name));
     let json = fs_err::read_to_string(json_path).with_context(|| {
         format!(
@@ -66,6 +63,53 @@ fn get_toolchain_crate_data(
             )
         })
         .map_err(Into::into)
+}
+
+fn get_json_docs_root_folder_via_rustup() -> Result<PathBuf, anyhow::Error> {
+    let nightly_toolchain = get_nightly_toolchain_root_folder_via_rustup()?;
+    Ok(nightly_toolchain.join("share/doc/rust/json"))
+}
+
+/// In order to determine where all components attached to the nightly toolchain are stored,
+/// we ask `rustup` to tell us where the `cargo` binary its location.
+/// It looks like its location is always going to be `<toolchain root folder>/bin/cargo`, so
+/// we compute `<toolchain root folder>` by chopping off the final two components of the path
+/// returned by `rustup`.
+fn get_nightly_toolchain_root_folder_via_rustup() -> Result<PathBuf, anyhow::Error> {
+    let mut cmd = std::process::Command::new("rustup");
+    cmd.arg("which")
+        .arg("--toolchain")
+        .arg("nightly")
+        .arg("cargo");
+
+    let output = cmd.output().with_context(|| {
+        format!(
+            "Failed to run a `rustup` command. Is `rustup` installed?\n{:?}",
+            cmd
+        )
+    })?;
+
+    if !output.status.success() {
+        anyhow::bail!(
+            "An invocation of `rustup` exited with non-zero status code.\n{:?}",
+            cmd
+        );
+    }
+    let path = std::str::from_utf8(&output.stdout)
+        .with_context(|| {
+            format!(
+                "An invocation of `rustup` returned non-UTF8 data as output.\n{:?}",
+                cmd
+            )
+        })?
+        .trim();
+    let path = Path::new(path);
+    debug_assert!(
+        path.ends_with("bin/cargo"),
+        "The path to the `cargo` binary for nightly does not have the expected structure: {:?}",
+        path
+    );
+    Ok(path.parent().unwrap().parent().unwrap().to_path_buf())
 }
 
 fn _get_crate_data(
