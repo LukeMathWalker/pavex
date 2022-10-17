@@ -274,6 +274,9 @@ impl App {
         })
     }
 
+    /// Generate the manifest and the Rust code for the analysed application.
+    ///
+    /// They are generated in-memory, they are not persisted to disk.
     pub fn codegen(&self) -> Result<GeneratedApp, anyhow::Error> {
         let (cargo_toml, mut package_ids2deps) = codegen::codegen_manifest(
             &self.package_graph,
