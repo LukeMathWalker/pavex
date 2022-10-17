@@ -336,6 +336,8 @@ pub struct AppDiagnostics {
 }
 
 impl AppDiagnostics {
+    /// Persist the diagnostic information to disk, using one file per handler within the specified
+    /// directory.
     pub fn persist(&self, directory: &Path) -> Result<(), anyhow::Error> {
         let handler_directory = directory.join("handlers");
         fs_err::create_dir_all(&handler_directory)?;
@@ -357,6 +359,7 @@ impl AppDiagnostics {
         Ok(())
     }
 
+    /// Save all diagnostics in a single file instead of having one file per handler.
     pub fn persist_flat(&self, filepath: &Path) -> Result<(), anyhow::Error> {
         let file = fs_err::OpenOptions::new()
             .create(true)
