@@ -374,6 +374,9 @@ impl AppDiagnostics {
     }
 }
 
+/// Determine the set of singleton types that are required to execute the constructors and handlers
+/// registered by the application.
+/// These singletons will be attached to the overall application state.
 fn get_required_singleton_types<'a>(
     handler_call_graphs: impl Iterator<Item = (&'a ResolvedPath, &'a HandlerCallGraph)>,
     component2lifecycle: &HashMap<ResolvedType, Lifecycle>,
