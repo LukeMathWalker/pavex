@@ -405,6 +405,10 @@ fn get_required_singleton_types<'a>(
     Ok(singletons_to_be_built)
 }
 
+/// Return the set of name bindings injected by `pavex` into the processing context for
+/// an incoming request (e.g. the incoming request itself!).  
+/// The types injected here can be used by constructors and handlers even though no constructor
+/// has been explicitly registered for them by the developer.
 fn framework_bindings(
     package_graph: &PackageGraph,
     krate_collection: &mut CrateCollection,
