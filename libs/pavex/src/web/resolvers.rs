@@ -183,7 +183,7 @@ fn resolve_callable(
             Err(e) => {
                 return Err(ParameterResolutionError {
                     parameter_type: parameter_type.to_owned(),
-                    callable_path: callable_path.to_owned().into(),
+                    callable_path: callable_path.to_owned(),
                     callable_item: type_,
                     source: e,
                     parameter_index,
@@ -210,7 +210,7 @@ fn resolve_callable(
                 Err(e) => {
                     return Err(OutputTypeResolutionError {
                         output_type: output_type.to_owned(),
-                        callable_path: callable_path.to_owned().into(),
+                        callable_path: callable_path.to_owned(),
                         callable_item: type_,
                         source: e,
                     }

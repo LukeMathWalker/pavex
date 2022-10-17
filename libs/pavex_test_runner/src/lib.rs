@@ -304,7 +304,7 @@ fn _run_test(
         return match test_config.expectations.codegen {
             ExpectedOutcome::Pass => Ok(TestOutcome {
                 outcome: Outcome::Failed {
-                    msg: Some(format!("We failed to generate the application code.",)),
+                    msg: Some("We failed to generate the application code.".to_string()),
                 },
                 source_generation_output,
             }),

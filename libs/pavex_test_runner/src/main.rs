@@ -62,13 +62,13 @@ fn review_snapshot(
     println!(
         "{}{}\n{}{}",
         style("Test name: ").bold(),
-        style(format!("{}", &test_name)).yellow().bold(),
+        style((&test_name).to_string()).yellow().bold(),
         style("Snapshot name: ").bold(),
-        style(format!("{}", &snapshot_name)).green().bold(),
+        style((&snapshot_name).to_string()).green().bold(),
     );
-    print_changeset(&expected_snapshot, &actual_snapshot);
+    print_changeset(expected_snapshot, actual_snapshot);
 
-    prompt(&terminal)
+    prompt(terminal)
 }
 
 fn prompt(terminal: &console::Term) -> std::io::Result<Decision> {

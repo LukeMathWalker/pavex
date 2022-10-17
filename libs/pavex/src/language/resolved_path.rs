@@ -163,14 +163,14 @@ impl ResolvedPath {
         if path_segments.len() < 3 {
             // It has to be at least three segments - crate name, type name, method name.
             // If it's shorter than three, it's just an unknown path.
-            return Err(UnknownPath(self.to_owned().into()));
+            return Err(UnknownPath(self.to_owned()));
         }
         let (method_name, type_path_segments) = path_segments.split_last().unwrap();
         if let Ok(t) = krate.get_type_by_path(type_path_segments) {
             let impl_block_ids = match &t.inner {
                 ItemEnum::Struct(s) => &s.impls,
                 ItemEnum::Enum(enum_) => &enum_.impls,
-                _ => return Err(UnknownPath(self.to_owned().into())),
+                _ => return Err(UnknownPath(self.to_owned())),
             };
             for impl_block_id in impl_block_ids {
                 let impl_block = krate.get_type_by_id(impl_block_id);
@@ -188,7 +188,7 @@ impl ResolvedPath {
                 }
             }
         }
-        Err(UnknownPath(self.to_owned().into()))
+        Err(UnknownPath(self.to_owned()))
     }
 
     pub fn render_path(&self, id2name: &BiHashMap<&PackageId, String>) -> String {

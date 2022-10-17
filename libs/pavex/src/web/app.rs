@@ -1,31 +1,26 @@
 use std::collections::{BTreeMap, HashMap, HashSet};
-use std::fmt::{Debug, Display, Formatter};
+use std::fmt::Debug;
 use std::io::{BufWriter, Write};
 use std::path::Path;
 
-use anyhow::anyhow;
 use bimap::BiHashMap;
 use guppy::graph::PackageGraph;
 use guppy::PackageId;
 use indexmap::{IndexMap, IndexSet};
-use miette::{miette, NamedSource, SourceSpan};
+use miette::miette;
 use proc_macro2::Ident;
 use quote::format_ident;
-use rustdoc_types::{GenericArg, GenericArgs, ItemEnum, Type};
-use syn::spanned::Spanned;
-use syn::{FnArg, ReturnType};
 
+use pavex_builder::Lifecycle;
 use pavex_builder::{AppBlueprint, RawCallableIdentifiers};
-use pavex_builder::{Lifecycle, Location};
 
+use crate::language::ResolvedPath;
 use crate::language::{Callable, ParseError, ResolvedType};
-use crate::language::{ResolvedPath, UnknownPath};
-use crate::rustdoc::{CannotGetCrateData, CrateCollection, STD_PACKAGE_ID};
+use crate::rustdoc::{CrateCollection, STD_PACKAGE_ID};
 use crate::web::application_state_call_graph::ApplicationStateCallGraph;
 use crate::web::dependency_graph::CallableDependencyGraph;
 use crate::web::diagnostic::{
-    convert_rustdoc_span, convert_span, read_source_file, CompilerDiagnosticBuilder,
-    OptionalSourceSpanExt, ParsedSourceFile, SourceSpanExt,
+    CompilerDiagnosticBuilder, OptionalSourceSpanExt, ParsedSourceFile, SourceSpanExt,
 };
 use crate::web::generated_app::GeneratedApp;
 use crate::web::handler_call_graph::HandlerCallGraph;
@@ -156,14 +151,12 @@ impl App {
         ) {
             Ok((resolver, constructors)) => (resolver, constructors),
             Err(e) => {
-                return Err(e
-                    .into_diagnostic(
-                        &resolved_paths2identifiers,
-                        |identifiers| app_blueprint.constructor_locations[identifiers].clone(),
-                        &package_graph,
-                        CallableType::Constructor,
-                    )?
-                    .into());
+                return Err(e.into_diagnostic(
+                    &resolved_paths2identifiers,
+                    |identifiers| app_blueprint.constructor_locations[identifiers].clone(),
+                    &package_graph,
+                    CallableType::Constructor,
+                )?);
             }
         };
 
@@ -201,19 +194,17 @@ impl App {
         ) {
             Ok(h) => h,
             Err(e) => {
-                return Err(e
-                    .into_diagnostic(
-                        &resolved_paths2identifiers,
-                        |identifiers| {
-                            app_blueprint.handler_locations[identifiers]
-                                .first()
-                                .unwrap()
-                                .clone()
-                        },
-                        &package_graph,
-                        CallableType::Handler,
-                    )?
-                    .into());
+                return Err(e.into_diagnostic(
+                    &resolved_paths2identifiers,
+                    |identifiers| {
+                        app_blueprint.handler_locations[identifiers]
+                            .first()
+                            .unwrap()
+                            .clone()
+                    },
+                    &package_graph,
+                    CallableType::Handler,
+                )?);
             }
         };
 
@@ -463,7 +454,7 @@ fn validate_constructors(
     constructors: &IndexMap<ResolvedType, Callable>,
 ) -> Result<(), ConstructorValidationError> {
     for (_output_type, constructor) in constructors.iter() {
-        validate_constructor(&constructor)?;
+        validate_constructor(constructor)?;
     }
     Ok(())
 }

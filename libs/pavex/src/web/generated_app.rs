@@ -82,10 +82,8 @@ impl GeneratedApp {
                 .unwrap();
             if let Some(members) = workspace.get_mut("members") {
                 if let Some(members) = members.as_array_mut() {
-                    if members
-                        .iter()
-                        .find(|m| m.as_str() == Some(&member_path))
-                        .is_none()
+                    if !members
+                        .iter().any(|m| m.as_str() == Some(&member_path))
                     {
                         members.push(member_path.into());
                     }
