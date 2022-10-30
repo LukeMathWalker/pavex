@@ -12,6 +12,7 @@ use crate::web::dependency_graph::DependencyGraphNode;
 
 pub(crate) enum Fragment {
     VariableReference(syn::Ident),
+    BorrowSharedReference(syn::Ident),
     Statement(Box<syn::Stmt>),
     Block(syn::Block),
 }
@@ -22,6 +23,10 @@ impl ToTokens for Fragment {
             Fragment::VariableReference(v) => v.to_tokens(tokens),
             Fragment::Statement(s) => s.to_tokens(tokens),
             Fragment::Block(b) => b.to_tokens(tokens),
+            Fragment::BorrowSharedReference(v) => quote! {
+                &#v
+            }
+            .to_tokens(tokens),
         }
     }
 }
@@ -50,7 +55,7 @@ pub(crate) fn codegen_call_block(
 ) -> Result<Fragment, anyhow::Error> {
     let dependencies = call_graph.neighbors_directed(node_index, Direction::Incoming);
     let mut block = quote! {};
-    let mut dependency_bindings: BiHashMap<ResolvedType, syn::Ident> = BiHashMap::new();
+    let mut dependency_bindings: HashMap<ResolvedType, Box<dyn ToTokens>> = HashMap::new();
     for dependency_index in dependencies {
         let fragment = &blocks[&dependency_index];
         let dependency_type = match &call_graph[dependency_index] {
@@ -60,16 +65,22 @@ pub(crate) fn codegen_call_block(
         let mut to_be_removed = false;
         match fragment {
             Fragment::VariableReference(v) => {
-                dependency_bindings.insert(dependency_type.to_owned(), v.to_owned());
+                dependency_bindings.insert(dependency_type.to_owned(), Box::new(v.to_owned()));
             }
             Fragment::Block(_) | Fragment::Statement(_) => {
                 let parameter_name = variable_generator.generate();
-                dependency_bindings.insert(dependency_type.to_owned(), parameter_name.to_owned());
+                dependency_bindings.insert(
+                    dependency_type.to_owned(),
+                    Box::new(parameter_name.to_owned()),
+                );
                 to_be_removed = true;
                 block = quote! {
                     #block
                     let #parameter_name = #fragment;
                 }
+            }
+            Fragment::BorrowSharedReference(v) => {
+                dependency_bindings.insert(dependency_type.to_owned(), Box::new(quote! { &#v }));
             }
         }
         if to_be_removed {
@@ -96,15 +107,12 @@ pub(crate) fn codegen_call_block(
 
 pub(crate) fn codegen_call(
     callable: &Callable,
-    variable_bindings: &BiHashMap<ResolvedType, syn::Ident>,
+    variable_bindings: &HashMap<ResolvedType, Box<dyn ToTokens>>,
     package_id2name: &BiHashMap<&PackageId, String>,
 ) -> Result<syn::ExprCall, anyhow::Error> {
     let callable_path: syn::ExprPath =
         syn::parse_str(&callable.path.render_path(package_id2name)).unwrap();
-    let parameters = callable
-        .inputs
-        .iter()
-        .map(|i| variable_bindings.get_by_left(i).unwrap());
+    let parameters = callable.inputs.iter().map(|i| &variable_bindings[i]);
     Ok(syn::parse2(quote! {
         #callable_path(#(#parameters),*)
     })

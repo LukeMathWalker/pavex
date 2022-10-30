@@ -15,6 +15,7 @@ use crate::language::{Callable, ResolvedType};
 use crate::rustdoc::STD_PACKAGE_ID;
 use crate::web::app::GENERATED_APP_PACKAGE_ID;
 use crate::web::application_state_call_graph::ApplicationStateCallGraph;
+use crate::web::constructors::Constructor;
 use crate::web::dependency_graph::DependencyGraphNode;
 use crate::web::handler_call_graph::{codegen, HandlerCallGraph};
 
@@ -174,6 +175,7 @@ fn get_request_dispatcher(
                 is_shared_reference: false,
                 ..type_.clone()
             };
+            dbg!(&request_scoped_bindings);
             if let Some(field_name) = singleton_bindings.get_by_right(&inner_type) {
                 if is_shared_reference {
                     quote! {
@@ -184,8 +186,12 @@ fn get_request_dispatcher(
                         server_state.application_state.#field_name.clone()
                     }
                 }
+            } else if let Some(field_name) = request_scoped_bindings.get_by_right(type_) {
+                quote! {
+                    #field_name
+                }
             } else {
-                let field_name = request_scoped_bindings.get_by_right(type_).unwrap();
+                let field_name = request_scoped_bindings.get_by_right(&inner_type).unwrap();
                 quote! {
                     #field_name
                 }
@@ -344,7 +350,12 @@ fn collect_package_ids<'a>(
             }
             DependencyGraphNode::Type(t) => {
                 if let Some(c) = application_state_call_graph.constructors.get(t) {
-                    collect_callable_package_ids(&mut package_ids, c)
+                    match c {
+                        Constructor::Callable(c) => {
+                            collect_callable_package_ids(&mut package_ids, c)
+                        }
+                        Constructor::BorrowSharedReference(_) => {}
+                    }
                 }
             }
         }
@@ -357,7 +368,12 @@ fn collect_package_ids<'a>(
                 }
                 DependencyGraphNode::Type(t) => {
                     if let Some(c) = handler_call_graph.constructors.get(t) {
-                        collect_callable_package_ids(&mut package_ids, c)
+                        match c {
+                            Constructor::Callable(c) => {
+                                collect_callable_package_ids(&mut package_ids, c)
+                            }
+                            Constructor::BorrowSharedReference(_) => {}
+                        }
                     }
                 }
             }
@@ -367,7 +383,6 @@ fn collect_package_ids<'a>(
 }
 
 fn collect_callable_package_ids<'a>(package_ids: &mut IndexSet<&'a PackageId>, c: &'a Callable) {
-    // What about the generic parameters of the callable?
     package_ids.insert(&c.path.package_id);
     for input in &c.inputs {
         collect_type_package_ids(package_ids, input);

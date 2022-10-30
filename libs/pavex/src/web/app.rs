@@ -19,6 +19,7 @@ use crate::language::ResolvedPath;
 use crate::language::{Callable, ParseError, ResolvedType};
 use crate::rustdoc::{CrateCollection, STD_PACKAGE_ID};
 use crate::web::application_state_call_graph::ApplicationStateCallGraph;
+use crate::web::constructors::{Constructor, ConstructorValidationError};
 use crate::web::dependency_graph::CallableDependencyGraph;
 use crate::web::diagnostic::{
     CompilerDiagnosticBuilder, OptionalSourceSpanExt, ParsedSourceFile, SourceSpanExt,
@@ -145,47 +146,57 @@ impl App {
             set
         };
 
-        let (constructor_resolver, constructors) = match resolvers::resolve_constructors(
-            &constructor_paths,
-            &mut krate_collection,
-            &package_graph,
-        ) {
-            Ok((resolver, constructors)) => (resolver, constructors),
-            Err(e) => {
-                return Err(e.into_diagnostic(
-                    &resolved_paths2identifiers,
-                    |identifiers| app_blueprint.constructor_locations[identifiers].clone(),
-                    &package_graph,
-                    CallableType::Constructor,
-                )?);
-            }
-        };
-
-        if let Err(e) = validate_constructors(&constructors) {
-            return match e {
-                ConstructorValidationError::CannotReturnTheUnitType(ref constructor_path) => {
-                    let raw_identifier = resolved_paths2identifiers[constructor_path]
-                        .iter()
-                        .next()
-                        .unwrap();
-                    let location = &app_blueprint.constructor_locations[raw_identifier];
-                    let source = ParsedSourceFile::new(
-                        location.file.as_str().into(),
-                        &package_graph.workspace(),
-                    )
-                    .map_err(miette::MietteError::IoError)?;
-                    let label = diagnostic::get_f_macro_invocation_span(
-                        &source.contents,
-                        &source.parsed,
-                        location,
-                    )
-                    .map(|s| s.labeled("The constructor was registered here".into()));
-                    let diagnostic = CompilerDiagnosticBuilder::new(source, e)
-                        .optional_label(label)
-                        .build();
-                    Err(diagnostic.into())
+        let (constructor_callable_resolver, constructor_callables) =
+            match resolvers::resolve_constructors(
+                &constructor_paths,
+                &mut krate_collection,
+                &package_graph,
+            ) {
+                Ok((resolver, constructors)) => (resolver, constructors),
+                Err(e) => {
+                    return Err(e.into_diagnostic(
+                        &resolved_paths2identifiers,
+                        |identifiers| app_blueprint.constructor_locations[identifiers].clone(),
+                        &package_graph,
+                        CallableType::Constructor,
+                    )?);
                 }
             };
+
+        let mut constructors: IndexMap<ResolvedType, Constructor> = IndexMap::new();
+        for (output_type, callable) in constructor_callables.into_iter() {
+            let constructor = match callable.try_into() {
+                Ok(c) => c,
+                Err(e) => {
+                    return match e {
+                        ConstructorValidationError::CannotReturnTheUnitType(
+                            ref constructor_path,
+                        ) => {
+                            let raw_identifier = resolved_paths2identifiers[constructor_path]
+                                .iter()
+                                .next()
+                                .unwrap();
+                            let location = &app_blueprint.constructor_locations[raw_identifier];
+                            let source = ParsedSourceFile::new(
+                                location.file.as_str().into(),
+                                &package_graph.workspace(),
+                            )
+                            .map_err(miette::MietteError::IoError)?;
+                            let label = diagnostic::get_f_macro_invocation_span(
+                                &source.contents,
+                                &source.parsed,
+                                location,
+                            )
+                            .map(|s| s.labeled("The constructor was registered here".into()));
+                            let diagnostic = CompilerDiagnosticBuilder::new(source, e)
+                                .optional_label(label)
+                                .build();
+                            Err(diagnostic.into())
+                        }
+                    };
+                }
+            };
+            constructors.insert(output_type, constructor);
         }
 
         let (handler_resolver, handlers) = match resolvers::resolve_handlers(
@@ -222,14 +233,23 @@ impl App {
                 CallableDependencyGraph::new(callable.to_owned(), &constructors),
             );
         }
+        dbg!(&handler_dependency_graphs);
 
         let component2lifecycle = {
             let mut map = HashMap::<ResolvedType, Lifecycle>::new();
             for (output_type, constructor) in &constructors {
-                let callable_path = constructor_resolver.get_by_right(constructor).unwrap();
-                let raw_identifiers = constructor_paths2ids.get_by_left(callable_path).unwrap();
-                let lifecycle = app_blueprint.component_lifecycles[raw_identifiers].clone();
-                map.insert(output_type.to_owned(), lifecycle);
+                match constructor {
+                    Constructor::BorrowSharedReference(_) => {
+                        map.insert(output_type.to_owned(), Lifecycle::Transient);
+                    }
+                    Constructor::Callable(c) => {
+                        let callable_path = constructor_callable_resolver.get_by_right(c).unwrap();
+                        let raw_identifiers =
+                            constructor_paths2ids.get_by_left(callable_path).unwrap();
+                        let lifecycle = app_blueprint.component_lifecycles[raw_identifiers].clone();
+                        map.insert(output_type.to_owned(), lifecycle);
+                    }
+                }
             }
             map
         };
@@ -247,6 +267,7 @@ impl App {
                 )
             })
             .collect();
+        dbg!(&handler_call_graphs);
 
         let request_scoped_framework_bindings =
             framework_bindings(&package_graph, &mut krate_collection);
@@ -471,30 +492,4 @@ pub(crate) enum BuildError {
     HandlerError(#[from] Box<CallableResolutionError>),
     #[error(transparent)]
     GenericError(#[from] anyhow::Error),
-}
-
-/// Validate the signature of all registered constructors.
-fn validate_constructors(
-    constructors: &IndexMap<ResolvedType, Callable>,
-) -> Result<(), ConstructorValidationError> {
-    for (_output_type, constructor) in constructors.iter() {
-        validate_constructor(constructor)?;
-    }
-    Ok(())
-}
-
-/// Validate the signature of a constructor
-fn validate_constructor(constructor: &Callable) -> Result<(), ConstructorValidationError> {
-    if constructor.output.base_type == vec!["()"] {
-        return Err(ConstructorValidationError::CannotReturnTheUnitType(
-            constructor.path.to_owned(),
-        ));
-    }
-    Ok(())
-}
-
-#[derive(thiserror::Error, Debug)]
-pub(crate) enum ConstructorValidationError {
-    #[error("I expect all constructors to return *something*.\nThis constructor doesn't, it returns the unit type - `()`.")]
-    CannotReturnTheUnitType(ResolvedPath),
 }

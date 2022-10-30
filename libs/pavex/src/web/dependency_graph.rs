@@ -1,7 +1,10 @@
+use std::collections::HashSet;
+
+use indexmap::IndexMap;
+
 use crate::graphmap::GraphMap;
 use crate::language::{Callable, ResolvedType};
-use indexmap::IndexMap;
-use std::collections::HashSet;
+use crate::web::constructors::Constructor;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) enum DependencyGraphNode {
@@ -32,7 +35,7 @@ pub(crate) struct CallableDependencyGraph {
 impl CallableDependencyGraph {
     /// Starting from a callable, build up its dependency graph: what types it needs to be fed as
     /// inputs and what types are needed, in turn, to construct those inputs.
-    pub fn new(callable: Callable, constructors: &IndexMap<ResolvedType, Callable>) -> Self {
+    pub fn new(callable: Callable, constructors: &IndexMap<ResolvedType, Constructor>) -> Self {
         fn process_callable(
             callable: &Callable,
             graph: &mut GraphMap<DependencyGraphNode>,
@@ -41,12 +44,22 @@ impl CallableDependencyGraph {
             resolved_nodes: &HashSet<u32>,
         ) {
             for input_type in &callable.inputs {
-                let input_type = input_type.to_owned();
-                let input_node_index = graph.add_node(DependencyGraphNode::Type(input_type));
-                graph.update_edge(input_node_index, output_node_index);
-                if !resolved_nodes.contains(&input_node_index) {
-                    stack.push(input_node_index);
-                }
+                process_input_type(input_type, graph, output_node_index, stack, resolved_nodes)
+            }
+        }
+
+        fn process_input_type(
+            input_type: &ResolvedType,
+            graph: &mut GraphMap<DependencyGraphNode>,
+            output_node_index: u32,
+            stack: &mut Vec<u32>,
+            resolved_nodes: &HashSet<u32>,
+        ) {
+            let input_type = input_type.to_owned();
+            let input_node_index = graph.add_node(DependencyGraphNode::Type(input_type));
+            graph.update_edge(input_node_index, output_node_index);
+            if !resolved_nodes.contains(&input_node_index) {
+                stack.push(input_node_index);
             }
         }
 
@@ -69,13 +82,24 @@ impl CallableDependencyGraph {
                 }
                 DependencyGraphNode::Type(type_) => {
                     if let Some(constructor) = constructors.get(type_) {
-                        process_callable(
-                            constructor,
-                            &mut graph,
-                            node_index,
-                            &mut stack,
-                            &resolved_nodes,
-                        );
+                        match constructor {
+                            Constructor::BorrowSharedReference(shared_ref) => process_input_type(
+                                &shared_ref.input,
+                                &mut graph,
+                                node_index,
+                                &mut stack,
+                                &resolved_nodes,
+                            ),
+                            Constructor::Callable(callable) => {
+                                process_callable(
+                                    callable,
+                                    &mut graph,
+                                    node_index,
+                                    &mut stack,
+                                    &resolved_nodes,
+                                );
+                            }
+                        }
                     }
                 }
             }
