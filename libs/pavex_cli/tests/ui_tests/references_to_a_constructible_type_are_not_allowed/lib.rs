@@ -1,19 +1,26 @@
 use pavex_builder::{f, AppBlueprint, Lifecycle};
 
-pub struct Logger;
+pub struct Singleton;
 
-impl Logger {
-    pub fn new() -> Logger {
+impl Singleton {
+    pub fn new() -> Singleton {
         todo!()
     }
 }
 
-pub fn stream_file(input: &Logger) -> http::Response<hyper::body::Body> {
+pub struct RequestScoped;
+
+pub fn request_scoped() -> RequestScoped {
+    todo!()
+}
+
+pub fn stream_file(s: &Singleton, r: &RequestScoped) -> http::Response<hyper::body::Body> {
     todo!()
 }
 
 pub fn blueprint() -> AppBlueprint {
     AppBlueprint::new()
-        .constructor(f!(crate::Logger::new), Lifecycle::Singleton)
+        .constructor(f!(crate::Singleton::new), Lifecycle::Singleton)
+        .constructor(f!(crate::request_scoped), Lifecycle::RequestScoped)
         .route(f!(crate::stream_file), "/home")
 }
