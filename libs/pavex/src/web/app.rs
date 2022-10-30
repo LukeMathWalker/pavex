@@ -199,6 +199,17 @@ impl App {
             constructors.insert(output_type, constructor);
         }
 
+        // For each non-reference type, register an inlineable constructor that transforms
+        // `T` in `&T`.
+        let constructibile_types: Vec<ResolvedType> =
+            constructors.keys().map(|t| t.to_owned()).collect();
+        for t in constructibile_types {
+            if !t.is_shared_reference {
+                let c = Constructor::shared_borrow(t);
+                constructors.insert(c.output_type().to_owned(), c);
+            }
+        }
+
         let (handler_resolver, handlers) = match resolvers::resolve_handlers(
             &handler_paths,
             &mut krate_collection,
@@ -233,7 +244,6 @@ impl App {
                 CallableDependencyGraph::new(callable.to_owned(), &constructors),
             );
         }
-        dbg!(&handler_dependency_graphs);
 
         let component2lifecycle = {
             let mut map = HashMap::<ResolvedType, Lifecycle>::new();
@@ -267,7 +277,6 @@ impl App {
                 )
             })
             .collect();
-        dbg!(&handler_call_graphs);
 
         let request_scoped_framework_bindings =
             framework_bindings(&package_graph, &mut krate_collection);

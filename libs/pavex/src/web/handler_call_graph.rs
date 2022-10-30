@@ -223,13 +223,25 @@ pub(crate) fn codegen<'a>(
                                 )?;
                                 blocks.insert(node_index, block);
                             }
-                            Constructor::BorrowSharedReference(shared_ref) => {
-                                let variable_name =
-                                    parameter_bindings.get(&shared_ref.input).unwrap();
-                                blocks.insert(
-                                    node_index,
-                                    Fragment::BorrowSharedReference(variable_name.to_owned()),
-                                );
+                            Constructor::BorrowSharedReference(_) => {
+                                let dependencies =
+                                    call_graph.neighbors_directed(node_index, Direction::Incoming);
+                                let dependency_indexes: Vec<_> = dependencies.collect();
+                                assert_eq!(1, dependency_indexes.len());
+                                let dependency_index = dependency_indexes.first().unwrap();
+                                match &blocks[dependency_index] {
+                                    Fragment::VariableReference(binding_name) => {
+                                        blocks.insert(
+                                            node_index,
+                                            Fragment::BorrowSharedReference(
+                                                binding_name.to_owned(),
+                                            ),
+                                        );
+                                    }
+                                    Fragment::BorrowSharedReference(_)
+                                    | Fragment::Statement(_)
+                                    | Fragment::Block(_) => unreachable!(),
+                                }
                             }
                         }
                     }

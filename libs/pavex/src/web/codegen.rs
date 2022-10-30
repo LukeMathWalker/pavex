@@ -175,7 +175,6 @@ fn get_request_dispatcher(
                 is_shared_reference: false,
                 ..type_.clone()
             };
-            dbg!(&request_scoped_bindings);
             if let Some(field_name) = singleton_bindings.get_by_right(&inner_type) {
                 if is_shared_reference {
                     quote! {
