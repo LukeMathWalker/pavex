@@ -166,9 +166,20 @@ fn get_request_dispatcher(
     for (route_id, (handler, handler_input_types)) in route_id2handler {
         let handler_function_name = &handler.sig.ident;
         let input_parameters = handler_input_types.iter().map(|type_| {
-            if let Some(field_name) = singleton_bindings.get_by_right(type_) {
-                quote! {
-                    server_state.application_state.#field_name.clone()
+            let is_shared_reference = type_.is_shared_reference;
+            let inner_type = ResolvedType {
+                is_shared_reference: false,
+                ..type_.clone()
+            };
+            if let Some(field_name) = singleton_bindings.get_by_right(&inner_type) {
+                if is_shared_reference {
+                    quote! {
+                        &server_state.application_state.#field_name
+                    }
+                } else {
+                    quote! {
+                        server_state.application_state.#field_name.clone()
+                    }
                 }
             } else {
                 let field_name = request_scoped_bindings.get_by_right(type_).unwrap();

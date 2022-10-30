@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fmt::Debug;
 use std::io::{BufWriter, Write};
@@ -391,11 +392,20 @@ fn get_required_singleton_types<'a>(
     let mut singletons_to_be_built = HashSet::new();
     for (import_path, handler_call_graph) in handler_call_graphs {
         for required_input in &handler_call_graph.input_parameter_types {
-            if !types_provided_by_the_framework.contains_right(required_input) {
-                match component2lifecycle.get(required_input) {
+            // We don't care if the type is required as a shared reference or an owned instance here.
+            // We care about the underlying type.
+            let required_input = if required_input.is_shared_reference {
+                let mut r = required_input.clone();
+                r.is_shared_reference = false;
+                Cow::Owned(r)
+            } else {
+                Cow::Borrowed(required_input)
+            };
+            if !types_provided_by_the_framework.contains_right(&required_input) {
+                match component2lifecycle.get(&required_input) {
                     Some(lifecycle) => {
                         if lifecycle == &Lifecycle::Singleton {
-                            singletons_to_be_built.insert(required_input.to_owned());
+                            singletons_to_be_built.insert(required_input.into_owned());
                         }
                     }
                     None => {
