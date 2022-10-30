@@ -249,8 +249,10 @@ impl App {
             let mut map = HashMap::<ResolvedType, Lifecycle>::new();
             for (output_type, constructor) in &constructors {
                 match constructor {
-                    Constructor::BorrowSharedReference(_) => {
-                        map.insert(output_type.to_owned(), Lifecycle::Transient);
+                    Constructor::BorrowSharedReference(s) => {
+                        // The lifecycle of a references matches the lifecycle of the type
+                        // it refers to.
+                        map.insert(output_type.to_owned(), map[&s.input].clone());
                     }
                     Constructor::Callable(c) => {
                         let callable_path = constructor_callable_resolver.get_by_right(c).unwrap();
