@@ -256,14 +256,14 @@ fn run_test(test: &libtest_mimic::Test<TestData>) -> Outcome {
         Ok(c) => match _run_test(&c, test) {
             Ok(TestOutcome {
                 outcome: Outcome::Failed { msg },
-                source_generation_output,
+                last_command_output,
             }) => Outcome::Failed {
                 msg: msg.map(|msg| {
                     enrich_failure_message(
                         &c,
                         format!(
                             "{msg}\n\n--- STDOUT:\n{}\n--- STDERR:\n{}",
-                            source_generation_output.stdout, source_generation_output.stderr
+                            last_command_output.stdout, last_command_output.stderr
                         ),
                     )
                 }),
@@ -291,8 +291,8 @@ fn _run_test(
     // Generate the application code
     let output = std::process::Command::new("cargo")
         .env("RUSTFLAGS", "-Awarnings")
-        .arg("r")
-        .arg("-q")
+        .arg("run")
+        .arg("--quiet")
         .current_dir(&test.data.runtime_directory)
         .output()
         .unwrap();
@@ -306,7 +306,7 @@ fn _run_test(
                 outcome: Outcome::Failed {
                     msg: Some("We failed to generate the application code.".to_string()),
                 },
-                source_generation_output,
+                last_command_output: source_generation_output,
             }),
             ExpectedOutcome::Fail => {
                 let stderr_snapshot = SnapshotTest::new(expectations_directory.join("stderr.txt"));
@@ -319,12 +319,12 @@ fn _run_test(
                             msg: Some(
                                 "The failure message returned by code generation does not match what we expected".into())
                         },
-                        source_generation_output,
+                        last_command_output: source_generation_output,
                     });
                 }
                 Ok(TestOutcome {
                     outcome: Outcome::Passed,
-                    source_generation_output,
+                    last_command_output: source_generation_output,
                 })
             }
         };
@@ -333,7 +333,7 @@ fn _run_test(
             outcome: Outcome::Failed {
                 msg: Some("We expected code generation to fail, but it succeeded!".into()),
             },
-            source_generation_output,
+            last_command_output: source_generation_output,
         });
     };
 
@@ -348,7 +348,7 @@ fn _run_test(
                         .into(),
                 ),
             },
-            source_generation_output,
+            last_command_output: source_generation_output,
         });
     }
 
@@ -366,19 +366,38 @@ fn _run_test(
             outcome: Outcome::Failed {
                 msg: Some("The generated application code does not match what we expected".into()),
             },
-            source_generation_output,
+            last_command_output: source_generation_output,
+        });
+    }
+
+    // Check that the generated code compiles
+    let output = std::process::Command::new("cargo")
+        .env("RUSTFLAGS", "-Awarnings")
+        .arg("check")
+        .arg("--workspace")
+        .arg("--quiet")
+        .current_dir(&test.data.runtime_directory)
+        .output()
+        .unwrap();
+    let check_output: CommandOutput = (&output).try_into()?;
+    if !output.status.success() {
+        return Ok(TestOutcome {
+            outcome: Outcome::Failed {
+                msg: Some("The generated application code does not compile.".into()),
+            },
+            last_command_output: check_output,
         });
     }
 
     Ok(TestOutcome {
         outcome: Outcome::Passed,
-        source_generation_output,
+        last_command_output: check_output,
     })
 }
 
 struct TestOutcome {
     outcome: Outcome,
-    source_generation_output: CommandOutput,
+    last_command_output: CommandOutput,
 }
 
 /// A refined `std::process::Output` that assumes that both stderr and stdout are valid UTF8.
