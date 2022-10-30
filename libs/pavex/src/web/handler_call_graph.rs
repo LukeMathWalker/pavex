@@ -263,9 +263,31 @@ pub(crate) fn codegen<'a>(
                                             ),
                                         );
                                     }
-                                    Fragment::BorrowSharedReference(_)
-                                    | Fragment::Statement(_)
-                                    | Fragment::Block(_) => unreachable!(),
+                                    Fragment::Block(b) => {
+                                        blocks.insert(
+                                            node_index,
+                                            Fragment::Block(
+                                                syn::parse2(quote! {
+                                                    &#b
+                                                })
+                                                .unwrap(),
+                                            ),
+                                        );
+                                    }
+                                    Fragment::Statement(b) => {
+                                        blocks.insert(
+                                            node_index,
+                                            Fragment::Statement(
+                                                syn::parse2(quote! {
+                                                    &#b;
+                                                })
+                                                .unwrap(),
+                                            ),
+                                        );
+                                    }
+                                    Fragment::BorrowSharedReference(_) => {
+                                        unreachable!()
+                                    }
                                 }
                             }
                         }

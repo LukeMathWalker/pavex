@@ -10,6 +10,7 @@ use quote::{format_ident, quote, ToTokens};
 use crate::language::{Callable, ResolvedType};
 use crate::web::dependency_graph::DependencyGraphNode;
 
+#[derive(Debug)]
 pub(crate) enum Fragment {
     VariableReference(syn::Ident),
     BorrowSharedReference(syn::Ident),

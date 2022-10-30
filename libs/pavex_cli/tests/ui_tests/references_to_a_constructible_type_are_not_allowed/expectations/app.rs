@@ -66,5 +66,6 @@ fn route_request(
 }
 pub fn route_handler_0(v2: &app::Singleton) -> http::Response<hyper::Body> {
     let v0 = app::request_scoped();
-    app::stream_file(v2, v1)
+    let v3 = &app::transient();
+    app::stream_file(v2, v1, v3)
 }
