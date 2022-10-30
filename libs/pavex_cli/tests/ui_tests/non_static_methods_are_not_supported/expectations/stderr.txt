@@ -15,6 +15,6 @@ Error:
  5 │ impl Streamer {
  6 │     pub fn stream_file(&self) -> http::Response<hyper::body::Body> {
    ·                        ──┬──
-   ·                          ╰── The parameter type that I cannot handle
+   ·                          ╰── I do not know how handle this parameter
  7 │         todo!()
    ╰────

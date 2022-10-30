@@ -331,7 +331,7 @@ impl CallableResolutionError {
                             (s.offset() + span.offset()).into(),
                             s.len().into(),
                         )
-                        .labeled("The parameter type that I cannot handle".into());
+                        .labeled("I do not know how handle this parameter".into());
                         let source_code = NamedSource::new(
                             &definition_span.filename.to_str().unwrap(),
                             source_contents,
