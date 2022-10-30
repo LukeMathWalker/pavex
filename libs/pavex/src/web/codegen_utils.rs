@@ -100,7 +100,7 @@ pub(crate) fn codegen_call(
     package_id2name: &BiHashMap<&PackageId, String>,
 ) -> Result<syn::ExprCall, anyhow::Error> {
     let callable_path: syn::ExprPath =
-        syn::parse_str(&callable.callable_fq_path.render_path(package_id2name)).unwrap();
+        syn::parse_str(&callable.path.render_path(package_id2name)).unwrap();
     let parameters = callable
         .inputs
         .iter()

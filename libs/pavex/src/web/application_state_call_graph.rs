@@ -37,12 +37,13 @@ impl ApplicationStateCallGraph {
         // We build a "mock" callable that has the right inputs in order to drive the machinery
         // that builds the dependency graph.
         let application_state_constructor = Callable {
-            output_fq_path: ResolvedType {
+            output: ResolvedType {
                 package_id: PackageId::new(GENERATED_APP_PACKAGE_ID),
                 base_type: vec!["crate".into(), "ApplicationState".into()],
                 generic_arguments: vec![],
+                is_shared_reference: false,
             },
-            callable_fq_path: ResolvedPath {
+            path: ResolvedPath {
                 segments: vec![
                     ResolvedPathSegment {
                         ident: "crate".into(),
@@ -211,7 +212,7 @@ impl ApplicationStateCallGraph {
                     let variable_type = type_.syn_type(package_id2name);
                     quote! { #variable_name: #variable_type }
                 });
-                let output_type = handler.output_fq_path.syn_type(package_id2name);
+                let output_type = handler.output.syn_type(package_id2name);
                 let singleton_constructors = singleton_constructors.values();
                 let b = match b {
                     Fragment::VariableReference(_) => unreachable!(),
@@ -301,7 +302,7 @@ pub(crate) fn codegen_struct_init_block(
         }
     }
     let constructor_invocation = codegen_struct_init(
-        &callable.callable_fq_path,
+        &callable.path,
         struct_fields,
         &dependency_bindings,
         package_id2name,

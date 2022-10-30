@@ -17,6 +17,7 @@ pub struct ResolvedType {
     pub package_id: PackageId,
     pub base_type: ImportPath,
     pub generic_arguments: Vec<ResolvedType>,
+    pub is_shared_reference: bool,
 }
 
 fn serialize_package_id<S>(package_id: &PackageId, serializer: S) -> Result<S::Ok, S::Error>

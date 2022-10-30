@@ -56,10 +56,7 @@ pub(crate) fn codegen_app(
     let mut route_id2handler = HashMap::new();
     for (route_id, (path, handler)) in router.iter().enumerate() {
         route_id2path.insert(route_id as u32, path.clone());
-        route_id2handler.insert(
-            route_id as u32,
-            handler_functions[&handler.callable_fq_path].to_owned(),
-        );
+        route_id2handler.insert(route_id as u32, handler_functions[&handler.path].to_owned());
     }
 
     let router_init = get_router_init(&route_id2path);
@@ -357,11 +354,11 @@ fn collect_package_ids<'a>(
 
 fn collect_callable_package_ids<'a>(package_ids: &mut IndexSet<&'a PackageId>, c: &'a Callable) {
     // What about the generic parameters of the callable?
-    package_ids.insert(&c.callable_fq_path.package_id);
+    package_ids.insert(&c.path.package_id);
     for input in &c.inputs {
         collect_type_package_ids(package_ids, input);
     }
-    collect_type_package_ids(package_ids, &c.output_fq_path);
+    collect_type_package_ids(package_ids, &c.output);
 }
 
 fn collect_type_package_ids<'a>(package_ids: &mut IndexSet<&'a PackageId>, t: &'a ResolvedType) {

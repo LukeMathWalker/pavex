@@ -271,7 +271,7 @@ pub(crate) fn codegen<'a>(
                 let variable_type = type_.syn_type(package_id2name);
                 quote! { #variable_name: #variable_type }
             });
-            let output_type = handler.output_fq_path.syn_type(package_id2name);
+            let output_type = handler.output.syn_type(package_id2name);
             let scoped_constructors = scoped_constructors.values();
             let b = match b {
                 Fragment::VariableReference(_) => unreachable!(),

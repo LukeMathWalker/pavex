@@ -42,7 +42,7 @@ pub(crate) fn resolve_constructors(
     for constructor_identifiers in constructor_paths {
         let constructor =
             resolve_callable(krate_collection, constructor_identifiers, package_graph)?;
-        constructors.insert(constructor.output_fq_path.clone(), constructor.clone());
+        constructors.insert(constructor.output.clone(), constructor.clone());
         resolution_map.insert(constructor_identifiers.to_owned(), constructor);
     }
     Ok((resolution_map, constructors))
@@ -117,10 +117,27 @@ fn process_type(
                 package_id: type_package_id,
                 base_type,
                 generic_arguments: generics,
+                is_shared_reference: false,
             })
         }
+        Type::BorrowedRef {
+            lifetime: _,
+            mutable,
+            type_,
+        } => {
+            if *mutable {
+                return Err(anyhow!(
+                    "Mutable references are not allowed. You can only pass an argument \
+                    by value (`move` semantic) or via a shared reference (`&MyType`)",
+                ));
+            }
+            let mut resolved_type =
+                process_type(type_, used_by_package_id, package_graph, krate_collection)?;
+            resolved_type.is_shared_reference = true;
+            Ok(resolved_type)
+        }
         _ => Err(anyhow!(
-            "We cannot handle inputs of this kind ({:?}) yet. Sorry!",
+            "I cannot handle inputs of this kind ({:?}) yet. Sorry!",
             type_
         )),
     }
@@ -198,6 +215,7 @@ fn resolve_callable(
             package_id: PackageId::new(STD_PACKAGE_ID),
             base_type: vec!["()".into()],
             generic_arguments: vec![],
+            is_shared_reference: false,
         },
         Some(output_type) => {
             match process_type(
@@ -220,8 +238,8 @@ fn resolve_callable(
         }
     };
     Ok(Callable {
-        output_fq_path: output_type_path,
-        callable_fq_path: callable_path.to_owned(),
+        output: output_type_path,
+        path: callable_path.to_owned(),
         inputs: parameter_paths,
     })
 }

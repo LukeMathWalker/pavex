@@ -217,7 +217,7 @@ impl App {
         let mut handler_dependency_graphs = IndexMap::with_capacity(handlers.len());
         for callable in &handlers {
             handler_dependency_graphs.insert(
-                callable.callable_fq_path.clone(),
+                callable.path.clone(),
                 CallableDependencyGraph::new(callable.to_owned(), &constructors),
             );
         }
@@ -313,7 +313,7 @@ impl App {
         package_ids2deps.insert(&std_package_id, "std".into());
 
         for (route, handler) in &self.router {
-            let handler_call_graph = &self.handler_call_graphs[&handler.callable_fq_path];
+            let handler_call_graph = &self.handler_call_graphs[&handler.path];
             handler_graphs.insert(
                 route.to_owned(),
                 handler_call_graph
@@ -441,6 +441,7 @@ fn framework_bindings(
             package_id,
             base_type: type_base_path,
             generic_arguments: vec![],
+            is_shared_reference: false,
         }
     }
 
@@ -474,9 +475,9 @@ fn validate_constructors(
 
 /// Validate the signature of a constructor
 fn validate_constructor(constructor: &Callable) -> Result<(), ConstructorValidationError> {
-    if constructor.output_fq_path.base_type == vec!["()"] {
+    if constructor.output.base_type == vec!["()"] {
         return Err(ConstructorValidationError::CannotReturnTheUnitType(
-            constructor.callable_fq_path.to_owned(),
+            constructor.path.to_owned(),
         ));
     }
     Ok(())
