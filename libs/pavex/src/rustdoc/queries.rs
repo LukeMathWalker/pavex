@@ -1,173 +1,35 @@
 use std::collections::{BTreeSet, HashMap};
-use std::default::Default;
 use std::fmt::{Display, Formatter};
-use std::path::{Path, PathBuf};
 
-use anyhow::{anyhow, Context};
-use guppy::graph::{PackageGraph, PackageMetadata, PackageSource};
+use anyhow::anyhow;
+use guppy::graph::PackageGraph;
 use guppy::{PackageId, Version};
 use rustdoc_types::{ItemEnum, Visibility};
 
 use crate::language::ImportPath;
-
-#[derive(Debug, thiserror::Error)]
-#[error("I failed to retrieve information about the public types of a package in your workspace ('{package_spec}').")]
-pub struct CannotGetCrateData {
-    pub package_spec: String,
-    #[source]
-    pub source: anyhow::Error,
-}
-
-pub const STD_PACKAGE_ID: &str = "std";
-pub const TOOLCHAIN_CRATES: [&str; 3] = ["std", "core", "alloc"];
-
-pub fn get_crate_data(
-    root_folder: &Path,
-    package_id_spec: &PackageIdSpecification,
-) -> Result<rustdoc_types::Crate, CannotGetCrateData> {
-    // Some crates are not compiled as part of the dependency tree of the current workspace.
-    // They are instead bundled as part of Rust's toolchain and automatically available for import
-    // and usage in your crate: the standard library (`std`), `core` (a smaller subset of `std`
-    // that does not require an allocator), `alloc` (a smaller subset of `std` that assumes you
-    // can allocate).
-    // Since those crates are pre-compiled (and somewhat special), we can't generate their
-    // documentation on the fly. We assume that their JSON docs have been pre-computed and are
-    // available for us to look at.
-    if TOOLCHAIN_CRATES.contains(&package_id_spec.name.as_str()) {
-        get_toolchain_crate_data(package_id_spec)
-    } else {
-        _get_crate_data(root_folder, package_id_spec)
-    }
-    .map_err(|e| CannotGetCrateData {
-        package_spec: package_id_spec.to_string(),
-        source: e,
-    })
-}
-
-fn get_toolchain_crate_data(
-    package_id_spec: &PackageIdSpecification,
-) -> Result<rustdoc_types::Crate, anyhow::Error> {
-    let root_folder = get_json_docs_root_folder_via_rustup()?;
-    let json_path = root_folder.join(format!("{}.json", package_id_spec.name));
-    let json = fs_err::read_to_string(json_path).with_context(|| {
-        format!(
-            "Failed to retrieve the JSON docs for {}",
-            package_id_spec.name
-        )
-    })?;
-    serde_json::from_str::<rustdoc_types::Crate>(&json)
-        .with_context(|| {
-            format!(
-                "Failed to deserialize the JSON docs for {}",
-                package_id_spec.name
-            )
-        })
-        .map_err(Into::into)
-}
-
-fn get_json_docs_root_folder_via_rustup() -> Result<PathBuf, anyhow::Error> {
-    let nightly_toolchain = get_nightly_toolchain_root_folder_via_rustup()?;
-    Ok(nightly_toolchain.join("share/doc/rust/json"))
-}
-
-/// In order to determine where all components attached to the nightly toolchain are stored,
-/// we ask `rustup` to tell us where the `cargo` binary its location.
-/// It looks like its location is always going to be `<toolchain root folder>/bin/cargo`, so
-/// we compute `<toolchain root folder>` by chopping off the final two components of the path
-/// returned by `rustup`.
-fn get_nightly_toolchain_root_folder_via_rustup() -> Result<PathBuf, anyhow::Error> {
-    let mut cmd = std::process::Command::new("rustup");
-    cmd.arg("which")
-        .arg("--toolchain")
-        .arg("nightly")
-        .arg("cargo");
-
-    let output = cmd.output().with_context(|| {
-        format!(
-            "Failed to run a `rustup` command. Is `rustup` installed?\n{:?}",
-            cmd
-        )
-    })?;
-
-    if !output.status.success() {
-        anyhow::bail!(
-            "An invocation of `rustup` exited with non-zero status code.\n{:?}",
-            cmd
-        );
-    }
-    let path = std::str::from_utf8(&output.stdout)
-        .with_context(|| {
-            format!(
-                "An invocation of `rustup` returned non-UTF8 data as output.\n{:?}",
-                cmd
-            )
-        })?
-        .trim();
-    let path = Path::new(path);
-    debug_assert!(
-        path.ends_with("bin/cargo"),
-        "The path to the `cargo` binary for nightly does not have the expected structure: {:?}",
-        path
-    );
-    Ok(path.parent().unwrap().parent().unwrap().to_path_buf())
-}
-
-fn _get_crate_data(
-    target_directory: &Path,
-    package_id_spec: &PackageIdSpecification,
-) -> Result<rustdoc_types::Crate, anyhow::Error> {
-    // TODO: check that we have the nightly toolchain available beforehand in order to return
-    // a good error.
-    let mut cmd = std::process::Command::new("cargo");
-    cmd.arg("+nightly")
-        .arg("rustdoc")
-        .arg("-q")
-        .arg("-p")
-        .arg(package_id_spec.to_string())
-        .arg("--lib")
-        .arg("--")
-        .arg("--document-private-items")
-        .arg("-Zunstable-options")
-        .arg("-wjson");
-
-    let status = cmd
-        .status()
-        .with_context(|| format!("Failed to run `cargo rustdoc`.\n{:?}", cmd))?;
-
-    if !status.success() {
-        anyhow::bail!(
-            "An invocation of `cargo rustdoc` exited with non-zero status code.\n{:?}",
-            cmd
-        );
-    }
-
-    let json_path = target_directory
-        .join("doc")
-        .join(format!("{}.json", &package_id_spec.name));
-
-    let json = fs_err::read_to_string(json_path).with_context(|| {
-        format!(
-            "Failed to read the output of a `cargo rustdoc` invocation.\n{:?}",
-            cmd
-        )
-    })?;
-    let krate = serde_json::from_str::<rustdoc_types::Crate>(&json).with_context(|| {
-        format!(
-            "Failed to deserialize the output of a `cargo rustdoc` invocation.\n{:?}",
-            cmd
-        )
-    })?;
-    Ok(krate)
-}
+use crate::rustdoc;
+use crate::rustdoc::package_id_spec::PackageIdSpecification;
+use crate::rustdoc::{CannotGetCrateData, TOOLCHAIN_CRATES};
 
 #[derive(Debug, Clone)]
+/// The main entrypoint for accessing the documentation of the crates
+/// in a specific `PackageGraph`.
+///
+/// It takes care of:
+/// - Computing and caching the JSON documentation for crates in the graph;
+/// - Execute queries that span the documentation of multiple crates (e.g. following crate
+///   re-exports or star re-exports).
 pub struct CrateCollection(HashMap<String, Crate>, PackageGraph);
 
 impl CrateCollection {
+    /// Initialise the collection for a `PackageGraph`.
     pub fn new(package_graph: PackageGraph) -> Self {
         Self(Default::default(), package_graph)
     }
 
+    /// Compute the documentation for the crate associated with a specific `PackageId`.
+    ///
+    /// It will be retrieved from [`CrateCollection`]'s internal cache if it was computed before.
     pub fn get_or_compute_by_id(
         &mut self,
         package_id: &PackageId,
@@ -183,7 +45,7 @@ impl CrateCollection {
             PackageIdSpecification::new(&package_metadata)
         };
         if self.0.get(&package_spec.to_string()).is_none() {
-            let krate = get_crate_data(
+            let krate = rustdoc::get_crate_data(
                 self.1.workspace().target_directory().as_std_path(),
                 &package_spec,
             )?;
@@ -263,69 +125,6 @@ impl CrateCollection {
         }
         .to_owned();
         Ok(base_type)
-    }
-}
-
-/// A selector that follows the [package ID specification](https://doc.rust-lang.org/cargo/reference/pkgid-spec.html).
-/// It is used as argument to the `-p`/`--package` flag in `cargo`'s commands.
-pub struct PackageIdSpecification {
-    source: Option<String>,
-    name: String,
-    version: Option<Version>,
-}
-
-impl PackageIdSpecification {
-    pub fn new(metadata: &PackageMetadata) -> Self {
-        let source = match metadata.source() {
-            PackageSource::Workspace(source) | PackageSource::Path(source) => {
-                let source = source.strip_prefix("path+").unwrap_or(source);
-                if source.as_str().is_empty() {
-                    source.to_string()
-                } else {
-                    let source = if source.is_relative() {
-                        metadata.graph().workspace().root().join(source).to_string()
-                    } else {
-                        source.to_string()
-                    };
-                    format!("file:///{}", source)
-                }
-            }
-            PackageSource::External(source) => {
-                let s = if let Some(source) = source.strip_prefix("git+") {
-                    source
-                } else if let Some(source) = source.strip_prefix("registry+") {
-                    source
-                } else {
-                    source
-                };
-                s.to_owned()
-            }
-        };
-        let source = if source.is_empty() {
-            None
-        } else {
-            Some(source)
-        };
-        let name = metadata.name().to_owned();
-        let version = Some(metadata.version().to_owned());
-        Self {
-            source,
-            name,
-            version,
-        }
-    }
-}
-
-impl Display for PackageIdSpecification {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        if let Some(source) = &self.source {
-            write!(f, "{}#", source)?;
-        }
-        write!(f, "{}", &self.name)?;
-        if let Some(version) = &self.version {
-            write!(f, "@{}", version)?;
-        }
-        Ok(())
     }
 }
 

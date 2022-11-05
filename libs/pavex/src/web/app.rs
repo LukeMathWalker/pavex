@@ -17,7 +17,8 @@ use pavex_builder::{AppBlueprint, RawCallableIdentifiers};
 
 use crate::language::ResolvedPath;
 use crate::language::{Callable, ParseError, ResolvedType};
-use crate::rustdoc::{CrateCollection, STD_PACKAGE_ID};
+use crate::rustdoc::CrateCollection;
+use crate::rustdoc::STD_PACKAGE_ID;
 use crate::web::application_state_call_graph::ApplicationStateCallGraph;
 use crate::web::constructors::{Constructor, ConstructorValidationError};
 use crate::web::dependency_graph::CallableDependencyGraph;

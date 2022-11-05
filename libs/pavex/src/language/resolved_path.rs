@@ -12,7 +12,8 @@ use rustdoc_types::{Item, ItemEnum};
 use pavex_builder::RawCallableIdentifiers;
 
 use crate::language::{CallPath, InvalidCallPath};
-use crate::rustdoc::{CrateCollection, STD_PACKAGE_ID, TOOLCHAIN_CRATES};
+use crate::rustdoc::CrateCollection;
+use crate::rustdoc::{STD_PACKAGE_ID, TOOLCHAIN_CRATES};
 
 /// A resolved import path.
 ///

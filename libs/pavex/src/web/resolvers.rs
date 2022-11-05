@@ -17,7 +17,9 @@ use syn::{FnArg, ReturnType};
 use pavex_builder::{Location, RawCallableIdentifiers};
 
 use crate::language::{Callable, ResolvedPath, ResolvedType, UnknownPath};
-use crate::rustdoc::{CannotGetCrateData, CrateCollection, STD_PACKAGE_ID};
+use crate::rustdoc::CannotGetCrateData;
+use crate::rustdoc::CrateCollection;
+use crate::rustdoc::STD_PACKAGE_ID;
 use crate::web::diagnostic;
 use crate::web::diagnostic::{
     convert_rustdoc_span, convert_span, read_source_file, CompilerDiagnosticBuilder,
