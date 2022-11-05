@@ -470,7 +470,7 @@ fn framework_bindings(
         krate_collection: &mut CrateCollection,
     ) -> ResolvedType {
         let identifiers =
-            RawCallableIdentifiers::from_raw_parts(raw_path.into(), "pavex_runtime".into());
+            RawCallableIdentifiers::from_raw_parts(raw_path.into(), "pavex_builder".into());
         let path = ResolvedPath::parse(&identifiers, package_graph).unwrap();
         let type_ = path.find_type(krate_collection).unwrap();
         let package_id = krate_collection
@@ -487,10 +487,10 @@ fn framework_bindings(
         }
     }
 
-    // http::request::Request<hyper::body::Body>
-    let http_request = "http::request::Request";
+    // pavex_runtime::http::Request<pavex_runtime::hyper::Body>
+    let http_request = "pavex_runtime::http::Request";
     let mut http_request = process_framework_path(http_request, package_graph, krate_collection);
-    let hyper_body = "hyper::body::Body";
+    let hyper_body = "pavex_runtime::hyper::Body";
     let hyper_body = process_framework_path(hyper_body, package_graph, krate_collection);
     http_request.generic_arguments = vec![hyper_body];
 
