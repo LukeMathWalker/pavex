@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::path::PathBuf;
 
 use bimap::BiHashMap;
@@ -217,11 +217,15 @@ pub(crate) fn codegen_manifest<'a>(
     package_graph: &guppy::graph::PackageGraph,
     handler_call_graphs: &'a IndexMap<ResolvedPath, HandlerCallGraph>,
     application_state_call_graph: &'a ApplicationStateCallGraph,
+    request_scoped_framework_bindings: &'a BiHashMap<Ident, ResolvedType>,
+    codegen_types: &'a HashSet<ResolvedType>,
 ) -> (cargo_manifest::Manifest, BiHashMap<&'a PackageId, String>) {
     let (dependencies, package_ids2deps) = compute_dependencies(
         package_graph,
         handler_call_graphs,
         application_state_call_graph,
+        request_scoped_framework_bindings,
+        codegen_types,
     );
     let manifest = cargo_manifest::Manifest {
         dependencies: Some(dependencies),
@@ -273,11 +277,18 @@ fn compute_dependencies<'a>(
     package_graph: &guppy::graph::PackageGraph,
     handler_call_graphs: &'a IndexMap<ResolvedPath, HandlerCallGraph>,
     application_state_call_graph: &'a ApplicationStateCallGraph,
+    request_scoped_framework_bindings: &'a BiHashMap<Ident, ResolvedType>,
+    codegen_types: &'a HashSet<ResolvedType>,
 ) -> (
     BTreeMap<String, Dependency>,
     BiHashMap<&'a PackageId, String>,
 ) {
-    let package_ids = collect_package_ids(handler_call_graphs, application_state_call_graph);
+    let package_ids = collect_package_ids(
+        handler_call_graphs,
+        application_state_call_graph,
+        request_scoped_framework_bindings,
+        codegen_types,
+    );
     let mut external_crates: IndexMap<&str, IndexSet<(&Version, &PackageId, Option<PathBuf>)>> =
         Default::default();
     let workspace_root = package_graph.workspace().root();
@@ -340,8 +351,16 @@ fn compute_dependencies<'a>(
 fn collect_package_ids<'a>(
     handler_call_graphs: &'a IndexMap<ResolvedPath, HandlerCallGraph>,
     application_state_call_graph: &'a ApplicationStateCallGraph,
+    request_scoped_framework_bindings: &'a BiHashMap<Ident, ResolvedType>,
+    codegen_types: &'a HashSet<ResolvedType>,
 ) -> IndexSet<&'a PackageId> {
     let mut package_ids = IndexSet::new();
+    for t in request_scoped_framework_bindings.right_values() {
+        package_ids.insert(&t.package_id);
+    }
+    for t in codegen_types {
+        package_ids.insert(&t.package_id);
+    }
     for node in application_state_call_graph.call_graph.node_weights() {
         match node {
             DependencyGraphNode::Compute(c) => {

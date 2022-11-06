@@ -4,6 +4,6 @@ description = "pavex supports having multiple versions of the same crate in use 
 codegen = "pass"
 
 [dependencies]
-http_01 = { package = "http", version = "0.2" }
-http_02 = { package = "http", version = "0.1" }
+http_01 = { package = "http", version = "0.1" }
+http_02 = { package = "http", version = "0.2" }
 hyper = { version = "0.14", features = ["server", "http1", "http2"] }

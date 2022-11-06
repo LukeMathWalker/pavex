@@ -4,7 +4,7 @@
 //! [`CrateCollection`] is the key entrypoint.
 pub use compute::CannotGetCrateData;
 pub use package_id_spec::PackageIdSpecification;
-pub use queries::{Crate, CrateCollection, UnknownTypePath};
+pub use queries::{Crate, CrateCollection, TypeId, UnknownTypePath};
 
 mod compute;
 mod package_id_spec;

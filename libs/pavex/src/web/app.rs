@@ -38,6 +38,7 @@ pub struct App {
     handler_call_graphs: IndexMap<ResolvedPath, HandlerCallGraph>,
     application_state_call_graph: ApplicationStateCallGraph,
     request_scoped_framework_bindings: BiHashMap<Ident, ResolvedType>,
+    codegen_types: HashSet<ResolvedType>,
 }
 
 impl App {
@@ -298,13 +299,14 @@ impl App {
 
         let application_state_call_graph =
             ApplicationStateCallGraph::new(runtime_singletons, component2lifecycle, constructors);
-
+        let codegen_types = codegen_types(&package_graph, &mut krate_collection);
         Ok(App {
             package_graph,
             router,
             handler_call_graphs,
             application_state_call_graph,
             request_scoped_framework_bindings,
+            codegen_types,
         })
     }
 
@@ -316,6 +318,8 @@ impl App {
             &self.package_graph,
             &self.handler_call_graphs,
             &self.application_state_call_graph,
+            &self.request_scoped_framework_bindings,
+            &self.codegen_types,
         );
         let generated_app_package_id = PackageId::new(GENERATED_APP_PACKAGE_ID);
         let std_package_id = PackageId::new(STD_PACKAGE_ID);
@@ -339,6 +343,8 @@ impl App {
             &self.package_graph,
             &self.handler_call_graphs,
             &self.application_state_call_graph,
+            &self.request_scoped_framework_bindings,
+            &self.codegen_types,
         );
         // TODO: dry this up in one place.
         let generated_app_package_id = PackageId::new(GENERATED_APP_PACKAGE_ID);
@@ -465,29 +471,6 @@ fn framework_bindings(
     package_graph: &PackageGraph,
     krate_collection: &mut CrateCollection,
 ) -> BiHashMap<Ident, ResolvedType> {
-    fn process_framework_path(
-        raw_path: &str,
-        package_graph: &PackageGraph,
-        krate_collection: &mut CrateCollection,
-    ) -> ResolvedType {
-        let identifiers =
-            RawCallableIdentifiers::from_raw_parts(raw_path.into(), "pavex_builder".into());
-        let path = ResolvedPath::parse(&identifiers, package_graph).unwrap();
-        let type_ = path.find_type(krate_collection).unwrap();
-        let package_id = krate_collection
-            .get_defining_package_id_for_item(&path.package_id, &type_.id)
-            .unwrap();
-        let type_base_path = krate_collection
-            .get_canonical_import_path(&path.package_id, &type_.id)
-            .unwrap();
-        ResolvedType {
-            package_id,
-            base_type: type_base_path,
-            generic_arguments: vec![],
-            is_shared_reference: false,
-        }
-    }
-
     // pavex_runtime::http::Request<pavex_runtime::hyper::Body>
     let http_request = "pavex_runtime::http::Request";
     let mut http_request = process_framework_path(http_request, package_graph, krate_collection);
@@ -496,6 +479,37 @@ fn framework_bindings(
     http_request.generic_arguments = vec![hyper_body];
 
     BiHashMap::from_iter([(format_ident!("request"), http_request)].into_iter())
+}
+
+/// Return the set of types that will be used in the generated code to build a functional
+/// server scaffolding.  
+fn codegen_types(
+    package_graph: &PackageGraph,
+    krate_collection: &mut CrateCollection,
+) -> HashSet<ResolvedType> {
+    let anyhow_error = process_framework_path("anyhow::Error", package_graph, krate_collection);
+    HashSet::from([anyhow_error])
+}
+
+fn process_framework_path(
+    raw_path: &str,
+    package_graph: &PackageGraph,
+    krate_collection: &mut CrateCollection,
+) -> ResolvedType {
+    // We are relying on a little hack to anchor our search:
+    // all framework types belong to crates that are direct dependencies of `pavex_builder`.
+    // TODO: find a better way in the future.
+    let identifiers =
+        RawCallableIdentifiers::from_raw_parts(raw_path.into(), "pavex_builder".into());
+    let path = ResolvedPath::parse(&identifiers, package_graph).unwrap();
+    let type_id = path.find_type_id(krate_collection).unwrap();
+    let base_path = krate_collection.get_canonical_path_by_type_id(&type_id);
+    ResolvedType {
+        package_id: path.package_id,
+        base_type: base_path.to_vec(),
+        generic_arguments: vec![],
+        is_shared_reference: false,
+    }
 }
 
 #[derive(Debug, thiserror::Error)]
