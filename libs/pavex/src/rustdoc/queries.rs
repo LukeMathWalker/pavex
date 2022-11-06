@@ -4,7 +4,7 @@ use std::fmt::{Display, Formatter};
 use anyhow::anyhow;
 use guppy::graph::PackageGraph;
 use guppy::{PackageId, Version};
-use rustdoc_types::{ItemEnum, Visibility};
+use rustdoc_types::{ItemEnum, ItemKind, Visibility};
 
 use crate::language::ImportPath;
 use crate::rustdoc::package_id_spec::PackageIdSpecification;
@@ -62,7 +62,7 @@ impl CrateCollection {
     ) -> Result<PackageId, anyhow::Error> {
         let package_graph = self.1.clone();
         let used_by_krate = self.get_or_compute_by_id(used_by_package_id)?;
-        let type_summary = used_by_krate.get_summary_by_id(item_id)?;
+        let type_summary = used_by_krate.get_type_summary_by_type_id(item_id)?;
 
         let type_package_id = if type_summary.crate_id == 0 {
             used_by_krate.package_id().to_owned()
@@ -111,7 +111,7 @@ impl CrateCollection {
             self.get_defining_package_id_for_item(used_by_package_id, item_id)?;
 
         let used_by_krate = self.get_or_compute_by_id(used_by_package_id)?;
-        let type_summary = used_by_krate.get_summary_by_id(item_id)?;
+        let type_summary = used_by_krate.get_type_summary_by_type_id(item_id)?;
         let referenced_base_type_path = type_summary.path.clone();
         let base_type = if type_summary.crate_id == 0 {
             self.get_or_compute_by_id(used_by_package_id)?
@@ -119,7 +119,8 @@ impl CrateCollection {
         } else {
             // The crate where the type is actually defined.
             let source_crate = self.get_or_compute_by_id(&definition_package_id)?;
-            let type_definition_id = source_crate.get_id_by_path(&referenced_base_type_path)?;
+            let type_definition_id =
+                source_crate.get_type_id_by_path(&referenced_base_type_path)?;
             source_crate.get_importable_path(type_definition_id)
         }
         .to_owned();
@@ -142,7 +143,11 @@ pub struct Crate {
 }
 
 impl Crate {
-    fn new(krate: rustdoc_types::Crate, package_id: PackageId) -> Self {
+    fn new(
+        collection: &mut CrateCollection,
+        krate: rustdoc_types::Crate,
+        package_id: PackageId,
+    ) -> Self {
         let mut path_index: HashMap<_, _> = krate
             .paths
             .iter()
@@ -197,13 +202,16 @@ impl Crate {
         &self.package_id
     }
 
-    pub fn get_id_by_path(&self, path: &[String]) -> Result<&rustdoc_types::Id, UnknownTypePath> {
+    pub fn get_type_id_by_path(
+        &self,
+        path: &[String],
+    ) -> Result<&rustdoc_types::Id, UnknownTypePath> {
         self.path_index.get(path).ok_or_else(|| UnknownTypePath {
             type_path: path.to_owned(),
         })
     }
 
-    pub fn get_summary_by_id(
+    pub fn get_type_summary_by_type_id(
         &self,
         id: &rustdoc_types::Id,
     ) -> Result<&rustdoc_types::ItemSummary, anyhow::Error> {
@@ -216,7 +224,7 @@ impl Crate {
         })
     }
 
-    pub fn get_type_by_id(&self, id: &rustdoc_types::Id) -> &rustdoc_types::Item {
+    pub fn get_type_by_type_id(&self, id: &rustdoc_types::Id) -> &rustdoc_types::Item {
         let type_ = self.krate.index.get(id);
         if type_.is_none() {
             panic!(
@@ -232,8 +240,8 @@ impl Crate {
         &self,
         path: &[String],
     ) -> Result<&rustdoc_types::Item, UnknownTypePath> {
-        let id = self.get_id_by_path(path)?;
-        Ok(self.get_type_by_id(id))
+        let id = self.get_type_id_by_path(path)?;
+        Ok(self.get_type_by_type_id(id))
     }
 
     pub fn get_importable_path(&self, id: &rustdoc_types::Id) -> &[String] {
@@ -241,7 +249,7 @@ impl Crate {
             return path.iter().next().unwrap();
         }
 
-        let item = self.get_type_by_id(id);
+        let item = self.get_type_by_type_id(id);
         if item.crate_id != 0 {
             let external_crate = &self.krate.external_crates[&item.crate_id];
             panic!(
@@ -293,6 +301,27 @@ fn index_local_items<'a>(
                     None => {
                         if let Some(imported_summary) = krate.paths.get(imported_id) {
                             debug_assert!(imported_summary.crate_id != 0);
+                            if let ItemKind::Module = imported_summary.kind {
+                                // We are looking at a public re-export of another crate (e.g. `pub use hyper;`)
+                                // or one of its modules.
+                                // Due to how re-exports are handled in `rustdoc`, the re-exported
+                                // items inside that foreign module will not be found in the `index`
+                                // for this crate.
+                                // We add the re-exported module to the local items index, allowing
+                                // upstream searches to combine the local information with the
+                                // information coming from the documentation of the other crate
+                                if !i.glob {
+                                    current_path.push(&i.name);
+                                    let path =
+                                        current_path.into_iter().map(|s| s.to_string()).collect();
+                                    path_index
+                                        .entry(current_item_id.to_owned())
+                                        .or_default()
+                                        .insert(path);
+                                } else {
+                                    panic!("We cannot handle star re-exports from foreign modules/crates (e.g. `pub use hyper::*`) yet.")
+                                }
+                            }
                         } else {
                             // TODO: this is firing for std's JSON docs. File a bug report.
                             // panic!("The imported id ({}) is not listed in the index nor in the path section of rustdoc's JSON output", imported_id.0)
@@ -300,7 +329,9 @@ fn index_local_items<'a>(
                     }
                     Some(imported_item) => {
                         if let ItemEnum::Module(_) = imported_item.inner {
-                            current_path.push(&i.name);
+                            if !i.glob {
+                                current_path.push(&i.name);
+                            }
                         }
                         index_local_items(krate, current_path.clone(), path_index, imported_id);
                     }

@@ -174,10 +174,10 @@ impl ResolvedPath {
                 _ => return Err(UnknownPath(self.to_owned())),
             };
             for impl_block_id in impl_block_ids {
-                let impl_block = krate.get_type_by_id(impl_block_id);
+                let impl_block = krate.get_type_by_type_id(impl_block_id);
                 if let ItemEnum::Impl(impl_block) = &impl_block.inner {
                     for impl_item_id in &impl_block.items {
-                        let impl_item = krate.get_type_by_id(impl_item_id);
+                        let impl_item = krate.get_type_by_type_id(impl_item_id);
                         if impl_item.name.as_ref() == Some(method_name) {
                             if let ItemEnum::Method(_) = &impl_item.inner {
                                 return Ok(impl_item.to_owned());
