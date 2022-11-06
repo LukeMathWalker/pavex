@@ -7,9 +7,8 @@ use guppy::{PackageId, Version};
 use rustdoc_types::{ItemEnum, Visibility};
 
 use crate::language::ImportPath;
-use crate::rustdoc;
 use crate::rustdoc::package_id_spec::PackageIdSpecification;
-use crate::rustdoc::{CannotGetCrateData, TOOLCHAIN_CRATES};
+use crate::rustdoc::{compute::get_crate_data, CannotGetCrateData, TOOLCHAIN_CRATES};
 
 #[derive(Debug, Clone)]
 /// The main entrypoint for accessing the documentation of the crates
@@ -45,7 +44,7 @@ impl CrateCollection {
             PackageIdSpecification::new(&package_metadata)
         };
         if self.0.get(&package_spec.to_string()).is_none() {
-            let krate = rustdoc::get_crate_data(
+            let krate = get_crate_data(
                 self.1.workspace().target_directory().as_std_path(),
                 &package_spec,
             )?;
