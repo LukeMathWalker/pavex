@@ -293,13 +293,18 @@ pub(crate) fn codegen<'a>(
                         }
                     }
                     Lifecycle::RequestScoped => {
-                        let parameter_name = variable_generator.generate();
                         match constructors.get(t) {
                             None => {
+                                let parameter_name = variable_generator.generate();
                                 parameter_bindings.insert(t.to_owned(), parameter_name.clone());
+                                blocks.insert(
+                                    node_index,
+                                    Fragment::VariableReference(parameter_name),
+                                );
                             }
                             Some(constructor) => match constructor {
                                 Constructor::Callable(callable) => {
+                                    let parameter_name = variable_generator.generate();
                                     let block = codegen_utils::codegen_call_block(
                                         call_graph,
                                         callable,
@@ -312,6 +317,10 @@ pub(crate) fn codegen<'a>(
                                         let #parameter_name = #block;
                                     };
                                     scoped_constructors.insert(node_index, block);
+                                    blocks.insert(
+                                        node_index,
+                                        Fragment::VariableReference(parameter_name),
+                                    );
                                 }
                                 Constructor::BorrowSharedReference(_) => {
                                     let dependencies = call_graph
@@ -335,7 +344,6 @@ pub(crate) fn codegen<'a>(
                                 }
                             },
                         };
-                        blocks.insert(node_index, Fragment::VariableReference(parameter_name));
                     }
                 }
             }
