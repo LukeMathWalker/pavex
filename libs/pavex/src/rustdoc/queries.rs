@@ -491,6 +491,10 @@ impl TypeId {
     fn new(raw_id: rustdoc_types::Id, package_id: PackageId) -> Self {
         Self { raw_id, package_id }
     }
+
+    pub fn package_id(&self) -> &PackageId {
+        &self.package_id
+    }
 }
 
 #[derive(thiserror::Error, Debug)]

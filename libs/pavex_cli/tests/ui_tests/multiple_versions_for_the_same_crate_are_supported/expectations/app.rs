@@ -61,7 +61,7 @@ fn route_request(
         _ => panic!("This is a bug, no route registered for a route id"),
     }
 }
-pub fn route_handler_0() -> http_1::Response<hyper::Body> {
+pub fn route_handler_0() -> http_0::Response<hyper::Body> {
     let v0 = app::header2();
     let v1 = app::header1();
     app::stream_file(v1, v0)

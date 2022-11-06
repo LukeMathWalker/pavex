@@ -488,7 +488,15 @@ fn codegen_types(
     krate_collection: &mut CrateCollection,
 ) -> HashSet<ResolvedType> {
     let anyhow_error = process_framework_path("anyhow::Error", package_graph, krate_collection);
-    HashSet::from([anyhow_error])
+    // A dirty hack. No honor here.
+    // We need a type that is defined in `pavex_runtime` (instead of being a re-export)
+    // to ensure that `pavex_runtime` ends up in the generated Cargo.toml.
+    let placeholder = process_framework_path(
+        "pavex_runtime::Placeholder",
+        package_graph,
+        krate_collection,
+    );
+    HashSet::from([anyhow_error, placeholder])
 }
 
 fn process_framework_path(
@@ -505,7 +513,7 @@ fn process_framework_path(
     let type_id = path.find_type_id(krate_collection).unwrap();
     let base_path = krate_collection.get_canonical_path_by_type_id(&type_id);
     ResolvedType {
-        package_id: path.package_id,
+        package_id: type_id.package_id().to_owned(),
         base_type: base_path.to_vec(),
         generic_arguments: vec![],
         is_shared_reference: false,
