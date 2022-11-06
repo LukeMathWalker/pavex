@@ -18,7 +18,7 @@ use crate::rustdoc::{compute::get_crate_data, CannotGetCrateData, TOOLCHAIN_CRAT
 /// - Computing and caching the JSON documentation for crates in the graph;
 /// - Execute queries that span the documentation of multiple crates (e.g. following crate
 ///   re-exports or star re-exports).
-pub struct CrateCollection(HashMap<String, Crate>, PackageGraph);
+pub struct CrateCollection(HashMap<PackageIdSpecification, Crate>, PackageGraph);
 
 impl CrateCollection {
     /// Initialise the collection for a `PackageGraph`.
@@ -43,15 +43,15 @@ impl CrateCollection {
             let package_metadata = self.1.metadata(package_id).expect("Unknown package ID");
             PackageIdSpecification::new(&package_metadata)
         };
-        if self.0.get(&package_spec.to_string()).is_none() {
+        if self.0.get(&package_spec).is_none() {
             let krate = get_crate_data(
                 self.1.workspace().target_directory().as_std_path(),
                 &package_spec,
             )?;
-            let krate = Crate::new(krate, package_id.to_owned());
-            self.0.insert(package_spec.to_string(), krate);
+            let krate = Crate::new(self, krate, package_id.to_owned());
+            self.0.insert(package_spec.clone(), krate);
         }
-        Ok(&self.0[&package_spec.to_string()])
+        Ok(&self.0[&package_spec])
     }
 
     /// Retrieve the package id where a certain item was originally defined.

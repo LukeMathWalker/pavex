@@ -5,6 +5,7 @@ use guppy::Version;
 
 /// A selector that follows the [package ID specification](https://doc.rust-lang.org/cargo/reference/pkgid-spec.html).
 /// It is used as argument to the `-p`/`--package` flag in `cargo`'s commands.
+#[derive(Debug, PartialEq, Hash, Eq, Clone)]
 pub struct PackageIdSpecification {
     pub(super) source: Option<String>,
     pub(super) name: String,
