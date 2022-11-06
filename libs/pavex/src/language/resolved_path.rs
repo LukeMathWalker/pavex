@@ -148,7 +148,7 @@ impl ResolvedPath {
     pub fn find_type(&self, krate_collection: &mut CrateCollection) -> Result<Item, UnknownPath> {
         // TODO: remove unwrap here
         let krate = krate_collection
-            .get_or_compute_by_id(&self.package_id)
+            .get_or_compute_by_package_id(&self.package_id)
             .unwrap();
         let path_segments: Vec<_> = self
             .segments

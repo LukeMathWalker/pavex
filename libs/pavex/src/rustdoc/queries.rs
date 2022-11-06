@@ -26,23 +26,14 @@ impl CrateCollection {
         Self(Default::default(), package_graph)
     }
 
-    /// Compute the documentation for the crate associated with a specific `PackageId`.
+    /// Compute the documentation for the crate associated with a specific [`PackageId`].
     ///
     /// It will be retrieved from [`CrateCollection`]'s internal cache if it was computed before.
-    pub fn get_or_compute_by_id(
+    pub fn get_or_compute_by_package_id(
         &mut self,
         package_id: &PackageId,
     ) -> Result<&Crate, CannotGetCrateData> {
-        let package_spec = if TOOLCHAIN_CRATES.contains(&package_id.repr()) {
-            PackageIdSpecification {
-                source: None,
-                name: package_id.repr().to_string(),
-                version: None,
-            }
-        } else {
-            let package_metadata = self.1.metadata(package_id).expect("Unknown package ID");
-            PackageIdSpecification::new(&package_metadata)
-        };
+        let package_spec = PackageIdSpecification::from_package_id(package_id, &self.1);
         if self.0.get(&package_spec).is_none() {
             let krate = get_crate_data(
                 self.1.workspace().target_directory().as_std_path(),
@@ -61,7 +52,7 @@ impl CrateCollection {
         item_id: &rustdoc_types::Id,
     ) -> Result<PackageId, anyhow::Error> {
         let package_graph = self.1.clone();
-        let used_by_krate = self.get_or_compute_by_id(used_by_package_id)?;
+        let used_by_krate = self.get_or_compute_by_package_id(used_by_package_id)?;
         let type_summary = used_by_krate.get_type_summary_by_type_id(item_id)?;
 
         let type_package_id = if type_summary.crate_id == 0 {
@@ -110,15 +101,15 @@ impl CrateCollection {
         let definition_package_id =
             self.get_defining_package_id_for_item(used_by_package_id, item_id)?;
 
-        let used_by_krate = self.get_or_compute_by_id(used_by_package_id)?;
+        let used_by_krate = self.get_or_compute_by_package_id(used_by_package_id)?;
         let type_summary = used_by_krate.get_type_summary_by_type_id(item_id)?;
         let referenced_base_type_path = type_summary.path.clone();
         let base_type = if type_summary.crate_id == 0 {
-            self.get_or_compute_by_id(used_by_package_id)?
+            self.get_or_compute_by_package_id(used_by_package_id)?
                 .get_importable_path(item_id)
         } else {
             // The crate where the type is actually defined.
-            let source_crate = self.get_or_compute_by_id(&definition_package_id)?;
+            let source_crate = self.get_or_compute_by_package_id(&definition_package_id)?;
             let type_definition_id =
                 source_crate.get_type_id_by_path(&referenced_base_type_path)?;
             source_crate.get_importable_path(type_definition_id)

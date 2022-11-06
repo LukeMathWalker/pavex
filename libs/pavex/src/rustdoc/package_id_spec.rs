@@ -1,7 +1,9 @@
 use std::fmt::{Display, Formatter};
 
-use guppy::graph::{PackageMetadata, PackageSource};
-use guppy::Version;
+use guppy::graph::{PackageGraph, PackageMetadata, PackageSource};
+use guppy::{PackageId, Version};
+
+use crate::rustdoc::TOOLCHAIN_CRATES;
 
 /// A selector that follows the [package ID specification](https://doc.rust-lang.org/cargo/reference/pkgid-spec.html).
 /// It is used as argument to the `-p`/`--package` flag in `cargo`'s commands.
@@ -13,7 +15,23 @@ pub struct PackageIdSpecification {
 }
 
 impl PackageIdSpecification {
-    pub fn new(metadata: &PackageMetadata) -> Self {
+    pub fn from_package_id(package_id: &PackageId, package_graph: &PackageGraph) -> Self {
+        // Toolchain crates do not appear in the package graph, therefore we special-case them.
+        if TOOLCHAIN_CRATES.contains(&package_id.repr()) {
+            Self {
+                source: None,
+                name: package_id.repr().to_string(),
+                version: None,
+            }
+        } else {
+            let package_metadata = package_graph
+                .metadata(package_id)
+                .expect("Unknown package ID");
+            Self::from_package_metadata(&package_metadata)
+        }
+    }
+
+    pub fn from_package_metadata(metadata: &PackageMetadata) -> Self {
         let source = match metadata.source() {
             PackageSource::Workspace(source) | PackageSource::Path(source) => {
                 let source = source.strip_prefix("path+").unwrap_or(source);
