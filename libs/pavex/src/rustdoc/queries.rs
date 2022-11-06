@@ -4,7 +4,7 @@ use std::fmt::{Display, Formatter};
 use anyhow::anyhow;
 use guppy::graph::PackageGraph;
 use guppy::{PackageId, Version};
-use rustdoc_types::{ExternalCrate, ItemEnum, ItemKind, Visibility};
+use rustdoc_types::{ExternalCrate, Item, ItemEnum, ItemKind, Visibility};
 
 use crate::language::ImportPath;
 use crate::rustdoc::package_id_spec::PackageIdSpecification;
@@ -326,7 +326,22 @@ fn index_local_items<'a>(
 ) {
     // TODO: the way we handle `current_path` is extremely wasteful,
     //       we can likely reuse the same buffer throughout.
-    let current_item = &crate_core.krate.index[current_item_id];
+    let current_item = match crate_core.krate.index.get(current_item_id) {
+        None => {
+            if let Some(summary) = crate_core.krate.paths.get(current_item_id) {
+                if summary.kind == ItemKind::Primitive {
+                    // This is a known bug - see https://github.com/rust-lang/rust/issues/104064
+                    return;
+                }
+            }
+            panic!(
+                "Failed to retrieve item id `{:?}` from the JSON `index` for package id `{}`.",
+                &current_item_id,
+                crate_core.package_id.repr()
+            )
+        }
+        Some(i) => i,
+    };
 
     // We do not want to index private items.
     if let Visibility::Default | Visibility::Crate | Visibility::Restricted { .. } =
@@ -364,9 +379,8 @@ fn index_local_items<'a>(
                                 // Due to how re-exports are handled in `rustdoc`, the re-exported
                                 // items inside that foreign module will not be found in the `index`
                                 // for this crate.
-                                // We add the re-exported module to the local items index, allowing
-                                // upstream searches to combine the local information with the
-                                // information coming from the documentation of the other crate
+                                // We intentionally add foreign items to the index to get a "complete"
+                                // picture of all the types available in this crate.
                                 let external_crate_id = imported_summary.crate_id;
                                 let external_package_id = crate_core
                                     .compute_package_id_for_external_crate_id(
@@ -377,20 +391,23 @@ fn index_local_items<'a>(
                                 let external_crate = collection
                                     .get_or_compute_crate_by_package_id(&external_package_id)
                                     .unwrap();
-                                let foreign_item_id = external_crate
-                                    .get_type_id_by_path(&imported_summary.path)
-                                    .unwrap()
-                                    .raw_id
-                                    .clone();
-                                // TODO: super-wasteful
-                                let external_core = external_crate.core.clone();
-                                index_local_items(
-                                    &external_core,
-                                    collection,
-                                    current_path,
-                                    path_index,
-                                    &foreign_item_id,
-                                );
+                                // It looks like we might fail to find the module item if there are
+                                // no public types inside it.
+                                // Example of this issue: `core::fmt::rt`.
+                                if let Ok(foreign_item_id) =
+                                    external_crate.get_type_id_by_path(&imported_summary.path)
+                                {
+                                    let foreign_item_id = foreign_item_id.raw_id.clone();
+                                    // TODO: super-wasteful
+                                    let external_core = external_crate.core.clone();
+                                    index_local_items(
+                                        &external_core,
+                                        collection,
+                                        current_path,
+                                        path_index,
+                                        &foreign_item_id,
+                                    );
+                                }
                             }
                         } else {
                             // TODO: this is firing for std's JSON docs. File a bug report.
