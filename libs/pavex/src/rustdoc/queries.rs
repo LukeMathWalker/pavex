@@ -75,6 +75,65 @@ impl CrateCollection {
         krate.get_type_by_local_type_id(&type_id.raw_id)
     }
 
+    pub fn get_type_by_local_path(
+        &mut self,
+        path: &[String],
+        package_id: &PackageId,
+    ) -> Result<Result<&Item, UnknownTypePath>, CannotGetCrateData> {
+        let krate = {
+            self.get_or_compute_crate_by_package_id(package_id)?;
+            self.get_crate_by_package_id(package_id)
+        };
+        if let Ok(type_id) = krate.get_type_id_by_path(&path) {
+            return Ok(Ok(self.get_type_by_global_type_id(type_id)));
+        }
+        // The path might be pointing to a method, which is not a type.
+        // We drop the last segment to see if we can get a hit on the struct/enum type
+        // to which the method belongs.
+        if path.len() < 3 {
+            // It has to be at least three segments - crate name, type name, method name.
+            // If it's shorter than three, it's just an unknown path.
+            return Ok(Err(UnknownTypePath {
+                type_path: path.to_owned(),
+            }));
+        }
+        let (method_name, type_path_segments) = path.split_last().unwrap();
+
+        if let Ok(type_id) = krate.get_type_id_by_path(&type_path_segments) {
+            let t = self.get_type_by_global_type_id(type_id);
+            let impl_block_ids = match &t.inner {
+                ItemEnum::Struct(s) => &s.impls,
+                ItemEnum::Enum(enum_) => &enum_.impls,
+                _ => {
+                    return Ok(Err(UnknownTypePath {
+                        type_path: path.to_owned(),
+                    }));
+                }
+            };
+            for impl_block_id in impl_block_ids {
+                let impl_block = krate.get_type_by_local_type_id(impl_block_id);
+                if let ItemEnum::Impl(impl_block) = &impl_block.inner {
+                    // We are completely ignoring the bounds attached to the implementation block.
+                    // This can lead to issues: the same method can be defined multiple
+                    // times in different implementation blocks with non-overlapping constraints.
+                    for impl_item_id in &impl_block.items {
+                        let impl_item = krate.get_type_by_local_type_id(impl_item_id);
+                        if impl_item.name.as_ref() == Some(method_name) {
+                            if let ItemEnum::Method(_) = &impl_item.inner {
+                                return Ok(Ok(impl_item));
+                            }
+                        }
+                    }
+                } else {
+                    unreachable!()
+                }
+            }
+        }
+        Ok(Err(UnknownTypePath {
+            type_path: path.to_owned(),
+        }))
+    }
+
     /// Retrieve the canonical path for a struct, enum or function given its [`GlobalTypeId`].
     ///
     /// It panics if no item is found for the specified [`GlobalTypeId`].
