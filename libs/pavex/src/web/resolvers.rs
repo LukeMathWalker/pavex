@@ -112,9 +112,11 @@ fn process_type(
                     }
                 }
             }
-            let type_package_id =
-                krate_collection.get_defining_package_id_for_item(used_by_package_id, id)?;
-            let base_type = krate_collection.get_canonical_import_path(used_by_package_id, id)?;
+            let type_package_id = krate_collection
+                .get_defining_package_id_by_local_type_id(used_by_package_id, id)?;
+            let base_type = krate_collection
+                .get_canonical_path_by_local_type_id(used_by_package_id, id)?
+                .to_vec();
             Ok(ResolvedType {
                 package_id: type_package_id,
                 base_type,

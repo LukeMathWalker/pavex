@@ -12,7 +12,7 @@ use rustdoc_types::{Item, ItemEnum};
 use pavex_builder::RawCallableIdentifiers;
 
 use crate::language::{CallPath, InvalidCallPath};
-use crate::rustdoc::{CrateCollection, TypeId};
+use crate::rustdoc::{CrateCollection, GlobalTypeId};
 use crate::rustdoc::{STD_PACKAGE_ID, TOOLCHAIN_CRATES};
 
 /// A resolved import path.
@@ -144,14 +144,14 @@ impl ResolvedPath {
         &self.segments.first().unwrap().ident
     }
 
-    /// Return the unequivocal [`TypeId`] that this path points at.
+    /// Return the unequivocal [`GlobalTypeId`] that this path points at.
     ///
     /// This method only works for structs, enums and free functions.
     /// It won't work for methods!
     pub fn find_type_id(
         &self,
         krate_collection: &mut CrateCollection,
-    ) -> Result<TypeId, UnknownPath> {
+    ) -> Result<GlobalTypeId, UnknownPath> {
         // TODO: remove unwrap here
         krate_collection
             .get_or_compute_crate_by_package_id(&self.package_id)
@@ -181,7 +181,9 @@ impl ResolvedPath {
             .map(|path_segment| path_segment.ident.to_string())
             .collect();
         if let Ok(type_id) = krate.get_type_id_by_path(&path_segments) {
-            return Ok(krate_collection.get_type_by_type_id(type_id).to_owned());
+            return Ok(krate_collection
+                .get_type_by_global_type_id(type_id)
+                .to_owned());
         }
         // The path might be pointing to a method, which is not a type.
         // We drop the last segment to see if we can get a hit on the struct/enum type
@@ -194,20 +196,20 @@ impl ResolvedPath {
         let (method_name, type_path_segments) = path_segments.split_last().unwrap();
 
         if let Ok(type_id) = krate.get_type_id_by_path(&type_path_segments) {
-            let t = krate_collection.get_type_by_type_id(type_id);
+            let t = krate_collection.get_type_by_global_type_id(type_id);
             let impl_block_ids = match &t.inner {
                 ItemEnum::Struct(s) => &s.impls,
                 ItemEnum::Enum(enum_) => &enum_.impls,
                 _ => return Err(UnknownPath(self.to_owned())),
             };
             for impl_block_id in impl_block_ids {
-                let impl_block = krate.get_type_by_type_id(impl_block_id);
+                let impl_block = krate.get_type_by_local_type_id(impl_block_id);
                 if let ItemEnum::Impl(impl_block) = &impl_block.inner {
                     // We are completely ignoring the bounds attached to the implementation block.
                     // This can lead to issues: the same method can be defined multiple
                     // times in different implementation blocks with non-overlapping constraints.
                     for impl_item_id in &impl_block.items {
-                        let impl_item = krate.get_type_by_type_id(impl_item_id);
+                        let impl_item = krate.get_type_by_local_type_id(impl_item_id);
                         if impl_item.name.as_ref() == Some(method_name) {
                             if let ItemEnum::Method(_) = &impl_item.inner {
                                 return Ok(impl_item.to_owned());
