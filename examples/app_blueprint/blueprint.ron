@@ -22,12 +22,12 @@
     component_lifecycles: {
         (
             registered_at: "app_blueprint",
-            import_path: "crate :: logger",
-        ): Transient,
-        (
-            registered_at: "app_blueprint",
             import_path: "crate :: extract_path",
         ): RequestScoped,
+        (
+            registered_at: "app_blueprint",
+            import_path: "crate :: logger",
+        ): Transient,
         (
             registered_at: "app_blueprint",
             import_path: "crate :: http_client",
@@ -62,17 +62,17 @@
         ),
         (
             registered_at: "app_blueprint",
-            import_path: "crate :: logger",
+            import_path: "crate :: http_client",
         ): (
-            line: 40,
+            line: 38,
             column: 10,
             file: "examples/app_blueprint/src/lib.rs",
         ),
         (
             registered_at: "app_blueprint",
-            import_path: "crate :: http_client",
+            import_path: "crate :: logger",
         ): (
-            line: 38,
+            line: 40,
             column: 10,
             file: "examples/app_blueprint/src/lib.rs",
         ),

@@ -52,6 +52,15 @@ pub fn load_configuration() -> Config { /* */ }
 pub fn http_client(config: Config) -> reqwest::Client { /* */ }
 ```
 
+You can see `pavex` at work in the [`/examples` folder](./examples):
+
+- [`app_blueprint/src/lib.rs`](./examples/app_blueprint/src/lib.rs) contains the function that returns the app
+  specification;
+- [`app_blueprint/src/bin.rs`](./examples/app_blueprint/src/bin.rs) builds the app specification, serializes it and
+  invokes `pavex`'s CLI to generate server code;
+- [`app_blueprint/blueprint.ron`](./examples/app_blueprint/blueprint.ron) contains the serialized app specification;
+- [`generated_app/src/lib.rs`](./examples/generated_app/src/lib.rs) contains the generated server code.
+
 ## Why does `pavex` exist?
 
 `actix-web`, `rocket`, `axum`, `tide`, `warp` - we have plenty of web frameworks in the Rust ecosystem, even
