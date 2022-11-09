@@ -7,12 +7,13 @@ use bimap::BiHashMap;
 use guppy::PackageId;
 use itertools::Itertools;
 use quote::format_ident;
-use rustdoc_types::{Item, ItemEnum};
+use rustdoc_types::Item;
 
 use pavex_builder::RawCallableIdentifiers;
 
 use crate::language::{CallPath, InvalidCallPath};
-use crate::rustdoc::{CrateCollection, STD_PACKAGE_ID, TOOLCHAIN_CRATES};
+use crate::rustdoc::{CrateCollection, GlobalTypeId};
+use crate::rustdoc::{STD_PACKAGE_ID, TOOLCHAIN_CRATES};
 
 /// A resolved import path.
 ///
@@ -35,14 +36,15 @@ use crate::rustdoc::{CrateCollection, STD_PACKAGE_ID, TOOLCHAIN_CRATES};
 /// the path. `ResolvedPath` takes this into account by using the `PackageId` of the target
 /// crate as the authoritative answer to "What crate does this path belong to?". This is unique
 /// and well-defined within a `cargo` workspace.
+// TODO: we need to implement Hash manually!
 #[derive(Clone, Debug, Hash, Eq)]
-pub(crate) struct ResolvedPath {
+pub struct ResolvedPath {
     pub segments: Vec<ResolvedPathSegment>,
     pub package_id: PackageId,
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
-pub(crate) struct ResolvedPathSegment {
+pub struct ResolvedPathSegment {
     pub ident: String,
     pub generic_arguments: Vec<ResolvedPath>,
 }
@@ -143,52 +145,40 @@ impl ResolvedPath {
         &self.segments.first().unwrap().ident
     }
 
-    /// Find information about the type that the path points at.
-    pub fn find_type(&self, krate_collection: &mut CrateCollection) -> Result<Item, UnknownPath> {
-        // TODO: remove unwrap here
-        let krate = krate_collection
-            .get_or_compute_by_id(&self.package_id)
-            .unwrap();
+    /// Return the unequivocal [`GlobalTypeId`] that this path points at.
+    ///
+    /// This method only works for structs, enums and free functions.
+    /// It won't work for methods!
+    pub fn find_type_id(
+        &self,
+        krate_collection: &mut CrateCollection,
+    ) -> Result<GlobalTypeId, UnknownPath> {
+        let krate = {
+            // TODO: remove unwrap here
+            krate_collection
+                .get_or_compute_crate_by_package_id(&self.package_id)
+                .unwrap();
+            krate_collection.get_crate_by_package_id(&self.package_id)
+        };
         let path_segments: Vec<_> = self
             .segments
             .iter()
             .map(|path_segment| path_segment.ident.to_string())
             .collect();
-        if let Ok(t) = krate.get_type_by_path(&path_segments) {
-            return Ok(t.to_owned());
-        }
-        // The path might be pointing to a method, which is not a type.
-        // We drop the last segment to see if we can get a hit on the struct/enum type
-        // to which the method belongs.
-        if path_segments.len() < 3 {
-            // It has to be at least three segments - crate name, type name, method name.
-            // If it's shorter than three, it's just an unknown path.
-            return Err(UnknownPath(self.to_owned()));
-        }
-        let (method_name, type_path_segments) = path_segments.split_last().unwrap();
-        if let Ok(t) = krate.get_type_by_path(type_path_segments) {
-            let impl_block_ids = match &t.inner {
-                ItemEnum::Struct(s) => &s.impls,
-                ItemEnum::Enum(enum_) => &enum_.impls,
-                _ => return Err(UnknownPath(self.to_owned())),
-            };
-            for impl_block_id in impl_block_ids {
-                let impl_block = krate.get_type_by_id(impl_block_id);
-                if let ItemEnum::Impl(impl_block) = &impl_block.inner {
-                    for impl_item_id in &impl_block.items {
-                        let impl_item = krate.get_type_by_id(impl_item_id);
-                        if impl_item.name.as_ref() == Some(method_name) {
-                            if let ItemEnum::Method(_) = &impl_item.inner {
-                                return Ok(impl_item.to_owned());
-                            }
-                        }
-                    }
-                } else {
-                    unreachable!()
-                }
-            }
+        if let Ok(type_id) = krate.get_type_id_by_path(&path_segments) {
+            return Ok(type_id.to_owned());
         }
         Err(UnknownPath(self.to_owned()))
+    }
+
+    /// Find information about the type that this path points at.
+    pub fn find_type(&self, krate_collection: &mut CrateCollection) -> Result<Item, UnknownPath> {
+        krate_collection
+            .get_type_by_resolved_path(self, &self.package_id)
+            // TODO: Remove this unwrap
+            .unwrap()
+            .map(ToOwned::to_owned)
+            .map_err(|_| UnknownPath(self.to_owned()))
     }
 
     pub fn render_path(&self, id2name: &BiHashMap<&PackageId, String>) -> String {
@@ -256,7 +246,7 @@ impl Display for ResolvedPathSegment {
 }
 
 #[derive(Debug, thiserror::Error)]
-pub(crate) enum ParseError {
+pub enum ParseError {
     #[error(transparent)]
     InvalidPath(#[from] InvalidCallPath),
     #[error(transparent)]
@@ -273,9 +263,9 @@ impl ParseError {
 }
 
 #[derive(Debug, thiserror::Error)]
-pub(crate) struct PathMustBeAbsolute {
-    pub raw_identifiers: RawCallableIdentifiers,
-    pub relative_path: String,
+pub struct PathMustBeAbsolute {
+    pub(crate) raw_identifiers: RawCallableIdentifiers,
+    pub(crate) relative_path: String,
 }
 
 impl Display for PathMustBeAbsolute {
@@ -289,7 +279,7 @@ impl Display for PathMustBeAbsolute {
 }
 
 #[derive(thiserror::Error, Debug)]
-pub(crate) struct UnknownPath(pub ResolvedPath);
+pub struct UnknownPath(pub ResolvedPath);
 
 impl Display for UnknownPath {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {

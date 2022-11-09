@@ -6,10 +6,10 @@ struct ServerState {
     application_state: ApplicationState,
 }
 pub struct ApplicationState {
-    s0: app::Streamer,
+    s0: app::Singleton,
 }
 pub fn build_application_state() -> crate::ApplicationState {
-    let v0 = app::streamer();
+    let v0 = app::Singleton::new();
     crate::ApplicationState { s0: v0 }
 }
 pub async fn run(
@@ -60,10 +60,12 @@ fn route_request(
         .at(request.uri().path())
         .expect("Failed to match incoming request path");
     match route_id.value {
-        0u32 => route_handler_0(server_state.application_state.s0.clone()),
+        0u32 => route_handler_0(&server_state.application_state.s0),
         _ => panic!("This is a bug, no route registered for a route id"),
     }
 }
-pub fn route_handler_0(v0: app::Streamer) -> http::Response<hyper::Body> {
-    app::stream_file(v0)
+pub fn route_handler_0(v1: &app::Singleton) -> http::Response<hyper::Body> {
+    let v0 = app::request_scoped();
+    let v2 = &app::transient();
+    app::stream_file(v1, &v0, v2)
 }

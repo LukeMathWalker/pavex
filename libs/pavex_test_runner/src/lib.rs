@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fmt::Write;
 use std::path::PathBuf;
 use std::process::Output;
 
@@ -256,16 +257,25 @@ fn run_test(test: &libtest_mimic::Test<TestData>) -> Outcome {
         Ok(c) => match _run_test(&c, test) {
             Ok(TestOutcome {
                 outcome: Outcome::Failed { msg },
-                source_generation_output,
+                codegen_output,
+                compilation_output,
             }) => Outcome::Failed {
-                msg: msg.map(|msg| {
-                    enrich_failure_message(
-                        &c,
-                        format!(
-                            "{msg}\n\n--- STDOUT:\n{}\n--- STDERR:\n{}",
-                            source_generation_output.stdout, source_generation_output.stderr
-                        ),
+                msg: msg.map(|mut msg| {
+                    write!(
+                        &mut msg,
+                        "\n\nCODEGEN:\n\t--- STDOUT:\n{}\n\t--- STDERR:\n{}",
+                        codegen_output.stdout, codegen_output.stderr
                     )
+                    .unwrap();
+                    if let Some(compilation_output) = compilation_output {
+                        write!(
+                            &mut msg,
+                            "\n\nCARGO CHECK:\n\t--- STDOUT:\n{}\n\t--- STDERR:\n{}",
+                            compilation_output.stdout, compilation_output.stderr
+                        )
+                        .unwrap();
+                    }
+                    enrich_failure_message(&c, msg)
                 }),
             },
             Err(e) => Outcome::Failed {
@@ -291,12 +301,12 @@ fn _run_test(
     // Generate the application code
     let output = std::process::Command::new("cargo")
         .env("RUSTFLAGS", "-Awarnings")
-        .arg("r")
-        .arg("-q")
+        .arg("run")
+        .arg("--quiet")
         .current_dir(&test.data.runtime_directory)
         .output()
         .unwrap();
-    let source_generation_output: CommandOutput = (&output).try_into()?;
+    let codegen_output: CommandOutput = (&output).try_into()?;
 
     let expectations_directory = test.data.definition_directory.join("expectations");
 
@@ -306,25 +316,25 @@ fn _run_test(
                 outcome: Outcome::Failed {
                     msg: Some("We failed to generate the application code.".to_string()),
                 },
-                source_generation_output,
+                codegen_output,
+                compilation_output: None,
             }),
             ExpectedOutcome::Fail => {
                 let stderr_snapshot = SnapshotTest::new(expectations_directory.join("stderr.txt"));
-                if stderr_snapshot
-                    .verify(&source_generation_output.stderr)
-                    .is_err()
-                {
+                if stderr_snapshot.verify(&codegen_output.stderr).is_err() {
                     return Ok(TestOutcome {
                         outcome: Outcome::Failed {
                             msg: Some(
                                 "The failure message returned by code generation does not match what we expected".into())
                         },
-                        source_generation_output,
+                        codegen_output,
+                        compilation_output: None,
                     });
                 }
                 Ok(TestOutcome {
                     outcome: Outcome::Passed,
-                    source_generation_output,
+                    codegen_output,
+                    compilation_output: None,
                 })
             }
         };
@@ -333,7 +343,8 @@ fn _run_test(
             outcome: Outcome::Failed {
                 msg: Some("We expected code generation to fail, but it succeeded!".into()),
             },
-            source_generation_output,
+            codegen_output,
+            compilation_output: None,
         });
     };
 
@@ -348,7 +359,8 @@ fn _run_test(
                         .into(),
                 ),
             },
-            source_generation_output,
+            codegen_output,
+            compilation_output: None,
         });
     }
 
@@ -366,19 +378,42 @@ fn _run_test(
             outcome: Outcome::Failed {
                 msg: Some("The generated application code does not match what we expected".into()),
             },
-            source_generation_output,
+            codegen_output,
+            compilation_output: None,
+        });
+    }
+
+    // Check that the generated code compiles
+    let output = std::process::Command::new("cargo")
+        .env("RUSTFLAGS", "-Awarnings")
+        .arg("check")
+        .arg("--workspace")
+        .arg("--quiet")
+        .current_dir(&test.data.runtime_directory)
+        .output()
+        .unwrap();
+    let compilation_output: CommandOutput = (&output).try_into()?;
+    if !output.status.success() {
+        return Ok(TestOutcome {
+            outcome: Outcome::Failed {
+                msg: Some("The generated application code does not compile.".into()),
+            },
+            codegen_output,
+            compilation_output: Some(compilation_output),
         });
     }
 
     Ok(TestOutcome {
         outcome: Outcome::Passed,
-        source_generation_output,
+        codegen_output,
+        compilation_output: Some(compilation_output),
     })
 }
 
 struct TestOutcome {
     outcome: Outcome,
-    source_generation_output: CommandOutput,
+    codegen_output: CommandOutput,
+    compilation_output: Option<CommandOutput>,
 }
 
 /// A refined `std::process::Output` that assumes that both stderr and stdout are valid UTF8.

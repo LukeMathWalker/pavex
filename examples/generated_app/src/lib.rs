@@ -6,11 +6,11 @@ struct ServerState {
     application_state: ApplicationState,
 }
 pub struct ApplicationState {
-    s0: app::Streamer,
+    s0: app_blueprint::HttpClient,
 }
-pub fn build_application_state() -> crate::ApplicationState {
-    let v0 = app::streamer();
-    crate::ApplicationState { s0: v0 }
+pub fn build_application_state(v0: app_blueprint::Config) -> crate::ApplicationState {
+    let v1 = app_blueprint::http_client(v0);
+    crate::ApplicationState { s0: v1 }
 }
 pub async fn run(
     server_builder: pavex_runtime::hyper::server::Builder<
@@ -60,10 +60,15 @@ fn route_request(
         .at(request.uri().path())
         .expect("Failed to match incoming request path");
     match route_id.value {
-        0u32 => route_handler_0(server_state.application_state.s0.clone()),
+        0u32 => route_handler_0(server_state.application_state.s0.clone(), request),
         _ => panic!("This is a bug, no route registered for a route id"),
     }
 }
-pub fn route_handler_0(v0: app::Streamer) -> http::Response<hyper::Body> {
-    app::stream_file(v0)
+pub fn route_handler_0(
+    v0: app_blueprint::HttpClient,
+    v1: http::Request<hyper::Body>,
+) -> http::Response<hyper::Body> {
+    let v2 = app_blueprint::extract_path(v1);
+    let v3 = app_blueprint::logger();
+    app_blueprint::stream_file(v2, v3, v0)
 }

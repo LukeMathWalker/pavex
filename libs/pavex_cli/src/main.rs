@@ -1,13 +1,15 @@
+use std::path::PathBuf;
+
 use clap::{Parser, Subcommand};
+
 use pavex::App;
 use pavex_builder::AppBlueprint;
-use std::path::PathBuf;
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
 struct Cli {
     /// Expose inner details in case of an error.
-    #[clap(long)]
+    #[clap(long, env = "PAVEX_DEBUG")]
     debug: bool,
     #[clap(subcommand)]
     command: Commands,

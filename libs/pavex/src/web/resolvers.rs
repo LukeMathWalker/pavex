@@ -17,7 +17,9 @@ use syn::{FnArg, ReturnType};
 use pavex_builder::{Location, RawCallableIdentifiers};
 
 use crate::language::{Callable, ResolvedPath, ResolvedType, UnknownPath};
-use crate::rustdoc::{CannotGetCrateData, CrateCollection, STD_PACKAGE_ID};
+use crate::rustdoc::CannotGetCrateData;
+use crate::rustdoc::CrateCollection;
+use crate::rustdoc::STD_PACKAGE_ID;
 use crate::web::diagnostic;
 use crate::web::diagnostic::{
     convert_rustdoc_span, convert_span, read_source_file, CompilerDiagnosticBuilder,
@@ -42,7 +44,7 @@ pub(crate) fn resolve_constructors(
     for constructor_identifiers in constructor_paths {
         let constructor =
             resolve_callable(krate_collection, constructor_identifiers, package_graph)?;
-        constructors.insert(constructor.output_fq_path.clone(), constructor.clone());
+        constructors.insert(constructor.output.clone(), constructor.clone());
         resolution_map.insert(constructor_identifiers.to_owned(), constructor);
     }
     Ok((resolution_map, constructors))
@@ -110,17 +112,33 @@ fn process_type(
                     }
                 }
             }
-            let type_package_id =
-                krate_collection.get_defining_package_id_for_item(used_by_package_id, id)?;
-            let base_type = krate_collection.get_canonical_import_path(used_by_package_id, id)?;
+            let (global_type_id, base_type) =
+                krate_collection.get_canonical_path_by_local_type_id(used_by_package_id, id)?;
             Ok(ResolvedType {
-                package_id: type_package_id,
-                base_type,
+                package_id: global_type_id.package_id().to_owned(),
+                base_type: base_type.to_vec(),
                 generic_arguments: generics,
+                is_shared_reference: false,
             })
         }
+        Type::BorrowedRef {
+            lifetime: _,
+            mutable,
+            type_,
+        } => {
+            if *mutable {
+                return Err(anyhow!(
+                    "Mutable references are not allowed. You can only pass an argument \
+                    by value (`move` semantic) or via a shared reference (`&MyType`)",
+                ));
+            }
+            let mut resolved_type =
+                process_type(type_, used_by_package_id, package_graph, krate_collection)?;
+            resolved_type.is_shared_reference = true;
+            Ok(resolved_type)
+        }
         _ => Err(anyhow!(
-            "We cannot handle inputs of this kind ({:?}) yet. Sorry!",
+            "I cannot handle inputs of this kind ({:?}) yet. Sorry!",
             type_
         )),
     }
@@ -198,6 +216,7 @@ fn resolve_callable(
             package_id: PackageId::new(STD_PACKAGE_ID),
             base_type: vec!["()".into()],
             generic_arguments: vec![],
+            is_shared_reference: false,
         },
         Some(output_type) => {
             match process_type(
@@ -220,8 +239,8 @@ fn resolve_callable(
         }
     };
     Ok(Callable {
-        output_fq_path: output_type_path,
-        callable_fq_path: callable_path.to_owned(),
+        output: output_type_path,
+        path: callable_path.to_owned(),
         inputs: parameter_paths,
     })
 }
@@ -331,7 +350,7 @@ impl CallableResolutionError {
                             (s.offset() + span.offset()).into(),
                             s.len().into(),
                         )
-                        .labeled("The parameter type that I cannot handle".into());
+                        .labeled("I do not know how handle this parameter".into());
                         let source_code = NamedSource::new(
                             &definition_span.filename.to_str().unwrap(),
                             source_contents,

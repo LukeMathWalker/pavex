@@ -1,7 +1,7 @@
 digraph "/home" {
-    0 [ label = "app::stream_file(http_0::header::HeaderName, http_1::header::HeaderName) -> http_1::Response<hyper::Body>"]
-    1 [ label = "http_1::header::HeaderName"]
-    2 [ label = "http_0::header::HeaderName"]
+    0 [ label = "app::stream_file(http_1::header::HeaderName, http_0::header::HeaderName) -> http_0::Response<hyper::Body>"]
+    1 [ label = "http_0::header::HeaderName"]
+    2 [ label = "http_1::header::HeaderName"]
     1 -> 0 [ ]
     2 -> 0 [ ]
 }

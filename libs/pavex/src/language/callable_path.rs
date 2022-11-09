@@ -108,10 +108,10 @@ impl Display for CallPathSegment {
 }
 
 #[derive(Debug, thiserror::Error)]
-pub(crate) struct InvalidCallPath {
-    pub raw_identifiers: RawCallableIdentifiers,
+pub struct InvalidCallPath {
+    pub(crate) raw_identifiers: RawCallableIdentifiers,
     #[source]
-    pub parsing_error: syn::Error,
+    pub(crate) parsing_error: syn::Error,
 }
 
 impl Display for InvalidCallPath {

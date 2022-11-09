@@ -1,2 +1,2 @@
 [workspace]
-members = ["libs/*", "examples/*"]
+members = ["libs/*", "examples/*", "examples/generated_app"]

@@ -1,5 +1,6 @@
 use pavex_builder::{f, AppBlueprint, Lifecycle};
 
+#[derive(Clone)]
 pub struct Streamer {
     pub a: usize,
     pub b: isize,
