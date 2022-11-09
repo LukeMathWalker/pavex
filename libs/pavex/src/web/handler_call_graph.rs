@@ -13,9 +13,10 @@ use syn::ItemFn;
 
 use pavex_builder::Lifecycle;
 
-use crate::language::{Callable, ResolvedType};
+use crate::language::ResolvedType;
 use crate::web::codegen_utils;
 use crate::web::codegen_utils::{Fragment, VariableNameGenerator};
+use crate::web::constructors::Constructor;
 use crate::web::dependency_graph::{CallableDependencyGraph, DependencyGraphNode};
 
 /// The handler dependency graph ([`CallableDependencyGraph`]) is focused on data - it tells us
@@ -39,7 +40,7 @@ pub(crate) struct HandlerCallGraph {
     pub(crate) call_graph: StableDiGraph<DependencyGraphNode, ()>,
     pub(crate) handler_node_index: NodeIndex,
     pub(crate) lifecycles: HashMap<ResolvedType, Lifecycle>,
-    pub(crate) constructors: IndexMap<ResolvedType, Callable>,
+    pub(crate) constructors: IndexMap<ResolvedType, Constructor>,
     pub(crate) input_parameter_types: IndexSet<ResolvedType>,
 }
 
@@ -47,7 +48,7 @@ impl HandlerCallGraph {
     pub(crate) fn new(
         dependency_graph: &'_ CallableDependencyGraph,
         lifecycles: HashMap<ResolvedType, Lifecycle>,
-        constructors: IndexMap<ResolvedType, Callable>,
+        constructors: IndexMap<ResolvedType, Constructor>,
     ) -> Self {
         // Vec<(index in dependency graph, parent index in call graph)>
         let CallableDependencyGraph {
@@ -149,7 +150,8 @@ impl HandlerCallGraph {
 ///
 /// In other words, return the set of types that either:
 /// - do not have a registered constructor;
-/// - have `Singleton` as lifecycle.
+/// - have `Singleton` as lifecycle;
+/// - are references to a `Singleton`.
 ///
 /// We return a `IndexSet` instead of a `HashSet` because we want a consistent ordering for the input
 /// parameters - it will be used in other parts of the crate to provide instances of those types
@@ -157,9 +159,9 @@ impl HandlerCallGraph {
 fn required_inputs(
     call_graph: &StableDiGraph<DependencyGraphNode, ()>,
     lifecycles: &HashMap<ResolvedType, Lifecycle>,
-    constructors: &IndexMap<ResolvedType, Callable>,
+    constructors: &IndexMap<ResolvedType, Constructor>,
 ) -> IndexSet<ResolvedType> {
-    call_graph
+    let singletons_or_missing_constructors: IndexSet<ResolvedType> = call_graph
         .node_weights()
         .filter_map(|node| {
             if let DependencyGraphNode::Type(type_) = node {
@@ -172,7 +174,8 @@ fn required_inputs(
             None
         })
         .cloned()
-        .collect()
+        .collect();
+    singletons_or_missing_constructors
 }
 
 pub(crate) fn codegen<'a>(
@@ -188,7 +191,7 @@ pub(crate) fn codegen<'a>(
     } = graph;
     let mut dfs = DfsPostOrder::new(Reversed(call_graph), *handler_node_index);
 
-    let mut parameter_bindings = HashMap::new();
+    let mut parameter_bindings: HashMap<ResolvedType, syn::Ident> = HashMap::new();
     let mut variable_generator = VariableNameGenerator::default();
 
     let mut scoped_constructors = IndexMap::<NodeIndex, TokenStream>::new();
@@ -204,29 +207,37 @@ pub(crate) fn codegen<'a>(
                     .unwrap_or(Lifecycle::RequestScoped);
                 match lifecycle {
                     Lifecycle::Singleton => {
-                        let parameter_name = variable_generator.generate();
-                        parameter_bindings.insert(t.to_owned(), parameter_name.clone());
-                        blocks.insert(node_index, Fragment::VariableReference(parameter_name));
+                        let constructor: &Constructor = &constructors[t];
+                        match constructor {
+                            Constructor::BorrowSharedReference(s) => {
+                                if let Some(parameter_name) = parameter_bindings.get(&s.input) {
+                                    blocks.insert(
+                                        node_index,
+                                        Fragment::BorrowSharedReference(parameter_name.to_owned()),
+                                    );
+                                } else {
+                                    let parameter_name = variable_generator.generate();
+                                    parameter_bindings.insert(t.to_owned(), parameter_name.clone());
+                                    blocks.insert(
+                                        node_index,
+                                        Fragment::VariableReference(parameter_name),
+                                    );
+                                }
+                            }
+                            Constructor::Callable(_) => {
+                                let parameter_name = variable_generator.generate();
+                                parameter_bindings.insert(t.to_owned(), parameter_name.clone());
+                                blocks.insert(
+                                    node_index,
+                                    Fragment::VariableReference(parameter_name),
+                                );
+                            }
+                        }
                     }
                     Lifecycle::Transient => {
-                        let callable = &constructors[t];
-                        let block = codegen_utils::codegen_call_block(
-                            call_graph,
-                            callable,
-                            node_index,
-                            &mut blocks,
-                            &mut variable_generator,
-                            package_id2name,
-                        )?;
-                        blocks.insert(node_index, block);
-                    }
-                    Lifecycle::RequestScoped => {
-                        let parameter_name = variable_generator.generate();
-                        match constructors.get(t) {
-                            None => {
-                                parameter_bindings.insert(t.to_owned(), parameter_name.clone());
-                            }
-                            Some(callable) => {
+                        let constructor: &Constructor = &constructors[t];
+                        match constructor {
+                            Constructor::Callable(callable) => {
                                 let block = codegen_utils::codegen_call_block(
                                     call_graph,
                                     callable,
@@ -235,13 +246,104 @@ pub(crate) fn codegen<'a>(
                                     &mut variable_generator,
                                     package_id2name,
                                 )?;
-                                let block = quote! {
-                                    let #parameter_name = #block;
-                                };
-                                scoped_constructors.insert(node_index, block);
+                                blocks.insert(node_index, block);
                             }
+                            Constructor::BorrowSharedReference(_) => {
+                                let dependencies =
+                                    call_graph.neighbors_directed(node_index, Direction::Incoming);
+                                let dependency_indexes: Vec<_> = dependencies.collect();
+                                assert_eq!(1, dependency_indexes.len());
+                                let dependency_index = dependency_indexes.first().unwrap();
+                                match &blocks[dependency_index] {
+                                    Fragment::VariableReference(binding_name) => {
+                                        blocks.insert(
+                                            node_index,
+                                            Fragment::BorrowSharedReference(
+                                                binding_name.to_owned(),
+                                            ),
+                                        );
+                                    }
+                                    Fragment::Block(b) => {
+                                        blocks.insert(
+                                            node_index,
+                                            Fragment::Block(
+                                                syn::parse2(quote! {
+                                                    &#b
+                                                })
+                                                .unwrap(),
+                                            ),
+                                        );
+                                    }
+                                    Fragment::Statement(b) => {
+                                        blocks.insert(
+                                            node_index,
+                                            Fragment::Statement(
+                                                syn::parse2(quote! {
+                                                    &#b;
+                                                })
+                                                .unwrap(),
+                                            ),
+                                        );
+                                    }
+                                    Fragment::BorrowSharedReference(_) => {
+                                        unreachable!()
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Lifecycle::RequestScoped => {
+                        match constructors.get(t) {
+                            None => {
+                                let parameter_name = variable_generator.generate();
+                                parameter_bindings.insert(t.to_owned(), parameter_name.clone());
+                                blocks.insert(
+                                    node_index,
+                                    Fragment::VariableReference(parameter_name),
+                                );
+                            }
+                            Some(constructor) => match constructor {
+                                Constructor::Callable(callable) => {
+                                    let parameter_name = variable_generator.generate();
+                                    let block = codegen_utils::codegen_call_block(
+                                        call_graph,
+                                        callable,
+                                        node_index,
+                                        &mut blocks,
+                                        &mut variable_generator,
+                                        package_id2name,
+                                    )?;
+                                    let block = quote! {
+                                        let #parameter_name = #block;
+                                    };
+                                    scoped_constructors.insert(node_index, block);
+                                    blocks.insert(
+                                        node_index,
+                                        Fragment::VariableReference(parameter_name),
+                                    );
+                                }
+                                Constructor::BorrowSharedReference(_) => {
+                                    let dependencies = call_graph
+                                        .neighbors_directed(node_index, Direction::Incoming);
+                                    let dependency_indexes: Vec<_> = dependencies.collect();
+                                    assert_eq!(1, dependency_indexes.len());
+                                    let dependency_index = dependency_indexes.first().unwrap();
+                                    match &blocks[dependency_index] {
+                                        Fragment::VariableReference(binding_name) => {
+                                            blocks.insert(
+                                                node_index,
+                                                Fragment::BorrowSharedReference(
+                                                    binding_name.to_owned(),
+                                                ),
+                                            );
+                                        }
+                                        Fragment::BorrowSharedReference(_)
+                                        | Fragment::Statement(_)
+                                        | Fragment::Block(_) => unreachable!(),
+                                    }
+                                }
+                            },
                         };
-                        blocks.insert(node_index, Fragment::VariableReference(parameter_name));
                     }
                 }
             }
@@ -271,10 +373,12 @@ pub(crate) fn codegen<'a>(
                 let variable_type = type_.syn_type(package_id2name);
                 quote! { #variable_name: #variable_type }
             });
-            let output_type = handler.output_fq_path.syn_type(package_id2name);
+            let output_type = handler.output.syn_type(package_id2name);
             let scoped_constructors = scoped_constructors.values();
             let b = match b {
-                Fragment::VariableReference(_) => unreachable!(),
+                Fragment::BorrowSharedReference(_) | Fragment::VariableReference(_) => {
+                    unreachable!()
+                }
                 Fragment::Block(b) => {
                     let stmts = b.stmts.iter();
                     quote! {

@@ -15,6 +15,6 @@ Error:
  4 │ 
  5 │ pub fn stream_file(input: (usize, isize)) -> Logger {
    ·                           ───────┬──────
-   ·                                  ╰── The parameter type that I cannot handle
+   ·                                  ╰── I do not know how handle this parameter
  6 │     todo!()
    ╰────

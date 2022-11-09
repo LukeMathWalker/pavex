@@ -16,6 +16,7 @@ use pavex_builder::Lifecycle;
 use crate::language::{Callable, ResolvedPath, ResolvedPathSegment, ResolvedType};
 use crate::web::app::GENERATED_APP_PACKAGE_ID;
 use crate::web::codegen_utils::{codegen_call_block, Fragment, VariableNameGenerator};
+use crate::web::constructors::Constructor;
 use crate::web::dependency_graph::{CallableDependencyGraph, DependencyGraphNode};
 
 #[derive(Debug)]
@@ -23,7 +24,7 @@ pub(crate) struct ApplicationStateCallGraph {
     pub(crate) call_graph: StableDiGraph<DependencyGraphNode, ()>,
     pub(crate) application_state_init_node_index: NodeIndex,
     pub(crate) lifecycles: HashMap<ResolvedType, Lifecycle>,
-    pub(crate) constructors: IndexMap<ResolvedType, Callable>,
+    pub(crate) constructors: IndexMap<ResolvedType, Constructor>,
     pub(crate) input_parameter_types: IndexSet<ResolvedType>,
     pub(crate) runtime_singleton_bindings: BiHashMap<Ident, ResolvedType>,
 }
@@ -32,17 +33,18 @@ impl ApplicationStateCallGraph {
     pub(crate) fn new(
         runtime_singleton_bindings: BiHashMap<Ident, ResolvedType>,
         lifecycles: HashMap<ResolvedType, Lifecycle>,
-        constructors: IndexMap<ResolvedType, Callable>,
+        constructors: IndexMap<ResolvedType, Constructor>,
     ) -> Self {
         // We build a "mock" callable that has the right inputs in order to drive the machinery
         // that builds the dependency graph.
         let application_state_constructor = Callable {
-            output_fq_path: ResolvedType {
+            output: ResolvedType {
                 package_id: PackageId::new(GENERATED_APP_PACKAGE_ID),
                 base_type: vec!["crate".into(), "ApplicationState".into()],
                 generic_arguments: vec![],
+                is_shared_reference: false,
             },
-            callable_fq_path: ResolvedPath {
+            path: ResolvedPath {
                 segments: vec![
                     ResolvedPathSegment {
                         ident: "crate".into(),
@@ -134,7 +136,7 @@ impl ApplicationStateCallGraph {
         } = &self;
         let mut dfs = DfsPostOrder::new(Reversed(call_graph), *handler_node_index);
 
-        let mut parameter_bindings = HashMap::new();
+        let mut parameter_bindings: HashMap<ResolvedType, Ident> = HashMap::new();
         let mut variable_generator = VariableNameGenerator::default();
 
         let mut singleton_constructors = HashMap::<NodeIndex, TokenStream>::new();
@@ -152,7 +154,30 @@ impl ApplicationStateCallGraph {
                                 None => {
                                     parameter_bindings.insert(t.to_owned(), parameter_name.clone());
                                 }
-                                Some(callable) => {
+                                Some(constructor) => match constructor {
+                                    Constructor::Callable(callable) => {
+                                        let block = codegen_call_block(
+                                            call_graph,
+                                            callable,
+                                            node_index,
+                                            &mut blocks,
+                                            &mut variable_generator,
+                                            package_id2name,
+                                        )?;
+                                        let block = quote! {
+                                            let #parameter_name = #block;
+                                        };
+                                        singleton_constructors.insert(node_index, block);
+                                    }
+                                    Constructor::BorrowSharedReference(_) => unreachable!(),
+                                },
+                            };
+                            blocks.insert(node_index, Fragment::VariableReference(parameter_name));
+                        }
+                        Lifecycle::Transient => {
+                            let constructor = &constructors[t];
+                            match constructor {
+                                Constructor::Callable(callable) => {
                                     let block = codegen_call_block(
                                         call_graph,
                                         callable,
@@ -161,25 +186,17 @@ impl ApplicationStateCallGraph {
                                         &mut variable_generator,
                                         package_id2name,
                                     )?;
-                                    let block = quote! {
-                                        let #parameter_name = #block;
-                                    };
-                                    singleton_constructors.insert(node_index, block);
+                                    blocks.insert(node_index, block);
                                 }
-                            };
-                            blocks.insert(node_index, Fragment::VariableReference(parameter_name));
-                        }
-                        Lifecycle::Transient => {
-                            let callable = &constructors[t];
-                            let block = codegen_call_block(
-                                call_graph,
-                                callable,
-                                node_index,
-                                &mut blocks,
-                                &mut variable_generator,
-                                package_id2name,
-                            )?;
-                            blocks.insert(node_index, block);
+                                Constructor::BorrowSharedReference(shared_reference) => {
+                                    let variable_name =
+                                        parameter_bindings.get(&shared_reference.input).unwrap();
+                                    blocks.insert(
+                                        node_index,
+                                        Fragment::BorrowSharedReference(variable_name.to_owned()),
+                                    );
+                                }
+                            }
                         }
                         Lifecycle::RequestScoped => unreachable!(),
                     }
@@ -211,10 +228,12 @@ impl ApplicationStateCallGraph {
                     let variable_type = type_.syn_type(package_id2name);
                     quote! { #variable_name: #variable_type }
                 });
-                let output_type = handler.output_fq_path.syn_type(package_id2name);
+                let output_type = handler.output.syn_type(package_id2name);
                 let singleton_constructors = singleton_constructors.values();
                 let b = match b {
-                    Fragment::VariableReference(_) => unreachable!(),
+                    Fragment::BorrowSharedReference(_) | Fragment::VariableReference(_) => {
+                        unreachable!()
+                    }
                     Fragment::Block(b) => {
                         let stmts = b.stmts.iter();
                         quote! {
@@ -273,7 +292,7 @@ pub(crate) fn codegen_struct_init_block(
 ) -> Result<Fragment, anyhow::Error> {
     let dependencies = call_graph.neighbors_directed(node_index, Direction::Incoming);
     let mut block = quote! {};
-    let mut dependency_bindings: BiHashMap<ResolvedType, Ident> = BiHashMap::new();
+    let mut dependency_bindings = HashMap::<ResolvedType, Box<dyn ToTokens>>::new();
     for dependency_index in dependencies {
         let fragment = &blocks[&dependency_index];
         let dependency_type = match &call_graph[dependency_index] {
@@ -283,16 +302,22 @@ pub(crate) fn codegen_struct_init_block(
         let mut to_be_removed = false;
         match fragment {
             Fragment::VariableReference(v) => {
-                dependency_bindings.insert(dependency_type.to_owned(), v.to_owned());
+                dependency_bindings.insert(dependency_type.to_owned(), Box::new(v.to_owned()));
             }
             Fragment::Block(_) | Fragment::Statement(_) => {
                 let parameter_name = variable_generator.generate();
-                dependency_bindings.insert(dependency_type.to_owned(), parameter_name.to_owned());
+                dependency_bindings.insert(
+                    dependency_type.to_owned(),
+                    Box::new(parameter_name.to_owned()),
+                );
                 to_be_removed = true;
                 block = quote! {
                     #block
                     let #parameter_name = #fragment;
                 }
+            }
+            Fragment::BorrowSharedReference(v) => {
+                dependency_bindings.insert(dependency_type.to_owned(), Box::new(quote! { &#v }));
             }
         }
         if to_be_removed {
@@ -301,7 +326,7 @@ pub(crate) fn codegen_struct_init_block(
         }
     }
     let constructor_invocation = codegen_struct_init(
-        &callable.callable_fq_path,
+        &callable.path,
         struct_fields,
         &dependency_bindings,
         package_id2name,
@@ -325,12 +350,12 @@ pub(crate) fn codegen_struct_init_block(
 pub(crate) fn codegen_struct_init(
     struct_path: &ResolvedPath,
     struct_fields: &BiHashMap<Ident, ResolvedType>,
-    variable_bindings: &BiHashMap<ResolvedType, Ident>,
+    field_init_values: &HashMap<ResolvedType, Box<dyn ToTokens>>,
     id2name: &BiHashMap<&PackageId, String>,
 ) -> Result<ExprStruct, anyhow::Error> {
     let struct_path: syn::ExprPath = syn::parse_str(&struct_path.render_path(id2name)).unwrap();
     let fields = struct_fields.iter().map(|(field_name, field_type)| {
-        let binding = variable_bindings.get_by_left(field_type).unwrap();
+        let binding = &field_init_values[field_type];
         quote! {
             #field_name: #binding
         }
@@ -352,7 +377,7 @@ pub(crate) fn codegen_struct_init(
 /// in the expected order.
 fn required_inputs(
     call_graph: &StableDiGraph<DependencyGraphNode, ()>,
-    constructors: &IndexMap<ResolvedType, Callable>,
+    constructors: &IndexMap<ResolvedType, Constructor>,
 ) -> IndexSet<ResolvedType> {
     call_graph
         .node_weights()

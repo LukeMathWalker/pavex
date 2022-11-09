@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fmt::Debug;
 use std::io::{BufWriter, Write};
@@ -16,8 +17,10 @@ use pavex_builder::{AppBlueprint, RawCallableIdentifiers};
 
 use crate::language::ResolvedPath;
 use crate::language::{Callable, ParseError, ResolvedType};
-use crate::rustdoc::{CrateCollection, STD_PACKAGE_ID};
+use crate::rustdoc::CrateCollection;
+use crate::rustdoc::STD_PACKAGE_ID;
 use crate::web::application_state_call_graph::ApplicationStateCallGraph;
+use crate::web::constructors::{Constructor, ConstructorValidationError};
 use crate::web::dependency_graph::CallableDependencyGraph;
 use crate::web::diagnostic::{
     CompilerDiagnosticBuilder, OptionalSourceSpanExt, ParsedSourceFile, SourceSpanExt,
@@ -35,6 +38,7 @@ pub struct App {
     handler_call_graphs: IndexMap<ResolvedPath, HandlerCallGraph>,
     application_state_call_graph: ApplicationStateCallGraph,
     request_scoped_framework_bindings: BiHashMap<Ident, ResolvedType>,
+    codegen_types: HashSet<ResolvedType>,
 }
 
 impl App {
@@ -144,47 +148,68 @@ impl App {
             set
         };
 
-        let (constructor_resolver, constructors) = match resolvers::resolve_constructors(
-            &constructor_paths,
-            &mut krate_collection,
-            &package_graph,
-        ) {
-            Ok((resolver, constructors)) => (resolver, constructors),
-            Err(e) => {
-                return Err(e.into_diagnostic(
-                    &resolved_paths2identifiers,
-                    |identifiers| app_blueprint.constructor_locations[identifiers].clone(),
-                    &package_graph,
-                    CallableType::Constructor,
-                )?);
-            }
-        };
-
-        if let Err(e) = validate_constructors(&constructors) {
-            return match e {
-                ConstructorValidationError::CannotReturnTheUnitType(ref constructor_path) => {
-                    let raw_identifier = resolved_paths2identifiers[constructor_path]
-                        .iter()
-                        .next()
-                        .unwrap();
-                    let location = &app_blueprint.constructor_locations[raw_identifier];
-                    let source = ParsedSourceFile::new(
-                        location.file.as_str().into(),
-                        &package_graph.workspace(),
-                    )
-                    .map_err(miette::MietteError::IoError)?;
-                    let label = diagnostic::get_f_macro_invocation_span(
-                        &source.contents,
-                        &source.parsed,
-                        location,
-                    )
-                    .map(|s| s.labeled("The constructor was registered here".into()));
-                    let diagnostic = CompilerDiagnosticBuilder::new(source, e)
-                        .optional_label(label)
-                        .build();
-                    Err(diagnostic.into())
+        let (constructor_callable_resolver, constructor_callables) =
+            match resolvers::resolve_constructors(
+                &constructor_paths,
+                &mut krate_collection,
+                &package_graph,
+            ) {
+                Ok((resolver, constructors)) => (resolver, constructors),
+                Err(e) => {
+                    return Err(e.into_diagnostic(
+                        &resolved_paths2identifiers,
+                        |identifiers| app_blueprint.constructor_locations[identifiers].clone(),
+                        &package_graph,
+                        CallableType::Constructor,
+                    )?);
                 }
             };
+
+        let mut constructors: IndexMap<ResolvedType, Constructor> = IndexMap::new();
+        for (output_type, callable) in constructor_callables.into_iter() {
+            let constructor = match callable.try_into() {
+                Ok(c) => c,
+                Err(e) => {
+                    return match e {
+                        ConstructorValidationError::CannotReturnTheUnitType(
+                            ref constructor_path,
+                        ) => {
+                            let raw_identifier = resolved_paths2identifiers[constructor_path]
+                                .iter()
+                                .next()
+                                .unwrap();
+                            let location = &app_blueprint.constructor_locations[raw_identifier];
+                            let source = ParsedSourceFile::new(
+                                location.file.as_str().into(),
+                                &package_graph.workspace(),
+                            )
+                            .map_err(miette::MietteError::IoError)?;
+                            let label = diagnostic::get_f_macro_invocation_span(
+                                &source.contents,
+                                &source.parsed,
+                                location,
+                            )
+                            .map(|s| s.labeled("The constructor was registered here".into()));
+                            let diagnostic = CompilerDiagnosticBuilder::new(source, e)
+                                .optional_label(label)
+                                .build();
+                            Err(diagnostic.into())
+                        }
+                    };
+                }
+            };
+            constructors.insert(output_type, constructor);
+        }
+
+        // For each non-reference type, register an inlineable constructor that transforms
+        // `T` in `&T`.
+        let constructibile_types: Vec<ResolvedType> =
+            constructors.keys().map(|t| t.to_owned()).collect();
+        for t in constructibile_types {
+            if !t.is_shared_reference {
+                let c = Constructor::shared_borrow(t);
+                constructors.insert(c.output_type().to_owned(), c);
+            }
         }
 
         let (handler_resolver, handlers) = match resolvers::resolve_handlers(
@@ -217,7 +242,7 @@ impl App {
         let mut handler_dependency_graphs = IndexMap::with_capacity(handlers.len());
         for callable in &handlers {
             handler_dependency_graphs.insert(
-                callable.callable_fq_path.clone(),
+                callable.path.clone(),
                 CallableDependencyGraph::new(callable.to_owned(), &constructors),
             );
         }
@@ -225,10 +250,20 @@ impl App {
         let component2lifecycle = {
             let mut map = HashMap::<ResolvedType, Lifecycle>::new();
             for (output_type, constructor) in &constructors {
-                let callable_path = constructor_resolver.get_by_right(constructor).unwrap();
-                let raw_identifiers = constructor_paths2ids.get_by_left(callable_path).unwrap();
-                let lifecycle = app_blueprint.component_lifecycles[raw_identifiers].clone();
-                map.insert(output_type.to_owned(), lifecycle);
+                match constructor {
+                    Constructor::BorrowSharedReference(s) => {
+                        // The lifecycle of a references matches the lifecycle of the type
+                        // it refers to.
+                        map.insert(output_type.to_owned(), map[&s.input].clone());
+                    }
+                    Constructor::Callable(c) => {
+                        let callable_path = constructor_callable_resolver.get_by_right(c).unwrap();
+                        let raw_identifiers =
+                            constructor_paths2ids.get_by_left(callable_path).unwrap();
+                        let lifecycle = app_blueprint.component_lifecycles[raw_identifiers].clone();
+                        map.insert(output_type.to_owned(), lifecycle);
+                    }
+                }
             }
             map
         };
@@ -264,13 +299,14 @@ impl App {
 
         let application_state_call_graph =
             ApplicationStateCallGraph::new(runtime_singletons, component2lifecycle, constructors);
-
+        let codegen_types = codegen_types(&package_graph, &mut krate_collection);
         Ok(App {
             package_graph,
             router,
             handler_call_graphs,
             application_state_call_graph,
             request_scoped_framework_bindings,
+            codegen_types,
         })
     }
 
@@ -282,6 +318,8 @@ impl App {
             &self.package_graph,
             &self.handler_call_graphs,
             &self.application_state_call_graph,
+            &self.request_scoped_framework_bindings,
+            &self.codegen_types,
         );
         let generated_app_package_id = PackageId::new(GENERATED_APP_PACKAGE_ID);
         let std_package_id = PackageId::new(STD_PACKAGE_ID);
@@ -305,6 +343,8 @@ impl App {
             &self.package_graph,
             &self.handler_call_graphs,
             &self.application_state_call_graph,
+            &self.request_scoped_framework_bindings,
+            &self.codegen_types,
         );
         // TODO: dry this up in one place.
         let generated_app_package_id = PackageId::new(GENERATED_APP_PACKAGE_ID);
@@ -313,7 +353,7 @@ impl App {
         package_ids2deps.insert(&std_package_id, "std".into());
 
         for (route, handler) in &self.router {
-            let handler_call_graph = &self.handler_call_graphs[&handler.callable_fq_path];
+            let handler_call_graph = &self.handler_call_graphs[&handler.path];
             handler_graphs.insert(
                 route.to_owned(),
                 handler_call_graph
@@ -391,11 +431,20 @@ fn get_required_singleton_types<'a>(
     let mut singletons_to_be_built = HashSet::new();
     for (import_path, handler_call_graph) in handler_call_graphs {
         for required_input in &handler_call_graph.input_parameter_types {
-            if !types_provided_by_the_framework.contains_right(required_input) {
-                match component2lifecycle.get(required_input) {
+            // We don't care if the type is required as a shared reference or an owned instance here.
+            // We care about the underlying type.
+            let required_input = if required_input.is_shared_reference {
+                let mut r = required_input.clone();
+                r.is_shared_reference = false;
+                Cow::Owned(r)
+            } else {
+                Cow::Borrowed(required_input)
+            };
+            if !types_provided_by_the_framework.contains_right(&required_input) {
+                match component2lifecycle.get(&required_input) {
                     Some(lifecycle) => {
                         if lifecycle == &Lifecycle::Singleton {
-                            singletons_to_be_built.insert(required_input.to_owned());
+                            singletons_to_be_built.insert(required_input.into_owned());
                         }
                     }
                     None => {
@@ -422,36 +471,53 @@ fn framework_bindings(
     package_graph: &PackageGraph,
     krate_collection: &mut CrateCollection,
 ) -> BiHashMap<Ident, ResolvedType> {
-    fn process_framework_path(
-        raw_path: &str,
-        package_graph: &PackageGraph,
-        krate_collection: &mut CrateCollection,
-    ) -> ResolvedType {
-        let identifiers =
-            RawCallableIdentifiers::from_raw_parts(raw_path.into(), "pavex_runtime".into());
-        let path = ResolvedPath::parse(&identifiers, package_graph).unwrap();
-        let type_ = path.find_type(krate_collection).unwrap();
-        let package_id = krate_collection
-            .get_defining_package_id_for_item(&path.package_id, &type_.id)
-            .unwrap();
-        let type_base_path = krate_collection
-            .get_canonical_import_path(&path.package_id, &type_.id)
-            .unwrap();
-        ResolvedType {
-            package_id,
-            base_type: type_base_path,
-            generic_arguments: vec![],
-        }
-    }
-
-    // http::request::Request<hyper::body::Body>
-    let http_request = "http::request::Request";
+    // pavex_runtime::http::Request<pavex_runtime::hyper::Body>
+    let http_request = "pavex_runtime::http::Request";
     let mut http_request = process_framework_path(http_request, package_graph, krate_collection);
-    let hyper_body = "hyper::body::Body";
+    let hyper_body = "pavex_runtime::hyper::Body";
     let hyper_body = process_framework_path(hyper_body, package_graph, krate_collection);
     http_request.generic_arguments = vec![hyper_body];
 
     BiHashMap::from_iter([(format_ident!("request"), http_request)].into_iter())
+}
+
+/// Return the set of types that will be used in the generated code to build a functional
+/// server scaffolding.  
+fn codegen_types(
+    package_graph: &PackageGraph,
+    krate_collection: &mut CrateCollection,
+) -> HashSet<ResolvedType> {
+    let anyhow_error = process_framework_path("anyhow::Error", package_graph, krate_collection);
+    // A dirty hack. No honor here.
+    // We need a type that is defined in `pavex_runtime` (instead of being a re-export)
+    // to ensure that `pavex_runtime` ends up in the generated Cargo.toml.
+    let placeholder = process_framework_path(
+        "pavex_runtime::Placeholder",
+        package_graph,
+        krate_collection,
+    );
+    HashSet::from([anyhow_error, placeholder])
+}
+
+fn process_framework_path(
+    raw_path: &str,
+    package_graph: &PackageGraph,
+    krate_collection: &mut CrateCollection,
+) -> ResolvedType {
+    // We are relying on a little hack to anchor our search:
+    // all framework types belong to crates that are direct dependencies of `pavex_builder`.
+    // TODO: find a better way in the future.
+    let identifiers =
+        RawCallableIdentifiers::from_raw_parts(raw_path.into(), "pavex_builder".into());
+    let path = ResolvedPath::parse(&identifiers, package_graph).unwrap();
+    let type_id = path.find_type_id(krate_collection).unwrap();
+    let base_path = krate_collection.get_canonical_path_by_global_type_id(&type_id);
+    ResolvedType {
+        package_id: type_id.package_id().to_owned(),
+        base_type: base_path.to_vec(),
+        generic_arguments: vec![],
+        is_shared_reference: false,
+    }
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -460,30 +526,4 @@ pub(crate) enum BuildError {
     HandlerError(#[from] Box<CallableResolutionError>),
     #[error(transparent)]
     GenericError(#[from] anyhow::Error),
-}
-
-/// Validate the signature of all registered constructors.
-fn validate_constructors(
-    constructors: &IndexMap<ResolvedType, Callable>,
-) -> Result<(), ConstructorValidationError> {
-    for (_output_type, constructor) in constructors.iter() {
-        validate_constructor(constructor)?;
-    }
-    Ok(())
-}
-
-/// Validate the signature of a constructor
-fn validate_constructor(constructor: &Callable) -> Result<(), ConstructorValidationError> {
-    if constructor.output_fq_path.base_type == vec!["()"] {
-        return Err(ConstructorValidationError::CannotReturnTheUnitType(
-            constructor.callable_fq_path.to_owned(),
-        ));
-    }
-    Ok(())
-}
-
-#[derive(thiserror::Error, Debug)]
-pub(crate) enum ConstructorValidationError {
-    #[error("I expect all constructors to return *something*.\nThis constructor doesn't, it returns the unit type - `()`.")]
-    CannotReturnTheUnitType(ResolvedPath),
 }

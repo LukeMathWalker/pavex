@@ -17,6 +17,7 @@ pub struct ResolvedType {
     pub package_id: PackageId,
     pub base_type: ImportPath,
     pub generic_arguments: Vec<ResolvedType>,
+    pub is_shared_reference: bool,
 }
 
 fn serialize_package_id<S>(package_id: &PackageId, serializer: S) -> Result<S::Ok, S::Error>
@@ -51,7 +52,8 @@ impl ResolvedType {
                 )
             })
             .unwrap();
-        write!(&mut buffer, "{}", crate_name).unwrap();
+        let maybe_reference = if self.is_shared_reference { "&" } else { "" };
+        write!(&mut buffer, "{}{}", maybe_reference, crate_name).unwrap();
         write!(&mut buffer, "::{}", self.base_type[1..].join("::")).unwrap();
         if !self.generic_arguments.is_empty() {
             write!(&mut buffer, "<").unwrap();
@@ -70,7 +72,8 @@ impl ResolvedType {
 
 impl std::fmt::Debug for ResolvedType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.base_type.join("::"))?;
+        let maybe_reference = if self.is_shared_reference { "&" } else { "" };
+        write!(f, "{}{}", maybe_reference, self.base_type.join("::"))?;
         if !self.generic_arguments.is_empty() {
             write!(f, "<")?;
             let mut arguments = self.generic_arguments.iter().peekable();
