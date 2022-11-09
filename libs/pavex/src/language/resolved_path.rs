@@ -38,13 +38,13 @@ use crate::rustdoc::{STD_PACKAGE_ID, TOOLCHAIN_CRATES};
 /// and well-defined within a `cargo` workspace.
 // TODO: we need to implement Hash manually!
 #[derive(Clone, Debug, Hash, Eq)]
-pub(crate) struct ResolvedPath {
+pub struct ResolvedPath {
     pub segments: Vec<ResolvedPathSegment>,
     pub package_id: PackageId,
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
-pub(crate) struct ResolvedPathSegment {
+pub struct ResolvedPathSegment {
     pub ident: String,
     pub generic_arguments: Vec<ResolvedPath>,
 }
@@ -153,11 +153,13 @@ impl ResolvedPath {
         &self,
         krate_collection: &mut CrateCollection,
     ) -> Result<GlobalTypeId, UnknownPath> {
-        // TODO: remove unwrap here
-        krate_collection
-            .get_or_compute_crate_by_package_id(&self.package_id)
-            .unwrap();
-        let krate = krate_collection.get_crate_by_package_id(&self.package_id);
+        let krate = {
+            // TODO: remove unwrap here
+            krate_collection
+                .get_or_compute_crate_by_package_id(&self.package_id)
+                .unwrap();
+            krate_collection.get_crate_by_package_id(&self.package_id)
+        };
         let path_segments: Vec<_> = self
             .segments
             .iter()
@@ -171,13 +173,8 @@ impl ResolvedPath {
 
     /// Find information about the type that this path points at.
     pub fn find_type(&self, krate_collection: &mut CrateCollection) -> Result<Item, UnknownPath> {
-        let path: Vec<_> = self
-            .segments
-            .iter()
-            .map(|path_segment| path_segment.ident.to_string())
-            .collect();
         krate_collection
-            .get_type_by_local_path(&path, &self.package_id)
+            .get_type_by_resolved_path(self, &self.package_id)
             // TODO: Remove this unwrap
             .unwrap()
             .map(ToOwned::to_owned)
@@ -249,7 +246,7 @@ impl Display for ResolvedPathSegment {
 }
 
 #[derive(Debug, thiserror::Error)]
-pub(crate) enum ParseError {
+pub enum ParseError {
     #[error(transparent)]
     InvalidPath(#[from] InvalidCallPath),
     #[error(transparent)]
@@ -266,9 +263,9 @@ impl ParseError {
 }
 
 #[derive(Debug, thiserror::Error)]
-pub(crate) struct PathMustBeAbsolute {
-    pub raw_identifiers: RawCallableIdentifiers,
-    pub relative_path: String,
+pub struct PathMustBeAbsolute {
+    pub(crate) raw_identifiers: RawCallableIdentifiers,
+    pub(crate) relative_path: String,
 }
 
 impl Display for PathMustBeAbsolute {
@@ -282,7 +279,7 @@ impl Display for PathMustBeAbsolute {
 }
 
 #[derive(thiserror::Error, Debug)]
-pub(crate) struct UnknownPath(pub ResolvedPath);
+pub struct UnknownPath(pub ResolvedPath);
 
 impl Display for UnknownPath {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {

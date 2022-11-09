@@ -6,7 +6,7 @@ use guppy::graph::PackageGraph;
 use guppy::{PackageId, Version};
 use rustdoc_types::{ExternalCrate, Item, ItemEnum, ItemKind, Visibility};
 
-use crate::language::ImportPath;
+use crate::language::{ImportPath, ResolvedPath};
 use crate::rustdoc::package_id_spec::PackageIdSpecification;
 use crate::rustdoc::{compute::get_crate_data, CannotGetCrateData, TOOLCHAIN_CRATES};
 
@@ -75,11 +75,18 @@ impl CrateCollection {
         krate.get_type_by_local_type_id(&type_id.raw_id)
     }
 
-    pub fn get_type_by_local_path(
+    /// Retrieve information about a type given its path and the id of the package where
+    /// it was defined.
+    pub fn get_type_by_resolved_path(
         &mut self,
-        path: &[String],
+        path: &ResolvedPath,
         package_id: &PackageId,
     ) -> Result<Result<&Item, UnknownTypePath>, CannotGetCrateData> {
+        let path: Vec<_> = path
+            .segments
+            .iter()
+            .map(|path_segment| path_segment.ident.to_string())
+            .collect();
         let krate = {
             self.get_or_compute_crate_by_package_id(package_id)?;
             self.get_crate_by_package_id(package_id)
