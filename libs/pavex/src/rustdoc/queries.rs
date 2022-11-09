@@ -142,32 +142,33 @@ impl CrateCollection {
         krate.get_canonical_path(type_id)
     }
 
-    /// Retrieve the package id of the crate where an item (identified by its **local** id)
-    /// was originally defined.
-    pub fn get_defining_package_id_by_local_type_id(
-        &mut self,
-        used_by_package_id: &PackageId,
-        item_id: &rustdoc_types::Id,
-    ) -> Result<PackageId, anyhow::Error> {
-        self.get_or_compute_crate_by_package_id(used_by_package_id)?;
-        let used_by_krate = self.get_crate_by_package_id(used_by_package_id);
-        let crate_id = used_by_krate
-            .get_type_summary_by_local_type_id(item_id)?
-            .crate_id;
-        let type_package_id = used_by_krate.compute_package_id_for_crate_id(crate_id, &self);
-        Ok(type_package_id)
-    }
-
-    /// Retrieve the canonical path for a struct, enum or function given its **local** id.
+    /// Retrieve the canonical path and the [`GlobalTypeId`] for a struct, enum or function given
+    /// its **local** id.
     pub fn get_canonical_path_by_local_type_id(
         &mut self,
         used_by_package_id: &PackageId,
         item_id: &rustdoc_types::Id,
-    ) -> Result<&[String], anyhow::Error> {
-        let definition_package_id =
-            self.get_defining_package_id_by_local_type_id(used_by_package_id, item_id)?;
-        let type_id = GlobalTypeId::new(item_id.to_owned(), definition_package_id);
-        Ok(self.get_canonical_path_by_global_type_id(&type_id))
+    ) -> Result<(GlobalTypeId, &[String]), anyhow::Error> {
+        let (definition_package_id, path) = {
+            let used_by_krate = {
+                self.get_or_compute_crate_by_package_id(used_by_package_id)?;
+                self.get_crate_by_package_id(used_by_package_id)
+            };
+            let local_type_summary = used_by_krate.get_type_summary_by_local_type_id(item_id)?;
+            (
+                used_by_krate.compute_package_id_for_crate_id(local_type_summary.crate_id, self),
+                local_type_summary.path.clone(),
+            )
+        };
+        let definition_krate = {
+            self.get_or_compute_crate_by_package_id(&definition_package_id)?;
+            self.get_crate_by_package_id(&definition_package_id)
+        };
+        let type_id = definition_krate.get_type_id_by_path(&path)?;
+        Ok((
+            type_id.clone(),
+            self.get_canonical_path_by_global_type_id(&type_id),
+        ))
     }
 }
 

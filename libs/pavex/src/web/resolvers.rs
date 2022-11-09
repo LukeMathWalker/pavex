@@ -112,14 +112,11 @@ fn process_type(
                     }
                 }
             }
-            let type_package_id = krate_collection
-                .get_defining_package_id_by_local_type_id(used_by_package_id, id)?;
-            let base_type = krate_collection
-                .get_canonical_path_by_local_type_id(used_by_package_id, id)?
-                .to_vec();
+            let (global_type_id, base_type) =
+                krate_collection.get_canonical_path_by_local_type_id(used_by_package_id, id)?;
             Ok(ResolvedType {
-                package_id: type_package_id,
-                base_type,
+                package_id: global_type_id.package_id().to_owned(),
+                base_type: base_type.to_vec(),
                 generic_arguments: generics,
                 is_shared_reference: false,
             })
