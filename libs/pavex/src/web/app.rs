@@ -11,6 +11,7 @@ use indexmap::{IndexMap, IndexSet};
 use miette::miette;
 use proc_macro2::Ident;
 use quote::format_ident;
+use rustdoc_types::ItemEnum;
 
 use pavex_builder::Lifecycle;
 use pavex_builder::{AppBlueprint, RawCallableIdentifiers};
@@ -267,6 +268,51 @@ impl App {
             }
             map
         };
+
+        // All singletons must implement `Clone`, `Send` and `Sync`.
+        // TODO: find `id` of `Sync` first!
+        for singleton_type in component2lifecycle.iter().filter_map(|(t, l)| {
+            if l == &Lifecycle::Singleton {
+                Some(t)
+            } else {
+                None
+            }
+        }) {
+            let krate = krate_collection.get_crate_by_package_id(&singleton_type.package_id);
+            let type_id = krate
+                .get_type_id_by_path(&singleton_type.base_type)
+                .unwrap();
+            let type_ = krate_collection.get_type_by_global_type_id(type_id);
+            match &type_.inner {
+                ItemEnum::Struct(s) => {
+                    let mut implements_sync = false;
+                    for impl_id in &s.impls {
+                        let trait_id = match &krate.get_type_by_local_type_id(impl_id).inner {
+                            ItemEnum::Impl(impl_) => impl_.trait_.as_ref().map(|p| &p.id),
+                            _ => unreachable!(),
+                        };
+                        if let Some(trait_id) = trait_id {
+                            let (_, trait_path) = krate_collection
+                                .get_canonical_path_by_local_type_id(
+                                    &singleton_type.package_id,
+                                    &trait_id,
+                                )
+                                .unwrap();
+                            if trait_path == ["core", "marker", "Sync"] {
+                                implements_sync = true;
+                                break;
+                            }
+                        }
+                    }
+                    if !implements_sync {
+                        panic!("Singletons must be Sync");
+                    }
+                }
+                ItemEnum::Enum(_) => {}
+                _ => unreachable!(),
+            }
+            // [...]
+        }
 
         let handler_call_graphs: IndexMap<_, _> = handler_dependency_graphs
             .iter()

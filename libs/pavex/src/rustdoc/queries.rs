@@ -1,7 +1,9 @@
 use std::collections::{BTreeSet, HashMap};
+use std::fmt;
 use std::fmt::{Display, Formatter};
 
 use anyhow::{anyhow, Context};
+use elsa::FrozenMap;
 use guppy::graph::PackageGraph;
 use guppy::{PackageId, Version};
 use rustdoc_types::{ExternalCrate, Item, ItemEnum, ItemKind, Visibility};
@@ -10,7 +12,6 @@ use crate::language::{ImportPath, ResolvedPath};
 use crate::rustdoc::package_id_spec::PackageIdSpecification;
 use crate::rustdoc::{compute::get_crate_data, CannotGetCrateData, TOOLCHAIN_CRATES};
 
-#[derive(Debug, Clone)]
 /// The main entrypoint for accessing the documentation of the crates
 /// in a specific `PackageGraph`.
 ///
@@ -18,19 +19,25 @@ use crate::rustdoc::{compute::get_crate_data, CannotGetCrateData, TOOLCHAIN_CRAT
 /// - Computing and caching the JSON documentation for crates in the graph;
 /// - Execute queries that span the documentation of multiple crates (e.g. following crate
 ///   re-exports or star re-exports).
-pub struct CrateCollection(HashMap<PackageIdSpecification, Crate>, PackageGraph);
+pub struct CrateCollection(FrozenMap<PackageIdSpecification, Box<Crate>>, PackageGraph);
+
+impl fmt::Debug for CrateCollection {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self.1)
+    }
+}
 
 impl CrateCollection {
     /// Initialise the collection for a `PackageGraph`.
     pub fn new(package_graph: PackageGraph) -> Self {
-        Self(Default::default(), package_graph)
+        Self(FrozenMap::new(), package_graph)
     }
 
     /// Compute the documentation for the crate associated with a specific [`PackageId`].
     ///
     /// It will be retrieved from [`CrateCollection`]'s internal cache if it was computed before.
     pub fn get_or_compute_crate_by_package_id(
-        &mut self,
+        &self,
         package_id: &PackageId,
     ) -> Result<&Crate, CannotGetCrateData> {
         let package_spec = PackageIdSpecification::from_package_id(package_id, &self.1);
@@ -40,7 +47,7 @@ impl CrateCollection {
                 &package_spec,
             )?;
             let krate = Crate::new(self, krate, package_id.to_owned());
-            self.0.insert(package_spec.clone(), krate);
+            self.0.insert(package_spec.clone(), Box::new(krate));
         }
         Ok(self.get_crate_by_package_id_spec(&package_spec))
     }
@@ -59,7 +66,7 @@ impl CrateCollection {
     ///
     /// It panics if no documentation is found for the specified [`PackageIdSpecification`].
     pub fn get_crate_by_package_id_spec(&self, package_spec: &PackageIdSpecification) -> &Crate {
-        &self.0.get(package_spec).unwrap_or_else(|| {
+        self.0.get(package_spec).unwrap_or_else(|| {
             panic!(
                 "No JSON docs were found for the following package ID specification: {:?}",
                 package_spec
@@ -78,7 +85,7 @@ impl CrateCollection {
     /// Retrieve information about a type given its path and the id of the package where
     /// it was defined.
     pub fn get_type_by_resolved_path(
-        &mut self,
+        &self,
         path: &ResolvedPath,
         package_id: &PackageId,
     ) -> Result<Result<&Item, UnknownTypePath>, CannotGetCrateData> {
@@ -152,7 +159,7 @@ impl CrateCollection {
     /// Retrieve the canonical path and the [`GlobalTypeId`] for a struct, enum or function given
     /// its **local** id.
     pub fn get_canonical_path_by_local_type_id(
-        &mut self,
+        &self,
         used_by_package_id: &PackageId,
         item_id: &rustdoc_types::Id,
     ) -> Result<(GlobalTypeId, &[String]), anyhow::Error> {
@@ -267,7 +274,7 @@ impl CrateCore {
 
 impl Crate {
     fn new(
-        collection: &mut CrateCollection,
+        collection: &CrateCollection,
         krate: rustdoc_types::Crate,
         package_id: PackageId,
     ) -> Self {
@@ -376,7 +383,7 @@ impl Crate {
 
 fn index_local_items<'a>(
     crate_core: &'a CrateCore,
-    collection: &mut CrateCollection,
+    collection: &CrateCollection,
     mut current_path: Vec<&'a str>,
     path_index: &mut HashMap<GlobalTypeId, BTreeSet<Vec<String>>>,
     current_item_id: &rustdoc_types::Id,
