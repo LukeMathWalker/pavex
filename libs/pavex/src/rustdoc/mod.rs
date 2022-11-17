@@ -9,6 +9,7 @@ pub use queries::{Crate, CrateCollection, GlobalTypeId, UnknownTypePath};
 mod compute;
 mod package_id_spec;
 mod queries;
+mod utils;
 
 pub const STD_PACKAGE_ID: &str = "std";
 pub const TOOLCHAIN_CRATES: [&str; 3] = ["std", "core", "alloc"];

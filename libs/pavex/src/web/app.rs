@@ -292,15 +292,16 @@ impl App {
                             _ => unreachable!(),
                         };
                         if let Some(trait_id) = trait_id {
-                            let (_, trait_path) = krate_collection
+                            if let Ok((_, trait_path)) = krate_collection
                                 .get_canonical_path_by_local_type_id(
                                     &singleton_type.package_id,
                                     &trait_id,
                                 )
-                                .unwrap();
-                            if trait_path == ["core", "marker", "Sync"] {
-                                implements_sync = true;
-                                break;
+                            {
+                                if trait_path == ["core", "marker", "Sync"] {
+                                    implements_sync = true;
+                                    break;
+                                }
                             }
                         }
                     }
@@ -557,7 +558,9 @@ fn process_framework_path(
         RawCallableIdentifiers::from_raw_parts(raw_path.into(), "pavex_builder".into());
     let path = ResolvedPath::parse(&identifiers, package_graph).unwrap();
     let type_id = path.find_type_id(krate_collection).unwrap();
-    let base_path = krate_collection.get_canonical_path_by_global_type_id(&type_id);
+    let base_path = krate_collection
+        .get_canonical_path_by_global_type_id(&type_id)
+        .unwrap();
     ResolvedType {
         package_id: type_id.package_id().to_owned(),
         base_type: base_path.to_vec(),

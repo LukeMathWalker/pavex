@@ -3,6 +3,7 @@ use std::path::{Path, PathBuf};
 use anyhow::Context;
 
 use crate::rustdoc::package_id_spec::PackageIdSpecification;
+use crate::rustdoc::utils::normalize_crate_name;
 use crate::rustdoc::TOOLCHAIN_CRATES;
 
 #[derive(Debug, thiserror::Error)]
@@ -142,9 +143,10 @@ fn _get_crate_data(
         );
     }
 
-    let json_path = target_directory
-        .join("doc")
-        .join(format!("{}.json", &package_id_spec.name));
+    let json_path = target_directory.join("doc").join(format!(
+        "{}.json",
+        normalize_crate_name(&package_id_spec.name)
+    ));
 
     let json = fs_err::read_to_string(json_path).with_context(|| {
         format!(
