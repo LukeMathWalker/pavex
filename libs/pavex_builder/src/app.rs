@@ -56,7 +56,7 @@ impl AppBlueprint {
         let location = std::panic::Location::caller();
         self.constructor_locations
             .entry(callable_identifiers.clone())
-            .or_insert(location.into());
+            .or_insert_with(|| location.into());
         self.component_lifecycles
             .insert(callable_identifiers.clone(), lifecycle);
         self.constructors.insert(callable_identifiers);
