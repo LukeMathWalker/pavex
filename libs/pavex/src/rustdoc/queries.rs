@@ -6,6 +6,7 @@ use anyhow::{anyhow, Context};
 use elsa::FrozenMap;
 use guppy::graph::PackageGraph;
 use guppy::{PackageId, Version};
+use indexmap::IndexSet;
 use rustdoc_types::{ExternalCrate, Item, ItemEnum, ItemKind, Visibility};
 
 use crate::language::{ImportPath, ResolvedPath};
@@ -219,6 +220,13 @@ impl CrateCore {
         crate_id: u32,
         collection: &CrateCollection,
     ) -> PackageId {
+        #[derive(Debug, Hash, Eq, PartialEq)]
+        struct PackageLinkMetadata<'a> {
+            id: &'a PackageId,
+            name: &'a str,
+            version: &'a Version,
+        }
+
         if crate_id == 0 {
             return self.package_id.clone();
         }
@@ -248,9 +256,17 @@ impl CrateCore {
             .unwrap()
             .resolve();
         let expected_link_name = utils::normalize_crate_name(&external_crate.name);
-        let package_candidates: Vec<_> = transitive_dependencies
+        let package_candidates: IndexSet<_> = transitive_dependencies
             .links(guppy::graph::DependencyDirection::Forward)
             .filter(|link| utils::normalize_crate_name(&link.to().name()) == expected_link_name)
+            .map(|link| {
+                let l = link.to();
+                PackageLinkMetadata {
+                    id: l.id(),
+                    name: l.name(),
+                    version: l.version(),
+                }
+            })
             .collect();
 
         if package_candidates.is_empty() {
@@ -262,7 +278,7 @@ impl CrateCore {
             .unwrap()
         }
         if package_candidates.len() == 1 {
-            return package_candidates.first().unwrap().to().id().to_owned();
+            return package_candidates.first().unwrap().id.to_owned();
         }
 
         // We have multiple packages with the same name.
@@ -272,9 +288,7 @@ impl CrateCore {
         if let Some(expected_link_version) = external_crate_version.as_ref() {
             package_candidates
                 .into_iter()
-                .find(|link| {
-                    link.to().version() == expected_link_version
-                })
+                .find(|l| l.version == expected_link_version)
                 .ok_or_else(|| {
                     anyhow!(
                         "None of the dependencies of {} named `{}` matches the version we expect ({})",
@@ -282,12 +296,12 @@ impl CrateCore {
                         expected_link_name,
                         expected_link_version
                     )
-                }).unwrap().to().id().to_owned()
+                }).unwrap().id.to_owned()
         } else {
             Err(
                 anyhow!(
                     "There are multiple packages named `{}` among the dependencies of {}. \
-                    I was not able to extract the expected version for `{}` from the JSON documentation for {},\
+                    I was not able to extract the expected version for `{}` from the JSON documentation for {}, \
                     therefore I do not have a way to disambiguate among the matches we found",
                     expected_link_name,
                     self.package_id.repr(),
