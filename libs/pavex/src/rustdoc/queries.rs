@@ -306,7 +306,6 @@ impl Crate {
         package_id: PackageId,
     ) -> Self {
         let crate_core = CrateCore { package_id, krate };
-        dbg!(&crate_core.package_id.repr());
         let mut path_index: HashMap<_, _> = crate_core
             .krate
             .paths

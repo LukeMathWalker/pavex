@@ -11,7 +11,6 @@ use indexmap::{IndexMap, IndexSet};
 use miette::miette;
 use proc_macro2::Ident;
 use quote::format_ident;
-use rustdoc_types::ItemEnum;
 
 use pavex_builder::Lifecycle;
 use pavex_builder::{AppBlueprint, RawCallableIdentifiers};
@@ -29,7 +28,7 @@ use crate::web::diagnostic::{
 use crate::web::generated_app::GeneratedApp;
 use crate::web::handler_call_graph::HandlerCallGraph;
 use crate::web::resolvers::{CallableResolutionError, CallableType};
-use crate::web::traits::implements_trait;
+use crate::web::traits::assert_trait_is_implemented;
 use crate::web::{codegen, diagnostic, resolvers};
 
 pub(crate) const GENERATED_APP_PACKAGE_ID: &str = "crate";
@@ -124,7 +123,7 @@ impl App {
             map
         };
 
-        let constructor_paths = {
+        let constructor_paths: IndexSet<ResolvedPath> = {
             let mut set = IndexSet::with_capacity(app_blueprint.constructors.len());
             for constructor_identifiers in &app_blueprint.constructors {
                 let constructor_path = identifiers2path[constructor_identifiers].clone();
@@ -168,8 +167,8 @@ impl App {
             };
 
         let mut constructors: IndexMap<ResolvedType, Constructor> = IndexMap::new();
-        for (output_type, callable) in constructor_callables.into_iter() {
-            let constructor = match callable.try_into() {
+        for (output_type, callable) in &constructor_callables {
+            let constructor = match callable.to_owned().try_into() {
                 Ok(c) => c,
                 Err(e) => {
                     return match e {
@@ -200,7 +199,7 @@ impl App {
                     };
                 }
             };
-            constructors.insert(output_type, constructor);
+            constructors.insert(output_type.to_owned(), constructor);
         }
 
         // For each non-reference type, register an inlineable constructor that transforms
@@ -271,7 +270,6 @@ impl App {
         };
 
         // All singletons must implement `Clone`, `Send` and `Sync`.
-        // TODO: find `id` of `Sync` first!
         for singleton_type in component2lifecycle.iter().filter_map(|(t, l)| {
             if l == &Lifecycle::Singleton {
                 Some(t)
@@ -279,12 +277,35 @@ impl App {
                 None
             }
         }) {
-            if !implements_trait(
+            if let Err(e) = assert_trait_is_implemented(
                 &krate_collection,
                 singleton_type,
                 &["core", "marker", "Sync"],
             ) {
-                todo!()
+                let constructor_callable: &Callable = &constructor_callables[singleton_type];
+                let constructor_path = constructor_callable_resolver
+                    .get_by_right(&constructor_callable)
+                    .unwrap();
+                let raw_identifier = resolved_paths2identifiers[constructor_path]
+                    .iter()
+                    .next()
+                    .unwrap();
+                let location = &app_blueprint.constructor_locations[raw_identifier];
+                let source = ParsedSourceFile::new(
+                    location.file.as_str().into(),
+                    &package_graph.workspace(),
+                )
+                .map_err(miette::MietteError::IoError)?;
+                let label = diagnostic::get_f_macro_invocation_span(
+                    &source.contents,
+                    &source.parsed,
+                    location,
+                )
+                .map(|s| s.labeled("The singleton's constructor was registered here".into()));
+                let diagnostic = CompilerDiagnosticBuilder::new(source, e)
+                    .optional_label(label)
+                    .build();
+                return Err(diagnostic.into());
             }
         }
 
