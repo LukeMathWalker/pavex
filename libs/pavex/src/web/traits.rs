@@ -49,7 +49,6 @@ pub(crate) fn implements_trait(
         ItemEnum::Enum(e) => &e.impls,
         _ => unreachable!(),
     };
-    // 2:3423:228
     for impl_id in impls {
         let trait_id = match &krate.get_type_by_local_type_id(impl_id).inner {
             ItemEnum::Impl(impl_) => impl_.trait_.as_ref().map(|p| &p.id),
@@ -59,6 +58,7 @@ pub(crate) fn implements_trait(
             if let Ok((_, trait_path)) =
                 krate_collection.get_canonical_path_by_local_type_id(&type_.package_id, trait_id)
             {
+                dbg!(trait_path);
                 if trait_path == expected_trait_path {
                     return true;
                 }
