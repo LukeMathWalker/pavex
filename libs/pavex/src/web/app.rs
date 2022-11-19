@@ -150,11 +150,7 @@ impl App {
         };
 
         let (constructor_callable_resolver, constructor_callables) =
-            match resolvers::resolve_constructors(
-                &constructor_paths,
-                &mut krate_collection,
-                &package_graph,
-            ) {
+            match resolvers::resolve_constructors(&constructor_paths, &mut krate_collection) {
                 Ok((resolver, constructors)) => (resolver, constructors),
                 Err(e) => {
                     return Err(e.into_diagnostic(
@@ -213,26 +209,23 @@ impl App {
             }
         }
 
-        let (handler_resolver, handlers) = match resolvers::resolve_handlers(
-            &handler_paths,
-            &mut krate_collection,
-            &package_graph,
-        ) {
-            Ok(h) => h,
-            Err(e) => {
-                return Err(e.into_diagnostic(
-                    &resolved_paths2identifiers,
-                    |identifiers| {
-                        app_blueprint.handler_locations[identifiers]
-                            .first()
-                            .unwrap()
-                            .clone()
-                    },
-                    &package_graph,
-                    CallableType::Handler,
-                )?);
-            }
-        };
+        let (handler_resolver, handlers) =
+            match resolvers::resolve_handlers(&handler_paths, &mut krate_collection) {
+                Ok(h) => h,
+                Err(e) => {
+                    return Err(e.into_diagnostic(
+                        &resolved_paths2identifiers,
+                        |identifiers| {
+                            app_blueprint.handler_locations[identifiers]
+                                .first()
+                                .unwrap()
+                                .clone()
+                        },
+                        &package_graph,
+                        CallableType::Handler,
+                    )?);
+                }
+            };
 
         let mut router = BTreeMap::new();
         for (route, callable_identifiers) in app_blueprint.router {
