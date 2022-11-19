@@ -63,7 +63,7 @@ impl GeneratedApp {
         let root_manifest = fs_err::read_to_string(&root_manifest_path)?;
         let mut root_manifest: toml::Value = toml::from_str(&root_manifest)?;
 
-        let member_path = pathdiff::diff_paths(&generated_crate_directory, root_path)
+        let member_path = pathdiff::diff_paths(generated_crate_directory, root_path)
             .unwrap()
             .to_string_lossy()
             .to_string();

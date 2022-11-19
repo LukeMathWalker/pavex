@@ -352,7 +352,7 @@ impl CallableResolutionError {
                         )
                         .labeled("I do not know how handle this parameter".into());
                         let source_code = NamedSource::new(
-                            &definition_span.filename.to_str().unwrap(),
+                            definition_span.filename.to_str().unwrap(),
                             source_contents,
                         );
                         Some(
@@ -447,7 +447,7 @@ impl CallableResolutionError {
                         let label =
                             source_span.labeled("The output type that I cannot handle".into());
                         let source_code = NamedSource::new(
-                            &definition_span.filename.to_str().unwrap(),
+                            definition_span.filename.to_str().unwrap(),
                             source_contents,
                         );
                         Some(

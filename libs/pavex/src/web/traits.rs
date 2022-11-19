@@ -57,7 +57,7 @@ pub(crate) fn implements_trait(
         };
         if let Some(trait_id) = trait_id {
             if let Ok((_, trait_path)) =
-                krate_collection.get_canonical_path_by_local_type_id(&type_.package_id, &trait_id)
+                krate_collection.get_canonical_path_by_local_type_id(&type_.package_id, trait_id)
             {
                 if trait_path == expected_trait_path {
                     return true;
@@ -108,7 +108,7 @@ impl MissingTraitImplementationError {
             }
         };
         let constructor_path = constructor_callable_resolver
-            .get_by_right(&constructor_callable)
+            .get_by_right(constructor_callable)
             .unwrap();
         let raw_identifier = resolved_paths2identifiers[constructor_path]
             .iter()
@@ -124,6 +124,6 @@ impl MissingTraitImplementationError {
         let diagnostic = CompilerDiagnosticBuilder::new(source, self)
             .optional_label(label)
             .build();
-        Ok(diagnostic.into())
+        Ok(diagnostic)
     }
 }

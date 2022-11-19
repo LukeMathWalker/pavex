@@ -109,12 +109,12 @@ impl CrateCollection {
             // It has to be at least three segments - crate name, type name, method name.
             // If it's shorter than three, it's just an unknown path.
             return Ok(Err(UnknownTypePath {
-                type_path: path.to_owned(),
+                type_path: path,
             }));
         }
         let (method_name, type_path_segments) = path.split_last().unwrap();
 
-        if let Ok(type_id) = krate.get_type_id_by_path(&type_path_segments) {
+        if let Ok(type_id) = krate.get_type_id_by_path(type_path_segments) {
             let t = self.get_type_by_global_type_id(type_id);
             let impl_block_ids = match &t.inner {
                 ItemEnum::Struct(s) => &s.impls,
@@ -179,7 +179,7 @@ impl CrateCollection {
         let type_id = definition_krate.get_type_id_by_path(&path)?;
         Ok((
             type_id.clone(),
-            self.get_canonical_path_by_global_type_id(&type_id)?,
+            self.get_canonical_path_by_global_type_id(type_id)?,
         ))
     }
 }
@@ -258,7 +258,7 @@ impl CrateCore {
         let expected_link_name = utils::normalize_crate_name(&external_crate.name);
         let package_candidates: IndexSet<_> = transitive_dependencies
             .links(guppy::graph::DependencyDirection::Forward)
-            .filter(|link| utils::normalize_crate_name(&link.to().name()) == expected_link_name)
+            .filter(|link| utils::normalize_crate_name(link.to().name()) == expected_link_name)
             .map(|link| {
                 let l = link.to();
                 PackageLinkMetadata {
