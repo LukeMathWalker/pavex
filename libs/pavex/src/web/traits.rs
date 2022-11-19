@@ -63,6 +63,7 @@ pub(crate) fn implements_trait(
             if let Ok((_, trait_path)) =
                 krate_collection.get_canonical_path_by_local_type_id(&type_.package_id, trait_id)
             {
+                dbg!(trait_path);
                 if trait_path == expected_trait_path {
                     return true;
                 }

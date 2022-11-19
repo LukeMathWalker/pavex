@@ -1,5 +1,6 @@
 Error: 
-  × `app::NonCloneSingleton` does not implement the `std::clone::Clone` trait.
+  × `app::NonCloneSingleton` does not implement the `core::clone::Clone`
+  │ trait.
     ╭─[src/lib.rs:11:1]
  11 │ pub fn blueprint() -> AppBlueprint {
  12 │     AppBlueprint::new().constructor(f!(crate::NonCloneSingleton::new), Lifecycle::Singleton)
