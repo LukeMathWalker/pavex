@@ -277,35 +277,24 @@ impl App {
                 None
             }
         }) {
-            if let Err(e) = assert_trait_is_implemented(
-                &krate_collection,
-                singleton_type,
+            for trait_path in [
                 &["core", "marker", "Sync"],
-            ) {
-                let constructor_callable: &Callable = &constructor_callables[singleton_type];
-                let constructor_path = constructor_callable_resolver
-                    .get_by_right(&constructor_callable)
-                    .unwrap();
-                let raw_identifier = resolved_paths2identifiers[constructor_path]
-                    .iter()
-                    .next()
-                    .unwrap();
-                let location = &app_blueprint.constructor_locations[raw_identifier];
-                let source = ParsedSourceFile::new(
-                    location.file.as_str().into(),
-                    &package_graph.workspace(),
-                )
-                .map_err(miette::MietteError::IoError)?;
-                let label = diagnostic::get_f_macro_invocation_span(
-                    &source.contents,
-                    &source.parsed,
-                    location,
-                )
-                .map(|s| s.labeled("The singleton's constructor was registered here".into()));
-                let diagnostic = CompilerDiagnosticBuilder::new(source, e)
-                    .optional_label(label)
-                    .build();
-                return Err(diagnostic.into());
+                &["core", "marker", "Send"],
+                &["std", "clone", "Clone"],
+            ] {
+                if let Err(e) =
+                    assert_trait_is_implemented(&krate_collection, singleton_type, trait_path)
+                {
+                    return Err(e
+                        .into_diagnostic(
+                            &constructor_callables,
+                            &constructor_callable_resolver,
+                            &resolved_paths2identifiers,
+                            &app_blueprint.constructor_locations,
+                            &package_graph,
+                        )?
+                        .into());
+                }
             }
         }
 

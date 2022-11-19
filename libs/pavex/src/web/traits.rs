@@ -1,9 +1,17 @@
+use std::collections::{HashMap, HashSet};
 use std::fmt::Formatter;
 
+use bimap::BiHashMap;
+use guppy::graph::PackageGraph;
+use indexmap::IndexMap;
 use rustdoc_types::ItemEnum;
 
-use crate::language::ResolvedType;
+use pavex_builder::{Location, RawCallableIdentifiers};
+
+use crate::language::{Callable, ResolvedPath, ResolvedType};
 use crate::rustdoc::CrateCollection;
+use crate::web::diagnostic::{CompilerDiagnosticBuilder, ParsedSourceFile, SourceSpanExt};
+use crate::web::{diagnostic, CompilerDiagnostic};
 
 /// It returns an error if `type_` does not implement the specified trait.
 ///
@@ -76,5 +84,46 @@ impl std::fmt::Display for MissingTraitImplementationError {
             &self.type_,
             self.trait_path.join("::")
         )
+    }
+}
+
+impl MissingTraitImplementationError {
+    pub(crate) fn into_diagnostic(
+        mut self,
+        constructor_callables: &IndexMap<ResolvedType, Callable>,
+        constructor_callable_resolver: &BiHashMap<ResolvedPath, Callable>,
+        resolved_paths2identifiers: &HashMap<ResolvedPath, HashSet<RawCallableIdentifiers>>,
+        constructor_locations: &HashMap<RawCallableIdentifiers, Location>,
+        package_graph: &PackageGraph,
+    ) -> Result<CompilerDiagnostic, miette::Error> {
+        let constructor_callable: &Callable = match constructor_callables.get(&self.type_) {
+            Some(c) => c,
+            None => {
+                if self.type_.is_shared_reference {
+                    self.type_.is_shared_reference = false;
+                    &constructor_callables[&self.type_]
+                } else {
+                    unreachable!()
+                }
+            }
+        };
+        let constructor_path = constructor_callable_resolver
+            .get_by_right(&constructor_callable)
+            .unwrap();
+        let raw_identifier = resolved_paths2identifiers[constructor_path]
+            .iter()
+            .next()
+            .unwrap();
+        let location = &constructor_locations[raw_identifier];
+        let source =
+            ParsedSourceFile::new(location.file.as_str().into(), &package_graph.workspace())
+                .map_err(miette::MietteError::IoError)?;
+        let label =
+            diagnostic::get_f_macro_invocation_span(&source.contents, &source.parsed, location)
+                .map(|s| s.labeled("The singleton's constructor was registered here".into()));
+        let diagnostic = CompilerDiagnosticBuilder::new(source, self)
+            .optional_label(label)
+            .build();
+        Ok(diagnostic.into())
     }
 }
