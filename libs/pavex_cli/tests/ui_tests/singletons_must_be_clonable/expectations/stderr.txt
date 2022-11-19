@@ -1,9 +1,9 @@
 Error: 
-  × `hello,` is not a valid import path.
-   ╭─[src/lib.rs:3:1]
- 3 │ pub fn blueprint() -> AppBlueprint {
- 4 │     AppBlueprint::new().route("hello,", "/home")
-   ·                               ────┬───
-   ·                                   ╰── The invalid import path was registered here
- 5 │ }
-   ╰────
+  × `app::NonCloneSingleton` does not implement the `std::clone::Clone` trait.
+    ╭─[src/lib.rs:11:1]
+ 11 │ pub fn blueprint() -> AppBlueprint {
+ 12 │     AppBlueprint::new().constructor(f!(crate::NonCloneSingleton::new), Lifecycle::Singleton)
+    ·                                     ────────────────┬────────────────
+    ·                                                     ╰── The singleton's constructor was registered here
+ 13 │ }
+    ╰────
