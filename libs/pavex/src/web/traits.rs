@@ -41,6 +41,7 @@ pub(crate) fn implements_trait(
         ItemEnum::Enum(e) => &e.impls,
         _ => unreachable!(),
     };
+    // 2:3423:228
     for impl_id in impls {
         let trait_id = match &krate.get_type_by_local_type_id(impl_id).inner {
             ItemEnum::Impl(impl_) => impl_.trait_.as_ref().map(|p| &p.id),

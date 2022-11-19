@@ -519,42 +519,11 @@ fn index_local_items<'a>(
                 }
             }
         }
-        ItemEnum::Struct(_) => {
-            let struct_name = current_item
-                .name
-                .as_deref()
-                .expect("All 'struct' items have a 'name' property");
+        ItemEnum::Trait(_) | ItemEnum::Function(_) | ItemEnum::Enum(_) | ItemEnum::Struct(_) => {
+            let struct_name = current_item.name.as_deref().expect(
+                "All 'struct', 'function', 'enum' and 'trait' items have a 'name' property",
+            );
             current_path.push(struct_name);
-            let path = current_path.into_iter().map(|s| s.to_string()).collect();
-            path_index
-                .entry(GlobalTypeId::new(
-                    current_item_id.to_owned(),
-                    crate_core.package_id.to_owned(),
-                ))
-                .or_default()
-                .insert(path);
-        }
-        ItemEnum::Enum(_) => {
-            let enum_name = current_item
-                .name
-                .as_deref()
-                .expect("All 'enum' items have a 'name' property");
-            current_path.push(enum_name);
-            let path = current_path.into_iter().map(|s| s.to_string()).collect();
-            path_index
-                .entry(GlobalTypeId::new(
-                    current_item_id.to_owned(),
-                    crate_core.package_id.to_owned(),
-                ))
-                .or_default()
-                .insert(path);
-        }
-        ItemEnum::Function(_) => {
-            let function_name = current_item
-                .name
-                .as_deref()
-                .expect("All 'function' items have a 'name' property");
-            current_path.push(function_name);
             let path = current_path.into_iter().map(|s| s.to_string()).collect();
             path_index
                 .entry(GlobalTypeId::new(
