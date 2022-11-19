@@ -51,14 +51,18 @@ pub(crate) fn implements_trait(
     };
     for impl_id in impls {
         let trait_id = match &krate.get_type_by_local_type_id(impl_id).inner {
-            ItemEnum::Impl(impl_) => impl_.trait_.as_ref().map(|p| &p.id),
+            ItemEnum::Impl(impl_) => {
+                if impl_.negative {
+                    continue;
+                }
+                impl_.trait_.as_ref().map(|p| &p.id)
+            }
             _ => unreachable!(),
         };
         if let Some(trait_id) = trait_id {
             if let Ok((_, trait_path)) =
                 krate_collection.get_canonical_path_by_local_type_id(&type_.package_id, trait_id)
             {
-                dbg!(trait_path);
                 if trait_path == expected_trait_path {
                     return true;
                 }

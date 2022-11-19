@@ -271,8 +271,8 @@ impl App {
             }
         }) {
             for trait_path in [
-                &["core", "marker", "Sync"],
                 &["core", "marker", "Send"],
+                &["core", "marker", "Sync"],
                 &["core", "clone", "Clone"],
             ] {
                 if let Err(e) =
