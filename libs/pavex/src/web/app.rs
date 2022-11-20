@@ -285,6 +285,9 @@ impl App {
                             &resolved_paths2identifiers,
                             &app_blueprint.constructor_locations,
                             &package_graph,
+                            Some("All singletons must implement the `Send`, `Sync` and `Clone` traits.\n \
+                                `pavex` runs on a multi-threaded HTTP server and singletons must be shared \
+                                 across all worker threads.".into()),
                         )?
                         .into());
                 }

@@ -42,6 +42,14 @@ impl CompilerDiagnosticBuilder {
         }
     }
 
+    pub fn optional_help(self, help: Option<String>) -> Self {
+        if let Some(help) = help {
+            self.help(help)
+        } else {
+            self
+        }
+    }
+
     pub fn optional_related_error(self, related_error: Option<CompilerDiagnostic>) -> Self {
         if let Some(related) = related_error {
             self.related_error(related)

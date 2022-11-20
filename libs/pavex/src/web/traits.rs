@@ -99,6 +99,7 @@ impl MissingTraitImplementationError {
         resolved_paths2identifiers: &HashMap<ResolvedPath, HashSet<RawCallableIdentifiers>>,
         constructor_locations: &HashMap<RawCallableIdentifiers, Location>,
         package_graph: &PackageGraph,
+        help: Option<String>,
     ) -> Result<CompilerDiagnostic, miette::Error> {
         let constructor_callable: &Callable = match constructor_callables.get(&self.type_) {
             Some(c) => c,
@@ -124,9 +125,10 @@ impl MissingTraitImplementationError {
                 .map_err(miette::MietteError::IoError)?;
         let label =
             diagnostic::get_f_macro_invocation_span(&source.contents, &source.parsed, location)
-                .map(|s| s.labeled("The singleton's constructor was registered here".into()));
+                .map(|s| s.labeled("The constructor was registered here".into()));
         let diagnostic = CompilerDiagnosticBuilder::new(source, self)
             .optional_label(label)
+            .optional_help(help)
             .build();
         Ok(diagnostic)
     }
