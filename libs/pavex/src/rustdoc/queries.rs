@@ -316,6 +316,7 @@ impl CrateCore {
 }
 
 impl Crate {
+    #[tracing::instrument(skip_all, name = "index_crate_docs", fields(package.id = package_id.repr()))]
     fn new(
         collection: &CrateCollection,
         krate: rustdoc_types::Crate,

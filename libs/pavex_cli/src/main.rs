@@ -39,6 +39,8 @@ enum Commands {
 
 fn init_telemetry() {
     let fmt_layer = tracing_subscriber::fmt::layer()
+        .with_file(false)
+        .with_target(false)
         .with_span_events(FmtSpan::NEW | FmtSpan::EXIT)
         .with_timer(tracing_subscriber::fmt::time::uptime());
     let filter_layer = EnvFilter::try_from_default_env()
