@@ -434,7 +434,7 @@ impl Crate {
 
 fn index_local_types<'a>(
     crate_core: &'a CrateCore,
-    collection: &CrateCollection,
+    collection: &'a CrateCollection,
     mut current_path: Vec<&'a str>,
     path_index: &mut HashMap<GlobalTypeId, BTreeSet<Vec<String>>>,
     current_item_id: &rustdoc_types::Id,
@@ -510,10 +510,8 @@ fn index_local_types<'a>(
                                     external_crate.get_type_id_by_path(&imported_summary.path)
                                 {
                                     let foreign_item_id = foreign_item_id.raw_id.clone();
-                                    // TODO: super-wasteful
-                                    let external_core = external_crate.core.clone();
                                     index_local_types(
-                                        &external_core,
+                                        &external_crate.core,
                                         collection,
                                         current_path,
                                         path_index,
