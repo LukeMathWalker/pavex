@@ -11,7 +11,7 @@ use rustdoc_types::{ExternalCrate, Item, ItemEnum, ItemKind, Visibility};
 
 use crate::language::{ImportPath, ResolvedPath};
 use crate::rustdoc::package_id_spec::PackageIdSpecification;
-use crate::rustdoc::{compute::get_crate_data, utils, CannotGetCrateData, TOOLCHAIN_CRATES};
+use crate::rustdoc::{compute::compute_crate_docs, utils, CannotGetCrateData, TOOLCHAIN_CRATES};
 
 /// The main entrypoint for accessing the documentation of the crates
 /// in a specific `PackageGraph`.
@@ -43,7 +43,7 @@ impl CrateCollection {
     ) -> Result<&Crate, CannotGetCrateData> {
         let package_spec = PackageIdSpecification::from_package_id(package_id, &self.1);
         if self.0.get(&package_spec).is_none() {
-            let krate = get_crate_data(
+            let krate = compute_crate_docs(
                 self.1.workspace().target_directory().as_std_path(),
                 &package_spec,
             )?;

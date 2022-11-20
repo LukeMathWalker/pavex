@@ -42,7 +42,19 @@ pub struct App {
     codegen_types: HashSet<ResolvedType>,
 }
 
+#[tracing::instrument]
+fn compute_package_graph() -> Result<PackageGraph, miette::Error> {
+    // `cargo metadata` seems to be the only reliable way of retrieving the path to
+    // the root manifest of the current workspace for a Rust project.
+    guppy::MetadataCommand::new()
+        .exec()
+        .map_err(|e| miette!(e))?
+        .build_graph()
+        .map_err(|e| miette!(e))
+}
+
 impl App {
+    #[tracing::instrument(skip_all)]
     pub fn build(app_blueprint: AppBlueprint) -> Result<Self, miette::Error> {
         // We collect all the unique raw identifiers from the blueprint.
         let raw_identifiers_db: HashSet<RawCallableIdentifiers> = {
@@ -56,11 +68,7 @@ impl App {
 
         // `cargo metadata` seems to be the only reliable way of retrieving the path to
         // the root manifest of the current workspace for a Rust project.
-        let package_graph = guppy::MetadataCommand::new()
-            .exec()
-            .map_err(|e| miette!(e))?
-            .build_graph()
-            .map_err(|e| miette!(e))?;
+        let package_graph = compute_package_graph()?;
         let mut krate_collection = CrateCollection::new(package_graph.clone());
 
         let resolved_paths2identifiers: HashMap<ResolvedPath, HashSet<RawCallableIdentifiers>> = {

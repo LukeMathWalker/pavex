@@ -1,6 +1,10 @@
 use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
+use tracing_subscriber::fmt::format::FmtSpan;
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::util::SubscriberInitExt;
+use tracing_subscriber::EnvFilter;
 
 use pavex::App;
 use pavex_builder::AppBlueprint;
@@ -33,6 +37,20 @@ enum Commands {
     },
 }
 
+fn init_telemetry() {
+    let fmt_layer = tracing_subscriber::fmt::layer()
+        .with_span_events(FmtSpan::NEW | FmtSpan::EXIT)
+        .with_timer(tracing_subscriber::fmt::time::uptime());
+    let filter_layer = EnvFilter::try_from_default_env()
+        .or_else(|_| EnvFilter::try_new("info"))
+        .unwrap();
+
+    tracing_subscriber::registry()
+        .with(filter_layer)
+        .with(fmt_layer)
+        .init();
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
     miette::set_hook(Box::new(move |_| {
@@ -45,6 +63,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Box::new(config.build())
     }))
     .unwrap();
+    init_telemetry();
     match cli.command {
         Commands::Generate {
             blueprint,
