@@ -1,5 +1,6 @@
 use pavex_builder::{f, AppBlueprint, Lifecycle};
 
+#[derive(Clone)]
 pub struct Singleton;
 
 impl Singleton {

@@ -42,6 +42,14 @@ impl CompilerDiagnosticBuilder {
         }
     }
 
+    pub fn optional_help(self, help: Option<String>) -> Self {
+        if let Some(help) = help {
+            self.help(help)
+        } else {
+            self
+        }
+    }
+
     pub fn optional_related_error(self, related_error: Option<CompilerDiagnostic>) -> Self {
         if let Some(related) = related_error {
             self.related_error(related)
@@ -301,7 +309,7 @@ pub fn read_source_file(
     if path.is_absolute() {
         fs_err::read_to_string(path)
     } else {
-        let path = workspace.root().as_std_path().join(&path);
+        let path = workspace.root().as_std_path().join(path);
         fs_err::read_to_string(&path)
     }
 }

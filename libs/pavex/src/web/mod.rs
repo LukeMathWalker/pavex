@@ -11,3 +11,4 @@ mod diagnostic;
 mod generated_app;
 mod handler_call_graph;
 mod resolvers;
+mod traits;

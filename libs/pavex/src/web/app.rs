@@ -28,6 +28,7 @@ use crate::web::diagnostic::{
 use crate::web::generated_app::GeneratedApp;
 use crate::web::handler_call_graph::HandlerCallGraph;
 use crate::web::resolvers::{CallableResolutionError, CallableType};
+use crate::web::traits::assert_trait_is_implemented;
 use crate::web::{codegen, diagnostic, resolvers};
 
 pub(crate) const GENERATED_APP_PACKAGE_ID: &str = "crate";
@@ -41,7 +42,19 @@ pub struct App {
     codegen_types: HashSet<ResolvedType>,
 }
 
+#[tracing::instrument]
+fn compute_package_graph() -> Result<PackageGraph, miette::Error> {
+    // `cargo metadata` seems to be the only reliable way of retrieving the path to
+    // the root manifest of the current workspace for a Rust project.
+    guppy::MetadataCommand::new()
+        .exec()
+        .map_err(|e| miette!(e))?
+        .build_graph()
+        .map_err(|e| miette!(e))
+}
+
 impl App {
+    #[tracing::instrument(skip_all)]
     pub fn build(app_blueprint: AppBlueprint) -> Result<Self, miette::Error> {
         // We collect all the unique raw identifiers from the blueprint.
         let raw_identifiers_db: HashSet<RawCallableIdentifiers> = {
@@ -55,11 +68,7 @@ impl App {
 
         // `cargo metadata` seems to be the only reliable way of retrieving the path to
         // the root manifest of the current workspace for a Rust project.
-        let package_graph = guppy::MetadataCommand::new()
-            .exec()
-            .map_err(|e| miette!(e))?
-            .build_graph()
-            .map_err(|e| miette!(e))?;
+        let package_graph = compute_package_graph()?;
         let mut krate_collection = CrateCollection::new(package_graph.clone());
 
         let resolved_paths2identifiers: HashMap<ResolvedPath, HashSet<RawCallableIdentifiers>> = {
@@ -122,7 +131,7 @@ impl App {
             map
         };
 
-        let constructor_paths = {
+        let constructor_paths: IndexSet<ResolvedPath> = {
             let mut set = IndexSet::with_capacity(app_blueprint.constructors.len());
             for constructor_identifiers in &app_blueprint.constructors {
                 let constructor_path = identifiers2path[constructor_identifiers].clone();
@@ -149,11 +158,7 @@ impl App {
         };
 
         let (constructor_callable_resolver, constructor_callables) =
-            match resolvers::resolve_constructors(
-                &constructor_paths,
-                &mut krate_collection,
-                &package_graph,
-            ) {
+            match resolvers::resolve_constructors(&constructor_paths, &mut krate_collection) {
                 Ok((resolver, constructors)) => (resolver, constructors),
                 Err(e) => {
                     return Err(e.into_diagnostic(
@@ -166,8 +171,8 @@ impl App {
             };
 
         let mut constructors: IndexMap<ResolvedType, Constructor> = IndexMap::new();
-        for (output_type, callable) in constructor_callables.into_iter() {
-            let constructor = match callable.try_into() {
+        for (output_type, callable) in &constructor_callables {
+            let constructor = match callable.to_owned().try_into() {
                 Ok(c) => c,
                 Err(e) => {
                     return match e {
@@ -198,7 +203,7 @@ impl App {
                     };
                 }
             };
-            constructors.insert(output_type, constructor);
+            constructors.insert(output_type.to_owned(), constructor);
         }
 
         // For each non-reference type, register an inlineable constructor that transforms
@@ -212,26 +217,23 @@ impl App {
             }
         }
 
-        let (handler_resolver, handlers) = match resolvers::resolve_handlers(
-            &handler_paths,
-            &mut krate_collection,
-            &package_graph,
-        ) {
-            Ok(h) => h,
-            Err(e) => {
-                return Err(e.into_diagnostic(
-                    &resolved_paths2identifiers,
-                    |identifiers| {
-                        app_blueprint.handler_locations[identifiers]
-                            .first()
-                            .unwrap()
-                            .clone()
-                    },
-                    &package_graph,
-                    CallableType::Handler,
-                )?);
-            }
-        };
+        let (handler_resolver, handlers) =
+            match resolvers::resolve_handlers(&handler_paths, &mut krate_collection) {
+                Ok(h) => h,
+                Err(e) => {
+                    return Err(e.into_diagnostic(
+                        &resolved_paths2identifiers,
+                        |identifiers| {
+                            app_blueprint.handler_locations[identifiers]
+                                .first()
+                                .unwrap()
+                                .clone()
+                        },
+                        &package_graph,
+                        CallableType::Handler,
+                    )?);
+                }
+            };
 
         let mut router = BTreeMap::new();
         for (route, callable_identifiers) in app_blueprint.router {
@@ -267,6 +269,38 @@ impl App {
             }
             map
         };
+
+        // All singletons must implement `Clone`, `Send` and `Sync`.
+        for singleton_type in component2lifecycle.iter().filter_map(|(t, l)| {
+            if l == &Lifecycle::Singleton {
+                Some(t)
+            } else {
+                None
+            }
+        }) {
+            for trait_path in [
+                &["core", "marker", "Send"],
+                &["core", "marker", "Sync"],
+                &["core", "clone", "Clone"],
+            ] {
+                if let Err(e) =
+                    assert_trait_is_implemented(&krate_collection, singleton_type, trait_path)
+                {
+                    return Err(e
+                        .into_diagnostic(
+                            &constructor_callables,
+                            &constructor_callable_resolver,
+                            &resolved_paths2identifiers,
+                            &app_blueprint.constructor_locations,
+                            &package_graph,
+                            Some("All singletons must implement the `Send`, `Sync` and `Clone` traits.\n \
+                                `pavex` runs on a multi-threaded HTTP server and singletons must be shared \
+                                 across all worker threads.".into()),
+                        )?
+                        .into());
+                }
+            }
+        }
 
         let handler_call_graphs: IndexMap<_, _> = handler_dependency_graphs
             .iter()
@@ -511,7 +545,9 @@ fn process_framework_path(
         RawCallableIdentifiers::from_raw_parts(raw_path.into(), "pavex_builder".into());
     let path = ResolvedPath::parse(&identifiers, package_graph).unwrap();
     let type_id = path.find_type_id(krate_collection).unwrap();
-    let base_path = krate_collection.get_canonical_path_by_global_type_id(&type_id);
+    let base_path = krate_collection
+        .get_canonical_path_by_global_type_id(&type_id)
+        .unwrap();
     ResolvedType {
         package_id: type_id.package_id().to_owned(),
         base_type: base_path.to_vec(),

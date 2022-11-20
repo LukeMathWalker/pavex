@@ -35,6 +35,7 @@ pub(crate) struct CallableDependencyGraph {
 impl CallableDependencyGraph {
     /// Starting from a callable, build up its dependency graph: what types it needs to be fed as
     /// inputs and what types are needed, in turn, to construct those inputs.
+    #[tracing::instrument(name = "compute_callable_dependency_graph", skip_all, fields(callable))]
     pub fn new(callable: Callable, constructors: &IndexMap<ResolvedType, Constructor>) -> Self {
         fn process_callable(
             callable: &Callable,
