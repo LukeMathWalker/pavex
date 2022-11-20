@@ -108,9 +108,7 @@ impl CrateCollection {
         if path.len() < 3 {
             // It has to be at least three segments - crate name, type name, method name.
             // If it's shorter than three, it's just an unknown path.
-            return Ok(Err(UnknownTypePath {
-                type_path: path,
-            }));
+            return Ok(Err(UnknownTypePath { type_path: path }));
         }
         let (method_name, type_path_segments) = path.split_last().unwrap();
 
@@ -177,10 +175,8 @@ impl CrateCollection {
         };
         let definition_krate = self.get_or_compute_crate_by_package_id(&definition_package_id)?;
         let type_id = definition_krate.get_type_id_by_path(&path)?;
-        Ok((
-            type_id.clone(),
-            self.get_canonical_path_by_global_type_id(type_id)?,
-        ))
+        let canonical_path = self.get_canonical_path_by_global_type_id(type_id)?;
+        Ok((type_id.clone(), canonical_path))
     }
 }
 
@@ -193,7 +189,13 @@ impl CrateCollection {
 #[derive(Debug, Clone)]
 pub struct Crate {
     core: CrateCore,
-    path_index: HashMap<Vec<String>, GlobalTypeId>,
+    /// An index to lookup the global id of a type given a local importable path
+    /// that points at it.
+    ///
+    /// The index does NOT contain macros, since macros and types live in two
+    /// different namespaces and can contain items with the same name.
+    /// E.g. `core::clone::Clone` is both a trait and a derive macro.
+    types_path_index: HashMap<Vec<String>, GlobalTypeId>,
     public_local_path_index: HashMap<GlobalTypeId, BTreeSet<Vec<String>>>,
 }
 
@@ -320,10 +322,15 @@ impl Crate {
         package_id: PackageId,
     ) -> Self {
         let crate_core = CrateCore { package_id, krate };
-        let mut path_index: HashMap<_, _> = crate_core
+        let mut types_path_index: HashMap<_, _> = crate_core
             .krate
             .paths
             .iter()
+            // We only want types, no macros
+            .filter(|(_, summary)| match summary.kind {
+                ItemKind::Macro | ItemKind::ProcDerive => false,
+                _ => true,
+            })
             .map(|(id, summary)| {
                 (
                     summary.path.clone(),
@@ -333,7 +340,7 @@ impl Crate {
             .collect();
 
         let mut public_local_path_index = HashMap::new();
-        index_local_items(
+        index_local_types(
             &crate_core,
             collection,
             vec![],
@@ -341,18 +348,18 @@ impl Crate {
             &crate_core.krate.root,
         );
 
-        path_index.reserve(public_local_path_index.len());
+        types_path_index.reserve(public_local_path_index.len());
         for (id, public_paths) in &public_local_path_index {
             for public_path in public_paths {
-                if path_index.get(public_path).is_none() {
-                    path_index.insert(public_path.to_owned(), id.to_owned());
+                if types_path_index.get(public_path).is_none() {
+                    types_path_index.insert(public_path.to_owned(), id.to_owned());
                 }
             }
         }
 
         Self {
             core: crate_core,
-            path_index,
+            types_path_index,
             public_local_path_index,
         }
     }
@@ -371,9 +378,11 @@ impl Crate {
     }
 
     pub fn get_type_id_by_path(&self, path: &[String]) -> Result<&GlobalTypeId, UnknownTypePath> {
-        self.path_index.get(path).ok_or_else(|| UnknownTypePath {
-            type_path: path.to_owned(),
-        })
+        self.types_path_index
+            .get(path)
+            .ok_or_else(|| UnknownTypePath {
+                type_path: path.to_owned(),
+            })
     }
 
     /// Return the crate_id, path and item kind for a **local** type id.
@@ -422,7 +431,7 @@ impl Crate {
     }
 }
 
-fn index_local_items<'a>(
+fn index_local_types<'a>(
     crate_core: &'a CrateCore,
     collection: &CrateCollection,
     mut current_path: Vec<&'a str>,
@@ -463,7 +472,7 @@ fn index_local_items<'a>(
                 .expect("All 'module' items have a 'name' property");
             current_path.push(current_path_segment);
             for item_id in &m.items {
-                index_local_items(
+                index_local_types(
                     crate_core,
                     collection,
                     current_path.clone(),
@@ -502,7 +511,7 @@ fn index_local_items<'a>(
                                     let foreign_item_id = foreign_item_id.raw_id.clone();
                                     // TODO: super-wasteful
                                     let external_core = external_crate.core.clone();
-                                    index_local_items(
+                                    index_local_types(
                                         &external_core,
                                         collection,
                                         current_path,
@@ -522,7 +531,7 @@ fn index_local_items<'a>(
                                 current_path.push(&i.name);
                             }
                         }
-                        index_local_items(
+                        index_local_types(
                             crate_core,
                             collection,
                             current_path.clone(),
