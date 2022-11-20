@@ -54,6 +54,14 @@
     constructor_locations: {
         (
             registered_at: "app_blueprint",
+            import_path: "crate :: logger",
+        ): (
+            line: 40,
+            column: 10,
+            file: "examples/app_blueprint/src/lib.rs",
+        ),
+        (
+            registered_at: "app_blueprint",
             import_path: "crate :: extract_path",
         ): (
             line: 39,
@@ -65,14 +73,6 @@
             import_path: "crate :: http_client",
         ): (
             line: 38,
-            column: 10,
-            file: "examples/app_blueprint/src/lib.rs",
-        ),
-        (
-            registered_at: "app_blueprint",
-            import_path: "crate :: logger",
-        ): (
-            line: 40,
             column: 10,
             file: "examples/app_blueprint/src/lib.rs",
         ),
