@@ -25,7 +25,7 @@ impl TryFrom<Callable> for Constructor {
     fn try_from(c: Callable) -> Result<Self, Self::Error> {
         if c.output.base_type == vec!["()"] {
             return Err(ConstructorValidationError::CannotReturnTheUnitType(
-                c.path.to_owned(),
+                c.path,
             ));
         }
         Ok(Constructor::Callable(c))

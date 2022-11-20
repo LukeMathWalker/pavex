@@ -31,7 +31,6 @@ use crate::web::diagnostic::{
 pub(crate) fn resolve_constructors(
     constructor_paths: &IndexSet<ResolvedPath>,
     krate_collection: &mut CrateCollection,
-    package_graph: &PackageGraph,
 ) -> Result<
     (
         BiHashMap<ResolvedPath, Callable>,
@@ -42,8 +41,7 @@ pub(crate) fn resolve_constructors(
     let mut resolution_map = BiHashMap::with_capacity(constructor_paths.len());
     let mut constructors = IndexMap::with_capacity(constructor_paths.len());
     for constructor_identifiers in constructor_paths {
-        let constructor =
-            resolve_callable(krate_collection, constructor_identifiers, package_graph)?;
+        let constructor = resolve_callable(krate_collection, constructor_identifiers)?;
         constructors.insert(constructor.output.clone(), constructor.clone());
         resolution_map.insert(constructor_identifiers.to_owned(), constructor);
     }
@@ -55,12 +53,11 @@ pub(crate) fn resolve_constructors(
 pub(crate) fn resolve_handlers(
     handler_paths: &IndexSet<ResolvedPath>,
     krate_collection: &mut CrateCollection,
-    package_graph: &PackageGraph,
 ) -> Result<(HashMap<ResolvedPath, Callable>, IndexSet<Callable>), CallableResolutionError> {
     let mut handlers = IndexSet::with_capacity(handler_paths.len());
     let mut handler_resolver = HashMap::new();
     for callable_path in handler_paths {
-        let handler = resolve_callable(krate_collection, callable_path, package_graph)?;
+        let handler = resolve_callable(krate_collection, callable_path)?;
         handlers.insert(handler.clone());
         handler_resolver.insert(callable_path.to_owned(), handler);
     }
@@ -72,7 +69,6 @@ fn process_type(
     // The package id where the type we are trying to process has been referenced (e.g. as an
     // input/output parameter).
     used_by_package_id: &PackageId,
-    package_graph: &PackageGraph,
     krate_collection: &mut CrateCollection,
 ) -> Result<ResolvedType, anyhow::Error> {
     match type_ {
@@ -92,7 +88,6 @@ fn process_type(
                                     generics.push(process_type(
                                         generic_type,
                                         used_by_package_id,
-                                        package_graph,
                                         krate_collection,
                                     )?);
                                 }
@@ -132,8 +127,7 @@ fn process_type(
                     by value (`move` semantic) or via a shared reference (`&MyType`)",
                 ));
             }
-            let mut resolved_type =
-                process_type(type_, used_by_package_id, package_graph, krate_collection)?;
+            let mut resolved_type = process_type(type_, used_by_package_id, krate_collection)?;
             resolved_type.is_shared_reference = true;
             Ok(resolved_type)
         }
@@ -147,7 +141,6 @@ fn process_type(
 fn resolve_callable(
     krate_collection: &mut CrateCollection,
     callable_path: &ResolvedPath,
-    package_graph: &PackageGraph,
 ) -> Result<Callable, CallableResolutionError> {
     let type_ = callable_path.find_type(krate_collection)?;
     let used_by_package_id = &callable_path.package_id;
@@ -191,12 +184,7 @@ fn resolve_callable(
 
     let mut parameter_paths = Vec::with_capacity(decl.inputs.len());
     for (parameter_index, (_, parameter_type)) in decl.inputs.iter().enumerate() {
-        match process_type(
-            parameter_type,
-            used_by_package_id,
-            package_graph,
-            krate_collection,
-        ) {
+        match process_type(parameter_type, used_by_package_id, krate_collection) {
             Ok(p) => parameter_paths.push(p),
             Err(e) => {
                 return Err(ParameterResolutionError {
@@ -219,12 +207,7 @@ fn resolve_callable(
             is_shared_reference: false,
         },
         Some(output_type) => {
-            match process_type(
-                output_type,
-                used_by_package_id,
-                package_graph,
-                krate_collection,
-            ) {
+            match process_type(output_type, used_by_package_id, krate_collection) {
                 Ok(p) => p,
                 Err(e) => {
                     return Err(OutputTypeResolutionError {
@@ -352,7 +335,7 @@ impl CallableResolutionError {
                         )
                         .labeled("I do not know how handle this parameter".into());
                         let source_code = NamedSource::new(
-                            &definition_span.filename.to_str().unwrap(),
+                            definition_span.filename.to_str().unwrap(),
                             source_contents,
                         );
                         Some(
@@ -447,7 +430,7 @@ impl CallableResolutionError {
                         let label =
                             source_span.labeled("The output type that I cannot handle".into());
                         let source_code = NamedSource::new(
-                            &definition_span.filename.to_str().unwrap(),
+                            definition_span.filename.to_str().unwrap(),
                             source_contents,
                         );
                         Some(

@@ -45,6 +45,7 @@ pub(crate) struct HandlerCallGraph {
 }
 
 impl HandlerCallGraph {
+    #[tracing::instrument(name = "compute_handler_call_graph", skip_all)]
     pub(crate) fn new(
         dependency_graph: &'_ CallableDependencyGraph,
         lifecycles: HashMap<ResolvedType, Lifecycle>,

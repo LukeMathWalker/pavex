@@ -30,6 +30,7 @@ pub(crate) struct ApplicationStateCallGraph {
 }
 
 impl ApplicationStateCallGraph {
+    #[tracing::instrument(name = "compute_application_state_call_graph", skip_all)]
     pub(crate) fn new(
         runtime_singleton_bindings: BiHashMap<Ident, ResolvedType>,
         lifecycles: HashMap<ResolvedType, Lifecycle>,

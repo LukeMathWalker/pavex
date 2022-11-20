@@ -63,7 +63,7 @@ impl GeneratedApp {
         let root_manifest = fs_err::read_to_string(&root_manifest_path)?;
         let mut root_manifest: toml::Value = toml::from_str(&root_manifest)?;
 
-        let member_path = pathdiff::diff_paths(&generated_crate_directory, root_path)
+        let member_path = pathdiff::diff_paths(generated_crate_directory, root_path)
             .unwrap()
             .to_string_lossy()
             .to_string();
@@ -82,9 +82,7 @@ impl GeneratedApp {
                 .unwrap();
             if let Some(members) = workspace.get_mut("members") {
                 if let Some(members) = members.as_array_mut() {
-                    if !members
-                        .iter().any(|m| m.as_str() == Some(&member_path))
-                    {
+                    if !members.iter().any(|m| m.as_str() == Some(&member_path)) {
                         members.push(member_path.into());
                     }
                 }
