@@ -54,7 +54,7 @@ pub(crate) fn codegen_app(
     // TODO: enforce that handlers have the right signature
     // TODO: enforce that the only required input is a Request type of some kind
     let mut route_id2path = BiHashMap::new();
-    let mut route_id2handler = HashMap::new();
+    let mut route_id2handler = BTreeMap::new();
     for (route_id, (path, handler)) in router.iter().enumerate() {
         route_id2path.insert(route_id as u32, path.clone());
         route_id2handler.insert(route_id as u32, handler_functions[&handler.path].to_owned());
@@ -161,7 +161,7 @@ fn get_router_init(route_id2path: &BiHashMap<u32, String>) -> ItemFn {
 }
 
 fn get_request_dispatcher(
-    route_id2handler: &HashMap<u32, (ItemFn, IndexSet<ResolvedType>)>,
+    route_id2handler: &BTreeMap<u32, (ItemFn, IndexSet<ResolvedType>)>,
     singleton_bindings: &BiHashMap<Ident, ResolvedType>,
     request_scoped_bindings: &BiHashMap<Ident, ResolvedType>,
 ) -> ItemFn {
