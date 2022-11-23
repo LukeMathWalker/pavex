@@ -5,13 +5,16 @@ struct ServerState {
     router: pavex_runtime::routing::Router<u32>,
     application_state: ApplicationState,
 }
+
 pub struct ApplicationState {
     s0: app::NonSyncSingleton,
 }
+
 pub fn build_application_state() -> crate::ApplicationState {
     let v0 = app::NonSyncSingleton::new();
     crate::ApplicationState { s0: v0 }
 }
+
 pub async fn run(
     server_builder: pavex_runtime::hyper::server::Builder<
         pavex_runtime::hyper::server::conn::AddrIncoming,
@@ -37,6 +40,7 @@ pub async fn run(
     });
     server_builder.serve(make_service).await.map_err(Into::into)
 }
+
 fn build_router() -> Result<pavex_runtime::routing::Router<u32>, pavex_runtime::routing::InsertError>
 {
     let mut router = pavex_runtime::routing::Router::new();
@@ -44,6 +48,7 @@ fn build_router() -> Result<pavex_runtime::routing::Router<u32>, pavex_runtime::
     router.insert("/ref", 1u32)?;
     Ok(router)
 }
+
 fn route_request(
     request: pavex_runtime::http::Request<pavex_runtime::hyper::body::Body>,
     server_state: std::sync::Arc<ServerState>,
@@ -58,6 +63,7 @@ fn route_request(
         _ => panic!("This is a bug, no route registered for a route id"),
     }
 }
+
 pub fn route_handler_0(v0: &app::NonSyncSingleton) -> http::Response<hyper::Body> {
     app::ref_handler(v0)
 }
