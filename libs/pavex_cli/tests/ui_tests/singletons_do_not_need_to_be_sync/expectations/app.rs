@@ -25,28 +25,20 @@ pub async fn run(
     let make_service = pavex_runtime::hyper::service::make_service_fn(move |_| {
         let server_state = server_state.clone();
         async move {
-            Ok::<
-                _,
-                pavex_runtime::hyper::Error,
-            >(
-                pavex_runtime::hyper::service::service_fn(move |request| {
+            Ok::<_, pavex_runtime::hyper::Error>(pavex_runtime::hyper::service::service_fn(
+                move |request| {
                     let server_state = server_state.clone();
                     async move {
-                        Ok::<
-                            _,
-                            pavex_runtime::hyper::Error,
-                        >(route_request(request, server_state))
+                        Ok::<_, pavex_runtime::hyper::Error>(route_request(request, server_state))
                     }
-                }),
-            )
+                },
+            ))
         }
     });
     server_builder.serve(make_service).await.map_err(Into::into)
 }
-fn build_router() -> Result<
-    pavex_runtime::routing::Router<u32>,
-    pavex_runtime::routing::InsertError,
-> {
+fn build_router() -> Result<pavex_runtime::routing::Router<u32>, pavex_runtime::routing::InsertError>
+{
     let mut router = pavex_runtime::routing::Router::new();
     router.insert("/owned", 0u32)?;
     router.insert("/ref", 1u32)?;
@@ -66,9 +58,10 @@ fn route_request(
         _ => panic!("This is a bug, no route registered for a route id"),
     }
 }
-pub fn route_handler_1(v0: app::NonSyncSingleton) -> http::Response<hyper::Body> {
-    app::owned_handler(v0)
-}
 pub fn route_handler_0(v0: &app::NonSyncSingleton) -> http::Response<hyper::Body> {
     app::ref_handler(v0)
+}
+
+pub fn route_handler_1(v0: app::NonSyncSingleton) -> http::Response<hyper::Body> {
+    app::owned_handler(v0)
 }

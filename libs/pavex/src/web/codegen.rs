@@ -1,7 +1,7 @@
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{BTreeMap, HashSet};
 use std::path::PathBuf;
 
-use bimap::BiHashMap;
+use bimap::{BiBTreeMap, BiHashMap};
 use cargo_manifest::{Dependency, DependencyDetail, Edition};
 use guppy::graph::PackageSource;
 use guppy::{PackageId, Version};
@@ -34,14 +34,14 @@ pub(crate) fn codegen_app(
         get_application_state_init(application_state_call_graph, package_id2name)?;
     let define_server_state = define_server_state();
 
-    let handler_functions: HashMap<_, _> = handler_call_graphs
+    let handler_functions: IndexMap<_, _> = handler_call_graphs
         .into_iter()
         .map(|(path, call_graph)| {
             let code = codegen(call_graph, package_id2name)?;
             Ok::<_, anyhow::Error>((path, (code, call_graph.input_parameter_types.clone())))
         })
         // TODO: wasteful
-        .collect::<Result<HashMap<_, _>, _>>()?
+        .collect::<Result<IndexMap<_, _>, _>>()?
         .into_iter()
         .enumerate()
         .map(|(i, (path, (mut function, parameter_bindings)))| {
@@ -49,11 +49,11 @@ pub(crate) fn codegen_app(
             function.sig.ident = format_ident!("route_handler_{}", i);
             (path, (function, parameter_bindings))
         })
-        .collect::<HashMap<_, _>>();
+        .collect();
 
     // TODO: enforce that handlers have the right signature
     // TODO: enforce that the only required input is a Request type of some kind
-    let mut route_id2path = BiHashMap::new();
+    let mut route_id2path = BiBTreeMap::new();
     let mut route_id2handler = BTreeMap::new();
     for (route_id, (path, handler)) in router.iter().enumerate() {
         route_id2path.insert(route_id as u32, path.clone());
@@ -142,7 +142,7 @@ fn get_application_state_init(
     Ok(function)
 }
 
-fn get_router_init(route_id2path: &BiHashMap<u32, String>) -> ItemFn {
+fn get_router_init(route_id2path: &BiBTreeMap<u32, String>) -> ItemFn {
     let mut router_init = quote! {
         let mut router = pavex_runtime::routing::Router::new();
     };
