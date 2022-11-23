@@ -278,11 +278,7 @@ impl App {
                 None
             }
         }) {
-            for trait_path in [
-                &["core", "marker", "Send"],
-                &["core", "marker", "Sync"],
-                &["core", "clone", "Clone"],
-            ] {
+            for trait_path in [&["core", "marker", "Send"], &["core", "clone", "Clone"]] {
                 if let Err(e) =
                     assert_trait_is_implemented(&krate_collection, singleton_type, trait_path)
                 {
