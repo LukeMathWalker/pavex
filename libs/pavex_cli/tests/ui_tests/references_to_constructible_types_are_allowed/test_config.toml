@@ -1,4 +1,4 @@
-description = "pavex does not know how to deal with shared references, even for types that have a registered constructor"
+description = "pavex knows how to deal with shared references, no matter the lifecycle of the underlying type"
 
 [expectations]
 codegen = "pass"
