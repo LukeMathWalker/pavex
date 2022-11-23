@@ -1,7 +1,7 @@
-description = "Singletons do not need to implement Sync"
+description = "Singletons need to implement Sync"
 
 [expectations]
-codegen = "pass"
+codegen = "fail"
 
 [dependencies]
 http = "0.2"
