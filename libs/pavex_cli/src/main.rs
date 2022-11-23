@@ -65,7 +65,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Box::new(config.build())
     }))
     .unwrap();
-    init_telemetry();
+    if cli.debug {
+        init_telemetry();
+    }
     match cli.command {
         Commands::Generate {
             blueprint,
