@@ -168,6 +168,7 @@ fn get_request_dispatcher(
     let mut route_dispatch_table = quote! {};
 
     for (route_id, (handler, handler_input_types)) in route_id2handler {
+        let is_handler_async = handler.sig.asyncness.is_some();
         let handler_function_name = &handler.sig.ident;
         let input_parameters = handler_input_types.iter().map(|type_| {
             let is_shared_reference = type_.is_shared_reference;
@@ -196,9 +197,13 @@ fn get_request_dispatcher(
                 }
             }
         });
+        let mut handler_invocation = quote! { #handler_function_name(#(#input_parameters),*) };
+        if is_handler_async {
+            handler_invocation = quote! { #handler_invocation.await };
+        }
         route_dispatch_table = quote! {
             #route_dispatch_table
-            #route_id => #handler_function_name(#(#input_parameters),*),
+            #route_id => #handler_invocation,
         }
     }
 
