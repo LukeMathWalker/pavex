@@ -270,7 +270,7 @@ impl App {
             map
         };
 
-        // All singletons must implement `Clone` and `Send`.
+        // All singletons must implement `Clone`, `Send` and `Sync`.
         for singleton_type in component2lifecycle.iter().filter_map(|(t, l)| {
             if l == &Lifecycle::Singleton {
                 Some(t)
