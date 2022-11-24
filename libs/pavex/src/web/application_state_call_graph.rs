@@ -39,6 +39,7 @@ impl ApplicationStateCallGraph {
         // We build a "mock" callable that has the right inputs in order to drive the machinery
         // that builds the dependency graph.
         let application_state_constructor = Callable {
+            is_async: false,
             output: ResolvedType {
                 package_id: PackageId::new(GENERATED_APP_PACKAGE_ID),
                 base_type: vec!["crate".into(), "ApplicationState".into()],
