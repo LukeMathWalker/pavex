@@ -8,6 +8,7 @@ use crate::language::{ResolvedPath, ResolvedType};
 
 #[derive(Clone, Hash, Eq, PartialEq)]
 pub(crate) struct Callable {
+    pub is_async: bool,
     pub output: ResolvedType,
     pub path: ResolvedPath,
     pub inputs: Vec<ResolvedType>,
