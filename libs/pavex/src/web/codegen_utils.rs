@@ -110,12 +110,15 @@ pub(crate) fn codegen_call(
     callable: &Callable,
     variable_bindings: &HashMap<ResolvedType, Box<dyn ToTokens>>,
     package_id2name: &BiHashMap<&PackageId, String>,
-) -> Result<syn::ExprCall, anyhow::Error> {
+) -> Result<TokenStream, anyhow::Error> {
     let callable_path: syn::ExprPath =
         syn::parse_str(&callable.path.render_path(package_id2name)).unwrap();
     let parameters = callable.inputs.iter().map(|i| &variable_bindings[i]);
-    Ok(syn::parse2(quote! {
+    let mut invocation = quote! {
         #callable_path(#(#parameters),*)
-    })
-    .unwrap())
+    };
+    if callable.is_async {
+        invocation = quote! { #invocation.await };
+    }
+    Ok(invocation)
 }

@@ -98,7 +98,7 @@ fn server_startup() -> ItemFn {
                 async move {
                     Ok::<_, pavex_runtime::hyper::Error>(pavex_runtime::hyper::service::service_fn(move |request| {
                         let server_state = server_state.clone();
-                        async move { Ok::<_, pavex_runtime::hyper::Error>(route_request(request, server_state)) }
+                        async move { Ok::<_, pavex_runtime::hyper::Error>(route_request(request, server_state).await) }
                     }))
                 }
             });
@@ -208,7 +208,7 @@ fn get_request_dispatcher(
     }
 
     syn::parse2(quote! {
-        fn route_request(request: pavex_runtime::http::Request<pavex_runtime::hyper::body::Body>, server_state: std::sync::Arc<ServerState>) -> pavex_runtime::http::Response<pavex_runtime::hyper::body::Body> {
+        async fn route_request(request: pavex_runtime::http::Request<pavex_runtime::hyper::body::Body>, server_state: std::sync::Arc<ServerState>) -> pavex_runtime::http::Response<pavex_runtime::hyper::body::Body> {
             let route_id = server_state.router.at(request.uri().path()).expect("Failed to match incoming request path");
             match route_id.value {
                 #route_dispatch_table

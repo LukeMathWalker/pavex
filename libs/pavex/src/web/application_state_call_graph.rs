@@ -245,7 +245,7 @@ impl ApplicationStateCallGraph {
                     Fragment::Statement(s) => s.to_token_stream(),
                 };
                 syn::parse2(quote! {
-                    pub fn build_application_state(#(#inputs),*) -> #output_type {
+                    pub async fn build_application_state(#(#inputs),*) -> #output_type {
                         #(#singleton_constructors)*
                         #b
                     }

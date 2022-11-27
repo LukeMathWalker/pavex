@@ -389,7 +389,7 @@ pub(crate) fn codegen<'a>(
                 Fragment::Statement(s) => s.to_token_stream(),
             };
             syn::parse2(quote! {
-                pub fn handler(#(#inputs),*) -> #output_type {
+                pub async fn handler(#(#inputs),*) -> #output_type {
                     #(#scoped_constructors)*
                     #b
                 }

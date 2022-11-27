@@ -5,13 +5,11 @@ struct ServerState {
     router: pavex_runtime::routing::Router<u32>,
     application_state: ApplicationState,
 }
-
 pub struct ApplicationState {
     s0: app::HttpClient,
 }
-
-pub fn build_application_state(v0: app::Config) -> crate::ApplicationState {
-    let v1 = app::http_client(v0);
+pub async fn build_application_state(v0: app::Config) -> crate::ApplicationState {
+    let v1 = app::http_client(v0).await;
     crate::ApplicationState { s0: v1 }
 }
 
@@ -32,7 +30,9 @@ pub async fn run(
                 move |request| {
                     let server_state = server_state.clone();
                     async move {
-                        Ok::<_, pavex_runtime::hyper::Error>(route_request(request, server_state))
+                        Ok::<_, pavex_runtime::hyper::Error>(
+                            route_request(request, server_state).await,
+                        )
                     }
                 },
             ))
@@ -48,7 +48,7 @@ fn build_router() -> Result<pavex_runtime::routing::Router<u32>, pavex_runtime::
     Ok(router)
 }
 
-fn route_request(
+async fn route_request(
     request: pavex_runtime::http::Request<pavex_runtime::hyper::body::Body>,
     server_state: std::sync::Arc<ServerState>,
 ) -> pavex_runtime::http::Response<pavex_runtime::hyper::body::Body> {
@@ -57,16 +57,16 @@ fn route_request(
         .at(request.uri().path())
         .expect("Failed to match incoming request path");
     match route_id.value {
-        0u32 => route_handler_0(server_state.application_state.s0.clone(), request),
+        0u32 => route_handler_0(server_state.application_state.s0.clone(), request).await,
         _ => panic!("This is a bug, no route registered for a route id"),
     }
 }
 
-pub fn route_handler_0(
+pub async fn route_handler_0(
     v0: app::HttpClient,
     v1: http::Request<hyper::Body>,
 ) -> http::Response<hyper::Body> {
-    let v2 = app::extract_path(v1);
-    let v3 = app::logger();
-    app::stream_file(v2, v3, v0)
+    let v2 = app::extract_path(v1).await;
+    let v3 = app::logger().await;
+    app::stream_file(v2, v3, v0).await
 }
