@@ -5,9 +5,11 @@ struct ServerState {
     router: pavex_runtime::routing::Router<u32>,
     application_state: ApplicationState,
 }
+
 pub struct ApplicationState {
     s0: app::HttpClient,
 }
+
 pub async fn build_application_state(v0: app::Config) -> crate::ApplicationState {
     let v1 = app::http_client(v0).await;
     crate::ApplicationState { s0: v1 }

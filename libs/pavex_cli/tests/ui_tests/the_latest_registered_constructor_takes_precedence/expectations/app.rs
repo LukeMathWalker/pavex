@@ -5,7 +5,9 @@ struct ServerState {
     router: pavex_runtime::routing::Router<u32>,
     application_state: ApplicationState,
 }
+
 pub struct ApplicationState {}
+
 pub async fn build_application_state() -> crate::ApplicationState {
     crate::ApplicationState {}
 }
