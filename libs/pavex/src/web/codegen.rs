@@ -98,7 +98,7 @@ fn server_startup() -> ItemFn {
                 async move {
                     Ok::<_, pavex_runtime::hyper::Error>(pavex_runtime::hyper::service::service_fn(move |request| {
                         let server_state = server_state.clone();
-                        async move { Ok::<_, pavex_runtime::hyper::Error>(route_request(request, server_state)) }
+                        async move { Ok::<_, pavex_runtime::hyper::Error>(route_request(request, server_state).await) }
                     }))
                 }
             });
@@ -168,6 +168,7 @@ fn get_request_dispatcher(
     let mut route_dispatch_table = quote! {};
 
     for (route_id, (handler, handler_input_types)) in route_id2handler {
+        let is_handler_async = handler.sig.asyncness.is_some();
         let handler_function_name = &handler.sig.ident;
         let input_parameters = handler_input_types.iter().map(|type_| {
             let is_shared_reference = type_.is_shared_reference;
@@ -196,14 +197,18 @@ fn get_request_dispatcher(
                 }
             }
         });
+        let mut handler_invocation = quote! { #handler_function_name(#(#input_parameters),*) };
+        if is_handler_async {
+            handler_invocation = quote! { #handler_invocation.await };
+        }
         route_dispatch_table = quote! {
             #route_dispatch_table
-            #route_id => #handler_function_name(#(#input_parameters),*),
+            #route_id => #handler_invocation,
         }
     }
 
     syn::parse2(quote! {
-        fn route_request(request: pavex_runtime::http::Request<pavex_runtime::hyper::body::Body>, server_state: std::sync::Arc<ServerState>) -> pavex_runtime::http::Response<pavex_runtime::hyper::body::Body> {
+        async fn route_request(request: pavex_runtime::http::Request<pavex_runtime::hyper::body::Body>, server_state: std::sync::Arc<ServerState>) -> pavex_runtime::http::Response<pavex_runtime::hyper::body::Body> {
             let route_id = server_state.router.at(request.uri().path()).expect("Failed to match incoming request path");
             match route_id.value {
                 #route_dispatch_table

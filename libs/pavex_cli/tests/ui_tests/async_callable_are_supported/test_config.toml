@@ -1,0 +1,1 @@
+description = "Pavex knows how to handle async functions and methods. The generated code should correctly await them where appropriate."

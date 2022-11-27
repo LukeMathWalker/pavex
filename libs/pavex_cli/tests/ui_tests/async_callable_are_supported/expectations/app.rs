@@ -11,7 +11,7 @@ pub struct ApplicationState {
 }
 
 pub async fn build_application_state(v0: app::Config) -> crate::ApplicationState {
-    let v1 = app::http_client(v0);
+    let v1 = app::http_client(v0).await;
     crate::ApplicationState { s0: v1 }
 }
 
@@ -68,7 +68,7 @@ pub async fn route_handler_0(
     v0: app::HttpClient,
     v1: http::Request<hyper::Body>,
 ) -> http::Response<hyper::Body> {
-    let v2 = app::extract_path(v1);
-    let v3 = app::logger();
-    app::stream_file(v2, v3, v0)
+    let v2 = app::extract_path(v1).await;
+    let v3 = app::logger().await;
+    app::stream_file(v2, v3, v0).await
 }

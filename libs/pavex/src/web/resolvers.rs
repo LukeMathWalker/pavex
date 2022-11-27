@@ -144,9 +144,9 @@ fn resolve_callable(
 ) -> Result<Callable, CallableResolutionError> {
     let type_ = callable_path.find_type(krate_collection)?;
     let used_by_package_id = &callable_path.package_id;
-    let decl = match &type_.inner {
-        ItemEnum::Function(f) => &f.decl,
-        ItemEnum::Method(m) => &m.decl,
+    let (header, decl) = match &type_.inner {
+        ItemEnum::Function(f) => (&f.header, &f.decl),
+        ItemEnum::Method(m) => (&m.header, &m.decl),
         kind => {
             let item_kind = match kind {
                 ItemEnum::Module(_) => "a module",
@@ -222,6 +222,7 @@ fn resolve_callable(
         }
     };
     Ok(Callable {
+        is_async: header.async_,
         output: output_type_path,
         path: callable_path.to_owned(),
         inputs: parameter_paths,
