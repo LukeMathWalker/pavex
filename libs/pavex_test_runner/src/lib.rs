@@ -5,8 +5,7 @@ use std::process::Output;
 
 use anyhow::Context;
 use console::style;
-use libtest_mimic::Conclusion;
-use libtest_mimic::Outcome;
+use libtest_mimic::{Conclusion, Failed};
 use toml::toml;
 
 pub use snapshot::print_changeset;
@@ -42,19 +41,14 @@ pub fn run_tests(
             .to_str()
             .expect("The name of test folders must be valid unicode.")
             .to_owned();
-        let test = libtest_mimic::Test {
-            name: name.clone(),
-            kind: "".into(),
-            is_ignored: false,
-            is_bench: false,
-            data: TestData {
-                definition_directory: entry.path(),
-                runtime_directory: runtime_directory.join("tests").join(filename),
-            },
+        let test_data = TestData {
+            definition_directory: entry.path(),
+            runtime_directory: runtime_directory.join("tests").join(filename),
         };
+        let test = libtest_mimic::Trial::test(name.clone(), move || run_test(test_data));
         tests.push(test);
     }
-    Ok(libtest_mimic::run_tests(&arguments, tests, run_test))
+    Ok(libtest_mimic::run(&arguments, tests))
 }
 
 #[derive(serde::Deserialize)]
@@ -251,51 +245,46 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 }
 
-fn run_test(test: &libtest_mimic::Test<TestData>) -> Outcome {
-    match test.data.load_configuration() {
+fn run_test(test: TestData) -> Result<(), Failed> {
+    match test.load_configuration() {
         // Ensure that the test description is always injected on top of the failure message
-        Ok(c) => match _run_test(&c, test) {
+        Ok(c) => match _run_test(&c, &test) {
             Ok(TestOutcome {
-                outcome: Outcome::Failed { msg },
+                outcome: Err(mut msg),
                 codegen_output,
                 compilation_output,
-            }) => Outcome::Failed {
-                msg: msg.map(|mut msg| {
+            }) => Err(Failed::from({
+                write!(
+                    &mut msg,
+                    "\n\nCODEGEN:\n\t--- STDOUT:\n{}\n\t--- STDERR:\n{}",
+                    codegen_output.stdout, codegen_output.stderr
+                )
+                .unwrap();
+                if let Some(compilation_output) = compilation_output {
                     write!(
                         &mut msg,
-                        "\n\nCODEGEN:\n\t--- STDOUT:\n{}\n\t--- STDERR:\n{}",
-                        codegen_output.stdout, codegen_output.stderr
+                        "\n\nCARGO CHECK:\n\t--- STDOUT:\n{}\n\t--- STDERR:\n{}",
+                        compilation_output.stdout, compilation_output.stderr
                     )
                     .unwrap();
-                    if let Some(compilation_output) = compilation_output {
-                        write!(
-                            &mut msg,
-                            "\n\nCARGO CHECK:\n\t--- STDOUT:\n{}\n\t--- STDERR:\n{}",
-                            compilation_output.stdout, compilation_output.stderr
-                        )
-                        .unwrap();
-                    }
-                    enrich_failure_message(&c, msg)
-                }),
-            },
-            Err(e) => Outcome::Failed {
-                msg: Some(enrich_failure_message(&c, unexpected_failure_message(&e))),
-            },
-            Ok(o) => o.outcome,
+                }
+                enrich_failure_message(&c, msg)
+            })),
+            Err(e) => Err(Failed::from(enrich_failure_message(
+                &c,
+                unexpected_failure_message(&e),
+            ))),
+            Ok(TestOutcome {
+                outcome: Ok(()), ..
+            }) => Ok(()),
         },
         // We do not have the test description if we fail to load the test configuration, so...
-        Err(e) => Outcome::Failed {
-            msg: Some(unexpected_failure_message(&e)),
-        },
+        Err(e) => Err(Failed::from(unexpected_failure_message(&e))),
     }
 }
 
-fn _run_test(
-    test_config: &TestConfig,
-    test: &libtest_mimic::Test<TestData>,
-) -> Result<TestOutcome, anyhow::Error> {
-    test.data
-        .seed_test_filesystem(test_config)
+fn _run_test(test_config: &TestConfig, test: &TestData) -> Result<TestOutcome, anyhow::Error> {
+    test.seed_test_filesystem(test_config)
         .context("Failed to seed the filesystem for the test runtime folder")?;
 
     // Generate the application code
@@ -303,19 +292,17 @@ fn _run_test(
         .env("RUSTFLAGS", "-Awarnings")
         .arg("run")
         .arg("--quiet")
-        .current_dir(&test.data.runtime_directory)
+        .current_dir(&test.runtime_directory)
         .output()
         .unwrap();
     let codegen_output: CommandOutput = (&output).try_into()?;
 
-    let expectations_directory = test.data.definition_directory.join("expectations");
+    let expectations_directory = test.definition_directory.join("expectations");
 
     if !output.status.success() {
         return match test_config.expectations.codegen {
             ExpectedOutcome::Pass => Ok(TestOutcome {
-                outcome: Outcome::Failed {
-                    msg: Some("We failed to generate the application code.".to_string()),
-                },
+                outcome: Err("We failed to generate the application code.".to_string()),
                 codegen_output,
                 compilation_output: None,
             }),
@@ -323,16 +310,13 @@ fn _run_test(
                 let stderr_snapshot = SnapshotTest::new(expectations_directory.join("stderr.txt"));
                 if stderr_snapshot.verify(&codegen_output.stderr).is_err() {
                     return Ok(TestOutcome {
-                        outcome: Outcome::Failed {
-                            msg: Some(
-                                "The failure message returned by code generation does not match what we expected".into())
-                        },
+                        outcome: Err("The failure message returned by code generation does not match what we expected".into()),
                         codegen_output,
                         compilation_output: None,
                     });
                 }
                 Ok(TestOutcome {
-                    outcome: Outcome::Passed,
+                    outcome: Ok(()),
                     codegen_output,
                     compilation_output: None,
                 })
@@ -340,9 +324,7 @@ fn _run_test(
         };
     } else if ExpectedOutcome::Fail == test_config.expectations.codegen {
         return Ok(TestOutcome {
-            outcome: Outcome::Failed {
-                msg: Some("We expected code generation to fail, but it succeeded!".into()),
-            },
+            outcome: Err("We expected code generation to fail, but it succeeded!".into()),
             codegen_output,
             compilation_output: None,
         });
@@ -350,15 +332,12 @@ fn _run_test(
 
     let diagnostics_snapshot = SnapshotTest::new(expectations_directory.join("diagnostics.dot"));
     let actual_diagnostics =
-        fs_err::read_to_string(test.data.runtime_directory.join("diagnostics.dot"))?;
+        fs_err::read_to_string(test.runtime_directory.join("diagnostics.dot"))?;
     if diagnostics_snapshot.verify(&actual_diagnostics).is_err() {
         return Ok(TestOutcome {
-            outcome: Outcome::Failed {
-                msg: Some(
-                    "Diagnostics for the generated application do not match what we expected"
-                        .into(),
-                ),
-            },
+            outcome: Err(
+                "Diagnostics for the generated application do not match what we expected".into(),
+            ),
             codegen_output,
             compilation_output: None,
         });
@@ -366,8 +345,7 @@ fn _run_test(
 
     let app_code_snapshot = SnapshotTest::new(expectations_directory.join("app.rs"));
     let actual_app_code = fs_err::read_to_string(
-        test.data
-            .runtime_directory
+        test.runtime_directory
             .join("generated_app")
             .join("src")
             .join("lib.rs"),
@@ -375,9 +353,8 @@ fn _run_test(
     .unwrap();
     if app_code_snapshot.verify(&actual_app_code).is_err() {
         return Ok(TestOutcome {
-            outcome: Outcome::Failed {
-                msg: Some("The generated application code does not match what we expected".into()),
-            },
+            outcome: Err("The generated application code does not match what we expected".into())
+                .into(),
             codegen_output,
             compilation_output: None,
         });
@@ -389,29 +366,27 @@ fn _run_test(
         .arg("check")
         .arg("--workspace")
         .arg("--quiet")
-        .current_dir(&test.data.runtime_directory)
+        .current_dir(&test.runtime_directory)
         .output()
         .unwrap();
     let compilation_output: CommandOutput = (&output).try_into()?;
     if !output.status.success() {
         return Ok(TestOutcome {
-            outcome: Outcome::Failed {
-                msg: Some("The generated application code does not compile.".into()),
-            },
+            outcome: Err("The generated application code does not compile.".into()),
             codegen_output,
             compilation_output: Some(compilation_output),
         });
     }
 
     Ok(TestOutcome {
-        outcome: Outcome::Passed,
+        outcome: Ok(()),
         codegen_output,
         compilation_output: Some(compilation_output),
     })
 }
 
 struct TestOutcome {
-    outcome: Outcome,
+    outcome: Result<(), String>,
     codegen_output: CommandOutput,
     compilation_output: Option<CommandOutput>,
 }

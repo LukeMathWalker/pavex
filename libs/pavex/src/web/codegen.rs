@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, HashSet};
 use std::path::PathBuf;
 
 use bimap::{BiBTreeMap, BiHashMap};
-use cargo_manifest::{Dependency, DependencyDetail, Edition};
+use cargo_manifest::{Dependency, DependencyDetail, Edition, MaybeInherited};
 use guppy::graph::PackageSource;
 use guppy::{PackageId, Version};
 use indexmap::{IndexMap, IndexSet};
@@ -237,22 +237,25 @@ pub(crate) fn codegen_manifest<'a>(
         package: Some(cargo_manifest::Package {
             // TODO: this should be configurable
             name: "application".to_string(),
-            edition: Edition::E2021,
-            version: "0.1.0".to_string(),
+            edition: Some(MaybeInherited::Local(Edition::E2021)),
+            version: MaybeInherited::Local("0.1.0".to_string()),
             build: None,
             workspace: None,
-            authors: vec![],
+            authors: None,
             links: None,
             description: None,
             homepage: None,
             documentation: None,
             readme: None,
-            keywords: vec![],
-            categories: vec![],
+            keywords: None,
+            categories: None,
             license: None,
             license_file: None,
             repository: None,
             metadata: None,
+            rust_version: None,
+            exclude: None,
+            include: None,
             default_run: None,
             autobins: false,
             autoexamples: false,

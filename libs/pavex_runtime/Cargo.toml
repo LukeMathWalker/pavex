@@ -7,6 +7,6 @@ edition = "2021"
 
 [dependencies]
 hyper = { version = "0.14", features = ["server", "http1", "http2", "tcp"] }
-matchit = "0.6"
+matchit = "0.7"
 http = "0.2"
 anyhow = "1"
