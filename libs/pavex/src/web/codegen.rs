@@ -297,6 +297,7 @@ fn compute_dependencies<'a>(
         request_scoped_framework_bindings,
         codegen_types,
     );
+    #[allow(clippy::type_complexity)]
     let mut external_crates: IndexMap<&str, IndexSet<(&Version, &PackageId, Option<PathBuf>)>> =
         Default::default();
     let workspace_root = package_graph.workspace().root();

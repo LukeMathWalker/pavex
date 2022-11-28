@@ -353,8 +353,7 @@ fn _run_test(test_config: &TestConfig, test: &TestData) -> Result<TestOutcome, a
     .unwrap();
     if app_code_snapshot.verify(&actual_app_code).is_err() {
         return Ok(TestOutcome {
-            outcome: Err("The generated application code does not match what we expected".into())
-                .into(),
+            outcome: Err("The generated application code does not match what we expected".into()),
             codegen_output,
             compilation_output: None,
         });

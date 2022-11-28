@@ -328,10 +328,7 @@ impl Crate {
             .paths
             .iter()
             // We only want types, no macros
-            .filter(|(_, summary)| match summary.kind {
-                ItemKind::Macro | ItemKind::ProcDerive => false,
-                _ => true,
-            })
+            .filter(|(_, summary)| !matches!(summary.kind, ItemKind::Macro | ItemKind::ProcDerive))
             .map(|(id, summary)| {
                 (
                     summary.path.clone(),
