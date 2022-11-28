@@ -17,7 +17,7 @@ pub struct AppBlueprint {
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum Lifecycle {
-    /// There will be a single instance of the component for every running the server.
+    /// There will be a single instance of the component for each instance of the server.
     ///
     /// As a consequence, the constructor is invoked at most once and the resulting component is
     /// stored as part of the server state. Every time the component is required as input,
