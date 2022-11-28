@@ -5,10 +5,13 @@ struct ServerState {
     router: pavex_runtime::routing::Router<u32>,
     application_state: ApplicationState,
 }
+
 pub struct ApplicationState {}
+
 pub async fn build_application_state() -> crate::ApplicationState {
     crate::ApplicationState {}
 }
+
 pub async fn run(
     server_builder: pavex_runtime::hyper::server::Builder<
         pavex_runtime::hyper::server::conn::AddrIncoming,
@@ -57,6 +60,7 @@ async fn route_request(
         _ => panic!("This is a bug, no route registered for a route id"),
     }
 }
+
 pub async fn route_handler_0() -> http_0::Response<hyper::Body> {
     let v0 = app::header2();
     let v1 = app::header1();
