@@ -12,7 +12,7 @@ use indexmap::{IndexMap, IndexSet};
 use miette::{miette, NamedSource, SourceSpan};
 use rustdoc_types::{GenericArg, GenericArgs, ItemEnum, Type};
 use syn::spanned::Spanned;
-use syn::{FnArg, ReturnType};
+use syn::{FnArg, ImplItemMethod, ReturnType};
 
 use pavex_builder::{Location, RawCallableIdentifiers};
 
@@ -146,7 +146,6 @@ fn resolve_callable(
     let used_by_package_id = &callable_path.package_id;
     let (header, decl) = match &type_.inner {
         ItemEnum::Function(f) => (&f.header, &f.decl),
-        ItemEnum::Method(m) => (&m.header, &m.decl),
         kind => {
             let item_kind = match kind {
                 ItemEnum::Module(_) => "a module",
@@ -157,10 +156,10 @@ fn resolve_callable(
                 ItemEnum::StructField(_) => "a struct field",
                 ItemEnum::Enum(_) => "an enum",
                 ItemEnum::Variant(_) => "an enum variant",
+                // TODO: this could also be a method! How do we find out?
                 ItemEnum::Function(_) => "a function",
                 ItemEnum::Trait(_) => "a trait",
                 ItemEnum::TraitAlias(_) => "a trait alias",
-                ItemEnum::Method(_) => "a method",
                 ItemEnum::Impl(_) => "an impl block",
                 ItemEnum::Typedef(_) => "a type definition",
                 ItemEnum::OpaqueTy(_) => "an opaque type",
@@ -307,15 +306,19 @@ impl CallableResolutionError {
                             &source_contents[span.offset()..(span.offset() + span.len())];
                         let input = match &e.callable_item.inner {
                             ItemEnum::Function(_) => {
-                                let item: syn::ItemFn = syn::parse_str(span_contents).unwrap();
-                                let mut inputs = item.sig.inputs.iter();
-                                inputs.nth(e.parameter_index).cloned()
-                            }
-                            ItemEnum::Method(_) => {
-                                let item: syn::ImplItemMethod =
-                                    syn::parse_str(span_contents).unwrap();
-                                let mut inputs = item.sig.inputs.iter();
-                                inputs.nth(e.parameter_index).cloned()
+                                if let Ok(item) = syn::parse_str::<syn::ItemFn>(span_contents) {
+                                    let mut inputs = item.sig.inputs.iter();
+                                    inputs.nth(e.parameter_index).cloned()
+                                } else if let Ok(item) =
+                                    syn::parse_str::<ImplItemMethod>(span_contents)
+                                {
+                                    let mut inputs = item.sig.inputs.iter();
+                                    inputs.nth(e.parameter_index).cloned()
+                                } else {
+                                    panic!(
+                                        "Could not parse as a function or method:\n{span_contents}"
+                                    )
+                                }
                             }
                             _ => unreachable!(),
                         }
@@ -404,13 +407,17 @@ impl CallableResolutionError {
                             &source_contents[span.offset()..(span.offset() + span.len())];
                         let output = match &e.callable_item.inner {
                             ItemEnum::Function(_) => {
-                                let item: syn::ItemFn = syn::parse_str(span_contents).unwrap();
-                                item.sig.output
-                            }
-                            ItemEnum::Method(_) => {
-                                let item: syn::ImplItemMethod =
-                                    syn::parse_str(span_contents).unwrap();
-                                item.sig.output
+                                if let Ok(item) = syn::parse_str::<syn::ItemFn>(span_contents) {
+                                    item.sig.output
+                                } else if let Ok(item) =
+                                    syn::parse_str::<syn::ImplItemMethod>(span_contents)
+                                {
+                                    item.sig.output
+                                } else {
+                                    panic!(
+                                        "Could not parse as a function or method:\n{span_contents}"
+                                    )
+                                }
                             }
                             _ => unreachable!(),
                         };

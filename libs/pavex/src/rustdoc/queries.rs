@@ -132,7 +132,7 @@ impl CrateCollection {
                     for impl_item_id in &impl_block.items {
                         let impl_item = krate.get_type_by_local_type_id(impl_item_id);
                         if impl_item.name.as_ref() == Some(method_name) {
-                            if let ItemEnum::Method(_) = &impl_item.inner {
+                            if let ItemEnum::Function(_) = &impl_item.inner {
                                 return Ok(Ok(impl_item));
                             }
                         }
