@@ -28,6 +28,7 @@ use crate::web::diagnostic::{
 
 /// Extract the input type paths, the output type path and the callable path for each
 /// registered type constructor.
+#[allow(clippy::type_complexity)]
 pub(crate) fn resolve_constructors(
     constructor_paths: &IndexSet<ResolvedPath>,
     krate_collection: &mut CrateCollection,

@@ -1,6 +1,6 @@
 use std::fmt::Write;
 use std::fmt::{Display, Formatter};
-use std::hash::Hash;
+use std::hash::{Hash, Hasher};
 
 use anyhow::Context;
 use bimap::BiHashMap;
@@ -37,7 +37,7 @@ use crate::rustdoc::{STD_PACKAGE_ID, TOOLCHAIN_CRATES};
 /// crate as the authoritative answer to "What crate does this path belong to?". This is unique
 /// and well-defined within a `cargo` workspace.
 // TODO: we need to implement Hash manually!
-#[derive(Clone, Debug, Hash, Eq)]
+#[derive(Clone, Debug, Eq)]
 pub struct ResolvedPath {
     pub segments: Vec<ResolvedPathSegment>,
     pub package_id: PackageId,
@@ -51,15 +51,24 @@ pub struct ResolvedPathSegment {
 
 impl PartialEq for ResolvedPath {
     fn eq(&self, other: &Self) -> bool {
-        let is_equal =
-            self.package_id == other.package_id && self.segments.len() == other.segments.len();
+        // Using destructuring syntax to make sure we get a compiler error
+        // if a new field gets added, as a reminder to update this Hash implementation.
+        let Self {
+            segments,
+            package_id,
+        } = self;
+        let Self {
+            segments: other_segments,
+            package_id: other_package_id,
+        } = other;
+        let is_equal = package_id == other_package_id && segments.len() == segments.len();
         if is_equal {
             // We want to ignore the first segment of the path, because dependencies can be
             // renamed and this can lead to equivalent paths not being considered equal.
             // Given that we already have the package id as part of the type, it is safe
             // to disregard the first segment when determining equality.
-            let self_segments = self.segments.iter().skip(1);
-            let other_segments = other.segments.iter().skip(1);
+            let self_segments = segments.iter().skip(1);
+            let other_segments = other_segments.iter().skip(1);
             for (self_segment, other_segment) in self_segments.zip_eq(other_segments) {
                 if self_segment != other_segment {
                     return false;
@@ -68,6 +77,26 @@ impl PartialEq for ResolvedPath {
             true
         } else {
             false
+        }
+    }
+}
+
+impl Hash for ResolvedPath {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        // Using destructuring syntax to make sure we get a compiler error
+        // if a new field gets added, as a reminder to update this Hash implementation.
+        let Self {
+            segments,
+            package_id,
+        } = self;
+        package_id.hash(state);
+        // We want to ignore the first segment of the path, because dependencies can be
+        // renamed and this can lead to equivalent paths not being considered equal.
+        // Given that we already have the package id as part of the type, it is safe
+        // to disregard the first segment when determining equality.
+        let self_segments = segments.iter().skip(1);
+        for segment in self_segments {
+            segment.hash(state)
         }
     }
 }
