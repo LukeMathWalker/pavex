@@ -9,9 +9,11 @@ use crate::callable::RawCallableIdentifiers;
 pub struct AppBlueprint {
     pub constructors: IndexSet<RawCallableIdentifiers>,
     pub handlers: IndexSet<RawCallableIdentifiers>,
+    pub error_handlers: IndexSet<RawCallableIdentifiers>,
     pub component_lifecycles: HashMap<RawCallableIdentifiers, Lifecycle>,
     pub router: BTreeMap<String, RawCallableIdentifiers>,
     pub handler_locations: HashMap<RawCallableIdentifiers, IndexSet<Location>>,
+    pub error_handler_locations: HashMap<RawCallableIdentifiers, Location>,
     pub constructor_locations: HashMap<RawCallableIdentifiers, Location>,
 }
 
@@ -76,6 +78,20 @@ impl AppBlueprint {
         self.router
             .insert(path.to_owned(), callable_identifiers.clone());
         self.handlers.insert(callable_identifiers);
+        self
+    }
+
+    #[track_caller]
+    /// Register an error handler function with the application blueprint.
+    ///
+    /// If a handler has already been registered for the same error type, it will be overwritten.
+    pub fn error_handler(mut self, error_handler_import_path: &'static str) -> Self {
+        let callable_identifiers = RawCallableIdentifiers::new(error_handler_import_path);
+        let location = std::panic::Location::caller();
+        self.error_handler_locations
+            .entry(callable_identifiers.clone())
+            .or_insert_with(|| location.into());
+        self.error_handlers.insert(callable_identifiers);
         self
     }
 
