@@ -66,8 +66,6 @@ impl App {
             set
         };
 
-        // `cargo metadata` seems to be the only reliable way of retrieving the path to
-        // the root manifest of the current workspace for a Rust project.
         let package_graph = compute_package_graph()?;
         let mut krate_collection = CrateCollection::new(package_graph.clone());
 
