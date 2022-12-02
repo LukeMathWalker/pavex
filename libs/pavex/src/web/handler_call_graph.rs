@@ -22,8 +22,8 @@ use crate::web::dependency_graph::{CallableDependencyGraph, DependencyGraphNode}
 /// The handler dependency graph ([`CallableDependencyGraph`]) is focused on data - it tells us
 /// what types are needed to build the input parameters for a certain handler.
 ///
-/// This is not enough to perform code generation - we also need to know what is the _lifecycle_
-/// for each of those types.  
+/// This is not enough to perform code generation - we also need to know the _lifecycle_
+/// of each of those types.  
 /// E.g. singletons should be constructed once and re-used throughout the entire lifetime of the
 /// application; this implies that the generated code for handling a single request should not
 /// call the singleton constructor - it should fetch it from the server state!
@@ -51,12 +51,13 @@ impl HandlerCallGraph {
         lifecycles: HashMap<ResolvedType, Lifecycle>,
         constructors: IndexMap<ResolvedType, Constructor>,
     ) -> Self {
-        // Vec<(index in dependency graph, parent index in call graph)>
         let CallableDependencyGraph {
             dependency_graph,
             callable_node_index: handler_node_index,
         } = dependency_graph;
+        // Vec<(index in dependency graph, parent index in call graph)>
         let mut nodes_to_be_visited = vec![(*handler_node_index, None)];
+        // HashMap<index in dependency graph, index in call graph>
         let mut scoped_or_longer_indexes = HashMap::<u32, NodeIndex>::new();
         let mut call_graph = StableDiGraph::new();
         while let Some((dep_node_index, call_parent_node_index)) = nodes_to_be_visited.pop() {
