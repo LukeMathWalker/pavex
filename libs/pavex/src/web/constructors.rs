@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use crate::language::{Callable, ResolvedPath, ResolvedType};
 
 /// A transformation that, given a set of inputs, **constructs** a new type.
@@ -24,9 +26,7 @@ impl TryFrom<Callable> for Constructor {
 
     fn try_from(c: Callable) -> Result<Self, Self::Error> {
         if c.output.base_type == vec!["()"] {
-            return Err(ConstructorValidationError::CannotReturnTheUnitType(
-                c.path,
-            ));
+            return Err(ConstructorValidationError::CannotReturnTheUnitType(c.path));
         }
         Ok(Constructor::Callable(c))
     }
@@ -48,6 +48,13 @@ impl Constructor {
         match self {
             Constructor::BorrowSharedReference(s) => &s.output,
             Constructor::Callable(c) => &c.output,
+        }
+    }
+
+    pub fn input_types(&self) -> Cow<[ResolvedType]> {
+        match self {
+            Constructor::BorrowSharedReference(r) => Cow::Owned(vec![r.output.clone()]),
+            Constructor::Callable(c) => Cow::Borrowed(c.inputs.as_slice()),
         }
     }
 }

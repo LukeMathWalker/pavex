@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::HashSet;
 
 use indexmap::IndexMap;
@@ -37,70 +38,27 @@ impl CallableDependencyGraph {
     /// inputs and what types are needed, in turn, to construct those inputs.
     #[tracing::instrument(name = "compute_callable_dependency_graph", skip_all, fields(callable))]
     pub fn new(callable: Callable, constructors: &IndexMap<ResolvedType, Constructor>) -> Self {
-        fn process_callable(
-            callable: &Callable,
-            graph: &mut GraphMap<DependencyGraphNode>,
-            output_node_index: u32,
-            stack: &mut Vec<u32>,
-            resolved_nodes: &HashSet<u32>,
-        ) {
-            for input_type in &callable.inputs {
-                process_input_type(input_type, graph, output_node_index, stack, resolved_nodes)
-            }
-        }
-
-        fn process_input_type(
-            input_type: &ResolvedType,
-            graph: &mut GraphMap<DependencyGraphNode>,
-            output_node_index: u32,
-            stack: &mut Vec<u32>,
-            resolved_nodes: &HashSet<u32>,
-        ) {
-            let input_type = input_type.to_owned();
-            let input_node_index = graph.add_node(DependencyGraphNode::Type(input_type));
-            graph.update_edge(input_node_index, output_node_index);
-            if !resolved_nodes.contains(&input_node_index) {
-                stack.push(input_node_index);
-            }
-        }
-
         let mut graph = GraphMap::new();
         let callable_node_index = graph.add_node(DependencyGraphNode::Compute(callable));
         let mut stack = vec![callable_node_index];
-        let resolved_nodes = HashSet::new();
+        let resolved_nodes = HashSet::<u32>::new();
         while let Some(node_index) = stack.pop() {
             let node = &graph[node_index];
-            match node {
+            let input_types = match node {
                 DependencyGraphNode::Compute(callable) => {
-                    let callable = callable.to_owned();
-                    process_callable(
-                        &callable,
-                        &mut graph,
-                        node_index,
-                        &mut stack,
-                        &resolved_nodes,
-                    );
+                    Some(Cow::Owned(callable.inputs.to_owned()))
                 }
                 DependencyGraphNode::Type(type_) => {
-                    if let Some(constructor) = constructors.get(type_) {
-                        match constructor {
-                            Constructor::BorrowSharedReference(shared_ref) => process_input_type(
-                                &shared_ref.input,
-                                &mut graph,
-                                node_index,
-                                &mut stack,
-                                &resolved_nodes,
-                            ),
-                            Constructor::Callable(callable) => {
-                                process_callable(
-                                    callable,
-                                    &mut graph,
-                                    node_index,
-                                    &mut stack,
-                                    &resolved_nodes,
-                                );
-                            }
-                        }
+                    constructors.get(type_).map(|c| c.input_types())
+                }
+            };
+            if let Some(input_types) = input_types {
+                for input_type in input_types.iter() {
+                    let input_type = input_type.to_owned();
+                    let input_node_index = graph.add_node(DependencyGraphNode::Type(input_type));
+                    graph.update_edge(input_node_index, node_index);
+                    if !resolved_nodes.contains(&input_node_index) {
+                        stack.push(input_node_index);
                     }
                 }
             }
