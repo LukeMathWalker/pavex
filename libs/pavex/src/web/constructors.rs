@@ -53,7 +53,7 @@ impl Constructor {
 
     pub fn input_types(&self) -> Cow<[ResolvedType]> {
         match self {
-            Constructor::BorrowSharedReference(r) => Cow::Owned(vec![r.output.clone()]),
+            Constructor::BorrowSharedReference(r) => Cow::Owned(vec![r.input.clone()]),
             Constructor::Callable(c) => Cow::Borrowed(c.inputs.as_slice()),
         }
     }
