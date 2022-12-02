@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::env::var;
 
 use bimap::BiHashMap;
 use guppy::PackageId;
@@ -54,15 +55,38 @@ pub(crate) fn codegen_call_block(
     variable_generator: &mut VariableNameGenerator,
     package_id2name: &BiHashMap<&PackageId, String>,
 ) -> Result<Fragment, anyhow::Error> {
-    let dependencies = call_graph.neighbors_directed(node_index, Direction::Incoming);
+    let dependencies = call_graph
+        .neighbors_directed(node_index, Direction::Incoming)
+        .map(|n| {
+            let type_ = match &call_graph[n] {
+                DependencyGraphNode::Compute(c) => &c.output,
+                DependencyGraphNode::Type(t) => t,
+            };
+            (n, type_)
+        });
+    _codegen_call_block(
+        dependencies,
+        callable,
+        blocks,
+        variable_generator,
+        package_id2name,
+    )
+}
+
+pub(crate) fn _codegen_call_block<'a, I>(
+    dependencies: I,
+    callable: &Callable,
+    blocks: &mut HashMap<NodeIndex, Fragment>,
+    variable_generator: &mut VariableNameGenerator,
+    package_id2name: &BiHashMap<&PackageId, String>,
+) -> Result<Fragment, anyhow::Error>
+where
+    I: Iterator<Item = (NodeIndex, &'a ResolvedType)>,
+{
     let mut block = quote! {};
     let mut dependency_bindings: HashMap<ResolvedType, Box<dyn ToTokens>> = HashMap::new();
-    for dependency_index in dependencies {
+    for (dependency_index, dependency_type) in dependencies {
         let fragment = &blocks[&dependency_index];
-        let dependency_type = match &call_graph[dependency_index] {
-            DependencyGraphNode::Type(t) => t,
-            DependencyGraphNode::Compute(_) => unreachable!(),
-        };
         let mut to_be_removed = false;
         match fragment {
             Fragment::VariableReference(v) => {

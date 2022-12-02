@@ -10,5 +10,6 @@ pub(crate) mod dependency_graph;
 mod diagnostic;
 mod generated_app;
 mod handler_call_graph;
+mod handler_call_graph_v2;
 mod resolvers;
 mod traits;
