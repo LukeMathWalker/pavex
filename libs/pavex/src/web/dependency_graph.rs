@@ -45,21 +45,26 @@ impl CallableDependencyGraph {
         while let Some(node_index) = stack.pop() {
             let node = &graph[node_index];
             let input_types = match node {
-                DependencyGraphNode::Compute(callable) => {
-                    Some(Cow::Owned(callable.inputs.to_owned()))
-                }
+                DependencyGraphNode::Compute(callable) => Cow::Owned(callable.inputs.to_owned()),
                 DependencyGraphNode::Type(type_) => {
-                    constructors.get(type_).map(|c| c.input_types())
+                    if let Some(c) = constructors.get(type_) {
+                        c.input_types()
+                    } else {
+                        // If we do not have a constructor for a type, the following things may
+                        // happen:
+                        // - It will be injected by the framework;
+                        // - It will be a required input of the application state constructor;
+                        // - pavex will later return an error to the user.
+                        continue;
+                    }
                 }
             };
-            if let Some(input_types) = input_types {
-                for input_type in input_types.iter() {
-                    let input_type = input_type.to_owned();
-                    let input_node_index = graph.add_node(DependencyGraphNode::Type(input_type));
-                    graph.update_edge(input_node_index, node_index);
-                    if !resolved_nodes.contains(&input_node_index) {
-                        stack.push(input_node_index);
-                    }
+            for input_type in input_types.iter() {
+                let input_type = input_type.to_owned();
+                let input_node_index = graph.add_node(DependencyGraphNode::Type(input_type));
+                graph.update_edge(input_node_index, node_index);
+                if !resolved_nodes.contains(&input_node_index) {
+                    stack.push(input_node_index);
                 }
             }
         }
