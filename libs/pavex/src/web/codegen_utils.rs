@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::env::var;
 
 use bimap::BiHashMap;
 use guppy::PackageId;

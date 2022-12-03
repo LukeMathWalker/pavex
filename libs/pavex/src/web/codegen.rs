@@ -17,7 +17,7 @@ use crate::web::app::GENERATED_APP_PACKAGE_ID;
 use crate::web::application_state_call_graph::ApplicationStateCallGraph;
 use crate::web::constructors::Constructor;
 use crate::web::dependency_graph::DependencyGraphNode;
-use crate::web::handler_call_graph::{codegen, HandlerCallGraph};
+use crate::web::handler_call_graph::{codegen, HandlerCallGraph, HandlerCallGraphNode};
 
 pub(crate) fn codegen_app(
     router: &BTreeMap<String, Callable>,
@@ -389,19 +389,18 @@ fn collect_package_ids<'a>(
     }
     for handler_call_graph in handler_call_graphs.values() {
         for node in handler_call_graph.call_graph.node_weights() {
+            let node: &HandlerCallGraphNode = node;
             match node {
-                DependencyGraphNode::Compute(c) => {
-                    collect_callable_package_ids(&mut package_ids, c);
-                }
-                DependencyGraphNode::Type(t) => {
-                    if let Some(c) = handler_call_graph.constructors.get(t) {
-                        match c {
-                            Constructor::Callable(c) => {
-                                collect_callable_package_ids(&mut package_ids, c)
-                            }
-                            Constructor::BorrowSharedReference(_) => {}
-                        }
+                HandlerCallGraphNode::Compute(c) => match c {
+                    Constructor::BorrowSharedReference(t) => {
+                        collect_type_package_ids(&mut package_ids, &t.input)
                     }
+                    Constructor::Callable(c) => {
+                        collect_callable_package_ids(&mut package_ids, c);
+                    }
+                },
+                HandlerCallGraphNode::InputParameter(t) => {
+                    collect_type_package_ids(&mut package_ids, t)
                 }
             }
         }
