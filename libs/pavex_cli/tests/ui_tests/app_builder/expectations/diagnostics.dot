@@ -1,8 +1,8 @@
 digraph "/home" {
     0 [ label = "app::stream_file(std::path::PathBuf, app::Logger, app::HttpClient) -> http::Response<hyper::Body>"]
-    1 [ label = "app::http_client(app::Config) -> app::HttpClient"]
-    2 [ label = "app::logger() -> app::Logger"]
-    3 [ label = "app::extract_path(http::Request<hyper::Body>) -> std::path::PathBuf"]
+    1 [ label = "app::HttpClient"]
+    2 [ label = "app::Logger"]
+    3 [ label = "std::path::PathBuf"]
     4 [ label = "http::Request<hyper::Body>"]
     1 -> 0 [ ]
     2 -> 0 [ ]
