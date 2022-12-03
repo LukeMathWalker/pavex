@@ -23,12 +23,12 @@ use crate::web::dependency_graph::{CallableDependencyGraph, DependencyGraphNode}
 /// what types are needed to build the input parameters for a certain handler.
 ///
 /// This is not enough to perform code generation - we also need to know the _lifecycle_
-/// of each of those types.  
+/// of each of those types.
 /// E.g. singletons should be constructed once and re-used throughout the entire lifetime of the
 /// application; this implies that the generated code for handling a single request should not
 /// call the singleton constructor - it should fetch it from the server state!
 ///
-/// The handler call graph tries to capture this information.  
+/// The handler call graph tries to capture this information.
 /// In the dependency graph, each type appears exactly once, no matter how many times it's required
 /// as input for other constructors.
 /// In the call graph, each type appears as many times as it needs to be constructed - either
@@ -47,6 +47,11 @@ pub(crate) struct HandlerCallGraph {
 pub(crate) enum HandlerCallGraphNode {
     Compute(Constructor),
     InputParameter(ResolvedType),
+}
+
+pub enum NumberOfAllowedInvocations {
+    One,
+    Multiple,
 }
 
 struct VisitorStackElement {
@@ -89,75 +94,60 @@ impl HandlerCallGraph {
             // If we are dealing with a singleton, we need to make sure it's invoked only once.
             // Transient components, instead, appear as many times as they are used in the call graph.
             // We treat compute nodes as singletons as well.
-            let call_node_index = match node {
-                DependencyGraphNode::Compute(c) => {
-                    let node = HandlerCallGraphNode::Compute(Constructor::Callable(c.to_owned()));
-                    let index = call_graph.add_node(node);
-                    lifecycles.insert(c.output.to_owned(), Lifecycle::RequestScoped);
-                    scoped_or_longer_indexes.insert(dep_node_index, index);
-                    index
-                }
-                DependencyGraphNode::Type(t) => {
-                    let lifecycle = lifecycles.get(t).cloned();
-                    if let Some(lifecycle) = lifecycle {
-                        match lifecycle {
-                            Lifecycle::Singleton | Lifecycle::RequestScoped => {
-                                scoped_or_longer_indexes
-                                    .get(&dep_node_index)
-                                    .cloned()
-                                    .unwrap_or_else(|| {
-                                        let node = HandlerCallGraphNode::Compute(
-                                            constructors[t].to_owned(),
-                                        );
-                                        let index = call_graph.add_node(node);
-                                        scoped_or_longer_indexes.insert(dep_node_index, index);
-                                        index
-                                    })
-                            }
-                            Lifecycle::Transient => {
-                                let node =
-                                    HandlerCallGraphNode::Compute(constructors[t].to_owned());
-                                call_graph.add_node(node)
-                            }
-                        }
-                    } else {
-                        scoped_or_longer_indexes
-                            .get(&dep_node_index)
-                            .cloned()
-                            .unwrap_or_else(|| {
-                                let node = HandlerCallGraphNode::InputParameter(t.to_owned());
-                                let index = call_graph.add_node(node);
-                                scoped_or_longer_indexes.insert(dep_node_index, index);
-                                index
-                            })
+            let call_node_index = {
+                let (n_allowed_invocations, new_node) = match node {
+                    DependencyGraphNode::Compute(c) => {
+                        let node =
+                            HandlerCallGraphNode::Compute(Constructor::Callable(c.to_owned()));
+                        lifecycles.insert(c.output.to_owned(), Lifecycle::RequestScoped);
+                        (NumberOfAllowedInvocations::One, node)
                     }
+                    DependencyGraphNode::Type(t) => match lifecycles.get(t).cloned() {
+                        Some(Lifecycle::Singleton) | None => (
+                            NumberOfAllowedInvocations::One,
+                            HandlerCallGraphNode::InputParameter(t.to_owned()),
+                        ),
+                        Some(Lifecycle::RequestScoped) => (
+                            NumberOfAllowedInvocations::One,
+                            HandlerCallGraphNode::Compute(constructors[t].to_owned()),
+                        ),
+                        Some(Lifecycle::Transient) => (
+                            NumberOfAllowedInvocations::Multiple,
+                            HandlerCallGraphNode::Compute(constructors[t].to_owned()),
+                        ),
+                    },
+                };
+                match n_allowed_invocations {
+                    NumberOfAllowedInvocations::One => scoped_or_longer_indexes
+                        .get(&dep_node_index)
+                        .cloned()
+                        .unwrap_or_else(|| {
+                            let index = call_graph.add_node(new_node);
+                            scoped_or_longer_indexes.insert(dep_node_index, index);
+                            index
+                        }),
+                    NumberOfAllowedInvocations::Multiple => call_graph.add_node(new_node),
                 }
             };
+
             if let Some(call_parent_node_index) = call_parent_node_index {
                 call_graph.add_edge(call_node_index, call_parent_node_index, ());
             }
 
-            // Singleton types are constructed in the initialization phase of the server, we do
-            // not build them every single time we receive a request.
-            // Therefore we should not account for their dependencies (and the necessary constructor
-            // calls) when building the call graph for a request handler.
-            if let DependencyGraphNode::Type(t) = node {
-                if Some(&Lifecycle::Singleton) == lifecycles.get(t) {
-                    continue;
+            // We need to recursively build the input types for all our constructors;
+            if let HandlerCallGraphNode::Compute(_) = call_graph[call_node_index] {
+                let dependencies_node_indexes = dependency_graph
+                    .graph
+                    .neighbors_directed(dep_node_index, Direction::Incoming);
+                for dependency_node_index in dependencies_node_indexes {
+                    nodes_to_be_visited.push(VisitorStackElement {
+                        dependency_graph_index: dependency_node_index,
+                        call_graph_parent_index: Some(call_node_index),
+                    });
                 }
             }
-
-            let dependencies_node_indexes = dependency_graph
-                .graph
-                .neighbors_directed(dep_node_index, Direction::Incoming);
-            for dependency_node_index in dependencies_node_indexes {
-                nodes_to_be_visited.push(VisitorStackElement {
-                    dependency_graph_index: dependency_node_index,
-                    call_graph_parent_index: Some(call_node_index),
-                });
-            }
         }
-        let input_parameter_types = required_inputs(&call_graph, &lifecycles);
+        let input_parameter_types = required_inputs(&call_graph);
         HandlerCallGraph {
             call_graph,
             handler_node_index: scoped_or_longer_indexes[handler_node_index],
@@ -208,20 +198,11 @@ impl HandlerCallGraph {
 /// We return a `IndexSet` instead of a `HashSet` because we want a consistent ordering for the input
 /// parameters - it will be used in other parts of the crate to provide instances of those types
 /// in the expected order.
-fn required_inputs(
-    call_graph: &StableDiGraph<HandlerCallGraphNode, ()>,
-    lifecycles: &HashMap<ResolvedType, Lifecycle>,
-) -> IndexSet<ResolvedType> {
+fn required_inputs(call_graph: &StableDiGraph<HandlerCallGraphNode, ()>) -> IndexSet<ResolvedType> {
     let singletons_or_missing_constructors: IndexSet<ResolvedType> = call_graph
         .node_weights()
         .filter_map(|node| match node {
-            HandlerCallGraphNode::Compute(constructor) => {
-                let output_type = constructor.output_type();
-                if lifecycles.get(output_type) == Some(&Lifecycle::Singleton) {
-                    return Some(output_type);
-                }
-                None
-            }
+            HandlerCallGraphNode::Compute(_) => None,
             HandlerCallGraphNode::InputParameter(i) => Some(i),
         })
         .cloned()
