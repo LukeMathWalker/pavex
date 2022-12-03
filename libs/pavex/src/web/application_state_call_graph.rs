@@ -176,31 +176,7 @@ impl ApplicationStateCallGraph {
                             };
                             blocks.insert(node_index, Fragment::VariableReference(parameter_name));
                         }
-                        Lifecycle::Transient => {
-                            let constructor = &constructors[t];
-                            match constructor {
-                                Constructor::Callable(callable) => {
-                                    let block = codegen_call_block(
-                                        call_graph,
-                                        callable,
-                                        node_index,
-                                        &mut blocks,
-                                        &mut variable_generator,
-                                        package_id2name,
-                                    )?;
-                                    blocks.insert(node_index, block);
-                                }
-                                Constructor::BorrowSharedReference(shared_reference) => {
-                                    let variable_name =
-                                        parameter_bindings.get(&shared_reference.input).unwrap();
-                                    blocks.insert(
-                                        node_index,
-                                        Fragment::BorrowSharedReference(variable_name.to_owned()),
-                                    );
-                                }
-                            }
-                        }
-                        Lifecycle::RequestScoped => unreachable!(),
+                        Lifecycle::Transient | Lifecycle::RequestScoped => unreachable!(),
                     }
                 }
                 DependencyGraphNode::Compute(callable) => {
