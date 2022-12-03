@@ -39,17 +39,20 @@ use crate::web::dependency_graph::{CallableDependencyGraph, DependencyGraphNode}
 pub(crate) struct HandlerCallGraph {
     pub(crate) call_graph: StableDiGraph<HandlerCallGraphNode, ()>,
     pub(crate) handler_node_index: NodeIndex,
-    pub(crate) lifecycles: HashMap<ResolvedType, Lifecycle>,
     pub(crate) input_parameter_types: IndexSet<ResolvedType>,
 }
 
 #[derive(Clone, Debug)]
 pub(crate) enum HandlerCallGraphNode {
-    Compute(Constructor),
+    Compute {
+        constructor: Constructor,
+        n_allowed_invocations: NumberOfAllowedInvocations,
+    },
     InputParameter(ResolvedType),
 }
 
-pub enum NumberOfAllowedInvocations {
+#[derive(Clone, Debug, Copy)]
+pub(crate) enum NumberOfAllowedInvocations {
     One,
     Multiple,
 }
@@ -73,7 +76,7 @@ impl HandlerCallGraph {
     #[tracing::instrument(name = "compute_handler_call_graph", skip_all)]
     pub(crate) fn new(
         dependency_graph: &'_ CallableDependencyGraph,
-        mut lifecycles: HashMap<ResolvedType, Lifecycle>,
+        lifecycles: &HashMap<ResolvedType, Lifecycle>,
         constructors: IndexMap<ResolvedType, Constructor>,
     ) -> Self {
         let CallableDependencyGraph {
@@ -95,38 +98,50 @@ impl HandlerCallGraph {
             // Transient components, instead, appear as many times as they are used in the call graph.
             // We treat compute nodes as singletons as well.
             let call_node_index = {
-                let (n_allowed_invocations, new_node) = match node {
-                    DependencyGraphNode::Compute(c) => {
-                        let node =
-                            HandlerCallGraphNode::Compute(Constructor::Callable(c.to_owned()));
-                        lifecycles.insert(c.output.to_owned(), Lifecycle::RequestScoped);
-                        (NumberOfAllowedInvocations::One, node)
-                    }
+                let call_graph_node = match node {
+                    DependencyGraphNode::Compute(c) => HandlerCallGraphNode::Compute {
+                        constructor: Constructor::Callable(c.to_owned()),
+                        n_allowed_invocations: NumberOfAllowedInvocations::One,
+                    },
                     DependencyGraphNode::Type(t) => match lifecycles.get(t).cloned() {
-                        Some(Lifecycle::Singleton) | None => (
-                            NumberOfAllowedInvocations::One,
-                            HandlerCallGraphNode::InputParameter(t.to_owned()),
-                        ),
-                        Some(Lifecycle::RequestScoped) => (
-                            NumberOfAllowedInvocations::One,
-                            HandlerCallGraphNode::Compute(constructors[t].to_owned()),
-                        ),
-                        Some(Lifecycle::Transient) => (
-                            NumberOfAllowedInvocations::Multiple,
-                            HandlerCallGraphNode::Compute(constructors[t].to_owned()),
-                        ),
+                        Some(Lifecycle::Singleton) | None => {
+                            HandlerCallGraphNode::InputParameter(t.to_owned())
+                        }
+                        Some(Lifecycle::RequestScoped) => HandlerCallGraphNode::Compute {
+                            constructor: constructors[t].to_owned(),
+                            n_allowed_invocations: NumberOfAllowedInvocations::One,
+                        },
+                        Some(Lifecycle::Transient) => HandlerCallGraphNode::Compute {
+                            constructor: constructors[t].to_owned(),
+                            n_allowed_invocations: NumberOfAllowedInvocations::Multiple,
+                        },
                     },
                 };
-                match n_allowed_invocations {
-                    NumberOfAllowedInvocations::One => scoped_or_longer_indexes
+                match call_graph_node {
+                    HandlerCallGraphNode::Compute {
+                        n_allowed_invocations,
+                        ..
+                    } => match n_allowed_invocations {
+                        NumberOfAllowedInvocations::One => scoped_or_longer_indexes
+                            .get(&dep_node_index)
+                            .cloned()
+                            .unwrap_or_else(|| {
+                                let index = call_graph.add_node(call_graph_node);
+                                scoped_or_longer_indexes.insert(dep_node_index, index);
+                                index
+                            }),
+                        NumberOfAllowedInvocations::Multiple => {
+                            call_graph.add_node(call_graph_node)
+                        }
+                    },
+                    HandlerCallGraphNode::InputParameter(_) => scoped_or_longer_indexes
                         .get(&dep_node_index)
                         .cloned()
                         .unwrap_or_else(|| {
-                            let index = call_graph.add_node(new_node);
+                            let index = call_graph.add_node(call_graph_node);
                             scoped_or_longer_indexes.insert(dep_node_index, index);
                             index
                         }),
-                    NumberOfAllowedInvocations::Multiple => call_graph.add_node(new_node),
                 }
             };
 
@@ -135,7 +150,7 @@ impl HandlerCallGraph {
             }
 
             // We need to recursively build the input types for all our constructors;
-            if let HandlerCallGraphNode::Compute(_) = call_graph[call_node_index] {
+            if let HandlerCallGraphNode::Compute { .. } = call_graph[call_node_index] {
                 let dependencies_node_indexes = dependency_graph
                     .graph
                     .neighbors_directed(dep_node_index, Direction::Incoming);
@@ -151,7 +166,6 @@ impl HandlerCallGraph {
         HandlerCallGraph {
             call_graph,
             handler_node_index: scoped_or_longer_indexes[handler_node_index],
-            lifecycles,
             input_parameter_types,
         }
     }
@@ -169,7 +183,7 @@ impl HandlerCallGraph {
                 &|_, _| "".to_string(),
                 &|_, (_, node)| {
                     match node {
-                        HandlerCallGraphNode::Compute(c) => match c {
+                        HandlerCallGraphNode::Compute { constructor: c, .. } => match c {
                             Constructor::BorrowSharedReference(r) => {
                                 format!("label = \"&{}\"", r.input.render_type(package_ids2names))
                             }
@@ -202,7 +216,7 @@ fn required_inputs(call_graph: &StableDiGraph<HandlerCallGraphNode, ()>) -> Inde
     let singletons_or_missing_constructors: IndexSet<ResolvedType> = call_graph
         .node_weights()
         .filter_map(|node| match node {
-            HandlerCallGraphNode::Compute(_) => None,
+            HandlerCallGraphNode::Compute { .. } => None,
             HandlerCallGraphNode::InputParameter(i) => Some(i),
         })
         .cloned()
@@ -217,7 +231,6 @@ pub(crate) fn codegen<'a>(
     let HandlerCallGraph {
         call_graph,
         handler_node_index,
-        lifecycles,
         input_parameter_types,
     } = graph;
     let mut dfs = DfsPostOrder::new(Reversed(call_graph), *handler_node_index);
@@ -231,38 +244,73 @@ pub(crate) fn codegen<'a>(
     while let Some(node_index) = dfs.next(Reversed(call_graph)) {
         let node = &call_graph[node_index];
         match node {
-            HandlerCallGraphNode::Compute(constructor) => {
-                let lifecycle = lifecycles[constructor.output_type()].to_owned();
-                match lifecycle {
-                    Lifecycle::Singleton => match constructor {
-                        Constructor::BorrowSharedReference(s) => {
-                            if let Some(parameter_name) = parameter_bindings.get(&s.input) {
-                                blocks.insert(
-                                    node_index,
-                                    Fragment::BorrowSharedReference(parameter_name.to_owned()),
-                                );
-                            } else {
-                                let parameter_name = variable_generator.generate();
-                                parameter_bindings.insert(
-                                    constructor.output_type().to_owned(),
-                                    parameter_name.clone(),
-                                );
-                                blocks.insert(
-                                    node_index,
-                                    Fragment::VariableReference(parameter_name),
-                                );
+            HandlerCallGraphNode::Compute {
+                constructor,
+                n_allowed_invocations,
+            } => {
+                match n_allowed_invocations {
+                    NumberOfAllowedInvocations::One => {
+                        match constructor {
+                            Constructor::Callable(callable) => {
+                                let block = codegen_utils::_codegen_call_block(
+                                    get_node_type_inputs(node_index, call_graph),
+                                    callable,
+                                    &mut blocks,
+                                    &mut variable_generator,
+                                    package_id2name,
+                                )?;
+
+                                let has_dependents = call_graph
+                                    .neighbors_directed(node_index, Direction::Outgoing)
+                                    .next()
+                                    .is_some();
+                                if !has_dependents {
+                                    // This is a leaf in the call dependency graph for this handler,
+                                    // which implies it is a constructor for the return type!
+                                    // Instead of creating an unnecessary variable binding, we add
+                                    // the raw expression block - which can then be used as-is for
+                                    // returning the value.
+                                    blocks.insert(node_index, block);
+                                } else {
+                                    // We have at least one dependent, this callable does not return
+                                    // the output type for this handler.
+                                    // We bind the constructed value to a variable name and instruct
+                                    // all dependents to refer to the constructed value via that
+                                    // variable name.
+                                    let parameter_name = variable_generator.generate();
+                                    let block = quote! {
+                                        let #parameter_name = #block;
+                                    };
+                                    scoped_constructors.insert(node_index, block);
+                                    blocks.insert(
+                                        node_index,
+                                        Fragment::VariableReference(parameter_name),
+                                    );
+                                }
+                            }
+                            Constructor::BorrowSharedReference(_) => {
+                                let dependencies =
+                                    call_graph.neighbors_directed(node_index, Direction::Incoming);
+                                let dependency_indexes: Vec<_> = dependencies.collect();
+                                assert_eq!(1, dependency_indexes.len());
+                                let dependency_index = dependency_indexes.first().unwrap();
+                                match &blocks[dependency_index] {
+                                    Fragment::VariableReference(binding_name) => {
+                                        blocks.insert(
+                                            node_index,
+                                            Fragment::BorrowSharedReference(
+                                                binding_name.to_owned(),
+                                            ),
+                                        );
+                                    }
+                                    Fragment::BorrowSharedReference(_)
+                                    | Fragment::Statement(_)
+                                    | Fragment::Block(_) => unreachable!(),
+                                }
                             }
                         }
-                        Constructor::Callable(_) => {
-                            let parameter_name = variable_generator.generate();
-                            parameter_bindings.insert(
-                                constructor.output_type().to_owned(),
-                                parameter_name.clone(),
-                            );
-                            blocks.insert(node_index, Fragment::VariableReference(parameter_name));
-                        }
-                    },
-                    Lifecycle::Transient => match constructor {
+                    }
+                    NumberOfAllowedInvocations::Multiple => match constructor {
                         Constructor::Callable(callable) => {
                             let block = codegen_utils::_codegen_call_block(
                                 get_node_type_inputs(node_index, call_graph),
@@ -314,63 +362,6 @@ pub(crate) fn codegen<'a>(
                             }
                         }
                     },
-                    Lifecycle::RequestScoped => match constructor {
-                        Constructor::Callable(callable) => {
-                            let block = codegen_utils::_codegen_call_block(
-                                get_node_type_inputs(node_index, call_graph),
-                                callable,
-                                &mut blocks,
-                                &mut variable_generator,
-                                package_id2name,
-                            )?;
-
-                            let has_dependents = call_graph
-                                .neighbors_directed(node_index, Direction::Outgoing)
-                                .next()
-                                .is_some();
-                            if !has_dependents {
-                                // This is a leaf in the call dependency graph for this handler,
-                                // which implies it is a constructor for the return type!
-                                // Instead of creating an unnecessary variable binding, we add
-                                // the raw expression block - which can then be used as-is for
-                                // returning the value.
-                                blocks.insert(node_index, block);
-                            } else {
-                                // We have at least one dependent, this callable does not return
-                                // the output type for this handler.
-                                // We bind the constructed value to a variable name and instruct
-                                // all dependents to refer to the constructed value via that
-                                // variable name.
-                                let parameter_name = variable_generator.generate();
-                                let block = quote! {
-                                    let #parameter_name = #block;
-                                };
-                                scoped_constructors.insert(node_index, block);
-                                blocks.insert(
-                                    node_index,
-                                    Fragment::VariableReference(parameter_name),
-                                );
-                            }
-                        }
-                        Constructor::BorrowSharedReference(_) => {
-                            let dependencies =
-                                call_graph.neighbors_directed(node_index, Direction::Incoming);
-                            let dependency_indexes: Vec<_> = dependencies.collect();
-                            assert_eq!(1, dependency_indexes.len());
-                            let dependency_index = dependency_indexes.first().unwrap();
-                            match &blocks[dependency_index] {
-                                Fragment::VariableReference(binding_name) => {
-                                    blocks.insert(
-                                        node_index,
-                                        Fragment::BorrowSharedReference(binding_name.to_owned()),
-                                    );
-                                }
-                                Fragment::BorrowSharedReference(_)
-                                | Fragment::Statement(_)
-                                | Fragment::Block(_) => unreachable!(),
-                            }
-                        }
-                    },
                 }
             }
             HandlerCallGraphNode::InputParameter(input_type) => {
@@ -382,7 +373,10 @@ pub(crate) fn codegen<'a>(
     }
 
     let handler = match &call_graph[*handler_node_index] {
-        HandlerCallGraphNode::Compute(Constructor::Callable(c)) => c,
+        HandlerCallGraphNode::Compute {
+            constructor: Constructor::Callable(c),
+            ..
+        } => c,
         _ => unreachable!(),
     };
     let code = {
@@ -422,7 +416,7 @@ fn get_node_type_inputs(
         .neighbors_directed(node_index, Direction::Incoming)
         .map(|n| {
             let type_ = match &call_graph[n] {
-                HandlerCallGraphNode::Compute(c) => c.output_type(),
+                HandlerCallGraphNode::Compute { constructor, .. } => constructor.output_type(),
                 HandlerCallGraphNode::InputParameter(i) => i,
             };
             (n, type_)

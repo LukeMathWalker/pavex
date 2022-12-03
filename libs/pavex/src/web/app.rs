@@ -305,11 +305,7 @@ impl App {
             .map(|(path, dep_graph)| {
                 (
                     path.to_owned(),
-                    HandlerCallGraph::new(
-                        dep_graph,
-                        component2lifecycle.clone(),
-                        constructors.clone(),
-                    ),
+                    HandlerCallGraph::new(dep_graph, &component2lifecycle, constructors.clone()),
                 )
             })
             .collect();

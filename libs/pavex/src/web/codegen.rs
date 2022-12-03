@@ -391,7 +391,7 @@ fn collect_package_ids<'a>(
         for node in handler_call_graph.call_graph.node_weights() {
             let node: &HandlerCallGraphNode = node;
             match node {
-                HandlerCallGraphNode::Compute(c) => match c {
+                HandlerCallGraphNode::Compute { constructor: c, .. } => match c {
                     Constructor::BorrowSharedReference(t) => {
                         collect_type_package_ids(&mut package_ids, &t.input)
                     }
