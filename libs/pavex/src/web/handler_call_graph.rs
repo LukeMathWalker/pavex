@@ -251,7 +251,6 @@ pub(crate) fn codegen<'a>(
         let node = &call_graph[node_index];
         match node {
             HandlerCallGraphNode::Compute(constructor) => {
-                dbg!(constructor.output_type());
                 let lifecycle = lifecycles[constructor.output_type()].to_owned();
                 match lifecycle {
                     Lifecycle::Singleton => match constructor {
