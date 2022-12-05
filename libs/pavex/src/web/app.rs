@@ -59,9 +59,9 @@ impl App {
         // We collect all the unique raw identifiers from the blueprint.
         let raw_identifiers_db: HashSet<RawCallableIdentifiers> = {
             let mut set = HashSet::with_capacity(
-                app_blueprint.handlers.len() + app_blueprint.constructors.len(),
+                app_blueprint.request_handlers.len() + app_blueprint.constructors.len(),
             );
-            set.extend(app_blueprint.handlers.iter().cloned());
+            set.extend(app_blueprint.request_handlers.iter().cloned());
             set.extend(app_blueprint.constructors.iter().cloned());
             set
         };
@@ -148,8 +148,8 @@ impl App {
         };
 
         let handler_paths = {
-            let mut set = IndexSet::with_capacity(app_blueprint.handlers.len());
-            for handler in &app_blueprint.handlers {
+            let mut set = IndexSet::with_capacity(app_blueprint.request_handlers.len());
+            for handler in &app_blueprint.request_handlers {
                 set.insert(identifiers2path[handler].clone());
             }
             set

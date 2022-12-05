@@ -8,7 +8,7 @@ use crate::callable::RawCallableIdentifiers;
 #[derive(Default, serde::Serialize, serde::Deserialize)]
 pub struct AppBlueprint {
     pub constructors: IndexSet<RawCallableIdentifiers>,
-    pub handlers: IndexSet<RawCallableIdentifiers>,
+    pub request_handlers: IndexSet<RawCallableIdentifiers>,
     pub error_handlers: IndexSet<RawCallableIdentifiers>,
     pub component_lifecycles: HashMap<RawCallableIdentifiers, Lifecycle>,
     pub router: BTreeMap<String, RawCallableIdentifiers>,
@@ -77,7 +77,7 @@ impl AppBlueprint {
             .insert(std::panic::Location::caller().into());
         self.router
             .insert(path.to_owned(), callable_identifiers.clone());
-        self.handlers.insert(callable_identifiers);
+        self.request_handlers.insert(callable_identifiers);
         self
     }
 
