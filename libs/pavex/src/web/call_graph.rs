@@ -31,18 +31,18 @@ pub(crate) fn application_state_call_graph(
         node: &DependencyGraphNode,
         lifecycles: &HashMap<ResolvedType, Lifecycle>,
         constructors: &IndexMap<ResolvedType, Constructor>,
-    ) -> HandlerCallGraphNode {
+    ) -> CallGraphNode {
         match node {
-            DependencyGraphNode::Compute(c) => HandlerCallGraphNode::Compute {
+            DependencyGraphNode::Compute(c) => CallGraphNode::Compute {
                 constructor: Constructor::Callable(c.to_owned()),
                 n_allowed_invocations: NumberOfAllowedInvocations::One,
             },
             DependencyGraphNode::Type(t) => match lifecycles.get(t).cloned() {
-                Some(Lifecycle::Singleton) => HandlerCallGraphNode::Compute {
+                Some(Lifecycle::Singleton) => CallGraphNode::Compute {
                     constructor: constructors[t].to_owned(),
                     n_allowed_invocations: NumberOfAllowedInvocations::One,
                 },
-                None => HandlerCallGraphNode::InputParameter(t.to_owned()),
+                None => CallGraphNode::InputParameter(t.to_owned()),
                 Some(Lifecycle::RequestScoped) => {
                     panic!("Singletons should not depend on types with a request-scoped lifecycle.")
                 }
@@ -105,21 +105,19 @@ pub(crate) fn handler_call_graph(
         node: &DependencyGraphNode,
         lifecycles: &HashMap<ResolvedType, Lifecycle>,
         constructors: &IndexMap<ResolvedType, Constructor>,
-    ) -> HandlerCallGraphNode {
+    ) -> CallGraphNode {
         match node {
-            DependencyGraphNode::Compute(c) => HandlerCallGraphNode::Compute {
+            DependencyGraphNode::Compute(c) => CallGraphNode::Compute {
                 constructor: Constructor::Callable(c.to_owned()),
                 n_allowed_invocations: NumberOfAllowedInvocations::One,
             },
             DependencyGraphNode::Type(t) => match lifecycles.get(t).cloned() {
-                Some(Lifecycle::Singleton) | None => {
-                    HandlerCallGraphNode::InputParameter(t.to_owned())
-                }
-                Some(Lifecycle::RequestScoped) => HandlerCallGraphNode::Compute {
+                Some(Lifecycle::Singleton) | None => CallGraphNode::InputParameter(t.to_owned()),
+                Some(Lifecycle::RequestScoped) => CallGraphNode::Compute {
                     constructor: constructors[t].to_owned(),
                     n_allowed_invocations: NumberOfAllowedInvocations::One,
                 },
-                Some(Lifecycle::Transient) => HandlerCallGraphNode::Compute {
+                Some(Lifecycle::Transient) => CallGraphNode::Compute {
                     constructor: constructors[t].to_owned(),
                     n_allowed_invocations: NumberOfAllowedInvocations::Multiple,
                 },
@@ -148,22 +146,22 @@ where
         &DependencyGraphNode,
         &HashMap<ResolvedType, Lifecycle>,
         &IndexMap<ResolvedType, Constructor>,
-    ) -> HandlerCallGraphNode,
+    ) -> CallGraphNode,
 {
     let CallableDependencyGraph {
         dependency_graph,
         callable_node_index,
     } = dependency_graph;
     let mut nodes_to_be_visited = vec![VisitorStackElement::orphan(*callable_node_index)];
-    let mut call_graph = StableDiGraph::<HandlerCallGraphNode, ()>::new();
+    let mut call_graph = StableDiGraph::<CallGraphNode, ()>::new();
 
     // If the constructor for a type can be invoked at most once, then it should only appear
     // at most once in the call graph. This mapping, and the corresponding Rust closure, are used
     // to make sure of that.
     let mut indexes_for_unique_nodes = HashMap::<u32, NodeIndex>::new();
     let mut add_node_at_most_once =
-        |graph: &mut StableDiGraph<HandlerCallGraphNode, ()>,
-         call_graph_node: HandlerCallGraphNode,
+        |graph: &mut StableDiGraph<CallGraphNode, ()>,
+         call_graph_node: CallGraphNode,
          dependency_graph_node_index: u32| {
             indexes_for_unique_nodes
                 .get(&dependency_graph_node_index)
@@ -189,7 +187,7 @@ where
             let call_graph_node =
                 dependency_graph_node2call_graph_node(node, lifecycles, constructors);
             match call_graph_node {
-                HandlerCallGraphNode::Compute {
+                CallGraphNode::Compute {
                     n_allowed_invocations,
                     ..
                 } => match n_allowed_invocations {
@@ -198,7 +196,7 @@ where
                     }
                     NumberOfAllowedInvocations::Multiple => call_graph.add_node(call_graph_node),
                 },
-                HandlerCallGraphNode::InputParameter(_) => {
+                CallGraphNode::InputParameter(_) => {
                     add_node_at_most_once(&mut call_graph, call_graph_node, dep_node_index)
                 }
             }
@@ -209,7 +207,7 @@ where
         }
 
         // We need to recursively build the input types for all our constructors;
-        if let HandlerCallGraphNode::Compute { .. } = call_graph[call_node_index] {
+        if let CallGraphNode::Compute { .. } = call_graph[call_node_index] {
             let dependencies_node_indexes = dependency_graph
                 .graph
                 .neighbors_directed(dep_node_index, Direction::Incoming);
@@ -259,12 +257,12 @@ where
 /// Transient types can be built multiple times within the lifecycle of each incoming request.
 #[derive(Debug)]
 pub(crate) struct CallGraph {
-    pub(crate) call_graph: StableDiGraph<HandlerCallGraphNode, ()>,
+    pub(crate) call_graph: StableDiGraph<CallGraphNode, ()>,
     pub(crate) root_callable_node_index: NodeIndex,
 }
 
 #[derive(Clone, Debug)]
-pub(crate) enum HandlerCallGraphNode {
+pub(crate) enum CallGraphNode {
     Compute {
         constructor: Constructor,
         n_allowed_invocations: NumberOfAllowedInvocations,
@@ -311,7 +309,7 @@ impl CallGraph {
                 &|_, _| "".to_string(),
                 &|_, (_, node)| {
                     match node {
-                        HandlerCallGraphNode::Compute { constructor: c, .. } => match c {
+                        CallGraphNode::Compute { constructor: c, .. } => match c {
                             Constructor::BorrowSharedReference(r) => {
                                 format!("label = \"&{}\"", r.input.render_type(package_ids2names))
                             }
@@ -319,7 +317,7 @@ impl CallGraph {
                                 format!("label = \"{}\"", c.render_signature(package_ids2names))
                             }
                         },
-                        HandlerCallGraphNode::InputParameter(t) => {
+                        CallGraphNode::InputParameter(t) => {
                             format!("label = \"{}\"", t.render_type(package_ids2names))
                         }
                     }
@@ -338,8 +336,8 @@ impl CallGraph {
         self.call_graph
             .node_weights()
             .filter_map(|node| match node {
-                HandlerCallGraphNode::Compute { .. } => None,
-                HandlerCallGraphNode::InputParameter(i) => Some(i),
+                CallGraphNode::Compute { .. } => None,
+                CallGraphNode::InputParameter(i) => Some(i),
             })
             .cloned()
             .collect()
@@ -366,7 +364,7 @@ pub(crate) fn codegen<'a>(
     while let Some(node_index) = dfs.next(Reversed(call_graph)) {
         let node = &call_graph[node_index];
         match node {
-            HandlerCallGraphNode::Compute {
+            CallGraphNode::Compute {
                 constructor,
                 n_allowed_invocations,
             } => {
@@ -486,7 +484,7 @@ pub(crate) fn codegen<'a>(
                     },
                 }
             }
-            HandlerCallGraphNode::InputParameter(input_type) => {
+            CallGraphNode::InputParameter(input_type) => {
                 let parameter_name = variable_generator.generate();
                 parameter_bindings.insert(input_type.to_owned(), parameter_name.clone());
                 blocks.insert(node_index, Fragment::VariableReference(parameter_name));
@@ -495,7 +493,7 @@ pub(crate) fn codegen<'a>(
     }
 
     let handler = match &call_graph[*handler_node_index] {
-        HandlerCallGraphNode::Compute {
+        CallGraphNode::Compute {
             constructor: Constructor::Callable(c),
             ..
         } => c,
@@ -532,14 +530,14 @@ pub(crate) fn codegen<'a>(
 
 fn get_node_type_inputs(
     node_index: NodeIndex,
-    call_graph: &StableDiGraph<HandlerCallGraphNode, ()>,
+    call_graph: &StableDiGraph<CallGraphNode, ()>,
 ) -> impl Iterator<Item = (NodeIndex, &ResolvedType)> {
     call_graph
         .neighbors_directed(node_index, Direction::Incoming)
         .map(|n| {
             let type_ = match &call_graph[n] {
-                HandlerCallGraphNode::Compute { constructor, .. } => constructor.output_type(),
-                HandlerCallGraphNode::InputParameter(i) => i,
+                CallGraphNode::Compute { constructor, .. } => constructor.output_type(),
+                CallGraphNode::InputParameter(i) => i,
             };
             (n, type_)
         })

@@ -14,7 +14,7 @@ use crate::language::ResolvedPath;
 use crate::language::{Callable, ResolvedType};
 use crate::rustdoc::STD_PACKAGE_ID;
 use crate::web::app::GENERATED_APP_PACKAGE_ID;
-use crate::web::call_graph::{codegen, CallGraph, HandlerCallGraphNode};
+use crate::web::call_graph::{codegen, CallGraph, CallGraphNode};
 use crate::web::constructors::Constructor;
 
 pub(crate) fn codegen_app(
@@ -380,7 +380,7 @@ fn collect_call_graph_package_ids<'a>(
 ) {
     for node in call_graph.call_graph.node_weights() {
         match node {
-            HandlerCallGraphNode::Compute { constructor: c, .. } => match c {
+            CallGraphNode::Compute { constructor: c, .. } => match c {
                 Constructor::BorrowSharedReference(t) => {
                     collect_type_package_ids(package_ids, &t.input)
                 }
@@ -388,7 +388,7 @@ fn collect_call_graph_package_ids<'a>(
                     collect_callable_package_ids(package_ids, c);
                 }
             },
-            HandlerCallGraphNode::InputParameter(t) => collect_type_package_ids(package_ids, t),
+            CallGraphNode::InputParameter(t) => collect_type_package_ids(package_ids, t),
         }
     }
 }
