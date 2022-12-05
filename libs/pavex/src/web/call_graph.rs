@@ -372,7 +372,7 @@ impl CallGraph {
                         NumberOfAllowedInvocations::One => {
                             match constructor {
                                 Constructor::Callable(callable) => {
-                                    let block = codegen_utils::_codegen_call_block(
+                                    let block = codegen_utils::codegen_call_block(
                                         get_node_type_inputs(node_index, call_graph),
                                         callable,
                                         &mut blocks,
@@ -432,7 +432,7 @@ impl CallGraph {
                         }
                         NumberOfAllowedInvocations::Multiple => match constructor {
                             Constructor::Callable(callable) => {
-                                let block = codegen_utils::_codegen_call_block(
+                                let block = codegen_utils::codegen_call_block(
                                     get_node_type_inputs(node_index, call_graph),
                                     callable,
                                     &mut blocks,

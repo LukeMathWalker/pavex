@@ -30,7 +30,7 @@ impl ToTokens for Fragment {
     }
 }
 
-// Generate a sequence of unique variable names.
+/// Generate a sequence of unique variable names.
 #[derive(Default)]
 pub(crate) struct VariableNameGenerator {
     cursor: u32,
@@ -44,7 +44,7 @@ impl VariableNameGenerator {
     }
 }
 
-pub(crate) fn _codegen_call_block<'a, I>(
+pub(crate) fn codegen_call_block<'a, I>(
     dependencies: I,
     callable: &Callable,
     blocks: &mut HashMap<NodeIndex, Fragment>,
