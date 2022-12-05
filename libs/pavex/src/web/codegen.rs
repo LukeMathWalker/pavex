@@ -38,7 +38,7 @@ pub(crate) fn codegen_app(
         .into_iter()
         .map(|(path, call_graph)| {
             let code = codegen(call_graph, package_id2name)?;
-            Ok::<_, anyhow::Error>((path, (code, call_graph.input_parameter_types.clone())))
+            Ok::<_, anyhow::Error>((path, (code, call_graph.required_input_types())))
         })
         // TODO: wasteful
         .collect::<Result<IndexMap<_, _>, _>>()?

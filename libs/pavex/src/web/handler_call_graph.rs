@@ -39,7 +39,6 @@ use crate::web::dependency_graph::{CallableDependencyGraph, DependencyGraphNode}
 pub(crate) struct HandlerCallGraph {
     pub(crate) call_graph: StableDiGraph<HandlerCallGraphNode, ()>,
     pub(crate) handler_node_index: NodeIndex,
-    pub(crate) input_parameter_types: IndexSet<ResolvedType>,
 }
 
 #[derive(Clone, Debug)]
@@ -52,8 +51,12 @@ pub(crate) enum HandlerCallGraphNode {
 }
 
 #[derive(Clone, Debug, Copy)]
+/// How many times can a certain constructor be invoked within the body of
+/// the code-generated function?
 pub(crate) enum NumberOfAllowedInvocations {
+    /// At most once.
     One,
+    /// As many times as you want to.
     Multiple,
 }
 
@@ -162,11 +165,9 @@ impl HandlerCallGraph {
                 }
             }
         }
-        let input_parameter_types = required_inputs(&call_graph);
         HandlerCallGraph {
             call_graph,
             handler_node_index: scoped_or_longer_indexes[handler_node_index],
-            input_parameter_types,
         }
     }
 
@@ -199,39 +200,33 @@ impl HandlerCallGraph {
             )
         )
     }
-}
 
-/// Return the set of types that must be provided as input to build the handler's input parameters
-/// and invoke it.
-///
-/// In other words, return the set of types that either:
-/// - do not have a registered constructor;
-/// - have `Singleton` as lifecycle;
-/// - are references to a `Singleton`.
-///
-/// We return a `IndexSet` instead of a `HashSet` because we want a consistent ordering for the input
-/// parameters - it will be used in other parts of the crate to provide instances of those types
-/// in the expected order.
-fn required_inputs(call_graph: &StableDiGraph<HandlerCallGraphNode, ()>) -> IndexSet<ResolvedType> {
-    let singletons_or_missing_constructors: IndexSet<ResolvedType> = call_graph
-        .node_weights()
-        .filter_map(|node| match node {
-            HandlerCallGraphNode::Compute { .. } => None,
-            HandlerCallGraphNode::InputParameter(i) => Some(i),
-        })
-        .cloned()
-        .collect();
-    singletons_or_missing_constructors
+    /// Return the set of types that must be provided as input to (recursively) build the handler's
+    /// input parameters and invoke it.
+    ///
+    /// We return a `IndexSet` instead of a `HashSet` because we want a consistent ordering for the input
+    /// parameters - it will be used in other parts of the crate to provide instances of those types
+    /// in the expected order.
+    pub fn required_input_types(&self) -> IndexSet<ResolvedType> {
+        self.call_graph
+            .node_weights()
+            .filter_map(|node| match node {
+                HandlerCallGraphNode::Compute { .. } => None,
+                HandlerCallGraphNode::InputParameter(i) => Some(i),
+            })
+            .cloned()
+            .collect()
+    }
 }
 
 pub(crate) fn codegen<'a>(
     graph: &HandlerCallGraph,
     package_id2name: &BiHashMap<&'a PackageId, String>,
 ) -> Result<ItemFn, anyhow::Error> {
+    let input_parameter_types = graph.required_input_types();
     let HandlerCallGraph {
         call_graph,
         handler_node_index,
-        input_parameter_types,
     } = graph;
     let mut dfs = DfsPostOrder::new(Reversed(call_graph), *handler_node_index);
 
