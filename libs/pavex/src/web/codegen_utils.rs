@@ -7,7 +7,7 @@ use petgraph::Direction;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
 
-use crate::language::{Callable, ResolvedType};
+use crate::language::{Callable, InvocationStyle, ResolvedType};
 use crate::web::dependency_graph::DependencyGraphNode;
 
 #[derive(Debug)]
@@ -112,7 +112,7 @@ where
             blocks.remove(&dependency_index);
         }
     }
-    let constructor_invocation = codegen_call(callable, &dependency_bindings, package_id2name)?;
+    let constructor_invocation = codegen_call(callable, &dependency_bindings, package_id2name);
     let block: syn::Block = syn::parse2(quote! {
         {
             #block
@@ -133,15 +133,33 @@ pub(crate) fn codegen_call(
     callable: &Callable,
     variable_bindings: &HashMap<ResolvedType, Box<dyn ToTokens>>,
     package_id2name: &BiHashMap<&PackageId, String>,
-) -> Result<TokenStream, anyhow::Error> {
+) -> TokenStream {
     let callable_path: syn::ExprPath =
         syn::parse_str(&callable.path.render_path(package_id2name)).unwrap();
-    let parameters = callable.inputs.iter().map(|i| &variable_bindings[i]);
-    let mut invocation = quote! {
-        #callable_path(#(#parameters),*)
+    let mut invocation = match &callable.invocation_style {
+        InvocationStyle::FunctionCall => {
+            let parameters = callable.inputs.iter().map(|i| &variable_bindings[i]);
+            quote! {
+                #callable_path(#(#parameters),*)
+            }
+        }
+        InvocationStyle::StructLiteral { field_names } => {
+            let fields = field_names.iter().map(|(field_name, field_type)| {
+                let field_name = format_ident!("{}", field_name);
+                let binding = &variable_bindings[field_type];
+                quote! {
+                    #field_name: #binding
+                }
+            });
+            quote! {
+                #callable_path {
+                    #(#fields),*
+                }
+            }
+        }
     };
     if callable.is_async {
         invocation = quote! { #invocation.await };
     }
-    Ok(invocation)
+    invocation
 }

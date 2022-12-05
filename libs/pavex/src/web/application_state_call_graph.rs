@@ -9,13 +9,15 @@ use petgraph::visit::{DfsPostOrder, Reversed};
 use petgraph::Direction;
 use proc_macro2::{Ident, TokenStream};
 use quote::{quote, ToTokens};
-use syn::{ExprStruct, ItemFn};
+use syn::ItemFn;
 
 use pavex_builder::Lifecycle;
 
 use crate::language::{Callable, InvocationStyle, ResolvedPath, ResolvedPathSegment, ResolvedType};
 use crate::web::app::GENERATED_APP_PACKAGE_ID;
-use crate::web::codegen_utils::{codegen_call_block, Fragment, VariableNameGenerator};
+use crate::web::codegen_utils::{
+    codegen_call, codegen_call_block, Fragment, VariableNameGenerator,
+};
 use crate::web::constructors::Constructor;
 use crate::web::dependency_graph::{CallableDependencyGraph, DependencyGraphNode};
 
@@ -62,8 +64,8 @@ impl ApplicationStateCallGraph {
             inputs: runtime_singleton_bindings.right_values().cloned().collect(),
             invocation_style: InvocationStyle::StructLiteral {
                 field_names: runtime_singleton_bindings
-                    .left_values()
-                    .map(|s| s.to_string())
+                    .iter()
+                    .map(|(ident, type_)| (ident.to_string(), type_.to_owned()))
                     .collect(),
             },
         };
@@ -140,7 +142,7 @@ impl ApplicationStateCallGraph {
             lifecycles,
             constructors,
             input_parameter_types,
-            runtime_singleton_bindings,
+            runtime_singleton_bindings: _,
         } = &self;
         let mut dfs = DfsPostOrder::new(Reversed(call_graph), *handler_node_index);
 
@@ -189,7 +191,6 @@ impl ApplicationStateCallGraph {
                     let block = codegen_struct_init_block(
                         call_graph,
                         callable,
-                        runtime_singleton_bindings,
                         node_index,
                         &mut blocks,
                         &mut variable_generator,
@@ -268,7 +269,6 @@ impl ApplicationStateCallGraph {
 pub(crate) fn codegen_struct_init_block(
     call_graph: &StableDiGraph<DependencyGraphNode, ()>,
     callable: &Callable,
-    struct_fields: &BiHashMap<Ident, ResolvedType>,
     node_index: NodeIndex,
     blocks: &mut HashMap<NodeIndex, Fragment>,
     variable_generator: &mut VariableNameGenerator,
@@ -309,12 +309,7 @@ pub(crate) fn codegen_struct_init_block(
             blocks.remove(&dependency_index);
         }
     }
-    let constructor_invocation = codegen_struct_init(
-        &callable.path,
-        struct_fields,
-        &dependency_bindings,
-        package_id2name,
-    )?;
+    let constructor_invocation = codegen_call(&callable, &dependency_bindings, package_id2name);
     let block: syn::Block = syn::parse2(quote! {
         {
             #block
@@ -329,27 +324,6 @@ pub(crate) fn codegen_struct_init_block(
     } else {
         Ok(Fragment::Block(block))
     }
-}
-
-pub(crate) fn codegen_struct_init(
-    struct_path: &ResolvedPath,
-    struct_fields: &BiHashMap<Ident, ResolvedType>,
-    field_init_values: &HashMap<ResolvedType, Box<dyn ToTokens>>,
-    id2name: &BiHashMap<&PackageId, String>,
-) -> Result<ExprStruct, anyhow::Error> {
-    let struct_path: syn::ExprPath = syn::parse_str(&struct_path.render_path(id2name)).unwrap();
-    let fields = struct_fields.iter().map(|(field_name, field_type)| {
-        let binding = &field_init_values[field_type];
-        quote! {
-            #field_name: #binding
-        }
-    });
-    Ok(syn::parse2(quote! {
-        #struct_path {
-            #(#fields),*
-        }
-    })
-    .unwrap())
 }
 
 /// Return the set of types that must be provided as input to build the application state.

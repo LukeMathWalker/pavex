@@ -1,4 +1,4 @@
-use std::collections::BTreeSet;
+use std::collections::BTreeMap;
 use std::fmt::Formatter;
 use std::fmt::Write;
 
@@ -40,8 +40,8 @@ pub(crate) enum InvocationStyle {
     /// `<struct_name> { <field_name>: <field_value>, ...}`
     /// An available option to build structs **if all their fields are public**.
     StructLiteral {
-        /// The name of the fields on the struct.
-        field_names: BTreeSet<String>,
+        /// A map associating each field name to its type.
+        field_names: BTreeMap<String, ResolvedType>,
     },
 }
 
