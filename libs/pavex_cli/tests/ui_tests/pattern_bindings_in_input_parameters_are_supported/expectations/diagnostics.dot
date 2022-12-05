@@ -5,6 +5,6 @@ digraph "/home" {
 }
 digraph app_state {
     0 [ label = "crate::ApplicationState(app::Streamer) -> crate::ApplicationState"]
-    1 [ label = "app::Streamer"]
+    1 [ label = "app::streamer() -> app::Streamer"]
     1 -> 0 [ ]
 }

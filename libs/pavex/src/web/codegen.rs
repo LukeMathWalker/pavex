@@ -14,22 +14,19 @@ use crate::language::ResolvedPath;
 use crate::language::{Callable, ResolvedType};
 use crate::rustdoc::STD_PACKAGE_ID;
 use crate::web::app::GENERATED_APP_PACKAGE_ID;
-use crate::web::application_state_call_graph::ApplicationStateCallGraph;
 use crate::web::constructors::Constructor;
-use crate::web::dependency_graph::DependencyGraphNode;
-use crate::web::handler_call_graph::{codegen, HandlerCallGraph, HandlerCallGraphNode};
+use crate::web::handler_call_graph::{codegen, CallGraph, HandlerCallGraphNode};
 
 pub(crate) fn codegen_app(
     router: &BTreeMap<String, Callable>,
-    handler_call_graphs: &IndexMap<ResolvedPath, HandlerCallGraph>,
-    application_state_call_graph: &ApplicationStateCallGraph,
+    handler_call_graphs: &IndexMap<ResolvedPath, CallGraph>,
+    application_state_call_graph: &CallGraph,
     request_scoped_framework_bindings: &BiHashMap<Ident, ResolvedType>,
     package_id2name: &BiHashMap<&'_ PackageId, String>,
+    runtime_singleton_bindings: &BiHashMap<Ident, ResolvedType>,
 ) -> Result<TokenStream, anyhow::Error> {
-    let define_application_state = define_application_state(
-        &application_state_call_graph.runtime_singleton_bindings,
-        package_id2name,
-    );
+    let define_application_state =
+        define_application_state(runtime_singleton_bindings, package_id2name);
     let application_state_init =
         get_application_state_init(application_state_call_graph, package_id2name)?;
     let define_server_state = define_server_state();
@@ -63,7 +60,7 @@ pub(crate) fn codegen_app(
     let router_init = get_router_init(&route_id2path);
     let route_request = get_request_dispatcher(
         &route_id2handler,
-        &application_state_call_graph.runtime_singleton_bindings,
+        runtime_singleton_bindings,
         request_scoped_framework_bindings,
     );
     let handlers = handler_functions.values().map(|(function, _)| function);
@@ -134,10 +131,10 @@ fn define_server_state() -> ItemStruct {
 }
 
 fn get_application_state_init(
-    application_state_call_graph: &ApplicationStateCallGraph,
+    application_state_call_graph: &CallGraph,
     package_id2name: &BiHashMap<&'_ PackageId, String>,
 ) -> Result<ItemFn, anyhow::Error> {
-    let mut function = application_state_call_graph.codegen(package_id2name)?;
+    let mut function = codegen(application_state_call_graph, package_id2name)?;
     function.sig.ident = format_ident!("build_application_state");
     Ok(function)
 }
@@ -220,8 +217,8 @@ fn get_request_dispatcher(
 
 pub(crate) fn codegen_manifest<'a>(
     package_graph: &guppy::graph::PackageGraph,
-    handler_call_graphs: &'a IndexMap<ResolvedPath, HandlerCallGraph>,
-    application_state_call_graph: &'a ApplicationStateCallGraph,
+    handler_call_graphs: &'a IndexMap<ResolvedPath, CallGraph>,
+    application_state_call_graph: &'a CallGraph,
     request_scoped_framework_bindings: &'a BiHashMap<Ident, ResolvedType>,
     codegen_types: &'a HashSet<ResolvedType>,
 ) -> (cargo_manifest::Manifest, BiHashMap<&'a PackageId, String>) {
@@ -283,8 +280,8 @@ pub(crate) fn codegen_manifest<'a>(
 
 fn compute_dependencies<'a>(
     package_graph: &guppy::graph::PackageGraph,
-    handler_call_graphs: &'a IndexMap<ResolvedPath, HandlerCallGraph>,
-    application_state_call_graph: &'a ApplicationStateCallGraph,
+    handler_call_graphs: &'a IndexMap<ResolvedPath, CallGraph>,
+    application_state_call_graph: &'a CallGraph,
     request_scoped_framework_bindings: &'a BiHashMap<Ident, ResolvedType>,
     codegen_types: &'a HashSet<ResolvedType>,
 ) -> (
@@ -358,8 +355,8 @@ fn compute_dependencies<'a>(
 }
 
 fn collect_package_ids<'a>(
-    handler_call_graphs: &'a IndexMap<ResolvedPath, HandlerCallGraph>,
-    application_state_call_graph: &'a ApplicationStateCallGraph,
+    handler_call_graphs: &'a IndexMap<ResolvedPath, CallGraph>,
+    application_state_call_graph: &'a CallGraph,
     request_scoped_framework_bindings: &'a BiHashMap<Ident, ResolvedType>,
     codegen_types: &'a HashSet<ResolvedType>,
 ) -> IndexSet<&'a PackageId> {
@@ -370,42 +367,30 @@ fn collect_package_ids<'a>(
     for t in codegen_types {
         package_ids.insert(&t.package_id);
     }
-    for node in application_state_call_graph.call_graph.node_weights() {
-        match node {
-            DependencyGraphNode::Compute(c) => {
-                collect_callable_package_ids(&mut package_ids, c);
-            }
-            DependencyGraphNode::Type(t) => {
-                if let Some(c) = application_state_call_graph.constructors.get(t) {
-                    match c {
-                        Constructor::Callable(c) => {
-                            collect_callable_package_ids(&mut package_ids, c)
-                        }
-                        Constructor::BorrowSharedReference(_) => {}
-                    }
-                }
-            }
-        }
-    }
+    collect_call_graph_package_ids(&mut package_ids, application_state_call_graph);
     for handler_call_graph in handler_call_graphs.values() {
-        for node in handler_call_graph.call_graph.node_weights() {
-            let node: &HandlerCallGraphNode = node;
-            match node {
-                HandlerCallGraphNode::Compute { constructor: c, .. } => match c {
-                    Constructor::BorrowSharedReference(t) => {
-                        collect_type_package_ids(&mut package_ids, &t.input)
-                    }
-                    Constructor::Callable(c) => {
-                        collect_callable_package_ids(&mut package_ids, c);
-                    }
-                },
-                HandlerCallGraphNode::InputParameter(t) => {
-                    collect_type_package_ids(&mut package_ids, t)
-                }
-            }
-        }
+        collect_call_graph_package_ids(&mut package_ids, handler_call_graph);
     }
     package_ids
+}
+
+fn collect_call_graph_package_ids<'a>(
+    package_ids: &mut IndexSet<&'a PackageId>,
+    call_graph: &'a CallGraph,
+) {
+    for node in call_graph.call_graph.node_weights() {
+        match node {
+            HandlerCallGraphNode::Compute { constructor: c, .. } => match c {
+                Constructor::BorrowSharedReference(t) => {
+                    collect_type_package_ids(package_ids, &t.input)
+                }
+                Constructor::Callable(c) => {
+                    collect_callable_package_ids(package_ids, c);
+                }
+            },
+            HandlerCallGraphNode::InputParameter(t) => collect_type_package_ids(package_ids, t),
+        }
+    }
 }
 
 fn collect_callable_package_ids<'a>(package_ids: &mut IndexSet<&'a PackageId>, c: &'a Callable) {

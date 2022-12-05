@@ -18,14 +18,14 @@ use crate::language::ResolvedPath;
 use crate::language::{Callable, ParseError, ResolvedType};
 use crate::rustdoc::CrateCollection;
 use crate::rustdoc::STD_PACKAGE_ID;
-use crate::web::application_state_call_graph::ApplicationStateCallGraph;
+use crate::web::application_state_call_graph::application_state_call_graph;
 use crate::web::constructors::{Constructor, ConstructorValidationError};
 use crate::web::dependency_graph::CallableDependencyGraph;
 use crate::web::diagnostic::{
     CompilerDiagnosticBuilder, OptionalSourceSpanExt, ParsedSourceFile, SourceSpanExt,
 };
 use crate::web::generated_app::GeneratedApp;
-use crate::web::handler_call_graph::HandlerCallGraph;
+use crate::web::handler_call_graph::CallGraph;
 use crate::web::resolvers::{CallableResolutionError, CallableType};
 use crate::web::traits::assert_trait_is_implemented;
 use crate::web::{codegen, diagnostic, resolvers};
@@ -35,8 +35,9 @@ pub(crate) const GENERATED_APP_PACKAGE_ID: &str = "crate";
 pub struct App {
     package_graph: PackageGraph,
     router: BTreeMap<String, Callable>,
-    handler_call_graphs: IndexMap<ResolvedPath, HandlerCallGraph>,
-    application_state_call_graph: ApplicationStateCallGraph,
+    handler_call_graphs: IndexMap<ResolvedPath, CallGraph>,
+    application_state_call_graph: CallGraph,
+    runtime_singleton_bindings: BiHashMap<Ident, ResolvedType>,
     request_scoped_framework_bindings: BiHashMap<Ident, ResolvedType>,
     codegen_types: HashSet<ResolvedType>,
 }
@@ -304,7 +305,7 @@ impl App {
             .map(|(path, dep_graph)| {
                 (
                     path.to_owned(),
-                    HandlerCallGraph::new(dep_graph, &component2lifecycle, constructors.clone()),
+                    CallGraph::new(dep_graph, &component2lifecycle, constructors.clone()),
                 )
             })
             .collect();
@@ -323,15 +324,15 @@ impl App {
         // Assign a unique name to each singleton
         .map(|(i, type_)| (format_ident!("s{}", i), type_))
         .collect();
-
         let application_state_call_graph =
-            ApplicationStateCallGraph::new(runtime_singletons, component2lifecycle, constructors);
+            application_state_call_graph(&runtime_singletons, &component2lifecycle, constructors);
         let codegen_types = codegen_types(&package_graph, &mut krate_collection);
         Ok(App {
             package_graph,
             router,
             handler_call_graphs,
             application_state_call_graph,
+            runtime_singleton_bindings: runtime_singletons,
             request_scoped_framework_bindings,
             codegen_types,
         })
@@ -359,6 +360,7 @@ impl App {
             &self.application_state_call_graph,
             &self.request_scoped_framework_bindings,
             &package_ids2deps,
+            &self.runtime_singleton_bindings,
         )?;
         Ok(GeneratedApp { lib_rs, cargo_toml })
     }
@@ -388,7 +390,10 @@ impl App {
                     .replace("digraph", &format!("digraph \"{}\"", route)),
             );
         }
-        let application_state_graph = self.application_state_call_graph.dot(&package_ids2deps);
+        let application_state_graph = self
+            .application_state_call_graph
+            .dot(&package_ids2deps)
+            .replace("digraph", "digraph app_state");
         AppDiagnostics {
             handlers: handler_graphs,
             application_state: application_state_graph,
@@ -451,7 +456,7 @@ impl AppDiagnostics {
 /// registered by the application.
 /// These singletons will be attached to the overall application state.
 fn get_required_singleton_types<'a>(
-    handler_call_graphs: impl Iterator<Item = (&'a ResolvedPath, &'a HandlerCallGraph)>,
+    handler_call_graphs: impl Iterator<Item = (&'a ResolvedPath, &'a CallGraph)>,
     component2lifecycle: &HashMap<ResolvedType, Lifecycle>,
     types_provided_by_the_framework: &BiHashMap<Ident, ResolvedType>,
 ) -> Result<HashSet<ResolvedType>, anyhow::Error> {

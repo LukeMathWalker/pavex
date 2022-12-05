@@ -47,10 +47,10 @@ use crate::web::dependency_graph::{CallableDependencyGraph, DependencyGraphNode}
 /// Singletons should be constructed once and re-used throughout the entire lifetime of the
 /// application; this implies that the generated code for handling a single request should not
 /// call the singleton constructor - it should fetch it from the server state!
-/// Request-scoped types, instead, should be built by the reuest handler closure **at most once**.
+/// Request-scoped types, instead, should be built by the request handler closure **at most once**.
 /// Transient types can be built multiple times within the lifecycle of each incoming request.
 #[derive(Debug)]
-pub(crate) struct HandlerCallGraph {
+pub(crate) struct CallGraph {
     pub(crate) call_graph: StableDiGraph<HandlerCallGraphNode, ()>,
     pub(crate) handler_node_index: NodeIndex,
 }
@@ -74,14 +74,14 @@ pub(crate) enum NumberOfAllowedInvocations {
     Multiple,
 }
 
-struct VisitorStackElement {
-    dependency_graph_index: u32,
-    call_graph_parent_index: Option<NodeIndex>,
+pub(crate) struct VisitorStackElement {
+    pub(crate) dependency_graph_index: u32,
+    pub(crate) call_graph_parent_index: Option<NodeIndex>,
 }
 
 impl VisitorStackElement {
     /// A short-cut to add a node without a parent to the visitor stack.
-    pub fn orphan(dependency_graph_index: u32) -> Self {
+    pub(crate) fn orphan(dependency_graph_index: u32) -> Self {
         Self {
             dependency_graph_index,
             call_graph_parent_index: None,
@@ -89,7 +89,7 @@ impl VisitorStackElement {
     }
 }
 
-impl HandlerCallGraph {
+impl CallGraph {
     #[tracing::instrument(name = "compute_handler_call_graph", skip_all)]
     pub(crate) fn new(
         dependency_graph: &'_ CallableDependencyGraph,
@@ -179,7 +179,7 @@ impl HandlerCallGraph {
                 }
             }
         }
-        HandlerCallGraph {
+        CallGraph {
             call_graph,
             handler_node_index: scoped_or_longer_indexes[handler_node_index],
         }
@@ -234,11 +234,11 @@ impl HandlerCallGraph {
 }
 
 pub(crate) fn codegen<'a>(
-    graph: &HandlerCallGraph,
+    graph: &CallGraph,
     package_id2name: &BiHashMap<&'a PackageId, String>,
 ) -> Result<ItemFn, anyhow::Error> {
     let input_parameter_types = graph.required_input_types();
-    let HandlerCallGraph {
+    let CallGraph {
         call_graph,
         handler_node_index,
     } = graph;

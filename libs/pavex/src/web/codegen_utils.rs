@@ -2,13 +2,11 @@ use std::collections::HashMap;
 
 use bimap::BiHashMap;
 use guppy::PackageId;
-use petgraph::stable_graph::{NodeIndex, StableDiGraph};
-use petgraph::Direction;
+use petgraph::stable_graph::NodeIndex;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
 
 use crate::language::{Callable, InvocationStyle, ResolvedType};
-use crate::web::dependency_graph::DependencyGraphNode;
 
 #[derive(Debug)]
 pub(crate) enum Fragment {
@@ -44,32 +42,6 @@ impl VariableNameGenerator {
         self.cursor += 1;
         ident
     }
-}
-
-pub(crate) fn codegen_call_block(
-    call_graph: &StableDiGraph<DependencyGraphNode, ()>,
-    callable: &Callable,
-    node_index: NodeIndex,
-    blocks: &mut HashMap<NodeIndex, Fragment>,
-    variable_generator: &mut VariableNameGenerator,
-    package_id2name: &BiHashMap<&PackageId, String>,
-) -> Result<Fragment, anyhow::Error> {
-    let dependencies = call_graph
-        .neighbors_directed(node_index, Direction::Incoming)
-        .map(|n| {
-            let type_ = match &call_graph[n] {
-                DependencyGraphNode::Compute(c) => &c.output,
-                DependencyGraphNode::Type(t) => t,
-            };
-            (n, type_)
-        });
-    _codegen_call_block(
-        dependencies,
-        callable,
-        blocks,
-        variable_generator,
-        package_id2name,
-    )
 }
 
 pub(crate) fn _codegen_call_block<'a, I>(
