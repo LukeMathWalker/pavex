@@ -305,7 +305,7 @@ impl App {
             .map(|(path, dep_graph)| {
                 (
                     path.to_owned(),
-                    handler_call_graph(dep_graph, &component2lifecycle, constructors.clone()),
+                    handler_call_graph(dep_graph, &component2lifecycle, &constructors),
                 )
             })
             .collect();
