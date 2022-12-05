@@ -179,10 +179,6 @@ where
             node_to_be_visited.call_graph_parent_index,
         );
         let node = &dependency_graph[dep_node_index];
-        // Determine how many times the constructor for this type should be invoked in the call graph.
-        // If we are dealing with a singleton, we need to make sure it's invoked only once.
-        // Transient components, instead, appear as many times as they are used in the call graph.
-        // We treat compute nodes as singletons as well.
         let call_node_index = {
             let call_graph_node =
                 dependency_graph_node2call_graph_node(node, lifecycles, constructors);
