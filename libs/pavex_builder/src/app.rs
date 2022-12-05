@@ -19,17 +19,17 @@ pub struct AppBlueprint {
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum Lifecycle {
-    /// There will be a single instance of the component for each instance of the server.
+    /// There will be a single instance of this type for each instance of the server.
     ///
     /// As a consequence, the constructor is invoked at most once and the resulting component is
     /// stored as part of the server state. Every time the component is required as input,
     /// the same instance is injected.
     Singleton,
-    /// There will be a single instance of the component for every incoming request.
+    /// There will be a single instance of this type for every incoming request.
     ///
     /// As a consequence, the constructor is invoked at most once for every incoming request.
     RequestScoped,
-    /// The constructor is invoked every single time an instance of the component is required.
+    /// The constructor is invoked every single time an instance of this type is required.
     Transient,
 }
 
