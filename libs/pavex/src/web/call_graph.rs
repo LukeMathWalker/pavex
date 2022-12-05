@@ -296,6 +296,7 @@ impl VisitorStackElement {
 }
 
 impl CallGraph {
+    /// Return a representation of the [`CallGraph`] in graphviz's .DOT format.
     pub fn dot(&self, package_ids2names: &BiHashMap<&'_ PackageId, String>) -> String {
         let config = [
             petgraph::dot::Config::EdgeNoLabel,
@@ -343,6 +344,10 @@ impl CallGraph {
             .collect()
     }
 
+    /// Generate the code for the dependency closure of the callable at the root of this
+    /// [`CallGraph`].
+    ///
+    /// See [`CallGraph`]'s documentation for more details.
     pub fn codegen<'a>(
         &self,
         package_id2name: &BiHashMap<&'a PackageId, String>,
