@@ -280,14 +280,14 @@ pub(crate) enum NumberOfAllowedInvocations {
     Multiple,
 }
 
-pub(crate) struct VisitorStackElement {
-    pub(crate) dependency_graph_index: u32,
-    pub(crate) call_graph_parent_index: Option<NodeIndex>,
+struct VisitorStackElement {
+    dependency_graph_index: u32,
+    call_graph_parent_index: Option<NodeIndex>,
 }
 
 impl VisitorStackElement {
     /// A short-cut to add a node without a parent to the visitor stack.
-    pub(crate) fn orphan(dependency_graph_index: u32) -> Self {
+    fn orphan(dependency_graph_index: u32) -> Self {
         Self {
             dependency_graph_index,
             call_graph_parent_index: None,
