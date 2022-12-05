@@ -19,22 +19,36 @@ use crate::web::codegen_utils::{Fragment, VariableNameGenerator};
 use crate::web::constructors::Constructor;
 use crate::web::dependency_graph::{CallableDependencyGraph, DependencyGraphNode};
 
-/// The handler dependency graph ([`CallableDependencyGraph`]) is focused on data - it tells us
-/// what types are needed to build the input parameters for a certain handler.
+/// [`CallableDependencyGraph`] is focused on **types** - it tells us what types are needed in
+/// order to build the input parameters and invoke a certain callable.
 ///
-/// This is not enough to perform code generation - we also need to know the _lifecycle_
-/// of each of those types.
-/// E.g. singletons should be constructed once and re-used throughout the entire lifetime of the
-/// application; this implies that the generated code for handling a single request should not
-/// call the singleton constructor - it should fetch it from the server state!
+/// We now want to convert that knowledge into action.  
+/// We want to code-generate a wrapping function for that callable, its **dependency closure**.
+/// The dependency closure, leveraging the registered constructors, should either requires no input
+/// of its own or ask for "upstream" inputs (i.e. types that are recursive dependencies of the input
+/// types for the callable that we want to invoke).
 ///
-/// The handler call graph tries to capture this information.
+/// [`CallableDependencyGraph`] is missing a key information when it comes to code generation:
+/// how many times can we invoke the constructors for the types in the dependency graph within
+/// the generated dependency closure for our callable?
+/// In other words, what is the lifecycle of each of the types built by those constructors?
+/// Should there be at most one instance for each invocation? Can we have more than one?
+///
+/// [`HandlerCallGraph`] captures this information.
+///
 /// In the dependency graph, each type appears exactly once, no matter how many times it's required
 /// as input for other constructors.
-/// In the call graph, each type appears as many times as it needs to be constructed - either
-/// by calling the constructor or receiving it as input.
-/// Singletons and request-scoped types will appear only once. Transient types will appear
-/// as many times as they are used.
+/// In the call graph, each constructor appears as many times as it needs to be invoked. A separate
+/// node type is used for types that we cannot build, the ones that the callable closure will
+/// take as inputs.
+///
+/// # Example: request handling
+///
+/// Singletons should be constructed once and re-used throughout the entire lifetime of the
+/// application; this implies that the generated code for handling a single request should not
+/// call the singleton constructor - it should fetch it from the server state!
+/// Request-scoped types, instead, should be built by the reuest handler closure **at most once**.
+/// Transient types can be built multiple times within the lifecycle of each incoming request.
 #[derive(Debug)]
 pub(crate) struct HandlerCallGraph {
     pub(crate) call_graph: StableDiGraph<HandlerCallGraphNode, ()>,
