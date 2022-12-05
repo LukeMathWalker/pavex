@@ -13,7 +13,7 @@ use syn::{ExprStruct, ItemFn};
 
 use pavex_builder::Lifecycle;
 
-use crate::language::{Callable, ResolvedPath, ResolvedPathSegment, ResolvedType};
+use crate::language::{Callable, InvocationStyle, ResolvedPath, ResolvedPathSegment, ResolvedType};
 use crate::web::app::GENERATED_APP_PACKAGE_ID;
 use crate::web::codegen_utils::{codegen_call_block, Fragment, VariableNameGenerator};
 use crate::web::constructors::Constructor;
@@ -60,6 +60,12 @@ impl ApplicationStateCallGraph {
                 package_id: PackageId::new(GENERATED_APP_PACKAGE_ID),
             },
             inputs: runtime_singleton_bindings.right_values().cloned().collect(),
+            invocation_style: InvocationStyle::StructLiteral {
+                field_names: runtime_singleton_bindings
+                    .left_values()
+                    .map(|s| s.to_string())
+                    .collect(),
+            },
         };
         let CallableDependencyGraph {
             dependency_graph,
