@@ -30,13 +30,14 @@ impl ToTokens for Fragment {
     }
 }
 
-/// Generate a sequence of unique variable names.
+/// A stateful generator of unique variable names.
 #[derive(Default)]
 pub(crate) struct VariableNameGenerator {
     cursor: u32,
 }
 
 impl VariableNameGenerator {
+    /// Generate a new variable name.
     pub fn generate(&mut self) -> syn::Ident {
         let ident = format_ident!("v{}", self.cursor);
         self.cursor += 1;
