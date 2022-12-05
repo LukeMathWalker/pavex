@@ -14,8 +14,8 @@ use crate::language::ResolvedPath;
 use crate::language::{Callable, ResolvedType};
 use crate::rustdoc::STD_PACKAGE_ID;
 use crate::web::app::GENERATED_APP_PACKAGE_ID;
+use crate::web::call_graph::{codegen, CallGraph, HandlerCallGraphNode};
 use crate::web::constructors::Constructor;
-use crate::web::handler_call_graph::{codegen, CallGraph, HandlerCallGraphNode};
 
 pub(crate) fn codegen_app(
     router: &BTreeMap<String, Callable>,

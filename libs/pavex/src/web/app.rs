@@ -18,14 +18,14 @@ use crate::language::ResolvedPath;
 use crate::language::{Callable, ParseError, ResolvedType};
 use crate::rustdoc::CrateCollection;
 use crate::rustdoc::STD_PACKAGE_ID;
-use crate::web::application_state_call_graph::application_state_call_graph;
+use crate::web::call_graph::CallGraph;
+use crate::web::call_graph::{application_state_call_graph, handler_call_graph};
 use crate::web::constructors::{Constructor, ConstructorValidationError};
 use crate::web::dependency_graph::CallableDependencyGraph;
 use crate::web::diagnostic::{
     CompilerDiagnosticBuilder, OptionalSourceSpanExt, ParsedSourceFile, SourceSpanExt,
 };
 use crate::web::generated_app::GeneratedApp;
-use crate::web::handler_call_graph::CallGraph;
 use crate::web::resolvers::{CallableResolutionError, CallableType};
 use crate::web::traits::assert_trait_is_implemented;
 use crate::web::{codegen, diagnostic, resolvers};
@@ -305,7 +305,7 @@ impl App {
             .map(|(path, dep_graph)| {
                 (
                     path.to_owned(),
-                    CallGraph::new(dep_graph, &component2lifecycle, constructors.clone()),
+                    handler_call_graph(dep_graph, &component2lifecycle, constructors.clone()),
                 )
             })
             .collect();
