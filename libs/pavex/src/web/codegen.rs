@@ -14,7 +14,7 @@ use crate::language::ResolvedPath;
 use crate::language::{Callable, ResolvedType};
 use crate::rustdoc::STD_PACKAGE_ID;
 use crate::web::app::GENERATED_APP_PACKAGE_ID;
-use crate::web::call_graph::{codegen, CallGraph, CallGraphNode};
+use crate::web::call_graph::{CallGraph, CallGraphNode};
 use crate::web::constructors::Constructor;
 
 pub(crate) fn codegen_app(
@@ -34,7 +34,7 @@ pub(crate) fn codegen_app(
     let handler_functions: IndexMap<_, _> = handler_call_graphs
         .into_iter()
         .map(|(path, call_graph)| {
-            let code = codegen(call_graph, package_id2name)?;
+            let code = call_graph.codegen(package_id2name)?;
             Ok::<_, anyhow::Error>((path, (code, call_graph.required_input_types())))
         })
         // TODO: wasteful
@@ -134,7 +134,7 @@ fn get_application_state_init(
     application_state_call_graph: &CallGraph,
     package_id2name: &BiHashMap<&'_ PackageId, String>,
 ) -> Result<ItemFn, anyhow::Error> {
-    let mut function = codegen(application_state_call_graph, package_id2name)?;
+    let mut function = application_state_call_graph.codegen(package_id2name)?;
     function.sig.ident = format_ident!("build_application_state");
     Ok(function)
 }
