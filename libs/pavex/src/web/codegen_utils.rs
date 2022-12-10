@@ -2,13 +2,11 @@ use std::collections::HashMap;
 
 use bimap::BiHashMap;
 use guppy::PackageId;
-use petgraph::stable_graph::{NodeIndex, StableDiGraph};
-use petgraph::Direction;
+use petgraph::stable_graph::NodeIndex;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
 
-use crate::language::{Callable, ResolvedType};
-use crate::web::dependency_graph::DependencyGraphNode;
+use crate::language::{Callable, InvocationStyle, ResolvedType};
 
 #[derive(Debug)]
 pub(crate) enum Fragment {
@@ -32,13 +30,14 @@ impl ToTokens for Fragment {
     }
 }
 
-// Generate a sequence of unique variable names.
+/// A stateful generator of unique variable names.
 #[derive(Default)]
 pub(crate) struct VariableNameGenerator {
     cursor: u32,
 }
 
 impl VariableNameGenerator {
+    /// Generate a new variable name.
     pub fn generate(&mut self) -> syn::Ident {
         let ident = format_ident!("v{}", self.cursor);
         self.cursor += 1;
@@ -46,23 +45,20 @@ impl VariableNameGenerator {
     }
 }
 
-pub(crate) fn codegen_call_block(
-    call_graph: &StableDiGraph<DependencyGraphNode, ()>,
+pub(crate) fn codegen_call_block<'a, I>(
+    dependencies: I,
     callable: &Callable,
-    node_index: NodeIndex,
     blocks: &mut HashMap<NodeIndex, Fragment>,
     variable_generator: &mut VariableNameGenerator,
     package_id2name: &BiHashMap<&PackageId, String>,
-) -> Result<Fragment, anyhow::Error> {
-    let dependencies = call_graph.neighbors_directed(node_index, Direction::Incoming);
+) -> Result<Fragment, anyhow::Error>
+where
+    I: Iterator<Item = (NodeIndex, &'a ResolvedType)>,
+{
     let mut block = quote! {};
     let mut dependency_bindings: HashMap<ResolvedType, Box<dyn ToTokens>> = HashMap::new();
-    for dependency_index in dependencies {
+    for (dependency_index, dependency_type) in dependencies {
         let fragment = &blocks[&dependency_index];
-        let dependency_type = match &call_graph[dependency_index] {
-            DependencyGraphNode::Type(t) => t,
-            DependencyGraphNode::Compute(_) => unreachable!(),
-        };
         let mut to_be_removed = false;
         match fragment {
             Fragment::VariableReference(v) => {
@@ -89,7 +85,7 @@ pub(crate) fn codegen_call_block(
             blocks.remove(&dependency_index);
         }
     }
-    let constructor_invocation = codegen_call(callable, &dependency_bindings, package_id2name)?;
+    let constructor_invocation = codegen_call(callable, &dependency_bindings, package_id2name);
     let block: syn::Block = syn::parse2(quote! {
         {
             #block
@@ -110,15 +106,33 @@ pub(crate) fn codegen_call(
     callable: &Callable,
     variable_bindings: &HashMap<ResolvedType, Box<dyn ToTokens>>,
     package_id2name: &BiHashMap<&PackageId, String>,
-) -> Result<TokenStream, anyhow::Error> {
+) -> TokenStream {
     let callable_path: syn::ExprPath =
         syn::parse_str(&callable.path.render_path(package_id2name)).unwrap();
-    let parameters = callable.inputs.iter().map(|i| &variable_bindings[i]);
-    let mut invocation = quote! {
-        #callable_path(#(#parameters),*)
+    let mut invocation = match &callable.invocation_style {
+        InvocationStyle::FunctionCall => {
+            let parameters = callable.inputs.iter().map(|i| &variable_bindings[i]);
+            quote! {
+                #callable_path(#(#parameters),*)
+            }
+        }
+        InvocationStyle::StructLiteral { field_names } => {
+            let fields = field_names.iter().map(|(field_name, field_type)| {
+                let field_name = format_ident!("{}", field_name);
+                let binding = &variable_bindings[field_type];
+                quote! {
+                    #field_name: #binding
+                }
+            });
+            quote! {
+                #callable_path {
+                    #(#fields),*
+                }
+            }
+        }
     };
     if callable.is_async {
         invocation = quote! { #invocation.await };
     }
-    Ok(invocation)
+    invocation
 }

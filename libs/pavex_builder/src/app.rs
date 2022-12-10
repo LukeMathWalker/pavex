@@ -8,26 +8,28 @@ use crate::callable::RawCallableIdentifiers;
 #[derive(Default, serde::Serialize, serde::Deserialize)]
 pub struct AppBlueprint {
     pub constructors: IndexSet<RawCallableIdentifiers>,
-    pub handlers: IndexSet<RawCallableIdentifiers>,
+    pub request_handlers: IndexSet<RawCallableIdentifiers>,
+    pub error_handlers: IndexSet<RawCallableIdentifiers>,
     pub component_lifecycles: HashMap<RawCallableIdentifiers, Lifecycle>,
     pub router: BTreeMap<String, RawCallableIdentifiers>,
     pub handler_locations: HashMap<RawCallableIdentifiers, IndexSet<Location>>,
+    pub error_handler_locations: HashMap<RawCallableIdentifiers, Location>,
     pub constructor_locations: HashMap<RawCallableIdentifiers, Location>,
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum Lifecycle {
-    /// There will be a single instance of the component for every running the server.
+    /// There will be a single instance of this type for each instance of the server.
     ///
     /// As a consequence, the constructor is invoked at most once and the resulting component is
     /// stored as part of the server state. Every time the component is required as input,
     /// the same instance is injected.
     Singleton,
-    /// There will be a single instance of the component for every incoming request.
+    /// There will be a single instance of this type for every incoming request.
     ///
     /// As a consequence, the constructor is invoked at most once for every incoming request.
     RequestScoped,
-    /// The constructor is invoked every single time an instance of the component is required.
+    /// The constructor is invoked every single time an instance of this type is required.
     Transient,
 }
 
@@ -75,7 +77,21 @@ impl AppBlueprint {
             .insert(std::panic::Location::caller().into());
         self.router
             .insert(path.to_owned(), callable_identifiers.clone());
-        self.handlers.insert(callable_identifiers);
+        self.request_handlers.insert(callable_identifiers);
+        self
+    }
+
+    #[track_caller]
+    /// Register an error handler function with the application blueprint.
+    ///
+    /// If a handler has already been registered for the same error type, it will be overwritten.
+    pub fn error_handler(mut self, error_handler_import_path: &'static str) -> Self {
+        let callable_identifiers = RawCallableIdentifiers::new(error_handler_import_path);
+        let location = std::panic::Location::caller();
+        self.error_handler_locations
+            .entry(callable_identifiers.clone())
+            .or_insert_with(|| location.into());
+        self.error_handlers.insert(callable_identifiers);
         self
     }
 

@@ -1,9 +1,9 @@
 digraph "/home" {
     0 [ label = "app::stream_file(&app::Singleton, &app::RequestScoped, &app::Transient) -> http::Response<hyper::Body>"]
     1 [ label = "&app::Transient"]
-    2 [ label = "app::Transient"]
+    2 [ label = "app::transient() -> app::Transient"]
     3 [ label = "&app::RequestScoped"]
-    4 [ label = "app::RequestScoped"]
+    4 [ label = "app::request_scoped() -> app::RequestScoped"]
     5 [ label = "&app::Singleton"]
     1 -> 0 [ ]
     2 -> 1 [ ]
@@ -13,6 +13,6 @@ digraph "/home" {
 }
 digraph app_state {
     0 [ label = "crate::ApplicationState(app::Singleton) -> crate::ApplicationState"]
-    1 [ label = "app::Singleton"]
+    1 [ label = "app::Singleton::new() -> app::Singleton"]
     1 -> 0 [ ]
 }
