@@ -59,10 +59,13 @@ impl App {
         // We collect all the unique raw identifiers from the blueprint.
         let raw_identifiers_db: HashSet<RawCallableIdentifiers> = {
             let mut set = HashSet::with_capacity(
-                app_blueprint.request_handlers.len() + app_blueprint.constructors.len(),
+                app_blueprint.request_handlers.len()
+                    + app_blueprint.constructors.len()
+                    + app_blueprint.error_handlers.len(),
             );
             set.extend(app_blueprint.request_handlers.iter().cloned());
             set.extend(app_blueprint.constructors.iter().cloned());
+            set.extend(app_blueprint.error_handlers.iter().cloned());
             set
         };
 
@@ -129,28 +132,23 @@ impl App {
             map
         };
 
-        let constructor_paths: IndexSet<ResolvedPath> = {
-            let mut set = IndexSet::with_capacity(app_blueprint.constructors.len());
-            for constructor_identifiers in &app_blueprint.constructors {
-                let constructor_path = identifiers2path[constructor_identifiers].clone();
-                set.insert(constructor_path);
-            }
-            set
-        };
+        let constructor_paths: IndexSet<ResolvedPath> = app_blueprint
+            .constructors
+            .iter()
+            .map(|id| identifiers2path[id].clone())
+            .collect();
+
+        let request_handler_paths: IndexSet<ResolvedPath> = app_blueprint
+            .request_handlers
+            .iter()
+            .map(|id| identifiers2path[id].clone())
+            .collect();
 
         let constructor_paths2ids = {
             let mut set = BiHashMap::with_capacity(app_blueprint.constructors.len());
             for constructor_identifiers in &app_blueprint.constructors {
                 let constructor_path = identifiers2path[constructor_identifiers].clone();
                 set.insert(constructor_path, constructor_identifiers.to_owned());
-            }
-            set
-        };
-
-        let handler_paths = {
-            let mut set = IndexSet::with_capacity(app_blueprint.request_handlers.len());
-            for handler in &app_blueprint.request_handlers {
-                set.insert(identifiers2path[handler].clone());
             }
             set
         };
@@ -215,23 +213,25 @@ impl App {
             }
         }
 
-        let (handler_resolver, handlers) =
-            match resolvers::resolve_handlers(&handler_paths, &mut krate_collection) {
-                Ok(h) => h,
-                Err(e) => {
-                    return Err(e.into_diagnostic(
-                        &resolved_paths2identifiers,
-                        |identifiers| {
-                            app_blueprint.handler_locations[identifiers]
-                                .first()
-                                .unwrap()
-                                .clone()
-                        },
-                        &package_graph,
-                        CallableType::Handler,
-                    )?);
-                }
-            };
+        let (handler_resolver, handlers) = match resolvers::resolve_request_handlers(
+            &request_handler_paths,
+            &mut krate_collection,
+        ) {
+            Ok(h) => h,
+            Err(e) => {
+                return Err(e.into_diagnostic(
+                    &resolved_paths2identifiers,
+                    |identifiers| {
+                        app_blueprint.handler_locations[identifiers]
+                            .first()
+                            .unwrap()
+                            .clone()
+                    },
+                    &package_graph,
+                    CallableType::Handler,
+                )?);
+            }
+        };
 
         let mut router = BTreeMap::new();
         for (route, callable_identifiers) in app_blueprint.router {

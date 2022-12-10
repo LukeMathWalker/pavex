@@ -50,8 +50,8 @@ pub(crate) fn resolve_constructors(
 }
 
 /// Extract the input type paths, the output type path and the callable path for each
-/// registered handler.
-pub(crate) fn resolve_handlers(
+/// registered request handler.
+pub(crate) fn resolve_request_handlers(
     handler_paths: &IndexSet<ResolvedPath>,
     krate_collection: &mut CrateCollection,
 ) -> Result<(HashMap<ResolvedPath, Callable>, IndexSet<Callable>), CallableResolutionError> {
