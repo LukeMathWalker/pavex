@@ -1,4 +1,3 @@
-use std::borrow::Cow;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fmt::Debug;
 use std::io::{BufWriter, Write};
@@ -19,14 +18,14 @@ use crate::language::ResolvedPath;
 use crate::language::{Callable, ParseError, ResolvedType};
 use crate::rustdoc::CrateCollection;
 use crate::rustdoc::STD_PACKAGE_ID;
-use crate::web::application_state_call_graph::ApplicationStateCallGraph;
+use crate::web::call_graph::CallGraph;
+use crate::web::call_graph::{application_state_call_graph, handler_call_graph};
 use crate::web::constructors::{Constructor, ConstructorValidationError};
 use crate::web::dependency_graph::CallableDependencyGraph;
 use crate::web::diagnostic::{
     CompilerDiagnosticBuilder, OptionalSourceSpanExt, ParsedSourceFile, SourceSpanExt,
 };
 use crate::web::generated_app::GeneratedApp;
-use crate::web::handler_call_graph::HandlerCallGraph;
 use crate::web::resolvers::{CallableResolutionError, CallableType};
 use crate::web::traits::assert_trait_is_implemented;
 use crate::web::{codegen, diagnostic, resolvers};
@@ -36,8 +35,9 @@ pub(crate) const GENERATED_APP_PACKAGE_ID: &str = "crate";
 pub struct App {
     package_graph: PackageGraph,
     router: BTreeMap<String, Callable>,
-    handler_call_graphs: IndexMap<ResolvedPath, HandlerCallGraph>,
-    application_state_call_graph: ApplicationStateCallGraph,
+    handler_call_graphs: IndexMap<ResolvedPath, CallGraph>,
+    application_state_call_graph: CallGraph,
+    runtime_singleton_bindings: BiHashMap<Ident, ResolvedType>,
     request_scoped_framework_bindings: BiHashMap<Ident, ResolvedType>,
     codegen_types: HashSet<ResolvedType>,
 }
@@ -59,9 +59,9 @@ impl App {
         // We collect all the unique raw identifiers from the blueprint.
         let raw_identifiers_db: HashSet<RawCallableIdentifiers> = {
             let mut set = HashSet::with_capacity(
-                app_blueprint.handlers.len() + app_blueprint.constructors.len(),
+                app_blueprint.request_handlers.len() + app_blueprint.constructors.len(),
             );
-            set.extend(app_blueprint.handlers.iter().cloned());
+            set.extend(app_blueprint.request_handlers.iter().cloned());
             set.extend(app_blueprint.constructors.iter().cloned());
             set
         };
@@ -148,8 +148,8 @@ impl App {
         };
 
         let handler_paths = {
-            let mut set = IndexSet::with_capacity(app_blueprint.handlers.len());
-            for handler in &app_blueprint.handlers {
+            let mut set = IndexSet::with_capacity(app_blueprint.request_handlers.len());
+            for handler in &app_blueprint.request_handlers {
                 set.insert(identifiers2path[handler].clone());
             }
             set
@@ -305,11 +305,7 @@ impl App {
             .map(|(path, dep_graph)| {
                 (
                     path.to_owned(),
-                    HandlerCallGraph::new(
-                        dep_graph,
-                        component2lifecycle.clone(),
-                        constructors.clone(),
-                    ),
+                    handler_call_graph(dep_graph, &component2lifecycle, &constructors),
                 )
             })
             .collect();
@@ -328,15 +324,15 @@ impl App {
         // Assign a unique name to each singleton
         .map(|(i, type_)| (format_ident!("s{}", i), type_))
         .collect();
-
         let application_state_call_graph =
-            ApplicationStateCallGraph::new(runtime_singletons, component2lifecycle, constructors);
+            application_state_call_graph(&runtime_singletons, &component2lifecycle, constructors);
         let codegen_types = codegen_types(&package_graph, &mut krate_collection);
         Ok(App {
             package_graph,
             router,
             handler_call_graphs,
             application_state_call_graph,
+            runtime_singleton_bindings: runtime_singletons,
             request_scoped_framework_bindings,
             codegen_types,
         })
@@ -364,6 +360,7 @@ impl App {
             &self.application_state_call_graph,
             &self.request_scoped_framework_bindings,
             &package_ids2deps,
+            &self.runtime_singleton_bindings,
         )?;
         Ok(GeneratedApp { lib_rs, cargo_toml })
     }
@@ -393,7 +390,10 @@ impl App {
                     .replace("digraph", &format!("digraph \"{}\"", route)),
             );
         }
-        let application_state_graph = self.application_state_call_graph.dot(&package_ids2deps);
+        let application_state_graph = self
+            .application_state_call_graph
+            .dot(&package_ids2deps)
+            .replace("digraph", "digraph app_state");
         AppDiagnostics {
             handlers: handler_graphs,
             application_state: application_state_graph,
@@ -456,27 +456,21 @@ impl AppDiagnostics {
 /// registered by the application.
 /// These singletons will be attached to the overall application state.
 fn get_required_singleton_types<'a>(
-    handler_call_graphs: impl Iterator<Item = (&'a ResolvedPath, &'a HandlerCallGraph)>,
+    handler_call_graphs: impl Iterator<Item = (&'a ResolvedPath, &'a CallGraph)>,
     component2lifecycle: &HashMap<ResolvedType, Lifecycle>,
     types_provided_by_the_framework: &BiHashMap<Ident, ResolvedType>,
 ) -> Result<HashSet<ResolvedType>, anyhow::Error> {
     let mut singletons_to_be_built = HashSet::new();
     for (import_path, handler_call_graph) in handler_call_graphs {
-        for required_input in &handler_call_graph.input_parameter_types {
+        for mut required_input in handler_call_graph.required_input_types() {
             // We don't care if the type is required as a shared reference or an owned instance here.
             // We care about the underlying type.
-            let required_input = if required_input.is_shared_reference {
-                let mut r = required_input.clone();
-                r.is_shared_reference = false;
-                Cow::Owned(r)
-            } else {
-                Cow::Borrowed(required_input)
-            };
+            required_input.is_shared_reference = false;
             if !types_provided_by_the_framework.contains_right(&required_input) {
                 match component2lifecycle.get(&required_input) {
                     Some(lifecycle) => {
                         if lifecycle == &Lifecycle::Singleton {
-                            singletons_to_be_built.insert(required_input.into_owned());
+                            singletons_to_be_built.insert(required_input);
                         }
                     }
                     None => {

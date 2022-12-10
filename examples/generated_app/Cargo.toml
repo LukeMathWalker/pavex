@@ -2,19 +2,15 @@
 name = "application"
 edition = "2021"
 version = "0.1.0"
-authors = []
-keywords = []
-categories = []
 autobins = false
 autoexamples = false
 autotests = false
 autobenches = false
-publish = true
 
 [dependencies]
 anyhow = "1.0.66"
 http = "0.2.8"
-hyper = "0.14.22"
+hyper = "0.14.23"
 
 [dependencies.app_blueprint]
 version = "0.1.0"

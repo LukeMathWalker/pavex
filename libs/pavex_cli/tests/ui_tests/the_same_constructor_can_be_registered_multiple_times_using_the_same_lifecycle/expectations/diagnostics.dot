@@ -1,6 +1,6 @@
 digraph "/home" {
     0 [ label = "app::Streamer::stream_file(app::Logger) -> http::Response<hyper::Body>"]
-    1 [ label = "app::Logger"]
+    1 [ label = "app::new_logger() -> app::Logger"]
     1 -> 0 [ ]
 }
 digraph app_state {

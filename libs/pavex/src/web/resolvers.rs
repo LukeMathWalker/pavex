@@ -16,7 +16,7 @@ use syn::{FnArg, ImplItemMethod, ReturnType};
 
 use pavex_builder::{Location, RawCallableIdentifiers};
 
-use crate::language::{Callable, ResolvedPath, ResolvedType, UnknownPath};
+use crate::language::{Callable, InvocationStyle, ResolvedPath, ResolvedType, UnknownPath};
 use crate::rustdoc::CannotGetCrateData;
 use crate::rustdoc::CrateCollection;
 use crate::rustdoc::STD_PACKAGE_ID;
@@ -145,8 +145,13 @@ fn resolve_callable(
 ) -> Result<Callable, CallableResolutionError> {
     let type_ = callable_path.find_type(krate_collection)?;
     let used_by_package_id = &callable_path.package_id;
-    let (header, decl) = match &type_.inner {
-        ItemEnum::Function(f) => (&f.header, &f.decl),
+    let (header, decl, invocation_style) = match &type_.inner {
+        ItemEnum::Function(f) => (
+            &f.header,
+            &f.decl,
+            // TODO: this must be reviewed when we start supporting non-static methods
+            InvocationStyle::FunctionCall,
+        ),
         kind => {
             let item_kind = match kind {
                 ItemEnum::Module(_) => "a module",
@@ -226,6 +231,7 @@ fn resolve_callable(
         output: output_type_path,
         path: callable_path.to_owned(),
         inputs: parameter_paths,
+        invocation_style,
     })
 }
 

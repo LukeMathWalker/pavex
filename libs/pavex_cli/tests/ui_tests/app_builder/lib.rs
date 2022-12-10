@@ -21,6 +21,7 @@ pub fn stream_file(
     todo!()
 }
 
+#[derive(Clone)]
 pub struct Config;
 
 pub fn config() -> Config {
