@@ -9,5 +9,7 @@ impl NonCloneSingleton {
 }
 
 pub fn blueprint() -> AppBlueprint {
-    AppBlueprint::new().constructor(f!(crate::NonCloneSingleton::new), Lifecycle::Singleton)
+    let mut bp = AppBlueprint::new();
+    bp.constructor(f!(crate::NonCloneSingleton::new), Lifecycle::Singleton);
+    bp
 }

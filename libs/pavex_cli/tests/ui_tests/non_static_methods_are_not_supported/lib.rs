@@ -7,6 +7,9 @@ impl Streamer {
         todo!()
     }
 }
+
 pub fn blueprint() -> AppBlueprint {
-    AppBlueprint::new().route(f!(crate::Streamer::stream_file), "/home")
+    let mut bp = AppBlueprint::new();
+    bp.route(f!(crate::Streamer::stream_file), "/home");
+    bp
 }

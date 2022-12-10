@@ -11,7 +11,8 @@ pub fn handler<T>(logger: Logger<T>) -> http::Response<hyper::body::Body> {
 }
 
 pub fn blueprint() -> AppBlueprint {
-    AppBlueprint::new()
-        .constructor(f!(crate::new_logger::<String>), Lifecycle::Singleton)
-        .route(f!(crate::handler::<std::string::String>), "/home")
+    let mut bp = AppBlueprint::new();
+    bp.constructor(f!(crate::new_logger::<String>), Lifecycle::Singleton);
+    bp.route(f!(crate::handler::<std::string::String>), "/home");
+    bp
 }

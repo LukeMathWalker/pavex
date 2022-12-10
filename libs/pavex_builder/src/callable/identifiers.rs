@@ -1,4 +1,10 @@
 #[derive(Debug, Hash, Eq, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
+pub struct RawCallable<F> {
+    pub callable: F,
+    pub import_path: &'static str,
+}
+
+#[derive(Debug, Hash, Eq, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
 pub struct RawCallableIdentifiers {
     /// The name of the crate that registered the callable against the blueprint builder.
     /// This information is needed to resolve the callable import path unambiguously.

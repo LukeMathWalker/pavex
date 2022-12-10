@@ -16,5 +16,7 @@ impl NonSyncSingleton {
 }
 
 pub fn blueprint() -> AppBlueprint {
-    AppBlueprint::new().constructor(f!(crate::NonSyncSingleton::new), Lifecycle::Singleton)
+    let mut bp = AppBlueprint::new();
+    bp.constructor(f!(crate::NonSyncSingleton::new), Lifecycle::Singleton);
+    bp
 }

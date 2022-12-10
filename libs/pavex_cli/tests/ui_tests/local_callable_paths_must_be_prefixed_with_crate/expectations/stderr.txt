@@ -1,12 +1,12 @@
 Error: 
   × `handler` is not a fully-qualified import path.
-   ╭─[src/lib.rs:7:1]
- 7 │ pub fn blueprint() -> AppBlueprint {
- 8 │     AppBlueprint::new().route(f!(handler), "/home")
-   ·                               ─────┬─────
-   ·                                    ╰── The relative import path was registered here
- 9 │ }
-   ╰────
+    ╭─[src/lib.rs:8:1]
+  8 │     let mut bp = AppBlueprint::new();
+  9 │     bp.route(f!(handler), "/home");
+    ·              ─────┬─────
+    ·                   ╰── The relative import path was registered here
+ 10 │     bp
+    ╰────
   help: If it is a local import, the path must start with `crate::`.
         If it is an import from a dependency, the path must start with the
         dependency name (e.g. `dependency::`).

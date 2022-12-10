@@ -16,8 +16,9 @@ pub fn stream_file(
 }
 
 pub fn blueprint() -> AppBlueprint {
-    AppBlueprint::new()
-        .constructor(f!(crate::header1), Lifecycle::RequestScoped)
-        .constructor(f!(crate::header2), Lifecycle::RequestScoped)
-        .route(f!(crate::stream_file), "/home")
+    let mut bp = AppBlueprint::new();
+    bp.constructor(f!(crate::header1), Lifecycle::RequestScoped);
+    bp.constructor(f!(crate::header2), Lifecycle::RequestScoped);
+    bp.route(f!(crate::stream_file), "/home");
+    bp
 }

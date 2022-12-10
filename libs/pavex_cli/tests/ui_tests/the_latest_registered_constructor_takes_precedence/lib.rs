@@ -9,8 +9,9 @@ impl Streamer {
 }
 
 pub fn blueprint() -> AppBlueprint {
-    AppBlueprint::new()
-        .constructor(f!(dep::new_logger), Lifecycle::Singleton)
-        .constructor(f!(::dep::new_logger), Lifecycle::RequestScoped)
-        .route(f!(crate::Streamer::stream_file), "/home")
+    let mut bp = AppBlueprint::new();
+    bp.constructor(f!(dep::new_logger), Lifecycle::Singleton);
+    bp.constructor(f!(::dep::new_logger), Lifecycle::RequestScoped);
+    bp.route(f!(crate::Streamer::stream_file), "/home");
+    bp
 }

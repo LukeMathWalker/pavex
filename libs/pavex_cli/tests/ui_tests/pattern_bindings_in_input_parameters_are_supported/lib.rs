@@ -15,7 +15,8 @@ pub fn stream_file(Streamer { a, b }: Streamer) -> http::Response<hyper::body::B
 }
 
 pub fn blueprint() -> AppBlueprint {
-    AppBlueprint::new()
-        .constructor(f!(crate::streamer), Lifecycle::Singleton)
-        .route(f!(crate::stream_file), "/home")
+    let mut bp = AppBlueprint::new();
+    bp.constructor(f!(crate::streamer), Lifecycle::Singleton);
+    bp.route(f!(crate::stream_file), "/home");
+    bp
 }

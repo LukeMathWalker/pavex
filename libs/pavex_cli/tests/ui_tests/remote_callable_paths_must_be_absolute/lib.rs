@@ -6,7 +6,8 @@ pub fn handler(logger: Logger) -> http::Response<hyper::body::Body> {
 }
 
 pub fn blueprint() -> AppBlueprint {
-    AppBlueprint::new()
-        .constructor(f!(new_logger), Lifecycle::Singleton)
-        .route(f!(crate::handler), "/home")
+    let mut bp = AppBlueprint::new();
+    bp.constructor(f!(new_logger), Lifecycle::Singleton);
+    bp.route(f!(crate::handler), "/home");
+    bp
 }

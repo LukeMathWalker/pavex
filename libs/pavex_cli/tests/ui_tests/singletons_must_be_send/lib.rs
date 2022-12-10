@@ -16,5 +16,7 @@ impl NonSendSingleton {
 }
 
 pub fn blueprint() -> AppBlueprint {
-    AppBlueprint::new().constructor(f!(crate::NonSendSingleton::new), Lifecycle::Singleton)
+    let mut bp = AppBlueprint::new();
+    bp.constructor(f!(crate::NonSendSingleton::new), Lifecycle::Singleton);
+    bp
 }
