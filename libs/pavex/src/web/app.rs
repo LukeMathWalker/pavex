@@ -11,8 +11,9 @@ use miette::miette;
 use proc_macro2::Ident;
 use quote::format_ident;
 
+use pavex_builder::AppBlueprint;
 use pavex_builder::Lifecycle;
-use pavex_builder::{AppBlueprint, RawCallableIdentifiers};
+use pavex_builder::RawCallableIdentifiers;
 
 use crate::language::ResolvedPath;
 use crate::language::{Callable, ParseError, ResolvedType};

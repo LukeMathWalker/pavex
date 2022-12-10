@@ -14,7 +14,8 @@ use rustdoc_types::{GenericArg, GenericArgs, ItemEnum, Type};
 use syn::spanned::Spanned;
 use syn::{FnArg, ImplItemMethod, ReturnType};
 
-use pavex_builder::{Location, RawCallableIdentifiers};
+use pavex_builder::Location;
+use pavex_builder::RawCallableIdentifiers;
 
 use crate::language::{Callable, InvocationStyle, ResolvedPath, ResolvedType, UnknownPath};
 use crate::rustdoc::CannotGetCrateData;

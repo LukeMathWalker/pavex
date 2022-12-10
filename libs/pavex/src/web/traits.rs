@@ -6,7 +6,8 @@ use guppy::graph::PackageGraph;
 use indexmap::IndexMap;
 use rustdoc_types::ItemEnum;
 
-use pavex_builder::{Location, RawCallableIdentifiers};
+use pavex_builder::Location;
+use pavex_builder::RawCallableIdentifiers;
 
 use crate::language::{Callable, ResolvedPath, ResolvedType};
 use crate::rustdoc::CrateCollection;
