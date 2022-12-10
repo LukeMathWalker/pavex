@@ -1,6 +1,8 @@
 pub use identifiers::RawCallableIdentifiers;
+pub use variadic_trait::Callable;
 
 mod identifiers;
+mod variadic_trait;
 
 #[macro_export]
 macro_rules! f {
