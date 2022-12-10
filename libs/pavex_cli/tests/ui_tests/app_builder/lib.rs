@@ -5,7 +5,16 @@ pub struct Logger;
 
 pub fn extract_path(
     _inner: pavex_runtime::http::Request<pavex_runtime::hyper::body::Body>,
-) -> PathBuf {
+) -> Result<PathBuf, ExtractPathError> {
+    todo!()
+}
+
+pub struct ExtractPathError;
+
+pub fn handle_extract_path_error(
+    _e: &ExtractPathError,
+    _logger: Logger,
+) -> pavex_runtime::http::Response<pavex_runtime::hyper::body::Body> {
     todo!()
 }
 
@@ -40,5 +49,6 @@ pub fn blueprint() -> AppBlueprint {
         .constructor(f!(crate::http_client), Lifecycle::Singleton)
         .constructor(f!(crate::extract_path), Lifecycle::RequestScoped)
         .constructor(f!(crate::logger), Lifecycle::Transient)
+        .error_handler(f!(crate::handle_extract_path_error))
         .route(f!(crate::stream_file), "/home")
 }
