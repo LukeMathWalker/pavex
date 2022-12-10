@@ -21,7 +21,7 @@ thiserror = "1.0.32"
 miette = { version = "5.3" }
 guppy = "0.15.0"
 itertools = "0.10.3"
-cargo-manifest = "0.4"
+cargo-manifest = "0.6"
 toml = "0.5"
 pathdiff = "0.2.1"
 elsa = "1.4.0"
