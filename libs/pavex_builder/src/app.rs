@@ -8,25 +8,16 @@ use crate::callable::{RawCallable, RawCallableIdentifiers};
 use crate::Callable;
 
 #[derive(Default, serde::Serialize, serde::Deserialize)]
-/// A blueprint to code-generate your application.
+/// A blueprint encoding the desired runtime behaviour of an application.
 ///
 /// `AppBlueprint` captures three types of information:
 ///
-/// - route handlers (e.g. use `my_handler` for all incoming `/home` requests).
-/// - constructors (e.g. use `my_constructor` every time you need to build an instance of `MyType`).
-/// - error handlers (e.g. use `error2response` every time you need to handle a `SerializationError`).
+/// - route handlers, via [`AppBlueprint::route`].
+/// - constructors, via [`AppBlueprint::constructor`].
+/// - error handlers, via [`Constructor::error_handler`].
 ///
-/// For each constructor, you must specify the [`Lifecycle`] of its output type:
-///
-/// - _[`Lifecycle::Singleton`]_; an instance is built once before, the application starts, and
-/// re-used for all incoming requests.
-/// - _[`Lifecycle::RequestScoped`]_; a new instance is built for every incoming request and re-used
-/// throughout the handling of that specific request.
-/// - _[`Lifecycle::Transient`]_; a new instance is built every time the type is needed, potentially
-/// multiple times for each incoming request.
-///
-/// All this information is encoded into an `AppBlueprint` and passed as input to `pavex_cli`
-/// to generate the application's source code.
+/// This information is then serialized via [`AppBlueprint::persist`] and passed as input to
+/// `pavex_cli` to generate the application's source code.
 pub struct AppBlueprint {
     /// The set of registered constructors.
     pub constructors: IndexSet<RawCallableIdentifiers>,
