@@ -121,8 +121,9 @@ impl AppBlueprint {
             .or_insert_with(|| location.into());
         self.component_lifecycles
             .insert(callable_identifiers.clone(), lifecycle);
-        self.constructors.insert(callable_identifiers);
+        self.constructors.insert(callable_identifiers.clone());
         Constructor {
+            constructor_identifiers: callable_identifiers,
             blueprint: self,
             output_type: PhantomData::<F::Output>,
         }
@@ -218,6 +219,7 @@ pub struct Route<'a> {
 /// It allows you to further configure the behaviour of the registered constructor.
 pub struct Constructor<'a, Output> {
     blueprint: &'a mut AppBlueprint,
+    constructor_identifiers: RawCallableIdentifiers,
     output_type: PhantomData<Output>,
 }
 
@@ -268,7 +270,9 @@ impl<'a, Success, Error> Constructor<'a, Result<Success, Error>> {
             .error_handler_locations
             .entry(callable_identifiers.clone())
             .or_insert_with(|| location.into());
-        self.blueprint.error_handlers.insert(callable_identifiers);
+        self.blueprint
+            .constructor_error_handlers
+            .insert(self.constructor_identifiers.clone(), callable_identifiers);
         self
     }
 }
