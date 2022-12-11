@@ -8,7 +8,7 @@ use crate::callable::{RawCallable, RawCallableIdentifiers};
 use crate::Callable;
 
 #[derive(Default, serde::Serialize, serde::Deserialize)]
-/// A blueprint encoding the desired runtime behaviour of an application.
+/// A blueprint for the runtime behaviour of your application.
 ///
 /// `AppBlueprint` captures three types of information:
 ///
