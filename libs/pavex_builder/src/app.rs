@@ -1,8 +1,8 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 use std::fmt::{Display, Formatter};
 use std::marker::PhantomData;
 
-use indexmap::IndexSet;
+use indexmap::{IndexMap, IndexSet};
 
 use crate::callable::{RawCallable, RawCallableIdentifiers};
 use crate::Callable;
@@ -12,11 +12,11 @@ pub struct AppBlueprint {
     pub constructors: IndexSet<RawCallableIdentifiers>,
     pub request_handlers: IndexSet<RawCallableIdentifiers>,
     pub error_handlers: IndexSet<RawCallableIdentifiers>,
-    pub component_lifecycles: HashMap<RawCallableIdentifiers, Lifecycle>,
+    pub component_lifecycles: IndexMap<RawCallableIdentifiers, Lifecycle>,
     pub router: BTreeMap<String, RawCallableIdentifiers>,
-    pub handler_locations: HashMap<RawCallableIdentifiers, IndexSet<Location>>,
-    pub error_handler_locations: HashMap<RawCallableIdentifiers, Location>,
-    pub constructor_locations: HashMap<RawCallableIdentifiers, Location>,
+    pub handler_locations: IndexMap<RawCallableIdentifiers, IndexSet<Location>>,
+    pub error_handler_locations: IndexMap<RawCallableIdentifiers, Location>,
+    pub constructor_locations: IndexMap<RawCallableIdentifiers, Location>,
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, serde::Serialize, serde::Deserialize)]

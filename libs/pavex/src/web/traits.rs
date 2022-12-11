@@ -98,7 +98,7 @@ impl MissingTraitImplementationError {
         constructor_callables: &IndexMap<ResolvedType, Callable>,
         constructor_callable_resolver: &BiHashMap<ResolvedPath, Callable>,
         resolved_paths2identifiers: &HashMap<ResolvedPath, HashSet<RawCallableIdentifiers>>,
-        constructor_locations: &HashMap<RawCallableIdentifiers, Location>,
+        constructor_locations: &IndexMap<RawCallableIdentifiers, Location>,
         package_graph: &PackageGraph,
         help: Option<String>,
     ) -> Result<CompilerDiagnostic, miette::Error> {
