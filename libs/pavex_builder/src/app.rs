@@ -52,12 +52,13 @@ impl Display for Lifecycle {
 }
 
 impl AppBlueprint {
+    /// Create a new [`AppBlueprint`].
     pub fn new() -> Self {
         Default::default()
     }
 
     #[track_caller]
-    /// Register a constructor with the application blueprint.
+    /// Register a constructor.
     ///
     /// ```rust
     /// use pavex_builder::{AppBlueprint, f, Lifecycle};
@@ -99,7 +100,7 @@ impl AppBlueprint {
     }
 
     #[track_caller]
-    /// Register a route and the corresponding request handler with the application blueprint.
+    /// Register a route and the corresponding request handler.
     ///
     /// If a handler has already been registered for the same route, it will be overwritten.
     pub fn route<F, HandlerInputs>(&mut self, callable: RawCallable<F>, path: &str) -> Route
@@ -129,7 +130,7 @@ impl AppBlueprint {
         Ok(())
     }
 
-    /// Read a RON-encoded application blueprint from a file.
+    /// Read a RON-encoded [`AppBlueprint`] from a file.
     pub fn load(filepath: &std::path::Path) -> Result<Self, anyhow::Error> {
         let file = fs_err::OpenOptions::new().read(true).open(filepath)?;
         let value = ron::de::from_reader(&file)?;
@@ -138,9 +139,30 @@ impl AppBlueprint {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash, serde::Serialize, serde::Deserialize)]
+/// A set of coordinates to identify a precise spot in a source file.
+///
+/// # Implementation Notes
+///
+/// `Location` is an owned version of [`std::panic::Location`].  
+/// You can build a `Location` instance starting from a [`std::panic::Location`]:
+///
+/// ```rust
+/// use pavex_builder::Location;
+///
+/// let location: Location = std::panic::Location::caller().into();
+/// ```
 pub struct Location {
+    /// The line number.
+    ///
+    /// Lines are 1-indexed (i.e. the first line is numbered as 1, not 0).
     pub line: u32,
+    /// The column number.
+    ///
+    /// Columns are 1-indexed (i.e. the first column is numbered as 1, not 0).
     pub column: u32,
+    /// The name of the source file.
+    ///
+    /// Check out [`std::panic::Location::file`] for more details.
     pub file: String,
 }
 
@@ -174,10 +196,16 @@ impl<'a, Success, Error> Constructor<'a, Result<Success, Error>> {
     #[track_caller]
     /// Register an error handler for the error type returned by the constructor.
     ///
+    /// Error handlers convert an error type into an HTTP response for the caller.
+    ///
+    /// Error handlers CANNOT consume the error type, they must take a reference to the
+    /// error as input.  
+    /// Error handlers can have additional input parameters alongside the error, as long as there
+    /// are constructors registered for those parameter types.
+    ///
     /// ```rust
     /// use pavex_builder::{AppBlueprint, f, Lifecycle};
     /// use pavex_runtime::{http::Response, hyper::body::Body};
-    ///
     /// # struct LogLevel;
     /// # struct Logger;
     /// # struct ConfigurationError;
@@ -187,12 +215,6 @@ impl<'a, Success, Error> Constructor<'a, Result<Success, Error>> {
     ///     # todo!()
     /// }
     ///
-    /// // Error handlers convert an error type into an HTTP response for the caller.
-    /// //
-    /// // Error handlers CANNOT consume the error type, they must take a reference to the
-    /// // error as input.  
-    /// // Error handlers can have additional input parameters alongside the error - they just
-    /// // need to have constructors registered against the application blueprint.
     /// fn error_to_response(error: &ConfigurationError, log_level: LogLevel) -> Response<Body> {
     ///     // [...]
     ///     # todo!()
