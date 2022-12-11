@@ -8,14 +8,52 @@ use crate::callable::{RawCallable, RawCallableIdentifiers};
 use crate::Callable;
 
 #[derive(Default, serde::Serialize, serde::Deserialize)]
+/// A blueprint to code-generate your application.
+///
+/// `AppBlueprint` captures three types of information:
+///
+/// - route handlers (e.g. use `my_handler` for all incoming `/home` requests).
+/// - constructors (e.g. use `my_constructor` every time you need to build an instance of `MyType`).
+/// - error handlers (e.g. use `error2response` every time you need to handle a `SerializationError`).
+///
+/// For each constructor, you must specify the [`Lifecycle`] of its output type:
+///
+/// - _[`Lifecycle::Singleton`]_; an instance is built once before, the application starts, and
+/// re-used for all incoming requests.
+/// - _[`Lifecycle::RequestScoped`]_; a new instance is built for every incoming request and re-used
+/// throughout the handling of that specific request.
+/// - _[`Lifecycle::Transient`]_; a new instance is built every time the type is needed, potentially
+/// multiple times for each incoming request.
+///
+/// All this information is encoded into an `AppBlueprint` and passed as input to `pavex_cli`
+/// to generate the application's source code.
 pub struct AppBlueprint {
+    /// The set of registered constructors.
     pub constructors: IndexSet<RawCallableIdentifiers>,
+    /// The set of registered request handlers.
     pub request_handlers: IndexSet<RawCallableIdentifiers>,
-    pub error_handlers: IndexSet<RawCallableIdentifiers>,
+    /// - Keys: [`RawCallableIdentifiers`] of a **fallible** constructor.
+    /// - Values: [`RawCallableIdentifiers`] of an error handler for the error type returned by
+    /// the constructor.
+    pub constructor_error_handlers: IndexMap<RawCallableIdentifiers, RawCallableIdentifiers>,
+    /// - Keys: [`RawCallableIdentifiers`] of a constructor.
+    /// - Values: the [`Lifecycle`] for the type returned by the constructor.
     pub component_lifecycles: IndexMap<RawCallableIdentifiers, Lifecycle>,
+    /// - Keys: a path (e.g. `/homes/rooms`).
+    /// - Values: [`RawCallableIdentifiers`] of the request handler in charge of processing
+    /// incoming requests for that path.
     pub router: BTreeMap<String, RawCallableIdentifiers>,
-    pub handler_locations: IndexMap<RawCallableIdentifiers, IndexSet<Location>>,
+    /// - Keys: [`RawCallableIdentifiers`] of a request handler.
+    /// - Values: a [`Location`] pointing at the corresponding invocation of
+    /// [`AppBlueprint::route`].
+    pub request_handler_locations: IndexMap<RawCallableIdentifiers, IndexSet<Location>>,
+    /// - Keys: [`RawCallableIdentifiers`] of an error handler.
+    /// - Values: a [`Location`] pointing at the corresponding invocation of
+    /// [`Constructor::error_handler`].
     pub error_handler_locations: IndexMap<RawCallableIdentifiers, Location>,
+    /// - Keys: [`RawCallableIdentifiers`] of a constructor.
+    /// - Values: a [`Location`] pointing at the corresponding invocation of
+    /// [`AppBlueprint::constructor`].
     pub constructor_locations: IndexMap<RawCallableIdentifiers, Location>,
 }
 
@@ -108,7 +146,7 @@ impl AppBlueprint {
         F: Callable<HandlerInputs>,
     {
         let callable_identifiers = RawCallableIdentifiers::new(callable.import_path);
-        self.handler_locations
+        self.request_handler_locations
             .entry(callable_identifiers.clone())
             .or_default()
             .insert(std::panic::Location::caller().into());

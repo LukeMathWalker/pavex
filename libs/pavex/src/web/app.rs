@@ -85,7 +85,9 @@ impl App {
                         let location = app_blueprint
                             .constructor_locations
                             .get(identifiers)
-                            .or_else(|| app_blueprint.handler_locations[identifiers].first())
+                            .or_else(|| {
+                                app_blueprint.request_handler_locations[identifiers].first()
+                            })
                             .unwrap();
                         let source = ParsedSourceFile::new(
                             location.file.as_str().into(),
@@ -223,7 +225,7 @@ impl App {
                 return Err(e.into_diagnostic(
                     &resolved_paths2identifiers,
                     |identifiers| {
-                        app_blueprint.handler_locations[identifiers]
+                        app_blueprint.request_handler_locations[identifiers]
                             .first()
                             .unwrap()
                             .clone()
