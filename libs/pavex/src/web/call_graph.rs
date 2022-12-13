@@ -5,7 +5,7 @@ use guppy::PackageId;
 use indexmap::{IndexMap, IndexSet};
 use petgraph::prelude::{DfsPostOrder, StableDiGraph};
 use petgraph::stable_graph::NodeIndex;
-use petgraph::visit::Reversed;
+use petgraph::visit::{Dfs, Reversed};
 use petgraph::Direction;
 use proc_macro2::{Ident, TokenStream};
 use quote::{quote, ToTokens};
@@ -55,14 +55,16 @@ pub(crate) fn application_state_call_graph(
 
     // We build a "mock" callable that has the right inputs in order to drive the machinery
     // that builds the dependency graph.
+    let package_id = PackageId::new(GENERATED_APP_PACKAGE_ID);
     let application_state_constructor = Callable {
         is_async: false,
-        output: ResolvedType {
-            package_id: PackageId::new(GENERATED_APP_PACKAGE_ID),
+        output: Some(ResolvedType {
+            package_id: package_id.clone(),
+            rustdoc_id: None,
             base_type: vec!["crate".into(), "ApplicationState".into()],
             generic_arguments: vec![],
             is_shared_reference: false,
-        },
+        }),
         path: ResolvedPath {
             segments: vec![
                 ResolvedPathSegment {
@@ -195,6 +197,9 @@ where
                 CallGraphNode::InputParameter(_) => {
                     add_node_at_most_once(&mut call_graph, call_graph_node, dep_node_index)
                 }
+                // We do not have `MatchBranching` nodes at this point!
+                // They are added later as a second pass.
+                CallGraphNode::MatchBranching => unreachable!(),
             }
         };
 
@@ -212,6 +217,57 @@ where
                     dependency_graph_index: dependency_node_index,
                     call_graph_parent_index: Some(call_node_index),
                 });
+            }
+        }
+    }
+
+    let root_callable_node_index = indexes_for_unique_nodes[callable_node_index];
+    // We traverse the graph looking for `MatchResult` nodes.
+    // For each of them:
+    // 1. We add a `MatchBranching` node, in between the ancestor `Compute` node for a `Result` type
+    //    and the corresponding descendant `MatchResult` node for the `Ok` variant.
+    // 2. We add a `MatchResult` node for the `Err` variant, as a descendant of the `MatchBranching`
+    //    node.
+    //
+    // In other words: we want to go from `Compute(Result) -> MatchResult(Ok)` to
+    // ```
+    // Compute(Result) -> MatchBranching -> MatchResult(Ok)
+    //                                   -> MatchResult(Err)
+    // ```
+    let mut pre_order_dfs = Dfs::new(Reversed(&call_graph), root_callable_node_index);
+    while let Some(node_index) = pre_order_dfs.next(Reversed(&call_graph)) {
+        let node = call_graph[node_index].clone();
+        if let CallGraphNode::Compute {
+            constructor,
+            n_allowed_invocations,
+        } = node
+        {
+            if let Constructor::MatchResult(_) = constructor {
+                let result_node = call_graph
+                    .neighbors_directed(node_index, Direction::Incoming)
+                    .next()
+                    // We know that the `MatchResult` node has exactly one incoming edge because
+                    // we have validation in place ensuring that we can't have a constructor for
+                    // `T` and a constructor for `Result<T, E>` at the same time (or multiple
+                    // `Result<T, _>` constructors using different error types).
+                    .unwrap();
+                let branching_node = call_graph.add_node(CallGraphNode::MatchBranching);
+                call_graph.add_edge(branching_node, node_index, ());
+                call_graph.add_edge(result_node, branching_node, ());
+
+                // At this point we only have the `Ok` node in the graph, not the `Err` node.
+                assert_eq!(
+                    call_graph
+                        .neighbors_directed(result_node, Direction::Outgoing)
+                        .count(),
+                    1
+                );
+                let err_constructor = Constructor::match_result(constructor.output_type()).err;
+                let err_node = call_graph.add_node(CallGraphNode::Compute {
+                    constructor: err_constructor,
+                    n_allowed_invocations: n_allowed_invocations.to_owned(),
+                });
+                call_graph.add_edge(branching_node, err_node, ());
             }
         }
     }
@@ -263,6 +319,7 @@ pub(crate) enum CallGraphNode {
         constructor: Constructor,
         n_allowed_invocations: NumberOfAllowedInvocations,
     },
+    MatchBranching,
     InputParameter(ResolvedType),
 }
 
@@ -308,7 +365,18 @@ impl CallGraph {
                     match node {
                         CallGraphNode::Compute { constructor: c, .. } => match c {
                             Constructor::BorrowSharedReference(r) => {
-                                format!("label = \"&{}\"", r.input.render_type(package_ids2names))
+                                format!(
+                                    "label = \"{} -> {}\"",
+                                    r.input.render_type(package_ids2names),
+                                    r.output.render_type(package_ids2names)
+                                )
+                            }
+                            Constructor::MatchResult(m) => {
+                                format!(
+                                    "label = \"{} -> {}\"",
+                                    m.input.render_type(package_ids2names),
+                                    m.output.render_type(package_ids2names)
+                                )
                             }
                             Constructor::Callable(c) => {
                                 format!("label = \"{}\"", c.render_signature(package_ids2names))
@@ -317,6 +385,7 @@ impl CallGraph {
                         CallGraphNode::InputParameter(t) => {
                             format!("label = \"{}\"", t.render_type(package_ids2names))
                         }
+                        CallGraphNode::MatchBranching => "label = \"`match`\"".to_string(),
                     }
                 },
             )
@@ -333,7 +402,7 @@ impl CallGraph {
         self.call_graph
             .node_weights()
             .filter_map(|node| match node {
-                CallGraphNode::Compute { .. } => None,
+                CallGraphNode::Compute { .. } | CallGraphNode::MatchBranching => None,
                 CallGraphNode::InputParameter(i) => Some(i),
             })
             .cloned()
@@ -507,7 +576,12 @@ impl CallGraph {
                 let variable_type = type_.syn_type(package_id2name);
                 quote! { #variable_name: #variable_type }
             });
-            let output_type = handler.output.syn_type(package_id2name);
+            let output_type = handler
+                .output
+                .as_ref()
+                // TODO: we should make sure that request handlers do not return the unit type.
+                .expect("Request handlers must return something")
+                .syn_type(package_id2name);
             let scoped_constructors = scoped_constructors.values();
             let b = match blocks.remove(handler_node_index).unwrap() {
                 Fragment::Block(b) => {

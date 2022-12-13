@@ -80,7 +80,7 @@ impl CrateCollection {
     /// It panics if no item is found for the specified [`GlobalTypeId`].
     pub fn get_type_by_global_type_id(&self, type_id: &GlobalTypeId) -> &Item {
         let krate = self.get_crate_by_package_id(&type_id.package_id);
-        krate.get_type_by_local_type_id(&type_id.raw_id)
+        krate.get_type_by_local_type_id(&type_id.rustdoc_item_id)
     }
 
     /// Retrieve information about a type given its path and the id of the package where
@@ -506,7 +506,7 @@ fn index_local_types<'a>(
                                 if let Ok(foreign_item_id) =
                                     external_crate.get_type_id_by_path(&imported_summary.path)
                                 {
-                                    let foreign_item_id = foreign_item_id.raw_id.clone();
+                                    let foreign_item_id = foreign_item_id.rustdoc_item_id.clone();
                                     index_local_types(
                                         &external_crate.core,
                                         collection,
@@ -559,13 +559,16 @@ fn index_local_types<'a>(
 /// An identifier that unequivocally points to a type within a [`CrateCollection`].
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct GlobalTypeId {
-    raw_id: rustdoc_types::Id,
-    package_id: PackageId,
+    pub(crate) rustdoc_item_id: rustdoc_types::Id,
+    pub(crate) package_id: PackageId,
 }
 
 impl GlobalTypeId {
     fn new(raw_id: rustdoc_types::Id, package_id: PackageId) -> Self {
-        Self { raw_id, package_id }
+        Self {
+            rustdoc_item_id: raw_id,
+            package_id,
+        }
     }
 
     pub fn package_id(&self) -> &PackageId {

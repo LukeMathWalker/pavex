@@ -20,7 +20,6 @@ use pavex_builder::RawCallableIdentifiers;
 use crate::language::{Callable, InvocationStyle, ResolvedPath, ResolvedType, UnknownPath};
 use crate::rustdoc::CannotGetCrateData;
 use crate::rustdoc::CrateCollection;
-use crate::rustdoc::STD_PACKAGE_ID;
 use crate::web::diagnostic;
 use crate::web::diagnostic::{
     convert_rustdoc_span, convert_span, read_source_file, CompilerDiagnosticBuilder,
@@ -44,10 +43,43 @@ pub(crate) fn resolve_constructors(
     let mut constructors = IndexMap::with_capacity(constructor_paths.len());
     for constructor_identifiers in constructor_paths {
         let constructor = resolve_callable(krate_collection, constructor_identifiers)?;
-        constructors.insert(constructor.output.clone(), constructor.clone());
+        if let Some(output) = &constructor.output {
+            constructors.insert(output.to_owned(), constructor.clone());
+        }
         resolution_map.insert(constructor_identifiers.to_owned(), constructor);
     }
     Ok((resolution_map, constructors))
+}
+
+/// Extract the input type paths, the output type path and the callable path for each
+/// registered error handler.
+#[allow(clippy::type_complexity)]
+pub(crate) fn resolve_error_handlers(
+    paths: &IndexSet<ResolvedPath>,
+    krate_collection: &mut CrateCollection,
+) -> Result<
+    (
+        HashMap<ResolvedPath, Callable>,
+        IndexMap<ResolvedType, Callable>,
+    ),
+    CallableResolutionError,
+> {
+    let mut resolution_map = HashMap::with_capacity(paths.len());
+    let mut callables = IndexMap::with_capacity(paths.len());
+    for identifiers in paths {
+        let callable = resolve_callable(krate_collection, identifiers)?;
+        callables.insert(
+            callable
+                .output
+                .as_ref()
+                // TODO: handle more gracefully
+                .expect("Error handlers must return something")
+                .to_owned(),
+            callable.clone(),
+        );
+        resolution_map.insert(identifiers.to_owned(), callable);
+    }
+    Ok((resolution_map, callables))
 }
 
 /// Extract the input type paths, the output type path and the callable path for each
@@ -71,7 +103,7 @@ fn process_type(
     // The package id where the type we are trying to process has been referenced (e.g. as an
     // input/output parameter).
     used_by_package_id: &PackageId,
-    krate_collection: &mut CrateCollection,
+    krate_collection: &CrateCollection,
 ) -> Result<ResolvedType, anyhow::Error> {
     match type_ {
         Type::ResolvedPath(rustdoc_types::Path { id, args, .. }) => {
@@ -113,6 +145,7 @@ fn process_type(
                 krate_collection.get_canonical_path_by_local_type_id(used_by_package_id, id)?;
             Ok(ResolvedType {
                 package_id: global_type_id.package_id().to_owned(),
+                rustdoc_id: Some(global_type_id.rustdoc_item_id),
                 base_type: base_type.to_vec(),
                 generic_arguments: generics,
                 is_shared_reference: false,
@@ -206,15 +239,10 @@ fn resolve_callable(
     }
     let output_type_path = match &decl.output {
         // Unit type
-        None => ResolvedType {
-            package_id: PackageId::new(STD_PACKAGE_ID),
-            base_type: vec!["()".into()],
-            generic_arguments: vec![],
-            is_shared_reference: false,
-        },
+        None => None,
         Some(output_type) => {
             match process_type(output_type, used_by_package_id, krate_collection) {
-                Ok(p) => p,
+                Ok(p) => Some(p),
                 Err(e) => {
                     return Err(OutputTypeResolutionError {
                         output_type: output_type.to_owned(),

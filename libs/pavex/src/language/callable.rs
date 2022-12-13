@@ -17,7 +17,7 @@ pub(crate) struct Callable {
     /// It is **NOT** set to `true` if the function does not use the `async` but returns a type
     /// that implements the `Future` trait.
     pub is_async: bool,
-    pub output: ResolvedType,
+    pub output: Option<ResolvedType>,
     /// The fully-qualified path pointing at this callable.
     pub path: ResolvedPath,
     /// The types of the callable input parameter types.
@@ -57,12 +57,10 @@ impl Callable {
                 write!(&mut buffer, ", ").unwrap();
             }
         }
-        write!(
-            &mut buffer,
-            ") -> {}",
-            self.output.render_type(package_ids2names)
-        )
-        .unwrap();
+        write!(&mut buffer, ")",).unwrap();
+        if let Some(output) = &self.output {
+            write!(&mut buffer, " -> {}", output.render_type(package_ids2names)).unwrap();
+        }
         buffer
     }
 }

@@ -398,7 +398,9 @@ fn collect_callable_package_ids<'a>(package_ids: &mut IndexSet<&'a PackageId>, c
     for input in &c.inputs {
         collect_type_package_ids(package_ids, input);
     }
-    collect_type_package_ids(package_ids, &c.output);
+    if let Some(output) = c.output.as_ref() {
+        collect_type_package_ids(package_ids, output);
+    }
 }
 
 fn collect_type_package_ids<'a>(package_ids: &mut IndexSet<&'a PackageId>, t: &'a ResolvedType) {

@@ -17,8 +17,8 @@ use pavex_builder::RawCallableIdentifiers;
 
 use crate::language::ResolvedPath;
 use crate::language::{Callable, ParseError, ResolvedType};
-use crate::rustdoc::CrateCollection;
 use crate::rustdoc::STD_PACKAGE_ID;
+use crate::rustdoc::{CrateCollection, GlobalTypeId};
 use crate::web::call_graph::CallGraph;
 use crate::web::call_graph::{application_state_call_graph, handler_call_graph};
 use crate::web::constructors::{Constructor, ConstructorValidationError};
@@ -62,11 +62,11 @@ impl App {
             let mut set = HashSet::with_capacity(
                 app_blueprint.request_handlers.len()
                     + app_blueprint.constructors.len()
-                    + app_blueprint.error_handlers.len(),
+                    + app_blueprint.constructor_error_handlers.len(),
             );
             set.extend(app_blueprint.request_handlers.iter().cloned());
             set.extend(app_blueprint.constructors.iter().cloned());
-            set.extend(app_blueprint.error_handlers.iter().cloned());
+            set.extend(app_blueprint.constructor_error_handlers.values().cloned());
             set
         };
 
@@ -147,6 +147,18 @@ impl App {
             .map(|id| identifiers2path[id].clone())
             .collect();
 
+        let _constructor_path2error_handler_path: IndexMap<ResolvedPath, ResolvedPath> =
+            app_blueprint
+                .constructor_error_handlers
+                .iter()
+                .map(|(constructor_id, error_handler_id)| {
+                    (
+                        identifiers2path[constructor_id].clone(),
+                        identifiers2path[error_handler_id].clone(),
+                    )
+                })
+                .collect();
+
         let constructor_paths2ids = {
             let mut set = BiHashMap::with_capacity(app_blueprint.constructors.len());
             for constructor_identifiers in &app_blueprint.constructors {
@@ -207,12 +219,29 @@ impl App {
 
         // For each non-reference type, register an inlineable constructor that transforms
         // `T` in `&T`.
-        let constructibile_types: Vec<ResolvedType> =
-            constructors.keys().map(|t| t.to_owned()).collect();
-        for t in constructibile_types {
+        let constructible_types: Vec<_> = constructors.keys().map(|t| t.to_owned()).collect();
+        for t in constructible_types {
             if !t.is_shared_reference {
-                let c = Constructor::shared_borrow(t);
+                let c = Constructor::shared_borrow(t.to_owned());
                 constructors.insert(c.output_type().to_owned(), c);
+            }
+        }
+
+        // TODO: check if we have a constructor that returns T and one/more constructors returning
+        //  Result<T, _>
+
+        // For each Result type, register a match constructor that transforms
+        // `Result<T,E>` into `T` or `E`.
+        let constructible_types: Vec<_> = constructors.keys().map(|t| t.to_owned()).collect();
+        for t in constructible_types {
+            if t.base_type == ["core", "result", "Result"]
+                || t.base_type == ["core", "prelude", "rust_2015", "v1", "Result"]
+                || t.base_type == ["core", "prelude", "rust_2018", "v1", "Result"]
+                || t.base_type == ["core", "prelude", "rust_2021", "v1", "Result"]
+            {
+                let m = Constructor::match_result(&t);
+                constructors.insert(m.ok.output_type().to_owned(), m.ok);
+                constructors.insert(m.err.output_type().to_owned(), m.err);
             }
         }
 
@@ -253,20 +282,21 @@ impl App {
         let component2lifecycle = {
             let mut map = HashMap::<ResolvedType, Lifecycle>::new();
             for (output_type, constructor) in &constructors {
-                match constructor {
-                    Constructor::BorrowSharedReference(s) => {
-                        // The lifecycle of a references matches the lifecycle of the type
-                        // it refers to.
-                        map.insert(output_type.to_owned(), map[&s.input].clone());
-                    }
+                let lifecycle = match constructor {
+                    // The lifecycle of a references matches the lifecycle of the type
+                    // it refers to.
+                    Constructor::BorrowSharedReference(s) => map[&s.input].clone(),
+                    // The lifecycle of the "unwrapped" type matches the lifecycle of the
+                    // original `Result`
+                    Constructor::MatchResult(m) => map[&m.input].clone(),
                     Constructor::Callable(c) => {
                         let callable_path = constructor_callable_resolver.get_by_right(c).unwrap();
                         let raw_identifiers =
                             constructor_paths2ids.get_by_left(callable_path).unwrap();
-                        let lifecycle = app_blueprint.component_lifecycles[raw_identifiers].clone();
-                        map.insert(output_type.to_owned(), lifecycle);
+                        app_blueprint.component_lifecycles[raw_identifiers].clone()
                     }
-                }
+                };
+                map.insert(output_type.to_owned(), lifecycle);
             }
             map
         };
@@ -543,8 +573,13 @@ fn process_framework_path(
     let base_path = krate_collection
         .get_canonical_path_by_global_type_id(&type_id)
         .unwrap();
+    let GlobalTypeId {
+        rustdoc_item_id: raw_id,
+        package_id,
+    } = type_id;
     ResolvedType {
-        package_id: type_id.package_id().to_owned(),
+        package_id,
+        rustdoc_id: Some(raw_id),
         base_type: base_path.to_vec(),
         generic_arguments: vec![],
         is_shared_reference: false,

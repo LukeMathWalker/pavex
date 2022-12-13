@@ -1,18 +1,19 @@
-use pavex_builder::{f, AppBlueprint, Lifecycle};
 use std::path::PathBuf;
+
+use pavex_builder::{f, AppBlueprint, Lifecycle};
 
 pub struct Logger;
 
 pub fn extract_path(
     _inner: pavex_runtime::http::Request<pavex_runtime::hyper::body::Body>,
-) -> Result<PathBuf, ExtractPathError> {
+) -> Result<PathBuf, ExtractPathError<String>> {
     todo!()
 }
 
-pub struct ExtractPathError;
+pub struct ExtractPathError<T>(T);
 
 pub fn handle_extract_path_error(
-    _e: &ExtractPathError,
+    _e: &ExtractPathError<String>,
     _logger: Logger,
 ) -> pavex_runtime::http::Response<pavex_runtime::hyper::body::Body> {
     todo!()

@@ -15,6 +15,11 @@ pub struct ResolvedType {
     // `PackageId` does not implement serde::Deserialize/serde::Serialize, therefore we must
     // manually specify deserializer and serializer for make the whole `ResolvedType` (de)serializable.
     pub package_id: PackageId,
+    /// The id associated with this type within the (JSON) docs for `package_id`.
+    ///
+    /// The id is optional to allow for flexible usage patterns - e.g. to leverage [`ResolveType`]
+    /// to work with types that we want to code-generate into a new crate.  
+    pub rustdoc_id: Option<rustdoc_types::Id>,
     pub base_type: ImportPath,
     pub generic_arguments: Vec<ResolvedType>,
     pub is_shared_reference: bool,
