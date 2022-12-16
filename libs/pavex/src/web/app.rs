@@ -234,6 +234,9 @@ impl App {
         // `Result<T,E>` into `T` or `E`.
         let constructible_types: Vec<_> = constructors.keys().map(|t| t.to_owned()).collect();
         for t in constructible_types {
+            if t.is_shared_reference {
+                continue;
+            }
             if t.base_type == ["core", "result", "Result"]
                 || t.base_type == ["core", "prelude", "rust_2015", "v1", "Result"]
                 || t.base_type == ["core", "prelude", "rust_2018", "v1", "Result"]

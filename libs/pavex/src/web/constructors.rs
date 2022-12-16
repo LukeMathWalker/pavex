@@ -30,6 +30,13 @@ pub(crate) struct BorrowSharedReference {
 pub(crate) struct MatchResult {
     pub(crate) input: ResolvedType,
     pub(crate) output: ResolvedType,
+    pub(crate) variant: MatchResultVariant,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Copy)]
+pub(crate) enum MatchResultVariant {
+    Ok,
+    Err,
 }
 
 impl TryFrom<Callable> for Constructor {
@@ -58,17 +65,24 @@ impl Constructor {
     ///
     /// It panics if `enum_type` is not an enum.
     pub fn match_result(result_type: &ResolvedType) -> ResultMatch {
-        assert_eq!(result_type.generic_arguments.len(), 2);
+        assert_eq!(
+            result_type.generic_arguments.len(),
+            2,
+            "{:?} does not have two generic arguments, as expected",
+            result_type
+        );
         let mut generics = result_type.generic_arguments.iter();
         let ok_type = generics.next().unwrap().to_owned();
         let ok_constructor = MatchResult {
             input: result_type.to_owned(),
             output: ok_type,
+            variant: MatchResultVariant::Ok,
         };
         let err_type = generics.next().unwrap().to_owned();
         let err_constructor = MatchResult {
             input: result_type.to_owned(),
             output: err_type,
+            variant: MatchResultVariant::Err,
         };
         ResultMatch {
             ok: Constructor::MatchResult(ok_constructor),

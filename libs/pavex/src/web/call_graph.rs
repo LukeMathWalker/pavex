@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use bimap::BiHashMap;
+use fixedbitset::FixedBitSet;
 use guppy::PackageId;
 use indexmap::{IndexMap, IndexSet};
 use petgraph::prelude::{DfsPostOrder, StableDiGraph};
@@ -17,7 +18,7 @@ use crate::language::{Callable, InvocationStyle, ResolvedPath, ResolvedPathSegme
 use crate::web::app::GENERATED_APP_PACKAGE_ID;
 use crate::web::codegen_utils;
 use crate::web::codegen_utils::{Fragment, VariableNameGenerator};
-use crate::web::constructors::Constructor;
+use crate::web::constructors::{Constructor, MatchResultVariant};
 use crate::web::dependency_graph::{CallableDependencyGraph, DependencyGraphNode};
 
 /// Build a [`CallGraph`] for the application state.
@@ -157,7 +158,7 @@ where
     let mut nodes_to_be_visited = vec![VisitorStackElement::orphan(*callable_node_index)];
     let mut call_graph = StableDiGraph::<CallGraphNode, ()>::new();
 
-    // If the constructor for a type can be invoked at most once, then it should only appear
+    // If the constructor for a type can be invoked at most once, then it should appear
     // at most once in the call graph. This mapping, and the corresponding Rust closure, are used
     // to make sure of that.
     let mut indexes_for_unique_nodes = HashMap::<u32, NodeIndex>::new();
@@ -229,7 +230,14 @@ where
     // 2. We add a `MatchResult` node for the `Err` variant, as a descendant of the `MatchBranching`
     //    node.
     //
-    // In other words: we want to go from `Compute(Result) -> MatchResult(Ok)` to
+    // In other words: we want to go from
+    //
+    // ```
+    // Compute(Result) -> MatchResult(Ok)
+    // ```
+    //
+    // to
+    //
     // ```
     // Compute(Result) -> MatchBranching -> MatchResult(Ok)
     //                                   -> MatchResult(Err)
@@ -252,6 +260,8 @@ where
                     // `Result<T, _>` constructors using different error types).
                     .unwrap();
                 let branching_node = call_graph.add_node(CallGraphNode::MatchBranching);
+                let e = call_graph.find_edge(result_node, node_index).unwrap();
+                call_graph.remove_edge(e).unwrap();
                 call_graph.add_edge(branching_node, node_index, ());
                 call_graph.add_edge(result_node, branching_node, ());
 
@@ -262,7 +272,7 @@ where
                         .count(),
                     1
                 );
-                let err_constructor = Constructor::match_result(constructor.output_type()).err;
+                let err_constructor = Constructor::match_result(&constructor.input_types()[0]).err;
                 let err_node = call_graph.add_node(CallGraphNode::Compute {
                     constructor: err_constructor,
                     n_allowed_invocations: n_allowed_invocations.to_owned(),
@@ -271,9 +281,37 @@ where
             }
         }
     }
+    // TODO: add error handlers.
+
+    // `callable_node_index` might point to a `Compute` node that returns a `Result`, therefore
+    // it might no longer be without descendants after our insertion of `MatchBranching` nodes.
+    // If that's the case, we determine a new `root_callable_node_index` by picking the `Ok`
+    // variant that descends from `callable_node_index`.
+    let root_callable_node_index = indexes_for_unique_nodes[callable_node_index];
+    let root_callable_node_index = if call_graph
+        .neighbors_directed(root_callable_node_index, Direction::Outgoing)
+        .count()
+        != 0
+    {
+        let mut dfs = Dfs::new(&call_graph, root_callable_node_index);
+        let mut new_root_callable_node_index = root_callable_node_index;
+        while let Some(node_index) = dfs.next(&call_graph) {
+            if let CallGraphNode::Compute { constructor, .. } = &call_graph[node_index] {
+                if let Constructor::MatchResult(m) = constructor {
+                    if m.variant == MatchResultVariant::Ok {
+                        new_root_callable_node_index = node_index;
+                        break;
+                    }
+                }
+            }
+        }
+        new_root_callable_node_index
+    } else {
+        root_callable_node_index
+    };
     CallGraph {
         call_graph,
-        root_callable_node_index: indexes_for_unique_nodes[callable_node_index],
+        root_callable_node_index,
     }
 }
 
@@ -417,193 +455,566 @@ impl CallGraph {
         &self,
         package_id2name: &BiHashMap<&'a PackageId, String>,
     ) -> Result<ItemFn, anyhow::Error> {
-        let input_parameter_types = self.required_input_types();
-        let CallGraph {
-            call_graph,
-            root_callable_node_index: handler_node_index,
-        } = self;
-        let mut dfs = DfsPostOrder::new(Reversed(call_graph), *handler_node_index);
+        codegen_callable_closure(self, package_id2name)
+    }
+}
 
-        let mut parameter_bindings: HashMap<ResolvedType, syn::Ident> = HashMap::new();
-        let mut variable_generator = VariableNameGenerator::default();
+/// Generate the dependency closure of the [`CallGraph`]'s root callable.
+///
+/// See [`CallGraph`] docs for more details.
+fn codegen_callable_closure<'a>(
+    call_graph: &'a CallGraph,
+    package_id2name: &BiHashMap<&'a PackageId, String>,
+) -> Result<ItemFn, anyhow::Error> {
+    let input_parameter_types = call_graph.required_input_types();
+    let mut variable_generator = VariableNameGenerator::new();
+    // Assign a unique parameter name to each input parameter type.
+    let parameter_bindings: HashMap<ResolvedType, Ident> = input_parameter_types
+        .iter()
+        .map(|type_| {
+            let parameter_name = variable_generator.generate();
+            (type_.to_owned(), parameter_name)
+        })
+        .collect();
+    let CallGraph {
+        call_graph,
+        root_callable_node_index,
+    } = call_graph;
+    let body = codegen_callable_closure_body(
+        *root_callable_node_index,
+        call_graph,
+        &parameter_bindings,
+        package_id2name,
+        &mut variable_generator,
+    )?;
 
-        let mut scoped_constructors = IndexMap::<NodeIndex, TokenStream>::new();
-        let mut blocks = HashMap::<NodeIndex, Fragment>::new();
+    let function = {
+        let inputs = input_parameter_types.iter().map(|type_| {
+            let variable_name = &parameter_bindings[type_];
+            let variable_type = type_.syn_type(package_id2name);
+            quote! { #variable_name: #variable_type }
+        });
+        let output_type = match &call_graph[*root_callable_node_index] {
+            // TODO: We are working under the happy-path assumption that all terminal nodes
+            // in the call graphs (i.e. all nodes with no outgoing edges) are returning the
+            // same type. We should verify this assumption before embarking in code generation
+            // and return an error if appropriate.
+            CallGraphNode::Compute { constructor, .. } => constructor.output_type(),
+            CallGraphNode::MatchBranching | CallGraphNode::InputParameter(_) => unreachable!(),
+        }
+        .syn_type(package_id2name);
+        syn::parse2(quote! {
+            pub async fn handler(#(#inputs),*) -> #output_type {
+                #body
+            }
+        })
+        .unwrap()
+    };
+    Ok(function)
+}
 
-        while let Some(node_index) = dfs.next(Reversed(call_graph)) {
-            let node = &call_graph[node_index];
-            match node {
-                CallGraphNode::Compute {
-                    constructor,
-                    n_allowed_invocations,
-                } => {
-                    match n_allowed_invocations {
-                        NumberOfAllowedInvocations::One => {
-                            match constructor {
-                                Constructor::Callable(callable) => {
-                                    let block = codegen_utils::codegen_call_block(
-                                        get_node_type_inputs(node_index, call_graph),
-                                        callable,
-                                        &mut blocks,
-                                        &mut variable_generator,
-                                        package_id2name,
-                                    )?;
+/// Generate the function body for the dependency closure of the [`CallGraph`]'s root callable.
+///
+/// See [`CallGraph`] docs for more details.
+fn codegen_callable_closure_body(
+    root_callable_node_index: NodeIndex,
+    call_graph: &StableDiGraph<CallGraphNode, ()>,
+    parameter_bindings: &HashMap<ResolvedType, Ident>,
+    package_id2name: &BiHashMap<&'_ PackageId, String>,
+    variable_name_generator: &mut VariableNameGenerator,
+) -> Result<TokenStream, anyhow::Error> {
+    let mut at_most_once_constructor_blocks = IndexMap::<NodeIndex, TokenStream>::new();
+    let mut blocks = HashMap::<NodeIndex, Fragment>::new();
+    let mut dfs = DfsPostOrder::new(Reversed(call_graph), root_callable_node_index);
+    _codegen_callable_closure_body(
+        root_callable_node_index,
+        call_graph,
+        parameter_bindings,
+        package_id2name,
+        variable_name_generator,
+        &mut at_most_once_constructor_blocks,
+        &mut blocks,
+        &mut dfs,
+    )
+}
 
-                                    let has_dependents = call_graph
-                                        .neighbors_directed(node_index, Direction::Outgoing)
-                                        .next()
-                                        .is_some();
-                                    if !has_dependents {
-                                        // This is a leaf in the call dependency graph for this handler,
-                                        // which implies it is a constructor for the return type!
-                                        // Instead of creating an unnecessary variable binding, we add
-                                        // the raw expression block - which can then be used as-is for
-                                        // returning the value.
-                                        blocks.insert(node_index, block);
-                                    } else {
-                                        // We have at least one dependent, this callable does not return
-                                        // the output type for this handler.
-                                        // We bind the constructed value to a variable name and instruct
-                                        // all dependents to refer to the constructed value via that
-                                        // variable name.
-                                        let parameter_name = variable_generator.generate();
-                                        let block = quote! {
-                                            let #parameter_name = #block;
-                                        };
-                                        scoped_constructors.insert(node_index, block);
-                                        blocks.insert(
-                                            node_index,
-                                            Fragment::VariableReference(parameter_name),
-                                        );
-                                    }
-                                }
-                                Constructor::BorrowSharedReference(_) => {
-                                    let dependencies = call_graph
-                                        .neighbors_directed(node_index, Direction::Incoming);
-                                    let dependency_indexes: Vec<_> = dependencies.collect();
-                                    assert_eq!(1, dependency_indexes.len());
-                                    let dependency_index = dependency_indexes.first().unwrap();
-                                    match &blocks[dependency_index] {
-                                        Fragment::VariableReference(binding_name) => {
-                                            blocks.insert(
-                                                node_index,
-                                                Fragment::BorrowSharedReference(
-                                                    binding_name.to_owned(),
-                                                ),
-                                            );
-                                        }
-                                        Fragment::BorrowSharedReference(_)
-                                        | Fragment::Statement(_)
-                                        | Fragment::Block(_) => unreachable!(),
-                                    }
-                                }
-                            }
-                        }
-                        NumberOfAllowedInvocations::Multiple => match constructor {
+fn _codegen_callable_closure_body(
+    node_index: NodeIndex,
+    call_graph: &StableDiGraph<CallGraphNode, ()>,
+    parameter_bindings: &HashMap<ResolvedType, Ident>,
+    package_id2name: &BiHashMap<&'_ PackageId, String>,
+    variable_name_generator: &mut VariableNameGenerator,
+    at_most_once_constructor_blocks: &mut IndexMap<NodeIndex, TokenStream>,
+    blocks: &mut HashMap<NodeIndex, Fragment>,
+    dfs: &mut DfsPostOrder<NodeIndex, FixedBitSet>,
+) -> Result<TokenStream, anyhow::Error> {
+    let terminal_index = find_terminal_descendant(node_index, call_graph);
+    // We want to start the code-generation process from a `MatchBranching` node with
+    // no `MatchBranching` predecessors.
+    // This ensures that we do not have to look-ahead when generating code for its predecessors.
+    let traversal_start_index = find_match_branching_ancestor(terminal_index, call_graph)
+        // If there are no `MatchBranching` nodes in the ancestors sub-graph, we start from the
+        // the terminal node.
+        .unwrap_or(terminal_index);
+    dfs.move_to(traversal_start_index);
+    while let Some(current_index) = dfs.next(Reversed(call_graph)) {
+        let current_node = &call_graph[current_index];
+        match current_node {
+            CallGraphNode::Compute {
+                constructor,
+                n_allowed_invocations,
+            } => {
+                match n_allowed_invocations {
+                    NumberOfAllowedInvocations::One => {
+                        match constructor {
                             Constructor::Callable(callable) => {
                                 let block = codegen_utils::codegen_call_block(
-                                    get_node_type_inputs(node_index, call_graph),
+                                    get_node_type_inputs(current_index, call_graph),
                                     callable,
-                                    &mut blocks,
-                                    &mut variable_generator,
+                                    blocks,
+                                    variable_name_generator,
                                     package_id2name,
                                 )?;
-                                blocks.insert(node_index, block);
+
+                                if current_index == traversal_start_index {
+                                    // This is the last node!
+                                    // We do not need to assign its value to a variable.
+                                    blocks.insert(current_index, block);
+                                } else {
+                                    // We bind the constructed value to a variable name and instruct
+                                    // all dependents to refer to the constructed value via that
+                                    // variable name.
+                                    let parameter_name = variable_name_generator.generate();
+                                    let block = quote! {
+                                        let #parameter_name = #block;
+                                    };
+                                    at_most_once_constructor_blocks.insert(current_index, block);
+                                    blocks.insert(
+                                        current_index,
+                                        Fragment::VariableReference(parameter_name),
+                                    );
+                                }
                             }
                             Constructor::BorrowSharedReference(_) => {
-                                let dependencies =
-                                    call_graph.neighbors_directed(node_index, Direction::Incoming);
+                                let dependencies = call_graph
+                                    .neighbors_directed(current_index, Direction::Incoming);
                                 let dependency_indexes: Vec<_> = dependencies.collect();
                                 assert_eq!(1, dependency_indexes.len());
                                 let dependency_index = dependency_indexes.first().unwrap();
                                 match &blocks[dependency_index] {
                                     Fragment::VariableReference(binding_name) => {
                                         blocks.insert(
-                                            node_index,
+                                            current_index,
                                             Fragment::BorrowSharedReference(
                                                 binding_name.to_owned(),
                                             ),
                                         );
                                     }
-                                    Fragment::Block(b) => {
-                                        blocks.insert(
-                                            node_index,
-                                            Fragment::Block(
-                                                syn::parse2(quote! {
-                                                    &#b
-                                                })
-                                                .unwrap(),
-                                            ),
-                                        );
-                                    }
-                                    Fragment::Statement(b) => {
-                                        blocks.insert(
-                                            node_index,
-                                            Fragment::Statement(
-                                                syn::parse2(quote! {
-                                                    &#b;
-                                                })
-                                                .unwrap(),
-                                            ),
-                                        );
-                                    }
-                                    Fragment::BorrowSharedReference(_) => {
-                                        unreachable!()
-                                    }
+                                    Fragment::BorrowSharedReference(_)
+                                    | Fragment::Statement(_)
+                                    | Fragment::Block(_) => unreachable!(),
                                 }
                             }
-                        },
+                            Constructor::MatchResult(v) => {
+                                let parameter_name = variable_name_generator.generate();
+                                let constructor_block = match v.variant {
+                                    MatchResultVariant::Ok => {
+                                        quote! {
+                                            Ok(#parameter_name)
+                                        }
+                                    }
+                                    MatchResultVariant::Err => {
+                                        quote! {
+                                            Err(#parameter_name)
+                                        }
+                                    }
+                                };
+                                at_most_once_constructor_blocks
+                                    .insert(current_index, constructor_block);
+                                blocks.insert(
+                                    current_index,
+                                    Fragment::VariableReference(parameter_name),
+                                );
+                            }
+                        }
                     }
-                }
-                CallGraphNode::InputParameter(input_type) => {
-                    let parameter_name = variable_generator.generate();
-                    parameter_bindings.insert(input_type.to_owned(), parameter_name.clone());
-                    blocks.insert(node_index, Fragment::VariableReference(parameter_name));
+                    NumberOfAllowedInvocations::Multiple => match constructor {
+                        Constructor::Callable(callable) => {
+                            let block = codegen_utils::codegen_call_block(
+                                get_node_type_inputs(current_index, call_graph),
+                                callable,
+                                blocks,
+                                variable_name_generator,
+                                package_id2name,
+                            )?;
+                            blocks.insert(current_index, block);
+                        }
+                        Constructor::BorrowSharedReference(_) => {
+                            let dependencies =
+                                call_graph.neighbors_directed(current_index, Direction::Incoming);
+                            let dependency_indexes: Vec<_> = dependencies.collect();
+                            assert_eq!(1, dependency_indexes.len());
+                            let dependency_index = dependency_indexes.first().unwrap();
+                            match &blocks[dependency_index] {
+                                Fragment::VariableReference(binding_name) => {
+                                    blocks.insert(
+                                        current_index,
+                                        Fragment::BorrowSharedReference(binding_name.to_owned()),
+                                    );
+                                }
+                                Fragment::Block(b) => {
+                                    blocks.insert(
+                                        current_index,
+                                        Fragment::Block(
+                                            syn::parse2(quote! {
+                                                &#b
+                                            })
+                                            .unwrap(),
+                                        ),
+                                    );
+                                }
+                                Fragment::Statement(b) => {
+                                    blocks.insert(
+                                        current_index,
+                                        Fragment::Statement(
+                                            syn::parse2(quote! {
+                                                &#b;
+                                            })
+                                            .unwrap(),
+                                        ),
+                                    );
+                                }
+                                Fragment::BorrowSharedReference(_) => {
+                                    unreachable!()
+                                }
+                            }
+                        }
+                        Constructor::MatchResult(_) => {
+                            let parameter_name = variable_name_generator.generate();
+                            blocks
+                                .insert(current_index, Fragment::VariableReference(parameter_name));
+                        }
+                    },
                 }
             }
+            CallGraphNode::InputParameter(input_type) => {
+                let parameter_name = parameter_bindings[input_type].clone();
+                blocks.insert(current_index, Fragment::VariableReference(parameter_name));
+            }
+            CallGraphNode::MatchBranching => {
+                let variants = call_graph
+                    .neighbors_directed(current_index, Direction::Outgoing)
+                    .collect::<Vec<_>>();
+                assert_eq!(2, variants.len());
+                assert_eq!(current_index, traversal_start_index);
+                let mut match_arms = vec![];
+                for variant in variants {
+                    let mut at_most_once_constructor_blocks = IndexMap::new();
+                    let mut blocks = blocks.clone();
+                    let match_arm_body = _codegen_callable_closure_body(
+                        variant,
+                        call_graph,
+                        parameter_bindings,
+                        package_id2name,
+                        variable_name_generator,
+                        &mut at_most_once_constructor_blocks,
+                        &mut blocks,
+                        dfs,
+                    )?;
+                    let variant_type = match &call_graph[variant] {
+                        CallGraphNode::Compute {
+                            constructor: Constructor::MatchResult(m),
+                            ..
+                        } => m.variant,
+                        _ => unreachable!(),
+                    };
+                    let parameter_name = match &blocks[&variant] {
+                        Fragment::VariableReference(n) => n,
+                        _ => unreachable!(),
+                    };
+                    let match_arm_binding = match variant_type {
+                        MatchResultVariant::Ok => {
+                            quote! {
+                                Ok(#parameter_name)
+                            }
+                        }
+                        MatchResultVariant::Err => {
+                            quote! {
+                                Err(#parameter_name)
+                            }
+                        }
+                    };
+                    match_arms.push(quote! {
+                        #match_arm_binding => {
+                            #match_arm_body
+                        }
+                    });
+                }
+                let result_node_index = call_graph
+                    .neighbors_directed(current_index, Direction::Incoming)
+                    .next()
+                    .unwrap();
+                let result_binding = match &blocks[&result_node_index] {
+                    Fragment::VariableReference(name) => name,
+                    _ => unreachable!(),
+                };
+                let block = quote! {
+                    match #result_binding {
+                        #(#match_arms)*
+                    }
+                };
+                blocks.insert(current_index, Fragment::Block(syn::parse2(block).unwrap()));
+            }
         }
-
-        let handler = match &call_graph[*handler_node_index] {
-            CallGraphNode::Compute {
-                constructor: Constructor::Callable(c),
-                ..
-            } => c,
-            _ => unreachable!(),
-        };
-        let code = {
-            let inputs = input_parameter_types.iter().map(|type_| {
-                let variable_name = &parameter_bindings[type_];
-                let variable_type = type_.syn_type(package_id2name);
-                quote! { #variable_name: #variable_type }
-            });
-            let output_type = handler
-                .output
-                .as_ref()
-                // TODO: we should make sure that request handlers do not return the unit type.
-                .expect("Request handlers must return something")
-                .syn_type(package_id2name);
-            let scoped_constructors = scoped_constructors.values();
-            let b = match blocks.remove(handler_node_index).unwrap() {
-                Fragment::Block(b) => {
-                    let s = b.stmts;
-                    quote! { #(#s)* }
-                }
-                Fragment::Statement(b) => b.to_token_stream(),
-                _ => {
-                    unreachable!()
-                }
-            };
-            syn::parse2(quote! {
-                pub async fn handler(#(#inputs),*) -> #output_type {
-                    #(#scoped_constructors)*
-                    #b
-                }
-            })
-            .unwrap()
-        };
-        Ok(code)
     }
+    let body = {
+        let at_most_once_constructors = at_most_once_constructor_blocks.values();
+        // Remove the wrapping block, if there is one
+        let b = match &blocks[&traversal_start_index] {
+            Fragment::Block(b) => {
+                let s = &b.stmts;
+                quote! { #(#s)* }
+            }
+            Fragment::Statement(b) => b.to_token_stream(),
+            _ => {
+                unreachable!()
+            }
+        };
+        quote! {
+            #(#at_most_once_constructors)*
+            #b
+        }
+    };
+    Ok(body)
 }
+
+/// Returns a terminal descendant of the given node - i.e. a node that is reachable from
+/// `start_index` and has no outgoing edges.
+fn find_terminal_descendant(
+    start_index: NodeIndex,
+    call_graph: &StableDiGraph<CallGraphNode, ()>,
+) -> NodeIndex {
+    let mut dfs = DfsPostOrder::new(call_graph, start_index);
+    while let Some(node_index) = dfs.next(call_graph) {
+        let mut successors = call_graph.neighbors_directed(node_index, Direction::Outgoing);
+        if successors.next().is_none() {
+            return node_index;
+        }
+    }
+    // `call_graph` is a DAG, so we should never reach this point.
+    unreachable!()
+}
+
+/// Returns `Some(node_index)` if there is an ancestor (either directly or indirectly connected
+/// to `start_index`) that is a `CallGraphNode::MatchBranching`.
+/// `node` index won't have any ancestors that are themselves a `CallGraphNode::MatchBranching`.
+///
+/// Returns `None` if such an ancestor does not exist.
+fn find_match_branching_ancestor(
+    start_index: NodeIndex,
+    call_graph: &StableDiGraph<CallGraphNode, ()>,
+) -> Option<NodeIndex> {
+    let mut ancestors = DfsPostOrder::new(Reversed(call_graph), start_index);
+    while let Some(ancestor_index) = ancestors.next(Reversed(call_graph)) {
+        if ancestor_index == start_index {
+            continue;
+        }
+        match &call_graph[ancestor_index] {
+            CallGraphNode::MatchBranching { .. } => return Some(ancestor_index),
+            _ => {}
+        }
+    }
+    None
+}
+
+// pub fn codegen2<'a>(
+//     call_graph: &'a CallGraph,
+//     package_id2name: &BiHashMap<&'a PackageId, String>,
+// ) -> Result<ItemFn, anyhow::Error> {
+//     let input_parameter_types = call_graph.required_input_types();
+//     let CallGraph {
+//         call_graph,
+//         root_callable_node_index,
+//     } = call_graph;
+//     let mut dfs = DfsPostOrder::new(Reversed(call_graph), *root_callable_node_index);
+//
+//     let mut parameter_bindings: HashMap<ResolvedType, Ident> = HashMap::new();
+//     let mut variable_generator = VariableNameGenerator::default();
+//
+//     let mut scoped_constructors = IndexMap::<NodeIndex, TokenStream>::new();
+//     let mut blocks = HashMap::<NodeIndex, Fragment>::new();
+//
+//     while let Some(node_index) = dfs.next(Reversed(call_graph)) {
+//         let node = &call_graph[node_index];
+//         match node {
+//             CallGraphNode::Compute {
+//                 constructor,
+//                 n_allowed_invocations,
+//             } => {
+//                 match n_allowed_invocations {
+//                     NumberOfAllowedInvocations::One => {
+//                         match constructor {
+//                             Constructor::Callable(callable) => {
+//                                 let block = codegen_utils::codegen_call_block(
+//                                     get_node_type_inputs(node_index, call_graph),
+//                                     callable,
+//                                     &mut blocks,
+//                                     &mut variable_generator,
+//                                     package_id2name,
+//                                 )?;
+//
+//                                 let has_dependents = call_graph
+//                                     .neighbors_directed(node_index, Direction::Outgoing)
+//                                     .next()
+//                                     .is_some();
+//                                 if !has_dependents {
+//                                     // This is a leaf in the call dependency graph for this handler,
+//                                     // which implies it is a constructor for the return type!
+//                                     // Instead of creating an unnecessary variable binding, we add
+//                                     // the raw expression block - which can then be used as-is for
+//                                     // returning the value.
+//                                     blocks.insert(node_index, block);
+//                                 } else {
+//                                     // We have at least one dependent, this callable does not return
+//                                     // the output type for this handler.
+//                                     // We bind the constructed value to a variable name and instruct
+//                                     // all dependents to refer to the constructed value via that
+//                                     // variable name.
+//                                     let parameter_name = variable_generator.generate();
+//                                     let block = quote! {
+//                                         let #parameter_name = #block;
+//                                     };
+//                                     scoped_constructors.insert(node_index, block);
+//                                     blocks.insert(
+//                                         node_index,
+//                                         Fragment::VariableReference(parameter_name),
+//                                     );
+//                                 }
+//                             }
+//                             Constructor::BorrowSharedReference(_) => {
+//                                 let dependencies =
+//                                     call_graph.neighbors_directed(node_index, Direction::Incoming);
+//                                 let dependency_indexes: Vec<_> = dependencies.collect();
+//                                 assert_eq!(1, dependency_indexes.len());
+//                                 let dependency_index = dependency_indexes.first().unwrap();
+//                                 match &blocks[dependency_index] {
+//                                     Fragment::VariableReference(binding_name) => {
+//                                         blocks.insert(
+//                                             node_index,
+//                                             Fragment::BorrowSharedReference(
+//                                                 binding_name.to_owned(),
+//                                             ),
+//                                         );
+//                                     }
+//                                     Fragment::BorrowSharedReference(_)
+//                                     | Fragment::Statement(_)
+//                                     | Fragment::Block(_) => unreachable!(),
+//                                 }
+//                             }
+//                         }
+//                     }
+//                     NumberOfAllowedInvocations::Multiple => match constructor {
+//                         Constructor::Callable(callable) => {
+//                             let block = codegen_utils::codegen_call_block(
+//                                 get_node_type_inputs(node_index, call_graph),
+//                                 callable,
+//                                 &mut blocks,
+//                                 &mut variable_generator,
+//                                 package_id2name,
+//                             )?;
+//                             blocks.insert(node_index, block);
+//                         }
+//                         Constructor::BorrowSharedReference(_) => {
+//                             let dependencies =
+//                                 call_graph.neighbors_directed(node_index, Direction::Incoming);
+//                             let dependency_indexes: Vec<_> = dependencies.collect();
+//                             assert_eq!(1, dependency_indexes.len());
+//                             let dependency_index = dependency_indexes.first().unwrap();
+//                             match &blocks[dependency_index] {
+//                                 Fragment::VariableReference(binding_name) => {
+//                                     blocks.insert(
+//                                         node_index,
+//                                         Fragment::BorrowSharedReference(binding_name.to_owned()),
+//                                     );
+//                                 }
+//                                 Fragment::Block(b) => {
+//                                     blocks.insert(
+//                                         node_index,
+//                                         Fragment::Block(
+//                                             syn::parse2(quote! {
+//                                                 &#b
+//                                             })
+//                                             .unwrap(),
+//                                         ),
+//                                     );
+//                                 }
+//                                 Fragment::Statement(b) => {
+//                                     blocks.insert(
+//                                         node_index,
+//                                         Fragment::Statement(
+//                                             syn::parse2(quote! {
+//                                                 &#b;
+//                                             })
+//                                             .unwrap(),
+//                                         ),
+//                                     );
+//                                 }
+//                                 Fragment::BorrowSharedReference(_) => {
+//                                     unreachable!()
+//                                 }
+//                             }
+//                         }
+//                     },
+//                 }
+//             }
+//             CallGraphNode::InputParameter(input_type) => {
+//                 let parameter_name = variable_generator.generate();
+//                 parameter_bindings.insert(input_type.to_owned(), parameter_name.clone());
+//                 blocks.insert(node_index, Fragment::VariableReference(parameter_name));
+//             }
+//         }
+//     }
+//
+//     let handler = match &call_graph[*root_callable_node_index] {
+//         CallGraphNode::Compute {
+//             constructor: Constructor::Callable(c),
+//             ..
+//         } => c,
+//         _ => unreachable!(),
+//     };
+//     let code = {
+//         let inputs = input_parameter_types.iter().map(|type_| {
+//             let variable_name = &parameter_bindings[type_];
+//             let variable_type = type_.syn_type(package_id2name);
+//             quote! { #variable_name: #variable_type }
+//         });
+//         let output_type = handler
+//             .output
+//             .as_ref()
+//             // TODO: we should make sure that request handlers do not return the unit type.
+//             .expect("Request handlers must return something")
+//             .syn_type(package_id2name);
+//         let scoped_constructors = scoped_constructors.values();
+//         let b = match blocks.remove(root_callable_node_index).unwrap() {
+//             Fragment::Block(b) => {
+//                 let s = b.stmts;
+//                 quote! { #(#s)* }
+//             }
+//             Fragment::Statement(b) => b.to_token_stream(),
+//             _ => {
+//                 unreachable!()
+//             }
+//         };
+//         syn::parse2(quote! {
+//             pub async fn handler(#(#inputs),*) -> #output_type {
+//                 #(#scoped_constructors)*
+//                 #b
+//             }
+//         })
+//         .unwrap()
+//     };
+//     Ok(code)
+// }
 
 fn get_node_type_inputs(
     node_index: NodeIndex,
@@ -615,6 +1026,7 @@ fn get_node_type_inputs(
             let type_ = match &call_graph[n] {
                 CallGraphNode::Compute { constructor, .. } => constructor.output_type(),
                 CallGraphNode::InputParameter(i) => i,
+                CallGraphNode::MatchBranching => unreachable!(),
             };
             (n, type_)
         })

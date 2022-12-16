@@ -8,7 +8,7 @@ use quote::{format_ident, quote, ToTokens};
 
 use crate::language::{Callable, InvocationStyle, ResolvedType};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) enum Fragment {
     VariableReference(syn::Ident),
     BorrowSharedReference(syn::Ident),
@@ -37,6 +37,11 @@ pub(crate) struct VariableNameGenerator {
 }
 
 impl VariableNameGenerator {
+    /// Create a new variable name generator.
+    pub fn new() -> Self {
+        Self::default()
+    }
+
     /// Generate a new variable name.
     pub fn generate(&mut self) -> syn::Ident {
         let ident = format_ident!("v{}", self.cursor);

@@ -387,8 +387,13 @@ fn collect_call_graph_package_ids<'a>(
                 Constructor::Callable(c) => {
                     collect_callable_package_ids(package_ids, c);
                 }
+                Constructor::MatchResult(m) => {
+                    collect_type_package_ids(package_ids, &m.input);
+                    collect_type_package_ids(package_ids, &m.output);
+                }
             },
             CallGraphNode::InputParameter(t) => collect_type_package_ids(package_ids, t),
+            CallGraphNode::MatchBranching => {}
         }
     }
 }

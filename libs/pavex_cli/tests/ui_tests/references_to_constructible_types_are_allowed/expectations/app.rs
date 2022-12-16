@@ -64,8 +64,8 @@ async fn route_request(
         _ => panic!("This is a bug, no route registered for a route id"),
     }
 }
-pub async fn route_handler_0(v1: &app::Singleton) -> http::Response<hyper::Body> {
-    let v0 = app::request_scoped();
+pub async fn route_handler_0(v0: &app::Singleton) -> http::Response<hyper::Body> {
+    let v1 = app::request_scoped();
     let v2 = &app::transient();
-    app::stream_file(v1, &v0, v2)
+    app::stream_file(v0, &v1, v2)
 }
