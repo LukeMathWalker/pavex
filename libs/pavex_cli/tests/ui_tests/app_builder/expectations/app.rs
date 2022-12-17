@@ -69,6 +69,11 @@ pub async fn route_handler_0(
     v1: http::Request<hyper::Body>,
 ) -> http::Response<hyper::Body> {
     let v2 = app::extract_path(v1);
-    let v3 = app::logger();
-    app::stream_file(v2, v3, v0)
+    match v2 {
+        Err(v3) => v3,
+        Ok(v4) => {
+            let v5 = app::logger();
+            app::stream_file(v4, v5, v0)
+        }
+    }
 }

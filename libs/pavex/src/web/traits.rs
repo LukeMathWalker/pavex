@@ -11,6 +11,7 @@ use pavex_builder::RawCallableIdentifiers;
 
 use crate::language::{Callable, ResolvedPath, ResolvedType};
 use crate::rustdoc::CrateCollection;
+use crate::web::constructors::Constructor;
 use crate::web::diagnostic::{CompilerDiagnosticBuilder, ParsedSourceFile, SourceSpanExt};
 use crate::web::{diagnostic, CompilerDiagnostic};
 
@@ -95,23 +96,27 @@ impl std::fmt::Display for MissingTraitImplementationError {
 impl MissingTraitImplementationError {
     pub(crate) fn into_diagnostic(
         mut self,
-        constructor_callables: &IndexMap<ResolvedType, Callable>,
+        constructors: &IndexMap<ResolvedType, Constructor>,
         constructor_callable_resolver: &BiHashMap<ResolvedPath, Callable>,
         resolved_paths2identifiers: &HashMap<ResolvedPath, HashSet<RawCallableIdentifiers>>,
         constructor_locations: &IndexMap<RawCallableIdentifiers, Location>,
         package_graph: &PackageGraph,
         help: Option<String>,
     ) -> Result<CompilerDiagnostic, miette::Error> {
-        let constructor_callable: &Callable = match constructor_callables.get(&self.type_) {
+        let constructor: &Constructor = match constructors.get(&self.type_) {
             Some(c) => c,
             None => {
                 if self.type_.is_shared_reference {
                     self.type_.is_shared_reference = false;
-                    &constructor_callables[&self.type_]
+                    &constructors[&self.type_]
                 } else {
                     unreachable!()
                 }
             }
+        };
+        let constructor_callable = match constructor {
+            Constructor::Callable(c) => c,
+            _ => unreachable!(),
         };
         let constructor_path = constructor_callable_resolver
             .get_by_right(constructor_callable)

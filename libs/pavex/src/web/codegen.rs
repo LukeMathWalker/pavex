@@ -12,7 +12,7 @@ use syn::{ItemFn, ItemStruct};
 
 use crate::language::ResolvedPath;
 use crate::language::{Callable, ResolvedType};
-use crate::rustdoc::STD_PACKAGE_ID;
+use crate::rustdoc::TOOLCHAIN_CRATES;
 use crate::web::app::GENERATED_APP_PACKAGE_ID;
 use crate::web::call_graph::{CallGraph, CallGraphNode};
 use crate::web::constructors::Constructor;
@@ -299,7 +299,9 @@ fn compute_dependencies<'a>(
         Default::default();
     let workspace_root = package_graph.workspace().root();
     for package_id in &package_ids {
-        if package_id.repr() != GENERATED_APP_PACKAGE_ID && package_id.repr() != STD_PACKAGE_ID {
+        if package_id.repr() != GENERATED_APP_PACKAGE_ID
+            && !TOOLCHAIN_CRATES.contains(&package_id.repr())
+        {
             let metadata = package_graph.metadata(package_id).unwrap();
             let path = match metadata.source() {
                 PackageSource::Workspace(p) | PackageSource::Path(p) => {

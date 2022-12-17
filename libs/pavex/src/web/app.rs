@@ -17,7 +17,7 @@ use pavex_builder::RawCallableIdentifiers;
 
 use crate::language::ResolvedPath;
 use crate::language::{Callable, ParseError, ResolvedType};
-use crate::rustdoc::STD_PACKAGE_ID;
+use crate::rustdoc::TOOLCHAIN_CRATES;
 use crate::rustdoc::{CrateCollection, GlobalTypeId};
 use crate::web::call_graph::CallGraph;
 use crate::web::call_graph::{application_state_call_graph, handler_call_graph};
@@ -168,9 +168,9 @@ impl App {
             set
         };
 
-        let (constructor_callable_resolver, constructor_callables) =
+        let constructor_callable_resolver =
             match resolvers::resolve_constructors(&constructor_paths, &mut krate_collection) {
-                Ok((resolver, constructors)) => (resolver, constructors),
+                Ok(r) => r,
                 Err(e) => {
                     return Err(e.into_diagnostic(
                         &resolved_paths2identifiers,
@@ -180,10 +180,9 @@ impl App {
                     )?);
                 }
             };
-
         let mut constructors: IndexMap<ResolvedType, Constructor> = IndexMap::new();
-        for (output_type, callable) in &constructor_callables {
-            let constructor = match callable.to_owned().try_into() {
+        for callable in constructor_callable_resolver.right_values() {
+            let constructor: Constructor = match callable.to_owned().try_into() {
                 Ok(c) => c,
                 Err(e) => {
                     return match e {
@@ -214,7 +213,7 @@ impl App {
                     };
                 }
             };
-            constructors.insert(output_type.to_owned(), constructor);
+            constructors.insert(constructor.output_type().to_owned(), constructor);
         }
 
         // For each non-reference type, register an inlineable constructor that transforms
@@ -322,7 +321,7 @@ impl App {
                 {
                     return Err(e
                         .into_diagnostic(
-                            &constructor_callables,
+                            &constructors,
                             &constructor_callable_resolver,
                             &resolved_paths2identifiers,
                             &app_blueprint.constructor_locations,
@@ -386,9 +385,14 @@ impl App {
             &self.codegen_types,
         );
         let generated_app_package_id = PackageId::new(GENERATED_APP_PACKAGE_ID);
-        let std_package_id = PackageId::new(STD_PACKAGE_ID);
+        let toolchain_package_ids = TOOLCHAIN_CRATES
+            .iter()
+            .map(|p| PackageId::new(*p))
+            .collect::<Vec<_>>();
+        for package_id in &toolchain_package_ids {
+            package_ids2deps.insert(&package_id, package_id.repr().into());
+        }
         package_ids2deps.insert(&generated_app_package_id, "crate".into());
-        package_ids2deps.insert(&std_package_id, "std".into());
 
         let lib_rs = codegen::codegen_app(
             &self.router,
@@ -413,9 +417,14 @@ impl App {
         );
         // TODO: dry this up in one place.
         let generated_app_package_id = PackageId::new(GENERATED_APP_PACKAGE_ID);
-        let std_package_id = PackageId::new(STD_PACKAGE_ID);
+        let toolchain_package_ids = TOOLCHAIN_CRATES
+            .iter()
+            .map(|p| PackageId::new(*p))
+            .collect::<Vec<_>>();
+        for package_id in &toolchain_package_ids {
+            package_ids2deps.insert(&package_id, package_id.repr().into());
+        }
         package_ids2deps.insert(&generated_app_package_id, "crate".into());
-        package_ids2deps.insert(&std_package_id, "std".into());
 
         for (route, handler) in &self.router {
             let handler_call_graph = &self.handler_call_graphs[&handler.path];

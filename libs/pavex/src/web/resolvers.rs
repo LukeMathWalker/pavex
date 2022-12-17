@@ -28,27 +28,16 @@ use crate::web::diagnostic::{
 
 /// Extract the input type paths, the output type path and the callable path for each
 /// registered type constructor.
-#[allow(clippy::type_complexity)]
 pub(crate) fn resolve_constructors(
     constructor_paths: &IndexSet<ResolvedPath>,
     krate_collection: &mut CrateCollection,
-) -> Result<
-    (
-        BiHashMap<ResolvedPath, Callable>,
-        IndexMap<ResolvedType, Callable>,
-    ),
-    CallableResolutionError,
-> {
+) -> Result<BiHashMap<ResolvedPath, Callable>, CallableResolutionError> {
     let mut resolution_map = BiHashMap::with_capacity(constructor_paths.len());
-    let mut constructors = IndexMap::with_capacity(constructor_paths.len());
     for constructor_identifiers in constructor_paths {
         let constructor = resolve_callable(krate_collection, constructor_identifiers)?;
-        if let Some(output) = &constructor.output {
-            constructors.insert(output.to_owned(), constructor.clone());
-        }
         resolution_map.insert(constructor_identifiers.to_owned(), constructor);
     }
-    Ok((resolution_map, constructors))
+    Ok(resolution_map)
 }
 
 /// Extract the input type paths, the output type path and the callable path for each

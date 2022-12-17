@@ -12,4 +12,4 @@ mod queries;
 mod utils;
 
 pub const STD_PACKAGE_ID: &str = "std";
-pub const TOOLCHAIN_CRATES: [&str; 3] = ["std", "core", "alloc"];
+pub const TOOLCHAIN_CRATES: [&str; 3] = [STD_PACKAGE_ID, "core", "alloc"];

@@ -552,10 +552,11 @@ fn _codegen_callable_closure_body(
     // We want to start the code-generation process from a `MatchBranching` node with
     // no `MatchBranching` predecessors.
     // This ensures that we do not have to look-ahead when generating code for its predecessors.
-    let traversal_start_index = find_match_branching_ancestor(terminal_index, call_graph)
-        // If there are no `MatchBranching` nodes in the ancestors sub-graph, we start from the
-        // the terminal node.
-        .unwrap_or(terminal_index);
+    let traversal_start_index =
+        find_match_branching_ancestor(terminal_index, call_graph, &dfs.finished)
+            // If there are no `MatchBranching` nodes in the ancestors sub-graph, we start from the
+            // the terminal node.
+            .unwrap_or(terminal_index);
     dfs.move_to(traversal_start_index);
     while let Some(current_index) = dfs.next(Reversed(call_graph)) {
         let current_node = &call_graph[current_index];
@@ -615,22 +616,8 @@ fn _codegen_callable_closure_body(
                                     | Fragment::Block(_) => unreachable!(),
                                 }
                             }
-                            Constructor::MatchResult(v) => {
+                            Constructor::MatchResult(_) => {
                                 let parameter_name = variable_name_generator.generate();
-                                let constructor_block = match v.variant {
-                                    MatchResultVariant::Ok => {
-                                        quote! {
-                                            Ok(#parameter_name)
-                                        }
-                                    }
-                                    MatchResultVariant::Err => {
-                                        quote! {
-                                            Err(#parameter_name)
-                                        }
-                                    }
-                                };
-                                at_most_once_constructor_blocks
-                                    .insert(current_index, constructor_block);
                                 blocks.insert(
                                     current_index,
                                     Fragment::VariableReference(parameter_name),
@@ -747,7 +734,7 @@ fn _codegen_callable_closure_body(
                     match_arms.push(quote! {
                         #match_arm_binding => {
                             #match_arm_body
-                        }
+                        },
                     });
                 }
                 let result_node_index = call_graph
@@ -759,8 +746,10 @@ fn _codegen_callable_closure_body(
                     _ => unreachable!(),
                 };
                 let block = quote! {
-                    match #result_binding {
-                        #(#match_arms)*
+                    {
+                        match #result_binding {
+                            #(#match_arms)*
+                        }
                     }
                 };
                 blocks.insert(current_index, Fragment::Block(syn::parse2(block).unwrap()));
@@ -776,6 +765,7 @@ fn _codegen_callable_closure_body(
                 quote! { #(#s)* }
             }
             Fragment::Statement(b) => b.to_token_stream(),
+            Fragment::VariableReference(n) => n.to_token_stream(),
             _ => {
                 unreachable!()
             }
@@ -806,17 +796,21 @@ fn find_terminal_descendant(
 }
 
 /// Returns `Some(node_index)` if there is an ancestor (either directly or indirectly connected
-/// to `start_index`) that is a `CallGraphNode::MatchBranching`.
+/// to `start_index`) that is a `CallGraphNode::MatchBranching` and does not belong to `ignore_set`.
 /// `node` index won't have any ancestors that are themselves a `CallGraphNode::MatchBranching`.
 ///
 /// Returns `None` if such an ancestor does not exist.
 fn find_match_branching_ancestor(
     start_index: NodeIndex,
     call_graph: &StableDiGraph<CallGraphNode, ()>,
+    ignore_set: &FixedBitSet,
 ) -> Option<NodeIndex> {
     let mut ancestors = DfsPostOrder::new(Reversed(call_graph), start_index);
     while let Some(ancestor_index) = ancestors.next(Reversed(call_graph)) {
         if ancestor_index == start_index {
+            continue;
+        }
+        if ignore_set.contains(ancestor_index.index()) {
             continue;
         }
         match &call_graph[ancestor_index] {
