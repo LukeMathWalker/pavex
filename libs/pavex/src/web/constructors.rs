@@ -3,7 +3,7 @@ use std::borrow::Cow;
 use crate::language::{Callable, ResolvedPath, ResolvedType};
 
 /// A transformation that, given a set of inputs, **constructs** a new type.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) enum Constructor {
     /// An inline transformation: construct a `&T` from a `T`.
     BorrowSharedReference(BorrowSharedReference),
@@ -18,7 +18,7 @@ pub(crate) enum Constructor {
 }
 
 /// Borrow a shared reference for a type - i.e. get a `&T` from a `T`.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) struct BorrowSharedReference {
     pub(crate) input: ResolvedType,
     pub(crate) output: ResolvedType,
@@ -26,14 +26,14 @@ pub(crate) struct BorrowSharedReference {
 
 /// A branching constructor: extract one of the variant out of a Rust enum.
 /// E.g. get a `T` (or `E`) from a `Result<T, E>`.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) struct MatchResult {
     pub(crate) input: ResolvedType,
     pub(crate) output: ResolvedType,
     pub(crate) variant: MatchResultVariant,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Copy)]
+#[derive(Debug, Clone, PartialEq, Eq, Copy, Hash)]
 pub(crate) enum MatchResultVariant {
     Ok,
     Err,

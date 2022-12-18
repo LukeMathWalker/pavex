@@ -8,7 +8,7 @@ use anyhow::anyhow;
 use bimap::BiHashMap;
 use guppy::graph::PackageGraph;
 use guppy::PackageId;
-use indexmap::{IndexMap, IndexSet};
+use indexmap::IndexSet;
 use miette::{miette, NamedSource, SourceSpan};
 use rustdoc_types::{GenericArg, GenericArgs, ItemEnum, Type};
 use syn::spanned::Spanned;
@@ -46,29 +46,13 @@ pub(crate) fn resolve_constructors(
 pub(crate) fn resolve_error_handlers(
     paths: &IndexSet<ResolvedPath>,
     krate_collection: &mut CrateCollection,
-) -> Result<
-    (
-        HashMap<ResolvedPath, Callable>,
-        IndexMap<ResolvedType, Callable>,
-    ),
-    CallableResolutionError,
-> {
+) -> Result<HashMap<ResolvedPath, Callable>, CallableResolutionError> {
     let mut resolution_map = HashMap::with_capacity(paths.len());
-    let mut callables = IndexMap::with_capacity(paths.len());
     for identifiers in paths {
         let callable = resolve_callable(krate_collection, identifiers)?;
-        callables.insert(
-            callable
-                .output
-                .as_ref()
-                // TODO: handle more gracefully
-                .expect("Error handlers must return something")
-                .to_owned(),
-            callable.clone(),
-        );
         resolution_map.insert(identifiers.to_owned(), callable);
     }
-    Ok((resolution_map, callables))
+    Ok(resolution_map)
 }
 
 /// Extract the input type paths, the output type path and the callable path for each
@@ -271,6 +255,7 @@ pub(crate) enum CallableResolutionError {
 pub(crate) enum CallableType {
     Handler,
     Constructor,
+    ErrorHandler,
 }
 
 impl Display for CallableType {
@@ -278,6 +263,7 @@ impl Display for CallableType {
         let s = match self {
             CallableType::Handler => "handler",
             CallableType::Constructor => "constructor",
+            CallableType::ErrorHandler => "error handler",
         };
         write!(f, "{}", s)
     }

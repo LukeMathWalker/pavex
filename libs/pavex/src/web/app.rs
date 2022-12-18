@@ -147,17 +147,11 @@ impl App {
             .map(|id| identifiers2path[id].clone())
             .collect();
 
-        let _constructor_path2error_handler_path: IndexMap<ResolvedPath, ResolvedPath> =
-            app_blueprint
-                .constructor_error_handlers
-                .iter()
-                .map(|(constructor_id, error_handler_id)| {
-                    (
-                        identifiers2path[constructor_id].clone(),
-                        identifiers2path[error_handler_id].clone(),
-                    )
-                })
-                .collect();
+        let error_handler_paths: IndexSet<ResolvedPath> = app_blueprint
+            .constructor_error_handlers
+            .iter()
+            .map(|(_, error_handler_id)| identifiers2path[error_handler_id].clone())
+            .collect();
 
         let constructor_paths2ids = {
             let mut set = BiHashMap::with_capacity(app_blueprint.constructors.len());
@@ -216,6 +210,19 @@ impl App {
             constructors.insert(constructor.output_type().to_owned(), constructor);
         }
 
+        let error_handler_callable_resolver =
+            match resolvers::resolve_error_handlers(&error_handler_paths, &mut krate_collection) {
+                Ok(r) => r,
+                Err(e) => {
+                    return Err(e.into_diagnostic(
+                        &resolved_paths2identifiers,
+                        |identifiers| app_blueprint.constructor_locations[identifiers].clone(),
+                        &package_graph,
+                        CallableType::ErrorHandler,
+                    )?);
+                }
+            };
+
         // For each non-reference type, register an inlineable constructor that transforms
         // `T` in `&T`.
         let constructible_types: Vec<_> = constructors.keys().map(|t| t.to_owned()).collect();
@@ -236,11 +243,7 @@ impl App {
             if t.is_shared_reference {
                 continue;
             }
-            if t.base_type == ["core", "result", "Result"]
-                || t.base_type == ["core", "prelude", "rust_2015", "v1", "Result"]
-                || t.base_type == ["core", "prelude", "rust_2018", "v1", "Result"]
-                || t.base_type == ["core", "prelude", "rust_2021", "v1", "Result"]
-            {
+            if is_result(&t) {
                 let m = Constructor::match_result(&t);
                 constructors.insert(m.ok.output_type().to_owned(), m.ok);
                 constructors.insert(m.err.output_type().to_owned(), m.err);
@@ -265,6 +268,31 @@ impl App {
                     CallableType::Handler,
                 )?);
             }
+        };
+
+        let constructor2error_handler: HashMap<Constructor, Callable> = {
+            let mut map = HashMap::new();
+            for (output_type, constructor) in &constructors {
+                if let Constructor::Callable(callable) = constructor {
+                    if is_result(&output_type) {
+                        let constructor_path = constructor_callable_resolver
+                            .get_by_right(&callable)
+                            .unwrap();
+                        let constructor_id =
+                            constructor_paths2ids.get_by_left(constructor_path).unwrap();
+                        let error_handler_id =
+                            &app_blueprint.constructor_error_handlers[constructor_id];
+                        let error_handler_path = &identifiers2path[error_handler_id];
+                        let error_handler = error_handler_callable_resolver
+                            .get(error_handler_path)
+                            // TODO: return an error asking for an error handler to be registered
+                            .unwrap()
+                            .to_owned();
+                        map.insert(constructor.to_owned(), error_handler);
+                    }
+                }
+            }
+            map
         };
 
         let mut router = BTreeMap::new();
@@ -340,7 +368,12 @@ impl App {
             .map(|(path, dep_graph)| {
                 (
                     path.to_owned(),
-                    handler_call_graph(dep_graph, &component2lifecycle, &constructors),
+                    handler_call_graph(
+                        dep_graph,
+                        &component2lifecycle,
+                        &constructors,
+                        &constructor2error_handler,
+                    ),
                 )
             })
             .collect();
@@ -359,8 +392,12 @@ impl App {
         // Assign a unique name to each singleton
         .map(|(i, type_)| (format_ident!("s{}", i), type_))
         .collect();
-        let application_state_call_graph =
-            application_state_call_graph(&runtime_singletons, &component2lifecycle, constructors);
+        let application_state_call_graph = application_state_call_graph(
+            &runtime_singletons,
+            &component2lifecycle,
+            constructors,
+            &constructor2error_handler,
+        );
         let codegen_types = codegen_types(&package_graph, &mut krate_collection);
         Ok(App {
             package_graph,
@@ -444,6 +481,14 @@ impl App {
             application_state: application_state_graph,
         }
     }
+}
+
+/// Returns `true` if `t` is a `Result` type.
+fn is_result(t: &ResolvedType) -> bool {
+    t.base_type == ["core", "result", "Result"]
+        || t.base_type == ["core", "prelude", "rust_2015", "v1", "Result"]
+        || t.base_type == ["core", "prelude", "rust_2018", "v1", "Result"]
+        || t.base_type == ["core", "prelude", "rust_2021", "v1", "Result"]
 }
 
 /// A representation of an `App` geared towards debugging and testing.

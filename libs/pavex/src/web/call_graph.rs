@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use bimap::BiHashMap;
 use fixedbitset::FixedBitSet;
@@ -27,6 +27,7 @@ pub(crate) fn application_state_call_graph(
     runtime_singleton_bindings: &BiHashMap<Ident, ResolvedType>,
     lifecycles: &HashMap<ResolvedType, Lifecycle>,
     constructors: IndexMap<ResolvedType, Constructor>,
+    constructor2error_handler: &HashMap<Constructor, Callable>,
 ) -> CallGraph {
     fn dependency_graph_node2call_graph_node(
         node: &DependencyGraphNode,
@@ -93,6 +94,7 @@ pub(crate) fn application_state_call_graph(
         &dependency_graph,
         lifecycles,
         &constructors,
+        constructor2error_handler,
         dependency_graph_node2call_graph_node,
     )
 }
@@ -103,6 +105,7 @@ pub(crate) fn handler_call_graph(
     dependency_graph: &'_ CallableDependencyGraph,
     lifecycles: &HashMap<ResolvedType, Lifecycle>,
     constructors: &IndexMap<ResolvedType, Constructor>,
+    constructor2error_handler: &HashMap<Constructor, Callable>,
 ) -> CallGraph {
     fn dependency_graph_node2call_graph_node(
         node: &DependencyGraphNode,
@@ -131,6 +134,7 @@ pub(crate) fn handler_call_graph(
         dependency_graph,
         lifecycles,
         constructors,
+        constructor2error_handler,
         dependency_graph_node2call_graph_node,
     )
 }
@@ -142,6 +146,7 @@ fn dependency_graph2call_graph<F>(
     dependency_graph: &'_ CallableDependencyGraph,
     lifecycles: &HashMap<ResolvedType, Lifecycle>,
     constructors: &IndexMap<ResolvedType, Constructor>,
+    _constructor2error_handler: &HashMap<Constructor, Callable>,
     dependency_graph_node2call_graph_node: F,
 ) -> CallGraph
 where
@@ -242,6 +247,7 @@ where
     // Compute(Result) -> MatchBranching -> MatchResult(Ok)
     //                                   -> MatchResult(Err)
     // ```
+    let mut err_variant_node2fallible_constructor = HashMap::<NodeIndex, Constructor>::new();
     let mut pre_order_dfs = Dfs::new(Reversed(&call_graph), root_callable_node_index);
     while let Some(node_index) = pre_order_dfs.next(Reversed(&call_graph)) {
         let node = call_graph[node_index].clone();
@@ -278,10 +284,123 @@ where
                     n_allowed_invocations: n_allowed_invocations.to_owned(),
                 });
                 call_graph.add_edge(branching_node, err_node, ());
+                err_variant_node2fallible_constructor.insert(err_node, constructor);
             }
         }
     }
-    // TODO: add error handlers.
+
+    // For each `MatchResult(Err)` node, we want to add a `Compute` node for the respective
+    // error handler.
+    // let mut nodes_to_be_visited = vec![];
+    // let resolved_nodes = call_graph.node_indices().collect::<HashSet<_>>();
+    // for (err_match_index, fallible_constructor) in err_variant_node2fallible_constructor {
+    //     // Add the error handler node and link it with the `Err(error)` node.
+    //     let error_handler = &constructor2error_handler[&fallible_constructor];
+    //     let (error_type, n_allowed_invocations) = {
+    //         let mut e = match &call_graph[err_match_index] {
+    //             CallGraphNode::Compute {
+    //                 constructor: Constructor::MatchResult(m),
+    //                 n_allowed_invocations,
+    //             } => (&m.output, n_allowed_invocations),
+    //             _ => unreachable!(),
+    //         }
+    //         .to_owned();
+    //         // The error handler will take a reference to the error type as input!
+    //         e.is_shared_reference = true;
+    //         e
+    //     };
+    //     let error_handler_node_index = call_graph.add_node(CallGraphNode::Compute {
+    //         constructor: Constructor::Callable(error_handler.to_owned()),
+    //         n_allowed_invocations: *n_allowed_invocations,
+    //     });
+    //     call_graph.update_edge(err_match_index, error_handler_node_index, ());
+    //
+    //     // Error handlers can leverage dependency injection: we need to make sure we have
+    //     // nodes for all their input types.
+    //     for input_type in error_handler.inputs.iter() {
+    //         let input_type = input_type.to_owned();
+    //         if error_type == input_type {
+    //             // We already handled this above.
+    //             continue;
+    //         }
+    //         let dependency_graph_node = DependencyGraphNode::Type(input_type);
+    //         let call_graph_node = dependency_graph_node2call_graph_node(
+    //             &dependency_graph_node,
+    //             lifecycles,
+    //             constructors,
+    //         );
+    //         let call_graph_node_index = match call_graph_node {
+    //             CallGraphNode::Compute {
+    //                 n_allowed_invocations,
+    //                 ..
+    //             } => match n_allowed_invocations {
+    //                 NumberOfAllowedInvocations::One => {
+    //                     add_node_at_most_once(&mut call_graph, call_graph_node, dep_node_index)
+    //                 }
+    //                 NumberOfAllowedInvocations::Multiple => call_graph.add_node(call_graph_node),
+    //             },
+    //             CallGraphNode::InputParameter(_) => {
+    //                 add_node_at_most_once(&mut call_graph, call_graph_node, dep_node_index)
+    //             }
+    //             // We do not have `MatchBranching` nodes at this point!
+    //             // They are added later as a second pass.
+    //             CallGraphNode::MatchBranching => unreachable!(),
+    //         };
+    //         call_graph.update_edge(call_graph_node_index, error_handler_node_index, ());
+    //         if !resolved_nodes.contains(&call_graph_node_index) {
+    //             nodes_to_be_visited.push((call_graph_node_index, error_handler_node_index));
+    //         }
+    //     }
+    // }
+    //
+    // for (node_index, parent_node_index) in nodes_to_be_visited {
+    //     let node = &call_graph[node_index];
+    //     match node {
+    //         CallGraphNode::Compute { .. } => {}
+    //         CallGraphNode::InputParameter(_) => {
+    //             add_node_at_most_once(&mut call_graph, node.to_owned(), dep_node_index)
+    //         }
+    //         CallGraphNode::MatchBranching => {
+    //             unreachable!()
+    //         }
+    //     }
+    //     // Error handlers' inputs can in turn require other input types that
+    //     // are not yet part of the graph.
+    //     for input_type in error_handler.inputs.iter() {
+    //         let input_type = input_type.to_owned();
+    //         if error_type == input_type {
+    //             // We already handled this above.
+    //             continue;
+    //         }
+    //         let dependency_graph_node = DependencyGraphNode::Type(input_type);
+    //         let call_graph_node = dependency_graph_node2call_graph_node(
+    //             &dependency_graph_node,
+    //             lifecycles,
+    //             constructors,
+    //         );
+    //         let call_graph_node_index = match call_graph_node {
+    //             CallGraphNode::Compute {
+    //                 n_allowed_invocations,
+    //                 ..
+    //             } => match n_allowed_invocations {
+    //                 NumberOfAllowedInvocations::One => {
+    //                     add_node_at_most_once(&mut call_graph, call_graph_node, dep_node_index)
+    //                 }
+    //                 NumberOfAllowedInvocations::Multiple => call_graph.add_node(call_graph_node),
+    //             },
+    //             CallGraphNode::InputParameter(_) => {
+    //                 add_node_at_most_once(&mut call_graph, call_graph_node, dep_node_index)
+    //             }
+    //             // We do not have `MatchBranching` nodes at this point!
+    //             // They are added later as a second pass.
+    //             CallGraphNode::MatchBranching => unreachable!(),
+    //         };
+    //         call_graph.update_edge(call_graph_node_index, error_handler_node_index, ());
+    //         if !resolved_nodes.contains(&call_graph_node_index) {
+    //             nodes_to_be_visited.push((call_graph_node_index, error_handler_node_index));
+    //         }
+    //     }
+    // }
 
     // `callable_node_index` might point to a `Compute` node that returns a `Result`, therefore
     // it might no longer be without descendants after our insertion of `MatchBranching` nodes.
