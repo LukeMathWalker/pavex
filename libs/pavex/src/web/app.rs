@@ -22,7 +22,6 @@ use crate::rustdoc::{CrateCollection, GlobalTypeId};
 use crate::web::call_graph::CallGraph;
 use crate::web::call_graph::{application_state_call_graph, handler_call_graph};
 use crate::web::constructors::{Constructor, ConstructorValidationError};
-use crate::web::dependency_graph::CallableDependencyGraph;
 use crate::web::diagnostic::{
     CompilerDiagnosticBuilder, OptionalSourceSpanExt, ParsedSourceFile, SourceSpanExt,
 };
@@ -301,14 +300,6 @@ impl App {
             router.insert(route, handler_resolver[callable_path].to_owned());
         }
 
-        let mut handler_dependency_graphs = IndexMap::with_capacity(handlers.len());
-        for callable in &handlers {
-            handler_dependency_graphs.insert(
-                callable.path.clone(),
-                CallableDependencyGraph::new(callable.to_owned(), &constructors),
-            );
-        }
-
         let component2lifecycle = {
             let mut map = HashMap::<ResolvedType, Lifecycle>::new();
             for (output_type, constructor) in &constructors {
@@ -363,20 +354,18 @@ impl App {
             }
         }
 
-        let handler_call_graphs: IndexMap<_, _> = handler_dependency_graphs
-            .iter()
-            .map(|(path, dep_graph)| {
-                (
-                    path.to_owned(),
-                    handler_call_graph(
-                        dep_graph,
-                        &component2lifecycle,
-                        &constructors,
-                        &constructor2error_handler,
-                    ),
-                )
-            })
-            .collect();
+        let mut handler_call_graphs = IndexMap::with_capacity(handlers.len());
+        for callable in &handlers {
+            handler_call_graphs.insert(
+                callable.path.clone(),
+                handler_call_graph(
+                    callable.to_owned(),
+                    &component2lifecycle,
+                    &constructors,
+                    &constructor2error_handler,
+                ),
+            );
+        }
 
         let request_scoped_framework_bindings =
             framework_bindings(&package_graph, &mut krate_collection);

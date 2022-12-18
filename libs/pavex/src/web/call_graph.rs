@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use bimap::BiHashMap;
 use fixedbitset::FixedBitSet;
@@ -19,7 +19,6 @@ use crate::web::app::GENERATED_APP_PACKAGE_ID;
 use crate::web::codegen_utils;
 use crate::web::codegen_utils::{Fragment, VariableNameGenerator};
 use crate::web::constructors::{Constructor, MatchResultVariant};
-use crate::web::dependency_graph::{CallableDependencyGraph, DependencyGraphNode};
 
 /// Build a [`CallGraph`] for the application state.
 #[tracing::instrument(name = "compute_application_state_call_graph", skip_all)]
@@ -29,29 +28,22 @@ pub(crate) fn application_state_call_graph(
     constructors: IndexMap<ResolvedType, Constructor>,
     constructor2error_handler: &HashMap<Constructor, Callable>,
 ) -> CallGraph {
-    fn dependency_graph_node2call_graph_node(
-        node: &DependencyGraphNode,
+    fn constructor2node(
+        constructor: &Constructor,
         lifecycles: &HashMap<ResolvedType, Lifecycle>,
-        constructors: &IndexMap<ResolvedType, Constructor>,
     ) -> CallGraphNode {
-        match node {
-            DependencyGraphNode::Compute(c) => CallGraphNode::Compute {
-                constructor: Constructor::Callable(c.to_owned()),
+        match lifecycles.get(constructor.output_type()) {
+            Some(Lifecycle::Singleton) => CallGraphNode::Compute {
+                constructor: constructor.to_owned(),
                 n_allowed_invocations: NumberOfAllowedInvocations::One,
             },
-            DependencyGraphNode::Type(t) => match lifecycles.get(t).cloned() {
-                Some(Lifecycle::Singleton) => CallGraphNode::Compute {
-                    constructor: constructors[t].to_owned(),
-                    n_allowed_invocations: NumberOfAllowedInvocations::One,
-                },
-                None => CallGraphNode::InputParameter(t.to_owned()),
-                Some(Lifecycle::RequestScoped) => {
-                    panic!("Singletons should not depend on types with a request-scoped lifecycle.")
-                }
-                Some(Lifecycle::Transient) => {
-                    panic!("Singletons should not depend on types with a transient lifecycle.")
-                }
-            },
+            None => CallGraphNode::InputParameter(constructor.output_type().to_owned()),
+            Some(Lifecycle::RequestScoped) => {
+                panic!("Singletons should not depend on types with a request-scoped lifecycle.")
+            }
+            Some(Lifecycle::Transient) => {
+                panic!("Singletons should not depend on types with a transient lifecycle.")
+            }
         }
     }
 
@@ -88,54 +80,47 @@ pub(crate) fn application_state_call_graph(
                 .collect(),
         },
     };
-    let dependency_graph =
-        CallableDependencyGraph::new(application_state_constructor, &constructors);
     dependency_graph2call_graph(
-        &dependency_graph,
+        application_state_constructor,
         lifecycles,
         &constructors,
         constructor2error_handler,
-        dependency_graph_node2call_graph_node,
+        constructor2node,
     )
 }
 
 /// Build a [`CallGraph`] for a request handler.
 #[tracing::instrument(name = "compute_handler_call_graph", skip_all)]
 pub(crate) fn handler_call_graph(
-    dependency_graph: &'_ CallableDependencyGraph,
+    root_callable: Callable,
     lifecycles: &HashMap<ResolvedType, Lifecycle>,
     constructors: &IndexMap<ResolvedType, Constructor>,
     constructor2error_handler: &HashMap<Constructor, Callable>,
 ) -> CallGraph {
-    fn dependency_graph_node2call_graph_node(
-        node: &DependencyGraphNode,
+    fn constructor2node(
+        constructor: &Constructor,
         lifecycles: &HashMap<ResolvedType, Lifecycle>,
-        constructors: &IndexMap<ResolvedType, Constructor>,
     ) -> CallGraphNode {
-        match node {
-            DependencyGraphNode::Compute(c) => CallGraphNode::Compute {
-                constructor: Constructor::Callable(c.to_owned()),
+        match lifecycles.get(constructor.output_type()) {
+            Some(Lifecycle::Singleton) | None => {
+                CallGraphNode::InputParameter(constructor.output_type().to_owned())
+            }
+            Some(Lifecycle::RequestScoped) => CallGraphNode::Compute {
+                constructor: constructor.to_owned(),
                 n_allowed_invocations: NumberOfAllowedInvocations::One,
             },
-            DependencyGraphNode::Type(t) => match lifecycles.get(t).cloned() {
-                Some(Lifecycle::Singleton) | None => CallGraphNode::InputParameter(t.to_owned()),
-                Some(Lifecycle::RequestScoped) => CallGraphNode::Compute {
-                    constructor: constructors[t].to_owned(),
-                    n_allowed_invocations: NumberOfAllowedInvocations::One,
-                },
-                Some(Lifecycle::Transient) => CallGraphNode::Compute {
-                    constructor: constructors[t].to_owned(),
-                    n_allowed_invocations: NumberOfAllowedInvocations::Multiple,
-                },
+            Some(Lifecycle::Transient) => CallGraphNode::Compute {
+                constructor: constructor.to_owned(),
+                n_allowed_invocations: NumberOfAllowedInvocations::Multiple,
             },
         }
     }
     dependency_graph2call_graph(
-        dependency_graph,
+        root_callable,
         lifecycles,
         constructors,
         constructor2error_handler,
-        dependency_graph_node2call_graph_node,
+        constructor2node,
     )
 }
 
@@ -143,65 +128,71 @@ pub(crate) fn handler_call_graph(
 /// The caller needs to provide the data required look-up maps and a node conversion function,
 /// while all the graph-traversing machinery is taken care of.
 fn dependency_graph2call_graph<F>(
-    dependency_graph: &'_ CallableDependencyGraph,
+    root_callable: Callable,
     lifecycles: &HashMap<ResolvedType, Lifecycle>,
     constructors: &IndexMap<ResolvedType, Constructor>,
     _constructor2error_handler: &HashMap<Constructor, Callable>,
-    dependency_graph_node2call_graph_node: F,
+    constructor2node: F,
 ) -> CallGraph
 where
-    F: Fn(
-        &DependencyGraphNode,
-        &HashMap<ResolvedType, Lifecycle>,
-        &IndexMap<ResolvedType, Constructor>,
-    ) -> CallGraphNode,
+    F: Fn(&Constructor, &HashMap<ResolvedType, Lifecycle>) -> CallGraphNode,
 {
-    let CallableDependencyGraph {
-        dependency_graph,
-        callable_node_index,
-    } = dependency_graph;
-    let mut nodes_to_be_visited = vec![VisitorStackElement::orphan(*callable_node_index)];
     let mut call_graph = StableDiGraph::<CallGraphNode, ()>::new();
+
+    // A little hack to make sure that the handler node gets assigned to a `Compute` node
+    // that is invoked at most once.
+    // Definitely not an "elegant" solution, but it works (for now).
+    let handler_constructor = Constructor::Callable(root_callable.clone());
+    let handler_node = CallGraphNode::Compute {
+        constructor: handler_constructor.clone(),
+        n_allowed_invocations: NumberOfAllowedInvocations::One,
+    };
+    let constructor2node = |constructor: &Constructor, lifecycles| {
+        if constructor == &handler_constructor {
+            handler_node.clone()
+        } else {
+            constructor2node(constructor, lifecycles)
+        }
+    };
+
+    let mut nodes_to_be_visited = vec![VisitorStackElement::orphan(handler_constructor.clone())];
 
     // If the constructor for a type can be invoked at most once, then it should appear
     // at most once in the call graph. This mapping, and the corresponding Rust closure, are used
     // to make sure of that.
-    let mut indexes_for_unique_nodes = HashMap::<u32, NodeIndex>::new();
-    let mut add_node_at_most_once =
-        |graph: &mut StableDiGraph<CallGraphNode, ()>,
-         call_graph_node: CallGraphNode,
-         dependency_graph_node_index: u32| {
-            indexes_for_unique_nodes
-                .get(&dependency_graph_node_index)
-                .cloned()
-                .unwrap_or_else(|| {
-                    let index = graph.add_node(call_graph_node);
-                    indexes_for_unique_nodes.insert(dependency_graph_node_index, index);
-                    index
-                })
-        };
+    let mut indexes_for_unique_nodes = HashMap::<CallGraphNode, NodeIndex>::new();
+    let mut add_node_at_most_once = |graph: &mut StableDiGraph<CallGraphNode, ()>,
+                                     node: CallGraphNode| {
+        assert!(!matches!(node, CallGraphNode::MatchBranching { .. }));
+        indexes_for_unique_nodes
+            .get(&node)
+            .cloned()
+            .unwrap_or_else(|| {
+                let index = graph.add_node(node.clone());
+                indexes_for_unique_nodes.insert(node, index);
+                index
+            })
+    };
 
     while let Some(node_to_be_visited) = nodes_to_be_visited.pop() {
-        let (dep_node_index, call_parent_node_index) = (
-            node_to_be_visited.dependency_graph_index,
-            node_to_be_visited.call_graph_parent_index,
+        let (constructor, parent_index) = (
+            node_to_be_visited.constructor,
+            node_to_be_visited.parent_index,
         );
-        let node = &dependency_graph[dep_node_index];
-        let call_node_index = {
-            let call_graph_node =
-                dependency_graph_node2call_graph_node(node, lifecycles, constructors);
+        let current_index = {
+            let call_graph_node = constructor2node(&constructor, lifecycles);
             match call_graph_node {
                 CallGraphNode::Compute {
                     n_allowed_invocations,
                     ..
                 } => match n_allowed_invocations {
                     NumberOfAllowedInvocations::One => {
-                        add_node_at_most_once(&mut call_graph, call_graph_node, dep_node_index)
+                        add_node_at_most_once(&mut call_graph, call_graph_node)
                     }
                     NumberOfAllowedInvocations::Multiple => call_graph.add_node(call_graph_node),
                 },
                 CallGraphNode::InputParameter(_) => {
-                    add_node_at_most_once(&mut call_graph, call_graph_node, dep_node_index)
+                    add_node_at_most_once(&mut call_graph, call_graph_node)
                 }
                 // We do not have `MatchBranching` nodes at this point!
                 // They are added later as a second pass.
@@ -209,25 +200,38 @@ where
             }
         };
 
-        if let Some(call_parent_node_index) = call_parent_node_index {
-            call_graph.add_edge(call_node_index, call_parent_node_index, ());
+        if let Some(parent_index) = parent_index {
+            call_graph.add_edge(current_index, parent_index, ());
         }
 
         // We need to recursively build the input types for all our constructors;
-        if let CallGraphNode::Compute { .. } = call_graph[call_node_index] {
-            let dependencies_node_indexes = dependency_graph
-                .graph
-                .neighbors_directed(dep_node_index, Direction::Incoming);
-            for dependency_node_index in dependencies_node_indexes {
+        if let CallGraphNode::Compute { constructor, .. } = call_graph[current_index].clone() {
+            let input_types = constructor.input_types();
+            for input_type in input_types.iter() {
+                let input_constructor = if let Some(c) = constructors.get(input_type) {
+                    c
+                } else {
+                    let index = add_node_at_most_once(
+                        &mut call_graph,
+                        CallGraphNode::InputParameter(input_type.to_owned()),
+                    );
+                    call_graph.update_edge(index, current_index, ());
+                    // If we do not have a constructor for a type, the following things may
+                    // happen:
+                    // - It will be injected by the framework;
+                    // - It will be a required input of the application state constructor;
+                    // - pavex will later return an error to the user.
+                    continue;
+                };
                 nodes_to_be_visited.push(VisitorStackElement {
-                    dependency_graph_index: dependency_node_index,
-                    call_graph_parent_index: Some(call_node_index),
+                    constructor: input_constructor.to_owned(),
+                    parent_index: Some(current_index),
                 });
             }
         }
     }
 
-    let root_callable_node_index = indexes_for_unique_nodes[callable_node_index];
+    let root_callable_node_index = indexes_for_unique_nodes[&handler_node];
     // We traverse the graph looking for `MatchResult` nodes.
     // For each of them:
     // 1. We add a `MatchBranching` node, in between the ancestor `Compute` node for a `Result` type
@@ -406,7 +410,7 @@ where
     // it might no longer be without descendants after our insertion of `MatchBranching` nodes.
     // If that's the case, we determine a new `root_callable_node_index` by picking the `Ok`
     // variant that descends from `callable_node_index`.
-    let root_callable_node_index = indexes_for_unique_nodes[callable_node_index];
+    let root_callable_node_index = indexes_for_unique_nodes[&handler_node];
     let root_callable_node_index = if call_graph
         .neighbors_directed(root_callable_node_index, Direction::Outgoing)
         .count()
@@ -470,7 +474,7 @@ pub(crate) struct CallGraph {
     pub(crate) root_callable_node_index: NodeIndex,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub(crate) enum CallGraphNode {
     Compute {
         constructor: Constructor,
@@ -480,7 +484,7 @@ pub(crate) enum CallGraphNode {
     InputParameter(ResolvedType),
 }
 
-#[derive(Clone, Debug, Copy)]
+#[derive(Clone, Debug, Copy, Hash, Eq, PartialEq)]
 /// How many times can a certain constructor be invoked within the body of
 /// the code-generated function?
 pub(crate) enum NumberOfAllowedInvocations {
@@ -491,16 +495,16 @@ pub(crate) enum NumberOfAllowedInvocations {
 }
 
 struct VisitorStackElement {
-    dependency_graph_index: u32,
-    call_graph_parent_index: Option<NodeIndex>,
+    constructor: Constructor,
+    parent_index: Option<NodeIndex>,
 }
 
 impl VisitorStackElement {
     /// A short-cut to add a node without a parent to the visitor stack.
-    fn orphan(dependency_graph_index: u32) -> Self {
+    fn orphan(constructor: Constructor) -> Self {
         Self {
-            dependency_graph_index,
-            call_graph_parent_index: None,
+            constructor,
+            parent_index: None,
         }
     }
 }
