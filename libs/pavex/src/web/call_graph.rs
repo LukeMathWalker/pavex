@@ -208,25 +208,18 @@ where
         if let CallGraphNode::Compute { constructor, .. } = call_graph[current_index].clone() {
             let input_types = constructor.input_types();
             for input_type in input_types.iter() {
-                let input_constructor = if let Some(c) = constructors.get(input_type) {
-                    c
+                if let Some(c) = constructors.get(input_type) {
+                    nodes_to_be_visited.push(VisitorStackElement {
+                        constructor: c.to_owned(),
+                        parent_index: Some(current_index),
+                    });
                 } else {
                     let index = add_node_at_most_once(
                         &mut call_graph,
                         CallGraphNode::InputParameter(input_type.to_owned()),
                     );
                     call_graph.update_edge(index, current_index, ());
-                    // If we do not have a constructor for a type, the following things may
-                    // happen:
-                    // - It will be injected by the framework;
-                    // - It will be a required input of the application state constructor;
-                    // - pavex will later return an error to the user.
-                    continue;
-                };
-                nodes_to_be_visited.push(VisitorStackElement {
-                    constructor: input_constructor.to_owned(),
-                    parent_index: Some(current_index),
-                });
+                }
             }
         }
     }
