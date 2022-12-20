@@ -326,10 +326,39 @@ impl App {
             map
         };
 
-        // All singletons must implement `Clone`, `Send` and `Sync`.
-        for singleton_type in component2lifecycle.iter().filter_map(|(t, l)| {
-            if l == &Lifecycle::Singleton {
-                Some(t)
+        let mut handler_call_graphs = IndexMap::with_capacity(handlers.len());
+        for callable in &handlers {
+            handler_call_graphs.insert(
+                callable.path.clone(),
+                handler_call_graph(
+                    callable.to_owned(),
+                    &component2lifecycle,
+                    &constructors,
+                    &constructor2error_handler,
+                ),
+            );
+        }
+
+        let request_scoped_framework_bindings =
+            framework_bindings(&package_graph, &mut krate_collection);
+
+        let runtime_singletons: BiHashMap<Ident, ResolvedType> = get_required_singleton_types(
+            handler_call_graphs.iter(),
+            &component2lifecycle,
+            &request_scoped_framework_bindings,
+        )
+        .map_err(|e| miette!(e))?
+        .into_iter()
+        .enumerate()
+        // Assign a unique name to each singleton
+        .map(|(i, type_)| (format_ident!("s{}", i), type_))
+        .collect();
+
+        // All singletons stored in the application state (i.e. all "runtime" singletons) must
+        // implement `Clone`, `Send` and `Sync` in order to be shared across threads.
+        for singleton_type in runtime_singletons.right_values().filter_map(|ty| {
+            if component2lifecycle.get(ty) == Some(&Lifecycle::Singleton) {
+                Some(ty)
             } else {
                 None
             }
@@ -358,33 +387,6 @@ impl App {
             }
         }
 
-        let mut handler_call_graphs = IndexMap::with_capacity(handlers.len());
-        for callable in &handlers {
-            handler_call_graphs.insert(
-                callable.path.clone(),
-                handler_call_graph(
-                    callable.to_owned(),
-                    &component2lifecycle,
-                    &constructors,
-                    &constructor2error_handler,
-                ),
-            );
-        }
-
-        let request_scoped_framework_bindings =
-            framework_bindings(&package_graph, &mut krate_collection);
-
-        let runtime_singletons: BiHashMap<Ident, ResolvedType> = get_required_singleton_types(
-            handler_call_graphs.iter(),
-            &component2lifecycle,
-            &request_scoped_framework_bindings,
-        )
-        .map_err(|e| miette!(e))?
-        .into_iter()
-        .enumerate()
-        // Assign a unique name to each singleton
-        .map(|(i, type_)| (format_ident!("s{}", i), type_))
-        .collect();
         let application_state_call_graph = application_state_call_graph(
             &runtime_singletons,
             &component2lifecycle,

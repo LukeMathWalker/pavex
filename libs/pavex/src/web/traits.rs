@@ -116,7 +116,10 @@ impl MissingTraitImplementationError {
         };
         let constructor_callable = match constructor {
             Constructor::Callable(c) => c,
-            _ => unreachable!(),
+            c => {
+                dbg!(c);
+                unreachable!()
+            }
         };
         let constructor_path = constructor_callable_resolver
             .get_by_right(constructor_callable)
