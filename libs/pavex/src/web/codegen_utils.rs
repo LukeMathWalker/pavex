@@ -31,7 +31,7 @@ impl ToTokens for Fragment {
 }
 
 /// A stateful generator of unique variable names.
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub(crate) struct VariableNameGenerator {
     cursor: u32,
 }

@@ -19,6 +19,7 @@ use crate::web::app::GENERATED_APP_PACKAGE_ID;
 use crate::web::codegen_utils;
 use crate::web::codegen_utils::{Fragment, VariableNameGenerator};
 use crate::web::constructors::{Constructor, MatchResultVariant};
+use crate::web::error_handlers::ErrorHandler;
 
 /// Build a [`CallGraph`] for the application state.
 #[tracing::instrument(name = "compute_application_state_call_graph", skip_all)]
@@ -26,22 +27,15 @@ pub(crate) fn application_state_call_graph(
     runtime_singleton_bindings: &BiHashMap<Ident, ResolvedType>,
     lifecycles: &HashMap<ResolvedType, Lifecycle>,
     constructors: IndexMap<ResolvedType, Constructor>,
-    constructor2error_handler: &HashMap<Constructor, Callable>,
+    constructor2error_handler: &HashMap<Constructor, ErrorHandler>,
 ) -> CallGraph {
-    fn constructor2node(
-        constructor: &Constructor,
-        lifecycles: &HashMap<ResolvedType, Lifecycle>,
-    ) -> CallGraphNode {
-        match lifecycles.get(constructor.output_type()) {
-            Some(Lifecycle::Singleton) => CallGraphNode::Compute {
-                constructor: constructor.to_owned(),
-                n_allowed_invocations: NumberOfAllowedInvocations::One,
-            },
-            None => CallGraphNode::InputParameter(constructor.output_type().to_owned()),
-            Some(Lifecycle::RequestScoped) => {
+    fn lifecycle2invocations(lifecycle: &Lifecycle) -> Option<NumberOfAllowedInvocations> {
+        match lifecycle {
+            Lifecycle::Singleton => Some(NumberOfAllowedInvocations::One),
+            Lifecycle::RequestScoped => {
                 panic!("Singletons should not depend on types with a request-scoped lifecycle.")
             }
-            Some(Lifecycle::Transient) => {
+            Lifecycle::Transient => {
                 panic!("Singletons should not depend on types with a transient lifecycle.")
             }
         }
@@ -85,7 +79,7 @@ pub(crate) fn application_state_call_graph(
         lifecycles,
         &constructors,
         constructor2error_handler,
-        constructor2node,
+        lifecycle2invocations,
     )
 }
 
@@ -95,24 +89,13 @@ pub(crate) fn handler_call_graph(
     root_callable: Callable,
     lifecycles: &HashMap<ResolvedType, Lifecycle>,
     constructors: &IndexMap<ResolvedType, Constructor>,
-    constructor2error_handler: &HashMap<Constructor, Callable>,
+    constructor2error_handler: &HashMap<Constructor, ErrorHandler>,
 ) -> CallGraph {
-    fn constructor2node(
-        constructor: &Constructor,
-        lifecycles: &HashMap<ResolvedType, Lifecycle>,
-    ) -> CallGraphNode {
-        match lifecycles.get(constructor.output_type()) {
-            Some(Lifecycle::Singleton) | None => {
-                CallGraphNode::InputParameter(constructor.output_type().to_owned())
-            }
-            Some(Lifecycle::RequestScoped) => CallGraphNode::Compute {
-                constructor: constructor.to_owned(),
-                n_allowed_invocations: NumberOfAllowedInvocations::One,
-            },
-            Some(Lifecycle::Transient) => CallGraphNode::Compute {
-                constructor: constructor.to_owned(),
-                n_allowed_invocations: NumberOfAllowedInvocations::Multiple,
-            },
+    fn lifecycle2invocations(l: &Lifecycle) -> Option<NumberOfAllowedInvocations> {
+        match l {
+            Lifecycle::Singleton => None,
+            Lifecycle::RequestScoped => Some(NumberOfAllowedInvocations::One),
+            Lifecycle::Transient => Some(NumberOfAllowedInvocations::Multiple),
         }
     }
     dependency_graph2call_graph(
@@ -120,7 +103,7 @@ pub(crate) fn handler_call_graph(
         lifecycles,
         constructors,
         constructor2error_handler,
-        constructor2node,
+        lifecycle2invocations,
     )
 }
 
@@ -131,31 +114,54 @@ fn dependency_graph2call_graph<F>(
     root_callable: Callable,
     lifecycles: &HashMap<ResolvedType, Lifecycle>,
     constructors: &IndexMap<ResolvedType, Constructor>,
-    _constructor2error_handler: &HashMap<Constructor, Callable>,
-    constructor2node: F,
+    constructor2error_handler: &HashMap<Constructor, ErrorHandler>,
+    lifecycle2n_allowed_invocations: F,
 ) -> CallGraph
 where
-    F: Fn(&Constructor, &HashMap<ResolvedType, Lifecycle>) -> CallGraphNode,
+    F: Fn(&Lifecycle) -> Option<NumberOfAllowedInvocations> + Clone,
 {
     let mut call_graph = StableDiGraph::<CallGraphNode, ()>::new();
 
-    // A little hack to make sure that the handler node gets assigned to a `Compute` node
-    // that is invoked at most once.
-    // Definitely not an "elegant" solution, but it works (for now).
     let handler_constructor = Constructor::Callable(root_callable.clone());
+    let handler_component: ComputeComponent = handler_constructor.clone().into();
     let handler_node = CallGraphNode::Compute {
-        constructor: handler_constructor.clone(),
+        component: handler_component.clone(),
         n_allowed_invocations: NumberOfAllowedInvocations::One,
     };
-    let constructor2node = |constructor: &Constructor, lifecycles| {
-        if constructor == &handler_constructor {
-            handler_node.clone()
+    let constructor2invocations = |c: &Constructor| {
+        lifecycles
+            .get(c.output_type())
+            .map(lifecycle2n_allowed_invocations.clone())
+            .flatten()
+    };
+    let component2invocations = |component: &ComputeComponent| {
+        if component == &handler_component {
+            Some(NumberOfAllowedInvocations::One)
         } else {
-            constructor2node(constructor, lifecycles)
+            match component {
+                ComputeComponent::Constructor(c) => constructor2invocations(c),
+                ComputeComponent::ErrorHandler(e) => {
+                    let fallible_constructor = Constructor::Callable(e.fallible_callable.clone());
+                    constructor2invocations(&fallible_constructor)
+                }
+            }
         }
     };
 
-    let mut nodes_to_be_visited = vec![VisitorStackElement::orphan(handler_constructor.clone())];
+    let component2node = |c: &ComputeComponent| {
+        let n_invocations = component2invocations(c);
+        match n_invocations {
+            None => CallGraphNode::InputParameter(c.output_type().to_owned()),
+            Some(n_allowed_invocations) => CallGraphNode::Compute {
+                component: c.to_owned(),
+                n_allowed_invocations,
+            },
+        }
+    };
+
+    let mut nodes_to_be_visited = vec![VisitorStackElement::orphan(
+        handler_constructor.clone().into(),
+    )];
 
     // If the constructor for a type can be invoked at most once, then it should appear
     // at most once in the call graph. This mapping, and the corresponding Rust closure, are used
@@ -174,87 +180,115 @@ where
             })
     };
 
-    while let Some(node_to_be_visited) = nodes_to_be_visited.pop() {
-        let (constructor, parent_index) = (
-            node_to_be_visited.constructor,
-            node_to_be_visited.parent_index,
-        );
-        let current_index = {
-            let call_graph_node = constructor2node(&constructor, lifecycles);
-            match call_graph_node {
-                CallGraphNode::Compute {
-                    n_allowed_invocations,
-                    ..
-                } => match n_allowed_invocations {
-                    NumberOfAllowedInvocations::One => {
+    loop {
+        while let Some(node_to_be_visited) = nodes_to_be_visited.pop() {
+            let (compute_component, neighbour_index) = (
+                node_to_be_visited.compute,
+                node_to_be_visited.neighbour_index,
+            );
+            let current_index = {
+                let call_graph_node = component2node(&compute_component);
+                match call_graph_node {
+                    CallGraphNode::Compute {
+                        n_allowed_invocations: NumberOfAllowedInvocations::One,
+                        ..
+                    }
+                    | CallGraphNode::InputParameter(_) => {
                         add_node_at_most_once(&mut call_graph, call_graph_node)
                     }
-                    NumberOfAllowedInvocations::Multiple => call_graph.add_node(call_graph_node),
-                },
-                CallGraphNode::InputParameter(_) => {
-                    add_node_at_most_once(&mut call_graph, call_graph_node)
+                    CallGraphNode::Compute {
+                        n_allowed_invocations: NumberOfAllowedInvocations::Multiple,
+                        ..
+                    } => call_graph.add_node(call_graph_node),
+                    CallGraphNode::MatchBranching => unreachable!(),
                 }
-                // We do not have `MatchBranching` nodes at this point!
-                // They are added later as a second pass.
-                CallGraphNode::MatchBranching => unreachable!(),
-            }
-        };
+            };
 
-        if let Some(parent_index) = parent_index {
-            call_graph.add_edge(current_index, parent_index, ());
-        }
-
-        // We need to recursively build the input types for all our constructors;
-        if let CallGraphNode::Compute { constructor, .. } = call_graph[current_index].clone() {
-            let input_types = constructor.input_types();
-            for input_type in input_types.iter() {
-                if let Some(c) = constructors.get(input_type) {
-                    nodes_to_be_visited.push(VisitorStackElement {
-                        constructor: c.to_owned(),
-                        parent_index: Some(current_index),
-                    });
-                } else {
-                    let index = add_node_at_most_once(
-                        &mut call_graph,
-                        CallGraphNode::InputParameter(input_type.to_owned()),
-                    );
-                    call_graph.update_edge(index, current_index, ());
+            if let Some(neighbour_index) = neighbour_index {
+                match neighbour_index {
+                    VisitorIndex::Parent(parent_index) => {
+                        call_graph.add_edge(parent_index, current_index, ());
+                    }
+                    VisitorIndex::Child(child_index) => {
+                        call_graph.add_edge(current_index, child_index, ());
+                    }
                 }
             }
-        }
-    }
 
-    let root_callable_node_index = indexes_for_unique_nodes[&handler_node];
-    // We traverse the graph looking for `MatchResult` nodes.
-    // For each of them:
-    // 1. We add a `MatchBranching` node, in between the ancestor `Compute` node for a `Result` type
-    //    and the corresponding descendant `MatchResult` node for the `Ok` variant.
-    // 2. We add a `MatchResult` node for the `Err` variant, as a descendant of the `MatchBranching`
-    //    node.
-    //
-    // In other words: we want to go from
-    //
-    // ```
-    // Compute(Result) -> MatchResult(Ok)
-    // ```
-    //
-    // to
-    //
-    // ```
-    // Compute(Result) -> MatchBranching -> MatchResult(Ok)
-    //                                   -> MatchResult(Err)
-    // ```
-    let mut err_variant_node2fallible_constructor = HashMap::<NodeIndex, Constructor>::new();
-    let mut pre_order_dfs = Dfs::new(Reversed(&call_graph), root_callable_node_index);
-    while let Some(node_index) = pre_order_dfs.next(Reversed(&call_graph)) {
-        let node = call_graph[node_index].clone();
-        if let CallGraphNode::Compute {
-            constructor,
-            n_allowed_invocations,
-        } = node
-        {
-            if let Constructor::MatchResult(_) = constructor {
-                let result_node = call_graph
+            // We need to recursively build the input types for all our compute components;
+            if let CallGraphNode::Compute { component, .. } = call_graph[current_index].clone() {
+                match component {
+                    ComputeComponent::Constructor(constructor) => {
+                        let input_types = constructor.input_types();
+                        for input_type in input_types.iter() {
+                            if let Some(c) = constructors.get(input_type) {
+                                nodes_to_be_visited.push(VisitorStackElement {
+                                    compute: c.to_owned().into(),
+                                    neighbour_index: Some(VisitorIndex::Child(current_index)),
+                                });
+                            } else {
+                                let index = add_node_at_most_once(
+                                    &mut call_graph,
+                                    CallGraphNode::InputParameter(input_type.to_owned()),
+                                );
+                                call_graph.update_edge(index, current_index, ());
+                            }
+                        }
+                    }
+                    ComputeComponent::ErrorHandler(error_handler) => {
+                        let input_types = error_handler.as_ref().inputs.iter();
+                        for input_type in input_types {
+                            if let Some(c) = constructors.get(input_type) {
+                                nodes_to_be_visited.push(VisitorStackElement {
+                                    compute: c.to_owned().into(),
+                                    neighbour_index: Some(VisitorIndex::Child(current_index)),
+                                });
+                            } else {
+                                if input_type == error_handler.error_type() {
+                                    // We have already added this edge.
+                                    continue;
+                                } else {
+                                    let index = add_node_at_most_once(
+                                        &mut call_graph,
+                                        CallGraphNode::InputParameter(input_type.to_owned()),
+                                    );
+                                    call_graph.update_edge(index, current_index, ());
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // We traverse the graph looking for `MatchResult` nodes.
+        // For each of them:
+        // 1. We add a `MatchBranching` node, in between the ancestor `Compute` node for a `Result` type
+        //    and the corresponding descendant `MatchResult` node for the `Ok` variant.
+        // 2. We add a `MatchResult` node for the `Err` variant, as a descendant of the `MatchBranching`
+        //    node.
+        //
+        // In other words: we want to go from
+        //
+        // ```
+        // Constructor(Result) -> MatchResult(Ok)
+        // ```
+        //
+        // to
+        //
+        // ```
+        // Constructor(Result) -> MatchBranching -> MatchResult(Ok)
+        //                                       -> MatchResult(Err)
+        // ```
+        let indexes = call_graph.node_indices().collect::<Vec<_>>();
+        for node_index in indexes {
+            let node = call_graph[node_index].clone();
+            if let CallGraphNode::Compute {
+                component: ComputeComponent::Constructor(Constructor::MatchResult(_)),
+                n_allowed_invocations,
+            } = node
+            {
+                let parent_node = call_graph
                     .neighbors_directed(node_index, Direction::Incoming)
                     .next()
                     // We know that the `MatchResult` node has exactly one incoming edge because
@@ -262,6 +296,21 @@ where
                     // `T` and a constructor for `Result<T, E>` at the same time (or multiple
                     // `Result<T, _>` constructors using different error types).
                     .unwrap();
+                if let CallGraphNode::MatchBranching = call_graph[parent_node] {
+                    // This has already been processed.
+                    continue;
+                }
+                let result_node = parent_node;
+                let result_constructor = match &call_graph[result_node] {
+                    CallGraphNode::Compute {
+                        component: ComputeComponent::Constructor(constructor),
+                        ..
+                    } => constructor.to_owned(),
+                    n => {
+                        dbg!(n);
+                        unreachable!()
+                    }
+                };
                 let branching_node = call_graph.add_node(CallGraphNode::MatchBranching);
                 let e = call_graph.find_edge(result_node, node_index).unwrap();
                 call_graph.remove_edge(e).unwrap();
@@ -275,134 +324,40 @@ where
                         .count(),
                     1
                 );
-                let err_constructor = Constructor::match_result(&constructor.input_types()[0]).err;
-                let err_node = call_graph.add_node(CallGraphNode::Compute {
-                    constructor: err_constructor,
+                let err_constructor =
+                    Constructor::match_result(result_constructor.output_type()).err;
+                let err_node_index = call_graph.add_node(CallGraphNode::Compute {
+                    component: err_constructor.clone().into(),
                     n_allowed_invocations: n_allowed_invocations.to_owned(),
                 });
-                call_graph.add_edge(branching_node, err_node, ());
-                err_variant_node2fallible_constructor.insert(err_node, constructor);
+                call_graph.add_edge(branching_node, err_node_index, ());
+
+                // For each `MatchResult(Err)` node, we want to add a `Compute` node for the respective
+                // error handler.
+                let error_handler = &constructor2error_handler[&result_constructor];
+                let err_ref_node_index = call_graph.add_node(CallGraphNode::Compute {
+                    component: ComputeComponent::Constructor(Constructor::shared_borrow(
+                        err_constructor.output_type().to_owned(),
+                    )),
+                    n_allowed_invocations,
+                });
+                call_graph.add_edge(err_node_index, err_ref_node_index, ());
+                nodes_to_be_visited.push(VisitorStackElement {
+                    compute: error_handler.to_owned().into(),
+                    neighbour_index: Some(VisitorIndex::Parent(err_ref_node_index)),
+                });
             }
+        }
+
+        if nodes_to_be_visited.is_empty() {
+            break;
         }
     }
 
-    // For each `MatchResult(Err)` node, we want to add a `Compute` node for the respective
-    // error handler.
-    // let mut nodes_to_be_visited = vec![];
-    // let resolved_nodes = call_graph.node_indices().collect::<HashSet<_>>();
-    // for (err_match_index, fallible_constructor) in err_variant_node2fallible_constructor {
-    //     // Add the error handler node and link it with the `Err(error)` node.
-    //     let error_handler = &constructor2error_handler[&fallible_constructor];
-    //     let (error_type, n_allowed_invocations) = {
-    //         let mut e = match &call_graph[err_match_index] {
-    //             CallGraphNode::Compute {
-    //                 constructor: Constructor::MatchResult(m),
-    //                 n_allowed_invocations,
-    //             } => (&m.output, n_allowed_invocations),
-    //             _ => unreachable!(),
-    //         }
-    //         .to_owned();
-    //         // The error handler will take a reference to the error type as input!
-    //         e.is_shared_reference = true;
-    //         e
-    //     };
-    //     let error_handler_node_index = call_graph.add_node(CallGraphNode::Compute {
-    //         constructor: Constructor::Callable(error_handler.to_owned()),
-    //         n_allowed_invocations: *n_allowed_invocations,
-    //     });
-    //     call_graph.update_edge(err_match_index, error_handler_node_index, ());
-    //
-    //     // Error handlers can leverage dependency injection: we need to make sure we have
-    //     // nodes for all their input types.
-    //     for input_type in error_handler.inputs.iter() {
-    //         let input_type = input_type.to_owned();
-    //         if error_type == input_type {
-    //             // We already handled this above.
-    //             continue;
-    //         }
-    //         let dependency_graph_node = DependencyGraphNode::Type(input_type);
-    //         let call_graph_node = dependency_graph_node2call_graph_node(
-    //             &dependency_graph_node,
-    //             lifecycles,
-    //             constructors,
-    //         );
-    //         let call_graph_node_index = match call_graph_node {
-    //             CallGraphNode::Compute {
-    //                 n_allowed_invocations,
-    //                 ..
-    //             } => match n_allowed_invocations {
-    //                 NumberOfAllowedInvocations::One => {
-    //                     add_node_at_most_once(&mut call_graph, call_graph_node, dep_node_index)
-    //                 }
-    //                 NumberOfAllowedInvocations::Multiple => call_graph.add_node(call_graph_node),
-    //             },
-    //             CallGraphNode::InputParameter(_) => {
-    //                 add_node_at_most_once(&mut call_graph, call_graph_node, dep_node_index)
-    //             }
-    //             // We do not have `MatchBranching` nodes at this point!
-    //             // They are added later as a second pass.
-    //             CallGraphNode::MatchBranching => unreachable!(),
-    //         };
-    //         call_graph.update_edge(call_graph_node_index, error_handler_node_index, ());
-    //         if !resolved_nodes.contains(&call_graph_node_index) {
-    //             nodes_to_be_visited.push((call_graph_node_index, error_handler_node_index));
-    //         }
-    //     }
-    // }
-    //
-    // for (node_index, parent_node_index) in nodes_to_be_visited {
-    //     let node = &call_graph[node_index];
-    //     match node {
-    //         CallGraphNode::Compute { .. } => {}
-    //         CallGraphNode::InputParameter(_) => {
-    //             add_node_at_most_once(&mut call_graph, node.to_owned(), dep_node_index)
-    //         }
-    //         CallGraphNode::MatchBranching => {
-    //             unreachable!()
-    //         }
-    //     }
-    //     // Error handlers' inputs can in turn require other input types that
-    //     // are not yet part of the graph.
-    //     for input_type in error_handler.inputs.iter() {
-    //         let input_type = input_type.to_owned();
-    //         if error_type == input_type {
-    //             // We already handled this above.
-    //             continue;
-    //         }
-    //         let dependency_graph_node = DependencyGraphNode::Type(input_type);
-    //         let call_graph_node = dependency_graph_node2call_graph_node(
-    //             &dependency_graph_node,
-    //             lifecycles,
-    //             constructors,
-    //         );
-    //         let call_graph_node_index = match call_graph_node {
-    //             CallGraphNode::Compute {
-    //                 n_allowed_invocations,
-    //                 ..
-    //             } => match n_allowed_invocations {
-    //                 NumberOfAllowedInvocations::One => {
-    //                     add_node_at_most_once(&mut call_graph, call_graph_node, dep_node_index)
-    //                 }
-    //                 NumberOfAllowedInvocations::Multiple => call_graph.add_node(call_graph_node),
-    //             },
-    //             CallGraphNode::InputParameter(_) => {
-    //                 add_node_at_most_once(&mut call_graph, call_graph_node, dep_node_index)
-    //             }
-    //             // We do not have `MatchBranching` nodes at this point!
-    //             // They are added later as a second pass.
-    //             CallGraphNode::MatchBranching => unreachable!(),
-    //         };
-    //         call_graph.update_edge(call_graph_node_index, error_handler_node_index, ());
-    //         if !resolved_nodes.contains(&call_graph_node_index) {
-    //             nodes_to_be_visited.push((call_graph_node_index, error_handler_node_index));
-    //         }
-    //     }
-    // }
-
-    // `callable_node_index` might point to a `Compute` node that returns a `Result`, therefore
+    // `root_callable_node_index` might point to a `Compute` node that returns a `Result`, therefore
     // it might no longer be without descendants after our insertion of `MatchBranching` nodes.
     // If that's the case, we determine a new `root_callable_node_index` by picking the `Ok`
-    // variant that descends from `callable_node_index`.
+    // variant that descends from `root_callable_node_index`.
     let root_callable_node_index = indexes_for_unique_nodes[&handler_node];
     let root_callable_node_index = if call_graph
         .neighbors_directed(root_callable_node_index, Direction::Outgoing)
@@ -412,12 +367,14 @@ where
         let mut dfs = Dfs::new(&call_graph, root_callable_node_index);
         let mut new_root_callable_node_index = root_callable_node_index;
         while let Some(node_index) = dfs.next(&call_graph) {
-            if let CallGraphNode::Compute { constructor, .. } = &call_graph[node_index] {
-                if let Constructor::MatchResult(m) = constructor {
-                    if m.variant == MatchResultVariant::Ok {
-                        new_root_callable_node_index = node_index;
-                        break;
-                    }
+            if let CallGraphNode::Compute {
+                component: ComputeComponent::Constructor(Constructor::MatchResult(m)),
+                ..
+            } = &call_graph[node_index]
+            {
+                if m.variant == MatchResultVariant::Ok {
+                    new_root_callable_node_index = node_index;
+                    break;
                 }
             }
         }
@@ -470,11 +427,38 @@ pub(crate) struct CallGraph {
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub(crate) enum CallGraphNode {
     Compute {
-        constructor: Constructor,
+        component: ComputeComponent,
         n_allowed_invocations: NumberOfAllowedInvocations,
     },
     MatchBranching,
     InputParameter(ResolvedType),
+}
+
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+pub(crate) enum ComputeComponent {
+    Constructor(Constructor),
+    ErrorHandler(ErrorHandler),
+}
+
+impl From<Constructor> for ComputeComponent {
+    fn from(c: Constructor) -> Self {
+        Self::Constructor(c)
+    }
+}
+
+impl From<ErrorHandler> for ComputeComponent {
+    fn from(e: ErrorHandler) -> Self {
+        Self::ErrorHandler(e)
+    }
+}
+
+impl ComputeComponent {
+    pub fn output_type(&self) -> &ResolvedType {
+        match self {
+            ComputeComponent::Constructor(c) => c.output_type(),
+            ComputeComponent::ErrorHandler(e) => e.output_type(),
+        }
+    }
 }
 
 #[derive(Clone, Debug, Copy, Hash, Eq, PartialEq)]
@@ -487,17 +471,24 @@ pub(crate) enum NumberOfAllowedInvocations {
     Multiple,
 }
 
+#[derive(Debug)]
 struct VisitorStackElement {
-    constructor: Constructor,
-    parent_index: Option<NodeIndex>,
+    compute: ComputeComponent,
+    neighbour_index: Option<VisitorIndex>,
+}
+
+#[derive(Debug)]
+enum VisitorIndex {
+    Parent(NodeIndex),
+    Child(NodeIndex),
 }
 
 impl VisitorStackElement {
     /// A short-cut to add a node without a parent to the visitor stack.
-    fn orphan(constructor: Constructor) -> Self {
+    fn orphan(compute: ComputeComponent) -> Self {
         Self {
-            constructor,
-            parent_index: None,
+            compute,
+            neighbour_index: None,
         }
     }
 }
@@ -517,23 +508,31 @@ impl CallGraph {
                 &|_, _| "".to_string(),
                 &|_, (_, node)| {
                     match node {
-                        CallGraphNode::Compute { constructor: c, .. } => match c {
-                            Constructor::BorrowSharedReference(r) => {
+                        CallGraphNode::Compute { component: c, .. } => match c {
+                            ComputeComponent::Constructor(constructor) => match constructor {
+                                Constructor::BorrowSharedReference(r) => {
+                                    format!(
+                                        "label = \"{} -> {}\"",
+                                        r.input.render_type(package_ids2names),
+                                        r.output.render_type(package_ids2names)
+                                    )
+                                }
+                                Constructor::MatchResult(m) => {
+                                    format!(
+                                        "label = \"{} -> {}\"",
+                                        m.input.render_type(package_ids2names),
+                                        m.output.render_type(package_ids2names)
+                                    )
+                                }
+                                Constructor::Callable(c) => {
+                                    format!("label = \"{}\"", c.render_signature(package_ids2names))
+                                }
+                            },
+                            ComputeComponent::ErrorHandler(e) => {
                                 format!(
-                                    "label = \"{} -> {}\"",
-                                    r.input.render_type(package_ids2names),
-                                    r.output.render_type(package_ids2names)
+                                    "label = \"{}\"",
+                                    e.as_ref().render_signature(package_ids2names)
                                 )
-                            }
-                            Constructor::MatchResult(m) => {
-                                format!(
-                                    "label = \"{} -> {}\"",
-                                    m.input.render_type(package_ids2names),
-                                    m.output.render_type(package_ids2names)
-                                )
-                            }
-                            Constructor::Callable(c) => {
-                                format!("label = \"{}\"", c.render_signature(package_ids2names))
                             }
                         },
                         CallGraphNode::InputParameter(t) => {
@@ -615,8 +614,14 @@ fn codegen_callable_closure<'a>(
             // in the call graphs (i.e. all nodes with no outgoing edges) are returning the
             // same type. We should verify this assumption before embarking in code generation
             // and return an error if appropriate.
-            CallGraphNode::Compute { constructor, .. } => constructor.output_type(),
-            CallGraphNode::MatchBranching | CallGraphNode::InputParameter(_) => unreachable!(),
+            CallGraphNode::Compute {
+                component: ComputeComponent::Constructor(c),
+                ..
+            } => c.output_type(),
+            n => {
+                dbg!(n);
+                unreachable!()
+            }
         }
         .syn_type(package_id2name);
         syn::parse2(quote! {
@@ -678,13 +683,14 @@ fn _codegen_callable_closure_body(
         let current_node = &call_graph[current_index];
         match current_node {
             CallGraphNode::Compute {
-                constructor,
+                component,
                 n_allowed_invocations,
             } => {
                 match n_allowed_invocations {
                     NumberOfAllowedInvocations::One => {
-                        match constructor {
-                            Constructor::Callable(callable) => {
+                        match component {
+                            ComputeComponent::Constructor(Constructor::Callable(callable))
+                            | ComputeComponent::ErrorHandler(ErrorHandler { callable, .. }) => {
                                 let block = codegen_utils::codegen_call_block(
                                     get_node_type_inputs(current_index, call_graph),
                                     callable,
@@ -712,7 +718,9 @@ fn _codegen_callable_closure_body(
                                     );
                                 }
                             }
-                            Constructor::BorrowSharedReference(_) => {
+                            ComputeComponent::Constructor(Constructor::BorrowSharedReference(
+                                _,
+                            )) => {
                                 let dependencies = call_graph
                                     .neighbors_directed(current_index, Direction::Incoming);
                                 let dependency_indexes: Vec<_> = dependencies.collect();
@@ -732,7 +740,7 @@ fn _codegen_callable_closure_body(
                                     | Fragment::Block(_) => unreachable!(),
                                 }
                             }
-                            Constructor::MatchResult(_) => {
+                            ComputeComponent::Constructor(Constructor::MatchResult(_)) => {
                                 let parameter_name = variable_name_generator.generate();
                                 blocks.insert(
                                     current_index,
@@ -741,8 +749,9 @@ fn _codegen_callable_closure_body(
                             }
                         }
                     }
-                    NumberOfAllowedInvocations::Multiple => match constructor {
-                        Constructor::Callable(callable) => {
+                    NumberOfAllowedInvocations::Multiple => match component {
+                        ComputeComponent::ErrorHandler(ErrorHandler { callable, .. })
+                        | ComputeComponent::Constructor(Constructor::Callable(callable)) => {
                             let block = codegen_utils::codegen_call_block(
                                 get_node_type_inputs(current_index, call_graph),
                                 callable,
@@ -752,7 +761,7 @@ fn _codegen_callable_closure_body(
                             )?;
                             blocks.insert(current_index, block);
                         }
-                        Constructor::BorrowSharedReference(_) => {
+                        ComputeComponent::Constructor(Constructor::BorrowSharedReference(_)) => {
                             let dependencies =
                                 call_graph.neighbors_directed(current_index, Direction::Incoming);
                             let dependency_indexes: Vec<_> = dependencies.collect();
@@ -792,7 +801,7 @@ fn _codegen_callable_closure_body(
                                 }
                             }
                         }
-                        Constructor::MatchResult(_) => {
+                        ComputeComponent::Constructor(Constructor::MatchResult(_)) => {
                             let parameter_name = variable_name_generator.generate();
                             blocks
                                 .insert(current_index, Fragment::VariableReference(parameter_name));
@@ -819,14 +828,14 @@ fn _codegen_callable_closure_body(
                         call_graph,
                         parameter_bindings,
                         package_id2name,
-                        variable_name_generator,
+                        &mut variable_name_generator.clone(),
                         &mut at_most_once_constructor_blocks,
                         &mut blocks,
                         dfs,
                     )?;
                     let variant_type = match &call_graph[variant] {
                         CallGraphNode::Compute {
-                            constructor: Constructor::MatchResult(m),
+                            component: ComputeComponent::Constructor(Constructor::MatchResult(m)),
                             ..
                         } => m.variant,
                         _ => unreachable!(),
@@ -1133,8 +1142,9 @@ fn get_node_type_inputs(
     call_graph
         .neighbors_directed(node_index, Direction::Incoming)
         .map(|n| {
-            let type_ = match &call_graph[n] {
-                CallGraphNode::Compute { constructor, .. } => constructor.output_type(),
+            let node = &call_graph[n];
+            let type_ = match node {
+                CallGraphNode::Compute { component, .. } => component.output_type(),
                 CallGraphNode::InputParameter(i) => i,
                 CallGraphNode::MatchBranching => unreachable!(),
             };

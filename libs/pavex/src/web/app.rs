@@ -25,10 +25,11 @@ use crate::web::constructors::{Constructor, ConstructorValidationError};
 use crate::web::diagnostic::{
     CompilerDiagnosticBuilder, OptionalSourceSpanExt, ParsedSourceFile, SourceSpanExt,
 };
+use crate::web::error_handlers::ErrorHandler;
 use crate::web::generated_app::GeneratedApp;
 use crate::web::resolvers::{CallableResolutionError, CallableType};
 use crate::web::traits::assert_trait_is_implemented;
-use crate::web::{codegen, diagnostic, resolvers};
+use crate::web::{codegen, diagnostic, resolvers, utils};
 
 pub(crate) const GENERATED_APP_PACKAGE_ID: &str = "crate";
 
@@ -242,7 +243,7 @@ impl App {
             if t.is_shared_reference {
                 continue;
             }
-            if is_result(&t) {
+            if utils::is_result(&t) {
                 let m = Constructor::match_result(&t);
                 constructors.insert(m.ok.output_type().to_owned(), m.ok);
                 constructors.insert(m.err.output_type().to_owned(), m.err);
@@ -269,11 +270,11 @@ impl App {
             }
         };
 
-        let constructor2error_handler: HashMap<Constructor, Callable> = {
+        let constructor2error_handler: HashMap<Constructor, ErrorHandler> = {
             let mut map = HashMap::new();
             for (output_type, constructor) in &constructors {
                 if let Constructor::Callable(callable) = constructor {
-                    if is_result(&output_type) {
+                    if utils::is_result(&output_type) {
                         let constructor_path = constructor_callable_resolver
                             .get_by_right(&callable)
                             .unwrap();
@@ -287,6 +288,9 @@ impl App {
                             // TODO: return an error asking for an error handler to be registered
                             .unwrap()
                             .to_owned();
+                        // TODO: handle the validation error
+                        let error_handler = ErrorHandler::new(error_handler, callable)
+                            .expect("Failed to validate the error handler");
                         map.insert(constructor.to_owned(), error_handler);
                     }
                 }
@@ -470,14 +474,6 @@ impl App {
             application_state: application_state_graph,
         }
     }
-}
-
-/// Returns `true` if `t` is a `Result` type.
-fn is_result(t: &ResolvedType) -> bool {
-    t.base_type == ["core", "result", "Result"]
-        || t.base_type == ["core", "prelude", "rust_2015", "v1", "Result"]
-        || t.base_type == ["core", "prelude", "rust_2018", "v1", "Result"]
-        || t.base_type == ["core", "prelude", "rust_2021", "v1", "Result"]
 }
 
 /// A representation of an `App` geared towards debugging and testing.
