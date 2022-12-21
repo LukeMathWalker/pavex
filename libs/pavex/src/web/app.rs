@@ -223,6 +223,9 @@ impl App {
                 }
             };
 
+        // TODO: check if we have a constructor that returns T and another constructor returning
+        //  &T
+
         // For each non-reference type, register an inlineable constructor that transforms
         // `T` in `&T`.
         let constructible_types: Vec<_> = constructors.keys().map(|t| t.to_owned()).collect();
@@ -269,6 +272,9 @@ impl App {
                 )?);
             }
         };
+
+        // TODO: check that the error handler associated with a constructor that returns
+        //  Result<_, E> has &E as one of its input types.
 
         let constructor2error_handler: HashMap<Constructor, ErrorHandler> = {
             let mut map = HashMap::new();
