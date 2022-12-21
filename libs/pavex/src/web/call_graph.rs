@@ -574,6 +574,48 @@ impl CallGraph {
     }
 }
 
+/// Return a representation of the [`CallGraph`] in graphviz's .DOT format, geared towards
+/// debugging.
+#[allow(unused)]
+fn debug_dot(g: &StableDiGraph<CallGraphNode, ()>) -> String {
+    let config = [
+        petgraph::dot::Config::EdgeNoLabel,
+        petgraph::dot::Config::NodeNoLabel,
+    ];
+    format!(
+        "{:?}",
+        petgraph::dot::Dot::with_attr_getters(
+            &g,
+            &config,
+            &|_, _| "".to_string(),
+            &|_, (_, node)| {
+                match node {
+                    CallGraphNode::Compute { component: c, .. } => match c {
+                        ComputeComponent::Constructor(constructor) => match constructor {
+                            Constructor::BorrowSharedReference(r) => {
+                                format!("label = \"{:?} -> {:?}\"", r.input, r.output)
+                            }
+                            Constructor::MatchResult(m) => {
+                                format!("label = \"{:?} -> {:?}\"", m.input, m.output)
+                            }
+                            Constructor::Callable(c) => {
+                                format!("label = \"{:?}\"", c)
+                            }
+                        },
+                        ComputeComponent::ErrorHandler(e) => {
+                            format!("label = \"{:?}\"", e.as_ref())
+                        }
+                    },
+                    CallGraphNode::InputParameter(t) => {
+                        format!("label = \"{:?}\"", t)
+                    }
+                    CallGraphNode::MatchBranching => "label = \"`match`\"".to_string(),
+                }
+            },
+        )
+    )
+}
+
 /// Generate the dependency closure of the [`CallGraph`]'s root callable.
 ///
 /// See [`CallGraph`] docs for more details.
@@ -686,127 +728,80 @@ fn _codegen_callable_closure_body(
                 component,
                 n_allowed_invocations,
             } => {
-                match n_allowed_invocations {
-                    NumberOfAllowedInvocations::One => {
-                        match component {
-                            ComputeComponent::Constructor(Constructor::Callable(callable))
-                            | ComputeComponent::ErrorHandler(ErrorHandler { callable, .. }) => {
-                                let block = codegen_utils::codegen_call_block(
-                                    get_node_type_inputs(current_index, call_graph),
-                                    callable,
-                                    blocks,
-                                    variable_name_generator,
-                                    package_id2name,
-                                )?;
-
-                                if current_index == traversal_start_index {
-                                    // This is the last node!
-                                    // We do not need to assign its value to a variable.
-                                    blocks.insert(current_index, block);
-                                } else {
-                                    // We bind the constructed value to a variable name and instruct
-                                    // all dependents to refer to the constructed value via that
-                                    // variable name.
-                                    let parameter_name = variable_name_generator.generate();
-                                    let block = quote! {
-                                        let #parameter_name = #block;
-                                    };
-                                    at_most_once_constructor_blocks.insert(current_index, block);
-                                    blocks.insert(
-                                        current_index,
-                                        Fragment::VariableReference(parameter_name),
-                                    );
-                                }
-                            }
-                            ComputeComponent::Constructor(Constructor::BorrowSharedReference(
-                                _,
-                            )) => {
-                                let dependencies = call_graph
-                                    .neighbors_directed(current_index, Direction::Incoming);
-                                let dependency_indexes: Vec<_> = dependencies.collect();
-                                assert_eq!(1, dependency_indexes.len());
-                                let dependency_index = dependency_indexes.first().unwrap();
-                                match &blocks[dependency_index] {
-                                    Fragment::VariableReference(binding_name) => {
-                                        blocks.insert(
-                                            current_index,
-                                            Fragment::BorrowSharedReference(
-                                                binding_name.to_owned(),
-                                            ),
-                                        );
-                                    }
-                                    Fragment::BorrowSharedReference(_)
-                                    | Fragment::Statement(_)
-                                    | Fragment::Block(_) => unreachable!(),
-                                }
-                            }
-                            ComputeComponent::Constructor(Constructor::MatchResult(_)) => {
-                                let parameter_name = variable_name_generator.generate();
-                                blocks.insert(
-                                    current_index,
-                                    Fragment::VariableReference(parameter_name),
-                                );
-                            }
-                        }
-                    }
-                    NumberOfAllowedInvocations::Multiple => match component {
-                        ComputeComponent::ErrorHandler(ErrorHandler { callable, .. })
-                        | ComputeComponent::Constructor(Constructor::Callable(callable)) => {
-                            let block = codegen_utils::codegen_call_block(
-                                get_node_type_inputs(current_index, call_graph),
-                                callable,
-                                blocks,
-                                variable_name_generator,
-                                package_id2name,
-                            )?;
+                match component {
+                    ComputeComponent::Constructor(Constructor::Callable(callable))
+                    | ComputeComponent::ErrorHandler(ErrorHandler { callable, .. }) => {
+                        let block = codegen_utils::codegen_call_block(
+                            get_node_type_inputs(current_index, call_graph),
+                            callable,
+                            blocks,
+                            variable_name_generator,
+                            package_id2name,
+                        )?;
+                        // This is the last node!
+                        // We do not need to assign its value to a variable.
+                        if current_index == traversal_start_index
+                            // Or this is a single-use value, so no point in binding it to a variable.
+                            || n_allowed_invocations == &NumberOfAllowedInvocations::Multiple
+                        {
                             blocks.insert(current_index, block);
-                        }
-                        ComputeComponent::Constructor(Constructor::BorrowSharedReference(_)) => {
-                            let dependencies =
-                                call_graph.neighbors_directed(current_index, Direction::Incoming);
-                            let dependency_indexes: Vec<_> = dependencies.collect();
-                            assert_eq!(1, dependency_indexes.len());
-                            let dependency_index = dependency_indexes.first().unwrap();
-                            match &blocks[dependency_index] {
-                                Fragment::VariableReference(binding_name) => {
-                                    blocks.insert(
-                                        current_index,
-                                        Fragment::BorrowSharedReference(binding_name.to_owned()),
-                                    );
-                                }
-                                Fragment::Block(b) => {
-                                    blocks.insert(
-                                        current_index,
-                                        Fragment::Block(
-                                            syn::parse2(quote! {
-                                                &#b
-                                            })
-                                            .unwrap(),
-                                        ),
-                                    );
-                                }
-                                Fragment::Statement(b) => {
-                                    blocks.insert(
-                                        current_index,
-                                        Fragment::Statement(
-                                            syn::parse2(quote! {
-                                                &#b;
-                                            })
-                                            .unwrap(),
-                                        ),
-                                    );
-                                }
-                                Fragment::BorrowSharedReference(_) => {
-                                    unreachable!()
-                                }
-                            }
-                        }
-                        ComputeComponent::Constructor(Constructor::MatchResult(_)) => {
+                        } else {
+                            // We bind the constructed value to a variable name and instruct
+                            // all dependents to refer to the constructed value via that
+                            // variable name.
                             let parameter_name = variable_name_generator.generate();
+                            let block = quote! {
+                                let #parameter_name = #block;
+                            };
+                            at_most_once_constructor_blocks.insert(current_index, block);
                             blocks
                                 .insert(current_index, Fragment::VariableReference(parameter_name));
                         }
-                    },
+                    }
+                    ComputeComponent::Constructor(Constructor::BorrowSharedReference(_)) => {
+                        let dependencies =
+                            call_graph.neighbors_directed(current_index, Direction::Incoming);
+                        let dependency_indexes: Vec<_> = dependencies.collect();
+                        assert_eq!(1, dependency_indexes.len());
+                        let dependency_index = dependency_indexes.first().unwrap();
+                        match &blocks[dependency_index] {
+                            Fragment::VariableReference(binding_name) => {
+                                blocks.insert(
+                                    current_index,
+                                    Fragment::BorrowSharedReference(binding_name.to_owned()),
+                                );
+                            }
+                            Fragment::Block(b) => {
+                                blocks.insert(
+                                    current_index,
+                                    Fragment::Block(
+                                        syn::parse2(quote! {
+                                            &#b
+                                        })
+                                        .unwrap(),
+                                    ),
+                                );
+                            }
+                            Fragment::Statement(b) => {
+                                blocks.insert(
+                                    current_index,
+                                    Fragment::Statement(
+                                        syn::parse2(quote! {
+                                            &#b;
+                                        })
+                                        .unwrap(),
+                                    ),
+                                );
+                            }
+                            Fragment::BorrowSharedReference(_) => {
+                                unreachable!()
+                            }
+                        }
+                    }
+                    ComputeComponent::Constructor(Constructor::MatchResult(_)) => {
+                        // We already bound the match result to a variable name when handling
+                        // its parent `MatchBranching` node.
+                    }
                 }
             }
             CallGraphNode::InputParameter(input_type) => {
@@ -820,39 +815,44 @@ fn _codegen_callable_closure_body(
                 assert_eq!(2, variants.len());
                 assert_eq!(current_index, traversal_start_index);
                 let mut match_arms = vec![];
-                for variant in variants {
+                for variant_index in variants {
                     let mut at_most_once_constructor_blocks = IndexMap::new();
-                    let mut blocks = blocks.clone();
+                    let mut variant_name_generator = variable_name_generator.clone();
+                    let match_binding_parameter_name = variant_name_generator.generate();
+                    let mut variant_blocks = {
+                        let mut b = blocks.clone();
+                        b.insert(
+                            variant_index,
+                            Fragment::VariableReference(match_binding_parameter_name.clone()),
+                        );
+                        b
+                    };
                     let match_arm_body = _codegen_callable_closure_body(
-                        variant,
+                        variant_index,
                         call_graph,
                         parameter_bindings,
                         package_id2name,
-                        &mut variable_name_generator.clone(),
+                        &mut variant_name_generator,
                         &mut at_most_once_constructor_blocks,
-                        &mut blocks,
+                        &mut variant_blocks,
                         dfs,
                     )?;
-                    let variant_type = match &call_graph[variant] {
+                    let variant_type = match &call_graph[variant_index] {
                         CallGraphNode::Compute {
                             component: ComputeComponent::Constructor(Constructor::MatchResult(m)),
                             ..
                         } => m.variant,
                         _ => unreachable!(),
                     };
-                    let parameter_name = match &blocks[&variant] {
-                        Fragment::VariableReference(n) => n,
-                        _ => unreachable!(),
-                    };
                     let match_arm_binding = match variant_type {
                         MatchResultVariant::Ok => {
                             quote! {
-                                Ok(#parameter_name)
+                                Ok(#match_binding_parameter_name)
                             }
                         }
                         MatchResultVariant::Err => {
                             quote! {
-                                Err(#parameter_name)
+                                Err(#match_binding_parameter_name)
                             }
                         }
                     };

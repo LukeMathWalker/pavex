@@ -10,7 +10,10 @@ pub struct ApplicationState {
 }
 pub async fn build_application_state(v0: app::Config) -> crate::ApplicationState {
     let v1 = app::http_client(v0);
-    crate::ApplicationState { s0: v1 }
+    match v1 {
+        Err(v2) => app::handle_http_client_error(&v2),
+        Ok(v2) => crate::ApplicationState { s0: v2 },
+    }
 }
 pub async fn run(
     server_builder: pavex_runtime::hyper::server::Builder<
@@ -68,15 +71,19 @@ pub async fn route_handler_0(
     v0: app::HttpClient,
     v1: http::Request<hyper::Body>,
 ) -> http::Response<hyper::Body> {
-    let v2 = app::extract_path(v1);
-    match v2 {
-        Err(v3) => {
-            let v4 = app::logger();
-            app::handle_extract_path_error(&v3, v4)
-        }
-        Ok(v3) => {
-            let v4 = app::logger();
-            app::stream_file(v3, v4, v0)
+    match app::logger() {
+        Err(v2) => app::handle_logger_error(&v2),
+        Ok(v2) => {
+            let v3 = app::extract_path(v1);
+            match v3 {
+                Err(v4) => {
+                    match app::logger() {
+                        Err(v5) => app::handle_logger_error(&v5),
+                        Ok(v5) => app::handle_extract_path_error(&v4, v5),
+                    }
+                }
+                Ok(v4) => app::stream_file(v4, v2, v0),
+            }
         }
     }
 }
