@@ -108,8 +108,9 @@ pub(crate) fn handler_call_graph(
 }
 
 /// A convenience function to convert a [`DependencyGraph`] into a [`CallGraph`].
-/// The caller needs to provide the data required look-up maps and a node conversion function,
-/// while all the graph-traversing machinery is taken care of.
+/// The caller needs to provide the required look-up maps and a function that determines how
+/// many times a callable can be invoked given its [`Lifecycle`].
+/// All the graph-traversing machinery is taken care of.
 fn dependency_graph2call_graph<F>(
     root_callable: Callable,
     lifecycles: &HashMap<ResolvedType, Lifecycle>,
