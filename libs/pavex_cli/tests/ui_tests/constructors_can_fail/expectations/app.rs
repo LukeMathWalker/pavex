@@ -57,7 +57,7 @@ fn build_router() -> Result<
 async fn route_request(
     request: pavex_runtime::http::Request<pavex_runtime::hyper::body::Body>,
     server_state: std::sync::Arc<ServerState>,
-) -> pavex_runtime::http::Response<pavex_runtime::hyper::body::Body> {
+) -> pavex_runtime::response::Response {
     let route_id = server_state
         .router
         .at(request.uri().path())
@@ -70,7 +70,7 @@ async fn route_request(
 pub async fn route_handler_0(
     v0: app::HttpClient,
     v1: http::Request<hyper::Body>,
-) -> http::Response<hyper::Body> {
+) -> pavex_runtime::response::Response {
     match app::logger() {
         Err(v2) => app::handle_logger_error(&v2),
         Ok(v2) => {

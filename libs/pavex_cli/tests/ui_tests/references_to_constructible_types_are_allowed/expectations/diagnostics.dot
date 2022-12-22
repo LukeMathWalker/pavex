@@ -1,5 +1,5 @@
 digraph "/home" {
-    0 [ label = "app::stream_file(&app::Singleton, &app::RequestScoped, &app::Transient) -> http::Response<hyper::Body>"]
+    0 [ label = "app::stream_file(&app::Singleton, &app::RequestScoped, &app::Transient) -> pavex_runtime::response::Response"]
     1 [ label = "app::Transient -> &app::Transient"]
     2 [ label = "app::transient() -> app::Transient"]
     3 [ label = "app::RequestScoped -> &app::RequestScoped"]

@@ -205,7 +205,7 @@ fn get_request_dispatcher(
     }
 
     syn::parse2(quote! {
-        async fn route_request(request: pavex_runtime::http::Request<pavex_runtime::hyper::body::Body>, server_state: std::sync::Arc<ServerState>) -> pavex_runtime::http::Response<pavex_runtime::hyper::body::Body> {
+        async fn route_request(request: pavex_runtime::http::Request<pavex_runtime::hyper::body::Body>, server_state: std::sync::Arc<ServerState>) -> pavex_runtime::response::Response {
             let route_id = server_state.router.at(request.uri().path()).expect("Failed to match incoming request path");
             match route_id.value {
                 #route_dispatch_table

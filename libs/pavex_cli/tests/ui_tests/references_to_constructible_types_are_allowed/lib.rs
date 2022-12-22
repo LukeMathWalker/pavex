@@ -25,7 +25,7 @@ pub fn stream_file(
     s: &Singleton,
     r: &RequestScoped,
     t: &Transient,
-) -> http::Response<hyper::body::Body> {
+) -> pavex_runtime::response::Response {
     todo!()
 }
 

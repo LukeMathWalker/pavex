@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use pavex_builder::{f, AppBlueprint, Lifecycle};
+use pavex_runtime::response::Response;
 
 pub struct Logger;
 
@@ -12,10 +13,7 @@ pub fn extract_path(
 
 pub struct ExtractPathError<T>(T);
 
-pub fn handle_extract_path_error(
-    _e: &ExtractPathError<String>,
-    _logger: Logger,
-) -> pavex_runtime::http::Response<pavex_runtime::hyper::body::Body> {
+pub fn handle_extract_path_error(_e: &ExtractPathError<String>, _logger: Logger) -> Response {
     todo!()
 }
 
@@ -23,11 +21,7 @@ pub fn logger() -> Logger {
     todo!()
 }
 
-pub fn stream_file(
-    _inner: PathBuf,
-    _logger: Logger,
-    _http_client: HttpClient,
-) -> pavex_runtime::http::Response<pavex_runtime::hyper::body::Body> {
+pub fn stream_file(_inner: PathBuf, _logger: Logger, _http_client: HttpClient) -> Response {
     todo!()
 }
 

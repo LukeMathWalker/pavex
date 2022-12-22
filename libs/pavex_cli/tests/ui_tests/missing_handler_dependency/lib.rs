@@ -1,7 +1,8 @@
-use pavex_builder::{f, AppBlueprint};
 use std::path::PathBuf;
 
-pub fn stream_file(_inner: PathBuf) -> http::Response<hyper::body::Body> {
+use pavex_builder::{f, AppBlueprint};
+
+pub fn stream_file(_inner: PathBuf) -> pavex_runtime::response::Response {
     todo!()
 }
 

@@ -1,6 +1,6 @@
 use pavex_builder::{f, AppBlueprint};
 
-pub fn stream_file<T>(_inner: T) -> http::Response<hyper::body::Body> {
+pub fn stream_file<T>(_inner: T) -> pavex_runtime::response::Response {
     todo!()
 }
 

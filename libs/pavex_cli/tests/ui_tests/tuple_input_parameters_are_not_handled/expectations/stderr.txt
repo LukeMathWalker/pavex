@@ -13,7 +13,7 @@ Error:
   × 
    ╭─[src/lib.rs:2:1]
  2 │ 
- 3 │ pub fn stream_file(input: (usize, isize)) -> http::Response<hyper::body::Body> {
+ 3 │ pub fn stream_file(input: (usize, isize)) -> pavex_runtime::response::Response {
    ·                           ───────┬──────
    ·                                  ╰── I do not know how handle this parameter
  4 │     todo!()

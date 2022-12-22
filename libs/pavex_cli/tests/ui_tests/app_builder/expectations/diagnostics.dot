@@ -1,5 +1,5 @@
 digraph "/home" {
-    0 [ label = "app::stream_file(std::path::PathBuf, app::Logger, app::HttpClient) -> http::Response<hyper::Body>"]
+    0 [ label = "app::stream_file(std::path::PathBuf, app::Logger, app::HttpClient) -> pavex_runtime::response::Response"]
     1 [ label = "app::HttpClient"]
     2 [ label = "app::logger() -> app::Logger"]
     3 [ label = "core::prelude::rust_2015::v1::Result<std::path::PathBuf, app::ExtractPathError<alloc::string::String>> -> std::path::PathBuf"]
@@ -8,7 +8,7 @@ digraph "/home" {
     6 [ label = "`match`"]
     7 [ label = "core::prelude::rust_2015::v1::Result<std::path::PathBuf, app::ExtractPathError<alloc::string::String>> -> app::ExtractPathError<alloc::string::String>"]
     8 [ label = "app::ExtractPathError<alloc::string::String> -> &app::ExtractPathError<alloc::string::String>"]
-    9 [ label = "app::handle_extract_path_error(&app::ExtractPathError<alloc::string::String>, app::Logger) -> http::Response<hyper::Body>"]
+    9 [ label = "app::handle_extract_path_error(&app::ExtractPathError<alloc::string::String>, app::Logger) -> pavex_runtime::response::Response"]
     10 [ label = "app::logger() -> app::Logger"]
     1 -> 0 [ ]
     2 -> 0 [ ]

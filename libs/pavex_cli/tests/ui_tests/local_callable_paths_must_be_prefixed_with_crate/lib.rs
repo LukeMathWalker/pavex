@@ -1,6 +1,6 @@
 use pavex_builder::{f, AppBlueprint};
 
-pub fn handler() -> http::Response<hyper::body::Body> {
+pub fn handler() -> pavex_runtime::response::Response {
     todo!()
 }
 

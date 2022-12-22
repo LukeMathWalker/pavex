@@ -538,11 +538,15 @@ fn index_local_types<'a>(
                 }
             }
         }
-        ItemEnum::Trait(_) | ItemEnum::Function(_) | ItemEnum::Enum(_) | ItemEnum::Struct(_) => {
-            let struct_name = current_item.name.as_deref().expect(
-                "All 'struct', 'function', 'enum' and 'trait' items have a 'name' property",
+        ItemEnum::Trait(_)
+        | ItemEnum::Function(_)
+        | ItemEnum::Enum(_)
+        | ItemEnum::Struct(_)
+        | ItemEnum::Typedef(_) => {
+            let name = current_item.name.as_deref().expect(
+                "All 'struct', 'function', 'enum', 'typedef' and 'trait' items have a 'name' property",
             );
-            current_path.push(struct_name);
+            current_path.push(name);
             let path = current_path.into_iter().map(|s| s.to_string()).collect();
             path_index
                 .entry(GlobalTypeId::new(

@@ -10,7 +10,7 @@ pub fn streamer() -> Streamer {
     todo!()
 }
 
-pub fn stream_file(Streamer { a, b }: Streamer) -> http::Response<hyper::body::Body> {
+pub fn stream_file(Streamer { a, b }: Streamer) -> pavex_runtime::response::Response {
     todo!()
 }
 

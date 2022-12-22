@@ -4,7 +4,7 @@ pub fn bogus_constructor() {
     todo!()
 }
 
-pub fn handler() -> http::Response<hyper::body::Body> {
+pub fn handler() -> pavex_runtime::response::Response {
     todo!()
 }
 

@@ -1,7 +1,7 @@
 use dep::{new_logger, Logger};
 use pavex_builder::{f, AppBlueprint, Lifecycle};
 
-pub fn handler(logger: Logger) -> http::Response<hyper::body::Body> {
+pub fn handler(logger: Logger) -> pavex_runtime::response::Response {
     todo!()
 }
 

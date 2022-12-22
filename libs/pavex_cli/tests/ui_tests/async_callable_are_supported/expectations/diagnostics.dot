@@ -1,5 +1,5 @@
 digraph "/home" {
-    0 [ label = "app::stream_file(std::path::PathBuf, app::Logger, app::HttpClient) -> http::Response<hyper::Body>"]
+    0 [ label = "app::stream_file(std::path::PathBuf, app::Logger, app::HttpClient) -> pavex_runtime::response::Response"]
     1 [ label = "app::HttpClient"]
     2 [ label = "app::logger() -> app::Logger"]
     3 [ label = "app::extract_path(http::Request<hyper::Body>) -> std::path::PathBuf"]

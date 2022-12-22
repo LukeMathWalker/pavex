@@ -11,7 +11,7 @@ pub fn header2() -> http_02::header::HeaderName {
 pub fn stream_file(
     _h1: http_01::header::HeaderName,
     _h2: http_02::header::HeaderName,
-) -> http_02::Response<hyper::body::Body> {
+) -> pavex_runtime::response::Response {
     todo!()
 }
 

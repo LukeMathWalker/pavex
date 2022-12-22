@@ -15,7 +15,7 @@ pub struct ExtractPathError<T>(T);
 pub fn handle_extract_path_error(
     _e: &ExtractPathError<String>,
     _logger: Logger,
-) -> pavex_runtime::http::Response<pavex_runtime::hyper::body::Body> {
+) -> pavex_runtime::response::Response {
     todo!()
 }
 
@@ -25,9 +25,7 @@ pub fn logger() -> Result<Logger, LoggerError> {
 
 pub struct LoggerError;
 
-pub fn handle_logger_error(
-    _e: &LoggerError,
-) -> pavex_runtime::http::Response<pavex_runtime::hyper::body::Body> {
+pub fn handle_logger_error(_e: &LoggerError) -> pavex_runtime::response::Response {
     todo!()
 }
 
@@ -35,7 +33,7 @@ pub fn stream_file(
     _inner: PathBuf,
     _logger: Logger,
     _http_client: HttpClient,
-) -> pavex_runtime::http::Response<pavex_runtime::hyper::body::Body> {
+) -> pavex_runtime::response::Response {
     todo!()
 }
 
@@ -55,9 +53,7 @@ pub fn http_client(_config: Config) -> Result<HttpClient, HttpClientError> {
     todo!()
 }
 
-pub fn handle_http_client_error(
-    _e: &HttpClientError,
-) -> pavex_runtime::http::Response<pavex_runtime::hyper::body::Body> {
+pub fn handle_http_client_error(_e: &HttpClientError) -> pavex_runtime::response::Response {
     todo!()
 }
 

@@ -1,5 +1,5 @@
 digraph "/home" {
-    0 [ label = "app::Streamer::stream_file(app::Logger) -> http::Response<hyper::Body>"]
+    0 [ label = "app::Streamer::stream_file(app::Logger) -> pavex_runtime::response::Response"]
     1 [ label = "app::new_logger() -> app::Logger"]
     1 -> 0 [ ]
 }

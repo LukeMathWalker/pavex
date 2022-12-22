@@ -1,5 +1,5 @@
 digraph "/home" {
-    0 [ label = "app::Streamer::stream_file() -> http::Response<hyper::Body>"]
+    0 [ label = "app::Streamer::stream_file() -> pavex_runtime::response::Response"]
 }
 digraph app_state {
     0 [ label = "crate::ApplicationState() -> crate::ApplicationState"]

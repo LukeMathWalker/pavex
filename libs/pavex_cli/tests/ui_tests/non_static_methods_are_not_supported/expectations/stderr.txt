@@ -13,7 +13,7 @@ Error:
   × 
    ╭─[src/lib.rs:5:1]
  5 │ impl Streamer {
- 6 │     pub fn stream_file(&self) -> http::Response<hyper::body::Body> {
+ 6 │     pub fn stream_file(&self) -> pavex_runtime::response::Response {
    ·                        ──┬──
    ·                          ╰── I do not know how handle this parameter
  7 │         todo!()

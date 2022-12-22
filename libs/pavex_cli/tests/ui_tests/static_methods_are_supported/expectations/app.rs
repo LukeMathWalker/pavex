@@ -51,7 +51,7 @@ fn build_router() -> Result<
 async fn route_request(
     request: pavex_runtime::http::Request<pavex_runtime::hyper::body::Body>,
     server_state: std::sync::Arc<ServerState>,
-) -> pavex_runtime::http::Response<pavex_runtime::hyper::body::Body> {
+) -> pavex_runtime::response::Response {
     let route_id = server_state
         .router
         .at(request.uri().path())
@@ -61,6 +61,6 @@ async fn route_request(
         _ => panic!("This is a bug, no route registered for a route id"),
     }
 }
-pub async fn route_handler_0() -> http::Response<hyper::Body> {
+pub async fn route_handler_0() -> pavex_runtime::response::Response {
     app::Streamer::stream_file()
 }

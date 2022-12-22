@@ -3,7 +3,7 @@ use pavex_builder::{f, AppBlueprint};
 pub struct Streamer;
 
 impl Streamer {
-    pub fn stream_file(&self) -> http::Response<hyper::body::Body> {
+    pub fn stream_file(&self) -> pavex_runtime::response::Response {
         todo!()
     }
 }
