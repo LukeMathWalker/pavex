@@ -14,9 +14,9 @@ pub async fn run(
         pavex_runtime::hyper::server::conn::AddrIncoming,
     >,
     application_state: ApplicationState,
-) -> Result<(), anyhow::Error> {
+) -> Result<(), pavex_runtime::Error> {
     let server_state = std::sync::Arc::new(ServerState {
-        router: build_router()?,
+        router: build_router().map_err(pavex_runtime::Error::new)?,
         application_state,
     });
     let make_service = pavex_runtime::hyper::service::make_service_fn(move |_| {
@@ -38,7 +38,7 @@ pub async fn run(
             )
         }
     });
-    server_builder.serve(make_service).await.map_err(Into::into)
+    server_builder.serve(make_service).await.map_err(pavex_runtime::Error::new)
 }
 fn build_router() -> Result<
     pavex_runtime::routing::Router<u32>,

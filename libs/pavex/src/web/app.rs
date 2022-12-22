@@ -596,16 +596,8 @@ fn codegen_types(
     package_graph: &PackageGraph,
     krate_collection: &mut CrateCollection,
 ) -> HashSet<ResolvedType> {
-    let anyhow_error = process_framework_path("anyhow::Error", package_graph, krate_collection);
-    // A dirty hack. No honor here.
-    // We need a type that is defined in `pavex_runtime` (instead of being a re-export)
-    // to ensure that `pavex_runtime` ends up in the generated Cargo.toml.
-    let placeholder = process_framework_path(
-        "pavex_runtime::Placeholder",
-        package_graph,
-        krate_collection,
-    );
-    HashSet::from([anyhow_error, placeholder])
+    let error = process_framework_path("pavex_runtime::Error", package_graph, krate_collection);
+    HashSet::from([error])
 }
 
 fn process_framework_path(
