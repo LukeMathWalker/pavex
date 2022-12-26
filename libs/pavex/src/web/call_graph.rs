@@ -208,10 +208,10 @@ where
             if let Some(neighbour_index) = neighbour_index {
                 match neighbour_index {
                     VisitorIndex::Parent(parent_index) => {
-                        call_graph.add_edge(parent_index, current_index, ());
+                        call_graph.update_edge(parent_index, current_index, ());
                     }
                     VisitorIndex::Child(child_index) => {
-                        call_graph.add_edge(current_index, child_index, ());
+                        call_graph.update_edge(current_index, child_index, ());
                     }
                 }
             }
