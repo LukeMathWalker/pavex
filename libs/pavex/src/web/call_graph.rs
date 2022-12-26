@@ -64,6 +64,7 @@ pub(crate) fn application_state_call_graph(
                     generic_arguments: vec![],
                 },
             ],
+            qualified_self: None,
             package_id: PackageId::new(GENERATED_APP_PACKAGE_ID),
         },
         inputs: runtime_singleton_bindings.right_values().cloned().collect(),

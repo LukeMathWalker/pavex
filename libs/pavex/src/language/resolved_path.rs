@@ -12,8 +12,8 @@ use rustdoc_types::Item;
 use pavex_builder::RawCallableIdentifiers;
 
 use crate::language::{CallPath, InvalidCallPath};
+use crate::rustdoc::TOOLCHAIN_CRATES;
 use crate::rustdoc::{CrateCollection, GlobalTypeId};
-use crate::rustdoc::{STD_PACKAGE_ID, TOOLCHAIN_CRATES};
 
 /// A resolved import path.
 ///
@@ -39,7 +39,14 @@ use crate::rustdoc::{STD_PACKAGE_ID, TOOLCHAIN_CRATES};
 #[derive(Clone, Debug, Eq)]
 pub struct ResolvedPath {
     pub segments: Vec<ResolvedPathSegment>,
+    pub qualified_self: Option<ResolvedPathQualifiedSelf>,
     pub package_id: PackageId,
+}
+
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+pub struct ResolvedPathQualifiedSelf {
+    pub position: usize,
+    pub path: Box<ResolvedPath>,
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
@@ -54,13 +61,17 @@ impl PartialEq for ResolvedPath {
         // if a new field gets added, as a reminder to update this Hash implementation.
         let Self {
             segments,
+            qualified_self,
             package_id,
         } = self;
         let Self {
             segments: other_segments,
+            qualified_self: other_qualified_self,
             package_id: other_package_id,
         } = other;
-        let is_equal = package_id == other_package_id && segments.len() == segments.len();
+        let is_equal = package_id == other_package_id
+            && segments.len() == segments.len()
+            && qualified_self == other_qualified_self;
         if is_equal {
             // We want to ignore the first segment of the path, because dependencies can be
             // renamed and this can lead to equivalent paths not being considered equal.
@@ -86,9 +97,11 @@ impl Hash for ResolvedPath {
         // if a new field gets added, as a reminder to update this Hash implementation.
         let Self {
             segments,
+            qualified_self,
             package_id,
         } = self;
         package_id.hash(state);
+        qualified_self.hash(state);
         // We want to ignore the first segment of the path, because dependencies can be
         // renamed and this can lead to equivalent paths not being considered equal.
         // Given that we already have the package id as part of the type, it is safe
@@ -140,6 +153,17 @@ impl ResolvedPath {
             segments.push(segment);
         }
 
+        let qself = match &path.qualified_self {
+            Some(qself) => {
+                let qself_path = Self::parse_call_path(&qself.path, identifiers, graph)?;
+                Some(ResolvedPathQualifiedSelf {
+                    position: qself.position,
+                    path: Box::new(qself_path),
+                })
+            }
+            None => None,
+        };
+
         let registration_package = graph.packages()
             .find(|p| p.name() == registered_at)
             .expect("There is no package in the current workspace whose name matches the registration crate for these identifiers");
@@ -151,7 +175,7 @@ impl ResolvedPath {
         {
             dependency.to().id().to_owned()
         } else if TOOLCHAIN_CRATES.contains(&krate_name_candidate.as_str()) {
-            PackageId::new(STD_PACKAGE_ID)
+            PackageId::new(krate_name_candidate.clone())
         } else {
             return Err(PathMustBeAbsolute {
                 raw_identifiers: identifiers.to_owned(),
@@ -161,6 +185,7 @@ impl ResolvedPath {
         };
         Ok(Self {
             segments,
+            qualified_self: qself,
             package_id,
         })
     }
@@ -220,8 +245,16 @@ impl ResolvedPath {
                 )
             })
             .unwrap();
+        let mut qself_closing_wedge_index = None;
+        if let Some(qself) = &self.qualified_self {
+            write!(&mut buffer, "<{} as ", qself.path.render_path(id2name)).unwrap();
+            qself_closing_wedge_index = Some(qself.position);
+        }
         write!(&mut buffer, "{}", crate_name).unwrap();
-        for path_segment in &self.segments[1..] {
+        for (index, path_segment) in self.segments[1..].iter().enumerate() {
+            if Some(index + 1) == qself_closing_wedge_index {
+                write!(&mut buffer, ">").unwrap();
+            }
             write!(&mut buffer, "::{}", path_segment.ident).unwrap();
             let generic_arguments = &path_segment.generic_arguments;
             if !generic_arguments.is_empty() {
@@ -243,8 +276,16 @@ impl ResolvedPath {
 impl Display for ResolvedPath {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let last_segment_index = self.segments.len().saturating_sub(1);
+        let mut qself_closing_wedge_index = None;
+        if let Some(qself) = &self.qualified_self {
+            write!(f, "<{} as ", qself.path)?;
+            qself_closing_wedge_index = Some(qself.position);
+        }
         for (i, segment) in self.segments.iter().enumerate() {
             write!(f, "{}", segment)?;
+            if Some(i) == qself_closing_wedge_index {
+                write!(f, ">")?;
+            }
             if i != last_segment_index {
                 write!(f, "::")?;
             }
