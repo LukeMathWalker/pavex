@@ -95,10 +95,7 @@ impl CrateCollection {
             .iter()
             .map(|path_segment| path_segment.ident.to_string())
             .collect();
-        let krate = {
-            self.get_or_compute_crate_by_package_id(package_id)?;
-            self.get_crate_by_package_id(package_id)
-        };
+        let krate = self.get_or_compute_crate_by_package_id(package_id)?;
         if let Ok(type_id) = krate.get_type_id_by_path(&path) {
             return Ok(Ok(self.get_type_by_global_type_id(type_id)));
         }

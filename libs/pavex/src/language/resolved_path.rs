@@ -36,7 +36,6 @@ use crate::rustdoc::{STD_PACKAGE_ID, TOOLCHAIN_CRATES};
 /// the path. `ResolvedPath` takes this into account by using the `PackageId` of the target
 /// crate as the authoritative answer to "What crate does this path belong to?". This is unique
 /// and well-defined within a `cargo` workspace.
-// TODO: we need to implement Hash manually!
 #[derive(Clone, Debug, Eq)]
 pub struct ResolvedPath {
     pub segments: Vec<ResolvedPathSegment>,

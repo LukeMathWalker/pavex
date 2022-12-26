@@ -153,12 +153,7 @@ fn resolve_callable(
     let type_ = callable_path.find_type(krate_collection)?;
     let used_by_package_id = &callable_path.package_id;
     let (header, decl, invocation_style) = match &type_.inner {
-        ItemEnum::Function(f) => (
-            &f.header,
-            &f.decl,
-            // TODO: this must be reviewed when we start supporting non-static methods
-            InvocationStyle::FunctionCall,
-        ),
+        ItemEnum::Function(f) => (&f.header, &f.decl, InvocationStyle::FunctionCall),
         kind => {
             let item_kind = match kind {
                 ItemEnum::Module(_) => "a module",
