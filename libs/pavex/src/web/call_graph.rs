@@ -74,7 +74,7 @@ pub(crate) fn application_state_call_graph(
                 .collect(),
         },
     };
-    dependency_graph2call_graph(
+    build_call_graph(
         application_state_constructor,
         lifecycles,
         &constructors,
@@ -98,7 +98,7 @@ pub(crate) fn handler_call_graph(
             Lifecycle::Transient => Some(NumberOfAllowedInvocations::Multiple),
         }
     }
-    dependency_graph2call_graph(
+    build_call_graph(
         root_callable,
         lifecycles,
         constructors,
@@ -107,11 +107,11 @@ pub(crate) fn handler_call_graph(
     )
 }
 
-/// A convenience function to convert a [`DependencyGraph`] into a [`CallGraph`].
+/// Build a [`CallGraph`] rooted in `root_callable`.
 /// The caller needs to provide the required look-up maps and a function that determines how
 /// many times a callable can be invoked given its [`Lifecycle`].
 /// All the graph-traversing machinery is taken care of.
-fn dependency_graph2call_graph<F>(
+fn build_call_graph<F>(
     root_callable: Callable,
     lifecycles: &HashMap<ResolvedType, Lifecycle>,
     constructors: &IndexMap<ResolvedType, Constructor>,
