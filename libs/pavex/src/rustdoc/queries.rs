@@ -114,9 +114,10 @@ impl CrateCollection {
 
         if let Ok(parent_type_id) = krate.get_type_id_by_path(type_path_segments) {
             let parent = self.get_type_by_global_type_id(parent_type_id);
-            let impl_block_ids = match &parent.inner {
+            let children_ids = match &parent.inner {
                 ItemEnum::Struct(s) => &s.impls,
                 ItemEnum::Enum(enum_) => &enum_.impls,
+                ItemEnum::Trait(trait_) => &trait_.items,
                 item => {
                     return Ok(Err(UnsupportedItemKind {
                         path: path.to_owned(),
@@ -125,25 +126,35 @@ impl CrateCollection {
                     .into()));
                 }
             };
-            for impl_block_id in impl_block_ids {
-                let impl_block = krate.get_type_by_local_type_id(impl_block_id);
-                if let ItemEnum::Impl(impl_block) = &impl_block.inner {
-                    // We are completely ignoring the bounds attached to the implementation block.
-                    // This can lead to issues: the same method can be defined multiple
-                    // times in different implementation blocks with non-overlapping constraints.
-                    for impl_item_id in &impl_block.items {
-                        let impl_item = krate.get_type_by_local_type_id(impl_item_id);
-                        if impl_item.name.as_ref() == Some(method_name) {
-                            if let ItemEnum::Function(_) = &impl_item.inner {
-                                return Ok(Ok(ResolvedItem {
-                                    item: Cow::Borrowed(impl_item),
-                                    parent: Some(Cow::Borrowed(parent)),
-                                }));
+            for child_id in children_ids {
+                let child = krate.get_type_by_local_type_id(child_id);
+                match &child.inner {
+                    ItemEnum::Impl(impl_block) => {
+                        // We are completely ignoring the bounds attached to the implementation block.
+                        // This can lead to issues: the same method can be defined multiple
+                        // times in different implementation blocks with non-overlapping constraints.
+                        for impl_item_id in &impl_block.items {
+                            let impl_item = krate.get_type_by_local_type_id(impl_item_id);
+                            if impl_item.name.as_ref() == Some(method_name) {
+                                if let ItemEnum::Function(_) = &impl_item.inner {
+                                    return Ok(Ok(ResolvedItem {
+                                        item: Cow::Borrowed(impl_item),
+                                        parent: Some(Cow::Borrowed(parent)),
+                                    }));
+                                }
                             }
                         }
                     }
-                } else {
-                    unreachable!()
+                    ItemEnum::Function(_) => {
+                        return Ok(Ok(ResolvedItem {
+                            item: Cow::Borrowed(child),
+                            parent: Some(Cow::Borrowed(parent)),
+                        }));
+                    }
+                    i => {
+                        dbg!(i);
+                        unreachable!()
+                    }
                 }
             }
         }
