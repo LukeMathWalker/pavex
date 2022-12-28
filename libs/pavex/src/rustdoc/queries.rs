@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::{BTreeSet, HashMap};
 use std::fmt;
 use std::fmt::{Display, Formatter};
@@ -83,13 +84,20 @@ impl CrateCollection {
         krate.get_type_by_local_type_id(&type_id.rustdoc_item_id)
     }
 
-    /// Retrieve information about a type given its path and the id of the package where
+    /// Retrieve information about an item given its path and the id of the package where
     /// it was defined.
-    pub fn get_type_by_resolved_path(
+    ///
+    /// It returns `(item, None)` if the item is "free-standing" - e.g. a function, a struct, an
+    /// enum.
+    ///
+    /// It returns `(item, Some(parent))` if the item is "attached" to another parent item - e.g.
+    /// a trait method and the respective trait definition, a method and the struct it is defined
+    /// on, etc.
+    pub fn get_item_by_resolved_path(
         &self,
         path: &ResolvedPath,
         package_id: &PackageId,
-    ) -> Result<Result<&Item, UnknownTypePath>, CannotGetCrateData> {
+    ) -> Result<Result<ResolvedItem<'_>, UnknownTypePath>, CannotGetCrateData> {
         let path: Vec<_> = path
             .segments
             .iter()
@@ -97,7 +105,11 @@ impl CrateCollection {
             .collect();
         let krate = self.get_or_compute_crate_by_package_id(package_id)?;
         if let Ok(type_id) = krate.get_type_id_by_path(&path) {
-            return Ok(Ok(self.get_type_by_global_type_id(type_id)));
+            let i = self.get_type_by_global_type_id(type_id);
+            return Ok(Ok(ResolvedItem {
+                item: Cow::Borrowed(i),
+                parent: None,
+            }));
         }
         // The path might be pointing to a method, which is not a type.
         // We drop the last segment to see if we can get a hit on the struct/enum type
@@ -109,9 +121,9 @@ impl CrateCollection {
         }
         let (method_name, type_path_segments) = path.split_last().unwrap();
 
-        if let Ok(type_id) = krate.get_type_id_by_path(type_path_segments) {
-            let t = self.get_type_by_global_type_id(type_id);
-            let impl_block_ids = match &t.inner {
+        if let Ok(parent_type_id) = krate.get_type_id_by_path(type_path_segments) {
+            let parent = self.get_type_by_global_type_id(parent_type_id);
+            let impl_block_ids = match &parent.inner {
                 ItemEnum::Struct(s) => &s.impls,
                 ItemEnum::Enum(enum_) => &enum_.impls,
                 _ => {
@@ -130,7 +142,10 @@ impl CrateCollection {
                         let impl_item = krate.get_type_by_local_type_id(impl_item_id);
                         if impl_item.name.as_ref() == Some(method_name) {
                             if let ItemEnum::Function(_) = &impl_item.inner {
-                                return Ok(Ok(impl_item));
+                                return Ok(Ok(ResolvedItem {
+                                    item: Cow::Borrowed(impl_item),
+                                    parent: Some(Cow::Borrowed(parent)),
+                                }));
                             }
                         }
                     }
@@ -175,6 +190,20 @@ impl CrateCollection {
         let canonical_path = self.get_canonical_path_by_global_type_id(type_id)?;
         Ok((type_id.clone(), canonical_path))
     }
+}
+
+/// The output of [`CrateCollection::find_item_by_resolved_path`].
+///
+/// If the path points to a "free-standing" item, `parent` is set to `None`.
+/// Examples: a function, a struct, an enum.
+///
+/// If the item is "attached" to another parent item, `parent` is set to `Some`.
+/// Examples: a trait method and the respective trait definition, a method and the struct it is
+/// defined on, etc.
+#[derive(Debug, Clone)]
+pub struct ResolvedItem<'a> {
+    pub item: Cow<'a, Item>,
+    pub parent: Option<Cow<'a, Item>>,
 }
 
 /// Thin wrapper around [`rustdoc_types::Crate`] to:

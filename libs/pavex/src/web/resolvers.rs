@@ -150,9 +150,10 @@ fn resolve_callable(
     krate_collection: &mut CrateCollection,
     callable_path: &ResolvedPath,
 ) -> Result<Callable, CallableResolutionError> {
-    let type_ = callable_path.find_type(krate_collection)?;
+    let (callable_type, _qualified_self_type) =
+        callable_path.find_rustdoc_items(krate_collection)?;
     let used_by_package_id = &callable_path.package_id;
-    let (header, decl, invocation_style) = match &type_.inner {
+    let (header, decl, invocation_style) = match &callable_type.item.inner {
         ItemEnum::Function(f) => (&f.header, &f.decl, InvocationStyle::FunctionCall),
         kind => {
             let item_kind = match kind {
@@ -197,7 +198,7 @@ fn resolve_callable(
                 return Err(ParameterResolutionError {
                     parameter_type: parameter_type.to_owned(),
                     callable_path: callable_path.to_owned(),
-                    callable_item: type_,
+                    callable_item: callable_type.item.into_owned(),
                     source: e,
                     parameter_index,
                 }
@@ -215,7 +216,7 @@ fn resolve_callable(
                     return Err(OutputTypeResolutionError {
                         output_type: output_type.to_owned(),
                         callable_path: callable_path.to_owned(),
-                        callable_item: type_,
+                        callable_item: callable_type.item.into_owned(),
                         source: e,
                     }
                     .into());

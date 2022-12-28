@@ -1,19 +1,19 @@
 use std::fmt::Write;
 use std::fmt::{Display, Formatter};
 use std::hash::{Hash, Hasher};
+use std::ops::Deref;
 
 use anyhow::Context;
 use bimap::BiHashMap;
 use guppy::PackageId;
 use itertools::Itertools;
 use quote::format_ident;
-use rustdoc_types::Item;
 
 use pavex_builder::RawCallableIdentifiers;
 
 use crate::language::{CallPath, InvalidCallPath};
-use crate::rustdoc::TOOLCHAIN_CRATES;
 use crate::rustdoc::{CrateCollection, GlobalTypeId};
+use crate::rustdoc::{ResolvedItem, TOOLCHAIN_CRATES};
 
 /// A resolved import path.
 ///
@@ -225,13 +225,31 @@ impl ResolvedPath {
     }
 
     /// Find information about the type that this path points at.
-    pub fn find_type(&self, krate_collection: &mut CrateCollection) -> Result<Item, UnknownPath> {
-        krate_collection
-            .get_type_by_resolved_path(self, &self.package_id)
+    /// It also returns the type of the qualified self, if it is present.
+    ///
+    /// E.g. `MyType` will return `(MyType, None)`.
+    /// `<MyType as MyTrait>::trait_method` will return `(MyType, Some(MyTrait::trait_method))`.
+    pub fn find_rustdoc_items<'a>(
+        &self,
+        krate_collection: &'a CrateCollection,
+    ) -> Result<(ResolvedItem<'a>, Option<ResolvedItem<'a>>), UnknownPath> {
+        let ty = krate_collection
+            .get_item_by_resolved_path(self, &self.package_id)
             // TODO: Remove this unwrap
             .unwrap()
-            .map(ToOwned::to_owned)
-            .map_err(|_| UnknownPath(self.to_owned()))
+            .map_err(|_| UnknownPath(self.to_owned()))?;
+        let qself_ty = match &self.qualified_self {
+            None => None,
+            Some(ResolvedPathQualifiedSelf { path, .. }) => {
+                let ty = krate_collection
+                    .get_item_by_resolved_path(path, &self.package_id)
+                    // TODO: Remove this unwrap
+                    .unwrap()
+                    .map_err(|_| UnknownPath(path.deref().to_owned()))?;
+                Some(ty)
+            }
+        };
+        Ok((ty, qself_ty))
     }
 
     pub fn render_path(&self, id2name: &BiHashMap<&PackageId, String>) -> String {
