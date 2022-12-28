@@ -631,7 +631,7 @@ impl Display for UnsupportedItemKind {
         let path = self.path.join("::").replace(' ', "");
         write!(
             f,
-            "'{path}' pointed at {} item. I don't know how to handle thaapp::MyTrait::a_method_that_returns_selft (yet)",
+            "'{path}' pointed at {} item. I don't know how to handle that (yet)",
             self.kind
         )
     }
