@@ -86,18 +86,11 @@ impl CrateCollection {
 
     /// Retrieve information about an item given its path and the id of the package where
     /// it was defined.
-    ///
-    /// It returns `(item, None)` if the item is "free-standing" - e.g. a function, a struct, an
-    /// enum.
-    ///
-    /// It returns `(item, Some(parent))` if the item is "attached" to another parent item - e.g.
-    /// a trait method and the respective trait definition, a method and the struct it is defined
-    /// on, etc.
     pub fn get_item_by_resolved_path(
         &self,
         path: &[String],
         package_id: &PackageId,
-    ) -> Result<Result<ResolvedItem<'_>, UnknownTypePath>, CannotGetCrateData> {
+    ) -> Result<Result<ResolvedItem<'_>, GetItemByResolvedPathError>, CannotGetCrateData> {
         let krate = self.get_or_compute_crate_by_package_id(package_id)?;
         if let Ok(type_id) = krate.get_type_id_by_path(&path) {
             let i = self.get_type_by_global_type_id(type_id);
@@ -112,9 +105,10 @@ impl CrateCollection {
         if path.len() < 3 {
             // It has to be at least three segments - crate name, type name, method name.
             // If it's shorter than three, it's just an unknown path.
-            return Ok(Err(UnknownTypePath {
-                type_path: path.to_vec(),
-            }));
+            return Ok(Err(UnknownItemPath {
+                path: path.to_vec(),
+            }
+            .into()));
         }
         let (method_name, type_path_segments) = path.split_last().unwrap();
 
@@ -123,10 +117,12 @@ impl CrateCollection {
             let impl_block_ids = match &parent.inner {
                 ItemEnum::Struct(s) => &s.impls,
                 ItemEnum::Enum(enum_) => &enum_.impls,
-                _ => {
-                    return Ok(Err(UnknownTypePath {
-                        type_path: path.to_owned(),
-                    }));
+                item => {
+                    return Ok(Err(UnsupportedItemKind {
+                        path: path.to_owned(),
+                        kind: item.kind().to_owned(),
+                    }
+                    .into()));
                 }
             };
             for impl_block_id in impl_block_ids {
@@ -151,9 +147,10 @@ impl CrateCollection {
                 }
             }
         }
-        Ok(Err(UnknownTypePath {
-            type_path: path.to_owned(),
-        }))
+        Ok(Err(UnknownItemPath {
+            path: path.to_owned(),
+        }
+        .into()))
     }
 
     /// Retrieve the canonical path for a struct, enum or function given its [`GlobalTypeId`].
@@ -398,11 +395,11 @@ impl Crate {
             .compute_package_id_for_crate_id(crate_id, collection)
     }
 
-    pub fn get_type_id_by_path(&self, path: &[String]) -> Result<&GlobalTypeId, UnknownTypePath> {
+    pub fn get_type_id_by_path(&self, path: &[String]) -> Result<&GlobalTypeId, UnknownItemPath> {
         self.types_path_index
             .get(path)
-            .ok_or_else(|| UnknownTypePath {
-                type_path: path.to_owned(),
+            .ok_or_else(|| UnknownItemPath {
+                path: path.to_owned(),
             })
     }
 
@@ -604,17 +601,54 @@ impl GlobalTypeId {
 }
 
 #[derive(thiserror::Error, Debug)]
-pub struct UnknownTypePath {
-    pub type_path: ImportPath,
+pub enum GetItemByResolvedPathError {
+    #[error(transparent)]
+    UnknownItemPath(UnknownItemPath),
+    #[error(transparent)]
+    UnsupportedItemKind(UnsupportedItemKind),
 }
 
-impl Display for UnknownTypePath {
+impl From<UnsupportedItemKind> for GetItemByResolvedPathError {
+    fn from(value: UnsupportedItemKind) -> Self {
+        Self::UnsupportedItemKind(value)
+    }
+}
+
+impl From<UnknownItemPath> for GetItemByResolvedPathError {
+    fn from(value: UnknownItemPath) -> Self {
+        Self::UnknownItemPath(value)
+    }
+}
+
+#[derive(thiserror::Error, Debug)]
+pub struct UnsupportedItemKind {
+    pub path: ImportPath,
+    pub kind: String,
+}
+
+impl Display for UnsupportedItemKind {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let type_path = self.type_path.join("::").replace(' ', "");
-        let krate = self.type_path.first().unwrap();
+        let path = self.path.join("::").replace(' ', "");
         write!(
             f,
-            "I could not find '{type_path}' in the auto-generated documentation for '{krate}'"
+            "'{path}' pointed at {} item. I don't know how to handle thaapp::MyTrait::a_method_that_returns_selft (yet)",
+            self.kind
+        )
+    }
+}
+
+#[derive(thiserror::Error, Debug)]
+pub struct UnknownItemPath {
+    pub path: ImportPath,
+}
+
+impl Display for UnknownItemPath {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let path = self.path.join("::").replace(' ', "");
+        let krate = self.path.first().unwrap();
+        write!(
+            f,
+            "I could not find '{path}' in the auto-generated documentation for '{krate}'"
         )
     }
 }
@@ -626,6 +660,41 @@ trait RustdocCrateExt {
     /// via `#[doc(html_root_url)]` - e.g. pointing at an outdated version of their docs (see
     /// https://github.com/tokio-rs/tracing/pull/2384 as an example).
     fn get_external_crate_name(&self, crate_id: u32) -> Option<(&ExternalCrate, Option<Version>)>;
+}
+
+pub trait RustdocKindExt {
+    /// Return a string representation of this item's kind (e.g. `a function`).
+    fn kind(&self) -> &'static str;
+}
+
+impl RustdocKindExt for ItemEnum {
+    fn kind(&self) -> &'static str {
+        match self {
+            ItemEnum::Module(_) => "a module",
+            ItemEnum::ExternCrate { .. } => "an external crate",
+            ItemEnum::Import(_) => "an import",
+            ItemEnum::Union(_) => "a union",
+            ItemEnum::Struct(_) => "a struct",
+            ItemEnum::StructField(_) => "a struct field",
+            ItemEnum::Enum(_) => "an enum",
+            ItemEnum::Variant(_) => "an enum variant",
+            // TODO: this could also be a method! How do we find out?
+            ItemEnum::Function(_) => "a function",
+            ItemEnum::Trait(_) => "a trait",
+            ItemEnum::TraitAlias(_) => "a trait alias",
+            ItemEnum::Impl(_) => "an impl block",
+            ItemEnum::Typedef(_) => "a type definition",
+            ItemEnum::OpaqueTy(_) => "an opaque type",
+            ItemEnum::Constant(_) => "a constant",
+            ItemEnum::Static(_) => "a static",
+            ItemEnum::ForeignType => "a foreign type",
+            ItemEnum::Macro(_) => "a macro",
+            ItemEnum::ProcMacro(_) => "a procedural macro",
+            ItemEnum::Primitive(_) => "a primitive type",
+            ItemEnum::AssocConst { .. } => "an associated constant",
+            ItemEnum::AssocType { .. } => "an associated type",
+        }
+    }
 }
 
 impl RustdocCrateExt for rustdoc_types::Crate {

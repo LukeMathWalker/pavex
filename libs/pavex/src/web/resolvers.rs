@@ -18,8 +18,8 @@ use pavex_builder::Location;
 use pavex_builder::RawCallableIdentifiers;
 
 use crate::language::{Callable, InvocationStyle, ResolvedPath, ResolvedType, UnknownPath};
-use crate::rustdoc::CannotGetCrateData;
 use crate::rustdoc::CrateCollection;
+use crate::rustdoc::{CannotGetCrateData, RustdocKindExt};
 use crate::web::diagnostic;
 use crate::web::diagnostic::{
     convert_rustdoc_span, convert_span, read_source_file, CompilerDiagnosticBuilder,
@@ -156,32 +156,7 @@ fn resolve_callable(
     let (header, decl, invocation_style) = match &callable_type.item.inner {
         ItemEnum::Function(f) => (&f.header, &f.decl, InvocationStyle::FunctionCall),
         kind => {
-            let item_kind = match kind {
-                ItemEnum::Module(_) => "a module",
-                ItemEnum::ExternCrate { .. } => "an external crate",
-                ItemEnum::Import(_) => "an import",
-                ItemEnum::Union(_) => "a union",
-                ItemEnum::Struct(_) => "a struct",
-                ItemEnum::StructField(_) => "a struct field",
-                ItemEnum::Enum(_) => "an enum",
-                ItemEnum::Variant(_) => "an enum variant",
-                // TODO: this could also be a method! How do we find out?
-                ItemEnum::Function(_) => "a function",
-                ItemEnum::Trait(_) => "a trait",
-                ItemEnum::TraitAlias(_) => "a trait alias",
-                ItemEnum::Impl(_) => "an impl block",
-                ItemEnum::Typedef(_) => "a type definition",
-                ItemEnum::OpaqueTy(_) => "an opaque type",
-                ItemEnum::Constant(_) => "a constant",
-                ItemEnum::Static(_) => "a static",
-                ItemEnum::ForeignType => "a foreign type",
-                ItemEnum::Macro(_) => "a macro",
-                ItemEnum::ProcMacro(_) => "a procedural macro",
-                ItemEnum::Primitive(_) => "a primitive type",
-                ItemEnum::AssocConst { .. } => "an associated constant",
-                ItemEnum::AssocType { .. } => "an associated type",
-            }
-            .to_string();
+            let item_kind = kind.kind().to_owned();
             return Err(UnsupportedCallableKind {
                 import_path: callable_path.to_owned(),
                 item_kind,

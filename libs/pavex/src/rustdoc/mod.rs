@@ -4,7 +4,10 @@
 //! [`CrateCollection`] is the key entrypoint.
 pub use compute::CannotGetCrateData;
 pub use package_id_spec::PackageIdSpecification;
-pub use queries::{Crate, CrateCollection, GlobalTypeId, ResolvedItem, UnknownTypePath};
+pub use queries::{
+    Crate, CrateCollection, GetItemByResolvedPathError, GlobalTypeId, ResolvedItem, RustdocKindExt,
+    UnknownItemPath,
+};
 
 mod compute;
 mod package_id_spec;
