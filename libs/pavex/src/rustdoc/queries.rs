@@ -10,7 +10,7 @@ use guppy::{PackageId, Version};
 use indexmap::IndexSet;
 use rustdoc_types::{ExternalCrate, Item, ItemEnum, ItemKind, Visibility};
 
-use crate::language::{ImportPath, ResolvedPath};
+use crate::language::ImportPath;
 use crate::rustdoc::package_id_spec::PackageIdSpecification;
 use crate::rustdoc::{compute::compute_crate_docs, utils, CannotGetCrateData, TOOLCHAIN_CRATES};
 
@@ -95,14 +95,9 @@ impl CrateCollection {
     /// on, etc.
     pub fn get_item_by_resolved_path(
         &self,
-        path: &ResolvedPath,
+        path: &[String],
         package_id: &PackageId,
     ) -> Result<Result<ResolvedItem<'_>, UnknownTypePath>, CannotGetCrateData> {
-        let path: Vec<_> = path
-            .segments
-            .iter()
-            .map(|path_segment| path_segment.ident.to_string())
-            .collect();
         let krate = self.get_or_compute_crate_by_package_id(package_id)?;
         if let Ok(type_id) = krate.get_type_id_by_path(&path) {
             let i = self.get_type_by_global_type_id(type_id);
@@ -117,7 +112,9 @@ impl CrateCollection {
         if path.len() < 3 {
             // It has to be at least three segments - crate name, type name, method name.
             // If it's shorter than three, it's just an unknown path.
-            return Ok(Err(UnknownTypePath { type_path: path }));
+            return Ok(Err(UnknownTypePath {
+                type_path: path.to_vec(),
+            }));
         }
         let (method_name, type_path_segments) = path.split_last().unwrap();
 

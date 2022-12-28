@@ -118,15 +118,25 @@ impl ResolvedPath {
         identifiers: &RawCallableIdentifiers,
         graph: &guppy::graph::PackageGraph,
     ) -> Result<Self, ParseError> {
+        fn replace_crate_with_registration_crate(
+            p: &mut CallPath,
+            identifiers: &RawCallableIdentifiers,
+        ) {
+            if p.leading_path_segment() == "crate" {
+                let first_segment = p
+                    .segments
+                    .first_mut()
+                    .expect("Bug: a `CallPath` with no path segments!");
+                // Unwrapping here is safe: there is always at least one path segment in a successfully
+                // parsed `ExprPath`.
+                first_segment.ident = format_ident!("{}", identifiers.registered_at());
+            }
+        }
+
         let mut path = CallPath::parse(identifiers)?;
-        if path.leading_path_segment() == "crate" {
-            let first_segment = path
-                .segments
-                .first_mut()
-                .expect("Bug: a `CallPath` with no path segments!");
-            // Unwrapping here is safe: there is always at least one path segment in a successfully
-            // parsed `ExprPath`.
-            first_segment.ident = format_ident!("{}", identifiers.registered_at());
+        replace_crate_with_registration_crate(&mut path, identifiers);
+        if let Some(qself) = &mut path.qualified_self {
+            replace_crate_with_registration_crate(&mut qself.path, identifiers);
         }
         Self::parse_call_path(&path, identifiers, graph)
     }
@@ -206,22 +216,19 @@ impl ResolvedPath {
         &self,
         krate_collection: &mut CrateCollection,
     ) -> Result<GlobalTypeId, UnknownPath> {
-        let krate = {
-            // TODO: remove unwrap here
-            krate_collection
-                .get_or_compute_crate_by_package_id(&self.package_id)
-                .unwrap();
-            krate_collection.get_crate_by_package_id(&self.package_id)
-        };
+        // TODO: remove unwrap here
+        let krate = krate_collection
+            .get_or_compute_crate_by_package_id(&self.package_id)
+            .unwrap();
         let path_segments: Vec<_> = self
             .segments
             .iter()
             .map(|path_segment| path_segment.ident.to_string())
             .collect();
-        if let Ok(type_id) = krate.get_type_id_by_path(&path_segments) {
-            return Ok(type_id.to_owned());
+        match krate.get_type_id_by_path(&path_segments) {
+            Ok(type_id) => Ok(type_id.to_owned()),
+            Err(e) => Err(UnknownPath(self.to_owned(), e.into())),
         }
-        Err(UnknownPath(self.to_owned()))
     }
 
     /// Find information about the type that this path points at.
@@ -233,19 +240,29 @@ impl ResolvedPath {
         &self,
         krate_collection: &'a CrateCollection,
     ) -> Result<(ResolvedItem<'a>, Option<ResolvedItem<'a>>), UnknownPath> {
+        let path: Vec<_> = self
+            .segments
+            .iter()
+            .map(|path_segment| path_segment.ident.to_string())
+            .collect();
         let ty = krate_collection
-            .get_item_by_resolved_path(self, &self.package_id)
+            .get_item_by_resolved_path(&path, &self.package_id)
             // TODO: Remove this unwrap
             .unwrap()
-            .map_err(|_| UnknownPath(self.to_owned()))?;
+            .map_err(|e| UnknownPath(self.to_owned(), e.into()))?;
         let qself_ty = match &self.qualified_self {
             None => None,
             Some(ResolvedPathQualifiedSelf { path, .. }) => {
+                let segments: Vec<_> = self
+                    .segments
+                    .iter()
+                    .map(|path_segment| path_segment.ident.to_string())
+                    .collect();
                 let ty = krate_collection
-                    .get_item_by_resolved_path(path, &self.package_id)
+                    .get_item_by_resolved_path(&segments, &self.package_id)
                     // TODO: Remove this unwrap
                     .unwrap()
-                    .map_err(|_| UnknownPath(path.deref().to_owned()))?;
+                    .map_err(|e| UnknownPath(path.deref().to_owned(), e.into()))?;
                 Some(ty)
             }
         };
@@ -366,7 +383,7 @@ impl Display for PathMustBeAbsolute {
 }
 
 #[derive(thiserror::Error, Debug)]
-pub struct UnknownPath(pub ResolvedPath);
+pub struct UnknownPath(pub ResolvedPath, #[source] anyhow::Error);
 
 impl Display for UnknownPath {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
