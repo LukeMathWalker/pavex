@@ -146,10 +146,12 @@ impl CrateCollection {
                         }
                     }
                     ItemEnum::Function(_) => {
-                        return Ok(Ok(ResolvedItem {
-                            item: Cow::Borrowed(child),
-                            parent: Some(Cow::Borrowed(parent)),
-                        }));
+                        if child.name.as_ref() == Some(method_name) {
+                            return Ok(Ok(ResolvedItem {
+                                item: Cow::Borrowed(child),
+                                parent: Some(Cow::Borrowed(parent)),
+                            }));
+                        }
                     }
                     i => {
                         dbg!(i);

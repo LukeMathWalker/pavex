@@ -10,7 +10,7 @@ use guppy::graph::PackageGraph;
 use guppy::PackageId;
 use indexmap::IndexSet;
 use miette::{miette, NamedSource, SourceSpan};
-use rustdoc_types::{GenericArg, GenericArgs, ItemEnum, Type};
+use rustdoc_types::{GenericArg, GenericArgs, Item, ItemEnum, Type};
 use syn::spanned::Spanned;
 use syn::{FnArg, ImplItemMethod, ReturnType};
 
@@ -30,7 +30,7 @@ use crate::web::diagnostic::{
 /// registered type constructor.
 pub(crate) fn resolve_constructors(
     constructor_paths: &IndexSet<ResolvedPath>,
-    krate_collection: &mut CrateCollection,
+    krate_collection: &CrateCollection,
 ) -> Result<BiHashMap<ResolvedPath, Callable>, CallableResolutionError> {
     let mut resolution_map = BiHashMap::with_capacity(constructor_paths.len());
     for constructor_identifiers in constructor_paths {
@@ -45,7 +45,7 @@ pub(crate) fn resolve_constructors(
 #[allow(clippy::type_complexity)]
 pub(crate) fn resolve_error_handlers(
     paths: &IndexSet<ResolvedPath>,
-    krate_collection: &mut CrateCollection,
+    krate_collection: &CrateCollection,
 ) -> Result<HashMap<ResolvedPath, Callable>, CallableResolutionError> {
     let mut resolution_map = HashMap::with_capacity(paths.len());
     for identifiers in paths {
@@ -59,7 +59,7 @@ pub(crate) fn resolve_error_handlers(
 /// registered request handler.
 pub(crate) fn resolve_request_handlers(
     handler_paths: &IndexSet<ResolvedPath>,
-    krate_collection: &mut CrateCollection,
+    krate_collection: &CrateCollection,
 ) -> Result<(HashMap<ResolvedPath, Callable>, IndexSet<Callable>), CallableResolutionError> {
     let mut handlers = IndexSet::with_capacity(handler_paths.len());
     let mut handler_resolver = HashMap::new();
@@ -77,6 +77,7 @@ fn process_type(
     // input/output parameter).
     used_by_package_id: &PackageId,
     krate_collection: &CrateCollection,
+    self_type: Option<&ResolvedType>,
 ) -> Result<ResolvedType, anyhow::Error> {
     match type_ {
         Type::ResolvedPath(rustdoc_types::Path { id, args, .. }) => {
@@ -96,6 +97,7 @@ fn process_type(
                                         generic_type,
                                         used_by_package_id,
                                         krate_collection,
+                                        self_type,
                                     )?);
                                 }
                                 GenericArg::Const(_) => {
@@ -135,22 +137,24 @@ fn process_type(
                     by value (`move` semantic) or via a shared reference (`&MyType`)",
                 ));
             }
-            let mut resolved_type = process_type(type_, used_by_package_id, krate_collection)?;
+            let mut resolved_type =
+                process_type(type_, used_by_package_id, krate_collection, self_type)?;
             resolved_type.is_shared_reference = true;
             Ok(resolved_type)
         }
+        Type::Generic(s) if s == "Self" && self_type.is_some() => Ok(self_type.cloned().unwrap()),
         _ => Err(anyhow!(
-            "I cannot handle inputs of this kind ({:?}) yet. Sorry!",
+            "I cannot handle this kind ({:?}) of type yet. Sorry!",
             type_
         )),
     }
 }
 
 fn resolve_callable(
-    krate_collection: &mut CrateCollection,
+    krate_collection: &CrateCollection,
     callable_path: &ResolvedPath,
 ) -> Result<Callable, CallableResolutionError> {
-    let (callable_type, _qualified_self_type) =
+    let (callable_type, qualified_self_type) =
         callable_path.find_rustdoc_items(krate_collection)?;
     let used_by_package_id = &callable_path.package_id;
     let (header, decl, invocation_style) = match &callable_type.item.inner {
@@ -165,9 +169,27 @@ fn resolve_callable(
         }
     };
 
+    let mut self_type = None;
+    if let Some(qself) = qualified_self_type {
+        let qself_path = &callable_path.qualified_self.as_ref().unwrap().path;
+        let qself_type = resolve_type_path(
+            &qself_path,
+            &qself.item,
+            used_by_package_id,
+            krate_collection,
+        )
+        .unwrap();
+        self_type = Some(qself_type);
+    }
+
     let mut parameter_paths = Vec::with_capacity(decl.inputs.len());
     for (parameter_index, (_, parameter_type)) in decl.inputs.iter().enumerate() {
-        match process_type(parameter_type, used_by_package_id, krate_collection) {
+        match process_type(
+            parameter_type,
+            used_by_package_id,
+            krate_collection,
+            self_type.as_ref(),
+        ) {
             Ok(p) => parameter_paths.push(p),
             Err(e) => {
                 return Err(ParameterResolutionError {
@@ -185,7 +207,12 @@ fn resolve_callable(
         // Unit type
         None => None,
         Some(output_type) => {
-            match process_type(output_type, used_by_package_id, krate_collection) {
+            match process_type(
+                output_type,
+                used_by_package_id,
+                krate_collection,
+                self_type.as_ref(),
+            ) {
                 Ok(p) => Some(p),
                 Err(e) => {
                     return Err(OutputTypeResolutionError {
@@ -199,12 +226,45 @@ fn resolve_callable(
             }
         }
     };
-    Ok(Callable {
+    let callable = Callable {
         is_async: header.async_,
         output: output_type_path,
         path: callable_path.to_owned(),
         inputs: parameter_paths,
         invocation_style,
+    };
+    Ok(callable)
+}
+
+fn resolve_type_path(
+    path: &ResolvedPath,
+    item: &Item,
+    used_by_package_id: &PackageId,
+    krate_collection: &CrateCollection,
+) -> Result<ResolvedType, anyhow::Error> {
+    let (global_type_id, base_type) =
+        krate_collection.get_canonical_path_by_local_type_id(used_by_package_id, &item.id)?;
+    let mut generic_arguments = vec![];
+    for segment in &path.segments {
+        for generic_path in &segment.generic_arguments {
+            let (generic_item, generic_qself_item) =
+                generic_path.find_rustdoc_items(krate_collection)?;
+            assert!(generic_qself_item.is_none());
+            let generic_type = resolve_type_path(
+                generic_path,
+                &generic_item.item,
+                used_by_package_id,
+                krate_collection,
+            )?;
+            generic_arguments.push(generic_type);
+        }
+    }
+    Ok(ResolvedType {
+        package_id: global_type_id.package_id().to_owned(),
+        rustdoc_id: Some(global_type_id.rustdoc_item_id),
+        base_type: base_type.to_vec(),
+        generic_arguments,
+        is_shared_reference: false,
     })
 }
 

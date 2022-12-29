@@ -253,7 +253,7 @@ impl ResolvedPath {
         let qself_ty = match &self.qualified_self {
             None => None,
             Some(ResolvedPathQualifiedSelf { path, .. }) => {
-                let segments: Vec<_> = self
+                let segments: Vec<_> = path
                     .segments
                     .iter()
                     .map(|path_segment| path_segment.ident.to_string())
@@ -287,9 +287,6 @@ impl ResolvedPath {
         }
         write!(&mut buffer, "{}", crate_name).unwrap();
         for (index, path_segment) in self.segments[1..].iter().enumerate() {
-            if Some(index + 1) == qself_closing_wedge_index {
-                write!(&mut buffer, ">").unwrap();
-            }
             write!(&mut buffer, "::{}", path_segment.ident).unwrap();
             let generic_arguments = &path_segment.generic_arguments;
             if !generic_arguments.is_empty() {
@@ -301,6 +298,9 @@ impl ResolvedPath {
                         write!(&mut buffer, ", ").unwrap();
                     }
                 }
+                write!(&mut buffer, ">").unwrap();
+            }
+            if Some(index + 1) == qself_closing_wedge_index {
                 write!(&mut buffer, ">").unwrap();
             }
         }
