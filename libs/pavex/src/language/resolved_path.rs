@@ -131,6 +131,11 @@ impl ResolvedPath {
                 // parsed `ExprPath`.
                 first_segment.ident = format_ident!("{}", identifiers.registered_at());
             }
+            for segment in p.segments.iter_mut() {
+                for generic_argument in segment.generic_arguments.iter_mut() {
+                    replace_crate_with_registration_crate(generic_argument, identifiers);
+                }
+            }
         }
 
         let mut path = CallPath::parse(identifiers)?;
@@ -290,7 +295,7 @@ impl ResolvedPath {
             write!(&mut buffer, "::{}", path_segment.ident).unwrap();
             let generic_arguments = &path_segment.generic_arguments;
             if !generic_arguments.is_empty() {
-                write!(&mut buffer, "<").unwrap();
+                write!(&mut buffer, "::<").unwrap();
                 let mut arguments = generic_arguments.iter().peekable();
                 while let Some(argument) = arguments.next() {
                     write!(&mut buffer, "{}", argument.render_path(id2name)).unwrap();
