@@ -15,8 +15,8 @@ use pavex_builder::AppBlueprint;
 use pavex_builder::Lifecycle;
 use pavex_builder::RawCallableIdentifiers;
 
-use crate::language::ResolvedPath;
-use crate::language::{Callable, ParseError, ResolvedType};
+use crate::language::{Callable, ParseError, ResolvedPathSegment, ResolvedType};
+use crate::language::{ResolvedPath, ResolvedPathQualifiedSelf};
 use crate::rustdoc::CrateCollection;
 use crate::rustdoc::TOOLCHAIN_CRATES;
 use crate::web::call_graph::CallGraph;
@@ -27,7 +27,9 @@ use crate::web::diagnostic::{
 };
 use crate::web::error_handlers::ErrorHandler;
 use crate::web::generated_app::GeneratedApp;
-use crate::web::resolvers::{resolve_type_path, CallableResolutionError, CallableType};
+use crate::web::resolvers::{
+    resolve_callable, resolve_type_path, CallableResolutionError, CallableType,
+};
 use crate::web::traits::assert_trait_is_implemented;
 use crate::web::{codegen, diagnostic, resolvers, utils};
 
@@ -273,30 +275,56 @@ impl App {
             }
         };
 
-        let mut response_transformers = HashMap::<ResolvedType, Callable>::new();
-        let into_response = process_framework_path(
-            "pavex_runtime::response::IntoResponse",
-            &package_graph,
-            &krate_collection,
-        );
-        for handler in &handlers {
-            if let Some(output) = &handler.output {
-                if response_transformers.get(output).is_some() {
-                    // We already processed this type
-                    continue;
+        let response_transformers = {
+            let mut response_transformers = HashMap::<ResolvedType, Callable>::new();
+            let into_response = process_framework_path(
+                "pavex_runtime::response::IntoResponse",
+                &package_graph,
+                &krate_collection,
+            );
+            let into_response_path = into_response.resolved_path();
+            for callable in handlers
+                .iter()
+                .chain(error_handler_callable_resolver.values())
+            {
+                if let Some(output) = &callable.output {
+                    // TODO: only the Ok variant must implement IntoResponse if output is a result
+                    if response_transformers.get(output).is_some() {
+                        // We already processed this type
+                        continue;
+                    }
+                    // Verify that the output type implements the `IntoResponse` trait.
+                    if let Err(e) =
+                        assert_trait_is_implemented(&krate_collection, output, &into_response)
+                    {
+                        // TODO: remove panic
+                        panic!(
+                            "All handler output types must implement `IntoResponse`: {:?}\n{}",
+                            e, e
+                        );
+                    }
+                    let output_path = output.resolved_path();
+                    let mut transformer_segments = into_response_path.segments.clone();
+                    transformer_segments.push(ResolvedPathSegment {
+                        ident: "into_response".into(),
+                        generic_arguments: vec![],
+                    });
+                    let transformer_path = ResolvedPath {
+                        segments: transformer_segments,
+                        qualified_self: Some(ResolvedPathQualifiedSelf {
+                            position: into_response_path.segments.len(),
+                            path: Box::new(output_path),
+                        }),
+                        package_id: into_response_path.package_id.clone(),
+                    };
+                    let transformer =
+                        // TODO: remove unwrap
+                        resolve_callable(&krate_collection, &transformer_path).unwrap();
+                    response_transformers.insert(output.to_owned(), transformer);
                 }
-                // Verify that the output type implements the `IntoResponse` trait.
-                if let Err(e) =
-                    assert_trait_is_implemented(&krate_collection, output, &into_response)
-                {
-                    panic!(
-                        "All handler output types must implement `IntoResponse`: {:?}\n{}",
-                        e, e
-                    );
-                }
-                // todo!()
             }
-        }
+            response_transformers
+        };
 
         // TODO: check that the error handler associated with a constructor that returns
         //  Result<_, E> has &E as one of its input types.

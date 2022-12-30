@@ -6,7 +6,7 @@ use bimap::BiHashMap;
 use guppy::PackageId;
 use serde::{Deserializer, Serializer};
 
-use crate::language::ImportPath;
+use crate::language::{ImportPath, ResolvedPath, ResolvedPathSegment};
 
 #[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Hash, Clone)]
 pub struct ResolvedType {
@@ -72,6 +72,21 @@ impl ResolvedType {
             write!(&mut buffer, ">").unwrap();
         }
         buffer
+    }
+
+    pub fn resolved_path(&self) -> ResolvedPath {
+        let mut segments = Vec::with_capacity(self.base_type.len());
+        for segment in &self.base_type {
+            segments.push(ResolvedPathSegment {
+                ident: segment.to_owned(),
+                generic_arguments: vec![],
+            });
+        }
+        ResolvedPath {
+            segments,
+            qualified_self: None,
+            package_id: self.package_id.clone(),
+        }
     }
 }
 
