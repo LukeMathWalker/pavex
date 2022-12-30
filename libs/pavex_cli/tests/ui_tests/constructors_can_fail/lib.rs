@@ -53,14 +53,9 @@ pub fn http_client(_config: Config) -> Result<HttpClient, HttpClientError> {
     todo!()
 }
 
-pub fn handle_http_client_error(_e: &HttpClientError) -> pavex_runtime::response::Response {
-    todo!()
-}
-
 pub fn blueprint() -> AppBlueprint {
     let mut bp = AppBlueprint::new();
-    bp.constructor(f!(crate::http_client), Lifecycle::Singleton)
-        .error_handler(f!(crate::handle_http_client_error));
+    bp.constructor(f!(crate::http_client), Lifecycle::Singleton);
     bp.constructor(f!(crate::extract_path), Lifecycle::RequestScoped)
         .error_handler(f!(crate::handle_extract_path_error));
     bp.constructor(f!(crate::logger), Lifecycle::Transient)

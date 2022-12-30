@@ -19,8 +19,8 @@ use crate::language::{Callable, ParseError, ResolvedPathSegment, ResolvedType};
 use crate::language::{ResolvedPath, ResolvedPathQualifiedSelf};
 use crate::rustdoc::CrateCollection;
 use crate::rustdoc::TOOLCHAIN_CRATES;
-use crate::web::call_graph::CallGraph;
 use crate::web::call_graph::{application_state_call_graph, handler_call_graph};
+use crate::web::call_graph::{ApplicationStateCallGraph, CallGraph};
 use crate::web::constructors::{Constructor, ConstructorValidationError};
 use crate::web::diagnostic::{
     CompilerDiagnosticBuilder, OptionalSourceSpanExt, ParsedSourceFile, SourceSpanExt,
@@ -39,7 +39,7 @@ pub struct App {
     package_graph: PackageGraph,
     router: BTreeMap<String, Callable>,
     handler_call_graphs: IndexMap<ResolvedPath, CallGraph>,
-    application_state_call_graph: CallGraph,
+    application_state_call_graph: ApplicationStateCallGraph,
     runtime_singleton_bindings: BiHashMap<Ident, ResolvedType>,
     request_scoped_framework_bindings: BiHashMap<Ident, ResolvedType>,
     codegen_types: HashSet<ResolvedType>,
@@ -326,37 +326,6 @@ impl App {
             response_transformers
         };
 
-        // TODO: check that the error handler associated with a constructor that returns
-        //  Result<_, E> has &E as one of its input types.
-
-        let constructor2error_handler: HashMap<Constructor, ErrorHandler> = {
-            let mut map = HashMap::new();
-            for (output_type, constructor) in &constructors {
-                if let Constructor::Callable(callable) = constructor {
-                    if utils::is_result(&output_type) {
-                        let constructor_path = constructor_callable_resolver
-                            .get_by_right(&callable)
-                            .unwrap();
-                        let constructor_id =
-                            constructor_paths2ids.get_by_left(constructor_path).unwrap();
-                        let error_handler_id =
-                            &app_blueprint.constructor_error_handlers[constructor_id];
-                        let error_handler_path = &identifiers2path[error_handler_id];
-                        let error_handler = error_handler_callable_resolver
-                            .get(error_handler_path)
-                            // TODO: return an error asking for an error handler to be registered
-                            .unwrap()
-                            .to_owned();
-                        // TODO: handle the validation error
-                        let error_handler = ErrorHandler::new(error_handler, callable)
-                            .expect("Failed to validate the error handler");
-                        map.insert(constructor.to_owned(), error_handler);
-                    }
-                }
-            }
-            map
-        };
-
         let mut router = BTreeMap::new();
         for (route, callable_identifiers) in app_blueprint.router {
             let callable_path = &identifiers2path[&callable_identifiers];
@@ -381,6 +350,43 @@ impl App {
                     }
                 };
                 map.insert(output_type.to_owned(), lifecycle);
+            }
+            map
+        };
+
+        // TODO: check that the error handler associated with a constructor that returns
+        //  Result<_, E> has &E as one of its input types.
+
+        let constructor2error_handler: HashMap<Constructor, ErrorHandler> = {
+            let mut map = HashMap::new();
+            for (output_type, constructor) in &constructors {
+                if let Constructor::Callable(callable) = constructor {
+                    // Errors when building a singleton are failures to build the application state.
+                    // They are not handled - they are just exposed to the caller in an ad-hoc
+                    // error enumeration.
+                    if let Some(Lifecycle::Singleton) = component2lifecycle.get(output_type) {
+                        continue;
+                    }
+                    if utils::is_result(&output_type) {
+                        let constructor_path = constructor_callable_resolver
+                            .get_by_right(&callable)
+                            .unwrap();
+                        let constructor_id =
+                            constructor_paths2ids.get_by_left(constructor_path).unwrap();
+                        let error_handler_id =
+                            &app_blueprint.constructor_error_handlers[constructor_id];
+                        let error_handler_path = &identifiers2path[error_handler_id];
+                        let error_handler = error_handler_callable_resolver
+                            .get(error_handler_path)
+                            // TODO: return an error asking for an error handler to be registered
+                            .unwrap()
+                            .to_owned();
+                        // TODO: handle the validation error
+                        let error_handler = ErrorHandler::new(error_handler, callable)
+                            .expect("Failed to validate the error handler");
+                        map.insert(constructor.to_owned(), error_handler);
+                    }
+                }
             }
             map
         };
@@ -471,7 +477,7 @@ impl App {
         let (cargo_toml, mut package_ids2deps) = codegen::codegen_manifest(
             &self.package_graph,
             &self.handler_call_graphs,
-            &self.application_state_call_graph,
+            &self.application_state_call_graph.call_graph,
             &self.request_scoped_framework_bindings,
             &self.codegen_types,
         );
@@ -502,7 +508,7 @@ impl App {
         let (_, mut package_ids2deps) = codegen::codegen_manifest(
             &self.package_graph,
             &self.handler_call_graphs,
-            &self.application_state_call_graph,
+            &self.application_state_call_graph.call_graph,
             &self.request_scoped_framework_bindings,
             &self.codegen_types,
         );
@@ -528,6 +534,7 @@ impl App {
         }
         let application_state_graph = self
             .application_state_call_graph
+            .call_graph
             .dot(&package_ids2deps)
             .replace("digraph", "digraph app_state");
         AppDiagnostics {

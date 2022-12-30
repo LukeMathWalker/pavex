@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap, HashSet};
 
 use bimap::BiHashMap;
 use fixedbitset::FixedBitSet;
@@ -28,7 +28,7 @@ pub(crate) fn application_state_call_graph(
     lifecycles: &HashMap<ResolvedType, Lifecycle>,
     constructors: IndexMap<ResolvedType, Constructor>,
     constructor2error_handler: &HashMap<Constructor, ErrorHandler>,
-) -> CallGraph {
+) -> ApplicationStateCallGraph {
     fn lifecycle2invocations(lifecycle: &Lifecycle) -> Option<NumberOfAllowedInvocations> {
         match lifecycle {
             Lifecycle::Singleton => Some(NumberOfAllowedInvocations::One),
@@ -44,29 +44,17 @@ pub(crate) fn application_state_call_graph(
     // We build a "mock" callable that has the right inputs in order to drive the machinery
     // that builds the dependency graph.
     let package_id = PackageId::new(GENERATED_APP_PACKAGE_ID);
+    let output = ResolvedType {
+        package_id: package_id.clone(),
+        rustdoc_id: None,
+        base_type: vec!["crate".into(), "ApplicationState".into()],
+        generic_arguments: vec![],
+        is_shared_reference: false,
+    };
     let application_state_constructor = Callable {
         is_async: false,
-        output: Some(ResolvedType {
-            package_id: package_id.clone(),
-            rustdoc_id: None,
-            base_type: vec!["crate".into(), "ApplicationState".into()],
-            generic_arguments: vec![],
-            is_shared_reference: false,
-        }),
-        path: ResolvedPath {
-            segments: vec![
-                ResolvedPathSegment {
-                    ident: "crate".into(),
-                    generic_arguments: vec![],
-                },
-                ResolvedPathSegment {
-                    ident: "ApplicationState".into(),
-                    generic_arguments: vec![],
-                },
-            ],
-            qualified_self: None,
-            package_id: PackageId::new(GENERATED_APP_PACKAGE_ID),
-        },
+        path: output.resolved_path(),
+        output: Some(output),
         inputs: runtime_singleton_bindings.right_values().cloned().collect(),
         invocation_style: InvocationStyle::StructLiteral {
             field_names: runtime_singleton_bindings
@@ -75,13 +63,127 @@ pub(crate) fn application_state_call_graph(
                 .collect(),
         },
     };
-    build_call_graph(
+    let CallGraph {
+        mut call_graph,
+        root_callable_node_index,
+    } = build_call_graph(
         application_state_constructor,
         lifecycles,
         &constructors,
         constructor2error_handler,
         lifecycle2invocations,
-    )
+    );
+
+    // We need to make sure that all paths return the same output type.
+    // For `ApplicationState`, that's either `ApplicationState` or `Result<ApplicationState, E>`,
+    // where `E` is an error enum with a variant for each possible error type that might be
+    // encountered when building `ApplicationState`.
+
+    // Let's start by collecting the possible error types.
+    let error_types = {
+        let mut error_types = IndexSet::new();
+        let mut output_node_indexes = call_graph
+            .externals(Direction::Outgoing)
+            .collect::<BTreeSet<_>>();
+        // We only care about errors at this point.
+        output_node_indexes.remove(&root_callable_node_index);
+        for output_node_index in output_node_indexes {
+            let CallGraphNode::Compute {
+                component,
+                ..
+            } = &call_graph[output_node_index] else {
+                unreachable!()
+            };
+            error_types.insert(component.output_type().to_owned());
+        }
+        error_types
+    };
+
+    if error_types.is_empty() {
+        // Happy days! Nothing to do!
+        return ApplicationStateCallGraph {
+            call_graph: CallGraph {
+                call_graph,
+                root_callable_node_index,
+            },
+            error_types,
+        };
+    }
+    let error_transformers = {
+        let mut error_transformers = HashMap::new();
+        for error_type in &error_types {
+            let error_type_name = error_type.base_type.last().unwrap();
+            let output = ResolvedType {
+                package_id: package_id.clone(),
+                rustdoc_id: None,
+                base_type: vec!["crate".into(), "ApplicationStateError".into()],
+                generic_arguments: vec![],
+                is_shared_reference: false,
+            };
+            let error_variant_constructor = Callable {
+                is_async: false,
+                path: ResolvedPath {
+                    segments: vec![
+                        ResolvedPathSegment {
+                            ident: "crate".into(),
+                            generic_arguments: vec![],
+                        },
+                        ResolvedPathSegment {
+                            ident: "ApplicationStateError".into(),
+                            generic_arguments: vec![],
+                        },
+                        ResolvedPathSegment {
+                            ident: error_type_name.to_owned(),
+                            generic_arguments: vec![],
+                        },
+                    ],
+                    qualified_self: None,
+                    package_id: package_id.clone(),
+                },
+                output: Some(output),
+                inputs: vec![error_type.to_owned()],
+                invocation_style: InvocationStyle::FunctionCall,
+            };
+            error_transformers.insert(error_type, error_variant_constructor);
+        }
+        error_transformers
+    };
+
+    // We now apply the newly built error transformers to our error types - we add a new
+    // transformer node as a child of each error node.
+    let mut output_node_indexes = call_graph
+        .externals(Direction::Outgoing)
+        .collect::<HashSet<_>>();
+    // We only care about errors at this point.
+    output_node_indexes.remove(&root_callable_node_index);
+    for output_node_index in output_node_indexes {
+        let CallGraphNode::Compute {
+            component,
+            n_allowed_invocations,
+        } = &call_graph[output_node_index] else {
+            unreachable!()
+        };
+        let output_type = component.output_type();
+        if let Some(error_transformer) = error_transformers.get(output_type) {
+            let error_transformer_node_index = call_graph.add_node(CallGraphNode::Compute {
+                component: ComputeComponent::Transformer(error_transformer.to_owned()),
+                n_allowed_invocations: *n_allowed_invocations,
+            });
+            call_graph.update_edge(output_node_index, error_transformer_node_index, ());
+        }
+    }
+    ApplicationStateCallGraph {
+        call_graph: CallGraph {
+            call_graph,
+            root_callable_node_index,
+        },
+        error_types,
+    }
+}
+
+pub(crate) struct ApplicationStateCallGraph {
+    pub(crate) call_graph: CallGraph,
+    pub(crate) error_types: IndexSet<ResolvedType>,
 }
 
 /// Build a [`CallGraph`] for a request handler.
@@ -115,7 +217,7 @@ pub(crate) fn handler_call_graph(
     // common type - `pavex_runtime::response::Response`.
     let output_node_indexes = call_graph
         .externals(Direction::Outgoing)
-        .collect::<Vec<_>>();
+        .collect::<BTreeSet<_>>();
     for output_node_index in output_node_indexes {
         let CallGraphNode::Compute {
             component,
@@ -392,20 +494,21 @@ where
                 });
                 call_graph.add_edge(branching_node, err_node_index, ());
 
-                // For each `MatchResult(Err)` node, we want to add a `Compute` node for the respective
-                // error handler.
-                let error_handler = &constructor2error_handler[&result_constructor];
-                let err_ref_node_index = call_graph.add_node(CallGraphNode::Compute {
-                    component: ComputeComponent::Constructor(Constructor::shared_borrow(
-                        err_constructor.output_type().to_owned(),
-                    )),
-                    n_allowed_invocations,
-                });
-                call_graph.add_edge(err_node_index, err_ref_node_index, ());
-                nodes_to_be_visited.push(VisitorStackElement {
-                    compute: error_handler.to_owned().into(),
-                    neighbour_index: Some(VisitorIndex::Parent(err_ref_node_index)),
-                });
+                // For each `MatchResult(Err)` node, we try to add a `Compute` node for the respective
+                // error handler (if one was registered).
+                if let Some(error_handler) = constructor2error_handler.get(&result_constructor) {
+                    let err_ref_node_index = call_graph.add_node(CallGraphNode::Compute {
+                        component: ComputeComponent::Constructor(Constructor::shared_borrow(
+                            err_constructor.output_type().to_owned(),
+                        )),
+                        n_allowed_invocations,
+                    });
+                    call_graph.add_edge(err_node_index, err_ref_node_index, ());
+                    nodes_to_be_visited.push(VisitorStackElement {
+                        compute: error_handler.to_owned().into(),
+                        neighbour_index: Some(VisitorIndex::Parent(err_ref_node_index)),
+                    });
+                }
             }
         }
 

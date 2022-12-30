@@ -8,27 +8,31 @@ use guppy::{PackageId, Version};
 use indexmap::{IndexMap, IndexSet};
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote};
-use syn::{ItemFn, ItemStruct};
+use syn::{ItemEnum, ItemFn, ItemStruct};
 
 use crate::language::ResolvedPath;
 use crate::language::{Callable, ResolvedType};
 use crate::rustdoc::TOOLCHAIN_CRATES;
 use crate::web::app::GENERATED_APP_PACKAGE_ID;
-use crate::web::call_graph::{CallGraph, CallGraphNode, ComputeComponent};
+use crate::web::call_graph::{
+    ApplicationStateCallGraph, CallGraph, CallGraphNode, ComputeComponent,
+};
 use crate::web::constructors::Constructor;
 
 pub(crate) fn codegen_app(
     router: &BTreeMap<String, Callable>,
     handler_call_graphs: &IndexMap<ResolvedPath, CallGraph>,
-    application_state_call_graph: &CallGraph,
+    application_state_call_graph: &ApplicationStateCallGraph,
     request_scoped_framework_bindings: &BiHashMap<Ident, ResolvedType>,
     package_id2name: &BiHashMap<&'_ PackageId, String>,
     runtime_singleton_bindings: &BiHashMap<Ident, ResolvedType>,
 ) -> Result<TokenStream, anyhow::Error> {
     let define_application_state =
         define_application_state(runtime_singleton_bindings, package_id2name);
+    let define_application_state_error =
+        define_application_state_error(&application_state_call_graph.error_types, package_id2name);
     let application_state_init =
-        get_application_state_init(application_state_call_graph, package_id2name)?;
+        get_application_state_init(&application_state_call_graph, package_id2name)?;
     let define_server_state = define_server_state();
 
     let handler_functions: IndexMap<_, _> = handler_call_graphs
@@ -71,6 +75,7 @@ pub(crate) fn codegen_app(
         //! All manual edits will be lost next time the code is generated.
         #define_server_state
         #define_application_state
+        #define_application_state_error
         #application_state_init
         #entrypoint
         #router_init
@@ -120,6 +125,28 @@ fn define_application_state(
     .unwrap()
 }
 
+fn define_application_state_error(
+    error_types: &IndexSet<ResolvedType>,
+    package_id2name: &BiHashMap<&'_ PackageId, String>,
+) -> Option<ItemEnum> {
+    if error_types.is_empty() {
+        return None;
+    }
+    let singleton_fields = error_types.iter().map(|type_| {
+        let variant_type = type_.syn_type(package_id2name);
+        let variant_name = format_ident!("{}", type_.base_type.last().unwrap());
+        quote! { #variant_name(#variant_type) }
+    });
+    Some(
+        syn::parse2(quote! {
+            pub enum ApplicationStateError {
+                #(#singleton_fields),*
+            }
+        })
+        .unwrap(),
+    )
+}
+
 fn define_server_state() -> ItemStruct {
     syn::parse2(quote! {
         struct ServerState {
@@ -131,11 +158,21 @@ fn define_server_state() -> ItemStruct {
 }
 
 fn get_application_state_init(
-    application_state_call_graph: &CallGraph,
+    application_state_call_graph: &ApplicationStateCallGraph,
     package_id2name: &BiHashMap<&'_ PackageId, String>,
 ) -> Result<ItemFn, anyhow::Error> {
-    let mut function = application_state_call_graph.codegen(package_id2name)?;
+    let mut function = application_state_call_graph
+        .call_graph
+        .codegen(package_id2name)?;
     function.sig.ident = format_ident!("build_application_state");
+    if !application_state_call_graph.error_types.is_empty() {
+        function.sig.output = syn::ReturnType::Type(
+            Default::default(),
+            Box::new(syn::parse2(
+                quote! { Result<crate::ApplicationState, crate::ApplicationStateError> },
+            )?),
+        );
+    }
     Ok(function)
 }
 

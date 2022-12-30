@@ -8,10 +8,15 @@ struct ServerState {
 pub struct ApplicationState {
     s0: app::HttpClient,
 }
-pub async fn build_application_state(v0: app::Config) -> crate::ApplicationState {
+pub enum ApplicationStateError {
+    HttpClientError(app::HttpClientError),
+}
+pub async fn build_application_state(
+    v0: app::Config,
+) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
     let v1 = app::http_client(v0);
     match v1 {
-        Err(v2) => app::handle_http_client_error(&v2),
+        Err(v2) => crate::ApplicationStateError::HttpClientError(v2),
         Ok(v2) => crate::ApplicationState { s0: v2 },
     }
 }
