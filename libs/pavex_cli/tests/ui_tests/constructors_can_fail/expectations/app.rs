@@ -16,8 +16,14 @@ pub async fn build_application_state(
 ) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
     let v1 = app::http_client(v0);
     match v1 {
-        Err(v2) => crate::ApplicationStateError::HttpClientError(v2),
-        Ok(v2) => crate::ApplicationState { s0: v2 },
+        Err(v2) => {
+            let v3 = crate::ApplicationStateError::HttpClientError(v2);
+            core::result::Result::Err(v3)
+        }
+        Ok(v2) => {
+            let v3 = crate::ApplicationState { s0: v2 };
+            core::result::Result::Ok(v3)
+        }
     }
 }
 pub async fn run(

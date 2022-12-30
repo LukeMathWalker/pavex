@@ -15,6 +15,7 @@ use syn::ItemFn;
 use pavex_builder::Lifecycle;
 
 use crate::language::{Callable, InvocationStyle, ResolvedPath, ResolvedPathSegment, ResolvedType};
+use crate::rustdoc::CORE_PACKAGE_ID;
 use crate::web::app::GENERATED_APP_PACKAGE_ID;
 use crate::web::codegen_utils;
 use crate::web::codegen_utils::{Fragment, VariableNameGenerator};
@@ -44,7 +45,7 @@ pub(crate) fn application_state_call_graph(
     // We build a "mock" callable that has the right inputs in order to drive the machinery
     // that builds the dependency graph.
     let package_id = PackageId::new(GENERATED_APP_PACKAGE_ID);
-    let output = ResolvedType {
+    let application_state_type = ResolvedType {
         package_id: package_id.clone(),
         rustdoc_id: None,
         base_type: vec!["crate".into(), "ApplicationState".into()],
@@ -53,8 +54,8 @@ pub(crate) fn application_state_call_graph(
     };
     let application_state_constructor = Callable {
         is_async: false,
-        path: output.resolved_path(),
-        output: Some(output),
+        path: application_state_type.resolved_path(),
+        output: Some(application_state_type.clone()),
         inputs: runtime_singleton_bindings.right_values().cloned().collect(),
         invocation_style: InvocationStyle::StructLiteral {
             field_names: runtime_singleton_bindings
@@ -109,17 +110,24 @@ pub(crate) fn application_state_call_graph(
             error_types,
         };
     }
+    let error_enum = ResolvedType {
+        package_id: package_id.clone(),
+        rustdoc_id: None,
+        base_type: vec!["crate".into(), "ApplicationStateError".into()],
+        generic_arguments: vec![],
+        is_shared_reference: false,
+    };
+    let application_state_result = ResolvedType {
+        package_id: PackageId::new(CORE_PACKAGE_ID),
+        rustdoc_id: None,
+        base_type: vec!["core".into(), "result".into(), "Result".into()],
+        generic_arguments: vec![application_state_type.clone(), error_enum.clone()],
+        is_shared_reference: false,
+    };
     let error_transformers = {
         let mut error_transformers = HashMap::new();
         for error_type in &error_types {
             let error_type_name = error_type.base_type.last().unwrap();
-            let output = ResolvedType {
-                package_id: package_id.clone(),
-                rustdoc_id: None,
-                base_type: vec!["crate".into(), "ApplicationStateError".into()],
-                generic_arguments: vec![],
-                is_shared_reference: false,
-            };
             let error_variant_constructor = Callable {
                 is_async: false,
                 path: ResolvedPath {
@@ -140,7 +148,7 @@ pub(crate) fn application_state_call_graph(
                     qualified_self: None,
                     package_id: package_id.clone(),
                 },
-                output: Some(output),
+                output: Some(error_enum.clone()),
                 inputs: vec![error_type.to_owned()],
                 invocation_style: InvocationStyle::FunctionCall,
             };
@@ -156,6 +164,15 @@ pub(crate) fn application_state_call_graph(
         .collect::<HashSet<_>>();
     // We only care about errors at this point.
     output_node_indexes.remove(&root_callable_node_index);
+
+    let err_wrapper_path = {
+        let mut v = application_state_result.resolved_path().segments.clone();
+        v.push(ResolvedPathSegment {
+            ident: "Err".into(),
+            generic_arguments: vec![],
+        });
+        v
+    };
     for output_node_index in output_node_indexes {
         let CallGraphNode::Compute {
             component,
@@ -163,19 +180,64 @@ pub(crate) fn application_state_call_graph(
         } = &call_graph[output_node_index] else {
             unreachable!()
         };
+        let n_allowed_invocations = *n_allowed_invocations;
         let output_type = component.output_type();
-        if let Some(error_transformer) = error_transformers.get(output_type) {
-            let error_transformer_node_index = call_graph.add_node(CallGraphNode::Compute {
-                component: ComputeComponent::Transformer(error_transformer.to_owned()),
-                n_allowed_invocations: *n_allowed_invocations,
-            });
-            call_graph.update_edge(output_node_index, error_transformer_node_index, ());
-        }
+        let error_transformer = &error_transformers[output_type];
+        let error_transformer_node_index = call_graph.add_node(CallGraphNode::Compute {
+            component: ComputeComponent::Transformer(error_transformer.to_owned()),
+            n_allowed_invocations,
+        });
+        call_graph.update_edge(output_node_index, error_transformer_node_index, ());
+
+        // We need to add an `Err` wrap around the error, since we are returning a `Result`.
+        let err_wrapper = Callable {
+            is_async: false,
+            output: Some(application_state_result.clone()),
+            path: ResolvedPath {
+                segments: err_wrapper_path.clone(),
+                qualified_self: None,
+                package_id: PackageId::new(CORE_PACKAGE_ID),
+            },
+            inputs: vec![error_transformer.output.as_ref().unwrap().to_owned()],
+            invocation_style: InvocationStyle::FunctionCall,
+        };
+        let err_wrapper_node_index = call_graph.add_node(CallGraphNode::Compute {
+            component: ComputeComponent::Transformer(err_wrapper),
+            n_allowed_invocations,
+        });
+        call_graph.update_edge(error_transformer_node_index, err_wrapper_node_index, ());
     }
+
+    // We need to add an `Ok` wrap around `ApplicationState`, since we are returning a `Result`.
+    let ok_wrapper_path = {
+        let mut v = application_state_result.resolved_path().segments.clone();
+        v.push(ResolvedPathSegment {
+            ident: "Ok".into(),
+            generic_arguments: vec![],
+        });
+        v
+    };
+    let ok_wrapper = Callable {
+        is_async: false,
+        output: Some(application_state_result.clone()),
+        path: ResolvedPath {
+            segments: ok_wrapper_path,
+            qualified_self: None,
+            package_id: PackageId::new(CORE_PACKAGE_ID),
+        },
+        inputs: vec![application_state_type],
+        invocation_style: InvocationStyle::FunctionCall,
+    };
+    let ok_wrapper_node_index = call_graph.add_node(CallGraphNode::Compute {
+        component: ComputeComponent::Transformer(ok_wrapper),
+        n_allowed_invocations: NumberOfAllowedInvocations::One,
+    });
+    call_graph.update_edge(root_callable_node_index, ok_wrapper_node_index, ());
+
     ApplicationStateCallGraph {
         call_graph: CallGraph {
             call_graph,
-            root_callable_node_index,
+            root_callable_node_index: ok_wrapper_node_index,
         },
         error_types,
     }
