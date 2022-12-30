@@ -17,8 +17,8 @@ use pavex_builder::RawCallableIdentifiers;
 
 use crate::language::ResolvedPath;
 use crate::language::{Callable, ParseError, ResolvedType};
+use crate::rustdoc::CrateCollection;
 use crate::rustdoc::TOOLCHAIN_CRATES;
-use crate::rustdoc::{CrateCollection, GlobalItemId};
 use crate::web::call_graph::CallGraph;
 use crate::web::call_graph::{application_state_call_graph, handler_call_graph};
 use crate::web::constructors::{Constructor, ConstructorValidationError};
@@ -632,13 +632,7 @@ fn process_framework_path(
         RawCallableIdentifiers::from_raw_parts(raw_path.into(), "pavex_builder".into());
     let path = ResolvedPath::parse(&identifiers, package_graph).unwrap();
     let (item, _) = path.find_rustdoc_items(krate_collection).unwrap();
-    resolve_type_path(
-        &path,
-        &item.item,
-        &item.item_id.package_id,
-        krate_collection,
-    )
-    .unwrap()
+    resolve_type_path(&path, &item.item, krate_collection).unwrap()
 }
 
 #[derive(Debug, thiserror::Error)]

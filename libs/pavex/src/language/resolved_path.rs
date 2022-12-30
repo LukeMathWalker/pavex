@@ -13,7 +13,7 @@ use pavex_builder::RawCallableIdentifiers;
 
 use crate::language::{CallPath, InvalidCallPath};
 use crate::rustdoc::{CrateCollection, GlobalItemId};
-use crate::rustdoc::{ResolvedItem, TOOLCHAIN_CRATES};
+use crate::rustdoc::{ResolvedItemWithParent, TOOLCHAIN_CRATES};
 
 /// A resolved import path.
 ///
@@ -217,6 +217,7 @@ impl ResolvedPath {
     ///
     /// This method only works for structs, enums and free functions.
     /// It won't work for methods!
+    #[allow(unused)]
     pub fn find_type_id(
         &self,
         krate_collection: &CrateCollection,
@@ -244,7 +245,13 @@ impl ResolvedPath {
     pub fn find_rustdoc_items<'a>(
         &self,
         krate_collection: &'a CrateCollection,
-    ) -> Result<(ResolvedItem<'a>, Option<ResolvedItem<'a>>), UnknownPath> {
+    ) -> Result<
+        (
+            ResolvedItemWithParent<'a>,
+            Option<ResolvedItemWithParent<'a>>,
+        ),
+        UnknownPath,
+    > {
         let path: Vec<_> = self
             .segments
             .iter()

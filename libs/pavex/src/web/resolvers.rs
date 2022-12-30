@@ -10,7 +10,7 @@ use guppy::graph::PackageGraph;
 use guppy::PackageId;
 use indexmap::IndexSet;
 use miette::{miette, NamedSource, SourceSpan};
-use rustdoc_types::{GenericArg, GenericArgs, Item, ItemEnum, Type};
+use rustdoc_types::{GenericArg, GenericArgs, ItemEnum, Type};
 use syn::spanned::Spanned;
 use syn::{FnArg, ImplItemMethod, ReturnType};
 
@@ -18,8 +18,8 @@ use pavex_builder::Location;
 use pavex_builder::RawCallableIdentifiers;
 
 use crate::language::{Callable, InvocationStyle, ResolvedPath, ResolvedType, UnknownPath};
-use crate::rustdoc::CrateCollection;
 use crate::rustdoc::{CannotGetCrateData, RustdocKindExt};
+use crate::rustdoc::{CrateCollection, ResolvedItem};
 use crate::web::diagnostic;
 use crate::web::diagnostic::{
     convert_rustdoc_span, convert_span, read_source_file, CompilerDiagnosticBuilder,
@@ -170,7 +170,7 @@ pub(crate) fn resolve_callable(
     let (callable_type, qualified_self_type) =
         callable_path.find_rustdoc_items(krate_collection)?;
     let used_by_package_id = &callable_path.package_id;
-    let (header, decl, invocation_style) = match &callable_type.item.inner {
+    let (header, decl, invocation_style) = match &callable_type.item.item.inner {
         ItemEnum::Function(f) => (&f.header, &f.decl, InvocationStyle::FunctionCall),
         kind => {
             let item_kind = kind.kind().to_owned();
@@ -185,13 +185,7 @@ pub(crate) fn resolve_callable(
     let mut generic_bindings = HashMap::new();
     if let Some(qself) = qualified_self_type {
         let qself_path = &callable_path.qualified_self.as_ref().unwrap().path;
-        let qself_type = resolve_type_path(
-            &qself_path,
-            &qself.item,
-            used_by_package_id,
-            krate_collection,
-        )
-        .unwrap();
+        let qself_type = resolve_type_path(&qself_path, &qself.item, krate_collection).unwrap();
         generic_bindings.insert("Self".to_string(), qself_type);
     }
 
@@ -208,7 +202,7 @@ pub(crate) fn resolve_callable(
                 return Err(ParameterResolutionError {
                     parameter_type: parameter_type.to_owned(),
                     callable_path: callable_path.to_owned(),
-                    callable_item: callable_type.item.into_owned(),
+                    callable_item: callable_type.item.item.into_owned(),
                     source: e,
                     parameter_index,
                 }
@@ -231,7 +225,7 @@ pub(crate) fn resolve_callable(
                     return Err(OutputTypeResolutionError {
                         output_type: output_type.to_owned(),
                         callable_path: callable_path.to_owned(),
-                        callable_item: callable_type.item.into_owned(),
+                        callable_item: callable_type.item.item.into_owned(),
                         source: e,
                     }
                     .into());
@@ -251,10 +245,11 @@ pub(crate) fn resolve_callable(
 
 pub(crate) fn resolve_type_path(
     path: &ResolvedPath,
-    item: &Item,
-    used_by_package_id: &PackageId,
+    resolved_item: &ResolvedItem,
     krate_collection: &CrateCollection,
 ) -> Result<ResolvedType, anyhow::Error> {
+    let item = &resolved_item.item;
+    let used_by_package_id = resolved_item.item_id.package_id();
     let (global_type_id, base_type) =
         krate_collection.get_canonical_path_by_local_type_id(used_by_package_id, &item.id)?;
     let mut generic_arguments = vec![];
@@ -263,12 +258,8 @@ pub(crate) fn resolve_type_path(
             let (generic_item, generic_qself_item) =
                 generic_path.find_rustdoc_items(krate_collection)?;
             assert!(generic_qself_item.is_none());
-            let generic_type = resolve_type_path(
-                generic_path,
-                &generic_item.item,
-                &generic_item.item_id.package_id,
-                krate_collection,
-            )?;
+            let generic_type =
+                resolve_type_path(generic_path, &generic_item.item, krate_collection)?;
             generic_arguments.push(generic_type);
         }
     }

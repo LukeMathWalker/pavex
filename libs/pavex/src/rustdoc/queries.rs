@@ -90,13 +90,16 @@ impl CrateCollection {
         &self,
         path: &[String],
         package_id: &PackageId,
-    ) -> Result<Result<ResolvedItem<'_>, GetItemByResolvedPathError>, CannotGetCrateData> {
+    ) -> Result<Result<ResolvedItemWithParent<'_>, GetItemByResolvedPathError>, CannotGetCrateData>
+    {
         let krate = self.get_or_compute_crate_by_package_id(package_id)?;
         if let Ok(type_id) = krate.get_type_id_by_path(&path) {
             let i = self.get_type_by_global_type_id(type_id);
-            return Ok(Ok(ResolvedItem {
-                item: Cow::Borrowed(i),
-                item_id: type_id.to_owned(),
+            return Ok(Ok(ResolvedItemWithParent {
+                item: ResolvedItem {
+                    item: Cow::Borrowed(i),
+                    item_id: type_id.to_owned(),
+                },
                 parent: None,
             }));
         }
@@ -138,13 +141,18 @@ impl CrateCollection {
                             let impl_item = krate.get_type_by_local_type_id(impl_item_id);
                             if impl_item.name.as_ref() == Some(method_name) {
                                 if let ItemEnum::Function(_) = &impl_item.inner {
-                                    return Ok(Ok(ResolvedItem {
-                                        item: Cow::Borrowed(impl_item),
-                                        item_id: GlobalItemId {
-                                            package_id: krate.core.package_id.clone(),
-                                            rustdoc_item_id: impl_item_id.to_owned(),
+                                    return Ok(Ok(ResolvedItemWithParent {
+                                        item: ResolvedItem {
+                                            item: Cow::Borrowed(impl_item),
+                                            item_id: GlobalItemId {
+                                                package_id: krate.core.package_id.clone(),
+                                                rustdoc_item_id: impl_item_id.to_owned(),
+                                            },
                                         },
-                                        parent: Some(Cow::Borrowed(parent)),
+                                        parent: Some(ResolvedItem {
+                                            item: Cow::Borrowed(parent),
+                                            item_id: parent_type_id.to_owned(),
+                                        }),
                                     }));
                                 }
                             }
@@ -152,13 +160,18 @@ impl CrateCollection {
                     }
                     ItemEnum::Function(_) => {
                         if child.name.as_ref() == Some(method_name) {
-                            return Ok(Ok(ResolvedItem {
-                                item: Cow::Borrowed(child),
-                                item_id: GlobalItemId {
-                                    package_id: krate.core.package_id.clone(),
-                                    rustdoc_item_id: child_id.to_owned(),
+                            return Ok(Ok(ResolvedItemWithParent {
+                                item: ResolvedItem {
+                                    item: Cow::Borrowed(child),
+                                    item_id: GlobalItemId {
+                                        package_id: krate.core.package_id.clone(),
+                                        rustdoc_item_id: child_id.to_owned(),
+                                    },
                                 },
-                                parent: Some(Cow::Borrowed(parent)),
+                                parent: Some(ResolvedItem {
+                                    item: Cow::Borrowed(parent),
+                                    item_id: parent_type_id.to_owned(),
+                                }),
                             }));
                         }
                     }
@@ -208,7 +221,7 @@ impl CrateCollection {
     }
 }
 
-/// The output of [`CrateCollection::find_item_by_resolved_path`].
+/// The output of [`CrateCollection::get_item_by_resolved_path`].
 ///
 /// If the path points to a "free-standing" item, `parent` is set to `None`.
 /// Examples: a function, a struct, an enum.
@@ -217,10 +230,15 @@ impl CrateCollection {
 /// Examples: a trait method and the respective trait definition, a method and the struct it is
 /// defined on, etc.
 #[derive(Debug, Clone)]
+pub struct ResolvedItemWithParent<'a> {
+    pub item: ResolvedItem<'a>,
+    pub parent: Option<ResolvedItem<'a>>,
+}
+
+#[derive(Debug, Clone)]
 pub struct ResolvedItem<'a> {
     pub item: Cow<'a, Item>,
     pub item_id: GlobalItemId,
-    pub parent: Option<Cow<'a, Item>>,
 }
 
 /// Thin wrapper around [`rustdoc_types::Crate`] to:
