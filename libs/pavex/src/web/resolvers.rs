@@ -71,13 +71,13 @@ pub(crate) fn resolve_request_handlers(
     Ok((handler_resolver, handlers))
 }
 
-fn process_type(
+pub(crate) fn resolve_type(
     type_: &Type,
     // The package id where the type we are trying to process has been referenced (e.g. as an
     // input/output parameter).
     used_by_package_id: &PackageId,
     krate_collection: &CrateCollection,
-    self_type: Option<&ResolvedType>,
+    generic_bindings: &HashMap<String, ResolvedType>,
 ) -> Result<ResolvedType, anyhow::Error> {
     match type_ {
         Type::ResolvedPath(rustdoc_types::Path { id, args, .. }) => {
@@ -93,11 +93,11 @@ fn process_type(
                                     ));
                                 }
                                 GenericArg::Type(generic_type) => {
-                                    generics.push(process_type(
+                                    generics.push(resolve_type(
                                         generic_type,
                                         used_by_package_id,
                                         krate_collection,
-                                        self_type,
+                                        generic_bindings,
                                     )?);
                                 }
                                 GenericArg::Const(_) => {
@@ -137,12 +137,25 @@ fn process_type(
                     by value (`move` semantic) or via a shared reference (`&MyType`)",
                 ));
             }
-            let mut resolved_type =
-                process_type(type_, used_by_package_id, krate_collection, self_type)?;
+            let mut resolved_type = resolve_type(
+                type_,
+                used_by_package_id,
+                krate_collection,
+                generic_bindings,
+            )?;
             resolved_type.is_shared_reference = true;
             Ok(resolved_type)
         }
-        Type::Generic(s) if s == "Self" && self_type.is_some() => Ok(self_type.cloned().unwrap()),
+        Type::Generic(s) => {
+            if let Some(resolved_type) = generic_bindings.get(s) {
+                Ok(resolved_type.to_owned())
+            } else {
+                Err(anyhow!(
+                    "The generic type `{}` is not bound to any concrete type",
+                    s
+                ))
+            }
+        }
         _ => Err(anyhow!(
             "I cannot handle this kind ({:?}) of type yet. Sorry!",
             type_
@@ -150,7 +163,7 @@ fn process_type(
     }
 }
 
-fn resolve_callable(
+pub(crate) fn resolve_callable(
     krate_collection: &CrateCollection,
     callable_path: &ResolvedPath,
 ) -> Result<Callable, CallableResolutionError> {
@@ -169,7 +182,7 @@ fn resolve_callable(
         }
     };
 
-    let mut self_type = None;
+    let mut generic_bindings = HashMap::new();
     if let Some(qself) = qualified_self_type {
         let qself_path = &callable_path.qualified_self.as_ref().unwrap().path;
         let qself_type = resolve_type_path(
@@ -179,16 +192,16 @@ fn resolve_callable(
             krate_collection,
         )
         .unwrap();
-        self_type = Some(qself_type);
+        generic_bindings.insert("Self".to_string(), qself_type);
     }
 
     let mut parameter_paths = Vec::with_capacity(decl.inputs.len());
     for (parameter_index, (_, parameter_type)) in decl.inputs.iter().enumerate() {
-        match process_type(
+        match resolve_type(
             parameter_type,
             used_by_package_id,
             krate_collection,
-            self_type.as_ref(),
+            &generic_bindings,
         ) {
             Ok(p) => parameter_paths.push(p),
             Err(e) => {
@@ -207,11 +220,11 @@ fn resolve_callable(
         // Unit type
         None => None,
         Some(output_type) => {
-            match process_type(
+            match resolve_type(
                 output_type,
                 used_by_package_id,
                 krate_collection,
-                self_type.as_ref(),
+                &generic_bindings,
             ) {
                 Ok(p) => Some(p),
                 Err(e) => {
@@ -236,7 +249,7 @@ fn resolve_callable(
     Ok(callable)
 }
 
-fn resolve_type_path(
+pub(crate) fn resolve_type_path(
     path: &ResolvedPath,
     item: &Item,
     used_by_package_id: &PackageId,
@@ -253,7 +266,7 @@ fn resolve_type_path(
             let generic_type = resolve_type_path(
                 generic_path,
                 &generic_item.item,
-                used_by_package_id,
+                &generic_item.item_id.package_id,
                 krate_collection,
             )?;
             generic_arguments.push(generic_type);

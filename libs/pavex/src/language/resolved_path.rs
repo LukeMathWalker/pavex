@@ -12,7 +12,7 @@ use quote::format_ident;
 use pavex_builder::RawCallableIdentifiers;
 
 use crate::language::{CallPath, InvalidCallPath};
-use crate::rustdoc::{CrateCollection, GlobalTypeId};
+use crate::rustdoc::{CrateCollection, GlobalItemId};
 use crate::rustdoc::{ResolvedItem, TOOLCHAIN_CRATES};
 
 /// A resolved import path.
@@ -213,14 +213,14 @@ impl ResolvedPath {
         &self.segments.first().unwrap().ident
     }
 
-    /// Return the unequivocal [`GlobalTypeId`] that this path points at.
+    /// Return the unequivocal [`GlobalItemId`] that this path points at.
     ///
     /// This method only works for structs, enums and free functions.
     /// It won't work for methods!
     pub fn find_type_id(
         &self,
-        krate_collection: &mut CrateCollection,
-    ) -> Result<GlobalTypeId, UnknownPath> {
+        krate_collection: &CrateCollection,
+    ) -> Result<GlobalItemId, UnknownPath> {
         // TODO: remove unwrap here
         let krate = krate_collection
             .get_or_compute_crate_by_package_id(&self.package_id)

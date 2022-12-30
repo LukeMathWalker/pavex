@@ -18,7 +18,7 @@ use pavex_builder::RawCallableIdentifiers;
 use crate::language::ResolvedPath;
 use crate::language::{Callable, ParseError, ResolvedType};
 use crate::rustdoc::TOOLCHAIN_CRATES;
-use crate::rustdoc::{CrateCollection, GlobalTypeId};
+use crate::rustdoc::{CrateCollection, GlobalItemId};
 use crate::web::call_graph::CallGraph;
 use crate::web::call_graph::{application_state_call_graph, handler_call_graph};
 use crate::web::constructors::{Constructor, ConstructorValidationError};
@@ -27,7 +27,7 @@ use crate::web::diagnostic::{
 };
 use crate::web::error_handlers::ErrorHandler;
 use crate::web::generated_app::GeneratedApp;
-use crate::web::resolvers::{CallableResolutionError, CallableType};
+use crate::web::resolvers::{resolve_type_path, CallableResolutionError, CallableType};
 use crate::web::traits::assert_trait_is_implemented;
 use crate::web::{codegen, diagnostic, resolvers, utils};
 
@@ -273,6 +273,31 @@ impl App {
             }
         };
 
+        let mut response_transformers = HashMap::<ResolvedType, Callable>::new();
+        let into_response = process_framework_path(
+            "pavex_runtime::response::IntoResponse",
+            &package_graph,
+            &krate_collection,
+        );
+        for handler in &handlers {
+            if let Some(output) = &handler.output {
+                if response_transformers.get(output).is_some() {
+                    // We already processed this type
+                    continue;
+                }
+                // Verify that the output type implements the `IntoResponse` trait.
+                if let Err(e) =
+                    assert_trait_is_implemented(&krate_collection, output, &into_response)
+                {
+                    panic!(
+                        "All handler output types must implement `IntoResponse`: {:?}\n{}",
+                        e, e
+                    );
+                }
+                // todo!()
+            }
+        }
+
         // TODO: check that the error handler associated with a constructor that returns
         //  Result<_, E> has &E as one of its input types.
 
@@ -362,6 +387,9 @@ impl App {
 
         // All singletons stored in the application state (i.e. all "runtime" singletons) must
         // implement `Clone`, `Send` and `Sync` in order to be shared across threads.
+        let send = process_framework_path("core::marker::Send", &package_graph, &krate_collection);
+        let sync = process_framework_path("core::marker::Sync", &package_graph, &krate_collection);
+        let clone = process_framework_path("core::clone::Clone", &package_graph, &krate_collection);
         for singleton_type in runtime_singletons.right_values().filter_map(|ty| {
             if component2lifecycle.get(ty) == Some(&Lifecycle::Singleton) {
                 Some(ty)
@@ -369,13 +397,9 @@ impl App {
                 None
             }
         }) {
-            for trait_path in [
-                &["core", "marker", "Send"],
-                &["core", "marker", "Sync"],
-                &["core", "clone", "Clone"],
-            ] {
+            for trait_ in [&send, &sync, &clone] {
                 if let Err(e) =
-                    assert_trait_is_implemented(&krate_collection, singleton_type, trait_path)
+                    assert_trait_is_implemented(&krate_collection, singleton_type, trait_)
                 {
                     return Err(e
                         .into_diagnostic(
@@ -580,13 +604,8 @@ fn framework_bindings(
     package_graph: &PackageGraph,
     krate_collection: &mut CrateCollection,
 ) -> BiHashMap<Ident, ResolvedType> {
-    // pavex_runtime::http::Request<pavex_runtime::hyper::Body>
-    let http_request = "pavex_runtime::http::Request";
-    let mut http_request = process_framework_path(http_request, package_graph, krate_collection);
-    let hyper_body = "pavex_runtime::hyper::Body";
-    let hyper_body = process_framework_path(hyper_body, package_graph, krate_collection);
-    http_request.generic_arguments = vec![hyper_body];
-
+    let http_request = "pavex_runtime::http::Request::<pavex_runtime::hyper::Body>";
+    let http_request = process_framework_path(http_request, package_graph, krate_collection);
     BiHashMap::from_iter([(format_ident!("request"), http_request)].into_iter())
 }
 
@@ -600,10 +619,11 @@ fn codegen_types(
     HashSet::from([error])
 }
 
+/// Resolve a type path assuming that the crate is a dependency of `pavex_builder`.
 fn process_framework_path(
     raw_path: &str,
     package_graph: &PackageGraph,
-    krate_collection: &mut CrateCollection,
+    krate_collection: &CrateCollection,
 ) -> ResolvedType {
     // We are relying on a little hack to anchor our search:
     // all framework types belong to crates that are direct dependencies of `pavex_builder`.
@@ -611,21 +631,14 @@ fn process_framework_path(
     let identifiers =
         RawCallableIdentifiers::from_raw_parts(raw_path.into(), "pavex_builder".into());
     let path = ResolvedPath::parse(&identifiers, package_graph).unwrap();
-    let type_id = path.find_type_id(krate_collection).unwrap();
-    let base_path = krate_collection
-        .get_canonical_path_by_global_type_id(&type_id)
-        .unwrap();
-    let GlobalTypeId {
-        rustdoc_item_id: raw_id,
-        package_id,
-    } = type_id;
-    ResolvedType {
-        package_id,
-        rustdoc_id: Some(raw_id),
-        base_type: base_path.to_vec(),
-        generic_arguments: vec![],
-        is_shared_reference: false,
-    }
+    let (item, _) = path.find_rustdoc_items(krate_collection).unwrap();
+    resolve_type_path(
+        &path,
+        &item.item,
+        &item.item_id.package_id,
+        krate_collection,
+    )
+    .unwrap()
 }
 
 #[derive(Debug, thiserror::Error)]

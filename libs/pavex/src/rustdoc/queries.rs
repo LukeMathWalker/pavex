@@ -76,10 +76,10 @@ impl CrateCollection {
         })
     }
 
-    /// Retrieve type information given its [`GlobalTypeId`].
+    /// Retrieve type information given its [`GlobalItemId`].
     ///
-    /// It panics if no item is found for the specified [`GlobalTypeId`].
-    pub fn get_type_by_global_type_id(&self, type_id: &GlobalTypeId) -> &Item {
+    /// It panics if no item is found for the specified [`GlobalItemId`].
+    pub fn get_type_by_global_type_id(&self, type_id: &GlobalItemId) -> &Item {
         let krate = self.get_crate_by_package_id(&type_id.package_id);
         krate.get_type_by_local_type_id(&type_id.rustdoc_item_id)
     }
@@ -96,6 +96,7 @@ impl CrateCollection {
             let i = self.get_type_by_global_type_id(type_id);
             return Ok(Ok(ResolvedItem {
                 item: Cow::Borrowed(i),
+                item_id: type_id.to_owned(),
                 parent: None,
             }));
         }
@@ -139,6 +140,10 @@ impl CrateCollection {
                                 if let ItemEnum::Function(_) = &impl_item.inner {
                                     return Ok(Ok(ResolvedItem {
                                         item: Cow::Borrowed(impl_item),
+                                        item_id: GlobalItemId {
+                                            package_id: krate.core.package_id.clone(),
+                                            rustdoc_item_id: impl_item_id.to_owned(),
+                                        },
                                         parent: Some(Cow::Borrowed(parent)),
                                     }));
                                 }
@@ -149,6 +154,10 @@ impl CrateCollection {
                         if child.name.as_ref() == Some(method_name) {
                             return Ok(Ok(ResolvedItem {
                                 item: Cow::Borrowed(child),
+                                item_id: GlobalItemId {
+                                    package_id: krate.core.package_id.clone(),
+                                    rustdoc_item_id: child_id.to_owned(),
+                                },
                                 parent: Some(Cow::Borrowed(parent)),
                             }));
                         }
@@ -166,24 +175,24 @@ impl CrateCollection {
         .into()))
     }
 
-    /// Retrieve the canonical path for a struct, enum or function given its [`GlobalTypeId`].
+    /// Retrieve the canonical path for a struct, enum or function given its [`GlobalItemId`].
     ///
-    /// It panics if no item is found for the specified [`GlobalTypeId`].
+    /// It panics if no item is found for the specified [`GlobalItemId`].
     pub fn get_canonical_path_by_global_type_id(
         &self,
-        type_id: &GlobalTypeId,
+        type_id: &GlobalItemId,
     ) -> Result<&[String], anyhow::Error> {
         let krate = self.get_crate_by_package_id(&type_id.package_id);
         krate.get_canonical_path(type_id)
     }
 
-    /// Retrieve the canonical path and the [`GlobalTypeId`] for a struct, enum or function given
+    /// Retrieve the canonical path and the [`GlobalItemId`] for a struct, enum or function given
     /// its **local** id.
     pub fn get_canonical_path_by_local_type_id(
         &self,
         used_by_package_id: &PackageId,
         item_id: &rustdoc_types::Id,
-    ) -> Result<(GlobalTypeId, &[String]), anyhow::Error> {
+    ) -> Result<(GlobalItemId, &[String]), anyhow::Error> {
         let (definition_package_id, path) = {
             let used_by_krate = self.get_or_compute_crate_by_package_id(used_by_package_id)?;
             let local_type_summary = used_by_krate.get_type_summary_by_local_type_id(item_id)?;
@@ -210,6 +219,7 @@ impl CrateCollection {
 #[derive(Debug, Clone)]
 pub struct ResolvedItem<'a> {
     pub item: Cow<'a, Item>,
+    pub item_id: GlobalItemId,
     pub parent: Option<Cow<'a, Item>>,
 }
 
@@ -221,20 +231,20 @@ pub struct ResolvedItem<'a> {
 /// for the workspace it belongs to.
 #[derive(Debug, Clone)]
 pub struct Crate {
-    core: CrateCore,
+    pub(crate) core: CrateCore,
     /// An index to lookup the global id of a type given a local importable path
     /// that points at it.
     ///
     /// The index does NOT contain macros, since macros and types live in two
     /// different namespaces and can contain items with the same name.
     /// E.g. `core::clone::Clone` is both a trait and a derive macro.
-    types_path_index: HashMap<Vec<String>, GlobalTypeId>,
-    public_local_path_index: HashMap<GlobalTypeId, BTreeSet<Vec<String>>>,
+    types_path_index: HashMap<Vec<String>, GlobalItemId>,
+    public_local_path_index: HashMap<GlobalItemId, BTreeSet<Vec<String>>>,
 }
 
 #[derive(Debug, Clone)]
-struct CrateCore {
-    package_id: PackageId,
+pub(crate) struct CrateCore {
+    pub(crate) package_id: PackageId,
     krate: rustdoc_types::Crate,
 }
 
@@ -365,7 +375,7 @@ impl Crate {
             .map(|(id, summary)| {
                 (
                     summary.path.clone(),
-                    GlobalTypeId::new(id.to_owned(), crate_core.package_id.clone()),
+                    GlobalItemId::new(id.to_owned(), crate_core.package_id.clone()),
                 )
             })
             .collect();
@@ -408,7 +418,7 @@ impl Crate {
             .compute_package_id_for_crate_id(crate_id, collection)
     }
 
-    pub fn get_type_id_by_path(&self, path: &[String]) -> Result<&GlobalTypeId, UnknownItemPath> {
+    pub fn get_type_id_by_path(&self, path: &[String]) -> Result<&GlobalItemId, UnknownItemPath> {
         self.types_path_index
             .get(path)
             .ok_or_else(|| UnknownItemPath {
@@ -449,7 +459,7 @@ impl Crate {
     /// Types can be exposed under multiple paths.
     /// This method returns a "canonical" importable path - i.e. the shortest importable path
     /// pointing at the type you specified.
-    fn get_canonical_path(&self, type_id: &GlobalTypeId) -> Result<&[String], anyhow::Error> {
+    fn get_canonical_path(&self, type_id: &GlobalItemId) -> Result<&[String], anyhow::Error> {
         if let Some(path) = self.public_local_path_index.get(type_id) {
             Ok(path.iter().next().unwrap())
         } else {
@@ -466,7 +476,7 @@ fn index_local_types<'a>(
     crate_core: &'a CrateCore,
     collection: &'a CrateCollection,
     mut current_path: Vec<&'a str>,
-    path_index: &mut HashMap<GlobalTypeId, BTreeSet<Vec<String>>>,
+    path_index: &mut HashMap<GlobalItemId, BTreeSet<Vec<String>>>,
     current_item_id: &rustdoc_types::Id,
 ) {
     // TODO: the way we handle `current_path` is extremely wasteful,
@@ -582,7 +592,7 @@ fn index_local_types<'a>(
             current_path.push(name);
             let path = current_path.into_iter().map(|s| s.to_string()).collect();
             path_index
-                .entry(GlobalTypeId::new(
+                .entry(GlobalItemId::new(
                     current_item_id.to_owned(),
                     crate_core.package_id.to_owned(),
                 ))
@@ -595,12 +605,12 @@ fn index_local_types<'a>(
 
 /// An identifier that unequivocally points to a type within a [`CrateCollection`].
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct GlobalTypeId {
+pub struct GlobalItemId {
     pub(crate) rustdoc_item_id: rustdoc_types::Id,
     pub(crate) package_id: PackageId,
 }
 
-impl GlobalTypeId {
+impl GlobalItemId {
     fn new(raw_id: rustdoc_types::Id, package_id: PackageId) -> Self {
         Self {
             rustdoc_item_id: raw_id,

@@ -5,7 +5,7 @@
 pub use compute::CannotGetCrateData;
 pub use package_id_spec::PackageIdSpecification;
 pub use queries::{
-    Crate, CrateCollection, GetItemByResolvedPathError, GlobalTypeId, ResolvedItem, RustdocKindExt,
+    Crate, CrateCollection, GetItemByResolvedPathError, GlobalItemId, ResolvedItem, RustdocKindExt,
     UnknownItemPath,
 };
 
