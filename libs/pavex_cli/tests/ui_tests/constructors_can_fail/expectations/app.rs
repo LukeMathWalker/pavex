@@ -8,6 +8,7 @@ struct ServerState {
 pub struct ApplicationState {
     s0: app::HttpClient,
 }
+#[derive(Debug)]
 pub enum ApplicationStateError {
     HttpClientError(app::HttpClientError),
 }

@@ -137,8 +137,10 @@ fn define_application_state_error(
         let variant_name = format_ident!("{}", type_.base_type.last().unwrap());
         quote! { #variant_name(#variant_type) }
     });
+    // TODO: implement `Display` + `Error` for `ApplicationStateError`
     Some(
         syn::parse2(quote! {
+            #[derive(Debug)]
             pub enum ApplicationStateError {
                 #(#singleton_fields),*
             }
