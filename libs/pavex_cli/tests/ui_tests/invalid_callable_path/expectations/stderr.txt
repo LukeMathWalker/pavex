@@ -1,9 +1,9 @@
 Error: 
-  × `hello,` is not a valid import path.
-   ╭─[src/lib.rs:3:1]
- 3 │ pub fn blueprint() -> AppBlueprint {
- 4 │     AppBlueprint::new().route("hello,", "/home")
-   ·                               ────┬───
-   ·                                   ╰── The invalid import path was registered here
- 5 │ }
-   ╰────
+  × `my_f,` is not a valid import path.
+    ╭─[src/lib.rs:10:1]
+ 10 │     };
+ 11 │     bp.route(callable, "/home");
+    ·              ────┬───
+    ·                  ╰── The invalid import path was registered here
+ 12 │     bp
+    ╰────

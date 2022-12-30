@@ -25,14 +25,15 @@ pub fn stream_file(
     s: &Singleton,
     r: &RequestScoped,
     t: &Transient,
-) -> http::Response<hyper::body::Body> {
+) -> pavex_runtime::response::Response {
     todo!()
 }
 
 pub fn blueprint() -> AppBlueprint {
-    AppBlueprint::new()
-        .constructor(f!(crate::Singleton::new), Lifecycle::Singleton)
-        .constructor(f!(crate::request_scoped), Lifecycle::RequestScoped)
-        .constructor(f!(crate::transient), Lifecycle::Transient)
-        .route(f!(crate::stream_file), "/home")
+    let mut bp = AppBlueprint::new();
+    bp.constructor(f!(crate::Singleton::new), Lifecycle::Singleton);
+    bp.constructor(f!(crate::request_scoped), Lifecycle::RequestScoped);
+    bp.constructor(f!(crate::transient), Lifecycle::Transient);
+    bp.route(f!(crate::stream_file), "/home");
+    bp
 }

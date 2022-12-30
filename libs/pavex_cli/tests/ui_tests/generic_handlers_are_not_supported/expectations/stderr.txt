@@ -1,19 +1,19 @@
 Error: 
   × One of the input parameters for `app::stream_file::<std::path::PathBuf>`
   │ has a type that I cannot handle.
-   ╭─[src/lib.rs:7:1]
- 7 │ pub fn blueprint() -> AppBlueprint {
- 8 │     AppBlueprint::new().route(f!(crate::stream_file::<std::path::PathBuf>), "/home")
-   ·                               ──────────────────────┬─────────────────────
-   ·                                                     ╰── The handler was registered here
- 9 │ }
-   ╰────
+    ╭─[src/lib.rs:8:1]
+  8 │     let mut bp = AppBlueprint::new();
+  9 │     bp.route(f!(crate::stream_file::<std::path::PathBuf>), "/home");
+    ·              ──────────────────────┬─────────────────────
+    ·                                    ╰── The handler was registered here
+ 10 │     bp
+    ╰────
 
 Error: 
   × 
    ╭─[src/lib.rs:2:1]
  2 │ 
- 3 │ pub fn stream_file<T>(_inner: T) -> http::Response<hyper::body::Body> {
+ 3 │ pub fn stream_file<T>(_inner: T) -> pavex_runtime::response::Response {
    ·                               ┬
    ·                               ╰── I do not know how handle this parameter
  4 │     todo!()

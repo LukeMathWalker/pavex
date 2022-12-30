@@ -17,9 +17,9 @@ pub async fn run(
         pavex_runtime::hyper::server::conn::AddrIncoming,
     >,
     application_state: ApplicationState,
-) -> Result<(), anyhow::Error> {
+) -> Result<(), pavex_runtime::Error> {
     let server_state = std::sync::Arc::new(ServerState {
-        router: build_router()?,
+        router: build_router().map_err(pavex_runtime::Error::new)?,
         application_state,
     });
     let make_service = pavex_runtime::hyper::service::make_service_fn(move |_| {
@@ -41,7 +41,7 @@ pub async fn run(
             )
         }
     });
-    server_builder.serve(make_service).await.map_err(Into::into)
+    server_builder.serve(make_service).await.map_err(pavex_runtime::Error::new)
 }
 fn build_router() -> Result<
     pavex_runtime::routing::Router<u32>,
@@ -54,7 +54,7 @@ fn build_router() -> Result<
 async fn route_request(
     request: pavex_runtime::http::Request<pavex_runtime::hyper::body::Body>,
     server_state: std::sync::Arc<ServerState>,
-) -> pavex_runtime::http::Response<pavex_runtime::hyper::body::Body> {
+) -> pavex_runtime::response::Response {
     let route_id = server_state
         .router
         .at(request.uri().path())
@@ -64,8 +64,13 @@ async fn route_request(
         _ => panic!("This is a bug, no route registered for a route id"),
     }
 }
-pub async fn route_handler_0(v1: &app::Singleton) -> http::Response<hyper::Body> {
-    let v0 = app::request_scoped();
-    let v2 = &app::transient();
-    app::stream_file(v1, &v0, v2)
+pub async fn route_handler_0(v0: &app::Singleton) -> pavex_runtime::response::Response {
+    let v1 = app::request_scoped();
+    let v3 = {
+        let v2 = &app::transient();
+        app::stream_file(v0, &v1, v2)
+    };
+    <pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(
+        v3,
+    )
 }

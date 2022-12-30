@@ -1,5 +1,13 @@
-use pavex_builder::AppBlueprint;
+use pavex_builder::{AppBlueprint, RawCallable};
+
+pub fn my_f() {}
 
 pub fn blueprint() -> AppBlueprint {
-    AppBlueprint::new().route("hello,", "/home")
+    let mut bp = AppBlueprint::new();
+    let callable = RawCallable {
+        callable: my_f,
+        import_path: "my_f,",
+    };
+    bp.route(callable, "/home");
+    bp
 }

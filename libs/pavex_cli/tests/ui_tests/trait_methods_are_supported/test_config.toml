@@ -1,0 +1,8 @@
+description = "pavex supports trait methods as constructors"
+
+[expectations]
+codegen = "pass"
+
+[dependencies]
+http = "0.2"
+hyper = { version = "0.14", features = ["server", "http1", "http2"] }

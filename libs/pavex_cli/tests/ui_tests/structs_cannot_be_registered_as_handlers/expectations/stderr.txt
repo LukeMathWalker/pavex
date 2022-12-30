@@ -1,11 +1,18 @@
-Error: 
-  × I can work with functions and static methods, but `app::Streamer` is
-  │ neither.
-  │ It is a struct and I do not know how to handle it here.
-   ╭─[src/lib.rs:5:1]
- 5 │ pub fn blueprint() -> AppBlueprint {
- 6 │     AppBlueprint::new().route(f!(crate::Streamer), "/home")
-   ·                               ─────────┬─────────
-   ·                                        ╰── It was registered as a handler here
- 7 │ }
-   ╰────
+error[E0277]: the trait bound `Streamer: Callable<_>` is not satisfied
+   --> src/lib.rs:7:14
+    |
+7   |     bp.route(f!(crate::Streamer), "/home");
+    |        ----- ^^^^^^^^^^^^^^^^^^^
+    |        |     |
+    |        |     the trait `Callable<_>` is not implemented for `Streamer`
+    |        |     this tail expression is of type `pavex_builder::RawCallable<_>`
+    |        required by a bound introduced by this call
+    |
+note: required by a bound in `AppBlueprint::route`
+   --> /Users/luca/code/pavex/libs/pavex_builder/src/app.rs:138:12
+    |
+138 |         F: Callable<HandlerInputs>,
+    |            ^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `AppBlueprint::route`
+
+For more information about this error, try `rustc --explain E0277`.
+error: could not compile `app` due to previous error

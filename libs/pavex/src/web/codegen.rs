@@ -8,27 +8,31 @@ use guppy::{PackageId, Version};
 use indexmap::{IndexMap, IndexSet};
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote};
-use syn::{ItemFn, ItemStruct};
+use syn::{ItemEnum, ItemFn, ItemStruct};
 
 use crate::language::ResolvedPath;
 use crate::language::{Callable, ResolvedType};
-use crate::rustdoc::STD_PACKAGE_ID;
+use crate::rustdoc::TOOLCHAIN_CRATES;
 use crate::web::app::GENERATED_APP_PACKAGE_ID;
-use crate::web::call_graph::{CallGraph, CallGraphNode};
+use crate::web::call_graph::{
+    ApplicationStateCallGraph, CallGraph, CallGraphNode, ComputeComponent,
+};
 use crate::web::constructors::Constructor;
 
 pub(crate) fn codegen_app(
     router: &BTreeMap<String, Callable>,
     handler_call_graphs: &IndexMap<ResolvedPath, CallGraph>,
-    application_state_call_graph: &CallGraph,
+    application_state_call_graph: &ApplicationStateCallGraph,
     request_scoped_framework_bindings: &BiHashMap<Ident, ResolvedType>,
     package_id2name: &BiHashMap<&'_ PackageId, String>,
     runtime_singleton_bindings: &BiHashMap<Ident, ResolvedType>,
 ) -> Result<TokenStream, anyhow::Error> {
     let define_application_state =
         define_application_state(runtime_singleton_bindings, package_id2name);
+    let define_application_state_error =
+        define_application_state_error(&application_state_call_graph.error_types, package_id2name);
     let application_state_init =
-        get_application_state_init(application_state_call_graph, package_id2name)?;
+        get_application_state_init(&application_state_call_graph, package_id2name)?;
     let define_server_state = define_server_state();
 
     let handler_functions: IndexMap<_, _> = handler_call_graphs
@@ -71,6 +75,7 @@ pub(crate) fn codegen_app(
         //! All manual edits will be lost next time the code is generated.
         #define_server_state
         #define_application_state
+        #define_application_state_error
         #application_state_init
         #entrypoint
         #router_init
@@ -85,9 +90,9 @@ fn server_startup() -> ItemFn {
         pub async fn run(
             server_builder: pavex_runtime::hyper::server::Builder<pavex_runtime::hyper::server::conn::AddrIncoming>,
             application_state: ApplicationState
-        ) -> Result<(), anyhow::Error> {
+        ) -> Result<(), pavex_runtime::Error> {
             let server_state = std::sync::Arc::new(ServerState {
-                router: build_router()?,
+                router: build_router().map_err(pavex_runtime::Error::new)?,
                 application_state
             });
             let make_service = pavex_runtime::hyper::service::make_service_fn(move |_| {
@@ -99,7 +104,7 @@ fn server_startup() -> ItemFn {
                     }))
                 }
             });
-            server_builder.serve(make_service).await.map_err(Into::into)
+            server_builder.serve(make_service).await.map_err(pavex_runtime::Error::new)
         }
     }).unwrap()
 }
@@ -120,6 +125,30 @@ fn define_application_state(
     .unwrap()
 }
 
+fn define_application_state_error(
+    error_types: &IndexSet<ResolvedType>,
+    package_id2name: &BiHashMap<&'_ PackageId, String>,
+) -> Option<ItemEnum> {
+    if error_types.is_empty() {
+        return None;
+    }
+    let singleton_fields = error_types.iter().map(|type_| {
+        let variant_type = type_.syn_type(package_id2name);
+        let variant_name = format_ident!("{}", type_.base_type.last().unwrap());
+        quote! { #variant_name(#variant_type) }
+    });
+    // TODO: implement `Display` + `Error` for `ApplicationStateError`
+    Some(
+        syn::parse2(quote! {
+            #[derive(Debug)]
+            pub enum ApplicationStateError {
+                #(#singleton_fields),*
+            }
+        })
+        .unwrap(),
+    )
+}
+
 fn define_server_state() -> ItemStruct {
     syn::parse2(quote! {
         struct ServerState {
@@ -131,11 +160,21 @@ fn define_server_state() -> ItemStruct {
 }
 
 fn get_application_state_init(
-    application_state_call_graph: &CallGraph,
+    application_state_call_graph: &ApplicationStateCallGraph,
     package_id2name: &BiHashMap<&'_ PackageId, String>,
 ) -> Result<ItemFn, anyhow::Error> {
-    let mut function = application_state_call_graph.codegen(package_id2name)?;
+    let mut function = application_state_call_graph
+        .call_graph
+        .codegen(package_id2name)?;
     function.sig.ident = format_ident!("build_application_state");
+    if !application_state_call_graph.error_types.is_empty() {
+        function.sig.output = syn::ReturnType::Type(
+            Default::default(),
+            Box::new(syn::parse2(
+                quote! { Result<crate::ApplicationState, crate::ApplicationStateError> },
+            )?),
+        );
+    }
     Ok(function)
 }
 
@@ -205,7 +244,7 @@ fn get_request_dispatcher(
     }
 
     syn::parse2(quote! {
-        async fn route_request(request: pavex_runtime::http::Request<pavex_runtime::hyper::body::Body>, server_state: std::sync::Arc<ServerState>) -> pavex_runtime::http::Response<pavex_runtime::hyper::body::Body> {
+        async fn route_request(request: pavex_runtime::http::Request<pavex_runtime::hyper::body::Body>, server_state: std::sync::Arc<ServerState>) -> pavex_runtime::response::Response {
             let route_id = server_state.router.at(request.uri().path()).expect("Failed to match incoming request path");
             match route_id.value {
                 #route_dispatch_table
@@ -299,7 +338,9 @@ fn compute_dependencies<'a>(
         Default::default();
     let workspace_root = package_graph.workspace().root();
     for package_id in &package_ids {
-        if package_id.repr() != GENERATED_APP_PACKAGE_ID && package_id.repr() != STD_PACKAGE_ID {
+        if package_id.repr() != GENERATED_APP_PACKAGE_ID
+            && !TOOLCHAIN_CRATES.contains(&package_id.repr())
+        {
             let metadata = package_graph.metadata(package_id).unwrap();
             let path = match metadata.source() {
                 PackageSource::Workspace(p) | PackageSource::Path(p) => {
@@ -380,15 +421,26 @@ fn collect_call_graph_package_ids<'a>(
 ) {
     for node in call_graph.call_graph.node_weights() {
         match node {
-            CallGraphNode::Compute { constructor: c, .. } => match c {
-                Constructor::BorrowSharedReference(t) => {
-                    collect_type_package_ids(package_ids, &t.input)
+            CallGraphNode::Compute { component, .. } => match component {
+                ComputeComponent::Constructor(c) => match c {
+                    Constructor::BorrowSharedReference(t) => {
+                        collect_type_package_ids(package_ids, &t.input)
+                    }
+                    Constructor::Callable(c) => {
+                        collect_callable_package_ids(package_ids, c);
+                    }
+                    Constructor::MatchResult(m) => {
+                        collect_type_package_ids(package_ids, &m.input);
+                        collect_type_package_ids(package_ids, &m.output);
+                    }
+                },
+                ComputeComponent::ErrorHandler(e) => {
+                    collect_callable_package_ids(package_ids, e.as_ref())
                 }
-                Constructor::Callable(c) => {
-                    collect_callable_package_ids(package_ids, c);
-                }
+                ComputeComponent::Transformer(t) => collect_callable_package_ids(package_ids, t),
             },
             CallGraphNode::InputParameter(t) => collect_type_package_ids(package_ids, t),
+            CallGraphNode::MatchBranching => {}
         }
     }
 }
@@ -398,7 +450,9 @@ fn collect_callable_package_ids<'a>(package_ids: &mut IndexSet<&'a PackageId>, c
     for input in &c.inputs {
         collect_type_package_ids(package_ids, input);
     }
-    collect_type_package_ids(package_ids, &c.output);
+    if let Some(output) = c.output.as_ref() {
+        collect_type_package_ids(package_ids, output);
+    }
 }
 
 fn collect_type_package_ids<'a>(package_ids: &mut IndexSet<&'a PackageId>, t: &'a ResolvedType) {

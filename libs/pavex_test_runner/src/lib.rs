@@ -45,7 +45,14 @@ pub fn run_tests(
             definition_directory: entry.path(),
             runtime_directory: runtime_directory.join("tests").join(filename),
         };
-        let test = libtest_mimic::Trial::test(name.clone(), move || run_test(test_data));
+        let test_configuration = test_data
+            .load_configuration()
+            .expect("Failed to load test configuration");
+        let is_ignored = test_configuration.ignore;
+        let test = libtest_mimic::Trial::test(name.clone(), move || {
+            run_test(test_data, test_configuration)
+        })
+        .with_ignored_flag(is_ignored);
         tests.push(test);
     }
     Ok(libtest_mimic::run(&arguments, tests))
@@ -70,6 +77,9 @@ struct TestConfig {
     /// `pavex` itself.
     #[serde(default)]
     dependencies: toml::value::Table,
+    /// Ignore the test if set to `true`.
+    #[serde(default)]
+    ignore: bool,
 }
 
 #[derive(serde::Deserialize)]
@@ -245,41 +255,36 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 }
 
-fn run_test(test: TestData) -> Result<(), Failed> {
-    match test.load_configuration() {
-        // Ensure that the test description is always injected on top of the failure message
-        Ok(c) => match _run_test(&c, &test) {
-            Ok(TestOutcome {
-                outcome: Err(mut msg),
-                codegen_output,
-                compilation_output,
-            }) => Err(Failed::from({
+fn run_test(test: TestData, config: TestConfig) -> Result<(), Failed> {
+    match _run_test(&config, &test) {
+        Ok(TestOutcome {
+            outcome: Err(mut msg),
+            codegen_output,
+            compilation_output,
+        }) => Err(Failed::from({
+            write!(
+                &mut msg,
+                "\n\nCODEGEN:\n\t--- STDOUT:\n{}\n\t--- STDERR:\n{}",
+                codegen_output.stdout, codegen_output.stderr
+            )
+            .unwrap();
+            if let Some(compilation_output) = compilation_output {
                 write!(
                     &mut msg,
-                    "\n\nCODEGEN:\n\t--- STDOUT:\n{}\n\t--- STDERR:\n{}",
-                    codegen_output.stdout, codegen_output.stderr
+                    "\n\nCARGO CHECK:\n\t--- STDOUT:\n{}\n\t--- STDERR:\n{}",
+                    compilation_output.stdout, compilation_output.stderr
                 )
                 .unwrap();
-                if let Some(compilation_output) = compilation_output {
-                    write!(
-                        &mut msg,
-                        "\n\nCARGO CHECK:\n\t--- STDOUT:\n{}\n\t--- STDERR:\n{}",
-                        compilation_output.stdout, compilation_output.stderr
-                    )
-                    .unwrap();
-                }
-                enrich_failure_message(&c, msg)
-            })),
-            Err(e) => Err(Failed::from(enrich_failure_message(
-                &c,
-                unexpected_failure_message(&e),
-            ))),
-            Ok(TestOutcome {
-                outcome: Ok(()), ..
-            }) => Ok(()),
-        },
-        // We do not have the test description if we fail to load the test configuration, so...
-        Err(e) => Err(Failed::from(unexpected_failure_message(&e))),
+            }
+            enrich_failure_message(&config, msg)
+        })),
+        Err(e) => Err(Failed::from(enrich_failure_message(
+            &config,
+            unexpected_failure_message(&e),
+        ))),
+        Ok(TestOutcome {
+            outcome: Ok(()), ..
+        }) => Ok(()),
     }
 }
 

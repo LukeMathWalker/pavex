@@ -16,7 +16,7 @@ pub fn stream_file(
     _inner: PathBuf,
     _logger: Logger,
     _http_client: HttpClient,
-) -> pavex_runtime::http::Response<pavex_runtime::hyper::Body> {
+) -> pavex_runtime::response::Response {
     todo!()
 }
 
@@ -34,9 +34,10 @@ pub fn http_client(_config: Config) -> HttpClient {
 }
 
 pub fn app_blueprint() -> AppBlueprint {
-    AppBlueprint::new()
-        .constructor(f!(crate::http_client), Lifecycle::Singleton)
-        .constructor(f!(crate::extract_path), Lifecycle::RequestScoped)
-        .constructor(f!(crate::logger), Lifecycle::Transient)
-        .route(f!(crate::stream_file), "/home")
+    let mut bp = AppBlueprint::new();
+    bp.constructor(f!(crate::http_client), Lifecycle::Singleton);
+    bp.constructor(f!(crate::extract_path), Lifecycle::RequestScoped);
+    bp.constructor(f!(crate::logger), Lifecycle::Transient);
+    bp.route(f!(crate::stream_file), "/home");
+    bp
 }
