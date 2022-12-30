@@ -8,7 +8,9 @@ struct ServerState {
 pub struct ApplicationState {
     s0: app_blueprint::HttpClient,
 }
-pub async fn build_application_state(v0: app_blueprint::Config) -> crate::ApplicationState {
+pub async fn build_application_state(
+    v0: app_blueprint::Config,
+) -> crate::ApplicationState {
     let v1 = app_blueprint::http_client(v0);
     crate::ApplicationState { s0: v1 }
 }
@@ -17,30 +19,36 @@ pub async fn run(
         pavex_runtime::hyper::server::conn::AddrIncoming,
     >,
     application_state: ApplicationState,
-) -> Result<(), anyhow::Error> {
+) -> Result<(), pavex_runtime::Error> {
     let server_state = std::sync::Arc::new(ServerState {
-        router: build_router()?,
+        router: build_router().map_err(pavex_runtime::Error::new)?,
         application_state,
     });
     let make_service = pavex_runtime::hyper::service::make_service_fn(move |_| {
         let server_state = server_state.clone();
         async move {
-            Ok::<_, pavex_runtime::hyper::Error>(pavex_runtime::hyper::service::service_fn(
-                move |request| {
+            Ok::<
+                _,
+                pavex_runtime::hyper::Error,
+            >(
+                pavex_runtime::hyper::service::service_fn(move |request| {
                     let server_state = server_state.clone();
                     async move {
-                        Ok::<_, pavex_runtime::hyper::Error>(
-                            route_request(request, server_state).await,
-                        )
+                        Ok::<
+                            _,
+                            pavex_runtime::hyper::Error,
+                        >(route_request(request, server_state).await)
                     }
-                },
-            ))
+                }),
+            )
         }
     });
-    server_builder.serve(make_service).await.map_err(Into::into)
+    server_builder.serve(make_service).await.map_err(pavex_runtime::Error::new)
 }
-fn build_router() -> Result<pavex_runtime::routing::Router<u32>, pavex_runtime::routing::InsertError>
-{
+fn build_router() -> Result<
+    pavex_runtime::routing::Router<u32>,
+    pavex_runtime::routing::InsertError,
+> {
     let mut router = pavex_runtime::routing::Router::new();
     router.insert("/home", 0u32)?;
     Ok(router)
@@ -48,7 +56,7 @@ fn build_router() -> Result<pavex_runtime::routing::Router<u32>, pavex_runtime::
 async fn route_request(
     request: pavex_runtime::http::Request<pavex_runtime::hyper::body::Body>,
     server_state: std::sync::Arc<ServerState>,
-) -> pavex_runtime::http::Response<pavex_runtime::hyper::body::Body> {
+) -> pavex_runtime::response::Response {
     let route_id = server_state
         .router
         .at(request.uri().path())
@@ -61,8 +69,13 @@ async fn route_request(
 pub async fn route_handler_0(
     v0: app_blueprint::HttpClient,
     v1: http::Request<hyper::Body>,
-) -> http::Response<hyper::Body> {
+) -> pavex_runtime::response::Response {
     let v2 = app_blueprint::extract_path(v1);
-    let v3 = app_blueprint::logger();
-    app_blueprint::stream_file(v2, v3, v0)
+    let v4 = {
+        let v3 = app_blueprint::logger();
+        app_blueprint::stream_file(v2, v3, v0)
+    };
+    <pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(
+        v4,
+    )
 }

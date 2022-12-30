@@ -19,7 +19,7 @@
             import_path: "crate :: stream_file",
         ),
     ],
-    error_handlers: [],
+    constructor_error_handlers: {},
     component_lifecycles: {
         (
             registered_at: "app_blueprint",
@@ -40,7 +40,7 @@
             import_path: "crate :: stream_file",
         ),
     },
-    handler_locations: {
+    request_handler_locations: {
         (
             registered_at: "app_blueprint",
             import_path: "crate :: stream_file",
