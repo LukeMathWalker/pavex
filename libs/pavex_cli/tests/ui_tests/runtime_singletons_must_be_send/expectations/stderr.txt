@@ -1,0 +1,12 @@
+Error: 
+  × `app::NonSendSingleton` does not implement the `core::marker::Send` trait.
+    ╭─[src/lib.rs:24:1]
+ 24 │     let mut bp = AppBlueprint::new();
+ 25 │     bp.constructor(f!(crate::NonSendSingleton::new), Lifecycle::Singleton);
+    ·                    ────────────────┬───────────────
+    ·                                    ╰── The constructor was registered here
+ 26 │     // The handler is needed because bounds are only checked for singletons
+    ╰────
+  help: All singletons must implement the `Send`, `Sync` and `Clone` traits.
+         `pavex` runs on a multi-threaded HTTP server and singletons must be
+        shared across all worker threads.

@@ -1,6 +1,8 @@
 pub(crate) use callable::{Callable, InvocationStyle};
 pub(crate) use callable_path::{CallPath, InvalidCallPath};
-pub(crate) use resolved_path::{ParseError, ResolvedPath, ResolvedPathSegment, UnknownPath};
+pub(crate) use resolved_path::{
+    ParseError, ResolvedPath, ResolvedPathQualifiedSelf, ResolvedPathSegment, UnknownPath,
+};
 pub(crate) use resolved_type::ResolvedType;
 
 mod callable;

@@ -1,12 +1,12 @@
 Error: 
   × One of the input parameters for `app::stream_file` has a type that I
   │ cannot handle.
-    ╭─[src/lib.rs:9:1]
-  9 │ pub fn blueprint() -> AppBlueprint {
- 10 │     AppBlueprint::new().constructor(f!(crate::stream_file), Lifecycle::Singleton)
-    ·                                     ───────────┬──────────
-    ·                                                ╰── The constructor was registered here
- 11 │ }
+    ╭─[src/lib.rs:10:1]
+ 10 │     let mut bp = AppBlueprint::new();
+ 11 │     bp.constructor(f!(crate::stream_file), Lifecycle::Singleton);
+    ·                    ───────────┬──────────
+    ·                               ╰── The constructor was registered here
+ 12 │     bp
     ╰────
 
 Error: 

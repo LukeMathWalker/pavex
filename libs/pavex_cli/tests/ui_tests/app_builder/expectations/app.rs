@@ -17,9 +17,9 @@ pub async fn run(
         pavex_runtime::hyper::server::conn::AddrIncoming,
     >,
     application_state: ApplicationState,
-) -> Result<(), anyhow::Error> {
+) -> Result<(), pavex_runtime::Error> {
     let server_state = std::sync::Arc::new(ServerState {
-        router: build_router()?,
+        router: build_router().map_err(pavex_runtime::Error::new)?,
         application_state,
     });
     let make_service = pavex_runtime::hyper::service::make_service_fn(move |_| {
@@ -41,7 +41,7 @@ pub async fn run(
             )
         }
     });
-    server_builder.serve(make_service).await.map_err(Into::into)
+    server_builder.serve(make_service).await.map_err(pavex_runtime::Error::new)
 }
 fn build_router() -> Result<
     pavex_runtime::routing::Router<u32>,
@@ -54,7 +54,7 @@ fn build_router() -> Result<
 async fn route_request(
     request: pavex_runtime::http::Request<pavex_runtime::hyper::body::Body>,
     server_state: std::sync::Arc<ServerState>,
-) -> pavex_runtime::http::Response<pavex_runtime::hyper::body::Body> {
+) -> pavex_runtime::response::Response {
     let route_id = server_state
         .router
         .at(request.uri().path())
@@ -67,8 +67,26 @@ async fn route_request(
 pub async fn route_handler_0(
     v0: app::HttpClient,
     v1: http::Request<hyper::Body>,
-) -> http::Response<hyper::Body> {
+) -> pavex_runtime::response::Response {
     let v2 = app::extract_path(v1);
-    let v3 = app::logger();
-    app::stream_file(v2, v3, v0)
+    match v2 {
+        Err(v3) => {
+            let v5 = {
+                let v4 = app::logger();
+                app::handle_extract_path_error(&v3, v4)
+            };
+            <pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(
+                v5,
+            )
+        }
+        Ok(v3) => {
+            let v5 = {
+                let v4 = app::logger();
+                app::stream_file(v3, v4, v0)
+            };
+            <pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(
+                v5,
+            )
+        }
+    }
 }

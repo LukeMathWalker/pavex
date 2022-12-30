@@ -1,9 +1,11 @@
 use pavex_builder::{f, AppBlueprint};
 
-pub fn handler() -> http::Response<hyper::body::Body> {
+pub fn handler() -> pavex_runtime::response::Response {
     todo!()
 }
 
 pub fn blueprint() -> AppBlueprint {
-    AppBlueprint::new().route(f!(handler), "/home")
+    let mut bp = AppBlueprint::new();
+    bp.route(f!(handler), "/home");
+    bp
 }

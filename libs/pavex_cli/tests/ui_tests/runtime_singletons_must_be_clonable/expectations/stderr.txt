@@ -1,0 +1,13 @@
+Error: 
+  × `app::NonCloneSingleton` does not implement the `core::clone::Clone`
+  │ trait.
+    ╭─[src/lib.rs:16:1]
+ 16 │     let mut bp = AppBlueprint::new();
+ 17 │     bp.constructor(f!(crate::NonCloneSingleton::new), Lifecycle::Singleton);
+    ·                    ────────────────┬────────────────
+    ·                                    ╰── The constructor was registered here
+ 18 │     // The handler is needed because bounds are only checked for singletons
+    ╰────
+  help: All singletons must implement the `Send`, `Sync` and `Clone` traits.
+         `pavex` runs on a multi-threaded HTTP server and singletons must be
+        shared across all worker threads.

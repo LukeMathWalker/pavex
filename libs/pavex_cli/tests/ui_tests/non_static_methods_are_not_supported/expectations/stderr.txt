@@ -1,19 +1,19 @@
 Error: 
   × One of the input parameters for `app::Streamer::stream_file` has a type
   │ that I cannot handle.
-    ╭─[src/lib.rs:10:1]
- 10 │ pub fn blueprint() -> AppBlueprint {
- 11 │     AppBlueprint::new().route(f!(crate::Streamer::stream_file), "/home")
-    ·                               ────────────────┬───────────────
-    ·                                               ╰── The handler was registered here
- 12 │ }
+    ╭─[src/lib.rs:12:1]
+ 12 │     let mut bp = AppBlueprint::new();
+ 13 │     bp.route(f!(crate::Streamer::stream_file), "/home");
+    ·              ────────────────┬───────────────
+    ·                              ╰── The handler was registered here
+ 14 │     bp
     ╰────
 
 Error: 
   × 
    ╭─[src/lib.rs:5:1]
  5 │ impl Streamer {
- 6 │     pub fn stream_file(&self) -> http::Response<hyper::body::Body> {
+ 6 │     pub fn stream_file(&self) -> pavex_runtime::response::Response {
    ·                        ──┬──
    ·                          ╰── I do not know how handle this parameter
  7 │         todo!()

@@ -9,14 +9,15 @@ pub fn new_logger() -> Logger {
 pub struct Streamer;
 
 impl Streamer {
-    pub fn stream_file(_logger: Logger) -> http::Response<hyper::body::Body> {
+    pub fn stream_file(_logger: Logger) -> pavex_runtime::response::Response {
         todo!()
     }
 }
 
 pub fn blueprint() -> AppBlueprint {
-    AppBlueprint::new()
-        .constructor(f!(crate::new_logger), Lifecycle::Singleton)
-        .constructor(f!(crate::new_logger), Lifecycle::RequestScoped)
-        .route(f!(crate::Streamer::stream_file), "/home")
+    let mut bp = AppBlueprint::new();
+    bp.constructor(f!(crate::new_logger), Lifecycle::Singleton);
+    bp.constructor(f!(crate::new_logger), Lifecycle::RequestScoped);
+    bp.route(f!(crate::Streamer::stream_file), "/home");
+    bp
 }

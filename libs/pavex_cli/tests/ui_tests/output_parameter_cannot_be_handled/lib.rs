@@ -5,5 +5,7 @@ pub fn c() -> (usize, usize) {
 }
 
 pub fn blueprint() -> AppBlueprint {
-    AppBlueprint::new().route(f!(crate::c), "/home")
+    let mut bp = AppBlueprint::new();
+    bp.route(f!(crate::c), "/home");
+    bp
 }

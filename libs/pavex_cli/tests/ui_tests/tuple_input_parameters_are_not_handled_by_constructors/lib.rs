@@ -7,5 +7,7 @@ pub fn stream_file(input: (usize, isize)) -> Logger {
 }
 
 pub fn blueprint() -> AppBlueprint {
-    AppBlueprint::new().constructor(f!(crate::stream_file), Lifecycle::Singleton)
+    let mut bp = AppBlueprint::new();
+    bp.constructor(f!(crate::stream_file), Lifecycle::Singleton);
+    bp
 }

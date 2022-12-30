@@ -8,18 +8,18 @@ use anyhow::anyhow;
 use bimap::BiHashMap;
 use guppy::graph::PackageGraph;
 use guppy::PackageId;
-use indexmap::{IndexMap, IndexSet};
+use indexmap::IndexSet;
 use miette::{miette, NamedSource, SourceSpan};
 use rustdoc_types::{GenericArg, GenericArgs, ItemEnum, Type};
 use syn::spanned::Spanned;
 use syn::{FnArg, ImplItemMethod, ReturnType};
 
-use pavex_builder::{Location, RawCallableIdentifiers};
+use pavex_builder::Location;
+use pavex_builder::RawCallableIdentifiers;
 
 use crate::language::{Callable, InvocationStyle, ResolvedPath, ResolvedType, UnknownPath};
-use crate::rustdoc::CannotGetCrateData;
-use crate::rustdoc::CrateCollection;
-use crate::rustdoc::STD_PACKAGE_ID;
+use crate::rustdoc::{CannotGetCrateData, RustdocKindExt};
+use crate::rustdoc::{CrateCollection, ResolvedItem};
 use crate::web::diagnostic;
 use crate::web::diagnostic::{
     convert_rustdoc_span, convert_span, read_source_file, CompilerDiagnosticBuilder,
@@ -28,32 +28,38 @@ use crate::web::diagnostic::{
 
 /// Extract the input type paths, the output type path and the callable path for each
 /// registered type constructor.
-#[allow(clippy::type_complexity)]
 pub(crate) fn resolve_constructors(
     constructor_paths: &IndexSet<ResolvedPath>,
-    krate_collection: &mut CrateCollection,
-) -> Result<
-    (
-        BiHashMap<ResolvedPath, Callable>,
-        IndexMap<ResolvedType, Callable>,
-    ),
-    CallableResolutionError,
-> {
+    krate_collection: &CrateCollection,
+) -> Result<BiHashMap<ResolvedPath, Callable>, CallableResolutionError> {
     let mut resolution_map = BiHashMap::with_capacity(constructor_paths.len());
-    let mut constructors = IndexMap::with_capacity(constructor_paths.len());
     for constructor_identifiers in constructor_paths {
         let constructor = resolve_callable(krate_collection, constructor_identifiers)?;
-        constructors.insert(constructor.output.clone(), constructor.clone());
         resolution_map.insert(constructor_identifiers.to_owned(), constructor);
     }
-    Ok((resolution_map, constructors))
+    Ok(resolution_map)
 }
 
 /// Extract the input type paths, the output type path and the callable path for each
-/// registered handler.
-pub(crate) fn resolve_handlers(
+/// registered error handler.
+#[allow(clippy::type_complexity)]
+pub(crate) fn resolve_error_handlers(
+    paths: &IndexSet<ResolvedPath>,
+    krate_collection: &CrateCollection,
+) -> Result<HashMap<ResolvedPath, Callable>, CallableResolutionError> {
+    let mut resolution_map = HashMap::with_capacity(paths.len());
+    for identifiers in paths {
+        let callable = resolve_callable(krate_collection, identifiers)?;
+        resolution_map.insert(identifiers.to_owned(), callable);
+    }
+    Ok(resolution_map)
+}
+
+/// Extract the input type paths, the output type path and the callable path for each
+/// registered request handler.
+pub(crate) fn resolve_request_handlers(
     handler_paths: &IndexSet<ResolvedPath>,
-    krate_collection: &mut CrateCollection,
+    krate_collection: &CrateCollection,
 ) -> Result<(HashMap<ResolvedPath, Callable>, IndexSet<Callable>), CallableResolutionError> {
     let mut handlers = IndexSet::with_capacity(handler_paths.len());
     let mut handler_resolver = HashMap::new();
@@ -65,12 +71,13 @@ pub(crate) fn resolve_handlers(
     Ok((handler_resolver, handlers))
 }
 
-fn process_type(
+pub(crate) fn resolve_type(
     type_: &Type,
     // The package id where the type we are trying to process has been referenced (e.g. as an
     // input/output parameter).
     used_by_package_id: &PackageId,
-    krate_collection: &mut CrateCollection,
+    krate_collection: &CrateCollection,
+    generic_bindings: &HashMap<String, ResolvedType>,
 ) -> Result<ResolvedType, anyhow::Error> {
     match type_ {
         Type::ResolvedPath(rustdoc_types::Path { id, args, .. }) => {
@@ -86,10 +93,11 @@ fn process_type(
                                     ));
                                 }
                                 GenericArg::Type(generic_type) => {
-                                    generics.push(process_type(
+                                    generics.push(resolve_type(
                                         generic_type,
                                         used_by_package_id,
                                         krate_collection,
+                                        generic_bindings,
                                     )?);
                                 }
                                 GenericArg::Const(_) => {
@@ -112,6 +120,7 @@ fn process_type(
                 krate_collection.get_canonical_path_by_local_type_id(used_by_package_id, id)?;
             Ok(ResolvedType {
                 package_id: global_type_id.package_id().to_owned(),
+                rustdoc_id: Some(global_type_id.rustdoc_item_id),
                 base_type: base_type.to_vec(),
                 generic_arguments: generics,
                 is_shared_reference: false,
@@ -128,57 +137,43 @@ fn process_type(
                     by value (`move` semantic) or via a shared reference (`&MyType`)",
                 ));
             }
-            let mut resolved_type = process_type(type_, used_by_package_id, krate_collection)?;
+            let mut resolved_type = resolve_type(
+                type_,
+                used_by_package_id,
+                krate_collection,
+                generic_bindings,
+            )?;
             resolved_type.is_shared_reference = true;
             Ok(resolved_type)
         }
+        Type::Generic(s) => {
+            if let Some(resolved_type) = generic_bindings.get(s) {
+                Ok(resolved_type.to_owned())
+            } else {
+                Err(anyhow!(
+                    "The generic type `{}` is not bound to any concrete type",
+                    s
+                ))
+            }
+        }
         _ => Err(anyhow!(
-            "I cannot handle inputs of this kind ({:?}) yet. Sorry!",
+            "I cannot handle this kind ({:?}) of type yet. Sorry!",
             type_
         )),
     }
 }
 
-fn resolve_callable(
-    krate_collection: &mut CrateCollection,
+pub(crate) fn resolve_callable(
+    krate_collection: &CrateCollection,
     callable_path: &ResolvedPath,
 ) -> Result<Callable, CallableResolutionError> {
-    let type_ = callable_path.find_type(krate_collection)?;
+    let (callable_type, qualified_self_type) =
+        callable_path.find_rustdoc_items(krate_collection)?;
     let used_by_package_id = &callable_path.package_id;
-    let (header, decl, invocation_style) = match &type_.inner {
-        ItemEnum::Function(f) => (
-            &f.header,
-            &f.decl,
-            // TODO: this must be reviewed when we start supporting non-static methods
-            InvocationStyle::FunctionCall,
-        ),
+    let (header, decl, invocation_style) = match &callable_type.item.item.inner {
+        ItemEnum::Function(f) => (&f.header, &f.decl, InvocationStyle::FunctionCall),
         kind => {
-            let item_kind = match kind {
-                ItemEnum::Module(_) => "a module",
-                ItemEnum::ExternCrate { .. } => "an external crate",
-                ItemEnum::Import(_) => "an import",
-                ItemEnum::Union(_) => "a union",
-                ItemEnum::Struct(_) => "a struct",
-                ItemEnum::StructField(_) => "a struct field",
-                ItemEnum::Enum(_) => "an enum",
-                ItemEnum::Variant(_) => "an enum variant",
-                // TODO: this could also be a method! How do we find out?
-                ItemEnum::Function(_) => "a function",
-                ItemEnum::Trait(_) => "a trait",
-                ItemEnum::TraitAlias(_) => "a trait alias",
-                ItemEnum::Impl(_) => "an impl block",
-                ItemEnum::Typedef(_) => "a type definition",
-                ItemEnum::OpaqueTy(_) => "an opaque type",
-                ItemEnum::Constant(_) => "a constant",
-                ItemEnum::Static(_) => "a static",
-                ItemEnum::ForeignType => "a foreign type",
-                ItemEnum::Macro(_) => "a macro",
-                ItemEnum::ProcMacro(_) => "a procedural macro",
-                ItemEnum::Primitive(_) => "a primitive type",
-                ItemEnum::AssocConst { .. } => "an associated constant",
-                ItemEnum::AssocType { .. } => "an associated type",
-            }
-            .to_string();
+            let item_kind = kind.kind().to_owned();
             return Err(UnsupportedCallableKind {
                 import_path: callable_path.to_owned(),
                 item_kind,
@@ -187,15 +182,27 @@ fn resolve_callable(
         }
     };
 
+    let mut generic_bindings = HashMap::new();
+    if let Some(qself) = qualified_self_type {
+        let qself_path = &callable_path.qualified_self.as_ref().unwrap().path;
+        let qself_type = resolve_type_path(&qself_path, &qself.item, krate_collection).unwrap();
+        generic_bindings.insert("Self".to_string(), qself_type);
+    }
+
     let mut parameter_paths = Vec::with_capacity(decl.inputs.len());
     for (parameter_index, (_, parameter_type)) in decl.inputs.iter().enumerate() {
-        match process_type(parameter_type, used_by_package_id, krate_collection) {
+        match resolve_type(
+            parameter_type,
+            used_by_package_id,
+            krate_collection,
+            &generic_bindings,
+        ) {
             Ok(p) => parameter_paths.push(p),
             Err(e) => {
                 return Err(ParameterResolutionError {
                     parameter_type: parameter_type.to_owned(),
                     callable_path: callable_path.to_owned(),
-                    callable_item: type_,
+                    callable_item: callable_type.item.item.into_owned(),
                     source: e,
                     parameter_index,
                 }
@@ -205,20 +212,20 @@ fn resolve_callable(
     }
     let output_type_path = match &decl.output {
         // Unit type
-        None => ResolvedType {
-            package_id: PackageId::new(STD_PACKAGE_ID),
-            base_type: vec!["()".into()],
-            generic_arguments: vec![],
-            is_shared_reference: false,
-        },
+        None => None,
         Some(output_type) => {
-            match process_type(output_type, used_by_package_id, krate_collection) {
-                Ok(p) => p,
+            match resolve_type(
+                output_type,
+                used_by_package_id,
+                krate_collection,
+                &generic_bindings,
+            ) {
+                Ok(p) => Some(p),
                 Err(e) => {
                     return Err(OutputTypeResolutionError {
                         output_type: output_type.to_owned(),
                         callable_path: callable_path.to_owned(),
-                        callable_item: type_,
+                        callable_item: callable_type.item.item.into_owned(),
                         source: e,
                     }
                     .into());
@@ -226,12 +233,42 @@ fn resolve_callable(
             }
         }
     };
-    Ok(Callable {
+    let callable = Callable {
         is_async: header.async_,
         output: output_type_path,
         path: callable_path.to_owned(),
         inputs: parameter_paths,
         invocation_style,
+    };
+    Ok(callable)
+}
+
+pub(crate) fn resolve_type_path(
+    path: &ResolvedPath,
+    resolved_item: &ResolvedItem,
+    krate_collection: &CrateCollection,
+) -> Result<ResolvedType, anyhow::Error> {
+    let item = &resolved_item.item;
+    let used_by_package_id = resolved_item.item_id.package_id();
+    let (global_type_id, base_type) =
+        krate_collection.get_canonical_path_by_local_type_id(used_by_package_id, &item.id)?;
+    let mut generic_arguments = vec![];
+    for segment in &path.segments {
+        for generic_path in &segment.generic_arguments {
+            let (generic_item, generic_qself_item) =
+                generic_path.find_rustdoc_items(krate_collection)?;
+            assert!(generic_qself_item.is_none());
+            let generic_type =
+                resolve_type_path(generic_path, &generic_item.item, krate_collection)?;
+            generic_arguments.push(generic_type);
+        }
+    }
+    Ok(ResolvedType {
+        package_id: global_type_id.package_id().to_owned(),
+        rustdoc_id: Some(global_type_id.rustdoc_item_id),
+        base_type: base_type.to_vec(),
+        generic_arguments,
+        is_shared_reference: false,
     })
 }
 
@@ -253,6 +290,7 @@ pub(crate) enum CallableResolutionError {
 pub(crate) enum CallableType {
     Handler,
     Constructor,
+    ErrorHandler,
 }
 
 impl Display for CallableType {
@@ -260,6 +298,7 @@ impl Display for CallableType {
         let s = match self {
             CallableType::Handler => "handler",
             CallableType::Constructor => "constructor",
+            CallableType::ErrorHandler => "error handler",
         };
         write!(f, "{}", s)
     }

@@ -1,11 +1,11 @@
 Error: 
   × `String` is not a fully-qualified import path.
     ╭─[src/lib.rs:14:1]
- 14 │     AppBlueprint::new()
- 15 │         .constructor(f!(crate::new_logger::<String>), Lifecycle::Singleton)
-    ·                      ───────────────┬───────────────
-    ·                                     ╰── The relative import path was registered here
- 16 │         .route(f!(crate::handler::<std::string::String>), "/home")
+ 14 │     let mut bp = AppBlueprint::new();
+ 15 │     bp.constructor(f!(crate::new_logger::<String>), Lifecycle::Singleton);
+    ·                    ───────────────┬───────────────
+    ·                                   ╰── The relative import path was registered here
+ 16 │     bp.route(f!(crate::handler::<std::string::String>), "/home");
     ╰────
   help: If it is a local import, the path must start with `crate::`.
         If it is an import from a dependency, the path must start with the

@@ -11,24 +11,27 @@ use miette::miette;
 use proc_macro2::Ident;
 use quote::format_ident;
 
+use pavex_builder::AppBlueprint;
 use pavex_builder::Lifecycle;
-use pavex_builder::{AppBlueprint, RawCallableIdentifiers};
+use pavex_builder::RawCallableIdentifiers;
 
-use crate::language::ResolvedPath;
-use crate::language::{Callable, ParseError, ResolvedType};
+use crate::language::{Callable, ParseError, ResolvedPathSegment, ResolvedType};
+use crate::language::{ResolvedPath, ResolvedPathQualifiedSelf};
 use crate::rustdoc::CrateCollection;
-use crate::rustdoc::STD_PACKAGE_ID;
-use crate::web::call_graph::CallGraph;
+use crate::rustdoc::TOOLCHAIN_CRATES;
 use crate::web::call_graph::{application_state_call_graph, handler_call_graph};
+use crate::web::call_graph::{ApplicationStateCallGraph, CallGraph};
 use crate::web::constructors::{Constructor, ConstructorValidationError};
-use crate::web::dependency_graph::CallableDependencyGraph;
 use crate::web::diagnostic::{
     CompilerDiagnosticBuilder, OptionalSourceSpanExt, ParsedSourceFile, SourceSpanExt,
 };
+use crate::web::error_handlers::ErrorHandler;
 use crate::web::generated_app::GeneratedApp;
-use crate::web::resolvers::{CallableResolutionError, CallableType};
+use crate::web::resolvers::{
+    resolve_callable, resolve_type_path, CallableResolutionError, CallableType,
+};
 use crate::web::traits::assert_trait_is_implemented;
-use crate::web::{codegen, diagnostic, resolvers};
+use crate::web::{codegen, diagnostic, resolvers, utils};
 
 pub(crate) const GENERATED_APP_PACKAGE_ID: &str = "crate";
 
@@ -36,7 +39,7 @@ pub struct App {
     package_graph: PackageGraph,
     router: BTreeMap<String, Callable>,
     handler_call_graphs: IndexMap<ResolvedPath, CallGraph>,
-    application_state_call_graph: CallGraph,
+    application_state_call_graph: ApplicationStateCallGraph,
     runtime_singleton_bindings: BiHashMap<Ident, ResolvedType>,
     request_scoped_framework_bindings: BiHashMap<Ident, ResolvedType>,
     codegen_types: HashSet<ResolvedType>,
@@ -59,10 +62,13 @@ impl App {
         // We collect all the unique raw identifiers from the blueprint.
         let raw_identifiers_db: HashSet<RawCallableIdentifiers> = {
             let mut set = HashSet::with_capacity(
-                app_blueprint.request_handlers.len() + app_blueprint.constructors.len(),
+                app_blueprint.request_handlers.len()
+                    + app_blueprint.constructors.len()
+                    + app_blueprint.constructor_error_handlers.len(),
             );
             set.extend(app_blueprint.request_handlers.iter().cloned());
             set.extend(app_blueprint.constructors.iter().cloned());
+            set.extend(app_blueprint.constructor_error_handlers.values().cloned());
             set
         };
 
@@ -81,7 +87,9 @@ impl App {
                         let location = app_blueprint
                             .constructor_locations
                             .get(identifiers)
-                            .or_else(|| app_blueprint.handler_locations[identifiers].first())
+                            .or_else(|| {
+                                app_blueprint.request_handler_locations[identifiers].first()
+                            })
                             .unwrap();
                         let source = ParsedSourceFile::new(
                             location.file.as_str().into(),
@@ -129,14 +137,23 @@ impl App {
             map
         };
 
-        let constructor_paths: IndexSet<ResolvedPath> = {
-            let mut set = IndexSet::with_capacity(app_blueprint.constructors.len());
-            for constructor_identifiers in &app_blueprint.constructors {
-                let constructor_path = identifiers2path[constructor_identifiers].clone();
-                set.insert(constructor_path);
-            }
-            set
-        };
+        let constructor_paths: IndexSet<ResolvedPath> = app_blueprint
+            .constructors
+            .iter()
+            .map(|id| identifiers2path[id].clone())
+            .collect();
+
+        let request_handler_paths: IndexSet<ResolvedPath> = app_blueprint
+            .request_handlers
+            .iter()
+            .map(|id| identifiers2path[id].clone())
+            .collect();
+
+        let error_handler_paths: IndexSet<ResolvedPath> = app_blueprint
+            .constructor_error_handlers
+            .iter()
+            .map(|(_, error_handler_id)| identifiers2path[error_handler_id].clone())
+            .collect();
 
         let constructor_paths2ids = {
             let mut set = BiHashMap::with_capacity(app_blueprint.constructors.len());
@@ -147,17 +164,9 @@ impl App {
             set
         };
 
-        let handler_paths = {
-            let mut set = IndexSet::with_capacity(app_blueprint.request_handlers.len());
-            for handler in &app_blueprint.request_handlers {
-                set.insert(identifiers2path[handler].clone());
-            }
-            set
-        };
-
-        let (constructor_callable_resolver, constructor_callables) =
+        let constructor_callable_resolver =
             match resolvers::resolve_constructors(&constructor_paths, &mut krate_collection) {
-                Ok((resolver, constructors)) => (resolver, constructors),
+                Ok(r) => r,
                 Err(e) => {
                     return Err(e.into_diagnostic(
                         &resolved_paths2identifiers,
@@ -167,10 +176,9 @@ impl App {
                     )?);
                 }
             };
-
         let mut constructors: IndexMap<ResolvedType, Constructor> = IndexMap::new();
-        for (output_type, callable) in &constructor_callables {
-            let constructor = match callable.to_owned().try_into() {
+        for callable in constructor_callable_resolver.right_values() {
+            let constructor: Constructor = match callable.to_owned().try_into() {
                 Ok(c) => c,
                 Err(e) => {
                     return match e {
@@ -201,37 +209,122 @@ impl App {
                     };
                 }
             };
-            constructors.insert(output_type.to_owned(), constructor);
+            constructors.insert(constructor.output_type().to_owned(), constructor);
         }
+
+        let error_handler_callable_resolver =
+            match resolvers::resolve_error_handlers(&error_handler_paths, &mut krate_collection) {
+                Ok(r) => r,
+                Err(e) => {
+                    return Err(e.into_diagnostic(
+                        &resolved_paths2identifiers,
+                        |identifiers| app_blueprint.constructor_locations[identifiers].clone(),
+                        &package_graph,
+                        CallableType::ErrorHandler,
+                    )?);
+                }
+            };
+
+        // TODO: check if we have a constructor that returns T and another constructor returning
+        //  &T
 
         // For each non-reference type, register an inlineable constructor that transforms
         // `T` in `&T`.
-        let constructibile_types: Vec<ResolvedType> =
-            constructors.keys().map(|t| t.to_owned()).collect();
-        for t in constructibile_types {
+        let constructible_types: Vec<_> = constructors.keys().map(|t| t.to_owned()).collect();
+        for t in constructible_types {
             if !t.is_shared_reference {
-                let c = Constructor::shared_borrow(t);
+                let c = Constructor::shared_borrow(t.to_owned());
                 constructors.insert(c.output_type().to_owned(), c);
             }
         }
 
-        let (handler_resolver, handlers) =
-            match resolvers::resolve_handlers(&handler_paths, &mut krate_collection) {
-                Ok(h) => h,
-                Err(e) => {
-                    return Err(e.into_diagnostic(
-                        &resolved_paths2identifiers,
-                        |identifiers| {
-                            app_blueprint.handler_locations[identifiers]
-                                .first()
-                                .unwrap()
-                                .clone()
-                        },
-                        &package_graph,
-                        CallableType::Handler,
-                    )?);
+        // TODO: check if we have a constructor that returns T and one/more constructors returning
+        //  Result<T, _>
+
+        // For each Result type, register a match constructor that transforms
+        // `Result<T,E>` into `T` or `E`.
+        let constructible_types: Vec<_> = constructors.keys().map(|t| t.to_owned()).collect();
+        for t in constructible_types {
+            if t.is_shared_reference {
+                continue;
+            }
+            if utils::is_result(&t) {
+                let m = Constructor::match_result(&t);
+                constructors.insert(m.ok.output_type().to_owned(), m.ok);
+                constructors.insert(m.err.output_type().to_owned(), m.err);
+            }
+        }
+
+        let (handler_resolver, handlers) = match resolvers::resolve_request_handlers(
+            &request_handler_paths,
+            &mut krate_collection,
+        ) {
+            Ok(h) => h,
+            Err(e) => {
+                return Err(e.into_diagnostic(
+                    &resolved_paths2identifiers,
+                    |identifiers| {
+                        app_blueprint.request_handler_locations[identifiers]
+                            .first()
+                            .unwrap()
+                            .clone()
+                    },
+                    &package_graph,
+                    CallableType::Handler,
+                )?);
+            }
+        };
+
+        let response_transformers = {
+            let mut response_transformers = HashMap::<ResolvedType, Callable>::new();
+            let into_response = process_framework_path(
+                "pavex_runtime::response::IntoResponse",
+                &package_graph,
+                &krate_collection,
+            );
+            let into_response_path = into_response.resolved_path();
+            for callable in handlers
+                .iter()
+                .chain(error_handler_callable_resolver.values())
+            {
+                if let Some(output) = &callable.output {
+                    // TODO: only the Ok variant must implement IntoResponse if output is a result
+                    if response_transformers.get(output).is_some() {
+                        // We already processed this type
+                        continue;
+                    }
+                    // Verify that the output type implements the `IntoResponse` trait.
+                    if let Err(e) =
+                        assert_trait_is_implemented(&krate_collection, output, &into_response)
+                    {
+                        // TODO: remove panic
+                        panic!(
+                            "All handler output types must implement `IntoResponse`: {:?}\n{}",
+                            e, e
+                        );
+                    }
+                    let output_path = output.resolved_path();
+                    let mut transformer_segments = into_response_path.segments.clone();
+                    transformer_segments.push(ResolvedPathSegment {
+                        ident: "into_response".into(),
+                        generic_arguments: vec![],
+                    });
+                    let transformer_path = ResolvedPath {
+                        segments: transformer_segments,
+                        qualified_self: Some(ResolvedPathQualifiedSelf {
+                            position: into_response_path.segments.len() - 1,
+                            path: Box::new(output_path),
+                        }),
+                        package_id: into_response_path.package_id.clone(),
+                    };
+                    let transformer =
+                        // TODO: remove unwrap
+                        resolve_callable(&krate_collection, &transformer_path).unwrap();
+                    response_transformers.insert(output.to_owned(), transformer);
                 }
-            };
+            }
+            response_transformers
+        };
 
         let mut router = BTreeMap::new();
         for (route, callable_identifiers) in app_blueprint.router {
@@ -239,76 +332,78 @@ impl App {
             router.insert(route, handler_resolver[callable_path].to_owned());
         }
 
-        let mut handler_dependency_graphs = IndexMap::with_capacity(handlers.len());
-        for callable in &handlers {
-            handler_dependency_graphs.insert(
-                callable.path.clone(),
-                CallableDependencyGraph::new(callable.to_owned(), &constructors),
-            );
-        }
-
         let component2lifecycle = {
             let mut map = HashMap::<ResolvedType, Lifecycle>::new();
             for (output_type, constructor) in &constructors {
-                match constructor {
-                    Constructor::BorrowSharedReference(s) => {
-                        // The lifecycle of a references matches the lifecycle of the type
-                        // it refers to.
-                        map.insert(output_type.to_owned(), map[&s.input].clone());
-                    }
+                let lifecycle = match constructor {
+                    // The lifecycle of a references matches the lifecycle of the type
+                    // it refers to.
+                    Constructor::BorrowSharedReference(s) => map[&s.input].clone(),
+                    // The lifecycle of the "unwrapped" type matches the lifecycle of the
+                    // original `Result`
+                    Constructor::MatchResult(m) => map[&m.input].clone(),
                     Constructor::Callable(c) => {
                         let callable_path = constructor_callable_resolver.get_by_right(c).unwrap();
                         let raw_identifiers =
                             constructor_paths2ids.get_by_left(callable_path).unwrap();
-                        let lifecycle = app_blueprint.component_lifecycles[raw_identifiers].clone();
-                        map.insert(output_type.to_owned(), lifecycle);
+                        app_blueprint.component_lifecycles[raw_identifiers].clone()
+                    }
+                };
+                map.insert(output_type.to_owned(), lifecycle);
+            }
+            map
+        };
+
+        // TODO: check that the error handler associated with a constructor that returns
+        //  Result<_, E> has &E as one of its input types.
+
+        let constructor2error_handler: HashMap<Constructor, ErrorHandler> = {
+            let mut map = HashMap::new();
+            for (output_type, constructor) in &constructors {
+                if let Constructor::Callable(callable) = constructor {
+                    // Errors when building a singleton are failures to build the application state.
+                    // They are not handled - they are just exposed to the caller in an ad-hoc
+                    // error enumeration.
+                    if let Some(Lifecycle::Singleton) = component2lifecycle.get(output_type) {
+                        continue;
+                    }
+                    if utils::is_result(&output_type) {
+                        let constructor_path = constructor_callable_resolver
+                            .get_by_right(&callable)
+                            .unwrap();
+                        let constructor_id =
+                            constructor_paths2ids.get_by_left(constructor_path).unwrap();
+                        let error_handler_id =
+                            &app_blueprint.constructor_error_handlers[constructor_id];
+                        let error_handler_path = &identifiers2path[error_handler_id];
+                        let error_handler = error_handler_callable_resolver
+                            .get(error_handler_path)
+                            // TODO: return an error asking for an error handler to be registered
+                            .unwrap()
+                            .to_owned();
+                        // TODO: handle the validation error
+                        let error_handler = ErrorHandler::new(error_handler, callable)
+                            .expect("Failed to validate the error handler");
+                        map.insert(constructor.to_owned(), error_handler);
                     }
                 }
             }
             map
         };
 
-        // All singletons must implement `Clone`, `Send` and `Sync`.
-        for singleton_type in component2lifecycle.iter().filter_map(|(t, l)| {
-            if l == &Lifecycle::Singleton {
-                Some(t)
-            } else {
-                None
-            }
-        }) {
-            for trait_path in [
-                &["core", "marker", "Send"],
-                &["core", "marker", "Sync"],
-                &["core", "clone", "Clone"],
-            ] {
-                if let Err(e) =
-                    assert_trait_is_implemented(&krate_collection, singleton_type, trait_path)
-                {
-                    return Err(e
-                        .into_diagnostic(
-                            &constructor_callables,
-                            &constructor_callable_resolver,
-                            &resolved_paths2identifiers,
-                            &app_blueprint.constructor_locations,
-                            &package_graph,
-                            Some("All singletons must implement the `Send`, `Sync` and `Clone` traits.\n \
-                                `pavex` runs on a multi-threaded HTTP server and singletons must be shared \
-                                 across all worker threads.".into()),
-                        )?
-                        .into());
-                }
-            }
+        let mut handler_call_graphs = IndexMap::with_capacity(handlers.len());
+        for callable in &handlers {
+            handler_call_graphs.insert(
+                callable.path.clone(),
+                handler_call_graph(
+                    callable.to_owned(),
+                    &component2lifecycle,
+                    &constructors,
+                    &constructor2error_handler,
+                    &response_transformers,
+                ),
+            );
         }
-
-        let handler_call_graphs: IndexMap<_, _> = handler_dependency_graphs
-            .iter()
-            .map(|(path, dep_graph)| {
-                (
-                    path.to_owned(),
-                    handler_call_graph(dep_graph, &component2lifecycle, &constructors),
-                )
-            })
-            .collect();
 
         let request_scoped_framework_bindings =
             framework_bindings(&package_graph, &mut krate_collection);
@@ -324,8 +419,45 @@ impl App {
         // Assign a unique name to each singleton
         .map(|(i, type_)| (format_ident!("s{}", i), type_))
         .collect();
-        let application_state_call_graph =
-            application_state_call_graph(&runtime_singletons, &component2lifecycle, constructors);
+
+        // All singletons stored in the application state (i.e. all "runtime" singletons) must
+        // implement `Clone`, `Send` and `Sync` in order to be shared across threads.
+        let send = process_framework_path("core::marker::Send", &package_graph, &krate_collection);
+        let sync = process_framework_path("core::marker::Sync", &package_graph, &krate_collection);
+        let clone = process_framework_path("core::clone::Clone", &package_graph, &krate_collection);
+        for singleton_type in runtime_singletons.right_values().filter_map(|ty| {
+            if component2lifecycle.get(ty) == Some(&Lifecycle::Singleton) {
+                Some(ty)
+            } else {
+                None
+            }
+        }) {
+            for trait_ in [&send, &sync, &clone] {
+                if let Err(e) =
+                    assert_trait_is_implemented(&krate_collection, singleton_type, trait_)
+                {
+                    return Err(e
+                        .into_diagnostic(
+                            &constructors,
+                            &constructor_callable_resolver,
+                            &resolved_paths2identifiers,
+                            &app_blueprint.constructor_locations,
+                            &package_graph,
+                            Some("All singletons must implement the `Send`, `Sync` and `Clone` traits.\n \
+                                `pavex` runs on a multi-threaded HTTP server and singletons must be shared \
+                                 across all worker threads.".into()),
+                        )?
+                        .into());
+                }
+            }
+        }
+
+        let application_state_call_graph = application_state_call_graph(
+            &runtime_singletons,
+            &component2lifecycle,
+            constructors,
+            &constructor2error_handler,
+        );
         let codegen_types = codegen_types(&package_graph, &mut krate_collection);
         Ok(App {
             package_graph,
@@ -345,14 +477,19 @@ impl App {
         let (cargo_toml, mut package_ids2deps) = codegen::codegen_manifest(
             &self.package_graph,
             &self.handler_call_graphs,
-            &self.application_state_call_graph,
+            &self.application_state_call_graph.call_graph,
             &self.request_scoped_framework_bindings,
             &self.codegen_types,
         );
         let generated_app_package_id = PackageId::new(GENERATED_APP_PACKAGE_ID);
-        let std_package_id = PackageId::new(STD_PACKAGE_ID);
+        let toolchain_package_ids = TOOLCHAIN_CRATES
+            .iter()
+            .map(|p| PackageId::new(*p))
+            .collect::<Vec<_>>();
+        for package_id in &toolchain_package_ids {
+            package_ids2deps.insert(&package_id, package_id.repr().into());
+        }
         package_ids2deps.insert(&generated_app_package_id, "crate".into());
-        package_ids2deps.insert(&std_package_id, "std".into());
 
         let lib_rs = codegen::codegen_app(
             &self.router,
@@ -371,15 +508,20 @@ impl App {
         let (_, mut package_ids2deps) = codegen::codegen_manifest(
             &self.package_graph,
             &self.handler_call_graphs,
-            &self.application_state_call_graph,
+            &self.application_state_call_graph.call_graph,
             &self.request_scoped_framework_bindings,
             &self.codegen_types,
         );
         // TODO: dry this up in one place.
         let generated_app_package_id = PackageId::new(GENERATED_APP_PACKAGE_ID);
-        let std_package_id = PackageId::new(STD_PACKAGE_ID);
+        let toolchain_package_ids = TOOLCHAIN_CRATES
+            .iter()
+            .map(|p| PackageId::new(*p))
+            .collect::<Vec<_>>();
+        for package_id in &toolchain_package_ids {
+            package_ids2deps.insert(&package_id, package_id.repr().into());
+        }
         package_ids2deps.insert(&generated_app_package_id, "crate".into());
-        package_ids2deps.insert(&std_package_id, "std".into());
 
         for (route, handler) in &self.router {
             let handler_call_graph = &self.handler_call_graphs[&handler.path];
@@ -392,6 +534,7 @@ impl App {
         }
         let application_state_graph = self
             .application_state_call_graph
+            .call_graph
             .dot(&package_ids2deps)
             .replace("digraph", "digraph app_state");
         AppDiagnostics {
@@ -497,13 +640,8 @@ fn framework_bindings(
     package_graph: &PackageGraph,
     krate_collection: &mut CrateCollection,
 ) -> BiHashMap<Ident, ResolvedType> {
-    // pavex_runtime::http::Request<pavex_runtime::hyper::Body>
-    let http_request = "pavex_runtime::http::Request";
-    let mut http_request = process_framework_path(http_request, package_graph, krate_collection);
-    let hyper_body = "pavex_runtime::hyper::Body";
-    let hyper_body = process_framework_path(hyper_body, package_graph, krate_collection);
-    http_request.generic_arguments = vec![hyper_body];
-
+    let http_request = "pavex_runtime::http::Request::<pavex_runtime::hyper::Body>";
+    let http_request = process_framework_path(http_request, package_graph, krate_collection);
     BiHashMap::from_iter([(format_ident!("request"), http_request)].into_iter())
 }
 
@@ -513,22 +651,15 @@ fn codegen_types(
     package_graph: &PackageGraph,
     krate_collection: &mut CrateCollection,
 ) -> HashSet<ResolvedType> {
-    let anyhow_error = process_framework_path("anyhow::Error", package_graph, krate_collection);
-    // A dirty hack. No honor here.
-    // We need a type that is defined in `pavex_runtime` (instead of being a re-export)
-    // to ensure that `pavex_runtime` ends up in the generated Cargo.toml.
-    let placeholder = process_framework_path(
-        "pavex_runtime::Placeholder",
-        package_graph,
-        krate_collection,
-    );
-    HashSet::from([anyhow_error, placeholder])
+    let error = process_framework_path("pavex_runtime::Error", package_graph, krate_collection);
+    HashSet::from([error])
 }
 
+/// Resolve a type path assuming that the crate is a dependency of `pavex_builder`.
 fn process_framework_path(
     raw_path: &str,
     package_graph: &PackageGraph,
-    krate_collection: &mut CrateCollection,
+    krate_collection: &CrateCollection,
 ) -> ResolvedType {
     // We are relying on a little hack to anchor our search:
     // all framework types belong to crates that are direct dependencies of `pavex_builder`.
@@ -536,16 +667,8 @@ fn process_framework_path(
     let identifiers =
         RawCallableIdentifiers::from_raw_parts(raw_path.into(), "pavex_builder".into());
     let path = ResolvedPath::parse(&identifiers, package_graph).unwrap();
-    let type_id = path.find_type_id(krate_collection).unwrap();
-    let base_path = krate_collection
-        .get_canonical_path_by_global_type_id(&type_id)
-        .unwrap();
-    ResolvedType {
-        package_id: type_id.package_id().to_owned(),
-        base_type: base_path.to_vec(),
-        generic_arguments: vec![],
-        is_shared_reference: false,
-    }
+    let (item, _) = path.find_rustdoc_items(krate_collection).unwrap();
+    resolve_type_path(&path, &item.item, krate_collection).unwrap()
 }
 
 #[derive(Debug, thiserror::Error)]

@@ -1,35 +1,71 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 use std::fmt::{Display, Formatter};
+use std::marker::PhantomData;
 
-use indexmap::IndexSet;
+use indexmap::{IndexMap, IndexSet};
 
-use crate::callable::RawCallableIdentifiers;
+use crate::callable::{RawCallable, RawCallableIdentifiers};
+use crate::Callable;
 
 #[derive(Default, serde::Serialize, serde::Deserialize)]
+/// A blueprint for the runtime behaviour of your application.
+///
+/// `AppBlueprint` captures three types of information:
+///
+/// - route handlers, via [`AppBlueprint::route`].
+/// - constructors, via [`AppBlueprint::constructor`].
+/// - error handlers, via [`Constructor::error_handler`].
+///
+/// This information is then serialized via [`AppBlueprint::persist`] and passed as input to
+/// `pavex_cli` to generate the application's source code.
 pub struct AppBlueprint {
+    /// The set of registered constructors.
     pub constructors: IndexSet<RawCallableIdentifiers>,
+    /// The set of registered request handlers.
     pub request_handlers: IndexSet<RawCallableIdentifiers>,
-    pub error_handlers: IndexSet<RawCallableIdentifiers>,
-    pub component_lifecycles: HashMap<RawCallableIdentifiers, Lifecycle>,
+    /// - Keys: [`RawCallableIdentifiers`] of a **fallible** constructor.
+    /// - Values: [`RawCallableIdentifiers`] of an error handler for the error type returned by
+    /// the constructor.
+    pub constructor_error_handlers: IndexMap<RawCallableIdentifiers, RawCallableIdentifiers>,
+    /// - Keys: [`RawCallableIdentifiers`] of a constructor.
+    /// - Values: the [`Lifecycle`] for the type returned by the constructor.
+    pub component_lifecycles: IndexMap<RawCallableIdentifiers, Lifecycle>,
+    /// - Keys: a path (e.g. `/homes/rooms`).
+    /// - Values: [`RawCallableIdentifiers`] of the request handler in charge of processing
+    /// incoming requests for that path.
     pub router: BTreeMap<String, RawCallableIdentifiers>,
-    pub handler_locations: HashMap<RawCallableIdentifiers, IndexSet<Location>>,
-    pub error_handler_locations: HashMap<RawCallableIdentifiers, Location>,
-    pub constructor_locations: HashMap<RawCallableIdentifiers, Location>,
+    /// - Keys: [`RawCallableIdentifiers`] of a request handler.
+    /// - Values: a [`Location`] pointing at the corresponding invocation of
+    /// [`AppBlueprint::route`].
+    pub request_handler_locations: IndexMap<RawCallableIdentifiers, IndexSet<Location>>,
+    /// - Keys: [`RawCallableIdentifiers`] of an error handler.
+    /// - Values: a [`Location`] pointing at the corresponding invocation of
+    /// [`Constructor::error_handler`].
+    pub error_handler_locations: IndexMap<RawCallableIdentifiers, Location>,
+    /// - Keys: [`RawCallableIdentifiers`] of a constructor.
+    /// - Values: a [`Location`] pointing at the corresponding invocation of
+    /// [`AppBlueprint::constructor`].
+    pub constructor_locations: IndexMap<RawCallableIdentifiers, Location>,
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
+/// How many times should a constructor be invoked?
 pub enum Lifecycle {
-    /// There will be a single instance of this type for each instance of the server.
+    /// The constructor for a `Singleton` type is invoked at most once.
     ///
-    /// As a consequence, the constructor is invoked at most once and the resulting component is
-    /// stored as part of the server state. Every time the component is required as input,
-    /// the same instance is injected.
+    /// As a consequence, there is at most one instance of `Singleton` types,
+    /// stored inside the server's global state.  
     Singleton,
-    /// There will be a single instance of this type for every incoming request.
+    /// The constructor for a `RequestScoped` type is invoked at most once for every incoming request.
     ///
-    /// As a consequence, the constructor is invoked at most once for every incoming request.
+    /// As a consequence, there is at most one instance of `RequestScoped` types for every incoming
+    /// request.
     RequestScoped,
-    /// The constructor is invoked every single time an instance of this type is required.
+    /// The constructor for a `Transient` type is invoked every single time an instance of the type
+    /// is required.
+    ///
+    /// As a consequence, there is can be **multiple** instances of `Transient` types for every
+    /// incoming request.
     Transient,
 }
 
@@ -45,57 +81,74 @@ impl Display for Lifecycle {
 }
 
 impl AppBlueprint {
+    /// Create a new [`AppBlueprint`].
     pub fn new() -> Self {
         Default::default()
     }
 
     #[track_caller]
-    /// Register a constructor with the application blueprint.
+    /// Register a constructor.
+    ///
+    /// ```rust
+    /// use pavex_builder::{AppBlueprint, f, Lifecycle};
+    /// # struct LogLevel;
+    /// # struct Logger;
+    ///
+    /// fn logger(log_level: LogLevel) -> Logger {
+    ///     // [...]
+    ///     # todo!()
+    /// }
+    ///
+    /// # fn main() {
+    /// let mut bp = AppBlueprint::new();
+    /// bp.constructor(f!(crate::logger), Lifecycle::Transient);
+    /// # }
+    /// ```
     ///
     /// If a constructor for the same type has already been registered, it will be overwritten.
-    pub fn constructor(mut self, import_path: &'static str, lifecycle: Lifecycle) -> Self {
-        let callable_identifiers = RawCallableIdentifiers::new(import_path);
+    pub fn constructor<F, ConstructorInputs>(
+        &mut self,
+        callable: RawCallable<F>,
+        lifecycle: Lifecycle,
+    ) -> Constructor<F::Output>
+    where
+        F: Callable<ConstructorInputs>,
+    {
+        let callable_identifiers = RawCallableIdentifiers::new(callable.import_path);
         let location = std::panic::Location::caller();
         self.constructor_locations
             .entry(callable_identifiers.clone())
             .or_insert_with(|| location.into());
         self.component_lifecycles
             .insert(callable_identifiers.clone(), lifecycle);
-        self.constructors.insert(callable_identifiers);
-        self
+        self.constructors.insert(callable_identifiers.clone());
+        Constructor {
+            constructor_identifiers: callable_identifiers,
+            blueprint: self,
+            output_type: PhantomData::<F::Output>,
+        }
     }
 
     #[track_caller]
-    /// Register a route and the corresponding request handler with the application blueprint.
+    /// Register a route and the corresponding request handler.
     ///
     /// If a handler has already been registered for the same route, it will be overwritten.
-    pub fn route(mut self, handler_import_path: &'static str, path: &str) -> Self {
-        let callable_identifiers = RawCallableIdentifiers::new(handler_import_path);
-        self.handler_locations
+    pub fn route<F, HandlerInputs>(&mut self, callable: RawCallable<F>, path: &str) -> Route
+    where
+        F: Callable<HandlerInputs>,
+    {
+        let callable_identifiers = RawCallableIdentifiers::new(callable.import_path);
+        self.request_handler_locations
             .entry(callable_identifiers.clone())
             .or_default()
             .insert(std::panic::Location::caller().into());
         self.router
             .insert(path.to_owned(), callable_identifiers.clone());
         self.request_handlers.insert(callable_identifiers);
-        self
+        Route { blueprint: self }
     }
 
-    #[track_caller]
-    /// Register an error handler function with the application blueprint.
-    ///
-    /// If a handler has already been registered for the same error type, it will be overwritten.
-    pub fn error_handler(mut self, error_handler_import_path: &'static str) -> Self {
-        let callable_identifiers = RawCallableIdentifiers::new(error_handler_import_path);
-        let location = std::panic::Location::caller();
-        self.error_handler_locations
-            .entry(callable_identifiers.clone())
-            .or_insert_with(|| location.into());
-        self.error_handlers.insert(callable_identifiers);
-        self
-    }
-
-    /// Serialize the application blueprint as RON and persist it to a file.
+    /// Serialize the blueprint data to a file in RON format.
     pub fn persist(&self, filepath: &std::path::Path) -> Result<(), anyhow::Error> {
         let mut file = fs_err::OpenOptions::new()
             .create(true)
@@ -107,7 +160,7 @@ impl AppBlueprint {
         Ok(())
     }
 
-    /// Read a RON-serialized application blueprint from a file.
+    /// Read a RON-encoded [`AppBlueprint`] from a file.
     pub fn load(filepath: &std::path::Path) -> Result<Self, anyhow::Error> {
         let file = fs_err::OpenOptions::new().read(true).open(filepath)?;
         let value = ron::de::from_reader(&file)?;
@@ -116,9 +169,30 @@ impl AppBlueprint {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash, serde::Serialize, serde::Deserialize)]
+/// A set of coordinates to identify a precise spot in a source file.
+///
+/// # Implementation Notes
+///
+/// `Location` is an owned version of [`std::panic::Location`].  
+/// You can build a `Location` instance starting from a [`std::panic::Location`]:
+///
+/// ```rust
+/// use pavex_builder::Location;
+///
+/// let location: Location = std::panic::Location::caller().into();
+/// ```
 pub struct Location {
+    /// The line number.
+    ///
+    /// Lines are 1-indexed (i.e. the first line is numbered as 1, not 0).
     pub line: u32,
+    /// The column number.
+    ///
+    /// Columns are 1-indexed (i.e. the first column is numbered as 1, not 0).
     pub column: u32,
+    /// The name of the source file.
+    ///
+    /// Check out [`std::panic::Location::file`] for more details.
     pub file: String,
 }
 
@@ -129,5 +203,76 @@ impl<'a> From<&'a std::panic::Location<'a>> for Location {
             column: l.column(),
             file: l.file().into(),
         }
+    }
+}
+
+/// The type returned by [`AppBlueprint::route`].
+///
+/// It allows you to further configure the behaviour of the registered route.
+pub struct Route<'a> {
+    #[allow(dead_code)]
+    blueprint: &'a mut AppBlueprint,
+}
+
+/// The type returned by [`AppBlueprint::constructor`].
+///
+/// It allows you to further configure the behaviour of the registered constructor.
+pub struct Constructor<'a, Output> {
+    blueprint: &'a mut AppBlueprint,
+    constructor_identifiers: RawCallableIdentifiers,
+    output_type: PhantomData<Output>,
+}
+
+impl<'a, Success, Error> Constructor<'a, Result<Success, Error>> {
+    #[track_caller]
+    /// Register an error handler for the error type returned by the constructor.
+    ///
+    /// Error handlers convert an error type into an HTTP response for the caller.
+    ///
+    /// Error handlers CANNOT consume the error type, they must take a reference to the
+    /// error as input.  
+    /// Error handlers can have additional input parameters alongside the error, as long as there
+    /// are constructors registered for those parameter types.
+    ///
+    /// ```rust
+    /// use pavex_builder::{AppBlueprint, f, Lifecycle};
+    /// use pavex_runtime::{http::Response, hyper::body::Body};
+    /// # struct LogLevel;
+    /// # struct Logger;
+    /// # struct ConfigurationError;
+    ///
+    /// fn logger() -> Result<Logger, ConfigurationError> {
+    ///     // [...]
+    ///     # todo!()
+    /// }
+    ///
+    /// fn error_to_response(error: &ConfigurationError, log_level: LogLevel) -> Response<Body> {
+    ///     // [...]
+    ///     # todo!()
+    /// }
+    ///
+    /// # fn main() {
+    /// let mut bp = AppBlueprint::new();
+    /// bp.constructor(f!(crate::logger), Lifecycle::Transient)
+    ///     .error_handler(f!(crate::error_to_response));
+    /// # }
+    /// ```
+    ///
+    /// If an error handler has already been registered for the same error type, it will be
+    /// overwritten.
+    pub fn error_handler<F, HandlerInputs>(self, handler: RawCallable<F>) -> Self
+    where
+        F: Callable<HandlerInputs>,
+    {
+        let callable_identifiers = RawCallableIdentifiers::new(handler.import_path);
+        let location = std::panic::Location::caller();
+        self.blueprint
+            .error_handler_locations
+            .entry(callable_identifiers.clone())
+            .or_insert_with(|| location.into());
+        self.blueprint
+            .constructor_error_handlers
+            .insert(self.constructor_identifiers.clone(), callable_identifiers);
+        self
     }
 }

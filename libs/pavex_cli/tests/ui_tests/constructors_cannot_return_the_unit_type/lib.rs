@@ -4,12 +4,13 @@ pub fn bogus_constructor() {
     todo!()
 }
 
-pub fn handler() -> http::Response<hyper::body::Body> {
+pub fn handler() -> pavex_runtime::response::Response {
     todo!()
 }
 
 pub fn blueprint() -> AppBlueprint {
-    AppBlueprint::new()
-        .constructor(f!(crate::bogus_constructor), Lifecycle::Singleton)
-        .route(f!(crate::handler), "/home")
+    let mut bp = AppBlueprint::new();
+    bp.constructor(f!(crate::bogus_constructor), Lifecycle::Singleton);
+    bp.route(f!(crate::handler), "/home");
+    bp
 }
