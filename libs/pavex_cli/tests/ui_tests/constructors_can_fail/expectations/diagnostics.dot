@@ -20,6 +20,10 @@ digraph "/home" {
     18 [ label = "core::prelude::rust_2015::v1::Result<app::Logger, app::LoggerError> -> app::LoggerError"]
     19 [ label = "app::LoggerError -> &app::LoggerError"]
     20 [ label = "app::handle_logger_error(&app::LoggerError) -> pavex_runtime::response::Response"]
+    21 [ label = "<pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(pavex_runtime::response::Response) -> pavex_runtime::response::Response"]
+    22 [ label = "<pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(pavex_runtime::response::Response) -> pavex_runtime::response::Response"]
+    23 [ label = "<pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(pavex_runtime::response::Response) -> pavex_runtime::response::Response"]
+    24 [ label = "<pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(pavex_runtime::response::Response) -> pavex_runtime::response::Response"]
     1 -> 0 [ ]
     2 -> 0 [ ]
     7 -> 2 [ ]
@@ -40,6 +44,10 @@ digraph "/home" {
     17 -> 18 [ ]
     18 -> 19 [ ]
     19 -> 20 [ ]
+    0 -> 21 [ ]
+    13 -> 22 [ ]
+    16 -> 23 [ ]
+    20 -> 24 [ ]
 }
 digraph app_state {
     0 [ label = "crate::ApplicationState(app::HttpClient) -> crate::ApplicationState"]

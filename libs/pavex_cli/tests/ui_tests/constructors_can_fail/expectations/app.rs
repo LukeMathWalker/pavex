@@ -72,17 +72,37 @@ pub async fn route_handler_0(
     v1: http::Request<hyper::Body>,
 ) -> pavex_runtime::response::Response {
     match app::logger() {
-        Err(v2) => app::handle_logger_error(&v2),
+        Err(v2) => {
+            let v3 = app::handle_logger_error(&v2);
+            <pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(
+                v3,
+            )
+        }
         Ok(v2) => {
             let v3 = app::extract_path(v1);
             match v3 {
                 Err(v4) => {
                     match app::logger() {
-                        Err(v5) => app::handle_logger_error(&v5),
-                        Ok(v5) => app::handle_extract_path_error(&v4, v5),
+                        Err(v5) => {
+                            let v6 = app::handle_logger_error(&v5);
+                            <pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(
+                                v6,
+                            )
+                        }
+                        Ok(v5) => {
+                            let v6 = app::handle_extract_path_error(&v4, v5);
+                            <pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(
+                                v6,
+                            )
+                        }
                     }
                 }
-                Ok(v4) => app::stream_file(v4, v2, v0),
+                Ok(v4) => {
+                    let v5 = app::stream_file(v4, v2, v0);
+                    <pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(
+                        v5,
+                    )
+                }
             }
         }
     }

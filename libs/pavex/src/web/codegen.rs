@@ -398,6 +398,7 @@ fn collect_call_graph_package_ids<'a>(
                 ComputeComponent::ErrorHandler(e) => {
                     collect_callable_package_ids(package_ids, e.as_ref())
                 }
+                ComputeComponent::Transformer(t) => collect_callable_package_ids(package_ids, t),
             },
             CallGraphNode::InputParameter(t) => collect_type_package_ids(package_ids, t),
             CallGraphNode::MatchBranching => {}

@@ -66,6 +66,11 @@ async fn route_request(
 }
 pub async fn route_handler_0(v0: &app::Singleton) -> pavex_runtime::response::Response {
     let v1 = app::request_scoped();
-    let v2 = &app::transient();
-    app::stream_file(v0, &v1, v2)
+    let v3 = {
+        let v2 = &app::transient();
+        app::stream_file(v0, &v1, v2)
+    };
+    <pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(
+        v3,
+    )
 }

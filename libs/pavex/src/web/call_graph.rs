@@ -91,6 +91,7 @@ pub(crate) fn handler_call_graph(
     lifecycles: &HashMap<ResolvedType, Lifecycle>,
     constructors: &IndexMap<ResolvedType, Constructor>,
     constructor2error_handler: &HashMap<Constructor, ErrorHandler>,
+    response_transformers: &HashMap<ResolvedType, Callable>,
 ) -> CallGraph {
     fn lifecycle2invocations(l: &Lifecycle) -> Option<NumberOfAllowedInvocations> {
         match l {
@@ -99,13 +100,68 @@ pub(crate) fn handler_call_graph(
             Lifecycle::Transient => Some(NumberOfAllowedInvocations::Multiple),
         }
     }
-    build_call_graph(
+    let CallGraph {
+        mut call_graph,
+        root_callable_node_index,
+    } = build_call_graph(
         root_callable,
         lifecycles,
         constructors,
         constructor2error_handler,
         lifecycle2invocations,
-    )
+    );
+    // We need to make sure that all paths return the same output type.
+    // We do this by adding a "response transformer" node that converts the output type to a
+    // common type - `pavex_runtime::response::Response`.
+    let output_node_indexes = call_graph
+        .externals(Direction::Outgoing)
+        .collect::<Vec<_>>();
+    for output_node_index in output_node_indexes {
+        let CallGraphNode::Compute {
+            component,
+            n_allowed_invocations,
+        } = &call_graph[output_node_index] else {
+            unreachable!()
+        };
+        let output_type = component.output_type();
+        let response_transformer = &response_transformers[output_type];
+        let new_node = CallGraphNode::Compute {
+            component: ComputeComponent::Transformer(response_transformer.clone()),
+            n_allowed_invocations: *n_allowed_invocations,
+        };
+        let new_node_index = call_graph.add_node(new_node);
+        call_graph.update_edge(output_node_index, new_node_index, ());
+    }
+
+    // `root_callable_node_index` might point to a `Compute` node which is now the parent of
+    // transformer node, therefore it might no longer be without descendants.
+    // If that's the case, we determine a new `root_callable_node_index` by picking its child node.
+    let root_callable_node_index = if call_graph
+        .neighbors_directed(root_callable_node_index, Direction::Outgoing)
+        .count()
+        != 0
+    {
+        let mut dfs = Dfs::new(&call_graph, root_callable_node_index);
+        let mut new_root_callable_node_index = root_callable_node_index;
+        while let Some(node_index) = dfs.next(&call_graph) {
+            if let CallGraphNode::Compute {
+                component: ComputeComponent::Transformer(_),
+                ..
+            } = &call_graph[node_index]
+            {
+                new_root_callable_node_index = node_index;
+                break;
+            }
+        }
+        new_root_callable_node_index
+    } else {
+        root_callable_node_index
+    };
+
+    CallGraph {
+        call_graph,
+        root_callable_node_index,
+    }
 }
 
 /// Build a [`CallGraph`] rooted in `root_callable`.
@@ -146,6 +202,7 @@ where
                     let fallible_constructor = Constructor::Callable(e.fallible_callable.clone());
                     constructor2invocations(&fallible_constructor)
                 }
+                ComputeComponent::Transformer(_) => unreachable!(),
             }
         }
     };
@@ -259,6 +316,7 @@ where
                             }
                         }
                     }
+                    ComputeComponent::Transformer(_) => unreachable!(),
                 }
             }
         }
@@ -440,6 +498,7 @@ pub(crate) enum CallGraphNode {
 pub(crate) enum ComputeComponent {
     Constructor(Constructor),
     ErrorHandler(ErrorHandler),
+    Transformer(Callable),
 }
 
 impl From<Constructor> for ComputeComponent {
@@ -459,6 +518,7 @@ impl ComputeComponent {
         match self {
             ComputeComponent::Constructor(c) => c.output_type(),
             ComputeComponent::ErrorHandler(e) => e.output_type(),
+            ComputeComponent::Transformer(t) => t.output.as_ref().unwrap(),
         }
     }
 }
@@ -536,6 +596,9 @@ impl CallGraph {
                                     e.as_ref().render_signature(package_ids2names)
                                 )
                             }
+                            ComputeComponent::Transformer(c) => {
+                                format!("label = \"{}\"", c.render_signature(package_ids2names))
+                            }
                         },
                         CallGraphNode::InputParameter(t) => {
                             format!("label = \"{}\"", t.render_type(package_ids2names))
@@ -607,6 +670,9 @@ fn debug_dot(g: &StableDiGraph<CallGraphNode, ()>) -> String {
                         ComputeComponent::ErrorHandler(e) => {
                             format!("label = \"{:?}\"", e.as_ref())
                         }
+                        ComputeComponent::Transformer(t) => {
+                            format!("label = \"{:?}\"", t)
+                        }
                     },
                     CallGraphNode::InputParameter(t) => {
                         format!("label = \"{:?}\"", t)
@@ -654,14 +720,7 @@ fn codegen_callable_closure<'a>(
             quote! { #variable_name: #variable_type }
         });
         let output_type = match &call_graph[*root_callable_node_index] {
-            // TODO: We are working under the happy-path assumption that all terminal nodes
-            // in the call graphs (i.e. all nodes with no outgoing edges) are returning the
-            // same type. We should verify this assumption before embarking in code generation
-            // and return an error if appropriate.
-            CallGraphNode::Compute {
-                component: ComputeComponent::Constructor(c),
-                ..
-            } => c.output_type(),
+            CallGraphNode::Compute { component: c, .. } => c.output_type(),
             n => {
                 dbg!(n);
                 unreachable!()
@@ -732,6 +791,7 @@ fn _codegen_callable_closure_body(
             } => {
                 match component {
                     ComputeComponent::Constructor(Constructor::Callable(callable))
+                    | ComputeComponent::Transformer(callable)
                     | ComputeComponent::ErrorHandler(ErrorHandler { callable, .. }) => {
                         let block = codegen_utils::codegen_call_block(
                             get_node_type_inputs(current_index, call_graph),

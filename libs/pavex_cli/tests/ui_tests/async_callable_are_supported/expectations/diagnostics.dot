@@ -4,10 +4,12 @@ digraph "/home" {
     2 [ label = "app::logger() -> app::Logger"]
     3 [ label = "app::extract_path(http::Request<hyper::Body>) -> std::path::PathBuf"]
     4 [ label = "http::Request<hyper::Body>"]
+    5 [ label = "<pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(pavex_runtime::response::Response) -> pavex_runtime::response::Response"]
     1 -> 0 [ ]
     2 -> 0 [ ]
     3 -> 0 [ ]
     4 -> 3 [ ]
+    0 -> 5 [ ]
 }
 digraph app_state {
     0 [ label = "crate::ApplicationState(app::HttpClient) -> crate::ApplicationState"]

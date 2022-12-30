@@ -312,7 +312,7 @@ impl App {
                     let transformer_path = ResolvedPath {
                         segments: transformer_segments,
                         qualified_self: Some(ResolvedPathQualifiedSelf {
-                            position: into_response_path.segments.len(),
+                            position: into_response_path.segments.len() - 1,
                             path: Box::new(output_path),
                         }),
                         package_id: into_response_path.package_id.clone(),
@@ -394,6 +394,7 @@ impl App {
                     &component2lifecycle,
                     &constructors,
                     &constructor2error_handler,
+                    &response_transformers,
                 ),
             );
         }

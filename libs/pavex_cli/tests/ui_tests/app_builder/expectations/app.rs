@@ -71,12 +71,22 @@ pub async fn route_handler_0(
     let v2 = app::extract_path(v1);
     match v2 {
         Err(v3) => {
-            let v4 = app::logger();
-            app::handle_extract_path_error(&v3, v4)
+            let v5 = {
+                let v4 = app::logger();
+                app::handle_extract_path_error(&v3, v4)
+            };
+            <pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(
+                v5,
+            )
         }
         Ok(v3) => {
-            let v4 = app::logger();
-            app::stream_file(v3, v4, v0)
+            let v5 = {
+                let v4 = app::logger();
+                app::stream_file(v3, v4, v0)
+            };
+            <pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(
+                v5,
+            )
         }
     }
 }

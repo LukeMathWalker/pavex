@@ -10,6 +10,8 @@ digraph "/home" {
     8 [ label = "app::ExtractPathError<alloc::string::String> -> &app::ExtractPathError<alloc::string::String>"]
     9 [ label = "app::handle_extract_path_error(&app::ExtractPathError<alloc::string::String>, app::Logger) -> pavex_runtime::response::Response"]
     10 [ label = "app::logger() -> app::Logger"]
+    11 [ label = "<pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(pavex_runtime::response::Response) -> pavex_runtime::response::Response"]
+    12 [ label = "<pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(pavex_runtime::response::Response) -> pavex_runtime::response::Response"]
     1 -> 0 [ ]
     2 -> 0 [ ]
     3 -> 0 [ ]
@@ -20,6 +22,8 @@ digraph "/home" {
     7 -> 8 [ ]
     8 -> 9 [ ]
     10 -> 9 [ ]
+    0 -> 11 [ ]
+    9 -> 12 [ ]
 }
 digraph app_state {
     0 [ label = "crate::ApplicationState(app::HttpClient) -> crate::ApplicationState"]

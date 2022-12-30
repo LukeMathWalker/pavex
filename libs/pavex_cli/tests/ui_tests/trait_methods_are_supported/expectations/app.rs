@@ -69,5 +69,8 @@ pub async fn route_handler_0() -> pavex_runtime::response::Response {
     let v4 = <app::A as app::MyTrait>::a_method_with_a_generic::<
         std::string::String,
     >(&v0);
-    app::handler(v0, v2, v4, v3)
+    let v5 = app::handler(v0, v2, v4, v3);
+    <pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(
+        v5,
+    )
 }

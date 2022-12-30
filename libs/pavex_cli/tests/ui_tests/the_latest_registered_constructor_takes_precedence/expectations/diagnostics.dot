@@ -1,7 +1,9 @@
 digraph "/home" {
     0 [ label = "app::Streamer::stream_file(dep::Logger) -> pavex_runtime::response::Response"]
     1 [ label = "dep::new_logger() -> dep::Logger"]
+    2 [ label = "<pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(pavex_runtime::response::Response) -> pavex_runtime::response::Response"]
     1 -> 0 [ ]
+    0 -> 2 [ ]
 }
 digraph app_state {
     0 [ label = "crate::ApplicationState() -> crate::ApplicationState"]

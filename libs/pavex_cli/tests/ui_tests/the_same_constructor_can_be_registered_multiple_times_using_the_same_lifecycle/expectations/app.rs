@@ -63,5 +63,8 @@ async fn route_request(
 }
 pub async fn route_handler_0() -> pavex_runtime::response::Response {
     let v0 = app::new_logger();
-    app::Streamer::stream_file(v0)
+    let v1 = app::Streamer::stream_file(v0);
+    <pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(
+        v1,
+    )
 }
