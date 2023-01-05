@@ -9,9 +9,9 @@ error[E0277]: the trait bound `Streamer: Callable<_>` is not satisfied
     |        required by a bound introduced by this call
     |
 note: required by a bound in `AppBlueprint::route`
-   --> /Users/luca/code/pavex/libs/pavex_builder/src/app.rs:138:12
+   --> /Users/luca/code/pavex/libs/pavex_builder/src/app.rs:136:12
     |
-138 |         F: Callable<HandlerInputs>,
+136 |         F: Callable<HandlerInputs>,
     |            ^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `AppBlueprint::route`
 
 For more information about this error, try `rustc --explain E0277`.

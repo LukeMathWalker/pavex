@@ -68,7 +68,7 @@ pub async fn route_handler_0(
     v0: app::HttpClient,
     v1: http::Request<hyper::Body>,
 ) -> pavex_runtime::response::Response {
-    let v2 = app::extract_path(v1);
+    let v2 = app::extract_path(v1).await;
     match v2 {
         Err(v3) => {
             let v5 = {
