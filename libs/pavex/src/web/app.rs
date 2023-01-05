@@ -23,8 +23,8 @@ use crate::web::call_graph::{application_state_call_graph, handler_call_graph};
 use crate::web::call_graph::{ApplicationStateCallGraph, CallGraph};
 use crate::web::constructors::{Constructor, ConstructorValidationError};
 use crate::web::diagnostic::{
-    get_registration_location, CompilerDiagnosticBuilder, LocationExt, OptionalSourceSpanExt,
-    SourceSpanExt,
+    get_registration_location, get_request_handler_location, CompilerDiagnosticBuilder,
+    LocationExt, OptionalSourceSpanExt, SourceSpanExt,
 };
 use crate::web::error_handlers::ErrorHandler;
 use crate::web::generated_app::GeneratedApp;
@@ -244,13 +244,12 @@ impl App {
                 return Err(e.into_diagnostic(
                     &resolved_paths2identifiers,
                     |identifiers| {
-                        app_blueprint.request_handler_locations[identifiers]
-                            .first()
+                        get_request_handler_location(&app_blueprint, identifiers)
                             .unwrap()
-                            .clone()
+                            .to_owned()
                     },
                     &package_graph,
-                    CallableType::Handler,
+                    CallableType::RequestHandler,
                 )?);
             }
         };

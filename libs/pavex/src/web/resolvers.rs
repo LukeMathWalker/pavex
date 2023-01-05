@@ -288,7 +288,7 @@ pub(crate) enum CallableResolutionError {
 
 #[derive(Debug, Copy, Clone)]
 pub(crate) enum CallableType {
-    Handler,
+    RequestHandler,
     Constructor,
     ErrorHandler,
 }
@@ -296,7 +296,7 @@ pub(crate) enum CallableType {
 impl Display for CallableType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let s = match self {
-            CallableType::Handler => "handler",
+            CallableType::RequestHandler => "request handler",
             CallableType::Constructor => "constructor",
             CallableType::ErrorHandler => "error handler",
         };

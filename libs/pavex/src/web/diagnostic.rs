@@ -333,16 +333,25 @@ pub fn read_source_file(
 ///
 /// The same request handlers can be registered multiple times: this function returns the location
 /// of the first registration.
-pub fn get_registration_location<'a>(
+pub(crate) fn get_registration_location<'a>(
     bp: &'a AppBlueprint,
     identifiers: &RawCallableIdentifiers,
 ) -> Option<&'a Location> {
     bp.constructor_locations
         .get(identifiers)
-        .or_else(|| {
-            bp.request_handler_locations
-                .get(identifiers)
-                .and_then(|v| v.first())
-        })
+        .or_else(|| get_request_handler_location(bp, identifiers))
         .or_else(|| bp.error_handler_locations.get(identifiers))
+}
+
+/// Given the callable identifiers for a request handler, return the location where it was registered.
+///
+/// The same request handlers can be registered multiple times: this function returns the location
+/// of the first registration.
+pub(crate) fn get_request_handler_location<'a>(
+    bp: &'a AppBlueprint,
+    identifiers: &RawCallableIdentifiers,
+) -> Option<&'a Location> {
+    bp.request_handler_locations
+        .get(identifiers)
+        .and_then(|v| v.first())
 }
