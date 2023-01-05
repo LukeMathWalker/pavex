@@ -192,6 +192,39 @@ impl App {
             constructors.insert(constructor.output_type().to_owned(), constructor);
         }
 
+        for (output_type, constructor) in &constructors {
+            if let Constructor::Callable(callable) = constructor {
+                if !utils::is_result(&output_type) {
+                    let constructor_path = constructor_callable_resolver
+                        .get_by_right(&callable)
+                        .unwrap();
+                    let constructor_id =
+                        constructor_paths2ids.get_by_left(constructor_path).unwrap();
+                    if let Some(error_handler_id) =
+                        app_blueprint.constructor_error_handlers.get(constructor_id)
+                    {
+                        let location = &app_blueprint.error_handler_locations[error_handler_id];
+                        let source = location.source_file(&package_graph)?;
+                        let label =
+                            diagnostic::get_f_macro_invocation_span(&source, location).map(|s| {
+                                s.labeled(
+                                    "The unnecessary error handler was registered here".into(),
+                                )
+                            });
+                        let error = anyhow::anyhow!(
+                            "You registered an error handler for a constructor that does \
+                            not return a `Result`."
+                        );
+                        let diagnostic = CompilerDiagnosticBuilder::new(source, error)
+                            .optional_label(label)
+                            .help("Remove the error handler, it is not needed. The constructor is infallible!".into())
+                            .build();
+                        return Err(diagnostic.into());
+                    }
+                }
+            }
+        }
+
         let error_handler_callable_resolver =
             match resolvers::resolve_error_handlers(&error_handler_paths, &mut krate_collection) {
                 Ok(r) => r,

@@ -1,0 +1,12 @@
+Error: 
+  × You registered an error handler for a constructor that does not return
+  │ a `Result`.
+    ╭─[src/lib.rs:22:1]
+ 22 │     bp.constructor(f!(crate::infallible_constructor), Lifecycle::RequestScoped)
+ 23 │         .error_handler(f!(crate::error_handler));
+    ·                        ────────────┬───────────
+    ·                                    ╰── The unnecessary error handler was registered here
+ 24 │     bp.route(f!(crate::request_handler), "/home");
+    ╰────
+  help: Remove the error handler, it is not needed. The constructor is
+        infallible!
