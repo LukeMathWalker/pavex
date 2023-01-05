@@ -316,6 +316,9 @@ pub fn read_source_file(
 }
 
 /// Given a callable identifier, return the location where it was registered.
+///
+/// The same request handlers can be registered multiple times: this function returns the location
+/// of the first registration.
 pub fn get_registration_location<'a>(
     bp: &'a AppBlueprint,
     identifiers: &RawCallableIdentifiers,
