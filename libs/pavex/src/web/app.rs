@@ -23,7 +23,8 @@ use crate::web::call_graph::{application_state_call_graph, handler_call_graph};
 use crate::web::call_graph::{ApplicationStateCallGraph, CallGraph};
 use crate::web::constructors::{Constructor, ConstructorValidationError};
 use crate::web::diagnostic::{
-    CompilerDiagnosticBuilder, OptionalSourceSpanExt, ParsedSourceFile, SourceSpanExt,
+    get_registration_location, CompilerDiagnosticBuilder, OptionalSourceSpanExt, ParsedSourceFile,
+    SourceSpanExt,
 };
 use crate::web::error_handlers::ErrorHandler;
 use crate::web::generated_app::GeneratedApp;
@@ -83,24 +84,15 @@ impl App {
                         map.entry(p).or_default().insert(raw_identifier.to_owned());
                     }
                     Err(e) => {
-                        let identifiers = e.raw_identifiers();
-                        let location = app_blueprint
-                            .constructor_locations
-                            .get(identifiers)
-                            .or_else(|| {
-                                app_blueprint.request_handler_locations[identifiers].first()
-                            })
-                            .unwrap();
+                        let location =
+                            get_registration_location(&app_blueprint, e.raw_identifiers()).unwrap();
                         let source = ParsedSourceFile::new(
                             location.file.as_str().into(),
                             &package_graph.workspace(),
                         )
                         .map_err(miette::MietteError::IoError)?;
-                        let source_span = diagnostic::get_f_macro_invocation_span(
-                            &source.contents,
-                            &source.parsed,
-                            location,
-                        );
+                        let source_span =
+                            diagnostic::get_f_macro_invocation_span(&source, location);
                         let diagnostic = match e {
                             ParseError::InvalidPath(_) => {
                                 let label = source_span
@@ -195,12 +187,8 @@ impl App {
                                 &package_graph.workspace(),
                             )
                             .map_err(miette::MietteError::IoError)?;
-                            let label = diagnostic::get_f_macro_invocation_span(
-                                &source.contents,
-                                &source.parsed,
-                                location,
-                            )
-                            .map(|s| s.labeled("The constructor was registered here".into()));
+                            let label = diagnostic::get_f_macro_invocation_span(&source, location)
+                                .map(|s| s.labeled("The constructor was registered here".into()));
                             let diagnostic = CompilerDiagnosticBuilder::new(source, e)
                                 .optional_label(label)
                                 .build();

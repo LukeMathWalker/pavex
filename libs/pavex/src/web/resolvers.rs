@@ -328,12 +328,8 @@ impl CallableResolutionError {
                     &package_graph.workspace(),
                 )
                 .map_err(miette::MietteError::IoError)?;
-                let label = diagnostic::get_f_macro_invocation_span(
-                    &source.contents,
-                    &source.parsed,
-                    &location,
-                )
-                .map(|s| s.labeled(format!("The {callable_type} that we cannot resolve")));
+                let label = diagnostic::get_f_macro_invocation_span(&source, &location)
+                    .map(|s| s.labeled(format!("The {callable_type} that we cannot resolve")));
                 let diagnostic = CompilerDiagnosticBuilder::new(source, e)
                     .optional_label(label)
                     .help("This is most likely a bug in `pavex` or `rustdoc`.\nPlease file a GitHub issue!".into())
@@ -409,12 +405,8 @@ impl CallableResolutionError {
                     &package_graph.workspace(),
                 )
                 .map_err(miette::MietteError::IoError)?;
-                let label = diagnostic::get_f_macro_invocation_span(
-                    &source.contents,
-                    &source.parsed,
-                    &location,
-                )
-                .map(|s| s.labeled(format!("The {callable_type} was registered here")));
+                let label = diagnostic::get_f_macro_invocation_span(&source, &location)
+                    .map(|s| s.labeled(format!("The {callable_type} was registered here")));
                 let diagnostic = CompilerDiagnosticBuilder::new(source, e)
                     .optional_label(label)
                     .optional_related_error(sub_diagnostic)
@@ -430,12 +422,8 @@ impl CallableResolutionError {
                     &package_graph.workspace(),
                 )
                 .map_err(miette::MietteError::IoError)?;
-                let label = diagnostic::get_f_macro_invocation_span(
-                    &source.contents,
-                    &source.parsed,
-                    &location,
-                )
-                .map(|s| s.labeled(format!("It was registered as a {callable_type} here")));
+                let label = diagnostic::get_f_macro_invocation_span(&source, &location)
+                    .map(|s| s.labeled(format!("It was registered as a {callable_type} here")));
                 let diagnostic = CompilerDiagnosticBuilder::new(source, e)
                     .optional_label(label)
                     .build();
@@ -508,12 +496,8 @@ impl CallableResolutionError {
                     &package_graph.workspace(),
                 )
                 .map_err(miette::MietteError::IoError)?;
-                let label = diagnostic::get_f_macro_invocation_span(
-                    &source.contents,
-                    &source.parsed,
-                    &location,
-                )
-                .map(|s| s.labeled(format!("The {callable_type} was registered here")));
+                let label = diagnostic::get_f_macro_invocation_span(&source, &location)
+                    .map(|s| s.labeled(format!("The {callable_type} was registered here")));
                 let diagnostic = CompilerDiagnosticBuilder::new(source, e)
                     .optional_label(label)
                     .optional_related_error(sub_diagnostic)

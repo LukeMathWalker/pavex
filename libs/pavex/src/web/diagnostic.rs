@@ -6,7 +6,7 @@ use syn::spanned::Spanned;
 use syn::visit::Visit;
 use syn::{ExprMethodCall, Stmt};
 
-use pavex_builder::Location;
+use pavex_builder::{AppBlueprint, Location, RawCallableIdentifiers};
 
 pub struct CompilerDiagnosticBuilder {
     source_code: NamedSource,
@@ -155,9 +155,8 @@ impl miette::Diagnostic for CompilerDiagnostic {
 /// There are going to be multiple nodes that match if we are dealing with chained method calls.
 /// Luckily enough, the visit is pre-order, therefore the latest node that contains `location`
 /// is also the smallest node that contains it - exactly what we are looking for.
-pub fn get_f_macro_invocation_span(
-    raw_source: &str,
-    parsed_source: &syn::File,
+pub(crate) fn get_f_macro_invocation_span(
+    source: &ParsedSourceFile,
     location: &Location,
 ) -> Option<SourceSpan> {
     struct CallableLocator<'a> {
@@ -182,6 +181,8 @@ pub fn get_f_macro_invocation_span(
         }
     }
 
+    let raw_source = &source.contents;
+    let parsed_source = &source.parsed;
     let mut locator = CallableLocator {
         location,
         node: None,
@@ -312,4 +313,19 @@ pub fn read_source_file(
         let path = workspace.root().as_std_path().join(path);
         fs_err::read_to_string(&path)
     }
+}
+
+/// Given a callable identifier, return the location where it was registered.
+pub fn get_registration_location<'a>(
+    bp: &'a AppBlueprint,
+    identifiers: &RawCallableIdentifiers,
+) -> Option<&'a Location> {
+    bp.constructor_locations
+        .get(identifiers)
+        .or_else(|| {
+            bp.request_handler_locations
+                .get(identifiers)
+                .and_then(|v| v.first())
+        })
+        .or_else(|| bp.error_handler_locations.get(identifiers))
 }
