@@ -366,9 +366,6 @@ impl App {
             map
         };
 
-        // TODO: check that the error handler associated with a constructor that returns
-        //  Result<_, E> has &E as one of its input types.
-
         let constructor2error_handler: HashMap<Constructor, ErrorHandler> = {
             let mut map = HashMap::new();
             for (output_type, constructor) in &constructors {
