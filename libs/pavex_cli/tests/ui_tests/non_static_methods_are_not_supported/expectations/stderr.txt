@@ -5,7 +5,7 @@ Error:
  12 │     let mut bp = AppBlueprint::new();
  13 │     bp.route(f!(crate::Streamer::stream_file), "/home");
     ·              ────────────────┬───────────────
-    ·                              ╰── The handler was registered here
+    ·                              ╰── The request handler was registered here
  14 │     bp
     ╰────
 
