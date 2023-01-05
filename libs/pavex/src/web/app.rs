@@ -198,7 +198,7 @@ impl App {
                 Err(e) => {
                     return Err(e.into_diagnostic(
                         &resolved_paths2identifiers,
-                        |identifiers| app_blueprint.constructor_locations[identifiers].clone(),
+                        |identifiers| app_blueprint.error_handler_locations[identifiers].clone(),
                         &package_graph,
                         CallableType::ErrorHandler,
                     )?);
