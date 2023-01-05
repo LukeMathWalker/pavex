@@ -1,7 +1,10 @@
 use std::fmt::Display;
 use std::path::Path;
 
-use miette::{Diagnostic, LabeledSpan, NamedSource, SourceCode, SourceOffset, SourceSpan};
+use guppy::graph::PackageGraph;
+use miette::{
+    Diagnostic, LabeledSpan, MietteError, NamedSource, SourceCode, SourceOffset, SourceSpan,
+};
 use syn::spanned::Spanned;
 use syn::visit::Visit;
 use syn::{ExprMethodCall, Stmt};
@@ -296,6 +299,17 @@ impl From<ParsedSourceFile> for NamedSource {
     fn from(f: ParsedSourceFile) -> Self {
         let file_name = f.path.to_string_lossy();
         NamedSource::new(file_name, f.contents)
+    }
+}
+
+pub(crate) trait LocationExt {
+    fn source_file(&self, package_graph: &PackageGraph) -> Result<ParsedSourceFile, MietteError>;
+}
+
+impl LocationExt for Location {
+    fn source_file(&self, package_graph: &PackageGraph) -> Result<ParsedSourceFile, MietteError> {
+        ParsedSourceFile::new(self.file.as_str().into(), &package_graph.workspace())
+            .map_err(MietteError::IoError)
     }
 }
 
