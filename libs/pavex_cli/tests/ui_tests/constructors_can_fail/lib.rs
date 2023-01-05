@@ -10,6 +10,7 @@ pub fn extract_path(
     todo!()
 }
 
+#[derive(Debug)]
 pub struct ExtractPathError<T>(T);
 
 pub fn handle_extract_path_error(
@@ -23,6 +24,7 @@ pub fn logger() -> Result<Logger, LoggerError> {
     todo!()
 }
 
+#[derive(Debug)]
 pub struct LoggerError;
 
 pub fn handle_logger_error(_e: &LoggerError) -> pavex_runtime::response::Response {
@@ -47,6 +49,7 @@ pub fn config() -> Config {
 #[derive(Clone)]
 pub struct HttpClient;
 
+#[derive(Debug)]
 pub struct HttpClientError;
 
 pub fn http_client(_config: Config) -> Result<HttpClient, HttpClientError> {

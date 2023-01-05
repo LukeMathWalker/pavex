@@ -12,7 +12,7 @@ use pavex_builder::RawCallableIdentifiers;
 use crate::language::{Callable, ResolvedPath, ResolvedType};
 use crate::rustdoc::CrateCollection;
 use crate::web::constructors::Constructor;
-use crate::web::diagnostic::{CompilerDiagnosticBuilder, ParsedSourceFile, SourceSpanExt};
+use crate::web::diagnostic::{CompilerDiagnosticBuilder, LocationExt, SourceSpanExt};
 use crate::web::resolvers::resolve_type;
 use crate::web::{diagnostic, CompilerDiagnostic};
 
@@ -262,12 +262,9 @@ impl MissingTraitImplementationError {
             .next()
             .unwrap();
         let location = &constructor_locations[raw_identifier];
-        let source =
-            ParsedSourceFile::new(location.file.as_str().into(), &package_graph.workspace())
-                .map_err(miette::MietteError::IoError)?;
-        let label =
-            diagnostic::get_f_macro_invocation_span(&source.contents, &source.parsed, location)
-                .map(|s| s.labeled("The constructor was registered here".into()));
+        let source = location.source_file(&package_graph)?;
+        let label = diagnostic::get_f_macro_invocation_span(&source, location)
+            .map(|s| s.labeled("The constructor was registered here".into()));
         let diagnostic = CompilerDiagnosticBuilder::new(source, self)
             .optional_label(label)
             .optional_help(help)

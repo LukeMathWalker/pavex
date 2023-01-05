@@ -22,8 +22,8 @@ use crate::rustdoc::{CannotGetCrateData, RustdocKindExt};
 use crate::rustdoc::{CrateCollection, ResolvedItem};
 use crate::web::diagnostic;
 use crate::web::diagnostic::{
-    convert_rustdoc_span, convert_span, read_source_file, CompilerDiagnosticBuilder,
-    OptionalSourceSpanExt, ParsedSourceFile, SourceSpanExt,
+    convert_rustdoc_span, convert_span, read_source_file, CompilerDiagnosticBuilder, LocationExt,
+    OptionalSourceSpanExt, SourceSpanExt,
 };
 
 /// Extract the input type paths, the output type path and the callable path for each
@@ -288,7 +288,7 @@ pub(crate) enum CallableResolutionError {
 
 #[derive(Debug, Copy, Clone)]
 pub(crate) enum CallableType {
-    Handler,
+    RequestHandler,
     Constructor,
     ErrorHandler,
 }
@@ -296,7 +296,7 @@ pub(crate) enum CallableType {
 impl Display for CallableType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let s = match self {
-            CallableType::Handler => "handler",
+            CallableType::RequestHandler => "request handler",
             CallableType::Constructor => "constructor",
             CallableType::ErrorHandler => "error handler",
         };
@@ -323,17 +323,9 @@ impl CallableResolutionError {
                 let type_path = &e.0;
                 let raw_identifier = resolved_paths2identifiers[type_path].iter().next().unwrap();
                 let location = identifiers2location(raw_identifier);
-                let source = ParsedSourceFile::new(
-                    location.file.as_str().into(),
-                    &package_graph.workspace(),
-                )
-                .map_err(miette::MietteError::IoError)?;
-                let label = diagnostic::get_f_macro_invocation_span(
-                    &source.contents,
-                    &source.parsed,
-                    &location,
-                )
-                .map(|s| s.labeled(format!("The {callable_type} that we cannot resolve")));
+                let source = location.source_file(&package_graph)?;
+                let label = diagnostic::get_f_macro_invocation_span(&source, &location)
+                    .map(|s| s.labeled(format!("The {callable_type} that we cannot resolve")));
                 let diagnostic = CompilerDiagnosticBuilder::new(source, e)
                     .optional_label(label)
                     .help("This is most likely a bug in `pavex` or `rustdoc`.\nPlease file a GitHub issue!".into())
@@ -404,17 +396,9 @@ impl CallableResolutionError {
                     .next()
                     .unwrap();
                 let location = identifiers2location(raw_identifier);
-                let source = ParsedSourceFile::new(
-                    location.file.as_str().into(),
-                    &package_graph.workspace(),
-                )
-                .map_err(miette::MietteError::IoError)?;
-                let label = diagnostic::get_f_macro_invocation_span(
-                    &source.contents,
-                    &source.parsed,
-                    &location,
-                )
-                .map(|s| s.labeled(format!("The {callable_type} was registered here")));
+                let source = location.source_file(&package_graph)?;
+                let label = diagnostic::get_f_macro_invocation_span(&source, &location)
+                    .map(|s| s.labeled(format!("The {callable_type} was registered here")));
                 let diagnostic = CompilerDiagnosticBuilder::new(source, e)
                     .optional_label(label)
                     .optional_related_error(sub_diagnostic)
@@ -425,17 +409,9 @@ impl CallableResolutionError {
                 let type_path = &e.import_path;
                 let raw_identifier = resolved_paths2identifiers[type_path].iter().next().unwrap();
                 let location = identifiers2location(raw_identifier);
-                let source = ParsedSourceFile::new(
-                    location.file.as_str().into(),
-                    &package_graph.workspace(),
-                )
-                .map_err(miette::MietteError::IoError)?;
-                let label = diagnostic::get_f_macro_invocation_span(
-                    &source.contents,
-                    &source.parsed,
-                    &location,
-                )
-                .map(|s| s.labeled(format!("It was registered as a {callable_type} here")));
+                let source = location.source_file(&package_graph)?;
+                let label = diagnostic::get_f_macro_invocation_span(&source, &location)
+                    .map(|s| s.labeled(format!("It was registered as a {callable_type} here")));
                 let diagnostic = CompilerDiagnosticBuilder::new(source, e)
                     .optional_label(label)
                     .build();
@@ -503,17 +479,9 @@ impl CallableResolutionError {
                     .next()
                     .unwrap();
                 let location = identifiers2location(raw_identifier);
-                let source = ParsedSourceFile::new(
-                    location.file.as_str().into(),
-                    &package_graph.workspace(),
-                )
-                .map_err(miette::MietteError::IoError)?;
-                let label = diagnostic::get_f_macro_invocation_span(
-                    &source.contents,
-                    &source.parsed,
-                    &location,
-                )
-                .map(|s| s.labeled(format!("The {callable_type} was registered here")));
+                let source = location.source_file(&package_graph)?;
+                let label = diagnostic::get_f_macro_invocation_span(&source, &location)
+                    .map(|s| s.labeled(format!("The {callable_type} was registered here")));
                 let diagnostic = CompilerDiagnosticBuilder::new(source, e)
                     .optional_label(label)
                     .optional_related_error(sub_diagnostic)

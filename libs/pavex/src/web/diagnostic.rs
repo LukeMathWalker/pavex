@@ -1,12 +1,15 @@
 use std::fmt::Display;
 use std::path::Path;
 
-use miette::{Diagnostic, LabeledSpan, NamedSource, SourceCode, SourceOffset, SourceSpan};
+use guppy::graph::PackageGraph;
+use miette::{
+    Diagnostic, LabeledSpan, MietteError, NamedSource, SourceCode, SourceOffset, SourceSpan,
+};
 use syn::spanned::Spanned;
 use syn::visit::Visit;
 use syn::{ExprMethodCall, Stmt};
 
-use pavex_builder::Location;
+use pavex_builder::{AppBlueprint, Location, RawCallableIdentifiers};
 
 pub struct CompilerDiagnosticBuilder {
     source_code: NamedSource,
@@ -155,9 +158,8 @@ impl miette::Diagnostic for CompilerDiagnostic {
 /// There are going to be multiple nodes that match if we are dealing with chained method calls.
 /// Luckily enough, the visit is pre-order, therefore the latest node that contains `location`
 /// is also the smallest node that contains it - exactly what we are looking for.
-pub fn get_f_macro_invocation_span(
-    raw_source: &str,
-    parsed_source: &syn::File,
+pub(crate) fn get_f_macro_invocation_span(
+    source: &ParsedSourceFile,
     location: &Location,
 ) -> Option<SourceSpan> {
     struct CallableLocator<'a> {
@@ -182,6 +184,8 @@ pub fn get_f_macro_invocation_span(
         }
     }
 
+    let raw_source = &source.contents;
+    let parsed_source = &source.parsed;
     let mut locator = CallableLocator {
         location,
         node: None,
@@ -298,6 +302,17 @@ impl From<ParsedSourceFile> for NamedSource {
     }
 }
 
+pub(crate) trait LocationExt {
+    fn source_file(&self, package_graph: &PackageGraph) -> Result<ParsedSourceFile, MietteError>;
+}
+
+impl LocationExt for Location {
+    fn source_file(&self, package_graph: &PackageGraph) -> Result<ParsedSourceFile, MietteError> {
+        ParsedSourceFile::new(self.file.as_str().into(), &package_graph.workspace())
+            .map_err(MietteError::IoError)
+    }
+}
+
 /// Given a file path, return the content of the source file it refers to.
 ///
 /// Relative paths are assumed to be relative to the workspace root manifest.  
@@ -312,4 +327,31 @@ pub fn read_source_file(
         let path = workspace.root().as_std_path().join(path);
         fs_err::read_to_string(&path)
     }
+}
+
+/// Given a callable identifier, return the location where it was registered.
+///
+/// The same request handlers can be registered multiple times: this function returns the location
+/// of the first registration.
+pub(crate) fn get_registration_location<'a>(
+    bp: &'a AppBlueprint,
+    identifiers: &RawCallableIdentifiers,
+) -> Option<&'a Location> {
+    bp.constructor_locations
+        .get(identifiers)
+        .or_else(|| get_request_handler_location(bp, identifiers))
+        .or_else(|| bp.error_handler_locations.get(identifiers))
+}
+
+/// Given the callable identifiers for a request handler, return the location where it was registered.
+///
+/// The same request handlers can be registered multiple times: this function returns the location
+/// of the first registration.
+pub(crate) fn get_request_handler_location<'a>(
+    bp: &'a AppBlueprint,
+    identifiers: &RawCallableIdentifiers,
+) -> Option<&'a Location> {
+    bp.request_handler_locations
+        .get(identifiers)
+        .and_then(|v| v.first())
 }

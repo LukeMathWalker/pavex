@@ -4,7 +4,7 @@ Error:
   8 │     let mut bp = AppBlueprint::new();
   9 │     bp.route(f!(crate::c), "/home");
     ·              ──────┬─────
-    ·                    ╰── The handler was registered here
+    ·                    ╰── The request handler was registered here
  10 │     bp
     ╰────
 

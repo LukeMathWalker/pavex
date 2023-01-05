@@ -2,7 +2,3 @@ description = "pavex expectes all constructors to _construct something_! They ca
 
 [expectations]
 codegen = "fail"
-
-[dependencies]
-http = "0.2"
-hyper = { version = "0.14", features = ["server", "http1", "http2"] }
