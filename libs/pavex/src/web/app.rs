@@ -23,7 +23,8 @@ use crate::web::call_graph::{application_state_call_graph, handler_call_graph};
 use crate::web::call_graph::{ApplicationStateCallGraph, CallGraph};
 use crate::web::constructors::{Constructor, ConstructorValidationError};
 use crate::web::diagnostic::{
-    CompilerDiagnosticBuilder, OptionalSourceSpanExt, ParsedSourceFile, SourceSpanExt,
+    get_registration_location, get_request_handler_location, CompilerDiagnosticBuilder,
+    LocationExt, OptionalSourceSpanExt, SourceSpanExt,
 };
 use crate::web::error_handlers::ErrorHandler;
 use crate::web::generated_app::GeneratedApp;
@@ -83,39 +84,26 @@ impl App {
                         map.entry(p).or_default().insert(raw_identifier.to_owned());
                     }
                     Err(e) => {
-                        let identifiers = e.raw_identifiers();
-                        let location = app_blueprint
-                            .constructor_locations
-                            .get(identifiers)
-                            .or_else(|| {
-                                app_blueprint.request_handler_locations[identifiers].first()
-                            })
-                            .unwrap();
-                        let source = ParsedSourceFile::new(
-                            location.file.as_str().into(),
-                            &package_graph.workspace(),
-                        )
-                        .map_err(miette::MietteError::IoError)?;
-                        let source_span = diagnostic::get_f_macro_invocation_span(
-                            &source.contents,
-                            &source.parsed,
-                            location,
-                        );
-                        let diagnostic = match e {
+                        let location =
+                            get_registration_location(&app_blueprint, e.raw_identifiers()).unwrap();
+                        let source = location.source_file(&package_graph)?;
+                        let source_span =
+                            diagnostic::get_f_macro_invocation_span(&source, location);
+                        let (label, help) = match e {
                             ParseError::InvalidPath(_) => {
-                                let label = source_span
-                                    .labeled("The invalid import path was registered here".into());
-                                CompilerDiagnosticBuilder::new(source, e)
-                                    .optional_label(label)
+                                ("The invalid import path was registered here", None)
                             }
                             ParseError::PathMustBeAbsolute(_) => {
-                                let label = source_span
-                                    .labeled("The relative import path was registered here".into());
-                                CompilerDiagnosticBuilder::new(source, e)
-                                    .optional_label(label)
-                                    .help("If it is a local import, the path must start with `crate::`.\nIf it is an import from a dependency, the path must start with the dependency name (e.g. `dependency::`).".into())
+                                ("The relative import path was registered here",
+                                 Some("If it is a local import, the path must start with `crate::`.\n\
+                                    If it is an import from a dependency, the path must start with \
+                                    the dependency name (e.g. `dependency::`)."))
                             }
-                        }.build();
+                        };
+                        let diagnostic = CompilerDiagnosticBuilder::new(source, e)
+                            .optional_label(source_span.labeled(label.into()))
+                            .optional_help(help.map(ToOwned::to_owned))
+                            .build();
                         return Err(diagnostic.into());
                     }
                 }
@@ -190,17 +178,9 @@ impl App {
                                 .next()
                                 .unwrap();
                             let location = &app_blueprint.constructor_locations[raw_identifier];
-                            let source = ParsedSourceFile::new(
-                                location.file.as_str().into(),
-                                &package_graph.workspace(),
-                            )
-                            .map_err(miette::MietteError::IoError)?;
-                            let label = diagnostic::get_f_macro_invocation_span(
-                                &source.contents,
-                                &source.parsed,
-                                location,
-                            )
-                            .map(|s| s.labeled("The constructor was registered here".into()));
+                            let source = location.source_file(&package_graph)?;
+                            let label = diagnostic::get_f_macro_invocation_span(&source, location)
+                                .map(|s| s.labeled("The constructor was registered here".into()));
                             let diagnostic = CompilerDiagnosticBuilder::new(source, e)
                                 .optional_label(label)
                                 .build();
@@ -212,13 +192,46 @@ impl App {
             constructors.insert(constructor.output_type().to_owned(), constructor);
         }
 
+        for (output_type, constructor) in &constructors {
+            if let Constructor::Callable(callable) = constructor {
+                if !utils::is_result(&output_type) {
+                    let constructor_path = constructor_callable_resolver
+                        .get_by_right(&callable)
+                        .unwrap();
+                    let constructor_id =
+                        constructor_paths2ids.get_by_left(constructor_path).unwrap();
+                    if let Some(error_handler_id) =
+                        app_blueprint.constructor_error_handlers.get(constructor_id)
+                    {
+                        let location = &app_blueprint.error_handler_locations[error_handler_id];
+                        let source = location.source_file(&package_graph)?;
+                        let label =
+                            diagnostic::get_f_macro_invocation_span(&source, location).map(|s| {
+                                s.labeled(
+                                    "The unnecessary error handler was registered here".into(),
+                                )
+                            });
+                        let error = anyhow::anyhow!(
+                            "You registered an error handler for a constructor that does \
+                            not return a `Result`."
+                        );
+                        let diagnostic = CompilerDiagnosticBuilder::new(source, error)
+                            .optional_label(label)
+                            .help("Remove the error handler, it is not needed. The constructor is infallible!".into())
+                            .build();
+                        return Err(diagnostic.into());
+                    }
+                }
+            }
+        }
+
         let error_handler_callable_resolver =
             match resolvers::resolve_error_handlers(&error_handler_paths, &mut krate_collection) {
                 Ok(r) => r,
                 Err(e) => {
                     return Err(e.into_diagnostic(
                         &resolved_paths2identifiers,
-                        |identifiers| app_blueprint.constructor_locations[identifiers].clone(),
+                        |identifiers| app_blueprint.error_handler_locations[identifiers].clone(),
                         &package_graph,
                         CallableType::ErrorHandler,
                     )?);
@@ -264,13 +277,12 @@ impl App {
                 return Err(e.into_diagnostic(
                     &resolved_paths2identifiers,
                     |identifiers| {
-                        app_blueprint.request_handler_locations[identifiers]
-                            .first()
+                        get_request_handler_location(&app_blueprint, identifiers)
                             .unwrap()
-                            .clone()
+                            .to_owned()
                     },
                     &package_graph,
-                    CallableType::Handler,
+                    CallableType::RequestHandler,
                 )?);
             }
         };

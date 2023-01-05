@@ -3,6 +3,4 @@ description = "pavex knows how to deal with shared references, no matter the lif
 [expectations]
 codegen = "pass"
 
-[dependencies]
-http = "0.2"
-hyper = { version = "0.14", features = ["server", "http1", "http2"] }
+

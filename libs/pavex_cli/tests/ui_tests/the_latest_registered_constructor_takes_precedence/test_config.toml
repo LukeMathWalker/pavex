@@ -6,6 +6,3 @@ codegen = "pass"
 [ephemeral_dependencies]
 dep = { path = "dep.rs" }
 
-[dependencies]
-http = "0.2"
-hyper = { version = "0.14", features = ["server", "http1", "http2"] }

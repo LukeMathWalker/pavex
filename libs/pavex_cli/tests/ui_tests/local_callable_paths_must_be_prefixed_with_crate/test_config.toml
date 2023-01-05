@@ -2,7 +2,3 @@ description = "pavex cannot resolve relative callable paths, even if they are lo
 
 [expectations]
 codegen = "fail"
-
-[dependencies]
-http = "0.2"
-hyper = { version = "0.14", features = ["server", "http1", "http2"] }

@@ -1,0 +1,4 @@
+description = "Pavex returns an error if you register an error handler for an infallible async constructor"
+
+[expectations]
+codegen = "fail"

@@ -1,6 +1,5 @@
 use std::collections::BTreeMap;
 use std::fmt::{Display, Formatter};
-use std::marker::PhantomData;
 
 use indexmap::{IndexMap, IndexSet};
 
@@ -110,7 +109,7 @@ impl AppBlueprint {
         &mut self,
         callable: RawCallable<F>,
         lifecycle: Lifecycle,
-    ) -> Constructor<F::Output>
+    ) -> Constructor
     where
         F: Callable<ConstructorInputs>,
     {
@@ -125,7 +124,6 @@ impl AppBlueprint {
         Constructor {
             constructor_identifiers: callable_identifiers,
             blueprint: self,
-            output_type: PhantomData::<F::Output>,
         }
     }
 
@@ -217,17 +215,17 @@ pub struct Route<'a> {
 /// The type returned by [`AppBlueprint::constructor`].
 ///
 /// It allows you to further configure the behaviour of the registered constructor.
-pub struct Constructor<'a, Output> {
+pub struct Constructor<'a> {
     blueprint: &'a mut AppBlueprint,
     constructor_identifiers: RawCallableIdentifiers,
-    output_type: PhantomData<Output>,
 }
 
-impl<'a, Success, Error> Constructor<'a, Result<Success, Error>> {
+impl<'a> Constructor<'a> {
     #[track_caller]
-    /// Register an error handler for the error type returned by the constructor.
+    /// Register an error handler.
     ///
-    /// Error handlers convert an error type into an HTTP response for the caller.
+    /// Error handlers convert the error type returned by your constructor into an HTTP response
+    /// for the caller of your API.
     ///
     /// Error handlers CANNOT consume the error type, they must take a reference to the
     /// error as input.  
@@ -260,6 +258,12 @@ impl<'a, Success, Error> Constructor<'a, Result<Success, Error>> {
     ///
     /// If an error handler has already been registered for the same error type, it will be
     /// overwritten.
+    ///
+    /// ## Common Errors
+    ///
+    /// `pavex_cli` will fail to generate the runtime code for your application if you register
+    /// an error handler for an infallible constructor (i.e. a constructor that does not return
+    /// a `Result`).
     pub fn error_handler<F, HandlerInputs>(self, handler: RawCallable<F>) -> Self
     where
         F: Callable<HandlerInputs>,
