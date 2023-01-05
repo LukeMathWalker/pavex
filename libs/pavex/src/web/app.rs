@@ -89,21 +89,21 @@ impl App {
                         let source = location.source_file(&package_graph)?;
                         let source_span =
                             diagnostic::get_f_macro_invocation_span(&source, location);
-                        let diagnostic = match e {
+                        let (label, help) = match e {
                             ParseError::InvalidPath(_) => {
-                                let label = source_span
-                                    .labeled("The invalid import path was registered here".into());
-                                CompilerDiagnosticBuilder::new(source, e)
-                                    .optional_label(label)
+                                ("The invalid import path was registered here", None)
                             }
                             ParseError::PathMustBeAbsolute(_) => {
-                                let label = source_span
-                                    .labeled("The relative import path was registered here".into());
-                                CompilerDiagnosticBuilder::new(source, e)
-                                    .optional_label(label)
-                                    .help("If it is a local import, the path must start with `crate::`.\nIf it is an import from a dependency, the path must start with the dependency name (e.g. `dependency::`).".into())
+                                ("The relative import path was registered here",
+                                 Some("If it is a local import, the path must start with `crate::`.\n\
+                                    If it is an import from a dependency, the path must start with \
+                                    the dependency name (e.g. `dependency::`)."))
                             }
-                        }.build();
+                        };
+                        let diagnostic = CompilerDiagnosticBuilder::new(source, e)
+                            .optional_label(source_span.labeled(label.into()))
+                            .optional_help(help.map(ToOwned::to_owned))
+                            .build();
                         return Err(diagnostic.into());
                     }
                 }
