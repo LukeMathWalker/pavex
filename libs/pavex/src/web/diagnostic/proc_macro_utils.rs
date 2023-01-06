@@ -1,6 +1,12 @@
 use pavex_builder::Location;
 
 pub trait ProcMacroSpanExt {
+    /// Returns `true` if a `proc_macro::Span` contains a `Location`.
+    /// `false` otherwise.
+    ///
+    /// Important: it does not take into account the `Location`'s file path.
+    /// You must check beforehand that the `Location`'s file path is the same as the
+    /// `proc_macro::Span`'s file path.
     fn contains(&self, location: &Location) -> bool;
 }
 
