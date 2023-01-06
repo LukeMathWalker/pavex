@@ -11,6 +11,7 @@ use syn::{ExprMethodCall, Stmt};
 
 use pavex_builder::{AppBlueprint, Location, RawCallableIdentifiers};
 
+/// A builder for a [`CompilerDiagnostic`].
 pub struct CompilerDiagnosticBuilder {
     source_code: NamedSource,
     labels: Option<Vec<LabeledSpan>>,
@@ -20,7 +21,7 @@ pub struct CompilerDiagnosticBuilder {
 }
 
 impl CompilerDiagnosticBuilder {
-    pub fn new(source_code: impl Into<NamedSource>, error: impl Into<anyhow::Error>) -> Self {
+    fn new(source_code: impl Into<NamedSource>, error: impl Into<anyhow::Error>) -> Self {
         Self {
             source_code: source_code.into(),
             labels: None,
@@ -73,6 +74,7 @@ impl CompilerDiagnosticBuilder {
         self
     }
 
+    /// Finalize the builder and return a [`CompilerDiagnostic`].
     pub fn build(self) -> CompilerDiagnostic {
         let Self {
             source_code,
@@ -93,6 +95,9 @@ impl CompilerDiagnosticBuilder {
 
 #[derive(Debug, thiserror::Error)]
 #[error("{error_source}")]
+/// A diagnostic is a single error or warning message returned by `pavex` to the user.
+///
+/// See [`CompilerDiagnostic::builder`] for how to create a diagnostic.
 pub struct CompilerDiagnostic {
     source_code: NamedSource,
     labels: Option<Vec<LabeledSpan>>,
@@ -100,6 +105,30 @@ pub struct CompilerDiagnostic {
     #[source]
     error_source: anyhow::Error,
     related_errors: Option<Vec<CompilerDiagnostic>>,
+}
+
+impl CompilerDiagnostic {
+    /// Start building a diagnostic.
+    /// You must specify:
+    ///
+    /// - the source code that the diagnostic is about;
+    /// - the error that caused the diagnostic.
+    ///
+    /// You can optionally specify:
+    ///
+    /// - labels to highlight specific parts of the source code (see
+    /// [`CompilerDiagnosticBuilder::label`] and [`CompilerDiagnosticBuilder::optional_label`]);
+    /// - a help message to provide more information about the error (see
+    /// [`CompilerDiagnosticBuilder::help`] and [`CompilerDiagnosticBuilder::optional_help`]);
+    /// - related errors. This can be leveraged to point at other source files that are related
+    /// to the error (see [`CompilerDiagnosticBuilder::related_error`] and
+    /// [`CompilerDiagnosticBuilder::optional_related_error`]).
+    pub fn builder(
+        source_code: impl Into<NamedSource>,
+        error: impl Into<anyhow::Error>,
+    ) -> CompilerDiagnosticBuilder {
+        CompilerDiagnosticBuilder::new(source_code, error)
+    }
 }
 
 impl miette::Diagnostic for CompilerDiagnostic {
