@@ -21,9 +21,10 @@ use crate::language::{Callable, InvocationStyle, ResolvedPath, ResolvedType, Unk
 use crate::rustdoc::{CannotGetCrateData, RustdocKindExt};
 use crate::rustdoc::{CrateCollection, ResolvedItem};
 use crate::web::diagnostic;
+use crate::web::diagnostic::read_source_file;
 use crate::web::diagnostic::CompilerDiagnostic;
 use crate::web::diagnostic::{
-    convert_rustdoc_span, convert_span, read_source_file, LocationExt, OptionalSourceSpanExt,
+    convert_proc_macro_span, convert_rustdoc_span, LocationExt, OptionalSourceSpanExt,
     SourceSpanExt,
 };
 
@@ -362,7 +363,7 @@ impl CallableResolutionError {
                             _ => unreachable!(),
                         }
                         .unwrap();
-                        let s = convert_span(
+                        let s = convert_proc_macro_span(
                             span_contents,
                             match input {
                                 FnArg::Typed(typed) => typed.ty.span(),
@@ -449,7 +450,7 @@ impl CallableResolutionError {
                             ReturnType::Type(_, type_) => Some(type_.span()),
                         }
                         .map(|s| {
-                            let s = convert_span(span_contents, s);
+                            let s = convert_proc_macro_span(span_contents, s);
                             SourceSpan::new(
                                 // We must shift the offset forward because it's the
                                 // offset from the beginning of the file slice that
