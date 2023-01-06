@@ -1,5 +1,4 @@
-Error: 
-  × I expect all constructors to return *something*.
+× I expect all constructors to return *something*.
   │ This constructor doesn't, it returns the unit type - `()`.
     ╭─[src/lib.rs:12:1]
  12 │     let mut bp = AppBlueprint::new();

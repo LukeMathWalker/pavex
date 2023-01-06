@@ -1,5 +1,4 @@
-Error: 
-  × `app::NonSendSingleton` does not implement the `core::marker::Send` trait.
+× `app::NonSendSingleton` does not implement the `core::marker::Send` trait.
     ╭─[src/lib.rs:24:1]
  24 │     let mut bp = AppBlueprint::new();
  25 │     bp.constructor(f!(crate::NonSendSingleton::new), Lifecycle::Singleton);

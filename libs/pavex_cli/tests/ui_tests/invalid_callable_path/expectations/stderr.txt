@@ -1,5 +1,4 @@
-Error: 
-  × `my_f,` is not a valid import path.
+× `my_f,` is not a valid import path.
     ╭─[src/lib.rs:10:1]
  10 │     };
  11 │     bp.route(callable, "/home");

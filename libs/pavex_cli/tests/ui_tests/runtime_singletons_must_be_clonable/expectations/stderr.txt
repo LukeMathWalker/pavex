@@ -1,5 +1,4 @@
-Error: 
-  × `app::NonCloneSingleton` does not implement the `core::clone::Clone`
+× `app::NonCloneSingleton` does not implement the `core::clone::Clone`
   │ trait.
     ╭─[src/lib.rs:16:1]
  16 │     let mut bp = AppBlueprint::new();

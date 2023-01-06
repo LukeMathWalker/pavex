@@ -1,5 +1,4 @@
-Error: 
-  × One of the input parameters for `app::stream_file` has a type that I
+× One of the input parameters for `app::stream_file` has a type that I
   │ cannot handle.
     ╭─[src/lib.rs:10:1]
  10 │     let mut bp = AppBlueprint::new();

@@ -1,5 +1,4 @@
-Error: 
-  × One of the input parameters for `app::stream_file::<std::path::PathBuf>`
+× One of the input parameters for `app::stream_file::<std::path::PathBuf>`
   │ has a type that I cannot handle.
     ╭─[src/lib.rs:8:1]
   8 │     let mut bp = AppBlueprint::new();

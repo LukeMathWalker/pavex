@@ -1,5 +1,4 @@
-Error: 
-  × `handler` is not a fully-qualified import path.
+× `handler` is not a fully-qualified import path.
     ╭─[src/lib.rs:8:1]
   8 │     let mut bp = AppBlueprint::new();
   9 │     bp.route(f!(handler), "/home");

@@ -5,7 +5,7 @@ error[E0277]: the trait bound `Streamer: Callable<_>` is not satisfied
     |        ----- ^^^^^^^^^^^^^^^^^^^
     |        |     |
     |        |     the trait `Callable<_>` is not implemented for `Streamer`
-    |        |     this tail expression is of type `pavex_builder::RawCallable<_>`
+    |        |     this tail expression is of type `RawCallable<Streamer>`
     |        required by a bound introduced by this call
     |
 note: required by a bound in `AppBlueprint::route`

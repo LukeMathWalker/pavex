@@ -1,5 +1,4 @@
-Error: 
-  × `app::NonSyncSingleton` does not implement the `core::marker::Sync` trait.
+× `app::NonSyncSingleton` does not implement the `core::marker::Sync` trait.
     ╭─[src/lib.rs:24:1]
  24 │     let mut bp = AppBlueprint::new();
  25 │     bp.constructor(f!(crate::NonSyncSingleton::new), Lifecycle::Singleton);
