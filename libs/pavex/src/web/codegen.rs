@@ -270,6 +270,7 @@ pub(crate) fn codegen_manifest<'a>(
     );
     let manifest = cargo_manifest::Manifest {
         dependencies: Some(dependencies),
+        cargo_features: None,
         package: Some(cargo_manifest::Package {
             // TODO: this should be configurable
             name: "application".to_string(),
