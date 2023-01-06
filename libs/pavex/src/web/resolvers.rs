@@ -21,9 +21,10 @@ use crate::language::{Callable, InvocationStyle, ResolvedPath, ResolvedType, Unk
 use crate::rustdoc::{CannotGetCrateData, RustdocKindExt};
 use crate::rustdoc::{CrateCollection, ResolvedItem};
 use crate::web::diagnostic;
+use crate::web::diagnostic::CompilerDiagnostic;
 use crate::web::diagnostic::{
-    convert_rustdoc_span, convert_span, read_source_file, CompilerDiagnosticBuilder, LocationExt,
-    OptionalSourceSpanExt, SourceSpanExt,
+    convert_rustdoc_span, convert_span, read_source_file, LocationExt, OptionalSourceSpanExt,
+    SourceSpanExt,
 };
 
 /// Extract the input type paths, the output type path and the callable path for each
@@ -326,7 +327,7 @@ impl CallableResolutionError {
                 let source = location.source_file(&package_graph)?;
                 let label = diagnostic::get_f_macro_invocation_span(&source, &location)
                     .map(|s| s.labeled(format!("The {callable_type} that we cannot resolve")));
-                let diagnostic = CompilerDiagnosticBuilder::new(source, e)
+                let diagnostic = CompilerDiagnostic::builder(source, e)
                     .optional_label(label)
                     .help("This is most likely a bug in `pavex` or `rustdoc`.\nPlease file a GitHub issue!".into())
                     .build();
@@ -381,7 +382,7 @@ impl CallableResolutionError {
                             source_contents,
                         );
                         Some(
-                            CompilerDiagnosticBuilder::new(source_code, anyhow::anyhow!(""))
+                            CompilerDiagnostic::builder(source_code, anyhow::anyhow!(""))
                                 .label(label)
                                 .build(),
                         )
@@ -399,7 +400,7 @@ impl CallableResolutionError {
                 let source = location.source_file(&package_graph)?;
                 let label = diagnostic::get_f_macro_invocation_span(&source, &location)
                     .map(|s| s.labeled(format!("The {callable_type} was registered here")));
-                let diagnostic = CompilerDiagnosticBuilder::new(source, e)
+                let diagnostic = CompilerDiagnostic::builder(source, e)
                     .optional_label(label)
                     .optional_related_error(sub_diagnostic)
                     .build();
@@ -412,7 +413,7 @@ impl CallableResolutionError {
                 let source = location.source_file(&package_graph)?;
                 let label = diagnostic::get_f_macro_invocation_span(&source, &location)
                     .map(|s| s.labeled(format!("It was registered as a {callable_type} here")));
-                let diagnostic = CompilerDiagnosticBuilder::new(source, e)
+                let diagnostic = CompilerDiagnostic::builder(source, e)
                     .optional_label(label)
                     .build();
                 diagnostic.into()
@@ -464,7 +465,7 @@ impl CallableResolutionError {
                             source_contents,
                         );
                         Some(
-                            CompilerDiagnosticBuilder::new(source_code, anyhow::anyhow!(""))
+                            CompilerDiagnostic::builder(source_code, anyhow::anyhow!(""))
                                 .optional_label(label)
                                 .build(),
                         )
@@ -482,7 +483,7 @@ impl CallableResolutionError {
                 let source = location.source_file(&package_graph)?;
                 let label = diagnostic::get_f_macro_invocation_span(&source, &location)
                     .map(|s| s.labeled(format!("The {callable_type} was registered here")));
-                let diagnostic = CompilerDiagnosticBuilder::new(source, e)
+                let diagnostic = CompilerDiagnostic::builder(source, e)
                     .optional_label(label)
                     .optional_related_error(sub_diagnostic)
                     .build();

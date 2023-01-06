@@ -22,9 +22,10 @@ use crate::rustdoc::TOOLCHAIN_CRATES;
 use crate::web::call_graph::{application_state_call_graph, handler_call_graph};
 use crate::web::call_graph::{ApplicationStateCallGraph, CallGraph};
 use crate::web::constructors::{Constructor, ConstructorValidationError};
+use crate::web::diagnostic::CompilerDiagnostic;
 use crate::web::diagnostic::{
-    get_registration_location, get_request_handler_location, CompilerDiagnosticBuilder,
-    LocationExt, OptionalSourceSpanExt, SourceSpanExt,
+    get_registration_location, get_request_handler_location, LocationExt, OptionalSourceSpanExt,
+    SourceSpanExt,
 };
 use crate::web::error_handlers::ErrorHandler;
 use crate::web::generated_app::GeneratedApp;
@@ -100,7 +101,7 @@ impl App {
                                     the dependency name (e.g. `dependency::`)."))
                             }
                         };
-                        let diagnostic = CompilerDiagnosticBuilder::new(source, e)
+                        let diagnostic = CompilerDiagnostic::builder(source, e)
                             .optional_label(source_span.labeled(label.into()))
                             .optional_help(help.map(ToOwned::to_owned))
                             .build();
@@ -181,7 +182,7 @@ impl App {
                             let source = location.source_file(&package_graph)?;
                             let label = diagnostic::get_f_macro_invocation_span(&source, location)
                                 .map(|s| s.labeled("The constructor was registered here".into()));
-                            let diagnostic = CompilerDiagnosticBuilder::new(source, e)
+                            let diagnostic = CompilerDiagnostic::builder(source, e)
                                 .optional_label(label)
                                 .build();
                             Err(diagnostic.into())
@@ -215,7 +216,7 @@ impl App {
                             "You registered an error handler for a constructor that does \
                             not return a `Result`."
                         );
-                        let diagnostic = CompilerDiagnosticBuilder::new(source, error)
+                        let diagnostic = CompilerDiagnostic::builder(source, error)
                             .optional_label(label)
                             .help("Remove the error handler, it is not needed. The constructor is infallible!".into())
                             .build();

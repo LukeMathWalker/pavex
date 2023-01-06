@@ -1,5 +1,4 @@
 pub use app::App;
-pub use diagnostic::CompilerDiagnostic;
 
 mod app;
 mod call_graph;
