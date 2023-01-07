@@ -15,25 +15,25 @@ use pavex_builder::AppBlueprint;
 use pavex_builder::Lifecycle;
 use pavex_builder::RawCallableIdentifiers;
 
-use crate::language::{Callable, ParseError, ResolvedPathSegment, ResolvedType};
+use crate::diagnostic;
+use crate::diagnostic::CompilerDiagnostic;
+use crate::diagnostic::{
+    get_registration_location_for_a_request_handler, LocationExt, SourceSpanExt,
+};
+use crate::language::{Callable, ResolvedPathSegment, ResolvedType};
 use crate::language::{ResolvedPath, ResolvedPathQualifiedSelf};
 use crate::rustdoc::CrateCollection;
 use crate::rustdoc::TOOLCHAIN_CRATES;
 use crate::web::call_graph::{application_state_call_graph, handler_call_graph};
 use crate::web::call_graph::{ApplicationStateCallGraph, CallGraph};
-use crate::web::constructors::{Constructor, ConstructorValidationError};
-use crate::web::diagnostic::CompilerDiagnostic;
-use crate::web::diagnostic::{
-    get_registration_location, get_registration_location_for_a_request_handler, LocationExt,
-    OptionalSourceSpanExt, SourceSpanExt,
-};
+use crate::web::constructors::Constructor;
 use crate::web::error_handlers::ErrorHandler;
 use crate::web::generated_app::GeneratedApp;
 use crate::web::resolvers::{
     resolve_callable, resolve_type_path, CallableResolutionError, CallableType,
 };
 use crate::web::traits::assert_trait_is_implemented;
-use crate::web::{codegen, diagnostic, resolvers, utils};
+use crate::web::{codegen, resolvers, utils};
 
 pub(crate) const GENERATED_APP_PACKAGE_ID: &str = "crate";
 
@@ -58,9 +58,18 @@ fn compute_package_graph() -> Result<PackageGraph, miette::Error> {
         .map_err(|e| miette!(e))
 }
 
+/// Exit early if there is at least one error.
+macro_rules! exit_on_errors {
+    ($var:ident) => {
+        if !$var.is_empty() {
+            return Err($var);
+        }
+    };
+}
+
 impl App {
     #[tracing::instrument(skip_all)]
-    pub fn build(app_blueprint: AppBlueprint) -> Result<Self, miette::Error> {
+    pub fn build(app_blueprint: AppBlueprint) -> Result<Self, Vec<miette::Error>> {
         // We collect all the unique raw identifiers from the blueprint.
         let raw_identifiers_db: HashSet<RawCallableIdentifiers> = {
             let mut set = HashSet::with_capacity(
@@ -74,7 +83,9 @@ impl App {
             set
         };
 
-        let package_graph = compute_package_graph()?;
+        let package_graph = compute_package_graph().map_err(|e| vec![e])?;
+
+        let mut diagnostics = vec![];
         let mut krate_collection = CrateCollection::new(package_graph.clone());
 
         let resolved_paths2identifiers: HashMap<ResolvedPath, HashSet<RawCallableIdentifiers>> = {
@@ -85,32 +96,17 @@ impl App {
                         map.entry(p).or_default().insert(raw_identifier.to_owned());
                     }
                     Err(e) => {
-                        let location =
-                            get_registration_location(&app_blueprint, e.raw_identifiers()).unwrap();
-                        let source = location.source_file(&package_graph)?;
-                        let source_span =
-                            diagnostic::get_f_macro_invocation_span(&source, location);
-                        let (label, help) = match e {
-                            ParseError::InvalidPath(_) => {
-                                ("The invalid import path was registered here", None)
-                            }
-                            ParseError::PathMustBeAbsolute(_) => {
-                                ("The relative import path was registered here",
-                                 Some("If it is a local import, the path must start with `crate::`.\n\
-                                    If it is an import from a dependency, the path must start with \
-                                    the dependency name (e.g. `dependency::`)."))
-                            }
-                        };
-                        let diagnostic = CompilerDiagnostic::builder(source, e)
-                            .optional_label(source_span.labeled(label.into()))
-                            .optional_help(help.map(ToOwned::to_owned))
-                            .build();
-                        return Err(diagnostic.into());
+                        let diagnostic = e
+                            .into_diagnostic(&app_blueprint, &package_graph)
+                            .to_miette();
+                        diagnostics.push(diagnostic);
                     }
                 }
             }
             map
         };
+
+        exit_on_errors!(diagnostics);
 
         // Important: there might be multiple identifiers pointing to the same callable path.
         // This is not necessarily an issue - e.g. the user might have registered the same
@@ -153,41 +149,34 @@ impl App {
             set
         };
 
-        let constructor_callable_resolver =
-            match resolvers::resolve_constructors(&constructor_paths, &mut krate_collection) {
-                Ok(r) => r,
-                Err(e) => {
-                    return Err(e.into_diagnostic(
-                        &resolved_paths2identifiers,
-                        |identifiers| app_blueprint.constructor_locations[identifiers].clone(),
-                        &package_graph,
-                        CallableType::Constructor,
-                    )?);
-                }
-            };
+        let (constructor_callable_resolver, errors) =
+            resolvers::resolve_constructors(&constructor_paths, &mut krate_collection);
+        for e in errors {
+            diagnostics.push(
+                e.into_diagnostic(
+                    &resolved_paths2identifiers,
+                    |identifiers| app_blueprint.constructor_locations[identifiers].clone(),
+                    &package_graph,
+                    CallableType::Constructor,
+                )
+                .to_miette(),
+            );
+        }
+
         let mut constructors: IndexMap<ResolvedType, Constructor> = IndexMap::new();
         for callable in constructor_callable_resolver.right_values() {
             let constructor: Constructor = match callable.to_owned().try_into() {
                 Ok(c) => c,
                 Err(e) => {
-                    return match e {
-                        ConstructorValidationError::CannotReturnTheUnitType(
-                            ref constructor_path,
-                        ) => {
-                            let raw_identifier = resolved_paths2identifiers[constructor_path]
-                                .iter()
-                                .next()
-                                .unwrap();
-                            let location = &app_blueprint.constructor_locations[raw_identifier];
-                            let source = location.source_file(&package_graph)?;
-                            let label = diagnostic::get_f_macro_invocation_span(&source, location)
-                                .map(|s| s.labeled("The constructor was registered here".into()));
-                            let diagnostic = CompilerDiagnostic::builder(source, e)
-                                .optional_label(label)
-                                .build();
-                            Err(diagnostic.into())
-                        }
-                    };
+                    diagnostics.push(
+                        e.into_diagnostic(
+                            &resolved_paths2identifiers,
+                            &app_blueprint,
+                            &package_graph,
+                        )
+                        .to_miette(),
+                    );
+                    continue;
                 }
             };
             constructors.insert(constructor.output_type().to_owned(), constructor);
@@ -204,40 +193,50 @@ impl App {
                     if let Some(error_handler_id) =
                         app_blueprint.constructor_error_handlers.get(constructor_id)
                     {
-                        let location = &app_blueprint.error_handler_locations[error_handler_id];
-                        let source = location.source_file(&package_graph)?;
-                        let label =
-                            diagnostic::get_f_macro_invocation_span(&source, location).map(|s| {
-                                s.labeled(
-                                    "The unnecessary error handler was registered here".into(),
-                                )
-                            });
-                        let error = anyhow::anyhow!(
-                            "You registered an error handler for a constructor that does \
-                            not return a `Result`."
-                        );
-                        let diagnostic = CompilerDiagnostic::builder(source, error)
-                            .optional_label(label)
-                            .help("Remove the error handler, it is not needed. The constructor is infallible!".into())
-                            .build();
-                        return Err(diagnostic.into());
+                        let diagnostic = ErrorHandlerForInfallibleConstructor {
+                            error_handler_id: error_handler_id.to_owned(),
+                        }
+                        .into_diagnostic(&app_blueprint, &package_graph)
+                        .to_miette();
+                        diagnostics.push(diagnostic);
                     }
                 }
             }
         }
 
-        let error_handler_callable_resolver =
-            match resolvers::resolve_error_handlers(&error_handler_paths, &mut krate_collection) {
-                Ok(r) => r,
-                Err(e) => {
-                    return Err(e.into_diagnostic(
-                        &resolved_paths2identifiers,
-                        |identifiers| app_blueprint.error_handler_locations[identifiers].clone(),
-                        &package_graph,
-                        CallableType::ErrorHandler,
-                    )?);
-                }
-            };
+        let (error_handler_callable_resolver, errors) =
+            resolvers::resolve_error_handlers(&error_handler_paths, &mut krate_collection);
+        for e in errors {
+            diagnostics.push(
+                e.into_diagnostic(
+                    &resolved_paths2identifiers,
+                    |identifiers| app_blueprint.error_handler_locations[identifiers].clone(),
+                    &package_graph,
+                    CallableType::ErrorHandler,
+                )
+                .to_miette(),
+            );
+        }
+
+        let (handler_resolver, handlers, errors) =
+            resolvers::resolve_request_handlers(&request_handler_paths, &mut krate_collection);
+        for e in errors {
+            diagnostics.push(
+                e.into_diagnostic(
+                    &resolved_paths2identifiers,
+                    |identifiers| {
+                        get_registration_location_for_a_request_handler(&app_blueprint, identifiers)
+                            .unwrap()
+                            .to_owned()
+                    },
+                    &package_graph,
+                    CallableType::RequestHandler,
+                )
+                .to_miette(),
+            );
+        }
+
+        exit_on_errors!(diagnostics);
 
         // TODO: check if we have a constructor that returns T and another constructor returning
         //  &T
@@ -268,25 +267,6 @@ impl App {
                 constructors.insert(m.err.output_type().to_owned(), m.err);
             }
         }
-
-        let (handler_resolver, handlers) = match resolvers::resolve_request_handlers(
-            &request_handler_paths,
-            &mut krate_collection,
-        ) {
-            Ok(h) => h,
-            Err(e) => {
-                return Err(e.into_diagnostic(
-                    &resolved_paths2identifiers,
-                    |identifiers| {
-                        get_registration_location_for_a_request_handler(&app_blueprint, identifiers)
-                            .unwrap()
-                            .to_owned()
-                    },
-                    &package_graph,
-                    CallableType::RequestHandler,
-                )?);
-            }
-        };
 
         let response_transformers = {
             let mut response_transformers = HashMap::<ResolvedType, Callable>::new();
@@ -339,6 +319,8 @@ impl App {
             response_transformers
         };
 
+        exit_on_errors!(diagnostics);
+
         let mut router = BTreeMap::new();
         for (route, callable_identifiers) in app_blueprint.router {
             let callable_path = &identifiers2path[&callable_identifiers];
@@ -366,6 +348,8 @@ impl App {
             }
             map
         };
+
+        exit_on_errors!(diagnostics);
 
         let constructor2error_handler: HashMap<Constructor, ErrorHandler> = {
             let mut map = HashMap::new();
@@ -423,7 +407,8 @@ impl App {
             &component2lifecycle,
             &request_scoped_framework_bindings,
         )
-        .map_err(|e| miette!(e))?
+        // TODO: produce a proper diagnostic here
+        .map_err(|e| vec![miette!(e)])?
         .into_iter()
         .enumerate()
         // Assign a unique name to each singleton
@@ -446,7 +431,7 @@ impl App {
                 if let Err(e) =
                     assert_trait_is_implemented(&krate_collection, singleton_type, trait_)
                 {
-                    return Err(e
+                    diagnostics.push(e
                         .into_diagnostic(
                             &constructors,
                             &constructor_callable_resolver,
@@ -456,11 +441,13 @@ impl App {
                             Some("All singletons must implement the `Send`, `Sync` and `Clone` traits.\n \
                                 `pavex` runs on a multi-threaded HTTP server and singletons must be shared \
                                  across all worker threads.".into()),
-                        )?
-                        .into());
+                        )
+                        .to_miette());
                 }
             }
         }
+
+        exit_on_errors!(diagnostics);
 
         let application_state_call_graph = application_state_call_graph(
             &runtime_singletons,
@@ -469,6 +456,7 @@ impl App {
             &constructor2error_handler,
         );
         let codegen_types = codegen_types(&package_graph, &mut krate_collection);
+        assert!(diagnostics.is_empty());
         Ok(App {
             package_graph,
             router,
@@ -687,4 +675,43 @@ pub(crate) enum BuildError {
     HandlerError(#[from] Box<CallableResolutionError>),
     #[error(transparent)]
     GenericError(#[from] anyhow::Error),
+}
+
+trait ResultExt {
+    fn to_miette(self) -> miette::Error;
+}
+
+impl ResultExt for Result<CompilerDiagnostic, miette::Error> {
+    fn to_miette(self) -> miette::Error {
+        match self {
+            Ok(e) => e.into(),
+            Err(e) => e,
+        }
+    }
+}
+
+#[derive(Debug, thiserror::Error)]
+#[error("You registered an error handler for a constructor that does not return a `Result`.")]
+pub(crate) struct ErrorHandlerForInfallibleConstructor {
+    error_handler_id: RawCallableIdentifiers,
+}
+
+impl ErrorHandlerForInfallibleConstructor {
+    pub fn into_diagnostic(
+        self,
+        app_blueprint: &AppBlueprint,
+        package_graph: &PackageGraph,
+    ) -> Result<CompilerDiagnostic, miette::Error> {
+        let location = &app_blueprint.error_handler_locations[&self.error_handler_id];
+        let source = location.source_file(&package_graph)?;
+        let label = diagnostic::get_f_macro_invocation_span(&source, location)
+            .map(|s| s.labeled("The unnecessary error handler was registered here".into()));
+        let diagnostic = CompilerDiagnostic::builder(source, self)
+            .optional_label(label)
+            .help(
+                "Remove the error handler, it is not needed. The constructor is infallible!".into(),
+            )
+            .build();
+        Ok(diagnostic)
+    }
 }

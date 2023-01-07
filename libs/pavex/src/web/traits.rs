@@ -9,12 +9,12 @@ use rustdoc_types::{GenericParamDefKind, ItemEnum, Type};
 use pavex_builder::Location;
 use pavex_builder::RawCallableIdentifiers;
 
+use crate::diagnostic;
+use crate::diagnostic::CompilerDiagnostic;
+use crate::diagnostic::{LocationExt, SourceSpanExt};
 use crate::language::{Callable, ResolvedPath, ResolvedType};
 use crate::rustdoc::CrateCollection;
 use crate::web::constructors::Constructor;
-use crate::web::diagnostic;
-use crate::web::diagnostic::CompilerDiagnostic;
-use crate::web::diagnostic::{LocationExt, SourceSpanExt};
 use crate::web::resolvers::resolve_type;
 
 /// It returns an error if `type_` does not implement the specified trait.

@@ -1,5 +1,12 @@
 use std::borrow::Cow;
+use std::collections::{HashMap, HashSet};
 
+use guppy::graph::PackageGraph;
+
+use pavex_builder::{AppBlueprint, RawCallableIdentifiers};
+
+use crate::diagnostic;
+use crate::diagnostic::{CompilerDiagnostic, LocationExt, SourceSpanExt};
 use crate::language::{Callable, ResolvedPath, ResolvedType};
 
 /// A transformation that, given a set of inputs, **constructs** a new type.
@@ -112,6 +119,32 @@ impl Constructor {
 pub(crate) enum ConstructorValidationError {
     #[error("I expect all constructors to return *something*.\nThis constructor doesn't, it returns the unit type - `()`.")]
     CannotReturnTheUnitType(ResolvedPath),
+}
+
+impl ConstructorValidationError {
+    pub fn into_diagnostic(
+        self,
+        resolved_paths2identifiers: &HashMap<ResolvedPath, HashSet<RawCallableIdentifiers>>,
+        app_blueprint: &AppBlueprint,
+        package_graph: &PackageGraph,
+    ) -> Result<CompilerDiagnostic, miette::Error> {
+        match self {
+            Self::CannotReturnTheUnitType(ref constructor_path) => {
+                let raw_identifier = resolved_paths2identifiers[constructor_path]
+                    .iter()
+                    .next()
+                    .unwrap();
+                let location = &app_blueprint.constructor_locations[raw_identifier];
+                let source = location.source_file(&package_graph)?;
+                let label = diagnostic::get_f_macro_invocation_span(&source, location)
+                    .map(|s| s.labeled("The constructor was registered here".into()));
+                let diagnostic = CompilerDiagnostic::builder(source, self)
+                    .optional_label(label)
+                    .build();
+                Ok(diagnostic)
+            }
+        }
+    }
 }
 
 /// The `Ok` and `Err` constructors returned by [`Constructor::match_result`].

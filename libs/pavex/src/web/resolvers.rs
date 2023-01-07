@@ -17,29 +17,37 @@ use syn::{FnArg, ImplItemMethod, ReturnType};
 use pavex_builder::Location;
 use pavex_builder::RawCallableIdentifiers;
 
-use crate::language::{Callable, InvocationStyle, ResolvedPath, ResolvedType, UnknownPath};
-use crate::rustdoc::{CannotGetCrateData, RustdocKindExt};
-use crate::rustdoc::{CrateCollection, ResolvedItem};
-use crate::web::diagnostic;
-use crate::web::diagnostic::read_source_file;
-use crate::web::diagnostic::CompilerDiagnostic;
-use crate::web::diagnostic::{
+use crate::diagnostic;
+use crate::diagnostic::read_source_file;
+use crate::diagnostic::CompilerDiagnostic;
+use crate::diagnostic::{
     convert_proc_macro_span, convert_rustdoc_span, LocationExt, OptionalSourceSpanExt,
     SourceSpanExt,
 };
+use crate::language::{Callable, InvocationStyle, ResolvedPath, ResolvedType, UnknownPath};
+use crate::rustdoc::{CannotGetCrateData, RustdocKindExt};
+use crate::rustdoc::{CrateCollection, ResolvedItem};
 
 /// Extract the input type paths, the output type path and the callable path for each
 /// registered type constructor.
 pub(crate) fn resolve_constructors(
     constructor_paths: &IndexSet<ResolvedPath>,
     krate_collection: &CrateCollection,
-) -> Result<BiHashMap<ResolvedPath, Callable>, CallableResolutionError> {
+) -> (
+    BiHashMap<ResolvedPath, Callable>,
+    Vec<CallableResolutionError>,
+) {
     let mut resolution_map = BiHashMap::with_capacity(constructor_paths.len());
+    let mut errors = vec![];
     for constructor_identifiers in constructor_paths {
-        let constructor = resolve_callable(krate_collection, constructor_identifiers)?;
-        resolution_map.insert(constructor_identifiers.to_owned(), constructor);
+        match resolve_callable(krate_collection, constructor_identifiers) {
+            Ok(constructor) => {
+                resolution_map.insert(constructor_identifiers.to_owned(), constructor);
+            }
+            Err(e) => errors.push(e),
+        }
     }
-    Ok(resolution_map)
+    (resolution_map, errors)
 }
 
 /// Extract the input type paths, the output type path and the callable path for each
@@ -48,13 +56,21 @@ pub(crate) fn resolve_constructors(
 pub(crate) fn resolve_error_handlers(
     paths: &IndexSet<ResolvedPath>,
     krate_collection: &CrateCollection,
-) -> Result<HashMap<ResolvedPath, Callable>, CallableResolutionError> {
+) -> (
+    HashMap<ResolvedPath, Callable>,
+    Vec<CallableResolutionError>,
+) {
     let mut resolution_map = HashMap::with_capacity(paths.len());
+    let mut errors = vec![];
     for identifiers in paths {
-        let callable = resolve_callable(krate_collection, identifiers)?;
-        resolution_map.insert(identifiers.to_owned(), callable);
+        match resolve_callable(krate_collection, identifiers) {
+            Ok(callable) => {
+                resolution_map.insert(identifiers.to_owned(), callable);
+            }
+            Err(e) => errors.push(e),
+        }
     }
-    Ok(resolution_map)
+    (resolution_map, errors)
 }
 
 /// Extract the input type paths, the output type path and the callable path for each
@@ -62,15 +78,24 @@ pub(crate) fn resolve_error_handlers(
 pub(crate) fn resolve_request_handlers(
     handler_paths: &IndexSet<ResolvedPath>,
     krate_collection: &CrateCollection,
-) -> Result<(HashMap<ResolvedPath, Callable>, IndexSet<Callable>), CallableResolutionError> {
+) -> (
+    HashMap<ResolvedPath, Callable>,
+    IndexSet<Callable>,
+    Vec<CallableResolutionError>,
+) {
     let mut handlers = IndexSet::with_capacity(handler_paths.len());
     let mut handler_resolver = HashMap::new();
+    let mut errors = vec![];
     for callable_path in handler_paths {
-        let handler = resolve_callable(krate_collection, callable_path)?;
-        handlers.insert(handler.clone());
-        handler_resolver.insert(callable_path.to_owned(), handler);
+        match resolve_callable(krate_collection, callable_path) {
+            Ok(handler) => {
+                handlers.insert(handler.clone());
+                handler_resolver.insert(callable_path.to_owned(), handler);
+            }
+            Err(e) => errors.push(e),
+        }
     }
-    Ok((handler_resolver, handlers))
+    (handler_resolver, handlers, errors)
 }
 
 pub(crate) fn resolve_type(
@@ -313,11 +338,11 @@ impl CallableResolutionError {
         identifiers2location: LocationProvider,
         package_graph: &PackageGraph,
         callable_type: CallableType,
-    ) -> Result<miette::Error, miette::Error>
+    ) -> Result<CompilerDiagnostic, miette::Error>
     where
         LocationProvider: Fn(&RawCallableIdentifiers) -> Location,
     {
-        let diagnostic = match self {
+        match self {
             Self::UnknownCallable(e) => {
                 // We only report a single registration site in the error report even though
                 // the same callable might have been registered in multiple locations.
@@ -328,11 +353,10 @@ impl CallableResolutionError {
                 let source = location.source_file(&package_graph)?;
                 let label = diagnostic::get_f_macro_invocation_span(&source, &location)
                     .map(|s| s.labeled(format!("The {callable_type} that we cannot resolve")));
-                let diagnostic = CompilerDiagnostic::builder(source, e)
+                Ok(CompilerDiagnostic::builder(source, e)
                     .optional_label(label)
                     .help("This is most likely a bug in `pavex` or `rustdoc`.\nPlease file a GitHub issue!".into())
-                    .build();
-                diagnostic.into()
+                    .build())
             }
             CallableResolutionError::ParameterResolutionError(e) => {
                 let sub_diagnostic = {
@@ -401,11 +425,10 @@ impl CallableResolutionError {
                 let source = location.source_file(&package_graph)?;
                 let label = diagnostic::get_f_macro_invocation_span(&source, &location)
                     .map(|s| s.labeled(format!("The {callable_type} was registered here")));
-                let diagnostic = CompilerDiagnostic::builder(source, e)
+                Ok(CompilerDiagnostic::builder(source, e)
                     .optional_label(label)
                     .optional_related_error(sub_diagnostic)
-                    .build();
-                diagnostic.into()
+                    .build())
             }
             CallableResolutionError::UnsupportedCallableKind(e) => {
                 let type_path = &e.import_path;
@@ -414,10 +437,9 @@ impl CallableResolutionError {
                 let source = location.source_file(&package_graph)?;
                 let label = diagnostic::get_f_macro_invocation_span(&source, &location)
                     .map(|s| s.labeled(format!("It was registered as a {callable_type} here")));
-                let diagnostic = CompilerDiagnostic::builder(source, e)
+                Ok(CompilerDiagnostic::builder(source, e)
                     .optional_label(label)
-                    .build();
-                diagnostic.into()
+                    .build())
             }
             CallableResolutionError::OutputTypeResolutionError(e) => {
                 let sub_diagnostic = {
@@ -484,15 +506,13 @@ impl CallableResolutionError {
                 let source = location.source_file(&package_graph)?;
                 let label = diagnostic::get_f_macro_invocation_span(&source, &location)
                     .map(|s| s.labeled(format!("The {callable_type} was registered here")));
-                let diagnostic = CompilerDiagnostic::builder(source, e)
+                Ok(CompilerDiagnostic::builder(source, e)
                     .optional_label(label)
                     .optional_related_error(sub_diagnostic)
-                    .build();
-                diagnostic.into()
+                    .build())
             }
-            CallableResolutionError::CannotGetCrateData(e) => miette!(e),
-        };
-        Ok(diagnostic)
+            CallableResolutionError::CannotGetCrateData(e) => Err(miette!(e)),
+        }
     }
 }
 

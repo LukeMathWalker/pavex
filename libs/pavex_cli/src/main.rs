@@ -78,8 +78,10 @@ fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
             let blueprint = AppBlueprint::load(&blueprint)?;
             let app = match App::build(blueprint) {
                 Ok(a) => a,
-                Err(e) => {
-                    eprintln!("{:?}", e);
+                Err(errors) => {
+                    for e in errors {
+                        eprintln!("{:?}", e);
+                    }
                     return Ok(ExitCode::FAILURE);
                 }
             };
