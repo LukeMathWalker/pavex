@@ -81,7 +81,7 @@ fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
                 Ok(a) => a,
                 Err(errors) => {
                     for e in errors {
-                        eprintln!("{}: {:?}", e, "ERROR".bold().red());
+                        eprintln!("{}: {:?}", "ERROR".bold().red(), e);
                     }
                     return Ok(ExitCode::FAILURE);
                 }

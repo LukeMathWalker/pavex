@@ -1,4 +1,5 @@
-× You registered an error handler for a constructor that does not return
+[31m[1mERROR[0m[39m: 
+  × You registered an error handler for a constructor that does not return
   │ a `Result`.
     ╭─[src/lib.rs:22:1]
  22 │     bp.constructor(f!(crate::infallible_constructor), Lifecycle::RequestScoped)

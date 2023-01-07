@@ -351,15 +351,11 @@ fn _run_test(
     let diagnostics_snapshot = SnapshotTest::new(expectations_directory.join("diagnostics.dot"));
     let actual_diagnostics =
         fs_err::read_to_string(test.runtime_directory.join("diagnostics.dot"))?;
-    if diagnostics_snapshot.verify(&actual_diagnostics).is_err() {
-        return Ok(TestOutcome {
-            outcome: Err(
-                "Diagnostics for the generated application do not match what we expected".into(),
-            ),
-            codegen_output,
-            compilation_output: None,
-        });
-    }
+    // We do not exit early here to get the generated code snapshot as well.
+    // This allows to update both code snapshot and diagnostics snapshot in one go via
+    // `cargo r --bin snaps` for a failing test instead of having to do them one at a time,
+    // with a test run in the middle.
+    let diagnostics_outcome = diagnostics_snapshot.verify(&actual_diagnostics);
 
     let app_code_snapshot = SnapshotTest::new(expectations_directory.join("app.rs"));
     let actual_app_code = fs_err::read_to_string(
@@ -369,7 +365,19 @@ fn _run_test(
             .join("lib.rs"),
     )
     .unwrap();
-    if app_code_snapshot.verify(&actual_app_code).is_err() {
+    let codegen_outcome = app_code_snapshot.verify(&actual_app_code);
+
+    if diagnostics_outcome.is_err() {
+        return Ok(TestOutcome {
+            outcome: Err(
+                "Diagnostics for the generated application do not match what we expected".into(),
+            ),
+            codegen_output,
+            compilation_output: None,
+        });
+    }
+
+    if codegen_outcome.is_err() {
         return Ok(TestOutcome {
             outcome: Err("The generated application code does not match what we expected".into()),
             codegen_output,
