@@ -402,25 +402,26 @@ impl App {
         let request_scoped_framework_bindings =
             framework_bindings(&package_graph, &mut krate_collection);
 
-        let runtime_singletons: BiHashMap<Ident, ResolvedType> = get_required_singleton_types(
+        let runtime_singletons: IndexSet<ResolvedType> = get_required_singleton_types(
             handler_call_graphs.iter(),
             &component2lifecycle,
             &request_scoped_framework_bindings,
         )
         // TODO: produce a proper diagnostic here
-        .map_err(|e| vec![miette!(e)])?
-        .into_iter()
-        .enumerate()
-        // Assign a unique name to each singleton
-        .map(|(i, type_)| (format_ident!("s{}", i), type_))
-        .collect();
+        .map_err(|e| vec![miette!(e)])?;
+        let runtime_singleton_bindings = runtime_singletons
+            .iter()
+            .enumerate()
+            // Assign a unique name to each singleton
+            .map(|(i, type_)| (format_ident!("s{}", i), type_.to_owned()))
+            .collect();
 
         // All singletons stored in the application state (i.e. all "runtime" singletons) must
         // implement `Clone`, `Send` and `Sync` in order to be shared across threads.
         let send = process_framework_path("core::marker::Send", &package_graph, &krate_collection);
         let sync = process_framework_path("core::marker::Sync", &package_graph, &krate_collection);
         let clone = process_framework_path("core::clone::Clone", &package_graph, &krate_collection);
-        for singleton_type in runtime_singletons.right_values().filter_map(|ty| {
+        for singleton_type in runtime_singletons.iter().filter_map(|ty| {
             if component2lifecycle.get(ty) == Some(&Lifecycle::Singleton) {
                 Some(ty)
             } else {
@@ -450,7 +451,7 @@ impl App {
         exit_on_errors!(diagnostics);
 
         let application_state_call_graph = application_state_call_graph(
-            &runtime_singletons,
+            &runtime_singleton_bindings,
             &component2lifecycle,
             constructors,
             &constructor2error_handler,
@@ -462,7 +463,7 @@ impl App {
             router,
             handler_call_graphs,
             application_state_call_graph,
-            runtime_singleton_bindings: runtime_singletons,
+            runtime_singleton_bindings,
             request_scoped_framework_bindings,
             codegen_types,
         })
@@ -600,8 +601,8 @@ fn get_required_singleton_types<'a>(
     handler_call_graphs: impl Iterator<Item = (&'a ResolvedPath, &'a CallGraph)>,
     component2lifecycle: &HashMap<ResolvedType, Lifecycle>,
     types_provided_by_the_framework: &BiHashMap<Ident, ResolvedType>,
-) -> Result<HashSet<ResolvedType>, anyhow::Error> {
-    let mut singletons_to_be_built = HashSet::new();
+) -> Result<IndexSet<ResolvedType>, anyhow::Error> {
+    let mut singletons_to_be_built = IndexSet::new();
     for (import_path, handler_call_graph) in handler_call_graphs {
         for mut required_input in handler_call_graph.required_input_types() {
             // We don't care if the type is required as a shared reference or an owned instance here.
