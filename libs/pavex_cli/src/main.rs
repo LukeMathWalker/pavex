@@ -7,6 +7,7 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::EnvFilter;
 
+use owo_colors::OwoColorize;
 use pavex::App;
 use pavex_builder::AppBlueprint;
 
@@ -80,7 +81,7 @@ fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
                 Ok(a) => a,
                 Err(errors) => {
                     for e in errors {
-                        eprintln!("{:?}", e);
+                        eprintln!("{}: {:?}", e, "ERROR".bold().red());
                     }
                     return Ok(ExitCode::FAILURE);
                 }
