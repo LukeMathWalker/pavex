@@ -8,7 +8,9 @@ struct ServerState {
 pub struct ApplicationState {
     s0: app_blueprint::HttpClient,
 }
-pub async fn build_application_state(v0: app_blueprint::Config) -> crate::ApplicationState {
+pub async fn build_application_state(
+    v0: app_blueprint::Config,
+) -> crate::ApplicationState {
     let v1 = app_blueprint::http_client(v0);
     crate::ApplicationState { s0: v1 }
 }
@@ -25,25 +27,28 @@ pub async fn run(
     let make_service = pavex_runtime::hyper::service::make_service_fn(move |_| {
         let server_state = server_state.clone();
         async move {
-            Ok::<_, pavex_runtime::hyper::Error>(pavex_runtime::hyper::service::service_fn(
-                move |request| {
+            Ok::<
+                _,
+                pavex_runtime::hyper::Error,
+            >(
+                pavex_runtime::hyper::service::service_fn(move |request| {
                     let server_state = server_state.clone();
                     async move {
-                        Ok::<_, pavex_runtime::hyper::Error>(
-                            route_request(request, server_state).await,
-                        )
+                        Ok::<
+                            _,
+                            pavex_runtime::hyper::Error,
+                        >(route_request(request, server_state).await)
                     }
-                },
-            ))
+                }),
+            )
         }
     });
-    server_builder
-        .serve(make_service)
-        .await
-        .map_err(pavex_runtime::Error::new)
+    server_builder.serve(make_service).await.map_err(pavex_runtime::Error::new)
 }
-fn build_router() -> Result<pavex_runtime::routing::Router<u32>, pavex_runtime::routing::InsertError>
-{
+fn build_router() -> Result<
+    pavex_runtime::routing::Router<u32>,
+    pavex_runtime::routing::InsertError,
+> {
     let mut router = pavex_runtime::routing::Router::new();
     router.insert("/home", 0u32)?;
     Ok(router)
@@ -70,5 +75,7 @@ pub async fn route_handler_0(
         let v3 = app_blueprint::logger();
         app_blueprint::stream_file(v2, v3, v0)
     };
-    <pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(v4)
+    <pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(
+        v4,
+    )
 }
