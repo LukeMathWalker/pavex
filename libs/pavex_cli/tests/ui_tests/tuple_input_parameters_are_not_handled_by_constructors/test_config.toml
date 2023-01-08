@@ -1,6 +1,0 @@
-description = "pavex does not accept tuple types as input parameters for constructors (yet)"
-
-[expectations]
-codegen = "fail"
-
-

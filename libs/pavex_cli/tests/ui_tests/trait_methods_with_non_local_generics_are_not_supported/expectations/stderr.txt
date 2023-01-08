@@ -1,5 +1,4 @@
-Error: 
-  × I do not know how to handle the type returned by `<app::B as
+× I do not know how to handle the type returned by `<app::B as
   │ app::GenericTrait::<app::A>>::a_method_using_the_trait_generic_param`.
     ╭─[src/lib.rs:28:1]
  28 │     bp.constructor(

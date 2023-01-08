@@ -5,12 +5,17 @@ use std::ops::Deref;
 
 use anyhow::Context;
 use bimap::BiHashMap;
+use guppy::graph::PackageGraph;
 use guppy::PackageId;
 use itertools::Itertools;
 use quote::format_ident;
 
-use pavex_builder::RawCallableIdentifiers;
+use pavex_builder::{AppBlueprint, RawCallableIdentifiers};
 
+use crate::diagnostic;
+use crate::diagnostic::{
+    get_registration_location, CompilerDiagnostic, LocationExt, OptionalSourceSpanExt,
+};
 use crate::language::{CallPath, InvalidCallPath};
 use crate::rustdoc::{CrateCollection, GlobalItemId};
 use crate::rustdoc::{ResolvedItemWithParent, TOOLCHAIN_CRATES};
@@ -375,6 +380,32 @@ impl ParseError {
             ParseError::InvalidPath(e) => &e.raw_identifiers,
             ParseError::PathMustBeAbsolute(e) => &e.raw_identifiers,
         }
+    }
+
+    pub(crate) fn into_diagnostic(
+        self,
+        app_blueprint: &AppBlueprint,
+        package_graph: &PackageGraph,
+    ) -> Result<CompilerDiagnostic, miette::Error> {
+        let location = get_registration_location(&app_blueprint, self.raw_identifiers()).unwrap();
+        let source = location.source_file(package_graph)?;
+        let source_span = diagnostic::get_f_macro_invocation_span(&source, location);
+        let (label, help) = match self {
+            ParseError::InvalidPath(_) => ("The invalid import path was registered here", None),
+            ParseError::PathMustBeAbsolute(_) => (
+                "The relative import path was registered here",
+                Some(
+                    "If it is a local import, the path must start with `crate::`.\n\
+                    If it is an import from a dependency, the path must start with \
+                    the dependency name (e.g. `dependency::`).",
+                ),
+            ),
+        };
+        let diagnostic = CompilerDiagnostic::builder(source, self)
+            .optional_label(source_span.labeled(label.into()))
+            .optional_help(help.map(ToOwned::to_owned))
+            .build();
+        Ok(diagnostic)
     }
 }
 

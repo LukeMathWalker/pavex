@@ -1,0 +1,51 @@
+× `app::NonCloneSingleton` does not implement the `core::clone::Clone`
+  │ trait.
+    ╭─[src/lib.rs:51:1]
+ 51 │     bp.constructor(f!(crate::NonSendSingleton::new), Lifecycle::Singleton);
+ 52 │     bp.constructor(f!(crate::NonCloneSingleton::new), Lifecycle::Singleton);
+    ·                    ────────────────┬────────────────
+    ·                                    ╰── The constructor was registered here
+ 53 │     bp.constructor(f!(crate::NonSyncSingleton::new), Lifecycle::Singleton);
+    ╰────
+  help: All singletons must implement the `Send`, `Sync` and `Clone` traits.
+         `pavex` runs on a multi-threaded HTTP server and singletons must be
+        shared across all worker threads.
+
+
+  × `app::NonSyncSingleton` does not implement the `core::marker::Sync` trait.
+    ╭─[src/lib.rs:52:1]
+ 52 │     bp.constructor(f!(crate::NonCloneSingleton::new), Lifecycle::Singleton);
+ 53 │     bp.constructor(f!(crate::NonSyncSingleton::new), Lifecycle::Singleton);
+    ·                    ────────────────┬───────────────
+    ·                                    ╰── The constructor was registered here
+ 54 │     // The handler is needed because bounds are only checked for singletons
+    ╰────
+  help: All singletons must implement the `Send`, `Sync` and `Clone` traits.
+         `pavex` runs on a multi-threaded HTTP server and singletons must be
+        shared across all worker threads.
+
+
+  × `app::NonSendSingleton` does not implement the `core::marker::Send` trait.
+    ╭─[src/lib.rs:50:1]
+ 50 │     let mut bp = AppBlueprint::new();
+ 51 │     bp.constructor(f!(crate::NonSendSingleton::new), Lifecycle::Singleton);
+    ·                    ────────────────┬───────────────
+    ·                                    ╰── The constructor was registered here
+ 52 │     bp.constructor(f!(crate::NonCloneSingleton::new), Lifecycle::Singleton);
+    ╰────
+  help: All singletons must implement the `Send`, `Sync` and `Clone` traits.
+         `pavex` runs on a multi-threaded HTTP server and singletons must be
+        shared across all worker threads.
+
+
+  × `app::NonSendSingleton` does not implement the `core::marker::Sync` trait.
+    ╭─[src/lib.rs:50:1]
+ 50 │     let mut bp = AppBlueprint::new();
+ 51 │     bp.constructor(f!(crate::NonSendSingleton::new), Lifecycle::Singleton);
+    ·                    ────────────────┬───────────────
+    ·                                    ╰── The constructor was registered here
+ 52 │     bp.constructor(f!(crate::NonCloneSingleton::new), Lifecycle::Singleton);
+    ╰────
+  help: All singletons must implement the `Send`, `Sync` and `Clone` traits.
+         `pavex` runs on a multi-threaded HTTP server and singletons must be
+        shared across all worker threads.

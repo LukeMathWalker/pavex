@@ -1,4 +1,3 @@
-Error: 
-  × One of your handlers (app::stream_file) needs an instance of type
+× One of your handlers (app::stream_file) needs an instance of type
   │ std::path::PathBuf as input (either directly or indirectly), but there is
   │ no constructor registered for that type.

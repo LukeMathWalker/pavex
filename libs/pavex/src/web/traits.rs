@@ -9,12 +9,13 @@ use rustdoc_types::{GenericParamDefKind, ItemEnum, Type};
 use pavex_builder::Location;
 use pavex_builder::RawCallableIdentifiers;
 
+use crate::diagnostic;
+use crate::diagnostic::CompilerDiagnostic;
+use crate::diagnostic::{LocationExt, SourceSpanExt};
 use crate::language::{Callable, ResolvedPath, ResolvedType};
 use crate::rustdoc::CrateCollection;
 use crate::web::constructors::Constructor;
-use crate::web::diagnostic::{CompilerDiagnosticBuilder, LocationExt, SourceSpanExt};
 use crate::web::resolvers::resolve_type;
-use crate::web::{diagnostic, CompilerDiagnostic};
 
 /// It returns an error if `type_` does not implement the specified trait.
 ///
@@ -265,7 +266,7 @@ impl MissingTraitImplementationError {
         let source = location.source_file(&package_graph)?;
         let label = diagnostic::get_f_macro_invocation_span(&source, location)
             .map(|s| s.labeled("The constructor was registered here".into()));
-        let diagnostic = CompilerDiagnosticBuilder::new(source, self)
+        let diagnostic = CompilerDiagnostic::builder(source, self)
             .optional_label(label)
             .optional_help(help)
             .build();

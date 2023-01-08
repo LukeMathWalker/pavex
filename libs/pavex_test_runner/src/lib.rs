@@ -32,6 +32,8 @@ pub fn run_tests(
 ) -> Result<Conclusion, anyhow::Error> {
     let arguments = libtest_mimic::Arguments::from_args();
 
+    let cli_profile = std::env::var("PAVEX_TEST_CLI_PROFILE").unwrap_or("debug".to_string());
+
     let entries = fs_err::read_dir(&definition_directory)?;
     let mut tests = Vec::new();
     for entry in entries {
@@ -49,8 +51,9 @@ pub fn run_tests(
             .load_configuration()
             .expect("Failed to load test configuration");
         let is_ignored = test_configuration.ignore;
+        let profile = cli_profile.clone();
         let test = libtest_mimic::Trial::test(name.clone(), move || {
-            run_test(test_data, test_configuration)
+            run_test(test_data, test_configuration, profile)
         })
         .with_ignored_flag(is_ignored);
         tests.push(test);
@@ -142,7 +145,11 @@ impl TestData {
 
     /// Populate the runtime test folder using the directives and the files in the test
     /// definition folder.
-    fn seed_test_filesystem(&self, test_config: &TestConfig) -> Result<(), anyhow::Error> {
+    fn seed_test_filesystem(
+        &self,
+        test_config: &TestConfig,
+        cli_profile: &str,
+    ) -> Result<(), anyhow::Error> {
         let source_directory = self.runtime_directory.join("src");
         fs_err::create_dir_all(&source_directory).context(
             "Failed to create the runtime directory when setting up the test runtime environment",
@@ -227,14 +234,15 @@ impl TestData {
             toml::to_string(&cargo_config)?,
         )?;
 
-        let main_rs = r#"use app::blueprint;
+        let main_rs = format!(
+            r#"use app::blueprint;
 use std::str::FromStr;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {{
     let path = std::path::PathBuf::from_str("blueprint.json")?;
     blueprint().persist(&path)?;
 
-    let status = std::process::Command::new("../../../target/debug/pavex_cli")
+    let status = std::process::Command::new("../../../target/{cli_profile}/pavex_cli")
         .arg("generate")
         .arg("-b")
         .arg(&path)
@@ -244,19 +252,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .arg("generated_app")
         .status()?;
        
-    if !status.success() {
+    if !status.success() {{
         std::process::exit(1); 
-    }
+    }}
      
     Ok(())
-}"#;
-        fs_err::write(source_directory.join("main.rs"), main_rs)?;
+}}"#
+        );
+        fs_err::write(source_directory.join("main.rs"), &main_rs)?;
         Ok(())
     }
 }
 
-fn run_test(test: TestData, config: TestConfig) -> Result<(), Failed> {
-    match _run_test(&config, &test) {
+fn run_test(test: TestData, config: TestConfig, cli_profile: String) -> Result<(), Failed> {
+    match _run_test(&config, &test, &cli_profile) {
         Ok(TestOutcome {
             outcome: Err(mut msg),
             codegen_output,
@@ -288,8 +297,12 @@ fn run_test(test: TestData, config: TestConfig) -> Result<(), Failed> {
     }
 }
 
-fn _run_test(test_config: &TestConfig, test: &TestData) -> Result<TestOutcome, anyhow::Error> {
-    test.seed_test_filesystem(test_config)
+fn _run_test(
+    test_config: &TestConfig,
+    test: &TestData,
+    cli_profile: &str,
+) -> Result<TestOutcome, anyhow::Error> {
+    test.seed_test_filesystem(test_config, cli_profile)
         .context("Failed to seed the filesystem for the test runtime folder")?;
 
     // Generate the application code
@@ -338,15 +351,11 @@ fn _run_test(test_config: &TestConfig, test: &TestData) -> Result<TestOutcome, a
     let diagnostics_snapshot = SnapshotTest::new(expectations_directory.join("diagnostics.dot"));
     let actual_diagnostics =
         fs_err::read_to_string(test.runtime_directory.join("diagnostics.dot"))?;
-    if diagnostics_snapshot.verify(&actual_diagnostics).is_err() {
-        return Ok(TestOutcome {
-            outcome: Err(
-                "Diagnostics for the generated application do not match what we expected".into(),
-            ),
-            codegen_output,
-            compilation_output: None,
-        });
-    }
+    // We do not exit early here to get the generated code snapshot as well.
+    // This allows to update both code snapshot and diagnostics snapshot in one go via
+    // `cargo r --bin snaps` for a failing test instead of having to do them one at a time,
+    // with a test run in the middle.
+    let diagnostics_outcome = diagnostics_snapshot.verify(&actual_diagnostics);
 
     let app_code_snapshot = SnapshotTest::new(expectations_directory.join("app.rs"));
     let actual_app_code = fs_err::read_to_string(
@@ -356,7 +365,19 @@ fn _run_test(test_config: &TestConfig, test: &TestData) -> Result<TestOutcome, a
             .join("lib.rs"),
     )
     .unwrap();
-    if app_code_snapshot.verify(&actual_app_code).is_err() {
+    let codegen_outcome = app_code_snapshot.verify(&actual_app_code);
+
+    if diagnostics_outcome.is_err() {
+        return Ok(TestOutcome {
+            outcome: Err(
+                "Diagnostics for the generated application do not match what we expected".into(),
+            ),
+            codegen_output,
+            compilation_output: None,
+        });
+    }
+
+    if codegen_outcome.is_err() {
         return Ok(TestOutcome {
             outcome: Err("The generated application code does not match what we expected".into()),
             codegen_output,
