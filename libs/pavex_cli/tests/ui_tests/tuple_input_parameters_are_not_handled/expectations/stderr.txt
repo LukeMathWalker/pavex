@@ -1,20 +1,40 @@
-Error: 
-  × One of the input parameters for `app::stream_file` has a type that I
-  │ cannot handle.
-    ╭─[src/lib.rs:8:1]
-  8 │     let mut bp = AppBlueprint::new();
-  9 │     bp.route(f!(crate::stream_file), "/home");
-    ·              ───────────┬──────────
-    ·                         ╰── The request handler was registered here
- 10 │     bp
+× One of the input parameters for `app::constructor_with_input_tuple` has a
+  │ type that I cannot handle.
+    ╭─[src/lib.rs:15:1]
+ 15 │     bp.constructor(
+ 16 │         f!(crate::constructor_with_input_tuple),
+    ·         ───────────────────┬───────────────────
+    ·                            ╰── The constructor was registered here
+ 17 │         Lifecycle::Singleton,
     ╰────
 
 Error: 
   × 
-   ╭─[src/lib.rs:2:1]
- 2 │ 
- 3 │ pub fn stream_file(input: (usize, isize)) -> pavex_runtime::response::Response {
-   ·                           ───────┬──────
-   ·                                  ╰── I do not know how handle this parameter
- 4 │     todo!()
+   ╭─[src/lib.rs:4:1]
+ 4 │ 
+ 5 │ pub fn constructor_with_input_tuple(input: (usize, isize)) -> Logger {
+   ·                                            ───────┬──────
+   ·                                                   ╰── I do not know how handle this parameter
+ 6 │     todo!()
    ╰────
+
+
+  × One of the input parameters for `app::handler_with_input_tuple` has a type
+  │ that I cannot handle.
+    ╭─[src/lib.rs:18:1]
+ 18 │     );
+ 19 │     bp.route(f!(crate::handler_with_input_tuple), "/home");
+    ·              ─────────────────┬─────────────────
+    ·                               ╰── The request handler was registered here
+ 20 │     bp
+    ╰────
+
+Error: 
+  × 
+    ╭─[src/lib.rs:8:1]
+  8 │ 
+  9 │ pub fn handler_with_input_tuple(input: (usize, isize)) -> pavex_runtime::response::Response {
+    ·                                        ───────┬──────
+    ·                                               ╰── I do not know how handle this parameter
+ 10 │     todo!()
+    ╰────

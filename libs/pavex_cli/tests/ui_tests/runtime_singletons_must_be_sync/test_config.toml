@@ -1,6 +1,0 @@
-description = "Singletons need to implement Sync"
-
-[expectations]
-codegen = "fail"
-
-

@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
 use tracing_subscriber::fmt::format::FmtSpan;
@@ -6,6 +7,7 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::EnvFilter;
 
+use owo_colors::OwoColorize;
 use pavex::App;
 use pavex_builder::AppBlueprint;
 
@@ -53,7 +55,7 @@ fn init_telemetry() {
         .init();
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
     let cli = Cli::parse();
     miette::set_hook(Box::new(move |_| {
         let mut config = miette::MietteHandlerOpts::new();
@@ -75,7 +77,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             output,
         } => {
             let blueprint = AppBlueprint::load(&blueprint)?;
-            let app = App::build(blueprint)?;
+            let app = match App::build(blueprint) {
+                Ok(a) => a,
+                Err(errors) => {
+                    for e in errors {
+                        eprintln!("{}: {:?}", "ERROR".bold().red(), e);
+                    }
+                    return Ok(ExitCode::FAILURE);
+                }
+            };
             if let Some(diagnostic_path) = diagnostics {
                 app.diagnostic_representation()
                     .persist_flat(&diagnostic_path)?;
@@ -88,5 +98,5 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             generated_app.persist(&output)?;
         }
     }
-    Ok(())
+    Ok(ExitCode::SUCCESS)
 }

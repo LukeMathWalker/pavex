@@ -1,4 +1,4 @@
-Error: 
+[31m[1mERROR[0m[39m: 
   × I expect all constructors to return *something*.
   │ This constructor doesn't, it returns the unit type - `()`.
     ╭─[src/lib.rs:12:1]
