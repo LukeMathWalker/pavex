@@ -58,19 +58,25 @@ pub(crate) fn resolve_error_handlers(
     krate_collection: &CrateCollection,
 ) -> (
     HashMap<ResolvedPath, Callable>,
+    HashMap<Callable, IndexSet<ResolvedPath>>,
     Vec<CallableResolutionError>,
 ) {
     let mut resolution_map = HashMap::with_capacity(paths.len());
+    let mut reverse_map = HashMap::<Callable, IndexSet<ResolvedPath>>::new();
     let mut errors = vec![];
-    for identifiers in paths {
-        match resolve_callable(krate_collection, identifiers) {
+    for path in paths {
+        match resolve_callable(krate_collection, path) {
             Ok(callable) => {
-                resolution_map.insert(identifiers.to_owned(), callable);
+                resolution_map.insert(path.to_owned(), callable);
+                reverse_map
+                    .entry(callable.clone())
+                    .or_default()
+                    .insert(path.to_owned());
             }
             Err(e) => errors.push(e),
         }
     }
-    (resolution_map, errors)
+    (resolution_map, reverse_map, errors)
 }
 
 /// Extract the input type paths, the output type path and the callable path for each
@@ -80,22 +86,28 @@ pub(crate) fn resolve_request_handlers(
     krate_collection: &CrateCollection,
 ) -> (
     HashMap<ResolvedPath, Callable>,
+    HashMap<Callable, IndexSet<ResolvedPath>>,
     IndexSet<Callable>,
     Vec<CallableResolutionError>,
 ) {
     let mut handlers = IndexSet::with_capacity(handler_paths.len());
     let mut handler_resolver = HashMap::new();
+    let mut reverse_map = HashMap::<Callable, IndexSet<ResolvedPath>>::new();
     let mut errors = vec![];
     for callable_path in handler_paths {
         match resolve_callable(krate_collection, callable_path) {
             Ok(handler) => {
                 handlers.insert(handler.clone());
                 handler_resolver.insert(callable_path.to_owned(), handler);
+                reverse_map
+                    .entry(handler.clone())
+                    .or_default()
+                    .insert(callable_path.to_owned());
             }
             Err(e) => errors.push(e),
         }
     }
-    (handler_resolver, handlers, errors)
+    (handler_resolver, reverse_map, handlers, errors)
 }
 
 pub(crate) fn resolve_type(
