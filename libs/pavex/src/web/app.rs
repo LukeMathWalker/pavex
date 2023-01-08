@@ -295,15 +295,25 @@ impl App {
                     if let Err(e) =
                         assert_trait_is_implemented(&krate_collection, output, &into_response)
                     {
-                        let diagnostic = OutputCannotBeConvertedIntoAResponse {
-                            identifiers: (),
-                            output_type: output.to_owned(),
-                            callable_type,
-                            source: e,
+                        let paths = match callable_type {
+                            CallableType::ErrorHandler => &error_handler_callable2paths[callable],
+                            CallableType::RequestHandler => &handler_callable2paths[callable],
+                            _ => unreachable!(),
+                        };
+                        for path in paths {
+                            let identifiers = &resolved_paths2identifiers[path];
+                            for identifier in identifiers {
+                                let diagnostic = OutputCannotBeConvertedIntoAResponse {
+                                    identifiers: identifier.to_owned(),
+                                    output_type: output.to_owned(),
+                                    callable_type,
+                                    source: e.clone(),
+                                }
+                                .into_diagnostic(&app_blueprint, &package_graph)
+                                .to_miette();
+                                diagnostics.push(diagnostic);
+                            }
                         }
-                        .into_diagnostic(&app_blueprint, &package_graph)
-                        .to_miette();
-                        diagnostics.push(diagnostic);
                         continue;
                     }
                     let output_path = output.resolved_path();
@@ -702,7 +712,7 @@ impl ResultExt for Result<CompilerDiagnostic, miette::Error> {
 }
 
 #[derive(Debug, thiserror::Error)]
-#[error("I cannot use the type returned by this {callable_type} to create an HTTP response.")]
+#[error("I cannot use the type returned by this {callable_type} to create an HTTP response.\nIt does not implement `pavex_runtime::response::IntoResponse`.")]
 pub(crate) struct OutputCannotBeConvertedIntoAResponse {
     identifiers: RawCallableIdentifiers,
     output_type: ResolvedType,
@@ -720,13 +730,14 @@ impl OutputCannotBeConvertedIntoAResponse {
         let location = get_registration_location(app_blueprint, &self.identifiers).unwrap();
         let source = location.source_file(&package_graph)?;
         let label = diagnostic::get_f_macro_invocation_span(&source, location)
-            .map(|s| s.labeled(format!("The {} was registered here", self.callable_type)));
+            .map(|s| s.labeled(format!("The {} was registered here", &self.callable_type)));
+        let help = format!(
+            "Implement `pavex_runtime::response::IntoResponse` for `{:?}`.",
+            &self.output_type
+        );
         let diagnostic = CompilerDiagnostic::builder(source, self)
             .optional_label(label)
-            .help(format!(
-                "Implement `pavex_runtime::response::IntoResponse` for {:?}.",
-                self.output_type
-            ))
+            .help(help)
             .build();
         Ok(diagnostic)
     }

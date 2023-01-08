@@ -67,9 +67,9 @@ pub(crate) fn resolve_error_handlers(
     for path in paths {
         match resolve_callable(krate_collection, path) {
             Ok(callable) => {
-                resolution_map.insert(path.to_owned(), callable);
+                resolution_map.insert(path.to_owned(), callable.clone());
                 reverse_map
-                    .entry(callable.clone())
+                    .entry(callable)
                     .or_default()
                     .insert(path.to_owned());
             }
@@ -98,9 +98,9 @@ pub(crate) fn resolve_request_handlers(
         match resolve_callable(krate_collection, callable_path) {
             Ok(handler) => {
                 handlers.insert(handler.clone());
-                handler_resolver.insert(callable_path.to_owned(), handler);
+                handler_resolver.insert(callable_path.to_owned(), handler.clone());
                 reverse_map
-                    .entry(handler.clone())
+                    .entry(handler)
                     .or_default()
                     .insert(callable_path.to_owned());
             }
