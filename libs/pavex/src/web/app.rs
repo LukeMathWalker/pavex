@@ -16,7 +16,7 @@ use pavex_builder::Lifecycle;
 use pavex_builder::RawCallableIdentifiers;
 
 use crate::diagnostic;
-use crate::diagnostic::CompilerDiagnostic;
+use crate::diagnostic::{get_registration_location, CompilerDiagnostic};
 use crate::diagnostic::{
     get_registration_location_for_a_request_handler, LocationExt, SourceSpanExt,
 };
@@ -32,7 +32,7 @@ use crate::web::generated_app::GeneratedApp;
 use crate::web::resolvers::{
     resolve_callable, resolve_type_path, CallableResolutionError, CallableType,
 };
-use crate::web::traits::assert_trait_is_implemented;
+use crate::web::traits::{assert_trait_is_implemented, MissingTraitImplementationError};
 use crate::web::{codegen, resolvers, utils};
 
 pub(crate) const GENERATED_APP_PACKAGE_ID: &str = "crate";
@@ -204,7 +204,7 @@ impl App {
             }
         }
 
-        let (error_handler_callable_resolver, errors) =
+        let (error_handler_path2callable, error_handler_callable2paths, errors) =
             resolvers::resolve_error_handlers(&error_handler_paths, &mut krate_collection);
         for e in errors {
             diagnostics.push(
@@ -218,7 +218,7 @@ impl App {
             );
         }
 
-        let (handler_resolver, handlers, errors) =
+        let (handler_path2callable, handler_callable2paths, handlers, errors) =
             resolvers::resolve_request_handlers(&request_handler_paths, &mut krate_collection);
         for e in errors {
             diagnostics.push(
@@ -276,9 +276,14 @@ impl App {
                 &krate_collection,
             );
             let into_response_path = into_response.resolved_path();
-            for callable in handlers
+            for (callable, callable_type) in handlers
                 .iter()
-                .chain(error_handler_callable_resolver.values())
+                .map(|h| (h, CallableType::RequestHandler))
+                .chain(
+                    error_handler_path2callable
+                        .values()
+                        .map(|e| (e, CallableType::ErrorHandler)),
+                )
             {
                 if let Some(output) = &callable.output {
                     // TODO: only the Ok variant must implement IntoResponse if output is a result
@@ -290,11 +295,26 @@ impl App {
                     if let Err(e) =
                         assert_trait_is_implemented(&krate_collection, output, &into_response)
                     {
-                        // TODO: remove panic
-                        panic!(
-                            "All handler output types must implement `IntoResponse`: {:?}\n{}",
-                            e, e
-                        );
+                        let paths = match callable_type {
+                            CallableType::ErrorHandler => &error_handler_callable2paths[callable],
+                            CallableType::RequestHandler => &handler_callable2paths[callable],
+                            _ => unreachable!(),
+                        };
+                        for path in paths {
+                            let identifiers = &resolved_paths2identifiers[path];
+                            for identifier in identifiers {
+                                let diagnostic = OutputCannotBeConvertedIntoAResponse {
+                                    identifiers: identifier.to_owned(),
+                                    output_type: output.to_owned(),
+                                    callable_type,
+                                    source: e.clone(),
+                                }
+                                .into_diagnostic(&app_blueprint, &package_graph)
+                                .to_miette();
+                                diagnostics.push(diagnostic);
+                            }
+                        }
+                        continue;
                     }
                     let output_path = output.resolved_path();
                     let mut transformer_segments = into_response_path.segments.clone();
@@ -324,7 +344,7 @@ impl App {
         let mut router = BTreeMap::new();
         for (route, callable_identifiers) in app_blueprint.router {
             let callable_path = &identifiers2path[&callable_identifiers];
-            router.insert(route, handler_resolver[callable_path].to_owned());
+            router.insert(route, handler_path2callable[callable_path].to_owned());
         }
 
         let component2lifecycle = {
@@ -370,7 +390,7 @@ impl App {
                         let error_handler_id =
                             &app_blueprint.constructor_error_handlers[constructor_id];
                         let error_handler_path = &identifiers2path[error_handler_id];
-                        let error_handler = error_handler_callable_resolver
+                        let error_handler = error_handler_path2callable
                             .get(error_handler_path)
                             // TODO: return an error asking for an error handler to be registered
                             .unwrap()
@@ -688,6 +708,38 @@ impl ResultExt for Result<CompilerDiagnostic, miette::Error> {
             Ok(e) => e.into(),
             Err(e) => e,
         }
+    }
+}
+
+#[derive(Debug, thiserror::Error)]
+#[error("I cannot use the type returned by this {callable_type} to create an HTTP response.\nIt does not implement `pavex_runtime::response::IntoResponse`.")]
+pub(crate) struct OutputCannotBeConvertedIntoAResponse {
+    identifiers: RawCallableIdentifiers,
+    output_type: ResolvedType,
+    callable_type: CallableType,
+    #[source]
+    source: MissingTraitImplementationError,
+}
+
+impl OutputCannotBeConvertedIntoAResponse {
+    pub fn into_diagnostic(
+        self,
+        app_blueprint: &AppBlueprint,
+        package_graph: &PackageGraph,
+    ) -> Result<CompilerDiagnostic, miette::Error> {
+        let location = get_registration_location(app_blueprint, &self.identifiers).unwrap();
+        let source = location.source_file(&package_graph)?;
+        let label = diagnostic::get_f_macro_invocation_span(&source, location)
+            .map(|s| s.labeled(format!("The {} was registered here", &self.callable_type)));
+        let help = format!(
+            "Implement `pavex_runtime::response::IntoResponse` for `{:?}`.",
+            &self.output_type
+        );
+        let diagnostic = CompilerDiagnostic::builder(source, self)
+            .optional_label(label)
+            .help(help)
+            .build();
+        Ok(diagnostic)
     }
 }
 
