@@ -209,7 +209,7 @@ pub(crate) fn implements_trait(
     false
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct MissingTraitImplementationError {
     pub type_: ResolvedType,
     pub trait_: ResolvedType,
