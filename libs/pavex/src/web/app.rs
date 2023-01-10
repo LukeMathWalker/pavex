@@ -163,7 +163,7 @@ impl App {
         };
 
         let (constructor_callable_resolver, errors) =
-            resolvers::resolve_constructors(&constructor_paths, &mut krate_collection);
+            resolvers::resolve_constructors(&constructor_paths, &krate_collection);
         for e in errors {
             diagnostics.push(
                 e.into_diagnostic(
@@ -218,7 +218,7 @@ impl App {
         }
 
         let (error_handler_path2callable, error_handler_callable2paths, errors) =
-            resolvers::resolve_error_handlers(&error_handler_paths, &mut krate_collection);
+            resolvers::resolve_error_handlers(&error_handler_paths, &krate_collection);
         for e in errors {
             diagnostics.push(
                 e.into_diagnostic(
@@ -232,7 +232,7 @@ impl App {
         }
 
         let (request_error_handler_path2callable, request_error_handler_callable2paths, errors) =
-            resolvers::resolve_error_handlers(&request_error_handler_paths, &mut krate_collection);
+            resolvers::resolve_error_handlers(&request_error_handler_paths, &krate_collection);
         for e in errors {
             diagnostics.push(
                 e.into_diagnostic(
@@ -248,7 +248,7 @@ impl App {
         }
 
         let (handler_path2callable, handler_callable2paths, request_handlers, errors) =
-            resolvers::resolve_request_handlers(&request_handler_paths, &mut krate_collection);
+            resolvers::resolve_request_handlers(&request_handler_paths, &krate_collection);
         for e in errors {
             diagnostics.push(
                 e.into_diagnostic(
@@ -514,13 +514,10 @@ impl App {
         let send = process_framework_path("core::marker::Send", &package_graph, &krate_collection);
         let sync = process_framework_path("core::marker::Sync", &package_graph, &krate_collection);
         let clone = process_framework_path("core::clone::Clone", &package_graph, &krate_collection);
-        for singleton_type in runtime_singletons.iter().filter_map(|ty| {
-            if component2lifecycle.get(ty) == Some(&Lifecycle::Singleton) {
-                Some(ty)
-            } else {
-                None
-            }
-        }) {
+        for singleton_type in runtime_singletons
+            .iter()
+            .filter(|ty| component2lifecycle.get(ty) == Some(&Lifecycle::Singleton))
+        {
             for trait_ in [&send, &sync, &clone] {
                 if let Err(e) =
                     assert_trait_is_implemented(&krate_collection, singleton_type, trait_)

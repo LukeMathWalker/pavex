@@ -843,9 +843,9 @@ impl CallGraph {
     /// [`CallGraph`].
     ///
     /// See [`CallGraph`]'s documentation for more details.
-    pub fn codegen<'a>(
+    pub fn codegen(
         &self,
-        package_id2name: &BiHashMap<&'a PackageId, String>,
+        package_id2name: &BiHashMap<&PackageId, String>,
     ) -> Result<ItemFn, anyhow::Error> {
         codegen_callable_closure(self, package_id2name)
     }
@@ -1209,9 +1209,8 @@ fn find_match_branching_ancestor(
         if ignore_set.contains(ancestor_index.index()) {
             continue;
         }
-        match &call_graph[ancestor_index] {
-            CallGraphNode::MatchBranching { .. } => return Some(ancestor_index),
-            _ => {}
+        if let CallGraphNode::MatchBranching { .. } = &call_graph[ancestor_index] {
+            return Some(ancestor_index);
         }
     }
     None
