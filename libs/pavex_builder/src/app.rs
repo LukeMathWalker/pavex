@@ -22,6 +22,10 @@ pub struct AppBlueprint {
     pub constructors: IndexSet<RawCallableIdentifiers>,
     /// The set of registered request handlers.
     pub request_handlers: IndexSet<RawCallableIdentifiers>,
+    /// - Keys: [`RawCallableIdentifiers`] of a **fallible** request_handler.
+    /// - Values: [`RawCallableIdentifiers`] of an error handler for the error type returned by
+    /// the request handler.
+    pub request_handlers_error_handlers: IndexMap<RawCallableIdentifiers, RawCallableIdentifiers>,
     /// - Keys: [`RawCallableIdentifiers`] of a **fallible** constructor.
     /// - Values: [`RawCallableIdentifiers`] of an error handler for the error type returned by
     /// the constructor.
@@ -41,6 +45,10 @@ pub struct AppBlueprint {
     /// - Values: a [`Location`] pointing at the corresponding invocation of
     /// [`Constructor::error_handler`].
     pub error_handler_locations: IndexMap<RawCallableIdentifiers, Location>,
+    /// - Keys: [`RawCallableIdentifiers`] of a request error handler.
+    /// - Values: a [`Location`] pointing at the corresponding invocation of
+    /// [`Route::error_handler`].
+    pub request_error_handler_locations: IndexMap<RawCallableIdentifiers, Location>,
     /// - Keys: [`RawCallableIdentifiers`] of a constructor.
     /// - Values: a [`Location`] pointing at the corresponding invocation of
     /// [`AppBlueprint::constructor`].
@@ -75,7 +83,7 @@ impl Display for Lifecycle {
             Lifecycle::RequestScoped => "request-scoped",
             Lifecycle::Transient => "transient",
         };
-        write!(f, "{}", s)
+        write!(f, "{s}")
     }
 }
 
@@ -142,8 +150,11 @@ impl AppBlueprint {
             .insert(std::panic::Location::caller().into());
         self.router
             .insert(path.to_owned(), callable_identifiers.clone());
-        self.request_handlers.insert(callable_identifiers);
-        Route { blueprint: self }
+        self.request_handlers.insert(callable_identifiers.clone());
+        Route {
+            blueprint: self,
+            handler_identifiers: callable_identifiers,
+        }
     }
 
     /// Serialize the blueprint data to a file in RON format.
@@ -210,6 +221,66 @@ impl<'a> From<&'a std::panic::Location<'a>> for Location {
 pub struct Route<'a> {
     #[allow(dead_code)]
     blueprint: &'a mut AppBlueprint,
+    handler_identifiers: RawCallableIdentifiers,
+}
+
+impl<'a> Route<'a> {
+    #[track_caller]
+    /// Register an error handler.
+    ///
+    /// Error handlers convert the error type returned by your request handler into an HTTP response.
+    ///
+    /// Error handlers CANNOT consume the error type, they must take a reference to the
+    /// error as input.  
+    /// Error handlers can have additional input parameters alongside the error, as long as there
+    /// are constructors registered for those parameter types.
+    ///
+    /// ```rust
+    /// use pavex_builder::{AppBlueprint, f};
+    /// use pavex_runtime::{response::Response, hyper::body::Body};
+    /// # struct LogLevel;
+    /// # struct RuntimeError;
+    ///
+    /// fn request_handler() -> Result<Response, RuntimeError> {
+    ///     // [...]
+    ///     # todo!()
+    /// }
+    ///
+    /// fn error_to_response(error: &ConfigurationError, log_level: LogLevel) -> Response {
+    ///     // [...]
+    ///     # todo!()
+    /// }
+    ///
+    /// # fn main() {
+    /// let mut bp = AppBlueprint::new();
+    /// bp.route(f!(crate::request_handler), "/home")
+    ///     .error_handler(f!(crate::error_to_response));
+    /// # }
+    /// ```
+    ///
+    /// If an error handler has already been registered for the same error type, it will be
+    /// overwritten.
+    ///
+    /// ## Common Errors
+    ///
+    /// `pavex_cli` will fail to generate the runtime code for your application if you register
+    /// an error handler for an infallible request handler (i.e. a request handler that does not
+    /// return a `Result`).
+    pub fn error_handler<F, HandlerInputs>(self, handler: RawCallable<F>) -> Self
+    where
+        F: Callable<HandlerInputs>,
+    {
+        let callable_identifiers = RawCallableIdentifiers::new(handler.import_path);
+        let location = std::panic::Location::caller();
+        self.blueprint
+            .request_error_handler_locations
+            .entry(callable_identifiers.clone())
+            .or_insert_with(|| location.into());
+        self.blueprint
+            .request_handlers_error_handlers
+            .insert(self.handler_identifiers.clone(), callable_identifiers);
+        self
+    }
 }
 
 /// The type returned by [`AppBlueprint::constructor`].
@@ -224,8 +295,7 @@ impl<'a> Constructor<'a> {
     #[track_caller]
     /// Register an error handler.
     ///
-    /// Error handlers convert the error type returned by your constructor into an HTTP response
-    /// for the caller of your API.
+    /// Error handlers convert the error type returned by your constructor into an HTTP response.
     ///
     /// Error handlers CANNOT consume the error type, they must take a reference to the
     /// error as input.  
@@ -234,7 +304,7 @@ impl<'a> Constructor<'a> {
     ///
     /// ```rust
     /// use pavex_builder::{AppBlueprint, f, Lifecycle};
-    /// use pavex_runtime::{http::Response, hyper::body::Body};
+    /// use pavex_runtime::{response::Response, hyper::body::Body};
     /// # struct LogLevel;
     /// # struct Logger;
     /// # struct ConfigurationError;
@@ -244,7 +314,7 @@ impl<'a> Constructor<'a> {
     ///     # todo!()
     /// }
     ///
-    /// fn error_to_response(error: &ConfigurationError, log_level: LogLevel) -> Response<Body> {
+    /// fn error_to_response(error: &ConfigurationError, log_level: LogLevel) -> Response {
     ///     // [...]
     ///     # todo!()
     /// }

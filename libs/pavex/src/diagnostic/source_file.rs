@@ -46,7 +46,7 @@ pub fn read_source_file(
         fs_err::read_to_string(path)
     } else {
         let path = workspace.root().as_std_path().join(path);
-        fs_err::read_to_string(&path)
+        fs_err::read_to_string(path)
     }
 }
 

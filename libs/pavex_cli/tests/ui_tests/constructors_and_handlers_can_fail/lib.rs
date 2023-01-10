@@ -1,12 +1,11 @@
 use std::path::PathBuf;
 
 use pavex_builder::{f, AppBlueprint, Lifecycle};
+use pavex_runtime::{http::Request, hyper::body::Body, response::Response};
 
 pub struct Logger;
 
-pub fn extract_path(
-    _inner: pavex_runtime::http::Request<pavex_runtime::hyper::body::Body>,
-) -> Result<PathBuf, ExtractPathError<String>> {
+pub fn extract_path(_inner: Request<Body>) -> Result<PathBuf, ExtractPathError<String>> {
     todo!()
 }
 
@@ -27,15 +26,22 @@ pub fn logger() -> Result<Logger, LoggerError> {
 #[derive(Debug)]
 pub struct LoggerError;
 
-pub fn handle_logger_error(_e: &LoggerError) -> pavex_runtime::response::Response {
+pub fn handle_logger_error(_e: &LoggerError) -> Response {
     todo!()
 }
 
-pub fn stream_file(
+pub fn request_handler(
     _inner: PathBuf,
     _logger: Logger,
     _http_client: HttpClient,
-) -> pavex_runtime::response::Response {
+) -> Result<Response, HandlerError> {
+    todo!()
+}
+
+#[derive(Debug)]
+pub struct HandlerError;
+
+pub fn handle_handler_error(_e: &HandlerError) -> Response {
     todo!()
 }
 
@@ -63,6 +69,7 @@ pub fn blueprint() -> AppBlueprint {
         .error_handler(f!(crate::handle_extract_path_error));
     bp.constructor(f!(crate::logger), Lifecycle::Transient)
         .error_handler(f!(crate::handle_logger_error));
-    bp.route(f!(crate::stream_file), "/home");
+    bp.route(f!(crate::request_handler), "/home")
+        .error_handler(f!(crate::handle_handler_error));
     bp
 }

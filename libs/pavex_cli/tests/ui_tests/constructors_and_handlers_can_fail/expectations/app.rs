@@ -110,10 +110,20 @@ pub async fn route_handler_0(
                     }
                 }
                 Ok(v4) => {
-                    let v5 = app::stream_file(v4, v2, v0);
-                    <pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(
-                        v5,
-                    )
+                    let v5 = app::request_handler(v4, v2, v0);
+                    match v5 {
+                        Err(v6) => {
+                            let v7 = app::handle_handler_error(&v6);
+                            <pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(
+                                v7,
+                            )
+                        }
+                        Ok(v6) => {
+                            <pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(
+                                v6,
+                            )
+                        }
+                    }
                 }
             }
         }

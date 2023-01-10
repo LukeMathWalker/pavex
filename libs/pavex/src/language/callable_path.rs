@@ -115,7 +115,7 @@ impl Display for CallPath {
         }
         let last_segment_index = self.segments.len().saturating_sub(1);
         for (i, segment) in self.segments.iter().enumerate() {
-            write!(f, "{}", segment)?;
+            write!(f, "{segment}")?;
             if Some(i) == qself_closing_wedge_index {
                 write!(f, ">")?;
             }
@@ -132,7 +132,7 @@ impl Display for CallPathSegment {
         write!(f, "{}", self.ident)?;
         let last_argument_index = self.generic_arguments.len().saturating_sub(1);
         for (j, argument) in self.generic_arguments.iter().enumerate() {
-            write!(f, "{}", argument)?;
+            write!(f, "{argument}")?;
             if j != last_argument_index {
                 write!(f, ", ")?;
             }

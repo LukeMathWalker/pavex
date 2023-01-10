@@ -58,7 +58,7 @@ impl ResolvedType {
             })
             .unwrap();
         let maybe_reference = if self.is_shared_reference { "&" } else { "" };
-        write!(&mut buffer, "{}{}", maybe_reference, crate_name).unwrap();
+        write!(&mut buffer, "{maybe_reference}{crate_name}").unwrap();
         write!(&mut buffer, "::{}", self.base_type[1..].join("::")).unwrap();
         if !self.generic_arguments.is_empty() {
             write!(&mut buffer, "<").unwrap();
@@ -98,7 +98,7 @@ impl std::fmt::Debug for ResolvedType {
             write!(f, "<")?;
             let mut arguments = self.generic_arguments.iter().peekable();
             while let Some(argument) = arguments.next() {
-                write!(f, "{:?}", argument)?;
+                write!(f, "{argument:?}")?;
                 if arguments.peek().is_some() {
                     write!(f, ", ")?;
                 }

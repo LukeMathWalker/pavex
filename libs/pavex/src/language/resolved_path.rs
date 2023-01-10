@@ -302,7 +302,7 @@ impl ResolvedPath {
             write!(&mut buffer, "<{} as ", qself.path.render_path(id2name)).unwrap();
             qself_closing_wedge_index = Some(qself.position);
         }
-        write!(&mut buffer, "{}", crate_name).unwrap();
+        write!(&mut buffer, "{crate_name}").unwrap();
         for (index, path_segment) in self.segments[1..].iter().enumerate() {
             write!(&mut buffer, "::{}", path_segment.ident).unwrap();
             let generic_arguments = &path_segment.generic_arguments;
@@ -334,7 +334,7 @@ impl Display for ResolvedPath {
             qself_closing_wedge_index = Some(qself.position);
         }
         for (i, segment) in self.segments.iter().enumerate() {
-            write!(f, "{}", segment)?;
+            write!(f, "{segment}")?;
             if Some(i) == qself_closing_wedge_index {
                 write!(f, ">")?;
             }
@@ -354,7 +354,7 @@ impl Display for ResolvedPathSegment {
         }
         let last_argument_index = self.generic_arguments.len().saturating_sub(1);
         for (j, argument) in self.generic_arguments.iter().enumerate() {
-            write!(f, "{}", argument)?;
+            write!(f, "{argument}")?;
             if j != last_argument_index {
                 write!(f, ", ")?;
             }
@@ -387,7 +387,7 @@ impl ParseError {
         app_blueprint: &AppBlueprint,
         package_graph: &PackageGraph,
     ) -> Result<CompilerDiagnostic, miette::Error> {
-        let location = get_registration_location(&app_blueprint, self.raw_identifiers()).unwrap();
+        let location = get_registration_location(app_blueprint, self.raw_identifiers()).unwrap();
         let source = location.source_file(package_graph)?;
         let source_span = diagnostic::get_f_macro_invocation_span(&source, location);
         let (label, help) = match self {

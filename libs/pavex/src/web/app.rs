@@ -33,14 +33,14 @@ use crate::web::resolvers::{
     resolve_callable, resolve_type_path, CallableResolutionError, CallableType,
 };
 use crate::web::traits::{assert_trait_is_implemented, MissingTraitImplementationError};
+use crate::web::utils::{get_ok_variant, is_result};
 use crate::web::{codegen, resolvers, utils};
 
 pub(crate) const GENERATED_APP_PACKAGE_ID: &str = "crate";
 
 pub struct App {
     package_graph: PackageGraph,
-    router: BTreeMap<String, Callable>,
-    handler_call_graphs: IndexMap<ResolvedPath, CallGraph>,
+    handler_call_graphs: IndexMap<String, CallGraph>,
     application_state_call_graph: ApplicationStateCallGraph,
     runtime_singleton_bindings: BiHashMap<Ident, ResolvedType>,
     request_scoped_framework_bindings: BiHashMap<Ident, ResolvedType>,
@@ -75,11 +75,18 @@ impl App {
             let mut set = HashSet::with_capacity(
                 app_blueprint.request_handlers.len()
                     + app_blueprint.constructors.len()
-                    + app_blueprint.constructor_error_handlers.len(),
+                    + app_blueprint.constructor_error_handlers.len()
+                    + app_blueprint.request_handlers_error_handlers.len(),
             );
             set.extend(app_blueprint.request_handlers.iter().cloned());
             set.extend(app_blueprint.constructors.iter().cloned());
             set.extend(app_blueprint.constructor_error_handlers.values().cloned());
+            set.extend(
+                app_blueprint
+                    .request_handlers_error_handlers
+                    .values()
+                    .cloned(),
+            );
             set
         };
 
@@ -140,6 +147,12 @@ impl App {
             .map(|(_, error_handler_id)| identifiers2path[error_handler_id].clone())
             .collect();
 
+        let request_error_handler_paths: IndexSet<ResolvedPath> = app_blueprint
+            .request_handlers_error_handlers
+            .iter()
+            .map(|(_, error_handler_id)| identifiers2path[error_handler_id].clone())
+            .collect();
+
         let constructor_paths2ids = {
             let mut set = BiHashMap::with_capacity(app_blueprint.constructors.len());
             for constructor_identifiers in &app_blueprint.constructors {
@@ -150,7 +163,7 @@ impl App {
         };
 
         let (constructor_callable_resolver, errors) =
-            resolvers::resolve_constructors(&constructor_paths, &mut krate_collection);
+            resolvers::resolve_constructors(&constructor_paths, &krate_collection);
         for e in errors {
             diagnostics.push(
                 e.into_diagnostic(
@@ -184,9 +197,9 @@ impl App {
 
         for (output_type, constructor) in &constructors {
             if let Constructor::Callable(callable) = constructor {
-                if !utils::is_result(&output_type) {
+                if !utils::is_result(output_type) {
                     let constructor_path = constructor_callable_resolver
-                        .get_by_right(&callable)
+                        .get_by_right(callable)
                         .unwrap();
                     let constructor_id =
                         constructor_paths2ids.get_by_left(constructor_path).unwrap();
@@ -205,7 +218,7 @@ impl App {
         }
 
         let (error_handler_path2callable, error_handler_callable2paths, errors) =
-            resolvers::resolve_error_handlers(&error_handler_paths, &mut krate_collection);
+            resolvers::resolve_error_handlers(&error_handler_paths, &krate_collection);
         for e in errors {
             diagnostics.push(
                 e.into_diagnostic(
@@ -218,8 +231,24 @@ impl App {
             );
         }
 
-        let (handler_path2callable, handler_callable2paths, handlers, errors) =
-            resolvers::resolve_request_handlers(&request_handler_paths, &mut krate_collection);
+        let (request_error_handler_path2callable, request_error_handler_callable2paths, errors) =
+            resolvers::resolve_error_handlers(&request_error_handler_paths, &krate_collection);
+        for e in errors {
+            diagnostics.push(
+                e.into_diagnostic(
+                    &resolved_paths2identifiers,
+                    |identifiers| {
+                        app_blueprint.request_error_handler_locations[identifiers].clone()
+                    },
+                    &package_graph,
+                    CallableType::ErrorHandler,
+                )
+                .to_miette(),
+            );
+        }
+
+        let (handler_path2callable, handler_callable2paths, request_handlers, errors) =
+            resolvers::resolve_request_handlers(&request_handler_paths, &krate_collection);
         for e in errors {
             diagnostics.push(
                 e.into_diagnostic(
@@ -276,7 +305,7 @@ impl App {
                 &krate_collection,
             );
             let into_response_path = into_response.resolved_path();
-            for (callable, callable_type) in handlers
+            for (callable, callable_type) in request_handlers
                 .iter()
                 .map(|h| (h, CallableType::RequestHandler))
                 .chain(
@@ -284,9 +313,18 @@ impl App {
                         .values()
                         .map(|e| (e, CallableType::ErrorHandler)),
                 )
+                .chain(
+                    request_error_handler_path2callable
+                        .values()
+                        .map(|e| (e, CallableType::ErrorHandler)),
+                )
             {
                 if let Some(output) = &callable.output {
-                    // TODO: only the Ok variant must implement IntoResponse if output is a result
+                    let output = if is_result(output) {
+                        get_ok_variant(output)
+                    } else {
+                        output
+                    };
                     if response_transformers.get(output).is_some() {
                         // We already processed this type
                         continue;
@@ -296,7 +334,9 @@ impl App {
                         assert_trait_is_implemented(&krate_collection, output, &into_response)
                     {
                         let paths = match callable_type {
-                            CallableType::ErrorHandler => &error_handler_callable2paths[callable],
+                            CallableType::ErrorHandler => error_handler_callable2paths
+                                .get(callable)
+                                .unwrap_or_else(|| &request_error_handler_callable2paths[callable]),
                             CallableType::RequestHandler => &handler_callable2paths[callable],
                             _ => unreachable!(),
                         };
@@ -341,11 +381,17 @@ impl App {
 
         exit_on_errors!(diagnostics);
 
-        let mut router = BTreeMap::new();
-        for (route, callable_identifiers) in app_blueprint.router {
-            let callable_path = &identifiers2path[&callable_identifiers];
-            router.insert(route, handler_path2callable[callable_path].to_owned());
-        }
+        let router = {
+            let mut router = BTreeMap::new();
+            for (route, callable_identifiers) in &app_blueprint.router {
+                let callable_path = &identifiers2path[callable_identifiers];
+                router.insert(
+                    route.to_owned(),
+                    handler_path2callable[callable_path].to_owned(),
+                );
+            }
+            router
+        };
 
         let component2lifecycle = {
             let mut map = HashMap::<ResolvedType, Lifecycle>::new();
@@ -371,6 +417,31 @@ impl App {
 
         exit_on_errors!(diagnostics);
 
+        // The same `Callable` can be registered to handle requests on different paths.
+        // Since error handlers can be specified on a per-path basis, we use the path here as key.
+        let route2error_handler: HashMap<String, ErrorHandler> = {
+            let mut map = HashMap::new();
+            for (route, request_handler) in &router {
+                let output_type = request_handler.output.as_ref().unwrap();
+                if utils::is_result(output_type) {
+                    let handler_id = &app_blueprint.router[route];
+                    let error_handler_id =
+                        &app_blueprint.request_handlers_error_handlers[handler_id];
+                    let error_handler_path = &identifiers2path[error_handler_id];
+                    let error_handler = request_error_handler_path2callable
+                        .get(error_handler_path)
+                        // TODO: return an error asking for an error handler to be registered
+                        .unwrap()
+                        .to_owned();
+                    // TODO: handle the validation error
+                    let error_handler = ErrorHandler::new(error_handler, request_handler)
+                        .expect("Failed to validate the error handler");
+                    map.insert(route.to_owned(), error_handler);
+                }
+            }
+            map
+        };
+
         let constructor2error_handler: HashMap<Constructor, ErrorHandler> = {
             let mut map = HashMap::new();
             for (output_type, constructor) in &constructors {
@@ -381,9 +452,9 @@ impl App {
                     if let Some(Lifecycle::Singleton) = component2lifecycle.get(output_type) {
                         continue;
                     }
-                    if utils::is_result(&output_type) {
+                    if utils::is_result(output_type) {
                         let constructor_path = constructor_callable_resolver
-                            .get_by_right(&callable)
+                            .get_by_right(callable)
                             .unwrap();
                         let constructor_id =
                             constructor_paths2ids.get_by_left(constructor_path).unwrap();
@@ -405,19 +476,21 @@ impl App {
             map
         };
 
-        let mut handler_call_graphs = IndexMap::with_capacity(handlers.len());
-        for callable in &handlers {
-            handler_call_graphs.insert(
-                callable.path.clone(),
-                handler_call_graph(
-                    callable.to_owned(),
+        let handler_call_graphs = {
+            let mut handler_call_graphs = IndexMap::with_capacity(router.len());
+            for (route, request_handler) in &router {
+                let call_graph = handler_call_graph(
+                    request_handler.to_owned(),
                     &component2lifecycle,
                     &constructors,
                     &constructor2error_handler,
+                    route2error_handler.get(route),
                     &response_transformers,
-                ),
-            );
-        }
+                );
+                handler_call_graphs.insert(route.to_owned(), call_graph);
+            }
+            handler_call_graphs
+        };
 
         let request_scoped_framework_bindings =
             framework_bindings(&package_graph, &mut krate_collection);
@@ -441,13 +514,10 @@ impl App {
         let send = process_framework_path("core::marker::Send", &package_graph, &krate_collection);
         let sync = process_framework_path("core::marker::Sync", &package_graph, &krate_collection);
         let clone = process_framework_path("core::clone::Clone", &package_graph, &krate_collection);
-        for singleton_type in runtime_singletons.iter().filter_map(|ty| {
-            if component2lifecycle.get(ty) == Some(&Lifecycle::Singleton) {
-                Some(ty)
-            } else {
-                None
-            }
-        }) {
+        for singleton_type in runtime_singletons
+            .iter()
+            .filter(|ty| component2lifecycle.get(ty) == Some(&Lifecycle::Singleton))
+        {
             for trait_ in [&send, &sync, &clone] {
                 if let Err(e) =
                     assert_trait_is_implemented(&krate_collection, singleton_type, trait_)
@@ -480,7 +550,6 @@ impl App {
         assert!(diagnostics.is_empty());
         Ok(App {
             package_graph,
-            router,
             handler_call_graphs,
             application_state_call_graph,
             runtime_singleton_bindings,
@@ -506,12 +575,11 @@ impl App {
             .map(|p| PackageId::new(*p))
             .collect::<Vec<_>>();
         for package_id in &toolchain_package_ids {
-            package_ids2deps.insert(&package_id, package_id.repr().into());
+            package_ids2deps.insert(package_id, package_id.repr().into());
         }
         package_ids2deps.insert(&generated_app_package_id, "crate".into());
 
         let lib_rs = codegen::codegen_app(
-            &self.router,
             &self.handler_call_graphs,
             &self.application_state_call_graph,
             &self.request_scoped_framework_bindings,
@@ -538,17 +606,16 @@ impl App {
             .map(|p| PackageId::new(*p))
             .collect::<Vec<_>>();
         for package_id in &toolchain_package_ids {
-            package_ids2deps.insert(&package_id, package_id.repr().into());
+            package_ids2deps.insert(package_id, package_id.repr().into());
         }
         package_ids2deps.insert(&generated_app_package_id, "crate".into());
 
-        for (route, handler) in &self.router {
-            let handler_call_graph = &self.handler_call_graphs[&handler.path];
+        for (route, handler_call_graph) in &self.handler_call_graphs {
             handler_graphs.insert(
                 route.to_owned(),
                 handler_call_graph
                     .dot(&package_ids2deps)
-                    .replace("digraph", &format!("digraph \"{}\"", route)),
+                    .replace("digraph", &format!("digraph \"{route}\"")),
             );
         }
         let application_state_graph = self
@@ -579,7 +646,7 @@ impl AppDiagnostics {
         let handler_directory = directory.join("handlers");
         fs_err::create_dir_all(&handler_directory)?;
         for (route, handler) in &self.handlers {
-            let path = handler_directory.join(format!("{}.dot", route).trim_start_matches('/'));
+            let path = handler_directory.join(format!("{route}.dot").trim_start_matches('/'));
             let mut file = fs_err::OpenOptions::new()
                 .write(true)
                 .create(true)
@@ -618,12 +685,12 @@ impl AppDiagnostics {
 /// registered by the application.
 /// These singletons will be attached to the overall application state.
 fn get_required_singleton_types<'a>(
-    handler_call_graphs: impl Iterator<Item = (&'a ResolvedPath, &'a CallGraph)>,
+    handler_call_graphs: impl Iterator<Item = (&'a String, &'a CallGraph)>,
     component2lifecycle: &HashMap<ResolvedType, Lifecycle>,
     types_provided_by_the_framework: &BiHashMap<Ident, ResolvedType>,
 ) -> Result<IndexSet<ResolvedType>, anyhow::Error> {
     let mut singletons_to_be_built = IndexSet::new();
-    for (import_path, handler_call_graph) in handler_call_graphs {
+    for (route, handler_call_graph) in handler_call_graphs {
         for mut required_input in handler_call_graph.required_input_types() {
             // We don't care if the type is required as a shared reference or an owned instance here.
             // We care about the underlying type.
@@ -640,7 +707,7 @@ fn get_required_singleton_types<'a>(
                             anyhow::anyhow!(
                                     "One of your handlers ({}) needs an instance of type {:?} as input \
                                     (either directly or indirectly), but there is no constructor registered for that type.",
-                                    import_path, required_input
+                                    route, required_input
                                 )
                         );
                     }
@@ -728,7 +795,7 @@ impl OutputCannotBeConvertedIntoAResponse {
         package_graph: &PackageGraph,
     ) -> Result<CompilerDiagnostic, miette::Error> {
         let location = get_registration_location(app_blueprint, &self.identifiers).unwrap();
-        let source = location.source_file(&package_graph)?;
+        let source = location.source_file(package_graph)?;
         let label = diagnostic::get_f_macro_invocation_span(&source, location)
             .map(|s| s.labeled(format!("The {} was registered here", &self.callable_type)));
         let help = format!(
@@ -756,7 +823,7 @@ impl ErrorHandlerForInfallibleConstructor {
         package_graph: &PackageGraph,
     ) -> Result<CompilerDiagnostic, miette::Error> {
         let location = &app_blueprint.error_handler_locations[&self.error_handler_id];
-        let source = location.source_file(&package_graph)?;
+        let source = location.source_file(package_graph)?;
         let label = diagnostic::get_f_macro_invocation_span(&source, location)
             .map(|s| s.labeled("The unnecessary error handler was registered here".into()));
         let diagnostic = CompilerDiagnostic::builder(source, self)

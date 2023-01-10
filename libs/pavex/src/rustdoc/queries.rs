@@ -70,8 +70,7 @@ impl CrateCollection {
     pub fn get_crate_by_package_id_spec(&self, package_spec: &PackageIdSpecification) -> &Crate {
         self.0.get(package_spec).unwrap_or_else(|| {
             panic!(
-                "No JSON docs were found for the following package ID specification: {:?}",
-                package_spec
+                "No JSON docs were found for the following package ID specification: {package_spec:?}"
             )
         })
     }
@@ -93,7 +92,7 @@ impl CrateCollection {
     ) -> Result<Result<ResolvedItemWithParent<'_>, GetItemByResolvedPathError>, CannotGetCrateData>
     {
         let krate = self.get_or_compute_crate_by_package_id(package_id)?;
-        if let Ok(type_id) = krate.get_type_id_by_path(&path) {
+        if let Ok(type_id) = krate.get_type_id_by_path(path) {
             let i = self.get_type_by_global_type_id(type_id);
             return Ok(Ok(ResolvedItemWithParent {
                 item: ResolvedItem {
