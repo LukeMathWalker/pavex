@@ -1,4 +1,5 @@
-× One of the input parameters for `app::constructor_with_input_tuple` has a
+[31m[1mERROR[0m[39m: 
+  × One of the input parameters for `app::constructor_with_input_tuple` has a
   │ type that I cannot handle.
     ╭─[src/lib.rs:15:1]
  15 │     bp.constructor(
@@ -18,7 +19,7 @@ Error:
  6 │     todo!()
    ╰────
 
-
+[31m[1mERROR[0m[39m: 
   × One of the input parameters for `app::handler_with_input_tuple` has a type
   │ that I cannot handle.
     ╭─[src/lib.rs:18:1]

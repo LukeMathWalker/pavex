@@ -45,6 +45,10 @@ pub struct AppBlueprint {
     /// - Values: a [`Location`] pointing at the corresponding invocation of
     /// [`Constructor::error_handler`].
     pub error_handler_locations: IndexMap<RawCallableIdentifiers, Location>,
+    /// - Keys: [`RawCallableIdentifiers`] of a request error handler.
+    /// - Values: a [`Location`] pointing at the corresponding invocation of
+    /// [`Route::error_handler`].
+    pub request_error_handler_locations: IndexMap<RawCallableIdentifiers, Location>,
     /// - Keys: [`RawCallableIdentifiers`] of a constructor.
     /// - Values: a [`Location`] pointing at the corresponding invocation of
     /// [`AppBlueprint::constructor`].
@@ -269,7 +273,7 @@ impl<'a> Route<'a> {
         let callable_identifiers = RawCallableIdentifiers::new(handler.import_path);
         let location = std::panic::Location::caller();
         self.blueprint
-            .error_handler_locations
+            .request_error_handler_locations
             .entry(callable_identifiers.clone())
             .or_insert_with(|| location.into());
         self.blueprint

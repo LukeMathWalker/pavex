@@ -10,7 +10,6 @@ use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote};
 use syn::{ItemEnum, ItemFn, ItemStruct};
 
-use crate::language::ResolvedPath;
 use crate::language::{Callable, ResolvedType};
 use crate::rustdoc::TOOLCHAIN_CRATES;
 use crate::web::app::GENERATED_APP_PACKAGE_ID;
@@ -20,8 +19,7 @@ use crate::web::call_graph::{
 use crate::web::constructors::Constructor;
 
 pub(crate) fn codegen_app(
-    router: &BTreeMap<String, Callable>,
-    handler_call_graphs: &IndexMap<ResolvedPath, CallGraph>,
+    handler_call_graphs: &IndexMap<String, CallGraph>,
     application_state_call_graph: &ApplicationStateCallGraph,
     request_scoped_framework_bindings: &BiHashMap<Ident, ResolvedType>,
     package_id2name: &BiHashMap<&'_ PackageId, String>,
@@ -56,9 +54,9 @@ pub(crate) fn codegen_app(
     // TODO: enforce that the only required input is a Request type of some kind
     let mut route_id2path = BiBTreeMap::new();
     let mut route_id2handler = BTreeMap::new();
-    for (route_id, (path, handler)) in router.iter().enumerate() {
-        route_id2path.insert(route_id as u32, path.clone());
-        route_id2handler.insert(route_id as u32, handler_functions[&handler.path].to_owned());
+    for (route_id, (&route, handler)) in handler_functions.iter().enumerate() {
+        route_id2path.insert(route_id as u32, route.to_owned());
+        route_id2handler.insert(route_id as u32, handler.to_owned());
     }
 
     let router_init = get_router_init(&route_id2path);
@@ -256,7 +254,7 @@ fn get_request_dispatcher(
 
 pub(crate) fn codegen_manifest<'a>(
     package_graph: &guppy::graph::PackageGraph,
-    handler_call_graphs: &'a IndexMap<ResolvedPath, CallGraph>,
+    handler_call_graphs: &'a IndexMap<String, CallGraph>,
     application_state_call_graph: &'a CallGraph,
     request_scoped_framework_bindings: &'a BiHashMap<Ident, ResolvedType>,
     codegen_types: &'a HashSet<ResolvedType>,
@@ -320,7 +318,7 @@ pub(crate) fn codegen_manifest<'a>(
 
 fn compute_dependencies<'a>(
     package_graph: &guppy::graph::PackageGraph,
-    handler_call_graphs: &'a IndexMap<ResolvedPath, CallGraph>,
+    handler_call_graphs: &'a IndexMap<String, CallGraph>,
     application_state_call_graph: &'a CallGraph,
     request_scoped_framework_bindings: &'a BiHashMap<Ident, ResolvedType>,
     codegen_types: &'a HashSet<ResolvedType>,
@@ -397,7 +395,7 @@ fn compute_dependencies<'a>(
 }
 
 fn collect_package_ids<'a>(
-    handler_call_graphs: &'a IndexMap<ResolvedPath, CallGraph>,
+    handler_call_graphs: &'a IndexMap<String, CallGraph>,
     application_state_call_graph: &'a CallGraph,
     request_scoped_framework_bindings: &'a BiHashMap<Ident, ResolvedType>,
     codegen_types: &'a HashSet<ResolvedType>,

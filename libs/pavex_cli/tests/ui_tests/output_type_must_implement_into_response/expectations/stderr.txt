@@ -10,8 +10,7 @@
  26 │     bp
     ╰────
   help: Implement `pavex_runtime::response::IntoResponse` for
-        `core::prelude::rust_2015::v1::Result<app::MyCustomOutputType,
-        app::ErrorType>`.
+        `app::MyCustomOutputType`.
 
 [31m[1mERROR[0m[39m: 
   × I cannot use the type returned by this error handler to create an HTTP

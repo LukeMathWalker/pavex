@@ -72,6 +72,7 @@ pub(crate) fn application_state_call_graph(
         lifecycles,
         &constructors,
         constructor2error_handler,
+        None,
         lifecycle2invocations,
     );
 
@@ -255,6 +256,7 @@ pub(crate) fn handler_call_graph(
     lifecycles: &HashMap<ResolvedType, Lifecycle>,
     constructors: &IndexMap<ResolvedType, Constructor>,
     constructor2error_handler: &HashMap<Constructor, ErrorHandler>,
+    request_handler_error_handler: Option<&ErrorHandler>,
     response_transformers: &HashMap<ResolvedType, Callable>,
 ) -> CallGraph {
     fn lifecycle2invocations(l: &Lifecycle) -> Option<NumberOfAllowedInvocations> {
@@ -272,6 +274,7 @@ pub(crate) fn handler_call_graph(
         lifecycles,
         constructors,
         constructor2error_handler,
+        request_handler_error_handler,
         lifecycle2invocations,
     );
     // We need to make sure that all paths return the same output type.
@@ -337,6 +340,7 @@ fn build_call_graph<F>(
     lifecycles: &HashMap<ResolvedType, Lifecycle>,
     constructors: &IndexMap<ResolvedType, Constructor>,
     constructor2error_handler: &HashMap<Constructor, ErrorHandler>,
+    root_callable_error_handler: Option<&ErrorHandler>,
     lifecycle2n_allowed_invocations: F,
 ) -> CallGraph
 where
@@ -350,6 +354,8 @@ where
         component: handler_component.clone(),
         n_allowed_invocations: NumberOfAllowedInvocations::One,
     };
+    let error_handler_component = root_callable_error_handler
+        .map(|error_handler| ComputeComponent::ErrorHandler(error_handler.clone()));
     let constructor2invocations = |c: &Constructor| {
         lifecycles
             .get(c.output_type())
@@ -357,7 +363,7 @@ where
             .flatten()
     };
     let component2invocations = |component: &ComputeComponent| {
-        if component == &handler_component {
+        if component == &handler_component || Some(component) == error_handler_component.as_ref() {
             Some(NumberOfAllowedInvocations::One)
         } else {
             match component {
@@ -512,7 +518,7 @@ where
                 n_allowed_invocations,
             } = node
             {
-                let parent_node = call_graph
+                let result_node_index = call_graph
                     .neighbors_directed(node_index, Direction::Incoming)
                     .next()
                     // We know that the `MatchResult` node has exactly one incoming edge because
@@ -520,12 +526,12 @@ where
                     // `T` and a constructor for `Result<T, E>` at the same time (or multiple
                     // `Result<T, _>` constructors using different error types).
                     .unwrap();
-                if let CallGraphNode::MatchBranching = call_graph[parent_node] {
+                if let CallGraphNode::MatchBranching = call_graph[result_node_index] {
                     // This has already been processed.
                     continue;
                 }
-                let result_node = parent_node;
-                let result_constructor = match &call_graph[result_node] {
+
+                let result_constructor = match &call_graph[result_node_index] {
                     CallGraphNode::Compute {
                         component: ComputeComponent::Constructor(constructor),
                         ..
@@ -535,16 +541,16 @@ where
                         unreachable!()
                     }
                 };
-                let branching_node = call_graph.add_node(CallGraphNode::MatchBranching);
-                let e = call_graph.find_edge(result_node, node_index).unwrap();
+                let branching_node_index = call_graph.add_node(CallGraphNode::MatchBranching);
+                let e = call_graph.find_edge(result_node_index, node_index).unwrap();
                 call_graph.remove_edge(e).unwrap();
-                call_graph.add_edge(branching_node, node_index, ());
-                call_graph.add_edge(result_node, branching_node, ());
+                call_graph.add_edge(branching_node_index, node_index, ());
+                call_graph.add_edge(result_node_index, branching_node_index, ());
 
                 // At this point we only have the `Ok` node in the graph, not the `Err` node.
                 assert_eq!(
                     call_graph
-                        .neighbors_directed(result_node, Direction::Outgoing)
+                        .neighbors_directed(result_node_index, Direction::Outgoing)
                         .count(),
                     1
                 );
@@ -554,11 +560,12 @@ where
                     component: err_constructor.clone().into(),
                     n_allowed_invocations: n_allowed_invocations.to_owned(),
                 });
-                call_graph.add_edge(branching_node, err_node_index, ());
+                call_graph.add_edge(branching_node_index, err_node_index, ());
 
                 // For each `MatchResult(Err)` node, we try to add a `Compute` node for the respective
                 // error handler (if one was registered).
-                if let Some(error_handler) = constructor2error_handler.get(&result_constructor) {
+                let error_handler = constructor2error_handler.get(&result_constructor);
+                if let Some(error_handler) = error_handler {
                     let err_ref_node_index = call_graph.add_node(CallGraphNode::Compute {
                         component: ComputeComponent::Constructor(Constructor::shared_borrow(
                             err_constructor.output_type().to_owned(),
@@ -571,6 +578,49 @@ where
                         neighbour_index: Some(VisitorIndex::Parent(err_ref_node_index)),
                     });
                 }
+            } else {
+                continue;
+            };
+        }
+
+        // The root callable could also be fallible. Let's handle that.
+        if let Some(root_callable_error_handler) = root_callable_error_handler {
+            let root_node_index = add_node_at_most_once(&mut call_graph, handler_node.clone());
+            let child_nodes = call_graph
+                .neighbors_directed(root_node_index, Direction::Outgoing)
+                .next();
+            // Make sure that we haven't already added nodes to handle the Ok/Err case.
+            if child_nodes.is_none() {
+                let Constructor::Callable(root_callable) = &handler_constructor else { unreachable!() };
+                let root_callable_output_type = root_callable.output.as_ref().unwrap();
+                let result_constructor = Constructor::match_result(root_callable_output_type);
+                let ok_constructor = result_constructor.ok;
+                let err_constructor = result_constructor.err;
+
+                let branching_node_index = call_graph.add_node(CallGraphNode::MatchBranching);
+                let ok_node_index = call_graph.add_node(CallGraphNode::Compute {
+                    component: ok_constructor.into(),
+                    n_allowed_invocations: NumberOfAllowedInvocations::One,
+                });
+                let err_node_index = call_graph.add_node(CallGraphNode::Compute {
+                    component: err_constructor.clone().into(),
+                    n_allowed_invocations: NumberOfAllowedInvocations::One,
+                });
+                call_graph.add_edge(root_node_index, branching_node_index, ());
+                call_graph.add_edge(branching_node_index, ok_node_index, ());
+                call_graph.add_edge(branching_node_index, err_node_index, ());
+
+                let err_ref_node_index = call_graph.add_node(CallGraphNode::Compute {
+                    component: ComputeComponent::Constructor(Constructor::shared_borrow(
+                        err_constructor.output_type().to_owned(),
+                    )),
+                    n_allowed_invocations: NumberOfAllowedInvocations::One,
+                });
+                call_graph.add_edge(err_node_index, err_ref_node_index, ());
+                nodes_to_be_visited.push(VisitorStackElement {
+                    compute: root_callable_error_handler.to_owned().into(),
+                    neighbour_index: Some(VisitorIndex::Parent(err_ref_node_index)),
+                });
             }
         }
 
@@ -616,7 +666,7 @@ where
 /// [`CallableDependencyGraph`] is focused on **types** - it tells us what types are needed in
 /// order to build the input parameters and invoke a certain callable.
 ///
-/// We now want to convert that knowledge into action.  
+/// We now want to convert that knowledge into action.
 /// We want to code-generate a wrapping function for that callable, its **dependency closure**.
 /// The dependency closure, leveraging the registered constructors, should either require no input
 /// of its own or ask for "upstream" inputs (i.e. types that are recursive dependencies of the input
