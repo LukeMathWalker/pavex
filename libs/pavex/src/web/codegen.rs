@@ -30,7 +30,7 @@ pub(crate) fn codegen_app(
     let define_application_state_error =
         define_application_state_error(&application_state_call_graph.error_types, package_id2name);
     let application_state_init =
-        get_application_state_init(&application_state_call_graph, package_id2name)?;
+        get_application_state_init(application_state_call_graph, package_id2name)?;
     let define_server_state = define_server_state();
 
     let handler_functions: IndexMap<_, _> = handler_call_graphs

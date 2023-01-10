@@ -59,7 +59,7 @@ pub(crate) fn implements_trait(
                     ..
                 } => {
                     let default = resolve_type(
-                        &default,
+                        default,
                         &type_.package_id,
                         krate_collection,
                         &generic_bindings,
@@ -263,7 +263,7 @@ impl MissingTraitImplementationError {
             .next()
             .unwrap();
         let location = &constructor_locations[raw_identifier];
-        let source = location.source_file(&package_graph)?;
+        let source = location.source_file(package_graph)?;
         let label = diagnostic::get_f_macro_invocation_span(&source, location)
             .map(|s| s.labeled("The constructor was registered here".into()));
         let diagnostic = CompilerDiagnostic::builder(source, self)

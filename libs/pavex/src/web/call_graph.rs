@@ -167,7 +167,7 @@ pub(crate) fn application_state_call_graph(
     output_node_indexes.remove(&root_callable_node_index);
 
     let err_wrapper_path = {
-        let mut v = application_state_result.resolved_path().segments.clone();
+        let mut v = application_state_result.resolved_path().segments;
         v.push(ResolvedPathSegment {
             ident: "Err".into(),
             generic_arguments: vec![],
@@ -211,7 +211,7 @@ pub(crate) fn application_state_call_graph(
 
     // We need to add an `Ok` wrap around `ApplicationState`, since we are returning a `Result`.
     let ok_wrapper_path = {
-        let mut v = application_state_result.resolved_path().segments.clone();
+        let mut v = application_state_result.resolved_path().segments;
         v.push(ResolvedPathSegment {
             ident: "Ok".into(),
             generic_arguments: vec![],
@@ -220,7 +220,7 @@ pub(crate) fn application_state_call_graph(
     };
     let ok_wrapper = Callable {
         is_async: false,
-        output: Some(application_state_result.clone()),
+        output: Some(application_state_result),
         path: ResolvedPath {
             segments: ok_wrapper_path,
             qualified_self: None,
@@ -348,7 +348,7 @@ where
 {
     let mut call_graph = StableDiGraph::<CallGraphNode, ()>::new();
 
-    let handler_constructor = Constructor::Callable(root_callable.clone());
+    let handler_constructor = Constructor::Callable(root_callable);
     let handler_component: ComputeComponent = handler_constructor.clone().into();
     let handler_node = CallGraphNode::Compute {
         component: handler_component.clone(),
@@ -359,8 +359,7 @@ where
     let constructor2invocations = |c: &Constructor| {
         lifecycles
             .get(c.output_type())
-            .map(lifecycle2n_allowed_invocations.clone())
-            .flatten()
+            .and_then(lifecycle2n_allowed_invocations.clone())
     };
     let component2invocations = |component: &ComputeComponent| {
         if component == &handler_component || Some(component) == error_handler_component.as_ref() {
@@ -472,17 +471,15 @@ where
                                     compute: c.to_owned().into(),
                                     neighbour_index: Some(VisitorIndex::Child(current_index)),
                                 });
+                            } else if input_type == error_handler.error_type() {
+                                // We have already added this edge.
+                                continue;
                             } else {
-                                if input_type == error_handler.error_type() {
-                                    // We have already added this edge.
-                                    continue;
-                                } else {
-                                    let index = add_node_at_most_once(
-                                        &mut call_graph,
-                                        CallGraphNode::InputParameter(input_type.to_owned()),
-                                    );
-                                    call_graph.update_edge(index, current_index, ());
-                                }
+                                let index = add_node_at_most_once(
+                                    &mut call_graph,
+                                    CallGraphNode::InputParameter(input_type.to_owned()),
+                                );
+                                call_graph.update_edge(index, current_index, ());
                             }
                         }
                     }
@@ -879,18 +876,18 @@ fn debug_dot(g: &StableDiGraph<CallGraphNode, ()>) -> String {
                                 format!("label = \"{:?} -> {:?}\"", m.input, m.output)
                             }
                             Constructor::Callable(c) => {
-                                format!("label = \"{:?}\"", c)
+                                format!("label = \"{c:?}\"")
                             }
                         },
                         ComputeComponent::ErrorHandler(e) => {
                             format!("label = \"{:?}\"", e.as_ref())
                         }
                         ComputeComponent::Transformer(t) => {
-                            format!("label = \"{:?}\"", t)
+                            format!("label = \"{t:?}\"")
                         }
                     },
                     CallGraphNode::InputParameter(t) => {
-                        format!("label = \"{:?}\"", t)
+                        format!("label = \"{t:?}\"")
                     }
                     CallGraphNode::MatchBranching => "label = \"`match`\"".to_string(),
                 }

@@ -43,7 +43,7 @@ impl PackageIdSpecification {
                     } else {
                         source.to_string()
                     };
-                    format!("file:///{}", source)
+                    format!("file:///{source}")
                 }
             }
             PackageSource::External(source) => {
@@ -75,11 +75,11 @@ impl PackageIdSpecification {
 impl Display for PackageIdSpecification {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         if let Some(source) = &self.source {
-            write!(f, "{}#", source)?;
+            write!(f, "{source}#")?;
         }
         write!(f, "{}", &self.name)?;
         if let Some(version) = &self.version {
-            write!(f, "@{}", version)?;
+            write!(f, "@{version}")?;
         }
         Ok(())
     }

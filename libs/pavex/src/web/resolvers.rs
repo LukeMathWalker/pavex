@@ -224,7 +224,7 @@ pub(crate) fn resolve_callable(
     let mut generic_bindings = HashMap::new();
     if let Some(qself) = qualified_self_type {
         let qself_path = &callable_path.qualified_self.as_ref().unwrap().path;
-        let qself_type = resolve_type_path(&qself_path, &qself.item, krate_collection).unwrap();
+        let qself_type = resolve_type_path(qself_path, &qself.item, krate_collection).unwrap();
         generic_bindings.insert("Self".to_string(), qself_type);
     }
 
@@ -339,7 +339,7 @@ impl Display for CallableType {
             CallableType::Constructor => "constructor",
             CallableType::ErrorHandler => "error handler",
         };
-        write!(f, "{}", s)
+        write!(f, "{s}")
     }
 }
 
@@ -362,7 +362,7 @@ impl CallableResolutionError {
                 let type_path = &e.0;
                 let raw_identifier = resolved_paths2identifiers[type_path].iter().next().unwrap();
                 let location = identifiers2location(raw_identifier);
-                let source = location.source_file(&package_graph)?;
+                let source = location.source_file(package_graph)?;
                 let label = diagnostic::get_f_macro_invocation_span(&source, &location)
                     .map(|s| s.labeled(format!("The {callable_type} that we cannot resolve")));
                 Ok(CompilerDiagnostic::builder(source, e)
@@ -434,7 +434,7 @@ impl CallableResolutionError {
                     .next()
                     .unwrap();
                 let location = identifiers2location(raw_identifier);
-                let source = location.source_file(&package_graph)?;
+                let source = location.source_file(package_graph)?;
                 let label = diagnostic::get_f_macro_invocation_span(&source, &location)
                     .map(|s| s.labeled(format!("The {callable_type} was registered here")));
                 Ok(CompilerDiagnostic::builder(source, e)
@@ -446,7 +446,7 @@ impl CallableResolutionError {
                 let type_path = &e.import_path;
                 let raw_identifier = resolved_paths2identifiers[type_path].iter().next().unwrap();
                 let location = identifiers2location(raw_identifier);
-                let source = location.source_file(&package_graph)?;
+                let source = location.source_file(package_graph)?;
                 let label = diagnostic::get_f_macro_invocation_span(&source, &location)
                     .map(|s| s.labeled(format!("It was registered as a {callable_type} here")));
                 Ok(CompilerDiagnostic::builder(source, e)
@@ -515,7 +515,7 @@ impl CallableResolutionError {
                     .next()
                     .unwrap();
                 let location = identifiers2location(raw_identifier);
-                let source = location.source_file(&package_graph)?;
+                let source = location.source_file(package_graph)?;
                 let label = diagnostic::get_f_macro_invocation_span(&source, &location)
                     .map(|s| s.labeled(format!("The {callable_type} was registered here")));
                 Ok(CompilerDiagnostic::builder(source, e)

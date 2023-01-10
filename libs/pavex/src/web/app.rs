@@ -197,9 +197,9 @@ impl App {
 
         for (output_type, constructor) in &constructors {
             if let Constructor::Callable(callable) = constructor {
-                if !utils::is_result(&output_type) {
+                if !utils::is_result(output_type) {
                     let constructor_path = constructor_callable_resolver
-                        .get_by_right(&callable)
+                        .get_by_right(callable)
                         .unwrap();
                     let constructor_id =
                         constructor_paths2ids.get_by_left(constructor_path).unwrap();
@@ -384,7 +384,7 @@ impl App {
         let router = {
             let mut router = BTreeMap::new();
             for (route, callable_identifiers) in &app_blueprint.router {
-                let callable_path = &identifiers2path[&callable_identifiers];
+                let callable_path = &identifiers2path[callable_identifiers];
                 router.insert(
                     route.to_owned(),
                     handler_path2callable[callable_path].to_owned(),
@@ -423,7 +423,7 @@ impl App {
             let mut map = HashMap::new();
             for (route, request_handler) in &router {
                 let output_type = request_handler.output.as_ref().unwrap();
-                if utils::is_result(&output_type) {
+                if utils::is_result(output_type) {
                     let handler_id = &app_blueprint.router[route];
                     let error_handler_id =
                         &app_blueprint.request_handlers_error_handlers[handler_id];
@@ -452,9 +452,9 @@ impl App {
                     if let Some(Lifecycle::Singleton) = component2lifecycle.get(output_type) {
                         continue;
                     }
-                    if utils::is_result(&output_type) {
+                    if utils::is_result(output_type) {
                         let constructor_path = constructor_callable_resolver
-                            .get_by_right(&callable)
+                            .get_by_right(callable)
                             .unwrap();
                         let constructor_id =
                             constructor_paths2ids.get_by_left(constructor_path).unwrap();
@@ -578,7 +578,7 @@ impl App {
             .map(|p| PackageId::new(*p))
             .collect::<Vec<_>>();
         for package_id in &toolchain_package_ids {
-            package_ids2deps.insert(&package_id, package_id.repr().into());
+            package_ids2deps.insert(package_id, package_id.repr().into());
         }
         package_ids2deps.insert(&generated_app_package_id, "crate".into());
 
@@ -609,7 +609,7 @@ impl App {
             .map(|p| PackageId::new(*p))
             .collect::<Vec<_>>();
         for package_id in &toolchain_package_ids {
-            package_ids2deps.insert(&package_id, package_id.repr().into());
+            package_ids2deps.insert(package_id, package_id.repr().into());
         }
         package_ids2deps.insert(&generated_app_package_id, "crate".into());
 
@@ -618,7 +618,7 @@ impl App {
                 route.to_owned(),
                 handler_call_graph
                     .dot(&package_ids2deps)
-                    .replace("digraph", &format!("digraph \"{}\"", route)),
+                    .replace("digraph", &format!("digraph \"{route}\"")),
             );
         }
         let application_state_graph = self
@@ -649,7 +649,7 @@ impl AppDiagnostics {
         let handler_directory = directory.join("handlers");
         fs_err::create_dir_all(&handler_directory)?;
         for (route, handler) in &self.handlers {
-            let path = handler_directory.join(format!("{}.dot", route).trim_start_matches('/'));
+            let path = handler_directory.join(format!("{route}.dot").trim_start_matches('/'));
             let mut file = fs_err::OpenOptions::new()
                 .write(true)
                 .create(true)
@@ -798,7 +798,7 @@ impl OutputCannotBeConvertedIntoAResponse {
         package_graph: &PackageGraph,
     ) -> Result<CompilerDiagnostic, miette::Error> {
         let location = get_registration_location(app_blueprint, &self.identifiers).unwrap();
-        let source = location.source_file(&package_graph)?;
+        let source = location.source_file(package_graph)?;
         let label = diagnostic::get_f_macro_invocation_span(&source, location)
             .map(|s| s.labeled(format!("The {} was registered here", &self.callable_type)));
         let help = format!(
@@ -826,7 +826,7 @@ impl ErrorHandlerForInfallibleConstructor {
         package_graph: &PackageGraph,
     ) -> Result<CompilerDiagnostic, miette::Error> {
         let location = &app_blueprint.error_handler_locations[&self.error_handler_id];
-        let source = location.source_file(&package_graph)?;
+        let source = location.source_file(package_graph)?;
         let label = diagnostic::get_f_macro_invocation_span(&source, location)
             .map(|s| s.labeled("The unnecessary error handler was registered here".into()));
         let diagnostic = CompilerDiagnostic::builder(source, self)

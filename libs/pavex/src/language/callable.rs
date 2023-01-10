@@ -72,7 +72,7 @@ impl std::fmt::Debug for Callable {
         write!(f, "(")?;
         let mut inputs = self.inputs.iter().peekable();
         while let Some(input) = inputs.next() {
-            write!(f, "{:?}", input)?;
+            write!(f, "{input:?}")?;
             if inputs.peek().is_some() {
                 write!(f, ", ")?;
             }

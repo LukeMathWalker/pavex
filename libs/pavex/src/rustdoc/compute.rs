@@ -106,8 +106,7 @@ fn get_nightly_toolchain_root_folder_via_rustup() -> Result<PathBuf, anyhow::Err
 
     let output = cmd.output().with_context(|| {
         format!(
-            "Failed to run a `rustup` command. Is `rustup` installed?\n{:?}",
-            cmd
+            "Failed to run a `rustup` command. Is `rustup` installed?\n{cmd:?}"
         )
     })?;
 
@@ -120,16 +119,14 @@ fn get_nightly_toolchain_root_folder_via_rustup() -> Result<PathBuf, anyhow::Err
     let path = std::str::from_utf8(&output.stdout)
         .with_context(|| {
             format!(
-                "An invocation of `rustup` returned non-UTF8 data as output.\n{:?}",
-                cmd
+                "An invocation of `rustup` returned non-UTF8 data as output.\n{cmd:?}"
             )
         })?
         .trim();
     let path = Path::new(path);
     debug_assert!(
         path.ends_with("bin/cargo"),
-        "The path to the `cargo` binary for nightly does not have the expected structure: {:?}",
-        path
+        "The path to the `cargo` binary for nightly does not have the expected structure: {path:?}"
     );
     Ok(path.parent().unwrap().parent().unwrap().to_path_buf())
 }
@@ -154,7 +151,7 @@ fn _compute_crate_docs(
 
     let status = cmd
         .status()
-        .with_context(|| format!("Failed to run `cargo rustdoc`.\n{:?}", cmd))?;
+        .with_context(|| format!("Failed to run `cargo rustdoc`.\n{cmd:?}"))?;
 
     if !status.success() {
         anyhow::bail!(
@@ -170,14 +167,12 @@ fn _compute_crate_docs(
 
     let json = fs_err::read_to_string(json_path).with_context(|| {
         format!(
-            "Failed to read the output of a `cargo rustdoc` invocation.\n{:?}",
-            cmd
+            "Failed to read the output of a `cargo rustdoc` invocation.\n{cmd:?}"
         )
     })?;
     let krate = serde_json::from_str::<rustdoc_types::Crate>(&json).with_context(|| {
         format!(
-            "Failed to deserialize the output of a `cargo rustdoc` invocation.\n{:?}",
-            cmd
+            "Failed to deserialize the output of a `cargo rustdoc` invocation.\n{cmd:?}"
         )
     })?;
     Ok(krate)

@@ -259,7 +259,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {{
     Ok(())
 }}"#
         );
-        fs_err::write(source_directory.join("main.rs"), &main_rs)?;
+        fs_err::write(source_directory.join("main.rs"), main_rs)?;
         Ok(())
     }
 }

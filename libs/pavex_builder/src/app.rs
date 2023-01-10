@@ -83,7 +83,7 @@ impl Display for Lifecycle {
             Lifecycle::RequestScoped => "request-scoped",
             Lifecycle::Transient => "transient",
         };
-        write!(f, "{}", s)
+        write!(f, "{s}")
     }
 }
 

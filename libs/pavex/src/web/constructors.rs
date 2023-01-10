@@ -75,8 +75,7 @@ impl Constructor {
         assert_eq!(
             result_type.generic_arguments.len(),
             2,
-            "{:?} does not have two generic arguments, as expected",
-            result_type
+            "{result_type:?} does not have two generic arguments, as expected"
         );
         let mut generics = result_type.generic_arguments.iter();
         let ok_type = generics.next().unwrap().to_owned();
@@ -135,7 +134,7 @@ impl ConstructorValidationError {
                     .next()
                     .unwrap();
                 let location = &app_blueprint.constructor_locations[raw_identifier];
-                let source = location.source_file(&package_graph)?;
+                let source = location.source_file(package_graph)?;
                 let label = diagnostic::get_f_macro_invocation_span(&source, location)
                     .map(|s| s.labeled("The constructor was registered here".into()));
                 let diagnostic = CompilerDiagnostic::builder(source, self)
