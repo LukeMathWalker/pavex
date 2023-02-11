@@ -1,6 +1,6 @@
 use pavex_builder::{f, AppBlueprint};
 
-pub fn c() -> (usize, usize) {
+pub fn c() -> Box<dyn std::error::Error> {
     todo!()
 }
 

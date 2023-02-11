@@ -1,6 +1,6 @@
 digraph "/home" {
-    0 [ label = "app::Streamer::stream_file() -> pavex_runtime::response::Response"]
-    1 [ label = "<pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(pavex_runtime::response::Response) -> pavex_runtime::response::Response"]
+    0 [ label = "app::Streamer::stream_file() -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
+    1 [ label = "<http::Response::<http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>> as pavex_runtime::response::IntoResponse>::into_response(http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
     0 -> 1 [ ]
 }
 digraph app_state {

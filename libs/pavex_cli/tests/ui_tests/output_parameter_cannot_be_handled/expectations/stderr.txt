@@ -12,8 +12,8 @@ Error:
   × 
    ╭─[src/lib.rs:2:1]
  2 │ 
- 3 │ pub fn c() -> (usize, usize) {
-   ·               ───────┬──────
-   ·                      ╰── The output type that I cannot handle
+ 3 │ pub fn c() -> Box<dyn std::error::Error> {
+   ·               ─────────────┬────────────
+   ·                            ╰── The output type that I cannot handle
  4 │     todo!()
    ╰────

@@ -35,6 +35,7 @@ pub enum ScalarPrimitive {
     F32,
     F64,
     Bool,
+    Char,
 }
 
 impl ScalarPrimitive {
@@ -53,6 +54,7 @@ impl ScalarPrimitive {
             Self::F32 => "f32",
             Self::F64 => "f64",
             Self::Bool => "bool",
+            Self::Char => "char",
         }
     }
 }
@@ -87,6 +89,7 @@ impl TryFrom<&str> for ScalarPrimitive {
             "f32" => Self::F32,
             "f64" => Self::F64,
             "bool" => Self::Bool,
+            "char" => Self::Char,
             _ => anyhow::bail!("Unknown primitive scalar type: {}", value),
         };
         Ok(v)

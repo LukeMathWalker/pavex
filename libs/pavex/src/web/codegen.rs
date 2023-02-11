@@ -400,10 +400,10 @@ fn compute_dependencies<'a>(
                 cargo_manifest::Dependency::Simple(version.to_string())
             };
             dependencies.insert(name.to_owned(), dependency);
-            package_ids2dependency_name.insert(package_id, name.to_owned());
+            package_ids2dependency_name.insert(package_id, name.replace('-', "_"));
         } else {
             for (i, (version, package_id, path)) in versions.into_iter().enumerate() {
-                let rename = format!("{name}_{i}");
+                let rename = format!("{}_{i}", name.replace('-', "_"));
                 let dependency = cargo_manifest::Dependency::Detailed(DependencyDetail {
                     package: Some(name.to_string()),
                     version: Some(version.to_string()),

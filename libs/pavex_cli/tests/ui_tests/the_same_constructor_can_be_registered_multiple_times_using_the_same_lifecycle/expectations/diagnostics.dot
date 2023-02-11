@@ -1,7 +1,7 @@
 digraph "/home" {
-    0 [ label = "app::Streamer::stream_file(app::Logger) -> pavex_runtime::response::Response"]
+    0 [ label = "app::Streamer::stream_file(app::Logger) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
     1 [ label = "app::new_logger() -> app::Logger"]
-    2 [ label = "<pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(pavex_runtime::response::Response) -> pavex_runtime::response::Response"]
+    2 [ label = "<http::Response::<http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>> as pavex_runtime::response::IntoResponse>::into_response(http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
     1 -> 0 [ ]
     0 -> 2 [ ]
 }

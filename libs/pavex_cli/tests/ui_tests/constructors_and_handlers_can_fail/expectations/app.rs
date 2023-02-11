@@ -82,7 +82,9 @@ async fn route_request(
 pub async fn route_handler_0(
     v0: app::HttpClient,
     v1: http::Request<hyper::Body>,
-) -> pavex_runtime::response::Response {
+) -> http::Response<
+    http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
+> {
     match app::logger() {
         Ok(v2) => {
             let v3 = app::extract_path(v1);
@@ -91,13 +93,23 @@ pub async fn route_handler_0(
                     let v5 = app::request_handler(v4, v2, v0);
                     match v5 {
                         Ok(v6) => {
-                            <pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(
+                            <http::Response::<
+                                http_body::combinators::BoxBody::<
+                                    bytes::Bytes,
+                                    pavex_runtime::Error,
+                                >,
+                            > as pavex_runtime::response::IntoResponse>::into_response(
                                 v6,
                             )
                         }
                         Err(v6) => {
                             let v7 = app::handle_handler_error(&v6);
-                            <pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(
+                            <http::Response::<
+                                http_body::combinators::BoxBody::<
+                                    bytes::Bytes,
+                                    pavex_runtime::Error,
+                                >,
+                            > as pavex_runtime::response::IntoResponse>::into_response(
                                 v7,
                             )
                         }
@@ -107,13 +119,23 @@ pub async fn route_handler_0(
                     match app::logger() {
                         Ok(v5) => {
                             let v6 = app::handle_extract_path_error(&v4, v5);
-                            <pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(
+                            <http::Response::<
+                                http_body::combinators::BoxBody::<
+                                    bytes::Bytes,
+                                    pavex_runtime::Error,
+                                >,
+                            > as pavex_runtime::response::IntoResponse>::into_response(
                                 v6,
                             )
                         }
                         Err(v5) => {
                             let v6 = app::handle_logger_error(&v5);
-                            <pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(
+                            <http::Response::<
+                                http_body::combinators::BoxBody::<
+                                    bytes::Bytes,
+                                    pavex_runtime::Error,
+                                >,
+                            > as pavex_runtime::response::IntoResponse>::into_response(
                                 v6,
                             )
                         }
@@ -123,9 +145,9 @@ pub async fn route_handler_0(
         }
         Err(v2) => {
             let v3 = app::handle_logger_error(&v2);
-            <pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(
-                v3,
-            )
+            <http::Response::<
+                http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>,
+            > as pavex_runtime::response::IntoResponse>::into_response(v3)
         }
     }
 }

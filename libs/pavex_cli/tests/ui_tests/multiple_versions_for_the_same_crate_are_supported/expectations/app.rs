@@ -61,11 +61,13 @@ async fn route_request(
         _ => panic!("This is a bug, no route registered for a route id"),
     }
 }
-pub async fn route_handler_0() -> pavex_runtime::response::Response {
+pub async fn route_handler_0() -> http_0::Response<
+    http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
+> {
     let v0 = app::header2();
     let v1 = app::header1();
     let v2 = app::stream_file(v1, v0);
-    <pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(
-        v2,
-    )
+    <http_0::Response::<
+        http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>,
+    > as pavex_runtime::response::IntoResponse>::into_response(v2)
 }

@@ -6,10 +6,10 @@ struct ServerState {
     application_state: ApplicationState,
 }
 pub struct ApplicationState {
-    s0: app::Streamer,
+    s0: (bool, char, u8),
 }
 pub async fn build_application_state() -> crate::ApplicationState {
-    let v0 = app::streamer();
+    let v0 = app::constructor_with_output_tuple();
     crate::ApplicationState { s0: v0 }
 }
 pub async fn run(
@@ -65,11 +65,11 @@ async fn route_request(
     }
 }
 pub async fn route_handler_0(
-    v0: app::Streamer,
+    v0: (bool, char, u8),
 ) -> http::Response<
     http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
 > {
-    let v1 = app::stream_file(v0);
+    let v1 = app::handler_with_input_tuple(v0);
     <http::Response::<
         http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>,
     > as pavex_runtime::response::IntoResponse>::into_response(v1)
