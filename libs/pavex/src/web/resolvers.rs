@@ -1,114 +1,20 @@
 //! Given the fully qualified path to a function (be it a constructor or a handler),
 //! find the corresponding item ("resolution") in `rustdoc`'s JSON output to determine
 //! its input parameters and output type.
-use std::collections::{HashMap, HashSet};
 use std::fmt::{Display, Formatter};
+use std::sync::Arc;
 
+use ahash::{HashMap, HashMapExt};
 use anyhow::anyhow;
-use bimap::BiHashMap;
-use guppy::graph::PackageGraph;
 use guppy::PackageId;
-use indexmap::IndexSet;
-use miette::{miette, NamedSource, SourceSpan};
 use rustdoc_types::{GenericArg, GenericArgs, ItemEnum, Type};
-use syn::spanned::Spanned;
-use syn::{FnArg, ImplItemMethod, ReturnType};
 
-use pavex_builder::Location;
-use pavex_builder::RawCallableIdentifiers;
-
-use crate::diagnostic;
-use crate::diagnostic::read_source_file;
-use crate::diagnostic::CompilerDiagnostic;
-use crate::diagnostic::{
-    convert_proc_macro_span, convert_rustdoc_span, LocationExt, OptionalSourceSpanExt,
-    SourceSpanExt,
+use crate::language::{
+    Callable, InvocationStyle, ResolvedPath, ResolvedPathType, ResolvedType, Tuple, TypeReference,
+    UnknownPath,
 };
-use crate::language::{Callable, InvocationStyle, ResolvedPath, ResolvedType, UnknownPath};
 use crate::rustdoc::{CannotGetCrateData, RustdocKindExt};
 use crate::rustdoc::{CrateCollection, ResolvedItem};
-
-/// Extract the input type paths, the output type path and the callable path for each
-/// registered type constructor.
-pub(crate) fn resolve_constructors(
-    constructor_paths: &IndexSet<ResolvedPath>,
-    krate_collection: &CrateCollection,
-) -> (
-    BiHashMap<ResolvedPath, Callable>,
-    Vec<CallableResolutionError>,
-) {
-    let mut resolution_map = BiHashMap::with_capacity(constructor_paths.len());
-    let mut errors = vec![];
-    for constructor_identifiers in constructor_paths {
-        match resolve_callable(krate_collection, constructor_identifiers) {
-            Ok(constructor) => {
-                resolution_map.insert(constructor_identifiers.to_owned(), constructor);
-            }
-            Err(e) => errors.push(e),
-        }
-    }
-    (resolution_map, errors)
-}
-
-/// Extract the input type paths, the output type path and the callable path for each
-/// registered error handler.
-#[allow(clippy::type_complexity)]
-pub(crate) fn resolve_error_handlers(
-    paths: &IndexSet<ResolvedPath>,
-    krate_collection: &CrateCollection,
-) -> (
-    HashMap<ResolvedPath, Callable>,
-    HashMap<Callable, IndexSet<ResolvedPath>>,
-    Vec<CallableResolutionError>,
-) {
-    let mut resolution_map = HashMap::with_capacity(paths.len());
-    let mut reverse_map = HashMap::<Callable, IndexSet<ResolvedPath>>::new();
-    let mut errors = vec![];
-    for path in paths {
-        match resolve_callable(krate_collection, path) {
-            Ok(callable) => {
-                resolution_map.insert(path.to_owned(), callable.clone());
-                reverse_map
-                    .entry(callable)
-                    .or_default()
-                    .insert(path.to_owned());
-            }
-            Err(e) => errors.push(e),
-        }
-    }
-    (resolution_map, reverse_map, errors)
-}
-
-/// Extract the input type paths, the output type path and the callable path for each
-/// registered request handler.
-pub(crate) fn resolve_request_handlers(
-    handler_paths: &IndexSet<ResolvedPath>,
-    krate_collection: &CrateCollection,
-) -> (
-    HashMap<ResolvedPath, Callable>,
-    HashMap<Callable, IndexSet<ResolvedPath>>,
-    IndexSet<Callable>,
-    Vec<CallableResolutionError>,
-) {
-    let mut handlers = IndexSet::with_capacity(handler_paths.len());
-    let mut handler_resolver = HashMap::new();
-    let mut reverse_map = HashMap::<Callable, IndexSet<ResolvedPath>>::new();
-    let mut errors = vec![];
-    for callable_path in handler_paths {
-        match resolve_callable(krate_collection, callable_path) {
-            Ok(handler) => {
-                handlers.insert(handler.clone());
-                handler_resolver.insert(callable_path.to_owned(), handler.clone());
-                reverse_map
-                    .entry(handler)
-                    .or_default()
-                    .insert(callable_path.to_owned());
-            }
-            Err(e) => errors.push(e),
-        }
-    }
-    (handler_resolver, reverse_map, handlers, errors)
-}
 
 pub(crate) fn resolve_type(
     type_: &Type,
@@ -157,13 +63,13 @@ pub(crate) fn resolve_type(
             }
             let (global_type_id, base_type) =
                 krate_collection.get_canonical_path_by_local_type_id(used_by_package_id, id)?;
-            Ok(ResolvedType {
+            let t = ResolvedPathType {
                 package_id: global_type_id.package_id().to_owned(),
                 rustdoc_id: Some(global_type_id.rustdoc_item_id),
                 base_type: base_type.to_vec(),
                 generic_arguments: generics,
-                is_shared_reference: false,
-            })
+            };
+            Ok(ResolvedType::ResolvedPath(t))
         }
         Type::BorrowedRef {
             lifetime: _,
@@ -176,14 +82,17 @@ pub(crate) fn resolve_type(
                     by value (`move` semantic) or via a shared reference (`&MyType`)",
                 ));
             }
-            let mut resolved_type = resolve_type(
+            let resolved_type = resolve_type(
                 type_,
                 used_by_package_id,
                 krate_collection,
                 generic_bindings,
             )?;
-            resolved_type.is_shared_reference = true;
-            Ok(resolved_type)
+            let t = TypeReference {
+                is_mutable: *mutable,
+                inner: Box::new(resolved_type),
+            };
+            Ok(t.into())
         }
         Type::Generic(s) => {
             if let Some(resolved_type) = generic_bindings.get(s) {
@@ -194,6 +103,18 @@ pub(crate) fn resolve_type(
                     s
                 ))
             }
+        }
+        Type::Tuple(t) => {
+            let mut types = Vec::with_capacity(t.len());
+            for type_ in t {
+                types.push(resolve_type(
+                    type_,
+                    used_by_package_id,
+                    krate_collection,
+                    generic_bindings,
+                )?);
+            }
+            Ok(ResolvedType::Tuple(Tuple { elements: types }))
         }
         _ => Err(anyhow!(
             "I cannot handle this kind ({:?}) of type yet. Sorry!",
@@ -223,9 +144,7 @@ pub(crate) fn resolve_callable(
 
     let mut generic_bindings = HashMap::new();
     if let Some(qself) = qualified_self_type {
-        let qself_path = &callable_path.qualified_self.as_ref().unwrap().path;
-        let qself_type = resolve_type_path(qself_path, &qself.item, krate_collection).unwrap();
-        generic_bindings.insert("Self".to_string(), qself_type);
+        generic_bindings.insert("Self".to_string(), qself);
     }
 
     let mut parameter_paths = Vec::with_capacity(decl.inputs.len());
@@ -242,7 +161,7 @@ pub(crate) fn resolve_callable(
                     parameter_type: parameter_type.to_owned(),
                     callable_path: callable_path.to_owned(),
                     callable_item: callable_type.item.item.into_owned(),
-                    source: e,
+                    source: Arc::new(e),
                     parameter_index,
                 }
                 .into());
@@ -265,7 +184,7 @@ pub(crate) fn resolve_callable(
                         output_type: output_type.to_owned(),
                         callable_path: callable_path.to_owned(),
                         callable_item: callable_type.item.item.into_owned(),
-                        source: e,
+                        source: Arc::new(e),
                     }
                     .into());
                 }
@@ -294,24 +213,20 @@ pub(crate) fn resolve_type_path(
     let mut generic_arguments = vec![];
     for segment in &path.segments {
         for generic_path in &segment.generic_arguments {
-            let (generic_item, generic_qself_item) =
-                generic_path.find_rustdoc_items(krate_collection)?;
-            assert!(generic_qself_item.is_none());
-            let generic_type =
-                resolve_type_path(generic_path, &generic_item.item, krate_collection)?;
-            generic_arguments.push(generic_type);
+            // TODO: remove unwrap
+            generic_arguments.push(generic_path.resolve(krate_collection).unwrap());
         }
     }
-    Ok(ResolvedType {
+    Ok(ResolvedPathType {
         package_id: global_type_id.package_id().to_owned(),
         rustdoc_id: Some(global_type_id.rustdoc_item_id),
         base_type: base_type.to_vec(),
         generic_arguments,
-        is_shared_reference: false,
-    })
+    }
+    .into())
 }
 
-#[derive(thiserror::Error, Debug)]
+#[derive(thiserror::Error, Debug, Clone)]
 pub(crate) enum CallableResolutionError {
     #[error(transparent)]
     UnsupportedCallableKind(#[from] UnsupportedCallableKind),
@@ -325,7 +240,7 @@ pub(crate) enum CallableResolutionError {
     CannotGetCrateData(#[from] CannotGetCrateData),
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub(crate) enum CallableType {
     RequestHandler,
     Constructor,
@@ -343,199 +258,14 @@ impl Display for CallableType {
     }
 }
 
-impl CallableResolutionError {
-    pub(crate) fn into_diagnostic<LocationProvider>(
-        self,
-        resolved_paths2identifiers: &HashMap<ResolvedPath, HashSet<RawCallableIdentifiers>>,
-        identifiers2location: LocationProvider,
-        package_graph: &PackageGraph,
-        callable_type: CallableType,
-    ) -> Result<CompilerDiagnostic, miette::Error>
-    where
-        LocationProvider: Fn(&RawCallableIdentifiers) -> Location,
-    {
-        match self {
-            Self::UnknownCallable(e) => {
-                // We only report a single registration site in the error report even though
-                // the same callable might have been registered in multiple locations.
-                // We may or may not want to change this in the future.
-                let type_path = &e.0;
-                let raw_identifier = resolved_paths2identifiers[type_path].iter().next().unwrap();
-                let location = identifiers2location(raw_identifier);
-                let source = location.source_file(package_graph)?;
-                let label = diagnostic::get_f_macro_invocation_span(&source, &location)
-                    .map(|s| s.labeled(format!("The {callable_type} that we cannot resolve")));
-                Ok(CompilerDiagnostic::builder(source, e)
-                    .optional_label(label)
-                    .help("This is most likely a bug in `pavex` or `rustdoc`.\nPlease file a GitHub issue!".into())
-                    .build())
-            }
-            CallableResolutionError::ParameterResolutionError(e) => {
-                let sub_diagnostic = {
-                    if let Some(definition_span) = &e.callable_item.span {
-                        let source_contents =
-                            read_source_file(&definition_span.filename, &package_graph.workspace())
-                                .map_err(miette::MietteError::IoError)?;
-                        let span =
-                            convert_rustdoc_span(&source_contents, definition_span.to_owned());
-                        let span_contents =
-                            &source_contents[span.offset()..(span.offset() + span.len())];
-                        let input = match &e.callable_item.inner {
-                            ItemEnum::Function(_) => {
-                                if let Ok(item) = syn::parse_str::<syn::ItemFn>(span_contents) {
-                                    let mut inputs = item.sig.inputs.iter();
-                                    inputs.nth(e.parameter_index).cloned()
-                                } else if let Ok(item) =
-                                    syn::parse_str::<ImplItemMethod>(span_contents)
-                                {
-                                    let mut inputs = item.sig.inputs.iter();
-                                    inputs.nth(e.parameter_index).cloned()
-                                } else {
-                                    panic!(
-                                        "Could not parse as a function or method:\n{span_contents}"
-                                    )
-                                }
-                            }
-                            _ => unreachable!(),
-                        }
-                        .unwrap();
-                        let s = convert_proc_macro_span(
-                            span_contents,
-                            match input {
-                                FnArg::Typed(typed) => typed.ty.span(),
-                                FnArg::Receiver(r) => r.span(),
-                            },
-                        );
-                        let label = SourceSpan::new(
-                            // We must shift the offset forward because it's the
-                            // offset from the beginning of the file slice that
-                            // we deserialized, instead of the entire file
-                            (s.offset() + span.offset()).into(),
-                            s.len().into(),
-                        )
-                        .labeled("I do not know how handle this parameter".into());
-                        let source_code = NamedSource::new(
-                            definition_span.filename.to_str().unwrap(),
-                            source_contents,
-                        );
-                        Some(
-                            CompilerDiagnostic::builder(source_code, anyhow::anyhow!(""))
-                                .label(label)
-                                .build(),
-                        )
-                    } else {
-                        None
-                    }
-                };
-
-                let callable_path = &e.callable_path;
-                let raw_identifier = resolved_paths2identifiers[callable_path]
-                    .iter()
-                    .next()
-                    .unwrap();
-                let location = identifiers2location(raw_identifier);
-                let source = location.source_file(package_graph)?;
-                let label = diagnostic::get_f_macro_invocation_span(&source, &location)
-                    .map(|s| s.labeled(format!("The {callable_type} was registered here")));
-                Ok(CompilerDiagnostic::builder(source, e)
-                    .optional_label(label)
-                    .optional_related_error(sub_diagnostic)
-                    .build())
-            }
-            CallableResolutionError::UnsupportedCallableKind(e) => {
-                let type_path = &e.import_path;
-                let raw_identifier = resolved_paths2identifiers[type_path].iter().next().unwrap();
-                let location = identifiers2location(raw_identifier);
-                let source = location.source_file(package_graph)?;
-                let label = diagnostic::get_f_macro_invocation_span(&source, &location)
-                    .map(|s| s.labeled(format!("It was registered as a {callable_type} here")));
-                Ok(CompilerDiagnostic::builder(source, e)
-                    .optional_label(label)
-                    .build())
-            }
-            CallableResolutionError::OutputTypeResolutionError(e) => {
-                let sub_diagnostic = {
-                    if let Some(definition_span) = &e.callable_item.span {
-                        let source_contents =
-                            read_source_file(&definition_span.filename, &package_graph.workspace())
-                                .map_err(miette::MietteError::IoError)?;
-                        let span =
-                            convert_rustdoc_span(&source_contents, definition_span.to_owned());
-                        let span_contents =
-                            &source_contents[span.offset()..(span.offset() + span.len())];
-                        let output = match &e.callable_item.inner {
-                            ItemEnum::Function(_) => {
-                                if let Ok(item) = syn::parse_str::<syn::ItemFn>(span_contents) {
-                                    item.sig.output
-                                } else if let Ok(item) =
-                                    syn::parse_str::<syn::ImplItemMethod>(span_contents)
-                                {
-                                    item.sig.output
-                                } else {
-                                    panic!(
-                                        "Could not parse as a function or method:\n{span_contents}"
-                                    )
-                                }
-                            }
-                            _ => unreachable!(),
-                        };
-                        let source_span = match output {
-                            ReturnType::Default => None,
-                            ReturnType::Type(_, type_) => Some(type_.span()),
-                        }
-                        .map(|s| {
-                            let s = convert_proc_macro_span(span_contents, s);
-                            SourceSpan::new(
-                                // We must shift the offset forward because it's the
-                                // offset from the beginning of the file slice that
-                                // we deserialized, instead of the entire file
-                                (s.offset() + span.offset()).into(),
-                                s.len().into(),
-                            )
-                        });
-                        let label =
-                            source_span.labeled("The output type that I cannot handle".into());
-                        let source_code = NamedSource::new(
-                            definition_span.filename.to_str().unwrap(),
-                            source_contents,
-                        );
-                        Some(
-                            CompilerDiagnostic::builder(source_code, anyhow::anyhow!(""))
-                                .optional_label(label)
-                                .build(),
-                        )
-                    } else {
-                        None
-                    }
-                };
-
-                let callable_path = &e.callable_path;
-                let raw_identifier = resolved_paths2identifiers[callable_path]
-                    .iter()
-                    .next()
-                    .unwrap();
-                let location = identifiers2location(raw_identifier);
-                let source = location.source_file(package_graph)?;
-                let label = diagnostic::get_f_macro_invocation_span(&source, &location)
-                    .map(|s| s.labeled(format!("The {callable_type} was registered here")));
-                Ok(CompilerDiagnostic::builder(source, e)
-                    .optional_label(label)
-                    .optional_related_error(sub_diagnostic)
-                    .build())
-            }
-            CallableResolutionError::CannotGetCrateData(e) => Err(miette!(e)),
-        }
-    }
-}
-
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, thiserror::Error, Clone)]
 #[error("I can work with functions and static methods, but `{import_path}` is neither.\nIt is {item_kind} and I do not know how to handle it here.")]
 pub(crate) struct UnsupportedCallableKind {
     pub import_path: ResolvedPath,
     pub item_kind: String,
 }
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, thiserror::Error, Clone)]
 #[error("One of the input parameters for `{callable_path}` has a type that I cannot handle.")]
 pub(crate) struct ParameterResolutionError {
     pub callable_path: ResolvedPath,
@@ -543,15 +273,15 @@ pub(crate) struct ParameterResolutionError {
     pub parameter_type: Type,
     pub parameter_index: usize,
     #[source]
-    pub source: anyhow::Error,
+    pub source: Arc<anyhow::Error>,
 }
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, thiserror::Error, Clone)]
 #[error("I do not know how to handle the type returned by `{callable_path}`.")]
 pub(crate) struct OutputTypeResolutionError {
     pub callable_path: ResolvedPath,
     pub callable_item: rustdoc_types::Item,
     pub output_type: Type,
     #[source]
-    pub source: anyhow::Error,
+    pub source: Arc<anyhow::Error>,
 }

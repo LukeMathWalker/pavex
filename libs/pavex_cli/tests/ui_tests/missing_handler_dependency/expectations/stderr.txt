@@ -1,4 +1,22 @@
 [31m[1mERROR[0m[39m: 
-  × One of your handlers (/home) needs an instance of type std::path::PathBuf
-  │ as input (either directly or indirectly), but there is no constructor
-  │ registered for that type.
+  × I cannot invoke your request handler, `app::stream_file`, because it
+  │ needs an instance of `std::path::PathBuf` as input, but I cannot find a
+  │ constructor for that type.
+    ╭─[src/lib.rs:10:1]
+ 10 │     let mut bp = AppBlueprint::new();
+ 11 │     bp.route(f!(crate::stream_file), "/home");
+    ·              ───────────┬──────────
+    ·                         ╰── The request handler was registered here
+ 12 │     bp
+    ╰────
+  help: Register a constructor for `std::path::PathBuf`
+
+Error: 
+  × 
+   ╭─[src/lib.rs:4:1]
+ 4 │ 
+ 5 │ pub fn stream_file(_inner: PathBuf) -> pavex_runtime::response::Response {
+   ·                            ───┬───
+   ·                               ╰── I do not know how to construct an instance of this input parameter
+ 6 │     todo!()
+   ╰────

@@ -1,0 +1,4 @@
+description = "pavex expectes all constructors and error handlers to _construct something_! They cannot return the unit type."
+
+[expectations]
+codegen = "fail"

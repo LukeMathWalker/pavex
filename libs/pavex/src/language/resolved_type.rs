@@ -9,11 +9,34 @@ use serde::{Deserializer, Serializer};
 use crate::language::{ImportPath, ResolvedPath, ResolvedPathSegment};
 
 #[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Hash, Clone)]
-pub struct ResolvedType {
+pub enum ResolvedType {
+    ResolvedPath(ResolvedPathType),
+    Reference(TypeReference),
+    Tuple(Tuple),
+}
+
+impl ResolvedType {
+    pub const UNIT_TYPE: ResolvedType = ResolvedType::Tuple(Tuple { elements: vec![] });
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Hash, Clone)]
+pub struct Tuple {
+    pub elements: Vec<ResolvedType>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Hash, Clone)]
+pub struct TypeReference {
+    pub is_mutable: bool,
+    pub inner: Box<ResolvedType>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Hash, Clone)]
+pub struct ResolvedPathType {
     #[serde(serialize_with = "serialize_package_id")]
     #[serde(deserialize_with = "deserialize_package_id")]
     // `PackageId` does not implement serde::Deserialize/serde::Serialize, therefore we must
-    // manually specify deserializer and serializer for make the whole `ResolvedType` (de)serializable.
+    // manually specify deserializer and serializer to make the whole `ResolvedPathType`
+    // (de)serializable.
     pub package_id: PackageId,
     /// The id associated with this type within the (JSON) docs for `package_id`.
     ///
@@ -22,7 +45,6 @@ pub struct ResolvedType {
     pub rustdoc_id: Option<rustdoc_types::Id>,
     pub base_type: ImportPath,
     pub generic_arguments: Vec<ResolvedType>,
-    pub is_shared_reference: bool,
 }
 
 fn serialize_package_id<S>(package_id: &PackageId, serializer: S) -> Result<S::Ok, S::Error>
@@ -41,39 +63,67 @@ where
 }
 
 impl ResolvedType {
-    pub fn syn_type(&self, id2name: &BiHashMap<&PackageId, String>) -> syn::Type {
+    pub fn syn_type(&self, id2name: &BiHashMap<PackageId, String>) -> syn::Type {
         let type_ = self.render_type(id2name);
         syn::parse_str(&type_).unwrap()
     }
 
-    pub fn render_type(&self, id2name: &BiHashMap<&PackageId, String>) -> String {
+    pub fn render_type(&self, id2name: &BiHashMap<PackageId, String>) -> String {
         let mut buffer = String::new();
-        let crate_name = id2name
-            .get_by_left(&self.package_id)
-            .with_context(|| {
-                format!(
-                    "The package id '{}' is missing from the id<>name mapping for crates.",
-                    self.package_id
-                )
-            })
-            .unwrap();
-        let maybe_reference = if self.is_shared_reference { "&" } else { "" };
-        write!(&mut buffer, "{maybe_reference}{crate_name}").unwrap();
-        write!(&mut buffer, "::{}", self.base_type[1..].join("::")).unwrap();
-        if !self.generic_arguments.is_empty() {
-            write!(&mut buffer, "<").unwrap();
-            let mut arguments = self.generic_arguments.iter().peekable();
-            while let Some(argument) = arguments.next() {
-                write!(&mut buffer, "{}", argument.render_type(id2name)).unwrap();
-                if arguments.peek().is_some() {
-                    write!(&mut buffer, ", ").unwrap();
-                }
-            }
-            write!(&mut buffer, ">").unwrap();
-        }
+        self._render_type(id2name, &mut buffer);
         buffer
     }
 
+    fn _render_type(&self, id2name: &BiHashMap<PackageId, String>, buffer: &mut String) {
+        match self {
+            ResolvedType::ResolvedPath(t) => {
+                let crate_name = id2name
+                    .get_by_left(&t.package_id)
+                    .with_context(|| {
+                        format!(
+                            "The package id '{}' is missing from the id<>name mapping for crates.",
+                            t.package_id
+                        )
+                    })
+                    .unwrap();
+                write!(buffer, "{crate_name}").unwrap();
+                write!(buffer, "::{}", t.base_type[1..].join("::")).unwrap();
+                if !t.generic_arguments.is_empty() {
+                    write!(buffer, "<").unwrap();
+                    let mut arguments = t.generic_arguments.iter().peekable();
+                    while let Some(argument) = arguments.next() {
+                        write!(buffer, "{}", argument.render_type(id2name)).unwrap();
+                        if arguments.peek().is_some() {
+                            write!(buffer, ", ").unwrap();
+                        }
+                    }
+                    write!(buffer, ">").unwrap();
+                }
+            }
+            ResolvedType::Reference(r) => {
+                if r.is_mutable {
+                    write!(buffer, "&mut ").unwrap();
+                } else {
+                    write!(buffer, "&").unwrap();
+                }
+                r.inner._render_type(id2name, buffer);
+            }
+            ResolvedType::Tuple(t) => {
+                write!(buffer, "(").unwrap();
+                let mut elements = t.elements.iter().peekable();
+                while let Some(element) = elements.next() {
+                    element._render_type(id2name, buffer);
+                    if elements.peek().is_some() {
+                        write!(buffer, ", ").unwrap();
+                    }
+                }
+                write!(buffer, ")").unwrap();
+            }
+        }
+    }
+}
+
+impl ResolvedPathType {
     pub fn resolved_path(&self) -> ResolvedPath {
         let mut segments = Vec::with_capacity(self.base_type.len());
         for segment in &self.base_type {
@@ -92,8 +142,19 @@ impl ResolvedType {
 
 impl std::fmt::Debug for ResolvedType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let maybe_reference = if self.is_shared_reference { "&" } else { "" };
-        write!(f, "{}{}", maybe_reference, self.base_type.join("::"))?;
+        match self {
+            ResolvedType::ResolvedPath(t) => write!(f, "{t:?}"),
+            ResolvedType::Reference(r) => write!(f, "{r:?}"),
+            ResolvedType::Tuple(t) => {
+                write!(f, "{t:?}")
+            }
+        }
+    }
+}
+
+impl std::fmt::Debug for ResolvedPathType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.base_type.join("::"))?;
         if !self.generic_arguments.is_empty() {
             write!(f, "<")?;
             let mut arguments = self.generic_arguments.iter().peekable();
@@ -106,5 +167,49 @@ impl std::fmt::Debug for ResolvedType {
             write!(f, ">")?;
         }
         Ok(())
+    }
+}
+
+impl std::fmt::Debug for Tuple {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "(")?;
+        let mut elements = self.elements.iter().peekable();
+        while let Some(element) = elements.next() {
+            write!(f, "{element:?}")?;
+            if elements.peek().is_some() {
+                write!(f, ", ")?;
+            }
+        }
+        write!(f, ")")?;
+        Ok(())
+    }
+}
+
+impl std::fmt::Debug for TypeReference {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "&")?;
+        if self.is_mutable {
+            write!(f, "mut ")?;
+        }
+        write!(f, "{:?}", self.inner)?;
+        Ok(())
+    }
+}
+
+impl From<Tuple> for ResolvedType {
+    fn from(value: Tuple) -> Self {
+        Self::Tuple(value)
+    }
+}
+
+impl From<ResolvedPathType> for ResolvedType {
+    fn from(value: ResolvedPathType) -> Self {
+        Self::ResolvedPath(value)
+    }
+}
+
+impl From<TypeReference> for ResolvedType {
+    fn from(value: TypeReference) -> Self {
+        Self::Reference(value)
     }
 }

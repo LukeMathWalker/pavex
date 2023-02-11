@@ -22,6 +22,7 @@ pub fn blueprint() -> AppBlueprint {
     let mut bp = AppBlueprint::new();
     bp.constructor(f!(crate::request_scoped), Lifecycle::RequestScoped)
         .error_handler(f!(crate::error_handler));
-    bp.route(f!(crate::handler), "/home");
+    bp.route(f!(crate::handler), "/home")
+        .error_handler(f!(crate::error_handler));
     bp
 }

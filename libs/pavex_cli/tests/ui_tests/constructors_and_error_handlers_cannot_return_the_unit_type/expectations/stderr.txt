@@ -1,0 +1,35 @@
+[31m[1mERROR[0m[39m: 
+  × All constructors must return *something*.
+  │ This constructor doesn't: it returns the unit type, `()`.
+    ╭─[src/lib.rs:27:1]
+ 27 │     let mut bp = AppBlueprint::new();
+ 28 │     bp.constructor(f!(crate::constructor), Lifecycle::Singleton);
+    ·                    ───────────┬──────────
+    ·                               ╰── The constructor was registered here
+ 29 │     bp.constructor(
+    ╰────
+
+[31m[1mERROR[0m[39m: 
+  × All fallible constructors must return *something* when successful.
+  │ This fallible constructor doesn't: it returns the unit type when
+  │ successful, `Ok(())`.
+    ╭─[src/lib.rs:29:1]
+ 29 │     bp.constructor(
+ 30 │         f!(crate::fallible_constructor_building_unit),
+    ·         ──────────────────────┬──────────────────────
+    ·                               ╰── The constructor was registered here
+ 31 │         Lifecycle::RequestScoped,
+    ╰────
+
+[31m[1mERROR[0m[39m: 
+  × All error handlers must return a type that implements
+  │ `pavex_runtime::response::IntoResponse`.
+  │ This error handler doesn't: it returns the unit type, `()`. I don't know
+  │ how to convert `()` into an HTTP response!
+    ╭─[src/lib.rs:33:1]
+ 33 │     bp.constructor(f!(crate::fallible_constructor), Lifecycle::RequestScoped)
+ 34 │         .error_handler(f!(crate::error_handler));
+    ·                        ────────────┬───────────
+    ·                                    ╰── The error handler was registered here
+ 35 │     bp.route(f!(crate::handler), "/home");
+    ╰────

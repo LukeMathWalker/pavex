@@ -1,0 +1,4 @@
+description = "pavex expectes all error handlers to take a reference of the error type as an input parameter"
+
+[expectations]
+codegen = "fail"

@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter};
 
-use syn::{ExprPath, GenericArgument, PathArguments};
+use syn::{ExprPath, GenericArgument, PathArguments, Type};
 
 use pavex_builder::RawCallableIdentifiers;
 
@@ -15,13 +15,36 @@ pub(crate) struct CallPath {
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub(crate) struct CallPathQualifiedSelf {
     pub position: usize,
+    pub type_: CallPathType,
+}
+
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+pub(crate) enum CallPathType {
+    ResolvedPath(CallPathResolvedPathType),
+    Reference(CallPathReference),
+    Tuple(CallPathTuple),
+}
+
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+pub(crate) struct CallPathResolvedPathType {
     pub path: Box<CallPath>,
+}
+
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+pub(crate) struct CallPathReference {
+    pub is_mutable: bool,
+    pub inner: Box<CallPathType>,
+}
+
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+pub(crate) struct CallPathTuple {
+    pub elements: Vec<CallPathType>,
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub(crate) struct CallPathSegment {
     pub ident: syn::Ident,
-    pub generic_arguments: Vec<CallPath>,
+    pub generic_arguments: Vec<CallPathType>,
 }
 
 impl CallPath {
@@ -32,6 +55,40 @@ impl CallPath {
                 parsing_error: e,
             })?;
         Self::parse_from_path(callable_path.path, callable_path.qself)
+    }
+
+    fn parse_qself(qself: syn::QSelf) -> Result<CallPathQualifiedSelf, InvalidCallPath> {
+        Ok(CallPathQualifiedSelf {
+            position: qself.position,
+            type_: Self::parse_type(*qself.ty)?,
+        })
+    }
+
+    fn parse_type(type_: Type) -> Result<CallPathType, InvalidCallPath> {
+        match type_ {
+            Type::Path(p) => {
+                let call_path = Self::parse_from_path(p.path, p.qself)?;
+                Ok(CallPathType::ResolvedPath(CallPathResolvedPathType {
+                    path: Box::new(call_path),
+                }))
+            }
+            Type::Reference(r) => {
+                let is_mutable = r.mutability.is_some();
+                let inner = Box::new(Self::parse_type(*r.elem)?);
+                Ok(CallPathType::Reference(CallPathReference {
+                    is_mutable,
+                    inner,
+                }))
+            }
+            Type::Tuple(t) => {
+                let mut elements = Vec::with_capacity(t.elems.len());
+                for element in t.elems {
+                    elements.push(Self::parse_type(element)?)
+                }
+                Ok(CallPathType::Tuple(CallPathTuple { elements }))
+            }
+            _ => todo!("We do not handle {:?} as a type yet", type_),
+        }
     }
 
     pub(crate) fn parse_from_path(
@@ -47,15 +104,12 @@ impl CallPath {
                     let mut arguments = Vec::with_capacity(syn_arguments.args.len());
                     for syn_argument in syn_arguments.args {
                         let argument = match syn_argument {
-                            GenericArgument::Type(p) => match p {
-                                syn::Type::Path(p) => Self::parse_from_path(p.path, p.qself)?,
-                                _ => unreachable!(),
-                            },
+                            GenericArgument::Type(t) => Self::parse_type(t)?,
                             GenericArgument::Lifetime(_)
                             | GenericArgument::Binding(_)
                             | GenericArgument::Constraint(_)
                             | GenericArgument::Const(_) => todo!(
-                                "We can only handle generic type parameters for the time being."
+                                "We can only handle types as generic parameters for the time being."
                             ),
                         };
                         arguments.push(argument)
@@ -73,18 +127,10 @@ impl CallPath {
             segments.push(segment)
         }
 
-        let qualified_self = match qualified_self {
-            Some(qself) => {
-                let syn::Type::Path(qself_path) = *qself.ty
-                    else {
-                        unreachable!()
-                    };
-                Some(CallPathQualifiedSelf {
-                    position: qself.position - 1,
-                    path: Box::new(Self::parse_from_path(qself_path.path, qself_path.qself)?),
-                })
-            }
-            None => None,
+        let qualified_self = if let Some(qself) = qualified_self {
+            Some(Self::parse_qself(qself)?)
+        } else {
+            None
         };
         Ok(Self {
             has_leading_colon,
@@ -103,11 +149,59 @@ impl CallPath {
     }
 }
 
+impl Display for CallPathType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CallPathType::ResolvedPath(p) => {
+                write!(f, "{}", p)?;
+            }
+            CallPathType::Reference(r) => {
+                write!(f, "{}", r)?;
+            }
+            CallPathType::Tuple(t) => {
+                write!(f, "{}", t)?;
+            }
+        }
+        Ok(())
+    }
+}
+
+impl Display for CallPathTuple {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "(")?;
+        let last_argument_index = self.elements.len().saturating_sub(1);
+        for (i, element) in self.elements.iter().enumerate() {
+            write!(f, "{}", element)?;
+            if i != last_argument_index {
+                write!(f, ", ")?;
+            }
+        }
+        write!(f, ")")
+    }
+}
+
+impl Display for CallPathReference {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "&{}{}",
+            if self.is_mutable { "mut " } else { "" },
+            self.inner
+        )
+    }
+}
+
+impl Display for CallPathResolvedPathType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.path)
+    }
+}
+
 impl Display for CallPath {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut qself_closing_wedge_index = None;
         if let Some(qself) = &self.qualified_self {
-            write!(f, "<{} as ", qself.path)?;
+            write!(f, "<{} as ", qself.type_)?;
             qself_closing_wedge_index = Some(qself.position);
         }
         if self.has_leading_colon {
@@ -141,7 +235,7 @@ impl Display for CallPathSegment {
     }
 }
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, thiserror::Error, Clone)]
 pub struct InvalidCallPath {
     pub(crate) raw_identifiers: RawCallableIdentifiers,
     #[source]

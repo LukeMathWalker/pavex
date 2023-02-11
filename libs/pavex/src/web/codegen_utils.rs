@@ -1,5 +1,4 @@
-use std::collections::HashMap;
-
+use ahash::{HashMap, HashMapExt};
 use bimap::BiHashMap;
 use guppy::PackageId;
 use petgraph::stable_graph::NodeIndex;
@@ -55,10 +54,10 @@ pub(crate) fn codegen_call_block<'a, I>(
     callable: &Callable,
     blocks: &mut HashMap<NodeIndex, Fragment>,
     variable_generator: &mut VariableNameGenerator,
-    package_id2name: &BiHashMap<&PackageId, String>,
+    package_id2name: &BiHashMap<PackageId, String>,
 ) -> Result<Fragment, anyhow::Error>
 where
-    I: Iterator<Item = (NodeIndex, &'a ResolvedType)>,
+    I: Iterator<Item = (NodeIndex, ResolvedType)>,
 {
     let mut block = quote! {};
     let mut dependency_bindings: HashMap<ResolvedType, Box<dyn ToTokens>> = HashMap::new();
@@ -110,10 +109,13 @@ where
 pub(crate) fn codegen_call(
     callable: &Callable,
     variable_bindings: &HashMap<ResolvedType, Box<dyn ToTokens>>,
-    package_id2name: &BiHashMap<&PackageId, String>,
+    package_id2name: &BiHashMap<PackageId, String>,
 ) -> TokenStream {
-    let callable_path: syn::ExprPath =
-        syn::parse_str(&callable.path.render_path(package_id2name)).unwrap();
+    let callable_path: syn::ExprPath = {
+        let mut buffer = String::new();
+        callable.path.render_path(package_id2name, &mut buffer);
+        syn::parse_str(&buffer).unwrap()
+    };
     let mut invocation = match &callable.invocation_style {
         InvocationStyle::FunctionCall => {
             let parameters = callable.inputs.iter().map(|i| &variable_bindings[i]);

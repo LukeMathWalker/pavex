@@ -1,6 +1,7 @@
-use std::collections::{BTreeMap, HashSet};
+use std::collections::BTreeMap;
 use std::path::PathBuf;
 
+use ahash::HashSet;
 use bimap::{BiBTreeMap, BiHashMap};
 use cargo_manifest::{Dependency, DependencyDetail, Edition, MaybeInherited};
 use guppy::graph::PackageSource;
@@ -12,31 +13,40 @@ use syn::{ItemEnum, ItemFn, ItemStruct};
 
 use crate::language::{Callable, ResolvedType};
 use crate::rustdoc::TOOLCHAIN_CRATES;
+use crate::web::analyses::call_graph::{ApplicationStateCallGraph, CallGraph, CallGraphNode};
+use crate::web::analyses::components::{ComponentDb, HydratedComponent};
+use crate::web::analyses::computations::ComputationDb;
 use crate::web::app::GENERATED_APP_PACKAGE_ID;
-use crate::web::call_graph::{
-    ApplicationStateCallGraph, CallGraph, CallGraphNode, ComputeComponent,
-};
+use crate::web::computation::Computation;
 use crate::web::constructors::Constructor;
 
 pub(crate) fn codegen_app(
     handler_call_graphs: &IndexMap<String, CallGraph>,
     application_state_call_graph: &ApplicationStateCallGraph,
     request_scoped_framework_bindings: &BiHashMap<Ident, ResolvedType>,
-    package_id2name: &BiHashMap<&'_ PackageId, String>,
+    package_id2name: &BiHashMap<PackageId, String>,
     runtime_singleton_bindings: &BiHashMap<Ident, ResolvedType>,
+    component_db: &ComponentDb,
+    computation_db: &ComputationDb,
 ) -> Result<TokenStream, anyhow::Error> {
     let define_application_state =
         define_application_state(runtime_singleton_bindings, package_id2name);
-    let define_application_state_error =
-        define_application_state_error(&application_state_call_graph.error_types, package_id2name);
-    let application_state_init =
-        get_application_state_init(application_state_call_graph, package_id2name)?;
+    let define_application_state_error = define_application_state_error(
+        &application_state_call_graph.error_variants,
+        package_id2name,
+    );
+    let application_state_init = get_application_state_init(
+        application_state_call_graph,
+        package_id2name,
+        component_db,
+        computation_db,
+    )?;
     let define_server_state = define_server_state();
 
     let handler_functions: IndexMap<_, _> = handler_call_graphs
         .into_iter()
         .map(|(path, call_graph)| {
-            let code = call_graph.codegen(package_id2name)?;
+            let code = call_graph.codegen(package_id2name, component_db, computation_db)?;
             Ok::<_, anyhow::Error>((path, (code, call_graph.required_input_types())))
         })
         // TODO: wasteful
@@ -109,7 +119,7 @@ fn server_startup() -> ItemFn {
 
 fn define_application_state(
     runtime_singletons: &BiHashMap<Ident, ResolvedType>,
-    package_id2name: &BiHashMap<&'_ PackageId, String>,
+    package_id2name: &BiHashMap<PackageId, String>,
 ) -> ItemStruct {
     let singleton_fields = runtime_singletons.iter().map(|(field_name, type_)| {
         let field_type = type_.syn_type(package_id2name);
@@ -124,15 +134,15 @@ fn define_application_state(
 }
 
 fn define_application_state_error(
-    error_types: &IndexSet<ResolvedType>,
-    package_id2name: &BiHashMap<&'_ PackageId, String>,
+    error_types: &IndexMap<String, ResolvedType>,
+    package_id2name: &BiHashMap<PackageId, String>,
 ) -> Option<ItemEnum> {
     if error_types.is_empty() {
         return None;
     }
-    let singleton_fields = error_types.iter().map(|type_| {
+    let singleton_fields = error_types.iter().map(|(variant_name, type_)| {
         let variant_type = type_.syn_type(package_id2name);
-        let variant_name = format_ident!("{}", type_.base_type.last().unwrap());
+        let variant_name = format_ident!("{}", variant_name);
         quote! { #variant_name(#variant_type) }
     });
     // TODO: implement `Display` + `Error` for `ApplicationStateError`
@@ -159,13 +169,17 @@ fn define_server_state() -> ItemStruct {
 
 fn get_application_state_init(
     application_state_call_graph: &ApplicationStateCallGraph,
-    package_id2name: &BiHashMap<&'_ PackageId, String>,
+    package_id2name: &BiHashMap<PackageId, String>,
+    component_db: &ComponentDb,
+    computation_db: &ComputationDb,
 ) -> Result<ItemFn, anyhow::Error> {
-    let mut function = application_state_call_graph
-        .call_graph
-        .codegen(package_id2name)?;
+    let mut function = application_state_call_graph.call_graph.codegen(
+        package_id2name,
+        component_db,
+        computation_db,
+    )?;
     function.sig.ident = format_ident!("build_application_state");
-    if !application_state_call_graph.error_types.is_empty() {
+    if !application_state_call_graph.error_variants.is_empty() {
         function.sig.output = syn::ReturnType::Type(
             Default::default(),
             Box::new(syn::parse2(
@@ -205,12 +219,16 @@ fn get_request_dispatcher(
         let is_handler_async = handler.sig.asyncness.is_some();
         let handler_function_name = &handler.sig.ident;
         let input_parameters = handler_input_types.iter().map(|type_| {
-            let is_shared_reference = type_.is_shared_reference;
-            let inner_type = ResolvedType {
-                is_shared_reference: false,
-                ..type_.clone()
+            let mut is_shared_reference = false;
+            let inner_type = match type_ {
+                ResolvedType::ResolvedPath(_) => type_,
+                ResolvedType::Reference(r) => {
+                    is_shared_reference = true;
+                    &r.inner
+                }
+                ResolvedType::Tuple(_) => type_,
             };
-            if let Some(field_name) = singleton_bindings.get_by_right(&inner_type) {
+            if let Some(field_name) = singleton_bindings.get_by_right(inner_type) {
                 if is_shared_reference {
                     quote! {
                         &server_state.application_state.#field_name
@@ -258,13 +276,17 @@ pub(crate) fn codegen_manifest<'a>(
     application_state_call_graph: &'a CallGraph,
     request_scoped_framework_bindings: &'a BiHashMap<Ident, ResolvedType>,
     codegen_types: &'a HashSet<ResolvedType>,
-) -> (cargo_manifest::Manifest, BiHashMap<&'a PackageId, String>) {
+    component_db: &'a ComponentDb,
+    computation_db: &'a ComputationDb,
+) -> (cargo_manifest::Manifest, BiHashMap<PackageId, String>) {
     let (dependencies, package_ids2deps) = compute_dependencies(
         package_graph,
         handler_call_graphs,
         application_state_call_graph,
         request_scoped_framework_bindings,
         codegen_types,
+        component_db,
+        computation_db,
     );
     let manifest = cargo_manifest::Manifest {
         dependencies: Some(dependencies),
@@ -322,18 +344,19 @@ fn compute_dependencies<'a>(
     application_state_call_graph: &'a CallGraph,
     request_scoped_framework_bindings: &'a BiHashMap<Ident, ResolvedType>,
     codegen_types: &'a HashSet<ResolvedType>,
-) -> (
-    BTreeMap<String, Dependency>,
-    BiHashMap<&'a PackageId, String>,
-) {
+    component_db: &'a ComponentDb,
+    computation_db: &'a ComputationDb,
+) -> (BTreeMap<String, Dependency>, BiHashMap<PackageId, String>) {
     let package_ids = collect_package_ids(
         handler_call_graphs,
         application_state_call_graph,
         request_scoped_framework_bindings,
         codegen_types,
+        component_db,
+        computation_db,
     );
     #[allow(clippy::type_complexity)]
-    let mut external_crates: IndexMap<&str, IndexSet<(&Version, &PackageId, Option<PathBuf>)>> =
+    let mut external_crates: IndexMap<&str, IndexSet<(&Version, PackageId, Option<PathBuf>)>> =
         Default::default();
     let workspace_root = package_graph.workspace().root();
     for package_id in &package_ids {
@@ -355,7 +378,7 @@ fn compute_dependencies<'a>(
             };
             external_crates.entry(metadata.name()).or_default().insert((
                 metadata.version(),
-                package_id,
+                package_id.to_owned(),
                 path,
             ));
         }
@@ -399,53 +422,73 @@ fn collect_package_ids<'a>(
     application_state_call_graph: &'a CallGraph,
     request_scoped_framework_bindings: &'a BiHashMap<Ident, ResolvedType>,
     codegen_types: &'a HashSet<ResolvedType>,
-) -> IndexSet<&'a PackageId> {
+    component_db: &'a ComponentDb,
+    computation_db: &'a ComputationDb,
+) -> IndexSet<PackageId> {
     let mut package_ids = IndexSet::new();
     for t in request_scoped_framework_bindings.right_values() {
-        package_ids.insert(&t.package_id);
+        collect_type_package_ids(&mut package_ids, t);
     }
     for t in codegen_types {
-        package_ids.insert(&t.package_id);
+        collect_type_package_ids(&mut package_ids, t);
     }
-    collect_call_graph_package_ids(&mut package_ids, application_state_call_graph);
+    collect_call_graph_package_ids(
+        &mut package_ids,
+        component_db,
+        computation_db,
+        application_state_call_graph,
+    );
     for handler_call_graph in handler_call_graphs.values() {
-        collect_call_graph_package_ids(&mut package_ids, handler_call_graph);
+        collect_call_graph_package_ids(
+            &mut package_ids,
+            component_db,
+            computation_db,
+            handler_call_graph,
+        );
     }
     package_ids
 }
 
 fn collect_call_graph_package_ids<'a>(
-    package_ids: &mut IndexSet<&'a PackageId>,
+    package_ids: &mut IndexSet<PackageId>,
+    component_db: &'a ComponentDb,
+    computation_db: &'a ComputationDb,
     call_graph: &'a CallGraph,
 ) {
     for node in call_graph.call_graph.node_weights() {
         match node {
-            CallGraphNode::Compute { component, .. } => match component {
-                ComputeComponent::Constructor(c) => match c {
-                    Constructor::BorrowSharedReference(t) => {
-                        collect_type_package_ids(package_ids, &t.input)
+            CallGraphNode::Compute { component_id, .. } => {
+                let component = component_db.hydrated_component(*component_id, computation_db);
+                match component {
+                    HydratedComponent::Transformer(Computation::BorrowSharedReference(b))
+                    | HydratedComponent::Constructor(Constructor(
+                        Computation::BorrowSharedReference(b),
+                    )) => collect_type_package_ids(package_ids, &b.input),
+                    HydratedComponent::Transformer(Computation::Callable(c))
+                    | HydratedComponent::Constructor(Constructor(Computation::Callable(c))) => {
+                        collect_callable_package_ids(package_ids, &c);
                     }
-                    Constructor::Callable(c) => {
-                        collect_callable_package_ids(package_ids, c);
-                    }
-                    Constructor::MatchResult(m) => {
+                    HydratedComponent::Transformer(Computation::MatchResult(m))
+                    | HydratedComponent::Constructor(Constructor(Computation::MatchResult(m))) => {
                         collect_type_package_ids(package_ids, &m.input);
                         collect_type_package_ids(package_ids, &m.output);
                     }
-                },
-                ComputeComponent::ErrorHandler(e) => {
-                    collect_callable_package_ids(package_ids, e.as_ref())
+                    HydratedComponent::RequestHandler(r) => {
+                        collect_callable_package_ids(package_ids, &r.callable);
+                    }
+                    HydratedComponent::ErrorHandler(e) => {
+                        collect_callable_package_ids(package_ids, &e.callable)
+                    }
                 }
-                ComputeComponent::Transformer(t) => collect_callable_package_ids(package_ids, t),
-            },
+            }
             CallGraphNode::InputParameter(t) => collect_type_package_ids(package_ids, t),
             CallGraphNode::MatchBranching => {}
         }
     }
 }
 
-fn collect_callable_package_ids<'a>(package_ids: &mut IndexSet<&'a PackageId>, c: &'a Callable) {
-    package_ids.insert(&c.path.package_id);
+fn collect_callable_package_ids(package_ids: &mut IndexSet<PackageId>, c: &Callable) {
+    package_ids.insert(c.path.package_id.clone());
     for input in &c.inputs {
         collect_type_package_ids(package_ids, input);
     }
@@ -454,9 +497,19 @@ fn collect_callable_package_ids<'a>(package_ids: &mut IndexSet<&'a PackageId>, c
     }
 }
 
-fn collect_type_package_ids<'a>(package_ids: &mut IndexSet<&'a PackageId>, t: &'a ResolvedType) {
-    package_ids.insert(&t.package_id);
-    for generic in &t.generic_arguments {
-        collect_type_package_ids(package_ids, generic);
+fn collect_type_package_ids(package_ids: &mut IndexSet<PackageId>, t: &ResolvedType) {
+    match t {
+        ResolvedType::ResolvedPath(t) => {
+            package_ids.insert(t.package_id.clone());
+            for generic in &t.generic_arguments {
+                collect_type_package_ids(package_ids, generic);
+            }
+        }
+        ResolvedType::Reference(t) => collect_type_package_ids(package_ids, &t.inner),
+        ResolvedType::Tuple(t) => {
+            for element in &t.elements {
+                collect_type_package_ids(package_ids, element)
+            }
+        }
     }
 }

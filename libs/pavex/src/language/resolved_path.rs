@@ -1,22 +1,19 @@
 use std::fmt::Write;
 use std::fmt::{Display, Formatter};
 use std::hash::{Hash, Hasher};
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
+use std::sync::Arc;
 
 use anyhow::Context;
 use bimap::BiHashMap;
-use guppy::graph::PackageGraph;
 use guppy::PackageId;
 use itertools::Itertools;
 use quote::format_ident;
 
-use pavex_builder::{AppBlueprint, RawCallableIdentifiers};
+use pavex_builder::RawCallableIdentifiers;
 
-use crate::diagnostic;
-use crate::diagnostic::{
-    get_registration_location, CompilerDiagnostic, LocationExt, OptionalSourceSpanExt,
-};
-use crate::language::{CallPath, InvalidCallPath};
+use crate::language::callable_path::CallPathType;
+use crate::language::{CallPath, InvalidCallPath, ResolvedType, Tuple, TypeReference};
 use crate::rustdoc::{CrateCollection, GlobalItemId};
 use crate::rustdoc::{ResolvedItemWithParent, TOOLCHAIN_CRATES};
 
@@ -51,13 +48,112 @@ pub struct ResolvedPath {
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct ResolvedPathQualifiedSelf {
     pub position: usize,
-    pub path: Box<ResolvedPath>,
+    pub type_: ResolvedPathType,
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct ResolvedPathSegment {
     pub ident: String,
-    pub generic_arguments: Vec<ResolvedPath>,
+    pub generic_arguments: Vec<ResolvedPathType>,
+}
+
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+pub enum ResolvedPathType {
+    ResolvedPath(ResolvedPathResolvedPathType),
+    Reference(ResolvedPathReference),
+    Tuple(ResolvedPathTuple),
+}
+
+impl ResolvedPathType {
+    pub fn resolve(
+        &self,
+        krate_collection: &CrateCollection,
+    ) -> Result<ResolvedType, anyhow::Error> {
+        match self {
+            ResolvedPathType::ResolvedPath(p) => {
+                let resolved_item = p.path.find_rustdoc_items(krate_collection)?.0.item;
+                let item = &resolved_item.item;
+                let used_by_package_id = resolved_item.item_id.package_id();
+                let (global_type_id, base_type) = krate_collection
+                    .get_canonical_path_by_local_type_id(used_by_package_id, &item.id)?;
+                let mut generic_arguments = vec![];
+                for segment in &p.path.segments {
+                    for generic_path in &segment.generic_arguments {
+                        let generic_type = generic_path.resolve(krate_collection)?;
+                        generic_arguments.push(generic_type);
+                    }
+                }
+                Ok(crate::language::resolved_type::ResolvedPathType {
+                    package_id: global_type_id.package_id().to_owned(),
+                    rustdoc_id: Some(global_type_id.rustdoc_item_id),
+                    base_type: base_type.to_vec(),
+                    generic_arguments,
+                }
+                .into())
+            }
+            ResolvedPathType::Reference(r) => Ok(ResolvedType::Reference(TypeReference {
+                is_mutable: r.is_mutable,
+                inner: Box::new(r.inner.resolve(krate_collection)?),
+            })),
+            ResolvedPathType::Tuple(t) => {
+                let elements = t
+                    .elements
+                    .iter()
+                    .map(|e| e.resolve(krate_collection))
+                    .collect::<Result<Vec<_>, _>>()?;
+                Ok(ResolvedType::Tuple(Tuple { elements }))
+            }
+        }
+    }
+}
+
+impl From<ResolvedType> for ResolvedPathType {
+    fn from(value: ResolvedType) -> Self {
+        match value {
+            ResolvedType::ResolvedPath(p) => {
+                let mut segments: Vec<ResolvedPathSegment> = p
+                    .base_type
+                    .iter()
+                    .map(|s| ResolvedPathSegment {
+                        ident: s.to_string(),
+                        generic_arguments: vec![],
+                    })
+                    .collect();
+                segments[0].generic_arguments =
+                    p.generic_arguments.into_iter().map(|t| t.into()).collect();
+                ResolvedPathType::ResolvedPath(ResolvedPathResolvedPathType {
+                    path: Box::new(ResolvedPath {
+                        segments,
+                        qualified_self: None,
+                        package_id: p.package_id,
+                    }),
+                })
+            }
+            ResolvedType::Reference(r) => ResolvedPathType::Reference(ResolvedPathReference {
+                is_mutable: r.is_mutable,
+                inner: Box::new((*r.inner).into()),
+            }),
+            ResolvedType::Tuple(t) => ResolvedPathType::Tuple(ResolvedPathTuple {
+                elements: t.elements.into_iter().map(|e| e.into()).collect(),
+            }),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+pub struct ResolvedPathResolvedPathType {
+    pub path: Box<ResolvedPath>,
+}
+
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+pub struct ResolvedPathReference {
+    pub is_mutable: bool,
+    pub inner: Box<ResolvedPathType>,
+}
+
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+pub struct ResolvedPathTuple {
+    pub elements: Vec<ResolvedPathType>,
 }
 
 impl PartialEq for ResolvedPath {
@@ -123,7 +219,7 @@ impl ResolvedPath {
         identifiers: &RawCallableIdentifiers,
         graph: &guppy::graph::PackageGraph,
     ) -> Result<Self, ParseError> {
-        fn replace_crate_with_registration_crate(
+        fn replace_crate_in_path_with_registration_crate(
             p: &mut CallPath,
             identifiers: &RawCallableIdentifiers,
         ) {
@@ -138,17 +234,68 @@ impl ResolvedPath {
             }
             for segment in p.segments.iter_mut() {
                 for generic_argument in segment.generic_arguments.iter_mut() {
-                    replace_crate_with_registration_crate(generic_argument, identifiers);
+                    replace_crate_in_type_with_registration_crate(generic_argument, identifiers);
+                }
+            }
+        }
+
+        fn replace_crate_in_type_with_registration_crate(
+            t: &mut CallPathType,
+            identifiers: &RawCallableIdentifiers,
+        ) {
+            match t {
+                CallPathType::ResolvedPath(p) => {
+                    replace_crate_in_path_with_registration_crate(p.path.deref_mut(), identifiers)
+                }
+                CallPathType::Reference(r) => {
+                    replace_crate_in_type_with_registration_crate(r.inner.deref_mut(), identifiers)
+                }
+                CallPathType::Tuple(t) => {
+                    for element in t.elements.iter_mut() {
+                        replace_crate_in_type_with_registration_crate(element, identifiers);
+                    }
                 }
             }
         }
 
         let mut path = CallPath::parse(identifiers)?;
-        replace_crate_with_registration_crate(&mut path, identifiers);
+        replace_crate_in_path_with_registration_crate(&mut path, identifiers);
         if let Some(qself) = &mut path.qualified_self {
-            replace_crate_with_registration_crate(&mut qself.path, identifiers);
+            replace_crate_in_type_with_registration_crate(&mut qself.type_, identifiers);
         }
         Self::parse_call_path(&path, identifiers, graph)
+    }
+
+    fn parse_call_path_type(
+        type_: &CallPathType,
+        identifiers: &RawCallableIdentifiers,
+        graph: &guppy::graph::PackageGraph,
+    ) -> Result<ResolvedPathType, ParseError> {
+        match type_ {
+            CallPathType::ResolvedPath(p) => {
+                let resolved_path = Self::parse_call_path(p.path.deref(), identifiers, graph)?;
+                Ok(ResolvedPathType::ResolvedPath(
+                    ResolvedPathResolvedPathType {
+                        path: Box::new(resolved_path),
+                    },
+                ))
+            }
+            CallPathType::Reference(r) => Ok(ResolvedPathType::Reference(ResolvedPathReference {
+                is_mutable: r.is_mutable,
+                inner: Box::new(Self::parse_call_path_type(
+                    r.inner.deref(),
+                    identifiers,
+                    graph,
+                )?),
+            })),
+            CallPathType::Tuple(t) => {
+                let mut elements = Vec::with_capacity(t.elements.len());
+                for element in t.elements.iter() {
+                    elements.push(Self::parse_call_path_type(element, identifiers, graph)?);
+                }
+                Ok(ResolvedPathType::Tuple(ResolvedPathTuple { elements }))
+            }
+        }
     }
 
     fn parse_call_path(
@@ -164,7 +311,7 @@ impl ResolvedPath {
             let generic_arguments = raw_segment
                 .generic_arguments
                 .iter()
-                .map(|arg| Self::parse_call_path(arg, identifiers, graph))
+                .map(|arg| Self::parse_call_path_type(arg, identifiers, graph))
                 .collect::<Result<Vec<_>, _>>()?;
             let segment = ResolvedPathSegment {
                 ident: raw_segment.ident.to_string(),
@@ -173,15 +320,13 @@ impl ResolvedPath {
             segments.push(segment);
         }
 
-        let qself = match &path.qualified_self {
-            Some(qself) => {
-                let qself_path = Self::parse_call_path(&qself.path, identifiers, graph)?;
-                Some(ResolvedPathQualifiedSelf {
-                    position: qself.position,
-                    path: Box::new(qself_path),
-                })
-            }
-            None => None,
+        let qself = if let Some(qself) = &path.qualified_self {
+            Some(ResolvedPathQualifiedSelf {
+                position: qself.position,
+                type_: Self::parse_call_path_type(&qself.type_, identifiers, graph)?,
+            })
+        } else {
+            None
         };
 
         let registration_package = graph.packages()
@@ -198,7 +343,6 @@ impl ResolvedPath {
             PackageId::new(krate_name_candidate.clone())
         } else {
             return Err(PathMustBeAbsolute {
-                raw_identifiers: identifiers.to_owned(),
                 relative_path: path.to_string(),
             }
             .into());
@@ -238,7 +382,7 @@ impl ResolvedPath {
             .collect();
         match krate.get_type_id_by_path(&path_segments) {
             Ok(type_id) => Ok(type_id.to_owned()),
-            Err(e) => Err(UnknownPath(self.to_owned(), e.into())),
+            Err(e) => Err(UnknownPath(self.to_owned(), Arc::new(e.into()))),
         }
     }
 
@@ -250,13 +394,7 @@ impl ResolvedPath {
     pub fn find_rustdoc_items<'a>(
         &self,
         krate_collection: &'a CrateCollection,
-    ) -> Result<
-        (
-            ResolvedItemWithParent<'a>,
-            Option<ResolvedItemWithParent<'a>>,
-        ),
-        UnknownPath,
-    > {
+    ) -> Result<(ResolvedItemWithParent<'a>, Option<ResolvedType>), UnknownPath> {
         let path: Vec<_> = self
             .segments
             .iter()
@@ -266,28 +404,17 @@ impl ResolvedPath {
             .get_item_by_resolved_path(&path, &self.package_id)
             // TODO: Remove this unwrap
             .unwrap()
-            .map_err(|e| UnknownPath(self.to_owned(), e.into()))?;
-        let qself_ty = match &self.qualified_self {
-            None => None,
-            Some(ResolvedPathQualifiedSelf { path, .. }) => {
-                let segments: Vec<_> = path
-                    .segments
-                    .iter()
-                    .map(|path_segment| path_segment.ident.to_string())
-                    .collect();
-                let ty = krate_collection
-                    .get_item_by_resolved_path(&segments, &self.package_id)
-                    // TODO: Remove this unwrap
-                    .unwrap()
-                    .map_err(|e| UnknownPath(path.deref().to_owned(), e.into()))?;
-                Some(ty)
-            }
+            .map_err(|e| UnknownPath(self.to_owned(), Arc::new(e.into())))?;
+        let qself_ty = if let Some(qself) = &self.qualified_self {
+            // TODO: remove unwrap
+            Some(qself.type_.resolve(krate_collection).unwrap())
+        } else {
+            None
         };
         Ok((ty, qself_ty))
     }
 
-    pub fn render_path(&self, id2name: &BiHashMap<&PackageId, String>) -> String {
-        let mut buffer = String::new();
+    pub fn render_path(&self, id2name: &BiHashMap<PackageId, String>, buffer: &mut String) {
         let crate_name = id2name
             .get_by_left(&self.package_id)
             .with_context(|| {
@@ -299,29 +426,70 @@ impl ResolvedPath {
             .unwrap();
         let mut qself_closing_wedge_index = None;
         if let Some(qself) = &self.qualified_self {
-            write!(&mut buffer, "<{} as ", qself.path.render_path(id2name)).unwrap();
-            qself_closing_wedge_index = Some(qself.position);
+            write!(buffer, "<").unwrap();
+            qself.type_.render_path(id2name, buffer);
+            write!(buffer, " as ",).unwrap();
+            qself_closing_wedge_index = Some(qself.position.saturating_sub(1));
         }
-        write!(&mut buffer, "{crate_name}").unwrap();
+        write!(buffer, "{crate_name}").unwrap();
         for (index, path_segment) in self.segments[1..].iter().enumerate() {
-            write!(&mut buffer, "::{}", path_segment.ident).unwrap();
+            write!(buffer, "::{}", path_segment.ident).unwrap();
             let generic_arguments = &path_segment.generic_arguments;
             if !generic_arguments.is_empty() {
-                write!(&mut buffer, "::<").unwrap();
+                write!(buffer, "::<").unwrap();
                 let mut arguments = generic_arguments.iter().peekable();
                 while let Some(argument) = arguments.next() {
-                    write!(&mut buffer, "{}", argument.render_path(id2name)).unwrap();
+                    argument.render_path(id2name, buffer);
                     if arguments.peek().is_some() {
-                        write!(&mut buffer, ", ").unwrap();
+                        write!(buffer, ", ").unwrap();
                     }
                 }
-                write!(&mut buffer, ">").unwrap();
+                write!(buffer, ">").unwrap();
             }
             if Some(index + 1) == qself_closing_wedge_index {
-                write!(&mut buffer, ">").unwrap();
+                write!(buffer, ">").unwrap();
             }
         }
-        buffer
+    }
+}
+
+impl ResolvedPathType {
+    pub fn render_path(&self, id2name: &BiHashMap<PackageId, String>, buffer: &mut String) {
+        match self {
+            ResolvedPathType::ResolvedPath(p) => p.render_path(id2name, buffer),
+            ResolvedPathType::Reference(r) => r.render_path(id2name, buffer),
+            ResolvedPathType::Tuple(t) => t.render_path(id2name, buffer),
+        }
+    }
+}
+
+impl ResolvedPathResolvedPathType {
+    pub fn render_path(&self, id2name: &BiHashMap<PackageId, String>, buffer: &mut String) {
+        self.path.render_path(id2name, buffer);
+    }
+}
+
+impl ResolvedPathTuple {
+    pub fn render_path(&self, id2name: &BiHashMap<PackageId, String>, buffer: &mut String) {
+        write!(buffer, "(").unwrap();
+        let mut types = self.elements.iter().peekable();
+        while let Some(ty) = types.next() {
+            ty.render_path(id2name, buffer);
+            if types.peek().is_some() {
+                write!(buffer, ", ").unwrap();
+            }
+        }
+        write!(buffer, ")").unwrap();
+    }
+}
+
+impl ResolvedPathReference {
+    pub fn render_path(&self, id2name: &BiHashMap<PackageId, String>, buffer: &mut String) {
+        write!(buffer, "&").unwrap();
+        if self.is_mutable {
+            write!(buffer, "mut ").unwrap();
+        }
+        self.inner.render_path(id2name, buffer);
     }
 }
 
@@ -330,8 +498,8 @@ impl Display for ResolvedPath {
         let last_segment_index = self.segments.len().saturating_sub(1);
         let mut qself_closing_wedge_index = None;
         if let Some(qself) = &self.qualified_self {
-            write!(f, "<{} as ", qself.path)?;
-            qself_closing_wedge_index = Some(qself.position);
+            write!(f, "<{} as ", qself.type_)?;
+            qself_closing_wedge_index = Some(qself.position.saturating_sub(1))
         }
         for (i, segment) in self.segments.iter().enumerate() {
             write!(f, "{segment}")?;
@@ -343,6 +511,46 @@ impl Display for ResolvedPath {
             }
         }
         Ok(())
+    }
+}
+
+impl Display for ResolvedPathType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ResolvedPathType::ResolvedPath(p) => write!(f, "{}", p),
+            ResolvedPathType::Reference(r) => write!(f, "{}", r),
+            ResolvedPathType::Tuple(t) => write!(f, "{}", t),
+        }
+    }
+}
+
+impl Display for ResolvedPathResolvedPathType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.path)
+    }
+}
+
+impl Display for ResolvedPathReference {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "&")?;
+        if self.is_mutable {
+            write!(f, "mut ")?;
+        }
+        write!(f, "{}", self.inner)
+    }
+}
+
+impl Display for ResolvedPathTuple {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "(")?;
+        let last_element_index = self.elements.len().saturating_sub(1);
+        for (i, element) in self.elements.iter().enumerate() {
+            write!(f, "{}", element)?;
+            if i != last_element_index {
+                write!(f, ", ")?;
+            }
+        }
+        write!(f, ")")
     }
 }
 
@@ -366,7 +574,7 @@ impl Display for ResolvedPathSegment {
     }
 }
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, thiserror::Error, Clone)]
 pub enum ParseError {
     #[error(transparent)]
     InvalidPath(#[from] InvalidCallPath),
@@ -374,44 +582,8 @@ pub enum ParseError {
     PathMustBeAbsolute(#[from] PathMustBeAbsolute),
 }
 
-impl ParseError {
-    pub(crate) fn raw_identifiers(&self) -> &RawCallableIdentifiers {
-        match self {
-            ParseError::InvalidPath(e) => &e.raw_identifiers,
-            ParseError::PathMustBeAbsolute(e) => &e.raw_identifiers,
-        }
-    }
-
-    pub(crate) fn into_diagnostic(
-        self,
-        app_blueprint: &AppBlueprint,
-        package_graph: &PackageGraph,
-    ) -> Result<CompilerDiagnostic, miette::Error> {
-        let location = get_registration_location(app_blueprint, self.raw_identifiers()).unwrap();
-        let source = location.source_file(package_graph)?;
-        let source_span = diagnostic::get_f_macro_invocation_span(&source, location);
-        let (label, help) = match self {
-            ParseError::InvalidPath(_) => ("The invalid import path was registered here", None),
-            ParseError::PathMustBeAbsolute(_) => (
-                "The relative import path was registered here",
-                Some(
-                    "If it is a local import, the path must start with `crate::`.\n\
-                    If it is an import from a dependency, the path must start with \
-                    the dependency name (e.g. `dependency::`).",
-                ),
-            ),
-        };
-        let diagnostic = CompilerDiagnostic::builder(source, self)
-            .optional_label(source_span.labeled(label.into()))
-            .optional_help(help.map(ToOwned::to_owned))
-            .build();
-        Ok(diagnostic)
-    }
-}
-
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, thiserror::Error, Clone)]
 pub struct PathMustBeAbsolute {
-    pub(crate) raw_identifiers: RawCallableIdentifiers,
     pub(crate) relative_path: String,
 }
 
@@ -425,8 +597,8 @@ impl Display for PathMustBeAbsolute {
     }
 }
 
-#[derive(thiserror::Error, Debug)]
-pub struct UnknownPath(pub ResolvedPath, #[source] anyhow::Error);
+#[derive(thiserror::Error, Debug, Clone)]
+pub struct UnknownPath(pub ResolvedPath, #[source] Arc<anyhow::Error>);
 
 impl Display for UnknownPath {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
