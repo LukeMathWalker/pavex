@@ -4,10 +4,7 @@ pub use miette_utils::{
     convert_proc_macro_span, convert_rustdoc_span, OptionalSourceSpanExt, SourceSpanExt,
 };
 pub use proc_macro_utils::ProcMacroSpanExt;
-pub use registration_locations::{
-    get_f_macro_invocation_span, get_registration_location,
-    get_registration_location_for_a_request_handler,
-};
+pub use registration_locations::get_f_macro_invocation_span;
 pub use source_file::{read_source_file, LocationExt, ParsedSourceFile};
 
 mod compiler_diagnostic;

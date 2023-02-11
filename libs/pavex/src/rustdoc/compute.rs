@@ -1,4 +1,5 @@
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use anyhow::Context;
 use guppy::Version;
@@ -7,12 +8,12 @@ use crate::rustdoc::package_id_spec::PackageIdSpecification;
 use crate::rustdoc::utils::normalize_crate_name;
 use crate::rustdoc::TOOLCHAIN_CRATES;
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, thiserror::Error, Clone)]
 #[error("I failed to retrieve information about the public types of a package in your workspace ('{package_spec}').")]
 pub struct CannotGetCrateData {
     pub package_spec: String,
     #[source]
-    pub source: anyhow::Error,
+    pub source: Arc<anyhow::Error>,
 }
 
 fn format_optional_version(v: &Option<Version>) -> Option<tracing::field::DisplayValue<String>> {
@@ -61,7 +62,7 @@ pub(super) fn compute_crate_docs(
     }
     .map_err(|e| CannotGetCrateData {
         package_spec: package_id_spec.to_string(),
-        source: e,
+        source: Arc::new(e),
     })
 }
 
@@ -105,9 +106,7 @@ fn get_nightly_toolchain_root_folder_via_rustup() -> Result<PathBuf, anyhow::Err
         .arg("cargo");
 
     let output = cmd.output().with_context(|| {
-        format!(
-            "Failed to run a `rustup` command. Is `rustup` installed?\n{cmd:?}"
-        )
+        format!("Failed to run a `rustup` command. Is `rustup` installed?\n{cmd:?}")
     })?;
 
     if !output.status.success() {
@@ -118,9 +117,7 @@ fn get_nightly_toolchain_root_folder_via_rustup() -> Result<PathBuf, anyhow::Err
     }
     let path = std::str::from_utf8(&output.stdout)
         .with_context(|| {
-            format!(
-                "An invocation of `rustup` returned non-UTF8 data as output.\n{cmd:?}"
-            )
+            format!("An invocation of `rustup` returned non-UTF8 data as output.\n{cmd:?}")
         })?
         .trim();
     let path = Path::new(path);
@@ -166,14 +163,10 @@ fn _compute_crate_docs(
     ));
 
     let json = fs_err::read_to_string(json_path).with_context(|| {
-        format!(
-            "Failed to read the output of a `cargo rustdoc` invocation.\n{cmd:?}"
-        )
+        format!("Failed to read the output of a `cargo rustdoc` invocation.\n{cmd:?}")
     })?;
     let krate = serde_json::from_str::<rustdoc_types::Crate>(&json).with_context(|| {
-        format!(
-            "Failed to deserialize the output of a `cargo rustdoc` invocation.\n{cmd:?}"
-        )
+        format!("Failed to deserialize the output of a `cargo rustdoc` invocation.\n{cmd:?}")
     })?;
     Ok(krate)
 }

@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::fmt::Write;
 use std::path::PathBuf;
 use std::process::Output;
@@ -8,6 +7,7 @@ use console::style;
 use libtest_mimic::{Conclusion, Failed};
 use toml::toml;
 
+use ahash::HashMap;
 pub use snapshot::print_changeset;
 
 use crate::snapshot::SnapshotTest;

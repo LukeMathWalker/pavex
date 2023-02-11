@@ -1,8 +1,9 @@
 use std::borrow::Cow;
-use std::collections::{BTreeSet, HashMap};
+use std::collections::BTreeSet;
 use std::fmt;
 use std::fmt::{Display, Formatter};
 
+use ahash::{HashMap, HashMapExt};
 use anyhow::{anyhow, Context};
 use elsa::FrozenMap;
 use guppy::graph::PackageGraph;

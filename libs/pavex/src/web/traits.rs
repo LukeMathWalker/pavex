@@ -1,20 +1,11 @@
-use std::collections::{HashMap, HashSet};
 use std::fmt::Formatter;
 
-use bimap::BiHashMap;
-use guppy::graph::PackageGraph;
-use indexmap::IndexMap;
+use ahash::{HashMap, HashMapExt};
+use guppy::PackageId;
 use rustdoc_types::{GenericParamDefKind, ItemEnum, Type};
 
-use pavex_builder::Location;
-use pavex_builder::RawCallableIdentifiers;
-
-use crate::diagnostic;
-use crate::diagnostic::CompilerDiagnostic;
-use crate::diagnostic::{LocationExt, SourceSpanExt};
-use crate::language::{Callable, ResolvedPath, ResolvedType};
+use crate::language::{ResolvedPathType, ResolvedType};
 use crate::rustdoc::CrateCollection;
-use crate::web::constructors::Constructor;
 use crate::web::resolvers::resolve_type;
 
 /// It returns an error if `type_` does not implement the specified trait.
@@ -24,12 +15,12 @@ use crate::web::resolvers::resolve_type;
 pub(crate) fn assert_trait_is_implemented(
     krate_collection: &CrateCollection,
     type_: &ResolvedType,
-    expected_trait: &ResolvedType,
+    expected_trait: &ResolvedPathType,
 ) -> Result<(), MissingTraitImplementationError> {
     if !implements_trait(krate_collection, type_, expected_trait) {
         Err(MissingTraitImplementationError {
             type_: type_.to_owned(),
-            trait_: expected_trait.to_owned(),
+            trait_: expected_trait.to_owned().into(),
         })
     } else {
         Ok(())
@@ -43,86 +34,8 @@ pub(crate) fn assert_trait_is_implemented(
 pub(crate) fn implements_trait(
     krate_collection: &CrateCollection,
     type_: &ResolvedType,
-    expected_trait: &ResolvedType,
+    expected_trait: &ResolvedPathType,
 ) -> bool {
-    let type_definition_crate = krate_collection.get_crate_by_package_id(&type_.package_id);
-    let type_id = type_definition_crate
-        .get_type_id_by_path(&type_.base_type)
-        .unwrap();
-    let type_item = krate_collection.get_type_by_global_type_id(type_id);
-    if let ItemEnum::Typedef(typedef) = &type_item.inner {
-        let mut generic_bindings = HashMap::new();
-        for generic in &typedef.generics.params {
-            match &generic.kind {
-                GenericParamDefKind::Type {
-                    default: Some(default),
-                    ..
-                } => {
-                    let default = resolve_type(
-                        default,
-                        &type_.package_id,
-                        krate_collection,
-                        &generic_bindings,
-                    )
-                    .unwrap();
-                    generic_bindings.insert(generic.name.to_string(), default);
-                }
-                GenericParamDefKind::Type { default: None, .. }
-                | GenericParamDefKind::Const { .. }
-                | GenericParamDefKind::Lifetime { .. } => {
-                    todo!("Generic parameters other than type parameters with a default value are not supported yet. I cannot handle:\n {:?}", generic)
-                }
-            }
-        }
-        let type_ = resolve_type(
-            &typedef.type_,
-            &type_.package_id,
-            krate_collection,
-            &generic_bindings,
-        )
-        .unwrap();
-        return implements_trait(krate_collection, &type_, expected_trait);
-    }
-
-    // Due to Rust's orphan rule, a trait implementation for a type can live in two places:
-    // - In the crate where the type was defined;
-    // - In the crate where the trait was defined.
-    // We start by checking if there is a trait implementation for this type in the crate where the
-    // type was defined.
-    let impls = match &type_item.inner {
-        ItemEnum::Struct(s) => &s.impls,
-        ItemEnum::Enum(e) => &e.impls,
-        n => {
-            dbg!(n);
-            unreachable!()
-        }
-    };
-    for impl_id in impls {
-        let trait_id = match &type_definition_crate
-            .get_type_by_local_type_id(impl_id)
-            .inner
-        {
-            ItemEnum::Impl(impl_) => {
-                if impl_.negative {
-                    continue;
-                }
-                impl_.trait_.as_ref().map(|p| &p.id)
-            }
-            _ => unreachable!(),
-        };
-        if let Some(trait_id) = trait_id {
-            if let Ok((_, trait_path)) =
-                krate_collection.get_canonical_path_by_local_type_id(&type_.package_id, trait_id)
-            {
-                if trait_path == expected_trait.base_type {
-                    return true;
-                }
-            }
-        }
-    }
-
-    // We check if there is a trait implementation for this type in the crate where the trait
-    // was defined.
     let trait_definition_crate =
         krate_collection.get_crate_by_package_id(&expected_trait.package_id);
     let trait_item_id = trait_definition_crate
@@ -131,13 +44,123 @@ pub(crate) fn implements_trait(
     let trait_item = krate_collection.get_type_by_global_type_id(trait_item_id);
     let ItemEnum::Trait(trait_item) = &trait_item.inner else { unreachable!() };
 
+    // Due to Rust's orphan rule, a trait implementation for a type can live in two places:
+    // - In the crate where the type was defined;
+    // - In the crate where the trait was defined.
+    // We start by checking if there is a trait implementation for this type in the crate where the
+    // type was defined.
+    match type_ {
+        ResolvedType::ResolvedPath(our_path_type) => {
+            let type_definition_crate =
+                krate_collection.get_crate_by_package_id(&our_path_type.package_id);
+            let type_id = type_definition_crate
+                .get_type_id_by_path(&our_path_type.base_type)
+                .unwrap();
+            let type_item = krate_collection.get_type_by_global_type_id(type_id);
+            // We want to see through type aliases here.
+            if let ItemEnum::Typedef(typedef) = &type_item.inner {
+                let mut generic_bindings = HashMap::new();
+                for generic in &typedef.generics.params {
+                    // We also try to handle generic parameters, as long as they have a default value.
+                    match &generic.kind {
+                        GenericParamDefKind::Type {
+                            default: Some(default),
+                            ..
+                        } => {
+                            let default = resolve_type(
+                                default,
+                                &our_path_type.package_id,
+                                krate_collection,
+                                &generic_bindings,
+                            )
+                            .unwrap();
+                            generic_bindings.insert(generic.name.to_string(), default);
+                        }
+                        GenericParamDefKind::Type { default: None, .. }
+                        | GenericParamDefKind::Const { .. }
+                        | GenericParamDefKind::Lifetime { .. } => {
+                            todo!("Generic parameters other than type parameters with a default value are not supported yet. I cannot handle:\n {:?}", generic)
+                        }
+                    }
+                }
+                let type_ = resolve_type(
+                    &typedef.type_,
+                    &our_path_type.package_id,
+                    krate_collection,
+                    &generic_bindings,
+                )
+                .unwrap();
+                return implements_trait(krate_collection, &type_, expected_trait);
+            }
+            let impls = match &type_item.inner {
+                ItemEnum::Struct(s) => &s.impls,
+                ItemEnum::Enum(e) => &e.impls,
+                n => {
+                    dbg!(n);
+                    unreachable!()
+                }
+            };
+            for impl_id in impls {
+                let (trait_id, implementer_type) = match &type_definition_crate
+                    .get_type_by_local_type_id(impl_id)
+                    .inner
+                {
+                    ItemEnum::Impl(impl_) => {
+                        if impl_.negative {
+                            continue;
+                        }
+                        (impl_.trait_.as_ref().map(|p| &p.id), &impl_.for_)
+                    }
+                    _ => unreachable!(),
+                };
+                if let Some(trait_id) = trait_id {
+                    if let Ok((_, trait_path)) = krate_collection
+                        .get_canonical_path_by_local_type_id(&our_path_type.package_id, trait_id)
+                    {
+                        if trait_path == expected_trait.base_type
+                            // The "impls" for a rustdoc item include implementations for
+                            // references to the type!
+                            // Therefore we must verify that the implementer type is indeed the
+                            // "owned" version of our type.
+                            && is_equivalent(implementer_type, type_, krate_collection, &our_path_type.package_id)
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        ResolvedType::Tuple(t) => {
+            // Tuple trait implementations in std are somewhat magical
+            // (see https://doc.rust-lang.org/std/primitive.tuple.html#trait-implementations-1).
+            // We handle the ones we know we care about (marker traits and Clone).
+            if expected_trait.base_type == ["core", "marker", "Send"]
+                || expected_trait.base_type == ["core", "marker", "Sync"]
+                || expected_trait.base_type == ["core", "marker", "Copy"]
+                || expected_trait.base_type == ["core", "marker", "Unpin"]
+                || expected_trait.base_type == ["core", "clone", "Clone"]
+            {
+                return t
+                    .elements
+                    .iter()
+                    .all(|t| implements_trait(krate_collection, t, expected_trait));
+            }
+        }
+        ResolvedType::Reference(_r) => {
+            todo!()
+        }
+    }
+
+    // We check if there is a trait implementation for this type in the crate where the trait
+    // was defined.
+
     // Auto-traits (e.g. Send, Sync, etc.) always appear as implemented in the crate where
     // the implementer is defined.
     if trait_item.is_auto {
         return false;
     }
 
-    'outer: for impl_id in &trait_item.implementations {
+    for impl_id in &trait_item.implementations {
         let implementer = match &trait_definition_crate
             .get_type_by_local_type_id(impl_id)
             .inner
@@ -153,57 +176,89 @@ pub(crate) fn implements_trait(
                 unreachable!()
             }
         };
-        let implementer_id = match implementer {
-            Type::ResolvedPath(p) => &p.id,
-            Type::BorrowedRef { type_, .. } => match &**type_ {
-                Type::ResolvedPath(p) => &p.id,
-                _ => {
-                    continue;
-                }
-            },
-            _ => {
-                continue;
-            }
-        };
-        let Ok((mut implementer_id, _)) = krate_collection
-            .get_canonical_path_by_local_type_id(&trait_item_id.package_id, implementer_id)
-            else {
-                continue;
-            };
-        // We want to see through type aliases
-        'inner: loop {
-            let implementer_item = krate_collection.get_type_by_global_type_id(&implementer_id);
-            if let ItemEnum::Typedef(typedef) = &implementer_item.inner {
-                let local_id = match &typedef.type_ {
-                    Type::ResolvedPath(p) => &p.id,
-                    Type::BorrowedRef { type_, .. } => match &**type_ {
-                        Type::ResolvedPath(p) => &p.id,
-                        n => {
-                            dbg!("Not yet implemented: {:?}", n);
-                            continue 'outer;
-                        }
-                    },
-                    n => {
-                        dbg!("Not yet implemented: {:?}", n);
-                        break 'outer;
-                    }
-                };
-                implementer_id = krate_collection
-                    .get_canonical_path_by_local_type_id(&implementer_id.package_id, local_id)
-                    .unwrap()
-                    .0;
-            } else {
-                break 'inner;
-            };
-        }
-        let implementer_path = krate_collection
-            .get_canonical_path_by_global_type_id(&implementer_id)
-            .unwrap();
-        // This is a much weaker check than the one we should actually be performing.
-        // We are only checking that the base path of the two types is the same, without inspecting
-        // where bounds or which generic parameters are being used.
-        if implementer_path == type_.base_type {
+        if is_equivalent(
+            implementer,
+            type_,
+            krate_collection,
+            &trait_definition_crate.core.package_id,
+        ) {
             return true;
+        }
+    }
+    false
+}
+
+fn is_equivalent(
+    rustdoc_type: &Type,
+    our_type: &ResolvedType,
+    krate_collection: &CrateCollection,
+    used_by_package_id: &PackageId,
+) -> bool {
+    match rustdoc_type {
+        Type::ResolvedPath(p) => {
+            let ResolvedType::ResolvedPath(our_path_type) = our_type else { return false; };
+            let rustdoc_type_id = &p.id;
+            let Ok((rustdoc_global_type_id, _)) = krate_collection
+                .get_canonical_path_by_local_type_id(used_by_package_id, rustdoc_type_id)
+                else {
+                    tracing::trace!("Failed to look up {:?}", rustdoc_type_id);
+                    return false;
+                };
+            let rustdoc_item = krate_collection.get_type_by_global_type_id(&rustdoc_global_type_id);
+            // We want to see through type aliases
+            if let ItemEnum::Typedef(typedef) = &rustdoc_item.inner {
+                return is_equivalent(
+                    &typedef.type_,
+                    our_type,
+                    krate_collection,
+                    used_by_package_id,
+                );
+            }
+            let Ok(rustdoc_type_path) = krate_collection
+                .get_canonical_path_by_global_type_id(&rustdoc_global_type_id)
+                else {
+                    tracing::trace!("Failed to look up {:?}", rustdoc_global_type_id);
+                    return false;
+                };
+            // This is a much weaker check than the one we should actually be performing.
+            // We are only checking that the base path of the two types is the same, without inspecting
+            // where bounds or which generic parameters are being used.
+            if rustdoc_type_path == our_path_type.base_type {
+                return true;
+            }
+        }
+        Type::BorrowedRef {
+            mutable,
+            type_: inner_type,
+            ..
+        } => {
+            if let ResolvedType::Reference(type_) = our_type {
+                return type_.is_mutable == *mutable
+                    && is_equivalent(inner_type, our_type, krate_collection, used_by_package_id);
+            }
+        }
+        Type::Tuple(rustdoc_tuple) => {
+            if let ResolvedType::Tuple(our_tuple) = our_type {
+                if our_tuple.elements.len() != rustdoc_tuple.len() {
+                    return false;
+                }
+                for (our_tuple_element, rustdoc_tuple_element) in
+                    our_tuple.elements.iter().zip(rustdoc_tuple.iter())
+                {
+                    if !is_equivalent(
+                        &rustdoc_tuple_element,
+                        our_tuple_element,
+                        krate_collection,
+                        used_by_package_id,
+                    ) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        }
+        n => {
+            tracing::trace!("We don't handle {:?} yet", n);
         }
     }
     false
@@ -224,52 +279,5 @@ impl std::fmt::Display for MissingTraitImplementationError {
             "`{:?}` does not implement the `{:?}` trait.",
             &self.type_, &self.trait_
         )
-    }
-}
-
-impl MissingTraitImplementationError {
-    pub(crate) fn into_diagnostic(
-        mut self,
-        constructors: &IndexMap<ResolvedType, Constructor>,
-        constructor_callable_resolver: &BiHashMap<ResolvedPath, Callable>,
-        resolved_paths2identifiers: &HashMap<ResolvedPath, HashSet<RawCallableIdentifiers>>,
-        constructor_locations: &IndexMap<RawCallableIdentifiers, Location>,
-        package_graph: &PackageGraph,
-        help: Option<String>,
-    ) -> Result<CompilerDiagnostic, miette::Error> {
-        let constructor: &Constructor = match constructors.get(&self.type_) {
-            Some(c) => c,
-            None => {
-                if self.type_.is_shared_reference {
-                    self.type_.is_shared_reference = false;
-                    &constructors[&self.type_]
-                } else {
-                    unreachable!()
-                }
-            }
-        };
-        let constructor_callable = match constructor {
-            Constructor::Callable(c) => c,
-            c => {
-                dbg!(c);
-                unreachable!()
-            }
-        };
-        let constructor_path = constructor_callable_resolver
-            .get_by_right(constructor_callable)
-            .unwrap();
-        let raw_identifier = resolved_paths2identifiers[constructor_path]
-            .iter()
-            .next()
-            .unwrap();
-        let location = &constructor_locations[raw_identifier];
-        let source = location.source_file(package_graph)?;
-        let label = diagnostic::get_f_macro_invocation_span(&source, location)
-            .map(|s| s.labeled("The constructor was registered here".into()));
-        let diagnostic = CompilerDiagnostic::builder(source, self)
-            .optional_label(label)
-            .optional_help(help)
-            .build();
-        Ok(diagnostic)
     }
 }

@@ -5,7 +5,7 @@ use syn::spanned::Spanned;
 use syn::visit::Visit;
 use syn::{ExprMethodCall, Stmt};
 
-use pavex_builder::{AppBlueprint, Location, RawCallableIdentifiers};
+use pavex_builder::Location;
 
 use crate::diagnostic::{convert_proc_macro_span, ParsedSourceFile, ProcMacroSpanExt};
 
@@ -79,31 +79,4 @@ pub fn get_f_macro_invocation_span(
         }
     }
     None
-}
-
-/// Given a callable identifier, return the location where it was registered.
-///
-/// The same request handlers can be registered multiple times: this function returns the location
-/// of the first registration.
-pub fn get_registration_location<'a>(
-    bp: &'a AppBlueprint,
-    identifiers: &RawCallableIdentifiers,
-) -> Option<&'a Location> {
-    bp.constructor_locations
-        .get(identifiers)
-        .or_else(|| get_registration_location_for_a_request_handler(bp, identifiers))
-        .or_else(|| bp.error_handler_locations.get(identifiers))
-}
-
-/// Given the callable identifiers for a request handler, return the location where it was registered.
-///
-/// The same request handlers can be registered multiple times: this function returns the location
-/// of the first registration.
-pub fn get_registration_location_for_a_request_handler<'a>(
-    bp: &'a AppBlueprint,
-    identifiers: &RawCallableIdentifiers,
-) -> Option<&'a Location> {
-    bp.request_handler_locations
-        .get(identifiers)
-        .and_then(|v| v.first())
 }

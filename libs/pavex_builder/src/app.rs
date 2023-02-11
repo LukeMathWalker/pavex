@@ -20,16 +20,14 @@ use crate::Callable;
 pub struct AppBlueprint {
     /// The set of registered constructors.
     pub constructors: IndexSet<RawCallableIdentifiers>,
-    /// The set of registered request handlers.
-    pub request_handlers: IndexSet<RawCallableIdentifiers>,
-    /// - Keys: [`RawCallableIdentifiers`] of a **fallible** request_handler.
+    /// - Keys: a path (e.g. `/homes/rooms`).
     /// - Values: [`RawCallableIdentifiers`] of an error handler for the error type returned by
-    /// the request handler.
-    pub request_handlers_error_handlers: IndexMap<RawCallableIdentifiers, RawCallableIdentifiers>,
+    /// the request handler specified for that path.
+    pub request_handlers_error_handlers: IndexMap<String, RawCallableIdentifiers>,
     /// - Keys: [`RawCallableIdentifiers`] of a **fallible** constructor.
     /// - Values: [`RawCallableIdentifiers`] of an error handler for the error type returned by
     /// the constructor.
-    pub constructor_error_handlers: IndexMap<RawCallableIdentifiers, RawCallableIdentifiers>,
+    pub constructors_error_handlers: IndexMap<RawCallableIdentifiers, RawCallableIdentifiers>,
     /// - Keys: [`RawCallableIdentifiers`] of a constructor.
     /// - Values: the [`Lifecycle`] for the type returned by the constructor.
     pub component_lifecycles: IndexMap<RawCallableIdentifiers, Lifecycle>,
@@ -37,18 +35,18 @@ pub struct AppBlueprint {
     /// - Values: [`RawCallableIdentifiers`] of the request handler in charge of processing
     /// incoming requests for that path.
     pub router: BTreeMap<String, RawCallableIdentifiers>,
-    /// - Keys: [`RawCallableIdentifiers`] of a request handler.
+    /// - Keys: a path (e.g. `/homes/rooms`).
     /// - Values: a [`Location`] pointing at the corresponding invocation of
     /// [`AppBlueprint::route`].
-    pub request_handler_locations: IndexMap<RawCallableIdentifiers, IndexSet<Location>>,
-    /// - Keys: [`RawCallableIdentifiers`] of an error handler.
+    pub request_handler_locations: IndexMap<String, Location>,
+    /// - Keys: [`RawCallableIdentifiers`] of the fallible constructor.
     /// - Values: a [`Location`] pointing at the corresponding invocation of
     /// [`Constructor::error_handler`].
     pub error_handler_locations: IndexMap<RawCallableIdentifiers, Location>,
-    /// - Keys: [`RawCallableIdentifiers`] of a request error handler.
+    /// - Keys: the path (e.g. `/homes/rooms`) of the corresponding request handler.
     /// - Values: a [`Location`] pointing at the corresponding invocation of
     /// [`Route::error_handler`].
-    pub request_error_handler_locations: IndexMap<RawCallableIdentifiers, Location>,
+    pub request_error_handler_locations: IndexMap<String, Location>,
     /// - Keys: [`RawCallableIdentifiers`] of a constructor.
     /// - Values: a [`Location`] pointing at the corresponding invocation of
     /// [`AppBlueprint::constructor`].
@@ -145,15 +143,12 @@ impl AppBlueprint {
     {
         let callable_identifiers = RawCallableIdentifiers::new(callable.import_path);
         self.request_handler_locations
-            .entry(callable_identifiers.clone())
-            .or_default()
-            .insert(std::panic::Location::caller().into());
+            .insert(path.to_owned(), std::panic::Location::caller().into());
         self.router
             .insert(path.to_owned(), callable_identifiers.clone());
-        self.request_handlers.insert(callable_identifiers.clone());
         Route {
             blueprint: self,
-            handler_identifiers: callable_identifiers,
+            path: path.to_owned(),
         }
     }
 
@@ -221,7 +216,7 @@ impl<'a> From<&'a std::panic::Location<'a>> for Location {
 pub struct Route<'a> {
     #[allow(dead_code)]
     blueprint: &'a mut AppBlueprint,
-    handler_identifiers: RawCallableIdentifiers,
+    path: String,
 }
 
 impl<'a> Route<'a> {
@@ -240,6 +235,7 @@ impl<'a> Route<'a> {
     /// use pavex_runtime::{response::Response, hyper::body::Body};
     /// # struct LogLevel;
     /// # struct RuntimeError;
+    /// # struct ConfigurationError;
     ///
     /// fn request_handler() -> Result<Response, RuntimeError> {
     ///     // [...]
@@ -266,19 +262,17 @@ impl<'a> Route<'a> {
     /// `pavex_cli` will fail to generate the runtime code for your application if you register
     /// an error handler for an infallible request handler (i.e. a request handler that does not
     /// return a `Result`).
-    pub fn error_handler<F, HandlerInputs>(self, handler: RawCallable<F>) -> Self
+    pub fn error_handler<F, HandlerInputs>(self, error_handler: RawCallable<F>) -> Self
     where
         F: Callable<HandlerInputs>,
     {
-        let callable_identifiers = RawCallableIdentifiers::new(handler.import_path);
-        let location = std::panic::Location::caller();
+        let callable_identifiers = RawCallableIdentifiers::new(error_handler.import_path);
         self.blueprint
             .request_error_handler_locations
-            .entry(callable_identifiers.clone())
-            .or_insert_with(|| location.into());
+            .insert(self.path.to_owned(), std::panic::Location::caller().into());
         self.blueprint
             .request_handlers_error_handlers
-            .insert(self.handler_identifiers.clone(), callable_identifiers);
+            .insert(self.path.to_owned(), callable_identifiers);
         self
     }
 }
@@ -339,13 +333,12 @@ impl<'a> Constructor<'a> {
         F: Callable<HandlerInputs>,
     {
         let callable_identifiers = RawCallableIdentifiers::new(handler.import_path);
-        let location = std::panic::Location::caller();
+        self.blueprint.error_handler_locations.insert(
+            self.constructor_identifiers.clone(),
+            std::panic::Location::caller().into(),
+        );
         self.blueprint
-            .error_handler_locations
-            .entry(callable_identifiers.clone())
-            .or_insert_with(|| location.into());
-        self.blueprint
-            .constructor_error_handlers
+            .constructors_error_handlers
             .insert(self.constructor_identifiers.clone(), callable_identifiers);
         self
     }

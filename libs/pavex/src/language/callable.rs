@@ -47,7 +47,7 @@ pub(crate) enum InvocationStyle {
 }
 
 impl Callable {
-    pub fn render_signature(&self, package_ids2names: &BiHashMap<&'_ PackageId, String>) -> String {
+    pub fn render_signature(&self, package_ids2names: &BiHashMap<PackageId, String>) -> String {
         let mut buffer = String::new();
         write!(&mut buffer, "{}", self.path).unwrap();
         write!(&mut buffer, "(").unwrap();
@@ -77,7 +77,9 @@ impl std::fmt::Debug for Callable {
                 write!(f, ", ")?;
             }
         }
-        write!(f, ") -> {:?}", self.output)?;
+        if let Some(output) = &self.output {
+            write!(f, ") -> {output:?}")?;
+        }
         Ok(())
     }
 }
