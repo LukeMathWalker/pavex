@@ -67,7 +67,9 @@ async fn route_request(
 pub async fn route_handler_0(
     v0: app::HttpClient,
     v1: http::Request<hyper::Body>,
-) -> pavex_runtime::response::Response {
+) -> http::Response<
+    http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
+> {
     let v2 = app::extract_path(v1).await;
     match v2 {
         Ok(v3) => {
@@ -75,18 +77,18 @@ pub async fn route_handler_0(
                 let v4 = app::logger();
                 app::stream_file(v3, v4, v0)
             };
-            <pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(
-                v5,
-            )
+            <http::Response::<
+                http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>,
+            > as pavex_runtime::response::IntoResponse>::into_response(v5)
         }
         Err(v3) => {
             let v5 = {
                 let v4 = app::logger();
                 app::handle_extract_path_error(&v3, v4)
             };
-            <pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(
-                v5,
-            )
+            <http::Response::<
+                http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>,
+            > as pavex_runtime::response::IntoResponse>::into_response(v5)
         }
     }
 }

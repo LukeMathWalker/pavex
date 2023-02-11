@@ -61,7 +61,9 @@ async fn route_request(
         _ => panic!("This is a bug, no route registered for a route id"),
     }
 }
-pub async fn route_handler_0() -> pavex_runtime::response::Response {
+pub async fn route_handler_0() -> http::Response<
+    http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
+> {
     let v0 = <app::A as app::MyTrait>::a_method_that_returns_self();
     let v1 = <app::A as app::MyTrait>::a_method_that_borrows_self(&v0);
     let v2 = <app::B as app::AnotherTrait>::a_method_that_consumes_self(v1);
@@ -70,7 +72,7 @@ pub async fn route_handler_0() -> pavex_runtime::response::Response {
         std::string::String,
     >(&v0);
     let v5 = app::handler(v0, v2, v4, v3);
-    <pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(
-        v5,
-    )
+    <http::Response::<
+        http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>,
+    > as pavex_runtime::response::IntoResponse>::into_response(v5)
 }

@@ -1,10 +1,10 @@
 digraph "/home" {
-    0 [ label = "app::stream_file(std::path::PathBuf, app::Logger, app::HttpClient) -> pavex_runtime::response::Response"]
+    0 [ label = "app::stream_file(std::path::PathBuf, app::Logger, app::HttpClient) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
     1 [ label = "app::HttpClient"]
     2 [ label = "app::logger() -> app::Logger"]
     3 [ label = "app::extract_path(http::Request<hyper::Body>) -> std::path::PathBuf"]
     4 [ label = "http::Request<hyper::Body>"]
-    5 [ label = "<pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(pavex_runtime::response::Response) -> pavex_runtime::response::Response"]
+    5 [ label = "<http::Response::<http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>> as pavex_runtime::response::IntoResponse>::into_response(http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
     1 -> 0 [ ]
     2 -> 0 [ ]
     3 -> 0 [ ]

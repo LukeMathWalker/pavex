@@ -122,8 +122,10 @@ impl From<ResolvedType> for ResolvedPathType {
                         generic_arguments: vec![],
                     })
                     .collect();
-                segments[0].generic_arguments =
-                    p.generic_arguments.into_iter().map(|t| t.into()).collect();
+                if let Some(segment) = segments.last_mut() {
+                    segment.generic_arguments =
+                        p.generic_arguments.into_iter().map(|t| t.into()).collect();
+                }
                 ResolvedPathType::ResolvedPath(ResolvedPathResolvedPathType {
                     path: Box::new(ResolvedPath {
                         segments,

@@ -7,7 +7,7 @@ use std::sync::Arc;
 use ahash::{HashMap, HashMapExt};
 use anyhow::anyhow;
 use guppy::PackageId;
-use rustdoc_types::{GenericArg, GenericArgs, ItemEnum, Type};
+use rustdoc_types::{GenericArg, GenericArgs, GenericParamDefKind, ItemEnum, Type};
 
 use crate::language::{
     Callable, InvocationStyle, ResolvedPath, ResolvedPathType, ResolvedType, Tuple, TypeReference,
@@ -26,50 +26,86 @@ pub(crate) fn resolve_type(
 ) -> Result<ResolvedType, anyhow::Error> {
     match type_ {
         Type::ResolvedPath(rustdoc_types::Path { id, args, .. }) => {
-            let mut generics = vec![];
-            if let Some(args) = args {
-                match &**args {
-                    GenericArgs::AngleBracketed { args, .. } => {
-                        for arg in args {
-                            match arg {
-                                GenericArg::Lifetime(_) => {
-                                    return Err(anyhow!(
+            let (global_type_id, base_type) =
+                krate_collection.get_canonical_path_by_local_type_id(used_by_package_id, id)?;
+            let type_item = krate_collection.get_type_by_global_type_id(&global_type_id);
+            // We want to remove any indirections (e.g. `type Foo = Bar;`) and get the actual type.
+            if let ItemEnum::Typedef(typedef) = &type_item.inner {
+                let mut generic_bindings = HashMap::new();
+                for generic in &typedef.generics.params {
+                    // We also try to handle generic parameters, as long as they have a default value.
+                    match &generic.kind {
+                        GenericParamDefKind::Type {
+                            default: Some(default),
+                            ..
+                        } => {
+                            let default = resolve_type(
+                                default,
+                                &global_type_id.package_id,
+                                krate_collection,
+                                &generic_bindings,
+                            )
+                            .unwrap();
+                            generic_bindings.insert(generic.name.to_string(), default);
+                        }
+                        GenericParamDefKind::Type { default: None, .. }
+                        | GenericParamDefKind::Const { .. }
+                        | GenericParamDefKind::Lifetime { .. } => {
+                            todo!("Generic parameters other than type parameters with a default value are not supported yet. I cannot handle:\n {:?}", generic)
+                        }
+                    }
+                }
+                let type_ = resolve_type(
+                    &typedef.type_,
+                    &global_type_id.package_id,
+                    krate_collection,
+                    &generic_bindings,
+                )?;
+                Ok(type_)
+            } else {
+                let mut generics = vec![];
+                if let Some(args) = args {
+                    match &**args {
+                        GenericArgs::AngleBracketed { args, .. } => {
+                            for arg in args {
+                                match arg {
+                                    GenericArg::Lifetime(_) => {
+                                        return Err(anyhow!(
                                         "We do not support lifetime arguments in types yet. Sorry!"
                                     ));
-                                }
-                                GenericArg::Type(generic_type) => {
-                                    generics.push(resolve_type(
-                                        generic_type,
-                                        used_by_package_id,
-                                        krate_collection,
-                                        generic_bindings,
-                                    )?);
-                                }
-                                GenericArg::Const(_) => {
-                                    return Err(anyhow!(
-                                        "We do not support const generics in types yet. Sorry!"
-                                    ));
-                                }
-                                GenericArg::Infer => {
-                                    return Err(anyhow!("We do not support inferred generic arguments in types yet. Sorry!"));
+                                    }
+                                    GenericArg::Type(generic_type) => {
+                                        generics.push(resolve_type(
+                                            generic_type,
+                                            used_by_package_id,
+                                            krate_collection,
+                                            generic_bindings,
+                                        )?);
+                                    }
+                                    GenericArg::Const(_) => {
+                                        return Err(anyhow!(
+                                            "We do not support const generics in types yet. Sorry!"
+                                        ));
+                                    }
+                                    GenericArg::Infer => {
+                                        return Err(anyhow!("We do not support inferred generic arguments in types yet. Sorry!"));
+                                    }
                                 }
                             }
                         }
-                    }
-                    GenericArgs::Parenthesized { .. } => {
-                        return Err(anyhow!("We do not support function pointers yet. Sorry!"));
+                        GenericArgs::Parenthesized { .. } => {
+                            return Err(anyhow!("We do not support function pointers yet. Sorry!"));
+                        }
                     }
                 }
+                let t = ResolvedPathType {
+                    package_id: global_type_id.package_id().to_owned(),
+                    rustdoc_id: Some(global_type_id.rustdoc_item_id),
+                    base_type: base_type.to_vec(),
+                    generic_arguments: generics,
+                };
+                Ok(ResolvedType::ResolvedPath(t))
             }
-            let (global_type_id, base_type) =
-                krate_collection.get_canonical_path_by_local_type_id(used_by_package_id, id)?;
-            let t = ResolvedPathType {
-                package_id: global_type_id.package_id().to_owned(),
-                rustdoc_id: Some(global_type_id.rustdoc_item_id),
-                base_type: base_type.to_vec(),
-                generic_arguments: generics,
-            };
-            Ok(ResolvedType::ResolvedPath(t))
         }
         Type::BorrowedRef {
             lifetime: _,
