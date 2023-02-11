@@ -1,8 +1,6 @@
 use pavex_builder::{f, AppBlueprint, Lifecycle};
 
-pub struct Logger;
-
-pub fn constructor_with_input_tuple(input: (usize, isize)) -> Logger {
+pub fn constructor_with_output_tuple() -> (usize, isize) {
     todo!()
 }
 
@@ -13,7 +11,7 @@ pub fn handler_with_input_tuple(input: (usize, isize)) -> pavex_runtime::respons
 pub fn blueprint() -> AppBlueprint {
     let mut bp = AppBlueprint::new();
     bp.constructor(
-        f!(crate::constructor_with_input_tuple),
+        f!(crate::constructor_with_output_tuple),
         Lifecycle::Singleton,
     );
     bp.route(f!(crate::handler_with_input_tuple), "/home");

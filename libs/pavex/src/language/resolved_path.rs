@@ -13,6 +13,7 @@ use quote::format_ident;
 use pavex_builder::RawCallableIdentifiers;
 
 use crate::language::callable_path::CallPathType;
+use crate::language::resolved_type::ScalarPrimitive;
 use crate::language::{CallPath, InvalidCallPath, ResolvedType, Tuple, TypeReference};
 use crate::rustdoc::{CrateCollection, GlobalItemId};
 use crate::rustdoc::{ResolvedItemWithParent, TOOLCHAIN_CRATES};
@@ -62,6 +63,7 @@ pub enum ResolvedPathType {
     ResolvedPath(ResolvedPathResolvedPathType),
     Reference(ResolvedPathReference),
     Tuple(ResolvedPathTuple),
+    ScalarPrimitive(ScalarPrimitive),
 }
 
 impl ResolvedPathType {
@@ -103,6 +105,7 @@ impl ResolvedPathType {
                     .collect::<Result<Vec<_>, _>>()?;
                 Ok(ResolvedType::Tuple(Tuple { elements }))
             }
+            ResolvedPathType::ScalarPrimitive(s) => Ok(ResolvedType::ScalarPrimitive(s.clone())),
         }
     }
 }
@@ -136,6 +139,7 @@ impl From<ResolvedType> for ResolvedPathType {
             ResolvedType::Tuple(t) => ResolvedPathType::Tuple(ResolvedPathTuple {
                 elements: t.elements.into_iter().map(|e| e.into()).collect(),
             }),
+            ResolvedType::ScalarPrimitive(s) => ResolvedPathType::ScalarPrimitive(s),
         }
     }
 }
@@ -459,6 +463,9 @@ impl ResolvedPathType {
             ResolvedPathType::ResolvedPath(p) => p.render_path(id2name, buffer),
             ResolvedPathType::Reference(r) => r.render_path(id2name, buffer),
             ResolvedPathType::Tuple(t) => t.render_path(id2name, buffer),
+            ResolvedPathType::ScalarPrimitive(s) => {
+                write!(buffer, "{s}").unwrap();
+            }
         }
     }
 }
@@ -520,6 +527,9 @@ impl Display for ResolvedPathType {
             ResolvedPathType::ResolvedPath(p) => write!(f, "{}", p),
             ResolvedPathType::Reference(r) => write!(f, "{}", r),
             ResolvedPathType::Tuple(t) => write!(f, "{}", t),
+            ResolvedPathType::ScalarPrimitive(s) => {
+                write!(f, "{}", s)
+            }
         }
     }
 }

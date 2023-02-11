@@ -149,6 +149,17 @@ pub(crate) fn implements_trait(
         ResolvedType::Reference(_r) => {
             todo!()
         }
+        ResolvedType::ScalarPrimitive(_) => {
+            if expected_trait.base_type == ["core", "marker", "Send"]
+                || expected_trait.base_type == ["core", "marker", "Sync"]
+                || expected_trait.base_type == ["core", "marker", "Copy"]
+                || expected_trait.base_type == ["core", "marker", "Unpin"]
+                || expected_trait.base_type == ["core", "clone", "Clone"]
+            {
+                return true;
+            }
+            todo!()
+        }
     }
 
     // We check if there is a trait implementation for this type in the crate where the trait

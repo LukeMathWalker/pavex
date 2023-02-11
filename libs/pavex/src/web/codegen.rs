@@ -221,12 +221,13 @@ fn get_request_dispatcher(
         let input_parameters = handler_input_types.iter().map(|type_| {
             let mut is_shared_reference = false;
             let inner_type = match type_ {
-                ResolvedType::ResolvedPath(_) => type_,
                 ResolvedType::Reference(r) => {
                     is_shared_reference = true;
                     &r.inner
                 }
-                ResolvedType::Tuple(_) => type_,
+                ResolvedType::ResolvedPath(_)
+                | ResolvedType::Tuple(_)
+                | ResolvedType::ScalarPrimitive(_) => type_,
             };
             if let Some(field_name) = singleton_bindings.get_by_right(inner_type) {
                 if is_shared_reference {
@@ -511,5 +512,6 @@ fn collect_type_package_ids(package_ids: &mut IndexSet<PackageId>, t: &ResolvedT
                 collect_type_package_ids(package_ids, element)
             }
         }
+        ResolvedType::ScalarPrimitive(_) => {}
     }
 }
