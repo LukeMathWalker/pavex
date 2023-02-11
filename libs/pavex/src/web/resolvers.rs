@@ -116,6 +116,7 @@ pub(crate) fn resolve_type(
             }
             Ok(ResolvedType::Tuple(Tuple { elements: types }))
         }
+        Type::Primitive(p) => Ok(ResolvedType::ScalarPrimitive(p.as_str().try_into()?)),
         _ => Err(anyhow!(
             "I cannot handle this kind ({:?}) of type yet. Sorry!",
             type_

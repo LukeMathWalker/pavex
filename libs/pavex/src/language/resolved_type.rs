@@ -1,5 +1,5 @@
-use std::fmt::Formatter;
 use std::fmt::Write;
+use std::fmt::{Debug, Display, Formatter};
 
 use anyhow::Context;
 use bimap::BiHashMap;
@@ -13,10 +13,84 @@ pub enum ResolvedType {
     ResolvedPath(ResolvedPathType),
     Reference(TypeReference),
     Tuple(Tuple),
+    ScalarPrimitive(ScalarPrimitive),
 }
 
 impl ResolvedType {
     pub const UNIT_TYPE: ResolvedType = ResolvedType::Tuple(Tuple { elements: vec![] });
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Hash, Clone)]
+pub enum ScalarPrimitive {
+    Usize,
+    U8,
+    U16,
+    U32,
+    U64,
+    Isize,
+    I8,
+    I16,
+    I32,
+    I64,
+    F32,
+    F64,
+    Bool,
+}
+
+impl ScalarPrimitive {
+    fn as_str(&self) -> &'static str {
+        match self {
+            Self::Usize => "usize",
+            Self::U8 => "u8",
+            Self::U16 => "u16",
+            Self::U32 => "u32",
+            Self::U64 => "u64",
+            Self::Isize => "isize",
+            Self::I8 => "i8",
+            Self::I16 => "i16",
+            Self::I32 => "i32",
+            Self::I64 => "i64",
+            Self::F32 => "f32",
+            Self::F64 => "f64",
+            Self::Bool => "bool",
+        }
+    }
+}
+
+impl Debug for ScalarPrimitive {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+impl Display for ScalarPrimitive {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+impl TryFrom<&str> for ScalarPrimitive {
+    type Error = anyhow::Error;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        let v = match value {
+            "usize" => Self::Usize,
+            "u8" => Self::U8,
+            "u16" => Self::U16,
+            "u32" => Self::U32,
+            "u64" => Self::U64,
+            "isize" => Self::Isize,
+            "i8" => Self::I8,
+            "i16" => Self::I16,
+            "i32" => Self::I32,
+            "i64" => Self::I64,
+            "f32" => Self::F32,
+            "f64" => Self::F64,
+            "bool" => Self::Bool,
+            _ => anyhow::bail!("Unknown primitive scalar type: {}", value),
+        };
+        Ok(v)
+    }
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Hash, Clone)]
@@ -119,6 +193,9 @@ impl ResolvedType {
                 }
                 write!(buffer, ")").unwrap();
             }
+            ResolvedType::ScalarPrimitive(s) => {
+                write!(buffer, "{s}").unwrap();
+            }
         }
     }
 }
@@ -147,6 +224,9 @@ impl std::fmt::Debug for ResolvedType {
             ResolvedType::Reference(r) => write!(f, "{r:?}"),
             ResolvedType::Tuple(t) => {
                 write!(f, "{t:?}")
+            }
+            ResolvedType::ScalarPrimitive(s) => {
+                write!(f, "{s:?}")
             }
         }
     }

@@ -1,0 +1,12 @@
+digraph "/home" {
+    0 [ label = "app::handler_with_input_tuple((usize, isize)) -> pavex_runtime::response::Response"]
+    1 [ label = "(usize, isize)"]
+    2 [ label = "<pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(pavex_runtime::response::Response) -> pavex_runtime::response::Response"]
+    1 -> 0 [ ]
+    0 -> 2 [ ]
+}
+digraph app_state {
+    0 [ label = "crate::ApplicationState((usize, isize)) -> crate::ApplicationState"]
+    1 [ label = "app::constructor_with_output_tuple() -> (usize, isize)"]
+    1 -> 0 [ ]
+}
