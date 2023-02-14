@@ -16,4 +16,5 @@ mod utils;
 
 pub const STD_PACKAGE_ID: &str = "std";
 pub const CORE_PACKAGE_ID: &str = "core";
-pub const TOOLCHAIN_CRATES: [&str; 3] = [STD_PACKAGE_ID, CORE_PACKAGE_ID, "alloc"];
+pub const ALLOC_PACKAGE_ID: &str = "alloc";
+pub const TOOLCHAIN_CRATES: [&str; 3] = [STD_PACKAGE_ID, CORE_PACKAGE_ID, ALLOC_PACKAGE_ID];

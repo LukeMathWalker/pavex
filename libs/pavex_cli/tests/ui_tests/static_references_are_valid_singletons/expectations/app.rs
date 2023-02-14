@@ -7,10 +7,10 @@ struct ServerState {
     application_state: ApplicationState,
 }
 pub struct ApplicationState {
-    s0: app::Streamer,
+    s0: &'static str,
 }
 pub async fn build_application_state() -> crate::ApplicationState {
-    let v0 = app::streamer();
+    let v0 = app::static_str();
     crate::ApplicationState { s0: v0 }
 }
 pub async fn run(
@@ -49,7 +49,7 @@ fn build_router() -> Result<
     pavex_runtime::routing::InsertError,
 > {
     let mut router = pavex_runtime::routing::Router::new();
-    router.insert("/home", 0u32)?;
+    router.insert("/handler", 0u32)?;
     Ok(router)
 }
 async fn route_request(
@@ -66,11 +66,11 @@ async fn route_request(
     }
 }
 pub async fn route_handler_0(
-    v0: app::Streamer,
+    v0: &'static str,
 ) -> http::Response<
     http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
 > {
-    let v1 = app::stream_file(v0);
+    let v1 = app::handler(v0);
     <http::Response::<
         http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>,
     > as pavex_runtime::response::IntoResponse>::into_response(v1)

@@ -2,7 +2,7 @@ use guppy::graph::PackageGraph;
 
 use pavex_builder::RawCallableIdentifiers;
 
-use crate::language::{ResolvedPath, ResolvedType};
+use crate::language::{GenericArgument, ResolvedPath, ResolvedType};
 use crate::rustdoc::CrateCollection;
 use crate::web::resolvers::resolve_type_path;
 
@@ -22,7 +22,10 @@ pub(crate) fn get_ok_variant(t: &ResolvedType) -> &ResolvedType {
     let ResolvedType::ResolvedPath(t) = t else {
         unreachable!();
     };
-    &t.generic_arguments[0]
+    let GenericArgument::Type(t) = &t.generic_arguments[0] else {
+        unreachable!()
+    };
+    t
 }
 
 /// Resolve a type path assuming that the crate is a dependency of `pavex_builder`.

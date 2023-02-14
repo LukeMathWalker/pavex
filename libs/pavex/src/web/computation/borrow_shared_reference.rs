@@ -11,6 +11,7 @@ impl BorrowSharedReference {
     pub fn new(input: ResolvedType) -> Self {
         let output = ResolvedType::Reference(TypeReference {
             is_mutable: false,
+            is_static: false,
             inner: Box::new(input.clone()),
         });
         Self { input, output }

@@ -23,6 +23,7 @@ pub(crate) enum CallPathType {
     ResolvedPath(CallPathResolvedPathType),
     Reference(CallPathReference),
     Tuple(CallPathTuple),
+    Slice(CallPathSlice),
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
@@ -31,8 +32,14 @@ pub(crate) struct CallPathResolvedPathType {
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
+pub(crate) struct CallPathSlice {
+    pub element_type: Box<CallPathType>,
+}
+
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub(crate) struct CallPathReference {
     pub is_mutable: bool,
+    pub is_static: bool,
     pub inner: Box<CallPathType>,
 }
 
@@ -44,7 +51,18 @@ pub(crate) struct CallPathTuple {
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub(crate) struct CallPathSegment {
     pub ident: syn::Ident,
-    pub generic_arguments: Vec<CallPathType>,
+    pub generic_arguments: Vec<CallPathGenericArgument>,
+}
+
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+pub(crate) enum CallPathGenericArgument {
+    Type(CallPathType),
+    Lifetime(CallPathLifetime),
+}
+
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+pub(crate) enum CallPathLifetime {
+    Static,
 }
 
 impl CallPath {
@@ -77,6 +95,10 @@ impl CallPath {
                 let inner = Box::new(Self::parse_type(*r.elem)?);
                 Ok(CallPathType::Reference(CallPathReference {
                     is_mutable,
+                    is_static: r
+                        .lifetime
+                        .map(|l| l.ident.to_string().as_str() == "'static")
+                        .unwrap_or(false),
                     inner,
                 }))
             }
@@ -86,6 +108,10 @@ impl CallPath {
                     elements.push(Self::parse_type(element)?)
                 }
                 Ok(CallPathType::Tuple(CallPathTuple { elements }))
+            }
+            Type::Slice(s) => {
+                let element_type = Box::new(Self::parse_type(s.elem.as_ref().to_owned())?);
+                Ok(CallPathType::Slice(CallPathSlice { element_type }))
             }
             _ => todo!("We do not handle {:?} as a type yet", type_),
         }
@@ -104,12 +130,17 @@ impl CallPath {
                     let mut arguments = Vec::with_capacity(syn_arguments.args.len());
                     for syn_argument in syn_arguments.args {
                         let argument = match syn_argument {
-                            GenericArgument::Type(t) => Self::parse_type(t)?,
-                            GenericArgument::Lifetime(_)
-                            | GenericArgument::Binding(_)
+                            GenericArgument::Type(t) => {
+                                CallPathGenericArgument::Type(Self::parse_type(t)?)
+                            }
+                            GenericArgument::Lifetime(l) if l.ident.to_string() == "static" => {
+                                CallPathGenericArgument::Lifetime(CallPathLifetime::Static)
+                            }
+                            GenericArgument::Lifetime(_) |
+                            GenericArgument::Binding(_)
                             | GenericArgument::Constraint(_)
                             | GenericArgument::Const(_) => todo!(
-                                "We can only handle types as generic parameters for the time being."
+                                "We can only handle concrete types and the 'static lifetime as generic parameters for the time being."
                             ),
                         };
                         arguments.push(argument)
@@ -161,8 +192,17 @@ impl Display for CallPathType {
             CallPathType::Tuple(t) => {
                 write!(f, "{}", t)?;
             }
+            CallPathType::Slice(s) => {
+                write!(f, "{}", s)?;
+            }
         }
         Ok(())
+    }
+}
+
+impl Display for CallPathSlice {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[{}]", self.element_type)
     }
 }
 
@@ -232,6 +272,28 @@ impl Display for CallPathSegment {
             }
         }
         Ok(())
+    }
+}
+
+impl Display for CallPathGenericArgument {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CallPathGenericArgument::Type(t) => {
+                write!(f, "{}", t)?;
+            }
+            CallPathGenericArgument::Lifetime(l) => {
+                write!(f, "{}", l)?;
+            }
+        }
+        Ok(())
+    }
+}
+
+impl Display for CallPathLifetime {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CallPathLifetime::Static => write!(f, "'static"),
+        }
     }
 }
 

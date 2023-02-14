@@ -12,8 +12,8 @@ use quote::format_ident;
 
 use pavex_builder::RawCallableIdentifiers;
 
-use crate::language::callable_path::CallPathType;
-use crate::language::resolved_type::ScalarPrimitive;
+use crate::language::callable_path::{CallPathGenericArgument, CallPathLifetime, CallPathType};
+use crate::language::resolved_type::{GenericArgument, Lifetime, ScalarPrimitive, Slice};
 use crate::language::{CallPath, InvalidCallPath, ResolvedType, Tuple, TypeReference};
 use crate::rustdoc::{CrateCollection, GlobalItemId};
 use crate::rustdoc::{ResolvedItemWithParent, TOOLCHAIN_CRATES};
@@ -55,7 +55,18 @@ pub struct ResolvedPathQualifiedSelf {
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct ResolvedPathSegment {
     pub ident: String,
-    pub generic_arguments: Vec<ResolvedPathType>,
+    pub generic_arguments: Vec<ResolvedPathGenericArgument>,
+}
+
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+pub enum ResolvedPathGenericArgument {
+    Type(ResolvedPathType),
+    Lifetime(ResolvedPathLifetime),
+}
+
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+pub enum ResolvedPathLifetime {
+    Static,
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
@@ -64,6 +75,7 @@ pub enum ResolvedPathType {
     Reference(ResolvedPathReference),
     Tuple(ResolvedPathTuple),
     ScalarPrimitive(ScalarPrimitive),
+    Slice(ResolvedPathSlice),
 }
 
 impl ResolvedPathType {
@@ -81,8 +93,17 @@ impl ResolvedPathType {
                 let mut generic_arguments = vec![];
                 for segment in &p.path.segments {
                     for generic_path in &segment.generic_arguments {
-                        let generic_type = generic_path.resolve(krate_collection)?;
-                        generic_arguments.push(generic_type);
+                        let generic_arg = match generic_path {
+                            ResolvedPathGenericArgument::Type(t) => {
+                                GenericArgument::Type(t.resolve(krate_collection)?)
+                            }
+                            ResolvedPathGenericArgument::Lifetime(l) => match l {
+                                ResolvedPathLifetime::Static => {
+                                    GenericArgument::Lifetime(Lifetime::Static)
+                                }
+                            },
+                        };
+                        generic_arguments.push(generic_arg);
                     }
                 }
                 Ok(crate::language::resolved_type::ResolvedPathType {
@@ -95,6 +116,7 @@ impl ResolvedPathType {
             }
             ResolvedPathType::Reference(r) => Ok(ResolvedType::Reference(TypeReference {
                 is_mutable: r.is_mutable,
+                is_static: r.is_static,
                 inner: Box::new(r.inner.resolve(krate_collection)?),
             })),
             ResolvedPathType::Tuple(t) => {
@@ -106,6 +128,12 @@ impl ResolvedPathType {
                 Ok(ResolvedType::Tuple(Tuple { elements }))
             }
             ResolvedPathType::ScalarPrimitive(s) => Ok(ResolvedType::ScalarPrimitive(s.clone())),
+            ResolvedPathType::Slice(s) => {
+                let inner = s.element.resolve(krate_collection)?;
+                Ok(ResolvedType::Slice(Slice {
+                    element_type: Box::new(inner),
+                }))
+            }
         }
     }
 }
@@ -123,8 +151,18 @@ impl From<ResolvedType> for ResolvedPathType {
                     })
                     .collect();
                 if let Some(segment) = segments.last_mut() {
-                    segment.generic_arguments =
-                        p.generic_arguments.into_iter().map(|t| t.into()).collect();
+                    segment.generic_arguments = p
+                        .generic_arguments
+                        .into_iter()
+                        .map(|t| match t {
+                            GenericArgument::Type(t) => ResolvedPathGenericArgument::Type(t.into()),
+                            GenericArgument::Lifetime(l) => match l {
+                                Lifetime::Static => ResolvedPathGenericArgument::Lifetime(
+                                    ResolvedPathLifetime::Static,
+                                ),
+                            },
+                        })
+                        .collect();
                 }
                 ResolvedPathType::ResolvedPath(ResolvedPathResolvedPathType {
                     path: Box::new(ResolvedPath {
@@ -136,12 +174,16 @@ impl From<ResolvedType> for ResolvedPathType {
             }
             ResolvedType::Reference(r) => ResolvedPathType::Reference(ResolvedPathReference {
                 is_mutable: r.is_mutable,
+                is_static: r.is_static,
                 inner: Box::new((*r.inner).into()),
             }),
             ResolvedType::Tuple(t) => ResolvedPathType::Tuple(ResolvedPathTuple {
                 elements: t.elements.into_iter().map(|e| e.into()).collect(),
             }),
             ResolvedType::ScalarPrimitive(s) => ResolvedPathType::ScalarPrimitive(s),
+            ResolvedType::Slice(s) => ResolvedPathType::Slice(ResolvedPathSlice {
+                element: Box::new((*s.element_type).into()),
+            }),
         }
     }
 }
@@ -154,12 +196,18 @@ pub struct ResolvedPathResolvedPathType {
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct ResolvedPathReference {
     pub is_mutable: bool,
+    pub is_static: bool,
     pub inner: Box<ResolvedPathType>,
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct ResolvedPathTuple {
     pub elements: Vec<ResolvedPathType>,
+}
+
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+pub struct ResolvedPathSlice {
+    pub element: Box<ResolvedPathType>,
 }
 
 impl PartialEq for ResolvedPath {
@@ -240,7 +288,12 @@ impl ResolvedPath {
             }
             for segment in p.segments.iter_mut() {
                 for generic_argument in segment.generic_arguments.iter_mut() {
-                    replace_crate_in_type_with_registration_crate(generic_argument, identifiers);
+                    match generic_argument {
+                        CallPathGenericArgument::Type(t) => {
+                            replace_crate_in_type_with_registration_crate(t, identifiers);
+                        }
+                        CallPathGenericArgument::Lifetime(_) => {}
+                    }
                 }
             }
         }
@@ -261,6 +314,12 @@ impl ResolvedPath {
                         replace_crate_in_type_with_registration_crate(element, identifiers);
                     }
                 }
+                CallPathType::Slice(s) => {
+                    replace_crate_in_type_with_registration_crate(
+                        s.element_type.deref_mut(),
+                        identifiers,
+                    );
+                }
             }
         }
 
@@ -270,6 +329,22 @@ impl ResolvedPath {
             replace_crate_in_type_with_registration_crate(&mut qself.type_, identifiers);
         }
         Self::parse_call_path(&path, identifiers, graph)
+    }
+
+    fn parse_call_path_generic_argument(
+        arg: &CallPathGenericArgument,
+        identifiers: &RawCallableIdentifiers,
+        graph: &guppy::graph::PackageGraph,
+    ) -> Result<ResolvedPathGenericArgument, ParseError> {
+        match arg {
+            CallPathGenericArgument::Type(t) => Self::parse_call_path_type(t, identifiers, graph)
+                .map(ResolvedPathGenericArgument::Type),
+            CallPathGenericArgument::Lifetime(l) => match l {
+                CallPathLifetime::Static => Ok(ResolvedPathGenericArgument::Lifetime(
+                    ResolvedPathLifetime::Static,
+                )),
+            },
+        }
     }
 
     fn parse_call_path_type(
@@ -288,6 +363,7 @@ impl ResolvedPath {
             }
             CallPathType::Reference(r) => Ok(ResolvedPathType::Reference(ResolvedPathReference {
                 is_mutable: r.is_mutable,
+                is_static: r.is_static,
                 inner: Box::new(Self::parse_call_path_type(
                     r.inner.deref(),
                     identifiers,
@@ -300,6 +376,13 @@ impl ResolvedPath {
                     elements.push(Self::parse_call_path_type(element, identifiers, graph)?);
                 }
                 Ok(ResolvedPathType::Tuple(ResolvedPathTuple { elements }))
+            }
+            CallPathType::Slice(s) => {
+                let element_type =
+                    Self::parse_call_path_type(s.element_type.deref(), identifiers, graph)?;
+                Ok(ResolvedPathType::Slice(ResolvedPathSlice {
+                    element: Box::new(element_type),
+                }))
             }
         }
     }
@@ -317,7 +400,7 @@ impl ResolvedPath {
             let generic_arguments = raw_segment
                 .generic_arguments
                 .iter()
-                .map(|arg| Self::parse_call_path_type(arg, identifiers, graph))
+                .map(|arg| Self::parse_call_path_generic_argument(arg, identifiers, graph))
                 .collect::<Result<Vec<_>, _>>()?;
             let segment = ResolvedPathSegment {
                 ident: raw_segment.ident.to_string(),
@@ -468,6 +551,30 @@ impl ResolvedPathType {
             ResolvedPathType::ScalarPrimitive(s) => {
                 write!(buffer, "{s}").unwrap();
             }
+            ResolvedPathType::Slice(s) => s.render_path(id2name, buffer),
+        }
+    }
+}
+
+impl ResolvedPathSlice {
+    pub fn render_path(&self, id2name: &BiHashMap<PackageId, String>, buffer: &mut String) {
+        write!(buffer, "[").unwrap();
+        self.element.render_path(id2name, buffer);
+        write!(buffer, "]").unwrap();
+    }
+}
+
+impl ResolvedPathGenericArgument {
+    pub fn render_path(&self, id2name: &BiHashMap<PackageId, String>, buffer: &mut String) {
+        match self {
+            ResolvedPathGenericArgument::Type(t) => {
+                t.render_path(id2name, buffer);
+            }
+            ResolvedPathGenericArgument::Lifetime(l) => match l {
+                ResolvedPathLifetime::Static => {
+                    write!(buffer, "'static").unwrap();
+                }
+            },
         }
     }
 }
@@ -532,7 +639,16 @@ impl Display for ResolvedPathType {
             ResolvedPathType::ScalarPrimitive(s) => {
                 write!(f, "{}", s)
             }
+            ResolvedPathType::Slice(s) => {
+                write!(f, "{}", s)
+            }
         }
+    }
+}
+
+impl Display for ResolvedPathSlice {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[{}]", self.element)
     }
 }
 
@@ -583,6 +699,27 @@ impl Display for ResolvedPathSegment {
             write!(f, ">")?;
         }
         Ok(())
+    }
+}
+
+impl Display for ResolvedPathGenericArgument {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ResolvedPathGenericArgument::Type(t) => {
+                write!(f, "{}", t)
+            }
+            ResolvedPathGenericArgument::Lifetime(l) => {
+                write!(f, "{}", l)
+            }
+        }
+    }
+}
+
+impl Display for ResolvedPathLifetime {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ResolvedPathLifetime::Static => write!(f, "'static"),
+        }
     }
 }
 

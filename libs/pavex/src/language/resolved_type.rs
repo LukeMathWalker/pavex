@@ -14,6 +14,7 @@ pub enum ResolvedType {
     Reference(TypeReference),
     Tuple(Tuple),
     ScalarPrimitive(ScalarPrimitive),
+    Slice(Slice),
 }
 
 impl ResolvedType {
@@ -36,10 +37,11 @@ pub enum ScalarPrimitive {
     F64,
     Bool,
     Char,
+    Str,
 }
 
 impl ScalarPrimitive {
-    fn as_str(&self) -> &'static str {
+    pub(crate) fn as_str(&self) -> &'static str {
         match self {
             Self::Usize => "usize",
             Self::U8 => "u8",
@@ -55,6 +57,7 @@ impl ScalarPrimitive {
             Self::F64 => "f64",
             Self::Bool => "bool",
             Self::Char => "char",
+            Self::Str => "str",
         }
     }
 }
@@ -90,6 +93,7 @@ impl TryFrom<&str> for ScalarPrimitive {
             "f64" => Self::F64,
             "bool" => Self::Bool,
             "char" => Self::Char,
+            "str" => Self::Str,
             _ => anyhow::bail!("Unknown primitive scalar type: {}", value),
         };
         Ok(v)
@@ -102,8 +106,14 @@ pub struct Tuple {
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Hash, Clone)]
+pub struct Slice {
+    pub element_type: Box<ResolvedType>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Hash, Clone)]
 pub struct TypeReference {
     pub is_mutable: bool,
+    pub is_static: bool,
     pub inner: Box<ResolvedType>,
 }
 
@@ -121,7 +131,18 @@ pub struct ResolvedPathType {
     /// to work with types that we want to code-generate into a new crate.  
     pub rustdoc_id: Option<rustdoc_types::Id>,
     pub base_type: ImportPath,
-    pub generic_arguments: Vec<ResolvedType>,
+    pub generic_arguments: Vec<GenericArgument>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Hash, Clone)]
+pub enum GenericArgument {
+    Type(ResolvedType),
+    Lifetime(Lifetime),
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Hash, Clone)]
+pub enum Lifetime {
+    Static,
 }
 
 fn serialize_package_id<S>(package_id: &PackageId, serializer: S) -> Result<S::Ok, S::Error>
@@ -169,7 +190,16 @@ impl ResolvedType {
                     write!(buffer, "<").unwrap();
                     let mut arguments = t.generic_arguments.iter().peekable();
                     while let Some(argument) = arguments.next() {
-                        write!(buffer, "{}", argument.render_type(id2name)).unwrap();
+                        match argument {
+                            GenericArgument::Type(t) => {
+                                write!(buffer, "{}", t.render_type(id2name)).unwrap();
+                            }
+                            GenericArgument::Lifetime(l) => match l {
+                                Lifetime::Static => {
+                                    write!(buffer, "'static").unwrap();
+                                }
+                            },
+                        }
                         if arguments.peek().is_some() {
                             write!(buffer, ", ").unwrap();
                         }
@@ -178,10 +208,12 @@ impl ResolvedType {
                 }
             }
             ResolvedType::Reference(r) => {
+                write!(buffer, "&").unwrap();
+                if r.is_static {
+                    write!(buffer, "'static ").unwrap();
+                }
                 if r.is_mutable {
-                    write!(buffer, "&mut ").unwrap();
-                } else {
-                    write!(buffer, "&").unwrap();
+                    write!(buffer, "mut ").unwrap();
                 }
                 r.inner._render_type(id2name, buffer);
             }
@@ -198,6 +230,9 @@ impl ResolvedType {
             }
             ResolvedType::ScalarPrimitive(s) => {
                 write!(buffer, "{s}").unwrap();
+            }
+            ResolvedType::Slice(s) => {
+                write!(buffer, "[{}]", s.element_type.render_type(id2name)).unwrap();
             }
         }
     }
@@ -225,12 +260,26 @@ impl std::fmt::Debug for ResolvedType {
         match self {
             ResolvedType::ResolvedPath(t) => write!(f, "{t:?}"),
             ResolvedType::Reference(r) => write!(f, "{r:?}"),
-            ResolvedType::Tuple(t) => {
-                write!(f, "{t:?}")
-            }
-            ResolvedType::ScalarPrimitive(s) => {
-                write!(f, "{s:?}")
-            }
+            ResolvedType::Tuple(t) => write!(f, "{t:?}"),
+            ResolvedType::ScalarPrimitive(s) => write!(f, "{s:?}"),
+            ResolvedType::Slice(s) => write!(f, "{s:?}"),
+        }
+    }
+}
+
+impl std::fmt::Debug for GenericArgument {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            GenericArgument::Type(r) => write!(f, "{r:?}"),
+            GenericArgument::Lifetime(l) => write!(f, "{l:?}"),
+        }
+    }
+}
+
+impl std::fmt::Debug for Lifetime {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Lifetime::Static => write!(f, "'static"),
         }
     }
 }
@@ -253,6 +302,12 @@ impl std::fmt::Debug for ResolvedPathType {
     }
 }
 
+impl std::fmt::Debug for Slice {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[{:?}]", self.element_type)
+    }
+}
+
 impl std::fmt::Debug for Tuple {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "(")?;
@@ -271,6 +326,9 @@ impl std::fmt::Debug for Tuple {
 impl std::fmt::Debug for TypeReference {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "&")?;
+        if self.is_static {
+            write!(f, "'static ")?;
+        }
         if self.is_mutable {
             write!(f, "mut ")?;
         }

@@ -1,0 +1,9 @@
+description = "pavex is able to handle the most common output type (i.e.  implementers of IntoResponse)"
+
+[expectations]
+codegen = "pass"
+
+[dependencies]
+bytes = "1"
+http-body = "0.4"
+http = "0.2"

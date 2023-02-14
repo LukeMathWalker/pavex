@@ -90,7 +90,9 @@ pub(crate) fn implements_trait(
                     &generic_bindings,
                 )
                 .unwrap();
-                return implements_trait(krate_collection, &type_, expected_trait);
+                if implements_trait(krate_collection, &type_, expected_trait) {
+                    return true;
+                }
             }
             let impls = match &type_item.inner {
                 ItemEnum::Struct(s) => &s.impls,
@@ -140,14 +142,35 @@ pub(crate) fn implements_trait(
                 || expected_trait.base_type == ["core", "marker", "Unpin"]
                 || expected_trait.base_type == ["core", "clone", "Clone"]
             {
-                return t
-                    .elements
+                if t.elements
                     .iter()
-                    .all(|t| implements_trait(krate_collection, t, expected_trait));
+                    .all(|t| implements_trait(krate_collection, t, expected_trait))
+                {
+                    return true;
+                }
             }
         }
-        ResolvedType::Reference(_r) => {
-            todo!()
+        ResolvedType::Reference(r) => {
+            // `& &T` is `Send` if `&T` is `Send`, therefore `&T` is `Sync` if `T` if `Sync`.
+            if expected_trait.base_type == ["core", "marker", "Sync"]
+                // `&T` is `Send` if `T` is `Send`.
+                // See https://doc.rust-lang.org/std/marker/trait.Send.html#impl-Send-for-%26T
+                || expected_trait.base_type == ["core", "marker", "Send"]
+            {
+                if implements_trait(krate_collection, &r.inner, expected_trait) {
+                    return true;
+                }
+            }
+            // `&T` is always `Copy`, but `&mut T` is never `Copy`.
+            // See https://doc.rust-lang.org/std/marker/trait.Copy.html#impl-Copy-for-%26T and
+            // https://doc.rust-lang.org/std/marker/trait.Copy.html#when-cant-my-type-be-copy
+            if (expected_trait.base_type == ["core", "clone", "Copy"] && !r.is_mutable)
+                // `Copy` implies `Clone`.
+                || (expected_trait.base_type == ["core", "clone", "Clone"] && !r.is_mutable)
+            {
+                return true;
+            }
+            // TODO: Unpin and other traits
         }
         ResolvedType::ScalarPrimitive(_) => {
             if expected_trait.base_type == ["core", "marker", "Send"]
@@ -158,7 +181,17 @@ pub(crate) fn implements_trait(
             {
                 return true;
             }
-            todo!()
+            // TODO: handle other traits
+        }
+        ResolvedType::Slice(s) => {
+            if expected_trait.base_type == ["core", "marker", "Send"]
+                || expected_trait.base_type == ["core", "marker", "Sync"]
+            {
+                if implements_trait(krate_collection, &s.element_type, expected_trait) {
+                    return true;
+                }
+            }
+            // TODO: handle Unpin + other traits
         }
     }
 
@@ -245,7 +278,12 @@ fn is_equivalent(
         } => {
             if let ResolvedType::Reference(type_) = our_type {
                 return type_.is_mutable == *mutable
-                    && is_equivalent(inner_type, our_type, krate_collection, used_by_package_id);
+                    && is_equivalent(
+                        inner_type,
+                        &type_.inner,
+                        krate_collection,
+                        used_by_package_id,
+                    );
             }
         }
         Type::Tuple(rustdoc_tuple) => {
@@ -266,6 +304,21 @@ fn is_equivalent(
                     }
                 }
                 return true;
+            }
+        }
+        Type::Primitive(p) => {
+            if let ResolvedType::ScalarPrimitive(our_primitive) = our_type {
+                return our_primitive.as_str() == p;
+            }
+        }
+        Type::Slice(s) => {
+            if let ResolvedType::Slice(our_slice) = our_type {
+                return is_equivalent(
+                    &s,
+                    &our_slice.element_type,
+                    krate_collection,
+                    used_by_package_id,
+                );
             }
         }
         n => {

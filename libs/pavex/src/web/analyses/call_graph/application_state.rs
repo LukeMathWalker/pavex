@@ -11,7 +11,8 @@ use proc_macro2::Ident;
 use pavex_builder::Lifecycle;
 
 use crate::language::{
-    Callable, InvocationStyle, ResolvedPath, ResolvedPathSegment, ResolvedPathType, ResolvedType,
+    Callable, GenericArgument, InvocationStyle, ResolvedPath, ResolvedPathSegment,
+    ResolvedPathType, ResolvedType,
 };
 use crate::rustdoc::CORE_PACKAGE_ID;
 use crate::web::analyses::call_graph::{
@@ -141,8 +142,8 @@ pub(crate) fn application_state_call_graph(
         rustdoc_id: None,
         base_type: vec!["core".into(), "result".into(), "Result".into()],
         generic_arguments: vec![
-            application_state_type.clone().into(),
-            error_enum.clone().into(),
+            GenericArgument::Type(application_state_type.clone().into()),
+            GenericArgument::Type(error_enum.clone().into()),
         ],
     };
     // We need to add an `Ok` wrap around `ApplicationState`, since we are returning a `Result`.

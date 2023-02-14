@@ -10,8 +10,9 @@ use guppy::PackageId;
 use rustdoc_types::{GenericArg, GenericArgs, GenericParamDefKind, ItemEnum, Type};
 
 use crate::language::{
-    Callable, InvocationStyle, ResolvedPath, ResolvedPathType, ResolvedType, Tuple, TypeReference,
-    UnknownPath,
+    Callable, GenericArgument, InvocationStyle, Lifetime, ResolvedPath,
+    ResolvedPathGenericArgument, ResolvedPathLifetime, ResolvedPathType, ResolvedType, Slice,
+    Tuple, TypeReference, UnknownPath,
 };
 use crate::rustdoc::{CannotGetCrateData, RustdocKindExt};
 use crate::rustdoc::{CrateCollection, ResolvedItem};
@@ -68,19 +69,22 @@ pub(crate) fn resolve_type(
                     match &**args {
                         GenericArgs::AngleBracketed { args, .. } => {
                             for arg in args {
-                                match arg {
-                                    GenericArg::Lifetime(_) => {
-                                        return Err(anyhow!(
-                                        "We do not support lifetime arguments in types yet. Sorry!"
-                                    ));
+                                let generic_argument = match arg {
+                                    GenericArg::Lifetime(l) if l == "'static" => {
+                                        GenericArgument::Lifetime(Lifetime::Static)
                                     }
                                     GenericArg::Type(generic_type) => {
-                                        generics.push(resolve_type(
+                                        GenericArgument::Type(resolve_type(
                                             generic_type,
                                             used_by_package_id,
                                             krate_collection,
                                             generic_bindings,
-                                        )?);
+                                        )?)
+                                    }
+                                    GenericArg::Lifetime(_) => {
+                                        return Err(anyhow!(
+                                            "We do not support non-static lifetime arguments in types yet. Sorry!"
+                                        ));
                                     }
                                     GenericArg::Const(_) => {
                                         return Err(anyhow!(
@@ -90,7 +94,8 @@ pub(crate) fn resolve_type(
                                     GenericArg::Infer => {
                                         return Err(anyhow!("We do not support inferred generic arguments in types yet. Sorry!"));
                                     }
-                                }
+                                };
+                                generics.push(generic_argument);
                             }
                         }
                         GenericArgs::Parenthesized { .. } => {
@@ -108,7 +113,7 @@ pub(crate) fn resolve_type(
             }
         }
         Type::BorrowedRef {
-            lifetime: _,
+            lifetime,
             mutable,
             type_,
         } => {
@@ -126,6 +131,7 @@ pub(crate) fn resolve_type(
             )?;
             let t = TypeReference {
                 is_mutable: *mutable,
+                is_static: lifetime.as_ref().map(|l| l == "'static").unwrap_or(false),
                 inner: Box::new(resolved_type),
             };
             Ok(t.into())
@@ -153,6 +159,17 @@ pub(crate) fn resolve_type(
             Ok(ResolvedType::Tuple(Tuple { elements: types }))
         }
         Type::Primitive(p) => Ok(ResolvedType::ScalarPrimitive(p.as_str().try_into()?)),
+        Type::Slice(type_) => {
+            let inner = resolve_type(
+                type_,
+                used_by_package_id,
+                krate_collection,
+                generic_bindings,
+            )?;
+            Ok(ResolvedType::Slice(Slice {
+                element_type: Box::new(inner),
+            }))
+        }
         _ => Err(anyhow!(
             "I cannot handle this kind ({:?}) of type yet. Sorry!",
             type_
@@ -250,8 +267,16 @@ pub(crate) fn resolve_type_path(
     let mut generic_arguments = vec![];
     for segment in &path.segments {
         for generic_path in &segment.generic_arguments {
-            // TODO: remove unwrap
-            generic_arguments.push(generic_path.resolve(krate_collection).unwrap());
+            let arg = match generic_path {
+                ResolvedPathGenericArgument::Type(t) => {
+                    // TODO: remove unwrap
+                    GenericArgument::Type(t.resolve(krate_collection).unwrap())
+                }
+                ResolvedPathGenericArgument::Lifetime(l) => match l {
+                    ResolvedPathLifetime::Static => GenericArgument::Lifetime(Lifetime::Static),
+                },
+            };
+            generic_arguments.push(arg);
         }
     }
     Ok(ResolvedPathType {
