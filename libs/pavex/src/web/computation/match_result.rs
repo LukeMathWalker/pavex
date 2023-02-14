@@ -1,4 +1,4 @@
-use crate::language::ResolvedType;
+use crate::language::{GenericArgument, ResolvedType};
 
 /// A branching constructor: extract one of the variant out of a Rust enum.
 /// E.g. get a `T` (or `E`) from a `Result<T, E>`.
@@ -29,13 +29,17 @@ impl MatchResult {
             "{result_type:?} does not have two generic arguments, as expected"
         );
         let mut generics = inner_result_type.generic_arguments.iter();
-        let ok_type = generics.next().unwrap().to_owned();
+        let GenericArgument::Type(ok_type) = generics.next().unwrap().to_owned() else {
+            unreachable!()
+        };
         let ok_constructor = MatchResult {
             input: inner_result_type.clone().into(),
             output: ok_type,
             variant: MatchResultVariant::Ok,
         };
-        let err_type = generics.next().unwrap().to_owned();
+        let GenericArgument::Type(err_type) = generics.next().unwrap().to_owned() else {
+            unreachable!()
+        };
         let err_constructor = MatchResult {
             input: inner_result_type.clone().into(),
             output: err_type,

@@ -17,6 +17,7 @@ use crate::web::analyses::computations::ComputationDb;
 use crate::web::analyses::raw_identifiers::RawCallableIdentifiersDb;
 use crate::web::analyses::user_components::{UserComponentDb, UserComponentId};
 
+#[derive(Debug)]
 pub(crate) struct ConstructibleDb {
     type2constructor_id: HashMap<ResolvedType, ComponentId>,
 }

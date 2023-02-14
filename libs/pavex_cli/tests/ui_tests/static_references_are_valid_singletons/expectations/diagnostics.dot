@@ -1,0 +1,12 @@
+digraph "/handler" {
+    0 [ label = "app::handler(&'static str) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
+    1 [ label = "&'static str"]
+    2 [ label = "<http::Response::<http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>> as pavex_runtime::response::IntoResponse>::into_response(http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
+    1 -> 0 [ ]
+    0 -> 2 [ ]
+}
+digraph app_state {
+    0 [ label = "crate::ApplicationState(&'static str) -> crate::ApplicationState"]
+    1 [ label = "app::static_str() -> &'static str"]
+    1 -> 0 [ ]
+}

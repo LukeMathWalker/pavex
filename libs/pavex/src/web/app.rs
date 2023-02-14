@@ -319,10 +319,14 @@ fn get_required_singleton_types<'a>(
     let mut singletons_to_be_built = IndexSet::new();
     for (_, handler_call_graph) in handler_call_graphs {
         for required_input in handler_call_graph.required_input_types() {
-            // We don't care if the type is required as a shared reference or an owned instance here.
-            // We care about the underlying type.
             let required_input = if let ResolvedType::Reference(t) = &required_input {
-                t.inner.deref()
+                if !t.is_static {
+                    // We can't store non-'static references in the application state, so we expect
+                    // to see the referenced type in there.
+                    t.inner.deref()
+                } else {
+                    &required_input
+                }
             } else {
                 &required_input
             };
@@ -384,7 +388,11 @@ fn verify_singletons(
         diagnostics: &mut Vec<miette::Error>,
     ) {
         let t = if let ResolvedType::Reference(ref t) = e.type_ {
-            t.inner.deref().clone()
+            if !t.is_static {
+                t.inner.deref().clone()
+            } else {
+                e.type_.clone()
+            }
         } else {
             e.type_.clone()
         };

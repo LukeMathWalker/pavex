@@ -312,11 +312,11 @@ where
                 if let HydratedComponent::Transformer(Computation::MatchResult(m)) =
                     component_db.hydrated_component(*component_id, computation_db)
                 {
-                    if m.variant == MatchResultVariant::Ok {
-                        new_root_index = node_index;
-                        break;
+                    if m.variant == MatchResultVariant::Err {
+                        continue;
                     }
                 }
+                new_root_index = node_index;
             }
         }
         new_root_index

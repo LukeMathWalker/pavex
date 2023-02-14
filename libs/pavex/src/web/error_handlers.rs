@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter};
 
-use crate::language::{Callable, ResolvedPath, ResolvedType, TypeReference};
+use crate::language::{Callable, GenericArgument, ResolvedPath, ResolvedType, TypeReference};
 use crate::web::utils::is_result;
 
 /// A transformation that, given a reference to an error type (and, optionally, other inputs),
@@ -36,9 +36,12 @@ impl ErrorHandler {
             let ResolvedType::ResolvedPath(result_type) = result_type else {
                 unreachable!()
             };
-            let e = result_type.generic_arguments[1].clone();
+            let GenericArgument::Type(e) = result_type.generic_arguments[1].clone() else {
+                unreachable!()
+            };
             ResolvedType::Reference(TypeReference {
                 is_mutable: false,
+                is_static: false,
                 inner: Box::new(e),
             })
         };
