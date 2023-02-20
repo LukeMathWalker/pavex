@@ -53,15 +53,17 @@ pub(crate) struct UserComponentDb {
 impl UserComponentDb {
     pub fn build(bp: &Blueprint, raw_callable_identifiers_db: &RawCallableIdentifiersDb) -> Self {
         let mut interner = Interner::new();
-        for (route, request_handler) in &bp.router {
-            let raw_callable_identifiers_id = raw_callable_identifiers_db[request_handler];
+        for registered_route in &bp.routes {
+            let raw_callable_identifiers_id =
+                raw_callable_identifiers_db[&registered_route.request_handler.callable];
             let component = UserComponent::RequestHandler {
                 raw_callable_identifiers_id,
-                route: route.to_owned(),
+                route: registered_route.path.to_owned(),
             };
             let request_handler_id = interner.get_or_intern(component);
-            if let Some(error_handler) = bp.request_handlers_error_handlers.get(route) {
-                let raw_callable_identifiers_id = raw_callable_identifiers_db[error_handler];
+            if let Some(error_handler) = &registered_route.error_handler {
+                let raw_callable_identifiers_id =
+                    raw_callable_identifiers_db[&error_handler.callable];
                 let component = UserComponent::ErrorHandler {
                     raw_callable_identifiers_id,
                     fallible_callable_identifiers_id: request_handler_id,

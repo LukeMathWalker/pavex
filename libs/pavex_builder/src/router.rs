@@ -1,4 +1,8 @@
 use std::collections::HashSet;
+use std::str::FromStr;
+
+use serde::ser::SerializeSeq;
+use serde::{Deserializer, Serializer};
 
 use pavex_runtime::http::Method;
 
@@ -12,7 +16,7 @@ use pavex_runtime::http::Method;
 /// If you want to match a list of HTTP methods, use [`MethodGuard::new`].  
 ///
 /// [`Blueprint::route`]: crate::Blueprint::route
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct MethodGuard {
     allowed_methods: AllowedMethods,
 }
@@ -44,6 +48,55 @@ enum AllowedMethods {
     All,
     Single(Method),
     Multiple(HashSet<Method>),
+}
+
+impl serde::Serialize for AllowedMethods {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut seq = serializer.serialize_seq(None)?;
+        match self {
+            AllowedMethods::All => seq.serialize_element("*")?,
+            AllowedMethods::Single(method) => seq.serialize_element(method.as_str())?,
+            AllowedMethods::Multiple(methods) => {
+                for method in methods {
+                    seq.serialize_element(method.as_str())?;
+                }
+            }
+        }
+        seq.end()
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for AllowedMethods {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let methods: Vec<String> = serde::de::Deserialize::deserialize(deserializer)?;
+        if methods.is_empty() {
+            return Err(serde::de::Error::custom("expected at least one method"));
+        }
+        if methods.len() == 1 {
+            if methods[0] == "*" {
+                return Ok(AllowedMethods::All);
+            }
+            return match Method::from_str(&methods[0]) {
+                Ok(method) => Ok(AllowedMethods::Single(method)),
+                Err(e) => Err(serde::de::Error::custom(format!("invalid method: {}", e))),
+            };
+        }
+        let mut set = HashSet::new();
+        for method in methods {
+            let method = match Method::from_str(&method) {
+                Ok(method) => method,
+                Err(e) => return Err(serde::de::Error::custom(format!("invalid method: {}", e))),
+            };
+            set.insert(method);
+        }
+        Ok(AllowedMethods::Multiple(set))
+    }
 }
 
 /// A [`MethodGuard`] that matches all incoming requests, regardless of their HTTP method.

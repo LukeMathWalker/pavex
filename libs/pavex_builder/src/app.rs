@@ -1,4 +1,3 @@
-use std::collections::BTreeMap;
 use std::fmt::{Display, Formatter};
 
 use indexmap::{IndexMap, IndexSet};
@@ -20,10 +19,6 @@ use crate::{router::MethodGuard, Callable};
 pub struct Blueprint {
     /// The set of registered constructors.
     pub constructors: IndexSet<RawCallableIdentifiers>,
-    /// - Keys: a path (e.g. `/homes/rooms`).
-    /// - Values: [`RawCallableIdentifiers`] of an error handler for the error type returned by
-    /// the request handler specified for that path.
-    pub request_handlers_error_handlers: IndexMap<String, RawCallableIdentifiers>,
     /// - Keys: [`RawCallableIdentifiers`] of a **fallible** constructor.
     /// - Values: [`RawCallableIdentifiers`] of an error handler for the error type returned by
     /// the constructor.
@@ -31,26 +26,35 @@ pub struct Blueprint {
     /// - Keys: [`RawCallableIdentifiers`] of a constructor.
     /// - Values: the [`Lifecycle`] for the type returned by the constructor.
     pub component_lifecycles: IndexMap<RawCallableIdentifiers, Lifecycle>,
-    /// - Keys: a path (e.g. `/homes/rooms`).
-    /// - Values: [`RawCallableIdentifiers`] of the request handler in charge of processing
-    /// incoming requests for that path.
-    pub router: BTreeMap<String, RawCallableIdentifiers>,
-    /// - Keys: a path (e.g. `/homes/rooms`).
-    /// - Values: a [`Location`] pointing at the corresponding invocation of
-    /// [`Blueprint::route`].
-    pub request_handler_locations: IndexMap<String, Location>,
     /// - Keys: [`RawCallableIdentifiers`] of the fallible constructor.
     /// - Values: a [`Location`] pointing at the corresponding invocation of
     /// [`Constructor::error_handler`].
     pub error_handler_locations: IndexMap<RawCallableIdentifiers, Location>,
-    /// - Keys: the path (e.g. `/homes/rooms`) of the corresponding request handler.
-    /// - Values: a [`Location`] pointing at the corresponding invocation of
-    /// [`Route::error_handler`].
-    pub request_error_handler_locations: IndexMap<String, Location>,
     /// - Keys: [`RawCallableIdentifiers`] of a constructor.
     /// - Values: a [`Location`] pointing at the corresponding invocation of
     /// [`Blueprint::constructor`].
     pub constructor_locations: IndexMap<RawCallableIdentifiers, Location>,
+    /// All registered routes, in the order they were registered.
+    pub routes: Vec<RegisteredRoute>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+/// A route registered against a [`Blueprint`] via [`Blueprint::route`].
+pub struct RegisteredRoute {
+    /// The path of the route.
+    pub path: String,
+    /// The HTTP method guard for the route.
+    pub method_guard: MethodGuard,
+    /// The callable in charge of processing incoming requests for this route.
+    pub request_handler: RegisteredCallable,
+    /// The callable in charge of processing errors returned by the request handler, if any.
+    pub error_handler: Option<RegisteredCallable>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct RegisteredCallable {
+    pub callable: RawCallableIdentifiers,
+    pub location: Location,
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -226,14 +230,20 @@ impl Blueprint {
     where
         F: Callable<HandlerInputs>,
     {
-        let callable_identifiers = RawCallableIdentifiers::new(callable.import_path);
-        self.request_handler_locations
-            .insert(path.to_owned(), std::panic::Location::caller().into());
-        self.router
-            .insert(path.to_owned(), callable_identifiers.clone());
+        let registered_route = RegisteredRoute {
+            path: path.to_owned(),
+            method_guard,
+            request_handler: RegisteredCallable {
+                callable: RawCallableIdentifiers::new(callable.import_path),
+                location: std::panic::Location::caller().into(),
+            },
+            error_handler: None,
+        };
+        let route_id = self.routes.len();
+        self.routes.push(registered_route);
         Route {
             blueprint: self,
-            path: path.to_owned(),
+            route_id,
         }
     }
 
@@ -301,7 +311,7 @@ impl<'a> From<&'a std::panic::Location<'a>> for Location {
 pub struct Route<'a> {
     #[allow(dead_code)]
     blueprint: &'a mut Blueprint,
-    path: String,
+    route_id: usize,
 }
 
 impl<'a> Route<'a> {
@@ -352,12 +362,11 @@ impl<'a> Route<'a> {
         F: Callable<HandlerInputs>,
     {
         let callable_identifiers = RawCallableIdentifiers::new(error_handler.import_path);
-        self.blueprint
-            .request_error_handler_locations
-            .insert(self.path.to_owned(), std::panic::Location::caller().into());
-        self.blueprint
-            .request_handlers_error_handlers
-            .insert(self.path.to_owned(), callable_identifiers);
+        let callable = RegisteredCallable {
+            callable: callable_identifiers,
+            location: std::panic::Location::caller().into(),
+        };
+        self.blueprint.routes[self.route_id].error_handler = Some(callable);
         self
     }
 }
