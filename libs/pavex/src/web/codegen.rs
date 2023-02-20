@@ -329,9 +329,9 @@ fn get_request_dispatcher(
                 quote! {
                     match request.method() {
                         #sub_router_dispatch_table
-                        s => {
+                        _ => {
                             pavex_runtime::response::Response::builder()
-                                .status(http::StatusCode::METHOD_NOT_ALLOWED)
+                                .status(pavex_runtime::http::StatusCode::METHOD_NOT_ALLOWED)
                                 .header(pavex_runtime::http::header::ALLOW, #allow_header_value)
                                 .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
                                 .unwrap()
@@ -351,13 +351,17 @@ fn get_request_dispatcher(
         };
     }
 
-    // TODO: we definitely do NOT want to panic here, we need to return a 404 to the caller.
     syn::parse2(quote! {
         async fn route_request(request: pavex_runtime::http::Request<pavex_runtime::hyper::body::Body>, #server_state_ident: std::sync::Arc<ServerState>) -> pavex_runtime::response::Response {
             let route_id = server_state.router.at(request.uri().path()).expect("Failed to match incoming request path");
             match route_id.value {
                 #route_dispatch_table
-                _ => panic!("This is a bug, no route registered for a route id"),
+                _ => {
+                    pavex_runtime::response::Response::builder()
+                        .status(pavex_runtime::http::StatusCode::NOT_FOUND)
+                        .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
+                        .unwrap()
+                }
             }
         }
     }).unwrap()

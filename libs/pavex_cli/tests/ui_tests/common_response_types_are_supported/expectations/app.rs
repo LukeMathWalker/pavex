@@ -73,82 +73,165 @@ async fn route_request(
         0u32 => {
             match request.method() {
                 &pavex_runtime::http::Method::GET => route_handler_0().await,
-                s => panic!("This is a bug, no handler registered for `{s}` method"),
+                _ => {
+                    pavex_runtime::response::Response::builder()
+                        .status(pavex_runtime::http::StatusCode::METHOD_NOT_ALLOWED)
+                        .header(pavex_runtime::http::header::ALLOW, "GET")
+                        .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
+                        .unwrap()
+                }
             }
         }
         1u32 => {
             match request.method() {
                 &pavex_runtime::http::Method::GET => route_handler_1().await,
-                s => panic!("This is a bug, no handler registered for `{s}` method"),
+                _ => {
+                    pavex_runtime::response::Response::builder()
+                        .status(pavex_runtime::http::StatusCode::METHOD_NOT_ALLOWED)
+                        .header(pavex_runtime::http::header::ALLOW, "GET")
+                        .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
+                        .unwrap()
+                }
             }
         }
         2u32 => {
             match request.method() {
                 &pavex_runtime::http::Method::GET => route_handler_2().await,
-                s => panic!("This is a bug, no handler registered for `{s}` method"),
+                _ => {
+                    pavex_runtime::response::Response::builder()
+                        .status(pavex_runtime::http::StatusCode::METHOD_NOT_ALLOWED)
+                        .header(pavex_runtime::http::header::ALLOW, "GET")
+                        .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
+                        .unwrap()
+                }
             }
         }
         3u32 => {
             match request.method() {
                 &pavex_runtime::http::Method::GET => route_handler_3().await,
-                s => panic!("This is a bug, no handler registered for `{s}` method"),
+                _ => {
+                    pavex_runtime::response::Response::builder()
+                        .status(pavex_runtime::http::StatusCode::METHOD_NOT_ALLOWED)
+                        .header(pavex_runtime::http::header::ALLOW, "GET")
+                        .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
+                        .unwrap()
+                }
             }
         }
         4u32 => {
             match request.method() {
                 &pavex_runtime::http::Method::GET => route_handler_4().await,
-                s => panic!("This is a bug, no handler registered for `{s}` method"),
+                _ => {
+                    pavex_runtime::response::Response::builder()
+                        .status(pavex_runtime::http::StatusCode::METHOD_NOT_ALLOWED)
+                        .header(pavex_runtime::http::header::ALLOW, "GET")
+                        .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
+                        .unwrap()
+                }
             }
         }
         5u32 => {
             match request.method() {
                 &pavex_runtime::http::Method::GET => route_handler_5().await,
-                s => panic!("This is a bug, no handler registered for `{s}` method"),
+                _ => {
+                    pavex_runtime::response::Response::builder()
+                        .status(pavex_runtime::http::StatusCode::METHOD_NOT_ALLOWED)
+                        .header(pavex_runtime::http::header::ALLOW, "GET")
+                        .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
+                        .unwrap()
+                }
             }
         }
         6u32 => {
             match request.method() {
                 &pavex_runtime::http::Method::GET => route_handler_6().await,
-                s => panic!("This is a bug, no handler registered for `{s}` method"),
+                _ => {
+                    pavex_runtime::response::Response::builder()
+                        .status(pavex_runtime::http::StatusCode::METHOD_NOT_ALLOWED)
+                        .header(pavex_runtime::http::header::ALLOW, "GET")
+                        .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
+                        .unwrap()
+                }
             }
         }
         7u32 => {
             match request.method() {
                 &pavex_runtime::http::Method::GET => route_handler_7().await,
-                s => panic!("This is a bug, no handler registered for `{s}` method"),
+                _ => {
+                    pavex_runtime::response::Response::builder()
+                        .status(pavex_runtime::http::StatusCode::METHOD_NOT_ALLOWED)
+                        .header(pavex_runtime::http::header::ALLOW, "GET")
+                        .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
+                        .unwrap()
+                }
             }
         }
         8u32 => {
             match request.method() {
                 &pavex_runtime::http::Method::GET => route_handler_8().await,
-                s => panic!("This is a bug, no handler registered for `{s}` method"),
+                _ => {
+                    pavex_runtime::response::Response::builder()
+                        .status(pavex_runtime::http::StatusCode::METHOD_NOT_ALLOWED)
+                        .header(pavex_runtime::http::header::ALLOW, "GET")
+                        .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
+                        .unwrap()
+                }
             }
         }
         9u32 => {
             match request.method() {
                 &pavex_runtime::http::Method::GET => route_handler_9().await,
-                s => panic!("This is a bug, no handler registered for `{s}` method"),
+                _ => {
+                    pavex_runtime::response::Response::builder()
+                        .status(pavex_runtime::http::StatusCode::METHOD_NOT_ALLOWED)
+                        .header(pavex_runtime::http::header::ALLOW, "GET")
+                        .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
+                        .unwrap()
+                }
             }
         }
         10u32 => {
             match request.method() {
                 &pavex_runtime::http::Method::GET => route_handler_10().await,
-                s => panic!("This is a bug, no handler registered for `{s}` method"),
+                _ => {
+                    pavex_runtime::response::Response::builder()
+                        .status(pavex_runtime::http::StatusCode::METHOD_NOT_ALLOWED)
+                        .header(pavex_runtime::http::header::ALLOW, "GET")
+                        .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
+                        .unwrap()
+                }
             }
         }
         11u32 => {
             match request.method() {
                 &pavex_runtime::http::Method::GET => route_handler_11().await,
-                s => panic!("This is a bug, no handler registered for `{s}` method"),
+                _ => {
+                    pavex_runtime::response::Response::builder()
+                        .status(pavex_runtime::http::StatusCode::METHOD_NOT_ALLOWED)
+                        .header(pavex_runtime::http::header::ALLOW, "GET")
+                        .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
+                        .unwrap()
+                }
             }
         }
         12u32 => {
             match request.method() {
                 &pavex_runtime::http::Method::GET => route_handler_12().await,
-                s => panic!("This is a bug, no handler registered for `{s}` method"),
+                _ => {
+                    pavex_runtime::response::Response::builder()
+                        .status(pavex_runtime::http::StatusCode::METHOD_NOT_ALLOWED)
+                        .header(pavex_runtime::http::header::ALLOW, "GET")
+                        .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
+                        .unwrap()
+                }
             }
         }
-        _ => panic!("This is a bug, no route registered for a route id"),
+        _ => {
+            pavex_runtime::response::Response::builder()
+                .status(pavex_runtime::http::StatusCode::NOT_FOUND)
+                .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
+                .unwrap()
+        }
     }
 }
 pub async fn route_handler_0() -> http::Response<

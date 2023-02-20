@@ -67,10 +67,21 @@ async fn route_request(
                     route_handler_0(server_state.application_state.s0.clone(), request)
                         .await
                 }
-                s => panic!("This is a bug, no handler registered for `{s}` method"),
+                _ => {
+                    pavex_runtime::response::Response::builder()
+                        .status(pavex_runtime::http::StatusCode::METHOD_NOT_ALLOWED)
+                        .header(pavex_runtime::http::header::ALLOW, "GET")
+                        .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
+                        .unwrap()
+                }
             }
         }
-        _ => panic!("This is a bug, no route registered for a route id"),
+        _ => {
+            pavex_runtime::response::Response::builder()
+                .status(pavex_runtime::http::StatusCode::NOT_FOUND)
+                .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
+                .unwrap()
+        }
     }
 }
 pub async fn route_handler_0(
