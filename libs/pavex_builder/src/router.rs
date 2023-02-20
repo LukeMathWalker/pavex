@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use pavex_runtime::http::Method;
 
 /// Match incoming requests based on their HTTP method.
@@ -41,7 +43,7 @@ impl MethodGuard {
 enum AllowedMethods {
     All,
     Single(Method),
-    Multiple(Vec<Method>),
+    Multiple(HashSet<Method>),
 }
 
 /// A [`MethodGuard`] that matches all incoming requests, regardless of their HTTP method.
