@@ -325,8 +325,6 @@ fn get_request_dispatcher(
                         &pavex_runtime::http::Method::#method => #invocation,
                     }
                 }
-                // TODO: we do NOT want to panic here, we should return a 405 to the caller with
-                //   the list of allowed methods.
                 let allow_header_value = allowed_methods.join(", ");
                 quote! {
                     match request.method() {
