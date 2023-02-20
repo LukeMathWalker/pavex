@@ -39,13 +39,13 @@ digraph "/response" {
     0 -> 1 [ ]
 }
 digraph "/static_str" {
-    0 [ label = "app::static_str() -> &str"]
-    1 [ label = "<&str as pavex_runtime::response::IntoResponse>::into_response(&str) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
+    0 [ label = "app::static_str() -> &'static str"]
+    1 [ label = "<&str as pavex_runtime::response::IntoResponse>::into_response(&'static str) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
     0 -> 1 [ ]
 }
 digraph "/static_u8_slice" {
-    0 [ label = "app::static_u8_slice() -> &[u8]"]
-    1 [ label = "<&[u8] as pavex_runtime::response::IntoResponse>::into_response(&[u8]) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
+    0 [ label = "app::static_u8_slice() -> &'static [u8]"]
+    1 [ label = "<&[u8] as pavex_runtime::response::IntoResponse>::into_response(&'static [u8]) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
     0 -> 1 [ ]
 }
 digraph "/status_code" {

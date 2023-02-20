@@ -9,7 +9,7 @@ use tracing_subscriber::EnvFilter;
 
 use owo_colors::OwoColorize;
 use pavex::App;
-use pavex_builder::AppBlueprint;
+use pavex_builder::Blueprint;
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
@@ -76,7 +76,7 @@ fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
             diagnostics,
             output,
         } => {
-            let blueprint = AppBlueprint::load(&blueprint)?;
+            let blueprint = Blueprint::load(&blueprint)?;
             let app = match App::build(blueprint) {
                 Ok(a) => a,
                 Err(errors) => {

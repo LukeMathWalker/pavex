@@ -1,7 +1,7 @@
 [31m[1mERROR[0m[39m: 
   × I do not know how to handle the type returned by `app::c`.
     ╭─[src/lib.rs:8:1]
-  8 │     let mut bp = AppBlueprint::new();
+  8 │     let mut bp = Blueprint::new();
   9 │     bp.route(f!(crate::c), "/home");
     ·              ──────┬─────
     ·                    ╰── The request handler was registered here

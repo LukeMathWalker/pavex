@@ -1,7 +1,7 @@
 [31m[1mERROR[0m[39m: 
   × `new_logger` is not a fully-qualified import path.
     ╭─[src/lib.rs:9:1]
-  9 │     let mut bp = AppBlueprint::new();
+  9 │     let mut bp = Blueprint::new();
  10 │     bp.constructor(f!(new_logger), Lifecycle::Singleton);
     ·                    ───────┬──────
     ·                           ╰── The relative import path was registered here

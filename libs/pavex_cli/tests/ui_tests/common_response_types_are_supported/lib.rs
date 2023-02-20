@@ -4,7 +4,7 @@ use bytes::{Bytes, BytesMut};
 use http::response::Parts;
 use http::status::StatusCode;
 use http_body::{Empty, Full};
-use pavex_builder::{f, AppBlueprint, Lifecycle};
+use pavex_builder::{f, Blueprint, Lifecycle};
 
 pub fn response() -> pavex_runtime::response::Response {
     todo!()
@@ -58,8 +58,8 @@ pub fn cow_static_u8_slice() -> Cow<'static, [u8]> {
     todo!()
 }
 
-pub fn blueprint() -> AppBlueprint {
-    let mut bp = AppBlueprint::new();
+pub fn blueprint() -> Blueprint {
+    let mut bp = Blueprint::new();
     bp.route(f!(crate::response), "/response");
     bp.route(f!(crate::static_str), "/static_str");
     bp.route(f!(crate::string), "/string");

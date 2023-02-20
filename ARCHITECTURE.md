@@ -7,9 +7,9 @@ This is an ideal starting point if you want to contribute or gain a deeper under
 
 A `pavex` project goes through three stages in order to generate runnable application code:
 
-1. Build an instance of `AppBlueprint`, a representation of the desired application behaviour;
-2. Serialize `AppBlueprint`, either to a file or in-memory;
-3. Generate the application source code using `pavex_cli`, using the serialized `AppBlueprint` as input.
+1. Build an instance of `Blueprint`, a representation of the desired application behaviour;
+2. Serialize `Blueprint`, either to a file or in-memory;
+3. Generate the application source code using `pavex_cli`, using the serialized `Blueprint` as input.
 
 In a diagram:
 
@@ -17,7 +17,7 @@ In a diagram:
 flowchart TB
     subgraph A["Stage 1 / Define behaviour"]
         direction LR
-        app_b[AppBlueprint] -->|Using| pavex_builder[pavex_builder]
+        app_b[Blueprint] -->|Using| pavex_builder[pavex_builder]
     end
 
     subgraph B["Stage 2 / Serialize the blueprint"]
@@ -43,7 +43,7 @@ flowchart TB
 
 As you can see in the diagram, the `pavex` project is actually underpinned by three user-facing components:
 
-- `pavex_builder`, where `AppBlueprint` lives;
+- `pavex_builder`, where `Blueprint` lives;
 - `pavex_runtime`, the "typical" web framework;
 - `pavex_cli`, the transpiler.
 
@@ -74,19 +74,19 @@ It will polished down the line, once the bulk of the work on `pavex_cli` is comp
 
 ### `pavex_builder`
 
-`pavex_builder` is the interface used to craft an `AppBlueprint` - a specification of how the application is supposed to
+`pavex_builder` is the interface used to craft an `Blueprint` - a specification of how the application is supposed to
 behave.
 
 ```rust
-use pavex_builder::{f, AppBlueprint, Lifecycle};
+use pavex_builder::{f, Blueprint, Lifecycle};
 
 /// The blueprint for our application.
 /// It lists all its routes and provides constructors for all the types
 /// that will be needed to invoke `stream_file`, our request handler.
 ///
 /// This will be turned into a ready-to-run web server by `pavex_cli`.
-pub fn blueprint() -> AppBlueprint {
-    AppBlueprint::new()
+pub fn blueprint() -> Blueprint {
+    Blueprint::new()
         .constructor(f!(crate::load_configuration), Lifecycle::Singleton)
         .constructor(f!(crate::http_client), Lifecycle::Singleton)
         .constructor(f!(crate::extract_path), Lifecycle::RequestScoped)
@@ -95,7 +95,7 @@ pub fn blueprint() -> AppBlueprint {
 }
 ```
 
-An `AppBlueprint` captures two types of information:
+An `Blueprint` captures two types of information:
 
 - route handlers (e.g. use `my_handler` for all incoming `/home` requests);
 - type constructors (e.g. use `my_constructor` every time you need to build an instance of type `MyType`).
@@ -108,12 +108,12 @@ For each type constructor, the developer must specify the lifecycle of its outpu
 - _transient_ - a new instance is built every time the type is needed, potentially multiple times for each incoming
   request.
 
-All this information is encoded into an `AppBlueprint` and passed as input to `pavex_cli` to generate the application's
+All this information is encoded into an `Blueprint` and passed as input to `pavex_cli` to generate the application's
 source code.
 
 ### `pavex_cli` and `pavex`
 
-`pavex_cli` is our transpiler, the component in charge of transforming an `AppBlueprint` into a ready-to-run web
+`pavex_cli` is our transpiler, the component in charge of transforming an `Blueprint` into a ready-to-run web
 server.  
 It is packaged as a binary, a thin wrapper over the (internal) `pavex` crate.
 

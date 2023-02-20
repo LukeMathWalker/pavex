@@ -1,4 +1,4 @@
-use pavex_builder::{f, AppBlueprint, Lifecycle};
+use pavex_builder::{f, Blueprint, Lifecycle};
 
 pub fn constructor() {
     todo!()
@@ -23,8 +23,8 @@ pub fn handler() -> pavex_runtime::response::Response {
     todo!()
 }
 
-pub fn blueprint() -> AppBlueprint {
-    let mut bp = AppBlueprint::new();
+pub fn blueprint() -> Blueprint {
+    let mut bp = Blueprint::new();
     bp.constructor(f!(crate::constructor), Lifecycle::Singleton);
     bp.constructor(
         f!(crate::fallible_constructor_building_unit),

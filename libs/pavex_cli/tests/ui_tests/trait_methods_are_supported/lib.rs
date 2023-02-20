@@ -1,4 +1,4 @@
-use pavex_builder::{f, AppBlueprint, Lifecycle};
+use pavex_builder::{f, Blueprint, Lifecycle};
 
 pub struct A;
 
@@ -52,8 +52,8 @@ pub fn handler(_a: A, _c: C, _d: D, _e: E) -> pavex_runtime::response::Response 
     todo!()
 }
 
-pub fn blueprint() -> AppBlueprint {
-    let mut bp = AppBlueprint::new();
+pub fn blueprint() -> Blueprint {
+    let mut bp = Blueprint::new();
     bp.constructor(
         f!(<crate::A as crate::MyTrait>::a_method_that_returns_self),
         Lifecycle::RequestScoped,

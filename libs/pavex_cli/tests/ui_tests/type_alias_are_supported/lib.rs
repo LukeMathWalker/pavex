@@ -1,4 +1,4 @@
-use pavex_builder::{f, AppBlueprint, Lifecycle};
+use pavex_builder::{f, Blueprint, Lifecycle};
 
 pub type MyTupleAlias = (bool, char, u8);
 
@@ -10,8 +10,8 @@ pub fn handler_with_input_tuple(input: MyTupleAlias) -> pavex_runtime::response:
     todo!()
 }
 
-pub fn blueprint() -> AppBlueprint {
-    let mut bp = AppBlueprint::new();
+pub fn blueprint() -> Blueprint {
+    let mut bp = Blueprint::new();
     bp.constructor(
         f!(crate::constructor_with_output_tuple),
         Lifecycle::Singleton,

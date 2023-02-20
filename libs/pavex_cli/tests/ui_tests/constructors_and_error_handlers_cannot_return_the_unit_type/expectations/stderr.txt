@@ -2,7 +2,7 @@
   × All constructors must return *something*.
   │ This constructor doesn't: it returns the unit type, `()`.
     ╭─[src/lib.rs:27:1]
- 27 │     let mut bp = AppBlueprint::new();
+ 27 │     let mut bp = Blueprint::new();
  28 │     bp.constructor(f!(crate::constructor), Lifecycle::Singleton);
     ·                    ───────────┬──────────
     ·                               ╰── The constructor was registered here

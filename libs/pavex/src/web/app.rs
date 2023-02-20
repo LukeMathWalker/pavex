@@ -12,7 +12,7 @@ use miette::miette;
 use proc_macro2::Ident;
 use quote::format_ident;
 
-use pavex_builder::{AppBlueprint, Lifecycle};
+use pavex_builder::{Blueprint, Lifecycle};
 
 use crate::diagnostic;
 use crate::diagnostic::{CompilerDiagnostic, LocationExt, SourceSpanExt};
@@ -68,7 +68,7 @@ macro_rules! exit_on_errors {
 
 impl App {
     #[tracing::instrument(skip_all)]
-    pub fn build(bp: AppBlueprint) -> Result<Self, Vec<miette::Error>> {
+    pub fn build(bp: Blueprint) -> Result<Self, Vec<miette::Error>> {
         let raw_identifiers_db = RawCallableIdentifiersDb::build(&bp);
         let user_component_db = UserComponentDb::build(&bp, &raw_identifiers_db);
         let package_graph = compute_package_graph().map_err(|e| vec![e])?;

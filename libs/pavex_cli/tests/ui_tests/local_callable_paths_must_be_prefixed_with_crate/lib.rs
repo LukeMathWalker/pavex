@@ -1,11 +1,11 @@
-use pavex_builder::{f, AppBlueprint};
+use pavex_builder::{f, Blueprint};
 
 pub fn handler() -> pavex_runtime::response::Response {
     todo!()
 }
 
-pub fn blueprint() -> AppBlueprint {
-    let mut bp = AppBlueprint::new();
+pub fn blueprint() -> Blueprint {
+    let mut bp = Blueprint::new();
     bp.route(f!(handler), "/home");
     bp
 }

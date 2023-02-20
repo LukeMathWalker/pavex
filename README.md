@@ -19,7 +19,7 @@ It generates as output the source code for a fully-fleshed web-server, behaving 
 to be launched.
 
 ```rust
-use pavex_builder::{f, AppBlueprint, Lifecycle};
+use pavex_builder::{f, Blueprint, Lifecycle};
 use pavex_runtime::{Request, Body, Response};
 use std::path::PathBuf;
 
@@ -28,8 +28,8 @@ use std::path::PathBuf;
 /// that will be needed to invoke `stream_file`, our request handler.
 ///
 /// This will be turned into a ready-to-run web server by `pavex_cli`.
-pub fn blueprint() -> AppBlueprint {
-    AppBlueprint::new()
+pub fn blueprint() -> Blueprint {
+    Blueprint::new()
         .constructor(f!(crate::load_configuration), Lifecycle::Singleton)
         .constructor(f!(crate::http_client), Lifecycle::Singleton)
         .constructor(f!(crate::extract_path), Lifecycle::RequestScoped)

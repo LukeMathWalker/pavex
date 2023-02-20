@@ -8,11 +8,11 @@ error[E0277]: the trait bound `Streamer: Callable<_>` is not satisfied
     |        |     this tail expression is of type `RawCallable<Streamer>`
     |        required by a bound introduced by this call
     |
-note: required by a bound in `AppBlueprint::route`
+note: required by a bound in `Blueprint::route`
    --> /Users/luca/code/pavex/libs/pavex_builder/src/app.rs:142:12
     |
 142 |         F: Callable<HandlerInputs>,
-    |            ^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `AppBlueprint::route`
+    |            ^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `Blueprint::route`
 
 For more information about this error, try `rustc --explain E0277`.
 error: could not compile `app` due to previous error

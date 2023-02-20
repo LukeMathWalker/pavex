@@ -3,7 +3,7 @@
   │ needs an instance of `std::path::PathBuf` as input, but I cannot find a
   │ constructor for that type.
     ╭─[src/lib.rs:10:1]
- 10 │     let mut bp = AppBlueprint::new();
+ 10 │     let mut bp = Blueprint::new();
  11 │     bp.route(f!(crate::stream_file), "/home");
     ·              ───────────┬──────────
     ·                         ╰── The request handler was registered here

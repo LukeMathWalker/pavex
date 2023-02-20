@@ -1,7 +1,7 @@
 [31m[1mERROR[0m[39m: 
   × `String` is not a fully-qualified import path.
     ╭─[src/lib.rs:14:1]
- 14 │     let mut bp = AppBlueprint::new();
+ 14 │     let mut bp = Blueprint::new();
  15 │     bp.constructor(f!(crate::new_logger::<String>), Lifecycle::Singleton);
     ·                    ───────────────┬───────────────
     ·                                   ╰── The relative import path was registered here

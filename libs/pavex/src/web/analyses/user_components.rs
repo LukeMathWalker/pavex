@@ -1,4 +1,4 @@
-use pavex_builder::AppBlueprint;
+use pavex_builder::Blueprint;
 
 use crate::web::analyses::raw_identifiers::{RawCallableIdentifierId, RawCallableIdentifiersDb};
 use crate::web::interner::Interner;
@@ -51,10 +51,7 @@ pub(crate) struct UserComponentDb {
 }
 
 impl UserComponentDb {
-    pub fn build(
-        bp: &AppBlueprint,
-        raw_callable_identifiers_db: &RawCallableIdentifiersDb,
-    ) -> Self {
+    pub fn build(bp: &Blueprint, raw_callable_identifiers_db: &RawCallableIdentifiersDb) -> Self {
         let mut interner = Interner::new();
         for (route, request_handler) in &bp.router {
             let raw_callable_identifiers_id = raw_callable_identifiers_db[request_handler];

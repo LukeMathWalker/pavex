@@ -1,6 +1,6 @@
 use ahash::{HashMap, HashMapExt};
 
-use pavex_builder::{AppBlueprint, Lifecycle, Location, RawCallableIdentifiers};
+use pavex_builder::{Blueprint, Lifecycle, Location, RawCallableIdentifiers};
 
 use crate::web::interner::Interner;
 
@@ -13,7 +13,7 @@ pub(crate) struct RawCallableIdentifiersDb {
 }
 
 impl RawCallableIdentifiersDb {
-    pub fn build(bp: &AppBlueprint) -> Self {
+    pub fn build(bp: &Blueprint) -> Self {
         let mut interner = Interner::new();
         let mut id2locations = HashMap::new();
         let mut id2lifecycle = HashMap::new();

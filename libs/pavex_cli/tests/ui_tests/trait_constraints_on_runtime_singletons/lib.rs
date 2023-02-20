@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use pavex_builder::{f, AppBlueprint, Lifecycle};
+use pavex_builder::{f, Blueprint, Lifecycle};
 
 pub struct NonSendSingleton(Rc<()>);
 
@@ -46,8 +46,8 @@ pub fn handler(
     todo!()
 }
 
-pub fn blueprint() -> AppBlueprint {
-    let mut bp = AppBlueprint::new();
+pub fn blueprint() -> Blueprint {
+    let mut bp = Blueprint::new();
     bp.constructor(f!(crate::NonSendSingleton::new), Lifecycle::Singleton);
     bp.constructor(f!(crate::NonCloneSingleton::new), Lifecycle::Singleton);
     bp.constructor(f!(crate::NonSyncSingleton::new), Lifecycle::Singleton);

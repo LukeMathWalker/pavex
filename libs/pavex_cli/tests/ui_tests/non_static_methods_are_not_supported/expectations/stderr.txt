@@ -2,7 +2,7 @@
   × One of the input parameters for `app::Streamer::stream_file` has a type
   │ that I cannot handle.
     ╭─[src/lib.rs:12:1]
- 12 │     let mut bp = AppBlueprint::new();
+ 12 │     let mut bp = Blueprint::new();
  13 │     bp.route(f!(crate::Streamer::stream_file), "/home");
     ·              ────────────────┬───────────────
     ·                              ╰── The request handler was registered here
