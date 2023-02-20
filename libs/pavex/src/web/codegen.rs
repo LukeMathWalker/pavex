@@ -21,6 +21,74 @@ use crate::web::app::GENERATED_APP_PACKAGE_ID;
 use crate::web::computation::Computation;
 use crate::web::constructors::Constructor;
 
+#[derive(Debug, Clone)]
+enum CodegenRouterEntry {
+    MethodSubRouter(BTreeMap<String, CodegenRequestHandler>),
+    CatchAllHandler(CodegenRequestHandler),
+}
+
+#[derive(Debug, Clone)]
+struct CodegenRequestHandler {
+    code: ItemFn,
+    input_types: IndexSet<ResolvedType>,
+}
+
+impl CodegenRequestHandler {
+    fn invocation(
+        &self,
+        singleton_bindings: &BiHashMap<Ident, ResolvedType>,
+        request_scoped_bindings: &BiHashMap<Ident, ResolvedType>,
+        server_state_ident: &Ident,
+    ) -> TokenStream {
+        let handler = &self.code;
+        let handler_input_types = &self.input_types;
+        let is_handler_async = handler.sig.asyncness.is_some();
+        let handler_function_name = &handler.sig.ident;
+        let input_parameters = handler_input_types.iter().map(|type_| {
+            let mut is_shared_reference = false;
+            let inner_type = match type_ {
+                ResolvedType::Reference(r) => {
+                    if !r.is_static {
+                        is_shared_reference = true;
+                        &r.inner
+                    } else {
+                        type_
+                    }
+                }
+                ResolvedType::Slice(_)
+                | ResolvedType::ResolvedPath(_)
+                | ResolvedType::Tuple(_)
+                | ResolvedType::ScalarPrimitive(_) => type_,
+            };
+            if let Some(field_name) = singleton_bindings.get_by_right(inner_type) {
+                if is_shared_reference {
+                    quote! {
+                        &#server_state_ident.application_state.#field_name
+                    }
+                } else {
+                    quote! {
+                        #server_state_ident.application_state.#field_name.clone()
+                    }
+                }
+            } else if let Some(field_name) = request_scoped_bindings.get_by_right(type_) {
+                quote! {
+                    #field_name
+                }
+            } else {
+                let field_name = request_scoped_bindings.get_by_right(&inner_type).unwrap();
+                quote! {
+                    #field_name
+                }
+            }
+        });
+        let mut handler_invocation = quote! { #handler_function_name(#(#input_parameters),*) };
+        if is_handler_async {
+            handler_invocation = quote! { #handler_invocation.await };
+        }
+        handler_invocation
+    }
+}
+
 pub(crate) fn codegen_app(
     handler_call_graphs: &IndexMap<RouterKey, CallGraph>,
     application_state_call_graph: &ApplicationStateCallGraph,
@@ -44,39 +112,61 @@ pub(crate) fn codegen_app(
     )?;
     let define_server_state = define_server_state();
 
-    let handler_functions: IndexMap<_, _> = handler_call_graphs
-        .into_iter()
-        .map(|(path, call_graph)| {
-            let code = call_graph.codegen(package_id2name, component_db, computation_db)?;
-            Ok::<_, anyhow::Error>((path, (code, call_graph.required_input_types())))
-        })
-        // TODO: wasteful
-        .collect::<Result<IndexMap<_, _>, _>>()?
-        .into_iter()
-        .enumerate()
-        .map(|(i, (path, (mut function, parameter_bindings)))| {
-            // Ensure that all handler functions have a unique name.
-            function.sig.ident = format_ident!("route_handler_{}", i);
-            (path, (function, parameter_bindings))
-        })
-        .collect();
+    let path2codegen_router_entry = {
+        let mut map: IndexMap<String, CodegenRouterEntry> = IndexMap::new();
+        for (i, (router_key, call_graph)) in handler_call_graphs.iter().enumerate() {
+            let mut code = call_graph.codegen(package_id2name, component_db, computation_db)?;
+            code.sig.ident = format_ident!("route_handler_{}", i);
+            let handler = CodegenRequestHandler {
+                code,
+                input_types: call_graph.required_input_types(),
+            };
+            match router_key.method_guard.clone() {
+                None => {
+                    map.insert(
+                        router_key.path.clone(),
+                        CodegenRouterEntry::CatchAllHandler(handler),
+                    );
+                }
+                Some(methods) => {
+                    let sub_router = map
+                        .entry(router_key.path.clone())
+                        .or_insert_with(|| CodegenRouterEntry::MethodSubRouter(BTreeMap::new()));
+                    let CodegenRouterEntry::MethodSubRouter(sub_router) = sub_router else {
+                        unreachable!("Cannot have a catch-all handler and a method sub-router for the same path");
+                    };
+                    for method in methods {
+                        sub_router.insert(method, handler.clone());
+                    }
+                }
+            }
+        }
+        map
+    };
 
     // TODO: enforce that handlers have the right signature
     // TODO: enforce that the only required input is a Request type of some kind
-    let mut route_id2router_key = BiBTreeMap::new();
-    let mut route_id2handler = BTreeMap::new();
-    for (route_id, (&route, handler)) in handler_functions.iter().enumerate() {
-        route_id2router_key.insert(route_id as u32, route.to_owned());
-        route_id2handler.insert(route_id as u32, handler.to_owned());
+    let mut route_id2path = BiBTreeMap::new();
+    let mut route_id2router_entry = BTreeMap::new();
+    for (route_id, (path, router_entry)) in path2codegen_router_entry.iter().enumerate() {
+        route_id2path.insert(route_id as u32, path.to_owned());
+        route_id2router_entry.insert(route_id as u32, router_entry.to_owned());
     }
 
-    let router_init = get_router_init(&route_id2router_key);
+    let router_init = get_router_init(&route_id2path);
     let route_request = get_request_dispatcher(
-        &route_id2handler,
+        &route_id2router_entry,
         runtime_singleton_bindings,
         request_scoped_framework_bindings,
     );
-    let handlers = handler_functions.values().map(|(function, _)| function);
+    let handlers = path2codegen_router_entry
+        .values()
+        .flat_map(|router_entry| match router_entry {
+            CodegenRouterEntry::MethodSubRouter(r) => {
+                r.values().map(|h| &h.code).collect::<Vec<_>>()
+            }
+            CodegenRouterEntry::CatchAllHandler(h) => vec![&h.code],
+        });
     let entrypoint = server_startup();
     let alloc_rename = if package_id2name.contains_right(ALLOC_PACKAGE_ID) {
         quote! { use std as alloc; }
@@ -197,12 +287,11 @@ fn get_application_state_init(
     Ok(function)
 }
 
-fn get_router_init(route_id2router_key: &BiBTreeMap<u32, RouterKey>) -> ItemFn {
+fn get_router_init(route_id2path: &BiBTreeMap<u32, String>) -> ItemFn {
     let mut router_init = quote! {
         let mut router = pavex_runtime::routing::Router::new();
     };
-    for (route_id, router_key) in route_id2router_key {
-        let path = &router_key.path;
+    for (route_id, path) in route_id2path {
         router_init = quote! {
             #router_init
             router.insert(#path, #route_id)?;
@@ -217,65 +306,53 @@ fn get_router_init(route_id2router_key: &BiBTreeMap<u32, RouterKey>) -> ItemFn {
 }
 
 fn get_request_dispatcher(
-    route_id2handler: &BTreeMap<u32, (ItemFn, IndexSet<ResolvedType>)>,
+    route_id2router_entry: &BTreeMap<u32, CodegenRouterEntry>,
     singleton_bindings: &BiHashMap<Ident, ResolvedType>,
     request_scoped_bindings: &BiHashMap<Ident, ResolvedType>,
 ) -> ItemFn {
     let mut route_dispatch_table = quote! {};
+    let server_state_ident = format_ident!("server_state");
 
-    for (route_id, (handler, handler_input_types)) in route_id2handler {
-        let is_handler_async = handler.sig.asyncness.is_some();
-        let handler_function_name = &handler.sig.ident;
-        let input_parameters = handler_input_types.iter().map(|type_| {
-            let mut is_shared_reference = false;
-            let inner_type = match type_ {
-                ResolvedType::Reference(r) => {
-                    if !r.is_static {
-                        is_shared_reference = true;
-                        &r.inner
-                    } else {
-                        type_
+    for (route_id, router_entry) in route_id2router_entry {
+        let match_arm = match router_entry {
+            CodegenRouterEntry::MethodSubRouter(sub_router) => {
+                let mut sub_router_dispatch_table = quote! {};
+                for (method, handler) in sub_router {
+                    let invocation = handler.invocation(
+                        &singleton_bindings,
+                        &request_scoped_bindings,
+                        &server_state_ident,
+                    );
+                    let method = format_ident!("{}", method);
+                    sub_router_dispatch_table = quote! {
+                        #sub_router_dispatch_table
+                        &pavex_runtime::http::Method::#method => #invocation,
                     }
                 }
-                ResolvedType::Slice(_)
-                | ResolvedType::ResolvedPath(_)
-                | ResolvedType::Tuple(_)
-                | ResolvedType::ScalarPrimitive(_) => type_,
-            };
-            if let Some(field_name) = singleton_bindings.get_by_right(inner_type) {
-                if is_shared_reference {
-                    quote! {
-                        &server_state.application_state.#field_name
-                    }
-                } else {
-                    quote! {
-                        server_state.application_state.#field_name.clone()
-                    }
-                }
-            } else if let Some(field_name) = request_scoped_bindings.get_by_right(type_) {
+                // TODO: we do NOT want to panic here, we should return a 405 to the caller with
+                //   the list of allowed methods.
                 quote! {
-                    #field_name
-                }
-            } else {
-                let field_name = request_scoped_bindings.get_by_right(&inner_type).unwrap();
-                quote! {
-                    #field_name
+                    match request.method() {
+                        #sub_router_dispatch_table
+                        s => panic!("This is a bug, no handler registered for `{s}` method"),
+                    }
                 }
             }
-        });
-        let mut handler_invocation = quote! { #handler_function_name(#(#input_parameters),*) };
-        if is_handler_async {
-            handler_invocation = quote! { #handler_invocation.await };
-        }
+            CodegenRouterEntry::CatchAllHandler(h) => h.invocation(
+                &singleton_bindings,
+                &request_scoped_bindings,
+                &server_state_ident,
+            ),
+        };
         route_dispatch_table = quote! {
             #route_dispatch_table
-            #route_id => #handler_invocation,
-        }
+            #route_id => #match_arm,
+        };
     }
 
     // TODO: we definitely do NOT want to panic here, we need to return a 404 to the caller.
     syn::parse2(quote! {
-        async fn route_request(request: pavex_runtime::http::Request<pavex_runtime::hyper::body::Body>, server_state: std::sync::Arc<ServerState>) -> pavex_runtime::response::Response {
+        async fn route_request(request: pavex_runtime::http::Request<pavex_runtime::hyper::body::Body>, #server_state_ident: std::sync::Arc<ServerState>) -> pavex_runtime::response::Response {
             let route_id = server_state.router.at(request.uri().path()).expect("Failed to match incoming request path");
             match route_id.value {
                 #route_dispatch_table
