@@ -2,9 +2,9 @@
   × `handler` is not a fully-qualified import path.
     ╭─[src/lib.rs:8:1]
   8 │     let mut bp = Blueprint::new();
-  9 │     bp.route(f!(handler), "/home");
-    ·              ─────┬─────
-    ·                   ╰── The relative import path was registered here
+  9 │     bp.route(GET, "/home", f!(handler));
+    ·                            ─────┬─────
+    ·                                 ╰── The relative import path was registered here
  10 │     bp
     ╰────
   help: If it is a local import, the path must start with `crate::`.

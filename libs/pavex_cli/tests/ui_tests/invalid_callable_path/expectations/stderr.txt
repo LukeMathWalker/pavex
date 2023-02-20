@@ -2,8 +2,8 @@
   × `my_f,` is not a valid import path.
     ╭─[src/lib.rs:10:1]
  10 │     };
- 11 │     bp.route(callable, "/home");
-    ·              ────┬───
-    ·                  ╰── The invalid import path was registered here
+ 11 │     bp.route(POST, "/home", callable);
+    ·                             ────┬───
+    ·                                 ╰── The invalid import path was registered here
  12 │     bp
     ╰────

@@ -1,4 +1,4 @@
-use pavex_builder::{f, Blueprint, Lifecycle};
+use pavex_builder::{f, router::GET, Blueprint, Lifecycle};
 
 pub struct A;
 
@@ -74,6 +74,6 @@ pub fn blueprint() -> Blueprint {
         f!(<crate::C as crate::GenericTrait<std::string::String>>::a_method),
         Lifecycle::RequestScoped,
     );
-    bp.route(f!(crate::handler), "/home");
+    bp.route(GET, "/home", f!(crate::handler));
     bp
 }

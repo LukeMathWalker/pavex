@@ -1,7 +1,6 @@
 //! Given the fully qualified path to a function (be it a constructor or a handler),
 //! find the corresponding item ("resolution") in `rustdoc`'s JSON output to determine
 //! its input parameters and output type.
-use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 
 use ahash::{HashMap, HashMapExt};
@@ -300,24 +299,6 @@ pub(crate) enum CallableResolutionError {
     OutputTypeResolutionError(#[from] OutputTypeResolutionError),
     #[error(transparent)]
     CannotGetCrateData(#[from] CannotGetCrateData),
-}
-
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
-pub(crate) enum CallableType {
-    RequestHandler,
-    Constructor,
-    ErrorHandler,
-}
-
-impl Display for CallableType {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let s = match self {
-            CallableType::RequestHandler => "request handler",
-            CallableType::Constructor => "constructor",
-            CallableType::ErrorHandler => "error handler",
-        };
-        write!(f, "{s}")
-    }
 }
 
 #[derive(Debug, thiserror::Error, Clone)]

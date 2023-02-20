@@ -1,4 +1,4 @@
-use pavex_builder::{f, Blueprint, Lifecycle};
+use pavex_builder::{f, router::GET, Blueprint, Lifecycle};
 
 #[derive(Clone)]
 pub struct Streamer {
@@ -17,6 +17,6 @@ pub fn stream_file(Streamer { a, b }: Streamer) -> pavex_runtime::response::Resp
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.constructor(f!(crate::streamer), Lifecycle::Singleton);
-    bp.route(f!(crate::stream_file), "/home");
+    bp.route(GET, "/home", f!(crate::stream_file));
     bp
 }

@@ -3,9 +3,9 @@
   │ that I cannot handle.
     ╭─[src/lib.rs:12:1]
  12 │     let mut bp = Blueprint::new();
- 13 │     bp.route(f!(crate::Streamer::stream_file), "/home");
-    ·              ────────────────┬───────────────
-    ·                              ╰── The request handler was registered here
+ 13 │     bp.route(GET, "/home", f!(crate::Streamer::stream_file));
+    ·                            ────────────────┬───────────────
+    ·                                            ╰── The request handler was registered here
  14 │     bp
     ╰────
 

@@ -1,4 +1,4 @@
-use pavex_builder::{f, Blueprint, Lifecycle};
+use pavex_builder::{f, router::GET, Blueprint, Lifecycle};
 
 #[derive(Clone)]
 pub struct Singleton;
@@ -34,6 +34,6 @@ pub fn blueprint() -> Blueprint {
     bp.constructor(f!(crate::Singleton::new), Lifecycle::Singleton);
     bp.constructor(f!(crate::request_scoped), Lifecycle::RequestScoped);
     bp.constructor(f!(crate::transient), Lifecycle::Transient);
-    bp.route(f!(crate::stream_file), "/home");
+    bp.route(GET, "/home", f!(crate::stream_file));
     bp
 }

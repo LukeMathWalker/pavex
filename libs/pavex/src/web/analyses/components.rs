@@ -8,7 +8,7 @@ use indexmap::IndexSet;
 use pavex_builder::Lifecycle;
 
 use crate::diagnostic;
-use crate::diagnostic::{CompilerDiagnostic, LocationExt, SourceSpanExt};
+use crate::diagnostic::{CallableType, CompilerDiagnostic, LocationExt, SourceSpanExt};
 use crate::language::{ResolvedPath, ResolvedPathQualifiedSelf, ResolvedPathSegment, ResolvedType};
 use crate::rustdoc::CrateCollection;
 use crate::web::analyses::computations::{ComputationDb, ComputationId};
@@ -19,7 +19,7 @@ use crate::web::constructors::{Constructor, ConstructorValidationError};
 use crate::web::error_handlers::{ErrorHandler, ErrorHandlerValidationError};
 use crate::web::interner::Interner;
 use crate::web::request_handlers::{RequestHandler, RequestHandlerValidationError};
-use crate::web::resolvers::{CallableResolutionError, CallableType};
+use crate::web::resolvers::CallableResolutionError;
 use crate::web::traits::{assert_trait_is_implemented, MissingTraitImplementationError};
 use crate::web::utils::{get_ok_variant, is_result, process_framework_path};
 
@@ -677,8 +677,8 @@ impl ComponentDb {
         match e {
             ConstructorValidationError::CannotFalliblyReturnTheUnitType
             | ConstructorValidationError::CannotReturnTheUnitType => {
-                let raw_identifier_id =
-                    user_component_db[user_component_id].raw_callable_identifiers_id();
+                let user_component = &user_component_db[user_component_id];
+                let raw_identifier_id = user_component.raw_callable_identifiers_id();
                 let location = raw_identifiers_db.get_location(raw_identifier_id);
                 let source = match location.source_file(package_graph) {
                     Ok(s) => s,
@@ -707,8 +707,8 @@ impl ComponentDb {
     ) {
         match e {
             RequestHandlerValidationError::CannotReturnTheUnitType => {
-                let raw_identifier_id =
-                    user_component_db[user_component_id].raw_callable_identifiers_id();
+                let user_component = &user_component_db[user_component_id];
+                let raw_identifier_id = user_component.raw_callable_identifiers_id();
                 let location = raw_identifiers_db.get_location(raw_identifier_id);
                 let source = match location.source_file(package_graph) {
                     Ok(s) => s,
@@ -806,7 +806,8 @@ impl ComponentDb {
         raw_identifiers_db: &RawCallableIdentifiersDb,
         diagnostics: &mut Vec<miette::Error>,
     ) {
-        let raw_identifier_id = user_component_db[user_component_id].raw_callable_identifiers_id();
+        let user_component = &user_component_db[user_component_id];
+        let raw_identifier_id = user_component.raw_callable_identifiers_id();
         let location = raw_identifiers_db.get_location(raw_identifier_id);
         let source = match location.source_file(package_graph) {
             Ok(s) => s,
@@ -843,7 +844,8 @@ impl ComponentDb {
         diagnostics: &mut Vec<miette::Error>,
     ) {
         let fallible_kind = user_component_db[fallible_id].callable_type();
-        let raw_identifier_id = user_component_db[error_handler_id].raw_callable_identifiers_id();
+        let user_component = &user_component_db[error_handler_id];
+        let raw_identifier_id = user_component.raw_callable_identifiers_id();
         let location = raw_identifiers_db.get_location(raw_identifier_id);
         let source = match location.source_file(package_graph) {
             Ok(s) => s,
@@ -875,11 +877,12 @@ impl ComponentDb {
         raw_identifiers_db: &RawCallableIdentifiersDb,
         diagnostics: &mut Vec<miette::Error>,
     ) {
+        let user_component = &user_component_db[error_handler_id];
+        let raw_identifier_id = user_component.raw_callable_identifiers_id();
         debug_assert_eq!(
             user_component_db[fallible_id].callable_type(),
             CallableType::Constructor
         );
-        let raw_identifier_id = user_component_db[error_handler_id].raw_callable_identifiers_id();
         let location = raw_identifiers_db.get_location(raw_identifier_id);
         let source = match location.source_file(package_graph) {
             Ok(s) => s,
@@ -909,7 +912,8 @@ impl ComponentDb {
         diagnostics: &mut Vec<miette::Error>,
     ) {
         let fallible_kind = user_component_db[fallible_id].callable_type();
-        let raw_identifier_id = user_component_db[fallible_id].raw_callable_identifiers_id();
+        let user_component = &user_component_db[fallible_id];
+        let raw_identifier_id = user_component.raw_callable_identifiers_id();
         let location = raw_identifiers_db.get_location(raw_identifier_id);
         let source = match location.source_file(package_graph) {
             Ok(s) => s,

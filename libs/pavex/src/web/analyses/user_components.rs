@@ -1,8 +1,8 @@
 use pavex_builder::Blueprint;
 
+use crate::diagnostic::CallableType;
 use crate::web::analyses::raw_identifiers::{RawCallableIdentifierId, RawCallableIdentifiersDb};
 use crate::web::interner::Interner;
-use crate::web::resolvers::CallableType;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) enum UserComponent {

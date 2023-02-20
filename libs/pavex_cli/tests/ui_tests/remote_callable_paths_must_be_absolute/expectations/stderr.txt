@@ -5,7 +5,7 @@
  10 │     bp.constructor(f!(new_logger), Lifecycle::Singleton);
     ·                    ───────┬──────
     ·                           ╰── The relative import path was registered here
- 11 │     bp.route(f!(crate::handler), "/home");
+ 11 │     bp.route(GET, "/home", f!(crate::handler));
     ╰────
   help: If it is a local import, the path must start with `crate::`.
         If it is an import from a dependency, the path must start with the

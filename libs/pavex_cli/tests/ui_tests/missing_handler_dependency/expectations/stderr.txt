@@ -4,9 +4,9 @@
   │ constructor for that type.
     ╭─[src/lib.rs:10:1]
  10 │     let mut bp = Blueprint::new();
- 11 │     bp.route(f!(crate::stream_file), "/home");
-    ·              ───────────┬──────────
-    ·                         ╰── The request handler was registered here
+ 11 │     bp.route(GET, "/home", f!(crate::stream_file));
+    ·                            ───────────┬──────────
+    ·                                       ╰── The request handler was registered here
  12 │     bp
     ╰────
   help: Register a constructor for `std::path::PathBuf`

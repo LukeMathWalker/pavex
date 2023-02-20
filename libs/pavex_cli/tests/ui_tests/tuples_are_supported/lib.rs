@@ -1,4 +1,4 @@
-use pavex_builder::{f, Blueprint, Lifecycle};
+use pavex_builder::{f, router::GET, Blueprint, Lifecycle};
 
 pub fn constructor_with_output_tuple() -> (usize, isize) {
     todo!()
@@ -14,6 +14,6 @@ pub fn blueprint() -> Blueprint {
         f!(crate::constructor_with_output_tuple),
         Lifecycle::Singleton,
     );
-    bp.route(f!(crate::handler_with_input_tuple), "/home");
+    bp.route(GET, "/home", f!(crate::handler_with_input_tuple));
     bp
 }

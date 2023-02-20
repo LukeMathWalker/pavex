@@ -6,7 +6,7 @@
  23 │         .error_handler(f!(crate::error_handler));
     ·                        ────────────┬───────────
     ·                                    ╰── The unnecessary error handler was registered here
- 24 │     bp.route(f!(crate::request_handler), "/home");
+ 24 │     bp.route(GET, "/home", f!(crate::request_handler));
     ╰────
   help: Remove the error handler, it is not needed. The constructor is
         infallible!

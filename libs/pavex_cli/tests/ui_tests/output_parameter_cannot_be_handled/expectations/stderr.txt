@@ -2,9 +2,9 @@
   × I do not know how to handle the type returned by `app::c`.
     ╭─[src/lib.rs:8:1]
   8 │     let mut bp = Blueprint::new();
-  9 │     bp.route(f!(crate::c), "/home");
-    ·              ──────┬─────
-    ·                    ╰── The request handler was registered here
+  9 │     bp.route(GET, "/home", f!(crate::c));
+    ·                            ──────┬─────
+    ·                                  ╰── The request handler was registered here
  10 │     bp
     ╰────
 

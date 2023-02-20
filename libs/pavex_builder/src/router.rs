@@ -8,6 +8,9 @@ use pavex_runtime::http::Method;
 /// If you want to match a single HTTP method, use the dedicated constants in this
 /// module ([`GET`], [`POST`], [`PATCH`], [`DELETE`], etc.).  
 /// If you want to match a list of HTTP methods, use [`MethodGuard::new`].  
+///
+/// [`Blueprint::route`]: crate::Blueprint::route
+#[derive(Debug, Clone)]
 pub struct MethodGuard {
     allowed_methods: AllowedMethods,
 }
@@ -25,7 +28,7 @@ impl MethodGuard {
     /// let guard = MethodGuard::new(vec![Method::GET, Method::PUT]);
     /// ```
     ///
-    /// If you want to match **any** HTTP method, use [`ANY`].
+    /// If you want to match **any** HTTP method, use [`ANY`].  
     /// If you want to match a single HTTP method, use the dedicated constants in this
     /// module ([`GET`], [`POST`], [`PATCH`], [`DELETE`], etc.).
     pub fn new(allowed_methods: impl IntoIterator<Item = Method>) -> Self {
@@ -34,6 +37,7 @@ impl MethodGuard {
     }
 }
 
+#[derive(Debug, Clone)]
 enum AllowedMethods {
     All,
     Single(Method),

@@ -8,5 +8,5 @@
  22 │         .error_handler(f!(crate::error_handler));
     ·                        ────────────┬───────────
     ·                                    ╰── The error handler was registered here
- 23 │     bp.route(f!(crate::handler), "/home");
+ 23 │     bp.route(GET, "/home", f!(crate::handler));
     ╰────

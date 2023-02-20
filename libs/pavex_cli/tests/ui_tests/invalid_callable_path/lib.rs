@@ -1,4 +1,4 @@
-use pavex_builder::{Blueprint, RawCallable};
+use pavex_builder::{router::POST, Blueprint, RawCallable};
 
 pub fn my_f() {}
 
@@ -8,6 +8,6 @@ pub fn blueprint() -> Blueprint {
         callable: my_f,
         import_path: "my_f,",
     };
-    bp.route(callable, "/home");
+    bp.route(POST, "/home", callable);
     bp
 }

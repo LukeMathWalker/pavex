@@ -1,4 +1,4 @@
-use pavex_builder::{f, Blueprint, Lifecycle};
+use pavex_builder::{f, router::GET, Blueprint, Lifecycle};
 
 pub fn constructor() {
     todo!()
@@ -32,6 +32,6 @@ pub fn blueprint() -> Blueprint {
     );
     bp.constructor(f!(crate::fallible_constructor), Lifecycle::RequestScoped)
         .error_handler(f!(crate::error_handler));
-    bp.route(f!(crate::handler), "/home");
+    bp.route(GET, "/home", f!(crate::handler));
     bp
 }

@@ -1,4 +1,4 @@
-use pavex_builder::{f, Blueprint};
+use pavex_builder::{f, router::GET, Blueprint};
 
 pub fn c() -> Box<dyn std::error::Error> {
     todo!()
@@ -6,6 +6,6 @@ pub fn c() -> Box<dyn std::error::Error> {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.route(f!(crate::c), "/home");
+    bp.route(GET, "/home", f!(crate::c));
     bp
 }

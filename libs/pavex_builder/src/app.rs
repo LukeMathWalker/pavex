@@ -134,10 +134,18 @@ impl Blueprint {
     }
 
     #[track_caller]
-    /// Register a route and the corresponding request handler.
+    /// Register a request handler to be invoked when an incoming request matches the specified route.
+    ///
+    /// If a request handler has already been registered for the same route, it will be overwritten.
+    ///
+    /// # Routing: an introduction
+    ///
+    /// ## Simple routes
+    ///
+    /// The simplest route is a combination of a single HTTP method, a path and a request handler:
     ///
     /// ```rust
-    /// use pavex_builder::{Blueprint, f, Lifecycle, router::GET};
+    /// use pavex_builder::{Blueprint, f, router::GET};
     /// use pavex_runtime::{http::Request, hyper::Body, response::Response};
     ///
     /// fn my_handler(request: Request<Body>) -> Response {
@@ -147,11 +155,68 @@ impl Blueprint {
     ///
     /// # fn main() {
     /// let mut bp = Blueprint::new();
-    /// bp.route(GET, "/endpoint", f!(crate::my_handler));
+    /// bp.route(GET, "/path", f!(crate::my_handler));
     /// # }
     /// ```
     ///
-    /// If a request handler has already been registered for the same route, it will be overwritten.
+    /// You can use the constants exported in the [`router`] module to specify one of the well-known
+    /// HTTP methods:
+    ///
+    /// ```rust
+    /// use pavex_builder::{Blueprint, f, router::{GET, POST, PUT, DELETE, PATCH}};
+    /// # use pavex_runtime::{http::Request, hyper::Body, response::Response};
+    /// # fn my_handler(request: Request<Body>) -> Response { todo!() }
+    /// # fn main() {
+    /// # let mut bp = Blueprint::new();
+    ///
+    /// bp.route(GET, "/path", f!(crate::my_handler));
+    /// bp.route(POST, "/path", f!(crate::my_handler));
+    /// bp.route(PUT, "/path", f!(crate::my_handler));
+    /// bp.route(DELETE, "/path", f!(crate::my_handler));
+    /// bp.route(PATCH, "/path", f!(crate::my_handler));
+    /// // ...and a few more!
+    /// # }
+    /// ```
+    ///
+    /// ## Matching multiple HTTP methods
+    ///
+    /// It can also be useful to register a request handler that handles multiple HTTP methods
+    /// for the same path:
+    ///
+    /// ```rust
+    /// use pavex_builder::{Blueprint, f, router::{MethodGuard, POST, PATCH}};
+    /// use pavex_runtime::http::Method;
+    /// # use pavex_runtime::{http::Request, hyper::Body, response::Response};
+    /// # fn my_handler(request: Request<Body>) -> Response { todo!() }
+    /// # fn main() {
+    /// # let mut bp = Blueprint::new();
+    ///
+    /// // `crate::my_handler` will be used to handle both `PATCH` and `POST` requests to `/path`
+    /// bp.route(
+    ///     MethodGuard::new([Method::PATCH, Method::POST]),
+    ///     "/path",
+    ///     f!(crate::my_handler)
+    /// );
+    /// # }
+    /// ```
+    ///
+    /// Last but not least, you can register a route that matches a request **regardless** of
+    /// the HTTP method being used:
+    ///
+    /// ```rust
+    /// use pavex_builder::{Blueprint, f, router::ANY};
+    /// # use pavex_runtime::{http::Request, hyper::Body, response::Response};
+    /// # fn my_handler(request: Request<Body>) -> Response { todo!() }
+    /// # fn main() {
+    /// # let mut bp = Blueprint::new();
+    ///
+    /// // This will match **all** incoming requests to `/path`, regardless of their HTTP method.
+    /// // `GET`, `POST`, `PUT`... anything goes!
+    /// bp.route(ANY, "/path", f!(crate::my_handler));
+    /// # }
+    /// ```
+    ///
+    /// [`router`]: crate::router
     pub fn route<F, HandlerInputs>(
         &mut self,
         method_guard: MethodGuard,
