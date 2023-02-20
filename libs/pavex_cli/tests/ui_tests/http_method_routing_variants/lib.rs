@@ -23,7 +23,7 @@ pub fn blueprint() -> Blueprint {
     bp.route(
         MethodGuard::new([
             pavex_runtime::http::Method::PATCH,
-            pavex_runtime::http::Method::PATCH,
+            pavex_runtime::http::Method::POST,
         ]),
         "/mixed",
         f!(crate::handler),

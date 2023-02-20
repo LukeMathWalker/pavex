@@ -112,11 +112,13 @@ pub(crate) fn codegen_app(
     )?;
     let define_server_state = define_server_state();
 
+    let mut handlers = vec![];
     let path2codegen_router_entry = {
         let mut map: IndexMap<String, CodegenRouterEntry> = IndexMap::new();
         for (i, (router_key, call_graph)) in handler_call_graphs.iter().enumerate() {
             let mut code = call_graph.codegen(package_id2name, component_db, computation_db)?;
             code.sig.ident = format_ident!("route_handler_{}", i);
+            handlers.push(code.clone());
             let handler = CodegenRequestHandler {
                 code,
                 input_types: call_graph.required_input_types(),
@@ -159,14 +161,6 @@ pub(crate) fn codegen_app(
         runtime_singleton_bindings,
         request_scoped_framework_bindings,
     );
-    let handlers = path2codegen_router_entry
-        .values()
-        .flat_map(|router_entry| match router_entry {
-            CodegenRouterEntry::MethodSubRouter(r) => {
-                r.values().map(|h| &h.code).collect::<Vec<_>>()
-            }
-            CodegenRouterEntry::CatchAllHandler(h) => vec![&h.code],
-        });
     let entrypoint = server_startup();
     let alloc_rename = if package_id2name.contains_right(ALLOC_PACKAGE_ID) {
         quote! { use std as alloc; }
@@ -317,12 +311,14 @@ fn get_request_dispatcher(
         let match_arm = match router_entry {
             CodegenRouterEntry::MethodSubRouter(sub_router) => {
                 let mut sub_router_dispatch_table = quote! {};
+                let mut allowed_methods = vec![];
                 for (method, handler) in sub_router {
                     let invocation = handler.invocation(
                         &singleton_bindings,
                         &request_scoped_bindings,
                         &server_state_ident,
                     );
+                    allowed_methods.push(method.clone());
                     let method = format_ident!("{}", method);
                     sub_router_dispatch_table = quote! {
                         #sub_router_dispatch_table
@@ -331,10 +327,17 @@ fn get_request_dispatcher(
                 }
                 // TODO: we do NOT want to panic here, we should return a 405 to the caller with
                 //   the list of allowed methods.
+                let allow_header_value = allowed_methods.join(", ");
                 quote! {
                     match request.method() {
                         #sub_router_dispatch_table
-                        s => panic!("This is a bug, no handler registered for `{s}` method"),
+                        s => {
+                            pavex_runtime::response::Response::builder()
+                                .status(http::StatusCode::METHOD_NOT_ALLOWED)
+                                .header(pavex_runtime::http::header::ALLOW, #allow_header_value)
+                                .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
+                                .unwrap()
+                        }
                     }
                 }
             }
