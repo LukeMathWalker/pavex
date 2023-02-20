@@ -1,4 +1,4 @@
-digraph "/home" {
+digraph "GET /home" {
     0 [ label = "app::stream_file(app::Streamer) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
     1 [ label = "app::Streamer"]
     2 [ label = "<http::Response::<http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>> as pavex_runtime::response::IntoResponse>::into_response(http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]

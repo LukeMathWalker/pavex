@@ -16,12 +16,13 @@ use crate::rustdoc::{ALLOC_PACKAGE_ID, TOOLCHAIN_CRATES};
 use crate::web::analyses::call_graph::{ApplicationStateCallGraph, CallGraph, CallGraphNode};
 use crate::web::analyses::components::{ComponentDb, HydratedComponent};
 use crate::web::analyses::computations::ComputationDb;
+use crate::web::analyses::user_components::RouterKey;
 use crate::web::app::GENERATED_APP_PACKAGE_ID;
 use crate::web::computation::Computation;
 use crate::web::constructors::Constructor;
 
 pub(crate) fn codegen_app(
-    handler_call_graphs: &IndexMap<String, CallGraph>,
+    handler_call_graphs: &IndexMap<RouterKey, CallGraph>,
     application_state_call_graph: &ApplicationStateCallGraph,
     request_scoped_framework_bindings: &BiHashMap<Ident, ResolvedType>,
     package_id2name: &BiHashMap<PackageId, String>,
@@ -62,14 +63,14 @@ pub(crate) fn codegen_app(
 
     // TODO: enforce that handlers have the right signature
     // TODO: enforce that the only required input is a Request type of some kind
-    let mut route_id2path = BiBTreeMap::new();
+    let mut route_id2router_key = BiBTreeMap::new();
     let mut route_id2handler = BTreeMap::new();
     for (route_id, (&route, handler)) in handler_functions.iter().enumerate() {
-        route_id2path.insert(route_id as u32, route.to_owned());
+        route_id2router_key.insert(route_id as u32, route.to_owned());
         route_id2handler.insert(route_id as u32, handler.to_owned());
     }
 
-    let router_init = get_router_init(&route_id2path);
+    let router_init = get_router_init(&route_id2router_key);
     let route_request = get_request_dispatcher(
         &route_id2handler,
         runtime_singleton_bindings,
@@ -196,11 +197,12 @@ fn get_application_state_init(
     Ok(function)
 }
 
-fn get_router_init(route_id2path: &BiBTreeMap<u32, String>) -> ItemFn {
+fn get_router_init(route_id2router_key: &BiBTreeMap<u32, RouterKey>) -> ItemFn {
     let mut router_init = quote! {
         let mut router = pavex_runtime::routing::Router::new();
     };
-    for (route_id, path) in route_id2path {
+    for (route_id, router_key) in route_id2router_key {
+        let path = &router_key.path;
         router_init = quote! {
             #router_init
             router.insert(#path, #route_id)?;
@@ -271,6 +273,7 @@ fn get_request_dispatcher(
         }
     }
 
+    // TODO: we definitely do NOT want to panic here, we need to return a 404 to the caller.
     syn::parse2(quote! {
         async fn route_request(request: pavex_runtime::http::Request<pavex_runtime::hyper::body::Body>, server_state: std::sync::Arc<ServerState>) -> pavex_runtime::response::Response {
             let route_id = server_state.router.at(request.uri().path()).expect("Failed to match incoming request path");
@@ -284,7 +287,7 @@ fn get_request_dispatcher(
 
 pub(crate) fn codegen_manifest<'a>(
     package_graph: &guppy::graph::PackageGraph,
-    handler_call_graphs: &'a IndexMap<String, CallGraph>,
+    handler_call_graphs: &'a IndexMap<RouterKey, CallGraph>,
     application_state_call_graph: &'a CallGraph,
     request_scoped_framework_bindings: &'a BiHashMap<Ident, ResolvedType>,
     codegen_types: &'a HashSet<ResolvedType>,
@@ -352,7 +355,7 @@ pub(crate) fn codegen_manifest<'a>(
 
 fn compute_dependencies<'a>(
     package_graph: &guppy::graph::PackageGraph,
-    handler_call_graphs: &'a IndexMap<String, CallGraph>,
+    handler_call_graphs: &'a IndexMap<RouterKey, CallGraph>,
     application_state_call_graph: &'a CallGraph,
     request_scoped_framework_bindings: &'a BiHashMap<Ident, ResolvedType>,
     codegen_types: &'a HashSet<ResolvedType>,
@@ -430,7 +433,7 @@ fn compute_dependencies<'a>(
 }
 
 fn collect_package_ids<'a>(
-    handler_call_graphs: &'a IndexMap<String, CallGraph>,
+    handler_call_graphs: &'a IndexMap<RouterKey, CallGraph>,
     application_state_call_graph: &'a CallGraph,
     request_scoped_framework_bindings: &'a BiHashMap<Ident, ResolvedType>,
     codegen_types: &'a HashSet<ResolvedType>,

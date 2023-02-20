@@ -18,7 +18,9 @@ use pavex_runtime::http::Method;
 /// [`Blueprint::route`]: crate::Blueprint::route
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct MethodGuard {
-    allowed_methods: AllowedMethods,
+    // TODO: it should not be public, even if it's hidden
+    #[doc(hidden)]
+    pub allowed_methods: AllowedMethods,
 }
 
 impl MethodGuard {
@@ -44,7 +46,9 @@ impl MethodGuard {
 }
 
 #[derive(Debug, Clone)]
-enum AllowedMethods {
+// TODO: it should not be public, even if it's hidden
+#[doc(hidden)]
+pub enum AllowedMethods {
     All,
     Single(Method),
     Multiple(HashSet<Method>),

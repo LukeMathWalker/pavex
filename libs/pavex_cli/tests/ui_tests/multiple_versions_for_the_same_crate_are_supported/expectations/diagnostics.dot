@@ -1,4 +1,4 @@
-digraph "/home" {
+digraph "GET /home" {
     0 [ label = "app::stream_file(http_1::header::HeaderName, http_0::header::HeaderName) -> http_0::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
     1 [ label = "app::header2() -> http_0::header::HeaderName"]
     2 [ label = "app::header1() -> http_1::header::HeaderName"]

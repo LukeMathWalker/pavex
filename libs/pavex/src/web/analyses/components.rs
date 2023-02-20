@@ -13,7 +13,9 @@ use crate::language::{ResolvedPath, ResolvedPathQualifiedSelf, ResolvedPathSegme
 use crate::rustdoc::CrateCollection;
 use crate::web::analyses::computations::{ComputationDb, ComputationId};
 use crate::web::analyses::raw_identifiers::RawCallableIdentifiersDb;
-use crate::web::analyses::user_components::{UserComponent, UserComponentDb, UserComponentId};
+use crate::web::analyses::user_components::{
+    RouterKey, UserComponent, UserComponentDb, UserComponentId,
+};
 use crate::web::computation::{BorrowSharedReference, Computation, MatchResult};
 use crate::web::constructors::{Constructor, ConstructorValidationError};
 use crate::web::error_handlers::{ErrorHandler, ErrorHandlerValidationError};
@@ -92,7 +94,7 @@ pub(crate) struct ComponentDb {
     id2transformer_ids: HashMap<ComponentId, IndexSet<ComponentId>>,
     id2lifecycle: HashMap<ComponentId, Lifecycle>,
     error_handler_id2error_handler: HashMap<ComponentId, ErrorHandler>,
-    router: BTreeMap<String, ComponentId>,
+    router: BTreeMap<RouterKey, ComponentId>,
 }
 
 impl ComponentDb {
@@ -172,7 +174,7 @@ impl ComponentDb {
             .filter(|(_, c)| c.callable_type() == CallableType::RequestHandler)
         {
             let callable = &computation_db[user_component_id];
-            let UserComponent::RequestHandler { route, .. } = user_component else {
+            let UserComponent::RequestHandler { router_key, .. } = user_component else {
                 unreachable!()
             };
             match RequestHandler::new(Cow::Borrowed(callable)) {
@@ -191,7 +193,7 @@ impl ComponentDb {
                         .interner
                         .get_or_intern(Component::RequestHandler { user_component_id });
                     user_component_id2component_id.insert(user_component_id, handler_id);
-                    self_.router.insert(route.to_owned(), handler_id);
+                    self_.router.insert(router_key.to_owned(), handler_id);
                     let lifecycle = Lifecycle::RequestScoped;
                     self_.id2lifecycle.insert(handler_id, lifecycle.clone());
 
@@ -427,7 +429,7 @@ impl ComponentDb {
     }
 
     /// The mapping from a route to its dedicated request handler.
-    pub fn router(&self) -> &BTreeMap<String, ComponentId> {
+    pub fn router(&self) -> &BTreeMap<RouterKey, ComponentId> {
         &self.router
     }
 
