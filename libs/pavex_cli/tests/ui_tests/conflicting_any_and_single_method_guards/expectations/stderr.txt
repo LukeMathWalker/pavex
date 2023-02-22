@@ -1,6 +1,8 @@
 [31m[1mERROR[0m[39m: 
   [31m×[0m I do not know how to route incoming `GET /home` requests: you have
   [31m│[0m registered 2 different request handlers for this path+method combination.
+  [31m│[0m You can only have a single request handler for each path+method
+  [31m│[0m combination.
   [31m│[0m
   [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:16:1]
   [31m│[0m  [2m16[0m │     let mut bp = Blueprint::new();
