@@ -88,12 +88,8 @@ fn push_router_conflict_diagnostic(
                 return;
             }
         };
-        let label = diagnostic::get_f_macro_invocation_span(&source, location).map(|s| {
-            s.labeled(format!(
-                "The {} conflicting request handler was registered here",
-                ZeroBasedOrdinal(i)
-            ))
-        });
+        let label = diagnostic::get_f_macro_invocation_span(&source, location)
+            .map(|s| s.labeled(format!("The {} conflicting handler", ZeroBasedOrdinal(i))));
         let diagnostic =
             CompilerDiagnostic::builder(source, anyhow::anyhow!("")).optional_label(label);
         sub_diagnostics.push(diagnostic);
