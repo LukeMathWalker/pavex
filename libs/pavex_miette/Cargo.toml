@@ -1,0 +1,10 @@
+[package]
+name = "pavex_miette"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+owo-colors = "3"
+textwrap = "0.16"
+unicode-width = "0.1"
+miette = "5"

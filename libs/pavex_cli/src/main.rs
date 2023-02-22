@@ -94,7 +94,7 @@ fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
     let cli = Cli::parse();
     miette::set_hook(Box::new(move |_| {
         // TODO: Bring in all miette's auto-detection logic.
-        let mut handler = pavex::GraphicalReportHandler::new_themed(GraphicalTheme {
+        let mut handler = pavex_miette::GraphicalReportHandler::new_themed(GraphicalTheme {
             characters: ThemeCharacters::unicode(),
             styles: ThemeStyles::ansi(),
         });

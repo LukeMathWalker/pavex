@@ -4,11 +4,10 @@ use miette::{
     Diagnostic, GraphicalTheme, LabeledSpan, MietteError, ReportHandler, Severity, SourceCode,
     SourceSpan, SpanContents,
 };
-
 use owo_colors::{OwoColorize, Style};
 use unicode_width::UnicodeWidthChar;
 
-use super::diagnostic_chain::DiagnosticChain;
+use crate::diagnostic_chain::DiagnosticChain;
 
 /**
 A [`ReportHandler`] that displays a given [`Report`](crate::Report) in a
@@ -360,7 +359,7 @@ impl GraphicalReportHandler {
                         }
                     }
                     for (ctx, _) in contexts {
-                        self.render_context(f, diagnostic, source, &ctx, &labels[..])?;
+                        self.render_context(f, source, &ctx, &labels[..])?;
                     }
                 }
             }
@@ -371,7 +370,6 @@ impl GraphicalReportHandler {
     fn render_context<'a>(
         &self,
         f: &mut impl fmt::Write,
-        diagnostic: &(dyn Diagnostic),
         source: &'a dyn SourceCode,
         context: &LabeledSpan,
         labels: &[LabeledSpan],
