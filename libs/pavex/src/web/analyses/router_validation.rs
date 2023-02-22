@@ -98,7 +98,8 @@ fn push_router_conflict_diagnostic(
     let mut overall = sub_diagnostics.next().unwrap().error(
         anyhow!(
             "I do not know how to route incoming `{method} {path}` requests: you have registered {n_unique_handlers} \
-            different request handlers for this path+method combination.",
+            different request handlers for this path+method combination.\n\
+            You can only have a single request handler for each path+method combination.",
         )
     ).help(
         "You can only register one request handler for each path+method combination. \
