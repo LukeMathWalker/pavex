@@ -155,18 +155,27 @@ impl GraphicalReportHandler {
         self.render_header(f, diagnostic)?;
         writeln!(f)?;
         self.render_causes(f, diagnostic)?;
+        let severity_style = match diagnostic.severity() {
+            Some(Severity::Error) | None => self.theme.styles.error,
+            Some(Severity::Warning) => self.theme.styles.warning,
+            Some(Severity::Advice) => self.theme.styles.advice,
+        };
+        let overall_indent = format!("  {} ", self.theme.characters.vbar.style(severity_style));
+        let mut buffer = String::new();
+        writeln!(&mut buffer)?;
         let src = diagnostic.source_code();
-        self.render_snippets(f, diagnostic, src)?;
-        self.render_footer(f, diagnostic)?;
-        self.render_related(f, diagnostic, src)?;
+        self.render_snippets(&mut buffer, diagnostic, src)?;
+        self.render_related(&mut buffer, diagnostic, src)?;
+        self.render_help(&mut buffer, diagnostic)?;
         if let Some(footer) = &self.footer {
-            writeln!(f)?;
+            writeln!(&mut buffer)?;
             let width = self.termwidth.saturating_sub(4);
             let opts = textwrap::Options::new(width)
                 .initial_indent("  ")
                 .subsequent_indent("  ");
-            writeln!(f, "{}", textwrap::fill(footer, opts))?;
+            writeln!(&mut buffer, "{}", textwrap::fill(footer, opts))?;
         }
+        write!(f, "{}", textwrap::indent(&buffer, &overall_indent))?;
         Ok(())
     }
 
@@ -262,7 +271,7 @@ impl GraphicalReportHandler {
         Ok(())
     }
 
-    fn render_footer(&self, f: &mut impl fmt::Write, diagnostic: &(dyn Diagnostic)) -> fmt::Result {
+    fn render_help(&self, f: &mut impl fmt::Write, diagnostic: &(dyn Diagnostic)) -> fmt::Result {
         if let Some(help) = diagnostic.help() {
             let width = self.termwidth.saturating_sub(4);
             let initial_indent = "  help: ".style(self.theme.styles.help).to_string();
@@ -281,20 +290,10 @@ impl GraphicalReportHandler {
         parent_src: Option<&dyn SourceCode>,
     ) -> fmt::Result {
         if let Some(related) = diagnostic.related() {
-            writeln!(f)?;
             for rel in related {
-                match rel.severity() {
-                    Some(Severity::Error) | None => write!(f, "Error: ")?,
-                    Some(Severity::Warning) => write!(f, "Warning: ")?,
-                    Some(Severity::Advice) => write!(f, "Advice: ")?,
-                };
-                self.render_header(f, rel)?;
-                writeln!(f)?;
                 self.render_causes(f, rel)?;
                 let src = rel.source_code().or(parent_src);
                 self.render_snippets(f, rel, src)?;
-                self.render_footer(f, rel)?;
-                self.render_related(f, rel, src)?;
             }
         }
         Ok(())
@@ -361,7 +360,7 @@ impl GraphicalReportHandler {
                         }
                     }
                     for (ctx, _) in contexts {
-                        self.render_context(f, source, &ctx, &labels[..])?;
+                        self.render_context(f, diagnostic, source, &ctx, &labels[..])?;
                     }
                 }
             }
@@ -372,6 +371,7 @@ impl GraphicalReportHandler {
     fn render_context<'a>(
         &self,
         f: &mut impl fmt::Write,
+        diagnostic: &(dyn Diagnostic),
         source: &'a dyn SourceCode,
         context: &LabeledSpan,
         labels: &[LabeledSpan],
