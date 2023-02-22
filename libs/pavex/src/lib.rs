@@ -1,3 +1,4 @@
+pub use diagnostic::GraphicalReportHandler;
 pub use web::App;
 
 mod diagnostic;

@@ -1,22 +1,22 @@
 [31m[1mERROR[0m[39m: 
-  × I cannot invoke your request handler, `app::stream_file`, because it
-  │ needs an instance of `std::path::PathBuf` as input, but I cannot find a
-  │ constructor for that type.
-    ╭─[src/lib.rs:10:1]
- 10 │     let mut bp = Blueprint::new();
- 11 │     bp.route(GET, "/home", f!(crate::stream_file));
-    ·                            ───────────┬──────────
-    ·                                       ╰── The request handler was registered here
- 12 │     bp
+  [31m×[0m I cannot invoke your request handler, `app::stream_file`, because it
+  [31m│[0m needs an instance of `std::path::PathBuf` as input, but I cannot find a
+  [31m│[0m constructor for that type.
+    ╭─[[36;1;4msrc/lib.rs[0m:10:1]
+ [2m10[0m │     let mut bp = Blueprint::new();
+ [2m11[0m │     bp.route(GET, "/home", f!(crate::stream_file));
+    · [35;1m                           ───────────┬──────────[0m
+    ·                                       [35;1m╰── [35;1mThe request handler was registered here[0m[0m
+ [2m12[0m │     bp
     ╰────
-  help: Register a constructor for `std::path::PathBuf`
+[36m  help: [0mRegister a constructor for `std::path::PathBuf`
 
 Error: 
-  × 
-   ╭─[src/lib.rs:4:1]
- 4 │ 
- 5 │ pub fn stream_file(_inner: PathBuf) -> pavex_runtime::response::Response {
-   ·                            ───┬───
-   ·                               ╰── I do not know how to construct an instance of this input parameter
- 6 │     todo!()
+  [31m×[0m 
+   ╭─[[36;1;4msrc/lib.rs[0m:4:1]
+ [2m4[0m │ 
+ [2m5[0m │ pub fn stream_file(_inner: PathBuf) -> pavex_runtime::response::Response {
+   · [35;1m                           ───┬───[0m
+   ·                               [35;1m╰── [35;1mI do not know how to construct an instance of this input parameter[0m[0m
+ [2m6[0m │     todo!()
    ╰────

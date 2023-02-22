@@ -22,6 +22,12 @@ impl CompilerDiagnosticBuilder {
         }
     }
 
+    /// Overwrite the source error for this diagnostic.
+    pub fn error(mut self, error: impl Into<anyhow::Error>) -> Self {
+        self.error_source = error.into();
+        self
+    }
+
     pub fn label(mut self, label: LabeledSpan) -> Self {
         let mut labels = self.labels.unwrap_or_else(|| Vec::with_capacity(1));
         labels.push(label);

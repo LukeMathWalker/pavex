@@ -1,12 +1,12 @@
 [31m[1mERROR[0m[39m: 
-  × Error handlers associated with a fallible operation must take a reference
-  │ to the operation's error type as input.
-  │ This error handler is associated with `app::fallible_constructor`,
-  │ therefore I expect `&app::Error` to be one of its input parameters.
-    ╭─[src/lib.rs:21:1]
- 21 │     bp.constructor(f!(crate::fallible_constructor), Lifecycle::RequestScoped)
- 22 │         .error_handler(f!(crate::error_handler));
-    ·                        ────────────┬───────────
-    ·                                    ╰── The error handler was registered here
- 23 │     bp.route(GET, "/home", f!(crate::handler));
+  [31m×[0m Error handlers associated with a fallible operation must take a reference
+  [31m│[0m to the operation's error type as input.
+  [31m│[0m This error handler is associated with `app::fallible_constructor`,
+  [31m│[0m therefore I expect `&app::Error` to be one of its input parameters.
+    ╭─[[36;1;4msrc/lib.rs[0m:21:1]
+ [2m21[0m │     bp.constructor(f!(crate::fallible_constructor), Lifecycle::RequestScoped)
+ [2m22[0m │         .error_handler(f!(crate::error_handler));
+    · [35;1m                       ────────────┬───────────[0m
+    ·                                    [35;1m╰── [35;1mThe error handler was registered here[0m[0m
+ [2m23[0m │     bp.route(GET, "/home", f!(crate::handler));
     ╰────

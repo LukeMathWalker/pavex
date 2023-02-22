@@ -1,5 +1,10 @@
 use miette::{LabeledSpan, SourceOffset, SourceSpan};
 
+pub use graphical_report_handler::GraphicalReportHandler;
+
+mod diagnostic_chain;
+mod graphical_report_handler;
+
 /// Helper methods to reduce boilerplate when working with [`miette::SourceSpan`]s.  
 /// We might eventually want to upstream them.
 pub trait SourceSpanExt {

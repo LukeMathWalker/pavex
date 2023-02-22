@@ -16,6 +16,7 @@ fs-err = "2.7.0"
 tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter"] }
 tracing = "0.1"
 owo-colors = "3"
+anyhow = "1"
 
 [dev-dependencies]
 pavex_test_runner = { path = "../pavex_test_runner" }

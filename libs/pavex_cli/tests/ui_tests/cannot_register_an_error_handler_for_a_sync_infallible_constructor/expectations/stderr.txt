@@ -1,12 +1,12 @@
 [31m[1mERROR[0m[39m: 
-  × You registered an error handler for a constructor that does not return
-  │ a `Result`.
-    ╭─[src/lib.rs:22:1]
- 22 │     bp.constructor(f!(crate::infallible_constructor), Lifecycle::RequestScoped)
- 23 │         .error_handler(f!(crate::error_handler));
-    ·                        ────────────┬───────────
-    ·                                    ╰── The unnecessary error handler was registered here
- 24 │     bp.route(GET, "/home", f!(crate::request_handler));
+  [31m×[0m You registered an error handler for a constructor that does not return
+  [31m│[0m a `Result`.
+    ╭─[[36;1;4msrc/lib.rs[0m:22:1]
+ [2m22[0m │     bp.constructor(f!(crate::infallible_constructor), Lifecycle::RequestScoped)
+ [2m23[0m │         .error_handler(f!(crate::error_handler));
+    · [35;1m                       ────────────┬───────────[0m
+    ·                                    [35;1m╰── [35;1mThe unnecessary error handler was registered here[0m[0m
+ [2m24[0m │     bp.route(GET, "/home", f!(crate::request_handler));
     ╰────
-  help: Remove the error handler, it is not needed. The constructor is
+[36m  help: [0mRemove the error handler, it is not needed. The constructor is
         infallible!

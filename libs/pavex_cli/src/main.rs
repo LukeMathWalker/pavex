@@ -1,13 +1,16 @@
+use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
 use std::process::ExitCode;
+use std::str::FromStr;
 
 use clap::{Parser, Subcommand};
+use miette::{GraphicalTheme, ThemeCharacters, ThemeStyles};
+use owo_colors::OwoColorize;
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::EnvFilter;
 
-use owo_colors::OwoColorize;
 use pavex::App;
 use pavex_builder::Blueprint;
 
@@ -17,8 +20,40 @@ struct Cli {
     /// Expose inner details in case of an error.
     #[clap(long, env = "PAVEX_DEBUG")]
     debug: bool,
+    #[clap(long, env = "PAVEX_COLOR", default_value_t = Color::Auto)]
+    color: Color,
     #[clap(subcommand)]
     command: Commands,
+}
+
+#[derive(Clone, Debug)]
+enum Color {
+    Auto,
+    Always,
+    Never,
+}
+
+impl Display for Color {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Color::Auto => write!(f, "auto"),
+            Color::Always => write!(f, "always"),
+            Color::Never => write!(f, "never"),
+        }
+    }
+}
+
+impl FromStr for Color {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "auto" => Ok(Color::Auto),
+            "always" => Ok(Color::Always),
+            "never" => Ok(Color::Never),
+            s => Err(anyhow::anyhow!("Invalid color setting: {}", s)),
+        }
+    }
 }
 
 #[derive(Subcommand)]
@@ -58,13 +93,18 @@ fn init_telemetry() {
 fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
     let cli = Cli::parse();
     miette::set_hook(Box::new(move |_| {
-        let mut config = miette::MietteHandlerOpts::new();
+        // TODO: Bring in all miette's auto-detection logic.
+        let mut handler = pavex::GraphicalReportHandler::new_themed(GraphicalTheme {
+            characters: ThemeCharacters::unicode(),
+            styles: ThemeStyles::ansi(),
+        });
+        handler = handler.with_width(80);
         if cli.debug {
-            config = config.with_cause_chain()
+            handler = handler.with_cause_chain()
         } else {
-            config = config.without_cause_chain()
+            handler = handler.without_cause_chain()
         };
-        Box::new(config.build())
+        Box::new(handler)
     }))
     .unwrap();
     if cli.debug {

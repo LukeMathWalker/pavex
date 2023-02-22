@@ -26,6 +26,7 @@ use crate::web::analyses::computations::ComputationDb;
 use crate::web::analyses::constructibles::ConstructibleDb;
 use crate::web::analyses::raw_identifiers::RawCallableIdentifiersDb;
 use crate::web::analyses::resolved_paths::ResolvedPathDb;
+use crate::web::analyses::router_validation::validate_router;
 use crate::web::analyses::user_components::{RouterKey, UserComponentDb};
 use crate::web::codegen;
 use crate::web::generated_app::GeneratedApp;
@@ -74,6 +75,12 @@ impl App {
         let package_graph = compute_package_graph().map_err(|e| vec![e])?;
         let mut diagnostics = vec![];
         let krate_collection = CrateCollection::new(package_graph.clone());
+        validate_router(
+            &user_component_db,
+            &raw_identifiers_db,
+            &package_graph,
+            &mut diagnostics,
+        );
         let resolved_path_db = ResolvedPathDb::build(
             &user_component_db,
             &raw_identifiers_db,

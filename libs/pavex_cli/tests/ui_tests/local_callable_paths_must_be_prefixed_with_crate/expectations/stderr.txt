@@ -1,12 +1,12 @@
 [31m[1mERROR[0m[39m: 
-  × `handler` is not a fully-qualified import path.
-    ╭─[src/lib.rs:8:1]
-  8 │     let mut bp = Blueprint::new();
-  9 │     bp.route(GET, "/home", f!(handler));
-    ·                            ─────┬─────
-    ·                                 ╰── The relative import path was registered here
- 10 │     bp
+  [31m×[0m `handler` is not a fully-qualified import path.
+    ╭─[[36;1;4msrc/lib.rs[0m:8:1]
+ [2m 8[0m │     let mut bp = Blueprint::new();
+ [2m 9[0m │     bp.route(GET, "/home", f!(handler));
+    · [35;1m                           ─────┬─────[0m
+    ·                                 [35;1m╰── [35;1mThe relative import path was registered here[0m[0m
+ [2m10[0m │     bp
     ╰────
-  help: If it is a local import, the path must start with `crate::`.
+[36m  help: [0mIf it is a local import, the path must start with `crate::`.
         If it is an import from a dependency, the path must start with the
         dependency name (e.g. `dependency::`).

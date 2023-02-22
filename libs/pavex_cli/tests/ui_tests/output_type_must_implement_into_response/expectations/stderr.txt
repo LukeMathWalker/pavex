@@ -1,41 +1,41 @@
 [31m[1mERROR[0m[39m: 
-  × I cannot use the type returned by this request handler to create an HTTP
-  │ response.
-  │ It does not implement `pavex_runtime::response::IntoResponse`.
-    ╭─[src/lib.rs:24:1]
- 24 │         .error_handler(f!(crate::error_handler));
- 25 │     bp.route(GET, "/home", f!(crate::handler))
-    ·                            ─────────┬────────
-    ·                                     ╰── The request handler was registered here
- 26 │         .error_handler(f!(crate::error_handler));
+  [31m×[0m I cannot use the type returned by this request handler to create an HTTP
+  [31m│[0m response.
+  [31m│[0m It does not implement `pavex_runtime::response::IntoResponse`.
+    ╭─[[36;1;4msrc/lib.rs[0m:24:1]
+ [2m24[0m │         .error_handler(f!(crate::error_handler));
+ [2m25[0m │     bp.route(GET, "/home", f!(crate::handler))
+    · [35;1m                           ─────────┬────────[0m
+    ·                                     [35;1m╰── [35;1mThe request handler was registered here[0m[0m
+ [2m26[0m │         .error_handler(f!(crate::error_handler));
     ╰────
-  help: Implement `pavex_runtime::response::IntoResponse` for
+[36m  help: [0mImplement `pavex_runtime::response::IntoResponse` for
         `app::MyCustomOutputType`.
 
 [31m[1mERROR[0m[39m: 
-  × I cannot use the type returned by this error handler to create an HTTP
-  │ response.
-  │ It does not implement `pavex_runtime::response::IntoResponse`.
-    ╭─[src/lib.rs:23:1]
- 23 │     bp.constructor(f!(crate::request_scoped), Lifecycle::RequestScoped)
- 24 │         .error_handler(f!(crate::error_handler));
-    ·                        ────────────┬───────────
-    ·                                    ╰── The error handler was registered here
- 25 │     bp.route(GET, "/home", f!(crate::handler))
+  [31m×[0m I cannot use the type returned by this error handler to create an HTTP
+  [31m│[0m response.
+  [31m│[0m It does not implement `pavex_runtime::response::IntoResponse`.
+    ╭─[[36;1;4msrc/lib.rs[0m:23:1]
+ [2m23[0m │     bp.constructor(f!(crate::request_scoped), Lifecycle::RequestScoped)
+ [2m24[0m │         .error_handler(f!(crate::error_handler));
+    · [35;1m                       ────────────┬───────────[0m
+    ·                                    [35;1m╰── [35;1mThe error handler was registered here[0m[0m
+ [2m25[0m │     bp.route(GET, "/home", f!(crate::handler))
     ╰────
-  help: Implement `pavex_runtime::response::IntoResponse` for
+[36m  help: [0mImplement `pavex_runtime::response::IntoResponse` for
         `app::MyCustomOutputType`.
 
 [31m[1mERROR[0m[39m: 
-  × I cannot use the type returned by this error handler to create an HTTP
-  │ response.
-  │ It does not implement `pavex_runtime::response::IntoResponse`.
-    ╭─[src/lib.rs:23:1]
- 23 │     bp.constructor(f!(crate::request_scoped), Lifecycle::RequestScoped)
- 24 │         .error_handler(f!(crate::error_handler));
-    ·                        ────────────┬───────────
-    ·                                    ╰── The error handler was registered here
- 25 │     bp.route(GET, "/home", f!(crate::handler))
+  [31m×[0m I cannot use the type returned by this error handler to create an HTTP
+  [31m│[0m response.
+  [31m│[0m It does not implement `pavex_runtime::response::IntoResponse`.
+    ╭─[[36;1;4msrc/lib.rs[0m:23:1]
+ [2m23[0m │     bp.constructor(f!(crate::request_scoped), Lifecycle::RequestScoped)
+ [2m24[0m │         .error_handler(f!(crate::error_handler));
+    · [35;1m                       ────────────┬───────────[0m
+    ·                                    [35;1m╰── [35;1mThe error handler was registered here[0m[0m
+ [2m25[0m │     bp.route(GET, "/home", f!(crate::handler))
     ╰────
-  help: Implement `pavex_runtime::response::IntoResponse` for
+[36m  help: [0mImplement `pavex_runtime::response::IntoResponse` for
         `app::MyCustomOutputType`.
