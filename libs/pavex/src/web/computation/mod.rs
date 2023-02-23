@@ -69,13 +69,13 @@ impl<'a> Computation<'a> {
 
 impl<'a> From<Callable> for Computation<'a> {
     fn from(value: Callable) -> Self {
-        Self::Callable(Cow::Owned(value.into()))
+        Self::Callable(Cow::Owned(value))
     }
 }
 
 impl<'a> From<BorrowSharedReference> for Computation<'a> {
     fn from(value: BorrowSharedReference) -> Self {
-        Self::BorrowSharedReference(Cow::Owned(value.into()))
+        Self::BorrowSharedReference(Cow::Owned(value))
     }
 }
 
@@ -87,13 +87,13 @@ impl<'a> From<MatchResult> for Computation<'a> {
 
 impl<'a> From<&'a Callable> for Computation<'a> {
     fn from(value: &'a Callable) -> Self {
-        Self::Callable(Cow::Borrowed(value.into()))
+        Self::Callable(Cow::Borrowed(value))
     }
 }
 
 impl<'a> From<&'a BorrowSharedReference> for Computation<'a> {
     fn from(value: &'a BorrowSharedReference) -> Self {
-        Self::BorrowSharedReference(Cow::Borrowed(value.into()))
+        Self::BorrowSharedReference(Cow::Borrowed(value))
     }
 }
 

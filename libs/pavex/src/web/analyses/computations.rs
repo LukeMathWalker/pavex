@@ -101,7 +101,7 @@ impl ComputationDb {
             CallableResolutionError::UnknownCallable(_) => {
                 let label = diagnostic::get_f_macro_invocation_span(&source, location)
                     .map(|s| s.labeled(format!("The {callable_type} that we cannot resolve")));
-                let diagnostic = CompilerDiagnostic::builder(source, e.clone())
+                let diagnostic = CompilerDiagnostic::builder(source, e)
                     .optional_label(label)
                     .help("This is most likely a bug in `pavex` or `rustdoc`.\nPlease file a GitHub issue!".into())
                     .build();
@@ -182,7 +182,7 @@ impl ComputationDb {
                 let label = diagnostic::get_f_macro_invocation_span(&source, location)
                     .map(|s| s.labeled(format!("It was registered as a {callable_type} here")));
                 diagnostics.push(
-                    CompilerDiagnostic::builder(source, e.clone())
+                    CompilerDiagnostic::builder(source, e)
                         .optional_label(label)
                         .build()
                         .into(),
@@ -265,7 +265,7 @@ impl ComputationDb {
                 )
             }
             CallableResolutionError::CannotGetCrateData(_) => {
-                diagnostics.push(miette!(e.clone()));
+                diagnostics.push(miette!(e));
             }
         }
     }

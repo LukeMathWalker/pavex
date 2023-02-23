@@ -1,3 +1,5 @@
+#![allow(clippy::too_many_arguments)]
+
 pub use app::App;
 
 mod analyses;

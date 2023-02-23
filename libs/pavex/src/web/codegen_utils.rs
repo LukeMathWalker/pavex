@@ -49,7 +49,7 @@ impl VariableNameGenerator {
     }
 }
 
-pub(crate) fn codegen_call_block<'a, I>(
+pub(crate) fn codegen_call_block<I>(
     dependencies: I,
     callable: &Callable,
     blocks: &mut HashMap<NodeIndex, Fragment>,

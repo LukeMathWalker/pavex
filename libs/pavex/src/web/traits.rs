@@ -136,37 +136,32 @@ pub(crate) fn implements_trait(
             // Tuple trait implementations in std are somewhat magical
             // (see https://doc.rust-lang.org/std/primitive.tuple.html#trait-implementations-1).
             // We handle the ones we know we care about (marker traits and Clone).
-            if expected_trait.base_type == ["core", "marker", "Send"]
+            if (expected_trait.base_type == ["core", "marker", "Send"]
                 || expected_trait.base_type == ["core", "marker", "Sync"]
                 || expected_trait.base_type == ["core", "marker", "Copy"]
                 || expected_trait.base_type == ["core", "marker", "Unpin"]
-                || expected_trait.base_type == ["core", "clone", "Clone"]
-            {
-                if t.elements
+                || expected_trait.base_type == ["core", "clone", "Clone"])
+                && t.elements
                     .iter()
                     .all(|t| implements_trait(krate_collection, t, expected_trait))
-                {
-                    return true;
-                }
+            {
+                return true;
             }
         }
         ResolvedType::Reference(r) => {
             // `& &T` is `Send` if `&T` is `Send`, therefore `&T` is `Sync` if `T` if `Sync`.
-            if expected_trait.base_type == ["core", "marker", "Sync"]
-                // `&T` is `Send` if `T` is `Send`.
-                // See https://doc.rust-lang.org/std/marker/trait.Send.html#impl-Send-for-%26T
-                || expected_trait.base_type == ["core", "marker", "Send"]
+            if (expected_trait.base_type == ["core", "marker", "Sync"]
+                || expected_trait.base_type == ["core", "marker", "Send"])
+                && implements_trait(krate_collection, &r.inner, expected_trait)
             {
-                if implements_trait(krate_collection, &r.inner, expected_trait) {
-                    return true;
-                }
+                return true;
             }
             // `&T` is always `Copy`, but `&mut T` is never `Copy`.
             // See https://doc.rust-lang.org/std/marker/trait.Copy.html#impl-Copy-for-%26T and
             // https://doc.rust-lang.org/std/marker/trait.Copy.html#when-cant-my-type-be-copy
-            if (expected_trait.base_type == ["core", "clone", "Copy"] && !r.is_mutable)
-                // `Copy` implies `Clone`.
-                || (expected_trait.base_type == ["core", "clone", "Clone"] && !r.is_mutable)
+            // `Copy` implies `Clone`.
+            if !r.is_mutable && (expected_trait.base_type == ["core", "clone", "Copy"])
+                || (expected_trait.base_type == ["core", "clone", "Clone"])
             {
                 return true;
             }
@@ -184,12 +179,11 @@ pub(crate) fn implements_trait(
             // TODO: handle other traits
         }
         ResolvedType::Slice(s) => {
-            if expected_trait.base_type == ["core", "marker", "Send"]
-                || expected_trait.base_type == ["core", "marker", "Sync"]
+            if (expected_trait.base_type == ["core", "marker", "Send"]
+                || expected_trait.base_type == ["core", "marker", "Sync"])
+                && implements_trait(krate_collection, &s.element_type, expected_trait)
             {
-                if implements_trait(krate_collection, &s.element_type, expected_trait) {
-                    return true;
-                }
+                return true;
             }
             // TODO: handle Unpin + other traits
         }
@@ -295,7 +289,7 @@ fn is_equivalent(
                     our_tuple.elements.iter().zip(rustdoc_tuple.iter())
                 {
                     if !is_equivalent(
-                        &rustdoc_tuple_element,
+                        rustdoc_tuple_element,
                         our_tuple_element,
                         krate_collection,
                         used_by_package_id,
@@ -314,7 +308,7 @@ fn is_equivalent(
         Type::Slice(s) => {
             if let ResolvedType::Slice(our_slice) = our_type {
                 return is_equivalent(
-                    &s,
+                    s,
                     &our_slice.element_type,
                     krate_collection,
                     used_by_package_id,

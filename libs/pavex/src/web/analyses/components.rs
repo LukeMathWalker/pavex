@@ -490,7 +490,7 @@ impl ComponentDb {
         if !matches!(output_type, ResolvedType::Reference(_)) {
             // For each non-reference type, register an inlineable constructor that transforms
             // `T` in `&T`.
-            let c: Computation<'_> = BorrowSharedReference::new(output_type.to_owned()).into();
+            let c: Computation<'_> = BorrowSharedReference::new(output_type).into();
             self.add_synthetic_constructor(
                 // It's fine to unwrap, since constructors are guaranteed to return a non-unit type.
                 // Therefore we can be certain the borrowing that return type doesn't give a computation
