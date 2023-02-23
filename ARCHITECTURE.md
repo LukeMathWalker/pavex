@@ -78,7 +78,7 @@ It will polished down the line, once the bulk of the work on `pavex_cli` is comp
 behave.
 
 ```rust
-use pavex_builder::{f, Blueprint, Lifecycle, router::GET};
+use pavex_builder::{f, Blueprint, Lifecycle};
 
 /// The blueprint for our application.
 /// It lists all its routes and provides constructors for all the types
