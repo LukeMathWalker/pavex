@@ -78,7 +78,7 @@ It will polished down the line, once the bulk of the work on `pavex_cli` is comp
 behave.
 
 ```rust
-use pavex_builder::{f, Blueprint, Lifecycle};
+use pavex_builder::{f, Blueprint, Lifecycle, router::GET};
 
 /// The blueprint for our application.
 /// It lists all its routes and provides constructors for all the types
@@ -91,7 +91,7 @@ pub fn blueprint() -> Blueprint {
         .constructor(f!(crate::http_client), Lifecycle::Singleton)
         .constructor(f!(crate::extract_path), Lifecycle::RequestScoped)
         .constructor(f!(crate::logger), Lifecycle::Transient)
-        .route(f!(crate::stream_file), "/home")
+        .route(GET, "/home", f!(crate::stream_file))
 }
 ```
 
