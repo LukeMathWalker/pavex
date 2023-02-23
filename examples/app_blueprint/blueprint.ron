@@ -13,13 +13,7 @@
             import_path: "crate :: logger",
         ),
     ],
-    request_handlers: [
-        (
-            registered_at: "app_blueprint",
-            import_path: "crate :: stream_file",
-        ),
-    ],
-    constructor_error_handlers: {},
+    constructors_error_handlers: {},
     component_lifecycles: {
         (
             registered_at: "app_blueprint",
@@ -34,37 +28,11 @@
             import_path: "crate :: logger",
         ): Transient,
     },
-    router: {
-        "/home": (
-            registered_at: "app_blueprint",
-            import_path: "crate :: stream_file",
-        ),
-    },
-    request_handler_locations: {
-        (
-            registered_at: "app_blueprint",
-            import_path: "crate :: stream_file",
-        ): [
-            (
-                line: 41,
-                column: 8,
-                file: "examples/app_blueprint/src/lib.rs",
-            ),
-        ],
-    },
     error_handler_locations: {},
     constructor_locations: {
         (
             registered_at: "app_blueprint",
             import_path: "crate :: http_client",
-        ): (
-            line: 38,
-            column: 8,
-            file: "examples/app_blueprint/src/lib.rs",
-        ),
-        (
-            registered_at: "app_blueprint",
-            import_path: "crate :: extract_path",
         ): (
             line: 39,
             column: 8,
@@ -72,11 +40,41 @@
         ),
         (
             registered_at: "app_blueprint",
-            import_path: "crate :: logger",
+            import_path: "crate :: extract_path",
         ): (
             line: 40,
             column: 8,
             file: "examples/app_blueprint/src/lib.rs",
         ),
+        (
+            registered_at: "app_blueprint",
+            import_path: "crate :: logger",
+        ): (
+            line: 41,
+            column: 8,
+            file: "examples/app_blueprint/src/lib.rs",
+        ),
     },
+    routes: [
+        (
+            path: "/home",
+            method_guard: (
+                allowed_methods: [
+                    "GET",
+                ],
+            ),
+            request_handler: (
+                callable: (
+                    registered_at: "app_blueprint",
+                    import_path: "crate :: stream_file",
+                ),
+                location: (
+                    line: 42,
+                    column: 8,
+                    file: "examples/app_blueprint/src/lib.rs",
+                ),
+            ),
+            error_handler: None,
+        ),
+    ],
 )

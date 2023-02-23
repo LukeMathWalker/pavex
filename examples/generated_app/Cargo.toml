@@ -8,8 +8,10 @@ autotests = false
 autobenches = false
 
 [dependencies]
-http = "0.2.8"
-hyper = "0.14.23"
+bytes = "1.4.0"
+http = "0.2.9"
+http-body = "0.4.5"
+hyper = "0.14.24"
 
 [dependencies.app_blueprint]
 version = "0.1.0"
