@@ -1,20 +1,19 @@
 [31m[1mERROR[0m[39m: 
-  × One of the input parameters for `app::stream_file::<std::path::PathBuf>`
-  │ has a type that I cannot handle.
-    ╭─[src/lib.rs:8:1]
-  8 │     let mut bp = AppBlueprint::new();
-  9 │     bp.route(f!(crate::stream_file::<std::path::PathBuf>), "/home");
-    ·              ──────────────────────┬─────────────────────
-    ·                                    ╰── The request handler was registered here
- 10 │     bp
-    ╰────
-
-Error: 
-  × 
-   ╭─[src/lib.rs:2:1]
- 2 │ 
- 3 │ pub fn stream_file<T>(_inner: T) -> pavex_runtime::response::Response {
-   ·                               ┬
-   ·                               ╰── I do not know how handle this parameter
- 4 │     todo!()
-   ╰────
+  [31m×[0m One of the input parameters for `app::stream_file::<std::path::PathBuf>`
+  [31m│[0m has a type that I cannot handle.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:8:1]
+  [31m│[0m  [2m 8[0m │     let mut bp = Blueprint::new();
+  [31m│[0m  [2m 9[0m │     bp.route(GET, "/home", f!(crate::stream_file::<std::path::PathBuf>));
+  [31m│[0m     · [35;1m                           ──────────────────────┬─────────────────────[0m
+  [31m│[0m     ·                                                  [35;1m╰── [35;1mThe request handler was registered here[0m[0m
+  [31m│[0m  [2m10[0m │     bp
+  [31m│[0m     ╰────
+  [31m│[0m   [31m×[0m 
+  [31m│[0m    ╭─[[36;1;4msrc/lib.rs[0m:2:1]
+  [31m│[0m  [2m2[0m │ 
+  [31m│[0m  [2m3[0m │ pub fn stream_file<T>(_inner: T) -> pavex_runtime::response::Response {
+  [31m│[0m    · [35;1m                              ┬[0m
+  [31m│[0m    ·                               [35;1m╰── [35;1mI do not know how handle this parameter[0m[0m
+  [31m│[0m  [2m4[0m │     todo!()
+  [31m│[0m    ╰────

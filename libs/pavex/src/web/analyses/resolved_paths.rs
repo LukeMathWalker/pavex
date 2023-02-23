@@ -57,7 +57,8 @@ impl ResolvedPathDb {
         package_graph: &PackageGraph,
         diagnostics: &mut Vec<miette::Error>,
     ) {
-        let raw_identifier_id = component_db[component_id].raw_callable_identifiers_id();
+        let user_component = &component_db[component_id];
+        let raw_identifier_id = user_component.raw_callable_identifiers_id();
         let location = raw_identifiers_db.get_location(raw_identifier_id);
         let source = match location.source_file(package_graph) {
             Ok(s) => s,

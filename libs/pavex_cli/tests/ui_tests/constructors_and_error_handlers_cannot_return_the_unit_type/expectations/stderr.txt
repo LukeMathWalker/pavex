@@ -1,35 +1,38 @@
 [31m[1mERROR[0m[39m: 
-  × All constructors must return *something*.
-  │ This constructor doesn't: it returns the unit type, `()`.
-    ╭─[src/lib.rs:27:1]
- 27 │     let mut bp = AppBlueprint::new();
- 28 │     bp.constructor(f!(crate::constructor), Lifecycle::Singleton);
-    ·                    ───────────┬──────────
-    ·                               ╰── The constructor was registered here
- 29 │     bp.constructor(
-    ╰────
+  [31m×[0m All constructors must return *something*.
+  [31m│[0m This constructor doesn't: it returns the unit type, `()`.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:27:1]
+  [31m│[0m  [2m27[0m │     let mut bp = Blueprint::new();
+  [31m│[0m  [2m28[0m │     bp.constructor(f!(crate::constructor), Lifecycle::Singleton);
+  [31m│[0m     · [35;1m                   ───────────┬──────────[0m
+  [31m│[0m     ·                               [35;1m╰── [35;1mThe constructor was registered here[0m[0m
+  [31m│[0m  [2m29[0m │     bp.constructor(
+  [31m│[0m     ╰────
 
 [31m[1mERROR[0m[39m: 
-  × All fallible constructors must return *something* when successful.
-  │ This fallible constructor doesn't: it returns the unit type when
-  │ successful, `Ok(())`.
-    ╭─[src/lib.rs:29:1]
- 29 │     bp.constructor(
- 30 │         f!(crate::fallible_constructor_building_unit),
-    ·         ──────────────────────┬──────────────────────
-    ·                               ╰── The constructor was registered here
- 31 │         Lifecycle::RequestScoped,
-    ╰────
+  [31m×[0m All fallible constructors must return *something* when successful.
+  [31m│[0m This fallible constructor doesn't: it returns the unit type when
+  [31m│[0m successful, `Ok(())`.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:29:1]
+  [31m│[0m  [2m29[0m │     bp.constructor(
+  [31m│[0m  [2m30[0m │         f!(crate::fallible_constructor_building_unit),
+  [31m│[0m     · [35;1m        ──────────────────────┬──────────────────────[0m
+  [31m│[0m     ·                               [35;1m╰── [35;1mThe constructor was registered here[0m[0m
+  [31m│[0m  [2m31[0m │         Lifecycle::RequestScoped,
+  [31m│[0m     ╰────
 
 [31m[1mERROR[0m[39m: 
-  × All error handlers must return a type that implements
-  │ `pavex_runtime::response::IntoResponse`.
-  │ This error handler doesn't: it returns the unit type, `()`. I don't know
-  │ how to convert `()` into an HTTP response!
-    ╭─[src/lib.rs:33:1]
- 33 │     bp.constructor(f!(crate::fallible_constructor), Lifecycle::RequestScoped)
- 34 │         .error_handler(f!(crate::error_handler));
-    ·                        ────────────┬───────────
-    ·                                    ╰── The error handler was registered here
- 35 │     bp.route(f!(crate::handler), "/home");
-    ╰────
+  [31m×[0m All error handlers must return a type that implements
+  [31m│[0m `pavex_runtime::response::IntoResponse`.
+  [31m│[0m This error handler doesn't: it returns the unit type, `()`. I don't know
+  [31m│[0m how to convert `()` into an HTTP response!
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:33:1]
+  [31m│[0m  [2m33[0m │     bp.constructor(f!(crate::fallible_constructor), Lifecycle::RequestScoped)
+  [31m│[0m  [2m34[0m │         .error_handler(f!(crate::error_handler));
+  [31m│[0m     · [35;1m                       ────────────┬───────────[0m
+  [31m│[0m     ·                                    [35;1m╰── [35;1mThe error handler was registered here[0m[0m
+  [31m│[0m  [2m35[0m │     bp.route(GET, "/home", f!(crate::handler));
+  [31m│[0m     ╰────

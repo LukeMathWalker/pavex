@@ -1,9 +1,9 @@
-use pavex_builder::{f, AppBlueprint};
+use pavex_builder::{f, router::GET, Blueprint};
 
 pub struct Streamer;
 
-pub fn blueprint() -> AppBlueprint {
-    let mut bp = AppBlueprint::new();
-    bp.route(f!(crate::Streamer), "/home");
+pub fn blueprint() -> Blueprint {
+    let mut bp = Blueprint::new();
+    bp.route(GET, "/home", f!(crate::Streamer));
     bp
 }

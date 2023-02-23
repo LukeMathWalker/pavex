@@ -8,18 +8,20 @@ use indexmap::IndexSet;
 use pavex_builder::Lifecycle;
 
 use crate::diagnostic;
-use crate::diagnostic::{CompilerDiagnostic, LocationExt, SourceSpanExt};
+use crate::diagnostic::{CallableType, CompilerDiagnostic, LocationExt, SourceSpanExt};
 use crate::language::{ResolvedPath, ResolvedPathQualifiedSelf, ResolvedPathSegment, ResolvedType};
 use crate::rustdoc::CrateCollection;
 use crate::web::analyses::computations::{ComputationDb, ComputationId};
 use crate::web::analyses::raw_identifiers::RawCallableIdentifiersDb;
-use crate::web::analyses::user_components::{UserComponent, UserComponentDb, UserComponentId};
+use crate::web::analyses::user_components::{
+    RouterKey, UserComponent, UserComponentDb, UserComponentId,
+};
 use crate::web::computation::{BorrowSharedReference, Computation, MatchResult};
 use crate::web::constructors::{Constructor, ConstructorValidationError};
 use crate::web::error_handlers::{ErrorHandler, ErrorHandlerValidationError};
 use crate::web::interner::Interner;
 use crate::web::request_handlers::{RequestHandler, RequestHandlerValidationError};
-use crate::web::resolvers::{CallableResolutionError, CallableType};
+use crate::web::resolvers::CallableResolutionError;
 use crate::web::traits::{assert_trait_is_implemented, MissingTraitImplementationError};
 use crate::web::utils::{get_ok_variant, is_result, process_framework_path};
 
@@ -92,7 +94,7 @@ pub(crate) struct ComponentDb {
     id2transformer_ids: HashMap<ComponentId, IndexSet<ComponentId>>,
     id2lifecycle: HashMap<ComponentId, Lifecycle>,
     error_handler_id2error_handler: HashMap<ComponentId, ErrorHandler>,
-    router: BTreeMap<String, ComponentId>,
+    router: BTreeMap<RouterKey, ComponentId>,
 }
 
 impl ComponentDb {
@@ -172,7 +174,7 @@ impl ComponentDb {
             .filter(|(_, c)| c.callable_type() == CallableType::RequestHandler)
         {
             let callable = &computation_db[user_component_id];
-            let UserComponent::RequestHandler { route, .. } = user_component else {
+            let UserComponent::RequestHandler { router_key, .. } = user_component else {
                 unreachable!()
             };
             match RequestHandler::new(Cow::Borrowed(callable)) {
@@ -191,7 +193,7 @@ impl ComponentDb {
                         .interner
                         .get_or_intern(Component::RequestHandler { user_component_id });
                     user_component_id2component_id.insert(user_component_id, handler_id);
-                    self_.router.insert(route.to_owned(), handler_id);
+                    self_.router.insert(router_key.to_owned(), handler_id);
                     let lifecycle = Lifecycle::RequestScoped;
                     self_.id2lifecycle.insert(handler_id, lifecycle.clone());
 
@@ -427,7 +429,7 @@ impl ComponentDb {
     }
 
     /// The mapping from a route to its dedicated request handler.
-    pub fn router(&self) -> &BTreeMap<String, ComponentId> {
+    pub fn router(&self) -> &BTreeMap<RouterKey, ComponentId> {
         &self.router
     }
 
@@ -677,8 +679,8 @@ impl ComponentDb {
         match e {
             ConstructorValidationError::CannotFalliblyReturnTheUnitType
             | ConstructorValidationError::CannotReturnTheUnitType => {
-                let raw_identifier_id =
-                    user_component_db[user_component_id].raw_callable_identifiers_id();
+                let user_component = &user_component_db[user_component_id];
+                let raw_identifier_id = user_component.raw_callable_identifiers_id();
                 let location = raw_identifiers_db.get_location(raw_identifier_id);
                 let source = match location.source_file(package_graph) {
                     Ok(s) => s,
@@ -707,8 +709,8 @@ impl ComponentDb {
     ) {
         match e {
             RequestHandlerValidationError::CannotReturnTheUnitType => {
-                let raw_identifier_id =
-                    user_component_db[user_component_id].raw_callable_identifiers_id();
+                let user_component = &user_component_db[user_component_id];
+                let raw_identifier_id = user_component.raw_callable_identifiers_id();
                 let location = raw_identifiers_db.get_location(raw_identifier_id);
                 let source = match location.source_file(package_graph) {
                     Ok(s) => s,
@@ -806,7 +808,8 @@ impl ComponentDb {
         raw_identifiers_db: &RawCallableIdentifiersDb,
         diagnostics: &mut Vec<miette::Error>,
     ) {
-        let raw_identifier_id = user_component_db[user_component_id].raw_callable_identifiers_id();
+        let user_component = &user_component_db[user_component_id];
+        let raw_identifier_id = user_component.raw_callable_identifiers_id();
         let location = raw_identifiers_db.get_location(raw_identifier_id);
         let source = match location.source_file(package_graph) {
             Ok(s) => s,
@@ -843,7 +846,8 @@ impl ComponentDb {
         diagnostics: &mut Vec<miette::Error>,
     ) {
         let fallible_kind = user_component_db[fallible_id].callable_type();
-        let raw_identifier_id = user_component_db[error_handler_id].raw_callable_identifiers_id();
+        let user_component = &user_component_db[error_handler_id];
+        let raw_identifier_id = user_component.raw_callable_identifiers_id();
         let location = raw_identifiers_db.get_location(raw_identifier_id);
         let source = match location.source_file(package_graph) {
             Ok(s) => s,
@@ -875,11 +879,12 @@ impl ComponentDb {
         raw_identifiers_db: &RawCallableIdentifiersDb,
         diagnostics: &mut Vec<miette::Error>,
     ) {
+        let user_component = &user_component_db[error_handler_id];
+        let raw_identifier_id = user_component.raw_callable_identifiers_id();
         debug_assert_eq!(
             user_component_db[fallible_id].callable_type(),
             CallableType::Constructor
         );
-        let raw_identifier_id = user_component_db[error_handler_id].raw_callable_identifiers_id();
         let location = raw_identifiers_db.get_location(raw_identifier_id);
         let source = match location.source_file(package_graph) {
             Ok(s) => s,
@@ -909,7 +914,8 @@ impl ComponentDb {
         diagnostics: &mut Vec<miette::Error>,
     ) {
         let fallible_kind = user_component_db[fallible_id].callable_type();
-        let raw_identifier_id = user_component_db[fallible_id].raw_callable_identifiers_id();
+        let user_component = &user_component_db[fallible_id];
+        let raw_identifier_id = user_component.raw_callable_identifiers_id();
         let location = raw_identifiers_db.get_location(raw_identifier_id);
         let source = match location.source_file(package_graph) {
             Ok(s) => s,

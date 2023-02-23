@@ -4,4 +4,5 @@ pub(crate) mod computations;
 pub(crate) mod constructibles;
 pub(crate) mod raw_identifiers;
 pub(crate) mod resolved_paths;
+pub(crate) mod router_validation;
 pub(crate) mod user_components;

@@ -4,7 +4,7 @@
 ///
 /// `pavex`'s constructors and request handlers can accept an arbitrary number of input
 /// parameters.  
-/// How do we encode this requirement in the signature of [`AppBlueprint`](crate::AppBlueprint)'s
+/// How do we encode this requirement in the signature of [`Blueprint`](crate::Blueprint)'s
 /// methods?
 ///
 /// We rely on `Callable`:

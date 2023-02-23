@@ -15,7 +15,7 @@ use crate::diagnostic::{convert_proc_macro_span, ParsedSourceFile, ProcMacroSpan
 ///
 /// ```rust,ignore
 /// App::builder()
-///   .route(f!(crate::stream_file::<std::path::PathBuf>), "/home")
+///   .route(GET, "/home", f!(crate::stream_file::<std::path::PathBuf>))
 /// //^ `location` points here!
 /// ```
 ///
@@ -24,9 +24,12 @@ use crate::diagnostic::{convert_proc_macro_span, ParsedSourceFile, ProcMacroSpan
 ///
 /// ```rust,ignore
 /// App::builder()
-///   .route(f!(crate::stream_file::<std::path::PathBuf>), "/home")
-/// //       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/// //       We want a SourceSpan that points at this!
+///   .route(GET, "/home", f!(crate::stream_file::<std::path::PathBuf>))
+/// //                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/// //                     We want a SourceSpan that points at this for routes
+///   .constructor(f!(crate::extract_file), Lifecycle::Singleton)
+/// //             ^^^^^^^^^^^^^^^^^^^^^^^
+/// //             We want a SourceSpan that points at this for constructors
 /// ```
 ///
 /// How do we do it?
@@ -40,7 +43,7 @@ use crate::diagnostic::{convert_proc_macro_span, ParsedSourceFile, ProcMacroSpan
 /// There are going to be multiple nodes that match if we are dealing with chained method calls.
 /// Luckily enough, the visit is pre-order, therefore the latest node that contains `location`
 /// is also the smallest node that contains it - exactly what we are looking for.
-pub fn get_f_macro_invocation_span(
+pub(crate) fn get_f_macro_invocation_span(
     source: &ParsedSourceFile,
     location: &Location,
 ) -> Option<SourceSpan> {
@@ -73,10 +76,17 @@ pub fn get_f_macro_invocation_span(
         node: None,
     };
     locator.visit_file(parsed_source);
-    if let Some(node) = locator.node {
-        if let Some(argument) = node.args.first() {
-            return Some(convert_proc_macro_span(raw_source, argument.span()));
+    let node = locator.node?;
+    let argument = match node.method.to_string().as_str() {
+        "error_handler" | "constructor" => node.args.first(),
+        "route" => node.args.iter().nth(2),
+        s => {
+            tracing::trace!(
+                "Unknown method name when looking for component registration: {}",
+                s
+            );
+            return None;
         }
-    }
-    None
+    }?;
+    Some(convert_proc_macro_span(raw_source, argument.span()))
 }

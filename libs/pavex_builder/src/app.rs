@@ -1,29 +1,24 @@
-use std::collections::BTreeMap;
 use std::fmt::{Display, Formatter};
 
 use indexmap::{IndexMap, IndexSet};
 
 use crate::callable::{RawCallable, RawCallableIdentifiers};
-use crate::Callable;
+use crate::{router::MethodGuard, Callable};
 
 #[derive(Default, serde::Serialize, serde::Deserialize)]
 /// A blueprint for the runtime behaviour of your application.
 ///
-/// `AppBlueprint` captures three types of information:
+/// `Blueprint` captures three types of information:
 ///
-/// - route handlers, via [`AppBlueprint::route`].
-/// - constructors, via [`AppBlueprint::constructor`].
+/// - route handlers, via [`Blueprint::route`].
+/// - constructors, via [`Blueprint::constructor`].
 /// - error handlers, via [`Constructor::error_handler`].
 ///
-/// This information is then serialized via [`AppBlueprint::persist`] and passed as input to
+/// This information is then serialized via [`Blueprint::persist`] and passed as input to
 /// `pavex_cli` to generate the application's source code.
-pub struct AppBlueprint {
+pub struct Blueprint {
     /// The set of registered constructors.
     pub constructors: IndexSet<RawCallableIdentifiers>,
-    /// - Keys: a path (e.g. `/homes/rooms`).
-    /// - Values: [`RawCallableIdentifiers`] of an error handler for the error type returned by
-    /// the request handler specified for that path.
-    pub request_handlers_error_handlers: IndexMap<String, RawCallableIdentifiers>,
     /// - Keys: [`RawCallableIdentifiers`] of a **fallible** constructor.
     /// - Values: [`RawCallableIdentifiers`] of an error handler for the error type returned by
     /// the constructor.
@@ -31,26 +26,35 @@ pub struct AppBlueprint {
     /// - Keys: [`RawCallableIdentifiers`] of a constructor.
     /// - Values: the [`Lifecycle`] for the type returned by the constructor.
     pub component_lifecycles: IndexMap<RawCallableIdentifiers, Lifecycle>,
-    /// - Keys: a path (e.g. `/homes/rooms`).
-    /// - Values: [`RawCallableIdentifiers`] of the request handler in charge of processing
-    /// incoming requests for that path.
-    pub router: BTreeMap<String, RawCallableIdentifiers>,
-    /// - Keys: a path (e.g. `/homes/rooms`).
-    /// - Values: a [`Location`] pointing at the corresponding invocation of
-    /// [`AppBlueprint::route`].
-    pub request_handler_locations: IndexMap<String, Location>,
     /// - Keys: [`RawCallableIdentifiers`] of the fallible constructor.
     /// - Values: a [`Location`] pointing at the corresponding invocation of
     /// [`Constructor::error_handler`].
     pub error_handler_locations: IndexMap<RawCallableIdentifiers, Location>,
-    /// - Keys: the path (e.g. `/homes/rooms`) of the corresponding request handler.
-    /// - Values: a [`Location`] pointing at the corresponding invocation of
-    /// [`Route::error_handler`].
-    pub request_error_handler_locations: IndexMap<String, Location>,
     /// - Keys: [`RawCallableIdentifiers`] of a constructor.
     /// - Values: a [`Location`] pointing at the corresponding invocation of
-    /// [`AppBlueprint::constructor`].
+    /// [`Blueprint::constructor`].
     pub constructor_locations: IndexMap<RawCallableIdentifiers, Location>,
+    /// All registered routes, in the order they were registered.
+    pub routes: Vec<RegisteredRoute>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+/// A route registered against a [`Blueprint`] via [`Blueprint::route`].
+pub struct RegisteredRoute {
+    /// The path of the route.
+    pub path: String,
+    /// The HTTP method guard for the route.
+    pub method_guard: MethodGuard,
+    /// The callable in charge of processing incoming requests for this route.
+    pub request_handler: RegisteredCallable,
+    /// The callable in charge of processing errors returned by the request handler, if any.
+    pub error_handler: Option<RegisteredCallable>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct RegisteredCallable {
+    pub callable: RawCallableIdentifiers,
+    pub location: Location,
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -85,8 +89,8 @@ impl Display for Lifecycle {
     }
 }
 
-impl AppBlueprint {
-    /// Create a new [`AppBlueprint`].
+impl Blueprint {
+    /// Create a new [`Blueprint`].
     pub fn new() -> Self {
         Default::default()
     }
@@ -95,7 +99,7 @@ impl AppBlueprint {
     /// Register a constructor.
     ///
     /// ```rust
-    /// use pavex_builder::{AppBlueprint, f, Lifecycle};
+    /// use pavex_builder::{Blueprint, f, Lifecycle};
     /// # struct LogLevel;
     /// # struct Logger;
     ///
@@ -105,7 +109,7 @@ impl AppBlueprint {
     /// }
     ///
     /// # fn main() {
-    /// let mut bp = AppBlueprint::new();
+    /// let mut bp = Blueprint::new();
     /// bp.constructor(f!(crate::logger), Lifecycle::Transient);
     /// # }
     /// ```
@@ -134,21 +138,112 @@ impl AppBlueprint {
     }
 
     #[track_caller]
-    /// Register a route and the corresponding request handler.
+    /// Register a request handler to be invoked when an incoming request matches the specified route.
     ///
-    /// If a handler has already been registered for the same route, it will be overwritten.
-    pub fn route<F, HandlerInputs>(&mut self, callable: RawCallable<F>, path: &str) -> Route
+    /// If a request handler has already been registered for the same route, it will be overwritten.
+    ///
+    /// # Routing: an introduction
+    ///
+    /// ## Simple routes
+    ///
+    /// The simplest route is a combination of a single HTTP method, a path and a request handler:
+    ///
+    /// ```rust
+    /// use pavex_builder::{Blueprint, f, router::GET};
+    /// use pavex_runtime::{http::Request, hyper::Body, response::Response};
+    ///
+    /// fn my_handler(request: Request<Body>) -> Response {
+    ///     // [...]
+    ///     # todo!()
+    /// }
+    ///
+    /// # fn main() {
+    /// let mut bp = Blueprint::new();
+    /// bp.route(GET, "/path", f!(crate::my_handler));
+    /// # }
+    /// ```
+    ///
+    /// You can use the constants exported in the [`router`] module to specify one of the well-known
+    /// HTTP methods:
+    ///
+    /// ```rust
+    /// use pavex_builder::{Blueprint, f, router::{GET, POST, PUT, DELETE, PATCH}};
+    /// # use pavex_runtime::{http::Request, hyper::Body, response::Response};
+    /// # fn my_handler(request: Request<Body>) -> Response { todo!() }
+    /// # fn main() {
+    /// # let mut bp = Blueprint::new();
+    ///
+    /// bp.route(GET, "/path", f!(crate::my_handler));
+    /// bp.route(POST, "/path", f!(crate::my_handler));
+    /// bp.route(PUT, "/path", f!(crate::my_handler));
+    /// bp.route(DELETE, "/path", f!(crate::my_handler));
+    /// bp.route(PATCH, "/path", f!(crate::my_handler));
+    /// // ...and a few more!
+    /// # }
+    /// ```
+    ///
+    /// ## Matching multiple HTTP methods
+    ///
+    /// It can also be useful to register a request handler that handles multiple HTTP methods
+    /// for the same path:
+    ///
+    /// ```rust
+    /// use pavex_builder::{Blueprint, f, router::{MethodGuard, POST, PATCH}};
+    /// use pavex_runtime::http::Method;
+    /// # use pavex_runtime::{http::Request, hyper::Body, response::Response};
+    /// # fn my_handler(request: Request<Body>) -> Response { todo!() }
+    /// # fn main() {
+    /// # let mut bp = Blueprint::new();
+    ///
+    /// // `crate::my_handler` will be used to handle both `PATCH` and `POST` requests to `/path`
+    /// bp.route(
+    ///     MethodGuard::new([Method::PATCH, Method::POST]),
+    ///     "/path",
+    ///     f!(crate::my_handler)
+    /// );
+    /// # }
+    /// ```
+    ///
+    /// Last but not least, you can register a route that matches a request **regardless** of
+    /// the HTTP method being used:
+    ///
+    /// ```rust
+    /// use pavex_builder::{Blueprint, f, router::ANY};
+    /// # use pavex_runtime::{http::Request, hyper::Body, response::Response};
+    /// # fn my_handler(request: Request<Body>) -> Response { todo!() }
+    /// # fn main() {
+    /// # let mut bp = Blueprint::new();
+    ///
+    /// // This will match **all** incoming requests to `/path`, regardless of their HTTP method.
+    /// // `GET`, `POST`, `PUT`... anything goes!
+    /// bp.route(ANY, "/path", f!(crate::my_handler));
+    /// # }
+    /// ```
+    ///
+    /// [`router`]: crate::router
+    pub fn route<F, HandlerInputs>(
+        &mut self,
+        method_guard: MethodGuard,
+        path: &str,
+        callable: RawCallable<F>,
+    ) -> Route
     where
         F: Callable<HandlerInputs>,
     {
-        let callable_identifiers = RawCallableIdentifiers::new(callable.import_path);
-        self.request_handler_locations
-            .insert(path.to_owned(), std::panic::Location::caller().into());
-        self.router
-            .insert(path.to_owned(), callable_identifiers.clone());
+        let registered_route = RegisteredRoute {
+            path: path.to_owned(),
+            method_guard,
+            request_handler: RegisteredCallable {
+                callable: RawCallableIdentifiers::new(callable.import_path),
+                location: std::panic::Location::caller().into(),
+            },
+            error_handler: None,
+        };
+        let route_id = self.routes.len();
+        self.routes.push(registered_route);
         Route {
             blueprint: self,
-            path: path.to_owned(),
+            route_id,
         }
     }
 
@@ -164,7 +259,7 @@ impl AppBlueprint {
         Ok(())
     }
 
-    /// Read a RON-encoded [`AppBlueprint`] from a file.
+    /// Read a RON-encoded [`Blueprint`] from a file.
     pub fn load(filepath: &std::path::Path) -> Result<Self, anyhow::Error> {
         let file = fs_err::OpenOptions::new().read(true).open(filepath)?;
         let value = ron::de::from_reader(&file)?;
@@ -210,13 +305,13 @@ impl<'a> From<&'a std::panic::Location<'a>> for Location {
     }
 }
 
-/// The type returned by [`AppBlueprint::route`].
+/// The type returned by [`Blueprint::route`].
 ///
 /// It allows you to further configure the behaviour of the registered route.
 pub struct Route<'a> {
     #[allow(dead_code)]
-    blueprint: &'a mut AppBlueprint,
-    path: String,
+    blueprint: &'a mut Blueprint,
+    route_id: usize,
 }
 
 impl<'a> Route<'a> {
@@ -231,7 +326,7 @@ impl<'a> Route<'a> {
     /// are constructors registered for those parameter types.
     ///
     /// ```rust
-    /// use pavex_builder::{AppBlueprint, f};
+    /// use pavex_builder::{Blueprint, f, router::GET};
     /// use pavex_runtime::{response::Response, hyper::body::Body};
     /// # struct LogLevel;
     /// # struct RuntimeError;
@@ -248,8 +343,8 @@ impl<'a> Route<'a> {
     /// }
     ///
     /// # fn main() {
-    /// let mut bp = AppBlueprint::new();
-    /// bp.route(f!(crate::request_handler), "/home")
+    /// let mut bp = Blueprint::new();
+    /// bp.route(GET, "/home", f!(crate::request_handler))
     ///     .error_handler(f!(crate::error_to_response));
     /// # }
     /// ```
@@ -267,21 +362,20 @@ impl<'a> Route<'a> {
         F: Callable<HandlerInputs>,
     {
         let callable_identifiers = RawCallableIdentifiers::new(error_handler.import_path);
-        self.blueprint
-            .request_error_handler_locations
-            .insert(self.path.to_owned(), std::panic::Location::caller().into());
-        self.blueprint
-            .request_handlers_error_handlers
-            .insert(self.path.to_owned(), callable_identifiers);
+        let callable = RegisteredCallable {
+            callable: callable_identifiers,
+            location: std::panic::Location::caller().into(),
+        };
+        self.blueprint.routes[self.route_id].error_handler = Some(callable);
         self
     }
 }
 
-/// The type returned by [`AppBlueprint::constructor`].
+/// The type returned by [`Blueprint::constructor`].
 ///
 /// It allows you to further configure the behaviour of the registered constructor.
 pub struct Constructor<'a> {
-    blueprint: &'a mut AppBlueprint,
+    blueprint: &'a mut Blueprint,
     constructor_identifiers: RawCallableIdentifiers,
 }
 
@@ -297,7 +391,7 @@ impl<'a> Constructor<'a> {
     /// are constructors registered for those parameter types.
     ///
     /// ```rust
-    /// use pavex_builder::{AppBlueprint, f, Lifecycle};
+    /// use pavex_builder::{Blueprint, f, Lifecycle};
     /// use pavex_runtime::{response::Response, hyper::body::Body};
     /// # struct LogLevel;
     /// # struct Logger;
@@ -314,7 +408,7 @@ impl<'a> Constructor<'a> {
     /// }
     ///
     /// # fn main() {
-    /// let mut bp = AppBlueprint::new();
+    /// let mut bp = Blueprint::new();
     /// bp.constructor(f!(crate::logger), Lifecycle::Transient)
     ///     .error_handler(f!(crate::error_to_response));
     /// # }

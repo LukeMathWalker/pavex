@@ -1,6 +1,6 @@
 use ahash::{HashMap, HashMapExt};
 
-use pavex_builder::{AppBlueprint, Lifecycle, Location, RawCallableIdentifiers};
+use pavex_builder::{Blueprint, Lifecycle, Location, RawCallableIdentifiers};
 
 use crate::web::interner::Interner;
 
@@ -13,22 +13,20 @@ pub(crate) struct RawCallableIdentifiersDb {
 }
 
 impl RawCallableIdentifiersDb {
-    pub fn build(bp: &AppBlueprint) -> Self {
+    pub fn build(bp: &Blueprint) -> Self {
         let mut interner = Interner::new();
         let mut id2locations = HashMap::new();
         let mut id2lifecycle = HashMap::new();
 
-        for (route, request_handler) in &bp.router {
-            let location = &bp.request_handler_locations[route];
-            let id = interner.get_or_intern(request_handler.to_owned());
-            id2locations.insert(id, location.to_owned());
+        for registered_route in &bp.routes {
+            let id = interner.get_or_intern(registered_route.request_handler.callable.clone());
             id2lifecycle.insert(id, Lifecycle::RequestScoped);
-        }
-
-        for (route, error_handler) in &bp.request_handlers_error_handlers {
-            let location = &bp.request_error_handler_locations[route];
-            let error_handler_id = interner.get_or_intern(error_handler.to_owned());
-            id2locations.insert(error_handler_id, location.to_owned());
+            id2locations.insert(id, registered_route.request_handler.location.to_owned());
+            if let Some(error_handler) = &registered_route.error_handler {
+                let error_handler_id = interner.get_or_intern(error_handler.callable.clone());
+                id2lifecycle.insert(error_handler_id, Lifecycle::RequestScoped);
+                id2locations.insert(error_handler_id, error_handler.location.to_owned());
+            }
         }
 
         for (fallible_constructor, error_handler) in &bp.constructors_error_handlers {

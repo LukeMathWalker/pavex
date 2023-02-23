@@ -76,8 +76,27 @@ async fn route_request(
         .at(request.uri().path())
         .expect("Failed to match incoming request path");
     match route_id.value {
-        0u32 => route_handler_0(server_state.application_state.s0.clone(), request).await,
-        _ => panic!("This is a bug, no route registered for a route id"),
+        0u32 => {
+            match request.method() {
+                &pavex_runtime::http::Method::GET => {
+                    route_handler_0(server_state.application_state.s0.clone(), request)
+                        .await
+                }
+                _ => {
+                    pavex_runtime::response::Response::builder()
+                        .status(pavex_runtime::http::StatusCode::METHOD_NOT_ALLOWED)
+                        .header(pavex_runtime::http::header::ALLOW, "GET")
+                        .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
+                        .unwrap()
+                }
+            }
+        }
+        _ => {
+            pavex_runtime::response::Response::builder()
+                .status(pavex_runtime::http::StatusCode::NOT_FOUND)
+                .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
+                .unwrap()
+        }
     }
 }
 pub async fn route_handler_0(

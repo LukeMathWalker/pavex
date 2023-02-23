@@ -1,4 +1,4 @@
-use pavex_builder::{f, AppBlueprint, Lifecycle};
+use pavex_builder::{f, router::GET, Blueprint, Lifecycle};
 
 pub struct Logger;
 
@@ -14,10 +14,10 @@ impl Streamer {
     }
 }
 
-pub fn blueprint() -> AppBlueprint {
-    let mut bp = AppBlueprint::new();
+pub fn blueprint() -> Blueprint {
+    let mut bp = Blueprint::new();
     bp.constructor(f!(crate::new_logger), Lifecycle::Singleton);
     bp.constructor(f!(crate::new_logger), Lifecycle::RequestScoped);
-    bp.route(f!(crate::Streamer::stream_file), "/home");
+    bp.route(GET, "/home", f!(crate::Streamer::stream_file));
     bp
 }

@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use pavex_builder::{f, AppBlueprint, Lifecycle};
+use pavex_builder::{f, router::GET, Blueprint, Lifecycle};
 use pavex_runtime::response::Response;
 
 pub struct Logger;
@@ -39,12 +39,12 @@ pub fn http_client(_config: Config) -> HttpClient {
     todo!()
 }
 
-pub fn blueprint() -> AppBlueprint {
-    let mut bp = AppBlueprint::new();
+pub fn blueprint() -> Blueprint {
+    let mut bp = Blueprint::new();
     bp.constructor(f!(crate::http_client), Lifecycle::Singleton);
     bp.constructor(f!(crate::extract_path), Lifecycle::RequestScoped)
         .error_handler(f!(crate::handle_extract_path_error));
     bp.constructor(f!(crate::logger), Lifecycle::Transient);
-    bp.route(f!(crate::stream_file), "/home");
+    bp.route(GET, "/home", f!(crate::stream_file));
     bp
 }

@@ -1,4 +1,4 @@
-use pavex_builder::{f, AppBlueprint, Lifecycle};
+use pavex_builder::{f, router::GET, Blueprint, Lifecycle};
 
 pub struct Logger<T>(T);
 
@@ -10,9 +10,9 @@ pub fn handler<T>(logger: Logger<T>) -> pavex_runtime::response::Response {
     todo!()
 }
 
-pub fn blueprint() -> AppBlueprint {
-    let mut bp = AppBlueprint::new();
+pub fn blueprint() -> Blueprint {
+    let mut bp = Blueprint::new();
     bp.constructor(f!(crate::new_logger::<String>), Lifecycle::Singleton);
-    bp.route(f!(crate::handler::<std::string::String>), "/home");
+    bp.route(GET, "/home", f!(crate::handler::<std::string::String>));
     bp
 }

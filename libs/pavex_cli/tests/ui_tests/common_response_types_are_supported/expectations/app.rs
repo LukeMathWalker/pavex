@@ -70,20 +70,168 @@ async fn route_request(
         .at(request.uri().path())
         .expect("Failed to match incoming request path");
     match route_id.value {
-        0u32 => route_handler_0().await,
-        1u32 => route_handler_1().await,
-        2u32 => route_handler_2().await,
-        3u32 => route_handler_3().await,
-        4u32 => route_handler_4().await,
-        5u32 => route_handler_5().await,
-        6u32 => route_handler_6().await,
-        7u32 => route_handler_7().await,
-        8u32 => route_handler_8().await,
-        9u32 => route_handler_9().await,
-        10u32 => route_handler_10().await,
-        11u32 => route_handler_11().await,
-        12u32 => route_handler_12().await,
-        _ => panic!("This is a bug, no route registered for a route id"),
+        0u32 => {
+            match request.method() {
+                &pavex_runtime::http::Method::GET => route_handler_0().await,
+                _ => {
+                    pavex_runtime::response::Response::builder()
+                        .status(pavex_runtime::http::StatusCode::METHOD_NOT_ALLOWED)
+                        .header(pavex_runtime::http::header::ALLOW, "GET")
+                        .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
+                        .unwrap()
+                }
+            }
+        }
+        1u32 => {
+            match request.method() {
+                &pavex_runtime::http::Method::GET => route_handler_1().await,
+                _ => {
+                    pavex_runtime::response::Response::builder()
+                        .status(pavex_runtime::http::StatusCode::METHOD_NOT_ALLOWED)
+                        .header(pavex_runtime::http::header::ALLOW, "GET")
+                        .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
+                        .unwrap()
+                }
+            }
+        }
+        2u32 => {
+            match request.method() {
+                &pavex_runtime::http::Method::GET => route_handler_2().await,
+                _ => {
+                    pavex_runtime::response::Response::builder()
+                        .status(pavex_runtime::http::StatusCode::METHOD_NOT_ALLOWED)
+                        .header(pavex_runtime::http::header::ALLOW, "GET")
+                        .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
+                        .unwrap()
+                }
+            }
+        }
+        3u32 => {
+            match request.method() {
+                &pavex_runtime::http::Method::GET => route_handler_3().await,
+                _ => {
+                    pavex_runtime::response::Response::builder()
+                        .status(pavex_runtime::http::StatusCode::METHOD_NOT_ALLOWED)
+                        .header(pavex_runtime::http::header::ALLOW, "GET")
+                        .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
+                        .unwrap()
+                }
+            }
+        }
+        4u32 => {
+            match request.method() {
+                &pavex_runtime::http::Method::GET => route_handler_4().await,
+                _ => {
+                    pavex_runtime::response::Response::builder()
+                        .status(pavex_runtime::http::StatusCode::METHOD_NOT_ALLOWED)
+                        .header(pavex_runtime::http::header::ALLOW, "GET")
+                        .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
+                        .unwrap()
+                }
+            }
+        }
+        5u32 => {
+            match request.method() {
+                &pavex_runtime::http::Method::GET => route_handler_5().await,
+                _ => {
+                    pavex_runtime::response::Response::builder()
+                        .status(pavex_runtime::http::StatusCode::METHOD_NOT_ALLOWED)
+                        .header(pavex_runtime::http::header::ALLOW, "GET")
+                        .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
+                        .unwrap()
+                }
+            }
+        }
+        6u32 => {
+            match request.method() {
+                &pavex_runtime::http::Method::GET => route_handler_6().await,
+                _ => {
+                    pavex_runtime::response::Response::builder()
+                        .status(pavex_runtime::http::StatusCode::METHOD_NOT_ALLOWED)
+                        .header(pavex_runtime::http::header::ALLOW, "GET")
+                        .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
+                        .unwrap()
+                }
+            }
+        }
+        7u32 => {
+            match request.method() {
+                &pavex_runtime::http::Method::GET => route_handler_7().await,
+                _ => {
+                    pavex_runtime::response::Response::builder()
+                        .status(pavex_runtime::http::StatusCode::METHOD_NOT_ALLOWED)
+                        .header(pavex_runtime::http::header::ALLOW, "GET")
+                        .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
+                        .unwrap()
+                }
+            }
+        }
+        8u32 => {
+            match request.method() {
+                &pavex_runtime::http::Method::GET => route_handler_8().await,
+                _ => {
+                    pavex_runtime::response::Response::builder()
+                        .status(pavex_runtime::http::StatusCode::METHOD_NOT_ALLOWED)
+                        .header(pavex_runtime::http::header::ALLOW, "GET")
+                        .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
+                        .unwrap()
+                }
+            }
+        }
+        9u32 => {
+            match request.method() {
+                &pavex_runtime::http::Method::GET => route_handler_9().await,
+                _ => {
+                    pavex_runtime::response::Response::builder()
+                        .status(pavex_runtime::http::StatusCode::METHOD_NOT_ALLOWED)
+                        .header(pavex_runtime::http::header::ALLOW, "GET")
+                        .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
+                        .unwrap()
+                }
+            }
+        }
+        10u32 => {
+            match request.method() {
+                &pavex_runtime::http::Method::GET => route_handler_10().await,
+                _ => {
+                    pavex_runtime::response::Response::builder()
+                        .status(pavex_runtime::http::StatusCode::METHOD_NOT_ALLOWED)
+                        .header(pavex_runtime::http::header::ALLOW, "GET")
+                        .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
+                        .unwrap()
+                }
+            }
+        }
+        11u32 => {
+            match request.method() {
+                &pavex_runtime::http::Method::GET => route_handler_11().await,
+                _ => {
+                    pavex_runtime::response::Response::builder()
+                        .status(pavex_runtime::http::StatusCode::METHOD_NOT_ALLOWED)
+                        .header(pavex_runtime::http::header::ALLOW, "GET")
+                        .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
+                        .unwrap()
+                }
+            }
+        }
+        12u32 => {
+            match request.method() {
+                &pavex_runtime::http::Method::GET => route_handler_12().await,
+                _ => {
+                    pavex_runtime::response::Response::builder()
+                        .status(pavex_runtime::http::StatusCode::METHOD_NOT_ALLOWED)
+                        .header(pavex_runtime::http::header::ALLOW, "GET")
+                        .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
+                        .unwrap()
+                }
+            }
+        }
+        _ => {
+            pavex_runtime::response::Response::builder()
+                .status(pavex_runtime::http::StatusCode::NOT_FOUND)
+                .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
+                .unwrap()
+        }
     }
 }
 pub async fn route_handler_0() -> http::Response<

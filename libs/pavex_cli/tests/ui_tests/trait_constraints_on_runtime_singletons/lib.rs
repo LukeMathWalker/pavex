@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use pavex_builder::{f, AppBlueprint, Lifecycle};
+use pavex_builder::{f, router::GET, Blueprint, Lifecycle};
 
 pub struct NonSendSingleton(Rc<()>);
 
@@ -46,13 +46,13 @@ pub fn handler(
     todo!()
 }
 
-pub fn blueprint() -> AppBlueprint {
-    let mut bp = AppBlueprint::new();
+pub fn blueprint() -> Blueprint {
+    let mut bp = Blueprint::new();
     bp.constructor(f!(crate::NonSendSingleton::new), Lifecycle::Singleton);
     bp.constructor(f!(crate::NonCloneSingleton::new), Lifecycle::Singleton);
     bp.constructor(f!(crate::NonSyncSingleton::new), Lifecycle::Singleton);
     // The handler is needed because bounds are only checked for singletons
     // that are used at runtime
-    bp.route(f!(crate::handler), "/home");
+    bp.route(GET, "/home", f!(crate::handler));
     bp
 }

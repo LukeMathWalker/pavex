@@ -1,13 +1,13 @@
-use pavex_builder::{AppBlueprint, RawCallable};
+use pavex_builder::{router::POST, Blueprint, RawCallable};
 
 pub fn my_f() {}
 
-pub fn blueprint() -> AppBlueprint {
-    let mut bp = AppBlueprint::new();
+pub fn blueprint() -> Blueprint {
+    let mut bp = Blueprint::new();
     let callable = RawCallable {
         callable: my_f,
         import_path: "my_f,",
     };
-    bp.route(callable, "/home");
+    bp.route(POST, "/home", callable);
     bp
 }

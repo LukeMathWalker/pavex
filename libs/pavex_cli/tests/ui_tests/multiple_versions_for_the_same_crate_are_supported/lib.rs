@@ -1,4 +1,4 @@
-use pavex_builder::{f, AppBlueprint, Lifecycle};
+use pavex_builder::{f, router::GET, Blueprint, Lifecycle};
 
 pub fn header1() -> http_01::header::HeaderName {
     todo!()
@@ -15,10 +15,10 @@ pub fn stream_file(
     todo!()
 }
 
-pub fn blueprint() -> AppBlueprint {
-    let mut bp = AppBlueprint::new();
+pub fn blueprint() -> Blueprint {
+    let mut bp = Blueprint::new();
     bp.constructor(f!(crate::header1), Lifecycle::RequestScoped);
     bp.constructor(f!(crate::header2), Lifecycle::RequestScoped);
-    bp.route(f!(crate::stream_file), "/home");
+    bp.route(GET, "/home", f!(crate::stream_file));
     bp
 }

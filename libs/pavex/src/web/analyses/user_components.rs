@@ -1,14 +1,17 @@
-use pavex_builder::AppBlueprint;
+use std::collections::BTreeSet;
 
+use pavex_builder::router::AllowedMethods;
+use pavex_builder::Blueprint;
+
+use crate::diagnostic::CallableType;
 use crate::web::analyses::raw_identifiers::{RawCallableIdentifierId, RawCallableIdentifiersDb};
 use crate::web::interner::Interner;
-use crate::web::resolvers::CallableType;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) enum UserComponent {
     RequestHandler {
         raw_callable_identifiers_id: RawCallableIdentifierId,
-        route: String,
+        router_key: RouterKey,
     },
     ErrorHandler {
         raw_callable_identifiers_id: RawCallableIdentifierId,
@@ -17,6 +20,18 @@ pub(crate) enum UserComponent {
     Constructor {
         raw_callable_identifiers_id: RawCallableIdentifierId,
     },
+}
+
+/// A `RouterKey` uniquely identifies a subset of incoming requests for routing purposes.
+/// Each request handler is associated with a `RouterKey`.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct RouterKey {
+    pub path: String,
+    /// If set to `Some(method_set)`, it will only match requests with an HTTP method that is
+    /// present in the set.
+    /// If set to `None`, it means that the handler matches all incoming requests for the given
+    /// path, regardless of the HTTP method.
+    pub method_guard: Option<BTreeSet<String>>,
 }
 
 impl UserComponent {
@@ -51,20 +66,33 @@ pub(crate) struct UserComponentDb {
 }
 
 impl UserComponentDb {
-    pub fn build(
-        bp: &AppBlueprint,
-        raw_callable_identifiers_db: &RawCallableIdentifiersDb,
-    ) -> Self {
+    pub fn build(bp: &Blueprint, raw_callable_identifiers_db: &RawCallableIdentifiersDb) -> Self {
         let mut interner = Interner::new();
-        for (route, request_handler) in &bp.router {
-            let raw_callable_identifiers_id = raw_callable_identifiers_db[request_handler];
+        for registered_route in &bp.routes {
+            let raw_callable_identifiers_id =
+                raw_callable_identifiers_db[&registered_route.request_handler.callable];
+            let method_guard = match &registered_route.method_guard.allowed_methods {
+                AllowedMethods::All => None,
+                AllowedMethods::Single(m) => {
+                    let mut set = BTreeSet::new();
+                    set.insert(m.to_string());
+                    Some(set)
+                }
+                AllowedMethods::Multiple(methods) => {
+                    methods.iter().map(|m| Some(m.to_string())).collect()
+                }
+            };
             let component = UserComponent::RequestHandler {
                 raw_callable_identifiers_id,
-                route: route.to_owned(),
+                router_key: RouterKey {
+                    path: registered_route.path.to_owned(),
+                    method_guard,
+                },
             };
             let request_handler_id = interner.get_or_intern(component);
-            if let Some(error_handler) = bp.request_handlers_error_handlers.get(route) {
-                let raw_callable_identifiers_id = raw_callable_identifiers_db[error_handler];
+            if let Some(error_handler) = &registered_route.error_handler {
+                let raw_callable_identifiers_id =
+                    raw_callable_identifiers_db[&error_handler.callable];
                 let component = UserComponent::ErrorHandler {
                     raw_callable_identifiers_id,
                     fallible_callable_identifiers_id: request_handler_id,

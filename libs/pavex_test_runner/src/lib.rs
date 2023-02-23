@@ -2,12 +2,12 @@ use std::fmt::Write;
 use std::path::PathBuf;
 use std::process::Output;
 
+use ahash::HashMap;
 use anyhow::Context;
 use console::style;
 use libtest_mimic::{Conclusion, Failed};
 use toml::toml;
 
-use ahash::HashMap;
 pub use snapshot::print_changeset;
 
 use crate::snapshot::SnapshotTest;
@@ -243,6 +243,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {{
     blueprint().persist(&path)?;
 
     let status = std::process::Command::new("../../../target/{cli_profile}/pavex_cli")
+        .arg("--color")
+        .arg("always")
         .arg("generate")
         .arg("-b")
         .arg(&path)

@@ -12,7 +12,7 @@ use miette::miette;
 use proc_macro2::Ident;
 use quote::format_ident;
 
-use pavex_builder::{AppBlueprint, Lifecycle};
+use pavex_builder::{Blueprint, Lifecycle};
 
 use crate::diagnostic;
 use crate::diagnostic::{CompilerDiagnostic, LocationExt, SourceSpanExt};
@@ -26,7 +26,8 @@ use crate::web::analyses::computations::ComputationDb;
 use crate::web::analyses::constructibles::ConstructibleDb;
 use crate::web::analyses::raw_identifiers::RawCallableIdentifiersDb;
 use crate::web::analyses::resolved_paths::ResolvedPathDb;
-use crate::web::analyses::user_components::UserComponentDb;
+use crate::web::analyses::router_validation::validate_router;
+use crate::web::analyses::user_components::{RouterKey, UserComponentDb};
 use crate::web::codegen;
 use crate::web::generated_app::GeneratedApp;
 use crate::web::resolvers::CallableResolutionError;
@@ -37,7 +38,7 @@ pub(crate) const GENERATED_APP_PACKAGE_ID: &str = "crate";
 
 pub struct App {
     package_graph: PackageGraph,
-    handler_call_graphs: IndexMap<String, CallGraph>,
+    handler_call_graphs: IndexMap<RouterKey, CallGraph>,
     application_state_call_graph: ApplicationStateCallGraph,
     runtime_singleton_bindings: BiHashMap<Ident, ResolvedType>,
     request_scoped_framework_bindings: BiHashMap<Ident, ResolvedType>,
@@ -68,12 +69,18 @@ macro_rules! exit_on_errors {
 
 impl App {
     #[tracing::instrument(skip_all)]
-    pub fn build(bp: AppBlueprint) -> Result<Self, Vec<miette::Error>> {
+    pub fn build(bp: Blueprint) -> Result<Self, Vec<miette::Error>> {
         let raw_identifiers_db = RawCallableIdentifiersDb::build(&bp);
         let user_component_db = UserComponentDb::build(&bp, &raw_identifiers_db);
         let package_graph = compute_package_graph().map_err(|e| vec![e])?;
         let mut diagnostics = vec![];
         let krate_collection = CrateCollection::new(package_graph.clone());
+        validate_router(
+            &user_component_db,
+            &raw_identifiers_db,
+            &package_graph,
+            &mut diagnostics,
+        );
         let resolved_path_db = ResolvedPathDb::build(
             &user_component_db,
             &raw_identifiers_db,
@@ -115,14 +122,14 @@ impl App {
         let handler_call_graphs = {
             let router = component_db.router();
             let mut handler_call_graphs = IndexMap::with_capacity(router.len());
-            for (route, handler_id) in router {
+            for (router_key, handler_id) in router {
                 let call_graph = handler_call_graph(
                     *handler_id,
                     &computation_db,
                     &component_db,
                     &constructible_db,
                 );
-                handler_call_graphs.insert(route.to_owned(), call_graph);
+                handler_call_graphs.insert(router_key.to_owned(), call_graph);
             }
             handler_call_graphs
         };
@@ -228,12 +235,26 @@ impl App {
         }
         package_ids2deps.insert(generated_app_package_id, "crate".into());
 
-        for (route, handler_call_graph) in &self.handler_call_graphs {
+        for (router_key, handler_call_graph) in &self.handler_call_graphs {
+            let method = router_key
+                .method_guard
+                .as_ref()
+                .map(|methods| {
+                    methods
+                        .iter()
+                        .map(|method| method.to_string())
+                        .collect::<Vec<_>>()
+                        .join(" | ")
+                })
+                .unwrap_or("*".to_string());
             handler_graphs.insert(
-                route.to_owned(),
+                router_key.to_owned(),
                 handler_call_graph
                     .dot(&package_ids2deps, &self.component_db, &self.computation_db)
-                    .replace("digraph", &format!("digraph \"{route}\"")),
+                    .replace(
+                        "digraph",
+                        &format!("digraph \"{method} {}\"", router_key.path),
+                    ),
             );
         }
         let application_state_graph = self
@@ -261,7 +282,7 @@ pub(crate) enum BuildError {
 /// It contains the DOT representation of all the call graphs underpinning the originating `App`.
 /// The DOT representation can be used for snapshot testing and/or troubleshooting.
 pub struct AppDiagnostics {
-    pub handlers: IndexMap<String, String>,
+    pub handlers: IndexMap<RouterKey, String>,
     pub application_state: String,
 }
 
@@ -271,13 +292,25 @@ impl AppDiagnostics {
     pub fn persist(&self, directory: &Path) -> Result<(), anyhow::Error> {
         let handler_directory = directory.join("handlers");
         fs_err::create_dir_all(&handler_directory)?;
-        for (route, handler) in &self.handlers {
-            let path = handler_directory.join(format!("{route}.dot").trim_start_matches('/'));
+        for (router_key, handler) in &self.handlers {
+            let method = router_key
+                .method_guard
+                .as_ref()
+                .map(|methods| {
+                    methods
+                        .iter()
+                        .map(|method| method.to_string())
+                        .collect::<Vec<_>>()
+                        .join(" | ")
+                })
+                .unwrap_or("*".to_string());
+            let path = router_key.path.trim_start_matches('/');
+            let filepath = handler_directory.join(format!("{method} {path}.dot"));
             let mut file = fs_err::OpenOptions::new()
                 .write(true)
                 .create(true)
                 .truncate(true)
-                .open(path)?;
+                .open(filepath)?;
             file.write_all(handler.as_bytes())?;
         }
         let mut file = fs_err::OpenOptions::new()
@@ -311,7 +344,7 @@ impl AppDiagnostics {
 /// registered by the application.
 /// These singletons will be attached to the overall application state.
 fn get_required_singleton_types<'a>(
-    handler_call_graphs: impl Iterator<Item = (&'a String, &'a CallGraph)>,
+    handler_call_graphs: impl Iterator<Item = (&'a RouterKey, &'a CallGraph)>,
     types_provided_by_the_framework: &BiHashMap<Ident, ResolvedType>,
     constructibles_db: &ConstructibleDb,
     component_db: &ComponentDb,

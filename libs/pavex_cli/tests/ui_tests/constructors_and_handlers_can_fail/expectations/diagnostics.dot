@@ -1,4 +1,4 @@
-digraph "/home" {
+digraph "GET /home" {
     0 [ label = "app::request_handler(std::path::PathBuf, app::Logger, app::HttpClient) -> core::prelude::rust_2015::v1::Result<http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>, app::HandlerError>"]
     1 [ label = "app::HttpClient"]
     2 [ label = "core::prelude::rust_2015::v1::Result<app::Logger, app::LoggerError> -> app::Logger"]

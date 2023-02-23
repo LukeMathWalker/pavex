@@ -1,4 +1,4 @@
-use pavex_builder::{f, AppBlueprint, Lifecycle};
+use pavex_builder::{f, router::GET, Blueprint, Lifecycle};
 
 pub fn request_scoped() -> Result<String, ErrorType> {
     todo!()
@@ -18,11 +18,11 @@ pub fn error_handler(e: &ErrorType) -> MyCustomOutputType {
     todo!()
 }
 
-pub fn blueprint() -> AppBlueprint {
-    let mut bp = AppBlueprint::new();
+pub fn blueprint() -> Blueprint {
+    let mut bp = Blueprint::new();
     bp.constructor(f!(crate::request_scoped), Lifecycle::RequestScoped)
         .error_handler(f!(crate::error_handler));
-    bp.route(f!(crate::handler), "/home")
+    bp.route(GET, "/home", f!(crate::handler))
         .error_handler(f!(crate::error_handler));
     bp
 }

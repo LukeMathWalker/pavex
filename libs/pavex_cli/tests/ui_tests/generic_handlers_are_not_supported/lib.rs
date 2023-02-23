@@ -1,11 +1,11 @@
-use pavex_builder::{f, AppBlueprint};
+use pavex_builder::{f, router::GET, Blueprint};
 
 pub fn stream_file<T>(_inner: T) -> pavex_runtime::response::Response {
     todo!()
 }
 
-pub fn blueprint() -> AppBlueprint {
-    let mut bp = AppBlueprint::new();
-    bp.route(f!(crate::stream_file::<std::path::PathBuf>), "/home");
+pub fn blueprint() -> Blueprint {
+    let mut bp = Blueprint::new();
+    bp.route(GET, "/home", f!(crate::stream_file::<std::path::PathBuf>));
     bp
 }

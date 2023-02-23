@@ -1,4 +1,4 @@
-digraph "/home" {
+digraph "GET /home" {
     0 [ label = "app::handler(app::A, app::C, app::D, app::E) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
     1 [ label = "<app::C as app::GenericTrait::<std::string::String>>::a_method(&app::C) -> app::E"]
     2 [ label = "app::C -> &app::C"]
