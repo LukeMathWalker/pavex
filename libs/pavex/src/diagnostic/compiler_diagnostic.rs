@@ -8,7 +8,7 @@ pub struct CompilerDiagnosticBuilder {
     labels: Option<Vec<LabeledSpan>>,
     help: Option<String>,
     error_source: anyhow::Error,
-    related_errors: Option<Vec<CompilerDiagnostic>>,
+    additional_annotated_snippets: Option<Vec<AnnotatedSnippet>>,
 }
 
 impl CompilerDiagnosticBuilder {
@@ -18,23 +18,22 @@ impl CompilerDiagnosticBuilder {
             labels: None,
             help: None,
             error_source: error.into(),
-            related_errors: None,
+            additional_annotated_snippets: None,
         }
     }
 
-    /// Overwrite the source error for this diagnostic.
-    pub fn error(mut self, error: impl Into<anyhow::Error>) -> Self {
-        self.error_source = error.into();
-        self
+    pub fn label(self, label: LabeledSpan) -> Self {
+        self.labels(std::iter::once(label))
     }
 
-    pub fn label(mut self, label: LabeledSpan) -> Self {
+    pub fn labels(mut self, new_labels: impl Iterator<Item = LabeledSpan>) -> Self {
         let mut labels = self.labels.unwrap_or_else(|| Vec::with_capacity(1));
-        labels.push(label);
+        labels.extend(new_labels);
         self.labels = Some(labels);
         self
     }
 
+    /// An optional version of [`Self::label`].
     pub fn optional_label(self, label: Option<LabeledSpan>) -> Self {
         if let Some(label) = label {
             self.label(label)
@@ -43,6 +42,7 @@ impl CompilerDiagnosticBuilder {
         }
     }
 
+    /// An optional version of [`Self::help`].
     pub fn optional_help(self, help: Option<String>) -> Self {
         if let Some(help) = help {
             self.help(help)
@@ -51,21 +51,46 @@ impl CompilerDiagnosticBuilder {
         }
     }
 
-    pub fn optional_related_error(self, related_error: Option<CompilerDiagnostic>) -> Self {
-        if let Some(related) = related_error {
-            self.related_error(related)
+    /// An optional version of [`Self::additional_annotated_snippet`].
+    pub fn optional_additional_annotated_snippet(
+        self,
+        annotated_snippet: Option<AnnotatedSnippet>,
+    ) -> Self {
+        if let Some(s) = annotated_snippet {
+            self.additional_annotated_snippet(s)
         } else {
             self
         }
     }
 
-    pub fn related_error(mut self, related_error: CompilerDiagnostic) -> Self {
-        let mut related_errors = self.related_errors.unwrap_or_else(|| Vec::with_capacity(1));
-        related_errors.push(related_error);
-        self.related_errors = Some(related_errors);
+    /// Record an additional annotated code snippet to be displayed with this diagnostic.
+    ///
+    /// This can be used to display a code snippet that does not live in the same source file
+    /// as the main code snippet for this diagnostic.
+    pub fn additional_annotated_snippet(self, annotated_snippet: AnnotatedSnippet) -> Self {
+        self.additional_annotated_snippets(std::iter::once(annotated_snippet))
+    }
+
+    /// Record an additional annotated code snippet to be displayed with this diagnostic.
+    ///
+    /// This can be used to display a code snippet that does not live in the same source file
+    /// as the main code snippet for this diagnostic.
+    pub fn additional_annotated_snippets(
+        mut self,
+        new_snippets: impl Iterator<Item = AnnotatedSnippet>,
+    ) -> Self {
+        let mut annotated_snippets = self
+            .additional_annotated_snippets
+            .unwrap_or_else(|| Vec::with_capacity(1));
+        annotated_snippets.extend(new_snippets);
+        self.additional_annotated_snippets = Some(annotated_snippets);
         self
     }
 
+    /// Add an help message to this diagnostic to nudge the user in the right direction.
+    ///
+    /// Help messages are rendered at the very end of the diagnostic, after the error message
+    /// and all code snippets.
     pub fn help(mut self, help: String) -> Self {
         self.help = Some(help);
         self
@@ -78,8 +103,24 @@ impl CompilerDiagnosticBuilder {
             labels,
             help,
             error_source,
-            related_errors,
+            additional_annotated_snippets,
         } = self;
+        // miette does not have first-class support for attaching multiple annotated code snippets
+        // to a single diagnostic _if_ they are not all related to the same source file.
+        // We work around this by creating a separate related diagnostic for each annotated snippet,
+        // with an empty error message.
+        // Our custom `miette` handler in `pavex_miette` will make sure to render the "related errors"
+        // as additional annotated snippets, which is what we want to see.
+        let related_errors = additional_annotated_snippets.map(|snippets| {
+            snippets
+                .into_iter()
+                .map(|s| {
+                    CompilerDiagnosticBuilder::new(s.source_code, anyhow::anyhow!(""))
+                        .labels(s.labels.into_iter())
+                        .build()
+                })
+                .collect()
+        });
         CompilerDiagnostic {
             source_code,
             labels,
@@ -104,13 +145,45 @@ impl CompilerDiagnostic {
     /// - a help message to provide more information about the error (see
     /// [`CompilerDiagnosticBuilder::help`] and [`CompilerDiagnosticBuilder::optional_help`]);
     /// - related errors. This can be leveraged to point at other source files that are related
-    /// to the error (see [`CompilerDiagnosticBuilder::related_error`] and
-    /// [`CompilerDiagnosticBuilder::optional_related_error`]).
+    /// to the error (see [`CompilerDiagnosticBuilder::additional_annotated_snippet`] and
+    /// [`CompilerDiagnosticBuilder::optional_additional_annotated_snippet`]).
     pub fn builder(
         source_code: impl Into<NamedSource>,
         error: impl Into<anyhow::Error>,
     ) -> CompilerDiagnosticBuilder {
         CompilerDiagnosticBuilder::new(source_code, error)
+    }
+}
+
+/// A source file annotated with one or more labels.
+pub struct AnnotatedSnippet {
+    pub source_code: NamedSource,
+    pub labels: Vec<LabeledSpan>,
+}
+
+impl AnnotatedSnippet {
+    /// Build a new annotated snippet with a single label.
+    pub fn new(source_code: impl Into<NamedSource>, label: LabeledSpan) -> Self {
+        Self {
+            source_code: source_code.into(),
+            labels: vec![label],
+        }
+    }
+
+    /// Build a new annotated snippet with multiple labels.
+    #[allow(unused)]
+    pub fn new_with_labels(source_code: impl Into<NamedSource>, labels: Vec<LabeledSpan>) -> Self {
+        Self {
+            source_code: source_code.into(),
+            labels,
+        }
+    }
+
+    /// Add an extra label to this annotated snippet.
+    #[allow(unused)]
+    pub fn add_label(mut self, label: LabeledSpan) -> Self {
+        self.labels.push(label);
+        self
     }
 }
 
