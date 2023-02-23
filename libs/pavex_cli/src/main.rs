@@ -4,7 +4,6 @@ use std::process::ExitCode;
 use std::str::FromStr;
 
 use clap::{Parser, Subcommand};
-use miette::{GraphicalTheme, ThemeCharacters, ThemeStyles};
 use owo_colors::OwoColorize;
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::layer::SubscriberExt;
@@ -93,18 +92,22 @@ fn init_telemetry() {
 fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
     let cli = Cli::parse();
     miette::set_hook(Box::new(move |_| {
-        // TODO: Bring in all miette's auto-detection logic.
-        let mut handler = pavex_miette::GraphicalReportHandler::new_themed(GraphicalTheme {
-            characters: ThemeCharacters::unicode(),
-            styles: ThemeStyles::ansi(),
-        });
-        handler = handler.with_width(80);
+        let mut handler = pavex_miette::PavexMietteHandlerOpts::new();
         if cli.debug {
             handler = handler.with_cause_chain()
         } else {
             handler = handler.without_cause_chain()
         };
-        Box::new(handler)
+        match cli.color {
+            Color::Auto => {}
+            Color::Always => {
+                handler = handler.color(true);
+            }
+            Color::Never => {
+                handler = handler.color(false);
+            }
+        }
+        Box::new(handler.build())
     }))
     .unwrap();
     if cli.debug {

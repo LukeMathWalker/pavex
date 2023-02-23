@@ -1,3 +1,4 @@
+// This is a copy-paste of https://github.com/zkat/miette/blob/main/src/diagnostic_chain.rs
 /*!
 Iterate over error `.diagnostic_source()` chains.
  */
