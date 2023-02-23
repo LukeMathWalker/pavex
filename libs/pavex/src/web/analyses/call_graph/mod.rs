@@ -559,8 +559,8 @@ fn debug_dot(
 /// Generate the dependency closure of the [`CallGraph`]'s root callable.
 ///
 /// See [`CallGraph`] docs for more details.
-fn codegen_callable_closure<'a>(
-    call_graph: &'a CallGraph,
+fn codegen_callable_closure(
+    call_graph: &CallGraph,
     package_id2name: &BiHashMap<PackageId, String>,
     component_db: &ComponentDb,
     computation_db: &ComputationDb,

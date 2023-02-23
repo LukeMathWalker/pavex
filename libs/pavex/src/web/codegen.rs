@@ -75,7 +75,7 @@ impl CodegenRequestHandler {
                     #field_name
                 }
             } else {
-                let field_name = request_scoped_bindings.get_by_right(&inner_type).unwrap();
+                let field_name = request_scoped_bindings.get_by_right(inner_type).unwrap();
                 quote! {
                     #field_name
                 }
@@ -314,8 +314,8 @@ fn get_request_dispatcher(
                 let mut allowed_methods = vec![];
                 for (method, handler) in sub_router {
                     let invocation = handler.invocation(
-                        &singleton_bindings,
-                        &request_scoped_bindings,
+                        singleton_bindings,
+                        request_scoped_bindings,
                         &server_state_ident,
                     );
                     allowed_methods.push(method.clone());
@@ -340,8 +340,8 @@ fn get_request_dispatcher(
                 }
             }
             CodegenRouterEntry::CatchAllHandler(h) => h.invocation(
-                &singleton_bindings,
-                &request_scoped_bindings,
+                singleton_bindings,
+                request_scoped_bindings,
                 &server_state_ident,
             ),
         };

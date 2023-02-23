@@ -133,7 +133,7 @@ impl CallPath {
                             GenericArgument::Type(t) => {
                                 CallPathGenericArgument::Type(Self::parse_type(t)?)
                             }
-                            GenericArgument::Lifetime(l) if l.ident.to_string() == "static" => {
+                            GenericArgument::Lifetime(l) if l.ident == "static" => {
                                 CallPathGenericArgument::Lifetime(CallPathLifetime::Static)
                             }
                             GenericArgument::Lifetime(_) |

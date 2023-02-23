@@ -494,12 +494,7 @@ impl ResolvedPath {
             // TODO: Remove this unwrap
             .unwrap()
             .map_err(|e| UnknownPath(self.to_owned(), Arc::new(e.into())))?;
-        let qself_ty = if let Some(qself) = &self.qualified_self {
-            // TODO: remove unwrap
-            Some(qself.type_.resolve(krate_collection).unwrap())
-        } else {
-            None
-        };
+        let qself_ty = self.qualified_self.as_ref().map(|qself| qself.type_.resolve(krate_collection).unwrap());
         Ok((ty, qself_ty))
     }
 
