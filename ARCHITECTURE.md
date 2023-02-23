@@ -91,7 +91,7 @@ pub fn blueprint() -> Blueprint {
         .constructor(f!(crate::http_client), Lifecycle::Singleton)
         .constructor(f!(crate::extract_path), Lifecycle::RequestScoped)
         .constructor(f!(crate::logger), Lifecycle::Transient)
-        .route(f!(crate::stream_file), "/home")
+        .route(GET, "/home", f!(crate::stream_file))
 }
 ```
 
