@@ -139,23 +139,29 @@ pub(crate) fn implements_trait(
             if (expected_trait.base_type == ["core", "marker", "Send"]
                 || expected_trait.base_type == ["core", "marker", "Sync"]
                 || expected_trait.base_type == ["core", "marker", "Copy"]
-                || expected_trait.base_type == ["core", "marker", "Unpin"] || expected_trait.base_type == ["core", "clone", "Clone"]) && t.elements
+                || expected_trait.base_type == ["core", "marker", "Unpin"]
+                || expected_trait.base_type == ["core", "clone", "Clone"])
+                && t.elements
                     .iter()
-                    .all(|t| implements_trait(krate_collection, t, expected_trait)) {
+                    .all(|t| implements_trait(krate_collection, t, expected_trait))
+            {
                 return true;
             }
         }
         ResolvedType::Reference(r) => {
             // `& &T` is `Send` if `&T` is `Send`, therefore `&T` is `Sync` if `T` if `Sync`.
-            if (expected_trait.base_type == ["core", "marker", "Sync"] || expected_trait.base_type == ["core", "marker", "Send"]) && implements_trait(krate_collection, &r.inner, expected_trait) {
+            if (expected_trait.base_type == ["core", "marker", "Sync"]
+                || expected_trait.base_type == ["core", "marker", "Send"])
+                && implements_trait(krate_collection, &r.inner, expected_trait)
+            {
                 return true;
             }
             // `&T` is always `Copy`, but `&mut T` is never `Copy`.
             // See https://doc.rust-lang.org/std/marker/trait.Copy.html#impl-Copy-for-%26T and
             // https://doc.rust-lang.org/std/marker/trait.Copy.html#when-cant-my-type-be-copy
-            if (expected_trait.base_type == ["core", "clone", "Copy"] && !r.is_mutable)
-                // `Copy` implies `Clone`.
-                || (expected_trait.base_type == ["core", "clone", "Clone"] && !r.is_mutable)
+            // `Copy` implies `Clone`.
+            if !r.is_mutable && (expected_trait.base_type == ["core", "clone", "Copy"])
+                || (expected_trait.base_type == ["core", "clone", "Clone"])
             {
                 return true;
             }
@@ -173,7 +179,10 @@ pub(crate) fn implements_trait(
             // TODO: handle other traits
         }
         ResolvedType::Slice(s) => {
-            if (expected_trait.base_type == ["core", "marker", "Send"] || expected_trait.base_type == ["core", "marker", "Sync"]) && implements_trait(krate_collection, &s.element_type, expected_trait) {
+            if (expected_trait.base_type == ["core", "marker", "Send"]
+                || expected_trait.base_type == ["core", "marker", "Sync"])
+                && implements_trait(krate_collection, &s.element_type, expected_trait)
+            {
                 return true;
             }
             // TODO: handle Unpin + other traits
