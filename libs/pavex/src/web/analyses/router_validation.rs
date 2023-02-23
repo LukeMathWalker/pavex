@@ -4,7 +4,9 @@ use indexmap::{IndexMap, IndexSet};
 use itertools::Itertools;
 
 use crate::diagnostic;
-use crate::diagnostic::{CompilerDiagnostic, LocationExt, SourceSpanExt, ZeroBasedOrdinal};
+use crate::diagnostic::{
+    AnnotatedSnippet, CompilerDiagnostic, LocationExt, SourceSpanExt, ZeroBasedOrdinal,
+};
 use crate::web::analyses::raw_identifiers::RawCallableIdentifiersDb;
 use crate::web::analyses::user_components::{UserComponent, UserComponentDb, UserComponentId};
 
@@ -76,7 +78,7 @@ fn push_router_conflict_diagnostic(
     diagnostics: &mut Vec<miette::Error>,
 ) {
     let n_unique_handlers = user_component_ids.len();
-    let mut sub_diagnostics = Vec::with_capacity(n_unique_handlers);
+    let mut annotated_snippets: Vec<AnnotatedSnippet> = Vec::with_capacity(n_unique_handlers);
     for (i, user_component_id) in user_component_ids.iter().enumerate() {
         let user_component = &user_component_db[**user_component_id];
         let raw_identifier_id = user_component.raw_callable_identifiers_id();
@@ -85,27 +87,26 @@ fn push_router_conflict_diagnostic(
             Ok(s) => s,
             Err(e) => {
                 diagnostics.push(e.into());
-                return;
+                continue;
             }
         };
-        let label = diagnostic::get_f_macro_invocation_span(&source, location)
-            .map(|s| s.labeled(format!("The {} conflicting handler", ZeroBasedOrdinal(i))));
-        let diagnostic =
-            CompilerDiagnostic::builder(source, anyhow::anyhow!("")).optional_label(label);
-        sub_diagnostics.push(diagnostic);
+        if let Some(s) = diagnostic::get_f_macro_invocation_span(&source, location) {
+            let label = s.labeled(format!("The {} conflicting handler", ZeroBasedOrdinal(i)));
+            annotated_snippets.push(AnnotatedSnippet::new(source, label));
+        }
     }
-    let mut sub_diagnostics = sub_diagnostics.into_iter();
-    let mut overall = sub_diagnostics.next().unwrap().error(
-        anyhow!(
+    let mut annotated_snippets = annotated_snippets.into_iter();
+    let first = annotated_snippets.next().unwrap();
+    let overall = CompilerDiagnostic::builder(first.source_code, anyhow!(
             "I do not know how to route incoming `{method} {path}` requests: you have registered {n_unique_handlers} \
             different request handlers for this path+method combination.\n\
             You can only have a single request handler for each path+method combination.",
-        )
-    ).help(
-        "You can only register one request handler for each path+method combination. \
-        Remove all but one of the conflicting request handlers.".into());
-    for diagnostic in sub_diagnostics {
-        overall = overall.related_error(diagnostic.build());
-    }
+        ))
+        .labels(first.labels.into_iter())
+        .additional_annotated_snippets(annotated_snippets)
+        .help(
+            "You can only register one request handler for each path+method combination. \
+            Remove all but one of the conflicting request handlers.".into()
+        );
     diagnostics.push(overall.build().into());
 }

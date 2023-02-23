@@ -1,14 +1,14 @@
 use ahash::{HashMap, HashMapExt, HashSet};
 use guppy::graph::PackageGraph;
-use miette::{LabeledSpan, NamedSource};
+use miette::NamedSource;
 use syn::spanned::Spanned;
 
 use pavex_builder::Lifecycle;
 
 use crate::diagnostic;
 use crate::diagnostic::{
-    convert_proc_macro_span, convert_rustdoc_span, read_source_file, CompilerDiagnostic,
-    LocationExt, SourceSpanExt,
+    convert_proc_macro_span, convert_rustdoc_span, read_source_file, AnnotatedSnippet,
+    CompilerDiagnostic, LocationExt, SourceSpanExt,
 };
 use crate::language::{Callable, ResolvedType};
 use crate::rustdoc::CrateCollection;
@@ -120,7 +120,7 @@ impl ConstructibleDb {
             unconstructible_type_index: usize,
             package_graph: &PackageGraph,
             krate_collection: &CrateCollection,
-        ) -> Option<(String, String, LabeledSpan)> {
+        ) -> Option<AnnotatedSnippet> {
             let (callable_type, _) = callable.path.find_rustdoc_items(krate_collection).ok()?;
             let callable_item = callable_type.item.item;
             let definition_span = callable_item.span.as_ref()?;
@@ -159,7 +159,10 @@ impl ConstructibleDb {
             )
             .labeled("I do not know how to construct an instance of this input parameter".into());
             let source_path = definition_span.filename.to_str().unwrap();
-            Some((source_path.to_string(), source_contents, label))
+            Some(AnnotatedSnippet::new(
+                NamedSource::new(source_path, source_contents),
+                label,
+            ))
         }
 
         let user_component = &user_component_db[user_component_id];
@@ -190,16 +193,7 @@ impl ConstructibleDb {
         );
         let diagnostic = CompilerDiagnostic::builder(source, e)
             .optional_label(label)
-            .optional_related_error(definition_info.clone().map(
-                |(source_path, source_content, label)| {
-                    CompilerDiagnostic::builder(
-                        NamedSource::new(source_path, source_content),
-                        anyhow::anyhow!(""),
-                    )
-                    .label(label)
-                    .build()
-                },
-            ))
+            .optional_additional_annotated_snippet(definition_info)
             .help(format!(
                 "Register a constructor for `{unconstructible_type:?}`"
             ))

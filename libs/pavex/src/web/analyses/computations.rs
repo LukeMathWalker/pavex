@@ -6,8 +6,8 @@ use syn::spanned::Spanned;
 
 use crate::diagnostic;
 use crate::diagnostic::{
-    convert_proc_macro_span, convert_rustdoc_span, CompilerDiagnostic, LocationExt,
-    OptionalSourceSpanExt, SourceSpanExt,
+    convert_proc_macro_span, convert_rustdoc_span, AnnotatedSnippet, CompilerDiagnostic,
+    LocationExt, SourceSpanExt,
 };
 use crate::language::{Callable, ResolvedPath};
 use crate::rustdoc::CrateCollection;
@@ -108,7 +108,7 @@ impl ComputationDb {
                 diagnostics.push(diagnostic.into());
             }
             CallableResolutionError::ParameterResolutionError(ref inner_error) => {
-                let definition_info = {
+                let definition_snippet = {
                     if let Some(definition_span) = &inner_error.callable_item.span {
                         match diagnostic::read_source_file(
                             &definition_span.filename,
@@ -156,7 +156,10 @@ impl ComputationDb {
                                 )
                                 .labeled("I do not know how handle this parameter".into());
                                 let source_path = definition_span.filename.to_str().unwrap();
-                                Some((source_path, source_contents, label))
+                                Some(AnnotatedSnippet::new(
+                                    NamedSource::new(source_path, source_contents),
+                                    label,
+                                ))
                             }
                             Err(e) => {
                                 tracing::warn!("Could not read source file: {:?}", e);
@@ -171,16 +174,7 @@ impl ComputationDb {
                     .map(|s| s.labeled(format!("The {callable_type} was registered here")));
                 let diagnostic = CompilerDiagnostic::builder(source, e.clone())
                     .optional_label(label)
-                    .optional_related_error(definition_info.clone().map(
-                        |(source_path, source_content, label)| {
-                            CompilerDiagnostic::builder(
-                                NamedSource::new(source_path, source_content),
-                                anyhow::anyhow!(""),
-                            )
-                            .label(label)
-                            .build()
-                        },
-                    ))
+                    .optional_additional_annotated_snippet(definition_snippet)
                     .build();
                 diagnostics.push(diagnostic.into());
             }
@@ -195,7 +189,7 @@ impl ComputationDb {
                 );
             }
             CallableResolutionError::OutputTypeResolutionError(ref inner_error) => {
-                let sub_diagnostic_info = {
+                let annotated_snippet = {
                     if let Some(definition_span) = &inner_error.callable_item.span {
                         match diagnostic::read_source_file(
                             &definition_span.filename,
@@ -206,16 +200,17 @@ impl ComputationDb {
                                     &source_contents,
                                     definition_span.to_owned(),
                                 );
-                                let span_contents =
-                                    &source_contents[span.offset()..(span.offset() + span.len())];
+                                let span_contents = source_contents
+                                    [span.offset()..(span.offset() + span.len())]
+                                    .to_string();
                                 let output = match &inner_error.callable_item.inner {
                                     ItemEnum::Function(_) => {
                                         if let Ok(item) =
-                                            syn::parse_str::<syn::ItemFn>(span_contents)
+                                            syn::parse_str::<syn::ItemFn>(&span_contents)
                                         {
                                             item.sig.output
                                         } else if let Ok(item) =
-                                            syn::parse_str::<syn::ImplItemMethod>(span_contents)
+                                            syn::parse_str::<syn::ImplItemMethod>(&span_contents)
                                         {
                                             item.sig.output
                                         } else {
@@ -226,24 +221,28 @@ impl ComputationDb {
                                     }
                                     _ => unreachable!(),
                                 };
-                                let source_span = match output {
+                                match output {
                                     syn::ReturnType::Default => None,
                                     syn::ReturnType::Type(_, type_) => Some(type_.span()),
                                 }
                                 .map(|s| {
-                                    let s = convert_proc_macro_span(span_contents, s);
-                                    miette::SourceSpan::new(
+                                    let s = convert_proc_macro_span(&span_contents, s);
+                                    let label = miette::SourceSpan::new(
                                         // We must shift the offset forward because it's the
                                         // offset from the beginning of the file slice that
                                         // we deserialized, instead of the entire file
                                         (s.offset() + span.offset()).into(),
                                         s.len().into(),
                                     )
-                                });
-                                let label = source_span
                                     .labeled("The output type that I cannot handle".into());
-                                let source_path = definition_span.filename.to_str().unwrap();
-                                Some((source_path, source_contents, label))
+                                    AnnotatedSnippet::new(
+                                        NamedSource::new(
+                                            definition_span.filename.to_str().unwrap(),
+                                            source_contents,
+                                        ),
+                                        label,
+                                    )
+                                })
                             }
                             Err(e) => {
                                 tracing::warn!("Could not read source file: {:?}", e);
@@ -260,16 +259,7 @@ impl ComputationDb {
                 diagnostics.push(
                     CompilerDiagnostic::builder(source, e.clone())
                         .optional_label(label)
-                        .optional_related_error(sub_diagnostic_info.clone().map(
-                            |(source_path, source_content, label)| {
-                                CompilerDiagnostic::builder(
-                                    NamedSource::new(source_path, source_content),
-                                    anyhow::anyhow!(""),
-                                )
-                                .optional_label(label)
-                                .build()
-                            },
-                        ))
+                        .optional_additional_annotated_snippet(annotated_snippet)
                         .build()
                         .into(),
                 )
