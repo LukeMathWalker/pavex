@@ -1,18 +1,12 @@
-error[E0277]: the trait bound `Streamer: Callable<_>` is not satisfied
-   --> src/lib.rs:7:28
-    |
-7   |     bp.route(GET, "/home", f!(crate::Streamer));
-    |        -----               ^^^^^^^^^^^^^^^^^^^
-    |        |                   |
-    |        |                   the trait `Callable<_>` is not implemented for `Streamer`
-    |        |                   this tail expression is of type `RawCallable<Streamer>`
-    |        required by a bound introduced by this call
-    |
-note: required by a bound in `Blueprint::route`
-   --> /Users/luca/code/pavex/libs/pavex_builder/src/app.rs:231:12
-    |
-231 |         F: Callable<HandlerInputs>,
-    |            ^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `Blueprint::route`
-
-For more information about this error, try `rustc --explain E0277`.
-error: could not compile `app` due to previous error
+[31m[1mERROR[0m[39m: 
+  [31m×[0m I can work with functions and static methods, but `app::Streamer` is
+  [31m│[0m neither.
+  [31m│[0m It is a struct and I do not know how to use it as a request handler.
+  [31m│[0m
+  [31m│[0m    ╭─[[36;1;4msrc/lib.rs[0m:6:1]
+  [31m│[0m  [2m6[0m │     let mut bp = Blueprint::new();
+  [31m│[0m  [2m7[0m │     bp.route(GET, "/home", f!(crate::Streamer));
+  [31m│[0m    · [35;1m                           ─────────┬─────────[0m
+  [31m│[0m    ·                                     [35;1m╰── [35;1mIt was registered as a request handler here[0m[0m
+  [31m│[0m  [2m8[0m │     bp
+  [31m│[0m    ╰────
