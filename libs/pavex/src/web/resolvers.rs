@@ -44,14 +44,13 @@ pub(crate) fn resolve_type(
                                 &global_type_id.package_id,
                                 krate_collection,
                                 &generic_bindings,
-                            )
-                            .unwrap();
+                            )?;
                             generic_bindings.insert(generic.name.to_string(), default);
                         }
                         GenericParamDefKind::Type { default: None, .. }
                         | GenericParamDefKind::Const { .. }
                         | GenericParamDefKind::Lifetime { .. } => {
-                            todo!("Generic parameters other than type parameters with a default value are not supported yet. I cannot handle:\n {:?}", generic)
+                            anyhow::bail!("I cannot only generic type parameters with a default when working with type aliases. I cannot handle a `{:?}` yet, sorry!", generic)
                         }
                     }
                 }
@@ -82,23 +81,23 @@ pub(crate) fn resolve_type(
                                     }
                                     GenericArg::Lifetime(_) => {
                                         return Err(anyhow!(
-                                            "We do not support non-static lifetime arguments in types yet. Sorry!"
+                                            "I do not support non-static lifetime arguments in types yet. Sorry!"
                                         ));
                                     }
                                     GenericArg::Const(_) => {
                                         return Err(anyhow!(
-                                            "We do not support const generics in types yet. Sorry!"
+                                            "I do not support const generics in types yet. Sorry!"
                                         ));
                                     }
                                     GenericArg::Infer => {
-                                        return Err(anyhow!("We do not support inferred generic arguments in types yet. Sorry!"));
+                                        return Err(anyhow!("I do not support inferred generic arguments in types yet. Sorry!"));
                                     }
                                 };
                                 generics.push(generic_argument);
                             }
                         }
                         GenericArgs::Parenthesized { .. } => {
-                            return Err(anyhow!("We do not support function pointers yet. Sorry!"));
+                            return Err(anyhow!("I do not support function pointers yet. Sorry!"));
                         }
                     }
                 }
