@@ -136,8 +136,19 @@ pub struct ResolvedPathType {
 
 #[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Hash, Clone)]
 pub enum GenericArgument {
-    Type(ResolvedType),
+    /// A type parameter that has not been assigned yet, e.g. `T` in `Vec<T>`.
+    UnassignedTypeParameter(NamedTypeGeneric),
+    /// A type parameter that has been assigned a concrete type, e.g. `u32` in `Vec<u32>`.
+    AssignedTypeParameter(ResolvedType),
+    /// A lifetime paremeter, e.g. `'a` in `&'a str` or `'static` in `&'static str`.
     Lifetime(Lifetime),
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Hash, Clone)]
+/// A type parameter that has not been assigned yet, e.g. `T` in `Vec<T>`.
+pub struct NamedTypeGeneric {
+    /// E.g. `T` in `Vec<T>`.
+    pub name: String,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Hash, Clone)]
@@ -191,7 +202,7 @@ impl ResolvedType {
                     let mut arguments = t.generic_arguments.iter().peekable();
                     while let Some(argument) = arguments.next() {
                         match argument {
-                            GenericArgument::Type(t) => {
+                            GenericArgument::AssignedTypeParameter(t) => {
                                 write!(buffer, "{}", t.render_type(id2name)).unwrap();
                             }
                             GenericArgument::Lifetime(l) => match l {
@@ -199,6 +210,9 @@ impl ResolvedType {
                                     write!(buffer, "'static").unwrap();
                                 }
                             },
+                            GenericArgument::UnassignedTypeParameter(t) => {
+                                write!(buffer, "{}", t.name).unwrap();
+                            }
                         }
                         if arguments.peek().is_some() {
                             write!(buffer, ", ").unwrap();
@@ -270,8 +284,9 @@ impl std::fmt::Debug for ResolvedType {
 impl std::fmt::Debug for GenericArgument {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            GenericArgument::Type(r) => write!(f, "{r:?}"),
+            GenericArgument::AssignedTypeParameter(r) => write!(f, "{r:?}"),
             GenericArgument::Lifetime(l) => write!(f, "{l:?}"),
+            GenericArgument::UnassignedTypeParameter(t) => write!(f, "{}", t.name),
         }
     }
 }

@@ -29,7 +29,7 @@ impl MatchResult {
             "{result_type:?} does not have two generic arguments, as expected"
         );
         let mut generics = inner_result_type.generic_arguments.iter();
-        let GenericArgument::Type(ok_type) = generics.next().unwrap().to_owned() else {
+        let GenericArgument::AssignedTypeParameter(ok_type) = generics.next().unwrap().to_owned() else {
             unreachable!()
         };
         let ok_constructor = MatchResult {
@@ -37,7 +37,7 @@ impl MatchResult {
             output: ok_type,
             variant: MatchResultVariant::Ok,
         };
-        let GenericArgument::Type(err_type) = generics.next().unwrap().to_owned() else {
+        let GenericArgument::AssignedTypeParameter(err_type) = generics.next().unwrap().to_owned() else {
             unreachable!()
         };
         let err_constructor = MatchResult {

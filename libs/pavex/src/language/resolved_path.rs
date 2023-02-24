@@ -95,7 +95,7 @@ impl ResolvedPathType {
                     for generic_path in &segment.generic_arguments {
                         let generic_arg = match generic_path {
                             ResolvedPathGenericArgument::Type(t) => {
-                                GenericArgument::Type(t.resolve(krate_collection)?)
+                                GenericArgument::AssignedTypeParameter(t.resolve(krate_collection)?)
                             }
                             ResolvedPathGenericArgument::Lifetime(l) => match l {
                                 ResolvedPathLifetime::Static => {
@@ -155,12 +155,18 @@ impl From<ResolvedType> for ResolvedPathType {
                         .generic_arguments
                         .into_iter()
                         .map(|t| match t {
-                            GenericArgument::Type(t) => ResolvedPathGenericArgument::Type(t.into()),
+                            GenericArgument::AssignedTypeParameter(t) => {
+                                ResolvedPathGenericArgument::Type(t.into())
+                            }
                             GenericArgument::Lifetime(l) => match l {
                                 Lifetime::Static => ResolvedPathGenericArgument::Lifetime(
                                     ResolvedPathLifetime::Static,
                                 ),
                             },
+                            GenericArgument::UnassignedTypeParameter(_) => {
+                                // ResolvedPath does not support unassigned type parameters yet
+                                todo!("UnassignedTypeParameter")
+                            }
                         })
                         .collect();
                 }
@@ -494,7 +500,10 @@ impl ResolvedPath {
             // TODO: Remove this unwrap
             .unwrap()
             .map_err(|e| UnknownPath(self.to_owned(), Arc::new(e.into())))?;
-        let qself_ty = self.qualified_self.as_ref().map(|qself| qself.type_.resolve(krate_collection).unwrap());
+        let qself_ty = self
+            .qualified_self
+            .as_ref()
+            .map(|qself| qself.type_.resolve(krate_collection).unwrap());
         Ok((ty, qself_ty))
     }
 

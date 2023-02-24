@@ -36,7 +36,7 @@ impl ErrorHandler {
             let ResolvedType::ResolvedPath(result_type) = result_type else {
                 unreachable!()
             };
-            let GenericArgument::Type(e) = result_type.generic_arguments[1].clone() else {
+            let GenericArgument::AssignedTypeParameter(e) = result_type.generic_arguments[1].clone() else {
                 unreachable!()
             };
             ResolvedType::Reference(TypeReference {

@@ -5,7 +5,8 @@ pub(crate) use resolved_path::{
     ResolvedPathQualifiedSelf, ResolvedPathSegment, UnknownPath,
 };
 pub(crate) use resolved_type::{
-    GenericArgument, Lifetime, ResolvedPathType, ResolvedType, Slice, Tuple, TypeReference,
+    GenericArgument, Lifetime, NamedTypeGeneric, ResolvedPathType, ResolvedType, Slice, Tuple,
+    TypeReference,
 };
 
 mod callable;
