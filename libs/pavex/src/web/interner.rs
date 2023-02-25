@@ -37,6 +37,10 @@ where
             id
         }
     }
+
+    pub fn get(&self, value: &T) -> Option<la_arena::Idx<T>> {
+        self.item2id.get(value).copied()
+    }
 }
 
 impl<T: Hash + Eq> std::ops::Index<la_arena::Idx<T>> for Interner<T> {

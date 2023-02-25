@@ -364,8 +364,6 @@ fn get_required_singleton_types<'a>(
                 &required_input
             };
             if !types_provided_by_the_framework.contains_right(required_input) {
-                dbg!(&required_input);
-                dbg!(constructibles_db);
                 let component_id = constructibles_db[required_input];
                 assert_eq!(
                     component_db.lifecycle(component_id),

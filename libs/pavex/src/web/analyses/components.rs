@@ -10,7 +10,10 @@ use pavex_builder::Lifecycle;
 
 use crate::diagnostic;
 use crate::diagnostic::{CallableType, CompilerDiagnostic, LocationExt, SourceSpanExt};
-use crate::language::{ResolvedPath, ResolvedPathQualifiedSelf, ResolvedPathSegment, ResolvedType};
+use crate::language::{
+    NamedTypeGeneric, ResolvedPath, ResolvedPathQualifiedSelf, ResolvedPathSegment,
+    ResolvedPathType, ResolvedType,
+};
 use crate::rustdoc::CrateCollection;
 use crate::web::analyses::computations::{ComputationDb, ComputationId};
 use crate::web::analyses::raw_identifiers::RawCallableIdentifiersDb;
@@ -110,6 +113,7 @@ pub(crate) struct ComponentDb {
     id2lifecycle: HashMap<ComponentId, Lifecycle>,
     error_handler_id2error_handler: HashMap<ComponentId, ErrorHandler>,
     router: BTreeMap<RouterKey, ComponentId>,
+    into_response: ResolvedPathType,
 }
 
 impl ComponentDb {
@@ -132,6 +136,15 @@ impl ComponentDb {
         let mut fallible_component_id2error_handler_id =
             HashMap::<UserComponentId, Option<ErrorHandlerId>>::new();
         let mut user_component_id2component_id = HashMap::new();
+        let into_response = {
+            let into_response = process_framework_path(
+                "pavex_runtime::response::IntoResponse",
+                package_graph,
+                krate_collection,
+            );
+            let ResolvedType::ResolvedPath(into_response) = into_response else { unreachable!() };
+            into_response
+        };
 
         let mut self_ = Self {
             interner: Interner::new(),
@@ -143,6 +156,7 @@ impl ComponentDb {
             id2lifecycle: Default::default(),
             error_handler_id2error_handler: Default::default(),
             router: Default::default(),
+            into_response,
         };
 
         for (user_component_id, user_component) in user_component_db
@@ -350,6 +364,7 @@ impl ComponentDb {
                         self_.id2lifecycle[&err_match_id].clone(),
                         computation_db,
                     );
+                    self_.borrow_id2owned_id.insert(err_ref_id, err_match_id);
                     self_
                         .err_ref_id2error_handler_id
                         .insert(err_ref_id, error_handler_id);
@@ -361,13 +376,7 @@ impl ComponentDb {
         // We need to make sure that all output nodes return the same output type.
         // We do this by adding a "response transformer" node that converts the output type to a
         // common type - `pavex_runtime::response::Response`.
-        let into_response = process_framework_path(
-            "pavex_runtime::response::IntoResponse",
-            package_graph,
-            krate_collection,
-        );
-        let ResolvedType::ResolvedPath(into_response) = into_response else { unreachable!() };
-        let into_response_path = into_response.resolved_path();
+        let into_response_path = self_.into_response.resolved_path();
         let iter: Vec<_> = self_
             .interner
             .iter()
@@ -393,7 +402,9 @@ impl ComponentDb {
                 output
             }
             .to_owned();
-            if let Err(e) = assert_trait_is_implemented(krate_collection, &output, &into_response) {
+            if let Err(e) =
+                assert_trait_is_implemented(krate_collection, &output, &self_.into_response)
+            {
                 Self::invalid_response_type(
                     e,
                     &output,
@@ -554,9 +565,10 @@ impl ComponentDb {
     ) -> Result<ComponentId, ConstructorValidationError> {
         let callable = computation_db[callable_id].to_owned();
         TryInto::<Constructor>::try_into(callable)?;
-        let constructor_id = self.interner.get_or_intern(Component::Constructor {
+        let constructor_component = Component::Constructor {
             source_id: ConstructorSourceId::ComputationId(callable_id),
-        });
+        };
+        let constructor_id = self.interner.get_or_intern(constructor_component);
         self.id2lifecycle.insert(constructor_id, lifecycle);
         self.register_derived_constructors(constructor_id, computation_db);
         Ok(constructor_id)
@@ -611,15 +623,15 @@ impl ComponentDb {
     /// derived components).
     /// If the constructor is a non-fallible constructor, the derived components are the
     /// `BorrowSharedReference` component.
-    pub fn derived_component_ids(&self, constructor_id: ComponentId) -> Vec<ComponentId> {
+    pub fn derived_component_ids(&self, component_id: ComponentId) -> Vec<ComponentId> {
         let mut derived_ids = Vec::new();
-        if let Some(match_ids) = self.match_ids(constructor_id) {
+        if let Some(match_ids) = self.match_ids(component_id) {
             derived_ids.push(match_ids.0);
             derived_ids.push(match_ids.1);
             derived_ids.extend(self.derived_component_ids(match_ids.0));
             derived_ids.extend(self.derived_component_ids(match_ids.1));
         }
-        if let Some(borrow_id) = self.borrow_id2owned_id.get_by_right(&constructor_id) {
+        if let Some(borrow_id) = self.borrow_id2owned_id.get_by_right(&component_id) {
             derived_ids.push(*borrow_id);
             derived_ids.extend(self.derived_component_ids(*borrow_id));
         }
@@ -704,6 +716,24 @@ impl ComponentDb {
                 HydratedComponent::Transformer(c.clone())
             }
         }
+    }
+}
+
+// All methods related to the logic for binding generic components.
+impl ComponentDb {
+    /// Replace all unassigned generic type parameters in the component with id set to `id` with
+    /// the concrete types specified in `bindings`.
+    ///
+    /// The newly "bound" component will be added to the component database and its id returned.
+    ///
+    /// The same process will be applied to all derived components (borrowed references,
+    /// error handlers, etc.), recursively.
+    pub fn bind(
+        &mut self,
+        _id: ComponentId,
+        _bindings: &HashMap<NamedTypeGeneric, ResolvedType>,
+        _computation_db: &ComputationDb,
+    ) {
     }
 }
 

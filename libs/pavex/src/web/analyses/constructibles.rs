@@ -13,10 +13,7 @@ use crate::diagnostic::{
     convert_proc_macro_span, convert_rustdoc_span, read_source_file, AnnotatedSnippet,
     CompilerDiagnostic, LocationExt, SourceSpanExt,
 };
-use crate::language::{
-    Callable, GenericArgument, NamedTypeGeneric, ResolvedPathType, ResolvedType, Slice, Tuple,
-    TypeReference,
-};
+use crate::language::{Callable, GenericArgument, NamedTypeGeneric, ResolvedType};
 use crate::rustdoc::CrateCollection;
 use crate::web::analyses::components::{ComponentDb, ComponentId, HydratedComponent};
 use crate::web::analyses::computations::ComputationDb;
@@ -108,9 +105,7 @@ impl ConstructibleDb {
                     continue;
                 }
                 for templated_constructible_type in &self_.templated_constructors {
-                    if let Some(bindings) =
-                        can_be_specialized_to(input, templated_constructible_type)
-                    {
+                    if let Some(bindings) = templated_constructible_type.is_a_template_for(input) {
                         specialize_and_register_constructor(
                             self_[templated_constructible_type],
                             component_db,
@@ -267,8 +262,9 @@ fn specialize_and_register_constructor(
         .hydrated_component(templated_component_id, computation_db)
         .into_owned();
     let HydratedComponent::Constructor(templated_constructor) = templated_component else { unreachable!() };
-    let specialized_output_type =
-        bind_generic_type_parameters(templated_constructor.output_type(), &bindings);
+    let specialized_output_type = templated_constructor
+        .output_type()
+        .bind_generic_type_parameters(&bindings);
     match &templated_constructor.0 {
         Computation::Callable(c) => {
             let specialized_callable = Callable {
@@ -315,201 +311,6 @@ fn specialize_and_register_constructor(
             );
         }
     }
-}
-
-/// Replace unassigned generic type parameters in `templated_type` with the concrete generic type
-/// parameters defined in `bindings`.
-///
-/// This function can also be used to _partially_ bind the unassigned generic type parameters in
-/// `t`. You are not required to bind all of them.
-fn bind_generic_type_parameters(
-    t: &ResolvedType,
-    bindings: &HashMap<NamedTypeGeneric, ResolvedType>,
-) -> ResolvedType {
-    match t {
-        ResolvedType::ResolvedPath(t) => {
-            let mut bound_generics = Vec::with_capacity(t.generic_arguments.len());
-            for generic in &t.generic_arguments {
-                let bound_generic = match generic {
-                    GenericArgument::UnassignedTypeParameter(name) => {
-                        if let Some(bound_type) = bindings.get(name) {
-                            GenericArgument::AssignedTypeParameter(bound_type.clone())
-                        } else {
-                            generic.to_owned()
-                        }
-                    }
-                    GenericArgument::AssignedTypeParameter(t) => {
-                        GenericArgument::AssignedTypeParameter(bind_generic_type_parameters(
-                            t, bindings,
-                        ))
-                    }
-                    GenericArgument::Lifetime(_) => generic.to_owned(),
-                };
-                bound_generics.push(bound_generic);
-            }
-            ResolvedType::ResolvedPath(ResolvedPathType {
-                package_id: t.package_id.clone(),
-                // Should we set this to `None`?
-                rustdoc_id: t.rustdoc_id.clone(),
-                base_type: t.base_type.clone(),
-                generic_arguments: bound_generics,
-            })
-        }
-        ResolvedType::Reference(r) => ResolvedType::Reference(TypeReference {
-            is_mutable: r.is_mutable,
-            inner: Box::new(bind_generic_type_parameters(&r.inner, bindings)),
-            is_static: r.is_static,
-        }),
-        ResolvedType::Tuple(t) => {
-            let mut bound_elements = Vec::with_capacity(t.elements.len());
-            for inner in &t.elements {
-                bound_elements.push(bind_generic_type_parameters(inner, bindings));
-            }
-            ResolvedType::Tuple(Tuple {
-                elements: bound_elements,
-            })
-        }
-        ResolvedType::ScalarPrimitive(s) => ResolvedType::ScalarPrimitive(s.clone()),
-        ResolvedType::Slice(s) => ResolvedType::Slice(Slice {
-            element_type: Box::new(bind_generic_type_parameters(&s.element_type, bindings)),
-        }),
-    }
-}
-
-/// Check if a type can be considered a "specialization" of another, with respect to their generic parameters.
-///
-/// I.e. if by replacing the unassigned generic type parameters of `templated_type` with the
-/// concrete generic type parameters of `concrete_type`, `templated_type` would be equal to `concrete_type`.
-///
-/// If possible, this function will return a map associating each unassigned generic parameter
-/// in `templated_type` with the type it must be set to in order to match `concrete_type`.
-/// If impossible, this function will return `None`.
-#[tracing::instrument(level = "trace", ret)]
-fn can_be_specialized_to(
-    concrete_type: &ResolvedType,
-    templated_type: &ResolvedType,
-) -> Option<HashMap<NamedTypeGeneric, ResolvedType>> {
-    let mut bindings = HashMap::new();
-    if _can_be_specialized_to(concrete_type, templated_type, &mut bindings) {
-        Some(bindings)
-    } else {
-        None
-    }
-}
-
-#[tracing::instrument(level = "trace", ret)]
-fn _can_be_specialized_to(
-    concrete_type: &ResolvedType,
-    templated_type: &ResolvedType,
-    bindings: &mut HashMap<NamedTypeGeneric, ResolvedType>,
-) -> bool {
-    if concrete_type == templated_type {
-        return true;
-    }
-    use ResolvedType::*;
-    match (concrete_type, templated_type) {
-        (ResolvedPath(concrete_path), ResolvedPath(templated_path)) => {
-            _can_be_specialized_to_for_resolved_path_types(concrete_path, templated_path, bindings)
-        }
-        (Slice(concrete_slice), Slice(templated_slice)) => _can_be_specialized_to(
-            &concrete_slice.element_type,
-            &templated_slice.element_type,
-            bindings,
-        ),
-        (Reference(concrete_reference), Reference(templated_reference)) => _can_be_specialized_to(
-            &concrete_reference.inner,
-            &templated_reference.inner,
-            bindings,
-        ),
-        (Tuple(concrete_tuple), Tuple(templated_tuple)) => {
-            if concrete_tuple.elements.len() != templated_tuple.elements.len() {
-                return false;
-            }
-            concrete_tuple
-                .elements
-                .iter()
-                .zip(templated_tuple.elements.iter())
-                .all(|(concrete_type, templated_type)| {
-                    _can_be_specialized_to(concrete_type, templated_type, bindings)
-                })
-        }
-        (ScalarPrimitive(concrete_primitive), ScalarPrimitive(templated_primitive)) => {
-            concrete_primitive == templated_primitive
-        }
-        (_, _) => false,
-    }
-}
-
-fn _can_be_specialized_to_for_resolved_path_types(
-    concrete_type: &ResolvedPathType,
-    templated_type: &ResolvedPathType,
-    bindings: &mut HashMap<NamedTypeGeneric, ResolvedType>,
-) -> bool {
-    // We destructure ALL fields to make sure that the compiler reminds us to update
-    // this function if we add new fields to `ResolvedPathType`.
-    let ResolvedPathType {
-        package_id: concrete_package_id,
-        rustdoc_id: _,
-        base_type: concrete_base_type,
-        generic_arguments: concrete_generic_arguments,
-    } = concrete_type;
-    let ResolvedPathType {
-        package_id: templated_package_id,
-        rustdoc_id: _,
-        base_type: templated_base_type,
-        generic_arguments: templated_generic_arguments,
-    } = templated_type;
-    if concrete_package_id != templated_package_id
-        || concrete_base_type != templated_base_type
-        || concrete_generic_arguments.len() != templated_generic_arguments.len()
-    {
-        return false;
-    }
-    for (concrete_arg, templated_arg) in concrete_generic_arguments
-        .iter()
-        .zip(templated_generic_arguments.iter())
-    {
-        use GenericArgument::*;
-        match (concrete_arg, templated_arg) {
-            (
-                AssignedTypeParameter(concrete_arg_type),
-                AssignedTypeParameter(templated_arg_type),
-            ) => {
-                if !_can_be_specialized_to(concrete_arg_type, templated_arg_type, bindings) {
-                    return false;
-                }
-            }
-            (AssignedTypeParameter(assigned), UnassignedTypeParameter(unassigned)) => {
-                // The unassigned type parameter can be assigned to the concrete type
-                // we expect, so it is a specialization.
-                let previous_assignment = bindings.insert(unassigned.clone(), assigned.clone());
-                if let Some(previous_assignment) = previous_assignment {
-                    if &previous_assignment != assigned {
-                        tracing::trace!(
-                            "Type parameter `{:?}` was already assigned to `{:?}` but is now being assigned to `{:?}`",
-                            unassigned,
-                            previous_assignment,
-                            assigned
-                        );
-                        return false;
-                    }
-                }
-            }
-            (Lifetime(_), Lifetime(_)) => {
-                // Lifetimes are not relevant for specialization (yet).
-            }
-            (UnassignedTypeParameter(unassigned), _) => {
-                // You are not allowed to specialize a type with an unassigned type parameter.
-                unreachable!("Unassigned type parameter (`{:?}`) in the 'concrete' type (`{:?}`) when checking for specialization", unassigned, concrete_type);
-            }
-            (AssignedTypeParameter(_), Lifetime(_))
-            | (Lifetime(_), UnassignedTypeParameter(_))
-            | (Lifetime(_), AssignedTypeParameter(_)) => {
-                return false;
-            }
-        }
-    }
-    true
 }
 
 /// Check if a type can be "specialized" - i.e. if it has any unassigned generic type parameters.
