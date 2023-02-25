@@ -1,4 +1,6 @@
-use crate::language::{GenericArgument, ResolvedType};
+use ahash::HashMap;
+
+use crate::language::{GenericArgument, NamedTypeGeneric, ResolvedType};
 
 /// A branching constructor: extract one of the variant out of a Rust enum.
 /// E.g. get a `T` (or `E`) from a `Result<T, E>`.
@@ -48,6 +50,23 @@ impl MatchResult {
         ResultMatchers {
             ok: ok_constructor,
             err: err_constructor,
+        }
+    }
+
+    /// Replace all unassigned generic type parameters in this match result with the
+    /// concrete types specified in `bindings`.
+    ///
+    /// The newly "bound" match result will be returned.
+    pub fn bind_generic_type_parameters(
+        &self,
+        bindings: &HashMap<NamedTypeGeneric, ResolvedType>,
+    ) -> Self {
+        let input = self.input.bind_generic_type_parameters(bindings);
+        let output = self.output.bind_generic_type_parameters(bindings);
+        Self {
+            input,
+            output,
+            variant: self.variant,
         }
     }
 }

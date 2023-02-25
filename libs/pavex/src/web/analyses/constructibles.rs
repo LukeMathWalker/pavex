@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-
 use ahash::{HashMap, HashMapExt, HashSet};
 use guppy::graph::PackageGraph;
 use indexmap::IndexSet;
@@ -106,7 +104,7 @@ impl ConstructibleDb {
                 }
                 for templated_constructible_type in &self_.templated_constructors {
                     if let Some(bindings) = templated_constructible_type.is_a_template_for(input) {
-                        specialize_and_register_constructor(
+                        bind_and_register_constructor(
                             self_[templated_constructible_type],
                             component_db,
                             computation_db,
@@ -247,68 +245,32 @@ impl std::ops::Index<&ResolvedType> for ConstructibleDb {
     }
 }
 
-fn specialize_and_register_constructor(
+fn bind_and_register_constructor(
     templated_component_id: ComponentId,
     component_db: &mut ComponentDb,
     computation_db: &mut ComputationDb,
     constructible_db: &mut ConstructibleDb,
     bindings: &HashMap<NamedTypeGeneric, ResolvedType>,
 ) {
-    let lifecycle = component_db
-        .lifecycle(templated_component_id)
-        .unwrap()
-        .to_owned();
     let templated_component = component_db
         .hydrated_component(templated_component_id, computation_db)
         .into_owned();
     let HydratedComponent::Constructor(templated_constructor) = templated_component else { unreachable!() };
-    let specialized_output_type = templated_constructor
-        .output_type()
-        .bind_generic_type_parameters(&bindings);
-    match &templated_constructor.0 {
-        Computation::Callable(c) => {
-            let specialized_callable = Callable {
-                output: Some(specialized_output_type.clone()),
-                ..c.clone().into_owned()
-            };
-            let computation = Computation::Callable(Cow::Owned(specialized_callable));
-            let computation_id = computation_db.get_or_intern(computation);
-            let specialized_component_id = component_db
-                .get_or_intern_constructor(computation_id, lifecycle, computation_db)
-                .unwrap();
+    let templated_component_id = match &templated_constructor.0 {
+        Computation::Callable(_) => templated_component_id,
+        Computation::MatchResult(_) => component_db.fallible_id(templated_component_id),
+        Computation::BorrowSharedReference(_) => component_db.owned_id(templated_component_id),
+    };
+    let bound_component_id = component_db.bind(templated_component_id, bindings, computation_db);
+    let mut derived_component_ids = component_db.derived_component_ids(bound_component_id);
+    derived_component_ids.push(bound_component_id);
+    for derived_component_id in derived_component_ids {
+        if let HydratedComponent::Constructor(c) =
+            component_db.hydrated_component(derived_component_id, computation_db)
+        {
             constructible_db
                 .type2constructor_id
-                .insert(specialized_output_type, specialized_component_id);
-            for derived_component_id in component_db.derived_component_ids(specialized_component_id)
-            {
-                if let HydratedComponent::Constructor(c) =
-                    component_db.hydrated_component(derived_component_id, computation_db)
-                {
-                    constructible_db
-                        .type2constructor_id
-                        .insert(c.output_type().clone(), derived_component_id);
-                }
-            }
-        }
-        Computation::MatchResult(_) => {
-            let fallible_constructor_id = component_db.fallible_id(templated_component_id);
-            specialize_and_register_constructor(
-                fallible_constructor_id,
-                component_db,
-                computation_db,
-                constructible_db,
-                bindings,
-            );
-        }
-        Computation::BorrowSharedReference(_) => {
-            let owned_constructor_id = component_db.owned_id(templated_component_id);
-            specialize_and_register_constructor(
-                owned_constructor_id,
-                component_db,
-                computation_db,
-                constructible_db,
-                bindings,
-            );
+                .insert(c.output_type().clone(), derived_component_id);
         }
     }
 }

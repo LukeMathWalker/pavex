@@ -1,9 +1,11 @@
 use std::borrow::Cow;
 
+use ahash::HashMap;
+
 pub(crate) use borrow_shared_reference::BorrowSharedReference;
 pub(crate) use match_result::{MatchResult, MatchResultVariant};
 
-use crate::language::Callable;
+use crate::language::{Callable, NamedTypeGeneric, ResolvedType};
 
 mod borrow_shared_reference;
 mod match_result;
@@ -20,7 +22,6 @@ pub(crate) enum Computation<'a> {
     /// Build a new instance of a type by calling a function or a method.
     ///
     /// The constructor can take zero or more arguments as inputs.
-    /// It must return a non-unit output type.
     Callable(Cow<'a, Callable>),
     /// A branching constructor: extract either the `Ok(T)` or the `Err(E)` variant out of a
     /// [`Result<T,E>`](Result).
@@ -40,6 +41,10 @@ impl<'a> Computation<'a> {
         }
     }
 
+    /// Return a new computation with the same behaviour but with a `'static` lifetime.
+    ///
+    /// This can be useful to break a reference relationship between the computation data and
+    /// the container they are being borrowed from.
     pub fn into_owned(self) -> Computation<'static> {
         match self {
             Computation::Callable(c) => Computation::Callable(Cow::Owned(c.into_owned())),
@@ -50,6 +55,7 @@ impl<'a> Computation<'a> {
         }
     }
 
+    /// The types required as input parameters by this computation.
     pub fn input_types(&self) -> Cow<[crate::language::ResolvedType]> {
         match self {
             Computation::Callable(c) => Cow::Borrowed(c.inputs.as_slice()),
@@ -58,11 +64,35 @@ impl<'a> Computation<'a> {
         }
     }
 
+    /// The type returned by this computation.
+    ///
+    /// This is `None` for computations that do not return a value.
     pub fn output_type(&self) -> Option<&crate::language::ResolvedType> {
         match self {
             Computation::Callable(c) => c.output.as_ref(),
             Computation::MatchResult(m) => Some(&m.output),
             Computation::BorrowSharedReference(b) => Some(&b.output),
+        }
+    }
+
+    /// Replace all unassigned generic type parameters in this computation with the
+    /// concrete types specified in `bindings`.
+    ///
+    /// The newly "bound" computation will be returned.
+    pub fn bind_generic_type_parameters(
+        &self,
+        bindings: &HashMap<NamedTypeGeneric, ResolvedType>,
+    ) -> Computation<'_> {
+        match self {
+            Computation::Callable(c) => {
+                Computation::Callable(Cow::Owned(c.bind_generic_type_parameters(bindings)))
+            }
+            Computation::MatchResult(m) => {
+                Computation::MatchResult(Cow::Owned(m.bind_generic_type_parameters(bindings)))
+            }
+            Computation::BorrowSharedReference(b) => Computation::BorrowSharedReference(
+                Cow::Owned(b.bind_generic_type_parameters(bindings)),
+            ),
         }
     }
 }

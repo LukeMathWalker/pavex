@@ -32,24 +32,24 @@ use crate::web::utils::{get_ok_variant, is_result, process_framework_path};
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) enum Component {
     RequestHandler { user_component_id: UserComponentId },
-    ErrorHandler { user_component_id: UserComponentId },
-    Constructor { source_id: ConstructorSourceId },
+    ErrorHandler { source_id: SourceId },
+    Constructor { source_id: SourceId },
     Transformer { computation_id: ComputationId },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
-pub(crate) enum ConstructorSourceId {
+pub(crate) enum SourceId {
     ComputationId(ComputationId),
     UserComponentId(UserComponentId),
 }
 
-impl From<ComputationId> for ConstructorSourceId {
+impl From<ComputationId> for SourceId {
     fn from(value: ComputationId) -> Self {
         Self::ComputationId(value)
     }
 }
 
-impl From<UserComponentId> for ConstructorSourceId {
+impl From<UserComponentId> for SourceId {
     fn from(value: UserComponentId) -> Self {
         Self::UserComponentId(value)
     }
@@ -180,7 +180,7 @@ impl ComponentDb {
                         .get_lifecycle(user_component.raw_callable_identifiers_id())
                         .unwrap();
                     let constructor_id = self_.interner.get_or_intern(Component::Constructor {
-                        source_id: ConstructorSourceId::UserComponentId(user_component_id),
+                        source_id: SourceId::UserComponentId(user_component_id),
                     });
                     user_component_id2component_id.insert(user_component_id, constructor_id);
                     self_
@@ -300,7 +300,7 @@ impl ComponentDb {
                     Ok(e) => {
                         let error_handler_id =
                             self_.interner.get_or_intern(Component::ErrorHandler {
-                                user_component_id: error_handler_user_component_id,
+                                source_id: error_handler_user_component_id.into(),
                             });
                         self_
                             .error_handler_id2error_handler
@@ -382,7 +382,10 @@ impl ComponentDb {
             .iter()
             .filter_map(|(id, c)| match c {
                 Component::RequestHandler { user_component_id }
-                | Component::ErrorHandler { user_component_id } => Some((id, *user_component_id)),
+                | Component::ErrorHandler {
+                    // There are no error handlers with a `ComputationId` source at this stage.
+                    source_id: SourceId::UserComponentId(user_component_id),
+                } => Some((id, *user_component_id)),
                 _ => None,
             })
             .collect();
@@ -566,7 +569,7 @@ impl ComponentDb {
         let callable = computation_db[callable_id].to_owned();
         TryInto::<Constructor>::try_into(callable)?;
         let constructor_component = Component::Constructor {
-            source_id: ConstructorSourceId::ComputationId(callable_id),
+            source_id: SourceId::ComputationId(callable_id),
         };
         let constructor_id = self.interner.get_or_intern(constructor_component);
         self.id2lifecycle.insert(constructor_id, lifecycle);
@@ -666,8 +669,8 @@ impl ComponentDb {
             | Component::Transformer { .. } => None,
             Component::Constructor { source_id } => {
                 let computation = match source_id {
-                    ConstructorSourceId::ComputationId(id) => computation_db[*id].clone(),
-                    ConstructorSourceId::UserComponentId(id) => computation_db[*id].clone().into(),
+                    SourceId::ComputationId(id) => computation_db[*id].clone(),
+                    SourceId::UserComponentId(id) => computation_db[*id].clone().into(),
                 };
                 Some((id, Constructor(computation)))
             }
@@ -676,13 +679,20 @@ impl ComponentDb {
 
     pub(crate) fn user_component_id(&self, id: ComponentId) -> Option<UserComponentId> {
         match &self[id] {
-            Component::Constructor { source_id } => match source_id {
-                ConstructorSourceId::ComputationId(_id) => None,
-                ConstructorSourceId::UserComponentId(id) => Some(*id),
-            },
-            Component::ErrorHandler { user_component_id }
+            Component::Constructor {
+                source_id: SourceId::UserComponentId(user_component_id),
+            }
+            | Component::ErrorHandler {
+                source_id: SourceId::UserComponentId(user_component_id),
+            }
             | Component::RequestHandler { user_component_id } => Some(*user_component_id),
-            Component::Transformer { .. } => None,
+            Component::ErrorHandler {
+                source_id: SourceId::ComputationId(_),
+            }
+            | Component::Constructor {
+                source_id: SourceId::ComputationId(_),
+            }
+            | Component::Transformer { .. } => None,
         }
     }
 
@@ -706,8 +716,8 @@ impl ComponentDb {
             }
             Component::Constructor { source_id } => {
                 let c = match source_id {
-                    ConstructorSourceId::ComputationId(id) => computation_db[*id].clone(),
-                    ConstructorSourceId::UserComponentId(id) => computation_db[*id].clone().into(),
+                    SourceId::ComputationId(id) => computation_db[*id].clone(),
+                    SourceId::UserComponentId(id) => computation_db[*id].clone().into(),
                 };
                 HydratedComponent::Constructor(Constructor(c))
             }
@@ -721,19 +731,53 @@ impl ComponentDb {
 
 // All methods related to the logic for binding generic components.
 impl ComponentDb {
-    /// Replace all unassigned generic type parameters in the component with id set to `id` with
+    /// Replace all unassigned generic type parameters in the constructor component with id set to `id` with
     /// the concrete types specified in `bindings`.
     ///
     /// The newly "bound" component will be added to the component database and its id returned.
     ///
     /// The same process will be applied to all derived components (borrowed references,
     /// error handlers, etc.), recursively.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the component with id `id` is not a constructor.
     pub fn bind(
         &mut self,
-        _id: ComponentId,
-        _bindings: &HashMap<NamedTypeGeneric, ResolvedType>,
-        _computation_db: &ComputationDb,
-    ) {
+        id: ComponentId,
+        bindings: &HashMap<NamedTypeGeneric, ResolvedType>,
+        computation_db: &mut ComputationDb,
+    ) -> ComponentId {
+        let HydratedComponent::Constructor(constructor) = self.hydrated_component(id, computation_db) else { unreachable!() };
+        let lifecycle = self.lifecycle(id).cloned().unwrap();
+        let bound_computation = constructor
+            .0
+            .bind_generic_type_parameters(bindings)
+            .into_owned();
+        let bound_computation_id = computation_db.get_or_intern(bound_computation);
+        let bound_component_id = self
+            .get_or_intern_constructor(bound_computation_id, lifecycle, computation_db)
+            .unwrap();
+        // ^ This registers all "derived" constructors as well (borrowed references, matchers, etc.)
+        // but it doesn't take care of the error handler, in case `id` pointed to a fallible constructor.
+        // We need to do that manually.
+        if let Some((_, err_match_id)) = self.fallible_id2match_ids.get(&id) {
+            if let Some(err_ref_id) = self.borrow_id2owned_id.get_by_right(err_match_id) {
+                let err_handler_id = self.err_ref_id2error_handler_id[err_ref_id];
+                let HydratedComponent::ErrorHandler(error_handler) = self.hydrated_component(err_handler_id, computation_db) else { unreachable!() };
+                // TODO: Can we actually use the same bindings here?
+                let bound_error_handler = error_handler.bind_generic_type_parameters(bindings);
+                let bound_error_computation_id =
+                    computation_db.get_or_intern(bound_error_handler.callable.clone());
+                let bound_error_component_id =
+                    self.interner.get_or_intern(Component::ErrorHandler {
+                        source_id: SourceId::ComputationId(bound_error_computation_id),
+                    });
+                self.error_handler_id2error_handler
+                    .insert(bound_error_component_id, bound_error_handler);
+            }
+        }
+        bound_component_id
     }
 }
 
