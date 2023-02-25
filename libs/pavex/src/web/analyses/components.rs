@@ -2,6 +2,7 @@ use std::borrow::Cow;
 use std::collections::BTreeMap;
 
 use ahash::{HashMap, HashMapExt};
+use bimap::BiHashMap;
 use guppy::graph::PackageGraph;
 use indexmap::IndexSet;
 
@@ -83,6 +84,19 @@ impl<'a> HydratedComponent<'a> {
             HydratedComponent::Transformer(c) => c.output_type().unwrap(),
         }
     }
+
+    pub(crate) fn into_owned(self) -> HydratedComponent<'static> {
+        match self {
+            HydratedComponent::Constructor(c) => HydratedComponent::Constructor(c.into_owned()),
+            HydratedComponent::RequestHandler(r) => {
+                HydratedComponent::RequestHandler(r.into_owned())
+            }
+            HydratedComponent::ErrorHandler(e) => {
+                HydratedComponent::ErrorHandler(Cow::Owned(e.into_owned()))
+            }
+            HydratedComponent::Transformer(t) => HydratedComponent::Transformer(t.into_owned()),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -91,6 +105,7 @@ pub(crate) struct ComponentDb {
     err_ref_id2error_handler_id: HashMap<ComponentId, ComponentId>,
     fallible_id2match_ids: HashMap<ComponentId, (ComponentId, ComponentId)>,
     match_id2fallible_id: HashMap<ComponentId, ComponentId>,
+    borrow_id2owned_id: BiHashMap<ComponentId, ComponentId>,
     id2transformer_ids: HashMap<ComponentId, IndexSet<ComponentId>>,
     id2lifecycle: HashMap<ComponentId, Lifecycle>,
     error_handler_id2error_handler: HashMap<ComponentId, ErrorHandler>,
@@ -123,6 +138,7 @@ impl ComponentDb {
             err_ref_id2error_handler_id: Default::default(),
             fallible_id2match_ids: Default::default(),
             match_id2fallible_id: Default::default(),
+            borrow_id2owned_id: Default::default(),
             id2transformer_ids: Default::default(),
             id2lifecycle: Default::default(),
             error_handler_id2error_handler: Default::default(),
@@ -491,7 +507,7 @@ impl ComponentDb {
             // For each non-reference type, register an inlineable constructor that transforms
             // `T` in `&T`.
             let c: Computation<'_> = BorrowSharedReference::new(output_type).into();
-            self.add_synthetic_constructor(
+            let borrow_id = self.add_synthetic_constructor(
                 // It's fine to unwrap, since constructors are guaranteed to return a non-unit type.
                 // Therefore we can be certain the borrowing that return type doesn't give a computation
                 // that returns the unit type;
@@ -499,6 +515,7 @@ impl ComponentDb {
                 lifecycle.to_owned(),
                 computation_db,
             );
+            self.borrow_id2owned_id.insert(borrow_id, constructor_id);
         }
         if let Ok(constructor) = constructor.as_fallible() {
             let m = constructor.matchers();
@@ -588,10 +605,42 @@ impl ComponentDb {
         self.fallible_id2match_ids.get(&fallible_component_id)
     }
 
-    /// Given the id of a `MatchResult` component, return the id of the corresponding fallible
+    /// Return the ids of the components that are derived from the given constructor.
+    /// E.g. if the constructor is a fallible constructor, the derived components are the
+    /// `MatchResult` components for the `Ok` and `Err` variants (and their respective
+    /// derived components).
+    /// If the constructor is a non-fallible constructor, the derived components are the
+    /// `BorrowSharedReference` component.
+    pub fn derived_component_ids(&self, constructor_id: ComponentId) -> Vec<ComponentId> {
+        let mut derived_ids = Vec::new();
+        if let Some(match_ids) = self.match_ids(constructor_id) {
+            derived_ids.push(match_ids.0);
+            derived_ids.push(match_ids.1);
+            derived_ids.extend(self.derived_component_ids(match_ids.0));
+            derived_ids.extend(self.derived_component_ids(match_ids.1));
+        }
+        if let Some(borrow_id) = self.borrow_id2owned_id.get_by_right(&constructor_id) {
+            derived_ids.push(*borrow_id);
+            derived_ids.extend(self.derived_component_ids(*borrow_id));
+        }
+        derived_ids
+    }
+
+    /// Given the id of a [`MatchResult`] component, return the id of the corresponding fallible
     /// component.
+    #[track_caller]
     pub fn fallible_id(&self, match_component_id: ComponentId) -> ComponentId {
         self.match_id2fallible_id[&match_component_id]
+    }
+
+    /// Given the id of a [`BorrowSharedReference`] component, return the id of the corresponding
+    /// component that returns the owned variant it borrows from.
+    #[track_caller]
+    pub fn owned_id(&self, borrow_component_id: ComponentId) -> ComponentId {
+        self.borrow_id2owned_id
+            .get_by_left(&borrow_component_id)
+            .copied()
+            .unwrap()
     }
 
     /// Iterate over all constructors in the component database, either user-provided or synthetic.

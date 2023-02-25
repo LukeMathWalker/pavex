@@ -20,6 +20,7 @@ use crate::web::resolvers::{resolve_callable, CallableResolutionError};
 
 pub(crate) type ComputationId = la_arena::Idx<Computation<'static>>;
 
+#[derive(Debug)]
 pub(crate) struct ComputationDb {
     interner: Interner<Computation<'static>>,
     component_id2callable_id: HashMap<UserComponentId, ComputationId>,

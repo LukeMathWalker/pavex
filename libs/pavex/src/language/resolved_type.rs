@@ -144,7 +144,7 @@ pub enum GenericArgument {
     Lifetime(Lifetime),
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Hash, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Hash, Clone, Debug)]
 /// A type parameter that has not been assigned yet, e.g. `T` in `Vec<T>`.
 pub struct NamedTypeGeneric {
     /// E.g. `T` in `Vec<T>`.
