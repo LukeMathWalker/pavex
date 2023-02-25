@@ -13,7 +13,7 @@ use crate::diagnostic::{
     convert_proc_macro_span, convert_rustdoc_span, read_source_file, AnnotatedSnippet,
     CompilerDiagnostic, LocationExt, SourceSpanExt,
 };
-use crate::language::{Callable, GenericArgument, NamedTypeGeneric, ResolvedType};
+use crate::language::{Callable, NamedTypeGeneric, ResolvedType};
 use crate::rustdoc::CrateCollection;
 use crate::web::analyses::components::{ComponentDb, ComponentId, HydratedComponent};
 use crate::web::analyses::computations::ComputationDb;
@@ -53,7 +53,7 @@ impl ConstructibleDb {
         for (component_id, component) in component_db.constructors(computation_db) {
             let output = component.output_type();
             type2constructor_id.insert(output.to_owned(), component_id);
-            if can_be_specialized(&output) {
+            if output.is_a_template() {
                 templated_constructors.insert(output.to_owned());
             }
         }
@@ -310,20 +310,5 @@ fn specialize_and_register_constructor(
                 bindings,
             );
         }
-    }
-}
-
-/// Check if a type can be "specialized" - i.e. if it has any unassigned generic type parameters.
-#[tracing::instrument(level = "trace", ret)]
-fn can_be_specialized(t: &ResolvedType) -> bool {
-    match t {
-        ResolvedType::ResolvedPath(path) => path.generic_arguments.iter().any(|arg| match arg {
-            GenericArgument::UnassignedTypeParameter(_) => true,
-            _ => false,
-        }),
-        ResolvedType::Reference(r) => can_be_specialized(&r.inner),
-        ResolvedType::Tuple(t) => t.elements.iter().any(|t| can_be_specialized(t)),
-        ResolvedType::ScalarPrimitive(_) => false,
-        ResolvedType::Slice(s) => can_be_specialized(&s.element_type),
     }
 }

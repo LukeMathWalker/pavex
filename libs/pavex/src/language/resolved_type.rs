@@ -80,13 +80,31 @@ impl ResolvedType {
         }
     }
 
-    /// Check if a type can be considered a "specialization" of another, with respect to their generic parameters.
+    /// Check if a type can be used as a "template" - i.e. if it has any unassigned generic type parameters.
+    #[tracing::instrument(level = "trace", ret)]
+    pub fn is_a_template(&self) -> bool {
+        match self {
+            ResolvedType::ResolvedPath(path) => {
+                path.generic_arguments.iter().any(|arg| match arg {
+                    GenericArgument::UnassignedTypeParameter(_) => true,
+                    GenericArgument::AssignedTypeParameter(g) => g.is_a_template(),
+                    GenericArgument::Lifetime(_) => false,
+                })
+            }
+            ResolvedType::Reference(r) => r.inner.is_a_template(),
+            ResolvedType::Tuple(t) => t.elements.iter().any(|t| t.is_a_template()),
+            ResolvedType::ScalarPrimitive(_) => false,
+            ResolvedType::Slice(s) => s.element_type.is_a_template(),
+        }
+    }
+
+    /// Check if a type can be considered a "template" for another.
     ///
-    /// I.e. if by replacing the unassigned generic type parameters of `templated_type` with the
-    /// concrete generic type parameters of `concrete_type`, `templated_type` would be equal to `concrete_type`.
+    /// I.e. if by replacing the unassigned generic type parameters of `self` with the
+    /// concrete generic type parameters of `concrete_type`, `self` would be equal to `concrete_type`.
     ///
     /// If possible, this function will return a map associating each unassigned generic parameter
-    /// in `templated_type` with the type it must be set to in order to match `concrete_type`.
+    /// in `self` with the type it must be set to in order to match `concrete_type`.
     /// If impossible, this function will return `None`.
     #[tracing::instrument(level = "trace", ret)]
     pub fn is_a_template_for(
