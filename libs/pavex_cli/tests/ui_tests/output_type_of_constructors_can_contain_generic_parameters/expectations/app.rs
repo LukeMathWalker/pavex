@@ -84,11 +84,19 @@ pub async fn route_handler_0() -> http::Response<
     let v0 = app::fallible();
     match v0 {
         Ok(v1) => {
-            let v2 = app::handler(v1);
+            let v2 = app::json();
+            let v3 = app::json();
+            let v4 = app::json();
+            let v5 = app::handler(v4, v3, &v2, v1);
+            <http::Response::<
+                http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>,
+            > as pavex_runtime::response::IntoResponse>::into_response(v5)
+        }
+        Err(v1) => {
+            let v2 = app::error_handler(&v1);
             <http::Response::<
                 http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>,
             > as pavex_runtime::response::IntoResponse>::into_response(v2)
         }
-        Err(v1) => v1,
     }
 }

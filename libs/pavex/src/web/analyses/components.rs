@@ -354,20 +354,13 @@ impl ComponentDb {
                     let fallible_component_id =
                         user_component_id2component_id[&fallible_user_component_id];
                     let err_match_id = self_.fallible_id2match_ids[&fallible_component_id].1;
-                    let err_type = self_
-                        .hydrated_component(err_match_id, computation_db)
-                        .output_type()
-                        .to_owned();
-                    let err_ref_id = self_.add_synthetic_transformer(
-                        BorrowSharedReference::new(err_type).into(),
-                        err_match_id,
-                        self_.id2lifecycle[&err_match_id].clone(),
-                        computation_db,
-                    );
-                    self_.borrow_id2owned_id.insert(err_ref_id, err_match_id);
+                    let err_ref_id = self_
+                        .borrow_id2owned_id
+                        .get_by_right(&err_match_id)
+                        .unwrap();
                     self_
                         .err_ref_id2error_handler_id
-                        .insert(err_ref_id, error_handler_id);
+                        .insert(*err_ref_id, error_handler_id);
                 }
                 Some(ErrorHandlerId::UserId(_)) => {}
             }
@@ -543,15 +536,24 @@ impl ComponentDb {
                 computation_db,
             );
 
-            // For each Result type, register a match transformer that transforms
-            // `Result<T,E>` into `E`.
+            // For each Result type, register:
+            // - a match transformer that transforms `Result<T,E>` into `E`.
+            // - a synthetic transformer that transforms `E` into `&E`.
+            let error_type = err.output.clone();
             let err: Computation = err.into();
             let err_id = self.add_synthetic_transformer(
                 err.into_owned(),
                 constructor_id,
+                lifecycle.clone(),
+                computation_db,
+            );
+            let err_ref_id = self.add_synthetic_transformer(
+                BorrowSharedReference::new(error_type).into(),
+                err_id,
                 lifecycle,
                 computation_db,
             );
+            self.borrow_id2owned_id.insert(err_ref_id, err_id);
 
             self.fallible_id2match_ids
                 .insert(constructor_id, (ok_id, err_id));
@@ -775,6 +777,14 @@ impl ComponentDb {
                     });
                 self.error_handler_id2error_handler
                     .insert(bound_error_component_id, bound_error_handler);
+
+                let bound_err_match_id = self.fallible_id2match_ids[&bound_component_id].1;
+                let bound_err_ref_id = self
+                    .borrow_id2owned_id
+                    .get_by_right(&bound_err_match_id)
+                    .unwrap();
+                self.err_ref_id2error_handler_id
+                    .insert(*bound_err_ref_id, bound_error_component_id);
             }
         }
         bound_component_id
