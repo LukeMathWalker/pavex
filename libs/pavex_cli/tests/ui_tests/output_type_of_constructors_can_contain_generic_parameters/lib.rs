@@ -4,7 +4,9 @@ pub fn json<T>() -> Json<T> {
     todo!()
 }
 
-pub struct Json<T>(T);
+// Using on a purpose a generic parameter that is named differently than the generic parameter
+// that appears in the constructor, the `json` function (`T` vs `V`).
+pub struct Json<V>(V);
 
 pub fn fallible<T>() -> Result<Form<T>, FallibleError> {
     todo!()
@@ -16,7 +18,17 @@ pub fn error_handler(e: &FallibleError) -> pavex_runtime::response::Response {
     todo!()
 }
 
-pub struct Form<T>(T);
+pub fn fallible_with_generic_error<T>() -> Result<Form<T>, GenericError<T>> {
+    todo!()
+}
+
+pub fn generic_error_handler<S>(e: &GenericError<S>) -> pavex_runtime::response::Response {
+    todo!()
+}
+
+pub struct GenericError<P>(P);
+
+pub struct Form<V>(V);
 
 // The generic parameters of all inputs types are fully specified!
 pub fn handler(
@@ -33,6 +45,11 @@ pub fn blueprint() -> Blueprint {
     bp.constructor(f!(crate::json), Lifecycle::RequestScoped);
     bp.constructor(f!(crate::fallible), Lifecycle::RequestScoped)
         .error_handler(f!(crate::error_handler));
+    bp.constructor(
+        f!(crate::fallible_with_generic_error),
+        Lifecycle::RequestScoped,
+    )
+    .error_handler(f!(crate::generic_error_handler));
     bp.route(GET, "/home", f!(crate::handler));
     bp
 }
