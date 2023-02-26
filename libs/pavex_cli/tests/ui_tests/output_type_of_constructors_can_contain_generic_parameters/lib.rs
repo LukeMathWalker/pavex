@@ -4,7 +4,7 @@ pub fn json<T>() -> Json<T> {
     todo!()
 }
 
-// Using on a purpose a generic parameter that is named differently than the generic parameter
+// Using on purpose a generic parameter that is named differently than the generic parameter
 // that appears in the constructor, the `json` function (`T` vs `V`).
 pub struct Json<V>(V);
 

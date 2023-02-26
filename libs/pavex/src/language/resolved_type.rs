@@ -1,5 +1,6 @@
 use std::fmt::Write;
 use std::fmt::{Debug, Display, Formatter};
+use std::hash::{Hash, Hasher};
 
 use ahash::{HashMap, HashMapExt};
 use anyhow::Context;
@@ -7,6 +8,9 @@ use bimap::BiHashMap;
 use guppy::PackageId;
 use serde::{Deserializer, Serializer};
 
+use crate::language::resolved_type::generics_equivalence::{
+    generic_arguments_are_equivalent, UnassignedIdGenerator,
+};
 use crate::language::{ImportPath, ResolvedPath, ResolvedPathSegment};
 
 #[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Hash, Clone)]
@@ -329,7 +333,8 @@ pub struct TypeReference {
     pub inner: Box<ResolvedType>,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Hash, Clone)]
+// TODO: implement Hash manually
+#[derive(serde::Serialize, serde::Deserialize, Eq, Clone)]
 pub struct ResolvedPathType {
     #[serde(serialize_with = "serialize_package_id")]
     #[serde(deserialize_with = "deserialize_package_id")]
@@ -344,6 +349,119 @@ pub struct ResolvedPathType {
     pub rustdoc_id: Option<rustdoc_types::Id>,
     pub base_type: ImportPath,
     pub generic_arguments: Vec<GenericArgument>,
+}
+
+mod generics_equivalence {
+    use std::collections::HashMap;
+
+    use crate::language::GenericArgument;
+
+    /// Returns `true` if the two lists of generic arguments are equivalent.
+    ///
+    /// Two lists of generic arguments are equivalent if:
+    ///
+    /// - All the assigned type parameters are the same;
+    /// - All the assigned lifetime parameters are the same;
+    /// - If there is a bijective renaming such that all the unassigned type parameters are the same.
+    ///
+    /// For example, `Vec<S, T>` and `Vec<T, S>` are equivalent - we just need to swap `S` and `T`.
+    /// `Vec<S, T>` and `Vec<S, S>`, instead, are not equivalent - the latter requires both parameters
+    /// to be identical, therefore there is no bijective renaming that can transform `Vec<S, T>`
+    /// into `Vec<S, S>`.
+    pub(super) fn generic_arguments_are_equivalent(
+        first_generic_args: &[GenericArgument],
+        second_generic_args: &[GenericArgument],
+    ) -> bool {
+        if first_generic_args.len() != second_generic_args.len() {
+            return false;
+        }
+        let mut first_id_gen = UnassignedIdGenerator::new();
+        let mut second_id_gen = UnassignedIdGenerator::new();
+        first_generic_args
+            .iter()
+            .zip(second_generic_args)
+            .all(|(first, second)| {
+                if let (
+                    GenericArgument::UnassignedTypeParameter(first),
+                    GenericArgument::UnassignedTypeParameter(second),
+                ) = (first, second)
+                {
+                    first_id_gen.id(&first.name) == second_id_gen.id(&second.name)
+                } else {
+                    first == second
+                }
+            })
+    }
+
+    /// To make the comparison easier, we assign a monotonically increasing unique id to all
+    /// unassigned type parameters.
+    /// If the ids match, we know that the two sequences of unassigned type parameters are equivalent.
+    pub(super) struct UnassignedIdGenerator<'a> {
+        next_id: usize,
+        known_ids: HashMap<&'a str, usize>,
+    }
+
+    impl<'a> UnassignedIdGenerator<'a> {
+        pub(super) fn new() -> Self {
+            Self {
+                next_id: 0,
+                known_ids: HashMap::new(),
+            }
+        }
+
+        pub(super) fn id<'b>(&'b mut self, name: &'a str) -> usize
+        where
+            'a: 'b,
+        {
+            if let Some(id) = self.known_ids.get(&name) {
+                *id
+            } else {
+                let id = self.next_id;
+                self.next_id += 1;
+                self.known_ids.insert(name, id);
+                id
+            }
+        }
+    }
+}
+
+impl PartialEq for ResolvedPathType {
+    fn eq(&self, other: &Self) -> bool {
+        let Self {
+            package_id,
+            rustdoc_id,
+            base_type,
+            generic_arguments,
+        } = self;
+        package_id == other.package_id
+            && rustdoc_id == &other.rustdoc_id
+            && base_type == &other.base_type
+            && generic_arguments_are_equivalent(generic_arguments, &other.generic_arguments)
+    }
+}
+
+impl Hash for ResolvedPathType {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let Self {
+            package_id,
+            rustdoc_id,
+            base_type,
+            generic_arguments,
+        } = self;
+        package_id.hash(state);
+        rustdoc_id.hash(state);
+        base_type.hash(state);
+        let mut id_gen = UnassignedIdGenerator::new();
+        for generic_argument in generic_arguments {
+            if let GenericArgument::UnassignedTypeParameter(unassigned_type_parameter) =
+                generic_argument
+            {
+                id_gen.id(&unassigned_type_parameter.name).hash(state);
+            } else {
+                generic_argument.hash(state);
+            }
+        }
+    }
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Hash, Clone)]
