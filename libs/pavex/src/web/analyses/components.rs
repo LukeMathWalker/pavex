@@ -243,15 +243,14 @@ impl ComponentDb {
                             computation_db,
                         );
 
-                        // For each Result type, register a match transformer that transforms
-                        // `Result<T,E>` into `E`.
+                        // For each Result type register a match transformer that
+                        // transforms `Result<T,E>` into `E`.
                         let err_id = self_.add_synthetic_transformer(
                             err.into(),
                             handler_id,
-                            lifecycle,
+                            lifecycle.clone(),
                             computation_db,
                         );
-
                         self_
                             .fallible_id2match_ids
                             .insert(handler_id, (ok_id, err_id));
@@ -350,17 +349,25 @@ impl ComponentDb {
                         diagnostics,
                     );
                 }
-                Some(ErrorHandlerId::Id(error_handler_id)) => {
+                Some(ErrorHandlerId::Id(err_handler_id)) => {
                     let fallible_component_id =
                         user_component_id2component_id[&fallible_user_component_id];
                     let err_match_id = self_.fallible_id2match_ids[&fallible_component_id].1;
-                    let err_ref_id = self_
-                        .borrow_id2owned_id
-                        .get_by_right(&err_match_id)
-                        .unwrap();
+                    let error_type = self_
+                        .hydrated_component(err_match_id, computation_db)
+                        .output_type()
+                        .to_owned();
+                    let err_ref_id = self_.add_synthetic_transformer(
+                        BorrowSharedReference::new(error_type).into(),
+                        err_match_id,
+                        self_.id2lifecycle[&fallible_component_id].clone(),
+                        computation_db,
+                    );
+
+                    self_.borrow_id2owned_id.insert(err_ref_id, err_match_id);
                     self_
                         .err_ref_id2error_handler_id
-                        .insert(*err_ref_id, error_handler_id);
+                        .insert(err_ref_id, err_handler_id);
                 }
                 Some(ErrorHandlerId::UserId(_)) => {}
             }
@@ -538,7 +545,7 @@ impl ComponentDb {
 
             // For each Result type, register:
             // - a match transformer that transforms `Result<T,E>` into `E`.
-            // - a synthetic transformer that transforms `E` into `&E`.
+            // - a synthetic transformer that transforms `E` into `&E` (if it's not a singleton)
             let error_type = err.output.clone();
             let err: Computation = err.into();
             let err_id = self.add_synthetic_transformer(
@@ -547,18 +554,20 @@ impl ComponentDb {
                 lifecycle.clone(),
                 computation_db,
             );
-            let err_ref_id = self.add_synthetic_transformer(
-                BorrowSharedReference::new(error_type).into(),
-                err_id,
-                lifecycle,
-                computation_db,
-            );
-            self.borrow_id2owned_id.insert(err_ref_id, err_id);
-
             self.fallible_id2match_ids
                 .insert(constructor_id, (ok_id, err_id));
             self.match_id2fallible_id.insert(ok_id, constructor_id);
             self.match_id2fallible_id.insert(err_id, constructor_id);
+
+            if lifecycle != Lifecycle::Singleton {
+                let err_ref_id = self.add_synthetic_transformer(
+                    BorrowSharedReference::new(error_type).into(),
+                    err_id,
+                    lifecycle,
+                    computation_db,
+                );
+                self.borrow_id2owned_id.insert(err_ref_id, err_id);
+            }
         }
     }
 
@@ -727,6 +736,49 @@ impl ComponentDb {
                 let c = &computation_db[*computation_id];
                 HydratedComponent::Transformer(c.clone())
             }
+        }
+    }
+}
+
+impl ComponentDb {
+    /// Print to stdout a debug dump of the component database, primarily for debugging
+    /// purposes.
+    #[allow(unused)]
+    pub(crate) fn debug_dump(&self, computation_db: &ComputationDb) {
+        for (component_id, _) in self.iter() {
+            println!(
+                "Component id: {:?}\nHydrated component: {:?}",
+                component_id,
+                self.hydrated_component(component_id, &computation_db),
+            );
+
+            println!("Matchers:");
+            if let Some((ok_id, err_id)) = self.match_ids(component_id) {
+                let matchers = format!(
+                    "- Ok: {:?}\n- Err: {:?}",
+                    self.hydrated_component(*ok_id, &computation_db),
+                    self.hydrated_component(*err_id, &computation_db)
+                );
+                println!("{}", textwrap::indent(&matchers, "  "));
+            }
+            println!("Error handler:");
+            if let Some(err_handler_id) = self.error_handler_id(component_id) {
+                let error_handler = format!(
+                    "{:?}",
+                    self.hydrated_component(*err_handler_id, &computation_db)
+                );
+                println!("{}", textwrap::indent(&error_handler, "  "));
+            }
+            println!("Transformers:");
+            if let Some(transformer_ids) = self.transformer_ids(component_id) {
+                let transformers = transformer_ids
+                    .iter()
+                    .map(|id| format!("- {:?}", self.hydrated_component(*id, &computation_db)))
+                    .collect::<Vec<_>>()
+                    .join("\n");
+                println!("{}", textwrap::indent(&transformers, "  "));
+            }
+            println!();
         }
     }
 }

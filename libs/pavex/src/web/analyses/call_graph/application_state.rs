@@ -105,10 +105,14 @@ pub(crate) fn application_state_call_graph(
                 unreachable!()
             };
             let component = component_db.hydrated_component(*component_id, computation_db);
-            assert!(matches!(
-                component,
-                HydratedComponent::Transformer(Computation::MatchResult(_)),
-            ));
+            assert!(
+                matches!(
+                    component,
+                    HydratedComponent::Transformer(Computation::MatchResult(_)),
+                ),
+                "One of the output components is not a `MatchResult` transformer: {:?}",
+                component
+            );
             map.entry(component.output_type().to_owned())
                 .or_default()
                 .insert(*component_id);

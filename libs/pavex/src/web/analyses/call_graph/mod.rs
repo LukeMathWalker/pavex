@@ -507,7 +507,7 @@ impl CallGraph {
 /// Return a representation of the [`CallGraph`] in graphviz's .DOT format, geared towards
 /// debugging.
 #[allow(unused)]
-fn debug_dot(
+pub(crate) fn debug_dot(
     g: &StableDiGraph<CallGraphNode, ()>,
     component_db: &ComponentDb,
     computation_db: &ComputationDb,

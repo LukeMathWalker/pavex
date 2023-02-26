@@ -1,8 +1,6 @@
 use pavex_builder::Lifecycle;
 
-use crate::web::analyses::call_graph::{
-    build_call_graph, debug_dot, CallGraph, NumberOfAllowedInvocations,
-};
+use crate::web::analyses::call_graph::{build_call_graph, CallGraph, NumberOfAllowedInvocations};
 use crate::web::analyses::components::{ComponentDb, ComponentId};
 use crate::web::analyses::computations::ComputationDb;
 use crate::web::analyses::constructibles::ConstructibleDb;
@@ -32,8 +30,6 @@ pub(crate) fn handler_call_graph(
         constructible_db,
         lifecycle2invocations,
     );
-
-    println!("{}", debug_dot(&call_graph, &component_db, &computation_db));
 
     CallGraph {
         call_graph,
