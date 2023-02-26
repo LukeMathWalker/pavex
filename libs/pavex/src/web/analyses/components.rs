@@ -297,16 +297,13 @@ impl ComponentDb {
                 );
                 match ErrorHandler::new(error_handler_callable.to_owned(), fallible_callable) {
                     Ok(e) => {
-                        let error_handler_id =
-                            self_.interner.get_or_intern(Component::ErrorHandler {
-                                source_id: error_handler_user_component_id.into(),
-                            });
-                        self_
-                            .error_handler_id2error_handler
-                            .insert(error_handler_id, e);
-                        self_
-                            .id2lifecycle
-                            .insert(error_handler_id, lifecycle.to_owned());
+                        let error_handler_id = self_.add_error_handler(
+                            e,
+                            user_component_id2component_id[&fallible_user_component_id],
+                            lifecycle.to_owned(),
+                            error_handler_user_component_id.into(),
+                            computation_db,
+                        );
                         user_component_id2component_id
                             .insert(error_handler_user_component_id, error_handler_id);
                         fallible_component_id2error_handler_id.insert(
@@ -339,35 +336,14 @@ impl ComponentDb {
 
         for (fallible_user_component_id, error_handler_id) in fallible_component_id2error_handler_id
         {
-            match error_handler_id {
-                None => {
-                    Self::missing_error_handler(
-                        fallible_user_component_id,
-                        user_component_db,
-                        package_graph,
-                        raw_identifiers_db,
-                        diagnostics,
-                    );
-                }
-                Some(ErrorHandlerId::Id(err_handler_id)) => {
-                    let fallible_component_id =
-                        user_component_id2component_id[&fallible_user_component_id];
-                    let err_match_id = self_.fallible_id2match_ids[&fallible_component_id].1;
-                    let error_type = self_
-                        .hydrated_component(err_match_id, computation_db)
-                        .output_type()
-                        .to_owned();
-                    let err_ref_id = self_.add_synthetic_transformer(
-                        BorrowSharedReference::new(error_type).into(),
-                        err_match_id,
-                        self_.id2lifecycle[&fallible_component_id].clone(),
-                        computation_db,
-                    );
-                    self_
-                        .err_ref_id2error_handler_id
-                        .insert(err_ref_id, err_handler_id);
-                }
-                Some(ErrorHandlerId::UserId(_)) => {}
+            if error_handler_id.is_none() {
+                Self::missing_error_handler(
+                    fallible_user_component_id,
+                    user_component_db,
+                    package_graph,
+                    raw_identifiers_db,
+                    diagnostics,
+                );
             }
         }
 
@@ -449,6 +425,41 @@ impl ComponentDb {
         }
 
         self_
+    }
+
+    fn add_error_handler(
+        &mut self,
+        e: ErrorHandler,
+        fallible_component_id: ComponentId,
+        lifecycle: Lifecycle,
+        source_id: SourceId,
+        computation_db: &mut ComputationDb,
+    ) -> ComponentId {
+        let error_handler_id = self
+            .interner
+            .get_or_intern(Component::ErrorHandler { source_id });
+        self.error_handler_id2error_handler
+            .insert(error_handler_id, e);
+        self.id2lifecycle.insert(error_handler_id, lifecycle);
+
+        // Add an `E -> &E` transformer, otherwise we'll a missing link between the fallible
+        // component and the error handler, since the latter takes a _reference_ to the error as
+        // input parameter.
+        let error_match_id = self.fallible_id2match_ids[&fallible_component_id].1;
+        let error_type = self
+            .hydrated_component(error_match_id, computation_db)
+            .output_type()
+            .to_owned();
+        let error_ref_id = self.add_synthetic_transformer(
+            BorrowSharedReference::new(error_type).into(),
+            error_match_id,
+            self.id2lifecycle[&fallible_component_id].clone(),
+            computation_db,
+        );
+        self.err_ref_id2error_handler_id
+            .insert(error_ref_id, error_handler_id);
+
+        error_handler_id
     }
 
     /// Retrieve the lifecycle for a component.
@@ -810,32 +821,13 @@ impl ComponentDb {
                 let HydratedComponent::ErrorHandler(error_handler) = self.hydrated_component(err_handler_id, computation_db) else { unreachable!() };
                 // TODO: Can we actually use the same bindings here?
                 let bound_error_handler = error_handler.bind_generic_type_parameters(bindings);
-                let bound_error_computation_id =
-                    computation_db.get_or_intern(bound_error_handler.callable.clone());
-                let bound_error_component_id =
-                    self.interner.get_or_intern(Component::ErrorHandler {
-                        source_id: SourceId::ComputationId(bound_error_computation_id),
-                    });
-                self.id2lifecycle
-                    .insert(bound_error_component_id, lifecycle.clone());
-                self.error_handler_id2error_handler
-                    .insert(bound_error_component_id, bound_error_handler);
-                let bound_err_match_id = self.fallible_id2match_ids[&bound_component_id].1;
-
-                // We must not forget to register the E -> &E transformer! Otherwise we'll have a missing
-                // link between the Err matcher and the error handler itself.
-                let bound_error_type = self
-                    .hydrated_component(bound_err_match_id, computation_db)
-                    .output_type()
-                    .to_owned();
-                let bound_err_ref_id = self.add_synthetic_transformer(
-                    BorrowSharedReference::new(bound_error_type).into(),
-                    bound_err_match_id,
+                let bound_error_component_id = self.add_error_handler(
+                    bound_error_handler,
+                    bound_component_id,
                     lifecycle.clone(),
+                    bound_computation_id.into(),
                     computation_db,
                 );
-                self.err_ref_id2error_handler_id
-                    .insert(bound_err_ref_id, bound_error_component_id);
 
                 // Finally, we need to bound the error handler's transformers.
                 if let Some(transformer_ids) = self.transformer_ids(err_handler_id).cloned() {
