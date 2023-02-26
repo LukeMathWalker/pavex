@@ -363,8 +363,6 @@ impl ComponentDb {
                         self_.id2lifecycle[&fallible_component_id].clone(),
                         computation_db,
                     );
-
-                    self_.borrow_id2owned_id.insert(err_ref_id, err_match_id);
                     self_
                         .err_ref_id2error_handler_id
                         .insert(err_ref_id, err_handler_id);
@@ -493,6 +491,7 @@ impl ComponentDb {
         l: Lifecycle,
         computation_db: &mut ComputationDb,
     ) -> ComponentId {
+        let is_borrow = matches!(&computation, Computation::BorrowSharedReference(_));
         let computation_id = computation_db.get_or_intern(computation);
         let id = self
             .interner
@@ -502,6 +501,9 @@ impl ComponentDb {
             .entry(transformed_id)
             .or_default()
             .insert(id);
+        if is_borrow {
+            self.borrow_id2owned_id.insert(id, transformed_id);
+        }
         id
     }
 
@@ -543,13 +545,9 @@ impl ComponentDb {
                 computation_db,
             );
 
-            // For each Result type, register:
-            // - a match transformer that transforms `Result<T,E>` into `E`.
-            // - a synthetic transformer that transforms `E` into `&E` (if it's not a singleton)
-            let error_type = err.output.clone();
-            let err: Computation = err.into();
+            // For each Result type, register a match transformer that transforms `Result<T,E>` into `E`.
             let err_id = self.add_synthetic_transformer(
-                err.into_owned(),
+                err.into(),
                 constructor_id,
                 lifecycle.clone(),
                 computation_db,
@@ -558,16 +556,6 @@ impl ComponentDb {
                 .insert(constructor_id, (ok_id, err_id));
             self.match_id2fallible_id.insert(ok_id, constructor_id);
             self.match_id2fallible_id.insert(err_id, constructor_id);
-
-            if lifecycle != Lifecycle::Singleton {
-                let err_ref_id = self.add_synthetic_transformer(
-                    BorrowSharedReference::new(error_type).into(),
-                    err_id,
-                    lifecycle,
-                    computation_db,
-                );
-                self.borrow_id2owned_id.insert(err_ref_id, err_id);
-            }
         }
     }
 
@@ -747,9 +735,10 @@ impl ComponentDb {
     pub(crate) fn debug_dump(&self, computation_db: &ComputationDb) {
         for (component_id, _) in self.iter() {
             println!(
-                "Component id: {:?}\nHydrated component: {:?}",
+                "Component id: {:?}\nHydrated component: {:?}\nLifecycle: {:?}",
                 component_id,
                 self.hydrated_component(component_id, &computation_db),
+                self.lifecycle(component_id)
             );
 
             println!("Matchers:");
@@ -796,7 +785,7 @@ impl ComponentDb {
     /// # Panics
     ///
     /// Panics if the component with id `id` is not a constructor.
-    pub fn bind(
+    pub fn bind_generic_type_parameters(
         &mut self,
         id: ComponentId,
         bindings: &HashMap<NamedTypeGeneric, ResolvedType>,
@@ -810,7 +799,7 @@ impl ComponentDb {
             .into_owned();
         let bound_computation_id = computation_db.get_or_intern(bound_computation);
         let bound_component_id = self
-            .get_or_intern_constructor(bound_computation_id, lifecycle, computation_db)
+            .get_or_intern_constructor(bound_computation_id, lifecycle.clone(), computation_db)
             .unwrap();
         // ^ This registers all "derived" constructors as well (borrowed references, matchers, etc.)
         // but it doesn't take care of the error handler, in case `id` pointed to a fallible constructor.
@@ -827,16 +816,42 @@ impl ComponentDb {
                     self.interner.get_or_intern(Component::ErrorHandler {
                         source_id: SourceId::ComputationId(bound_error_computation_id),
                     });
+                self.id2lifecycle
+                    .insert(bound_error_component_id, lifecycle.clone());
                 self.error_handler_id2error_handler
                     .insert(bound_error_component_id, bound_error_handler);
-
                 let bound_err_match_id = self.fallible_id2match_ids[&bound_component_id].1;
-                let bound_err_ref_id = self
-                    .borrow_id2owned_id
-                    .get_by_right(&bound_err_match_id)
-                    .unwrap();
+
+                // We must not forget to register the E -> &E transformer! Otherwise we'll have a missing
+                // link between the Err matcher and the error handler itself.
+                let bound_error_type = self
+                    .hydrated_component(bound_err_match_id, computation_db)
+                    .output_type()
+                    .to_owned();
+                let bound_err_ref_id = self.add_synthetic_transformer(
+                    BorrowSharedReference::new(bound_error_type).into(),
+                    bound_err_match_id,
+                    lifecycle.clone(),
+                    computation_db,
+                );
                 self.err_ref_id2error_handler_id
-                    .insert(*bound_err_ref_id, bound_error_component_id);
+                    .insert(bound_err_ref_id, bound_error_component_id);
+
+                // Finally, we need to bound the error handler's transformers.
+                if let Some(transformer_ids) = self.transformer_ids(err_handler_id).cloned() {
+                    for transformer_id in transformer_ids {
+                        let HydratedComponent::Transformer(transformer) = self.hydrated_component(transformer_id, computation_db) else { unreachable!() };
+                        let bound_transformer = transformer
+                            .bind_generic_type_parameters(bindings)
+                            .into_owned();
+                        self.add_synthetic_transformer(
+                            bound_transformer,
+                            bound_error_component_id,
+                            lifecycle.clone(),
+                            computation_db,
+                        );
+                    }
+                }
             }
         }
         bound_component_id

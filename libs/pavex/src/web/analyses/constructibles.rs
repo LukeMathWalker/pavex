@@ -261,7 +261,8 @@ fn bind_and_register_constructor(
         Computation::MatchResult(_) => component_db.fallible_id(templated_component_id),
         Computation::BorrowSharedReference(_) => component_db.owned_id(templated_component_id),
     };
-    let bound_component_id = component_db.bind(templated_component_id, bindings, computation_db);
+    let bound_component_id =
+        component_db.bind_generic_type_parameters(templated_component_id, bindings, computation_db);
     let mut derived_component_ids = component_db.derived_component_ids(bound_component_id);
     derived_component_ids.push(bound_component_id);
     for derived_component_id in derived_component_ids {
