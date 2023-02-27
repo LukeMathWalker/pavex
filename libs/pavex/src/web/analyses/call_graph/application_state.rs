@@ -196,6 +196,7 @@ pub(crate) fn application_state_call_graph(
     component_db.get_or_intern_transformer(
         computation_db.get_or_intern(ok_wrapper),
         application_state_id,
+        computation_db,
     );
 
     let mut error_variants = IndexMap::new();
@@ -256,11 +257,13 @@ pub(crate) fn application_state_call_graph(
             let transformer_id = component_db.get_or_intern_transformer(
                 computation_db.get_or_intern(error_variant_constructor.clone()),
                 *err_match_id,
+                computation_db,
             );
             // We need to do an Err(..) wrap around the error variant returned by the transformer.
             component_db.get_or_intern_transformer(
                 computation_db.get_or_intern(err_wrapper.clone()),
                 transformer_id,
+                computation_db,
             );
         }
     }

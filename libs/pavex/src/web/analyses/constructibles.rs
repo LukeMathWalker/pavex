@@ -59,75 +59,95 @@ impl ConstructibleDb {
             templated_constructors,
         };
 
-        let component_ids = component_db.iter().map(|(id, _)| id).collect::<Vec<_>>();
-        for component_id in component_ids {
-            let resolved_component = component_db.hydrated_component(component_id, computation_db);
-            // We don't support dependency injection for transformers (yet).
-            if let HydratedComponent::Transformer(_) = &resolved_component {
-                continue;
-            }
-
-            if let HydratedComponent::Constructor(_) = &resolved_component {
-                let lifecycle = component_db.lifecycle(component_id).unwrap();
-                if lifecycle == &Lifecycle::Singleton {
+        let mut component_ids = component_db.iter().map(|(id, _)| id).collect::<Vec<_>>();
+        let mut n_component_ids = component_ids.len();
+        loop {
+            for component_id in component_ids {
+                let resolved_component =
+                    component_db.hydrated_component(component_id, computation_db);
+                // We don't support dependency injection for transformers (yet).
+                if let HydratedComponent::Transformer(_) = &resolved_component {
                     continue;
                 }
-            }
 
-            let input_types = {
-                let mut input_types: Vec<Option<ResolvedType>> = resolved_component
-                    .input_types()
-                    .iter()
-                    .map(|i| Some(i.to_owned()))
-                    .collect();
-                // Errors happen, they are not "constructed" (we use a transformer instead).
-                // Therefore we skip the error input type for error handlers.
-                if let HydratedComponent::ErrorHandler(e) = &resolved_component {
-                    input_types[e.error_input_index] = None;
-                }
-                input_types
-            };
-
-            'outer: for (input_index, input) in input_types.into_iter().enumerate() {
-                let input = match input.as_ref() {
-                    Some(i) => i,
-                    None => {
+                if let HydratedComponent::Constructor(_) = &resolved_component {
+                    let lifecycle = component_db.lifecycle(component_id).unwrap();
+                    if lifecycle == &Lifecycle::Singleton {
                         continue;
                     }
+                }
+
+                let input_types = {
+                    let mut input_types: Vec<Option<ResolvedType>> = resolved_component
+                        .input_types()
+                        .iter()
+                        .map(|i| Some(i.to_owned()))
+                        .collect();
+                    // Errors happen, they are not "constructed" (we use a transformer instead).
+                    // Therefore we skip the error input type for error handlers.
+                    if let HydratedComponent::ErrorHandler(e) = &resolved_component {
+                        input_types[e.error_input_index] = None;
+                    }
+                    input_types
                 };
-                if request_scoped_framework_types.contains(input) {
-                    continue;
-                }
-                if self_.get(input).is_some() {
-                    continue;
-                }
-                for templated_constructible_type in &self_.templated_constructors {
-                    if let Some(bindings) = templated_constructible_type.is_a_template_for(input) {
-                        bind_and_register_constructor(
-                            self_[templated_constructible_type],
-                            component_db,
+
+                'outer: for (input_index, input) in input_types.into_iter().enumerate() {
+                    let input = match input.as_ref() {
+                        Some(i) => i,
+                        None => {
+                            continue;
+                        }
+                    };
+                    if request_scoped_framework_types.contains(input) {
+                        continue;
+                    }
+                    if self_.get(input).is_some() {
+                        continue;
+                    }
+                    for templated_constructible_type in &self_.templated_constructors {
+                        if let Some(bindings) =
+                            templated_constructible_type.is_a_template_for(input)
+                        {
+                            bind_and_register_constructor(
+                                self_[templated_constructible_type],
+                                component_db,
+                                computation_db,
+                                &mut self_,
+                                &bindings,
+                            );
+                            continue 'outer;
+                        }
+                    }
+                    if let Some(user_component_id) = component_db.user_component_id(component_id) {
+                        ConstructibleDb::missing_constructor(
+                            user_component_id,
+                            user_component_db,
+                            input,
+                            input_index,
+                            package_graph,
+                            krate_collection,
+                            raw_identifiers_db,
                             computation_db,
-                            &mut self_,
-                            &bindings,
-                        );
-                        continue 'outer;
+                            diagnostics,
+                        )
+                    } else {
+                        unreachable!()
                     }
                 }
-                if let Some(user_component_id) = component_db.user_component_id(component_id) {
-                    ConstructibleDb::missing_constructor(
-                        user_component_id,
-                        user_component_db,
-                        input,
-                        input_index,
-                        package_graph,
-                        krate_collection,
-                        raw_identifiers_db,
-                        computation_db,
-                        diagnostics,
-                    )
-                } else {
-                    unreachable!()
-                }
+            }
+
+            // If we didn't add any new component IDs, we're done.
+            // Otherwise, we need to determine the list of component IDs that we are yet to examine.
+            let new_component_ids: Vec<_> = component_db
+                .iter()
+                .skip(n_component_ids)
+                .map(|(id, _)| id)
+                .collect();
+            if new_component_ids.is_empty() {
+                break;
+            } else {
+                n_component_ids = n_component_ids + new_component_ids.len();
+                component_ids = new_component_ids;
             }
         }
 

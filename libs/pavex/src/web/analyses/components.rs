@@ -31,10 +31,19 @@ use crate::web::utils::{get_err_variant, get_ok_variant, is_result, process_fram
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) enum Component {
-    RequestHandler { user_component_id: UserComponentId },
-    ErrorHandler { source_id: SourceId },
-    Constructor { source_id: SourceId },
-    Transformer { computation_id: ComputationId },
+    RequestHandler {
+        user_component_id: UserComponentId,
+    },
+    ErrorHandler {
+        source_id: SourceId,
+    },
+    Constructor {
+        source_id: SourceId,
+    },
+    Transformer {
+        computation_id: ComputationId,
+        transformed_component_id: ComponentId,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
@@ -236,21 +245,13 @@ impl ComponentDb {
                         let m = MatchResult::match_result(h.output_type());
                         let (ok, err) = (m.ok, m.err);
 
-                        let ok_id = self_.add_synthetic_transformer(
-                            ok.into(),
-                            handler_id,
-                            lifecycle.clone(),
-                            computation_db,
-                        );
+                        let ok_id =
+                            self_.add_synthetic_transformer(ok.into(), handler_id, computation_db);
 
                         // For each Result type register a match transformer that
                         // transforms `Result<T,E>` into `E`.
-                        let err_id = self_.add_synthetic_transformer(
-                            err.into(),
-                            handler_id,
-                            lifecycle.clone(),
-                            computation_db,
-                        );
+                        let err_id =
+                            self_.add_synthetic_transformer(err.into(), handler_id, computation_db);
                         self_
                             .fallible_id2match_ids
                             .insert(handler_id, (ok_id, err_id));
@@ -408,7 +409,7 @@ impl ComponentDb {
             };
             match computation_db.resolve_callable(krate_collection, &transformer_path, None) {
                 Ok(callable_id) => {
-                    self_.get_or_intern_transformer(callable_id, component_id);
+                    self_.get_or_intern_transformer(callable_id, component_id, computation_db);
                 }
                 Err(e) => {
                     Self::cannot_handle_into_response_implementation(
@@ -453,7 +454,6 @@ impl ComponentDb {
         let error_ref_id = self.add_synthetic_transformer(
             BorrowSharedReference::new(error_type).into(),
             error_match_id,
-            self.id2lifecycle[&fallible_component_id].clone(),
             computation_db,
         );
         self.err_ref_id2error_handler_id
@@ -492,29 +492,6 @@ impl ComponentDb {
         });
         self.id2lifecycle.insert(id, l);
         self.register_derived_constructors(id, computation_db);
-        id
-    }
-
-    fn add_synthetic_transformer(
-        &mut self,
-        computation: Computation<'static>,
-        transformed_id: ComponentId,
-        l: Lifecycle,
-        computation_db: &mut ComputationDb,
-    ) -> ComponentId {
-        let is_borrow = matches!(&computation, Computation::BorrowSharedReference(_));
-        let computation_id = computation_db.get_or_intern(computation);
-        let id = self
-            .interner
-            .get_or_intern(Component::Transformer { computation_id });
-        self.id2lifecycle.insert(id, l);
-        self.id2transformer_ids
-            .entry(transformed_id)
-            .or_default()
-            .insert(id);
-        if is_borrow {
-            self.borrow_id2owned_id.insert(id, transformed_id);
-        }
         id
     }
 
@@ -557,12 +534,7 @@ impl ComponentDb {
             );
 
             // For each Result type, register a match transformer that transforms `Result<T,E>` into `E`.
-            let err_id = self.add_synthetic_transformer(
-                err.into(),
-                constructor_id,
-                lifecycle.clone(),
-                computation_db,
-            );
+            let err_id = self.add_synthetic_transformer(err.into(), constructor_id, computation_db);
             self.fallible_id2match_ids
                 .insert(constructor_id, (ok_id, err_id));
             self.match_id2fallible_id.insert(ok_id, constructor_id);
@@ -587,13 +559,25 @@ impl ComponentDb {
         Ok(constructor_id)
     }
 
+    fn add_synthetic_transformer(
+        &mut self,
+        computation: Computation<'static>,
+        transformed_id: ComponentId,
+        computation_db: &mut ComputationDb,
+    ) -> ComponentId {
+        let computation_id = computation_db.get_or_intern(computation);
+        self.get_or_intern_transformer(computation_id, transformed_id, computation_db)
+    }
+
     pub fn get_or_intern_transformer(
         &mut self,
         callable_id: ComputationId,
         transformed_component_id: ComponentId,
+        computation_db: &ComputationDb,
     ) -> ComponentId {
         let transformer = Component::Transformer {
             computation_id: callable_id,
+            transformed_component_id,
         };
         let transformer_id = self.interner.get_or_intern(transformer);
         self.id2transformer_ids
@@ -604,6 +588,15 @@ impl ComponentDb {
             transformer_id,
             self.lifecycle(transformed_component_id).unwrap().to_owned(),
         );
+
+        let is_borrow = matches!(
+            &computation_db[callable_id],
+            Computation::BorrowSharedReference(_)
+        );
+        if is_borrow {
+            self.borrow_id2owned_id
+                .insert(transformer_id, transformed_component_id);
+        }
         transformer_id
     }
 
@@ -731,7 +724,7 @@ impl ComponentDb {
                 };
                 HydratedComponent::Constructor(Constructor(c))
             }
-            Component::Transformer { computation_id } => {
+            Component::Transformer { computation_id, .. } => {
                 let c = &computation_db[*computation_id];
                 HydratedComponent::Transformer(c.clone())
             }
@@ -912,7 +905,6 @@ impl ComponentDb {
                         self.add_synthetic_transformer(
                             bound_transformer,
                             bound_error_component_id,
-                            lifecycle.clone(),
                             computation_db,
                         );
                     }
