@@ -41,6 +41,7 @@ pub fn handler(
     json_ref: &Json<char>,
     fallible: Form<u64>,
     fallible_with_generic_error: FallibleForm<AType>,
+    fallible_ref_with_generic_error: &FallibleForm<u16>,
 ) -> pavex_runtime::response::Response {
     todo!()
 }
