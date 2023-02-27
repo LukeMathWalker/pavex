@@ -802,6 +802,34 @@ impl ComponentDb {
         bindings: &HashMap<NamedTypeGeneric, ResolvedType>,
         computation_db: &mut ComputationDb,
     ) -> ComponentId {
+        fn _get_root_component_id(
+            component_id: ComponentId,
+            component_db: &ComponentDb,
+            computation_db: &ComputationDb,
+        ) -> ComponentId {
+            let templated_component = component_db
+                .hydrated_component(component_id, computation_db)
+                .into_owned();
+            let HydratedComponent::Constructor(constructor) = templated_component else { unreachable!() };
+            match &constructor.0 {
+                Computation::Callable(_) => component_id,
+                Computation::MatchResult(_) => _get_root_component_id(
+                    component_db.fallible_id(component_id),
+                    component_db,
+                    computation_db,
+                ),
+                Computation::BorrowSharedReference(_) => _get_root_component_id(
+                    component_db.owned_id(component_id),
+                    component_db,
+                    computation_db,
+                ),
+            }
+        }
+
+        // We want to make sure we are binding the root component (i.e. a constructor registered
+        // by the user), not a derived one. If not, we might have resolution issues when computing
+        // the call graph for handlers where these derived components are used.
+        let id = _get_root_component_id(id, self, computation_db);
         let HydratedComponent::Constructor(constructor) = self.hydrated_component(id, computation_db).into_owned() else { unreachable!() };
         let lifecycle = self.lifecycle(id).cloned().unwrap();
         let bound_computation = constructor

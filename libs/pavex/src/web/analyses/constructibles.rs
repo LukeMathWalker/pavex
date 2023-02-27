@@ -17,7 +17,6 @@ use crate::web::analyses::components::{ComponentDb, ComponentId, HydratedCompone
 use crate::web::analyses::computations::ComputationDb;
 use crate::web::analyses::raw_identifiers::RawCallableIdentifiersDb;
 use crate::web::analyses::user_components::{UserComponentDb, UserComponentId};
-use crate::web::computation::Computation;
 
 #[derive(Debug)]
 pub(crate) struct ConstructibleDb {
@@ -252,32 +251,6 @@ fn bind_and_register_constructor(
     constructible_db: &mut ConstructibleDb,
     bindings: &HashMap<NamedTypeGeneric, ResolvedType>,
 ) {
-    fn _get_root_component_id(
-        component_id: ComponentId,
-        component_db: &ComponentDb,
-        computation_db: &ComputationDb,
-    ) -> ComponentId {
-        let templated_component = component_db
-            .hydrated_component(component_id, computation_db)
-            .into_owned();
-        let HydratedComponent::Constructor(constructor) = templated_component else { unreachable!() };
-        match &constructor.0 {
-            Computation::Callable(_) => component_id,
-            Computation::MatchResult(_) => _get_root_component_id(
-                component_db.fallible_id(component_id),
-                component_db,
-                computation_db,
-            ),
-            Computation::BorrowSharedReference(_) => _get_root_component_id(
-                component_db.owned_id(component_id),
-                component_db,
-                computation_db,
-            ),
-        }
-    }
-
-    let templated_component_id =
-        _get_root_component_id(templated_component_id, component_db, computation_db);
     let bound_component_id =
         component_db.bind_generic_type_parameters(templated_component_id, bindings, computation_db);
     let mut derived_component_ids = component_db.derived_component_ids(bound_component_id);
