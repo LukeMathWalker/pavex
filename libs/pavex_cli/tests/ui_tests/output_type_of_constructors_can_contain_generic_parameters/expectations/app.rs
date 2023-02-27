@@ -84,22 +84,40 @@ pub async fn route_handler_0() -> http::Response<
     let v0 = app::fallible_with_generic_error();
     match v0 {
         Ok(v1) => {
-            let v2 = app::fallible();
+            let v2 = app::fallible_with_generic_error();
             match v2 {
                 Ok(v3) => {
-                    let v4 = app::json();
-                    let v5 = app::json();
-                    let v6 = app::json();
-                    let v7 = app::handler(v6, v5, &v4, v3, v1);
-                    <http::Response::<
-                        http_body::combinators::BoxBody::<
-                            bytes::Bytes,
-                            pavex_runtime::Error,
-                        >,
-                    > as pavex_runtime::response::IntoResponse>::into_response(v7)
+                    let v4 = app::fallible();
+                    match v4 {
+                        Ok(v5) => {
+                            let v6 = app::json();
+                            let v7 = app::json();
+                            let v8 = app::json();
+                            let v9 = app::handler(v8, v7, &v6, v5, v3, &v1);
+                            <http::Response::<
+                                http_body::combinators::BoxBody::<
+                                    bytes::Bytes,
+                                    pavex_runtime::Error,
+                                >,
+                            > as pavex_runtime::response::IntoResponse>::into_response(
+                                v9,
+                            )
+                        }
+                        Err(v5) => {
+                            let v6 = app::error_handler(&v5);
+                            <http::Response::<
+                                http_body::combinators::BoxBody::<
+                                    bytes::Bytes,
+                                    pavex_runtime::Error,
+                                >,
+                            > as pavex_runtime::response::IntoResponse>::into_response(
+                                v6,
+                            )
+                        }
+                    }
                 }
                 Err(v3) => {
-                    let v4 = app::error_handler(&v3);
+                    let v4 = app::generic_error_handler(&v3);
                     <http::Response::<
                         http_body::combinators::BoxBody::<
                             bytes::Bytes,
