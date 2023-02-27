@@ -28,6 +28,17 @@ pub(crate) fn get_ok_variant(t: &ResolvedType) -> &ResolvedType {
     t
 }
 
+pub(crate) fn get_err_variant(t: &ResolvedType) -> &ResolvedType {
+    debug_assert!(is_result(t));
+    let ResolvedType::ResolvedPath(t) = t else {
+        unreachable!();
+    };
+    let GenericArgument::AssignedTypeParameter(t) = &t.generic_arguments[1] else {
+        unreachable!()
+    };
+    t
+}
+
 /// Resolve a type path assuming that the crate is a dependency of `pavex_builder`.
 pub(crate) fn process_framework_path(
     raw_path: &str,

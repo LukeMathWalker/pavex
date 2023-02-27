@@ -133,7 +133,7 @@ where
                         .input_types()
                         .iter()
                         // We have already added the error -> error handler edge at this stage.
-                        .filter(|&t| error_handler.error_type() != t)
+                        .filter(|&t| error_handler.error_type_ref() != t)
                         .map(|t| t.to_owned())
                         .collect(),
                     HydratedComponent::Transformer(_) => {

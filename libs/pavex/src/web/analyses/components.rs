@@ -12,7 +12,7 @@ use crate::diagnostic;
 use crate::diagnostic::{CallableType, CompilerDiagnostic, LocationExt, SourceSpanExt};
 use crate::language::{
     NamedTypeGeneric, ResolvedPath, ResolvedPathQualifiedSelf, ResolvedPathSegment,
-    ResolvedPathType, ResolvedType,
+    ResolvedPathType, ResolvedType, TypeReference,
 };
 use crate::rustdoc::CrateCollection;
 use crate::web::analyses::computations::{ComputationDb, ComputationId};
@@ -27,7 +27,7 @@ use crate::web::interner::Interner;
 use crate::web::request_handlers::{RequestHandler, RequestHandlerValidationError};
 use crate::web::resolvers::CallableResolutionError;
 use crate::web::traits::{assert_trait_is_implemented, MissingTraitImplementationError};
-use crate::web::utils::{get_ok_variant, is_result, process_framework_path};
+use crate::web::utils::{get_err_variant, get_ok_variant, is_result, process_framework_path};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) enum Component {
@@ -802,7 +802,7 @@ impl ComponentDb {
         bindings: &HashMap<NamedTypeGeneric, ResolvedType>,
         computation_db: &mut ComputationDb,
     ) -> ComponentId {
-        let HydratedComponent::Constructor(constructor) = self.hydrated_component(id, computation_db) else { unreachable!() };
+        let HydratedComponent::Constructor(constructor) = self.hydrated_component(id, computation_db).into_owned() else { unreachable!() };
         let lifecycle = self.lifecycle(id).cloned().unwrap();
         let bound_computation = constructor
             .0
@@ -819,8 +819,53 @@ impl ComponentDb {
             if let Some(err_ref_id) = self.borrow_id2owned_id.get_by_right(err_match_id) {
                 let err_handler_id = self.err_ref_id2error_handler_id[err_ref_id];
                 let HydratedComponent::ErrorHandler(error_handler) = self.hydrated_component(err_handler_id, computation_db) else { unreachable!() };
-                // TODO: Can we actually use the same bindings here?
-                let bound_error_handler = error_handler.bind_generic_type_parameters(bindings);
+
+                // `bindings` contains the concrete types for all the unassigned generic
+                // type parameters that appear in the signature of the constructor.
+                // The error handler might itself have unassigned generic parameters that are
+                // _equivalent_ to those in the constructor, but named differently.
+                //
+                // E.g.
+                // - Constructor: `fn constructor<T>(x: u64) -> Result<T, Error<T>>`
+                // - Error handler: `fn error_handler<S>(e: &Error<S>) -> Response`
+                //
+                // This little utility function "adapts" the bindings from the constructor to the
+                // bindings required by the error handler.
+                let error_handler_bindings = {
+                    let ref_constructor_error_type = ResolvedType::Reference(TypeReference {
+                        is_mutable: false,
+                        is_static: false,
+                        inner: Box::new(get_err_variant(constructor.output_type()).to_owned()),
+                    });
+                    let ref_error_handler_error_type = error_handler.error_type_ref();
+
+                    let remapping = ref_constructor_error_type
+                        .is_equivalent_to(&ref_error_handler_error_type)
+                        .unwrap();
+                    let mut error_handler_bindings = HashMap::new();
+                    for (generic, concrete) in bindings {
+                        // `bindings` contains the concrete types for all the unassigned generic
+                        // type parameters that appear in the signature of the constructor.
+                        // It is not guaranteed that ALL those generic type parameters appear in the
+                        // signature of the error handler, so we need to mindful here.
+                        //
+                        // E.g.
+                        // - Constructor: `fn constructor<T>(x: u64) -> Result<T, Error>`
+                        // - Error handler: `fn error_handler(e: &Error) -> Response`
+                        if let Some(error_handler_generic) = remapping.get(generic.name.as_str()) {
+                            error_handler_bindings.insert(
+                                NamedTypeGeneric {
+                                    name: (*error_handler_generic).to_owned(),
+                                },
+                                concrete.clone(),
+                            );
+                        }
+                    }
+                    error_handler_bindings
+                };
+
+                let bound_error_handler =
+                    error_handler.bind_generic_type_parameters(&error_handler_bindings);
                 let bound_error_component_id = self.add_error_handler(
                     bound_error_handler,
                     bound_component_id,

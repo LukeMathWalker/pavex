@@ -81,19 +81,36 @@ async fn route_request(
 pub async fn route_handler_0() -> http::Response<
     http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
 > {
-    let v0 = app::fallible();
+    let v0 = app::fallible_with_generic_error();
     match v0 {
         Ok(v1) => {
-            let v2 = app::json();
-            let v3 = app::json();
-            let v4 = app::json();
-            let v5 = app::handler(v4, v3, &v2, v1);
-            <http::Response::<
-                http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>,
-            > as pavex_runtime::response::IntoResponse>::into_response(v5)
+            let v2 = app::fallible();
+            match v2 {
+                Ok(v3) => {
+                    let v4 = app::json();
+                    let v5 = app::json();
+                    let v6 = app::json();
+                    let v7 = app::handler(v6, v5, &v4, v3, v1);
+                    <http::Response::<
+                        http_body::combinators::BoxBody::<
+                            bytes::Bytes,
+                            pavex_runtime::Error,
+                        >,
+                    > as pavex_runtime::response::IntoResponse>::into_response(v7)
+                }
+                Err(v3) => {
+                    let v4 = app::error_handler(&v3);
+                    <http::Response::<
+                        http_body::combinators::BoxBody::<
+                            bytes::Bytes,
+                            pavex_runtime::Error,
+                        >,
+                    > as pavex_runtime::response::IntoResponse>::into_response(v4)
+                }
+            }
         }
         Err(v1) => {
-            let v2 = app::error_handler(&v1);
+            let v2 = app::generic_error_handler(&v1);
             <http::Response::<
                 http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>,
             > as pavex_runtime::response::IntoResponse>::into_response(v2)

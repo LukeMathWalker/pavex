@@ -9,7 +9,8 @@ use guppy::PackageId;
 use serde::{Deserializer, Serializer};
 
 use crate::language::resolved_type::generics_equivalence::{
-    generic_arguments_are_equivalent, UnassignedIdGenerator,
+    compute_generic_argument_equivalence_mapping, generic_arguments_are_equivalent,
+    UnassignedIdGenerator,
 };
 use crate::language::{ImportPath, ResolvedPath, ResolvedPathSegment};
 
@@ -159,6 +160,71 @@ impl ResolvedType {
                 concrete_primitive == templated_primitive
             }
             (_, _) => false,
+        }
+    }
+
+    /// Check if, by renaming the unassigned generic type parameters of `self` (via a bijection!),
+    /// `self` would be equal to `other`.
+    /// If possible, this function will return a map associating each unassigned generic parameter
+    /// in `self` with the name it must be renamed to in order to match `other`.
+    /// If impossible, this function will return `None`.
+    pub(crate) fn is_equivalent_to<'a, 'b>(
+        &'a self,
+        other: &'b ResolvedType,
+    ) -> Option<HashMap<&'a str, &'b str>> {
+        let mut bindings = HashMap::new();
+        if self._is_equivalent_to(other, &mut bindings) {
+            Some(bindings)
+        } else {
+            None
+        }
+    }
+
+    fn _is_equivalent_to<'a, 'b>(
+        &'a self,
+        other: &'b ResolvedType,
+        bindings: &mut HashMap<&'a str, &'b str>,
+    ) -> bool {
+        // The `PartialEq`/`Eq` implementation for `ResolvedType` already takes into account
+        // the possibility of remapping unassigned generic type parameters, so we can exit early
+        // here if they don't match.
+        if self != other {
+            return false;
+        }
+        use ResolvedType::*;
+        match (self, other) {
+            (ResolvedPath(self_path), ResolvedPath(other_path)) => {
+                let remapping = compute_generic_argument_equivalence_mapping(
+                    &self_path.generic_arguments,
+                    &other_path.generic_arguments,
+                );
+                if let Some(remapping) = remapping {
+                    for (self_generic, other_generic) in remapping {
+                        let previous_other_name = bindings.insert(self_generic, other_generic);
+                        if let Some(previous_other_name) = previous_other_name {
+                            if previous_other_name != other_generic {
+                                return false;
+                            }
+                        }
+                    }
+                    true
+                } else {
+                    false
+                }
+            }
+            (Slice(self_slice), Slice(other_slice)) => self_slice
+                .element_type
+                ._is_equivalent_to(&other_slice.element_type, bindings),
+            (Reference(self_reference), Reference(other_reference)) => self_reference
+                .inner
+                ._is_equivalent_to(&other_reference.inner, bindings),
+            (Tuple(self_tuple), Tuple(other_tuple)) => self_tuple
+                .elements
+                .iter()
+                .zip(other_tuple.elements.iter())
+                .all(|(self_type, other_type)| self_type._is_equivalent_to(other_type, bindings)),
+            (ScalarPrimitive(_), ScalarPrimitive(_)) => true,
+            (_, _) => unreachable!(),
         }
     }
 }
@@ -368,7 +434,9 @@ mod generics_equivalence {
     /// `Vec<S, T>` and `Vec<S, S>`, instead, are not equivalent - the latter requires both parameters
     /// to be identical, therefore there is no bijective renaming that can transform `Vec<S, T>`
     /// into `Vec<S, S>`.
-    pub(super) fn generic_arguments_are_equivalent(
+    ///
+    /// If you need to compute the equivalence mapping, see [`compute_generic_argument_equivalence_mapping`].
+    pub(crate) fn generic_arguments_are_equivalent(
         first_generic_args: &[GenericArgument],
         second_generic_args: &[GenericArgument],
     ) -> bool {
@@ -391,6 +459,39 @@ mod generics_equivalence {
                     first == second
                 }
             })
+    }
+
+    /// If two lists of generic arguments are equivalent, returns a mapping from the unassigned
+    /// type parameters of the first list to the unassigned type parameters of the second list
+    /// that turns the first list of generic parameters into the second one.
+    ///
+    /// It returns `None` if the two lists of generic arguments are not equivalent.
+    pub(crate) fn compute_generic_argument_equivalence_mapping<'a, 'b>(
+        first_generic_args: &'a [GenericArgument],
+        second_generic_args: &'b [GenericArgument],
+    ) -> Option<HashMap<&'a str, &'b str>> {
+        if first_generic_args.len() != second_generic_args.len() {
+            return None;
+        }
+        let mut first_id_gen = UnassignedIdGenerator::new();
+        let mut second_id_gen = UnassignedIdGenerator::new();
+        let mut mapping = HashMap::new();
+        for (first, second) in first_generic_args.iter().zip(second_generic_args) {
+            if let (
+                GenericArgument::UnassignedTypeParameter(first),
+                GenericArgument::UnassignedTypeParameter(second),
+            ) = (first, second)
+            {
+                let first_id = first_id_gen.id(&first.name);
+                let second_id = second_id_gen.id(&second.name);
+                if first_id == second_id {
+                    mapping.insert(first.name.as_str(), second.name.as_str());
+                }
+            } else if first != second {
+                return None;
+            }
+        }
+        Some(mapping)
     }
 
     /// To make the comparison easier, we assign a monotonically increasing unique id to all

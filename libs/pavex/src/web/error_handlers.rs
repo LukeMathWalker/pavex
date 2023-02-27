@@ -74,7 +74,7 @@ impl ErrorHandler {
     ///
     /// This is a **reference** to the error type returned by the fallible callable
     /// that this is error handler is associated with.
-    pub(crate) fn error_type(&self) -> &ResolvedType {
+    pub(crate) fn error_type_ref(&self) -> &ResolvedType {
         &self.callable.inputs[self.error_input_index]
     }
 
