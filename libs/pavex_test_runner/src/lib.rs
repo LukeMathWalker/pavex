@@ -369,6 +369,17 @@ fn _run_test(
     .unwrap();
     let codegen_outcome = app_code_snapshot.verify(&actual_app_code);
 
+    // Check that the generated code compiles
+    let output = std::process::Command::new("cargo")
+        .env("RUSTFLAGS", "-Awarnings")
+        .arg("check")
+        .arg("--workspace")
+        .arg("--quiet")
+        .current_dir(&test.runtime_directory)
+        .output()
+        .unwrap();
+    let compilation_output: Result<CommandOutput, _> = (&output).try_into();
+
     if diagnostics_outcome.is_err() {
         return Ok(TestOutcome {
             outcome: Err(
@@ -387,16 +398,7 @@ fn _run_test(
         });
     }
 
-    // Check that the generated code compiles
-    let output = std::process::Command::new("cargo")
-        .env("RUSTFLAGS", "-Awarnings")
-        .arg("check")
-        .arg("--workspace")
-        .arg("--quiet")
-        .current_dir(&test.runtime_directory)
-        .output()
-        .unwrap();
-    let compilation_output: CommandOutput = (&output).try_into()?;
+    let compilation_output = compilation_output?;
     if !output.status.success() {
         return Ok(TestOutcome {
             outcome: Err("The generated application code does not compile.".into()),

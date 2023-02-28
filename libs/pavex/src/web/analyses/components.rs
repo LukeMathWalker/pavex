@@ -2,6 +2,7 @@ use std::borrow::Cow;
 use std::collections::BTreeMap;
 
 use ahash::{HashMap, HashMapExt};
+use bimap::BiHashMap;
 use guppy::graph::PackageGraph;
 use indexmap::IndexSet;
 
@@ -9,7 +10,10 @@ use pavex_builder::Lifecycle;
 
 use crate::diagnostic;
 use crate::diagnostic::{CallableType, CompilerDiagnostic, LocationExt, SourceSpanExt};
-use crate::language::{ResolvedPath, ResolvedPathQualifiedSelf, ResolvedPathSegment, ResolvedType};
+use crate::language::{
+    NamedTypeGeneric, ResolvedPath, ResolvedPathQualifiedSelf, ResolvedPathSegment,
+    ResolvedPathType, ResolvedType, TypeReference,
+};
 use crate::rustdoc::CrateCollection;
 use crate::web::analyses::computations::{ComputationDb, ComputationId};
 use crate::web::analyses::raw_identifiers::RawCallableIdentifiersDb;
@@ -23,29 +27,38 @@ use crate::web::interner::Interner;
 use crate::web::request_handlers::{RequestHandler, RequestHandlerValidationError};
 use crate::web::resolvers::CallableResolutionError;
 use crate::web::traits::{assert_trait_is_implemented, MissingTraitImplementationError};
-use crate::web::utils::{get_ok_variant, is_result, process_framework_path};
+use crate::web::utils::{get_err_variant, get_ok_variant, is_result, process_framework_path};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) enum Component {
-    RequestHandler { user_component_id: UserComponentId },
-    ErrorHandler { user_component_id: UserComponentId },
-    Constructor { source_id: ConstructorSourceId },
-    Transformer { computation_id: ComputationId },
+    RequestHandler {
+        user_component_id: UserComponentId,
+    },
+    ErrorHandler {
+        source_id: SourceId,
+    },
+    Constructor {
+        source_id: SourceId,
+    },
+    Transformer {
+        computation_id: ComputationId,
+        transformed_component_id: ComponentId,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
-pub(crate) enum ConstructorSourceId {
+pub(crate) enum SourceId {
     ComputationId(ComputationId),
     UserComponentId(UserComponentId),
 }
 
-impl From<ComputationId> for ConstructorSourceId {
+impl From<ComputationId> for SourceId {
     fn from(value: ComputationId) -> Self {
         Self::ComputationId(value)
     }
 }
 
-impl From<UserComponentId> for ConstructorSourceId {
+impl From<UserComponentId> for SourceId {
     fn from(value: UserComponentId) -> Self {
         Self::UserComponentId(value)
     }
@@ -83,6 +96,19 @@ impl<'a> HydratedComponent<'a> {
             HydratedComponent::Transformer(c) => c.output_type().unwrap(),
         }
     }
+
+    pub(crate) fn into_owned(self) -> HydratedComponent<'static> {
+        match self {
+            HydratedComponent::Constructor(c) => HydratedComponent::Constructor(c.into_owned()),
+            HydratedComponent::RequestHandler(r) => {
+                HydratedComponent::RequestHandler(r.into_owned())
+            }
+            HydratedComponent::ErrorHandler(e) => {
+                HydratedComponent::ErrorHandler(Cow::Owned(e.into_owned()))
+            }
+            HydratedComponent::Transformer(t) => HydratedComponent::Transformer(t.into_owned()),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -91,10 +117,12 @@ pub(crate) struct ComponentDb {
     err_ref_id2error_handler_id: HashMap<ComponentId, ComponentId>,
     fallible_id2match_ids: HashMap<ComponentId, (ComponentId, ComponentId)>,
     match_id2fallible_id: HashMap<ComponentId, ComponentId>,
+    borrow_id2owned_id: BiHashMap<ComponentId, ComponentId>,
     id2transformer_ids: HashMap<ComponentId, IndexSet<ComponentId>>,
     id2lifecycle: HashMap<ComponentId, Lifecycle>,
     error_handler_id2error_handler: HashMap<ComponentId, ErrorHandler>,
     router: BTreeMap<RouterKey, ComponentId>,
+    into_response: ResolvedPathType,
 }
 
 impl ComponentDb {
@@ -117,16 +145,27 @@ impl ComponentDb {
         let mut fallible_component_id2error_handler_id =
             HashMap::<UserComponentId, Option<ErrorHandlerId>>::new();
         let mut user_component_id2component_id = HashMap::new();
+        let into_response = {
+            let into_response = process_framework_path(
+                "pavex_runtime::response::IntoResponse",
+                package_graph,
+                krate_collection,
+            );
+            let ResolvedType::ResolvedPath(into_response) = into_response else { unreachable!() };
+            into_response
+        };
 
         let mut self_ = Self {
             interner: Interner::new(),
             err_ref_id2error_handler_id: Default::default(),
             fallible_id2match_ids: Default::default(),
             match_id2fallible_id: Default::default(),
+            borrow_id2owned_id: Default::default(),
             id2transformer_ids: Default::default(),
             id2lifecycle: Default::default(),
             error_handler_id2error_handler: Default::default(),
             router: Default::default(),
+            into_response,
         };
 
         for (user_component_id, user_component) in user_component_db
@@ -150,7 +189,7 @@ impl ComponentDb {
                         .get_lifecycle(user_component.raw_callable_identifiers_id())
                         .unwrap();
                     let constructor_id = self_.interner.get_or_intern(Component::Constructor {
-                        source_id: ConstructorSourceId::UserComponentId(user_component_id),
+                        source_id: SourceId::UserComponentId(user_component_id),
                     });
                     user_component_id2component_id.insert(user_component_id, constructor_id);
                     self_
@@ -206,22 +245,13 @@ impl ComponentDb {
                         let m = MatchResult::match_result(h.output_type());
                         let (ok, err) = (m.ok, m.err);
 
-                        let ok_id = self_.add_synthetic_transformer(
-                            ok.into(),
-                            handler_id,
-                            lifecycle.clone(),
-                            computation_db,
-                        );
+                        let ok_id =
+                            self_.add_synthetic_transformer(ok.into(), handler_id, computation_db);
 
-                        // For each Result type, register a match transformer that transforms
-                        // `Result<T,E>` into `E`.
-                        let err_id = self_.add_synthetic_transformer(
-                            err.into(),
-                            handler_id,
-                            lifecycle,
-                            computation_db,
-                        );
-
+                        // For each Result type register a match transformer that
+                        // transforms `Result<T,E>` into `E`.
+                        let err_id =
+                            self_.add_synthetic_transformer(err.into(), handler_id, computation_db);
                         self_
                             .fallible_id2match_ids
                             .insert(handler_id, (ok_id, err_id));
@@ -268,16 +298,13 @@ impl ComponentDb {
                 );
                 match ErrorHandler::new(error_handler_callable.to_owned(), fallible_callable) {
                     Ok(e) => {
-                        let error_handler_id =
-                            self_.interner.get_or_intern(Component::ErrorHandler {
-                                user_component_id: error_handler_user_component_id,
-                            });
-                        self_
-                            .error_handler_id2error_handler
-                            .insert(error_handler_id, e);
-                        self_
-                            .id2lifecycle
-                            .insert(error_handler_id, lifecycle.to_owned());
+                        let error_handler_id = self_.add_error_handler(
+                            e,
+                            user_component_id2component_id[&fallible_user_component_id],
+                            lifecycle.to_owned(),
+                            error_handler_user_component_id.into(),
+                            computation_db,
+                        );
                         user_component_id2component_id
                             .insert(error_handler_user_component_id, error_handler_id);
                         fallible_component_id2error_handler_id.insert(
@@ -310,54 +337,30 @@ impl ComponentDb {
 
         for (fallible_user_component_id, error_handler_id) in fallible_component_id2error_handler_id
         {
-            match error_handler_id {
-                None => {
-                    Self::missing_error_handler(
-                        fallible_user_component_id,
-                        user_component_db,
-                        package_graph,
-                        raw_identifiers_db,
-                        diagnostics,
-                    );
-                }
-                Some(ErrorHandlerId::Id(error_handler_id)) => {
-                    let fallible_component_id =
-                        user_component_id2component_id[&fallible_user_component_id];
-                    let err_match_id = self_.fallible_id2match_ids[&fallible_component_id].1;
-                    let err_type = self_
-                        .hydrated_component(err_match_id, computation_db)
-                        .output_type()
-                        .to_owned();
-                    let err_ref_id = self_.add_synthetic_transformer(
-                        BorrowSharedReference::new(err_type).into(),
-                        err_match_id,
-                        self_.id2lifecycle[&err_match_id].clone(),
-                        computation_db,
-                    );
-                    self_
-                        .err_ref_id2error_handler_id
-                        .insert(err_ref_id, error_handler_id);
-                }
-                Some(ErrorHandlerId::UserId(_)) => {}
+            if error_handler_id.is_none() {
+                Self::missing_error_handler(
+                    fallible_user_component_id,
+                    user_component_db,
+                    package_graph,
+                    raw_identifiers_db,
+                    diagnostics,
+                );
             }
         }
 
         // We need to make sure that all output nodes return the same output type.
         // We do this by adding a "response transformer" node that converts the output type to a
         // common type - `pavex_runtime::response::Response`.
-        let into_response = process_framework_path(
-            "pavex_runtime::response::IntoResponse",
-            package_graph,
-            krate_collection,
-        );
-        let ResolvedType::ResolvedPath(into_response) = into_response else { unreachable!() };
-        let into_response_path = into_response.resolved_path();
+        let into_response_path = self_.into_response.resolved_path();
         let iter: Vec<_> = self_
             .interner
             .iter()
             .filter_map(|(id, c)| match c {
                 Component::RequestHandler { user_component_id }
-                | Component::ErrorHandler { user_component_id } => Some((id, *user_component_id)),
+                | Component::ErrorHandler {
+                    // There are no error handlers with a `ComputationId` source at this stage.
+                    source_id: SourceId::UserComponentId(user_component_id),
+                } => Some((id, *user_component_id)),
                 _ => None,
             })
             .collect();
@@ -377,7 +380,9 @@ impl ComponentDb {
                 output
             }
             .to_owned();
-            if let Err(e) = assert_trait_is_implemented(krate_collection, &output, &into_response) {
+            if let Err(e) =
+                assert_trait_is_implemented(krate_collection, &output, &self_.into_response)
+            {
                 Self::invalid_response_type(
                     e,
                     &output,
@@ -404,7 +409,7 @@ impl ComponentDb {
             };
             match computation_db.resolve_callable(krate_collection, &transformer_path, None) {
                 Ok(callable_id) => {
-                    self_.get_or_intern_transformer(callable_id, component_id);
+                    self_.get_or_intern_transformer(callable_id, component_id, computation_db);
                 }
                 Err(e) => {
                     Self::cannot_handle_into_response_implementation(
@@ -421,6 +426,40 @@ impl ComponentDb {
         }
 
         self_
+    }
+
+    fn add_error_handler(
+        &mut self,
+        e: ErrorHandler,
+        fallible_component_id: ComponentId,
+        lifecycle: Lifecycle,
+        source_id: SourceId,
+        computation_db: &mut ComputationDb,
+    ) -> ComponentId {
+        let error_handler_id = self
+            .interner
+            .get_or_intern(Component::ErrorHandler { source_id });
+        self.error_handler_id2error_handler
+            .insert(error_handler_id, e);
+        self.id2lifecycle.insert(error_handler_id, lifecycle);
+
+        // Add an `E -> &E` transformer, otherwise we'll a missing link between the fallible
+        // component and the error handler, since the latter takes a _reference_ to the error as
+        // input parameter.
+        let error_match_id = self.fallible_id2match_ids[&fallible_component_id].1;
+        let error_type = self
+            .hydrated_component(error_match_id, computation_db)
+            .output_type()
+            .to_owned();
+        let error_ref_id = self.add_synthetic_transformer(
+            BorrowSharedReference::new(error_type).into(),
+            error_match_id,
+            computation_db,
+        );
+        self.err_ref_id2error_handler_id
+            .insert(error_ref_id, error_handler_id);
+
+        error_handler_id
     }
 
     /// Retrieve the lifecycle for a component.
@@ -456,25 +495,6 @@ impl ComponentDb {
         id
     }
 
-    fn add_synthetic_transformer(
-        &mut self,
-        computation: Computation<'static>,
-        transformed_id: ComponentId,
-        l: Lifecycle,
-        computation_db: &mut ComputationDb,
-    ) -> ComponentId {
-        let computation_id = computation_db.get_or_intern(computation);
-        let id = self
-            .interner
-            .get_or_intern(Component::Transformer { computation_id });
-        self.id2lifecycle.insert(id, l);
-        self.id2transformer_ids
-            .entry(transformed_id)
-            .or_default()
-            .insert(id);
-        id
-    }
-
     fn register_derived_constructors(
         &mut self,
         constructor_id: ComponentId,
@@ -491,7 +511,7 @@ impl ComponentDb {
             // For each non-reference type, register an inlineable constructor that transforms
             // `T` in `&T`.
             let c: Computation<'_> = BorrowSharedReference::new(output_type).into();
-            self.add_synthetic_constructor(
+            let borrow_id = self.add_synthetic_constructor(
                 // It's fine to unwrap, since constructors are guaranteed to return a non-unit type.
                 // Therefore we can be certain the borrowing that return type doesn't give a computation
                 // that returns the unit type;
@@ -499,6 +519,7 @@ impl ComponentDb {
                 lifecycle.to_owned(),
                 computation_db,
             );
+            self.borrow_id2owned_id.insert(borrow_id, constructor_id);
         }
         if let Ok(constructor) = constructor.as_fallible() {
             let m = constructor.matchers();
@@ -512,16 +533,8 @@ impl ComponentDb {
                 computation_db,
             );
 
-            // For each Result type, register a match transformer that transforms
-            // `Result<T,E>` into `E`.
-            let err: Computation = err.into();
-            let err_id = self.add_synthetic_transformer(
-                err.into_owned(),
-                constructor_id,
-                lifecycle,
-                computation_db,
-            );
-
+            // For each Result type, register a match transformer that transforms `Result<T,E>` into `E`.
+            let err_id = self.add_synthetic_transformer(err.into(), constructor_id, computation_db);
             self.fallible_id2match_ids
                 .insert(constructor_id, (ok_id, err_id));
             self.match_id2fallible_id.insert(ok_id, constructor_id);
@@ -537,21 +550,34 @@ impl ComponentDb {
     ) -> Result<ComponentId, ConstructorValidationError> {
         let callable = computation_db[callable_id].to_owned();
         TryInto::<Constructor>::try_into(callable)?;
-        let constructor_id = self.interner.get_or_intern(Component::Constructor {
-            source_id: ConstructorSourceId::ComputationId(callable_id),
-        });
+        let constructor_component = Component::Constructor {
+            source_id: SourceId::ComputationId(callable_id),
+        };
+        let constructor_id = self.interner.get_or_intern(constructor_component);
         self.id2lifecycle.insert(constructor_id, lifecycle);
         self.register_derived_constructors(constructor_id, computation_db);
         Ok(constructor_id)
+    }
+
+    fn add_synthetic_transformer(
+        &mut self,
+        computation: Computation<'static>,
+        transformed_id: ComponentId,
+        computation_db: &mut ComputationDb,
+    ) -> ComponentId {
+        let computation_id = computation_db.get_or_intern(computation);
+        self.get_or_intern_transformer(computation_id, transformed_id, computation_db)
     }
 
     pub fn get_or_intern_transformer(
         &mut self,
         callable_id: ComputationId,
         transformed_component_id: ComponentId,
+        computation_db: &ComputationDb,
     ) -> ComponentId {
         let transformer = Component::Transformer {
             computation_id: callable_id,
+            transformed_component_id,
         };
         let transformer_id = self.interner.get_or_intern(transformer);
         self.id2transformer_ids
@@ -562,6 +588,15 @@ impl ComponentDb {
             transformer_id,
             self.lifecycle(transformed_component_id).unwrap().to_owned(),
         );
+
+        let is_borrow = matches!(
+            &computation_db[callable_id],
+            Computation::BorrowSharedReference(_)
+        );
+        if is_borrow {
+            self.borrow_id2owned_id
+                .insert(transformer_id, transformed_component_id);
+        }
         transformer_id
     }
 
@@ -588,10 +623,42 @@ impl ComponentDb {
         self.fallible_id2match_ids.get(&fallible_component_id)
     }
 
-    /// Given the id of a `MatchResult` component, return the id of the corresponding fallible
+    /// Return the ids of the components that are derived from the given constructor.
+    /// E.g. if the constructor is a fallible constructor, the derived components are the
+    /// `MatchResult` components for the `Ok` and `Err` variants (and their respective
+    /// derived components).
+    /// If the constructor is a non-fallible constructor, the derived components are the
+    /// `BorrowSharedReference` component.
+    pub fn derived_component_ids(&self, component_id: ComponentId) -> Vec<ComponentId> {
+        let mut derived_ids = Vec::new();
+        if let Some(match_ids) = self.match_ids(component_id) {
+            derived_ids.push(match_ids.0);
+            derived_ids.push(match_ids.1);
+            derived_ids.extend(self.derived_component_ids(match_ids.0));
+            derived_ids.extend(self.derived_component_ids(match_ids.1));
+        }
+        if let Some(borrow_id) = self.borrow_id2owned_id.get_by_right(&component_id) {
+            derived_ids.push(*borrow_id);
+            derived_ids.extend(self.derived_component_ids(*borrow_id));
+        }
+        derived_ids
+    }
+
+    /// Given the id of a [`MatchResult`] component, return the id of the corresponding fallible
     /// component.
+    #[track_caller]
     pub fn fallible_id(&self, match_component_id: ComponentId) -> ComponentId {
         self.match_id2fallible_id[&match_component_id]
+    }
+
+    /// Given the id of a [`BorrowSharedReference`] component, return the id of the corresponding
+    /// component that returns the owned variant it borrows from.
+    #[track_caller]
+    pub fn owned_id(&self, borrow_component_id: ComponentId) -> ComponentId {
+        self.borrow_id2owned_id
+            .get_by_left(&borrow_component_id)
+            .copied()
+            .unwrap()
     }
 
     /// Iterate over all constructors in the component database, either user-provided or synthetic.
@@ -605,8 +672,8 @@ impl ComponentDb {
             | Component::Transformer { .. } => None,
             Component::Constructor { source_id } => {
                 let computation = match source_id {
-                    ConstructorSourceId::ComputationId(id) => computation_db[*id].clone(),
-                    ConstructorSourceId::UserComponentId(id) => computation_db[*id].clone().into(),
+                    SourceId::ComputationId(id) => computation_db[*id].clone(),
+                    SourceId::UserComponentId(id) => computation_db[*id].clone().into(),
                 };
                 Some((id, Constructor(computation)))
             }
@@ -615,13 +682,20 @@ impl ComponentDb {
 
     pub(crate) fn user_component_id(&self, id: ComponentId) -> Option<UserComponentId> {
         match &self[id] {
-            Component::Constructor { source_id } => match source_id {
-                ConstructorSourceId::ComputationId(_id) => None,
-                ConstructorSourceId::UserComponentId(id) => Some(*id),
-            },
-            Component::ErrorHandler { user_component_id }
+            Component::Constructor {
+                source_id: SourceId::UserComponentId(user_component_id),
+            }
+            | Component::ErrorHandler {
+                source_id: SourceId::UserComponentId(user_component_id),
+            }
             | Component::RequestHandler { user_component_id } => Some(*user_component_id),
-            Component::Transformer { .. } => None,
+            Component::ErrorHandler {
+                source_id: SourceId::ComputationId(_),
+            }
+            | Component::Constructor {
+                source_id: SourceId::ComputationId(_),
+            }
+            | Component::Transformer { .. } => None,
         }
     }
 
@@ -645,16 +719,199 @@ impl ComponentDb {
             }
             Component::Constructor { source_id } => {
                 let c = match source_id {
-                    ConstructorSourceId::ComputationId(id) => computation_db[*id].clone(),
-                    ConstructorSourceId::UserComponentId(id) => computation_db[*id].clone().into(),
+                    SourceId::ComputationId(id) => computation_db[*id].clone(),
+                    SourceId::UserComponentId(id) => computation_db[*id].clone().into(),
                 };
                 HydratedComponent::Constructor(Constructor(c))
             }
-            Component::Transformer { computation_id } => {
+            Component::Transformer { computation_id, .. } => {
                 let c = &computation_db[*computation_id];
                 HydratedComponent::Transformer(c.clone())
             }
         }
+    }
+}
+
+impl ComponentDb {
+    /// Print to stdout a debug dump of the component database, primarily for debugging
+    /// purposes.
+    #[allow(unused)]
+    pub(crate) fn debug_dump(&self, computation_db: &ComputationDb) {
+        for (component_id, _) in self.iter() {
+            println!(
+                "Component id: {:?}\nHydrated component: {:?}\nLifecycle: {:?}",
+                component_id,
+                self.hydrated_component(component_id, &computation_db),
+                self.lifecycle(component_id)
+            );
+
+            println!("Matchers:");
+            if let Some((ok_id, err_id)) = self.match_ids(component_id) {
+                let matchers = format!(
+                    "- Ok: {:?}\n- Err: {:?}",
+                    self.hydrated_component(*ok_id, &computation_db),
+                    self.hydrated_component(*err_id, &computation_db)
+                );
+                println!("{}", textwrap::indent(&matchers, "  "));
+            }
+            println!("Error handler:");
+            if let Some(err_handler_id) = self.error_handler_id(component_id) {
+                let error_handler = format!(
+                    "{:?}",
+                    self.hydrated_component(*err_handler_id, &computation_db)
+                );
+                println!("{}", textwrap::indent(&error_handler, "  "));
+            }
+            println!("Transformers:");
+            if let Some(transformer_ids) = self.transformer_ids(component_id) {
+                let transformers = transformer_ids
+                    .iter()
+                    .map(|id| format!("- {:?}", self.hydrated_component(*id, &computation_db)))
+                    .collect::<Vec<_>>()
+                    .join("\n");
+                println!("{}", textwrap::indent(&transformers, "  "));
+            }
+            println!();
+        }
+    }
+}
+
+// All methods related to the logic for binding generic components.
+impl ComponentDb {
+    /// Replace all unassigned generic type parameters in the constructor component with id set to `id` with
+    /// the concrete types specified in `bindings`.
+    ///
+    /// The newly "bound" component will be added to the component database and its id returned.
+    ///
+    /// The same process will be applied to all derived components (borrowed references,
+    /// error handlers, etc.), recursively.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the component with id `id` is not a constructor.
+    pub fn bind_generic_type_parameters(
+        &mut self,
+        id: ComponentId,
+        bindings: &HashMap<NamedTypeGeneric, ResolvedType>,
+        computation_db: &mut ComputationDb,
+    ) -> ComponentId {
+        fn _get_root_component_id(
+            component_id: ComponentId,
+            component_db: &ComponentDb,
+            computation_db: &ComputationDb,
+        ) -> ComponentId {
+            let templated_component = component_db
+                .hydrated_component(component_id, computation_db)
+                .into_owned();
+            let HydratedComponent::Constructor(constructor) = templated_component else { unreachable!() };
+            match &constructor.0 {
+                Computation::Callable(_) => component_id,
+                Computation::MatchResult(_) => _get_root_component_id(
+                    component_db.fallible_id(component_id),
+                    component_db,
+                    computation_db,
+                ),
+                Computation::BorrowSharedReference(_) => _get_root_component_id(
+                    component_db.owned_id(component_id),
+                    component_db,
+                    computation_db,
+                ),
+            }
+        }
+
+        // We want to make sure we are binding the root component (i.e. a constructor registered
+        // by the user), not a derived one. If not, we might have resolution issues when computing
+        // the call graph for handlers where these derived components are used.
+        let id = _get_root_component_id(id, self, computation_db);
+        let HydratedComponent::Constructor(constructor) = self.hydrated_component(id, computation_db).into_owned() else { unreachable!() };
+        let lifecycle = self.lifecycle(id).cloned().unwrap();
+        let bound_computation = constructor
+            .0
+            .bind_generic_type_parameters(bindings)
+            .into_owned();
+        let bound_computation_id = computation_db.get_or_intern(bound_computation);
+        let bound_component_id = self
+            .get_or_intern_constructor(bound_computation_id, lifecycle.clone(), computation_db)
+            .unwrap();
+        // ^ This registers all "derived" constructors as well (borrowed references, matchers, etc.)
+        // but it doesn't take care of the error handler, in case `id` pointed to a fallible constructor.
+        // We need to do that manually.
+        if let Some((_, err_match_id)) = self.fallible_id2match_ids.get(&id) {
+            if let Some(err_ref_id) = self.borrow_id2owned_id.get_by_right(err_match_id) {
+                let err_handler_id = self.err_ref_id2error_handler_id[err_ref_id];
+                let HydratedComponent::ErrorHandler(error_handler) = self.hydrated_component(err_handler_id, computation_db) else { unreachable!() };
+
+                // `bindings` contains the concrete types for all the unassigned generic
+                // type parameters that appear in the signature of the constructor.
+                // The error handler might itself have unassigned generic parameters that are
+                // _equivalent_ to those in the constructor, but named differently.
+                //
+                // E.g.
+                // - Constructor: `fn constructor<T>(x: u64) -> Result<T, Error<T>>`
+                // - Error handler: `fn error_handler<S>(e: &Error<S>) -> Response`
+                //
+                // This little utility function "adapts" the bindings from the constructor to the
+                // bindings required by the error handler.
+                let error_handler_bindings = {
+                    let ref_constructor_error_type = ResolvedType::Reference(TypeReference {
+                        is_mutable: false,
+                        is_static: false,
+                        inner: Box::new(get_err_variant(constructor.output_type()).to_owned()),
+                    });
+                    let ref_error_handler_error_type = error_handler.error_type_ref();
+
+                    let remapping = ref_constructor_error_type
+                        .is_equivalent_to(&ref_error_handler_error_type)
+                        .unwrap();
+                    let mut error_handler_bindings = HashMap::new();
+                    for (generic, concrete) in bindings {
+                        // `bindings` contains the concrete types for all the unassigned generic
+                        // type parameters that appear in the signature of the constructor.
+                        // It is not guaranteed that ALL those generic type parameters appear in the
+                        // signature of the error handler, so we need to mindful here.
+                        //
+                        // E.g.
+                        // - Constructor: `fn constructor<T>(x: u64) -> Result<T, Error>`
+                        // - Error handler: `fn error_handler(e: &Error) -> Response`
+                        if let Some(error_handler_generic) = remapping.get(generic.name.as_str()) {
+                            error_handler_bindings.insert(
+                                NamedTypeGeneric {
+                                    name: (*error_handler_generic).to_owned(),
+                                },
+                                concrete.clone(),
+                            );
+                        }
+                    }
+                    error_handler_bindings
+                };
+
+                let bound_error_handler =
+                    error_handler.bind_generic_type_parameters(&error_handler_bindings);
+                let bound_error_component_id = self.add_error_handler(
+                    bound_error_handler,
+                    bound_component_id,
+                    lifecycle.clone(),
+                    bound_computation_id.into(),
+                    computation_db,
+                );
+
+                // Finally, we need to bound the error handler's transformers.
+                if let Some(transformer_ids) = self.transformer_ids(err_handler_id).cloned() {
+                    for transformer_id in transformer_ids {
+                        let HydratedComponent::Transformer(transformer) = self.hydrated_component(transformer_id, computation_db) else { unreachable!() };
+                        let bound_transformer = transformer
+                            .bind_generic_type_parameters(bindings)
+                            .into_owned();
+                        self.add_synthetic_transformer(
+                            bound_transformer,
+                            bound_error_component_id,
+                            computation_db,
+                        );
+                    }
+                }
+            }
+        }
+        bound_component_id
     }
 }
 

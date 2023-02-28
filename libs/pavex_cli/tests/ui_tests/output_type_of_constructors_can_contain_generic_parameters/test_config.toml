@@ -1,0 +1,4 @@
+description = "pavex allows constructors that return type that have one or more generic parameters in their signatures"
+
+[expectations]
+codegen = "pass"

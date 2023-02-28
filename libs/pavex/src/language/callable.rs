@@ -2,10 +2,11 @@ use std::collections::BTreeMap;
 use std::fmt::Formatter;
 use std::fmt::Write;
 
+use ahash::HashMap;
 use bimap::BiHashMap;
 use guppy::PackageId;
 
-use crate::language::{ResolvedPath, ResolvedType};
+use crate::language::{NamedTypeGeneric, ResolvedPath, ResolvedType};
 
 #[derive(Clone, Hash, Eq, PartialEq)]
 /// A Rust type that can be invoked - e.g. a function, a method, a struct literal constructor.
@@ -28,6 +29,33 @@ pub(crate) struct Callable {
     /// Rust supports different types of callables which rely on different invocation syntax.
     /// See [`InvocationStyle`] for more details.
     pub invocation_style: InvocationStyle,
+}
+
+impl Callable {
+    /// Replace all unassigned generic type parameters in this callable with the
+    /// concrete types specified in `bindings`.
+    ///
+    /// The newly "bound" callable will be returned.
+    pub fn bind_generic_type_parameters(
+        &self,
+        bindings: &HashMap<NamedTypeGeneric, ResolvedType>,
+    ) -> Callable {
+        // TODO: we should bind the generics on the path of the callable itself.
+        let inputs = self
+            .inputs
+            .iter()
+            .map(|t| t.bind_generic_type_parameters(bindings))
+            .collect();
+        let output = self
+            .output
+            .as_ref()
+            .map(|t| t.bind_generic_type_parameters(bindings));
+        Self {
+            output,
+            inputs,
+            ..self.clone()
+        }
+    }
 }
 
 /// Rust supports different types of callables which rely on different invocation syntax.

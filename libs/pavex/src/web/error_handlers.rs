@@ -1,6 +1,10 @@
 use std::fmt::{Display, Formatter};
 
-use crate::language::{Callable, GenericArgument, ResolvedPath, ResolvedType, TypeReference};
+use ahash::HashMap;
+
+use crate::language::{
+    Callable, GenericArgument, NamedTypeGeneric, ResolvedPath, ResolvedType, TypeReference,
+};
 use crate::web::utils::is_result;
 
 /// A transformation that, given a reference to an error type (and, optionally, other inputs),
@@ -10,7 +14,6 @@ pub(crate) struct ErrorHandler {
     pub(crate) callable: Callable,
     /// The index of the error type in the vector of input types for `callable`.
     pub(crate) error_input_index: usize,
-    pub(crate) fallible_callable: Callable,
 }
 
 impl ErrorHandler {
@@ -36,7 +39,7 @@ impl ErrorHandler {
             let ResolvedType::ResolvedPath(result_type) = result_type else {
                 unreachable!()
             };
-            let GenericArgument::Type(e) = result_type.generic_arguments[1].clone() else {
+            let GenericArgument::AssignedTypeParameter(e) = result_type.generic_arguments[1].clone() else {
                 unreachable!()
             };
             ResolvedType::Reference(TypeReference {
@@ -57,7 +60,6 @@ impl ErrorHandler {
             Some(i) => Ok(Self {
                 callable: error_handler,
                 error_input_index: i,
-                fallible_callable: fallible_callable.to_owned(),
             }),
             None => Err(
                 ErrorHandlerValidationError::DoesNotTakeErrorReferenceAsInput {
@@ -72,7 +74,7 @@ impl ErrorHandler {
     ///
     /// This is a **reference** to the error type returned by the fallible callable
     /// that this is error handler is associated with.
-    pub(crate) fn error_type(&self) -> &ResolvedType {
+    pub(crate) fn error_type_ref(&self) -> &ResolvedType {
         &self.callable.inputs[self.error_input_index]
     }
 
@@ -82,6 +84,20 @@ impl ErrorHandler {
 
     pub fn input_types(&self) -> &[ResolvedType] {
         self.callable.inputs.as_slice()
+    }
+
+    /// Replace all unassigned generic type parameters in this error handler with the
+    /// concrete types specified in `bindings`.
+    ///
+    /// The newly "bound" error handler will be returned.
+    pub fn bind_generic_type_parameters(
+        &self,
+        bindings: &HashMap<NamedTypeGeneric, ResolvedType>,
+    ) -> Self {
+        Self {
+            callable: self.callable.bind_generic_type_parameters(bindings),
+            error_input_index: self.error_input_index,
+        }
     }
 }
 

@@ -1,6 +1,8 @@
 #[derive(Debug, Hash, Eq, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
-pub struct RawCallable<F> {
-    pub callable: F,
+/// An implementation detail of the builder.
+/// You must the [`f!`] macro wherever a `RawCallable` is needed.
+pub struct RawCallable {
+    #[doc(hidden)]
     pub import_path: &'static str,
 }
 

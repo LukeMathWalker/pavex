@@ -133,7 +133,7 @@ where
                         .input_types()
                         .iter()
                         // We have already added the error -> error handler edge at this stage.
-                        .filter(|&t| error_handler.error_type() != t)
+                        .filter(|&t| error_handler.error_type_ref() != t)
                         .map(|t| t.to_owned())
                         .collect(),
                     HydratedComponent::Transformer(_) => {
@@ -507,7 +507,7 @@ impl CallGraph {
 /// Return a representation of the [`CallGraph`] in graphviz's .DOT format, geared towards
 /// debugging.
 #[allow(unused)]
-fn debug_dot(
+pub(crate) fn debug_dot(
     g: &StableDiGraph<CallGraphNode, ()>,
     component_db: &ComponentDb,
     computation_db: &ComputationDb,
@@ -785,6 +785,12 @@ fn _codegen_callable_closure_body(
                         );
                         b
                     };
+                    // This `.clone()` is **load-bearing**.
+                    // The sub-graph for each match arm might have one or more nodes in common.
+                    // If we don't create a new DFS for each match arm, the visitor will only
+                    // pick up the shared nodes once (for the first match arm), leading to issues
+                    // when generating code for the second match arm (i.e. most likely a panic).
+                    let mut new_dfs = dfs.clone();
                     let match_arm_body = _codegen_callable_closure_body(
                         variant_index,
                         call_graph,
@@ -795,7 +801,7 @@ fn _codegen_callable_closure_body(
                         &mut variant_name_generator,
                         &mut at_most_once_constructor_blocks,
                         &mut variant_blocks,
-                        dfs,
+                        &mut new_dfs,
                     )?;
                     let variant_type = match &call_graph[variant_index] {
                         CallGraphNode::Compute { component_id, .. } => {

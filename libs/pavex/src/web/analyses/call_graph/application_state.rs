@@ -105,10 +105,14 @@ pub(crate) fn application_state_call_graph(
                 unreachable!()
             };
             let component = component_db.hydrated_component(*component_id, computation_db);
-            assert!(matches!(
-                component,
-                HydratedComponent::Transformer(Computation::MatchResult(_)),
-            ));
+            assert!(
+                matches!(
+                    component,
+                    HydratedComponent::Transformer(Computation::MatchResult(_)),
+                ),
+                "One of the output components is not a `MatchResult` transformer: {:?}",
+                component
+            );
             map.entry(component.output_type().to_owned())
                 .or_default()
                 .insert(*component_id);
@@ -142,8 +146,8 @@ pub(crate) fn application_state_call_graph(
         rustdoc_id: None,
         base_type: vec!["core".into(), "result".into(), "Result".into()],
         generic_arguments: vec![
-            GenericArgument::Type(application_state_type.clone().into()),
-            GenericArgument::Type(error_enum.clone().into()),
+            GenericArgument::AssignedTypeParameter(application_state_type.clone().into()),
+            GenericArgument::AssignedTypeParameter(error_enum.clone().into()),
         ],
     };
     // We need to add an `Ok` wrap around `ApplicationState`, since we are returning a `Result`.
@@ -192,6 +196,7 @@ pub(crate) fn application_state_call_graph(
     component_db.get_or_intern_transformer(
         computation_db.get_or_intern(ok_wrapper),
         application_state_id,
+        computation_db,
     );
 
     let mut error_variants = IndexMap::new();
@@ -252,11 +257,13 @@ pub(crate) fn application_state_call_graph(
             let transformer_id = component_db.get_or_intern_transformer(
                 computation_db.get_or_intern(error_variant_constructor.clone()),
                 *err_match_id,
+                computation_db,
             );
             // We need to do an Err(..) wrap around the error variant returned by the transformer.
             component_db.get_or_intern_transformer(
                 computation_db.get_or_intern(err_wrapper.clone()),
                 transformer_id,
+                computation_db,
             );
         }
     }

@@ -109,8 +109,8 @@ impl App {
         let request_scoped_framework_bindings =
             framework_bindings(&package_graph, &krate_collection);
         let mut constructible_db = ConstructibleDb::build(
-            &component_db,
-            &computation_db,
+            &mut component_db,
+            &mut computation_db,
             &package_graph,
             &krate_collection,
             &user_component_db,

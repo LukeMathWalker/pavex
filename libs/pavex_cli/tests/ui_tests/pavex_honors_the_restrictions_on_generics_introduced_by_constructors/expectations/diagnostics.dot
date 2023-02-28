@@ -1,0 +1,12 @@
+digraph "GET /home" {
+    0 [ label = "app::handler(app::Json<u8>, app::Json<alloc::vec::Vec<u8>>) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
+    1 [ label = "app::json() -> app::Json<alloc::vec::Vec<u8>>"]
+    2 [ label = "app::json() -> app::Json<u8>"]
+    3 [ label = "<http::Response::<http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>> as pavex_runtime::response::IntoResponse>::into_response(http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
+    1 -> 0 [ ]
+    2 -> 0 [ ]
+    0 -> 3 [ ]
+}
+digraph app_state {
+    0 [ label = "crate::ApplicationState() -> crate::ApplicationState"]
+}

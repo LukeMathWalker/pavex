@@ -1,5 +1,5 @@
 pub use app::{Blueprint, Constructor, Lifecycle, Location, Route};
-pub use callable::{Callable, RawCallable, RawCallableIdentifiers};
+pub use callable::{RawCallable, RawCallableIdentifiers};
 
 mod app;
 mod callable;

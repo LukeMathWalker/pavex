@@ -600,8 +600,10 @@ fn collect_type_package_ids(package_ids: &mut IndexSet<PackageId>, t: &ResolvedT
             package_ids.insert(t.package_id.clone());
             for generic in &t.generic_arguments {
                 match generic {
-                    GenericArgument::Type(t) => collect_type_package_ids(package_ids, t),
-                    GenericArgument::Lifetime(_) => {}
+                    GenericArgument::AssignedTypeParameter(t) => {
+                        collect_type_package_ids(package_ids, t)
+                    }
+                    GenericArgument::Lifetime(_) | GenericArgument::UnassignedTypeParameter(_) => {}
                 }
             }
         }

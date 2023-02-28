@@ -25,6 +25,12 @@ impl<'a> RequestHandler<'a> {
     pub fn input_types(&self) -> &[ResolvedType] {
         self.callable.inputs.as_slice()
     }
+
+    pub fn into_owned(self) -> RequestHandler<'static> {
+        RequestHandler {
+            callable: Cow::Owned(self.callable.into_owned()),
+        }
+    }
 }
 
 #[derive(thiserror::Error, Debug, Clone)]

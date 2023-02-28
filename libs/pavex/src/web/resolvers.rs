@@ -9,7 +9,7 @@ use guppy::PackageId;
 use rustdoc_types::{GenericArg, GenericArgs, GenericParamDefKind, ItemEnum, Type};
 
 use crate::language::{
-    Callable, GenericArgument, InvocationStyle, Lifetime, ResolvedPath,
+    Callable, GenericArgument, InvocationStyle, Lifetime, NamedTypeGeneric, ResolvedPath,
     ResolvedPathGenericArgument, ResolvedPathLifetime, ResolvedPathType, ResolvedType, Slice,
     Tuple, TypeReference, UnknownPath,
 };
@@ -44,14 +44,13 @@ pub(crate) fn resolve_type(
                                 &global_type_id.package_id,
                                 krate_collection,
                                 &generic_bindings,
-                            )
-                            .unwrap();
+                            )?;
                             generic_bindings.insert(generic.name.to_string(), default);
                         }
                         GenericParamDefKind::Type { default: None, .. }
                         | GenericParamDefKind::Const { .. }
                         | GenericParamDefKind::Lifetime { .. } => {
-                            todo!("Generic parameters other than type parameters with a default value are not supported yet. I cannot handle:\n {:?}", generic)
+                            anyhow::bail!("I cannot only generic type parameters with a default when working with type aliases. I cannot handle a `{:?}` yet, sorry!", generic)
                         }
                     }
                 }
@@ -73,32 +72,48 @@ pub(crate) fn resolve_type(
                                         GenericArgument::Lifetime(Lifetime::Static)
                                     }
                                     GenericArg::Type(generic_type) => {
-                                        GenericArgument::Type(resolve_type(
-                                            generic_type,
-                                            used_by_package_id,
-                                            krate_collection,
-                                            generic_bindings,
-                                        )?)
+                                        if let Type::Generic(generic) = generic_type {
+                                            if let Some(resolved_type) =
+                                                generic_bindings.get(generic)
+                                            {
+                                                GenericArgument::AssignedTypeParameter(
+                                                    resolved_type.to_owned(),
+                                                )
+                                            } else {
+                                                GenericArgument::UnassignedTypeParameter(
+                                                    NamedTypeGeneric {
+                                                        name: generic.to_owned(),
+                                                    },
+                                                )
+                                            }
+                                        } else {
+                                            GenericArgument::AssignedTypeParameter(resolve_type(
+                                                generic_type,
+                                                used_by_package_id,
+                                                krate_collection,
+                                                generic_bindings,
+                                            )?)
+                                        }
                                     }
                                     GenericArg::Lifetime(_) => {
                                         return Err(anyhow!(
-                                            "We do not support non-static lifetime arguments in types yet. Sorry!"
+                                            "I do not support non-static lifetime arguments in types yet. Sorry!"
                                         ));
                                     }
                                     GenericArg::Const(_) => {
                                         return Err(anyhow!(
-                                            "We do not support const generics in types yet. Sorry!"
+                                            "I do not support const generics in types yet. Sorry!"
                                         ));
                                     }
                                     GenericArg::Infer => {
-                                        return Err(anyhow!("We do not support inferred generic arguments in types yet. Sorry!"));
+                                        return Err(anyhow!("I do not support inferred generic arguments in types yet. Sorry!"));
                                     }
                                 };
                                 generics.push(generic_argument);
                             }
                         }
                         GenericArgs::Parenthesized { .. } => {
-                            return Err(anyhow!("We do not support function pointers yet. Sorry!"));
+                            return Err(anyhow!("I do not support function pointers yet. Sorry!"));
                         }
                     }
                 }
@@ -269,7 +284,7 @@ pub(crate) fn resolve_type_path(
             let arg = match generic_path {
                 ResolvedPathGenericArgument::Type(t) => {
                     // TODO: remove unwrap
-                    GenericArgument::Type(t.resolve(krate_collection).unwrap())
+                    GenericArgument::AssignedTypeParameter(t.resolve(krate_collection).unwrap())
                 }
                 ResolvedPathGenericArgument::Lifetime(l) => match l {
                     ResolvedPathLifetime::Static => GenericArgument::Lifetime(Lifetime::Static),

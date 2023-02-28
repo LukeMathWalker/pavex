@@ -3,7 +3,7 @@ use std::fmt::{Display, Formatter};
 use indexmap::{IndexMap, IndexSet};
 
 use crate::callable::{RawCallable, RawCallableIdentifiers};
-use crate::{router::MethodGuard, Callable};
+use crate::router::MethodGuard;
 
 #[derive(Default, serde::Serialize, serde::Deserialize)]
 /// A blueprint for the runtime behaviour of your application.
@@ -115,14 +115,7 @@ impl Blueprint {
     /// ```
     ///
     /// If a constructor for the same type has already been registered, it will be overwritten.
-    pub fn constructor<F, ConstructorInputs>(
-        &mut self,
-        callable: RawCallable<F>,
-        lifecycle: Lifecycle,
-    ) -> Constructor
-    where
-        F: Callable<ConstructorInputs>,
-    {
+    pub fn constructor(&mut self, callable: RawCallable, lifecycle: Lifecycle) -> Constructor {
         let callable_identifiers = RawCallableIdentifiers::new(callable.import_path);
         let location = std::panic::Location::caller();
         self.constructor_locations
@@ -221,15 +214,7 @@ impl Blueprint {
     /// ```
     ///
     /// [`router`]: crate::router
-    pub fn route<F, HandlerInputs>(
-        &mut self,
-        method_guard: MethodGuard,
-        path: &str,
-        callable: RawCallable<F>,
-    ) -> Route
-    where
-        F: Callable<HandlerInputs>,
-    {
+    pub fn route(&mut self, method_guard: MethodGuard, path: &str, callable: RawCallable) -> Route {
         let registered_route = RegisteredRoute {
             path: path.to_owned(),
             method_guard,
@@ -357,10 +342,7 @@ impl<'a> Route<'a> {
     /// `pavex_cli` will fail to generate the runtime code for your application if you register
     /// an error handler for an infallible request handler (i.e. a request handler that does not
     /// return a `Result`).
-    pub fn error_handler<F, HandlerInputs>(self, error_handler: RawCallable<F>) -> Self
-    where
-        F: Callable<HandlerInputs>,
-    {
+    pub fn error_handler(self, error_handler: RawCallable) -> Self {
         let callable_identifiers = RawCallableIdentifiers::new(error_handler.import_path);
         let callable = RegisteredCallable {
             callable: callable_identifiers,
@@ -422,10 +404,7 @@ impl<'a> Constructor<'a> {
     /// `pavex_cli` will fail to generate the runtime code for your application if you register
     /// an error handler for an infallible constructor (i.e. a constructor that does not return
     /// a `Result`).
-    pub fn error_handler<F, HandlerInputs>(self, handler: RawCallable<F>) -> Self
-    where
-        F: Callable<HandlerInputs>,
-    {
+    pub fn error_handler(self, handler: RawCallable) -> Self {
         let callable_identifiers = RawCallableIdentifiers::new(handler.import_path);
         self.blueprint.error_handler_locations.insert(
             self.constructor_identifiers.clone(),
