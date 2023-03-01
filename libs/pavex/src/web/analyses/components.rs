@@ -5,13 +5,19 @@ use ahash::{HashMap, HashMapExt};
 use bimap::BiHashMap;
 use guppy::graph::PackageGraph;
 use indexmap::IndexSet;
+use miette::NamedSource;
+use rustdoc_types::ItemEnum;
+use syn::spanned::Spanned;
 
 use pavex_builder::Lifecycle;
 
 use crate::diagnostic;
-use crate::diagnostic::{CallableType, CompilerDiagnostic, LocationExt, SourceSpanExt};
+use crate::diagnostic::{
+    convert_proc_macro_span, convert_rustdoc_span, AnnotatedSnippet, CallableType,
+    CompilerDiagnostic, LocationExt, SourceSpanExt,
+};
 use crate::language::{
-    NamedTypeGeneric, ResolvedPath, ResolvedPathQualifiedSelf, ResolvedPathSegment,
+    Callable, NamedTypeGeneric, ResolvedPath, ResolvedPathQualifiedSelf, ResolvedPathSegment,
     ResolvedPathType, ResolvedType, TypeReference,
 };
 use crate::rustdoc::CrateCollection;
@@ -179,7 +185,9 @@ impl ComponentDb {
                         e,
                         user_component_id,
                         user_component_db,
+                        computation_db,
                         package_graph,
+                        krate_collection,
                         raw_identifiers_db,
                         diagnostics,
                     );
@@ -929,31 +937,128 @@ impl ComponentDb {
         e: ConstructorValidationError,
         user_component_id: UserComponentId,
         user_component_db: &UserComponentDb,
+        computation_db: &ComputationDb,
         package_graph: &PackageGraph,
+        krate_collection: &CrateCollection,
         raw_identifiers_db: &RawCallableIdentifiersDb,
         diagnostics: &mut Vec<miette::Error>,
     ) {
-        match e {
+        let user_component = &user_component_db[user_component_id];
+        let raw_identifier_id = user_component.raw_callable_identifiers_id();
+        let location = raw_identifiers_db.get_location(raw_identifier_id);
+        let source = match location.source_file(package_graph) {
+            Ok(s) => s,
+            Err(e) => {
+                diagnostics.push(e.into());
+                return;
+            }
+        };
+        let label = diagnostic::get_f_macro_invocation_span(&source, location)
+            .map(|s| s.labeled("The constructor was registered here".into()));
+        let diagnostic = match e {
             ConstructorValidationError::CannotFalliblyReturnTheUnitType
             | ConstructorValidationError::CannotReturnTheUnitType => {
-                let user_component = &user_component_db[user_component_id];
-                let raw_identifier_id = user_component.raw_callable_identifiers_id();
-                let location = raw_identifiers_db.get_location(raw_identifier_id);
-                let source = match location.source_file(package_graph) {
-                    Ok(s) => s,
-                    Err(e) => {
-                        diagnostics.push(e.into());
-                        return;
-                    }
-                };
-                let label = diagnostic::get_f_macro_invocation_span(&source, location)
-                    .map(|s| s.labeled("The constructor was registered here".into()));
-                let diagnostic = CompilerDiagnostic::builder(source, e)
+                CompilerDiagnostic::builder(source, e)
                     .optional_label(label)
-                    .build();
-                diagnostics.push(diagnostic.into());
+                    .build()
             }
-        }
+            ConstructorValidationError::UnderconstrainedGenericParameters { ref parameters } => {
+                fn get_definition_span(
+                    callable: &Callable,
+                    free_parameters: &IndexSet<String>,
+                    krate_collection: &CrateCollection,
+                    package_graph: &PackageGraph,
+                ) -> Option<AnnotatedSnippet> {
+                    let global_item_id = callable.source_coordinates.as_ref()?;
+                    let item = krate_collection.get_type_by_global_type_id(global_item_id);
+                    let definition_span = item.span.as_ref()?;
+                    let source_contents = diagnostic::read_source_file(
+                        &definition_span.filename,
+                        &package_graph.workspace(),
+                    )
+                    .ok()?;
+                    let span = convert_rustdoc_span(&source_contents, definition_span.to_owned());
+                    let span_contents =
+                        source_contents[span.offset()..(span.offset() + span.len())].to_string();
+                    let generic_params = match &item.inner {
+                        ItemEnum::Function(_) => {
+                            if let Ok(item) = syn::parse_str::<syn::ItemFn>(&span_contents) {
+                                item.sig.generics.params
+                            } else if let Ok(item) =
+                                syn::parse_str::<syn::ImplItemMethod>(&span_contents)
+                            {
+                                item.sig.generics.params
+                            } else {
+                                panic!("Could not parse as a function or method:\n{span_contents}")
+                            }
+                        }
+                        _ => unreachable!(),
+                    };
+
+                    let mut labels = vec![];
+                    for param in generic_params {
+                        if let syn::GenericParam::Type(ty) = param {
+                            if free_parameters.contains(ty.ident.to_string().as_str()) {
+                                labels.push(
+                                    convert_proc_macro_span(&span_contents, ty.span())
+                                        .labeled("I can't infer this".into()),
+                                );
+                            }
+                        }
+                    }
+                    let source_path = definition_span.filename.to_str().unwrap();
+                    Some(AnnotatedSnippet::new_with_labels(
+                        NamedSource::new(source_path, span_contents),
+                        labels,
+                    ))
+                }
+
+                let callable = &computation_db[user_component_id];
+                let definition_snippet =
+                    get_definition_span(callable, parameters, krate_collection, package_graph);
+                let subject_verb = if parameters.len() == 1 {
+                    "it is"
+                } else {
+                    "they are"
+                };
+                let free_parameters = if parameters.len() == 1 {
+                    format!("`{}`", &parameters[0])
+                } else {
+                    let mut buffer = String::new();
+                    for (i, param) in parameters.iter().enumerate() {
+                        if i == parameters.len() - 1 {
+                            buffer.push_str("and ");
+                        }
+                        buffer.push_str(&format!("`{}`", param));
+                        if i != parameters.len() - 1 {
+                            buffer.push_str(", ");
+                        }
+                    }
+                    buffer
+                };
+                let error = anyhow::anyhow!(e)
+                    .context(
+                        format!(
+                            "I am not smart enough to figure out the concrete type for all the generic parameters in `{}`.\n\
+                            I can only infer the type of an unassigned generic parameter if it appears in the output type returned by the constructor. This is \
+                            not the case for {free_parameters}, since {subject_verb} only used in the input parameters.",
+                            callable.path));
+                CompilerDiagnostic::builder(source, error)
+                    .optional_label(label)
+                    .optional_additional_annotated_snippet(definition_snippet)
+                    .help(
+                        "Specify the concrete type(s) for the problematic \
+                        generic parameter(s) when registering the constructor against the blueprint: \n\
+                        |  bp.constructor(\n\
+                        |    f!(my_crate::my_constructor::<ConcreteType>), \n\
+                        |    ..\n\
+                        |  )".into())
+                    // ^ TODO: add a proper code snippet here, using the actual function that needs
+                    //    to be amended instead of a made signature
+                    .build()
+            }
+        };
+        diagnostics.push(diagnostic.into());
     }
 
     fn invalid_request_handler(

@@ -171,7 +171,6 @@ impl AnnotatedSnippet {
     }
 
     /// Build a new annotated snippet with multiple labels.
-    #[allow(unused)]
     pub fn new_with_labels(source_code: impl Into<NamedSource>, labels: Vec<LabeledSpan>) -> Self {
         Self {
             source_code: source_code.into(),

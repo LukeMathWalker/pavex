@@ -1,4 +1,5 @@
 use ahash::HashMap;
+use indexmap::IndexSet;
 
 use crate::language::{GenericArgument, NamedTypeGeneric, ResolvedType};
 
@@ -68,6 +69,15 @@ impl MatchResult {
             output,
             variant: self.variant,
         }
+    }
+
+    /// Returns the set of all unassigned generic type parameters in this matcher.
+    #[allow(unused)]
+    pub(crate) fn unassigned_generic_type_parameters(&self) -> IndexSet<NamedTypeGeneric> {
+        let mut result = IndexSet::new();
+        result.extend(self.input.unassigned_generic_type_parameters());
+        result.extend(self.output.unassigned_generic_type_parameters());
+        result
     }
 }
 

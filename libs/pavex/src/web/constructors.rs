@@ -1,5 +1,7 @@
 use std::borrow::Cow;
 
+use indexmap::IndexSet;
+
 use crate::language::ResolvedType;
 use crate::web::computation::{Computation, MatchResult};
 use crate::web::utils::is_result;
@@ -24,14 +26,40 @@ impl<'a> TryFrom<Computation<'a>> for Constructor<'a> {
             return Err(ConstructorValidationError::CannotReturnTheUnitType);
         }
         let output_type = c.output_type().unwrap();
+
+        let mut output_unassigned_generic_parameters =
+            output_type.unassigned_generic_type_parameters();
+
         // If the constructor is fallible, we make sure that it returns a non-unit type on
         // the happy path.
         if is_result(output_type) {
             let m = MatchResult::match_result(output_type);
+            output_unassigned_generic_parameters = m.ok.output.unassigned_generic_type_parameters();
             if m.ok.output == ResolvedType::UNIT_TYPE {
                 return Err(ConstructorValidationError::CannotFalliblyReturnTheUnitType);
             }
         }
+
+        let mut free_parameters = IndexSet::new();
+        for input in c.input_types().as_ref() {
+            free_parameters.extend(
+                input
+                    .unassigned_generic_type_parameters()
+                    .difference(&output_unassigned_generic_parameters)
+                    .cloned(),
+            );
+        }
+        if !free_parameters.is_empty() {
+            return Err(
+                ConstructorValidationError::UnderconstrainedGenericParameters {
+                    parameters: free_parameters
+                        .into_iter()
+                        .map(|t| t.name.clone())
+                        .collect(),
+                },
+            );
+        }
+
         Ok(Constructor(c))
     }
 }
@@ -101,6 +129,8 @@ pub(crate) enum ConstructorValidationError {
     CannotReturnTheUnitType,
     #[error("All fallible constructors must return *something* when successful.\nThis fallible constructor doesn't: it returns the unit type when successful, `Ok(())`.")]
     CannotFalliblyReturnTheUnitType,
+    #[error("Input parameters for a constructor cannot have any *unassigned* generic type parameters that appear exclusively in its input parameters.")]
+    UnderconstrainedGenericParameters { parameters: IndexSet<String> },
 }
 
 #[derive(thiserror::Error, Debug, Clone)]

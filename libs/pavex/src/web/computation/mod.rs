@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 
 use ahash::HashMap;
+use indexmap::IndexSet;
 
 pub(crate) use borrow_shared_reference::BorrowSharedReference;
 pub(crate) use match_result::{MatchResult, MatchResultVariant};
@@ -31,6 +32,7 @@ pub(crate) enum Computation<'a> {
 }
 
 impl<'a> Computation<'a> {
+    #[allow(unused)]
     pub fn ref_(&self) -> Computation<'_> {
         match self {
             Computation::Callable(c) => Computation::Callable(Cow::Borrowed(c)),
@@ -56,7 +58,7 @@ impl<'a> Computation<'a> {
     }
 
     /// The types required as input parameters by this computation.
-    pub fn input_types(&self) -> Cow<[crate::language::ResolvedType]> {
+    pub fn input_types(&self) -> Cow<[ResolvedType]> {
         match self {
             Computation::Callable(c) => Cow::Borrowed(c.inputs.as_slice()),
             Computation::MatchResult(m) => Cow::Owned(vec![m.input.clone()]),
@@ -93,6 +95,16 @@ impl<'a> Computation<'a> {
             Computation::BorrowSharedReference(b) => Computation::BorrowSharedReference(
                 Cow::Owned(b.bind_generic_type_parameters(bindings)),
             ),
+        }
+    }
+
+    /// Returns the set of all unassigned generic type parameters in this computation.
+    #[allow(unused)]
+    pub(crate) fn unassigned_generic_type_parameters(&self) -> IndexSet<NamedTypeGeneric> {
+        match self {
+            Computation::Callable(c) => c.unassigned_generic_type_parameters(),
+            Computation::MatchResult(m) => m.unassigned_generic_type_parameters(),
+            Computation::BorrowSharedReference(b) => b.unassigned_generic_type_parameters(),
         }
     }
 }

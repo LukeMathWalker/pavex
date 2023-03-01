@@ -5,8 +5,10 @@ use std::fmt::Write;
 use ahash::HashMap;
 use bimap::BiHashMap;
 use guppy::PackageId;
+use indexmap::IndexSet;
 
 use crate::language::{NamedTypeGeneric, ResolvedPath, ResolvedType};
+use crate::rustdoc::GlobalItemId;
 
 #[derive(Clone, Hash, Eq, PartialEq)]
 /// A Rust type that can be invoked - e.g. a function, a method, a struct literal constructor.
@@ -19,8 +21,11 @@ pub(crate) struct Callable {
     /// a type that implements the `Future` trait.
     pub is_async: bool,
     /// `None` if the callable returns the unit type (`()`).
+    /// Otherwise, the type of the callable return value.
     pub output: Option<ResolvedType>,
     /// The fully-qualified path pointing at this callable.
+    ///
+    /// E.g. `std::vec::Vec::new` for `Vec::new()`.
     pub path: ResolvedPath,
     /// The types of the callable input parameter types.
     /// The list is ordered, matching the order in the callable declaration - this is relevant
@@ -29,6 +34,12 @@ pub(crate) struct Callable {
     /// Rust supports different types of callables which rely on different invocation syntax.
     /// See [`InvocationStyle`] for more details.
     pub invocation_style: InvocationStyle,
+    /// The ids required to locate this callable in the JSON docs for the package where it is
+    /// defined.
+    ///
+    /// It is optional to allow for flexible usage patterns - e.g. to leverage [`Callable`]
+    /// to work with callables that we want to code-generate into a new crate.  
+    pub source_coordinates: Option<GlobalItemId>,
 }
 
 impl Callable {
@@ -55,6 +66,21 @@ impl Callable {
             inputs,
             ..self.clone()
         }
+    }
+
+    /// Returns the set of all unassigned generic type parameters in this callable.
+    ///
+    /// E.g. `[T]` for `fn f<T>() -> Json<T, u8>` or `[T, V]` for `fn g<T, V>() -> Json<T, V>`.
+    #[allow(unused)]
+    pub(crate) fn unassigned_generic_type_parameters(&self) -> IndexSet<NamedTypeGeneric> {
+        let mut result = IndexSet::new();
+        for input in &self.inputs {
+            result.extend(input.unassigned_generic_type_parameters());
+        }
+        if let Some(output) = &self.output {
+            result.extend(output.unassigned_generic_type_parameters());
+        }
+        result
     }
 }
 

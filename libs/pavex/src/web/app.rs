@@ -36,6 +36,8 @@ use crate::web::utils::process_framework_path;
 
 pub(crate) const GENERATED_APP_PACKAGE_ID: &str = "crate";
 
+/// An in-memory representation that can be used to generate application code that matches
+/// the constraints and instructions from a [`Blueprint`] instance..
 pub struct App {
     package_graph: PackageGraph,
     handler_call_graphs: IndexMap<RouterKey, CallGraph>,
@@ -58,18 +60,24 @@ fn compute_package_graph() -> Result<PackageGraph, miette::Error> {
         .map_err(|e| miette!(e))
 }
 
-/// Exit early if there is at least one error.
-macro_rules! exit_on_errors {
-    ($var:ident) => {
-        if !$var.is_empty() {
-            return Err($var);
-        }
-    };
-}
-
 impl App {
     #[tracing::instrument(skip_all)]
+    /// Process the [`Blueprint`] created by user into an [`App`] instance - an in-memory
+    /// representation that can be used to generate application code that matches the constraints
+    /// and instructions in the blueprint.
+    ///
+    /// Many different things can go wrong during this process: this method tries its best to
+    /// report all errors to the user, but it may not be able to do so in all cases.
     pub fn build(bp: Blueprint) -> Result<Self, Vec<miette::Error>> {
+        /// Exit early if there is at least one error.
+        macro_rules! exit_on_errors {
+            ($var:ident) => {
+                if !$var.is_empty() {
+                    return Err($var);
+                }
+            };
+        }
+
         let raw_identifiers_db = RawCallableIdentifiersDb::build(&bp);
         let user_component_db = UserComponentDb::build(&bp, &raw_identifiers_db);
         let package_graph = compute_package_graph().map_err(|e| vec![e])?;
