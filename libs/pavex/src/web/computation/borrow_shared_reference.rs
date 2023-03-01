@@ -1,4 +1,5 @@
 use ahash::HashMap;
+use indexmap::IndexSet;
 
 use crate::language::{NamedTypeGeneric, ResolvedType, TypeReference};
 
@@ -31,5 +32,13 @@ impl BorrowSharedReference {
             input: self.input.bind_generic_type_parameters(bindings),
             output: self.output.bind_generic_type_parameters(bindings),
         }
+    }
+
+    /// Returns the set of all unassigned generic type parameters in this borrow.
+    pub(crate) fn unassigned_generic_type_parameters(&self) -> IndexSet<NamedTypeGeneric> {
+        let mut result = IndexSet::new();
+        result.extend(self.input.unassigned_generic_type_parameters());
+        result.extend(self.output.unassigned_generic_type_parameters());
+        result
     }
 }

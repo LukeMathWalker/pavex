@@ -24,14 +24,31 @@ impl<'a> TryFrom<Computation<'a>> for Constructor<'a> {
             return Err(ConstructorValidationError::CannotReturnTheUnitType);
         }
         let output_type = c.output_type().unwrap();
+
+        let mut output_unassigned_generic_parameters =
+            output_type.unassigned_generic_type_parameters();
+
         // If the constructor is fallible, we make sure that it returns a non-unit type on
         // the happy path.
         if is_result(output_type) {
             let m = MatchResult::match_result(output_type);
+            output_unassigned_generic_parameters = m.ok.output.unassigned_generic_type_parameters();
             if m.ok.output == ResolvedType::UNIT_TYPE {
                 return Err(ConstructorValidationError::CannotFalliblyReturnTheUnitType);
             }
         }
+
+        for input in c.input_types().as_ref() {
+            if input
+                .unassigned_generic_type_parameters()
+                .difference(&output_unassigned_generic_parameters)
+                .count()
+                > 0
+            {
+                return Err(ConstructorValidationError::UnderconstrainedInputParameters);
+            }
+        }
+
         Ok(Constructor(c))
     }
 }
@@ -101,6 +118,8 @@ pub(crate) enum ConstructorValidationError {
     CannotReturnTheUnitType,
     #[error("All fallible constructors must return *something* when successful.\nThis fallible constructor doesn't: it returns the unit type when successful, `Ok(())`.")]
     CannotFalliblyReturnTheUnitType,
+    #[error("Input parameters for a constructor cannot have any *unassigned* generic type parameters that do not appear as well in its output type.")]
+    UnderconstrainedInputParameters,
 }
 
 #[derive(thiserror::Error, Debug, Clone)]

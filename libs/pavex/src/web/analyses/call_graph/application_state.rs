@@ -64,6 +64,7 @@ pub(crate) fn application_state_call_graph(
                 .map(|(ident, type_)| (ident.to_string(), type_.to_owned()))
                 .collect(),
         },
+        source_coordinates: None,
     };
     let application_state_callable_id = computation_db.get_or_intern(application_state_constructor);
     let application_state_id = component_db
@@ -170,6 +171,7 @@ pub(crate) fn application_state_call_graph(
             },
             inputs: vec![application_state_type.into()],
             invocation_style: InvocationStyle::FunctionCall,
+            source_coordinates: None,
         }
     };
     let err_wrapper = {
@@ -191,6 +193,7 @@ pub(crate) fn application_state_call_graph(
             },
             inputs: vec![error_enum.clone().into()],
             invocation_style: InvocationStyle::FunctionCall,
+            source_coordinates: None,
         }
     };
     component_db.get_or_intern_transformer(
@@ -253,6 +256,7 @@ pub(crate) fn application_state_call_graph(
                 output: Some(error_enum.clone().into()),
                 inputs: vec![error_type.to_owned()],
                 invocation_style: InvocationStyle::FunctionCall,
+                source_coordinates: None,
             };
             let transformer_id = component_db.get_or_intern_transformer(
                 computation_db.get_or_intern(error_variant_constructor.clone()),

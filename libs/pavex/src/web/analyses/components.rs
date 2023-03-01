@@ -5,16 +5,22 @@ use ahash::{HashMap, HashMapExt};
 use bimap::BiHashMap;
 use guppy::graph::PackageGraph;
 use indexmap::IndexSet;
+use miette::NamedSource;
+use rustdoc_types::ItemEnum;
+use syn::spanned::Spanned;
 
 use pavex_builder::Lifecycle;
 
 use crate::diagnostic;
-use crate::diagnostic::{CallableType, CompilerDiagnostic, LocationExt, SourceSpanExt};
+use crate::diagnostic::{
+    convert_proc_macro_span, convert_rustdoc_span, AnnotatedSnippet, CallableType,
+    CompilerDiagnostic, LocationExt, SourceSpanExt,
+};
 use crate::language::{
-    NamedTypeGeneric, ResolvedPath, ResolvedPathQualifiedSelf, ResolvedPathSegment,
+    Callable, NamedTypeGeneric, ResolvedPath, ResolvedPathQualifiedSelf, ResolvedPathSegment,
     ResolvedPathType, ResolvedType, TypeReference,
 };
-use crate::rustdoc::CrateCollection;
+use crate::rustdoc::{CrateCollection, GlobalItemId};
 use crate::web::analyses::computations::{ComputationDb, ComputationId};
 use crate::web::analyses::raw_identifiers::RawCallableIdentifiersDb;
 use crate::web::analyses::user_components::{
@@ -179,7 +185,9 @@ impl ComponentDb {
                         e,
                         user_component_id,
                         user_component_db,
+                        computation_db,
                         package_graph,
+                        krate_collection,
                         raw_identifiers_db,
                         diagnostics,
                     );
@@ -929,31 +937,105 @@ impl ComponentDb {
         e: ConstructorValidationError,
         user_component_id: UserComponentId,
         user_component_db: &UserComponentDb,
+        computation_db: &ComputationDb,
         package_graph: &PackageGraph,
+        krate_collection: &CrateCollection,
         raw_identifiers_db: &RawCallableIdentifiersDb,
         diagnostics: &mut Vec<miette::Error>,
     ) {
-        match e {
+        let user_component = &user_component_db[user_component_id];
+        let raw_identifier_id = user_component.raw_callable_identifiers_id();
+        let location = raw_identifiers_db.get_location(raw_identifier_id);
+        let source = match location.source_file(package_graph) {
+            Ok(s) => s,
+            Err(e) => {
+                diagnostics.push(e.into());
+                return;
+            }
+        };
+        let label = diagnostic::get_f_macro_invocation_span(&source, location)
+            .map(|s| s.labeled("The constructor was registered here".into()));
+        let diagnostic = match e {
             ConstructorValidationError::CannotFalliblyReturnTheUnitType
             | ConstructorValidationError::CannotReturnTheUnitType => {
-                let user_component = &user_component_db[user_component_id];
-                let raw_identifier_id = user_component.raw_callable_identifiers_id();
-                let location = raw_identifiers_db.get_location(raw_identifier_id);
-                let source = match location.source_file(package_graph) {
-                    Ok(s) => s,
-                    Err(e) => {
-                        diagnostics.push(e.into());
-                        return;
-                    }
-                };
-                let label = diagnostic::get_f_macro_invocation_span(&source, location)
-                    .map(|s| s.labeled("The constructor was registered here".into()));
-                let diagnostic = CompilerDiagnostic::builder(source, e)
+                CompilerDiagnostic::builder(source, e)
                     .optional_label(label)
-                    .build();
-                diagnostics.push(diagnostic.into());
+                    .build()
             }
-        }
+            ConstructorValidationError::UnderconstrainedInputParameters => {
+                fn get_definition_span(
+                    callable: &Callable,
+                    krate_collection: &CrateCollection,
+                    package_graph: &PackageGraph,
+                ) -> Option<AnnotatedSnippet> {
+                    let global_item_id = callable.source_coordinates.as_ref()?;
+                    let definition_span = krate_collection
+                        .get_type_by_global_type_id(global_item_id)
+                        .span
+                        .as_ref()?;
+                    let source_contents = diagnostic::read_source_file(
+                        &definition_span.filename,
+                        &package_graph.workspace(),
+                    )
+                    .ok()?;
+                    let span = convert_rustdoc_span(&source_contents, definition_span.to_owned());
+                    // let span_contents =
+                    //     &source_contents[span.offset()..(span.offset() + span.len())];
+                    // let input = match &inner_error.callable_item.inner {
+                    //     ItemEnum::Function(_) => {
+                    //         if let Ok(item) = syn::parse_str::<syn::ItemFn>(span_contents) {
+                    //             let mut inputs = item.sig.inputs.iter();
+                    //             inputs.nth(inner_error.parameter_index).cloned()
+                    //         } else if let Ok(item) =
+                    //             syn::parse_str::<syn::ImplItemMethod>(span_contents)
+                    //         {
+                    //             let mut inputs = item.sig.inputs.iter();
+                    //             inputs.nth(inner_error.parameter_index).cloned()
+                    //         } else {
+                    //             panic!("Could not parse as a function or method:\n{span_contents}")
+                    //         }
+                    //     }
+                    //     _ => unreachable!(),
+                    // }
+                    // .unwrap();
+                    // let s = convert_proc_macro_span(
+                    //     span_contents,
+                    //     match input {
+                    //         syn::FnArg::Typed(typed) => typed.ty.span(),
+                    //         syn::FnArg::Receiver(r) => r.span(),
+                    //     },
+                    // );
+                    // let label = miette::SourceSpan::new(
+                    //     // We must shift the offset forward because it's the
+                    //     // offset from the beginning of the file slice that
+                    //     // we deserialized, instead of the entire file
+                    //     (s.offset() + span.offset()).into(),
+                    //     s.len().into(),
+                    // )
+                    let label = span.labeled("I do not know how handle this parameter".into());
+                    let source_path = definition_span.filename.to_str().unwrap();
+                    Some(AnnotatedSnippet::new(
+                        NamedSource::new(source_path, source_contents),
+                        label,
+                    ))
+                }
+
+                let definition_snippet = get_definition_span(
+                    &computation_db[user_component_id],
+                    krate_collection,
+                    package_graph,
+                );
+                let error = anyhow::anyhow!(e)
+                    .context("I cannot infer the concrete type that must be injected into this constructor: it is under-constrained.\n\
+                    While constructors can have unassigned generic type parameters, there is a restriction: \
+                    all those unassigned generic type parameters must appear in its output type.");
+                CompilerDiagnostic::builder(source, error)
+                    .optional_label(label)
+                    .optional_additional_annotated_snippet(definition_snippet)
+                    .build()
+            }
+        };
+        diagnostics.push(diagnostic.into());
     }
 
     fn invalid_request_handler(

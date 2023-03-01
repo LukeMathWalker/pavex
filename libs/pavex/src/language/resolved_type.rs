@@ -6,6 +6,7 @@ use ahash::{HashMap, HashMapExt};
 use anyhow::Context;
 use bimap::BiHashMap;
 use guppy::PackageId;
+use indexmap::IndexSet;
 use serde::{Deserializer, Serializer};
 
 use crate::language::resolved_type::generics_equivalence::{
@@ -100,6 +101,41 @@ impl ResolvedType {
             ResolvedType::Tuple(t) => t.elements.iter().any(|t| t.is_a_template()),
             ResolvedType::ScalarPrimitive(_) => false,
             ResolvedType::Slice(s) => s.element_type.is_a_template(),
+        }
+    }
+
+    /// Returns the set of all unassigned generic type parameters in this type.
+    ///
+    /// E.g. `[T]` for `Json<T, u8>` or `[T, V]` for `Json<T, V>`.
+    pub fn unassigned_generic_type_parameters(&self) -> IndexSet<NamedTypeGeneric> {
+        let mut set = IndexSet::new();
+        self._unassigned_generic_type_parameters(&mut set);
+        set
+    }
+
+    fn _unassigned_generic_type_parameters(&self, set: &mut IndexSet<NamedTypeGeneric>) {
+        match self {
+            ResolvedType::ResolvedPath(path) => {
+                for arg in &path.generic_arguments {
+                    match arg {
+                        GenericArgument::UnassignedTypeParameter(name) => {
+                            set.insert(name.clone());
+                        }
+                        GenericArgument::AssignedTypeParameter(g) => {
+                            g._unassigned_generic_type_parameters(set);
+                        }
+                        GenericArgument::Lifetime(_) => {}
+                    }
+                }
+            }
+            ResolvedType::Reference(r) => r.inner._unassigned_generic_type_parameters(set),
+            ResolvedType::Tuple(t) => {
+                for inner in &t.elements {
+                    inner._unassigned_generic_type_parameters(set);
+                }
+            }
+            ResolvedType::ScalarPrimitive(_) => {}
+            ResolvedType::Slice(s) => s.element_type._unassigned_generic_type_parameters(set),
         }
     }
 

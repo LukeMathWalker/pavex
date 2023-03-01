@@ -265,6 +265,7 @@ pub(crate) fn resolve_callable(
         path: callable_path.to_owned(),
         inputs: parameter_paths,
         invocation_style,
+        source_coordinates: Some(callable_type.item.item_id),
     };
     Ok(callable)
 }
