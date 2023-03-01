@@ -38,6 +38,7 @@ where
         }
     }
 
+    #[allow(unused)]
     pub fn get(&self, value: &T) -> Option<la_arena::Idx<T>> {
         self.item2id.get(value).copied()
     }

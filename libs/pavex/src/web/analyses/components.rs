@@ -20,7 +20,7 @@ use crate::language::{
     Callable, NamedTypeGeneric, ResolvedPath, ResolvedPathQualifiedSelf, ResolvedPathSegment,
     ResolvedPathType, ResolvedType, TypeReference,
 };
-use crate::rustdoc::{CrateCollection, GlobalItemId};
+use crate::rustdoc::CrateCollection;
 use crate::web::analyses::computations::{ComputationDb, ComputationId};
 use crate::web::analyses::raw_identifiers::RawCallableIdentifiersDb;
 use crate::web::analyses::user_components::{
@@ -962,76 +962,99 @@ impl ComponentDb {
                     .optional_label(label)
                     .build()
             }
-            ConstructorValidationError::UnderconstrainedInputParameters => {
+            ConstructorValidationError::UnderconstrainedGenericParameters { ref parameters } => {
                 fn get_definition_span(
                     callable: &Callable,
+                    free_parameters: &IndexSet<String>,
                     krate_collection: &CrateCollection,
                     package_graph: &PackageGraph,
                 ) -> Option<AnnotatedSnippet> {
                     let global_item_id = callable.source_coordinates.as_ref()?;
-                    let definition_span = krate_collection
-                        .get_type_by_global_type_id(global_item_id)
-                        .span
-                        .as_ref()?;
+                    let item = krate_collection.get_type_by_global_type_id(global_item_id);
+                    let definition_span = item.span.as_ref()?;
                     let source_contents = diagnostic::read_source_file(
                         &definition_span.filename,
                         &package_graph.workspace(),
                     )
                     .ok()?;
                     let span = convert_rustdoc_span(&source_contents, definition_span.to_owned());
-                    // let span_contents =
-                    //     &source_contents[span.offset()..(span.offset() + span.len())];
-                    // let input = match &inner_error.callable_item.inner {
-                    //     ItemEnum::Function(_) => {
-                    //         if let Ok(item) = syn::parse_str::<syn::ItemFn>(span_contents) {
-                    //             let mut inputs = item.sig.inputs.iter();
-                    //             inputs.nth(inner_error.parameter_index).cloned()
-                    //         } else if let Ok(item) =
-                    //             syn::parse_str::<syn::ImplItemMethod>(span_contents)
-                    //         {
-                    //             let mut inputs = item.sig.inputs.iter();
-                    //             inputs.nth(inner_error.parameter_index).cloned()
-                    //         } else {
-                    //             panic!("Could not parse as a function or method:\n{span_contents}")
-                    //         }
-                    //     }
-                    //     _ => unreachable!(),
-                    // }
-                    // .unwrap();
-                    // let s = convert_proc_macro_span(
-                    //     span_contents,
-                    //     match input {
-                    //         syn::FnArg::Typed(typed) => typed.ty.span(),
-                    //         syn::FnArg::Receiver(r) => r.span(),
-                    //     },
-                    // );
-                    // let label = miette::SourceSpan::new(
-                    //     // We must shift the offset forward because it's the
-                    //     // offset from the beginning of the file slice that
-                    //     // we deserialized, instead of the entire file
-                    //     (s.offset() + span.offset()).into(),
-                    //     s.len().into(),
-                    // )
-                    let label = span.labeled("I do not know how handle this parameter".into());
+                    let span_contents =
+                        source_contents[span.offset()..(span.offset() + span.len())].to_string();
+                    let generic_params = match &item.inner {
+                        ItemEnum::Function(_) => {
+                            if let Ok(item) = syn::parse_str::<syn::ItemFn>(&span_contents) {
+                                item.sig.generics.params
+                            } else if let Ok(item) =
+                                syn::parse_str::<syn::ImplItemMethod>(&span_contents)
+                            {
+                                item.sig.generics.params
+                            } else {
+                                panic!("Could not parse as a function or method:\n{span_contents}")
+                            }
+                        }
+                        _ => unreachable!(),
+                    };
+
+                    let mut labels = vec![];
+                    for param in generic_params {
+                        if let syn::GenericParam::Type(ty) = param {
+                            if free_parameters.contains(ty.ident.to_string().as_str()) {
+                                labels.push(
+                                    convert_proc_macro_span(&span_contents, ty.span())
+                                        .labeled("I can't infer this".into()),
+                                );
+                            }
+                        }
+                    }
                     let source_path = definition_span.filename.to_str().unwrap();
-                    Some(AnnotatedSnippet::new(
-                        NamedSource::new(source_path, source_contents),
-                        label,
+                    Some(AnnotatedSnippet::new_with_labels(
+                        NamedSource::new(source_path, span_contents),
+                        labels,
                     ))
                 }
 
-                let definition_snippet = get_definition_span(
-                    &computation_db[user_component_id],
-                    krate_collection,
-                    package_graph,
-                );
+                let callable = &computation_db[user_component_id];
+                let definition_snippet =
+                    get_definition_span(callable, parameters, krate_collection, package_graph);
+                let subject_verb = if parameters.len() == 1 {
+                    "it is"
+                } else {
+                    "they are"
+                };
+                let free_parameters = if parameters.len() == 1 {
+                    format!("`{}`", &parameters[0])
+                } else {
+                    let mut buffer = String::new();
+                    for (i, param) in parameters.iter().enumerate() {
+                        if i == parameters.len() - 1 {
+                            buffer.push_str("and ");
+                        }
+                        buffer.push_str(&format!("`{}`", param));
+                        if i != parameters.len() - 1 {
+                            buffer.push_str(", ");
+                        }
+                    }
+                    buffer
+                };
                 let error = anyhow::anyhow!(e)
-                    .context("I cannot infer the concrete type that must be injected into this constructor: it is under-constrained.\n\
-                    While constructors can have unassigned generic type parameters, there is a restriction: \
-                    all those unassigned generic type parameters must appear in its output type.");
+                    .context(
+                        format!(
+                            "I am not smart enough to figure out the concrete type for all the generic parameters in `{}`.\n\
+                            I can only infer the type of an unassigned generic parameter if it appears in the output type returned by the constructor. This is \
+                            not the case for {free_parameters}, since {subject_verb} only used in the input parameters.",
+                            callable.path));
                 CompilerDiagnostic::builder(source, error)
                     .optional_label(label)
                     .optional_additional_annotated_snippet(definition_snippet)
+                    .help(
+                        "Specify the concrete type(s) for the problematic \
+                        generic parameter(s) when registering the constructor against the blueprint: \n\
+                        |  bp.constructor(\n\
+                        |    f!(my_crate::my_constructor::<ConcreteType>), \n\
+                        |    ..\n\
+                        |  )".into())
+                    // ^ TODO: add a proper code snippet here, using the actual function that needs
+                    //    to be amended instead of a made signature
                     .build()
             }
         };

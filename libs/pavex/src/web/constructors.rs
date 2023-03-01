@@ -1,5 +1,7 @@
 use std::borrow::Cow;
 
+use indexmap::IndexSet;
+
 use crate::language::ResolvedType;
 use crate::web::computation::{Computation, MatchResult};
 use crate::web::utils::is_result;
@@ -38,15 +40,24 @@ impl<'a> TryFrom<Computation<'a>> for Constructor<'a> {
             }
         }
 
+        let mut free_parameters = IndexSet::new();
         for input in c.input_types().as_ref() {
-            if input
-                .unassigned_generic_type_parameters()
-                .difference(&output_unassigned_generic_parameters)
-                .count()
-                > 0
-            {
-                return Err(ConstructorValidationError::UnderconstrainedInputParameters);
-            }
+            free_parameters.extend(
+                input
+                    .unassigned_generic_type_parameters()
+                    .difference(&output_unassigned_generic_parameters)
+                    .cloned(),
+            );
+        }
+        if !free_parameters.is_empty() {
+            return Err(
+                ConstructorValidationError::UnderconstrainedGenericParameters {
+                    parameters: free_parameters
+                        .into_iter()
+                        .map(|t| t.name.clone())
+                        .collect(),
+                },
+            );
         }
 
         Ok(Constructor(c))
@@ -118,8 +129,8 @@ pub(crate) enum ConstructorValidationError {
     CannotReturnTheUnitType,
     #[error("All fallible constructors must return *something* when successful.\nThis fallible constructor doesn't: it returns the unit type when successful, `Ok(())`.")]
     CannotFalliblyReturnTheUnitType,
-    #[error("Input parameters for a constructor cannot have any *unassigned* generic type parameters that do not appear as well in its output type.")]
-    UnderconstrainedInputParameters,
+    #[error("Input parameters for a constructor cannot have any *unassigned* generic type parameters that appear exclusively in its input parameters.")]
+    UnderconstrainedGenericParameters { parameters: IndexSet<String> },
 }
 
 #[derive(thiserror::Error, Debug, Clone)]

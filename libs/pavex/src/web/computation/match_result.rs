@@ -72,6 +72,7 @@ impl MatchResult {
     }
 
     /// Returns the set of all unassigned generic type parameters in this matcher.
+    #[allow(unused)]
     pub(crate) fn unassigned_generic_type_parameters(&self) -> IndexSet<NamedTypeGeneric> {
         let mut result = IndexSet::new();
         result.extend(self.input.unassigned_generic_type_parameters());

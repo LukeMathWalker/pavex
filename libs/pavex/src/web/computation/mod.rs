@@ -32,6 +32,7 @@ pub(crate) enum Computation<'a> {
 }
 
 impl<'a> Computation<'a> {
+    #[allow(unused)]
     pub fn ref_(&self) -> Computation<'_> {
         match self {
             Computation::Callable(c) => Computation::Callable(Cow::Borrowed(c)),
@@ -98,6 +99,7 @@ impl<'a> Computation<'a> {
     }
 
     /// Returns the set of all unassigned generic type parameters in this computation.
+    #[allow(unused)]
     pub(crate) fn unassigned_generic_type_parameters(&self) -> IndexSet<NamedTypeGeneric> {
         match self {
             Computation::Callable(c) => c.unassigned_generic_type_parameters(),

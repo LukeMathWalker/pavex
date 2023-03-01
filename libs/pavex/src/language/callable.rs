@@ -71,6 +71,7 @@ impl Callable {
     /// Returns the set of all unassigned generic type parameters in this callable.
     ///
     /// E.g. `[T]` for `fn f<T>() -> Json<T, u8>` or `[T, V]` for `fn g<T, V>() -> Json<T, V>`.
+    #[allow(unused)]
     pub(crate) fn unassigned_generic_type_parameters(&self) -> IndexSet<NamedTypeGeneric> {
         let mut result = IndexSet::new();
         for input in &self.inputs {
