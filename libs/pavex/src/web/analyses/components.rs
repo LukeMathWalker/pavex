@@ -980,14 +980,14 @@ impl ComponentDb {
                     let span = convert_rustdoc_span(&source_contents, definition_span.to_owned());
                     let span_contents =
                         source_contents[span.offset()..(span.offset() + span.len())].to_string();
-                    let generic_params = match &item.inner {
+                    let (generic_params, output) = match &item.inner {
                         ItemEnum::Function(_) => {
                             if let Ok(item) = syn::parse_str::<syn::ItemFn>(&span_contents) {
-                                item.sig.generics.params
+                                (item.sig.generics.params, item.sig.output)
                             } else if let Ok(item) =
                                 syn::parse_str::<syn::ImplItemMethod>(&span_contents)
                             {
-                                item.sig.generics.params
+                                (item.sig.generics.params, item.sig.output)
                             } else {
                                 panic!("Could not parse as a function or method:\n{span_contents}")
                             }
@@ -996,16 +996,30 @@ impl ComponentDb {
                     };
 
                     let mut labels = vec![];
+                    let subject_verb = if generic_params.len() == 1 {
+                        "it is"
+                    } else {
+                        "they are"
+                    };
                     for param in generic_params {
                         if let syn::GenericParam::Type(ty) = param {
                             if free_parameters.contains(ty.ident.to_string().as_str()) {
                                 labels.push(
                                     convert_proc_macro_span(&span_contents, ty.span())
-                                        .labeled("I can't infer this".into()),
+                                        .labeled("I can't infer this..".into()),
                                 );
                             }
                         }
                     }
+                    let output_span = if let syn::ReturnType::Type(_, output_type) = &output {
+                        output_type.span()
+                    } else {
+                        output.span()
+                    };
+                    labels.push(
+                        convert_proc_macro_span(&span_contents, output_span)
+                            .labeled(format!("..because {subject_verb} not used here")),
+                    );
                     let source_path = definition_span.filename.to_str().unwrap();
                     Some(AnnotatedSnippet::new_with_labels(
                         NamedSource::new(source_path, span_contents),
