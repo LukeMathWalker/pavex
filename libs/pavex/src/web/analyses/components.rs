@@ -1071,6 +1071,9 @@ impl ComponentDb {
                     //    to be amended instead of a made signature
                     .build()
             }
+            ConstructorValidationError::NakedGenericOutputType { .. } => {
+                todo!()
+            }
         };
         diagnostics.push(diagnostic.into());
     }
