@@ -25,21 +25,19 @@ impl<'a> TryFrom<Computation<'a>> for Constructor<'a> {
         if c.output_type().is_none() {
             return Err(ConstructorValidationError::CannotReturnTheUnitType);
         }
-        let output_type = c.output_type().unwrap();
-
-        let mut output_unassigned_generic_parameters =
-            output_type.unassigned_generic_type_parameters();
+        let mut output_type = c.output_type().unwrap().to_owned();
 
         // If the constructor is fallible, we make sure that it returns a non-unit type on
         // the happy path.
-        if is_result(output_type) {
-            let m = MatchResult::match_result(output_type);
-            output_unassigned_generic_parameters = m.ok.output.unassigned_generic_type_parameters();
-            if m.ok.output == ResolvedType::UNIT_TYPE {
+        if is_result(&output_type) {
+            let m = MatchResult::match_result(&output_type);
+            output_type = m.ok.output;
+            if output_type == ResolvedType::UNIT_TYPE {
                 return Err(ConstructorValidationError::CannotFalliblyReturnTheUnitType);
             }
         }
 
+        let output_unassigned_generic_parameters = output_type.unassigned_generic_type_parameters();
         let mut free_parameters = IndexSet::new();
         for input in c.input_types().as_ref() {
             free_parameters.extend(
@@ -131,6 +129,11 @@ pub(crate) enum ConstructorValidationError {
     CannotFalliblyReturnTheUnitType,
     #[error("Input parameters for a constructor cannot have any *unassigned* generic type parameters that appear exclusively in its input parameters.")]
     UnderconstrainedGenericParameters { parameters: IndexSet<String> },
+    #[error("The output type of a constructor cannot be a naked generic parameters (i.e. `T`).\n\
+        Pavex ignores trait bounds when looking at generic parameters, therefore a constructor \
+        that returns a generic `T` is a constructor that can build **any** type - which is unlikely \
+        to be the case.")]
+    NakedGenericOutputType { naked_parameter: String },
 }
 
 #[derive(thiserror::Error, Debug, Clone)]
