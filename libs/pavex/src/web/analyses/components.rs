@@ -1067,8 +1067,74 @@ impl ComponentDb {
                     //    to be amended instead of a made signature
                     .build()
             }
-            ConstructorValidationError::NakedGenericOutputType { .. } => {
-                todo!()
+            ConstructorValidationError::NakedGenericOutputType {
+                ref naked_parameter,
+            } => {
+                fn get_definition_span(
+                    callable: &Callable,
+                    krate_collection: &CrateCollection,
+                    package_graph: &PackageGraph,
+                ) -> Option<AnnotatedSnippet> {
+                    let global_item_id = callable.source_coordinates.as_ref()?;
+                    let item = krate_collection.get_type_by_global_type_id(global_item_id);
+                    let definition_span = item.span.as_ref()?;
+                    let source_contents = diagnostic::read_source_file(
+                        &definition_span.filename,
+                        &package_graph.workspace(),
+                    )
+                    .ok()?;
+                    let span = convert_rustdoc_span(&source_contents, definition_span.to_owned());
+                    let span_contents =
+                        source_contents[span.offset()..(span.offset() + span.len())].to_string();
+                    let output = match &item.inner {
+                        ItemEnum::Function(_) => {
+                            if let Ok(item) = syn::parse_str::<syn::ItemFn>(&span_contents) {
+                                item.sig.output
+                            } else if let Ok(item) =
+                                syn::parse_str::<syn::ImplItemMethod>(&span_contents)
+                            {
+                                item.sig.output
+                            } else {
+                                panic!("Could not parse as a function or method:\n{span_contents}")
+                            }
+                        }
+                        _ => unreachable!(),
+                    };
+
+                    let output_span = if let syn::ReturnType::Type(_, output_type) = &output {
+                        output_type.span()
+                    } else {
+                        output.span()
+                    };
+                    let label = convert_proc_macro_span(&span_contents, output_span)
+                        .labeled(format!("The invalid output type"));
+                    let source_path = definition_span.filename.to_str().unwrap();
+                    Some(AnnotatedSnippet::new(
+                        NamedSource::new(source_path, span_contents),
+                        label,
+                    ))
+                }
+
+                let callable = &computation_db[user_component_id];
+                let definition_snippet =
+                    get_definition_span(callable, krate_collection, package_graph);
+                let msg = format!(
+                    "You can't return a naked generic parameter from a constructor, like `{naked_parameter}` in `{}`.\n\
+                    I do not take into account trait bounds when building your dependency graph. A constructor \n\
+                    that returns a naked generic parameter is equivalent, in my eyes, to a constructor that can build \n\
+                    **any** type, which is unlikely to be what you want!",
+                    callable.path
+                );
+                let error = anyhow::anyhow!(e).context(msg);
+                CompilerDiagnostic::builder(source, error)
+                    .optional_label(label)
+                    .optional_additional_annotated_snippet(definition_snippet)
+                    .help(
+                        "Can you return a concrete type as output? Or wrap it the generic \
+                        parameter (e.g. `T` in `Vec<T>` is not considered to be a naked parameter)"
+                            .into(),
+                    )
+                    .build()
             }
         };
         diagnostics.push(diagnostic.into());

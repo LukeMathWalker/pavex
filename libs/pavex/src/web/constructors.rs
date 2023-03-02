@@ -37,6 +37,12 @@ impl<'a> TryFrom<Computation<'a>> for Constructor<'a> {
             }
         }
 
+        if let ResolvedType::Generic(g) = output_type {
+            return Err(ConstructorValidationError::NakedGenericOutputType {
+                naked_parameter: g.name,
+            });
+        }
+
         let output_unassigned_generic_parameters = output_type.unassigned_generic_type_parameters();
         let mut free_parameters = IndexSet::new();
         for input in c.input_types().as_ref() {
