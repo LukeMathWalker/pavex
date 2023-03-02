@@ -2,9 +2,7 @@ use std::fmt::{Display, Formatter};
 
 use ahash::HashMap;
 
-use crate::language::{
-    Callable, GenericArgument, NamedTypeGeneric, ResolvedPath, ResolvedType, TypeReference,
-};
+use crate::language::{Callable, GenericArgument, ResolvedPath, ResolvedType, TypeReference};
 use crate::web::utils::is_result;
 
 /// A transformation that, given a reference to an error type (and, optionally, other inputs),
@@ -39,7 +37,7 @@ impl ErrorHandler {
             let ResolvedType::ResolvedPath(result_type) = result_type else {
                 unreachable!()
             };
-            let GenericArgument::AssignedTypeParameter(e) = result_type.generic_arguments[1].clone() else {
+            let GenericArgument::TypeParameter(e) = result_type.generic_arguments[1].clone() else {
                 unreachable!()
             };
             ResolvedType::Reference(TypeReference {
@@ -90,10 +88,7 @@ impl ErrorHandler {
     /// concrete types specified in `bindings`.
     ///
     /// The newly "bound" error handler will be returned.
-    pub fn bind_generic_type_parameters(
-        &self,
-        bindings: &HashMap<NamedTypeGeneric, ResolvedType>,
-    ) -> Self {
+    pub fn bind_generic_type_parameters(&self, bindings: &HashMap<String, ResolvedType>) -> Self {
         Self {
             callable: self.callable.bind_generic_type_parameters(bindings),
             error_input_index: self.error_input_index,

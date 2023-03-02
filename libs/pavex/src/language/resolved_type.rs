@@ -22,6 +22,7 @@ pub enum ResolvedType {
     Tuple(Tuple),
     ScalarPrimitive(ScalarPrimitive),
     Slice(Slice),
+    Generic(Generic),
 }
 
 impl ResolvedType {
@@ -34,24 +35,15 @@ impl ResolvedType {
     /// `t`. You are not required to bind all of them.
     pub fn bind_generic_type_parameters(
         &self,
-        bindings: &HashMap<NamedTypeGeneric, ResolvedType>,
+        bindings: &HashMap<String, ResolvedType>,
     ) -> ResolvedType {
         match self {
             ResolvedType::ResolvedPath(t) => {
                 let mut bound_generics = Vec::with_capacity(t.generic_arguments.len());
                 for generic in &t.generic_arguments {
                     let bound_generic = match generic {
-                        GenericArgument::UnassignedTypeParameter(name) => {
-                            if let Some(bound_type) = bindings.get(name) {
-                                GenericArgument::AssignedTypeParameter(bound_type.clone())
-                            } else {
-                                generic.to_owned()
-                            }
-                        }
-                        GenericArgument::AssignedTypeParameter(t) => {
-                            GenericArgument::AssignedTypeParameter(
-                                t.bind_generic_type_parameters(bindings),
-                            )
+                        GenericArgument::TypeParameter(t) => {
+                            GenericArgument::TypeParameter(t.bind_generic_type_parameters(bindings))
                         }
                         GenericArgument::Lifetime(_) => generic.to_owned(),
                     };
@@ -83,6 +75,13 @@ impl ResolvedType {
             ResolvedType::Slice(s) => ResolvedType::Slice(Slice {
                 element_type: Box::new(s.element_type.bind_generic_type_parameters(bindings)),
             }),
+            ResolvedType::Generic(g) => {
+                if let Some(bound_type) = bindings.get(&g.name) {
+                    bound_type.clone()
+                } else {
+                    ResolvedType::Generic(g.to_owned())
+                }
+            }
         }
     }
 
@@ -92,8 +91,7 @@ impl ResolvedType {
         match self {
             ResolvedType::ResolvedPath(path) => {
                 path.generic_arguments.iter().any(|arg| match arg {
-                    GenericArgument::UnassignedTypeParameter(_) => true,
-                    GenericArgument::AssignedTypeParameter(g) => g.is_a_template(),
+                    GenericArgument::TypeParameter(g) => g.is_a_template(),
                     GenericArgument::Lifetime(_) => false,
                 })
             }
@@ -101,27 +99,25 @@ impl ResolvedType {
             ResolvedType::Tuple(t) => t.elements.iter().any(|t| t.is_a_template()),
             ResolvedType::ScalarPrimitive(_) => false,
             ResolvedType::Slice(s) => s.element_type.is_a_template(),
+            ResolvedType::Generic(_) => true,
         }
     }
 
     /// Returns the set of all unassigned generic type parameters in this type.
     ///
     /// E.g. `[T]` for `Json<T, u8>` or `[T, V]` for `Json<T, V>`.
-    pub fn unassigned_generic_type_parameters(&self) -> IndexSet<NamedTypeGeneric> {
+    pub fn unassigned_generic_type_parameters(&self) -> IndexSet<String> {
         let mut set = IndexSet::new();
         self._unassigned_generic_type_parameters(&mut set);
         set
     }
 
-    fn _unassigned_generic_type_parameters(&self, set: &mut IndexSet<NamedTypeGeneric>) {
+    fn _unassigned_generic_type_parameters(&self, set: &mut IndexSet<String>) {
         match self {
             ResolvedType::ResolvedPath(path) => {
                 for arg in &path.generic_arguments {
                     match arg {
-                        GenericArgument::UnassignedTypeParameter(name) => {
-                            set.insert(name.clone());
-                        }
-                        GenericArgument::AssignedTypeParameter(g) => {
+                        GenericArgument::TypeParameter(g) => {
                             g._unassigned_generic_type_parameters(set);
                         }
                         GenericArgument::Lifetime(_) => {}
@@ -136,6 +132,9 @@ impl ResolvedType {
             }
             ResolvedType::ScalarPrimitive(_) => {}
             ResolvedType::Slice(s) => s.element_type._unassigned_generic_type_parameters(set),
+            ResolvedType::Generic(t) => {
+                set.insert(t.name.clone());
+            }
         }
     }
 
@@ -151,7 +150,7 @@ impl ResolvedType {
     pub fn is_a_template_for(
         &self,
         concrete_type: &ResolvedType,
-    ) -> Option<HashMap<NamedTypeGeneric, ResolvedType>> {
+    ) -> Option<HashMap<String, ResolvedType>> {
         let mut bindings = HashMap::new();
         if self._is_a_template_for(concrete_type, &mut bindings) {
             Some(bindings)
@@ -164,7 +163,7 @@ impl ResolvedType {
     fn _is_a_template_for(
         &self,
         concrete_type: &ResolvedType,
-        bindings: &mut HashMap<NamedTypeGeneric, ResolvedType>,
+        bindings: &mut HashMap<String, ResolvedType>,
     ) -> bool {
         if concrete_type == self {
             return true;
@@ -195,6 +194,7 @@ impl ResolvedType {
             (ScalarPrimitive(concrete_primitive), ScalarPrimitive(templated_primitive)) => {
                 concrete_primitive == templated_primitive
             }
+            (_, Generic(_)) => true,
             (_, _) => false,
         }
     }
@@ -260,6 +260,7 @@ impl ResolvedType {
                 .zip(other_tuple.elements.iter())
                 .all(|(self_type, other_type)| self_type._is_equivalent_to(other_type, bindings)),
             (ScalarPrimitive(_), ScalarPrimitive(_)) => true,
+            (Generic(_), Generic(_)) => true,
             (_, _) => unreachable!(),
         }
     }
@@ -269,7 +270,7 @@ impl ResolvedPathType {
     fn _is_a_resolved_path_type_template_for(
         &self,
         concrete_type: &ResolvedPathType,
-        bindings: &mut HashMap<NamedTypeGeneric, ResolvedType>,
+        bindings: &mut HashMap<String, ResolvedType>,
     ) -> bool {
         // We destructure ALL fields to make sure that the compiler reminds us to update
         // this function if we add new fields to `ResolvedPathType`.
@@ -297,18 +298,15 @@ impl ResolvedPathType {
         {
             use GenericArgument::*;
             match (concrete_arg, templated_arg) {
-                (
-                    AssignedTypeParameter(concrete_arg_type),
-                    AssignedTypeParameter(templated_arg_type),
-                ) => {
-                    if !templated_arg_type._is_a_template_for(concrete_arg_type, bindings) {
-                        return false;
-                    }
+                (TypeParameter(ResolvedType::Generic(unassigned)), _) => {
+                    // You are not allowed to specialize a type with an unassigned type parameter.
+                    unreachable!("Unassigned type parameter (`{:?}`) in the 'concrete' type (`{:?}`) when checking for specialization", unassigned, concrete_type);
                 }
-                (AssignedTypeParameter(assigned), UnassignedTypeParameter(unassigned)) => {
+                (TypeParameter(assigned), TypeParameter(ResolvedType::Generic(unassigned))) => {
                     // The unassigned type parameter can be assigned to the concrete type
                     // we expect, so it is a specialization.
-                    let previous_assignment = bindings.insert(unassigned.clone(), assigned.clone());
+                    let previous_assignment =
+                        bindings.insert(unassigned.name.clone(), assigned.clone());
                     if let Some(previous_assignment) = previous_assignment {
                         if &previous_assignment != assigned {
                             tracing::trace!(
@@ -321,16 +319,15 @@ impl ResolvedPathType {
                         }
                     }
                 }
+                (TypeParameter(concrete_arg_type), TypeParameter(templated_arg_type)) => {
+                    if !templated_arg_type._is_a_template_for(concrete_arg_type, bindings) {
+                        return false;
+                    }
+                }
                 (Lifetime(_), Lifetime(_)) => {
                     // Lifetimes are not relevant for specialization (yet).
                 }
-                (UnassignedTypeParameter(unassigned), _) => {
-                    // You are not allowed to specialize a type with an unassigned type parameter.
-                    unreachable!("Unassigned type parameter (`{:?}`) in the 'concrete' type (`{:?}`) when checking for specialization", unassigned, concrete_type);
-                }
-                (AssignedTypeParameter(_), Lifetime(_))
-                | (Lifetime(_), UnassignedTypeParameter(_))
-                | (Lifetime(_), AssignedTypeParameter(_)) => {
+                (TypeParameter(_), Lifetime(_)) | (Lifetime(_), TypeParameter(_)) => {
                     return false;
                 }
             }
@@ -419,16 +416,25 @@ impl TryFrom<&str> for ScalarPrimitive {
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Hash, Clone)]
+/// An unassigned generic parameter - e.g. `T` in `fn foo<T>(t: T)`.
+pub struct Generic {
+    pub name: String,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Hash, Clone)]
+/// A Rust tuple - e.g. `(u8, u16, u32)`.
 pub struct Tuple {
     pub elements: Vec<ResolvedType>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Hash, Clone)]
+/// A Rust slice - e.g. `[u16]`.
 pub struct Slice {
     pub element_type: Box<ResolvedType>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Hash, Clone)]
+/// A Rust reference - e.g. `&mut u32` or `&'static mut Vec<u8>`.
 pub struct TypeReference {
     pub is_mutable: bool,
     pub is_static: bool,
@@ -456,7 +462,7 @@ pub struct ResolvedPathType {
 mod generics_equivalence {
     use std::collections::HashMap;
 
-    use crate::language::GenericArgument;
+    use crate::language::{GenericArgument, ResolvedType};
 
     /// Returns `true` if the two lists of generic arguments are equivalent.
     ///
@@ -486,8 +492,8 @@ mod generics_equivalence {
             .zip(second_generic_args)
             .all(|(first, second)| {
                 if let (
-                    GenericArgument::UnassignedTypeParameter(first),
-                    GenericArgument::UnassignedTypeParameter(second),
+                    GenericArgument::TypeParameter(ResolvedType::Generic(first)),
+                    GenericArgument::TypeParameter(ResolvedType::Generic(second)),
                 ) = (first, second)
                 {
                     first_id_gen.id(&first.name) == second_id_gen.id(&second.name)
@@ -514,8 +520,8 @@ mod generics_equivalence {
         let mut mapping = HashMap::new();
         for (first, second) in first_generic_args.iter().zip(second_generic_args) {
             if let (
-                GenericArgument::UnassignedTypeParameter(first),
-                GenericArgument::UnassignedTypeParameter(second),
+                GenericArgument::TypeParameter(ResolvedType::Generic(first)),
+                GenericArgument::TypeParameter(ResolvedType::Generic(second)),
             ) = (first, second)
             {
                 let first_id = first_id_gen.id(&first.name);
@@ -590,8 +596,9 @@ impl Hash for ResolvedPathType {
         base_type.hash(state);
         let mut id_gen = UnassignedIdGenerator::new();
         for generic_argument in generic_arguments {
-            if let GenericArgument::UnassignedTypeParameter(unassigned_type_parameter) =
-                generic_argument
+            if let GenericArgument::TypeParameter(ResolvedType::Generic(
+                unassigned_type_parameter,
+            )) = generic_argument
             {
                 id_gen.id(&unassigned_type_parameter.name).hash(state);
             } else {
@@ -603,19 +610,10 @@ impl Hash for ResolvedPathType {
 
 #[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Hash, Clone)]
 pub enum GenericArgument {
-    /// A type parameter that has not been assigned yet, e.g. `T` in `Vec<T>`.
-    UnassignedTypeParameter(NamedTypeGeneric),
-    /// A type parameter that has been assigned a concrete type, e.g. `u32` in `Vec<u32>`.
-    AssignedTypeParameter(ResolvedType),
-    /// A lifetime paremeter, e.g. `'a` in `&'a str` or `'static` in `&'static str`.
+    /// A generic type parameter, e.g. `u32` in `Vec<u32>` or `T` in `HashSet<T>`.
+    TypeParameter(ResolvedType),
+    /// A lifetime parameter, e.g. `'a` in `&'a str` or `'static` in `&'static str`.
     Lifetime(Lifetime),
-}
-
-#[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Hash, Clone, Debug)]
-/// A type parameter that has not been assigned yet, e.g. `T` in `Vec<T>`.
-pub struct NamedTypeGeneric {
-    /// E.g. `T` in `Vec<T>`.
-    pub name: String,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Hash, Clone)]
@@ -669,7 +667,7 @@ impl ResolvedType {
                     let mut arguments = t.generic_arguments.iter().peekable();
                     while let Some(argument) = arguments.next() {
                         match argument {
-                            GenericArgument::AssignedTypeParameter(t) => {
+                            GenericArgument::TypeParameter(t) => {
                                 write!(buffer, "{}", t.render_type(id2name)).unwrap();
                             }
                             GenericArgument::Lifetime(l) => match l {
@@ -677,9 +675,6 @@ impl ResolvedType {
                                     write!(buffer, "'static").unwrap();
                                 }
                             },
-                            GenericArgument::UnassignedTypeParameter(t) => {
-                                write!(buffer, "{}", t.name).unwrap();
-                            }
                         }
                         if arguments.peek().is_some() {
                             write!(buffer, ", ").unwrap();
@@ -715,6 +710,9 @@ impl ResolvedType {
             ResolvedType::Slice(s) => {
                 write!(buffer, "[{}]", s.element_type.render_type(id2name)).unwrap();
             }
+            ResolvedType::Generic(t) => {
+                write!(buffer, "{}", t.name).unwrap();
+            }
         }
     }
 }
@@ -736,7 +734,7 @@ impl ResolvedPathType {
     }
 }
 
-impl std::fmt::Debug for ResolvedType {
+impl Debug for ResolvedType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             ResolvedType::ResolvedPath(t) => write!(f, "{t:?}"),
@@ -744,21 +742,27 @@ impl std::fmt::Debug for ResolvedType {
             ResolvedType::Tuple(t) => write!(f, "{t:?}"),
             ResolvedType::ScalarPrimitive(s) => write!(f, "{s:?}"),
             ResolvedType::Slice(s) => write!(f, "{s:?}"),
+            ResolvedType::Generic(g) => write!(f, "{g:?}"),
         }
     }
 }
 
-impl std::fmt::Debug for GenericArgument {
+impl Debug for Generic {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name)
+    }
+}
+
+impl Debug for GenericArgument {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            GenericArgument::AssignedTypeParameter(r) => write!(f, "{r:?}"),
+            GenericArgument::TypeParameter(r) => write!(f, "{r:?}"),
             GenericArgument::Lifetime(l) => write!(f, "{l:?}"),
-            GenericArgument::UnassignedTypeParameter(t) => write!(f, "{}", t.name),
         }
     }
 }
 
-impl std::fmt::Debug for Lifetime {
+impl Debug for Lifetime {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Lifetime::Static => write!(f, "'static"),
@@ -766,7 +770,7 @@ impl std::fmt::Debug for Lifetime {
     }
 }
 
-impl std::fmt::Debug for ResolvedPathType {
+impl Debug for ResolvedPathType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.base_type.join("::"))?;
         if !self.generic_arguments.is_empty() {
@@ -784,13 +788,13 @@ impl std::fmt::Debug for ResolvedPathType {
     }
 }
 
-impl std::fmt::Debug for Slice {
+impl Debug for Slice {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "[{:?}]", self.element_type)
     }
 }
 
-impl std::fmt::Debug for Tuple {
+impl Debug for Tuple {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "(")?;
         let mut elements = self.elements.iter().peekable();
@@ -805,7 +809,7 @@ impl std::fmt::Debug for Tuple {
     }
 }
 
-impl std::fmt::Debug for TypeReference {
+impl Debug for TypeReference {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "&")?;
         if self.is_static {

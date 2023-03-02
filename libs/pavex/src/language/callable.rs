@@ -7,7 +7,7 @@ use bimap::BiHashMap;
 use guppy::PackageId;
 use indexmap::IndexSet;
 
-use crate::language::{NamedTypeGeneric, ResolvedPath, ResolvedType};
+use crate::language::{ResolvedPath, ResolvedType};
 use crate::rustdoc::GlobalItemId;
 
 #[derive(Clone, Hash, Eq, PartialEq)]
@@ -49,7 +49,7 @@ impl Callable {
     /// The newly "bound" callable will be returned.
     pub fn bind_generic_type_parameters(
         &self,
-        bindings: &HashMap<NamedTypeGeneric, ResolvedType>,
+        bindings: &HashMap<String, ResolvedType>,
     ) -> Callable {
         // TODO: we should bind the generics on the path of the callable itself.
         let inputs = self
@@ -72,7 +72,7 @@ impl Callable {
     ///
     /// E.g. `[T]` for `fn f<T>() -> Json<T, u8>` or `[T, V]` for `fn g<T, V>() -> Json<T, V>`.
     #[allow(unused)]
-    pub(crate) fn unassigned_generic_type_parameters(&self) -> IndexSet<NamedTypeGeneric> {
+    pub(crate) fn unassigned_generic_type_parameters(&self) -> IndexSet<String> {
         let mut result = IndexSet::new();
         for input in &self.inputs {
             result.extend(input.unassigned_generic_type_parameters());

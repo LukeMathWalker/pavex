@@ -50,10 +50,7 @@ impl<'a> TryFrom<Computation<'a>> for Constructor<'a> {
         if !free_parameters.is_empty() {
             return Err(
                 ConstructorValidationError::UnderconstrainedGenericParameters {
-                    parameters: free_parameters
-                        .into_iter()
-                        .map(|t| t.name.clone())
-                        .collect(),
+                    parameters: free_parameters,
                 },
             );
         }

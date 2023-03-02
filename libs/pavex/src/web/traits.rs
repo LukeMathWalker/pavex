@@ -187,6 +187,11 @@ pub(crate) fn implements_trait(
             }
             // TODO: handle Unpin + other traits
         }
+        ResolvedType::Generic(_) => {
+            // TODO: handle blanket implementations. As a first approximation,
+            //   we assume that if the type is generic, it implements all traits.
+            return true;
+        }
     }
 
     // We check if there is a trait implementation for this type in the crate where the trait

@@ -17,8 +17,8 @@ use crate::diagnostic::{
     CompilerDiagnostic, LocationExt, SourceSpanExt,
 };
 use crate::language::{
-    Callable, NamedTypeGeneric, ResolvedPath, ResolvedPathQualifiedSelf, ResolvedPathSegment,
-    ResolvedPathType, ResolvedType, TypeReference,
+    Callable, ResolvedPath, ResolvedPathQualifiedSelf, ResolvedPathSegment, ResolvedPathType,
+    ResolvedType, TypeReference,
 };
 use crate::rustdoc::CrateCollection;
 use crate::web::analyses::computations::{ComputationDb, ComputationId};
@@ -800,7 +800,7 @@ impl ComponentDb {
     pub fn bind_generic_type_parameters(
         &mut self,
         id: ComponentId,
-        bindings: &HashMap<NamedTypeGeneric, ResolvedType>,
+        bindings: &HashMap<String, ResolvedType>,
         computation_db: &mut ComputationDb,
     ) -> ComponentId {
         fn _get_root_component_id(
@@ -881,13 +881,9 @@ impl ComponentDb {
                         // E.g.
                         // - Constructor: `fn constructor<T>(x: u64) -> Result<T, Error>`
                         // - Error handler: `fn error_handler(e: &Error) -> Response`
-                        if let Some(error_handler_generic) = remapping.get(generic.name.as_str()) {
-                            error_handler_bindings.insert(
-                                NamedTypeGeneric {
-                                    name: (*error_handler_generic).to_owned(),
-                                },
-                                concrete.clone(),
-                            );
+                        if let Some(error_handler_generic) = remapping.get(generic.as_str()) {
+                            error_handler_bindings
+                                .insert((*error_handler_generic).to_owned(), concrete.clone());
                         }
                     }
                     error_handler_bindings

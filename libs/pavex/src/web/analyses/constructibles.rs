@@ -11,7 +11,7 @@ use crate::diagnostic::{
     convert_proc_macro_span, convert_rustdoc_span, read_source_file, AnnotatedSnippet,
     CompilerDiagnostic, LocationExt, SourceSpanExt,
 };
-use crate::language::{Callable, NamedTypeGeneric, ResolvedType};
+use crate::language::{Callable, ResolvedType};
 use crate::rustdoc::CrateCollection;
 use crate::web::analyses::components::{ComponentDb, ComponentId, HydratedComponent};
 use crate::web::analyses::computations::ComputationDb;
@@ -269,7 +269,7 @@ fn bind_and_register_constructor(
     component_db: &mut ComponentDb,
     computation_db: &mut ComputationDb,
     constructible_db: &mut ConstructibleDb,
-    bindings: &HashMap<NamedTypeGeneric, ResolvedType>,
+    bindings: &HashMap<String, ResolvedType>,
 ) {
     let bound_component_id =
         component_db.bind_generic_type_parameters(templated_component_id, bindings, computation_db);

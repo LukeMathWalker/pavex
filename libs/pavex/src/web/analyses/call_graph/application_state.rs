@@ -147,8 +147,8 @@ pub(crate) fn application_state_call_graph(
         rustdoc_id: None,
         base_type: vec!["core".into(), "result".into(), "Result".into()],
         generic_arguments: vec![
-            GenericArgument::AssignedTypeParameter(application_state_type.clone().into()),
-            GenericArgument::AssignedTypeParameter(error_enum.clone().into()),
+            GenericArgument::TypeParameter(application_state_type.clone().into()),
+            GenericArgument::TypeParameter(error_enum.clone().into()),
         ],
     };
     // We need to add an `Ok` wrap around `ApplicationState`, since we are returning a `Result`.

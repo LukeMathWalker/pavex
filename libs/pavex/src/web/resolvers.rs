@@ -9,7 +9,7 @@ use guppy::PackageId;
 use rustdoc_types::{GenericArg, GenericArgs, GenericParamDefKind, ItemEnum, Type};
 
 use crate::language::{
-    Callable, GenericArgument, InvocationStyle, Lifetime, NamedTypeGeneric, ResolvedPath,
+    Callable, Generic, GenericArgument, InvocationStyle, Lifetime, ResolvedPath,
     ResolvedPathGenericArgument, ResolvedPathLifetime, ResolvedPathType, ResolvedType, Slice,
     Tuple, TypeReference, UnknownPath,
 };
@@ -76,18 +76,18 @@ pub(crate) fn resolve_type(
                                             if let Some(resolved_type) =
                                                 generic_bindings.get(generic)
                                             {
-                                                GenericArgument::AssignedTypeParameter(
+                                                GenericArgument::TypeParameter(
                                                     resolved_type.to_owned(),
                                                 )
                                             } else {
-                                                GenericArgument::UnassignedTypeParameter(
-                                                    NamedTypeGeneric {
+                                                GenericArgument::TypeParameter(
+                                                    ResolvedType::Generic(Generic {
                                                         name: generic.to_owned(),
-                                                    },
+                                                    }),
                                                 )
                                             }
                                         } else {
-                                            GenericArgument::AssignedTypeParameter(resolve_type(
+                                            GenericArgument::TypeParameter(resolve_type(
                                                 generic_type,
                                                 used_by_package_id,
                                                 krate_collection,
@@ -154,10 +154,7 @@ pub(crate) fn resolve_type(
             if let Some(resolved_type) = generic_bindings.get(s) {
                 Ok(resolved_type.to_owned())
             } else {
-                Err(anyhow!(
-                    "The generic type `{}` is not bound to any concrete type",
-                    s
-                ))
+                Ok(ResolvedType::Generic(Generic { name: s.to_owned() }))
             }
         }
         Type::Tuple(t) => {
@@ -285,7 +282,7 @@ pub(crate) fn resolve_type_path(
             let arg = match generic_path {
                 ResolvedPathGenericArgument::Type(t) => {
                     // TODO: remove unwrap
-                    GenericArgument::AssignedTypeParameter(t.resolve(krate_collection).unwrap())
+                    GenericArgument::TypeParameter(t.resolve(krate_collection).unwrap())
                 }
                 ResolvedPathGenericArgument::Lifetime(l) => match l {
                     ResolvedPathLifetime::Static => GenericArgument::Lifetime(Lifetime::Static),
