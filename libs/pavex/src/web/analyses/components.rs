@@ -306,19 +306,26 @@ impl ComponentDb {
                 );
                 match ErrorHandler::new(error_handler_callable.to_owned(), fallible_callable) {
                     Ok(e) => {
-                        let error_handler_id = self_.add_error_handler(
-                            e,
-                            user_component_id2component_id[&fallible_user_component_id],
-                            lifecycle.to_owned(),
-                            error_handler_user_component_id.into(),
-                            computation_db,
-                        );
-                        user_component_id2component_id
-                            .insert(error_handler_user_component_id, error_handler_id);
-                        fallible_component_id2error_handler_id.insert(
-                            fallible_user_component_id,
-                            Some(ErrorHandlerId::Id(error_handler_id)),
-                        );
+                        // This may be `None` if the fallible component failed to pass its own
+                        // validation - e.g. the constructor callable was not deemed to be a valid
+                        // constructor.
+                        if let Some(fallible_component_id) =
+                            user_component_id2component_id.get(&fallible_user_component_id)
+                        {
+                            let error_handler_id = self_.add_error_handler(
+                                e,
+                                *fallible_component_id,
+                                lifecycle.to_owned(),
+                                error_handler_user_component_id.into(),
+                                computation_db,
+                            );
+                            user_component_id2component_id
+                                .insert(error_handler_user_component_id, error_handler_id);
+                            fallible_component_id2error_handler_id.insert(
+                                fallible_user_component_id,
+                                Some(ErrorHandlerId::Id(error_handler_id)),
+                            );
+                        }
                     }
                     Err(e) => {
                         Self::invalid_error_handler(
@@ -1120,8 +1127,8 @@ impl ComponentDb {
                     get_definition_span(callable, krate_collection, package_graph);
                 let msg = format!(
                     "You can't return a naked generic parameter from a constructor, like `{naked_parameter}` in `{}`.\n\
-                    I do not take into account trait bounds when building your dependency graph. A constructor \n\
-                    that returns a naked generic parameter is equivalent, in my eyes, to a constructor that can build \n\
+                    I do not take into account trait bounds when building your dependency graph. A constructor \
+                    that returns a naked generic parameter is equivalent, in my eyes, to a constructor that can build \
                     **any** type, which is unlikely to be what you want!",
                     callable.path
                 );
@@ -1130,8 +1137,9 @@ impl ComponentDb {
                     .optional_label(label)
                     .optional_additional_annotated_snippet(definition_snippet)
                     .help(
-                        "Can you return a concrete type as output? Or wrap it the generic \
-                        parameter (e.g. `T` in `Vec<T>` is not considered to be a naked parameter)"
+                        "Can you return a concrete type as output? \n\
+                        Or wrap the generic parameter in a non-generic container? \
+                        For example, `T` in `Vec<T>` is not considered to be a naked parameter."
                             .into(),
                     )
                     .build()
