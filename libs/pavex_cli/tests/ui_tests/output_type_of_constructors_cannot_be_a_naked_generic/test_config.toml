@@ -1,0 +1,4 @@
+description = "pavex does not let you return a naked `T` as output type, because all types would match it!"
+
+[expectations]
+codegen = "fail"
