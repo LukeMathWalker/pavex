@@ -210,6 +210,16 @@ pub(crate) fn resolve_callable(
     let mut generic_bindings = HashMap::new();
     if let Some(qself) = qualified_self_type {
         generic_bindings.insert("Self".to_string(), qself);
+    } else if let Some(parent) = &callable_type.parent {
+        let parent_segments = callable_path.segments[..callable_path.segments.len() - 1].to_vec();
+        let parent_path = ResolvedPath {
+            segments: parent_segments,
+            qualified_self: callable_path.qualified_self.clone(),
+            package_id: callable_path.package_id.clone(),
+        };
+        if let Ok(parent_type) = resolve_type_path(&parent_path, &parent, krate_collection) {
+            generic_bindings.insert("Self".to_string(), parent_type);
+        }
     }
 
     let mut parameter_paths = Vec::with_capacity(decl.inputs.len());
@@ -281,8 +291,7 @@ pub(crate) fn resolve_type_path(
         for generic_path in &segment.generic_arguments {
             let arg = match generic_path {
                 ResolvedPathGenericArgument::Type(t) => {
-                    // TODO: remove unwrap
-                    GenericArgument::TypeParameter(t.resolve(krate_collection).unwrap())
+                    GenericArgument::TypeParameter(t.resolve(krate_collection)?)
                 }
                 ResolvedPathGenericArgument::Lifetime(l) => match l {
                     ResolvedPathLifetime::Static => GenericArgument::Lifetime(Lifetime::Static),
