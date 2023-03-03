@@ -1,5 +1,7 @@
 use std::borrow::Cow;
 
+use indexmap::IndexSet;
+
 use crate::language::{Callable, ResolvedType};
 
 /// A callable that handles incoming requests for one or more routes.
@@ -15,6 +17,26 @@ impl<'a> RequestHandler<'a> {
         if c.output.is_none() {
             return Err(RequestHandlerValidationError::CannotReturnTheUnitType);
         }
+        let output_type = c.output.as_ref().unwrap();
+
+        let output_unassigned_generic_parameters = output_type.unassigned_generic_type_parameters();
+        let mut free_parameters = IndexSet::new();
+        for input in c.inputs.iter() {
+            free_parameters.extend(
+                input
+                    .unassigned_generic_type_parameters()
+                    .difference(&output_unassigned_generic_parameters)
+                    .cloned(),
+            );
+        }
+        if !free_parameters.is_empty() {
+            return Err(
+                RequestHandlerValidationError::UnderconstrainedGenericParameters {
+                    parameters: free_parameters,
+                },
+            );
+        }
+
         Ok(Self { callable: c })
     }
 
@@ -41,4 +63,6 @@ pub(crate) enum RequestHandlerValidationError {
         This request handler doesn't: it returns the unit type, `()`."
     )]
     CannotReturnTheUnitType,
+    #[error("Input parameters for a request handler cannot have any *unassigned* generic type parameters that appear exclusively in its input parameters.")]
+    UnderconstrainedGenericParameters { parameters: IndexSet<String> },
 }
