@@ -1,5 +1,5 @@
 [31m[1mERROR[0m[39m: 
-  [31m×[0m You registered an error handler for a constructor that does not return
+  [31m×[0m You registered an error handler for a constructor that doesn't return
   [31m│[0m a `Result`.
   [31m│[0m
   [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:22:1]

@@ -1,7 +1,7 @@
 [31m[1mERROR[0m[39m: 
   [31m×[0m I can work with functions and static methods, but `app::Streamer` is
   [31m│[0m neither.
-  [31m│[0m It is a struct and I do not know how to use it as a request handler.
+  [31m│[0m It is a struct and I don't know how to use it as a request handler.
   [31m│[0m
   [31m│[0m    ╭─[[36;1;4msrc/lib.rs[0m:6:1]
   [31m│[0m  [2m6[0m │     let mut bp = Blueprint::new();

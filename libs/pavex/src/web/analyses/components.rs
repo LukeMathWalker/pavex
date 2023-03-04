@@ -1173,7 +1173,8 @@ impl ComponentDb {
         let label = diagnostic::get_f_macro_invocation_span(&source, location)
             .map(|s| s.labeled("The request handler was registered here".into()));
         let diagnostic = match e {
-            RequestHandlerValidationError::CannotReturnTheUnitType => {
+            RequestHandlerValidationError::CannotReturnTheUnitType
+            | RequestHandlerValidationError::CannotFalliblyReturnTheUnitType => {
                 CompilerDiagnostic::builder(source, e)
                     .optional_label(label)
                     .build()
