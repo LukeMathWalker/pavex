@@ -124,7 +124,7 @@ impl CallPath {
             | Type::Ptr(_)
             | Type::TraitObject(_)
             | Type::Verbatim(_)
-            | _ => todo!("We do not handle {:?} as a type yet", type_),
+            | _ => todo!("We don't handle {:?} as a type yet", type_),
         }
     }
 
@@ -159,7 +159,7 @@ impl CallPath {
                     arguments
                 }
                 PathArguments::Parenthesized(_) => {
-                    todo!("We do not handle paranthesized generic parameters")
+                    todo!("We don't handle paranthesized generic parameters")
                 }
             };
             let segment = CallPathSegment {

@@ -207,7 +207,7 @@ impl ConstructibleDb {
                 (s.offset() + span.offset()).into(),
                 s.len().into(),
             )
-            .labeled("I do not know how to construct an instance of this input parameter".into());
+            .labeled("I don't know how to construct an instance of this input parameter".into());
             let source_path = definition_span.filename.to_str().unwrap();
             Some(AnnotatedSnippet::new(
                 NamedSource::new(source_path, source_contents),
@@ -231,8 +231,8 @@ impl ConstructibleDb {
         let label = diagnostic::get_f_macro_invocation_span(&source, location)
             .map(|s| s.labeled(format!("The {component_kind} was registered here")));
         let e = anyhow::anyhow!(
-                "I cannot invoke your {component_kind}, `{}`, because it needs an instance \
-                of `{unconstructible_type:?}` as input, but I cannot find a constructor for that type.",
+                "I can't invoke your {component_kind}, `{}`, because it needs an instance \
+                of `{unconstructible_type:?}` as input, but I can't find a constructor for that type.",
                 callable.path
             );
         let definition_info = get_definition_info(

@@ -1,19 +1,17 @@
 use std::fmt;
 
+use atty::Stream;
 use miette::{
     Diagnostic, GraphicalTheme, NarratableReportHandler, ReportHandler, ThemeCharacters,
     ThemeStyles,
 };
 
-use atty::Stream;
-
 use crate::GraphicalReportHandler;
 
 /// Settings to control the color format used for graphical rendering.
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-#[derive(Default)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Default)]
 pub enum RgbColors {
-    /// Use RGB colors even if the terminal does not support them
+    /// Use RGB colors even if the terminal doesn't support them
     Always,
     /// Use RGB colors instead of ANSI if the terminal supports RGB
     Preferred,
@@ -21,8 +19,6 @@ pub enum RgbColors {
     #[default]
     Never,
 }
-
-
 
 /**
 Create a custom [`PavexMietteHandler`] from options.
@@ -116,7 +112,7 @@ impl PavexMietteHandlerOpts {
     ///
     /// The default is `Never`.
     ///
-    /// This value does not control whether or not colors are being used in the
+    /// This value doesn't control whether or not colors are being used in the
     /// first place. That is handled by the [`PavexMietteHandlerOpts::color`]
     /// setting. If colors are not being used, the value of `rgb_colors` has
     /// no effect.

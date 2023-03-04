@@ -7,7 +7,7 @@ pub fn request_scoped() -> Result<String, ErrorType> {
 #[derive(Debug)]
 pub struct ErrorType;
 
-// It does not implement IntoResponse!
+// It doesn't implement IntoResponse!
 pub struct MyCustomOutputType;
 
 pub fn handler(_s: String) -> Result<MyCustomOutputType, ErrorType> {

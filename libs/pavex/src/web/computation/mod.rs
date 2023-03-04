@@ -68,7 +68,7 @@ impl<'a> Computation<'a> {
 
     /// The type returned by this computation.
     ///
-    /// This is `None` for computations that do not return a value.
+    /// This is `None` for computations that don't return a value.
     pub fn output_type(&self) -> Option<&crate::language::ResolvedType> {
         match self {
             Computation::Callable(c) => c.output.as_ref(),

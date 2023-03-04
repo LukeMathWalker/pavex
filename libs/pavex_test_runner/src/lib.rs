@@ -330,7 +330,7 @@ fn _run_test(
                 let stderr_snapshot = SnapshotTest::new(expectations_directory.join("stderr.txt"));
                 if stderr_snapshot.verify(&codegen_output.stderr).is_err() {
                     return Ok(TestOutcome {
-                        outcome: Err("The failure message returned by code generation does not match what we expected".into()),
+                        outcome: Err("The failure message returned by code generation doesn't match what we expected".into()),
                         codegen_output,
                         compilation_output: None,
                     });
@@ -353,7 +353,7 @@ fn _run_test(
     let diagnostics_snapshot = SnapshotTest::new(expectations_directory.join("diagnostics.dot"));
     let actual_diagnostics =
         fs_err::read_to_string(test.runtime_directory.join("diagnostics.dot"))?;
-    // We do not exit early here to get the generated code snapshot as well.
+    // We don't exit early here to get the generated code snapshot as well.
     // This allows to update both code snapshot and diagnostics snapshot in one go via
     // `cargo r --bin snaps` for a failing test instead of having to do them one at a time,
     // with a test run in the middle.
@@ -383,7 +383,7 @@ fn _run_test(
     if diagnostics_outcome.is_err() {
         return Ok(TestOutcome {
             outcome: Err(
-                "Diagnostics for the generated application do not match what we expected".into(),
+                "Diagnostics for the generated application don't match what we expected".into(),
             ),
             codegen_output,
             compilation_output: None,
@@ -392,7 +392,7 @@ fn _run_test(
 
     if codegen_outcome.is_err() {
         return Ok(TestOutcome {
-            outcome: Err("The generated application code does not match what we expected".into()),
+            outcome: Err("The generated application code doesn't match what we expected".into()),
             codegen_output,
             compilation_output: None,
         });
@@ -401,7 +401,7 @@ fn _run_test(
     let compilation_output = compilation_output?;
     if !output.status.success() {
         return Ok(TestOutcome {
-            outcome: Err("The generated application code does not compile.".into()),
+            outcome: Err("The generated application code doesn't compile.".into()),
             codegen_output,
             compilation_output: Some(compilation_output),
         });

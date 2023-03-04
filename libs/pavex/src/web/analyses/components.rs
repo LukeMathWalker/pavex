@@ -207,7 +207,7 @@ impl ComponentDb {
                     self_.register_derived_constructors(constructor_id, computation_db);
                     if is_result(c.output_type()) && lifecycle != &Lifecycle::Singleton {
                         // We'll try to match all fallible constructors with an error handler later.
-                        // We skip singletons since we do not "handle" errors when constructing them.
+                        // We skip singletons since we don't "handle" errors when constructing them.
                         // They are just bubbled up to the caller by the function that builds
                         // the application state.
                         fallible_component_id2error_handler_id.insert(user_component_id, None);
@@ -1129,7 +1129,7 @@ impl ComponentDb {
                     get_definition_span(callable, krate_collection, package_graph);
                 let msg = format!(
                     "You can't return a naked generic parameter from a constructor, like `{naked_parameter}` in `{}`.\n\
-                    I do not take into account trait bounds when building your dependency graph. A constructor \
+                    I don't take into account trait bounds when building your dependency graph. A constructor \
                     that returns a naked generic parameter is equivalent, in my eyes, to a constructor that can build \
                     **any** type, which is unlikely to be what you want!",
                     callable.path
@@ -1297,9 +1297,9 @@ impl ComponentDb {
         let label = diagnostic::get_f_macro_invocation_span(&source, location)
             .map(|s| s.labeled(format!("The {callable_type} was registered here")));
         let error = anyhow::Error::from(e).context(format!(
-            "I cannot use the type returned by this {callable_type} to create an HTTP \
+            "I can't use the type returned by this {callable_type} to create an HTTP \
                 response.\n\
-                It does not implement `pavex_runtime::response::IntoResponse`."
+                It doesn't implement `pavex_runtime::response::IntoResponse`."
         ));
         let help =
             format!("Implement `pavex_runtime::response::IntoResponse` for `{output_type:?}`.");
@@ -1404,7 +1404,7 @@ impl ComponentDb {
         let label = diagnostic::get_f_macro_invocation_span(&source, location)
             .map(|s| s.labeled("The unnecessary error handler was registered here".into()));
         let error = anyhow::anyhow!(
-            "You registered an error handler for a {} that does not return a `Result`.",
+            "You registered an error handler for a {} that doesn't return a `Result`.",
             fallible_kind
         );
         let diagnostic = CompilerDiagnostic::builder(source, error)
@@ -1441,8 +1441,8 @@ impl ComponentDb {
         let label = diagnostic::get_f_macro_invocation_span(&source, location)
             .map(|s| s.labeled("The unnecessary error handler was registered here".into()));
         let error = anyhow::anyhow!(
-            "You cannot register an error handler for a singleton constructor. \n\
-                If I fail to build a singleton, I bubble up the error - it does not get handled.",
+            "You can't register an error handler for a singleton constructor. \n\
+                If I fail to build a singleton, I bubble up the error - it doesn't get handled.",
         );
         let diagnostic = CompilerDiagnostic::builder(source, error)
             .optional_label(label)

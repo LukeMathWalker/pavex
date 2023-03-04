@@ -276,7 +276,7 @@ impl CrateCore {
 
     /// Given a crate id, return the corresponding [`PackageId`].
     ///
-    /// It panics if the provided crate id does not appear in the JSON documentation
+    /// It panics if the provided crate id doesn't appear in the JSON documentation
     /// for this crate - i.e. if it's not `0` or assigned to one of its transitive dependencies.
     pub fn compute_package_id_for_crate_id(
         &self,
@@ -312,7 +312,7 @@ impl CrateCore {
             .query_forward([&self.package_id])
             .with_context(|| {
                 format!(
-                    "`{}` does not appear in the package graph for the current workspace",
+                    "`{}` doesn't appear in the package graph for the current workspace",
                     &self.package_id.repr()
                 )
             })
@@ -365,7 +365,7 @@ impl CrateCore {
                 anyhow!(
                     "There are multiple packages named `{}` among the dependencies of {}. \
                     I was not able to extract the expected version for `{}` from the JSON documentation for {}, \
-                    therefore I do not have a way to disambiguate among the matches we found",
+                    therefore I don't have a way to disambiguate among the matches we found",
                     expected_link_name,
                     self.package_id.repr(),
                     expected_link_name,
@@ -425,7 +425,7 @@ impl Crate {
 
     /// Given a crate id, return the corresponding [`PackageId`].
     ///
-    /// It panics if the provided crate id does not appear in the JSON documentation
+    /// It panics if the provided crate id doesn't appear in the JSON documentation
     /// for this crate - i.e. if it's not `0` or assigned to one of its transitive dependencies.
     pub fn compute_package_id_for_crate_id(
         &self,
@@ -516,7 +516,7 @@ fn index_local_types<'a>(
         Some(i) => i,
     };
 
-    // We do not want to index private items.
+    // We don't want to index private items.
     if let Visibility::Default | Visibility::Crate | Visibility::Restricted { .. } =
         current_item.visibility
     {

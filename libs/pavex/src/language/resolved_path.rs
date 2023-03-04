@@ -187,7 +187,7 @@ impl From<ResolvedType> for ResolvedPathType {
                 element: Box::new((*s.element_type).into()),
             }),
             ResolvedType::Generic(_) => {
-                // ResolvedPath does not support unassigned generic parameters.
+                // ResolvedPath doesn't support unassigned generic parameters.
                 unreachable!("UnassignedGeneric")
             }
         }

@@ -63,6 +63,6 @@ pub(crate) enum RequestHandlerValidationError {
         This request handler doesn't: it returns the unit type, `()`."
     )]
     CannotReturnTheUnitType,
-    #[error("Input parameters for a request handler cannot have any *unassigned* generic type parameters that appear exclusively in its input parameters.")]
+    #[error("Input parameters for a request handler can't have any *unassigned* generic type parameters that appear exclusively in its input parameters.")]
     UnderconstrainedGenericParameters { parameters: IndexSet<String> },
 }

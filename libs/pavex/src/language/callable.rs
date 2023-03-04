@@ -17,7 +17,7 @@ pub(crate) struct Callable {
     ///
     /// # Implementation Gaps
     ///
-    /// It is **NOT** set to `true` if the function does not use the `async` keyword but returns
+    /// It is **NOT** set to `true` if the function doesn't use the `async` keyword but returns
     /// a type that implements the `Future` trait.
     pub is_async: bool,
     /// `None` if the callable returns the unit type (`()`).

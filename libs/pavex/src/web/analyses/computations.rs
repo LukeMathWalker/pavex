@@ -101,7 +101,7 @@ impl ComputationDb {
         match e {
             CallableResolutionError::UnknownCallable(_) => {
                 let label = diagnostic::get_f_macro_invocation_span(&source, location)
-                    .map(|s| s.labeled(format!("The {callable_type} that we cannot resolve")));
+                    .map(|s| s.labeled(format!("The {callable_type} that we can't resolve")));
                 let diagnostic = CompilerDiagnostic::builder(source, e)
                     .optional_label(label)
                     .help("This is most likely a bug in `pavex` or `rustdoc`.\nPlease file a GitHub issue!".into())
@@ -155,7 +155,7 @@ impl ComputationDb {
                                     (s.offset() + span.offset()).into(),
                                     s.len().into(),
                                 )
-                                .labeled("I do not know how handle this parameter".into());
+                                .labeled("I don't know how handle this parameter".into());
                                 let source_path = definition_span.filename.to_str().unwrap();
                                 Some(AnnotatedSnippet::new(
                                     NamedSource::new(source_path, source_contents),
@@ -182,7 +182,7 @@ impl ComputationDb {
             CallableResolutionError::UnsupportedCallableKind(ref inner_error) => {
                 let label = diagnostic::get_f_macro_invocation_span(&source, location)
                     .map(|s| s.labeled(format!("It was registered as a {callable_type} here")));
-                let message = format!("I can work with functions and static methods, but `{}` is neither.\nIt is {} and I do not know how to use it as a {}.", inner_error.import_path, inner_error.item_kind, callable_type);
+                let message = format!("I can work with functions and static methods, but `{}` is neither.\nIt is {} and I don't know how to use it as a {}.", inner_error.import_path, inner_error.item_kind, callable_type);
                 let error = anyhow::anyhow!(e).context(message);
                 diagnostics.push(
                     CompilerDiagnostic::builder(source, error)
@@ -237,7 +237,7 @@ impl ComputationDb {
                                         (s.offset() + span.offset()).into(),
                                         s.len().into(),
                                     )
-                                    .labeled("The output type that I cannot handle".into());
+                                    .labeled("The output type that I can't handle".into());
                                     AnnotatedSnippet::new(
                                         NamedSource::new(
                                             definition_span.filename.to_str().unwrap(),

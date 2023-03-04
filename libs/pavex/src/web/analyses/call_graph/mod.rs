@@ -44,7 +44,7 @@ where
     let mut call_graph = StableDiGraph::<CallGraphNode, ()>::new();
 
     let component_id2invocations = |component_id: ComponentId| {
-        // We do not expect to invoke this function for response transformers, therefore
+        // We don't expect to invoke this function for response transformers, therefore
         // it's fine to unwrap here.
         let lifecycle = component_db.lifecycle(component_id).unwrap();
         lifecycle2n_allowed_invocations(lifecycle)
@@ -137,7 +137,7 @@ where
                         .map(|t| t.to_owned())
                         .collect(),
                     HydratedComponent::Transformer(_) => {
-                        // We do not allow/need dependency injection for transformers at the moment.
+                        // We don't allow/need dependency injection for transformers at the moment.
                         vec![]
                     }
                 };
@@ -349,7 +349,7 @@ where
 /// In the dependency graph, each type appears exactly once, no matter how many times it's required
 /// as input for other constructors.
 /// In the call graph, each constructor appears as many times as it needs to be invoked. A separate
-/// node type is used for types that we cannot build, the ones that the callable closure will
+/// node type is used for types that we can't build, the ones that the callable closure will
 /// take as inputs.
 ///
 /// # Example: request handling
@@ -660,7 +660,7 @@ fn _codegen_callable_closure_body(
     let terminal_index = find_terminal_descendant(node_index, call_graph);
     // We want to start the code-generation process from a `MatchBranching` node with
     // no `MatchBranching` predecessors.
-    // This ensures that we do not have to look-ahead when generating code for its predecessors.
+    // This ensures that we don't have to look-ahead when generating code for its predecessors.
     let traversal_start_index =
         find_match_branching_ancestor(terminal_index, call_graph, &dfs.finished)
             // If there are no `MatchBranching` nodes in the ancestors sub-graph, we start from the
@@ -696,7 +696,7 @@ fn _codegen_callable_closure_body(
                             package_id2name,
                         )?;
                         // This is the last node!
-                        // We do not need to assign its value to a variable.
+                        // We don't need to assign its value to a variable.
                         if current_index == traversal_start_index
                             // Or this is a single-use value, so no point in binding it to a variable.
                             || n_allowed_invocations == &NumberOfAllowedInvocations::Multiple
@@ -900,10 +900,10 @@ fn find_terminal_descendant(
 }
 
 /// Returns `Some(node_index)` if there is an ancestor (either directly or indirectly connected
-/// to `start_index`) that is a `CallGraphNode::MatchBranching` and does not belong to `ignore_set`.
+/// to `start_index`) that is a `CallGraphNode::MatchBranching` and doesn't belong to `ignore_set`.
 /// `node` index won't have any ancestors that are themselves a `CallGraphNode::MatchBranching`.
 ///
-/// Returns `None` if such an ancestor does not exist.
+/// Returns `None` if such an ancestor doesn't exist.
 fn find_match_branching_ancestor(
     start_index: NodeIndex,
     call_graph: &StableDiGraph<CallGraphNode, ()>,

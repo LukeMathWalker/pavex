@@ -6,7 +6,7 @@
 //! We have also done other minor tweaks to the graphical layout to better suit our needs.
 //!
 //! This allows us to display snippets that come from different source files, a feature
-//! that does not have first-class support in `miette`.  
+//! that doesn't have first-class support in `miette`.  
 //! In other words, you can see this custom handler as a "hack" to avoid having to
 //! maintain a full fork of `miette`.
 pub use graphical_report_handler::GraphicalReportHandler;

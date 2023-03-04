@@ -446,7 +446,7 @@ pub struct TypeReference {
 pub struct ResolvedPathType {
     #[serde(serialize_with = "serialize_package_id")]
     #[serde(deserialize_with = "deserialize_package_id")]
-    // `PackageId` does not implement serde::Deserialize/serde::Serialize, therefore we must
+    // `PackageId` doesn't implement serde::Deserialize/serde::Serialize, therefore we must
     // manually specify deserializer and serializer to make the whole `ResolvedPathType`
     // (de)serializable.
     pub package_id: PackageId,

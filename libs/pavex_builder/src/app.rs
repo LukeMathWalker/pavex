@@ -340,7 +340,7 @@ impl<'a> Route<'a> {
     /// ## Common Errors
     ///
     /// `pavex_cli` will fail to generate the runtime code for your application if you register
-    /// an error handler for an infallible request handler (i.e. a request handler that does not
+    /// an error handler for an infallible request handler (i.e. a request handler that doesn't
     /// return a `Result`).
     pub fn error_handler(self, error_handler: RawCallable) -> Self {
         let callable_identifiers = RawCallableIdentifiers::new(error_handler.import_path);
@@ -402,7 +402,7 @@ impl<'a> Constructor<'a> {
     /// ## Common Errors
     ///
     /// `pavex_cli` will fail to generate the runtime code for your application if you register
-    /// an error handler for an infallible constructor (i.e. a constructor that does not return
+    /// an error handler for an infallible constructor (i.e. a constructor that doesn't return
     /// a `Result`).
     pub fn error_handler(self, handler: RawCallable) -> Self {
         let callable_identifiers = RawCallableIdentifiers::new(handler.import_path);

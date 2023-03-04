@@ -29,7 +29,7 @@ impl MatchResult {
         assert_eq!(
             inner_result_type.generic_arguments.len(),
             2,
-            "{result_type:?} does not have two generic arguments, as expected"
+            "{result_type:?} doesn't have two generic arguments, as expected"
         );
         let mut generics = inner_result_type.generic_arguments.iter();
         let GenericArgument::TypeParameter(ok_type) = generics.next().unwrap().to_owned() else {

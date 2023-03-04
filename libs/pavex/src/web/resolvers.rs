@@ -50,7 +50,7 @@ pub(crate) fn resolve_type(
                         GenericParamDefKind::Type { default: None, .. }
                         | GenericParamDefKind::Const { .. }
                         | GenericParamDefKind::Lifetime { .. } => {
-                            anyhow::bail!("I cannot only generic type parameters with a default when working with type aliases. I cannot handle a `{:?}` yet, sorry!", generic)
+                            anyhow::bail!("I can't only generic type parameters with a default when working with type aliases. I can't handle a `{:?}` yet, sorry!", generic)
                         }
                     }
                 }
@@ -97,23 +97,23 @@ pub(crate) fn resolve_type(
                                     }
                                     GenericArg::Lifetime(_) => {
                                         return Err(anyhow!(
-                                            "I do not support non-static lifetime arguments in types yet. Sorry!"
+                                            "I don't support non-static lifetime arguments in types yet. Sorry!"
                                         ));
                                     }
                                     GenericArg::Const(_) => {
                                         return Err(anyhow!(
-                                            "I do not support const generics in types yet. Sorry!"
+                                            "I don't support const generics in types yet. Sorry!"
                                         ));
                                     }
                                     GenericArg::Infer => {
-                                        return Err(anyhow!("I do not support inferred generic arguments in types yet. Sorry!"));
+                                        return Err(anyhow!("I don't support inferred generic arguments in types yet. Sorry!"));
                                     }
                                 };
                                 generics.push(generic_argument);
                             }
                         }
                         GenericArgs::Parenthesized { .. } => {
-                            return Err(anyhow!("I do not support function pointers yet. Sorry!"));
+                            return Err(anyhow!("I don't support function pointers yet. Sorry!"));
                         }
                     }
                 }
@@ -182,7 +182,7 @@ pub(crate) fn resolve_type(
             }))
         }
         _ => Err(anyhow!(
-            "I cannot handle this kind ({:?}) of type yet. Sorry!",
+            "I can't handle this kind ({:?}) of type yet. Sorry!",
             type_
         )),
     }
@@ -324,14 +324,14 @@ pub(crate) enum CallableResolutionError {
 }
 
 #[derive(Debug, thiserror::Error, Clone)]
-#[error("I can work with functions and static methods, but `{import_path}` is neither.\nIt is {item_kind} and I do not know how to handle it here.")]
+#[error("I can work with functions and static methods, but `{import_path}` is neither.\nIt is {item_kind} and I don't know how to handle it here.")]
 pub(crate) struct UnsupportedCallableKind {
     pub import_path: ResolvedPath,
     pub item_kind: String,
 }
 
 #[derive(Debug, thiserror::Error, Clone)]
-#[error("One of the input parameters for `{callable_path}` has a type that I cannot handle.")]
+#[error("One of the input parameters for `{callable_path}` has a type that I can't handle.")]
 pub(crate) struct ParameterResolutionError {
     pub callable_path: ResolvedPath,
     pub callable_item: rustdoc_types::Item,
@@ -342,7 +342,7 @@ pub(crate) struct ParameterResolutionError {
 }
 
 #[derive(Debug, thiserror::Error, Clone)]
-#[error("I do not know how to handle the type returned by `{callable_path}`.")]
+#[error("I don't know how to handle the type returned by `{callable_path}`.")]
 pub(crate) struct OutputTypeResolutionError {
     pub callable_path: ResolvedPath,
     pub callable_item: rustdoc_types::Item,

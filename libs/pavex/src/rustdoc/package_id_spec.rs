@@ -16,7 +16,7 @@ pub struct PackageIdSpecification {
 
 impl PackageIdSpecification {
     pub fn from_package_id(package_id: &PackageId, package_graph: &PackageGraph) -> Self {
-        // Toolchain crates do not appear in the package graph, therefore we special-case them.
+        // Toolchain crates don't appear in the package graph, therefore we special-case them.
         if TOOLCHAIN_CRATES.contains(&package_id.repr()) {
             Self {
                 source: None,

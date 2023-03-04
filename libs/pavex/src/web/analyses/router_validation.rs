@@ -10,7 +10,7 @@ use crate::diagnostic::{
 use crate::web::analyses::raw_identifiers::RawCallableIdentifiersDb;
 use crate::web::analyses::user_components::{UserComponent, UserComponentDb, UserComponentId};
 
-/// Examine the registered paths and methods guards to make sure that we do not
+/// Examine the registered paths and methods guards to make sure that we don't
 /// have any conflicts.
 pub(crate) fn validate_router(
     user_component_db: &UserComponentDb,
@@ -47,7 +47,7 @@ pub(crate) fn validate_router(
                     }
                 }
             }
-            // We do not want to return an error if the _same_ callable is being registered
+            // We don't want to return an error if the _same_ callable is being registered
             // as a request handler for the same path+method multiple times.
             let unique_handlers = relevant_handler_ids
                 .iter()
@@ -98,7 +98,7 @@ fn push_router_conflict_diagnostic(
     let mut annotated_snippets = annotated_snippets.into_iter();
     let first = annotated_snippets.next().unwrap();
     let overall = CompilerDiagnostic::builder(first.source_code, anyhow!(
-            "I do not know how to route incoming `{method} {path}` requests: you have registered {n_unique_handlers} \
+            "I don't know how to route incoming `{method} {path}` requests: you have registered {n_unique_handlers} \
             different request handlers for this path+method combination.\n\
             You can only have a single request handler for each path+method combination.",
         ))
