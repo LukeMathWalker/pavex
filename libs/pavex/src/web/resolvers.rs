@@ -225,7 +225,7 @@ pub(crate) fn resolve_callable(
                 krate_collection,
                 &mut generic_bindings,
             ) {
-                tracing::trace!("Error getting trait generic bindings", error.msg = %e, error.details = ?e);
+                tracing::trace!(error.msg = %e, error.details = ?e, "Error getting trait generic bindings");
             }
         } else {
             match resolve_type_path(&parent_path, &parent, krate_collection) {
@@ -233,7 +233,7 @@ pub(crate) fn resolve_callable(
                     generic_bindings.insert("Self".to_string(), parent_type);
                 }
                 Err(e) => {
-                    tracing::trace!("Error resolving the parent type", error.msg = %e, error.details = ?e);
+                    tracing::trace!(error.msg = %e, error.details = ?e, "Error resolving the parent type");
                 }
             }
         }

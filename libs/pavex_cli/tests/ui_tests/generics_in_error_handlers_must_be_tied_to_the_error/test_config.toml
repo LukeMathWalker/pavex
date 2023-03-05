@@ -1,0 +1,4 @@
+description = "pavex does not allow input parameters of constructors to have unassigned generic parameters"
+
+[expectations]
+codegen = "fail"
