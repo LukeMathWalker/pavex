@@ -1,6 +1,5 @@
 [31m[1mERROR[0m[39m: 
-  [31m×[0m `app::NonCloneSingleton` does not implement the `core::clone::Clone`
-  [31m│[0m trait.
+  [31m×[0m `app::NonCloneSingleton` doesn't implement the `core::clone::Clone` trait.
   [31m│[0m
   [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:51:1]
   [31m│[0m  [2m51[0m │     bp.constructor(f!(crate::NonSendSingleton::new), Lifecycle::Singleton);
@@ -14,7 +13,7 @@
   [31m│[0m         shared across all worker threads.
 
 [31m[1mERROR[0m[39m: 
-  [31m×[0m `app::NonSyncSingleton` does not implement the `core::marker::Sync` trait.
+  [31m×[0m `app::NonSyncSingleton` doesn't implement the `core::marker::Sync` trait.
   [31m│[0m
   [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:52:1]
   [31m│[0m  [2m52[0m │     bp.constructor(f!(crate::NonCloneSingleton::new), Lifecycle::Singleton);
@@ -28,7 +27,7 @@
   [31m│[0m         shared across all worker threads.
 
 [31m[1mERROR[0m[39m: 
-  [31m×[0m `app::NonSendSingleton` does not implement the `core::marker::Send` trait.
+  [31m×[0m `app::NonSendSingleton` doesn't implement the `core::marker::Send` trait.
   [31m│[0m
   [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:50:1]
   [31m│[0m  [2m50[0m │     let mut bp = Blueprint::new();
@@ -42,7 +41,7 @@
   [31m│[0m         shared across all worker threads.
 
 [31m[1mERROR[0m[39m: 
-  [31m×[0m `app::NonSendSingleton` does not implement the `core::marker::Sync` trait.
+  [31m×[0m `app::NonSendSingleton` doesn't implement the `core::marker::Sync` trait.
   [31m│[0m
   [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:50:1]
   [31m│[0m  [2m50[0m │     let mut bp = Blueprint::new();

@@ -113,7 +113,7 @@ impl CallPath {
                 let element_type = Box::new(Self::parse_type(s.elem.as_ref().to_owned())?);
                 Ok(CallPathType::Slice(CallPathSlice { element_type }))
             }
-            _ => todo!("We do not handle {:?} as a type yet", type_),
+            _ => todo!("We don't handle {:?} as a type yet", type_),
         }
     }
 
@@ -148,7 +148,7 @@ impl CallPath {
                     arguments
                 }
                 PathArguments::Parenthesized(_) => {
-                    todo!("We do not handle paranthesized generic parameters")
+                    todo!("We don't handle paranthesized generic parameters")
                 }
             };
             let segment = CallPathSegment {

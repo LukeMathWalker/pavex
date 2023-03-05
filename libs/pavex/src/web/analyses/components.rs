@@ -17,10 +17,11 @@ use crate::diagnostic::{
     CompilerDiagnostic, LocationExt, SourceSpanExt,
 };
 use crate::language::{
-    Callable, NamedTypeGeneric, ResolvedPath, ResolvedPathQualifiedSelf, ResolvedPathSegment,
-    ResolvedPathType, ResolvedType, TypeReference,
+    Callable, ResolvedPath, ResolvedPathQualifiedSelf, ResolvedPathSegment, ResolvedPathType,
+    ResolvedType, TypeReference,
 };
 use crate::rustdoc::CrateCollection;
+use crate::utils::comma_separated_list;
 use crate::web::analyses::computations::{ComputationDb, ComputationId};
 use crate::web::analyses::raw_identifiers::RawCallableIdentifiersDb;
 use crate::web::analyses::user_components::{
@@ -207,7 +208,7 @@ impl ComponentDb {
                     self_.register_derived_constructors(constructor_id, computation_db);
                     if is_result(c.output_type()) && lifecycle != &Lifecycle::Singleton {
                         // We'll try to match all fallible constructors with an error handler later.
-                        // We skip singletons since we do not "handle" errors when constructing them.
+                        // We skip singletons since we don't "handle" errors when constructing them.
                         // They are just bubbled up to the caller by the function that builds
                         // the application state.
                         fallible_component_id2error_handler_id.insert(user_component_id, None);
@@ -230,6 +231,8 @@ impl ComponentDb {
                         e,
                         user_component_id,
                         user_component_db,
+                        computation_db,
+                        krate_collection,
                         package_graph,
                         raw_identifiers_db,
                         diagnostics,
@@ -306,25 +309,34 @@ impl ComponentDb {
                 );
                 match ErrorHandler::new(error_handler_callable.to_owned(), fallible_callable) {
                     Ok(e) => {
-                        let error_handler_id = self_.add_error_handler(
-                            e,
-                            user_component_id2component_id[&fallible_user_component_id],
-                            lifecycle.to_owned(),
-                            error_handler_user_component_id.into(),
-                            computation_db,
-                        );
-                        user_component_id2component_id
-                            .insert(error_handler_user_component_id, error_handler_id);
-                        fallible_component_id2error_handler_id.insert(
-                            fallible_user_component_id,
-                            Some(ErrorHandlerId::Id(error_handler_id)),
-                        );
+                        // This may be `None` if the fallible component failed to pass its own
+                        // validation - e.g. the constructor callable was not deemed to be a valid
+                        // constructor.
+                        if let Some(fallible_component_id) =
+                            user_component_id2component_id.get(&fallible_user_component_id)
+                        {
+                            let error_handler_id = self_.add_error_handler(
+                                e,
+                                *fallible_component_id,
+                                lifecycle.to_owned(),
+                                error_handler_user_component_id.into(),
+                                computation_db,
+                            );
+                            user_component_id2component_id
+                                .insert(error_handler_user_component_id, error_handler_id);
+                            fallible_component_id2error_handler_id.insert(
+                                fallible_user_component_id,
+                                Some(ErrorHandlerId::Id(error_handler_id)),
+                            );
+                        }
                     }
                     Err(e) => {
                         Self::invalid_error_handler(
                             e,
                             error_handler_user_component_id,
                             user_component_db,
+                            computation_db,
+                            krate_collection,
                             package_graph,
                             raw_identifiers_db,
                             diagnostics,
@@ -537,7 +549,7 @@ impl ComponentDb {
             // `Result<T,E>` into `T`.
             let ok_id = self.add_synthetic_constructor(
                 ok.into_owned(),
-                lifecycle.to_owned(),
+                lifecycle,
                 computation_db,
             );
 
@@ -749,7 +761,7 @@ impl ComponentDb {
             println!(
                 "Component id: {:?}\nHydrated component: {:?}\nLifecycle: {:?}",
                 component_id,
-                self.hydrated_component(component_id, &computation_db),
+                self.hydrated_component(component_id, computation_db),
                 self.lifecycle(component_id)
             );
 
@@ -757,8 +769,8 @@ impl ComponentDb {
             if let Some((ok_id, err_id)) = self.match_ids(component_id) {
                 let matchers = format!(
                     "- Ok: {:?}\n- Err: {:?}",
-                    self.hydrated_component(*ok_id, &computation_db),
-                    self.hydrated_component(*err_id, &computation_db)
+                    self.hydrated_component(*ok_id, computation_db),
+                    self.hydrated_component(*err_id, computation_db)
                 );
                 println!("{}", textwrap::indent(&matchers, "  "));
             }
@@ -766,7 +778,7 @@ impl ComponentDb {
             if let Some(err_handler_id) = self.error_handler_id(component_id) {
                 let error_handler = format!(
                     "{:?}",
-                    self.hydrated_component(*err_handler_id, &computation_db)
+                    self.hydrated_component(*err_handler_id, computation_db)
                 );
                 println!("{}", textwrap::indent(&error_handler, "  "));
             }
@@ -774,7 +786,7 @@ impl ComponentDb {
             if let Some(transformer_ids) = self.transformer_ids(component_id) {
                 let transformers = transformer_ids
                     .iter()
-                    .map(|id| format!("- {:?}", self.hydrated_component(*id, &computation_db)))
+                    .map(|id| format!("- {:?}", self.hydrated_component(*id, computation_db)))
                     .collect::<Vec<_>>()
                     .join("\n");
                 println!("{}", textwrap::indent(&transformers, "  "));
@@ -800,7 +812,7 @@ impl ComponentDb {
     pub fn bind_generic_type_parameters(
         &mut self,
         id: ComponentId,
-        bindings: &HashMap<NamedTypeGeneric, ResolvedType>,
+        bindings: &HashMap<String, ResolvedType>,
         computation_db: &mut ComputationDb,
     ) -> ComponentId {
         fn _get_root_component_id(
@@ -869,7 +881,7 @@ impl ComponentDb {
                     let ref_error_handler_error_type = error_handler.error_type_ref();
 
                     let remapping = ref_constructor_error_type
-                        .is_equivalent_to(&ref_error_handler_error_type)
+                        .is_equivalent_to(ref_error_handler_error_type)
                         .unwrap();
                     let mut error_handler_bindings = HashMap::new();
                     for (generic, concrete) in bindings {
@@ -881,13 +893,9 @@ impl ComponentDb {
                         // E.g.
                         // - Constructor: `fn constructor<T>(x: u64) -> Result<T, Error>`
                         // - Error handler: `fn error_handler(e: &Error) -> Response`
-                        if let Some(error_handler_generic) = remapping.get(generic.name.as_str()) {
-                            error_handler_bindings.insert(
-                                NamedTypeGeneric {
-                                    name: (*error_handler_generic).to_owned(),
-                                },
-                                concrete.clone(),
-                            );
+                        if let Some(error_handler_generic) = remapping.get(generic.as_str()) {
+                            error_handler_bindings
+                                .insert((*error_handler_generic).to_owned(), concrete.clone());
                         }
                     }
                     error_handler_bindings
@@ -898,7 +906,7 @@ impl ComponentDb {
                 let bound_error_component_id = self.add_error_handler(
                     bound_error_handler,
                     bound_component_id,
-                    lifecycle.clone(),
+                    lifecycle,
                     bound_computation_id.into(),
                     computation_db,
                 );
@@ -1039,15 +1047,8 @@ impl ComponentDb {
                     format!("`{}`", &parameters[0])
                 } else {
                     let mut buffer = String::new();
-                    for (i, param) in parameters.iter().enumerate() {
-                        if i == parameters.len() - 1 {
-                            buffer.push_str("and ");
-                        }
-                        buffer.push_str(&format!("`{}`", param));
-                        if i != parameters.len() - 1 {
-                            buffer.push_str(", ");
-                        }
-                    }
+                    comma_separated_list(&mut buffer, parameters.iter(), |p| format!("`{}`", p))
+                        .unwrap();
                     buffer
                 };
                 let error = anyhow::anyhow!(e)
@@ -1055,7 +1056,7 @@ impl ComponentDb {
                         format!(
                             "I am not smart enough to figure out the concrete type for all the generic parameters in `{}`.\n\
                             I can only infer the type of an unassigned generic parameter if it appears in the output type returned by the constructor. This is \
-                            not the case for {free_parameters}, since {subject_verb} only used in the input parameters.",
+                            not the case for {free_parameters}, since {subject_verb} only used by the input parameters.",
                             callable.path));
                 CompilerDiagnostic::builder(source, error)
                     .optional_label(label)
@@ -1071,6 +1072,76 @@ impl ComponentDb {
                     //    to be amended instead of a made signature
                     .build()
             }
+            ConstructorValidationError::NakedGenericOutputType {
+                ref naked_parameter,
+            } => {
+                fn get_definition_span(
+                    callable: &Callable,
+                    krate_collection: &CrateCollection,
+                    package_graph: &PackageGraph,
+                ) -> Option<AnnotatedSnippet> {
+                    let global_item_id = callable.source_coordinates.as_ref()?;
+                    let item = krate_collection.get_type_by_global_type_id(global_item_id);
+                    let definition_span = item.span.as_ref()?;
+                    let source_contents = diagnostic::read_source_file(
+                        &definition_span.filename,
+                        &package_graph.workspace(),
+                    )
+                    .ok()?;
+                    let span = convert_rustdoc_span(&source_contents, definition_span.to_owned());
+                    let span_contents =
+                        source_contents[span.offset()..(span.offset() + span.len())].to_string();
+                    let output = match &item.inner {
+                        ItemEnum::Function(_) => {
+                            if let Ok(item) = syn::parse_str::<syn::ItemFn>(&span_contents) {
+                                item.sig.output
+                            } else if let Ok(item) =
+                                syn::parse_str::<syn::ImplItemMethod>(&span_contents)
+                            {
+                                item.sig.output
+                            } else {
+                                panic!("Could not parse as a function or method:\n{span_contents}")
+                            }
+                        }
+                        _ => unreachable!(),
+                    };
+
+                    let output_span = if let syn::ReturnType::Type(_, output_type) = &output {
+                        output_type.span()
+                    } else {
+                        output.span()
+                    };
+                    let label = convert_proc_macro_span(&span_contents, output_span)
+                        .labeled("The invalid output type".to_string());
+                    let source_path = definition_span.filename.to_str().unwrap();
+                    Some(AnnotatedSnippet::new(
+                        NamedSource::new(source_path, span_contents),
+                        label,
+                    ))
+                }
+
+                let callable = &computation_db[user_component_id];
+                let definition_snippet =
+                    get_definition_span(callable, krate_collection, package_graph);
+                let msg = format!(
+                    "You can't return a naked generic parameter from a constructor, like `{naked_parameter}` in `{}`.\n\
+                    I don't take into account trait bounds when building your dependency graph. A constructor \
+                    that returns a naked generic parameter is equivalent, in my eyes, to a constructor that can build \
+                    **any** type, which is unlikely to be what you want!",
+                    callable.path
+                );
+                let error = anyhow::anyhow!(e).context(msg);
+                CompilerDiagnostic::builder(source, error)
+                    .optional_label(label)
+                    .optional_additional_annotated_snippet(definition_snippet)
+                    .help(
+                        "Can you return a concrete type as output? \n\
+                        Or wrap the generic parameter in a non-generic container? \
+                        For example, `T` in `Vec<T>` is not considered to be a naked parameter."
+                            .into(),
+                    )
+                    .build()
+            }
         };
         diagnostics.push(diagnostic.into());
     }
@@ -1079,30 +1150,118 @@ impl ComponentDb {
         e: RequestHandlerValidationError,
         user_component_id: UserComponentId,
         user_component_db: &UserComponentDb,
+        computation_db: &ComputationDb,
+        krate_collection: &CrateCollection,
         package_graph: &PackageGraph,
         raw_identifiers_db: &RawCallableIdentifiersDb,
         diagnostics: &mut Vec<miette::Error>,
     ) {
-        match e {
-            RequestHandlerValidationError::CannotReturnTheUnitType => {
-                let user_component = &user_component_db[user_component_id];
-                let raw_identifier_id = user_component.raw_callable_identifiers_id();
-                let location = raw_identifiers_db.get_location(raw_identifier_id);
-                let source = match location.source_file(package_graph) {
-                    Ok(s) => s,
-                    Err(e) => {
-                        diagnostics.push(e.into());
-                        return;
-                    }
-                };
-                let label = diagnostic::get_f_macro_invocation_span(&source, location)
-                    .map(|s| s.labeled("The request handler was registered here".into()));
-                let diagnostic = CompilerDiagnostic::builder(source, e)
-                    .optional_label(label)
-                    .build();
-                diagnostics.push(diagnostic.into());
+        let user_component = &user_component_db[user_component_id];
+        let raw_identifier_id = user_component.raw_callable_identifiers_id();
+        let location = raw_identifiers_db.get_location(raw_identifier_id);
+        let source = match location.source_file(package_graph) {
+            Ok(s) => s,
+            Err(e) => {
+                diagnostics.push(e.into());
+                return;
             }
-        }
+        };
+        let label = diagnostic::get_f_macro_invocation_span(&source, location)
+            .map(|s| s.labeled("The request handler was registered here".into()));
+        let diagnostic = match e {
+            RequestHandlerValidationError::CannotReturnTheUnitType
+            | RequestHandlerValidationError::CannotFalliblyReturnTheUnitType => {
+                CompilerDiagnostic::builder(source, e)
+                    .optional_label(label)
+                    .build()
+            }
+            RequestHandlerValidationError::UnderconstrainedGenericParameters { ref parameters } => {
+                fn get_definition_span(
+                    callable: &Callable,
+                    free_parameters: &IndexSet<String>,
+                    krate_collection: &CrateCollection,
+                    package_graph: &PackageGraph,
+                ) -> Option<AnnotatedSnippet> {
+                    let global_item_id = callable.source_coordinates.as_ref()?;
+                    let item = krate_collection.get_type_by_global_type_id(global_item_id);
+                    let definition_span = item.span.as_ref()?;
+                    let source_contents = diagnostic::read_source_file(
+                        &definition_span.filename,
+                        &package_graph.workspace(),
+                    )
+                    .ok()?;
+                    let span = convert_rustdoc_span(&source_contents, definition_span.to_owned());
+                    let span_contents =
+                        source_contents[span.offset()..(span.offset() + span.len())].to_string();
+                    let generic_params = match &item.inner {
+                        ItemEnum::Function(_) => {
+                            if let Ok(item) = syn::parse_str::<syn::ItemFn>(&span_contents) {
+                                item.sig.generics.params
+                            } else if let Ok(item) =
+                                syn::parse_str::<syn::ImplItemMethod>(&span_contents)
+                            {
+                                item.sig.generics.params
+                            } else {
+                                panic!("Could not parse as a function or method:\n{span_contents}")
+                            }
+                        }
+                        _ => unreachable!(),
+                    };
+
+                    let mut labels = vec![];
+                    for param in generic_params {
+                        if let syn::GenericParam::Type(ty) = param {
+                            if free_parameters.contains(ty.ident.to_string().as_str()) {
+                                labels.push(
+                                    convert_proc_macro_span(&span_contents, ty.span()).labeled(
+                                        "The generic parameter without a concrete type".into(),
+                                    ),
+                                );
+                            }
+                        }
+                    }
+                    let source_path = definition_span.filename.to_str().unwrap();
+                    Some(AnnotatedSnippet::new_with_labels(
+                        NamedSource::new(source_path, span_contents),
+                        labels,
+                    ))
+                }
+
+                let callable = &computation_db[user_component_id];
+                let definition_snippet =
+                    get_definition_span(callable, parameters, krate_collection, package_graph);
+                let free_parameters = if parameters.len() == 1 {
+                    format!("`{}`", &parameters[0])
+                } else {
+                    let mut buffer = String::new();
+                    comma_separated_list(&mut buffer, parameters.iter(), |p| format!("`{}`", p))
+                        .unwrap();
+                    buffer
+                };
+                let verb = if parameters.len() == 1 { "does" } else { "do" };
+                let plural = if parameters.len() == 1 { "" } else { "s" };
+                let error = anyhow::anyhow!(e)
+                    .context(
+                        format!(
+                            "I am not smart enough to figure out the concrete type for all the generic parameters in `{}`.\n\
+                            There should no unassigned generic parameters in request handlers, but {free_parameters} {verb} \
+                            not seem to have been assigned a concrete type.",
+                            callable.path));
+                CompilerDiagnostic::builder(source, error)
+                    .optional_label(label)
+                    .optional_additional_annotated_snippet(definition_snippet)
+                    .help(
+                        format!("Specify the concrete type{plural} for {free_parameters} when registering the request handler against the blueprint: \n\
+                        |  bp.route(\n\
+                        |    ..\n\
+                        |    f!(my_crate::my_handler::<ConcreteType>), \n\
+                        |  )"))
+                    // ^ TODO: add a proper code snippet here, using the actual function that needs
+                    //    to be amended instead of a made signature
+                    .build()
+            }
+        };
+        diagnostics.push(diagnostic.into());
     }
 
     fn invalid_response_type(
@@ -1128,9 +1287,9 @@ impl ComponentDb {
         let label = diagnostic::get_f_macro_invocation_span(&source, location)
             .map(|s| s.labeled(format!("The {callable_type} was registered here")));
         let error = anyhow::Error::from(e).context(format!(
-            "I cannot use the type returned by this {callable_type} to create an HTTP \
+            "I can't use the type returned by this {callable_type} to create an HTTP \
                 response.\n\
-                It does not implement `pavex_runtime::response::IntoResponse`."
+                It doesn't implement `pavex_runtime::response::IntoResponse`."
         ));
         let help =
             format!("Implement `pavex_runtime::response::IntoResponse` for `{output_type:?}`.");
@@ -1180,6 +1339,8 @@ impl ComponentDb {
         e: ErrorHandlerValidationError,
         user_component_id: UserComponentId,
         user_component_db: &UserComponentDb,
+        computation_db: &ComputationDb,
+        krate_collection: &CrateCollection,
         package_graph: &PackageGraph,
         raw_identifiers_db: &RawCallableIdentifiersDb,
         diagnostics: &mut Vec<miette::Error>,
@@ -1196,20 +1357,116 @@ impl ComponentDb {
         };
         let label = diagnostic::get_f_macro_invocation_span(&source, location)
             .map(|s| s.labeled("The error handler was registered here".into()));
-        match &e {
-            ErrorHandlerValidationError::CannotReturnTheUnitType(_) => {
-                // TODO: Add a sub-diagnostic showing the error handler signature, highlighting with
-                // a label the missing return type.
-            }
+        let diagnostic = match &e {
+            // TODO: Add a sub-diagnostic showing the error handler signature, highlighting with
+            // a label the missing return type.
+            ErrorHandlerValidationError::CannotReturnTheUnitType(_) |
+            // TODO: Add a sub-diagnostic showing the error handler signature, highlighting with
+            // a label the input types. Perhaps add a signature showing the signature of
+            // the associate fallible handler, highlighting the output type.
             ErrorHandlerValidationError::DoesNotTakeErrorReferenceAsInput { .. } => {
-                // TODO: Add a sub-diagnostic showing the error handler signature, highlighting with
-                // a label the input types. Perhaps add a signature showing the signature of
-                // the associate fallible handler, highlighting the output type.
+                CompilerDiagnostic::builder(source, e)
+                    .optional_label(label)
+                    .build()
             }
-        }
-        let diagnostic = CompilerDiagnostic::builder(source, e)
-            .optional_label(label)
-            .build();
+            ErrorHandlerValidationError::UnderconstrainedGenericParameters { ref parameters, ref error_ref_input_index } => {
+                fn get_definition_span(
+                    callable: &Callable,
+                    free_parameters: &IndexSet<String>,
+                    error_ref_input_index: usize,
+                    krate_collection: &CrateCollection,
+                    package_graph: &PackageGraph,
+                ) -> Option<AnnotatedSnippet> {
+                    let global_item_id = callable.source_coordinates.as_ref()?;
+                    let item = krate_collection.get_type_by_global_type_id(global_item_id);
+                    let definition_span = item.span.as_ref()?;
+                    let source_contents = diagnostic::read_source_file(
+                        &definition_span.filename,
+                        &package_graph.workspace(),
+                    )
+                        .ok()?;
+                    let span = convert_rustdoc_span(&source_contents, definition_span.to_owned());
+                    let span_contents =
+                        source_contents[span.offset()..(span.offset() + span.len())].to_string();
+                    let (generic_params, error_input) = match &item.inner {
+                        ItemEnum::Function(_) => {
+                            if let Ok(item) = syn::parse_str::<syn::ItemFn>(&span_contents) {
+                                (item.sig.generics.params, item.sig.inputs[error_ref_input_index].clone())
+                            } else if let Ok(item) =
+                                syn::parse_str::<syn::ImplItemMethod>(&span_contents)
+                            {
+                                (item.sig.generics.params, item.sig.inputs[error_ref_input_index].clone())
+                            } else {
+                                panic!("Could not parse as a function or method:\n{span_contents}")
+                            }
+                        }
+                        _ => unreachable!(),
+                    };
+
+                    let mut labels = vec![];
+                    let subject_verb = if generic_params.len() == 1 {
+                        "it is"
+                    } else {
+                        "they are"
+                    };
+                    for param in generic_params {
+                        if let syn::GenericParam::Type(ty) = param {
+                            if free_parameters.contains(ty.ident.to_string().as_str()) {
+                                labels.push(
+                                    convert_proc_macro_span(&span_contents, ty.span())
+                                        .labeled("I can't infer this..".into()),
+                                );
+                            }
+                        }
+                    }
+                    let error_input_span = error_input.span();
+                    labels.push(
+                        convert_proc_macro_span(&span_contents, error_input_span)
+                            .labeled(format!("..because {subject_verb} not used here")),
+                    );
+                    let source_path = definition_span.filename.to_str().unwrap();
+                    Some(AnnotatedSnippet::new_with_labels(
+                        NamedSource::new(source_path, span_contents),
+                        labels,
+                    ))
+                }
+
+                let callable = &computation_db[user_component_id];
+                let definition_snippet =
+                    get_definition_span(callable, parameters, *error_ref_input_index, krate_collection, package_graph);
+                let subject_verb = if parameters.len() == 1 {
+                    "it isn't"
+                } else {
+                    "they aren't"
+                };
+                let free_parameters = if parameters.len() == 1 {
+                    format!("`{}`", &parameters[0])
+                } else {
+                    let mut buffer = String::new();
+                    comma_separated_list(&mut buffer, parameters.iter(), |p| format!("`{}`", p)).unwrap();
+                    buffer
+                };
+                let error = anyhow::anyhow!(e)
+                    .context(
+                        format!(
+                            "I am not smart enough to figure out the concrete type for all the generic parameters in `{}`.\n\
+                            I can only infer the type of an unassigned generic parameter if it appears in the error type processed by this error handler. This is \
+                            not the case for {free_parameters}, since {subject_verb} used by the error type.",
+                            callable.path));
+                CompilerDiagnostic::builder(source, error)
+                    .optional_label(label)
+                    .optional_additional_annotated_snippet(definition_snippet)
+                    .help(
+                        "Specify the concrete type(s) for the problematic \
+                        generic parameter(s) when registering the error handler against the blueprint: \n\
+                        |  .error_handler(\n\
+                        |    f!(my_crate::my_error_handler::<ConcreteType>)\n\
+                        |  )".into())
+                    // ^ TODO: add a proper code snippet here, using the actual function that needs
+                    //    to be amended instead of a made signature
+                    .build()
+            }
+        };
         diagnostics.push(diagnostic.into());
     }
 
@@ -1235,7 +1492,7 @@ impl ComponentDb {
         let label = diagnostic::get_f_macro_invocation_span(&source, location)
             .map(|s| s.labeled("The unnecessary error handler was registered here".into()));
         let error = anyhow::anyhow!(
-            "You registered an error handler for a {} that does not return a `Result`.",
+            "You registered an error handler for a {} that doesn't return a `Result`.",
             fallible_kind
         );
         let diagnostic = CompilerDiagnostic::builder(source, error)
@@ -1272,8 +1529,8 @@ impl ComponentDb {
         let label = diagnostic::get_f_macro_invocation_span(&source, location)
             .map(|s| s.labeled("The unnecessary error handler was registered here".into()));
         let error = anyhow::anyhow!(
-            "You cannot register an error handler for a singleton constructor. \n\
-                If I fail to build a singleton, I bubble up the error - it does not get handled.",
+            "You can't register an error handler for a singleton constructor. \n\
+                If I fail to build a singleton, I bubble up the error - it doesn't get handled.",
         );
         let diagnostic = CompilerDiagnostic::builder(source, error)
             .optional_label(label)

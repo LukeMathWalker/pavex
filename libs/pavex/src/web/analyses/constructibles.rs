@@ -11,7 +11,7 @@ use crate::diagnostic::{
     convert_proc_macro_span, convert_rustdoc_span, read_source_file, AnnotatedSnippet,
     CompilerDiagnostic, LocationExt, SourceSpanExt,
 };
-use crate::language::{Callable, NamedTypeGeneric, ResolvedType};
+use crate::language::{Callable, ResolvedType};
 use crate::rustdoc::CrateCollection;
 use crate::web::analyses::components::{ComponentDb, ComponentId, HydratedComponent};
 use crate::web::analyses::computations::ComputationDb;
@@ -146,7 +146,7 @@ impl ConstructibleDb {
             if new_component_ids.is_empty() {
                 break;
             } else {
-                n_component_ids = n_component_ids + new_component_ids.len();
+                n_component_ids += new_component_ids.len();
                 component_ids = new_component_ids;
             }
         }
@@ -207,7 +207,7 @@ impl ConstructibleDb {
                 (s.offset() + span.offset()).into(),
                 s.len().into(),
             )
-            .labeled("I do not know how to construct an instance of this input parameter".into());
+            .labeled("I don't know how to construct an instance of this input parameter".into());
             let source_path = definition_span.filename.to_str().unwrap();
             Some(AnnotatedSnippet::new(
                 NamedSource::new(source_path, source_contents),
@@ -231,8 +231,8 @@ impl ConstructibleDb {
         let label = diagnostic::get_f_macro_invocation_span(&source, location)
             .map(|s| s.labeled(format!("The {component_kind} was registered here")));
         let e = anyhow::anyhow!(
-                "I cannot invoke your {component_kind}, `{}`, because it needs an instance \
-                of `{unconstructible_type:?}` as input, but I cannot find a constructor for that type.",
+                "I can't invoke your {component_kind}, `{}`, because it needs an instance \
+                of `{unconstructible_type:?}` as input, but I can't find a constructor for that type.",
                 callable.path
             );
         let definition_info = get_definition_info(
@@ -269,7 +269,7 @@ fn bind_and_register_constructor(
     component_db: &mut ComponentDb,
     computation_db: &mut ComputationDb,
     constructible_db: &mut ConstructibleDb,
-    bindings: &HashMap<NamedTypeGeneric, ResolvedType>,
+    bindings: &HashMap<String, ResolvedType>,
 ) {
     let bound_component_id =
         component_db.bind_generic_type_parameters(templated_component_id, bindings, computation_db);

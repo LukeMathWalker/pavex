@@ -95,7 +95,7 @@ impl ResolvedPathType {
                     for generic_path in &segment.generic_arguments {
                         let generic_arg = match generic_path {
                             ResolvedPathGenericArgument::Type(t) => {
-                                GenericArgument::AssignedTypeParameter(t.resolve(krate_collection)?)
+                                GenericArgument::TypeParameter(t.resolve(krate_collection)?)
                             }
                             ResolvedPathGenericArgument::Lifetime(l) => match l {
                                 ResolvedPathLifetime::Static => {
@@ -155,7 +155,7 @@ impl From<ResolvedType> for ResolvedPathType {
                         .generic_arguments
                         .into_iter()
                         .map(|t| match t {
-                            GenericArgument::AssignedTypeParameter(t) => {
+                            GenericArgument::TypeParameter(t) => {
                                 ResolvedPathGenericArgument::Type(t.into())
                             }
                             GenericArgument::Lifetime(l) => match l {
@@ -163,10 +163,6 @@ impl From<ResolvedType> for ResolvedPathType {
                                     ResolvedPathLifetime::Static,
                                 ),
                             },
-                            GenericArgument::UnassignedTypeParameter(_) => {
-                                // ResolvedPath does not support unassigned type parameters yet
-                                todo!("UnassignedTypeParameter")
-                            }
                         })
                         .collect();
                 }
@@ -190,6 +186,10 @@ impl From<ResolvedType> for ResolvedPathType {
             ResolvedType::Slice(s) => ResolvedPathType::Slice(ResolvedPathSlice {
                 element: Box::new((*s.element_type).into()),
             }),
+            ResolvedType::Generic(_) => {
+                // ResolvedPath doesn't support unassigned generic parameters.
+                unreachable!("UnassignedGeneric")
+            }
         }
     }
 }

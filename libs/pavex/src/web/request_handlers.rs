@@ -1,6 +1,10 @@
 use std::borrow::Cow;
 
+use indexmap::IndexSet;
+
 use crate::language::{Callable, ResolvedType};
+use crate::web::computation::MatchResult;
+use crate::web::utils::is_result;
 
 /// A callable that handles incoming requests for one or more routes.
 /// It must return a type that implements `pavex_runtime::response::IntoResponse`.
@@ -12,9 +16,40 @@ pub(crate) struct RequestHandler<'a> {
 
 impl<'a> RequestHandler<'a> {
     pub fn new(c: Cow<'a, Callable>) -> Result<Self, RequestHandlerValidationError> {
-        if c.output.is_none() {
-            return Err(RequestHandlerValidationError::CannotReturnTheUnitType);
+        let mut output_type = c
+            .output
+            .as_ref()
+            .ok_or(RequestHandlerValidationError::CannotReturnTheUnitType)?
+            .clone();
+
+        // If the constructor is fallible, we make sure that it returns a non-unit type on
+        // the happy path.
+        if is_result(&output_type) {
+            let m = MatchResult::match_result(&output_type);
+            output_type = m.ok.output;
+            if output_type == ResolvedType::UNIT_TYPE {
+                return Err(RequestHandlerValidationError::CannotFalliblyReturnTheUnitType);
+            }
         }
+
+        let output_unassigned_generic_parameters = output_type.unassigned_generic_type_parameters();
+        let mut free_parameters = IndexSet::new();
+        for input in c.inputs.iter() {
+            free_parameters.extend(
+                input
+                    .unassigned_generic_type_parameters()
+                    .difference(&output_unassigned_generic_parameters)
+                    .cloned(),
+            );
+        }
+        if !free_parameters.is_empty() {
+            return Err(
+                RequestHandlerValidationError::UnderconstrainedGenericParameters {
+                    parameters: free_parameters,
+                },
+            );
+        }
+
         Ok(Self { callable: c })
     }
 
@@ -36,9 +71,17 @@ impl<'a> RequestHandler<'a> {
 #[derive(thiserror::Error, Debug, Clone)]
 pub(crate) enum RequestHandlerValidationError {
     #[error(
-        "All request handlers must return a type that can be converted into a \
+    "All request handlers must return a type that can be converted into a \
         `pavex_runtime::response::Response`.\n\
-        This request handler doesn't: it returns the unit type, `()`."
+        This request handler doesn't: it returns the unit type, `()`. I can't convert `()` into an HTTP response."
     )]
     CannotReturnTheUnitType,
+    #[error(
+    "All request handlers must return a type that can be converted into a \
+        `pavex_runtime::response::Response`.\n\
+        This request handler doesn't: it returns the unit type, `()`, when successful. I can't convert `()` into an HTTP response."
+    )]
+    CannotFalliblyReturnTheUnitType,
+    #[error("Input parameters for a request handler can't have any *unassigned* generic type parameters that appear exclusively in its input parameters.")]
+    UnderconstrainedGenericParameters { parameters: IndexSet<String> },
 }

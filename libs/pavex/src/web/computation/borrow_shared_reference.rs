@@ -1,7 +1,7 @@
 use ahash::HashMap;
 use indexmap::IndexSet;
 
-use crate::language::{NamedTypeGeneric, ResolvedType, TypeReference};
+use crate::language::{ResolvedType, TypeReference};
 
 /// Borrow a shared reference for a type - i.e. get a `&T` from a `T`.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -24,10 +24,7 @@ impl BorrowSharedReference {
     /// concrete types specified in `bindings`.
     ///
     /// The newly "bound" reference will be returned.
-    pub fn bind_generic_type_parameters(
-        &self,
-        bindings: &HashMap<NamedTypeGeneric, ResolvedType>,
-    ) -> Self {
+    pub fn bind_generic_type_parameters(&self, bindings: &HashMap<String, ResolvedType>) -> Self {
         Self {
             input: self.input.bind_generic_type_parameters(bindings),
             output: self.output.bind_generic_type_parameters(bindings),
@@ -36,7 +33,7 @@ impl BorrowSharedReference {
 
     /// Returns the set of all unassigned generic type parameters in this borrow.
     #[allow(unused)]
-    pub(crate) fn unassigned_generic_type_parameters(&self) -> IndexSet<NamedTypeGeneric> {
+    pub(crate) fn unassigned_generic_type_parameters(&self) -> IndexSet<String> {
         let mut result = IndexSet::new();
         result.extend(self.input.unassigned_generic_type_parameters());
         result.extend(self.output.unassigned_generic_type_parameters());

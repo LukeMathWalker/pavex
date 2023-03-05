@@ -23,6 +23,14 @@ pub fn handler() -> pavex_runtime::response::Response {
     todo!()
 }
 
+pub fn unit_handler() {
+    todo!()
+}
+
+pub fn fallible_unit_handler() -> Result<(), Error> {
+    todo!()
+}
+
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.constructor(f!(crate::constructor), Lifecycle::Singleton);
@@ -33,5 +41,8 @@ pub fn blueprint() -> Blueprint {
     bp.constructor(f!(crate::fallible_constructor), Lifecycle::RequestScoped)
         .error_handler(f!(crate::error_handler));
     bp.route(GET, "/home", f!(crate::handler));
+    bp.route(GET, "/unit", f!(crate::unit_handler));
+    bp.route(GET, "/fallible_unit", f!(crate::fallible_unit_handler))
+        .error_handler(f!(crate::error_handler));
     bp
 }

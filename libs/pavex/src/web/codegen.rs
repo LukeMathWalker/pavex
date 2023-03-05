@@ -59,6 +59,9 @@ impl CodegenRequestHandler {
                 | ResolvedType::ResolvedPath(_)
                 | ResolvedType::Tuple(_)
                 | ResolvedType::ScalarPrimitive(_) => type_,
+                ResolvedType::Generic(_) => {
+                    unreachable!("Generic types should have been resolved by now")
+                }
             };
             if let Some(field_name) = singleton_bindings.get_by_right(inner_type) {
                 if is_shared_reference {
@@ -600,10 +603,8 @@ fn collect_type_package_ids(package_ids: &mut IndexSet<PackageId>, t: &ResolvedT
             package_ids.insert(t.package_id.clone());
             for generic in &t.generic_arguments {
                 match generic {
-                    GenericArgument::AssignedTypeParameter(t) => {
-                        collect_type_package_ids(package_ids, t)
-                    }
-                    GenericArgument::Lifetime(_) | GenericArgument::UnassignedTypeParameter(_) => {}
+                    GenericArgument::TypeParameter(t) => collect_type_package_ids(package_ids, t),
+                    GenericArgument::Lifetime(_) => {}
                 }
             }
         }
@@ -613,9 +614,9 @@ fn collect_type_package_ids(package_ids: &mut IndexSet<PackageId>, t: &ResolvedT
                 collect_type_package_ids(package_ids, element)
             }
         }
-        ResolvedType::ScalarPrimitive(_) => {}
         ResolvedType::Slice(s) => {
             collect_type_package_ids(package_ids, &s.element_type);
         }
+        ResolvedType::Generic(_) | ResolvedType::ScalarPrimitive(_) => {}
     }
 }

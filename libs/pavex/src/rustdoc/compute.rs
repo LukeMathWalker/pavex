@@ -50,7 +50,7 @@ pub(super) fn compute_crate_docs(
     // Some crates are not compiled as part of the dependency tree of the current workspace.
     // They are instead bundled as part of Rust's toolchain and automatically available for import
     // and usage in your crate: the standard library (`std`), `core` (a smaller subset of `std`
-    // that does not require an allocator), `alloc` (a smaller subset of `std` that assumes you
+    // that doesn't require an allocator), `alloc` (a smaller subset of `std` that assumes you
     // can allocate).
     // Since those crates are pre-compiled (and somewhat special), we can't generate their
     // documentation on the fly. We assume that their JSON docs have been pre-computed and are
@@ -123,7 +123,7 @@ fn get_nightly_toolchain_root_folder_via_rustup() -> Result<PathBuf, anyhow::Err
     let path = Path::new(path);
     debug_assert!(
         path.ends_with("bin/cargo"),
-        "The path to the `cargo` binary for nightly does not have the expected structure: {path:?}"
+        "The path to the `cargo` binary for nightly doesn't have the expected structure: {path:?}"
     );
     Ok(path.parent().unwrap().parent().unwrap().to_path_buf())
 }

@@ -8,7 +8,7 @@ use crate::language::{ResolvedPathType, ResolvedType};
 use crate::rustdoc::CrateCollection;
 use crate::web::resolvers::resolve_type;
 
-/// It returns an error if `type_` does not implement the specified trait.
+/// It returns an error if `type_` doesn't implement the specified trait.
 ///
 /// The trait path must be fully resolved: it should NOT point to a re-export
 /// (e.g. `std::marker::Sync` won't work, you should use `core::marker::Sync`).
@@ -79,7 +79,7 @@ pub(crate) fn implements_trait(
                         GenericParamDefKind::Type { default: None, .. }
                         | GenericParamDefKind::Const { .. }
                         | GenericParamDefKind::Lifetime { .. } => {
-                            todo!("Generic parameters other than type parameters with a default value are not supported yet. I cannot handle:\n {:?}", generic)
+                            todo!("Generic parameters other than type parameters with a default value are not supported yet. I can't handle:\n {:?}", generic)
                         }
                     }
                 }
@@ -186,6 +186,11 @@ pub(crate) fn implements_trait(
                 return true;
             }
             // TODO: handle Unpin + other traits
+        }
+        ResolvedType::Generic(_) => {
+            // TODO: handle blanket implementations. As a first approximation,
+            //   we assume that if the type is generic, it implements all traits.
+            return true;
         }
     }
 
@@ -334,7 +339,7 @@ impl std::fmt::Display for MissingTraitImplementationError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "`{:?}` does not implement the `{:?}` trait.",
+            "`{:?}` doesn't implement the `{:?}` trait.",
             &self.type_, &self.trait_
         )
     }

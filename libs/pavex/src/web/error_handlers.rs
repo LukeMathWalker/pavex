@@ -1,10 +1,9 @@
 use std::fmt::{Display, Formatter};
 
 use ahash::HashMap;
+use indexmap::IndexSet;
 
-use crate::language::{
-    Callable, GenericArgument, NamedTypeGeneric, ResolvedPath, ResolvedType, TypeReference,
-};
+use crate::language::{Callable, GenericArgument, ResolvedPath, ResolvedType, TypeReference};
 use crate::web::utils::is_result;
 
 /// A transformation that, given a reference to an error type (and, optionally, other inputs),
@@ -39,7 +38,7 @@ impl ErrorHandler {
             let ResolvedType::ResolvedPath(result_type) = result_type else {
                 unreachable!()
             };
-            let GenericArgument::AssignedTypeParameter(e) = result_type.generic_arguments[1].clone() else {
+            let GenericArgument::TypeParameter(e) = result_type.generic_arguments[1].clone() else {
                 unreachable!()
             };
             ResolvedType::Reference(TypeReference {
@@ -55,19 +54,49 @@ impl ErrorHandler {
         let error_input_index = error_handler
             .inputs
             .iter()
-            .position(|i| i == &error_type_ref);
-        match error_input_index {
-            Some(i) => Ok(Self {
-                callable: error_handler,
-                error_input_index: i,
-            }),
-            None => Err(
-                ErrorHandlerValidationError::DoesNotTakeErrorReferenceAsInput {
+            .position(|i| i == &error_type_ref)
+            .ok_or_else(
+                || ErrorHandlerValidationError::DoesNotTakeErrorReferenceAsInput {
                     fallible_callable: fallible_callable.to_owned(),
                     error_type: error_type_ref,
                 },
-            ),
+            )?;
+        let error_ref_parameter = error_handler
+            .inputs
+            .get(error_input_index)
+            .expect("Error input index must be valid");
+
+        // All "free" generic parameters in the error handler must be assigned to concrete types.
+        // The only ones that are allowed to be unassigned are those used by the error type,
+        // because they might/will be dictated by the fallible callable that this error handler
+        // is associated with.
+        let error_ref_unassigned_generic_parameters =
+            error_ref_parameter.unassigned_generic_type_parameters();
+        let mut free_parameters = IndexSet::new();
+        for (i, input) in error_handler.inputs.iter().enumerate() {
+            if i == error_input_index {
+                continue;
+            }
+            free_parameters.extend(
+                input
+                    .unassigned_generic_type_parameters()
+                    .difference(&error_ref_unassigned_generic_parameters)
+                    .cloned(),
+            );
         }
+        if !free_parameters.is_empty() {
+            return Err(
+                ErrorHandlerValidationError::UnderconstrainedGenericParameters {
+                    parameters: free_parameters,
+                    error_ref_input_index: error_input_index,
+                },
+            );
+        }
+
+        Ok(Self {
+            callable: error_handler,
+            error_input_index,
+        })
     }
 
     /// Return the error type that this error handler takes as input.
@@ -90,10 +119,7 @@ impl ErrorHandler {
     /// concrete types specified in `bindings`.
     ///
     /// The newly "bound" error handler will be returned.
-    pub fn bind_generic_type_parameters(
-        &self,
-        bindings: &HashMap<NamedTypeGeneric, ResolvedType>,
-    ) -> Self {
+    pub fn bind_generic_type_parameters(&self, bindings: &HashMap<String, ResolvedType>) -> Self {
         Self {
             callable: self.callable.bind_generic_type_parameters(bindings),
             error_input_index: self.error_input_index,
@@ -120,13 +146,17 @@ pub(crate) enum ErrorHandlerValidationError {
         fallible_callable: Callable,
         error_type: ResolvedType,
     },
+    UnderconstrainedGenericParameters {
+        parameters: IndexSet<String>,
+        error_ref_input_index: usize,
+    },
 }
 
 impl Display for ErrorHandlerValidationError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             ErrorHandlerValidationError::CannotReturnTheUnitType(_) => {
-                write!(f, "All error handlers must return a type that implements `pavex_runtime::response::IntoResponse`.\nThis error handler doesn't: it returns the unit type, `()`. I don't know how to convert `()` into an HTTP response!")
+                write!(f, "All error handlers must return a type that implements `pavex_runtime::response::IntoResponse`.\nThis error handler doesn't: it returns the unit type, `()`. I can't convert `()` into an HTTP response!")
             }
             ErrorHandlerValidationError::DoesNotTakeErrorReferenceAsInput {
                 ref fallible_callable,
@@ -140,6 +170,13 @@ impl Display for ErrorHandlerValidationError {
                     This error handler is associated with `{}`, therefore I \
                     expect `{error_type:?}` to be one of its input parameters.",
                     fallible_callable.path,
+                )
+            }
+            ErrorHandlerValidationError::UnderconstrainedGenericParameters { .. } => {
+                write!(
+                    f,
+                    "Input parameters for an error handler can't have any *unassigned* \
+                       generic type parameters that do not appear in the error type itself."
                 )
             }
         }

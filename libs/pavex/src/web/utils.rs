@@ -22,7 +22,7 @@ pub(crate) fn get_ok_variant(t: &ResolvedType) -> &ResolvedType {
     let ResolvedType::ResolvedPath(t) = t else {
         unreachable!();
     };
-    let GenericArgument::AssignedTypeParameter(t) = &t.generic_arguments[0] else {
+    let GenericArgument::TypeParameter(t) = &t.generic_arguments[0] else {
         unreachable!()
     };
     t
@@ -33,7 +33,7 @@ pub(crate) fn get_err_variant(t: &ResolvedType) -> &ResolvedType {
     let ResolvedType::ResolvedPath(t) = t else {
         unreachable!();
     };
-    let GenericArgument::AssignedTypeParameter(t) = &t.generic_arguments[1] else {
+    let GenericArgument::TypeParameter(t) = &t.generic_arguments[1] else {
         unreachable!()
     };
     t

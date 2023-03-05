@@ -1,7 +1,7 @@
 [31m[1mERROR[0m[39m: 
-  [31m×[0m I cannot use the type returned by this request handler to create an HTTP
+  [31m×[0m I can't use the type returned by this request handler to create an HTTP
   [31m│[0m response.
-  [31m│[0m It does not implement `pavex_runtime::response::IntoResponse`.
+  [31m│[0m It doesn't implement `pavex_runtime::response::IntoResponse`.
   [31m│[0m
   [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:24:1]
   [31m│[0m  [2m24[0m │         .error_handler(f!(crate::error_handler));
@@ -14,9 +14,9 @@
   [31m│[0m         `app::MyCustomOutputType`.
 
 [31m[1mERROR[0m[39m: 
-  [31m×[0m I cannot use the type returned by this error handler to create an HTTP
+  [31m×[0m I can't use the type returned by this error handler to create an HTTP
   [31m│[0m response.
-  [31m│[0m It does not implement `pavex_runtime::response::IntoResponse`.
+  [31m│[0m It doesn't implement `pavex_runtime::response::IntoResponse`.
   [31m│[0m
   [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:23:1]
   [31m│[0m  [2m23[0m │     bp.constructor(f!(crate::request_scoped), Lifecycle::RequestScoped)
@@ -29,9 +29,9 @@
   [31m│[0m         `app::MyCustomOutputType`.
 
 [31m[1mERROR[0m[39m: 
-  [31m×[0m I cannot use the type returned by this error handler to create an HTTP
+  [31m×[0m I can't use the type returned by this error handler to create an HTTP
   [31m│[0m response.
-  [31m│[0m It does not implement `pavex_runtime::response::IntoResponse`.
+  [31m│[0m It doesn't implement `pavex_runtime::response::IntoResponse`.
   [31m│[0m
   [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:23:1]
   [31m│[0m  [2m23[0m │     bp.constructor(f!(crate::request_scoped), Lifecycle::RequestScoped)

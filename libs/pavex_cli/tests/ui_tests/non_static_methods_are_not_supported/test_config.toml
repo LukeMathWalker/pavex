@@ -1,6 +1,0 @@
-description = "pavex does not support generic functions as handlers (yet)"
-
-[expectations]
-codegen = "fail"
-
-

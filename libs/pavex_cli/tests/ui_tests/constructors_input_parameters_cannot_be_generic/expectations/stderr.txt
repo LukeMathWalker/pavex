@@ -3,7 +3,7 @@
   [31m│[0m parameters in `app::generic_constructor`.
   [31m│[0m I can only infer the type of an unassigned generic parameter if it appears
   [31m│[0m in the output type returned by the constructor. This is not the case for
-  [31m│[0m `T`, since it is only used in the input parameters.
+  [31m│[0m `T`, since it is only used by the input parameters.
   [31m│[0m
   [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:26:1]
   [31m│[0m  [2m26[0m │     let mut bp = Blueprint::new();
@@ -32,7 +32,7 @@
   [31m│[0m parameters in `app::doubly_generic_constructor`.
   [31m│[0m I can only infer the type of an unassigned generic parameter if it appears
   [31m│[0m in the output type returned by the constructor. This is not the case for
-  [31m│[0m `T`, and `S`, since they are only used in the input parameters.
+  [31m│[0m `T` and `S`, since they are only used by the input parameters.
   [31m│[0m
   [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:28:1]
   [31m│[0m  [2m28[0m │     bp.constructor(
@@ -62,7 +62,7 @@
   [31m│[0m parameters in `app::triply_generic_constructor`.
   [31m│[0m I can only infer the type of an unassigned generic parameter if it appears
   [31m│[0m in the output type returned by the constructor. This is not the case for
-  [31m│[0m `T`, `S`, and `U`, since they are only used in the input parameters.
+  [31m│[0m `T`, `S` and `U`, since they are only used by the input parameters.
   [31m│[0m
   [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:32:1]
   [31m│[0m  [2m32[0m │     bp.constructor(

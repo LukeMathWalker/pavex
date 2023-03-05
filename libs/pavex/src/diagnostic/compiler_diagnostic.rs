@@ -65,7 +65,7 @@ impl CompilerDiagnosticBuilder {
 
     /// Record an additional annotated code snippet to be displayed with this diagnostic.
     ///
-    /// This can be used to display a code snippet that does not live in the same source file
+    /// This can be used to display a code snippet that doesn't live in the same source file
     /// as the main code snippet for this diagnostic.
     pub fn additional_annotated_snippet(self, annotated_snippet: AnnotatedSnippet) -> Self {
         self.additional_annotated_snippets(std::iter::once(annotated_snippet))
@@ -73,7 +73,7 @@ impl CompilerDiagnosticBuilder {
 
     /// Record an additional annotated code snippet to be displayed with this diagnostic.
     ///
-    /// This can be used to display a code snippet that does not live in the same source file
+    /// This can be used to display a code snippet that doesn't live in the same source file
     /// as the main code snippet for this diagnostic.
     pub fn additional_annotated_snippets(
         mut self,
@@ -105,7 +105,7 @@ impl CompilerDiagnosticBuilder {
             error_source,
             additional_annotated_snippets,
         } = self;
-        // miette does not have first-class support for attaching multiple annotated code snippets
+        // miette doesn't have first-class support for attaching multiple annotated code snippets
         // to a single diagnostic _if_ they are not all related to the same source file.
         // We work around this by creating a separate related diagnostic for each annotated snippet,
         // with an empty error message.

@@ -6,7 +6,7 @@ use indexmap::IndexSet;
 pub(crate) use borrow_shared_reference::BorrowSharedReference;
 pub(crate) use match_result::{MatchResult, MatchResultVariant};
 
-use crate::language::{Callable, NamedTypeGeneric, ResolvedType};
+use crate::language::{Callable, ResolvedType};
 
 mod borrow_shared_reference;
 mod match_result;
@@ -68,7 +68,7 @@ impl<'a> Computation<'a> {
 
     /// The type returned by this computation.
     ///
-    /// This is `None` for computations that do not return a value.
+    /// This is `None` for computations that don't return a value.
     pub fn output_type(&self) -> Option<&crate::language::ResolvedType> {
         match self {
             Computation::Callable(c) => c.output.as_ref(),
@@ -83,7 +83,7 @@ impl<'a> Computation<'a> {
     /// The newly "bound" computation will be returned.
     pub fn bind_generic_type_parameters(
         &self,
-        bindings: &HashMap<NamedTypeGeneric, ResolvedType>,
+        bindings: &HashMap<String, ResolvedType>,
     ) -> Computation<'_> {
         match self {
             Computation::Callable(c) => {
@@ -100,7 +100,7 @@ impl<'a> Computation<'a> {
 
     /// Returns the set of all unassigned generic type parameters in this computation.
     #[allow(unused)]
-    pub(crate) fn unassigned_generic_type_parameters(&self) -> IndexSet<NamedTypeGeneric> {
+    pub(crate) fn unassigned_generic_type_parameters(&self) -> IndexSet<String> {
         match self {
             Computation::Callable(c) => c.unassigned_generic_type_parameters(),
             Computation::MatchResult(m) => m.unassigned_generic_type_parameters(),

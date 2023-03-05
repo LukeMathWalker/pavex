@@ -843,7 +843,7 @@ impl Line {
     }
 
     // A 'flyby' is a multi-line span that technically covers this line, but
-    // does not begin or end within the line itself. This method is used to
+    // doesn't begin or end within the line itself. This method is used to
     // calculate gutters.
     fn span_flyby(&self, span: &FancySpan) -> bool {
         // The span itself starts before this line's starting offset (so, in a

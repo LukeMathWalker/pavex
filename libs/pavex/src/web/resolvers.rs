@@ -9,7 +9,7 @@ use guppy::PackageId;
 use rustdoc_types::{GenericArg, GenericArgs, GenericParamDefKind, ItemEnum, Type};
 
 use crate::language::{
-    Callable, GenericArgument, InvocationStyle, Lifetime, NamedTypeGeneric, ResolvedPath,
+    Callable, Generic, GenericArgument, InvocationStyle, Lifetime, ResolvedPath,
     ResolvedPathGenericArgument, ResolvedPathLifetime, ResolvedPathType, ResolvedType, Slice,
     Tuple, TypeReference, UnknownPath,
 };
@@ -50,7 +50,7 @@ pub(crate) fn resolve_type(
                         GenericParamDefKind::Type { default: None, .. }
                         | GenericParamDefKind::Const { .. }
                         | GenericParamDefKind::Lifetime { .. } => {
-                            anyhow::bail!("I cannot only generic type parameters with a default when working with type aliases. I cannot handle a `{:?}` yet, sorry!", generic)
+                            anyhow::bail!("I can't only generic type parameters with a default when working with type aliases. I can't handle a `{:?}` yet, sorry!", generic)
                         }
                     }
                 }
@@ -76,18 +76,18 @@ pub(crate) fn resolve_type(
                                             if let Some(resolved_type) =
                                                 generic_bindings.get(generic)
                                             {
-                                                GenericArgument::AssignedTypeParameter(
+                                                GenericArgument::TypeParameter(
                                                     resolved_type.to_owned(),
                                                 )
                                             } else {
-                                                GenericArgument::UnassignedTypeParameter(
-                                                    NamedTypeGeneric {
+                                                GenericArgument::TypeParameter(
+                                                    ResolvedType::Generic(Generic {
                                                         name: generic.to_owned(),
-                                                    },
+                                                    }),
                                                 )
                                             }
                                         } else {
-                                            GenericArgument::AssignedTypeParameter(resolve_type(
+                                            GenericArgument::TypeParameter(resolve_type(
                                                 generic_type,
                                                 used_by_package_id,
                                                 krate_collection,
@@ -97,23 +97,23 @@ pub(crate) fn resolve_type(
                                     }
                                     GenericArg::Lifetime(_) => {
                                         return Err(anyhow!(
-                                            "I do not support non-static lifetime arguments in types yet. Sorry!"
+                                            "I don't support non-static lifetime arguments in types yet. Sorry!"
                                         ));
                                     }
                                     GenericArg::Const(_) => {
                                         return Err(anyhow!(
-                                            "I do not support const generics in types yet. Sorry!"
+                                            "I don't support const generics in types yet. Sorry!"
                                         ));
                                     }
                                     GenericArg::Infer => {
-                                        return Err(anyhow!("I do not support inferred generic arguments in types yet. Sorry!"));
+                                        return Err(anyhow!("I don't support inferred generic arguments in types yet. Sorry!"));
                                     }
                                 };
                                 generics.push(generic_argument);
                             }
                         }
                         GenericArgs::Parenthesized { .. } => {
-                            return Err(anyhow!("I do not support function pointers yet. Sorry!"));
+                            return Err(anyhow!("I don't support function pointers yet. Sorry!"));
                         }
                     }
                 }
@@ -154,10 +154,7 @@ pub(crate) fn resolve_type(
             if let Some(resolved_type) = generic_bindings.get(s) {
                 Ok(resolved_type.to_owned())
             } else {
-                Err(anyhow!(
-                    "The generic type `{}` is not bound to any concrete type",
-                    s
-                ))
+                Ok(ResolvedType::Generic(Generic { name: s.to_owned() }))
             }
         }
         Type::Tuple(t) => {
@@ -185,7 +182,7 @@ pub(crate) fn resolve_type(
             }))
         }
         _ => Err(anyhow!(
-            "I cannot handle this kind ({:?}) of type yet. Sorry!",
+            "I can't handle this kind ({:?}) of type yet. Sorry!",
             type_
         )),
     }
@@ -213,6 +210,33 @@ pub(crate) fn resolve_callable(
     let mut generic_bindings = HashMap::new();
     if let Some(qself) = qualified_self_type {
         generic_bindings.insert("Self".to_string(), qself);
+    }
+    if let Some(parent) = &callable_type.parent {
+        let parent_segments = callable_path.segments[..callable_path.segments.len() - 1].to_vec();
+        let parent_path = ResolvedPath {
+            segments: parent_segments,
+            qualified_self: callable_path.qualified_self.clone(),
+            package_id: callable_path.package_id.clone(),
+        };
+        if matches!(parent.item.inner, ItemEnum::Trait(_)) {
+            if let Err(e) = get_trait_generic_bindings(
+                parent,
+                &parent_path,
+                krate_collection,
+                &mut generic_bindings,
+            ) {
+                tracing::trace!(error.msg = %e, error.details = ?e, "Error getting trait generic bindings");
+            }
+        } else {
+            match resolve_type_path(&parent_path, parent, krate_collection) {
+                Ok(parent_type) => {
+                    generic_bindings.insert("Self".to_string(), parent_type);
+                }
+                Err(e) => {
+                    tracing::trace!(error.msg = %e, error.details = ?e, "Error resolving the parent type");
+                }
+            }
+        }
     }
 
     let mut parameter_paths = Vec::with_capacity(decl.inputs.len());
@@ -270,6 +294,29 @@ pub(crate) fn resolve_callable(
     Ok(callable)
 }
 
+fn get_trait_generic_bindings(
+    resolved_item: &ResolvedItem,
+    path: &ResolvedPath,
+    krate_collection: &CrateCollection,
+    generic_bindings: &mut HashMap<String, ResolvedType>,
+) -> Result<(), anyhow::Error> {
+    let inner = &resolved_item.item.inner;
+    let ItemEnum::Trait(trait_item) = inner else { unreachable!() };
+    // TODO: handle defaults
+    for (generic_slot, assigned_parameter) in trait_item
+        .generics
+        .params
+        .iter()
+        .zip(path.segments.last().unwrap().generic_arguments.iter())
+    {
+        if let ResolvedPathGenericArgument::Type(t) = assigned_parameter {
+            // TODO: handle conflicts
+            generic_bindings.insert(generic_slot.name.clone(), t.resolve(krate_collection)?);
+        }
+    }
+    Ok(())
+}
+
 pub(crate) fn resolve_type_path(
     path: &ResolvedPath,
     resolved_item: &ResolvedItem,
@@ -284,8 +331,7 @@ pub(crate) fn resolve_type_path(
         for generic_path in &segment.generic_arguments {
             let arg = match generic_path {
                 ResolvedPathGenericArgument::Type(t) => {
-                    // TODO: remove unwrap
-                    GenericArgument::AssignedTypeParameter(t.resolve(krate_collection).unwrap())
+                    GenericArgument::TypeParameter(t.resolve(krate_collection)?)
                 }
                 ResolvedPathGenericArgument::Lifetime(l) => match l {
                     ResolvedPathLifetime::Static => GenericArgument::Lifetime(Lifetime::Static),
@@ -318,14 +364,14 @@ pub(crate) enum CallableResolutionError {
 }
 
 #[derive(Debug, thiserror::Error, Clone)]
-#[error("I can work with functions and static methods, but `{import_path}` is neither.\nIt is {item_kind} and I do not know how to handle it here.")]
+#[error("I can work with functions and methods, but `{import_path}` is neither.\nIt is {item_kind} and I don't know how to handle it here.")]
 pub(crate) struct UnsupportedCallableKind {
     pub import_path: ResolvedPath,
     pub item_kind: String,
 }
 
 #[derive(Debug, thiserror::Error, Clone)]
-#[error("One of the input parameters for `{callable_path}` has a type that I cannot handle.")]
+#[error("One of the input parameters for `{callable_path}` has a type that I can't handle.")]
 pub(crate) struct ParameterResolutionError {
     pub callable_path: ResolvedPath,
     pub callable_item: rustdoc_types::Item,
@@ -336,7 +382,7 @@ pub(crate) struct ParameterResolutionError {
 }
 
 #[derive(Debug, thiserror::Error, Clone)]
-#[error("I do not know how to handle the type returned by `{callable_path}`.")]
+#[error("I don't know how to handle the type returned by `{callable_path}`.")]
 pub(crate) struct OutputTypeResolutionError {
     pub callable_path: ResolvedPath,
     pub callable_item: rustdoc_types::Item,
