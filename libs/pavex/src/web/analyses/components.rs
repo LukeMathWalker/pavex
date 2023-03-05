@@ -21,6 +21,7 @@ use crate::language::{
     ResolvedType, TypeReference,
 };
 use crate::rustdoc::CrateCollection;
+use crate::utils::comma_separated_list;
 use crate::web::analyses::computations::{ComputationDb, ComputationId};
 use crate::web::analyses::raw_identifiers::RawCallableIdentifiersDb;
 use crate::web::analyses::user_components::{
@@ -334,6 +335,8 @@ impl ComponentDb {
                             e,
                             error_handler_user_component_id,
                             user_component_db,
+                            computation_db,
+                            krate_collection,
                             package_graph,
                             raw_identifiers_db,
                             diagnostics,
@@ -1044,15 +1047,8 @@ impl ComponentDb {
                     format!("`{}`", &parameters[0])
                 } else {
                     let mut buffer = String::new();
-                    for (i, param) in parameters.iter().enumerate() {
-                        if i == parameters.len() - 1 {
-                            buffer.push_str("and ");
-                        }
-                        buffer.push_str(&format!("`{}`", param));
-                        if i != parameters.len() - 1 {
-                            buffer.push_str(", ");
-                        }
-                    }
+                    comma_separated_list(&mut buffer, parameters.iter(), |p| format!("`{}`", p))
+                        .unwrap();
                     buffer
                 };
                 let error = anyhow::anyhow!(e)
@@ -1060,7 +1056,7 @@ impl ComponentDb {
                         format!(
                             "I am not smart enough to figure out the concrete type for all the generic parameters in `{}`.\n\
                             I can only infer the type of an unassigned generic parameter if it appears in the output type returned by the constructor. This is \
-                            not the case for {free_parameters}, since {subject_verb} only used in the input parameters.",
+                            not the case for {free_parameters}, since {subject_verb} only used by the input parameters.",
                             callable.path));
                 CompilerDiagnostic::builder(source, error)
                     .optional_label(label)
@@ -1238,15 +1234,8 @@ impl ComponentDb {
                     format!("`{}`", &parameters[0])
                 } else {
                     let mut buffer = String::new();
-                    for (i, param) in parameters.iter().enumerate() {
-                        if i == parameters.len() - 1 {
-                            buffer.push_str("and ");
-                        }
-                        buffer.push_str(&format!("`{}`", param));
-                        if i != parameters.len() - 1 {
-                            buffer.push_str(", ");
-                        }
-                    }
+                    comma_separated_list(&mut buffer, parameters.iter(), |p| format!("`{}`", p))
+                        .unwrap();
                     buffer
                 };
                 let verb = if parameters.len() == 1 { "does" } else { "do" };
@@ -1350,6 +1339,8 @@ impl ComponentDb {
         e: ErrorHandlerValidationError,
         user_component_id: UserComponentId,
         user_component_db: &UserComponentDb,
+        computation_db: &ComputationDb,
+        krate_collection: &CrateCollection,
         package_graph: &PackageGraph,
         raw_identifiers_db: &RawCallableIdentifiersDb,
         diagnostics: &mut Vec<miette::Error>,
@@ -1366,20 +1357,116 @@ impl ComponentDb {
         };
         let label = diagnostic::get_f_macro_invocation_span(&source, location)
             .map(|s| s.labeled("The error handler was registered here".into()));
-        match &e {
-            ErrorHandlerValidationError::CannotReturnTheUnitType(_) => {
-                // TODO: Add a sub-diagnostic showing the error handler signature, highlighting with
-                // a label the missing return type.
-            }
+        let diagnostic = match &e {
+            // TODO: Add a sub-diagnostic showing the error handler signature, highlighting with
+            // a label the missing return type.
+            ErrorHandlerValidationError::CannotReturnTheUnitType(_) |
+            // TODO: Add a sub-diagnostic showing the error handler signature, highlighting with
+            // a label the input types. Perhaps add a signature showing the signature of
+            // the associate fallible handler, highlighting the output type.
             ErrorHandlerValidationError::DoesNotTakeErrorReferenceAsInput { .. } => {
-                // TODO: Add a sub-diagnostic showing the error handler signature, highlighting with
-                // a label the input types. Perhaps add a signature showing the signature of
-                // the associate fallible handler, highlighting the output type.
+                CompilerDiagnostic::builder(source, e)
+                    .optional_label(label)
+                    .build()
             }
-        }
-        let diagnostic = CompilerDiagnostic::builder(source, e)
-            .optional_label(label)
-            .build();
+            ErrorHandlerValidationError::UnderconstrainedGenericParameters { ref parameters, ref error_ref_input_index } => {
+                fn get_definition_span(
+                    callable: &Callable,
+                    free_parameters: &IndexSet<String>,
+                    error_ref_input_index: usize,
+                    krate_collection: &CrateCollection,
+                    package_graph: &PackageGraph,
+                ) -> Option<AnnotatedSnippet> {
+                    let global_item_id = callable.source_coordinates.as_ref()?;
+                    let item = krate_collection.get_type_by_global_type_id(global_item_id);
+                    let definition_span = item.span.as_ref()?;
+                    let source_contents = diagnostic::read_source_file(
+                        &definition_span.filename,
+                        &package_graph.workspace(),
+                    )
+                        .ok()?;
+                    let span = convert_rustdoc_span(&source_contents, definition_span.to_owned());
+                    let span_contents =
+                        source_contents[span.offset()..(span.offset() + span.len())].to_string();
+                    let (generic_params, error_input) = match &item.inner {
+                        ItemEnum::Function(_) => {
+                            if let Ok(item) = syn::parse_str::<syn::ItemFn>(&span_contents) {
+                                (item.sig.generics.params, item.sig.inputs[error_ref_input_index].clone())
+                            } else if let Ok(item) =
+                                syn::parse_str::<syn::ImplItemMethod>(&span_contents)
+                            {
+                                (item.sig.generics.params, item.sig.inputs[error_ref_input_index].clone())
+                            } else {
+                                panic!("Could not parse as a function or method:\n{span_contents}")
+                            }
+                        }
+                        _ => unreachable!(),
+                    };
+
+                    let mut labels = vec![];
+                    let subject_verb = if generic_params.len() == 1 {
+                        "it is"
+                    } else {
+                        "they are"
+                    };
+                    for param in generic_params {
+                        if let syn::GenericParam::Type(ty) = param {
+                            if free_parameters.contains(ty.ident.to_string().as_str()) {
+                                labels.push(
+                                    convert_proc_macro_span(&span_contents, ty.span())
+                                        .labeled("I can't infer this..".into()),
+                                );
+                            }
+                        }
+                    }
+                    let error_input_span = error_input.span();
+                    labels.push(
+                        convert_proc_macro_span(&span_contents, error_input_span)
+                            .labeled(format!("..because {subject_verb} not used here")),
+                    );
+                    let source_path = definition_span.filename.to_str().unwrap();
+                    Some(AnnotatedSnippet::new_with_labels(
+                        NamedSource::new(source_path, span_contents),
+                        labels,
+                    ))
+                }
+
+                let callable = &computation_db[user_component_id];
+                let definition_snippet =
+                    get_definition_span(callable, parameters, *error_ref_input_index, krate_collection, package_graph);
+                let subject_verb = if parameters.len() == 1 {
+                    "it isn't"
+                } else {
+                    "they aren't"
+                };
+                let free_parameters = if parameters.len() == 1 {
+                    format!("`{}`", &parameters[0])
+                } else {
+                    let mut buffer = String::new();
+                    comma_separated_list(&mut buffer, parameters.iter(), |p| format!("`{}`", p)).unwrap();
+                    buffer
+                };
+                let error = anyhow::anyhow!(e)
+                    .context(
+                        format!(
+                            "I am not smart enough to figure out the concrete type for all the generic parameters in `{}`.\n\
+                            I can only infer the type of an unassigned generic parameter if it appears in the error type processed by this error handler. This is \
+                            not the case for {free_parameters}, since {subject_verb} used by the error type.",
+                            callable.path));
+                CompilerDiagnostic::builder(source, error)
+                    .optional_label(label)
+                    .optional_additional_annotated_snippet(definition_snippet)
+                    .help(
+                        "Specify the concrete type(s) for the problematic \
+                        generic parameter(s) when registering the error handler against the blueprint: \n\
+                        |  .error_handler(\n\
+                        |    f!(my_crate::my_error_handler::<ConcreteType>)\n\
+                        |  )".into())
+                    // ^ TODO: add a proper code snippet here, using the actual function that needs
+                    //    to be amended instead of a made signature
+                    .build()
+            }
+        };
         diagnostics.push(diagnostic.into());
     }
 

@@ -1,6 +1,7 @@
 use std::fmt::{Display, Formatter};
 
 use ahash::HashMap;
+use indexmap::IndexSet;
 
 use crate::language::{Callable, GenericArgument, ResolvedPath, ResolvedType, TypeReference};
 use crate::web::utils::is_result;
@@ -53,19 +54,49 @@ impl ErrorHandler {
         let error_input_index = error_handler
             .inputs
             .iter()
-            .position(|i| i == &error_type_ref);
-        match error_input_index {
-            Some(i) => Ok(Self {
-                callable: error_handler,
-                error_input_index: i,
-            }),
-            None => Err(
-                ErrorHandlerValidationError::DoesNotTakeErrorReferenceAsInput {
+            .position(|i| i == &error_type_ref)
+            .ok_or_else(
+                || ErrorHandlerValidationError::DoesNotTakeErrorReferenceAsInput {
                     fallible_callable: fallible_callable.to_owned(),
                     error_type: error_type_ref,
                 },
-            ),
+            )?;
+        let error_ref_parameter = error_handler
+            .inputs
+            .get(error_input_index)
+            .expect("Error input index must be valid");
+
+        // All "free" generic parameters in the error handler must be assigned to concrete types.
+        // The only ones that are allowed to be unassigned are those used by the error type,
+        // because they might/will be dictated by the fallible callable that this error handler
+        // is associated with.
+        let error_ref_unassigned_generic_parameters =
+            error_ref_parameter.unassigned_generic_type_parameters();
+        let mut free_parameters = IndexSet::new();
+        for (i, input) in error_handler.inputs.iter().enumerate() {
+            if i == error_input_index {
+                continue;
+            }
+            free_parameters.extend(
+                input
+                    .unassigned_generic_type_parameters()
+                    .difference(&error_ref_unassigned_generic_parameters)
+                    .cloned(),
+            );
         }
+        if !free_parameters.is_empty() {
+            return Err(
+                ErrorHandlerValidationError::UnderconstrainedGenericParameters {
+                    parameters: free_parameters,
+                    error_ref_input_index: error_input_index,
+                },
+            );
+        }
+
+        Ok(Self {
+            callable: error_handler,
+            error_input_index,
+        })
     }
 
     /// Return the error type that this error handler takes as input.
@@ -115,6 +146,10 @@ pub(crate) enum ErrorHandlerValidationError {
         fallible_callable: Callable,
         error_type: ResolvedType,
     },
+    UnderconstrainedGenericParameters {
+        parameters: IndexSet<String>,
+        error_ref_input_index: usize,
+    },
 }
 
 impl Display for ErrorHandlerValidationError {
@@ -135,6 +170,13 @@ impl Display for ErrorHandlerValidationError {
                     This error handler is associated with `{}`, therefore I \
                     expect `{error_type:?}` to be one of its input parameters.",
                     fallible_callable.path,
+                )
+            }
+            ErrorHandlerValidationError::UnderconstrainedGenericParameters { .. } => {
+                write!(
+                    f,
+                    "Input parameters for an error handler can't have any *unassigned* \
+                       generic type parameters that do not appear in the error type itself."
                 )
             }
         }
