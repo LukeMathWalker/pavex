@@ -549,7 +549,7 @@ impl ComponentDb {
             // `Result<T,E>` into `T`.
             let ok_id = self.add_synthetic_constructor(
                 ok.into_owned(),
-                lifecycle.to_owned(),
+                lifecycle,
                 computation_db,
             );
 
@@ -761,7 +761,7 @@ impl ComponentDb {
             println!(
                 "Component id: {:?}\nHydrated component: {:?}\nLifecycle: {:?}",
                 component_id,
-                self.hydrated_component(component_id, &computation_db),
+                self.hydrated_component(component_id, computation_db),
                 self.lifecycle(component_id)
             );
 
@@ -769,8 +769,8 @@ impl ComponentDb {
             if let Some((ok_id, err_id)) = self.match_ids(component_id) {
                 let matchers = format!(
                     "- Ok: {:?}\n- Err: {:?}",
-                    self.hydrated_component(*ok_id, &computation_db),
-                    self.hydrated_component(*err_id, &computation_db)
+                    self.hydrated_component(*ok_id, computation_db),
+                    self.hydrated_component(*err_id, computation_db)
                 );
                 println!("{}", textwrap::indent(&matchers, "  "));
             }
@@ -778,7 +778,7 @@ impl ComponentDb {
             if let Some(err_handler_id) = self.error_handler_id(component_id) {
                 let error_handler = format!(
                     "{:?}",
-                    self.hydrated_component(*err_handler_id, &computation_db)
+                    self.hydrated_component(*err_handler_id, computation_db)
                 );
                 println!("{}", textwrap::indent(&error_handler, "  "));
             }
@@ -786,7 +786,7 @@ impl ComponentDb {
             if let Some(transformer_ids) = self.transformer_ids(component_id) {
                 let transformers = transformer_ids
                     .iter()
-                    .map(|id| format!("- {:?}", self.hydrated_component(*id, &computation_db)))
+                    .map(|id| format!("- {:?}", self.hydrated_component(*id, computation_db)))
                     .collect::<Vec<_>>()
                     .join("\n");
                 println!("{}", textwrap::indent(&transformers, "  "));
@@ -881,7 +881,7 @@ impl ComponentDb {
                     let ref_error_handler_error_type = error_handler.error_type_ref();
 
                     let remapping = ref_constructor_error_type
-                        .is_equivalent_to(&ref_error_handler_error_type)
+                        .is_equivalent_to(ref_error_handler_error_type)
                         .unwrap();
                     let mut error_handler_bindings = HashMap::new();
                     for (generic, concrete) in bindings {
@@ -906,7 +906,7 @@ impl ComponentDb {
                 let bound_error_component_id = self.add_error_handler(
                     bound_error_handler,
                     bound_component_id,
-                    lifecycle.clone(),
+                    lifecycle,
                     bound_computation_id.into(),
                     computation_db,
                 );
@@ -1112,7 +1112,7 @@ impl ComponentDb {
                         output.span()
                     };
                     let label = convert_proc_macro_span(&span_contents, output_span)
-                        .labeled(format!("The invalid output type"));
+                        .labeled("The invalid output type".to_string());
                     let source_path = definition_span.filename.to_str().unwrap();
                     Some(AnnotatedSnippet::new(
                         NamedSource::new(source_path, span_contents),

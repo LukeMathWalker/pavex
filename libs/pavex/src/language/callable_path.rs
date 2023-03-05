@@ -113,18 +113,7 @@ impl CallPath {
                 let element_type = Box::new(Self::parse_type(s.elem.as_ref().to_owned())?);
                 Ok(CallPathType::Slice(CallPathSlice { element_type }))
             }
-            Type::Array(_)
-            | Type::BareFn(_)
-            | Type::Group(_)
-            | Type::ImplTrait(_)
-            | Type::Infer(_)
-            | Type::Macro(_)
-            | Type::Never(_)
-            | Type::Paren(_)
-            | Type::Ptr(_)
-            | Type::TraitObject(_)
-            | Type::Verbatim(_)
-            | _ => todo!("We don't handle {:?} as a type yet", type_),
+            _ => todo!("We don't handle {:?} as a type yet", type_),
         }
     }
 

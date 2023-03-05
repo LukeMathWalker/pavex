@@ -460,7 +460,7 @@ pub struct ResolvedPathType {
 }
 
 mod generics_equivalence {
-    use std::collections::HashMap;
+    use ahash::{HashMap, HashMapExt};
 
     use crate::language::{GenericArgument, ResolvedType};
 

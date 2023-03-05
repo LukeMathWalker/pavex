@@ -146,7 +146,7 @@ impl ConstructibleDb {
             if new_component_ids.is_empty() {
                 break;
             } else {
-                n_component_ids = n_component_ids + new_component_ids.len();
+                n_component_ids += new_component_ids.len();
                 component_ids = new_component_ids;
             }
         }

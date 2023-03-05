@@ -220,7 +220,7 @@ pub(crate) fn resolve_callable(
         };
         if matches!(parent.item.inner, ItemEnum::Trait(_)) {
             if let Err(e) = get_trait_generic_bindings(
-                &parent,
+                parent,
                 &parent_path,
                 krate_collection,
                 &mut generic_bindings,
@@ -228,7 +228,7 @@ pub(crate) fn resolve_callable(
                 tracing::trace!(error.msg = %e, error.details = ?e, "Error getting trait generic bindings");
             }
         } else {
-            match resolve_type_path(&parent_path, &parent, krate_collection) {
+            match resolve_type_path(&parent_path, parent, krate_collection) {
                 Ok(parent_type) => {
                     generic_bindings.insert("Self".to_string(), parent_type);
                 }
