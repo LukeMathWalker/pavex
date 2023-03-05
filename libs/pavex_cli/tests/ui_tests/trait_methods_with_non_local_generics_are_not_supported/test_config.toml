@@ -1,6 +1,0 @@
-description = "pavex does not yet support trait methods that rely on non-local generic parameters (e.g. generics defined on the trait itself)"
-
-[expectations]
-codegen = "fail"
-
-

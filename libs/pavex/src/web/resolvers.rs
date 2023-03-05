@@ -210,15 +210,32 @@ pub(crate) fn resolve_callable(
     let mut generic_bindings = HashMap::new();
     if let Some(qself) = qualified_self_type {
         generic_bindings.insert("Self".to_string(), qself);
-    } else if let Some(parent) = &callable_type.parent {
+    }
+    if let Some(parent) = &callable_type.parent {
         let parent_segments = callable_path.segments[..callable_path.segments.len() - 1].to_vec();
         let parent_path = ResolvedPath {
             segments: parent_segments,
             qualified_self: callable_path.qualified_self.clone(),
             package_id: callable_path.package_id.clone(),
         };
-        if let Ok(parent_type) = resolve_type_path(&parent_path, &parent, krate_collection) {
-            generic_bindings.insert("Self".to_string(), parent_type);
+        if matches!(parent.item.inner, ItemEnum::Trait(_)) {
+            if let Err(e) = get_trait_generic_bindings(
+                &parent,
+                &parent_path,
+                krate_collection,
+                &mut generic_bindings,
+            ) {
+                tracing::trace!("Error getting trait generic bindings", error.msg = %e, error.details = ?e);
+            }
+        } else {
+            match resolve_type_path(&parent_path, &parent, krate_collection) {
+                Ok(parent_type) => {
+                    generic_bindings.insert("Self".to_string(), parent_type);
+                }
+                Err(e) => {
+                    tracing::trace!("Error resolving the parent type", error.msg = %e, error.details = ?e);
+                }
+            }
         }
     }
 
@@ -277,6 +294,29 @@ pub(crate) fn resolve_callable(
     Ok(callable)
 }
 
+fn get_trait_generic_bindings(
+    resolved_item: &ResolvedItem,
+    path: &ResolvedPath,
+    krate_collection: &CrateCollection,
+    generic_bindings: &mut HashMap<String, ResolvedType>,
+) -> Result<(), anyhow::Error> {
+    let inner = &resolved_item.item.inner;
+    let ItemEnum::Trait(trait_item) = inner else { unreachable!() };
+    // TODO: handle defaults
+    for (generic_slot, assigned_parameter) in trait_item
+        .generics
+        .params
+        .iter()
+        .zip(path.segments.last().unwrap().generic_arguments.iter())
+    {
+        if let ResolvedPathGenericArgument::Type(t) = assigned_parameter {
+            // TODO: handle conflicts
+            generic_bindings.insert(generic_slot.name.clone(), t.resolve(krate_collection)?);
+        }
+    }
+    Ok(())
+}
+
 pub(crate) fn resolve_type_path(
     path: &ResolvedPath,
     resolved_item: &ResolvedItem,
@@ -324,7 +364,7 @@ pub(crate) enum CallableResolutionError {
 }
 
 #[derive(Debug, thiserror::Error, Clone)]
-#[error("I can work with functions and static methods, but `{import_path}` is neither.\nIt is {item_kind} and I don't know how to handle it here.")]
+#[error("I can work with functions and methods, but `{import_path}` is neither.\nIt is {item_kind} and I don't know how to handle it here.")]
 pub(crate) struct UnsupportedCallableKind {
     pub import_path: ResolvedPath,
     pub item_kind: String,
