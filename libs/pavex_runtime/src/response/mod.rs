@@ -1,5 +1,3 @@
-pub use into_response::{IntoResponse, Response};
-
 // Most of this module is an adaptation of the corresponding
 // module in `axum-core`
 //
@@ -28,4 +26,7 @@ pub use into_response::{IntoResponse, Response};
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
 // IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
+//! Types and traits for generating HTTP responses.
+pub use into_response::{IntoResponse, Response};
+
 mod into_response;
