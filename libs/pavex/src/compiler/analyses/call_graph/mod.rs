@@ -15,14 +15,14 @@ pub(crate) use application_state::{application_state_call_graph, ApplicationStat
 use pavex_builder::Lifecycle;
 pub(crate) use request_handler::handler_call_graph;
 
+use crate::compiler::analyses::components::{ComponentDb, ComponentId, HydratedComponent};
+use crate::compiler::analyses::computations::ComputationDb;
+use crate::compiler::analyses::constructibles::ConstructibleDb;
+use crate::compiler::codegen_utils;
+use crate::compiler::codegen_utils::{Fragment, VariableNameGenerator};
+use crate::compiler::computation::{Computation, MatchResultVariant};
+use crate::compiler::constructors::Constructor;
 use crate::language::ResolvedType;
-use crate::web::analyses::components::{ComponentDb, ComponentId, HydratedComponent};
-use crate::web::analyses::computations::ComputationDb;
-use crate::web::analyses::constructibles::ConstructibleDb;
-use crate::web::codegen_utils;
-use crate::web::codegen_utils::{Fragment, VariableNameGenerator};
-use crate::web::computation::{Computation, MatchResultVariant};
-use crate::web::constructors::Constructor;
 
 mod application_state;
 mod request_handler;

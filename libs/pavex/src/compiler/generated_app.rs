@@ -6,7 +6,7 @@ use proc_macro2::TokenStream;
 #[derive(Clone)]
 /// The manifest and the code for a generated application.
 ///
-/// Built by [`App::codegen`](crate::web::App::codegen).
+/// Built by [`App::codegen`](crate::compiler::App::codegen).
 pub struct GeneratedApp {
     pub(crate) lib_rs: TokenStream,
     pub(crate) cargo_toml: cargo_manifest::Manifest,

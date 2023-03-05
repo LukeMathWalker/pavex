@@ -3,9 +3,11 @@ use std::collections::BTreeSet;
 use pavex_builder::router::AllowedMethods;
 use pavex_builder::Blueprint;
 
+use crate::compiler::analyses::raw_identifiers::{
+    RawCallableIdentifierId, RawCallableIdentifiersDb,
+};
+use crate::compiler::interner::Interner;
 use crate::diagnostic::CallableType;
-use crate::web::analyses::raw_identifiers::{RawCallableIdentifierId, RawCallableIdentifiersDb};
-use crate::web::interner::Interner;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) enum UserComponent {

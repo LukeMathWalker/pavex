@@ -2,9 +2,9 @@ use std::borrow::Cow;
 
 use indexmap::IndexSet;
 
+use crate::compiler::computation::MatchResult;
+use crate::compiler::utils::is_result;
 use crate::language::{Callable, ResolvedType};
-use crate::web::computation::MatchResult;
-use crate::web::utils::is_result;
 
 /// A callable that handles incoming requests for one or more routes.
 /// It must return a type that implements `pavex_runtime::response::IntoResponse`.

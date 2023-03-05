@@ -1,12 +1,12 @@
 use ahash::{HashMap, HashMapExt};
 use guppy::graph::PackageGraph;
 
+use crate::compiler::analyses::raw_identifiers::RawCallableIdentifiersDb;
+use crate::compiler::analyses::user_components::{UserComponentDb, UserComponentId};
+use crate::compiler::interner::Interner;
 use crate::diagnostic;
 use crate::diagnostic::{CompilerDiagnostic, LocationExt, OptionalSourceSpanExt};
 use crate::language::{ParseError, ResolvedPath};
-use crate::web::analyses::raw_identifiers::RawCallableIdentifiersDb;
-use crate::web::analyses::user_components::{UserComponentDb, UserComponentId};
-use crate::web::interner::Interner;
 
 pub(crate) type ResolvedPathId = la_arena::Idx<ResolvedPath>;
 

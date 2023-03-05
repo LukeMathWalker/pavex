@@ -14,25 +14,25 @@ use quote::format_ident;
 
 use pavex_builder::{Blueprint, Lifecycle};
 
+use crate::compiler::analyses::call_graph::{
+    application_state_call_graph, handler_call_graph, ApplicationStateCallGraph, CallGraph,
+};
+use crate::compiler::analyses::components::ComponentDb;
+use crate::compiler::analyses::computations::ComputationDb;
+use crate::compiler::analyses::constructibles::ConstructibleDb;
+use crate::compiler::analyses::raw_identifiers::RawCallableIdentifiersDb;
+use crate::compiler::analyses::resolved_paths::ResolvedPathDb;
+use crate::compiler::analyses::router_validation::validate_router;
+use crate::compiler::analyses::user_components::{RouterKey, UserComponentDb};
+use crate::compiler::codegen;
+use crate::compiler::generated_app::GeneratedApp;
+use crate::compiler::resolvers::CallableResolutionError;
+use crate::compiler::traits::{assert_trait_is_implemented, MissingTraitImplementationError};
+use crate::compiler::utils::process_framework_path;
 use crate::diagnostic;
 use crate::diagnostic::{CompilerDiagnostic, LocationExt, SourceSpanExt};
 use crate::language::ResolvedType;
 use crate::rustdoc::{CrateCollection, TOOLCHAIN_CRATES};
-use crate::web::analyses::call_graph::{
-    application_state_call_graph, handler_call_graph, ApplicationStateCallGraph, CallGraph,
-};
-use crate::web::analyses::components::ComponentDb;
-use crate::web::analyses::computations::ComputationDb;
-use crate::web::analyses::constructibles::ConstructibleDb;
-use crate::web::analyses::raw_identifiers::RawCallableIdentifiersDb;
-use crate::web::analyses::resolved_paths::ResolvedPathDb;
-use crate::web::analyses::router_validation::validate_router;
-use crate::web::analyses::user_components::{RouterKey, UserComponentDb};
-use crate::web::codegen;
-use crate::web::generated_app::GeneratedApp;
-use crate::web::resolvers::CallableResolutionError;
-use crate::web::traits::{assert_trait_is_implemented, MissingTraitImplementationError};
-use crate::web::utils::process_framework_path;
 
 pub(crate) const GENERATED_APP_PACKAGE_ID: &str = "crate";
 

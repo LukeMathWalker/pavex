@@ -2,9 +2,9 @@ use std::borrow::Cow;
 
 use indexmap::IndexSet;
 
+use crate::compiler::computation::{Computation, MatchResult};
+use crate::compiler::utils::is_result;
 use crate::language::ResolvedType;
-use crate::web::computation::{Computation, MatchResult};
-use crate::web::utils::is_result;
 
 /// Build a new instance of a type by performing a computation.
 ///

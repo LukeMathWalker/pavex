@@ -11,6 +11,19 @@ use syn::spanned::Spanned;
 
 use pavex_builder::Lifecycle;
 
+use crate::compiler::analyses::computations::{ComputationDb, ComputationId};
+use crate::compiler::analyses::raw_identifiers::RawCallableIdentifiersDb;
+use crate::compiler::analyses::user_components::{
+    RouterKey, UserComponent, UserComponentDb, UserComponentId,
+};
+use crate::compiler::computation::{BorrowSharedReference, Computation, MatchResult};
+use crate::compiler::constructors::{Constructor, ConstructorValidationError};
+use crate::compiler::error_handlers::{ErrorHandler, ErrorHandlerValidationError};
+use crate::compiler::interner::Interner;
+use crate::compiler::request_handlers::{RequestHandler, RequestHandlerValidationError};
+use crate::compiler::resolvers::CallableResolutionError;
+use crate::compiler::traits::{assert_trait_is_implemented, MissingTraitImplementationError};
+use crate::compiler::utils::{get_err_variant, get_ok_variant, is_result, process_framework_path};
 use crate::diagnostic;
 use crate::diagnostic::{
     convert_proc_macro_span, convert_rustdoc_span, AnnotatedSnippet, CallableType,
@@ -22,19 +35,6 @@ use crate::language::{
 };
 use crate::rustdoc::CrateCollection;
 use crate::utils::comma_separated_list;
-use crate::web::analyses::computations::{ComputationDb, ComputationId};
-use crate::web::analyses::raw_identifiers::RawCallableIdentifiersDb;
-use crate::web::analyses::user_components::{
-    RouterKey, UserComponent, UserComponentDb, UserComponentId,
-};
-use crate::web::computation::{BorrowSharedReference, Computation, MatchResult};
-use crate::web::constructors::{Constructor, ConstructorValidationError};
-use crate::web::error_handlers::{ErrorHandler, ErrorHandlerValidationError};
-use crate::web::interner::Interner;
-use crate::web::request_handlers::{RequestHandler, RequestHandlerValidationError};
-use crate::web::resolvers::CallableResolutionError;
-use crate::web::traits::{assert_trait_is_implemented, MissingTraitImplementationError};
-use crate::web::utils::{get_err_variant, get_ok_variant, is_result, process_framework_path};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) enum Component {
@@ -547,11 +547,7 @@ impl ComponentDb {
 
             // For each Result type, register a match constructor that transforms
             // `Result<T,E>` into `T`.
-            let ok_id = self.add_synthetic_constructor(
-                ok.into_owned(),
-                lifecycle,
-                computation_db,
-            );
+            let ok_id = self.add_synthetic_constructor(ok.into_owned(), lifecycle, computation_db);
 
             // For each Result type, register a match transformer that transforms `Result<T,E>` into `E`.
             let err_id = self.add_synthetic_transformer(err.into(), constructor_id, computation_db);

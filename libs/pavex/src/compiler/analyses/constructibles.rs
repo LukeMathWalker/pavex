@@ -6,6 +6,10 @@ use syn::spanned::Spanned;
 
 use pavex_builder::Lifecycle;
 
+use crate::compiler::analyses::components::{ComponentDb, ComponentId, HydratedComponent};
+use crate::compiler::analyses::computations::ComputationDb;
+use crate::compiler::analyses::raw_identifiers::RawCallableIdentifiersDb;
+use crate::compiler::analyses::user_components::{UserComponentDb, UserComponentId};
 use crate::diagnostic;
 use crate::diagnostic::{
     convert_proc_macro_span, convert_rustdoc_span, read_source_file, AnnotatedSnippet,
@@ -13,10 +17,6 @@ use crate::diagnostic::{
 };
 use crate::language::{Callable, ResolvedType};
 use crate::rustdoc::CrateCollection;
-use crate::web::analyses::components::{ComponentDb, ComponentId, HydratedComponent};
-use crate::web::analyses::computations::ComputationDb;
-use crate::web::analyses::raw_identifiers::RawCallableIdentifiersDb;
-use crate::web::analyses::user_components::{UserComponentDb, UserComponentId};
 
 #[derive(Debug)]
 pub(crate) struct ConstructibleDb {

@@ -3,12 +3,12 @@ use guppy::graph::PackageGraph;
 use indexmap::{IndexMap, IndexSet};
 use itertools::Itertools;
 
+use crate::compiler::analyses::raw_identifiers::RawCallableIdentifiersDb;
+use crate::compiler::analyses::user_components::{UserComponent, UserComponentDb, UserComponentId};
 use crate::diagnostic;
 use crate::diagnostic::{
     AnnotatedSnippet, CompilerDiagnostic, LocationExt, SourceSpanExt, ZeroBasedOrdinal,
 };
-use crate::web::analyses::raw_identifiers::RawCallableIdentifiersDb;
-use crate::web::analyses::user_components::{UserComponent, UserComponentDb, UserComponentId};
 
 /// Examine the registered paths and methods guards to make sure that we don't
 /// have any conflicts.

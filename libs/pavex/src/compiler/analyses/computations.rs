@@ -4,6 +4,12 @@ use miette::{miette, NamedSource};
 use rustdoc_types::ItemEnum;
 use syn::spanned::Spanned;
 
+use crate::compiler::analyses::raw_identifiers::RawCallableIdentifiersDb;
+use crate::compiler::analyses::resolved_paths::ResolvedPathDb;
+use crate::compiler::analyses::user_components::{UserComponentDb, UserComponentId};
+use crate::compiler::computation::Computation;
+use crate::compiler::interner::Interner;
+use crate::compiler::resolvers::{resolve_callable, CallableResolutionError};
 use crate::diagnostic;
 use crate::diagnostic::{
     convert_proc_macro_span, convert_rustdoc_span, AnnotatedSnippet, CompilerDiagnostic,
@@ -11,12 +17,6 @@ use crate::diagnostic::{
 };
 use crate::language::{Callable, ResolvedPath};
 use crate::rustdoc::CrateCollection;
-use crate::web::analyses::raw_identifiers::RawCallableIdentifiersDb;
-use crate::web::analyses::resolved_paths::ResolvedPathDb;
-use crate::web::analyses::user_components::{UserComponentDb, UserComponentId};
-use crate::web::computation::Computation;
-use crate::web::interner::Interner;
-use crate::web::resolvers::{resolve_callable, CallableResolutionError};
 
 pub(crate) type ComputationId = la_arena::Idx<Computation<'static>>;
 

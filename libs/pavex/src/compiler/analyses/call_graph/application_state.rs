@@ -10,19 +10,19 @@ use proc_macro2::Ident;
 
 use pavex_builder::Lifecycle;
 
+use crate::compiler::analyses::call_graph::{
+    build_call_graph, CallGraph, CallGraphNode, NumberOfAllowedInvocations,
+};
+use crate::compiler::analyses::components::{ComponentDb, ComponentId, HydratedComponent};
+use crate::compiler::analyses::computations::ComputationDb;
+use crate::compiler::analyses::constructibles::ConstructibleDb;
+use crate::compiler::app::GENERATED_APP_PACKAGE_ID;
+use crate::compiler::computation::Computation;
 use crate::language::{
     Callable, GenericArgument, InvocationStyle, ResolvedPath, ResolvedPathSegment,
     ResolvedPathType, ResolvedType,
 };
 use crate::rustdoc::CORE_PACKAGE_ID;
-use crate::web::analyses::call_graph::{
-    build_call_graph, CallGraph, CallGraphNode, NumberOfAllowedInvocations,
-};
-use crate::web::analyses::components::{ComponentDb, ComponentId, HydratedComponent};
-use crate::web::analyses::computations::ComputationDb;
-use crate::web::analyses::constructibles::ConstructibleDb;
-use crate::web::app::GENERATED_APP_PACKAGE_ID;
-use crate::web::computation::Computation;
 
 /// Build a [`CallGraph`] for the application state.
 #[tracing::instrument(name = "compute_application_state_call_graph", skip_all)]
