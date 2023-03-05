@@ -2,7 +2,7 @@ use ahash::{HashMap, HashMapExt};
 
 use pavex_builder::{Blueprint, Lifecycle, Location, RawCallableIdentifiers};
 
-use crate::web::interner::Interner;
+use crate::compiler::interner::Interner;
 
 pub(crate) type RawCallableIdentifierId = la_arena::Idx<RawCallableIdentifiers>;
 

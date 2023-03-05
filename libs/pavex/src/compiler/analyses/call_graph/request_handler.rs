@@ -1,9 +1,11 @@
 use pavex_builder::Lifecycle;
 
-use crate::web::analyses::call_graph::{build_call_graph, CallGraph, NumberOfAllowedInvocations};
-use crate::web::analyses::components::{ComponentDb, ComponentId};
-use crate::web::analyses::computations::ComputationDb;
-use crate::web::analyses::constructibles::ConstructibleDb;
+use crate::compiler::analyses::call_graph::{
+    build_call_graph, CallGraph, NumberOfAllowedInvocations,
+};
+use crate::compiler::analyses::components::{ComponentDb, ComponentId};
+use crate::compiler::analyses::computations::ComputationDb;
+use crate::compiler::analyses::constructibles::ConstructibleDb;
 
 /// Build a [`CallGraph`] for a request handler.
 #[tracing::instrument(name = "compute_handler_call_graph", skip_all)]

@@ -4,9 +4,9 @@ use ahash::{HashMap, HashMapExt};
 use guppy::PackageId;
 use rustdoc_types::{GenericParamDefKind, ItemEnum, Type};
 
+use crate::compiler::resolvers::resolve_type;
 use crate::language::{ResolvedPathType, ResolvedType};
 use crate::rustdoc::CrateCollection;
-use crate::web::resolvers::resolve_type;
 
 /// It returns an error if `type_` doesn't implement the specified trait.
 ///

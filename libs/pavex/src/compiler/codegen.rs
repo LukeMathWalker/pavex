@@ -11,15 +11,15 @@ use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote};
 use syn::{ItemEnum, ItemFn, ItemStruct};
 
+use crate::compiler::analyses::call_graph::{ApplicationStateCallGraph, CallGraph, CallGraphNode};
+use crate::compiler::analyses::components::{ComponentDb, HydratedComponent};
+use crate::compiler::analyses::computations::ComputationDb;
+use crate::compiler::analyses::user_components::RouterKey;
+use crate::compiler::app::GENERATED_APP_PACKAGE_ID;
+use crate::compiler::computation::Computation;
+use crate::compiler::constructors::Constructor;
 use crate::language::{Callable, GenericArgument, ResolvedType};
 use crate::rustdoc::{ALLOC_PACKAGE_ID, TOOLCHAIN_CRATES};
-use crate::web::analyses::call_graph::{ApplicationStateCallGraph, CallGraph, CallGraphNode};
-use crate::web::analyses::components::{ComponentDb, HydratedComponent};
-use crate::web::analyses::computations::ComputationDb;
-use crate::web::analyses::user_components::RouterKey;
-use crate::web::app::GENERATED_APP_PACKAGE_ID;
-use crate::web::computation::Computation;
-use crate::web::constructors::Constructor;
 
 #[derive(Debug, Clone)]
 enum CodegenRouterEntry {

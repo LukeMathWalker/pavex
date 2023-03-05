@@ -3,8 +3,8 @@ use std::fmt::{Display, Formatter};
 use ahash::HashMap;
 use indexmap::IndexSet;
 
+use crate::compiler::utils::is_result;
 use crate::language::{Callable, GenericArgument, ResolvedPath, ResolvedType, TypeReference};
-use crate::web::utils::is_result;
 
 /// A transformation that, given a reference to an error type (and, optionally, other inputs),
 /// returns an HTTP response.

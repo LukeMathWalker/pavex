@@ -2,9 +2,9 @@ use guppy::graph::PackageGraph;
 
 use pavex_builder::RawCallableIdentifiers;
 
+use crate::compiler::resolvers::resolve_type_path;
 use crate::language::{GenericArgument, ResolvedPath, ResolvedType};
 use crate::rustdoc::CrateCollection;
-use crate::web::resolvers::resolve_type_path;
 
 /// Returns `true` if `t` is a `Result` type.
 pub(crate) fn is_result(t: &ResolvedType) -> bool {
