@@ -63,6 +63,16 @@ pub(crate) enum CallPathGenericArgument {
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub(crate) enum CallPathLifetime {
     Static,
+    Named(String),
+}
+
+impl CallPathLifetime {
+    fn new(l: String) -> Self {
+        match l.trim_start_matches('\'') {
+            "static" => Self::Static,
+            other => Self::Named(other.to_owned()),
+        }
+    }
 }
 
 impl CallPath {
@@ -133,10 +143,9 @@ impl CallPath {
                             GenericArgument::Type(t) => {
                                 CallPathGenericArgument::Type(Self::parse_type(t)?)
                             }
-                            GenericArgument::Lifetime(l) if l.ident == "static" => {
-                                CallPathGenericArgument::Lifetime(CallPathLifetime::Static)
+                            GenericArgument::Lifetime(l) => {
+                                CallPathGenericArgument::Lifetime(CallPathLifetime::new(l.ident.to_string()))
                             }
-                            GenericArgument::Lifetime(_) |
                             GenericArgument::Binding(_)
                             | GenericArgument::Constraint(_)
                             | GenericArgument::Const(_) => todo!(
@@ -293,6 +302,7 @@ impl Display for CallPathLifetime {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             CallPathLifetime::Static => write!(f, "'static"),
+            CallPathLifetime::Named(name) => write!(f, "'{}", name),
         }
     }
 }

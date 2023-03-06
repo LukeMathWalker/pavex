@@ -398,7 +398,7 @@ fn framework_bindings(
         krate_collection,
     );
     let path_parameters = process_framework_path(
-        "pavex_runtime::routing::Params",
+        "pavex_runtime::routing::Params::<'k, 'v>",
         package_graph,
         krate_collection,
     );

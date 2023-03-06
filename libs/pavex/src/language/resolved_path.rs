@@ -356,6 +356,9 @@ impl ResolvedPath {
                 CallPathLifetime::Static => Ok(ResolvedPathGenericArgument::Lifetime(
                     ResolvedPathLifetime::Static,
                 )),
+                CallPathLifetime::Named(name) => Ok(ResolvedPathGenericArgument::Lifetime(
+                    ResolvedPathLifetime::Named(name.to_owned()),
+                )),
             },
         }
     }
