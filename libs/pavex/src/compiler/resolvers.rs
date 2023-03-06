@@ -68,8 +68,14 @@ pub(crate) fn resolve_type(
                         GenericArgs::AngleBracketed { args, .. } => {
                             for arg in args {
                                 let generic_argument = match arg {
-                                    GenericArg::Lifetime(l) if l == "'static" => {
-                                        GenericArgument::Lifetime(Lifetime::Static)
+                                    GenericArg::Lifetime(l) => {
+                                        if l == "'static" {
+                                            GenericArgument::Lifetime(Lifetime::Static)
+                                        } else {
+                                            GenericArgument::Lifetime(Lifetime::Named(
+                                                l.trim_start_matches('\'').to_owned(),
+                                            ))
+                                        }
                                     }
                                     GenericArg::Type(generic_type) => {
                                         if let Type::Generic(generic) = generic_type {
@@ -94,11 +100,6 @@ pub(crate) fn resolve_type(
                                                 generic_bindings,
                                             )?)
                                         }
-                                    }
-                                    GenericArg::Lifetime(_) => {
-                                        return Err(anyhow!(
-                                            "I don't support non-static lifetime arguments in types yet. Sorry!"
-                                        ));
                                     }
                                     GenericArg::Const(_) => {
                                         return Err(anyhow!(

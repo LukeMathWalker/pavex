@@ -405,6 +405,7 @@ impl Crate {
             vec![],
             &mut public_local_path_index,
             &crate_core.krate.root,
+            None,
         );
 
         types_path_index.reserve(public_local_path_index.len());
@@ -496,6 +497,9 @@ fn index_local_types<'a>(
     mut current_path: Vec<&'a str>,
     path_index: &mut HashMap<GlobalItemId, BTreeSet<Vec<String>>>,
     current_item_id: &rustdoc_types::Id,
+    // Set when a crate is being re-exported under a different name. E.g. `pub use hyper as server`
+    // would have `renamed_module` set to `Some(server)`.
+    renamed_module: Option<&'a str>,
 ) {
     // TODO: the way we handle `current_path` is extremely wasteful,
     //       we can likely reuse the same buffer throughout.
@@ -525,11 +529,15 @@ fn index_local_types<'a>(
 
     match &current_item.inner {
         ItemEnum::Module(m) => {
-            let current_path_segment = current_item
-                .name
-                .as_deref()
-                .expect("All 'module' items have a 'name' property");
-            current_path.push(current_path_segment);
+            if let Some(renamed_module) = renamed_module {
+                current_path.push(renamed_module);
+            } else {
+                let current_path_segment = current_item
+                    .name
+                    .as_deref()
+                    .expect("All 'module' items have a 'name' property");
+                current_path.push(current_path_segment);
+            }
             for item_id in &m.items {
                 index_local_types(
                     crate_core,
@@ -537,6 +545,7 @@ fn index_local_types<'a>(
                     current_path.clone(),
                     path_index,
                     item_id,
+                    None,
                 );
             }
         }
@@ -574,6 +583,7 @@ fn index_local_types<'a>(
                                         current_path,
                                         path_index,
                                         &foreign_item_id,
+                                        Some(&i.name),
                                     );
                                 }
                             }
@@ -594,6 +604,7 @@ fn index_local_types<'a>(
                             current_path.clone(),
                             path_index,
                             imported_id,
+                            None,
                         );
                     }
                 }
