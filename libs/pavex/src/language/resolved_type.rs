@@ -85,14 +85,15 @@ impl ResolvedType {
         }
     }
 
-    /// Check if a type can be used as a "template" - i.e. if it has any unassigned generic type parameters.
+    /// Check if a type can be used as a "template" - i.e. if it has any unassigned generic parameters.
     #[tracing::instrument(level = "trace", ret)]
     pub fn is_a_template(&self) -> bool {
         match self {
             ResolvedType::ResolvedPath(path) => {
                 path.generic_arguments.iter().any(|arg| match arg {
                     GenericArgument::TypeParameter(g) => g.is_a_template(),
-                    GenericArgument::Lifetime(_) => false,
+                    GenericArgument::Lifetime(Lifetime::Static) => false,
+                    GenericArgument::Lifetime(Lifetime::Named(_)) => true,
                 })
             }
             ResolvedType::Reference(r) => r.inner.is_a_template(),

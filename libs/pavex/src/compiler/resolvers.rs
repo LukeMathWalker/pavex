@@ -66,15 +66,41 @@ pub(crate) fn resolve_type(
                 if let Some(args) = args {
                     match &**args {
                         GenericArgs::AngleBracketed { args, .. } => {
-                            for arg in args {
+                            // We fetch the name of the generic parameters as they appear
+                            // in the definition of the type that we are processing.
+                            // This is necessary because generic parameters can be elided
+                            // when using the type as part of a function signature - e.g.
+                            // `fn path(params: Params<'_, '_>) -> Result<_, _> { ... }`
+                            //
+                            // Can the two elided generic lifetime parameters be set to two
+                            // different values? Or must they be the same?
+                            // We need to check the definition of `Params` to find out.
+                            let generic_arg_defs = match &type_item.inner {
+                                ItemEnum::Struct(s) => &s.generics,
+                                ItemEnum::Enum(e) => &e.generics,
+                                _ => unreachable!(),
+                            }
+                            .params
+                            .iter()
+                            .map(|p| p.name.trim_start_matches('\'').to_string())
+                            .collect::<Vec<_>>();
+                            for (arg, arg_def_name) in args.iter().zip(generic_arg_defs) {
                                 let generic_argument = match arg {
                                     GenericArg::Lifetime(l) => {
                                         if l == "'static" {
                                             GenericArgument::Lifetime(Lifetime::Static)
                                         } else {
-                                            GenericArgument::Lifetime(Lifetime::Named(
-                                                l.trim_start_matches('\'').to_owned(),
-                                            ))
+                                            let name = l.trim_start_matches('\'');
+                                            let lifetime = if name == "_" {
+                                                // TODO: we must make sure to choose a unique
+                                                //  name for this lifetime.
+                                                //  As in, one that is not used by any other lifetime
+                                                //  in the context of the function we are processing.
+                                                Lifetime::Named(format!("_{arg_def_name}"))
+                                            } else {
+                                                Lifetime::Named(name.to_owned())
+                                            };
+                                            GenericArgument::Lifetime(lifetime)
                                         }
                                     }
                                     GenericArg::Type(generic_type) => {
