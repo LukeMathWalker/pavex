@@ -104,7 +104,7 @@ impl ComputationDb {
                     .map(|s| s.labeled(format!("The {callable_type} that we can't resolve")));
                 let diagnostic = CompilerDiagnostic::builder(source, e)
                     .optional_label(label)
-                    .help("This is most likely a bug in `pavex` or `rustdoc`.\nPlease file a GitHub issue!".into())
+                    .help("Check that the path is spelled correctly and that the function (or method) is marked as `pub`.".into())
                     .build();
                 diagnostics.push(diagnostic.into());
             }
