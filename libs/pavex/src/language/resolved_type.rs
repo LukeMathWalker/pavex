@@ -619,6 +619,7 @@ pub enum GenericArgument {
 #[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Hash, Clone)]
 pub enum Lifetime {
     Static,
+    Named(String),
 }
 
 fn serialize_package_id<S>(package_id: &PackageId, serializer: S) -> Result<S::Ok, S::Error>
@@ -673,6 +674,9 @@ impl ResolvedType {
                             GenericArgument::Lifetime(l) => match l {
                                 Lifetime::Static => {
                                     write!(buffer, "'static").unwrap();
+                                }
+                                Lifetime::Named(name) => {
+                                    write!(buffer, "'{}", name).unwrap();
                                 }
                             },
                         }
@@ -766,6 +770,7 @@ impl Debug for Lifetime {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Lifetime::Static => write!(f, "'static"),
+            Lifetime::Named(name) => write!(f, "'{}", name),
         }
     }
 }

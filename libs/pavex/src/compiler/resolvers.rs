@@ -335,6 +335,9 @@ pub(crate) fn resolve_type_path(
                 }
                 ResolvedPathGenericArgument::Lifetime(l) => match l {
                     ResolvedPathLifetime::Static => GenericArgument::Lifetime(Lifetime::Static),
+                    ResolvedPathLifetime::Named(name) => {
+                        GenericArgument::Lifetime(Lifetime::Named(name.clone()))
+                    }
                 },
             };
             generic_arguments.push(arg);
