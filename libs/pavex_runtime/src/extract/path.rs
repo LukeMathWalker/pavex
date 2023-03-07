@@ -1,11 +1,11 @@
-//! Extract the values of templated path segments from the incoming request.
+//! Extract the values of templated path segments from the incoming request using [`Path`].
 use matchit::Params;
 
 use crate::response::Response;
 
 /// Extract the values of templated path segments from the incoming request.
 ///
-/// E.g. `home_id=1` in `/home/:home_id` from `/home/1`.
+/// E.g. set `home_id` to `1` when matching `/home/1` against `/home/:home_id`.
 pub struct Path<T>(pub T);
 
 impl<T> Path<T> {
