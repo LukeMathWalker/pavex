@@ -149,8 +149,6 @@ pub(crate) fn codegen_app(
         map
     };
 
-    // TODO: enforce that handlers have the right signature
-    // TODO: enforce that the only required input is a Request type of some kind
     let mut route_id2path = BiBTreeMap::new();
     let mut route_id2router_entry = BTreeMap::new();
     for (route_id, (path, router_entry)) in path2codegen_router_entry.iter().enumerate() {
