@@ -98,13 +98,8 @@ impl ConstructibleDb {
                             continue;
                         }
                     };
-                    for request_scoped_framework_type in request_scoped_framework_types {
-                        if request_scoped_framework_type
-                            .is_a_template_for(input)
-                            .is_some()
-                        {
-                            continue 'outer;
-                        }
+                    if request_scoped_framework_types.contains(input) {
+                        continue;
                     }
                     if self_.get(input).is_some() {
                         continue;

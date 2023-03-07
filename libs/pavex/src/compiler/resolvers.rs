@@ -354,7 +354,8 @@ pub(crate) fn resolve_type_path(
     let (global_type_id, base_type) =
         krate_collection.get_canonical_path_by_local_type_id(used_by_package_id, &item.id)?;
     let mut generic_arguments = vec![];
-    for segment in &path.segments {
+    let (last_segment, first_segments) = path.segments.split_last().unwrap();
+    for segment in first_segments {
         for generic_path in &segment.generic_arguments {
             let arg = match generic_path {
                 ResolvedPathGenericArgument::Type(t) => {
@@ -369,6 +370,49 @@ pub(crate) fn resolve_type_path(
             };
             generic_arguments.push(arg);
         }
+    }
+    // Some generic parameters might not be explicitly specified in the path, so we need to
+    // look at the definition of the type to take them into account.
+    let generic_defs = match &resolved_item.item.inner {
+        ItemEnum::Struct(s) => &s.generics.params,
+        ItemEnum::Enum(e) => &e.generics.params,
+        ItemEnum::Trait(t) => &t.generics.params,
+        _ => unreachable!(),
+    };
+    for (i, generic_def) in generic_defs.into_iter().enumerate() {
+        let arg = if let Some(generic_path) = last_segment.generic_arguments.get(i) {
+            match generic_path {
+                ResolvedPathGenericArgument::Type(t) => {
+                    GenericArgument::TypeParameter(t.resolve(krate_collection)?)
+                }
+                ResolvedPathGenericArgument::Lifetime(l) => match l {
+                    ResolvedPathLifetime::Static => GenericArgument::Lifetime(Lifetime::Static),
+                    ResolvedPathLifetime::Named(name) => {
+                        GenericArgument::Lifetime(Lifetime::Named(name.clone()))
+                    }
+                },
+            }
+        } else {
+            match generic_def.kind {
+                GenericParamDefKind::Lifetime { .. } => {
+                    let lifetime_name = generic_def.name.trim_start_matches('\'');
+                    if lifetime_name == "static" {
+                        GenericArgument::Lifetime(Lifetime::Static)
+                    } else {
+                        GenericArgument::Lifetime(Lifetime::Named(lifetime_name.to_owned()))
+                    }
+                }
+                GenericParamDefKind::Type { .. } => {
+                    GenericArgument::TypeParameter(ResolvedType::Generic(Generic {
+                        name: generic_def.name.clone(),
+                    }))
+                }
+                GenericParamDefKind::Const { .. } => {
+                    unimplemented!("const generic parameters are not supported yet")
+                }
+            }
+        };
+        generic_arguments.push(arg);
     }
     Ok(ResolvedPathType {
         package_id: global_type_id.package_id().to_owned(),
