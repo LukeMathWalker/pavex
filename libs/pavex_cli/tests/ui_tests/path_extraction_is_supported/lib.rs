@@ -2,11 +2,11 @@ use pavex_builder::{f, router::GET, Blueprint, Lifecycle};
 use pavex_runtime::extract::path::Path;
 
 pub struct HomePath {
-    pub home_ids: u32,
+    pub home_id: u32,
 }
 
-pub fn request_handler(_path: Path<HomePath>) -> pavex_runtime::response::Response {
-    todo!()
+pub fn request_handler(path: Path<HomePath>) -> String {
+    format!("{}", path.0.home_id)
 }
 
 pub fn blueprint() -> Blueprint {

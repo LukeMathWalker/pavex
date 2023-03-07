@@ -1,9 +1,9 @@
 digraph "GET /home/:home_id" {
-    0 [ label = "app::request_handler(pavex_runtime::extract::path::Path<app::HomePath>) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
+    0 [ label = "app::request_handler(pavex_runtime::extract::path::Path<app::HomePath>) -> alloc::string::String"]
     1 [ label = "core::prelude::rust_2015::v1::Result<pavex_runtime::extract::path::Path<app::HomePath>, pavex_runtime::extract::path::ExtractPathError> -> pavex_runtime::extract::path::Path<app::HomePath>"]
     2 [ label = "pavex_runtime::extract::path::Path::extract(matchit::Params<'_, '_>) -> core::prelude::rust_2015::v1::Result<pavex_runtime::extract::path::Path<app::HomePath>, pavex_runtime::extract::path::ExtractPathError>"]
     3 [ label = "matchit::Params<'_, '_>"]
-    4 [ label = "<http::Response::<http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>> as pavex_runtime::response::IntoResponse>::into_response(http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
+    4 [ label = "<alloc::string::String as pavex_runtime::response::IntoResponse>::into_response(alloc::string::String) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
     5 [ label = "core::prelude::rust_2015::v1::Result<pavex_runtime::extract::path::Path<app::HomePath>, pavex_runtime::extract::path::ExtractPathError> -> pavex_runtime::extract::path::ExtractPathError"]
     6 [ label = "pavex_runtime::extract::path::ExtractPathError -> &pavex_runtime::extract::path::ExtractPathError"]
     7 [ label = "pavex_runtime::extract::path::ExtractPathError::default_error_handler(&pavex_runtime::extract::path::ExtractPathError) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]

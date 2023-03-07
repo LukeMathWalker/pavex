@@ -95,9 +95,9 @@ pub async fn route_handler_0(
     match v1 {
         Ok(v2) => {
             let v3 = app::request_handler(v2);
-            <http::Response::<
-                http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>,
-            > as pavex_runtime::response::IntoResponse>::into_response(v3)
+            <alloc::string::String as pavex_runtime::response::IntoResponse>::into_response(
+                v3,
+            )
         }
         Err(v2) => {
             let v3 = pavex_runtime::extract::path::ExtractPathError::default_error_handler(
