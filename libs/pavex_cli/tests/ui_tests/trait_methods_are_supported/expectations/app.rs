@@ -53,8 +53,8 @@ async fn route_request(
     request: pavex_runtime::http::Request<pavex_runtime::hyper::body::Body>,
     server_state: std::sync::Arc<ServerState>,
 ) -> pavex_runtime::response::Response {
-    let route_id = match server_state.router.at(request.uri().path()) {
-        Ok(route_id) => route_id,
+    let matched_route = match server_state.router.at(request.uri().path()) {
+        Ok(m) => m,
         Err(_) => {
             return pavex_runtime::response::Response::builder()
                 .status(pavex_runtime::http::StatusCode::NOT_FOUND)
@@ -62,7 +62,10 @@ async fn route_request(
                 .unwrap();
         }
     };
-    match route_id.value {
+    let route_id = matched_route.value;
+    #[allow(unused)]
+    let url_params = matched_route.params;
+    match route_id {
         0u32 => {
             match request.method() {
                 &pavex_runtime::http::Method::GET => route_handler_0().await,

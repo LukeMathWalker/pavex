@@ -6,12 +6,9 @@ struct ServerState {
     router: pavex_runtime::routing::Router<u32>,
     application_state: ApplicationState,
 }
-pub struct ApplicationState {
-    s0: app::HttpClient,
-}
-pub async fn build_application_state(v0: app::Config) -> crate::ApplicationState {
-    let v1 = app::http_client(v0).await;
-    crate::ApplicationState { s0: v1 }
+pub struct ApplicationState {}
+pub async fn build_application_state() -> crate::ApplicationState {
+    crate::ApplicationState {}
 }
 pub async fn run(
     server_builder: pavex_runtime::hyper::server::Builder<
@@ -49,7 +46,7 @@ fn build_router() -> Result<
     pavex_runtime::routing::InsertError,
 > {
     let mut router = pavex_runtime::routing::Router::new();
-    router.insert("/home", 0u32)?;
+    router.insert("/home/:home_id", 0u32)?;
     Ok(router)
 }
 async fn route_request(
@@ -71,10 +68,7 @@ async fn route_request(
     match route_id {
         0u32 => {
             match request.method() {
-                &pavex_runtime::http::Method::GET => {
-                    route_handler_0(server_state.application_state.s0.clone(), request)
-                        .await
-                }
+                &pavex_runtime::http::Method::GET => route_handler_0(url_params).await,
                 _ => {
                     pavex_runtime::response::Response::builder()
                         .status(pavex_runtime::http::StatusCode::METHOD_NOT_ALLOWED)
@@ -93,17 +87,25 @@ async fn route_request(
     }
 }
 pub async fn route_handler_0(
-    v0: app::HttpClient,
-    v1: http::Request<hyper::Body>,
+    v0: matchit::Params<'_, '_>,
 ) -> http::Response<
     http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
 > {
-    let v2 = app::extract_path(v1).await;
-    let v4 = {
-        let v3 = app::logger().await;
-        app::stream_file(v2, v3, v0).await
-    };
-    <http::Response::<
-        http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>,
-    > as pavex_runtime::response::IntoResponse>::into_response(v4)
+    let v1 = pavex_runtime::extract::path::Path::extract(v0);
+    match v1 {
+        Ok(v2) => {
+            let v3 = app::request_handler(v2);
+            <http::Response::<
+                http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>,
+            > as pavex_runtime::response::IntoResponse>::into_response(v3)
+        }
+        Err(v2) => {
+            let v3 = pavex_runtime::extract::path::ExtractPathError::default_error_handler(
+                &v2,
+            );
+            <http::Response::<
+                http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>,
+            > as pavex_runtime::response::IntoResponse>::into_response(v3)
+        }
+    }
 }

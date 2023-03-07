@@ -703,8 +703,11 @@ impl ResolvedType {
                                 Lifetime::Static => {
                                     write!(buffer, "'static").unwrap();
                                 }
-                                Lifetime::Named(name) => {
-                                    write!(buffer, "'{}", name).unwrap();
+                                Lifetime::Named(_) => {
+                                    // TODO: We should have a dedicated lifetime mapping here.
+                                    //  For now we hack around it since we know that all the usecases
+                                    //  we currently support will work out with lifetime elision.
+                                    write!(buffer, "'_").unwrap();
                                 }
                             },
                         }
