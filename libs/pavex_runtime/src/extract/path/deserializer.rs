@@ -737,8 +737,6 @@ mod tests {
         check_single_value!(String, "one%20two", "one two");
         check_single_value!(&str, "abc", "abc");
         check_single_value!(Cow<'_, str>, "abc", "abc");
-        // This can't be deserialized as a &str because it contains a percent-encoded space,
-        // which requires an allocation when performing the percent-decoding step.
         check_single_value!(Cow<'_, str>, "one%20two", "one two");
         check_single_value!(char, "a", 'a');
 
@@ -754,13 +752,23 @@ mod tests {
         let error_kind = i32::deserialize(PathDeserializer::new(&url_params))
             .unwrap_err()
             .kind;
-        assert!(matches!(
+        assert_eq!(
             error_kind,
             ErrorKind::WrongNumberOfParameters {
                 expected: 1,
-                got: 2
+                got: 2,
             }
-        ));
+        );
+
+        // This can't be deserialized as a &str because it contains a percent-encoded space,
+        // which requires an allocation when performing the percent-decoding step.
+        let raw_params = vec![("key", "one%20two")];
+        let url_params = create_url_params(&raw_params);
+        let error_kind = <&str>::deserialize(PathDeserializer::new(&url_params))
+            .unwrap_err()
+            .kind;
+        let err_msg = "invalid type: string \"one two\", expected a borrowed string".to_string();
+        assert_eq!(error_kind, ErrorKind::Message(err_msg));
     }
 
     #[test]
