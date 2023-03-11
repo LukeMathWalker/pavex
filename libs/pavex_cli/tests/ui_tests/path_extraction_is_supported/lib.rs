@@ -1,6 +1,7 @@
 use pavex_builder::{f, router::GET, Blueprint, Lifecycle};
 use pavex_runtime::extract::path::Path;
 
+#[derive(serde::Deserialize)]
 pub struct HomePath {
     pub home_id: u32,
 }
