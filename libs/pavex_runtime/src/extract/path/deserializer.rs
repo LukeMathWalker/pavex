@@ -575,13 +575,6 @@ mod tests {
         C,
     }
 
-    #[derive(Debug, Deserialize, Eq, PartialEq)]
-    struct Struct {
-        c: String,
-        b: bool,
-        a: i32,
-    }
-
     fn create_url_params<'a>(values: &'a [(&'a str, &'a str)]) -> Vec<(&'a str, Cow<'a, str>)> {
         values
             .iter()
@@ -662,22 +655,94 @@ mod tests {
         assert_eq!(error_kind, ErrorKind::Message(err_msg));
     }
 
+    #[derive(Debug, Deserialize, Eq, PartialEq)]
+    struct Struct<'a> {
+        a: i32,
+        c: String,
+        b: bool,
+        bool_true: bool,
+        bool_false: bool,
+        n_i8: i8,
+        n_i16: i16,
+        n_i32: i32,
+        n_i64: i64,
+        n_i128: i128,
+        n_u8: u8,
+        n_u16: u16,
+        n_u32: u32,
+        n_u64: u64,
+        n_u128: u128,
+        unencoded_string: String,
+        unencoded_str: &'a str,
+        unencoded_cow: Cow<'a, str>,
+        encoded_cow: Cow<'a, str>,
+        encoded_string: String,
+        char: char,
+    }
+
     #[test]
     fn test_parse_struct() {
-        let raw_params = vec![("a", "1"), ("b", "true"), ("c", "abc")];
+        let raw_params = vec![
+            ("a", "1"),
+            ("b", "true"),
+            ("c", "abc"),
+            ("bool_true", "true"),
+            ("bool_false", "false"),
+            ("n_i8", "-123"),
+            ("n_i16", "-123"),
+            ("n_i32", "-123"),
+            ("n_i64", "-123"),
+            ("n_i128", "123"),
+            ("n_u8", "123"),
+            ("n_u16", "123"),
+            ("n_u32", "123"),
+            ("n_u64", "123"),
+            ("n_u128", "123"),
+            ("unencoded_string", "abc"),
+            ("unencoded_str", "abc"),
+            ("unencoded_cow", "abc"),
+            ("encoded_cow", "one%20two"),
+            ("encoded_string", "one%20two"),
+            ("char", "a"),
+        ];
         let url_params = create_url_params(&raw_params);
         assert_eq!(
             Struct::deserialize(PathDeserializer::new(&url_params)).unwrap(),
             Struct {
                 c: "abc".to_owned(),
                 b: true,
+                bool_true: true,
+                bool_false: false,
+                n_i8: -123,
+                n_i16: -123,
+                n_i32: -123,
+                n_i64: -123,
+                n_i128: 123,
+                n_u8: 123,
+                n_u16: 123,
+                n_u32: 123,
+                n_u64: 123,
+                n_u128: 123,
+                unencoded_string: "abc".into(),
+                unencoded_str: "abc",
+                unencoded_cow: "abc".into(),
+                encoded_cow: "one two".to_string().into(),
+                encoded_string: "one two".to_string(),
                 a: 1,
+                char: 'a',
             }
         );
     }
 
     #[test]
     fn test_parse_struct_ignoring_additional_fields() {
+        #[derive(Debug, Deserialize, Eq, PartialEq)]
+        struct Struct {
+            a: i32,
+            c: String,
+            b: bool,
+        }
+
         let raw_params = vec![("a", "1"), ("b", "true"), ("c", "abc"), ("d", "false")];
         let url_params = create_url_params(&raw_params);
         assert_eq!(
