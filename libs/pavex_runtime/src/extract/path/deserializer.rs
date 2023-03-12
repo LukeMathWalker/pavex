@@ -94,6 +94,7 @@ where
     unsupported_type!(deserialize_option);
     unsupported_type!(deserialize_identifier);
     unsupported_type!(deserialize_ignored_any);
+    unsupported_type!(deserialize_unit);
 
     parse_single_value!(deserialize_bool, visit_bool, "bool");
     parse_single_value!(deserialize_i8, visit_i8, "i8");
@@ -134,33 +135,30 @@ where
         }
     }
 
-    fn deserialize_unit<V>(self, visitor: V) -> Result<V::Value, Self::Error>
-    where
-        V: Visitor<'request>,
-    {
-        visitor.visit_unit()
-    }
-
     fn deserialize_unit_struct<V>(
         self,
         _name: &'static str,
-        visitor: V,
+        _visitor: V,
     ) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'request>,
     {
-        visitor.visit_unit()
+        Err(PathDeserializationError::unsupported_type(type_name::<
+            V::Value,
+        >()))
     }
 
     fn deserialize_newtype_struct<V>(
         self,
         _name: &'static str,
-        visitor: V,
+        _visitor: V,
     ) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'request>,
     {
-        visitor.visit_newtype_struct(self)
+        Err(PathDeserializationError::unsupported_type(type_name::<
+            V::Value,
+        >()))
     }
 
     fn deserialize_seq<V>(self, visitor: V) -> Result<V::Value, Self::Error>
@@ -180,35 +178,20 @@ where
         Err(PathDeserializationError::unsupported_type(type_name::<
             V::Value,
         >()))
-        // if self.url_params.len() < len {
-        //     return Err(PathDeserializationError::wrong_number_of_parameters()
-        //         .got(self.url_params.len())
-        //         .expected(len));
-        // }
-        // visitor.visit_seq(SeqDeserializer {
-        //     params: self.url_params,
-        //     idx: 0,
-        // })
     }
 
     fn deserialize_tuple_struct<V>(
         self,
         _name: &'static str,
-        len: usize,
-        visitor: V,
+        _len: usize,
+        _visitor: V,
     ) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'request>,
     {
-        if self.url_params.len() < len {
-            return Err(PathDeserializationError::wrong_number_of_parameters()
-                .got(self.url_params.len())
-                .expected(len));
-        }
-        visitor.visit_seq(SeqDeserializer {
-            params: self.url_params,
-            idx: 0,
-        })
+        Err(PathDeserializationError::unsupported_type(type_name::<
+            V::Value,
+        >()))
     }
 
     fn deserialize_map<V>(self, visitor: V) -> Result<V::Value, Self::Error>
@@ -457,63 +440,13 @@ impl<'request> Deserializer<'request> for ValueDeserializer<'request> {
         visitor.visit_newtype_struct(self)
     }
 
-    fn deserialize_tuple<V>(self, len: usize, visitor: V) -> Result<V::Value, Self::Error>
+    fn deserialize_tuple<V>(self, _len: usize, _visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'request>,
     {
-        struct PairDeserializer<'request> {
-            key: Option<KeyOrIdx<'request>>,
-            value: Option<Cow<'request, str>>,
-        }
-
-        impl<'request> SeqAccess<'request> for PairDeserializer<'request> {
-            type Error = PathDeserializationError;
-
-            fn next_element_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>, Self::Error>
-            where
-                T: DeserializeSeed<'request>,
-            {
-                match self.key.take() {
-                    Some(KeyOrIdx::Idx { idx: _, key }) => {
-                        return seed
-                            .deserialize(KeyDeserializer {
-                                key: Cow::Borrowed(key),
-                            })
-                            .map(Some);
-                    }
-                    // `KeyOrIdx::Key` is only used when deserializing maps so `deserialize_seq`
-                    // wouldn't be called for that
-                    Some(KeyOrIdx::Key(_)) => unreachable!(),
-                    None => {}
-                };
-
-                self.value
-                    .take()
-                    .map(|value| {
-                        seed.deserialize(ValueDeserializer {
-                            key: None,
-                            value: value.clone(),
-                        })
-                    })
-                    .transpose()
-            }
-        }
-
-        if len == 2 {
-            match self.key {
-                Some(key) => visitor.visit_seq(PairDeserializer {
-                    key: Some(key),
-                    value: Some(self.value),
-                }),
-                // `self.key` is only `None` when deserializing maps so `deserialize_seq`
-                // wouldn't be called for that
-                None => unreachable!(),
-            }
-        } else {
-            Err(PathDeserializationError::unsupported_type(type_name::<
-                V::Value,
-            >()))
-        }
+        Err(PathDeserializationError::unsupported_type(type_name::<
+            V::Value,
+        >()))
     }
 
     fn deserialize_seq<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
@@ -776,15 +709,6 @@ mod tests {
 
     #[test]
     fn test_parse_seq() {
-        let raw_params = vec![("a", "1"), ("b", "true"), ("c", "abc")];
-        let url_params = create_url_params(&raw_params);
-        #[derive(Debug, Deserialize, Eq, PartialEq)]
-        struct TupleStruct(i32, bool, String);
-        assert_eq!(
-            TupleStruct::deserialize(PathDeserializer::new(&url_params)).unwrap(),
-            TupleStruct(1, true, "abc".to_owned())
-        );
-
         let raw_params = vec![("a", "1"), ("b", "2"), ("c", "3")];
         let url_params = create_url_params(&raw_params);
         assert_eq!(
@@ -801,6 +725,21 @@ mod tests {
 
         let raw_params = vec![("a", "1"), ("b", "true"), ("c", "abc")];
         let url_params = create_url_params(&raw_params);
+        #[derive(Debug, Deserialize, Eq, PartialEq)]
+        struct TupleStruct(i32, bool, String);
+        let error_kind = TupleStruct::deserialize(PathDeserializer::new(&url_params))
+            .unwrap_err()
+            .kind;
+        assert_eq!(
+            error_kind,
+            ErrorKind::UnsupportedType {
+                name:
+                    "pavex_runtime::extract::path::deserializer::tests::test_parse_seq::TupleStruct"
+            }
+        );
+
+        let raw_params = vec![("a", "1"), ("b", "true"), ("c", "abc")];
+        let url_params = create_url_params(&raw_params);
         let error_kind = <(i32, bool, String)>::deserialize(PathDeserializer::new(&url_params))
             .unwrap_err()
             .kind;
@@ -813,25 +752,16 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_seq_tuple_string_string() {
+    fn test_unsupported_type_error_seq_tuple() {
         let raw_params = vec![("a", "foo"), ("b", "bar")];
         let url_params = create_url_params(&raw_params);
         assert_eq!(
-            <Vec<(String, String)>>::deserialize(PathDeserializer::new(&url_params)).unwrap(),
-            vec![
-                ("a".to_owned(), "foo".to_owned()),
-                ("b".to_owned(), "bar".to_owned()),
-            ]
-        );
-    }
-
-    #[test]
-    fn test_parse_seq_tuple_string_parse() {
-        let raw_params = vec![("a", "1"), ("b", "2")];
-        let url_params = create_url_params(&raw_params);
-        assert_eq!(
-            <Vec<(String, u32)>>::deserialize(PathDeserializer::new(&url_params)).unwrap(),
-            vec![("a".to_owned(), 1), ("b".to_owned(), 2)]
+            <Vec<(String, String)>>::deserialize(PathDeserializer::new(&url_params))
+                .unwrap_err()
+                .kind,
+            ErrorKind::UnsupportedType {
+                name: "(alloc::string::String, alloc::string::String)"
+            }
         );
     }
 
@@ -970,15 +900,6 @@ mod tests {
             ErrorKind::UnsupportedType {
                 name: "alloc::vec::Vec<u32>",
             }
-        );
-    }
-
-    #[test]
-    fn test_parse_seq_tuple_unsupported_key_type() {
-        test_parse_error!(
-            vec![("a", "false")],
-            Vec<(u32, String)>,
-            ErrorKind::Message("Unexpected key type".to_owned())
         );
     }
 

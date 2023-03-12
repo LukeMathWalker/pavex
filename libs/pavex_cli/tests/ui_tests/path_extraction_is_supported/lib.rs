@@ -6,8 +6,8 @@ pub struct HomePath {
     pub home_id: u32,
 }
 
-pub fn request_handler(path: Path<HomePath>) -> String {
-    format!("{}", path.0.home_id)
+pub fn request_handler(Path(HomePath { home_id }): Path<HomePath>) -> String {
+    format!("{}", home_id)
 }
 
 pub fn blueprint() -> Blueprint {
