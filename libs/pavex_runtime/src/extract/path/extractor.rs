@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 use std::str::Utf8Error;
 
+use http::StatusCode;
 use matchit::Params;
 use percent_encoding::percent_decode_str;
 use serde::Deserialize;
@@ -87,8 +88,25 @@ impl ExtractPathError {
     /// The default error handler for [`ExtractPathError`].
     ///
     /// It returns a `400 Bad Request` to the caller.
-    pub fn default_error_handler(&self) -> Response {
-        todo!()
+    pub fn default_error_handler(&self) -> Response<String> {
+        match self {
+            ExtractPathError::InvalidUtf8InPathParameter(e) => Response::builder()
+                .status(StatusCode::BAD_REQUEST)
+                .body(format!("Invalid URL: {}", e))
+                .unwrap(),
+            ExtractPathError::PathDeserializationError(e) => match e.kind {
+                ErrorKind::ParseErrorAtKey { .. }
+                | ErrorKind::ParseError { .. }
+                | ErrorKind::Message(_) => Response::builder()
+                    .status(StatusCode::BAD_REQUEST)
+                    .body(format!("Invalid URL: {}", e.kind))
+                    .unwrap(),
+                ErrorKind::UnsupportedType { .. } => Response::builder()
+                    .status(StatusCode::INTERNAL_SERVER_ERROR)
+                    .body("".to_string())
+                    .unwrap(),
+            },
+        }
     }
 }
 
@@ -178,19 +196,26 @@ impl std::fmt::Display for ErrorKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             ErrorKind::Message(error) => std::fmt::Display::fmt(error, f),
-            ErrorKind::UnsupportedType { name } => write!(f, "Unsupported type `{name}`"),
+            ErrorKind::UnsupportedType { name } => {
+                write!(
+                    f,
+                    "`{name}` is not a supported type for the `Path` extractor. \
+                    The type `T` in `Path<T>` must be a struct (with one public field for each \
+                    templated path segment) or a map (e.g. `HashMap<&'a str, Cow<'a, str>>`)."
+                )
+            }
             ErrorKind::ParseErrorAtKey {
                 key,
                 value,
                 expected_type,
             } => write!(
                 f,
-                "Cannot parse `{key}` with value `{value:?}` to a `{expected_type}`"
+                "Cannot parse `{key}` with value `{value}` as a `{expected_type}`"
             ),
             ErrorKind::ParseError {
                 value,
                 expected_type,
-            } => write!(f, "Cannot parse `{value:?}` to a `{expected_type}`"),
+            } => write!(f, "Cannot parse `{value}` as a `{expected_type}`"),
         }
     }
 }
