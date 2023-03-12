@@ -173,19 +173,22 @@ where
         })
     }
 
-    fn deserialize_tuple<V>(self, len: usize, visitor: V) -> Result<V::Value, Self::Error>
+    fn deserialize_tuple<V>(self, _len: usize, _visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'request>,
     {
-        if self.url_params.len() < len {
-            return Err(PathDeserializationError::wrong_number_of_parameters()
-                .got(self.url_params.len())
-                .expected(len));
-        }
-        visitor.visit_seq(SeqDeserializer {
-            params: self.url_params,
-            idx: 0,
-        })
+        Err(PathDeserializationError::unsupported_type(type_name::<
+            V::Value,
+        >()))
+        // if self.url_params.len() < len {
+        //     return Err(PathDeserializationError::wrong_number_of_parameters()
+        //         .got(self.url_params.len())
+        //         .expected(len));
+        // }
+        // visitor.visit_seq(SeqDeserializer {
+        //     params: self.url_params,
+        //     idx: 0,
+        // })
     }
 
     fn deserialize_tuple_struct<V>(
@@ -775,11 +778,6 @@ mod tests {
     fn test_parse_seq() {
         let raw_params = vec![("a", "1"), ("b", "true"), ("c", "abc")];
         let url_params = create_url_params(&raw_params);
-        assert_eq!(
-            <(i32, bool, String)>::deserialize(PathDeserializer::new(&url_params)).unwrap(),
-            (1, true, "abc".to_owned())
-        );
-
         #[derive(Debug, Deserialize, Eq, PartialEq)]
         struct TupleStruct(i32, bool, String);
         assert_eq!(
@@ -799,6 +797,18 @@ mod tests {
         assert_eq!(
             <Vec<MyEnum>>::deserialize(PathDeserializer::new(&url_params)).unwrap(),
             vec![MyEnum::C, MyEnum::B]
+        );
+
+        let raw_params = vec![("a", "1"), ("b", "true"), ("c", "abc")];
+        let url_params = create_url_params(&raw_params);
+        let error_kind = <(i32, bool, String)>::deserialize(PathDeserializer::new(&url_params))
+            .unwrap_err()
+            .kind;
+        assert_eq!(
+            error_kind,
+            ErrorKind::UnsupportedType {
+                name: "(i32, bool, alloc::string::String)"
+            }
         );
     }
 
@@ -854,16 +864,6 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_tuple_ignoring_additional_fields() {
-        let raw_params = vec![("a", "abc"), ("b", "true"), ("c", "1"), ("d", "false")];
-        let url_params = create_url_params(&raw_params);
-        assert_eq!(
-            <(&str, bool, u32)>::deserialize(PathDeserializer::new(&url_params)).unwrap(),
-            ("abc", true, 1)
-        );
-    }
-
-    #[test]
     fn test_parse_map() {
         let raw_params = vec![("a", "1"), ("b", "true"), ("c", "abc")];
         let url_params = create_url_params(&raw_params);
@@ -892,14 +892,11 @@ mod tests {
     }
 
     #[test]
-    fn test_wrong_number_of_parameters_error() {
+    fn test_tuple_with_wrong_number_of_parameters() {
         test_parse_error!(
             vec![("a", "1")],
             (u32, u32),
-            ErrorKind::WrongNumberOfParameters {
-                got: 1,
-                expected: 2,
-            }
+            ErrorKind::UnsupportedType { name: "(u32, u32)" }
         );
     }
 
@@ -943,12 +940,12 @@ mod tests {
     #[test]
     fn test_parse_error_at_index_error() {
         test_parse_error!(
-            vec![("a", "false"), ("b", "true")],
-            (bool, u32),
+            vec![("a", "false"), ("b", "b")],
+            Vec<bool>,
             ErrorKind::ParseErrorAtIndex {
                 index: 1,
-                value: "true".to_owned(),
-                expected_type: "u32",
+                value: "b".to_owned(),
+                expected_type: "bool",
             }
         );
     }
