@@ -50,29 +50,6 @@ macro_rules! unsupported_type {
     };
 }
 
-macro_rules! parse_single_value {
-    ($trait_fn:ident, $visit_fn:ident, $ty:literal) => {
-        fn $trait_fn<V>(self, visitor: V) -> Result<V::Value, Self::Error>
-        where
-            V: Visitor<'request>,
-        {
-            if self.url_params.len() != 1 {
-                return Err(PathDeserializationError::wrong_number_of_parameters()
-                    .got(self.url_params.len())
-                    .expected(1));
-            }
-
-            let value = self.url_params[0].1.parse().map_err(|_| {
-                PathDeserializationError::new(ErrorKind::ParseError {
-                    value: self.url_params[0].1.clone().into_owned(),
-                    expected_type: $ty,
-                })
-            })?;
-            visitor.$visit_fn(value)
-        }
-    };
-}
-
 pub(super) struct PathDeserializer<'server, 'request, 'de> {
     url_params: &'de [(&'server str, Cow<'request, str>)],
 }
@@ -96,44 +73,29 @@ where
     unsupported_type!(deserialize_ignored_any);
     unsupported_type!(deserialize_unit);
     unsupported_type!(deserialize_seq);
-
-    parse_single_value!(deserialize_bool, visit_bool, "bool");
-    parse_single_value!(deserialize_i8, visit_i8, "i8");
-    parse_single_value!(deserialize_i16, visit_i16, "i16");
-    parse_single_value!(deserialize_i32, visit_i32, "i32");
-    parse_single_value!(deserialize_i64, visit_i64, "i64");
-    parse_single_value!(deserialize_i128, visit_i128, "i128");
-    parse_single_value!(deserialize_u8, visit_u8, "u8");
-    parse_single_value!(deserialize_u16, visit_u16, "u16");
-    parse_single_value!(deserialize_u32, visit_u32, "u32");
-    parse_single_value!(deserialize_u64, visit_u64, "u64");
-    parse_single_value!(deserialize_u128, visit_u128, "u128");
-    parse_single_value!(deserialize_f32, visit_f32, "f32");
-    parse_single_value!(deserialize_f64, visit_f64, "f64");
-    parse_single_value!(deserialize_string, visit_string, "String");
-    parse_single_value!(deserialize_byte_buf, visit_string, "String");
-    parse_single_value!(deserialize_char, visit_char, "char");
+    unsupported_type!(deserialize_bool);
+    unsupported_type!(deserialize_i8);
+    unsupported_type!(deserialize_i16);
+    unsupported_type!(deserialize_i32);
+    unsupported_type!(deserialize_i64);
+    unsupported_type!(deserialize_i128);
+    unsupported_type!(deserialize_u8);
+    unsupported_type!(deserialize_u16);
+    unsupported_type!(deserialize_u32);
+    unsupported_type!(deserialize_u64);
+    unsupported_type!(deserialize_u128);
+    unsupported_type!(deserialize_f32);
+    unsupported_type!(deserialize_f64);
+    unsupported_type!(deserialize_string);
+    unsupported_type!(deserialize_byte_buf);
+    unsupported_type!(deserialize_char);
+    unsupported_type!(deserialize_str);
 
     fn deserialize_any<V>(self, v: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'request>,
     {
         self.deserialize_str(v)
-    }
-
-    fn deserialize_str<V>(self, visitor: V) -> Result<V::Value, Self::Error>
-    where
-        V: Visitor<'request>,
-    {
-        if self.url_params.len() != 1 {
-            return Err(PathDeserializationError::wrong_number_of_parameters()
-                .got(self.url_params.len())
-                .expected(1));
-        }
-        match self.url_params[0].1.clone() {
-            Cow::Borrowed(s) => visitor.visit_borrowed_str(s),
-            Cow::Owned(s) => visitor.visit_str(&s),
-        }
     }
 
     fn deserialize_unit_struct<V>(
@@ -212,20 +174,14 @@ where
         self,
         _name: &'static str,
         _variants: &'static [&'static str],
-        visitor: V,
+        _visitor: V,
     ) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'request>,
     {
-        if self.url_params.len() != 1 {
-            return Err(PathDeserializationError::wrong_number_of_parameters()
-                .got(self.url_params.len())
-                .expected(1));
-        }
-
-        visitor.visit_enum(EnumDeserializer {
-            value: self.url_params[0].1.clone(),
-        })
+        Err(PathDeserializationError::unsupported_type(type_name::<
+            V::Value,
+        >()))
     }
 }
 
@@ -589,72 +545,6 @@ mod tests {
             .collect()
     }
 
-    macro_rules! check_single_value {
-        ($ty:ty, $value_str:literal, $value:expr) => {
-            #[allow(clippy::bool_assert_comparison)]
-            {
-                let raw_params = vec![("value", $value_str)];
-                let url_params = create_url_params(&raw_params);
-                let deserializer = PathDeserializer::new(&url_params);
-                assert_eq!(<$ty>::deserialize(deserializer).unwrap(), $value);
-            }
-        };
-    }
-
-    #[test]
-    fn test_parse_single_value() {
-        check_single_value!(bool, "true", true);
-        check_single_value!(bool, "false", false);
-        check_single_value!(i8, "-123", -123);
-        check_single_value!(i16, "-123", -123);
-        check_single_value!(i32, "-123", -123);
-        check_single_value!(i64, "-123", -123);
-        check_single_value!(i128, "123", 123);
-        check_single_value!(u8, "123", 123);
-        check_single_value!(u16, "123", 123);
-        check_single_value!(u32, "123", 123);
-        check_single_value!(u64, "123", 123);
-        check_single_value!(u128, "123", 123);
-        check_single_value!(f32, "123", 123.0);
-        check_single_value!(f64, "123", 123.0);
-        check_single_value!(String, "abc", "abc");
-        check_single_value!(String, "one%20two", "one two");
-        check_single_value!(&str, "abc", "abc");
-        check_single_value!(Cow<'_, str>, "abc", "abc");
-        check_single_value!(Cow<'_, str>, "one%20two", "one two");
-        check_single_value!(char, "a", 'a');
-
-        let raw_params = vec![("a", "B")];
-        let url_params = create_url_params(&raw_params);
-        assert_eq!(
-            MyEnum::deserialize(PathDeserializer::new(&url_params)).unwrap(),
-            MyEnum::B
-        );
-
-        let raw_params = vec![("a", "1"), ("b", "2")];
-        let url_params = create_url_params(&raw_params);
-        let error_kind = i32::deserialize(PathDeserializer::new(&url_params))
-            .unwrap_err()
-            .kind;
-        assert_eq!(
-            error_kind,
-            ErrorKind::WrongNumberOfParameters {
-                expected: 1,
-                got: 2,
-            }
-        );
-
-        // This can't be deserialized as a &str because it contains a percent-encoded space,
-        // which requires an allocation when performing the percent-decoding step.
-        let raw_params = vec![("key", "one%20two")];
-        let url_params = create_url_params(&raw_params);
-        let error_kind = <&str>::deserialize(PathDeserializer::new(&url_params))
-            .unwrap_err()
-            .kind;
-        let err_msg = "invalid type: string \"one two\", expected a borrowed string".to_string();
-        assert_eq!(error_kind, ErrorKind::Message(err_msg));
-    }
-
     #[derive(Debug, Deserialize, Eq, PartialEq)]
     struct Struct<'a> {
         a: i32,
@@ -783,6 +673,62 @@ mod tests {
         };
     }
 
+    macro_rules! check_single_value {
+        ($ty:ty, $value_str:literal) => {
+            #[allow(clippy::bool_assert_comparison)]
+            {
+                let raw_params = vec![("value", $value_str)];
+                let url_params = create_url_params(&raw_params);
+                let deserializer = PathDeserializer::new(&url_params);
+                assert!(matches!(
+                    <$ty>::deserialize(deserializer).unwrap_err().kind,
+                    ErrorKind::UnsupportedType { .. }
+                ));
+            }
+        };
+    }
+
+    #[test]
+    fn test_parse_single_value() {
+        check_single_value!(bool, "true");
+        check_single_value!(bool, "false");
+        check_single_value!(i8, "-123");
+        check_single_value!(i16, "-123");
+        check_single_value!(i32, "-123");
+        check_single_value!(i64, "-123");
+        check_single_value!(i128, "123");
+        check_single_value!(u8, "123");
+        check_single_value!(u16, "123");
+        check_single_value!(u32, "123");
+        check_single_value!(u64, "123");
+        check_single_value!(u128, "123");
+        check_single_value!(f32, "123");
+        check_single_value!(f64, "123");
+        check_single_value!(String, "abc");
+        check_single_value!(String, "one%20two");
+        check_single_value!(&str, "abc");
+        check_single_value!(Cow<'_, str>, "abc");
+        check_single_value!(Cow<'_, str>, "one%20two");
+        check_single_value!(char, "a");
+        check_single_value!(MyEnum, "B");
+    }
+
+    #[test]
+    fn test_parse_error_for_percent_encoded_str() {
+        #[derive(Debug, Deserialize, Eq, PartialEq)]
+        struct Struct<'a> {
+            key: &'a str,
+        }
+        // This can't be deserialized as a &str because it contains a percent-encoded space,
+        // which requires an allocation when performing the percent-decoding step.
+        let err_msg = "invalid type: string \"one two\", expected a borrowed string".to_string();
+        test_parse_error!(
+            vec![("key", "one%20two")],
+            Struct,
+            ErrorKind::Message(err_msg)
+        );
+    }
+
     #[test]
     fn test_unsupported_seq() {
         test_parse_error!(
@@ -872,18 +818,6 @@ mod tests {
             Params,
             ErrorKind::ParseErrorAtKey {
                 key: "a".to_owned(),
-                value: "false".to_owned(),
-                expected_type: "u32",
-            }
-        );
-    }
-
-    #[test]
-    fn test_parse_error_error() {
-        test_parse_error!(
-            vec![("a", "false")],
-            u32,
-            ErrorKind::ParseError {
                 value: "false".to_owned(),
                 expected_type: "u32",
             }

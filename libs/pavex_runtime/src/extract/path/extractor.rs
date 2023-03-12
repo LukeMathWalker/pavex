@@ -106,33 +106,9 @@ impl PathDeserializationError {
         &self.kind
     }
 
-    pub(super) fn wrong_number_of_parameters() -> WrongNumberOfParameters<()> {
-        WrongNumberOfParameters { got: () }
-    }
-
     #[track_caller]
     pub(super) fn unsupported_type(name: &'static str) -> Self {
         Self::new(ErrorKind::UnsupportedType { name })
-    }
-}
-
-pub(super) struct WrongNumberOfParameters<G> {
-    got: G,
-}
-
-impl<G> WrongNumberOfParameters<G> {
-    #[allow(clippy::unused_self)]
-    pub(super) fn got<G2>(self, got: G2) -> WrongNumberOfParameters<G2> {
-        WrongNumberOfParameters { got }
-    }
-}
-
-impl WrongNumberOfParameters<usize> {
-    pub(super) fn expected(self, expected: usize) -> PathDeserializationError {
-        PathDeserializationError::new(ErrorKind::WrongNumberOfParameters {
-            got: self.got,
-            expected,
-        })
     }
 }
 
@@ -163,14 +139,6 @@ impl std::error::Error for PathDeserializationError {}
 #[derive(Debug, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum ErrorKind {
-    /// The URI contained the wrong number of parameters.
-    WrongNumberOfParameters {
-        /// The number of actual parameters in the URI.
-        got: usize,
-        /// The number of expected parameters.
-        expected: usize,
-    },
-
     /// Failed to parse the value at a specific key into the expected type.
     ///
     /// This variant is used when deserializing into types that have named fields, such as structs.
@@ -210,18 +178,6 @@ impl std::fmt::Display for ErrorKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             ErrorKind::Message(error) => std::fmt::Display::fmt(error, f),
-            ErrorKind::WrongNumberOfParameters { got, expected } => {
-                write!(
-                    f,
-                    "Wrong number of path arguments for `Path`. Expected {expected} but got {got}"
-                )?;
-
-                if *expected == 1 {
-                    write!(f, ". Note that multiple parameters must be extracted with a tuple `Path<(_, _)>` or a struct `Path<YourParams>`")?;
-                }
-
-                Ok(())
-            }
             ErrorKind::UnsupportedType { name } => write!(f, "Unsupported type `{name}`"),
             ErrorKind::ParseErrorAtKey {
                 key,
