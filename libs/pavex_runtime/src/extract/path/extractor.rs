@@ -183,18 +183,6 @@ pub enum ErrorKind {
         expected_type: &'static str,
     },
 
-    /// Failed to parse the value at a specific index into the expected type.
-    ///
-    /// This variant is used when deserializing into sequence types, such as tuples.
-    ParseErrorAtIndex {
-        /// The index at which the value was located.
-        index: usize,
-        /// The value from the URI.
-        value: String,
-        /// The expected type of the value.
-        expected_type: &'static str,
-    },
-
     /// Failed to parse a value into the expected type.
     ///
     /// This variant is used when deserializing into a primitive type (such as `String` and `u32`).
@@ -247,14 +235,6 @@ impl std::fmt::Display for ErrorKind {
                 value,
                 expected_type,
             } => write!(f, "Cannot parse `{value:?}` to a `{expected_type}`"),
-            ErrorKind::ParseErrorAtIndex {
-                index,
-                value,
-                expected_type,
-            } => write!(
-                f,
-                "Cannot parse value at index {index} with value `{value:?}` to a `{expected_type}`"
-            ),
         }
     }
 }

@@ -31,7 +31,7 @@ use std::any::type_name;
 use std::borrow::Cow;
 
 use serde::{
-    de::{self, DeserializeSeed, EnumAccess, Error, MapAccess, SeqAccess, VariantAccess, Visitor},
+    de::{self, DeserializeSeed, EnumAccess, Error, MapAccess, VariantAccess, Visitor},
     forward_to_deserialize_any, Deserializer,
 };
 
@@ -95,6 +95,7 @@ where
     unsupported_type!(deserialize_identifier);
     unsupported_type!(deserialize_ignored_any);
     unsupported_type!(deserialize_unit);
+    unsupported_type!(deserialize_seq);
 
     parse_single_value!(deserialize_bool, visit_bool, "bool");
     parse_single_value!(deserialize_i8, visit_i8, "i8");
@@ -159,16 +160,6 @@ where
         Err(PathDeserializationError::unsupported_type(type_name::<
             V::Value,
         >()))
-    }
-
-    fn deserialize_seq<V>(self, visitor: V) -> Result<V::Value, Self::Error>
-    where
-        V: Visitor<'request>,
-    {
-        visitor.visit_seq(SeqDeserializer {
-            params: self.url_params,
-            idx: 0,
-        })
     }
 
     fn deserialize_tuple<V>(self, _len: usize, _visitor: V) -> Result<V::Value, Self::Error>
@@ -326,11 +317,6 @@ macro_rules! parse_value {
                     let kind = match key {
                         KeyOrIdx::Key(key) => ErrorKind::ParseErrorAtKey {
                             key: key.to_string(),
-                            value: self.value.to_string(),
-                            expected_type: $ty,
-                        },
-                        KeyOrIdx::Idx { idx: index, key: _ } => ErrorKind::ParseErrorAtIndex {
-                            index,
                             value: self.value.to_string(),
                             expected_type: $ty,
                         },
@@ -568,40 +554,9 @@ impl<'de> VariantAccess<'de> for UnitVariant {
     }
 }
 
-struct SeqDeserializer<'de, 'request> {
-    params: &'de [(&'request str, Cow<'request, str>)],
-    idx: usize,
-}
-
-impl<'de, 'request> SeqAccess<'request> for SeqDeserializer<'de, 'request> {
-    type Error = PathDeserializationError;
-
-    fn next_element_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>, Self::Error>
-    where
-        T: DeserializeSeed<'request>,
-    {
-        match self.params.split_first() {
-            Some(((key, value), tail)) => {
-                self.params = tail;
-                let idx = self.idx;
-                self.idx += 1;
-                Ok(Some(seed.deserialize(ValueDeserializer {
-                    key: Some(KeyOrIdx::Idx {
-                        idx,
-                        key: key.clone(),
-                    }),
-                    value: value.clone(),
-                })?))
-            }
-            None => Ok(None),
-        }
-    }
-}
-
 #[derive(Debug, Clone)]
 enum KeyOrIdx<'a> {
     Key(&'a str),
-    Idx { idx: usize, key: &'a str },
 }
 
 #[cfg(test)]
@@ -708,64 +663,6 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_seq() {
-        let raw_params = vec![("a", "1"), ("b", "2"), ("c", "3")];
-        let url_params = create_url_params(&raw_params);
-        assert_eq!(
-            <Vec<i32>>::deserialize(PathDeserializer::new(&url_params)).unwrap(),
-            vec![1, 2, 3]
-        );
-
-        let raw_params = vec![("a", "c"), ("a", "B")];
-        let url_params = create_url_params(&raw_params);
-        assert_eq!(
-            <Vec<MyEnum>>::deserialize(PathDeserializer::new(&url_params)).unwrap(),
-            vec![MyEnum::C, MyEnum::B]
-        );
-
-        let raw_params = vec![("a", "1"), ("b", "true"), ("c", "abc")];
-        let url_params = create_url_params(&raw_params);
-        #[derive(Debug, Deserialize, Eq, PartialEq)]
-        struct TupleStruct(i32, bool, String);
-        let error_kind = TupleStruct::deserialize(PathDeserializer::new(&url_params))
-            .unwrap_err()
-            .kind;
-        assert_eq!(
-            error_kind,
-            ErrorKind::UnsupportedType {
-                name:
-                    "pavex_runtime::extract::path::deserializer::tests::test_parse_seq::TupleStruct"
-            }
-        );
-
-        let raw_params = vec![("a", "1"), ("b", "true"), ("c", "abc")];
-        let url_params = create_url_params(&raw_params);
-        let error_kind = <(i32, bool, String)>::deserialize(PathDeserializer::new(&url_params))
-            .unwrap_err()
-            .kind;
-        assert_eq!(
-            error_kind,
-            ErrorKind::UnsupportedType {
-                name: "(i32, bool, alloc::string::String)"
-            }
-        );
-    }
-
-    #[test]
-    fn test_unsupported_type_error_seq_tuple() {
-        let raw_params = vec![("a", "foo"), ("b", "bar")];
-        let url_params = create_url_params(&raw_params);
-        assert_eq!(
-            <Vec<(String, String)>>::deserialize(PathDeserializer::new(&url_params))
-                .unwrap_err()
-                .kind,
-            ErrorKind::UnsupportedType {
-                name: "(alloc::string::String, alloc::string::String)"
-            }
-        );
-    }
-
-    #[test]
     fn test_parse_struct() {
         let raw_params = vec![("a", "1"), ("b", "true"), ("c", "abc")];
         let url_params = create_url_params(&raw_params);
@@ -822,6 +719,55 @@ mod tests {
     }
 
     #[test]
+    fn test_unsupported_seq() {
+        test_parse_error!(
+            vec![("a", "1"), ("b", "2"), ("c", "3")],
+            Vec<i32>,
+            ErrorKind::UnsupportedType {
+                name: "alloc::vec::Vec<i32>"
+            }
+        );
+
+        test_parse_error!(
+            vec![("a", "c"), ("a", "B")],
+            Vec<MyEnum>,
+            ErrorKind::UnsupportedType {
+                name: "alloc::vec::Vec<pavex_runtime::extract::path::deserializer::tests::MyEnum>"
+            }
+        );
+
+        #[derive(Debug, Deserialize, Eq, PartialEq)]
+        struct TupleStruct(i32, bool, String);
+        test_parse_error!(
+            vec![("a", "1"), ("b", "true"), ("c", "abc")],
+            TupleStruct,
+            ErrorKind::UnsupportedType {
+                name:
+                    "pavex_runtime::extract::path::deserializer::tests::test_unsupported_seq::TupleStruct"
+            }
+        );
+
+        test_parse_error!(
+            vec![("a", "1"), ("b", "true"), ("c", "abc")],
+            (i32, bool, String),
+            ErrorKind::UnsupportedType {
+                name: "(i32, bool, alloc::string::String)"
+            }
+        );
+    }
+
+    #[test]
+    fn test_unsupported_type_error_seq_tuple() {
+        test_parse_error!(
+            vec![("a", "foo"), ("b", "bar")],
+            Vec<(String, String)>,
+            ErrorKind::UnsupportedType {
+                name: "alloc::vec::Vec<(alloc::string::String, alloc::string::String)>"
+            }
+        );
+    }
+
+    #[test]
     fn test_tuple_with_wrong_number_of_parameters() {
         test_parse_error!(
             vec![("a", "1")],
@@ -868,19 +814,6 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_error_at_index_error() {
-        test_parse_error!(
-            vec![("a", "false"), ("b", "b")],
-            Vec<bool>,
-            ErrorKind::ParseErrorAtIndex {
-                index: 1,
-                value: "b".to_owned(),
-                expected_type: "bool",
-            }
-        );
-    }
-
-    #[test]
     fn test_parse_error_error() {
         test_parse_error!(
             vec![("a", "false")],
@@ -898,18 +831,7 @@ mod tests {
             vec![("a", "false")],
             Vec<Vec<u32>>,
             ErrorKind::UnsupportedType {
-                name: "alloc::vec::Vec<u32>",
-            }
-        );
-    }
-
-    #[test]
-    fn test_parse_seq_wrong_tuple_length() {
-        test_parse_error!(
-            vec![("a", "false")],
-            Vec<(String, String, String)>,
-            ErrorKind::UnsupportedType {
-                name: "(alloc::string::String, alloc::string::String, alloc::string::String)",
+                name: "alloc::vec::Vec<alloc::vec::Vec<u32>>",
             }
         );
     }
@@ -920,7 +842,7 @@ mod tests {
             vec![("a", "false")],
             Vec<Vec<String>>,
             ErrorKind::UnsupportedType {
-                name: "alloc::vec::Vec<alloc::string::String>",
+                name: "alloc::vec::Vec<alloc::vec::Vec<alloc::string::String>>",
             }
         );
     }
