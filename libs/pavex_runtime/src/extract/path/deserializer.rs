@@ -1,6 +1,7 @@
-// The implementation of path deserialization is an adaptation of the corresponding
+// The implementation of path deserialization was started from the corresponding
 // implementation of `Path` in `axum`.
-// We restrict the range of supported types and perform zero-copy deserialization.
+// We significantly restricted the range of supported types and adjusted the deserializer
+// to be zero-copy.
 //
 // Copyright (c) 2019 Axum Contributors
 //
@@ -90,13 +91,7 @@ where
     unsupported_type!(deserialize_byte_buf);
     unsupported_type!(deserialize_char);
     unsupported_type!(deserialize_str);
-
-    fn deserialize_any<V>(self, v: V) -> Result<V::Value, Self::Error>
-    where
-        V: Visitor<'request>,
-    {
-        self.deserialize_str(v)
-    }
+    unsupported_type!(deserialize_any);
 
     fn deserialize_unit_struct<V>(
         self,
@@ -187,7 +182,7 @@ where
 
 struct MapDeserializer<'de, 'request> {
     params: &'de [(&'request str, Cow<'request, str>)],
-    key: Option<KeyOrIdx<'request>>,
+    key: Option<Key<'request>>,
     value: Option<&'de Cow<'request, str>>,
 }
 
@@ -202,7 +197,7 @@ impl<'de, 'request> MapAccess<'request> for MapDeserializer<'de, 'request> {
             Some(((key, value), tail)) => {
                 self.value = Some(value);
                 self.params = tail;
-                self.key = Some(KeyOrIdx::Key(key.clone()));
+                self.key = Some(Key(key.clone()));
                 seed.deserialize(KeyDeserializer {
                     key: Cow::Borrowed(key),
                 })
@@ -270,12 +265,10 @@ macro_rules! parse_value {
         {
             let v = self.value.parse().map_err(|_| {
                 if let Some(key) = self.key.take() {
-                    let kind = match key {
-                        KeyOrIdx::Key(key) => ErrorKind::ParseErrorAtKey {
-                            key: key.to_string(),
-                            value: self.value.to_string(),
-                            expected_type: $ty,
-                        },
+                    let kind = ErrorKind::ParseErrorAtKey {
+                        key: key.0.to_string(),
+                        value: self.value.to_string(),
+                        expected_type: $ty,
                     };
                     PathDeserializationError::new(kind)
                 } else {
@@ -292,7 +285,7 @@ macro_rules! parse_value {
 
 #[derive(Debug)]
 struct ValueDeserializer<'request> {
-    key: Option<KeyOrIdx<'request>>,
+    key: Option<Key<'request>>,
     value: Cow<'request, str>,
 }
 
@@ -511,9 +504,7 @@ impl<'de> VariantAccess<'de> for UnitVariant {
 }
 
 #[derive(Debug, Clone)]
-enum KeyOrIdx<'a> {
-    Key(&'a str),
-}
+struct Key<'a>(&'a str);
 
 #[cfg(test)]
 mod tests {
