@@ -680,7 +680,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_single_value() {
+    fn test_parse_errors_for_single_values() {
         check_single_value!(bool, "true");
         check_single_value!(bool, "false");
         check_single_value!(i8, "-123");
