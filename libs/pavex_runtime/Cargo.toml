@@ -20,3 +20,4 @@ serde = "1"
 
 [dev-dependencies]
 serde = { version = "1", features = ["derive"] }
+pavex_builder = { path = "../pavex_builder" }

@@ -14,7 +14,7 @@ use crate::response::Response;
 /// # Example
 ///
 /// ```rust
-/// # use pavex_builder::{f, router::GET, Blueprint};
+/// use pavex_builder::{f, router::GET, Blueprint, Lifecycle};
 /// use pavex_runtime::extract::path::PathParams;
 ///
 /// # fn main() {
@@ -39,7 +39,7 @@ use crate::response::Response;
 ///
 /// // The `Path` extractor will deserialize the path parameters into the
 /// // specified type.
-/// fn get_home(params: PathParams<HomePathParams>) -> String {
+/// fn get_home(params: &PathParams<HomePathParams>) -> String {
 ///    format!("The identifier for this home is: {}", params.0.home_id)
 /// }
 /// ```
@@ -55,7 +55,7 @@ use crate::response::Response;
 /// - a struct with named fields, where each field name matches one of the path parameter names
 ///   used in the route's path template.
 /// ```rust
-/// # use pavex_builder::{f, router::GET, Blueprint};
+/// use pavex_builder::{f, router::GET, Blueprint};
 /// use pavex_runtime::extract::path::PathParams;
 ///
 /// # fn main() {
@@ -80,15 +80,15 @@ use crate::response::Response;
 ///
 /// // The `Path` extractor will deserialize the path parameters into the
 /// // type you specified—`HomePathParams` in this case.
-/// fn get_home(params: PathParams<HomePathParams>) -> String {
-///     let params = params.0;
+/// fn get_home(params: &PathParams<HomePathParams>) -> String {
+///     let params = &params.0;
 ///     format!("The home with id {} is in street {}", params.home_id, params.street_id)
 /// }
 /// ```
 /// - a map-like type, e.g. `HashMap<String, String>`, where the keys are the path parameter names
 ///   used in the route's path template and the values are the extracted path parameter values.
 /// ```rust
-/// # use pavex_builder::{f, router::GET, Blueprint};
+/// use pavex_builder::{f, router::GET, Blueprint};
 /// use pavex_runtime::extract::path::PathParams;
 /// use std::collections::HashMap;
 ///
@@ -99,10 +99,10 @@ use crate::response::Response;
 /// bp.route(GET, "/address/:address_id/home/:home_id/room/:room_id/", f!(crate::get_home));
 /// # }
 ///
-/// // The `Path` extractor will collect all the deserialized parameters
-/// // as key-value pairs in a `HashMap`.
-/// fn get_home(params: PathParams<HashMap<String, String>>) -> String {
-///     let params = params.0;
+/// // All the deserialized (path parameter name, path parameter value) pairs
+/// // will be inserted into the map.
+/// fn get_home(params: &PathParams<HashMap<String, u32>>) -> String {
+///     let params = &params.0;
 ///     format!("The home with id {} is in street {}", params["home_id"], params["street_id"])
 /// }
 /// ```
