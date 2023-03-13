@@ -26,7 +26,7 @@ use crate::response::Response;
 /// ).error_handler(
 ///     f!(pavex_runtime::extract::path::ExtractPathParamsError::into_response)
 /// );
-/// // Register a route with a template path segment, `:home_id`.
+/// // Register a route with a path parameter, `:home_id`.
 /// bp.route(GET, "/home/:home_id", f!(crate::get_home));
 /// # }
 ///
