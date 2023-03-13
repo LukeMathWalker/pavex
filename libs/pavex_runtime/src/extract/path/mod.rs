@@ -1,4 +1,4 @@
-//! Extract the values of templated path segments from the incoming request using [`PathParams`].
+//! Extract data from the URL of incoming requests using [`PathParams`].
 pub use extractor::{
     ExtractPathParamsError, InvalidUtf8InPathParam, PathDeserializationError, PathParams,
 };
