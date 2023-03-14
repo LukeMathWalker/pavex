@@ -2,44 +2,44 @@ use std::fmt::Debug;
 use std::str::Utf8Error;
 
 use http::StatusCode;
-use matchit::Params;
 use percent_encoding::percent_decode_str;
 use serde::Deserialize;
 
-use crate::extract::path::deserializer::PathDeserializer;
+use crate::extract::route::deserializer::PathDeserializer;
+use crate::extract::route::RawRouteParams;
 use crate::response::Response;
 
-/// Extract (typed) path parameters from the incoming request.
+/// Extract (typed) route parameters from the URL of an incoming request.
 ///
 /// # Example
 ///
 /// ```rust
 /// use pavex_builder::{f, router::GET, Blueprint, Lifecycle};
-/// use pavex_runtime::extract::path::PathParams;
+/// use pavex_runtime::extract::route::RouteParams;
 ///
 /// # fn main() {
 /// let mut bp = Blueprint::new();
-/// // Register the default constructor and error handler for `PathParams`.
+/// // Register the default constructor and error handler for `RouteParams`.
 /// bp.constructor(
-///     f!(pavex_runtime::extract::path::PathParams::extract),
+///     f!(pavex_runtime::extract::path::RouteParams::extract),
 ///     Lifecycle::RequestScoped,
 /// ).error_handler(
-///     f!(pavex_runtime::extract::path::ExtractPathParamsError::into_response)
+///     f!(pavex_runtime::extract::path::ExtractRouteParamsError::into_response)
 /// );
-/// // Register a route with a path parameter, `:home_id`.
+/// // Register a route with a route parameter, `:home_id`.
 /// bp.route(GET, "/home/:home_id", f!(crate::get_home));
 /// # }
 ///
 /// #[derive(serde::Deserialize)]
-/// struct HomePathParams {
-///     // The name of the field must match the name of the path parameter
+/// struct HomeRouteParams {
+///     // The name of the field must match the name of the route parameter
 ///     // used in `bp.route`.
 ///     home_id: u32
 /// }
 ///
-/// // The `Path` extractor will deserialize the path parameters into the
-/// // specified type.
-/// fn get_home(params: &PathParams<HomePathParams>) -> String {
+/// // The `RouteParams` extractor will deserialize the route parameters into
+/// // the type you specified—`HomeRouteParams` in this case.
+/// fn get_home(params: &RouteParams<HomeRouteParams>) -> String {
 ///    format!("The identifier for this home is: {}", params.0.home_id)
 /// }
 /// ```
@@ -49,59 +49,59 @@ use crate::response::Response;
 ///
 /// # Supported types
 ///
-/// `T` in `PathParams<T>` must implement [`serde::Deserialize`].  
+/// `T` in `RouteParams<T>` must implement [`serde::Deserialize`].  
 /// `T` can be one of the following:
 ///
-/// - a struct with named fields, where each field name matches one of the path parameter names
+/// - a struct with named fields, where each field name matches one of the route parameter names
 ///   used in the route's path template.
 /// ```rust
 /// use pavex_builder::{f, router::GET, Blueprint};
-/// use pavex_runtime::extract::path::PathParams;
+/// use pavex_runtime::extract::route::RouteParams;
 ///
 /// # fn main() {
 /// let mut bp = Blueprint::new();
 /// // [...]
-/// // Register a route with a few path parameters.
+/// // Register a route with a few route parameters.
 /// bp.route(GET, "/address/:address_id/home/:home_id/room/:room_id/", f!(crate::get_home));
 /// # }
 ///
 /// #[derive(serde::Deserialize)]
-/// struct HomePathParams {
-///     // The name of the field must match the name of the path parameter
+/// struct HomeRouteParams {
+///     // The name of the field must match the name of the route parameter
 ///     // used in the template we passed to `bp.route`.
 ///     home_id: u32,
-///     // You can map a path parameter to a struct field with a different
+///     // You can map a route parameter to a struct field with a different
 ///     // name via the `rename` attribute.
 ///     #[serde(rename(deserialize = "address_id"))]
 ///     street_id: String,
-///     // You can also choose to ignore some path parameters—e.g. we are not
+///     // You can also choose to ignore some route parameters—e.g. we are not
 ///     // extracting the `room_id` here.
 /// }
 ///
-/// // The `Path` extractor will deserialize the path parameters into the
-/// // type you specified—`HomePathParams` in this case.
-/// fn get_home(params: &PathParams<HomePathParams>) -> String {
+/// // The `RouteParams` extractor will deserialize the route parameters into the
+/// // type you specified—`HomeRouteParams` in this case.
+/// fn get_home(params: &RouteParams<HomeRouteParams>) -> String {
 ///     let params = &params.0;
 ///     format!("The home with id {} is in street {}", params.home_id, params.street_id)
 /// }
 /// ```
-/// - a map-like type, e.g. `HashMap<String, String>`, where the keys are the path parameter names
-///   used in the route's path template and the values are the extracted path parameter values.
+/// - a map-like type, e.g. `HashMap<String, String>`, where the keys are the route parameter names
+///   used in the route's path template and the values are the extracted route parameter values.
 /// ```rust
 /// use pavex_builder::{f, router::GET, Blueprint};
-/// use pavex_runtime::extract::path::PathParams;
+/// use pavex_runtime::extract::route::RouteParams;
 /// use std::collections::HashMap;
 ///
 /// # fn main() {
 /// let mut bp = Blueprint::new();
 /// // [...]
-/// // Register a route with a few path parameters.
+/// // Register a route with a few route parameters.
 /// bp.route(GET, "/address/:address_id/home/:home_id/room/:room_id/", f!(crate::get_home));
 /// # }
 ///
-/// // All the deserialized (path parameter name, path parameter value) pairs
+/// // All the deserialized (route parameter name, route parameter value) pairs
 /// // will be inserted into the map.
-/// fn get_home(params: &PathParams<HashMap<String, u32>>) -> String {
+/// fn get_home(params: &RouteParams<HashMap<String, u32>>) -> String {
 ///     let params = &params.0;
 ///     format!("The home with id {} is in street {}", params["home_id"], params["street_id"])
 /// }
@@ -109,16 +109,61 @@ use crate::response::Response;
 ///
 /// # Unsupported types
 ///
+/// `pavex` wants to enable local reasoning, whenever possible: it should be easy to understand what
+/// each extracted route parameter represents.  
+/// Struct with named fields are ideal in this regard: by looking at the field name you can
+/// immediately understand _which_ route parameter is being extracted.  
+/// The same is not true for other types, e.g. `(String, u64, u32)`, where you have to go and
+/// check the route's path template to understand what each entry represents.
+/// For this reason, `pavex` does not support the following types as `T` in `RouteParams<T>`:
 ///
-pub struct PathParams<T>(pub T);
+/// - tuples, e.g. `(u32, String)`;
+/// - tuple structs, e.g. `struct HomeId(u32, String)`;
+/// - unit structs, e.g. `struct HomeId`;
+/// - newtypes, e.g. `struct HomeId(MyParamsStruct)`;
+/// - sequence-like types, e.g. `Vec<String>`;
+/// - enums.
+///
+/// # Working with raw route parameters
+///
+/// It is possible to work with the **raw** route parameters, i.e. the route parameters as they
+/// are extracted from the URL, before any kind of percent-decoding or deserialization has taken
+/// place.
+///
+/// You can do so by using the [`RawRouteParams`] extractor instead of [`RouteParams`].
+///
+/// ```rust
+/// use pavex_builder::{f, router::GET, Blueprint};
+/// use pavex_runtime::extract::route::RawRouteParams;
+///
+/// # fn main() {
+/// let mut bp = Blueprint::new();
+/// // [...]
+/// // Register a route with a few route parameters.
+/// bp.route(GET, "/address/:address_id/home/:home_id", f!(crate::get_home));
+/// # }
+///
+/// fn get_home(params: &RawRouteParams) -> String {
+///     let home_id = &params.get("home_id").unwrap();
+///     let street_id = &params.get("street_id").unwrap();
+///     format!("The home with id {} is in street {}", home_id, street_id)
+/// }
+/// ```
+///
+/// `RawRouteParams` is a built-in extractor, so you don't need to register any constructor for it
+/// against the [`Blueprint`] for your application.
+pub struct RouteParams<T>(
+    /// The extracted route parameters, deserialized into `T`, the type you specified.
+    pub T,
+);
 
-impl<T> PathParams<T> {
-    /// The default constructor for [`PathParams`].
+impl<T> RouteParams<T> {
+    /// The default constructor for [`RouteParams`].
     ///
-    /// If the extraction fails, an [`ExtractPathParamsError`] returned.
+    /// If the extraction fails, an [`ExtractRouteParamsError`] returned.
     pub fn extract<'key, 'value>(
-        params: Params<'key, 'value>,
-    ) -> Result<Self, ExtractPathParamsError>
+        params: RawRouteParams<'key, 'value>,
+    ) -> Result<Self, ExtractRouteParamsError>
     where
         T: Deserialize<'value>,
         // The parameter ids live as long as the server, while the values are tied to the lifecycle
@@ -128,7 +173,7 @@ impl<T> PathParams<T> {
         let mut decoded_params = Vec::with_capacity(params.len());
         for (id, value) in params.iter() {
             let decoded_value = percent_decode_str(value).decode_utf8().map_err(|e| {
-                ExtractPathParamsError::InvalidUtf8InPathParameter(InvalidUtf8InPathParam {
+                ExtractRouteParamsError::InvalidUtf8InPathParameter(InvalidUtf8InPathParam {
                     invalid_key: id.into(),
                     invalid_raw_segment: value.into(),
                     source: e,
@@ -138,20 +183,20 @@ impl<T> PathParams<T> {
         }
         let deserializer = PathDeserializer::new(&decoded_params);
         T::deserialize(deserializer)
-            .map_err(ExtractPathParamsError::PathDeserializationError)
-            .map(PathParams)
+            .map_err(ExtractRouteParamsError::PathDeserializationError)
+            .map(RouteParams)
     }
 }
 
-/// The error returned by [`PathParams::extract`] when the extraction fails.
+/// The error returned by [`RouteParams::extract`] when the extraction fails.
 ///
-/// See [`PathParams::extract`] and the documentation of each error variant for more details.
+/// See [`RouteParams::extract`] and the documentation of each error variant for more details.
 ///
-/// `pavex` provides [`ExtractPathParamsError::into_response`] as the default error handler for
+/// `pavex` provides [`ExtractRouteParamsError::into_response`] as the default error handler for
 /// this failure.
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
-pub enum ExtractPathParamsError {
+pub enum ExtractRouteParamsError {
     #[error(transparent)]
     /// See [`InvalidUtf8InPathParam`] for details.
     InvalidUtf8InPathParameter(InvalidUtf8InPathParam),
@@ -190,28 +235,31 @@ pub struct InvalidUtf8InPathParam {
     source: Utf8Error,
 }
 
-impl ExtractPathParamsError {
-    /// Convert an [`ExtractPathParamsError`] into an HTTP response.
+impl ExtractRouteParamsError {
+    /// Convert an [`ExtractRouteParamsError`] into an HTTP response.
     ///
     /// It returns a `500 Internal Server Error` to the caller if the failure was caused by a
     /// programmer error (e.g. `T` in `Path<T>` is an unsupported type).  
     /// It returns a `400 Bad Request` for all other cases.
     pub fn into_response(&self) -> Response<String> {
         match self {
-            ExtractPathParamsError::InvalidUtf8InPathParameter(e) => Response::builder()
+            ExtractRouteParamsError::InvalidUtf8InPathParameter(e) => Response::builder()
                 .status(StatusCode::BAD_REQUEST)
-                .body(format!("Invalid URL: {}", e))
+                .body(format!("Invalid URL.\n{}", e))
                 .unwrap(),
-            ExtractPathParamsError::PathDeserializationError(e) => match e.kind {
-                ErrorKind::ParseErrorAtKey { .. }
-                | ErrorKind::ParseError { .. }
-                | ErrorKind::Message(_) => Response::builder()
-                    .status(StatusCode::BAD_REQUEST)
-                    .body(format!("Invalid URL: {}", e.kind))
-                    .unwrap(),
-                ErrorKind::UnsupportedType { .. } => Response::builder()
+            ExtractRouteParamsError::PathDeserializationError(e) => match e.kind {
+                ErrorKind::ParseErrorAtKey { .. } | ErrorKind::ParseError { .. } => {
+                    Response::builder()
+                        .status(StatusCode::BAD_REQUEST)
+                        .body(format!("Invalid URL.\n{}", e.kind))
+                        .unwrap()
+                }
+                // We put the "custom" message variant here as well because it's not clear
+                // whether it's a programmer error or not. We err on the side of safety and
+                // prefer to return a 500 with an opaque error message.
+                ErrorKind::Message(_) | ErrorKind::UnsupportedType { .. } => Response::builder()
                     .status(StatusCode::INTERNAL_SERVER_ERROR)
-                    .body("".to_string())
+                    .body("Something went wrong when trying to process the request".to_string())
                     .unwrap(),
             },
         }
@@ -264,7 +312,7 @@ impl std::fmt::Display for PathDeserializationError {
 
 impl std::error::Error for PathDeserializationError {}
 
-/// The kinds of errors that can happen when deserializing into a [`PathParams`].
+/// The kinds of errors that can happen when deserializing into a [`RouteParams`].
 ///
 /// This type is obtained through [`PathDeserializationError::kind`] and is useful for building
 /// more precise error messages (e.g. implementing your own custom conversion from
@@ -314,7 +362,7 @@ impl std::fmt::Display for ErrorKind {
             ErrorKind::UnsupportedType { name } => {
                 write!(
                     f,
-                    "`{name}` is not a supported type for the `Path` extractor. \
+                    "`{name}` is not a supported type for the `RouteParams` extractor. \
                     The type `T` in `Path<T>` must be a struct (with one public field for each \
                     templated path segment) or a map (e.g. `HashMap<&'a str, Cow<'a, str>>`)."
                 )
@@ -325,12 +373,12 @@ impl std::fmt::Display for ErrorKind {
                 expected_type,
             } => write!(
                 f,
-                "Cannot parse `{key}` with value `{value}` as a `{expected_type}`"
+                "`{key}` is set to `{value}`, which we can't parse as a `{expected_type}`"
             ),
             ErrorKind::ParseError {
                 value,
                 expected_type,
-            } => write!(f, "Cannot parse `{value}` as a `{expected_type}`"),
+            } => write!(f, "We can't parse `{value}` as a `{expected_type}`"),
         }
     }
 }

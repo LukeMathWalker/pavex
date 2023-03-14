@@ -1,6 +1,7 @@
 //! Given the fully qualified path to a function (be it a constructor or a handler),
 //! find the corresponding item ("resolution") in `rustdoc`'s JSON output to determine
 //! its input parameters and output type.
+use std::ops::Deref;
 use std::sync::Arc;
 
 use ahash::{HashMap, HashMapExt};
@@ -32,25 +33,56 @@ pub(crate) fn resolve_type(
             // We want to remove any indirections (e.g. `type Foo = Bar;`) and get the actual type.
             if let ItemEnum::Typedef(typedef) = &type_item.inner {
                 let mut generic_bindings = HashMap::new();
-                for generic in &typedef.generics.params {
+                // The generic arguments that have been passed to the type alias.
+                // E.g. `u32` in `Foo<u32>` for `type Foo<T=u64> = Bar<T>;`
+                let generic_args = if let Some(args) = args {
+                    if let GenericArgs::AngleBracketed { args, .. } = args.deref() {
+                        Some(args)
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                };
+                // The generic parameters that have been defined for the type alias.
+                // E.g. `T` in `type Foo<T> = Bar<T, u64>;`
+                let generic_param_defs = &typedef.generics.params;
+                for (i, generic_param_def) in generic_param_defs.iter().enumerate() {
                     // We also try to handle generic parameters, as long as they have a default value.
-                    match &generic.kind {
-                        GenericParamDefKind::Type {
-                            default: Some(default),
-                            ..
-                        } => {
-                            let default = resolve_type(
-                                default,
-                                &global_type_id.package_id,
-                                krate_collection,
-                                &generic_bindings,
-                            )?;
-                            generic_bindings.insert(generic.name.to_string(), default);
+                    match &generic_param_def.kind {
+                        GenericParamDefKind::Type { default, .. } => {
+                            let provided_arg = generic_args.map(|v| v.get(i)).flatten();
+                            let generic_type = if let Some(provided_arg) = provided_arg {
+                                if let GenericArg::Type(provided_arg) = provided_arg {
+                                    resolve_type(
+                                        provided_arg,
+                                        &global_type_id.package_id,
+                                        krate_collection,
+                                        &generic_bindings,
+                                    )?
+                                } else {
+                                    anyhow::bail!("Expected `{:?}` to be a generic _type_ parameter, but it wasn't!", provided_arg)
+                                }
+                            } else {
+                                if let Some(default) = default {
+                                    resolve_type(
+                                        default,
+                                        &global_type_id.package_id,
+                                        krate_collection,
+                                        &generic_bindings,
+                                    )?
+                                } else {
+                                    ResolvedType::Generic(Generic {
+                                        name: generic_param_def.name.clone(),
+                                    })
+                                }
+                            };
+                            generic_bindings
+                                .insert(generic_param_def.name.to_string(), generic_type);
                         }
-                        GenericParamDefKind::Type { default: None, .. }
-                        | GenericParamDefKind::Const { .. }
+                        GenericParamDefKind::Const { .. }
                         | GenericParamDefKind::Lifetime { .. } => {
-                            anyhow::bail!("I can't only generic type parameters with a default when working with type aliases. I can't handle a `{:?}` yet, sorry!", generic)
+                            anyhow::bail!("I can only work with generic type parameters when working with type aliases. I can't handle a `{:?}` yet, sorry!", generic_param_def)
                         }
                     }
                 }

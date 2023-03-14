@@ -233,9 +233,30 @@ impl TestData {
             )?;
         }
 
+        // Dummy application crate, ahead of code generation.
+        {
+            let application_dir = self.runtime_directory.join("generated_app");
+            let application_src_dir = application_dir.join("src");
+            fs_err::create_dir_all(&application_src_dir).context(
+                "Failed to create the runtime directory for the generated application when setting up the test runtime environment",
+            )?;
+            fs_err::write(application_src_dir.join("lib.rs"), "")?;
+
+            let cargo_toml = toml! {
+                [package]
+                name = "application"
+                version = "0.1.0"
+                edition = "2021"
+            };
+            fs_err::write(
+                application_dir.join("Cargo.toml"),
+                toml::to_string(&cargo_toml)?,
+            )?;
+        }
+
         let mut cargo_toml = toml! {
             [workspace]
-            members = ["."]
+            members = [".", "generated_app"]
 
             [package]
             name = "app"
@@ -391,7 +412,7 @@ fn _run_test(
         .arg("--quiet")
         .current_dir(&test.runtime_directory)
         .output()
-        .unwrap();
+        .context("Failed to perform code generation")?;
     let codegen_output: CommandOutput = (&output).try_into()?;
 
     let expectations_directory = test.definition_directory.join("expectations");
