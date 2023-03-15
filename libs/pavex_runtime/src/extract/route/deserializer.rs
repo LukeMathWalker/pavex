@@ -142,15 +142,13 @@ where
         >()))
     }
 
-    fn deserialize_map<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    fn deserialize_map<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'request>,
     {
-        visitor.visit_map(MapDeserializer {
-            params: self.url_params,
-            value: None,
-            key: None,
-        })
+        Err(PathDeserializationError::unsupported_type(type_name::<
+            V::Value,
+        >()))
     }
 
     fn deserialize_struct<V>(
@@ -162,7 +160,11 @@ where
     where
         V: Visitor<'request>,
     {
-        self.deserialize_map(visitor)
+        visitor.visit_map(MapDeserializer {
+            params: self.url_params,
+            value: None,
+            key: None,
+        })
     }
 
     fn deserialize_enum<V>(
@@ -636,19 +638,6 @@ mod tests {
         );
     }
 
-    #[test]
-    fn test_parse_map() {
-        let raw_params = vec![("a", "1"), ("b", "true"), ("c", "abc")];
-        let url_params = create_url_params(&raw_params);
-        assert_eq!(
-            <HashMap<String, String>>::deserialize(PathDeserializer::new(&url_params)).unwrap(),
-            [("a", "1"), ("b", "true"), ("c", "abc")]
-                .iter()
-                .map(|(key, value)| ((*key).to_owned(), (*value).to_owned()))
-                .collect()
-        );
-    }
-
     macro_rules! test_parse_error {
         (
             $params:expr,
@@ -702,6 +691,17 @@ mod tests {
         check_single_value!(Cow<'_, str>, "one%20two");
         check_single_value!(char, "a");
         check_single_value!(MyEnum, "B");
+    }
+
+    #[test]
+    fn test_parse_error_for_map() {
+        test_parse_error!(
+            vec![("a", "1"), ("b", "true"), ("c", "abc")],
+            HashMap<String, String>,
+            ErrorKind::UnsupportedType {
+                name: "std::collections::hash::map::HashMap<alloc::string::String, alloc::string::String>"
+            }
+        );
     }
 
     #[test]
