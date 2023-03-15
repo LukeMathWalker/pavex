@@ -53,11 +53,19 @@ async fn route_request(
     request: pavex_runtime::http::Request<pavex_runtime::hyper::body::Body>,
     server_state: std::sync::Arc<ServerState>,
 ) -> pavex_runtime::response::Response {
-    let route_id = server_state
-        .router
-        .at(request.uri().path())
-        .expect("Failed to match incoming request path");
-    match route_id.value {
+    let matched_route = match server_state.router.at(request.uri().path()) {
+        Ok(m) => m,
+        Err(_) => {
+            return pavex_runtime::response::Response::builder()
+                .status(pavex_runtime::http::StatusCode::NOT_FOUND)
+                .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
+                .unwrap();
+        }
+    };
+    let route_id = matched_route.value;
+    #[allow(unused)]
+    let url_params = matched_route.params;
+    match route_id {
         0u32 => {
             match request.method() {
                 &pavex_runtime::http::Method::GET => route_handler_0().await,

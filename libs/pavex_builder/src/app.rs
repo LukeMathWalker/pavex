@@ -213,7 +213,51 @@ impl Blueprint {
     /// # }
     /// ```
     ///
+    /// ## Route parameters
+    ///
+    /// Your route paths can include **route parameters**—a way to bind the
+    /// value of a path segment from an incoming request and make it available to your request
+    /// handler.
+    ///
+    /// Let's look at an example—a route with a single route parameter, `home_id`:
+    ///
+    /// ```rust
+    /// use pavex_builder::{Blueprint, f, router::GET};
+    /// # use pavex_runtime::{http::Request, hyper::Body, response::Response};
+    /// # fn get_home(request: Request<Body>) -> Response { todo!() }
+    /// # fn main() {
+    /// # let mut bp = Blueprint::new();
+    ///
+    /// // This route will match `GET` requests to `/home/123` and `/home/456`, but not `/home`.
+    /// bp.route(GET, "/home/:home_id", f!(crate::get_home));
+    /// # }
+    /// ```
+    ///
+    /// The value of the route parameter `home_id` can then be retrieved from the request handler
+    /// (or any other constructor that has access to the request):
+    ///
+    /// ```rust
+    /// use pavex_runtime::extract::route::RouteParams;
+    ///
+    /// #[derive(serde::Deserialize)]
+    /// struct HomeRouteParams {
+    ///     // The name of the field must match the name of the route parameter
+    ///     // used in the template we passed to `bp.route`.
+    ///     home_id: u32,
+    /// }
+    ///
+    /// // The `RouteParams` extractor will deserialize the route parameters into the
+    /// // type you specified—`HomeRouteParams` in this case.
+    /// fn get_home(params: &RouteParams<HomeRouteParams>) -> String {
+    ///     format!("Fetching the home with id {}", params.0.home_id)
+    /// }
+    /// ```
+    ///
+    /// Check out the [`extract::path`] module in `pavex_runtime` for more information
+    /// on how to use route parameters.
+    ///
     /// [`router`]: crate::router
+    /// [`extract::path`]: pavex_runtime::extract::route
     pub fn route(&mut self, method_guard: MethodGuard, path: &str, callable: RawCallable) -> Route {
         let registered_route = RegisteredRoute {
             path: path.to_owned(),

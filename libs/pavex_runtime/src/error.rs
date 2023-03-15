@@ -1,3 +1,4 @@
+//! The error type used by `pavex` for runtime failures.
 // Most of this module is a direct copy (with, from time to time,
 // minor modifications) of the corresponding `error` module in
 // `axum-core`.

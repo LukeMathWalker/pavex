@@ -1,0 +1,7 @@
+description = "Pavex can extract route parameters"
+
+[expectations]
+codegen = "pass"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }

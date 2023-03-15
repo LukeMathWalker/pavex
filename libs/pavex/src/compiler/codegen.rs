@@ -149,8 +149,6 @@ pub(crate) fn codegen_app(
         map
     };
 
-    // TODO: enforce that handlers have the right signature
-    // TODO: enforce that the only required input is a Request type of some kind
     let mut route_id2path = BiBTreeMap::new();
     let mut route_id2router_entry = BTreeMap::new();
     for (route_id, (path, router_entry)) in path2codegen_router_entry.iter().enumerate() {
@@ -356,8 +354,19 @@ fn get_request_dispatcher(
 
     syn::parse2(quote! {
         async fn route_request(request: pavex_runtime::http::Request<pavex_runtime::hyper::body::Body>, #server_state_ident: std::sync::Arc<ServerState>) -> pavex_runtime::response::Response {
-            let route_id = server_state.router.at(request.uri().path()).expect("Failed to match incoming request path");
-            match route_id.value {
+            let matched_route = match server_state.router.at(request.uri().path()) {
+                Ok(m) => m,
+                Err(_) => {
+                    return pavex_runtime::response::Response::builder()
+                        .status(pavex_runtime::http::StatusCode::NOT_FOUND)
+                        .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
+                        .unwrap();
+                }
+            };
+            let route_id = matched_route.value;
+            #[allow(unused)]
+            let url_params = matched_route.params;
+            match route_id {
                 #route_dispatch_table
                 _ => {
                     pavex_runtime::response::Response::builder()

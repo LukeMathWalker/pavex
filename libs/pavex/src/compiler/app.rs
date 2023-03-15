@@ -392,9 +392,23 @@ fn framework_bindings(
     package_graph: &PackageGraph,
     krate_collection: &CrateCollection,
 ) -> BiHashMap<Ident, ResolvedType> {
-    let http_request = "pavex_runtime::http::Request::<pavex_runtime::hyper::Body>";
-    let http_request = process_framework_path(http_request, package_graph, krate_collection);
-    BiHashMap::from_iter([(format_ident!("request"), http_request)].into_iter())
+    let http_request = process_framework_path(
+        "pavex_runtime::http::Request::<pavex_runtime::hyper::Body>",
+        package_graph,
+        krate_collection,
+    );
+    let path_parameters = process_framework_path(
+        "pavex_runtime::routing::Params::<'k, 'v>",
+        package_graph,
+        krate_collection,
+    );
+    BiHashMap::from_iter(
+        [
+            (format_ident!("request"), http_request),
+            (format_ident!("url_params"), path_parameters),
+        ]
+        .into_iter(),
+    )
 }
 
 /// Return the set of types that will be used in the generated code to build a functional

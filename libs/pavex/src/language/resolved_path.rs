@@ -67,6 +67,7 @@ pub enum ResolvedPathGenericArgument {
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub enum ResolvedPathLifetime {
     Static,
+    Named(String),
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
@@ -100,6 +101,9 @@ impl ResolvedPathType {
                             ResolvedPathGenericArgument::Lifetime(l) => match l {
                                 ResolvedPathLifetime::Static => {
                                     GenericArgument::Lifetime(Lifetime::Static)
+                                }
+                                ResolvedPathLifetime::Named(name) => {
+                                    GenericArgument::Lifetime(Lifetime::Named(name.clone()))
                                 }
                             },
                         };
@@ -161,6 +165,9 @@ impl From<ResolvedType> for ResolvedPathType {
                             GenericArgument::Lifetime(l) => match l {
                                 Lifetime::Static => ResolvedPathGenericArgument::Lifetime(
                                     ResolvedPathLifetime::Static,
+                                ),
+                                Lifetime::Named(name) => ResolvedPathGenericArgument::Lifetime(
+                                    ResolvedPathLifetime::Named(name),
                                 ),
                             },
                         })
@@ -348,6 +355,9 @@ impl ResolvedPath {
             CallPathGenericArgument::Lifetime(l) => match l {
                 CallPathLifetime::Static => Ok(ResolvedPathGenericArgument::Lifetime(
                     ResolvedPathLifetime::Static,
+                )),
+                CallPathLifetime::Named(name) => Ok(ResolvedPathGenericArgument::Lifetime(
+                    ResolvedPathLifetime::Named(name.to_owned()),
                 )),
             },
         }
@@ -578,6 +588,9 @@ impl ResolvedPathGenericArgument {
                 ResolvedPathLifetime::Static => {
                     write!(buffer, "'static").unwrap();
                 }
+                ResolvedPathLifetime::Named(name) => {
+                    write!(buffer, "'{}", name).unwrap();
+                }
             },
         }
     }
@@ -723,6 +736,7 @@ impl Display for ResolvedPathLifetime {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             ResolvedPathLifetime::Static => write!(f, "'static"),
+            ResolvedPathLifetime::Named(name) => write!(f, "{}", name),
         }
     }
 }

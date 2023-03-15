@@ -1,6 +1,3 @@
-use bytes::Bytes;
-use http_body::Body;
-
 // Most of this module is a direct copy (with, from time to time,
 // minor modifications) of the corresponding `body` module in
 // `axum-core`.
@@ -30,6 +27,10 @@ use http_body::Body;
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
 // IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
+//! Body types and utilities used by `pavex`.
+use bytes::Bytes;
+use http_body::Body;
+
 use crate::Error;
 
 /// The most common body type in `pavex`.

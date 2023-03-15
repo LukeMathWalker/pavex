@@ -85,14 +85,15 @@ impl ResolvedType {
         }
     }
 
-    /// Check if a type can be used as a "template" - i.e. if it has any unassigned generic type parameters.
+    /// Check if a type can be used as a "template" - i.e. if it has any unassigned generic parameters.
     #[tracing::instrument(level = "trace", ret)]
     pub fn is_a_template(&self) -> bool {
         match self {
             ResolvedType::ResolvedPath(path) => {
                 path.generic_arguments.iter().any(|arg| match arg {
                     GenericArgument::TypeParameter(g) => g.is_a_template(),
-                    GenericArgument::Lifetime(_) => false,
+                    GenericArgument::Lifetime(Lifetime::Static) => false,
+                    GenericArgument::Lifetime(Lifetime::Named(_)) => true,
                 })
             }
             ResolvedType::Reference(r) => r.inner.is_a_template(),
@@ -460,6 +461,8 @@ pub struct ResolvedPathType {
 }
 
 mod generics_equivalence {
+    use std::borrow::Cow;
+
     use ahash::{HashMap, HashMapExt};
 
     use crate::language::{GenericArgument, ResolvedType};
@@ -487,18 +490,23 @@ mod generics_equivalence {
         }
         let mut first_id_gen = UnassignedIdGenerator::new();
         let mut second_id_gen = UnassignedIdGenerator::new();
+        let mut first_lifetime_id_gen = UnassignedIdGenerator::new();
+        let mut second_lifetime_id_gen = UnassignedIdGenerator::new();
         first_generic_args
             .iter()
             .zip(second_generic_args)
             .all(|(first, second)| {
-                if let (
-                    GenericArgument::TypeParameter(ResolvedType::Generic(first)),
-                    GenericArgument::TypeParameter(ResolvedType::Generic(second)),
-                ) = (first, second)
-                {
-                    first_id_gen.id(&first.name) == second_id_gen.id(&second.name)
-                } else {
-                    first == second
+                use GenericArgument::*;
+                use ResolvedType::*;
+                match (first, second) {
+                    (TypeParameter(Generic(first)), TypeParameter(Generic(second))) => {
+                        first_id_gen.id(&first.name) == second_id_gen.id(&second.name)
+                    }
+                    (Lifetime(first), Lifetime(second)) => {
+                        first_lifetime_id_gen.id(format!("{first:?}"))
+                            == second_lifetime_id_gen.id(format!("{second:?}"))
+                    }
+                    (first, second) => first == second,
                 }
             })
     }
@@ -517,31 +525,46 @@ mod generics_equivalence {
         }
         let mut first_id_gen = UnassignedIdGenerator::new();
         let mut second_id_gen = UnassignedIdGenerator::new();
+        let mut first_lifetime_id_gen = UnassignedIdGenerator::new();
+        let mut second_lifetime_id_gen = UnassignedIdGenerator::new();
         let mut mapping = HashMap::new();
         for (first, second) in first_generic_args.iter().zip(second_generic_args) {
-            if let (
-                GenericArgument::TypeParameter(ResolvedType::Generic(first)),
-                GenericArgument::TypeParameter(ResolvedType::Generic(second)),
-            ) = (first, second)
-            {
-                let first_id = first_id_gen.id(&first.name);
-                let second_id = second_id_gen.id(&second.name);
-                if first_id == second_id {
-                    mapping.insert(first.name.as_str(), second.name.as_str());
+            use GenericArgument::*;
+            use ResolvedType::*;
+            match (first, second) {
+                (TypeParameter(Generic(first)), TypeParameter(Generic(second))) => {
+                    let first_id = first_id_gen.id(&first.name);
+                    let second_id = second_id_gen.id(&second.name);
+                    if first_id == second_id {
+                        mapping.insert(first.name.as_str(), second.name.as_str());
+                    } else {
+                        return None;
+                    }
                 }
-            } else if first != second {
-                return None;
+                (Lifetime(first), Lifetime(second)) => {
+                    let first_id = first_lifetime_id_gen.id(format!("{first:?}"));
+                    let second_id = second_lifetime_id_gen.id(format!("{second:?}"));
+                    // TODO: include lifetimes in the mapping
+                    if first_id != second_id {
+                        return None;
+                    }
+                }
+                (first, second) => {
+                    if first != second {
+                        return None;
+                    }
+                }
             }
         }
         Some(mapping)
     }
 
     /// To make the comparison easier, we assign a monotonically increasing unique id to all
-    /// unassigned type parameters.
-    /// If the ids match, we know that the two sequences of unassigned type parameters are equivalent.
+    /// unassigned generic parameters.
+    /// If the ids match, we know that the two sequences of unassigned generic parameters are equivalent.
     pub(super) struct UnassignedIdGenerator<'a> {
         next_id: usize,
-        known_ids: HashMap<&'a str, usize>,
+        known_ids: HashMap<Cow<'a, str>, usize>,
     }
 
     impl<'a> UnassignedIdGenerator<'a> {
@@ -552,10 +575,11 @@ mod generics_equivalence {
             }
         }
 
-        pub(super) fn id<'b>(&'b mut self, name: &'a str) -> usize
+        pub(super) fn id<'b>(&'b mut self, name: impl Into<Cow<'a, str>>) -> usize
         where
             'a: 'b,
         {
+            let name = name.into();
             if let Some(id) = self.known_ids.get(&name) {
                 *id
             } else {
@@ -595,14 +619,18 @@ impl Hash for ResolvedPathType {
         rustdoc_id.hash(state);
         base_type.hash(state);
         let mut id_gen = UnassignedIdGenerator::new();
+        let mut lifetime_id_gen = UnassignedIdGenerator::new();
         for generic_argument in generic_arguments {
-            if let GenericArgument::TypeParameter(ResolvedType::Generic(
-                unassigned_type_parameter,
-            )) = generic_argument
-            {
-                id_gen.id(&unassigned_type_parameter.name).hash(state);
-            } else {
-                generic_argument.hash(state);
+            match generic_argument {
+                GenericArgument::Lifetime(lifetime) => {
+                    lifetime_id_gen.id(format!("{lifetime:?}")).hash(state);
+                }
+                GenericArgument::TypeParameter(ResolvedType::Generic(
+                    unassigned_type_parameter,
+                )) => {
+                    id_gen.id(&unassigned_type_parameter.name).hash(state);
+                }
+                _ => generic_argument.hash(state),
             }
         }
     }
@@ -619,6 +647,7 @@ pub enum GenericArgument {
 #[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Hash, Clone)]
 pub enum Lifetime {
     Static,
+    Named(String),
 }
 
 fn serialize_package_id<S>(package_id: &PackageId, serializer: S) -> Result<S::Ok, S::Error>
@@ -673,6 +702,12 @@ impl ResolvedType {
                             GenericArgument::Lifetime(l) => match l {
                                 Lifetime::Static => {
                                     write!(buffer, "'static").unwrap();
+                                }
+                                Lifetime::Named(_) => {
+                                    // TODO: We should have a dedicated lifetime mapping here.
+                                    //  For now we hack around it since we know that all the usecases
+                                    //  we currently support will work out with lifetime elision.
+                                    write!(buffer, "'_").unwrap();
                                 }
                             },
                         }
@@ -766,6 +801,7 @@ impl Debug for Lifetime {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Lifetime::Static => write!(f, "'static"),
+            Lifetime::Named(name) => write!(f, "'{}", name),
         }
     }
 }

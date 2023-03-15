@@ -80,6 +80,9 @@ struct TestConfig {
     /// `pavex` itself.
     #[serde(default)]
     dependencies: toml::value::Table,
+    /// Crates that should be listed as dev dependencies of the test package.
+    #[serde(default, rename = "dev-dependencies")]
+    dev_dependencies: toml::value::Table,
     /// Ignore the test if set to `true`.
     #[serde(default)]
     ignore: bool,
@@ -149,7 +152,7 @@ impl TestData {
         &self,
         test_config: &TestConfig,
         cli_profile: &str,
-    ) -> Result<(), anyhow::Error> {
+    ) -> Result<ShouldRunTests, anyhow::Error> {
         let source_directory = self.runtime_directory.join("src");
         fs_err::create_dir_all(&source_directory).context(
             "Failed to create the runtime directory when setting up the test runtime environment",
@@ -184,9 +187,76 @@ impl TestData {
             )?;
         }
 
+        let integration_test_file = self.definition_directory.join("test.rs");
+        let has_tests = integration_test_file.exists();
+        if has_tests {
+            let integration_test_directory = self.runtime_directory.join("integration");
+            let integration_test_src_directory = integration_test_directory.join("src");
+            let integration_test_test_directory = integration_test_directory.join("tests");
+            fs_err::create_dir_all(&integration_test_src_directory).context(
+                "Failed to create the runtime directory for integration tests when setting up the test runtime environment",
+            )?;
+            fs_err::create_dir_all(&integration_test_test_directory).context(
+                "Failed to create the runtime directory for integration tests when setting up the test runtime environment",
+            )?;
+            fs_err::copy(
+                integration_test_file,
+                integration_test_test_directory.join("run.rs"),
+            )?;
+            fs_err::write(integration_test_src_directory.join("lib.rs"), "")?;
+
+            let mut cargo_toml = toml! {
+                [package]
+                name = "integration"
+                version = "0.1.0"
+                edition = "2021"
+
+                [dependencies]
+                application = { path = "../generated_app" }
+
+                [dev-dependencies]
+                tokio = { version = "1", features = ["full"] }
+                reqwest = "0.11"
+                pavex_runtime = { path = "../../../../libs/pavex_runtime" }
+            };
+
+            let dev_deps = cargo_toml
+                .get_mut("dev-dependencies")
+                .unwrap()
+                .as_table_mut()
+                .unwrap();
+            dev_deps.extend(test_config.dev_dependencies.clone());
+
+            fs_err::write(
+                integration_test_directory.join("Cargo.toml"),
+                toml::to_string(&cargo_toml)?,
+            )?;
+        }
+
+        // Dummy application crate, ahead of code generation.
+        {
+            let application_dir = self.runtime_directory.join("generated_app");
+            let application_src_dir = application_dir.join("src");
+            fs_err::create_dir_all(&application_src_dir).context(
+                "Failed to create the runtime directory for the generated application when setting up the test runtime environment",
+            )?;
+            fs_err::write(application_src_dir.join("lib.rs"), "")?;
+
+            let cargo_toml = toml! {
+                [package]
+                name = "application"
+                version = "0.1.0"
+                edition = "2021"
+            };
+            fs_err::write(
+                application_dir.join("Cargo.toml"),
+                toml::to_string(&cargo_toml)?,
+            )?;
+        }
+
         let mut cargo_toml = toml! {
             [workspace]
-            members = ["."]
+            members = [".", "generated_app"]
 
             [package]
             name = "app"
@@ -198,7 +268,16 @@ impl TestData {
             pavex_runtime = { path = "../../../libs/pavex_runtime" }
         };
         if !test_config.ephemeral_dependencies.is_empty() {
-            cargo_toml["workspace"]["members"] = vec![".", "ephemeral_dependencies/*"].into();
+            cargo_toml["workspace"]["members"]
+                .as_array_mut()
+                .unwrap()
+                .push("ephemeral_dependencies/*".into());
+        }
+        if has_tests {
+            cargo_toml["workspace"]["members"]
+                .as_array_mut()
+                .unwrap()
+                .push("integration".into());
         }
         let deps = cargo_toml
             .get_mut("dependencies")
@@ -262,8 +341,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {{
 }}"#
         );
         fs_err::write(source_directory.join("main.rs"), main_rs)?;
-        Ok(())
+        Ok(if has_tests {
+            ShouldRunTests::Yes
+        } else {
+            ShouldRunTests::No
+        })
     }
+}
+
+enum ShouldRunTests {
+    Yes,
+    No,
 }
 
 fn run_test(test: TestData, config: TestConfig, cli_profile: String) -> Result<(), Failed> {
@@ -272,6 +360,7 @@ fn run_test(test: TestData, config: TestConfig, cli_profile: String) -> Result<(
             outcome: Err(mut msg),
             codegen_output,
             compilation_output,
+            test_output,
         }) => Err(Failed::from({
             write!(
                 &mut msg,
@@ -284,6 +373,14 @@ fn run_test(test: TestData, config: TestConfig, cli_profile: String) -> Result<(
                     &mut msg,
                     "\n\nCARGO CHECK:\n\t--- STDOUT:\n{}\n\t--- STDERR:\n{}",
                     compilation_output.stdout, compilation_output.stderr
+                )
+                .unwrap();
+            }
+            if let Some(test_output) = test_output {
+                write!(
+                    &mut msg,
+                    "\n\nCARGO TEST:\n\t--- STDOUT:\n{}\n\t--- STDERR:\n{}",
+                    test_output.stdout, test_output.stderr
                 )
                 .unwrap();
             }
@@ -304,7 +401,8 @@ fn _run_test(
     test: &TestData,
     cli_profile: &str,
 ) -> Result<TestOutcome, anyhow::Error> {
-    test.seed_test_filesystem(test_config, cli_profile)
+    let should_run_tests = test
+        .seed_test_filesystem(test_config, cli_profile)
         .context("Failed to seed the filesystem for the test runtime folder")?;
 
     // Generate the application code
@@ -314,7 +412,7 @@ fn _run_test(
         .arg("--quiet")
         .current_dir(&test.runtime_directory)
         .output()
-        .unwrap();
+        .context("Failed to perform code generation")?;
     let codegen_output: CommandOutput = (&output).try_into()?;
 
     let expectations_directory = test.definition_directory.join("expectations");
@@ -325,6 +423,7 @@ fn _run_test(
                 outcome: Err("We failed to generate the application code.".to_string()),
                 codegen_output,
                 compilation_output: None,
+                test_output: None,
             }),
             ExpectedOutcome::Fail => {
                 let stderr_snapshot = SnapshotTest::new(expectations_directory.join("stderr.txt"));
@@ -333,12 +432,14 @@ fn _run_test(
                         outcome: Err("The failure message returned by code generation doesn't match what we expected".into()),
                         codegen_output,
                         compilation_output: None,
+                        test_output: None,
                     });
                 }
                 Ok(TestOutcome {
                     outcome: Ok(()),
                     codegen_output,
                     compilation_output: None,
+                    test_output: None,
                 })
             }
         };
@@ -347,6 +448,7 @@ fn _run_test(
             outcome: Err("We expected code generation to fail, but it succeeded!".into()),
             codegen_output,
             compilation_output: None,
+            test_output: None,
         });
     };
 
@@ -373,7 +475,8 @@ fn _run_test(
     let output = std::process::Command::new("cargo")
         .env("RUSTFLAGS", "-Awarnings")
         .arg("check")
-        .arg("--workspace")
+        .arg("-p")
+        .arg("application")
         .arg("--quiet")
         .current_dir(&test.runtime_directory)
         .output()
@@ -387,6 +490,7 @@ fn _run_test(
             ),
             codegen_output,
             compilation_output: None,
+            test_output: None,
         });
     }
 
@@ -395,6 +499,7 @@ fn _run_test(
             outcome: Err("The generated application code doesn't match what we expected".into()),
             codegen_output,
             compilation_output: None,
+            test_output: None,
         });
     }
 
@@ -404,13 +509,36 @@ fn _run_test(
             outcome: Err("The generated application code doesn't compile.".into()),
             codegen_output,
             compilation_output: Some(compilation_output),
+            test_output: None,
         });
+    }
+
+    // Run integration tests, if we have any,
+    if let ShouldRunTests::Yes = should_run_tests {
+        let output = std::process::Command::new("cargo")
+            .env("RUSTFLAGS", "-Awarnings")
+            .arg("t")
+            .arg("-p")
+            .arg("integration")
+            .current_dir(&test.runtime_directory)
+            .output()
+            .unwrap();
+        let test_output: CommandOutput = (&output).try_into()?;
+        if !output.status.success() {
+            return Ok(TestOutcome {
+                outcome: Err("Integration tests failed.".into()),
+                codegen_output,
+                test_output: Some(test_output),
+                compilation_output: Some(compilation_output),
+            });
+        }
     }
 
     Ok(TestOutcome {
         outcome: Ok(()),
         codegen_output,
         compilation_output: Some(compilation_output),
+        test_output: None,
     })
 }
 
@@ -418,6 +546,7 @@ struct TestOutcome {
     outcome: Result<(), String>,
     codegen_output: CommandOutput,
     compilation_output: Option<CommandOutput>,
+    test_output: Option<CommandOutput>,
 }
 
 /// A refined `std::process::Output` that assumes that both stderr and stdout are valid UTF8.

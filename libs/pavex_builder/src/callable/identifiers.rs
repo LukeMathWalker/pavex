@@ -1,6 +1,8 @@
 #[derive(Debug, Hash, Eq, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
 /// An implementation detail of the builder.
 /// You must the [`f!`] macro wherever a `RawCallable` is needed.
+///
+/// [`f!`]: crate::f
 pub struct RawCallable {
     #[doc(hidden)]
     pub import_path: &'static str,
