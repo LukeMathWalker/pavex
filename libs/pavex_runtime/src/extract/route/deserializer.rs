@@ -36,7 +36,7 @@ use serde::{
     forward_to_deserialize_any, Deserializer,
 };
 
-use crate::extract::route::extractor::{ErrorKind, PathDeserializationError};
+use crate::extract::route::errors::{ErrorKind, PathDeserializationError};
 
 macro_rules! unsupported_type {
     ($trait_fn:ident) => {
