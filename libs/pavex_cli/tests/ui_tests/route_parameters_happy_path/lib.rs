@@ -28,7 +28,7 @@ pub fn blueprint() -> Blueprint {
         Lifecycle::RequestScoped,
     )
     .error_handler(f!(
-        pavex_runtime::extract::route::ExtractRouteParamsError::into_response
+        pavex_runtime::extract::route::errors::ExtractRouteParamsError::into_response
     ));
     bp.route(GET, "/home/:home_id", f!(crate::get_home));
     bp.route(GET, "/home/:home_id/room/:room_id", f!(crate::get_room));

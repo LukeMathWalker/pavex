@@ -21,14 +21,22 @@
 /// ```
 ///
 /// `RawRouteParams` is a framework primitive—you don't need to register any constructor
-/// with [`Blueprint`] to use it in your application.
+/// with `Blueprint` to use it in your application.
 ///
 /// # What does "raw" mean?
 ///
+/// Route parameters are URL segments, therefore they must comply with the restrictions that apply
+/// to the URL itself. In particular, they can only use ASCII characters.  
+/// In order to support non-ASCII characters, route parameters are
+/// [percent-encoded](https://www.w3schools.com/tags/ref_urlencode.ASP).  
+/// If you want to send "123 456" as a route parameter, you have to percent-encode it: it becomes
+/// "123%20456" since "%20" is the percent-encoding for a space character.
+///
 /// `RawRouteParams` gives you access to the **raw** route parameters, i.e. the route parameters
-/// as they are extracted from the URL, before any kind of percent-decoding or deserialization has taken
+/// as they are extracted from the URL, before any kind of processing has taken
 /// place.
 ///
+/// In particular, `RawRouteParams` does **not** perform any percent-decoding.  
 /// If you send a request to `/address/123%20456/home/789`, the `RawRouteParams` for
 /// `/address/:address_id/home/:home_id` will contain the following key-value pairs:
 ///
@@ -38,10 +46,9 @@
 /// `address_id` is not `123 456` because `RawRouteParams` does not perform percent-decoding!
 /// Therefore `%20` is not interpreted as a space character.
 ///
-/// If you don't want to take care of percent-decoding and deserialization yourself, you can use
-/// [`RouteParams`] instead.
-///
-/// [`Blueprint`]: pavex_builder::Blueprint
+/// There are situations where you might want to work with the raw route parameters, but
+/// most of the time you'll want to use [`RouteParams`] instead - it performs percent-decoding
+/// and deserialization for you.
 #[doc(inline)]
 pub use matchit::Params as RawRouteParams;
 use percent_encoding::percent_decode_str;
@@ -57,7 +64,7 @@ use crate::extract::route::errors::{ExtractRouteParamsError, InvalidUtf8InPathPa
 /// - [Example](#example)
 /// - [Supported types](#supported-types)
 /// - [Unsupported types](#unsupported-types)
-/// - [Working with raw parameters](#working-with-raw-parameters)
+/// - [Working with raw route parameters](#working-with-raw-route-parameters)
 ///
 /// # Example
 ///
@@ -156,7 +163,7 @@ use crate::extract::route::errors::{ExtractRouteParamsError, InvalidUtf8InPathPa
 /// are extracted from the URL, before any kind of percent-decoding or deserialization has taken
 /// place.
 ///
-/// You can do so by using the [`RawRouteParams`] instead of [`RouteParams`]. Check out
+/// You can do so by using the [`RawRouteParams`] extractor instead of [`RouteParams`]. Check out
 /// [`RawRouteParams`]' documentation for more information.
 #[doc(alias = "Path")]
 #[doc(alias = "PathParams")]

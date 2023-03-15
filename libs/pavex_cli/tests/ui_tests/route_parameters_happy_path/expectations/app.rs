@@ -113,7 +113,7 @@ pub async fn route_handler_0(
             )
         }
         Err(v2) => {
-            let v3 = pavex_runtime::extract::route::ExtractRouteParamsError::into_response(
+            let v3 = pavex_runtime::extract::route::errors::ExtractRouteParamsError::into_response(
                 &v2,
             );
             <http::Response::<
@@ -136,7 +136,7 @@ pub async fn route_handler_1(
             )
         }
         Err(v2) => {
-            let v3 = pavex_runtime::extract::route::ExtractRouteParamsError::into_response(
+            let v3 = pavex_runtime::extract::route::errors::ExtractRouteParamsError::into_response(
                 &v2,
             );
             <http::Response::<

@@ -26,7 +26,7 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
 // IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
-//! Types and traits for generating HTTP responses.
+//! Build HTTP responses, from scratch or by converting existing types.
 pub use into_response::{IntoResponse, Response};
 
 mod into_response;
