@@ -78,7 +78,7 @@ impl App {
             };
         }
 
-        let raw_identifiers_db = RawCallableIdentifiersDb::build(&bp);
+        let (raw_identifiers_db, _scope_tree) = RawCallableIdentifiersDb::build(&bp);
         let user_component_db = UserComponentDb::build(&bp, &raw_identifiers_db);
         let package_graph = compute_package_graph().map_err(|e| vec![e])?;
         let mut diagnostics = vec![];
