@@ -413,7 +413,7 @@ impl ComponentDb {
                 }),
                 package_id: into_response_path.package_id.clone(),
             };
-            match computation_db.resolve_callable(krate_collection, &transformer_path, None) {
+            match computation_db.resolve_and_intern(krate_collection, &transformer_path, None) {
                 Ok(callable_id) => {
                     self_.get_or_intern_transformer(callable_id, component_id, computation_db);
                 }

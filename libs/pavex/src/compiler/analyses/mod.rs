@@ -6,3 +6,4 @@ pub(crate) mod raw_user_components;
 pub(crate) mod resolved_paths;
 pub(crate) mod router_validation;
 pub(crate) mod scope_tree;
+pub(crate) mod user_components;

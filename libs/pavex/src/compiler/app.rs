@@ -21,8 +21,7 @@ use crate::compiler::analyses::components::ComponentDb;
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::constructibles::ConstructibleDb;
 use crate::compiler::analyses::raw_user_components::{RawUserComponentDb, RouterKey};
-use crate::compiler::analyses::resolved_paths::ResolvedPathDb;
-use crate::compiler::analyses::router_validation::validate_router;
+use crate::compiler::analyses::user_components::UserComponentDb;
 use crate::compiler::codegen;
 use crate::compiler::generated_app::GeneratedApp;
 use crate::compiler::resolvers::CallableResolutionError;
@@ -79,15 +78,12 @@ impl App {
 
         let raw_user_component_db = RawUserComponentDb::build(&bp);
         let package_graph = compute_package_graph().map_err(|e| vec![e])?;
-        let mut diagnostics = vec![];
-        validate_router(&raw_user_component_db, &package_graph, &mut diagnostics);
-        let resolved_path_db =
-            ResolvedPathDb::build(&raw_user_component_db, &package_graph, &mut diagnostics);
-        exit_on_errors!(diagnostics);
         let krate_collection = CrateCollection::new(package_graph.clone());
-        let mut computation_db = ComputationDb::build(
+        let mut diagnostics = vec![];
+        let mut computation_db = ComputationDb::new();
+        let _user_component_db = UserComponentDb::build(
             &raw_user_component_db,
-            &resolved_path_db,
+            &mut computation_db,
             &package_graph,
             &krate_collection,
             &mut diagnostics,

@@ -12,11 +12,9 @@ use crate::diagnostic::CallableType;
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 /// A component registered by a framework user against the `Blueprint` for their application.
 ///
-/// We call it "raw" components because we are yet to resolve the paths to the actual
-/// functions that they refer to and perform higher-level checks (e.g. does a constructor
-/// return a type or unit?).
-///
 /// All raw components can be directly mapped back to the source code that registered them.
+///
+/// See [`RawUserComponentDb`] for more details.
 pub(crate) enum RawUserComponent {
     RequestHandler {
         raw_callable_identifiers_id: RawCallableIdentifierId,
@@ -100,6 +98,10 @@ pub(crate) type RawUserComponentId = la_arena::Idx<RawUserComponent>;
 /// - the source code location where it was registered (for error reporting purposes);
 /// - the lifecycle of the component;
 /// - the scope that the component belongs to.
+///
+/// We call them "raw" components because we are yet to resolve the paths to the actual
+/// functions that they refer to and perform higher-level checks (e.g. does a constructor
+/// return a type or unit?).
 pub(crate) struct RawUserComponentDb {
     component_interner: Interner<RawUserComponent>,
     identifiers_interner: Interner<RawCallableIdentifiers>,
