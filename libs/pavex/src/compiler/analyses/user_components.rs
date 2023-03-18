@@ -74,8 +74,8 @@ impl UserComponent {
     }
 
     /// Returns the raw identifiers for the callable that this `UserComponent` is associated with.
-    pub fn raw_callable_identifiers<'a, 'b>(
-        &'a self,
+    pub fn raw_callable_identifiers<'b>(
+        &self,
         db: &'b UserComponentDb,
     ) -> &'b RawCallableIdentifiers {
         &db.identifiers_interner[self.raw_callable_identifiers_id()]
