@@ -17,10 +17,17 @@ pub struct ScopeTree {
     next_node_id: usize,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+/// The unique ID of a scope.
+///
+/// See [`ScopeTree`] for more information.
 pub struct ScopeId<'a>(Cow<'a, NodeId>);
 
 impl<'a> ScopeId<'a> {
+    /// Perform a deep clone of the scope ID.
+    ///
+    /// It is expected to be cheap (a `ScopeId` is three integers in a trench coat
+    /// and it should probably just be `Copy`, but `NodeId` isn't, so..).
     pub fn into_owned(self) -> ScopeId<'static> {
         match self.0 {
             Cow::Borrowed(b) => ScopeId(Cow::Owned(b.to_owned())),

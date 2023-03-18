@@ -4,7 +4,6 @@ use miette::{miette, NamedSource};
 use rustdoc_types::ItemEnum;
 use syn::spanned::Spanned;
 
-use crate::compiler::analyses::raw_identifiers::RawCallableIdentifiersDb;
 use crate::compiler::analyses::resolved_paths::ResolvedPathDb;
 use crate::compiler::analyses::user_components::{UserComponentDb, UserComponentId};
 use crate::compiler::computation::Computation;
@@ -32,7 +31,6 @@ impl ComputationDb {
         resolved_path_db: &ResolvedPathDb,
         package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
-        raw_identifiers_db: &RawCallableIdentifiersDb,
         diagnostics: &mut Vec<miette::Error>,
     ) -> Self {
         let mut self_ = Self {
@@ -48,7 +46,6 @@ impl ComputationDb {
                     e,
                     component_id,
                     component_db,
-                    raw_identifiers_db,
                     package_graph,
                     diagnostics,
                 );
@@ -83,14 +80,12 @@ impl ComputationDb {
         e: CallableResolutionError,
         component_id: UserComponentId,
         component_db: &UserComponentDb,
-        raw_identifiers_db: &RawCallableIdentifiersDb,
         package_graph: &PackageGraph,
         diagnostics: &mut Vec<miette::Error>,
     ) {
+        let location = component_db.get_location(component_id);
         let component = &component_db[component_id];
         let callable_type = component.callable_type();
-        let raw_identifier_id = component.raw_callable_identifiers_id();
-        let location = raw_identifiers_db.get_location(raw_identifier_id);
         let source = match location.source_file(package_graph) {
             Ok(source) => source,
             Err(e) => {

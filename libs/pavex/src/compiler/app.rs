@@ -20,7 +20,6 @@ use crate::compiler::analyses::call_graph::{
 use crate::compiler::analyses::components::ComponentDb;
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::constructibles::ConstructibleDb;
-use crate::compiler::analyses::raw_identifiers::RawCallableIdentifiersDb;
 use crate::compiler::analyses::resolved_paths::ResolvedPathDb;
 use crate::compiler::analyses::router_validation::validate_router;
 use crate::compiler::analyses::user_components::{RouterKey, UserComponentDb};
@@ -78,30 +77,19 @@ impl App {
             };
         }
 
-        let (raw_identifiers_db, _scope_tree) = RawCallableIdentifiersDb::build(&bp);
-        let user_component_db = UserComponentDb::build(&bp, &raw_identifiers_db);
+        let user_component_db = UserComponentDb::build(&bp);
         let package_graph = compute_package_graph().map_err(|e| vec![e])?;
         let mut diagnostics = vec![];
-        let krate_collection = CrateCollection::new(package_graph.clone());
-        validate_router(
-            &user_component_db,
-            &raw_identifiers_db,
-            &package_graph,
-            &mut diagnostics,
-        );
-        let resolved_path_db = ResolvedPathDb::build(
-            &user_component_db,
-            &raw_identifiers_db,
-            &package_graph,
-            &mut diagnostics,
-        );
+        validate_router(&user_component_db, &package_graph, &mut diagnostics);
+        let resolved_path_db =
+            ResolvedPathDb::build(&user_component_db, &package_graph, &mut diagnostics);
         exit_on_errors!(diagnostics);
+        let krate_collection = CrateCollection::new(package_graph.clone());
         let mut computation_db = ComputationDb::build(
             &user_component_db,
             &resolved_path_db,
             &package_graph,
             &krate_collection,
-            &raw_identifiers_db,
             &mut diagnostics,
         );
         exit_on_errors!(diagnostics);
@@ -109,7 +97,6 @@ impl App {
             &user_component_db,
             &mut computation_db,
             &package_graph,
-            &raw_identifiers_db,
             &krate_collection,
             &mut diagnostics,
         );
@@ -122,7 +109,6 @@ impl App {
             &package_graph,
             &krate_collection,
             &user_component_db,
-            &raw_identifiers_db,
             &request_scoped_framework_bindings.right_values().collect(),
             &mut diagnostics,
         );
@@ -155,7 +141,6 @@ impl App {
             &component_db,
             &package_graph,
             &user_component_db,
-            &raw_identifiers_db,
             &krate_collection,
             &mut diagnostics,
         );
@@ -429,7 +414,6 @@ fn verify_singletons(
     component_db: &ComponentDb,
     package_graph: &PackageGraph,
     user_component_db: &UserComponentDb,
-    raw_identifiers_db: &RawCallableIdentifiersDb,
     krate_collection: &CrateCollection,
     diagnostics: &mut Vec<miette::Error>,
 ) {
@@ -439,7 +423,6 @@ fn verify_singletons(
         constructible_db: &ConstructibleDb,
         component_db: &ComponentDb,
         user_component_db: &UserComponentDb,
-        raw_identifiers_db: &RawCallableIdentifiersDb,
         diagnostics: &mut Vec<miette::Error>,
     ) {
         let t = if let ResolvedType::Reference(ref t) = e.type_ {
@@ -454,10 +437,8 @@ fn verify_singletons(
         let component_id = constructible_db[&t];
         let user_component_id = component_db.user_component_id(component_id).unwrap();
         let user_component = &user_component_db[user_component_id];
-        let raw_identifier_id = user_component.raw_callable_identifiers_id();
         let component_kind = user_component.callable_type();
-
-        let location = raw_identifiers_db.get_location(raw_identifier_id);
+        let location = user_component_db.get_location(user_component_id);
         let source = match location.source_file(package_graph) {
             Ok(s) => s,
             Err(e) => {
@@ -491,7 +472,6 @@ fn verify_singletons(
                     constructible_db,
                     component_db,
                     user_component_db,
-                    raw_identifiers_db,
                     diagnostics,
                 );
             }

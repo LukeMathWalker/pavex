@@ -9,6 +9,11 @@ pub struct RawCallable {
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
+/// All the information required to identify a callable registered against a [`Blueprint`].
+///
+/// It is an implementation detail of the builder.
+///
+/// [`Blueprint`]: crate::Blueprint
 pub struct RawCallableIdentifiers {
     /// The name of the crate that registered the callable against the blueprint builder.
     /// This information is needed to resolve the callable import path unambiguously.
@@ -31,6 +36,7 @@ pub struct RawCallableIdentifiers {
 
 impl RawCallableIdentifiers {
     #[track_caller]
+    #[doc(hidden)]
     pub fn new(import_path: &'static str) -> Self {
         Self {
             registered_at: std::env::var("CARGO_PKG_NAME").expect("Failed to fetch the CARGO_CRATE_NAME environment variable. Are you using a custom build system?"),

@@ -3,7 +3,6 @@ use guppy::graph::PackageGraph;
 use indexmap::{IndexMap, IndexSet};
 use itertools::Itertools;
 
-use crate::compiler::analyses::raw_identifiers::RawCallableIdentifiersDb;
 use crate::compiler::analyses::user_components::{UserComponent, UserComponentDb, UserComponentId};
 use crate::diagnostic;
 use crate::diagnostic::{
@@ -11,10 +10,9 @@ use crate::diagnostic::{
 };
 
 /// Examine the registered paths and methods guards to make sure that we don't
-/// have any conflicts.
+/// have any conflicts—i.e. multiple handlers registered for the same path+method combination.
 pub(crate) fn validate_router(
     user_component_db: &UserComponentDb,
-    raw_identifiers_db: &RawCallableIdentifiersDb,
     package_graph: &PackageGraph,
     diagnostics: &mut Vec<miette::Error>,
 ) {
@@ -59,7 +57,6 @@ pub(crate) fn validate_router(
                     method,
                     &unique_handlers,
                     user_component_db,
-                    raw_identifiers_db,
                     package_graph,
                     diagnostics,
                 );
@@ -73,16 +70,13 @@ fn push_router_conflict_diagnostic(
     method: &str,
     user_component_ids: &[&UserComponentId],
     user_component_db: &UserComponentDb,
-    raw_identifiers_db: &RawCallableIdentifiersDb,
     package_graph: &PackageGraph,
     diagnostics: &mut Vec<miette::Error>,
 ) {
     let n_unique_handlers = user_component_ids.len();
     let mut annotated_snippets: Vec<AnnotatedSnippet> = Vec::with_capacity(n_unique_handlers);
     for (i, user_component_id) in user_component_ids.iter().enumerate() {
-        let user_component = &user_component_db[**user_component_id];
-        let raw_identifier_id = user_component.raw_callable_identifiers_id();
-        let location = raw_identifiers_db.get_location(raw_identifier_id);
+        let location = user_component_db.get_location(**user_component_id);
         let source = match location.source_file(package_graph) {
             Ok(s) => s,
             Err(e) => {

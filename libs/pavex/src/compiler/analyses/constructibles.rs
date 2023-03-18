@@ -8,7 +8,6 @@ use pavex_builder::Lifecycle;
 
 use crate::compiler::analyses::components::{ComponentDb, ComponentId, HydratedComponent};
 use crate::compiler::analyses::computations::ComputationDb;
-use crate::compiler::analyses::raw_identifiers::RawCallableIdentifiersDb;
 use crate::compiler::analyses::user_components::{UserComponentDb, UserComponentId};
 use crate::diagnostic;
 use crate::diagnostic::{
@@ -41,7 +40,6 @@ impl ConstructibleDb {
         package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
         user_component_db: &UserComponentDb,
-        raw_identifiers_db: &RawCallableIdentifiersDb,
         request_scoped_framework_types: &HashSet<&ResolvedType>,
         diagnostics: &mut Vec<miette::Error>,
     ) -> Self {
@@ -126,7 +124,6 @@ impl ConstructibleDb {
                             input_index,
                             package_graph,
                             krate_collection,
-                            raw_identifiers_db,
                             computation_db,
                             diagnostics,
                         )
@@ -161,7 +158,6 @@ impl ConstructibleDb {
         unconstructible_type_index: usize,
         package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
-        raw_identifiers_db: &RawCallableIdentifiersDb,
         computation_db: &ComputationDb,
         diagnostics: &mut Vec<miette::Error>,
     ) {
@@ -217,10 +213,9 @@ impl ConstructibleDb {
 
         let user_component = &user_component_db[user_component_id];
         let callable = &computation_db[user_component_id];
-        let raw_identifier_id = user_component.raw_callable_identifiers_id();
         let component_kind = user_component.callable_type();
+        let location = user_component_db.get_location(user_component_id);
 
-        let location = raw_identifiers_db.get_location(raw_identifier_id);
         let source = match location.source_file(package_graph) {
             Ok(s) => s,
             Err(e) => {
