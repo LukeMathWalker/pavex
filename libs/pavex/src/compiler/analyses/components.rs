@@ -173,10 +173,7 @@ impl ComponentDb {
             into_response,
         };
 
-        for (user_component_id, _) in user_component_db
-            .iter()
-            .filter(|(_, c)| c.callable_type() == CallableType::Constructor)
-        {
+        for (user_component_id, _) in user_component_db.constructors() {
             let c: Computation = computation_db[user_component_id].clone().into();
             match TryInto::<Constructor>::try_into(c) {
                 Err(e) => {
@@ -212,10 +209,7 @@ impl ComponentDb {
             }
         }
 
-        for (user_component_id, user_component) in user_component_db
-            .iter()
-            .filter(|(_, c)| c.callable_type() == CallableType::RequestHandler)
-        {
+        for (user_component_id, user_component) in user_component_db.request_handlers() {
             let callable = &computation_db[user_component_id];
             let UserComponent::RequestHandler { router_key, .. } = user_component else {
                 unreachable!()

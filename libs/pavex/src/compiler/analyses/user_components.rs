@@ -209,6 +209,28 @@ impl UserComponentDb {
         self.component_interner.iter()
     }
 
+    /// Iterate over all the constructor components in the database, returning their id and the
+    /// associated `UserComponent`.
+    pub fn constructors(
+        &self,
+    ) -> impl Iterator<Item = (UserComponentId, &UserComponent)> + ExactSizeIterator + DoubleEndedIterator
+    {
+        self.component_interner
+            .iter()
+            .filter(|(_, c)| matches!(c, UserComponent::Constructor { .. }))
+    }
+
+    /// Iterate over all the request handler components in the database, returning their id and the
+    /// associated `UserComponent`.
+    pub fn request_handlers(
+        &self,
+    ) -> impl Iterator<Item = (UserComponentId, &UserComponent)> + ExactSizeIterator + DoubleEndedIterator
+    {
+        self.component_interner
+            .iter()
+            .filter(|(_, c)| matches!(c, UserComponent::RequestHandler { .. }))
+    }
+
     /// Return the lifecycle of the component with the given id.
     pub fn get_lifecycle(&self, id: UserComponentId) -> &Lifecycle {
         &self.id2lifecycle[&id]
