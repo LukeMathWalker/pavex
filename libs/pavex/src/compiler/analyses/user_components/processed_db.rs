@@ -27,13 +27,10 @@ use crate::rustdoc::CrateCollection;
 /// - the lifecycle of the component;
 /// - the scope that the component belongs to.
 ///
-/// All components have been validated:
+/// Some basic validation has been carried out:
 /// - the callable associated to each component has been resolved and added to the
 ///   provided [`ComputationDb`].
 /// - there are no conflicting routes.
-/// - all fallible components have a corresponding error handler.
-/// - each component complies with its specific constraints (e.g. constructors do not return the
-///   unit type, `()`).
 pub struct UserComponentDb {
     component_interner: Interner<UserComponent>,
     id2locations: HashMap<UserComponentId, Location>,
