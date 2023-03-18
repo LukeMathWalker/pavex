@@ -1,7 +1,7 @@
 use ahash::{HashMap, HashMapExt};
 use guppy::graph::PackageGraph;
 
-use crate::compiler::analyses::user_components::{UserComponentDb, UserComponentId};
+use crate::compiler::analyses::raw_user_components::{RawUserComponentDb, RawUserComponentId};
 use crate::compiler::interner::Interner;
 use crate::diagnostic;
 use crate::diagnostic::{CompilerDiagnostic, LocationExt, OptionalSourceSpanExt};
@@ -11,12 +11,12 @@ pub(crate) type ResolvedPathId = la_arena::Idx<ResolvedPath>;
 
 pub(crate) struct ResolvedPathDb {
     interner: Interner<ResolvedPath>,
-    component_id2path_id: HashMap<UserComponentId, ResolvedPathId>,
+    component_id2path_id: HashMap<RawUserComponentId, ResolvedPathId>,
 }
 
 impl ResolvedPathDb {
     pub fn build(
-        component_db: &UserComponentDb,
+        component_db: &RawUserComponentDb,
         package_graph: &PackageGraph,
         diagnostics: &mut Vec<miette::Error>,
     ) -> Self {
@@ -46,8 +46,8 @@ impl ResolvedPathDb {
 
     fn capture_diagnostics(
         e: ParseError,
-        component_id: UserComponentId,
-        component_db: &UserComponentDb,
+        component_id: RawUserComponentId,
+        component_db: &RawUserComponentDb,
         package_graph: &PackageGraph,
         diagnostics: &mut Vec<miette::Error>,
     ) {
@@ -87,10 +87,10 @@ impl std::ops::Index<ResolvedPathId> for ResolvedPathDb {
     }
 }
 
-impl std::ops::Index<UserComponentId> for ResolvedPathDb {
+impl std::ops::Index<RawUserComponentId> for ResolvedPathDb {
     type Output = ResolvedPath;
 
-    fn index(&self, index: UserComponentId) -> &Self::Output {
+    fn index(&self, index: RawUserComponentId) -> &Self::Output {
         &self[self.component_id2path_id[&index]]
     }
 }

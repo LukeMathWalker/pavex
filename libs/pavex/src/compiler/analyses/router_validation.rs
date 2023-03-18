@@ -3,7 +3,9 @@ use guppy::graph::PackageGraph;
 use indexmap::{IndexMap, IndexSet};
 use itertools::Itertools;
 
-use crate::compiler::analyses::user_components::{UserComponent, UserComponentDb, UserComponentId};
+use crate::compiler::analyses::raw_user_components::{
+    RawUserComponent, RawUserComponentDb, RawUserComponentId,
+};
 use crate::diagnostic;
 use crate::diagnostic::{
     AnnotatedSnippet, CompilerDiagnostic, LocationExt, SourceSpanExt, ZeroBasedOrdinal,
@@ -12,7 +14,7 @@ use crate::diagnostic::{
 /// Examine the registered paths and methods guards to make sure that we don't
 /// have any conflicts—i.e. multiple handlers registered for the same path+method combination.
 pub(crate) fn validate_router(
-    user_component_db: &UserComponentDb,
+    raw_user_component_db: &RawUserComponentDb,
     package_graph: &PackageGraph,
     diagnostics: &mut Vec<miette::Error>,
 ) {
@@ -20,8 +22,8 @@ pub(crate) fn validate_router(
         "GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS", "CONNECT", "TRACE",
     ];
     let mut path2method2component_id = IndexMap::<_, Vec<_>>::new();
-    for (id, component) in user_component_db.iter() {
-        if let UserComponent::RequestHandler { router_key, .. } = component {
+    for (id, component) in raw_user_component_db.iter() {
+        if let RawUserComponent::RequestHandler { router_key, .. } = component {
             path2method2component_id
                 .entry(&router_key.path)
                 .or_default()
@@ -49,14 +51,14 @@ pub(crate) fn validate_router(
             // as a request handler for the same path+method multiple times.
             let unique_handlers = relevant_handler_ids
                 .iter()
-                .unique_by(|id| user_component_db[**id].raw_callable_identifiers_id())
+                .unique_by(|id| raw_user_component_db[**id].raw_callable_identifiers_id())
                 .collect::<Vec<_>>();
             if unique_handlers.len() > 1 {
                 push_router_conflict_diagnostic(
                     path,
                     method,
                     &unique_handlers,
-                    user_component_db,
+                    raw_user_component_db,
                     package_graph,
                     diagnostics,
                 );
@@ -68,15 +70,15 @@ pub(crate) fn validate_router(
 fn push_router_conflict_diagnostic(
     path: &str,
     method: &str,
-    user_component_ids: &[&UserComponentId],
-    user_component_db: &UserComponentDb,
+    raw_user_component_ids: &[&RawUserComponentId],
+    raw_user_component_db: &RawUserComponentDb,
     package_graph: &PackageGraph,
     diagnostics: &mut Vec<miette::Error>,
 ) {
-    let n_unique_handlers = user_component_ids.len();
+    let n_unique_handlers = raw_user_component_ids.len();
     let mut annotated_snippets: Vec<AnnotatedSnippet> = Vec::with_capacity(n_unique_handlers);
-    for (i, user_component_id) in user_component_ids.iter().enumerate() {
-        let location = user_component_db.get_location(**user_component_id);
+    for (i, raw_user_component_id) in raw_user_component_ids.iter().enumerate() {
+        let location = raw_user_component_db.get_location(**raw_user_component_id);
         let source = match location.source_file(package_graph) {
             Ok(s) => s,
             Err(e) => {

@@ -12,8 +12,12 @@ use crate::diagnostic::CallableType;
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 /// A component registered by a framework user against the `Blueprint` for their application.
 ///
-/// All components can be directly mapped back to the source code that registered them.
-pub(crate) enum UserComponent {
+/// We call it "raw" components because we are yet to resolve the paths to the actual
+/// functions that they refer to and perform higher-level checks (e.g. does a constructor
+/// return a type or unit?).
+///
+/// All raw components can be directly mapped back to the source code that registered them.
+pub(crate) enum RawUserComponent {
     RequestHandler {
         raw_callable_identifiers_id: RawCallableIdentifierId,
         router_key: RouterKey,
@@ -21,7 +25,7 @@ pub(crate) enum UserComponent {
     },
     ErrorHandler {
         raw_callable_identifiers_id: RawCallableIdentifierId,
-        fallible_callable_identifiers_id: UserComponentId,
+        fallible_callable_identifiers_id: RawUserComponentId,
         scope_id: ScopeId<'static>,
     },
     Constructor {
@@ -42,15 +46,15 @@ pub struct RouterKey {
     pub method_guard: Option<BTreeSet<String>>,
 }
 
-impl UserComponent {
+impl RawUserComponent {
     /// Returns the tag for the "variant" of this `UserComponent`.
     ///
     /// Useful when you don't need to access the actual data attached component.
     pub fn callable_type(&self) -> CallableType {
         match self {
-            UserComponent::RequestHandler { .. } => CallableType::RequestHandler,
-            UserComponent::ErrorHandler { .. } => CallableType::ErrorHandler,
-            UserComponent::Constructor { .. } => CallableType::Constructor,
+            RawUserComponent::RequestHandler { .. } => CallableType::RequestHandler,
+            RawUserComponent::ErrorHandler { .. } => CallableType::ErrorHandler,
+            RawUserComponent::Constructor { .. } => CallableType::Constructor,
         }
     }
 
@@ -58,15 +62,15 @@ impl UserComponent {
     /// this `UserComponent` is associated with.
     pub fn raw_callable_identifiers_id(&self) -> RawCallableIdentifierId {
         match self {
-            UserComponent::RequestHandler {
+            RawUserComponent::RequestHandler {
                 raw_callable_identifiers_id,
                 ..
             } => *raw_callable_identifiers_id,
-            UserComponent::ErrorHandler {
+            RawUserComponent::ErrorHandler {
                 raw_callable_identifiers_id,
                 ..
             } => *raw_callable_identifiers_id,
-            UserComponent::Constructor {
+            RawUserComponent::Constructor {
                 raw_callable_identifiers_id,
                 ..
             } => *raw_callable_identifiers_id,
@@ -76,7 +80,7 @@ impl UserComponent {
     /// Returns the raw identifiers for the callable that this `UserComponent` is associated with.
     pub fn raw_callable_identifiers<'b>(
         &self,
-        db: &'b UserComponentDb,
+        db: &'b RawUserComponentDb,
     ) -> &'b RawCallableIdentifiers {
         &db.identifiers_interner[self.raw_callable_identifiers_id()]
     }
@@ -85,8 +89,8 @@ impl UserComponent {
 /// A unique identifier for a `RawCallableIdentifiers`.
 pub(crate) type RawCallableIdentifierId = la_arena::Idx<RawCallableIdentifiers>;
 
-/// A unique identifier for a [`UserComponent`].
-pub(crate) type UserComponentId = la_arena::Idx<UserComponent>;
+/// A unique identifier for a [`RawUserComponent`].
+pub(crate) type RawUserComponentId = la_arena::Idx<RawUserComponent>;
 
 /// A database that contains all the user components that have been registered against the
 /// `Blueprint` for the application.
@@ -96,15 +100,15 @@ pub(crate) type UserComponentId = la_arena::Idx<UserComponent>;
 /// - the source code location where it was registered (for error reporting purposes);
 /// - the lifecycle of the component;
 /// - the scope that the component belongs to.
-pub(crate) struct UserComponentDb {
-    component_interner: Interner<UserComponent>,
+pub(crate) struct RawUserComponentDb {
+    component_interner: Interner<RawUserComponent>,
     identifiers_interner: Interner<RawCallableIdentifiers>,
-    id2locations: HashMap<UserComponentId, Location>,
-    id2lifecycle: HashMap<UserComponentId, Lifecycle>,
+    id2locations: HashMap<RawUserComponentId, Location>,
+    id2lifecycle: HashMap<RawUserComponentId, Lifecycle>,
     scope_tree: ScopeTree,
 }
 
-impl UserComponentDb {
+impl RawUserComponentDb {
     /// Process a `Blueprint` and return a `UserComponentDb` that contains all the user components
     /// that have been registered against it.
     pub fn build(bp: &Blueprint) -> Self {
@@ -135,7 +139,7 @@ impl UserComponentDb {
                 }
             };
             let route_scope_id = scope_tree.add_scope(root_scope_id.clone());
-            let component = UserComponent::RequestHandler {
+            let component = RawUserComponent::RequestHandler {
                 raw_callable_identifiers_id,
                 router_key: RouterKey {
                     path: registered_route.path.to_owned(),
@@ -153,7 +157,7 @@ impl UserComponentDb {
             if let Some(error_handler) = &registered_route.error_handler {
                 let raw_callable_identifiers_id =
                     identifiers_interner.get_or_intern(error_handler.callable.clone());
-                let component = UserComponent::ErrorHandler {
+                let component = RawUserComponent::ErrorHandler {
                     raw_callable_identifiers_id,
                     fallible_callable_identifiers_id: request_handler_id,
                     scope_id: route_scope_id,
@@ -167,7 +171,7 @@ impl UserComponentDb {
         for constructor in &bp.constructors {
             let raw_callable_identifiers_id =
                 identifiers_interner.get_or_intern(constructor.clone());
-            let component = UserComponent::Constructor {
+            let component = RawUserComponent::Constructor {
                 raw_callable_identifiers_id,
                 scope_id: root_scope_id.clone(),
             };
@@ -179,7 +183,7 @@ impl UserComponentDb {
             if let Some(error_handler) = bp.constructors_error_handlers.get(constructor) {
                 let raw_callable_identifiers_id =
                     identifiers_interner.get_or_intern(error_handler.clone());
-                let component = UserComponent::ErrorHandler {
+                let component = RawUserComponent::ErrorHandler {
                     raw_callable_identifiers_id,
                     fallible_callable_identifiers_id: constructor_id,
                     scope_id: root_scope_id.clone(),
@@ -204,8 +208,9 @@ impl UserComponentDb {
     /// `UserComponent`.
     pub fn iter(
         &self,
-    ) -> impl Iterator<Item = (UserComponentId, &UserComponent)> + ExactSizeIterator + DoubleEndedIterator
-    {
+    ) -> impl Iterator<Item = (RawUserComponentId, &RawUserComponent)>
+           + ExactSizeIterator
+           + DoubleEndedIterator {
         self.component_interner.iter()
     }
 
@@ -213,48 +218,46 @@ impl UserComponentDb {
     /// associated `UserComponent`.
     pub fn constructors(
         &self,
-    ) -> impl Iterator<Item = (UserComponentId, &UserComponent)> + ExactSizeIterator + DoubleEndedIterator
-    {
+    ) -> impl Iterator<Item = (RawUserComponentId, &RawUserComponent)> + DoubleEndedIterator {
         self.component_interner
             .iter()
-            .filter(|(_, c)| matches!(c, UserComponent::Constructor { .. }))
+            .filter(|(_, c)| matches!(c, RawUserComponent::Constructor { .. }))
     }
 
     /// Iterate over all the request handler components in the database, returning their id and the
     /// associated `UserComponent`.
     pub fn request_handlers(
         &self,
-    ) -> impl Iterator<Item = (UserComponentId, &UserComponent)> + ExactSizeIterator + DoubleEndedIterator
-    {
+    ) -> impl Iterator<Item = (RawUserComponentId, &RawUserComponent)> + DoubleEndedIterator {
         self.component_interner
             .iter()
-            .filter(|(_, c)| matches!(c, UserComponent::RequestHandler { .. }))
+            .filter(|(_, c)| matches!(c, RawUserComponent::RequestHandler { .. }))
     }
 
     /// Return the lifecycle of the component with the given id.
-    pub fn get_lifecycle(&self, id: UserComponentId) -> &Lifecycle {
+    pub fn get_lifecycle(&self, id: RawUserComponentId) -> &Lifecycle {
         &self.id2lifecycle[&id]
     }
 
     /// Return the location where the component with the given id was registered against the
     /// application blueprint.
-    pub fn get_location(&self, id: UserComponentId) -> &Location {
+    pub fn get_location(&self, id: RawUserComponentId) -> &Location {
         &self.id2locations[&id]
     }
 }
 
-impl std::ops::Index<UserComponentId> for UserComponentDb {
-    type Output = UserComponent;
+impl std::ops::Index<RawUserComponentId> for RawUserComponentDb {
+    type Output = RawUserComponent;
 
-    fn index(&self, index: UserComponentId) -> &Self::Output {
+    fn index(&self, index: RawUserComponentId) -> &Self::Output {
         &self.component_interner[index]
     }
 }
 
-impl std::ops::Index<&UserComponent> for UserComponentDb {
-    type Output = UserComponentId;
+impl std::ops::Index<&RawUserComponent> for RawUserComponentDb {
+    type Output = RawUserComponentId;
 
-    fn index(&self, index: &UserComponent) -> &Self::Output {
+    fn index(&self, index: &RawUserComponent) -> &Self::Output {
         &self.component_interner[index]
     }
 }

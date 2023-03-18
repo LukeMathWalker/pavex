@@ -12,8 +12,8 @@ use syn::spanned::Spanned;
 use pavex_builder::Lifecycle;
 
 use crate::compiler::analyses::computations::{ComputationDb, ComputationId};
-use crate::compiler::analyses::user_components::{
-    RouterKey, UserComponent, UserComponentDb, UserComponentId,
+use crate::compiler::analyses::raw_user_components::{
+    RawUserComponent, RawUserComponentDb, RawUserComponentId, RouterKey,
 };
 use crate::compiler::computation::{BorrowSharedReference, Computation, MatchResult};
 use crate::compiler::constructors::{Constructor, ConstructorValidationError};
@@ -38,7 +38,7 @@ use crate::utils::comma_separated_list;
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) enum Component {
     RequestHandler {
-        user_component_id: UserComponentId,
+        raw_user_component_id: RawUserComponentId,
     },
     ErrorHandler {
         source_id: SourceId,
@@ -55,7 +55,7 @@ pub(crate) enum Component {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
 pub(crate) enum SourceId {
     ComputationId(ComputationId),
-    UserComponentId(UserComponentId),
+    UserComponentId(RawUserComponentId),
 }
 
 impl From<ComputationId> for SourceId {
@@ -64,8 +64,8 @@ impl From<ComputationId> for SourceId {
     }
 }
 
-impl From<UserComponentId> for SourceId {
-    fn from(value: UserComponentId) -> Self {
+impl From<RawUserComponentId> for SourceId {
+    fn from(value: RawUserComponentId) -> Self {
         Self::UserComponentId(value)
     }
 }
@@ -133,7 +133,7 @@ pub(crate) struct ComponentDb {
 
 impl ComponentDb {
     pub fn build(
-        user_component_db: &UserComponentDb,
+        raw_user_component_db: &RawUserComponentDb,
         computation_db: &mut ComputationDb,
         package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
@@ -145,11 +145,11 @@ impl ComponentDb {
             // It allows us to keep track of the fact that an error *was* registered for a fallible
             // constructor/request handler, preventing us from reporting (incorrectly) that an error
             // handler was missing.
-            UserId(UserComponentId),
+            UserId(RawUserComponentId),
         }
         let mut fallible_component_id2error_handler_id =
-            HashMap::<UserComponentId, Option<ErrorHandlerId>>::new();
-        let mut user_component_id2component_id = HashMap::new();
+            HashMap::<RawUserComponentId, Option<ErrorHandlerId>>::new();
+        let mut raw_user_component_id2component_id = HashMap::new();
         let into_response = {
             let into_response = process_framework_path(
                 "pavex_runtime::response::IntoResponse",
@@ -173,14 +173,14 @@ impl ComponentDb {
             into_response,
         };
 
-        for (user_component_id, _) in user_component_db.constructors() {
-            let c: Computation = computation_db[user_component_id].clone().into();
+        for (raw_user_component_id, _) in raw_user_component_db.constructors() {
+            let c: Computation = computation_db[raw_user_component_id].clone().into();
             match TryInto::<Constructor>::try_into(c) {
                 Err(e) => {
                     Self::invalid_constructor(
                         e,
-                        user_component_id,
-                        user_component_db,
+                        raw_user_component_id,
+                        raw_user_component_db,
                         computation_db,
                         package_graph,
                         krate_collection,
@@ -188,11 +188,12 @@ impl ComponentDb {
                     );
                 }
                 Ok(c) => {
-                    let lifecycle = user_component_db.get_lifecycle(user_component_id);
+                    let lifecycle = raw_user_component_db.get_lifecycle(raw_user_component_id);
                     let constructor_id = self_.interner.get_or_intern(Component::Constructor {
-                        source_id: SourceId::UserComponentId(user_component_id),
+                        source_id: SourceId::UserComponentId(raw_user_component_id),
                     });
-                    user_component_id2component_id.insert(user_component_id, constructor_id);
+                    raw_user_component_id2component_id
+                        .insert(raw_user_component_id, constructor_id);
                     self_
                         .id2lifecycle
                         .insert(constructor_id, lifecycle.to_owned());
@@ -203,23 +204,24 @@ impl ComponentDb {
                         // We skip singletons since we don't "handle" errors when constructing them.
                         // They are just bubbled up to the caller by the function that builds
                         // the application state.
-                        fallible_component_id2error_handler_id.insert(user_component_id, None);
+                        fallible_component_id2error_handler_id.insert(raw_user_component_id, None);
                     }
                 }
             }
         }
 
-        for (user_component_id, user_component) in user_component_db.request_handlers() {
-            let callable = &computation_db[user_component_id];
-            let UserComponent::RequestHandler { router_key, .. } = user_component else {
+        for (raw_user_component_id, raw_user_component) in raw_user_component_db.request_handlers()
+        {
+            let callable = &computation_db[raw_user_component_id];
+            let RawUserComponent::RequestHandler { router_key, .. } = raw_user_component else {
                 unreachable!()
             };
             match RequestHandler::new(Cow::Borrowed(callable)) {
                 Err(e) => {
                     Self::invalid_request_handler(
                         e,
-                        user_component_id,
-                        user_component_db,
+                        raw_user_component_id,
+                        raw_user_component_db,
                         computation_db,
                         krate_collection,
                         package_graph,
@@ -227,17 +229,17 @@ impl ComponentDb {
                     );
                 }
                 Ok(h) => {
-                    let handler_id = self_
-                        .interner
-                        .get_or_intern(Component::RequestHandler { user_component_id });
-                    user_component_id2component_id.insert(user_component_id, handler_id);
+                    let handler_id = self_.interner.get_or_intern(Component::RequestHandler {
+                        raw_user_component_id,
+                    });
+                    raw_user_component_id2component_id.insert(raw_user_component_id, handler_id);
                     self_.router.insert(router_key.to_owned(), handler_id);
                     let lifecycle = Lifecycle::RequestScoped;
                     self_.id2lifecycle.insert(handler_id, lifecycle.clone());
 
                     if is_result(h.output_type()) {
                         // We'll try to match it with an error handler later.
-                        fallible_component_id2error_handler_id.insert(user_component_id, None);
+                        fallible_component_id2error_handler_id.insert(raw_user_component_id, None);
 
                         // For each Result type, register two match transformers that de-structure
                         // `Result<T,E>` into `T` or `E`.
@@ -261,34 +263,36 @@ impl ComponentDb {
             }
         }
 
-        for (error_handler_user_component_id, fallible_user_component_id) in
-            user_component_db.iter().filter_map(|(id, c)| match c {
-                UserComponent::ErrorHandler {
+        for (error_handler_raw_user_component_id, fallible_raw_user_component_id) in
+            raw_user_component_db.iter().filter_map(|(id, c)| match c {
+                RawUserComponent::ErrorHandler {
                     fallible_callable_identifiers_id,
                     ..
                 } => Some((id, *fallible_callable_identifiers_id)),
-                UserComponent::RequestHandler { .. } | UserComponent::Constructor { .. } => None,
+                RawUserComponent::RequestHandler { .. } | RawUserComponent::Constructor { .. } => {
+                    None
+                }
             })
         {
-            let lifecycle = user_component_db.get_lifecycle(fallible_user_component_id);
+            let lifecycle = raw_user_component_db.get_lifecycle(fallible_raw_user_component_id);
             if lifecycle == &Lifecycle::Singleton {
                 Self::error_handler_for_a_singleton(
-                    error_handler_user_component_id,
-                    fallible_user_component_id,
-                    user_component_db,
+                    error_handler_raw_user_component_id,
+                    fallible_raw_user_component_id,
+                    raw_user_component_db,
                     package_graph,
                     diagnostics,
                 );
                 continue;
             }
-            let fallible_callable = &computation_db[fallible_user_component_id];
+            let fallible_callable = &computation_db[fallible_raw_user_component_id];
             if is_result(fallible_callable.output.as_ref().unwrap()) {
-                let error_handler_callable = &computation_db[error_handler_user_component_id];
+                let error_handler_callable = &computation_db[error_handler_raw_user_component_id];
                 // Capture immediately that an error handler was registered for this fallible component.
                 // We will later overwrite the associated id if it passes validation.
                 fallible_component_id2error_handler_id.insert(
-                    fallible_user_component_id,
-                    Some(ErrorHandlerId::UserId(error_handler_user_component_id)),
+                    fallible_raw_user_component_id,
+                    Some(ErrorHandlerId::UserId(error_handler_raw_user_component_id)),
                 );
                 match ErrorHandler::new(error_handler_callable.to_owned(), fallible_callable) {
                     Ok(e) => {
@@ -296,19 +300,19 @@ impl ComponentDb {
                         // validation - e.g. the constructor callable was not deemed to be a valid
                         // constructor.
                         if let Some(fallible_component_id) =
-                            user_component_id2component_id.get(&fallible_user_component_id)
+                            raw_user_component_id2component_id.get(&fallible_raw_user_component_id)
                         {
                             let error_handler_id = self_.add_error_handler(
                                 e,
                                 *fallible_component_id,
                                 lifecycle.to_owned(),
-                                error_handler_user_component_id.into(),
+                                error_handler_raw_user_component_id.into(),
                                 computation_db,
                             );
-                            user_component_id2component_id
-                                .insert(error_handler_user_component_id, error_handler_id);
+                            raw_user_component_id2component_id
+                                .insert(error_handler_raw_user_component_id, error_handler_id);
                             fallible_component_id2error_handler_id.insert(
-                                fallible_user_component_id,
+                                fallible_raw_user_component_id,
                                 Some(ErrorHandlerId::Id(error_handler_id)),
                             );
                         }
@@ -316,8 +320,8 @@ impl ComponentDb {
                     Err(e) => {
                         Self::invalid_error_handler(
                             e,
-                            error_handler_user_component_id,
-                            user_component_db,
+                            error_handler_raw_user_component_id,
+                            raw_user_component_db,
                             computation_db,
                             krate_collection,
                             package_graph,
@@ -327,21 +331,22 @@ impl ComponentDb {
                 };
             } else {
                 Self::error_handler_for_infallible_component(
-                    error_handler_user_component_id,
-                    fallible_user_component_id,
-                    user_component_db,
+                    error_handler_raw_user_component_id,
+                    fallible_raw_user_component_id,
+                    raw_user_component_db,
                     package_graph,
                     diagnostics,
                 );
             }
         }
 
-        for (fallible_user_component_id, error_handler_id) in fallible_component_id2error_handler_id
+        for (fallible_raw_user_component_id, error_handler_id) in
+            fallible_component_id2error_handler_id
         {
             if error_handler_id.is_none() {
                 Self::missing_error_handler(
-                    fallible_user_component_id,
-                    user_component_db,
+                    fallible_raw_user_component_id,
+                    raw_user_component_db,
                     package_graph,
                     diagnostics,
                 );
@@ -356,15 +361,17 @@ impl ComponentDb {
             .interner
             .iter()
             .filter_map(|(id, c)| match c {
-                Component::RequestHandler { user_component_id }
+                Component::RequestHandler {
+                    raw_user_component_id,
+                }
                 | Component::ErrorHandler {
                     // There are no error handlers with a `ComputationId` source at this stage.
-                    source_id: SourceId::UserComponentId(user_component_id),
-                } => Some((id, *user_component_id)),
+                    source_id: SourceId::UserComponentId(raw_user_component_id),
+                } => Some((id, *raw_user_component_id)),
                 _ => None,
             })
             .collect();
-        for (component_id, user_component_id) in iter.into_iter() {
+        for (component_id, raw_user_component_id) in iter.into_iter() {
             // If the component is fallible, we want to attach the transformer to its Ok matcher.
             let component_id =
                 if let Some((ok_id, _)) = self_.fallible_id2match_ids.get(&component_id) {
@@ -372,7 +379,7 @@ impl ComponentDb {
                 } else {
                     component_id
                 };
-            let callable = &computation_db[user_component_id];
+            let callable = &computation_db[raw_user_component_id];
             let output = callable.output.as_ref().unwrap();
             let output = if is_result(output) {
                 get_ok_variant(output)
@@ -386,8 +393,8 @@ impl ComponentDb {
                 Self::invalid_response_type(
                     e,
                     &output,
-                    user_component_id,
-                    user_component_db,
+                    raw_user_component_id,
+                    raw_user_component_db,
                     package_graph,
                     diagnostics,
                 );
@@ -414,8 +421,8 @@ impl ComponentDb {
                     Self::cannot_handle_into_response_implementation(
                         e,
                         &output,
-                        user_component_id,
-                        user_component_db,
+                        raw_user_component_id,
+                        raw_user_component_db,
                         package_graph,
                         diagnostics,
                     );
@@ -674,15 +681,17 @@ impl ComponentDb {
         })
     }
 
-    pub(crate) fn user_component_id(&self, id: ComponentId) -> Option<UserComponentId> {
+    pub(crate) fn raw_user_component_id(&self, id: ComponentId) -> Option<RawUserComponentId> {
         match &self[id] {
             Component::Constructor {
-                source_id: SourceId::UserComponentId(user_component_id),
+                source_id: SourceId::UserComponentId(raw_user_component_id),
             }
             | Component::ErrorHandler {
-                source_id: SourceId::UserComponentId(user_component_id),
+                source_id: SourceId::UserComponentId(raw_user_component_id),
             }
-            | Component::RequestHandler { user_component_id } => Some(*user_component_id),
+            | Component::RequestHandler {
+                raw_user_component_id,
+            } => Some(*raw_user_component_id),
             Component::ErrorHandler {
                 source_id: SourceId::ComputationId(_),
             }
@@ -700,8 +709,10 @@ impl ComponentDb {
     ) -> HydratedComponent<'a> {
         let component = &self[id];
         match component {
-            Component::RequestHandler { user_component_id } => {
-                let callable = &computation_db[*user_component_id];
+            Component::RequestHandler {
+                raw_user_component_id,
+            } => {
+                let callable = &computation_db[*raw_user_component_id];
                 let request_handler = RequestHandler {
                     callable: Cow::Borrowed(callable),
                 };
@@ -917,14 +928,14 @@ impl std::ops::Index<ComponentId> for ComponentDb {
 impl ComponentDb {
     fn invalid_constructor(
         e: ConstructorValidationError,
-        user_component_id: UserComponentId,
-        user_component_db: &UserComponentDb,
+        raw_user_component_id: RawUserComponentId,
+        raw_user_component_db: &RawUserComponentDb,
         computation_db: &ComputationDb,
         package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
         diagnostics: &mut Vec<miette::Error>,
     ) {
-        let location = user_component_db.get_location(user_component_id);
+        let location = raw_user_component_db.get_location(raw_user_component_id);
         let source = match location.source_file(package_graph) {
             Ok(s) => s,
             Err(e) => {
@@ -1006,7 +1017,7 @@ impl ComponentDb {
                     ))
                 }
 
-                let callable = &computation_db[user_component_id];
+                let callable = &computation_db[raw_user_component_id];
                 let definition_snippet =
                     get_definition_span(callable, parameters, krate_collection, package_graph);
                 let subject_verb = if parameters.len() == 1 {
@@ -1091,7 +1102,7 @@ impl ComponentDb {
                     ))
                 }
 
-                let callable = &computation_db[user_component_id];
+                let callable = &computation_db[raw_user_component_id];
                 let definition_snippet =
                     get_definition_span(callable, krate_collection, package_graph);
                 let msg = format!(
@@ -1119,14 +1130,14 @@ impl ComponentDb {
 
     fn invalid_request_handler(
         e: RequestHandlerValidationError,
-        user_component_id: UserComponentId,
-        user_component_db: &UserComponentDb,
+        raw_user_component_id: RawUserComponentId,
+        raw_user_component_db: &RawUserComponentDb,
         computation_db: &ComputationDb,
         krate_collection: &CrateCollection,
         package_graph: &PackageGraph,
         diagnostics: &mut Vec<miette::Error>,
     ) {
-        let location = user_component_db.get_location(user_component_id);
+        let location = raw_user_component_db.get_location(raw_user_component_id);
         let source = match location.source_file(package_graph) {
             Ok(s) => s,
             Err(e) => {
@@ -1195,7 +1206,7 @@ impl ComponentDb {
                     ))
                 }
 
-                let callable = &computation_db[user_component_id];
+                let callable = &computation_db[raw_user_component_id];
                 let definition_snippet =
                     get_definition_span(callable, parameters, krate_collection, package_graph);
                 let free_parameters = if parameters.len() == 1 {
@@ -1235,14 +1246,14 @@ impl ComponentDb {
     fn invalid_response_type(
         e: MissingTraitImplementationError,
         output_type: &ResolvedType,
-        user_component_id: UserComponentId,
-        user_component_db: &UserComponentDb,
+        raw_user_component_id: RawUserComponentId,
+        raw_user_component_db: &RawUserComponentDb,
         package_graph: &PackageGraph,
         diagnostics: &mut Vec<miette::Error>,
     ) {
-        let location = user_component_db.get_location(user_component_id);
-        let user_component = &user_component_db[user_component_id];
-        let callable_type = user_component.callable_type();
+        let location = raw_user_component_db.get_location(raw_user_component_id);
+        let raw_user_component = &raw_user_component_db[raw_user_component_id];
+        let callable_type = raw_user_component.callable_type();
         let source = match location.source_file(package_graph) {
             Ok(s) => s,
             Err(e) => {
@@ -1269,14 +1280,14 @@ impl ComponentDb {
     fn cannot_handle_into_response_implementation(
         e: CallableResolutionError,
         output_type: &ResolvedType,
-        user_component_id: UserComponentId,
-        user_component_db: &UserComponentDb,
+        raw_user_component_id: RawUserComponentId,
+        raw_user_component_db: &RawUserComponentDb,
         package_graph: &PackageGraph,
         diagnostics: &mut Vec<miette::Error>,
     ) {
-        let location = user_component_db.get_location(user_component_id);
-        let user_component = &user_component_db[user_component_id];
-        let callable_type = user_component.callable_type();
+        let location = raw_user_component_db.get_location(raw_user_component_id);
+        let raw_user_component = &raw_user_component_db[raw_user_component_id];
+        let callable_type = raw_user_component.callable_type();
         let source = match location.source_file(package_graph) {
             Ok(s) => s,
             Err(e) => {
@@ -1301,14 +1312,14 @@ impl ComponentDb {
 
     fn invalid_error_handler(
         e: ErrorHandlerValidationError,
-        user_component_id: UserComponentId,
-        user_component_db: &UserComponentDb,
+        raw_user_component_id: RawUserComponentId,
+        raw_user_component_db: &RawUserComponentDb,
         computation_db: &ComputationDb,
         krate_collection: &CrateCollection,
         package_graph: &PackageGraph,
         diagnostics: &mut Vec<miette::Error>,
     ) {
-        let location = user_component_db.get_location(user_component_id);
+        let location = raw_user_component_db.get_location(raw_user_component_id);
         let source = match location.source_file(package_graph) {
             Ok(s) => s,
             Err(e) => {
@@ -1392,7 +1403,7 @@ impl ComponentDb {
                     ))
                 }
 
-                let callable = &computation_db[user_component_id];
+                let callable = &computation_db[raw_user_component_id];
                 let definition_snippet =
                     get_definition_span(callable, parameters, *error_ref_input_index, krate_collection, package_graph);
                 let subject_verb = if parameters.len() == 1 {
@@ -1432,14 +1443,14 @@ impl ComponentDb {
     }
 
     fn error_handler_for_infallible_component(
-        error_handler_id: UserComponentId,
-        fallible_id: UserComponentId,
-        user_component_db: &UserComponentDb,
+        error_handler_id: RawUserComponentId,
+        fallible_id: RawUserComponentId,
+        raw_user_component_db: &RawUserComponentDb,
         package_graph: &PackageGraph,
         diagnostics: &mut Vec<miette::Error>,
     ) {
-        let fallible_kind = user_component_db[fallible_id].callable_type();
-        let location = user_component_db.get_location(error_handler_id);
+        let fallible_kind = raw_user_component_db[fallible_id].callable_type();
+        let location = raw_user_component_db.get_location(error_handler_id);
         let source = match location.source_file(package_graph) {
             Ok(s) => s,
             Err(e) => {
@@ -1463,17 +1474,17 @@ impl ComponentDb {
     }
 
     fn error_handler_for_a_singleton(
-        error_handler_id: UserComponentId,
-        fallible_id: UserComponentId,
-        user_component_db: &UserComponentDb,
+        error_handler_id: RawUserComponentId,
+        fallible_id: RawUserComponentId,
+        raw_user_component_db: &RawUserComponentDb,
         package_graph: &PackageGraph,
         diagnostics: &mut Vec<miette::Error>,
     ) {
         debug_assert_eq!(
-            user_component_db[fallible_id].callable_type(),
+            raw_user_component_db[fallible_id].callable_type(),
             CallableType::Constructor
         );
-        let location = user_component_db.get_location(error_handler_id);
+        let location = raw_user_component_db.get_location(error_handler_id);
         let source = match location.source_file(package_graph) {
             Ok(s) => s,
             Err(e) => {
@@ -1495,13 +1506,13 @@ impl ComponentDb {
     }
 
     fn missing_error_handler(
-        fallible_id: UserComponentId,
-        user_component_db: &UserComponentDb,
+        fallible_id: RawUserComponentId,
+        raw_user_component_db: &RawUserComponentDb,
         package_graph: &PackageGraph,
         diagnostics: &mut Vec<miette::Error>,
     ) {
-        let fallible_kind = user_component_db[fallible_id].callable_type();
-        let location = user_component_db.get_location(fallible_id);
+        let fallible_kind = raw_user_component_db[fallible_id].callable_type();
+        let location = raw_user_component_db.get_location(fallible_id);
         let source = match location.source_file(package_graph) {
             Ok(s) => s,
             Err(e) => {

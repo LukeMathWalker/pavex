@@ -20,9 +20,9 @@ use crate::compiler::analyses::call_graph::{
 use crate::compiler::analyses::components::ComponentDb;
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::constructibles::ConstructibleDb;
+use crate::compiler::analyses::raw_user_components::{RawUserComponentDb, RouterKey};
 use crate::compiler::analyses::resolved_paths::ResolvedPathDb;
 use crate::compiler::analyses::router_validation::validate_router;
-use crate::compiler::analyses::user_components::{RouterKey, UserComponentDb};
 use crate::compiler::codegen;
 use crate::compiler::generated_app::GeneratedApp;
 use crate::compiler::resolvers::CallableResolutionError;
@@ -77,16 +77,16 @@ impl App {
             };
         }
 
-        let user_component_db = UserComponentDb::build(&bp);
+        let raw_user_component_db = RawUserComponentDb::build(&bp);
         let package_graph = compute_package_graph().map_err(|e| vec![e])?;
         let mut diagnostics = vec![];
-        validate_router(&user_component_db, &package_graph, &mut diagnostics);
+        validate_router(&raw_user_component_db, &package_graph, &mut diagnostics);
         let resolved_path_db =
-            ResolvedPathDb::build(&user_component_db, &package_graph, &mut diagnostics);
+            ResolvedPathDb::build(&raw_user_component_db, &package_graph, &mut diagnostics);
         exit_on_errors!(diagnostics);
         let krate_collection = CrateCollection::new(package_graph.clone());
         let mut computation_db = ComputationDb::build(
-            &user_component_db,
+            &raw_user_component_db,
             &resolved_path_db,
             &package_graph,
             &krate_collection,
@@ -94,7 +94,7 @@ impl App {
         );
         exit_on_errors!(diagnostics);
         let mut component_db = ComponentDb::build(
-            &user_component_db,
+            &raw_user_component_db,
             &mut computation_db,
             &package_graph,
             &krate_collection,
@@ -108,7 +108,7 @@ impl App {
             &mut computation_db,
             &package_graph,
             &krate_collection,
-            &user_component_db,
+            &raw_user_component_db,
             &request_scoped_framework_bindings.right_values().collect(),
             &mut diagnostics,
         );
@@ -140,7 +140,7 @@ impl App {
             &constructible_db,
             &component_db,
             &package_graph,
-            &user_component_db,
+            &raw_user_component_db,
             &krate_collection,
             &mut diagnostics,
         );
@@ -413,7 +413,7 @@ fn verify_singletons(
     constructible_db: &ConstructibleDb,
     component_db: &ComponentDb,
     package_graph: &PackageGraph,
-    user_component_db: &UserComponentDb,
+    raw_user_component_db: &RawUserComponentDb,
     krate_collection: &CrateCollection,
     diagnostics: &mut Vec<miette::Error>,
 ) {
@@ -422,7 +422,7 @@ fn verify_singletons(
         package_graph: &PackageGraph,
         constructible_db: &ConstructibleDb,
         component_db: &ComponentDb,
-        user_component_db: &UserComponentDb,
+        raw_user_component_db: &RawUserComponentDb,
         diagnostics: &mut Vec<miette::Error>,
     ) {
         let t = if let ResolvedType::Reference(ref t) = e.type_ {
@@ -435,10 +435,10 @@ fn verify_singletons(
             e.type_.clone()
         };
         let component_id = constructible_db[&t];
-        let user_component_id = component_db.user_component_id(component_id).unwrap();
-        let user_component = &user_component_db[user_component_id];
-        let component_kind = user_component.callable_type();
-        let location = user_component_db.get_location(user_component_id);
+        let raw_user_component_id = component_db.raw_user_component_id(component_id).unwrap();
+        let raw_user_component = &raw_user_component_db[raw_user_component_id];
+        let component_kind = raw_user_component.callable_type();
+        let location = raw_user_component_db.get_location(raw_user_component_id);
         let source = match location.source_file(package_graph) {
             Ok(s) => s,
             Err(e) => {
@@ -471,7 +471,7 @@ fn verify_singletons(
                     package_graph,
                     constructible_db,
                     component_db,
-                    user_component_db,
+                    raw_user_component_db,
                     diagnostics,
                 );
             }

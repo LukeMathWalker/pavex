@@ -4,8 +4,8 @@ use miette::{miette, NamedSource};
 use rustdoc_types::ItemEnum;
 use syn::spanned::Spanned;
 
+use crate::compiler::analyses::raw_user_components::{RawUserComponentDb, RawUserComponentId};
 use crate::compiler::analyses::resolved_paths::ResolvedPathDb;
-use crate::compiler::analyses::user_components::{UserComponentDb, UserComponentId};
 use crate::compiler::computation::Computation;
 use crate::compiler::interner::Interner;
 use crate::compiler::resolvers::{resolve_callable, CallableResolutionError};
@@ -22,12 +22,12 @@ pub(crate) type ComputationId = la_arena::Idx<Computation<'static>>;
 #[derive(Debug)]
 pub(crate) struct ComputationDb {
     interner: Interner<Computation<'static>>,
-    component_id2callable_id: HashMap<UserComponentId, ComputationId>,
+    component_id2callable_id: HashMap<RawUserComponentId, ComputationId>,
 }
 
 impl ComputationDb {
     pub fn build(
-        component_db: &UserComponentDb,
+        component_db: &RawUserComponentDb,
         resolved_path_db: &ResolvedPathDb,
         package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
@@ -58,7 +58,7 @@ impl ComputationDb {
         &mut self,
         krate_collection: &CrateCollection,
         resolved_path: &ResolvedPath,
-        component_id: Option<UserComponentId>,
+        component_id: Option<RawUserComponentId>,
     ) -> Result<ComputationId, CallableResolutionError> {
         let callable = resolve_callable(krate_collection, resolved_path)?;
         let callable_id = self.interner.get_or_intern(callable.into());
@@ -78,8 +78,8 @@ impl ComputationDb {
 
     fn capture_diagnostics(
         e: CallableResolutionError,
-        component_id: UserComponentId,
-        component_db: &UserComponentDb,
+        component_id: RawUserComponentId,
+        component_db: &RawUserComponentDb,
         package_graph: &PackageGraph,
         diagnostics: &mut Vec<miette::Error>,
     ) {
@@ -277,10 +277,10 @@ impl std::ops::Index<ComputationId> for ComputationDb {
     }
 }
 
-impl std::ops::Index<UserComponentId> for ComputationDb {
+impl std::ops::Index<RawUserComponentId> for ComputationDb {
     type Output = Callable;
 
-    fn index(&self, index: UserComponentId) -> &Self::Output {
+    fn index(&self, index: RawUserComponentId) -> &Self::Output {
         match &self[self.component_id2callable_id[&index]] {
             Computation::Callable(c) => c,
             n => {
