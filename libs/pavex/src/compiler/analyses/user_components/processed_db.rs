@@ -31,6 +31,7 @@ use crate::rustdoc::CrateCollection;
 /// - the callable associated to each component has been resolved and added to the
 ///   provided [`ComputationDb`].
 /// - there are no conflicting routes.
+#[derive(Debug)]
 pub struct UserComponentDb {
     component_interner: Interner<UserComponent>,
     id2locations: HashMap<UserComponentId, Location>,
@@ -129,6 +130,11 @@ impl UserComponentDb {
     /// application blueprint.
     pub fn get_location(&self, id: UserComponentId) -> &Location {
         &self.id2locations[&id]
+    }
+
+    /// Return the scope tree that was built from the application blueprint.
+    pub fn scope_tree(&self) -> &ScopeTree {
+        &self.scope_tree
     }
 }
 

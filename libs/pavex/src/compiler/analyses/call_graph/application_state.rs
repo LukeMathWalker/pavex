@@ -47,6 +47,7 @@ pub(crate) fn application_state_call_graph(
     // We build a "mock" callable that has the right inputs in order to drive the machinery
     // that builds the dependency graph.
     let package_id = PackageId::new(GENERATED_APP_PACKAGE_ID);
+    let root_scope_id = component_db.root_scope_id();
     let application_state_type = ResolvedPathType {
         package_id: package_id.clone(),
         rustdoc_id: None,
@@ -71,6 +72,7 @@ pub(crate) fn application_state_call_graph(
         .get_or_intern_constructor(
             application_state_callable_id,
             Lifecycle::Singleton,
+            root_scope_id.clone(),
             computation_db,
         )
         .unwrap();
@@ -199,6 +201,7 @@ pub(crate) fn application_state_call_graph(
     component_db.get_or_intern_transformer(
         computation_db.get_or_intern(ok_wrapper),
         application_state_id,
+        root_scope_id.clone(),
         computation_db,
     );
 
@@ -261,12 +264,14 @@ pub(crate) fn application_state_call_graph(
             let transformer_id = component_db.get_or_intern_transformer(
                 computation_db.get_or_intern(error_variant_constructor.clone()),
                 *err_match_id,
+                root_scope_id.clone(),
                 computation_db,
             );
             // We need to do an Err(..) wrap around the error variant returned by the transformer.
             component_db.get_or_intern_transformer(
                 computation_db.get_or_intern(err_wrapper.clone()),
                 transformer_id,
+                root_scope_id.clone(),
                 computation_db,
             );
         }

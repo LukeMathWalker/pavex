@@ -39,7 +39,6 @@ impl ConstructibleDb {
         computation_db: &mut ComputationDb,
         package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
-        user_component_db: &UserComponentDb,
         request_scoped_framework_types: &HashSet<&ResolvedType>,
         diagnostics: &mut Vec<miette::Error>,
     ) -> Self {
@@ -119,7 +118,7 @@ impl ConstructibleDb {
                     if let Some(user_component_id) = component_db.user_component_id(component_id) {
                         ConstructibleDb::missing_constructor(
                             user_component_id,
-                            user_component_db,
+                            &component_db.user_component_db,
                             input,
                             input_index,
                             package_graph,

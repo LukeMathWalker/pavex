@@ -48,7 +48,7 @@ impl UserComponent {
     }
 
     /// Returns an id that points at the raw identifiers for the callable that
-    /// this `UserComponent` is associated with.
+    /// this [`UserComponent`] is associated with.
     pub fn raw_callable_identifiers_id(&self) -> RawCallableIdentifierId {
         match self {
             UserComponent::RequestHandler {
@@ -63,6 +63,15 @@ impl UserComponent {
                 raw_callable_identifiers_id,
                 ..
             } => *raw_callable_identifiers_id,
+        }
+    }
+
+    /// Returns the [`ScopeId`] for the scope that this [`UserComponent`] is associated with.
+    pub fn scope_id(&self) -> &ScopeId {
+        match self {
+            UserComponent::RequestHandler { scope_id, .. } => scope_id,
+            UserComponent::ErrorHandler { scope_id, .. } => scope_id,
+            UserComponent::Constructor { scope_id, .. } => scope_id,
         }
     }
 

@@ -90,7 +90,7 @@ impl App {
         };
         exit_on_errors!(diagnostics);
         let mut component_db = ComponentDb::build(
-            &user_component_db,
+            user_component_db,
             &mut computation_db,
             &package_graph,
             &krate_collection,
@@ -104,7 +104,6 @@ impl App {
             &mut computation_db,
             &package_graph,
             &krate_collection,
-            &user_component_db,
             &request_scoped_framework_bindings.right_values().collect(),
             &mut diagnostics,
         );
@@ -136,7 +135,6 @@ impl App {
             &constructible_db,
             &component_db,
             &package_graph,
-            &user_component_db,
             &krate_collection,
             &mut diagnostics,
         );
@@ -409,7 +407,6 @@ fn verify_singletons(
     constructible_db: &ConstructibleDb,
     component_db: &ComponentDb,
     package_graph: &PackageGraph,
-    user_component_db: &UserComponentDb,
     krate_collection: &CrateCollection,
     diagnostics: &mut Vec<miette::Error>,
 ) {
@@ -418,7 +415,6 @@ fn verify_singletons(
         package_graph: &PackageGraph,
         constructible_db: &ConstructibleDb,
         component_db: &ComponentDb,
-        user_component_db: &UserComponentDb,
         diagnostics: &mut Vec<miette::Error>,
     ) {
         let t = if let ResolvedType::Reference(ref t) = e.type_ {
@@ -432,6 +428,7 @@ fn verify_singletons(
         };
         let component_id = constructible_db[&t];
         let user_component_id = component_db.user_component_id(component_id).unwrap();
+        let user_component_db = &component_db.user_component_db;
         let user_component = &user_component_db[user_component_id];
         let component_kind = user_component.callable_type();
         let location = user_component_db.get_location(user_component_id);
@@ -467,7 +464,6 @@ fn verify_singletons(
                     package_graph,
                     constructible_db,
                     component_db,
-                    user_component_db,
                     diagnostics,
                 );
             }
