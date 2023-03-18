@@ -8,7 +8,7 @@ use pavex_builder::Lifecycle;
 
 use crate::compiler::analyses::components::{ComponentDb, ComponentId, HydratedComponent};
 use crate::compiler::analyses::computations::ComputationDb;
-use crate::compiler::analyses::raw_user_components::{RawUserComponentDb, RawUserComponentId};
+use crate::compiler::analyses::user_components::{UserComponentDb, UserComponentId};
 use crate::diagnostic;
 use crate::diagnostic::{
     convert_proc_macro_span, convert_rustdoc_span, read_source_file, AnnotatedSnippet,
@@ -39,7 +39,7 @@ impl ConstructibleDb {
         computation_db: &mut ComputationDb,
         package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
-        raw_user_component_db: &RawUserComponentDb,
+        user_component_db: &UserComponentDb,
         request_scoped_framework_types: &HashSet<&ResolvedType>,
         diagnostics: &mut Vec<miette::Error>,
     ) -> Self {
@@ -116,12 +116,10 @@ impl ConstructibleDb {
                             continue 'outer;
                         }
                     }
-                    if let Some(raw_user_component_id) =
-                        component_db.raw_user_component_id(component_id)
-                    {
+                    if let Some(user_component_id) = component_db.user_component_id(component_id) {
                         ConstructibleDb::missing_constructor(
-                            raw_user_component_id,
-                            raw_user_component_db,
+                            user_component_id,
+                            user_component_db,
                             input,
                             input_index,
                             package_graph,
@@ -154,8 +152,8 @@ impl ConstructibleDb {
     }
 
     fn missing_constructor(
-        raw_user_component_id: RawUserComponentId,
-        raw_user_component_db: &RawUserComponentDb,
+        user_component_id: UserComponentId,
+        user_component_db: &UserComponentDb,
         unconstructible_type: &ResolvedType,
         unconstructible_type_index: usize,
         package_graph: &PackageGraph,
@@ -213,10 +211,10 @@ impl ConstructibleDb {
             ))
         }
 
-        let raw_user_component = &raw_user_component_db[raw_user_component_id];
-        let callable = &computation_db[raw_user_component_id];
-        let component_kind = raw_user_component.callable_type();
-        let location = raw_user_component_db.get_location(raw_user_component_id);
+        let user_component = &user_component_db[user_component_id];
+        let callable = &computation_db[user_component_id];
+        let component_kind = user_component.callable_type();
+        let location = user_component_db.get_location(user_component_id);
 
         let source = match location.source_file(package_graph) {
             Ok(s) => s,

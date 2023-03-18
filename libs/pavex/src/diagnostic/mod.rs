@@ -19,7 +19,7 @@ mod registration_locations;
 mod source_file;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
-pub(crate) enum CallableType {
+pub enum CallableType {
     RequestHandler,
     Constructor,
     ErrorHandler,

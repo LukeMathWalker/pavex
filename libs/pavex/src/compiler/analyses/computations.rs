@@ -1,6 +1,6 @@
 use ahash::HashMap;
 
-use crate::compiler::analyses::raw_user_components::RawUserComponentId;
+use crate::compiler::analyses::user_components::UserComponentId;
 use crate::compiler::computation::Computation;
 use crate::compiler::interner::Interner;
 use crate::compiler::resolvers::{resolve_callable, CallableResolutionError};
@@ -10,9 +10,9 @@ use crate::rustdoc::CrateCollection;
 pub(crate) type ComputationId = la_arena::Idx<Computation<'static>>;
 
 #[derive(Debug)]
-pub(crate) struct ComputationDb {
+pub struct ComputationDb {
     interner: Interner<Computation<'static>>,
-    component_id2callable_id: HashMap<RawUserComponentId, ComputationId>,
+    component_id2callable_id: HashMap<UserComponentId, ComputationId>,
 }
 
 impl ComputationDb {
@@ -30,11 +30,11 @@ impl ComputationDb {
         &mut self,
         krate_collection: &CrateCollection,
         resolved_path: &ResolvedPath,
-        raw_user_component_id: Option<RawUserComponentId>,
+        user_component_id: Option<UserComponentId>,
     ) -> Result<ComputationId, CallableResolutionError> {
         let callable = resolve_callable(krate_collection, resolved_path)?;
         let callable_id = self.interner.get_or_intern(callable.into());
-        if let Some(raw_user_id) = raw_user_component_id {
+        if let Some(raw_user_id) = user_component_id {
             self.component_id2callable_id
                 .insert(raw_user_id, callable_id);
         }
@@ -58,10 +58,10 @@ impl std::ops::Index<ComputationId> for ComputationDb {
     }
 }
 
-impl std::ops::Index<RawUserComponentId> for ComputationDb {
+impl std::ops::Index<UserComponentId> for ComputationDb {
     type Output = Callable;
 
-    fn index(&self, index: RawUserComponentId) -> &Self::Output {
+    fn index(&self, index: UserComponentId) -> &Self::Output {
         match &self[self.component_id2callable_id[&index]] {
             Computation::Callable(c) => c,
             n => {

@@ -1,11 +1,16 @@
+use ahash::HashMap;
 use guppy::graph::PackageGraph;
 use miette::{miette, NamedSource};
 use syn::spanned::Spanned;
 
+use pavex_builder::{Blueprint, Lifecycle, Location};
+
 use crate::compiler::analyses::computations::ComputationDb;
-use crate::compiler::analyses::raw_user_components::{RawUserComponentDb, RawUserComponentId};
-use crate::compiler::analyses::resolved_paths::ResolvedPathDb;
-use crate::compiler::analyses::router_validation::validate_router;
+use crate::compiler::analyses::user_components::raw_db::RawUserComponentDb;
+use crate::compiler::analyses::user_components::resolved_paths::ResolvedPathDb;
+use crate::compiler::analyses::user_components::router_validation::validate_router;
+use crate::compiler::analyses::user_components::{ScopeTree, UserComponent, UserComponentId};
+use crate::compiler::interner::Interner;
 use crate::compiler::resolvers::CallableResolutionError;
 use crate::diagnostic;
 use crate::diagnostic::{
@@ -14,13 +19,36 @@ use crate::diagnostic::{
 };
 use crate::rustdoc::CrateCollection;
 
-pub(crate) struct UserComponentDb {}
+/// A database that contains all the user components that have been registered against the
+/// `Blueprint` for the application.
+///
+/// For each component, we keep track of:
+/// - the source code location where it was registered (for error reporting purposes);
+/// - the lifecycle of the component;
+/// - the scope that the component belongs to.
+///
+/// All components have been validated:
+/// - the callable associated to each component has been resolved and added to the
+///   provided [`ComputationDb`].
+/// - there are no conflicting routes.
+/// - all fallible components have a corresponding error handler.
+/// - each component complies with its specific constraints (e.g. constructors do not return the
+///   unit type, `()`).
+pub struct UserComponentDb {
+    component_interner: Interner<UserComponent>,
+    id2locations: HashMap<UserComponentId, Location>,
+    id2lifecycle: HashMap<UserComponentId, Lifecycle>,
+    scope_tree: ScopeTree,
+}
 
 impl UserComponentDb {
     /// Process a `Blueprint` and return a `UserComponentDb` that contains all the user components
     /// that have been registered against it.
+    ///
+    /// The callable associated to each component will be resolved and added to the
+    /// provided [`ComputationDb`].
     pub fn build(
-        raw_db: &RawUserComponentDb,
+        bp: &Blueprint,
         computation_db: &mut ComputationDb,
         package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
@@ -35,6 +63,7 @@ impl UserComponentDb {
             };
         }
 
+        let raw_db = RawUserComponentDb::build(bp);
         validate_router(&raw_db, &package_graph, &mut diagnostics);
         let resolved_path_db = ResolvedPathDb::build(&raw_db, &package_graph, &mut diagnostics);
         exit_on_errors!(diagnostics);
@@ -49,9 +78,64 @@ impl UserComponentDb {
         );
         exit_on_errors!(diagnostics);
 
-        Ok(Self {})
+        let RawUserComponentDb {
+            component_interner,
+            id2locations,
+            id2lifecycle,
+            scope_tree,
+            identifiers_interner: _,
+        } = raw_db;
+
+        Ok(Self {
+            component_interner,
+            id2locations,
+            id2lifecycle,
+            scope_tree,
+        })
     }
 
+    /// Iterate over all the user components in the database, returning their id and the associated
+    /// `UserComponent`.
+    pub fn iter(
+        &self,
+    ) -> impl Iterator<Item = (UserComponentId, &UserComponent)> + ExactSizeIterator + DoubleEndedIterator
+    {
+        self.component_interner.iter()
+    }
+
+    /// Iterate over all the constructor components in the database, returning their id and the
+    /// associated `UserComponent`.
+    pub fn constructors(
+        &self,
+    ) -> impl Iterator<Item = (UserComponentId, &UserComponent)> + DoubleEndedIterator {
+        self.component_interner
+            .iter()
+            .filter(|(_, c)| matches!(c, UserComponent::Constructor { .. }))
+    }
+
+    /// Iterate over all the request handler components in the database, returning their id and the
+    /// associated `UserComponent`.
+    pub fn request_handlers(
+        &self,
+    ) -> impl Iterator<Item = (UserComponentId, &UserComponent)> + DoubleEndedIterator {
+        self.component_interner
+            .iter()
+            .filter(|(_, c)| matches!(c, UserComponent::RequestHandler { .. }))
+    }
+
+    /// Return the lifecycle of the component with the given id.
+    pub fn get_lifecycle(&self, id: UserComponentId) -> &Lifecycle {
+        &self.id2lifecycle[&id]
+    }
+
+    /// Return the location where the component with the given id was registered against the
+    /// application blueprint.
+    pub fn get_location(&self, id: UserComponentId) -> &Location {
+        &self.id2locations[&id]
+    }
+}
+
+impl UserComponentDb {
     /// Resolve and intern all the paths in the `ResolvedPathDb`.
     /// Report errors as diagnostics if any of the paths cannot be resolved.
     fn resolve_and_intern_paths(
@@ -74,7 +158,7 @@ impl UserComponentDb {
 
     fn cannot_resolve_path(
         e: CallableResolutionError,
-        component_id: RawUserComponentId,
+        component_id: UserComponentId,
         component_db: &RawUserComponentDb,
         package_graph: &PackageGraph,
         diagnostics: &mut Vec<miette::Error>,
@@ -262,5 +346,21 @@ impl UserComponentDb {
                 diagnostics.push(miette!(e));
             }
         }
+    }
+}
+
+impl std::ops::Index<UserComponentId> for UserComponentDb {
+    type Output = UserComponent;
+
+    fn index(&self, index: UserComponentId) -> &Self::Output {
+        &self.component_interner[index]
+    }
+}
+
+impl std::ops::Index<&UserComponent> for UserComponentDb {
+    type Output = UserComponentId;
+
+    fn index(&self, index: &UserComponent) -> &Self::Output {
+        &self.component_interner[index]
     }
 }

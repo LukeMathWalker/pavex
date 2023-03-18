@@ -14,7 +14,7 @@ use syn::{ItemEnum, ItemFn, ItemStruct};
 use crate::compiler::analyses::call_graph::{ApplicationStateCallGraph, CallGraph, CallGraphNode};
 use crate::compiler::analyses::components::{ComponentDb, HydratedComponent};
 use crate::compiler::analyses::computations::ComputationDb;
-use crate::compiler::analyses::raw_user_components::RouterKey;
+use crate::compiler::analyses::user_components::RouterKey;
 use crate::compiler::app::GENERATED_APP_PACKAGE_ID;
 use crate::compiler::computation::Computation;
 use crate::compiler::constructors::Constructor;

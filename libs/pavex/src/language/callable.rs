@@ -12,7 +12,7 @@ use crate::rustdoc::GlobalItemId;
 
 #[derive(Clone, Hash, Eq, PartialEq)]
 /// A Rust type that can be invoked - e.g. a function, a method, a struct literal constructor.
-pub(crate) struct Callable {
+pub struct Callable {
     /// `true` if the callable declaration uses the `async` keyword.
     ///
     /// # Implementation Gaps
@@ -86,7 +86,7 @@ impl Callable {
 
 /// Rust supports different types of callables which rely on different invocation syntax.
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
-pub(crate) enum InvocationStyle {
+pub enum InvocationStyle {
     /// `<callable_path>(<comma-separated list of input parameters)`.
     /// Used by functions and methods. The latter is only valid if the callable path
     /// includes the name of the item that the method is attached to (e.g. `MyStruct::init()` is
