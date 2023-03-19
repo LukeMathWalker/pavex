@@ -4,38 +4,32 @@ use std::ops::Deref;
 use std::path::Path;
 
 use ahash::HashSet;
-use anyhow::anyhow;
 use bimap::BiHashMap;
 use guppy::graph::PackageGraph;
 use guppy::PackageId;
 use indexmap::{IndexMap, IndexSet};
 use miette::miette;
-use petgraph::Direction;
 use proc_macro2::Ident;
 use quote::format_ident;
-use rustdoc_types::{ItemEnum, StructKind};
 
 use pavex_builder::{Blueprint, Lifecycle};
 
 use crate::compiler::analyses::call_graph::{
     application_state_call_graph, handler_call_graph, ApplicationStateCallGraph, CallGraph,
-    CallGraphNode,
 };
-use crate::compiler::analyses::components::{ComponentDb, HydratedComponent};
+use crate::compiler::analyses::components::ComponentDb;
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::constructibles::ConstructibleDb;
 use crate::compiler::analyses::user_components::{RouterKey, UserComponentDb};
-use crate::compiler::computation::{Computation, MatchResultVariant};
-use crate::compiler::constructors::Constructor;
 use crate::compiler::generated_app::GeneratedApp;
 use crate::compiler::resolvers::CallableResolutionError;
 use crate::compiler::traits::{assert_trait_is_implemented, MissingTraitImplementationError};
 use crate::compiler::utils::process_framework_path;
 use crate::compiler::{codegen, route_parameter_validation};
 use crate::diagnostic;
-use crate::diagnostic::{CompilerDiagnostic, LocationExt, OptionalSourceSpanExt, SourceSpanExt};
-use crate::language::{GenericArgument, ResolvedType};
-use crate::rustdoc::{CrateCollection, GlobalItemId, TOOLCHAIN_CRATES};
+use crate::diagnostic::{CompilerDiagnostic, LocationExt, SourceSpanExt};
+use crate::language::ResolvedType;
+use crate::rustdoc::{CrateCollection, TOOLCHAIN_CRATES};
 
 pub(crate) const GENERATED_APP_PACKAGE_ID: &str = "crate";
 
