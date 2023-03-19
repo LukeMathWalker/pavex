@@ -29,8 +29,8 @@ use crate::diagnostic::{
     CompilerDiagnostic, LocationExt, SourceSpanExt,
 };
 use crate::language::{
-    Callable, ResolvedPath, ResolvedPathQualifiedSelf, ResolvedPathSegment, ResolvedPathType,
-    ResolvedType, TypeReference,
+    Callable, PathType, ResolvedPath, ResolvedPathQualifiedSelf, ResolvedPathSegment, ResolvedType,
+    TypeReference,
 };
 use crate::rustdoc::CrateCollection;
 use crate::utils::comma_separated_list;
@@ -124,7 +124,7 @@ pub(crate) struct ComponentDb {
     id2lifecycle: HashMap<ComponentId, Lifecycle>,
     error_handler_id2error_handler: HashMap<ComponentId, ErrorHandler>,
     router: BTreeMap<RouterKey, ComponentId>,
-    into_response: ResolvedPathType,
+    into_response: PathType,
 }
 
 impl ComponentDb {
@@ -703,6 +703,14 @@ impl ComponentDb {
             .get_by_left(&borrow_component_id)
             .copied()
             .unwrap()
+    }
+
+    /// Given the id of a component, return the id of the corresponding
+    /// component that borrows the value it returns (if it exists).
+    pub fn borrow_id(&self, owned_component_id: ComponentId) -> Option<ComponentId> {
+        self.borrow_id2owned_id
+            .get_by_right(&owned_component_id)
+            .copied()
     }
 
     /// Iterate over all constructors in the component database, either user-provided or synthetic.

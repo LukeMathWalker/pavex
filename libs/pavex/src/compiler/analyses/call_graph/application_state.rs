@@ -19,8 +19,8 @@ use crate::compiler::analyses::constructibles::ConstructibleDb;
 use crate::compiler::app::GENERATED_APP_PACKAGE_ID;
 use crate::compiler::computation::Computation;
 use crate::language::{
-    Callable, GenericArgument, InvocationStyle, ResolvedPath, ResolvedPathSegment,
-    ResolvedPathType, ResolvedType,
+    Callable, GenericArgument, InvocationStyle, PathType, ResolvedPath, ResolvedPathSegment,
+    ResolvedType,
 };
 use crate::rustdoc::CORE_PACKAGE_ID;
 
@@ -48,7 +48,7 @@ pub(crate) fn application_state_call_graph(
     // that builds the dependency graph.
     let package_id = PackageId::new(GENERATED_APP_PACKAGE_ID);
     let root_scope_id = component_db.root_scope_id();
-    let application_state_type = ResolvedPathType {
+    let application_state_type = PathType {
         package_id: package_id.clone(),
         rustdoc_id: None,
         base_type: vec!["crate".into(), "ApplicationState".into()],
@@ -138,13 +138,13 @@ pub(crate) fn application_state_call_graph(
         };
     }
 
-    let error_enum = ResolvedPathType {
+    let error_enum = PathType {
         package_id: package_id.clone(),
         rustdoc_id: None,
         base_type: vec!["crate".into(), "ApplicationStateError".into()],
         generic_arguments: vec![],
     };
-    let application_state_result = ResolvedPathType {
+    let application_state_result = PathType {
         package_id: PackageId::new(CORE_PACKAGE_ID),
         rustdoc_id: None,
         base_type: vec!["core".into(), "result".into(), "Result".into()],

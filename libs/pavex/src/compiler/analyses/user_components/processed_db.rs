@@ -3,7 +3,7 @@ use guppy::graph::PackageGraph;
 use miette::{miette, NamedSource};
 use syn::spanned::Spanned;
 
-use pavex_builder::{Blueprint, Lifecycle, Location};
+use pavex_builder::{Blueprint, Lifecycle, Location, RawCallableIdentifiers};
 
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::user_components::raw_db::RawUserComponentDb;
@@ -34,6 +34,7 @@ use crate::rustdoc::CrateCollection;
 #[derive(Debug)]
 pub struct UserComponentDb {
     component_interner: Interner<UserComponent>,
+    identifiers_interner: Interner<RawCallableIdentifiers>,
     id2locations: HashMap<UserComponentId, Location>,
     id2lifecycle: HashMap<UserComponentId, Lifecycle>,
     scope_tree: ScopeTree,
@@ -81,11 +82,12 @@ impl UserComponentDb {
             id2locations,
             id2lifecycle,
             scope_tree,
-            identifiers_interner: _,
+            identifiers_interner,
         } = raw_db;
 
         Ok(Self {
             component_interner,
+            identifiers_interner,
             id2locations,
             id2lifecycle,
             scope_tree,
@@ -135,6 +137,15 @@ impl UserComponentDb {
     /// Return the scope tree that was built from the application blueprint.
     pub fn scope_tree(&self) -> &ScopeTree {
         &self.scope_tree
+    }
+
+    /// Return the raw callable identifiers associated to the user component with the given id.
+    ///
+    /// This can be used to recover the original import path passed by the user when registering
+    /// this component, primarily for error reporting purposes.
+    pub fn get_raw_callable_identifiers(&self, id: UserComponentId) -> &RawCallableIdentifiers {
+        let raw_id = self.component_interner[id].raw_callable_identifiers_id();
+        &self.identifiers_interner[raw_id]
     }
 }
 
@@ -186,7 +197,7 @@ impl UserComponentDb {
                     .build();
                 diagnostics.push(diagnostic.into());
             }
-            CallableResolutionError::ParameterResolutionError(ref inner_error) => {
+            CallableResolutionError::InputParameterResolutionError(ref inner_error) => {
                 let definition_snippet = {
                     if let Some(definition_span) = &inner_error.callable_item.span {
                         match diagnostic::read_source_file(
@@ -347,6 +358,14 @@ impl UserComponentDb {
             }
             CallableResolutionError::CannotGetCrateData(_) => {
                 diagnostics.push(miette!(e));
+            }
+            CallableResolutionError::GenericParameterResolutionError(_) => {
+                let label = diagnostic::get_f_macro_invocation_span(&source, location)
+                    .map(|s| s.labeled(format!("The {callable_type} was registered here")));
+                let diagnostic = CompilerDiagnostic::builder(source, e.clone())
+                    .optional_label(label)
+                    .build();
+                diagnostics.push(diagnostic.into());
             }
         }
     }

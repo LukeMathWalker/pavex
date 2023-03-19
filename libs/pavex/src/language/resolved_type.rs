@@ -17,7 +17,7 @@ use crate::language::{ImportPath, ResolvedPath, ResolvedPathSegment};
 
 #[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Hash, Clone)]
 pub enum ResolvedType {
-    ResolvedPath(ResolvedPathType),
+    ResolvedPath(PathType),
     Reference(TypeReference),
     Tuple(Tuple),
     ScalarPrimitive(ScalarPrimitive),
@@ -49,7 +49,7 @@ impl ResolvedType {
                     };
                     bound_generics.push(bound_generic);
                 }
-                ResolvedType::ResolvedPath(ResolvedPathType {
+                ResolvedType::ResolvedPath(PathType {
                     package_id: t.package_id.clone(),
                     // Should we set this to `None`?
                     rustdoc_id: t.rustdoc_id.clone(),
@@ -267,21 +267,21 @@ impl ResolvedType {
     }
 }
 
-impl ResolvedPathType {
+impl PathType {
     fn _is_a_resolved_path_type_template_for(
         &self,
-        concrete_type: &ResolvedPathType,
+        concrete_type: &PathType,
         bindings: &mut HashMap<String, ResolvedType>,
     ) -> bool {
         // We destructure ALL fields to make sure that the compiler reminds us to update
         // this function if we add new fields to `ResolvedPathType`.
-        let ResolvedPathType {
+        let PathType {
             package_id: concrete_package_id,
             rustdoc_id: _,
             base_type: concrete_base_type,
             generic_arguments: concrete_generic_arguments,
         } = concrete_type;
-        let ResolvedPathType {
+        let PathType {
             package_id: templated_package_id,
             rustdoc_id: _,
             base_type: templated_base_type,
@@ -442,9 +442,8 @@ pub struct TypeReference {
     pub inner: Box<ResolvedType>,
 }
 
-// TODO: implement Hash manually
 #[derive(serde::Serialize, serde::Deserialize, Eq, Clone)]
-pub struct ResolvedPathType {
+pub struct PathType {
     #[serde(serialize_with = "serialize_package_id")]
     #[serde(deserialize_with = "deserialize_package_id")]
     // `PackageId` doesn't implement serde::Deserialize/serde::Serialize, therefore we must
@@ -592,7 +591,7 @@ mod generics_equivalence {
     }
 }
 
-impl PartialEq for ResolvedPathType {
+impl PartialEq for PathType {
     fn eq(&self, other: &Self) -> bool {
         let Self {
             package_id,
@@ -607,7 +606,7 @@ impl PartialEq for ResolvedPathType {
     }
 }
 
-impl Hash for ResolvedPathType {
+impl Hash for PathType {
     fn hash<H: Hasher>(&self, state: &mut H) {
         let Self {
             package_id,
@@ -752,7 +751,7 @@ impl ResolvedType {
     }
 }
 
-impl ResolvedPathType {
+impl PathType {
     pub fn resolved_path(&self) -> ResolvedPath {
         let mut segments = Vec::with_capacity(self.base_type.len());
         for segment in &self.base_type {
@@ -806,7 +805,7 @@ impl Debug for Lifetime {
     }
 }
 
-impl Debug for ResolvedPathType {
+impl Debug for PathType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.base_type.join("::"))?;
         if !self.generic_arguments.is_empty() {
@@ -865,8 +864,8 @@ impl From<Tuple> for ResolvedType {
     }
 }
 
-impl From<ResolvedPathType> for ResolvedType {
-    fn from(value: ResolvedPathType) -> Self {
+impl From<PathType> for ResolvedType {
+    fn from(value: PathType) -> Self {
         Self::ResolvedPath(value)
     }
 }

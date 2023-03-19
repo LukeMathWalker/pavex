@@ -10,7 +10,7 @@ use guppy::PackageId;
 use rustdoc_types::{GenericArg, GenericArgs, GenericParamDefKind, ItemEnum, Type};
 
 use crate::language::{
-    Callable, Generic, GenericArgument, InvocationStyle, Lifetime, ResolvedPath,
+    Callable, Generic, GenericArgument, InvocationStyle, Lifetime, PathType, ResolvedPath,
     ResolvedPathGenericArgument, ResolvedPathLifetime, ResolvedPathType, ResolvedType, Slice,
     Tuple, TypeReference, UnknownPath,
 };
@@ -174,7 +174,7 @@ pub(crate) fn resolve_type(
                         }
                     }
                 }
-                let t = ResolvedPathType {
+                let t = PathType {
                     package_id: global_type_id.package_id().to_owned(),
                     rustdoc_id: Some(global_type_id.rustdoc_item_id),
                     base_type: base_type.to_vec(),
@@ -252,8 +252,13 @@ pub(crate) fn resolve_callable(
     let (callable_type, qualified_self_type) =
         callable_path.find_rustdoc_items(krate_collection)?;
     let used_by_package_id = &callable_path.package_id;
-    let (header, decl, invocation_style) = match &callable_type.item.item.inner {
-        ItemEnum::Function(f) => (&f.header, &f.decl, InvocationStyle::FunctionCall),
+    let (header, decl, fn_generics_defs, invocation_style) = match &callable_type.item.item.inner {
+        ItemEnum::Function(f) => (
+            &f.header,
+            &f.decl,
+            &f.generics,
+            InvocationStyle::FunctionCall,
+        ),
         kind => {
             let item_kind = kind.kind().to_owned();
             return Err(UnsupportedCallableKind {
@@ -296,6 +301,26 @@ pub(crate) fn resolve_callable(
         }
     }
 
+    let fn_generic_args = &callable_path.segments.last().unwrap().generic_arguments;
+    for (generic_arg, generic_def) in fn_generic_args.iter().zip(&fn_generics_defs.params) {
+        let generic_name = &generic_def.name;
+        let generic_type = match generic_arg {
+            ResolvedPathGenericArgument::Type(t) => t,
+            _ => {
+                continue;
+            }
+        };
+        let resolved_type = generic_type.resolve(krate_collection).map_err(|e| {
+            GenericParameterResolutionError {
+                generic_type: generic_type.to_owned(),
+                callable_path: callable_path.to_owned(),
+                callable_item: callable_type.item.item.clone().into_owned(),
+                source: Arc::new(e),
+            }
+        })?;
+        generic_bindings.insert(generic_name.to_owned(), resolved_type);
+    }
+
     let mut parameter_paths = Vec::with_capacity(decl.inputs.len());
     for (parameter_index, (_, parameter_type)) in decl.inputs.iter().enumerate() {
         match resolve_type(
@@ -306,7 +331,7 @@ pub(crate) fn resolve_callable(
         ) {
             Ok(p) => parameter_paths.push(p),
             Err(e) => {
-                return Err(ParameterResolutionError {
+                return Err(InputParameterResolutionError {
                     parameter_type: parameter_type.to_owned(),
                     callable_path: callable_path.to_owned(),
                     callable_item: callable_type.item.item.into_owned(),
@@ -444,7 +469,7 @@ pub(crate) fn resolve_type_path(
         };
         generic_arguments.push(arg);
     }
-    Ok(ResolvedPathType {
+    Ok(PathType {
         package_id: global_type_id.package_id().to_owned(),
         rustdoc_id: Some(global_type_id.rustdoc_item_id),
         base_type: base_type.to_vec(),
@@ -460,7 +485,9 @@ pub(crate) enum CallableResolutionError {
     #[error(transparent)]
     UnknownCallable(#[from] UnknownPath),
     #[error(transparent)]
-    ParameterResolutionError(#[from] ParameterResolutionError),
+    GenericParameterResolutionError(#[from] GenericParameterResolutionError),
+    #[error(transparent)]
+    InputParameterResolutionError(#[from] InputParameterResolutionError),
     #[error(transparent)]
     OutputTypeResolutionError(#[from] OutputTypeResolutionError),
     #[error(transparent)]
@@ -476,11 +503,21 @@ pub(crate) struct UnsupportedCallableKind {
 
 #[derive(Debug, thiserror::Error, Clone)]
 #[error("One of the input parameters for `{callable_path}` has a type that I can't handle.")]
-pub(crate) struct ParameterResolutionError {
+pub(crate) struct InputParameterResolutionError {
     pub callable_path: ResolvedPath,
     pub callable_item: rustdoc_types::Item,
     pub parameter_type: Type,
     pub parameter_index: usize,
+    #[source]
+    pub source: Arc<anyhow::Error>,
+}
+
+#[derive(Debug, thiserror::Error, Clone)]
+#[error("I can't handle `{generic_type}`, one of the generic parameters you specified for `{callable_path}`.")]
+pub(crate) struct GenericParameterResolutionError {
+    pub callable_path: ResolvedPath,
+    pub callable_item: rustdoc_types::Item,
+    pub generic_type: ResolvedPathType,
     #[source]
     pub source: Arc<anyhow::Error>,
 }

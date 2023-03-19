@@ -110,7 +110,7 @@ impl ResolvedPathType {
                         generic_arguments.push(generic_arg);
                     }
                 }
-                Ok(crate::language::resolved_type::ResolvedPathType {
+                Ok(crate::language::resolved_type::PathType {
                     package_id: global_type_id.package_id().to_owned(),
                     rustdoc_id: Some(global_type_id.rustdoc_item_id),
                     base_type: base_type.to_vec(),
