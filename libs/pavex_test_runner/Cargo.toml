@@ -16,5 +16,5 @@ libtest-mimic = "0.6.0"
 serde = { version = "1.0.141", features = ["derive"] }
 similar = { version = "2.2.0", features = ["inline"] }
 textwrap = "0.16.0"
-toml = { version = "0.5.9", features = ["preserve_order"] }
+toml = { version = "0.7", features = ["preserve_order"] }
 miette = { version = "5.3.0", features = ["fancy"] }
