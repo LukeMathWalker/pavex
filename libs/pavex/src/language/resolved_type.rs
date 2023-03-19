@@ -442,7 +442,6 @@ pub struct TypeReference {
     pub inner: Box<ResolvedType>,
 }
 
-// TODO: implement Hash manually
 #[derive(serde::Serialize, serde::Deserialize, Eq, Clone)]
 pub struct PathType {
     #[serde(serialize_with = "serialize_package_id")]
