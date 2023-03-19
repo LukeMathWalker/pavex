@@ -222,7 +222,6 @@ impl ComponentDb {
         for user_component_id in request_handler_ids {
             let user_component = &self_.user_component_db[user_component_id];
             let callable = &computation_db[user_component_id];
-            dbg!(callable);
             let UserComponent::RequestHandler { router_key, .. } = user_component else {
                 unreachable!()
             };
