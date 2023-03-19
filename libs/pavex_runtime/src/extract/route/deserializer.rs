@@ -199,7 +199,7 @@ impl<'de, 'request> MapAccess<'request> for MapDeserializer<'de, 'request> {
             Some(((key, value), tail)) => {
                 self.value = Some(value);
                 self.params = tail;
-                self.key = Some(Key(key.clone()));
+                self.key = Some(Key(key));
                 seed.deserialize(KeyDeserializer {
                     key: Cow::Borrowed(key),
                 })

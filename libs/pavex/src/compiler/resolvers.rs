@@ -51,7 +51,7 @@ pub(crate) fn resolve_type(
                     // We also try to handle generic parameters, as long as they have a default value.
                     match &generic_param_def.kind {
                         GenericParamDefKind::Type { default, .. } => {
-                            let provided_arg = generic_args.map(|v| v.get(i)).flatten();
+                            let provided_arg = generic_args.and_then(|v| v.get(i));
                             let generic_type = if let Some(provided_arg) = provided_arg {
                                 if let GenericArg::Type(provided_arg) = provided_arg {
                                     resolve_type(
@@ -63,19 +63,17 @@ pub(crate) fn resolve_type(
                                 } else {
                                     anyhow::bail!("Expected `{:?}` to be a generic _type_ parameter, but it wasn't!", provided_arg)
                                 }
+                            } else if let Some(default) = default {
+                                resolve_type(
+                                    default,
+                                    &global_type_id.package_id,
+                                    krate_collection,
+                                    &generic_bindings,
+                                )?
                             } else {
-                                if let Some(default) = default {
-                                    resolve_type(
-                                        default,
-                                        &global_type_id.package_id,
-                                        krate_collection,
-                                        &generic_bindings,
-                                    )?
-                                } else {
-                                    ResolvedType::Generic(Generic {
-                                        name: generic_param_def.name.clone(),
-                                    })
-                                }
+                                ResolvedType::Generic(Generic {
+                                    name: generic_param_def.name.clone(),
+                                })
                             };
                             generic_bindings
                                 .insert(generic_param_def.name.to_string(), generic_type);
@@ -411,7 +409,7 @@ pub(crate) fn resolve_type_path(
         ItemEnum::Trait(t) => &t.generics.params,
         _ => unreachable!(),
     };
-    for (i, generic_def) in generic_defs.into_iter().enumerate() {
+    for (i, generic_def) in generic_defs.iter().enumerate() {
         let arg = if let Some(generic_path) = last_segment.generic_arguments.get(i) {
             match generic_path {
                 ResolvedPathGenericArgument::Type(t) => {

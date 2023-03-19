@@ -1,33 +1,30 @@
 use ahash::{HashMap, HashMapExt};
 use guppy::graph::PackageGraph;
 
-use crate::compiler::analyses::raw_identifiers::RawCallableIdentifiersDb;
-use crate::compiler::analyses::user_components::{UserComponentDb, UserComponentId};
+use crate::compiler::analyses::user_components::raw_db::RawUserComponentDb;
+use crate::compiler::analyses::user_components::UserComponentId;
 use crate::compiler::interner::Interner;
 use crate::diagnostic;
 use crate::diagnostic::{CompilerDiagnostic, LocationExt, OptionalSourceSpanExt};
 use crate::language::{ParseError, ResolvedPath};
 
-pub(crate) type ResolvedPathId = la_arena::Idx<ResolvedPath>;
+pub(super) type ResolvedPathId = la_arena::Idx<ResolvedPath>;
 
-pub(crate) struct ResolvedPathDb {
+pub(super) struct ResolvedPathDb {
     interner: Interner<ResolvedPath>,
     component_id2path_id: HashMap<UserComponentId, ResolvedPathId>,
 }
 
 impl ResolvedPathDb {
     pub fn build(
-        component_db: &UserComponentDb,
-        raw_callable_identifiers_db: &RawCallableIdentifiersDb,
+        component_db: &RawUserComponentDb,
         package_graph: &PackageGraph,
         diagnostics: &mut Vec<miette::Error>,
     ) -> Self {
         let mut interner = Interner::new();
         let mut component_id2path_id = HashMap::new();
         for (component_id, component) in component_db.iter() {
-            let raw_callable_identifiers_id = component.raw_callable_identifiers_id();
-            let raw_callable_identifiers =
-                &raw_callable_identifiers_db[raw_callable_identifiers_id];
+            let raw_callable_identifiers = component.raw_callable_identifiers(component_db);
             match ResolvedPath::parse(raw_callable_identifiers, package_graph) {
                 Ok(path) => {
                     let path_id = interner.get_or_intern(path);
@@ -37,7 +34,6 @@ impl ResolvedPathDb {
                     e,
                     component_id,
                     component_db,
-                    raw_callable_identifiers_db,
                     package_graph,
                     diagnostics,
                 ),
@@ -52,14 +48,11 @@ impl ResolvedPathDb {
     fn capture_diagnostics(
         e: ParseError,
         component_id: UserComponentId,
-        component_db: &UserComponentDb,
-        raw_identifiers_db: &RawCallableIdentifiersDb,
+        component_db: &RawUserComponentDb,
         package_graph: &PackageGraph,
         diagnostics: &mut Vec<miette::Error>,
     ) {
-        let user_component = &component_db[component_id];
-        let raw_identifier_id = user_component.raw_callable_identifiers_id();
-        let location = raw_identifiers_db.get_location(raw_identifier_id);
+        let location = component_db.get_location(component_id);
         let source = match location.source_file(package_graph) {
             Ok(s) => s,
             Err(e) => {

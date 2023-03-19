@@ -8,7 +8,6 @@ use pavex_builder::Lifecycle;
 
 use crate::compiler::analyses::components::{ComponentDb, ComponentId, HydratedComponent};
 use crate::compiler::analyses::computations::ComputationDb;
-use crate::compiler::analyses::raw_identifiers::RawCallableIdentifiersDb;
 use crate::compiler::analyses::user_components::{UserComponentDb, UserComponentId};
 use crate::diagnostic;
 use crate::diagnostic::{
@@ -40,8 +39,6 @@ impl ConstructibleDb {
         computation_db: &mut ComputationDb,
         package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
-        user_component_db: &UserComponentDb,
-        raw_identifiers_db: &RawCallableIdentifiersDb,
         request_scoped_framework_types: &HashSet<&ResolvedType>,
         diagnostics: &mut Vec<miette::Error>,
     ) -> Self {
@@ -121,12 +118,11 @@ impl ConstructibleDb {
                     if let Some(user_component_id) = component_db.user_component_id(component_id) {
                         ConstructibleDb::missing_constructor(
                             user_component_id,
-                            user_component_db,
+                            &component_db.user_component_db,
                             input,
                             input_index,
                             package_graph,
                             krate_collection,
-                            raw_identifiers_db,
                             computation_db,
                             diagnostics,
                         )
@@ -151,6 +147,27 @@ impl ConstructibleDb {
             }
         }
 
+        // For each constructible type, we look up their constructor.
+        // We assert that all inputs of the constructor are in a scope that is the same or a
+        // parent of the scope of the constructor.
+        // This should always be the case, but we add an assertion to eagerly discover if our
+        // assumptions are wrong.
+        for (_, constructor_id) in self_.type2constructor_id.iter() {
+            let constructor = component_db.hydrated_component(*constructor_id, computation_db);
+            let constructor_scope = component_db.scope_id(*constructor_id);
+            for input_type in constructor.input_types().iter() {
+                // Some inputs are not constructible and will be injected by the framework
+                // or as part of the application state.
+                if let Some(input_constructor_id) = self_.type2constructor_id.get(input_type) {
+                    let input_constructor_scope = component_db.scope_id(*input_constructor_id);
+                    assert!(constructor_scope.is_child_of(
+                        &input_constructor_scope,
+                        component_db.user_component_db.scope_tree(),
+                    ));
+                }
+            }
+        }
+
         self_
     }
 
@@ -161,7 +178,6 @@ impl ConstructibleDb {
         unconstructible_type_index: usize,
         package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
-        raw_identifiers_db: &RawCallableIdentifiersDb,
         computation_db: &ComputationDb,
         diagnostics: &mut Vec<miette::Error>,
     ) {
@@ -217,10 +233,9 @@ impl ConstructibleDb {
 
         let user_component = &user_component_db[user_component_id];
         let callable = &computation_db[user_component_id];
-        let raw_identifier_id = user_component.raw_callable_identifiers_id();
         let component_kind = user_component.callable_type();
+        let location = user_component_db.get_location(user_component_id);
 
-        let location = raw_identifiers_db.get_location(raw_identifier_id);
         let source = match location.source_file(package_graph) {
             Ok(s) => s,
             Err(e) => {
