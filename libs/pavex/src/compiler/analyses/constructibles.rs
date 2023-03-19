@@ -147,6 +147,27 @@ impl ConstructibleDb {
             }
         }
 
+        // For each constructible type, we look up their constructor.
+        // We assert that all inputs of the constructor are in a scope that is the same or a
+        // parent of the scope of the constructor.
+        // This should always be the case, but we add an assertion to eagerly discover if our
+        // assumptions are wrong.
+        for (_, constructor_id) in self_.type2constructor_id.iter() {
+            let constructor = component_db.hydrated_component(*constructor_id, computation_db);
+            let constructor_scope = component_db.scope_id(*constructor_id);
+            for input_type in constructor.input_types().iter() {
+                // Some inputs are not constructible and will be injected by the framework
+                // or as part of the application state.
+                if let Some(input_constructor_id) = self_.type2constructor_id.get(input_type) {
+                    let input_constructor_scope = component_db.scope_id(*input_constructor_id);
+                    assert!(constructor_scope.is_child_of(
+                        &input_constructor_scope,
+                        component_db.user_component_db.scope_tree(),
+                    ));
+                }
+            }
+        }
+
         self_
     }
 

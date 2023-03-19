@@ -34,6 +34,16 @@ impl<'a> ScopeId<'a> {
             Cow::Owned(b) => ScopeId(Cow::Owned(b)),
         }
     }
+
+    /// Return `true` if the `other` scope is a parent of this scope or if the two scopes are equal.
+    pub fn is_child_of(&self, other: &ScopeId<'_>, scope_tree: &ScopeTree) -> bool {
+        self == other
+            || scope_tree
+                .tree
+                .children_ids(&other.0)
+                .unwrap()
+                .any(|id| id == self.0.as_ref())
+    }
 }
 
 impl ScopeTree {
