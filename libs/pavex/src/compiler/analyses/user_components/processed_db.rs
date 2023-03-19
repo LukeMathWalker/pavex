@@ -3,7 +3,7 @@ use guppy::graph::PackageGraph;
 use miette::{miette, NamedSource};
 use syn::spanned::Spanned;
 
-use pavex_builder::{Blueprint, Lifecycle, Location};
+use pavex_builder::{Blueprint, Lifecycle, Location, RawCallableIdentifiers};
 
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::user_components::raw_db::RawUserComponentDb;
@@ -34,6 +34,7 @@ use crate::rustdoc::CrateCollection;
 #[derive(Debug)]
 pub struct UserComponentDb {
     component_interner: Interner<UserComponent>,
+    identifiers_interner: Interner<RawCallableIdentifiers>,
     id2locations: HashMap<UserComponentId, Location>,
     id2lifecycle: HashMap<UserComponentId, Lifecycle>,
     scope_tree: ScopeTree,
@@ -81,11 +82,12 @@ impl UserComponentDb {
             id2locations,
             id2lifecycle,
             scope_tree,
-            identifiers_interner: _,
+            identifiers_interner,
         } = raw_db;
 
         Ok(Self {
             component_interner,
+            identifiers_interner,
             id2locations,
             id2lifecycle,
             scope_tree,
@@ -135,6 +137,15 @@ impl UserComponentDb {
     /// Return the scope tree that was built from the application blueprint.
     pub fn scope_tree(&self) -> &ScopeTree {
         &self.scope_tree
+    }
+
+    /// Return the raw callable identifiers associated to the user component with the given id.
+    ///
+    /// This can be used to recover the original import path passed by the user when registering
+    /// this component, primarily for error reporting purposes.
+    pub fn get_raw_callable_identifiers(&self, id: UserComponentId) -> &RawCallableIdentifiers {
+        let raw_id = self.component_interner[id].raw_callable_identifiers_id();
+        &self.identifiers_interner[raw_id]
     }
 }
 

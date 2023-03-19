@@ -1,0 +1,72 @@
+[31m[1mERROR[0m[39m: 
+  [31m×[0m Route parameters must be extracted using a struct with named fields, where
+  [31m│[0m the name of each field is matches one of the route parameters specified in
+  [31m│[0m the route for the respective request handler.
+  [31m│[0m `app::primitive` is trying to extract `RouteParams<u32>`, but `u32` is a
+  [31m│[0m primitive, not a struct type. I don't support this: the extraction would
+  [31m│[0m fail at runtime, when trying to process an incoming request.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:33:1]
+  [31m│[0m  [2m33[0m │     ));
+  [31m│[0m  [2m34[0m │     bp.route(GET, "a/:x", f!(crate::primitive));
+  [31m│[0m     · [35;1m                          ──────────┬─────────[0m
+  [31m│[0m     ·                                     [35;1m╰── [35;1mThe request handler asking for `RouteParams<u32>`[0m[0m
+  [31m│[0m  [2m35[0m │     bp.route(GET, "b/:x/:y", f!(crate::tuple));
+  [31m│[0m     ╰────
+  [31m│[0m [36m  help: [0mUse a struct type to extract route parameters.
+  [31m│[0m         Check out `RouteParams`' documentation for all the details!
+
+[31m[1mERROR[0m[39m: 
+  [31m×[0m Route parameters must be extracted using a struct with named fields, where
+  [31m│[0m the name of each field is matches one of the route parameters specified in
+  [31m│[0m the route for the respective request handler.
+  [31m│[0m `app::tuple` is trying to extract `RouteParams<(u32, u32)>`, but `(u32,
+  [31m│[0m u32)` is a tuple, not a struct type. I don't support this: the extraction
+  [31m│[0m would fail at runtime, when trying to process an incoming request.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:34:1]
+  [31m│[0m  [2m34[0m │     bp.route(GET, "a/:x", f!(crate::primitive));
+  [31m│[0m  [2m35[0m │     bp.route(GET, "b/:x/:y", f!(crate::tuple));
+  [31m│[0m     · [35;1m                             ────────┬───────[0m
+  [31m│[0m     ·                                      [35;1m╰── [35;1mThe request handler asking for `RouteParams<(u32, u32)>`[0m[0m
+  [31m│[0m  [2m36[0m │     bp.route(GET, "c/:x/:z", f!(crate::slice_ref));
+  [31m│[0m     ╰────
+  [31m│[0m [36m  help: [0mUse a struct type to extract route parameters.
+  [31m│[0m         Check out `RouteParams`' documentation for all the details!
+
+[31m[1mERROR[0m[39m: 
+  [31m×[0m Route parameters must be extracted using a struct with named fields, where
+  [31m│[0m the name of each field is matches one of the route parameters specified in
+  [31m│[0m the route for the respective request handler.
+  [31m│[0m `app::slice_ref` is trying to extract `RouteParams<&[u32]>`, but `&[u32]`
+  [31m│[0m is a reference, not a struct type. I don't support this: the extraction
+  [31m│[0m would fail at runtime, when trying to process an incoming request.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:35:1]
+  [31m│[0m  [2m35[0m │     bp.route(GET, "b/:x/:y", f!(crate::tuple));
+  [31m│[0m  [2m36[0m │     bp.route(GET, "c/:x/:z", f!(crate::slice_ref));
+  [31m│[0m     · [35;1m                             ──────────┬─────────[0m
+  [31m│[0m     ·                                        [35;1m╰── [35;1mThe request handler asking for `RouteParams<&[u32]>`[0m[0m
+  [31m│[0m  [2m37[0m │     bp.route(GET, "d/:x/:y", f!(crate::reference));
+  [31m│[0m     ╰────
+  [31m│[0m [36m  help: [0mUse a struct type to extract route parameters.
+  [31m│[0m         Check out `RouteParams`' documentation for all the details!
+
+[31m[1mERROR[0m[39m: 
+  [31m×[0m Route parameters must be extracted using a struct with named fields, where
+  [31m│[0m the name of each field is matches one of the route parameters specified in
+  [31m│[0m the route for the respective request handler.
+  [31m│[0m `app::reference` is trying to extract `RouteParams<&app::MyStruct>`, but
+  [31m│[0m `&app::MyStruct` is a reference, not a struct type. I don't support this:
+  [31m│[0m the extraction would fail at runtime, when trying to process an incoming
+  [31m│[0m request.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:36:1]
+  [31m│[0m  [2m36[0m │     bp.route(GET, "c/:x/:z", f!(crate::slice_ref));
+  [31m│[0m  [2m37[0m │     bp.route(GET, "d/:x/:y", f!(crate::reference));
+  [31m│[0m     · [35;1m                             ──────────┬─────────[0m
+  [31m│[0m     ·                                        [35;1m╰── [35;1mThe request handler asking for `RouteParams<&app::MyStruct>`[0m[0m
+  [31m│[0m  [2m38[0m │     bp
+  [31m│[0m     ╰────
+  [31m│[0m [36m  help: [0mUse a struct type to extract route parameters.
+  [31m│[0m         Check out `RouteParams`' documentation for all the details!

@@ -705,6 +705,14 @@ impl ComponentDb {
             .unwrap()
     }
 
+    /// Given the id of a component, return the id of the corresponding
+    /// component that borrows the value it returns (if it exists).
+    pub fn borrow_id(&self, owned_component_id: ComponentId) -> Option<ComponentId> {
+        self.borrow_id2owned_id
+            .get_by_right(&owned_component_id)
+            .copied()
+    }
+
     /// Iterate over all constructors in the component database, either user-provided or synthetic.
     pub fn constructors<'a>(
         &'a self,

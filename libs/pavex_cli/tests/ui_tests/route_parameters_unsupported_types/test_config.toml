@@ -1,0 +1,7 @@
+description = "Pavex can only extract route parameters using a struct with named fields"
+
+[expectations]
+codegen = "fail"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
