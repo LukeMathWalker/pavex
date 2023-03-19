@@ -18,7 +18,7 @@ pub struct MyStruct {
     y: u32,
 }
 
-pub fn reference(params: RouteParams<&MyStruct>) -> String {
+pub fn reference<T>(params: RouteParams<&T>) -> String {
     todo!()
 }
 
@@ -34,6 +34,6 @@ pub fn blueprint() -> Blueprint {
     bp.route(GET, "a/:x", f!(crate::primitive));
     bp.route(GET, "b/:x/:y", f!(crate::tuple));
     bp.route(GET, "c/:x/:z", f!(crate::slice_ref));
-    bp.route(GET, "d/:x/:y", f!(crate::reference));
+    bp.route(GET, "d/:x/:y", f!(crate::reference::<crate::MyStruct>));
     bp
 }

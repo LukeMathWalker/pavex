@@ -197,7 +197,7 @@ impl UserComponentDb {
                     .build();
                 diagnostics.push(diagnostic.into());
             }
-            CallableResolutionError::ParameterResolutionError(ref inner_error) => {
+            CallableResolutionError::InputParameterResolutionError(ref inner_error) => {
                 let definition_snippet = {
                     if let Some(definition_span) = &inner_error.callable_item.span {
                         match diagnostic::read_source_file(
@@ -358,6 +358,14 @@ impl UserComponentDb {
             }
             CallableResolutionError::CannotGetCrateData(_) => {
                 diagnostics.push(miette!(e));
+            }
+            CallableResolutionError::GenericParameterResolutionError(_) => {
+                let label = diagnostic::get_f_macro_invocation_span(&source, location)
+                    .map(|s| s.labeled(format!("The {callable_type} was registered here")));
+                let diagnostic = CompilerDiagnostic::builder(source, e.clone())
+                    .optional_label(label)
+                    .build();
+                diagnostics.push(diagnostic.into());
             }
         }
     }

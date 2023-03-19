@@ -5,7 +5,7 @@ use guppy::PackageId;
 use rustdoc_types::{GenericParamDefKind, ItemEnum, Type};
 
 use crate::compiler::resolvers::resolve_type;
-use crate::language::{ResolvedPathType, ResolvedType};
+use crate::language::{PathType, ResolvedType};
 use crate::rustdoc::CrateCollection;
 
 /// It returns an error if `type_` doesn't implement the specified trait.
@@ -15,7 +15,7 @@ use crate::rustdoc::CrateCollection;
 pub(crate) fn assert_trait_is_implemented(
     krate_collection: &CrateCollection,
     type_: &ResolvedType,
-    expected_trait: &ResolvedPathType,
+    expected_trait: &PathType,
 ) -> Result<(), MissingTraitImplementationError> {
     if !implements_trait(krate_collection, type_, expected_trait) {
         Err(MissingTraitImplementationError {
@@ -34,7 +34,7 @@ pub(crate) fn assert_trait_is_implemented(
 pub(crate) fn implements_trait(
     krate_collection: &CrateCollection,
     type_: &ResolvedType,
-    expected_trait: &ResolvedPathType,
+    expected_trait: &PathType,
 ) -> bool {
     let trait_definition_crate =
         krate_collection.get_crate_by_package_id(&expected_trait.package_id);

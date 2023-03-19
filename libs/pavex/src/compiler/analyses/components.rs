@@ -29,8 +29,8 @@ use crate::diagnostic::{
     CompilerDiagnostic, LocationExt, SourceSpanExt,
 };
 use crate::language::{
-    Callable, ResolvedPath, ResolvedPathQualifiedSelf, ResolvedPathSegment, ResolvedPathType,
-    ResolvedType, TypeReference,
+    Callable, PathType, ResolvedPath, ResolvedPathQualifiedSelf, ResolvedPathSegment, ResolvedType,
+    TypeReference,
 };
 use crate::rustdoc::CrateCollection;
 use crate::utils::comma_separated_list;
@@ -124,7 +124,7 @@ pub(crate) struct ComponentDb {
     id2lifecycle: HashMap<ComponentId, Lifecycle>,
     error_handler_id2error_handler: HashMap<ComponentId, ErrorHandler>,
     router: BTreeMap<RouterKey, ComponentId>,
-    into_response: ResolvedPathType,
+    into_response: PathType,
 }
 
 impl ComponentDb {
@@ -222,6 +222,7 @@ impl ComponentDb {
         for user_component_id in request_handler_ids {
             let user_component = &self_.user_component_db[user_component_id];
             let callable = &computation_db[user_component_id];
+            dbg!(callable);
             let UserComponent::RequestHandler { router_key, .. } = user_component else {
                 unreachable!()
             };
