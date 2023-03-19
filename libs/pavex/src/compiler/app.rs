@@ -13,6 +13,7 @@ use miette::miette;
 use petgraph::Direction;
 use proc_macro2::Ident;
 use quote::format_ident;
+use rustdoc_types::{ItemEnum, StructKind};
 
 use pavex_builder::{Blueprint, Lifecycle};
 
@@ -34,7 +35,7 @@ use crate::compiler::utils::process_framework_path;
 use crate::diagnostic;
 use crate::diagnostic::{CompilerDiagnostic, LocationExt, OptionalSourceSpanExt, SourceSpanExt};
 use crate::language::{GenericArgument, ResolvedType};
-use crate::rustdoc::{CrateCollection, TOOLCHAIN_CRATES};
+use crate::rustdoc::{CrateCollection, GlobalItemId, TOOLCHAIN_CRATES};
 
 pub(crate) const GENERATED_APP_PACKAGE_ID: &str = "crate";
 
@@ -131,6 +132,7 @@ impl App {
             &computation_db,
             &component_db,
             &package_graph,
+            &krate_collection,
             &mut diagnostics,
         );
 
@@ -419,6 +421,7 @@ fn verify_route_parameters(
     computation_db: &ComputationDb,
     component_db: &ComponentDb,
     package_graph: &PackageGraph,
+    krate_collection: &CrateCollection,
     diagnostics: &mut Vec<miette::Error>,
 ) {
     for (_router_key, call_graph) in handler_call_graphs {
@@ -441,7 +444,28 @@ fn verify_route_parameters(
 
         let GenericArgument::TypeParameter(extracted_type) = &ty_.generic_arguments[0] else { unreachable!() };
         let error_suffix = match extracted_type {
-            ResolvedType::ResolvedPath(_) => None,
+            ResolvedType::ResolvedPath(t) => {
+                if let Some(item_id) = t.rustdoc_id.clone() {
+                    let item = krate_collection.get_type_by_global_type_id(&GlobalItemId {
+                        rustdoc_item_id: item_id,
+                        package_id: t.package_id.clone(),
+                    });
+                    match item.inner {
+                        ItemEnum::Union(_) => Some(format!("`{t:?}` is an union")),
+                        ItemEnum::Enum(_) => Some(format!("`{t:?}` is an enum")),
+                        ItemEnum::Struct(ref s) => match s.kind {
+                            StructKind::Unit => Some(format!(
+                                "`{t:?}` is a struct with no fields (a.k.a. unit struct)"
+                            )),
+                            StructKind::Tuple(_) => Some(format!("`{t:?}` is a tuple struct")),
+                            StructKind::Plain { .. } => None,
+                        },
+                        _ => None,
+                    }
+                } else {
+                    None
+                }
+            }
             ResolvedType::Reference(r) => Some(format!("`{r:?}` is a reference")),
             ResolvedType::Tuple(t) => Some(format!("`{t:?}` is a tuple")),
             ResolvedType::ScalarPrimitive(s) => Some(format!("`{s:?}` is a primitive")),
@@ -495,11 +519,11 @@ fn verify_route_parameters(
                 };
                 let source_span = diagnostic::get_f_macro_invocation_span(&source, location);
                 let error = anyhow!(
-                    "Route parameters must be extracted using a struct with named fields, \
-                    where the name of each field is matches one of the route parameters specified \
+                    "Route parameters must be extracted using a plain struct with named fields, \
+                    where the name of each field matches one of the route parameters specified \
                     in the route for the respective request handler.\n\
                     `{}` is trying to extract `RouteParams<{extracted_type:?}>`, but \
-                    {error_suffix}, not a struct type. I don't support this: the extraction would \
+                    {error_suffix}, not a plain struct type. I don't support this: the extraction would \
                     fail at runtime, when trying to process an incoming request.",
                     raw_identifiers.fully_qualified_path().join("::")
                 );
@@ -508,7 +532,7 @@ fn verify_route_parameters(
                         "The {callable_type} asking for `RouteParams<{extracted_type:?}>`"
                     )))
                     .help(
-                        "Use a struct type to extract route parameters.\n\
+                        "Use a plain struct with named fields to extract route parameters.\n\
                         Check out `RouteParams`' documentation for all the details!"
                             .into(),
                     )
