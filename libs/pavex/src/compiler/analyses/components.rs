@@ -318,7 +318,7 @@ impl ComponentDb {
                 match ErrorHandler::new(error_handler_callable.to_owned(), fallible_callable) {
                     Ok(e) => {
                         // This may be `None` if the fallible component failed to pass its own
-                        // validation - e.g. the constructor callable was not deemed to be a valid
+                        // validation—e.g. the constructor callable was not deemed to be a valid
                         // constructor.
                         if let Some(fallible_component_id) =
                             user_component_id2component_id.get(&fallible_user_component_id)
@@ -375,7 +375,7 @@ impl ComponentDb {
 
         // We need to make sure that all output nodes return the same output type.
         // We do this by adding a "response transformer" node that converts the output type to a
-        // common type - `pavex_runtime::response::Response`.
+        // common type—`pavex_runtime::response::Response`.
         let into_response_path = self_.into_response.resolved_path();
         let iter: Vec<_> = self_
             .interner

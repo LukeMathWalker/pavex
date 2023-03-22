@@ -107,7 +107,7 @@ impl CrateCollection {
         // We drop the last segment to see if we can get a hit on the struct/enum type
         // to which the method belongs.
         if path.len() < 3 {
-            // It has to be at least three segments - crate name, type name, method name.
+            // It has to be at least three segments—crate name, type name, method name.
             // If it's shorter than three, it's just an unknown path.
             return Ok(Err(UnknownItemPath {
                 path: path.to_vec(),
@@ -277,7 +277,7 @@ impl CrateCore {
     /// Given a crate id, return the corresponding [`PackageId`].
     ///
     /// It panics if the provided crate id doesn't appear in the JSON documentation
-    /// for this crate - i.e. if it's not `0` or assigned to one of its transitive dependencies.
+    /// for this crate—i.e. if it's not `0` or assigned to one of its transitive dependencies.
     pub fn compute_package_id_for_crate_id(
         &self,
         crate_id: u32,
@@ -427,7 +427,7 @@ impl Crate {
     /// Given a crate id, return the corresponding [`PackageId`].
     ///
     /// It panics if the provided crate id doesn't appear in the JSON documentation
-    /// for this crate - i.e. if it's not `0` or assigned to one of its transitive dependencies.
+    /// for this crate—i.e. if it's not `0` or assigned to one of its transitive dependencies.
     pub fn compute_package_id_for_crate_id(
         &self,
         crate_id: u32,
@@ -476,7 +476,7 @@ impl Crate {
     }
 
     /// Types can be exposed under multiple paths.
-    /// This method returns a "canonical" importable path - i.e. the shortest importable path
+    /// This method returns a "canonical" importable path—i.e. the shortest importable path
     /// pointing at the type you specified.
     fn get_canonical_path(&self, type_id: &GlobalItemId) -> Result<&[String], anyhow::Error> {
         if let Some(path) = self.public_local_path_index.get(type_id) {
@@ -507,7 +507,7 @@ fn index_local_types<'a>(
         None => {
             if let Some(summary) = crate_core.krate.paths.get(current_item_id) {
                 if summary.kind == ItemKind::Primitive {
-                    // This is a known bug - see https://github.com/rust-lang/rust/issues/104064
+                    // This is a known bug—see https://github.com/rust-lang/rust/issues/104064
                     return;
                 }
             }
@@ -709,7 +709,7 @@ trait RustdocCrateExt {
     /// Given a crate id, return the corresponding external crate object.
     /// We try to guess the crate version by parsing it out of the root URL for the HTML documentation.
     /// The extracted version is not guaranteed to be correct: crates can set an arbitrary root URL
-    /// via `#[doc(html_root_url)]` - e.g. pointing at an outdated version of their docs (see
+    /// via `#[doc(html_root_url)]`—e.g. pointing at an outdated version of their docs (see
     /// https://github.com/tokio-rs/tracing/pull/2384 as an example).
     fn get_external_crate_name(&self, crate_id: u32) -> Option<(&ExternalCrate, Option<Version>)>;
 }

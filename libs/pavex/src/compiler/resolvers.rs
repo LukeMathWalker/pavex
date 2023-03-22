@@ -99,7 +99,7 @@ pub(crate) fn resolve_type(
                             // We fetch the name of the generic parameters as they appear
                             // in the definition of the type that we are processing.
                             // This is necessary because generic parameters can be elided
-                            // when using the type as part of a function signature - e.g.
+                            // when using the type as part of a function signature—e.g.
                             // `fn path(params: Params<'_, '_>) -> Result<_, _> { ... }`
                             //
                             // Can the two elided generic lifetime parameters be set to two

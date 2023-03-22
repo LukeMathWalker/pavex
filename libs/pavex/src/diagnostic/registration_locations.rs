@@ -42,7 +42,7 @@ use crate::diagnostic::{convert_proc_macro_span, ParsedSourceFile, ProcMacroSpan
 ///
 /// There are going to be multiple nodes that match if we are dealing with chained method calls.
 /// Luckily enough, the visit is pre-order, therefore the latest node that contains `location`
-/// is also the smallest node that contains it - exactly what we are looking for.
+/// is also the smallest node that contains it—exactly what we are looking for.
 pub(crate) fn get_f_macro_invocation_span(
     source: &ParsedSourceFile,
     location: &Location,
@@ -61,7 +61,7 @@ pub(crate) fn get_f_macro_invocation_span(
         }
 
         fn visit_stmt(&mut self, node: &'a Stmt) {
-            // This is an optimization - it allows the visitor to skip the entire sub-tree
+            // This is an optimization—it allows the visitor to skip the entire sub-tree
             // under a top-level statement that is not relevant to our search.
             if node.span().contains(self.location) {
                 syn::visit::visit_stmt(self, node)

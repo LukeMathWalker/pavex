@@ -22,7 +22,7 @@ use crate::rustdoc::{ResolvedItemWithParent, TOOLCHAIN_CRATES};
 ///
 /// What does "resolved" mean in this contest?
 ///
-/// `ResolvedPath` ensures that all paths are "fully qualified" - i.e.
+/// `ResolvedPath` ensures that all paths are "fully qualified"—i.e.
 /// the first path segment is either the name of the current package or the name of a
 /// crate listed as a dependency of the current package.
 ///

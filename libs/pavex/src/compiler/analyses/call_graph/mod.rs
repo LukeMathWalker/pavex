@@ -329,7 +329,7 @@ where
     }
 }
 
-/// [`CallableDependencyGraph`] is focused on **types** - it tells us what types are needed in
+/// [`CallableDependencyGraph`] is focused on **types**—it tells us what types are needed in
 /// order to build the input parameters and invoke a certain callable.
 ///
 /// We now want to convert that knowledge into action.
@@ -356,7 +356,7 @@ where
 ///
 /// Singletons should be constructed once and re-used throughout the entire lifetime of the
 /// application; this implies that the generated code for handling a single request should not
-/// call the singleton constructor - it should fetch it from the server state!
+/// call the singleton constructor—it should fetch it from the server state!
 /// Request-scoped types, instead, should be built by the request handler closure **at most once**.
 /// Transient types can be built multiple times within the lifecycle of each incoming request.
 #[derive(Debug)]
@@ -477,7 +477,7 @@ impl CallGraph {
     /// input parameters and invoke it.
     ///
     /// We return a `IndexSet` instead of a `HashSet` because we want a consistent ordering for the input
-    /// parameters - it will be used in other parts of the crate to provide instances of those types
+    /// parameters—it will be used in other parts of the crate to provide instances of those types
     /// in the expected order.
     pub fn required_input_types(&self) -> IndexSet<ResolvedType> {
         self.call_graph
@@ -882,7 +882,7 @@ fn _codegen_callable_closure_body(
     Ok(body)
 }
 
-/// Returns a terminal descendant of the given node - i.e. a node that is reachable from
+/// Returns a terminal descendant of the given node—i.e. a node that is reachable from
 /// `start_index` and has no outgoing edges.
 fn find_terminal_descendant(
     start_index: NodeIndex,

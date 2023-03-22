@@ -47,7 +47,7 @@
 /// Therefore `%20` is not interpreted as a space character.
 ///
 /// There are situations where you might want to work with the raw route parameters, but
-/// most of the time you'll want to use [`RouteParams`] instead - it performs percent-decoding
+/// most of the time you'll want to use [`RouteParams`] instead—it performs percent-decoding
 /// and deserialization for you.
 #[doc(inline)]
 pub use matchit::Params as RawRouteParams;

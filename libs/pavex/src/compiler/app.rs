@@ -59,7 +59,7 @@ fn compute_package_graph() -> Result<PackageGraph, miette::Error> {
 
 impl App {
     #[tracing::instrument(skip_all)]
-    /// Process the [`Blueprint`] created by user into an [`App`] instance - an in-memory
+    /// Process the [`Blueprint`] created by user into an [`App`] instance—an in-memory
     /// representation that can be used to generate application code that matches the constraints
     /// and instructions in the blueprint.
     ///

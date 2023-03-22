@@ -18,7 +18,7 @@ pub struct RawCallableIdentifiers {
     /// The name of the crate that registered the callable against the blueprint builder.
     /// This information is needed to resolve the callable import path unambiguously.
     ///
-    /// E.g. `my_crate::module_1::type_2` - which crate is `my_crate`?
+    /// E.g. `my_crate::module_1::type_2`—which crate is `my_crate`?
     /// This is not obvious due to the possibility of [renaming dependencies in `Cargo.toml`](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html?highlight=rename,depende#renaming-dependencies-in-cargotoml):
     ///
     /// ```toml

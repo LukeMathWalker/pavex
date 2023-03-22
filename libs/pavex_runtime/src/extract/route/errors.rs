@@ -27,20 +27,20 @@ pub enum ExtractRouteParamsError {
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 /// URL parameters must be percent-encoded whenever they contain characters that are not
-/// URL safe - e.g. whitespaces.
+/// URL safe—e.g. whitespaces.
 ///
 /// `pavex` automatically percent-decodes URL parameters before trying to deserialize them
 /// in `Path<T>`.
-/// This error is returned whenever the percent-decoding step fails - i.e. the decoded data is not a
+/// This error is returned whenever the percent-decoding step fails—i.e. the decoded data is not a
 /// valid UTF8 string.
 ///
 /// # Example
 ///
 /// One of our routes is `/address/:address_id`.
-/// We receive a request with `/address/the%20street` as path - `address_id` is set to
+/// We receive a request with `/address/the%20street` as path—`address_id` is set to
 /// `the%20street` and `pavex` automatically decodes it into `the street`.
 ///
-/// We could also receive a request using `/address/dirty%DE~%C7%1FY` as path - `address_id`, when
+/// We could also receive a request using `/address/dirty%DE~%C7%1FY` as path—`address_id`, when
 /// decoded, is a sequence of bytes that cannot be interpreted as a well-formed UTF8 string.
 /// This error is then returned.
 #[error(
