@@ -1,7 +1,7 @@
 # `pavex`
 
-> The goal is simple: great ergonomics and high performance - no sacrifices.
-> As easy to use as `tide`, Rails or ASP.NET Core.
+> The goal is simple: great ergonomics and high performance - no sacrifices.  
+> As easy to use as `tide`, Rails or ASP.NET Core.  
 > As fast as a handwritten solution built directly on top of raw `hyper`.
 
 _< Insert cool logo here >_
@@ -37,8 +37,8 @@ It has not yet been released on crates.io and you can expect breaking changes on
 
 We publish project updates every 4-6 weeks:
 
-- [Progress report #1](https://www.lpalmieri.com/posts/pavex-progress-report-01/)
-- [Progress report #2](https://www.lpalmieri.com/posts/pavex-progress-report-02/)
+- [Progress report #1](https://www.lpalmieri.com/posts/pavex-progress-report-01/) [January 2023]
+- [Progress report #2](https://www.lpalmieri.com/posts/pavex-progress-report-02/) [March 2023]
 
 ## Why does `pavex` exist?
 
