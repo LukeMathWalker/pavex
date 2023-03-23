@@ -16,7 +16,7 @@ mod snapshot;
 
 /// Create a test case for each folder in `definition_directory`.
 ///
-/// Each test will get a separate runtime environment - a sub-folder of `runtime_directory`. The
+/// Each test will get a separate runtime environment—a sub-folder of `runtime_directory`. The
 /// same sub-folder is reused across multiple test runs to benefit from cargo's incremental compilation.
 ///
 /// Custom configuration can be specified on a per-test basis by including a `test_config.toml` file

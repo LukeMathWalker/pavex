@@ -85,7 +85,7 @@ impl ResolvedType {
         }
     }
 
-    /// Check if a type can be used as a "template" - i.e. if it has any unassigned generic parameters.
+    /// Check if a type can be used as a "template"—i.e. if it has any unassigned generic parameters.
     #[tracing::instrument(level = "trace", ret)]
     pub fn is_a_template(&self) -> bool {
         match self {
@@ -417,25 +417,25 @@ impl TryFrom<&str> for ScalarPrimitive {
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Hash, Clone)]
-/// An unassigned generic parameter - e.g. `T` in `fn foo<T>(t: T)`.
+/// An unassigned generic parameter—e.g. `T` in `fn foo<T>(t: T)`.
 pub struct Generic {
     pub name: String,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Hash, Clone)]
-/// A Rust tuple - e.g. `(u8, u16, u32)`.
+/// A Rust tuple—e.g. `(u8, u16, u32)`.
 pub struct Tuple {
     pub elements: Vec<ResolvedType>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Hash, Clone)]
-/// A Rust slice - e.g. `[u16]`.
+/// A Rust slice—e.g. `[u16]`.
 pub struct Slice {
     pub element_type: Box<ResolvedType>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Hash, Clone)]
-/// A Rust reference - e.g. `&mut u32` or `&'static mut Vec<u8>`.
+/// A Rust reference—e.g. `&mut u32` or `&'static mut Vec<u8>`.
 pub struct TypeReference {
     pub is_mutable: bool,
     pub is_static: bool,
@@ -452,7 +452,7 @@ pub struct PathType {
     pub package_id: PackageId,
     /// The id associated with this type within the (JSON) docs for `package_id`.
     ///
-    /// The id is optional to allow for flexible usage patterns - e.g. to leverage [`ResolvedType`]
+    /// The id is optional to allow for flexible usage patterns—e.g. to leverage [`ResolvedType`]
     /// to work with types that we want to code-generate into a new crate.  
     pub rustdoc_id: Option<rustdoc_types::Id>,
     pub base_type: ImportPath,
@@ -474,8 +474,8 @@ mod generics_equivalence {
     /// - All the assigned lifetime parameters are the same;
     /// - If there is a bijective renaming such that all the unassigned type parameters are the same.
     ///
-    /// For example, `Vec<S, T>` and `Vec<T, S>` are equivalent - we just need to swap `S` and `T`.
-    /// `Vec<S, T>` and `Vec<S, S>`, instead, are not equivalent - the latter requires both parameters
+    /// For example, `Vec<S, T>` and `Vec<T, S>` are equivalent—we just need to swap `S` and `T`.
+    /// `Vec<S, T>` and `Vec<S, S>`, instead, are not equivalent—the latter requires both parameters
     /// to be identical, therefore there is no bijective renaming that can transform `Vec<S, T>`
     /// into `Vec<S, S>`.
     ///

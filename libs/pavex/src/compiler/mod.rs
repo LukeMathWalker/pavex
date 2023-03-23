@@ -13,5 +13,6 @@ mod generated_app;
 mod interner;
 mod request_handlers;
 mod resolvers;
+mod route_parameter_validation;
 mod traits;
 mod utils;

@@ -11,7 +11,7 @@ use crate::language::{ResolvedPath, ResolvedType};
 use crate::rustdoc::GlobalItemId;
 
 #[derive(Clone, Hash, Eq, PartialEq)]
-/// A Rust type that can be invoked - e.g. a function, a method, a struct literal constructor.
+/// A Rust type that can be invoked—e.g. a function, a method, a struct literal constructor.
 pub struct Callable {
     /// `true` if the callable declaration uses the `async` keyword.
     ///
@@ -28,7 +28,7 @@ pub struct Callable {
     /// E.g. `std::vec::Vec::new` for `Vec::new()`.
     pub path: ResolvedPath,
     /// The types of the callable input parameter types.
-    /// The list is ordered, matching the order in the callable declaration - this is relevant
+    /// The list is ordered, matching the order in the callable declaration—this is relevant
     /// to ensure correct invocations.
     pub inputs: Vec<ResolvedType>,
     /// Rust supports different types of callables which rely on different invocation syntax.
@@ -37,7 +37,7 @@ pub struct Callable {
     /// The ids required to locate this callable in the JSON docs for the package where it is
     /// defined.
     ///
-    /// It is optional to allow for flexible usage patterns - e.g. to leverage [`Callable`]
+    /// It is optional to allow for flexible usage patterns—e.g. to leverage [`Callable`]
     /// to work with callables that we want to code-generate into a new crate.  
     pub source_coordinates: Option<GlobalItemId>,
 }

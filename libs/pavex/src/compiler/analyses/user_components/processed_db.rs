@@ -51,7 +51,7 @@ impl UserComponentDb {
         computation_db: &mut ComputationDb,
         package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
-        mut diagnostics: &mut Vec<miette::Error>,
+        diagnostics: &mut Vec<miette::Error>,
     ) -> Result<Self, ()> {
         /// Exit early if there is at least one error.
         macro_rules! exit_on_errors {
@@ -63,17 +63,17 @@ impl UserComponentDb {
         }
 
         let raw_db = RawUserComponentDb::build(bp);
-        validate_router(&raw_db, &package_graph, &mut diagnostics);
-        let resolved_path_db = ResolvedPathDb::build(&raw_db, &package_graph, &mut diagnostics);
+        validate_router(&raw_db, package_graph, diagnostics);
+        let resolved_path_db = ResolvedPathDb::build(&raw_db, package_graph, diagnostics);
         exit_on_errors!(diagnostics);
 
         Self::resolve_and_intern_paths(
             &resolved_path_db,
             &raw_db,
             computation_db,
-            &package_graph,
-            &krate_collection,
-            &mut diagnostics,
+            package_graph,
+            krate_collection,
+            diagnostics,
         );
         exit_on_errors!(diagnostics);
 
@@ -217,7 +217,7 @@ impl UserComponentDb {
                                             let mut inputs = item.sig.inputs.iter();
                                             inputs.nth(inner_error.parameter_index).cloned()
                                         } else if let Ok(item) =
-                                            syn::parse_str::<syn::ImplItemMethod>(span_contents)
+                                            syn::parse_str::<syn::ImplItemFn>(span_contents)
                                         {
                                             let mut inputs = item.sig.inputs.iter();
                                             inputs.nth(inner_error.parameter_index).cloned()
@@ -302,7 +302,7 @@ impl UserComponentDb {
                                         {
                                             item.sig.output
                                         } else if let Ok(item) =
-                                            syn::parse_str::<syn::ImplItemMethod>(&span_contents)
+                                            syn::parse_str::<syn::ImplItemFn>(&span_contents)
                                         {
                                             item.sig.output
                                         } else {
@@ -362,7 +362,7 @@ impl UserComponentDb {
             CallableResolutionError::GenericParameterResolutionError(_) => {
                 let label = diagnostic::get_f_macro_invocation_span(&source, location)
                     .map(|s| s.labeled(format!("The {callable_type} was registered here")));
-                let diagnostic = CompilerDiagnostic::builder(source, e.clone())
+                let diagnostic = CompilerDiagnostic::builder(source, e)
                     .optional_label(label)
                     .build();
                 diagnostics.push(diagnostic.into());

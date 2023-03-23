@@ -94,8 +94,7 @@ fn push_router_conflict_diagnostic(
     let first = annotated_snippets.next().unwrap();
     let overall = CompilerDiagnostic::builder(first.source_code, anyhow!(
             "I don't know how to route incoming `{method} {path}` requests: you have registered {n_unique_handlers} \
-            different request handlers for this path+method combination.\n\
-            You can only have a single request handler for each path+method combination.",
+            different request handlers for this path+method combination."
         ))
         .labels(first.labels.into_iter())
         .additional_annotated_snippets(annotated_snippets)

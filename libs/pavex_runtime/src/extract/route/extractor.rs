@@ -47,7 +47,7 @@
 /// Therefore `%20` is not interpreted as a space character.
 ///
 /// There are situations where you might want to work with the raw route parameters, but
-/// most of the time you'll want to use [`RouteParams`] instead - it performs percent-decoding
+/// most of the time you'll want to use [`RouteParams`] instead—it performs percent-decoding
 /// and deserialization for you.
 #[doc(inline)]
 pub use matchit::Params as RawRouteParams;
@@ -144,7 +144,7 @@ use crate::extract::route::errors::{ExtractRouteParamsError, InvalidUtf8InPathPa
 ///
 /// `pavex` wants to enable local reasoning, whenever possible: it should be easy to understand what
 /// each extracted route parameter represents.  
-/// Struct with named fields are ideal in this regard: by looking at the field name you can
+/// Plain structs with named fields are ideal in this regard: by looking at the field name you can
 /// immediately understand _which_ route parameter is being extracted.  
 /// The same is not true for other types, e.g. `(String, u64, u32)`, where you have to go and
 /// check the route's path template to understand what each entry represents.

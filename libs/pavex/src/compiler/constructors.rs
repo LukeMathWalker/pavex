@@ -146,7 +146,7 @@ pub(crate) enum FallibleConstructorValidationError {
 }
 
 /// The `Ok` and `Err` `MatchResult`s returned by [`FallibleConstructor::matchers`].
-/// The `Ok` variant is guaranteed to be a valid constructor - i.e. it doesn't return the unit
+/// The `Ok` variant is guaranteed to be a valid constructor—i.e. it doesn't return the unit
 /// type.
 pub(crate) struct ConstructorResultMatchers<'a> {
     pub(crate) ok: Constructor<'a>,

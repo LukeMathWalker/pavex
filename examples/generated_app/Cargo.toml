@@ -11,7 +11,8 @@ autobenches = false
 bytes = "1.4.0"
 http = "0.2.9"
 http-body = "0.4.5"
-hyper = "0.14.24"
+hyper = "0.14.25"
+matchit = "0.7.0"
 
 [dependencies.app_blueprint]
 version = "0.1.0"

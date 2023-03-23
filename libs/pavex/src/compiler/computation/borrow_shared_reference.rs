@@ -3,7 +3,7 @@ use indexmap::IndexSet;
 
 use crate::language::{ResolvedType, TypeReference};
 
-/// Borrow a shared reference for a type - i.e. get a `&T` from a `T`.
+/// Borrow a shared reference for a type—i.e. get a `&T` from a `T`.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) struct BorrowSharedReference {
     pub(crate) input: ResolvedType,
