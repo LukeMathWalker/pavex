@@ -26,8 +26,10 @@
 //! ```
 //!
 //! Check out [`RouteParams`]' documentation for more details.
-pub use extractor::{RawRouteParams, RouteParams};
+pub use raw_route_params::{RawRouteParams, RawRouteParamsIter};
+pub use route_params::RouteParams;
 
 mod deserializer;
 pub mod errors;
-mod extractor;
+mod raw_route_params;
+mod route_params;

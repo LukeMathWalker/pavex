@@ -94,7 +94,7 @@ pub async fn route_handler_0() -> http::Response<
         app::A,
     >>::a_method_using_the_trait_generic_param();
     let v2 = app::handler(v1, v0);
-    <http::Response::<
-        http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>,
+    <http::Response<
+        http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
     > as pavex_runtime::response::IntoResponse>::into_response(v2)
 }

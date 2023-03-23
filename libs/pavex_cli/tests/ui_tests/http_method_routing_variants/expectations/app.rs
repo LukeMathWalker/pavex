@@ -210,87 +210,87 @@ pub async fn route_handler_0() -> http::Response<
     http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
 > {
     let v0 = app::handler();
-    <http::Response::<
-        http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>,
+    <http::Response<
+        http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
     > as pavex_runtime::response::IntoResponse>::into_response(v0)
 }
 pub async fn route_handler_1() -> http::Response<
     http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
 > {
     let v0 = app::handler();
-    <http::Response::<
-        http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>,
+    <http::Response<
+        http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
     > as pavex_runtime::response::IntoResponse>::into_response(v0)
 }
 pub async fn route_handler_2() -> http::Response<
     http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
 > {
     let v0 = app::handler();
-    <http::Response::<
-        http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>,
+    <http::Response<
+        http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
     > as pavex_runtime::response::IntoResponse>::into_response(v0)
 }
 pub async fn route_handler_3() -> http::Response<
     http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
 > {
     let v0 = app::handler();
-    <http::Response::<
-        http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>,
+    <http::Response<
+        http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
     > as pavex_runtime::response::IntoResponse>::into_response(v0)
 }
 pub async fn route_handler_4() -> http::Response<
     http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
 > {
     let v0 = app::handler();
-    <http::Response::<
-        http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>,
+    <http::Response<
+        http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
     > as pavex_runtime::response::IntoResponse>::into_response(v0)
 }
 pub async fn route_handler_5() -> http::Response<
     http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
 > {
     let v0 = app::handler();
-    <http::Response::<
-        http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>,
+    <http::Response<
+        http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
     > as pavex_runtime::response::IntoResponse>::into_response(v0)
 }
 pub async fn route_handler_6() -> http::Response<
     http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
 > {
     let v0 = app::handler();
-    <http::Response::<
-        http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>,
+    <http::Response<
+        http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
     > as pavex_runtime::response::IntoResponse>::into_response(v0)
 }
 pub async fn route_handler_7() -> http::Response<
     http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
 > {
     let v0 = app::handler();
-    <http::Response::<
-        http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>,
+    <http::Response<
+        http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
     > as pavex_runtime::response::IntoResponse>::into_response(v0)
 }
 pub async fn route_handler_8() -> http::Response<
     http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
 > {
     let v0 = app::handler();
-    <http::Response::<
-        http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>,
+    <http::Response<
+        http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
     > as pavex_runtime::response::IntoResponse>::into_response(v0)
 }
 pub async fn route_handler_9() -> http::Response<
     http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
 > {
     let v0 = app::handler();
-    <http::Response::<
-        http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>,
+    <http::Response<
+        http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
     > as pavex_runtime::response::IntoResponse>::into_response(v0)
 }
 pub async fn route_handler_10() -> http::Response<
     http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
 > {
     let v0 = app::handler();
-    <http::Response::<
-        http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>,
+    <http::Response<
+        http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
     > as pavex_runtime::response::IntoResponse>::into_response(v0)
 }

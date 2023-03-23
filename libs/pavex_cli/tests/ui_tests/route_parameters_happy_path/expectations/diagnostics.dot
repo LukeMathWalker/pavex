@@ -1,8 +1,8 @@
 digraph "GET /home/:home_id" {
     0 [ label = "app::get_home(pavex_runtime::extract::route::RouteParams<app::HomeRouteParams>) -> alloc::string::String"]
     1 [ label = "core::prelude::rust_2015::v1::Result<pavex_runtime::extract::route::RouteParams<app::HomeRouteParams>, pavex_runtime::extract::route::errors::ExtractRouteParamsError> -> pavex_runtime::extract::route::RouteParams<app::HomeRouteParams>"]
-    2 [ label = "pavex_runtime::extract::route::RouteParams::extract(matchit::Params<'_, '_>) -> core::prelude::rust_2015::v1::Result<pavex_runtime::extract::route::RouteParams<app::HomeRouteParams>, pavex_runtime::extract::route::errors::ExtractRouteParamsError>"]
-    3 [ label = "matchit::Params<'_, '_>"]
+    2 [ label = "pavex_runtime::extract::route::RouteParams::extract(pavex_runtime::extract::route::RawRouteParams<'_, '_>) -> core::prelude::rust_2015::v1::Result<pavex_runtime::extract::route::RouteParams<app::HomeRouteParams>, pavex_runtime::extract::route::errors::ExtractRouteParamsError>"]
+    3 [ label = "pavex_runtime::extract::route::RawRouteParams<'_, '_>"]
     4 [ label = "<alloc::string::String as pavex_runtime::response::IntoResponse>::into_response(alloc::string::String) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
     5 [ label = "core::prelude::rust_2015::v1::Result<pavex_runtime::extract::route::RouteParams<app::HomeRouteParams>, pavex_runtime::extract::route::errors::ExtractRouteParamsError> -> pavex_runtime::extract::route::errors::ExtractRouteParamsError"]
     6 [ label = "pavex_runtime::extract::route::errors::ExtractRouteParamsError -> &pavex_runtime::extract::route::errors::ExtractRouteParamsError"]
@@ -22,8 +22,8 @@ digraph "GET /home/:home_id" {
 digraph "GET /home/:home_id/room/:room_id" {
     0 [ label = "app::get_room(pavex_runtime::extract::route::RouteParams<app::RoomRouteParams>) -> alloc::string::String"]
     1 [ label = "core::prelude::rust_2015::v1::Result<pavex_runtime::extract::route::RouteParams<app::RoomRouteParams>, pavex_runtime::extract::route::errors::ExtractRouteParamsError> -> pavex_runtime::extract::route::RouteParams<app::RoomRouteParams>"]
-    2 [ label = "pavex_runtime::extract::route::RouteParams::extract(matchit::Params<'_, '_>) -> core::prelude::rust_2015::v1::Result<pavex_runtime::extract::route::RouteParams<app::RoomRouteParams>, pavex_runtime::extract::route::errors::ExtractRouteParamsError>"]
-    3 [ label = "matchit::Params<'_, '_>"]
+    2 [ label = "pavex_runtime::extract::route::RouteParams::extract(pavex_runtime::extract::route::RawRouteParams<'_, '_>) -> core::prelude::rust_2015::v1::Result<pavex_runtime::extract::route::RouteParams<app::RoomRouteParams>, pavex_runtime::extract::route::errors::ExtractRouteParamsError>"]
+    3 [ label = "pavex_runtime::extract::route::RawRouteParams<'_, '_>"]
     4 [ label = "<alloc::string::String as pavex_runtime::response::IntoResponse>::into_response(alloc::string::String) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
     5 [ label = "core::prelude::rust_2015::v1::Result<pavex_runtime::extract::route::RouteParams<app::RoomRouteParams>, pavex_runtime::extract::route::errors::ExtractRouteParamsError> -> pavex_runtime::extract::route::errors::ExtractRouteParamsError"]
     6 [ label = "pavex_runtime::extract::route::errors::ExtractRouteParamsError -> &pavex_runtime::extract::route::errors::ExtractRouteParamsError"]

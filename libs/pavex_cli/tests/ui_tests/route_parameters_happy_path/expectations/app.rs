@@ -65,7 +65,9 @@ async fn route_request(
     };
     let route_id = matched_route.value;
     #[allow(unused)]
-    let url_params = matched_route.params;
+    let url_params: pavex_runtime::extract::route::RawRouteParams<'_, '_> = matched_route
+        .params
+        .into();
     match route_id {
         0u32 => {
             match request.method() {
@@ -100,7 +102,7 @@ async fn route_request(
     }
 }
 pub async fn route_handler_0(
-    v0: matchit::Params<'_, '_>,
+    v0: pavex_runtime::extract::route::RawRouteParams<'_, '_>,
 ) -> http::Response<
     http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
 > {
@@ -116,14 +118,14 @@ pub async fn route_handler_0(
             let v3 = pavex_runtime::extract::route::errors::ExtractRouteParamsError::into_response(
                 &v2,
             );
-            <http::Response::<
+            <http::Response<
                 alloc::string::String,
             > as pavex_runtime::response::IntoResponse>::into_response(v3)
         }
     }
 }
 pub async fn route_handler_1(
-    v0: matchit::Params<'_, '_>,
+    v0: pavex_runtime::extract::route::RawRouteParams<'_, '_>,
 ) -> http::Response<
     http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
 > {
@@ -139,7 +141,7 @@ pub async fn route_handler_1(
             let v3 = pavex_runtime::extract::route::errors::ExtractRouteParamsError::into_response(
                 &v2,
             );
-            <http::Response::<
+            <http::Response<
                 alloc::string::String,
             > as pavex_runtime::response::IntoResponse>::into_response(v3)
         }
