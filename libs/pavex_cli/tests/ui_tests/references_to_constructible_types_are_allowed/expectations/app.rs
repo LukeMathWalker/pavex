@@ -101,7 +101,7 @@ pub async fn route_handler_0(
         let v2 = &app::transient();
         app::stream_file(v0, &v1, v2)
     };
-    <http::Response::<
-        http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>,
+    <http::Response<
+        http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
     > as pavex_runtime::response::IntoResponse>::into_response(v3)
 }

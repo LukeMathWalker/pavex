@@ -365,7 +365,9 @@ fn get_request_dispatcher(
             };
             let route_id = matched_route.value;
             #[allow(unused)]
-            let url_params = matched_route.params;
+            let url_params: pavex_runtime::extract::route::RawRouteParams<'_, '_> = matched_route
+                .params
+                .into();
             match route_id {
                 #route_dispatch_table
                 _ => {

@@ -105,8 +105,8 @@ pub async fn route_handler_0() -> http::Response<
                                     let v9 = app::json();
                                     let v10 = app::json();
                                     let v11 = app::handler(v10, v9, &v8, v7, v5, &v3, &v1);
-                                    <http::Response::<
-                                        http_body::combinators::BoxBody::<
+                                    <http::Response<
+                                        http_body::combinators::BoxBody<
                                             bytes::Bytes,
                                             pavex_runtime::Error,
                                         >,
@@ -116,8 +116,8 @@ pub async fn route_handler_0() -> http::Response<
                                 }
                                 Err(v7) => {
                                     let v8 = app::error_handler(&v7);
-                                    <http::Response::<
-                                        http_body::combinators::BoxBody::<
+                                    <http::Response<
+                                        http_body::combinators::BoxBody<
                                             bytes::Bytes,
                                             pavex_runtime::Error,
                                         >,
@@ -129,8 +129,8 @@ pub async fn route_handler_0() -> http::Response<
                         }
                         Err(v5) => {
                             let v6 = app::generic_error_handler(&v5);
-                            <http::Response::<
-                                http_body::combinators::BoxBody::<
+                            <http::Response<
+                                http_body::combinators::BoxBody<
                                     bytes::Bytes,
                                     pavex_runtime::Error,
                                 >,
@@ -142,8 +142,8 @@ pub async fn route_handler_0() -> http::Response<
                 }
                 Err(v3) => {
                     let v4 = app::generic_error_handler(&v3);
-                    <http::Response::<
-                        http_body::combinators::BoxBody::<
+                    <http::Response<
+                        http_body::combinators::BoxBody<
                             bytes::Bytes,
                             pavex_runtime::Error,
                         >,
@@ -154,8 +154,8 @@ pub async fn route_handler_0() -> http::Response<
         Err(v1) => {
             let v2 = app::json();
             let v3 = app::doubly_generic_error_handler(&v1, &v2);
-            <http::Response::<
-                http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>,
+            <http::Response<
+                http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
             > as pavex_runtime::response::IntoResponse>::into_response(v3)
         }
     }

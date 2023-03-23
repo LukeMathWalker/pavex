@@ -383,15 +383,15 @@ fn framework_bindings(
         package_graph,
         krate_collection,
     );
-    let path_parameters = process_framework_path(
-        "pavex_runtime::routing::Params::<'k, 'v>",
+    let raw_path_parameters = process_framework_path(
+        "pavex_runtime::extract::route::RawRouteParams::<'server, 'request>",
         package_graph,
         krate_collection,
     );
     BiHashMap::from_iter(
         [
             (format_ident!("request"), http_request),
-            (format_ident!("url_params"), path_parameters),
+            (format_ident!("url_params"), raw_path_parameters),
         ]
         .into_iter(),
     )

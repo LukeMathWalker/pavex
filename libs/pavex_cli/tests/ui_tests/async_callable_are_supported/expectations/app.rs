@@ -103,7 +103,7 @@ pub async fn route_handler_0(
         let v3 = app::logger().await;
         app::stream_file(v2, v3, v0).await
     };
-    <http::Response::<
-        http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>,
+    <http::Response<
+        http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
     > as pavex_runtime::response::IntoResponse>::into_response(v4)
 }

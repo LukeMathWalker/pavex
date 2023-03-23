@@ -26,7 +26,7 @@
 //! ```
 //!
 //! Check out [`RouteParams`]' documentation for more details.
-pub use raw_route_params::RawRouteParams;
+pub use raw_route_params::{RawRouteParams, RawRouteParamsIter};
 pub use route_params::RouteParams;
 
 mod deserializer;

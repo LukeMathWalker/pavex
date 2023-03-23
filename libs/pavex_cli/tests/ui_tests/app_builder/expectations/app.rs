@@ -105,8 +105,8 @@ pub async fn route_handler_0(
                 let v4 = app::logger();
                 app::stream_file(v3, v4, v0)
             };
-            <http::Response::<
-                http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>,
+            <http::Response<
+                http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
             > as pavex_runtime::response::IntoResponse>::into_response(v5)
         }
         Err(v3) => {
@@ -114,8 +114,8 @@ pub async fn route_handler_0(
                 let v4 = app::logger();
                 app::handle_extract_path_error(&v3, v4)
             };
-            <http::Response::<
-                http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>,
+            <http::Response<
+                http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
             > as pavex_runtime::response::IntoResponse>::into_response(v5)
         }
     }

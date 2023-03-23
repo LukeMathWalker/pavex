@@ -97,7 +97,7 @@ pub async fn route_handler_0() -> http::Response<
         std::string::String,
     >(&v0);
     let v5 = app::handler(v0, v2, v4, v3);
-    <http::Response::<
-        http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>,
+    <http::Response<
+        http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
     > as pavex_runtime::response::IntoResponse>::into_response(v5)
 }

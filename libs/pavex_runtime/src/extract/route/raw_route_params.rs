@@ -1,3 +1,5 @@
+use matchit::{Params, ParamsIter};
+
 /// Extract (raw) route parameters from the URL of an incoming request.
 ///
 /// # Example
@@ -49,5 +51,47 @@
 /// There are situations where you might want to work with the raw route parameters, but
 /// most of the time you'll want to use [`RouteParams`] instead—it performs percent-decoding
 /// and deserialization for you.
-#[doc(inline)]
-pub use matchit::Params as RawRouteParams;
+///
+/// [`RouteParams`]: crate::extract::route::RouteParams
+pub struct RawRouteParams<'server, 'request>(matchit::Params<'server, 'request>);
+
+impl<'server, 'request> RawRouteParams<'server, 'request> {
+    /// Returns the number of extracted route parameters.
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    /// Returns the value of the first route parameter registered under the given key.
+    pub fn get(&self, key: impl AsRef<str>) -> Option<&'request str> {
+        self.0.get(key)
+    }
+
+    /// Returns an iterator over the parameters in the list.
+    pub fn iter(&self) -> RawRouteParamsIter<'_, 'server, 'request> {
+        RawRouteParamsIter(self.0.iter())
+    }
+
+    /// Returns `true` if no route parameters have been extracted from the request URL.
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+}
+
+impl<'k, 'v> From<Params<'k, 'v>> for RawRouteParams<'k, 'v> {
+    fn from(value: Params<'k, 'v>) -> Self {
+        Self(value)
+    }
+}
+
+/// An iterator over the route parameters extracted via [`RawRouteParams`].
+pub struct RawRouteParamsIter<'extractor, 'server, 'request>(
+    ParamsIter<'extractor, 'server, 'request>,
+);
+
+impl<'extractor, 'server, 'request> Iterator for RawRouteParamsIter<'extractor, 'server, 'request> {
+    type Item = (&'server str, &'request str);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next()
+    }
+}

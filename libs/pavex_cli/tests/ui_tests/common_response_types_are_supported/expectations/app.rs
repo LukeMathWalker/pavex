@@ -258,7 +258,7 @@ pub async fn route_handler_2() -> http::Response<
     http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
 > {
     let v0 = app::cow_static_str();
-    <alloc::borrow::Cow::<
+    <alloc::borrow::Cow<
         'static,
         str,
     > as pavex_runtime::response::IntoResponse>::into_response(v0)
@@ -267,7 +267,7 @@ pub async fn route_handler_3() -> http::Response<
     http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
 > {
     let v0 = app::cow_static_u8_slice();
-    <alloc::borrow::Cow::<
+    <alloc::borrow::Cow<
         'static,
         [u8],
     > as pavex_runtime::response::IntoResponse>::into_response(v0)
@@ -276,7 +276,7 @@ pub async fn route_handler_4() -> http::Response<
     http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
 > {
     let v0 = app::empty();
-    <http_body::Empty::<
+    <http_body::Empty<
         bytes::Bytes,
     > as pavex_runtime::response::IntoResponse>::into_response(v0)
 }
@@ -284,7 +284,7 @@ pub async fn route_handler_5() -> http::Response<
     http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
 > {
     let v0 = app::full();
-    <http_body::Full::<
+    <http_body::Full<
         bytes::Bytes,
     > as pavex_runtime::response::IntoResponse>::into_response(v0)
 }
@@ -298,8 +298,8 @@ pub async fn route_handler_7() -> http::Response<
     http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
 > {
     let v0 = app::response();
-    <http::Response::<
-        http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>,
+    <http::Response<
+        http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
     > as pavex_runtime::response::IntoResponse>::into_response(v0)
 }
 pub async fn route_handler_8() -> http::Response<
@@ -330,5 +330,5 @@ pub async fn route_handler_12() -> http::Response<
     http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
 > {
     let v0 = app::vec_u8();
-    <alloc::vec::Vec::<u8> as pavex_runtime::response::IntoResponse>::into_response(v0)
+    <alloc::vec::Vec<u8> as pavex_runtime::response::IntoResponse>::into_response(v0)
 }
