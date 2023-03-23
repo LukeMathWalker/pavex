@@ -146,10 +146,12 @@ impl CallPath {
                             GenericArgument::Lifetime(l) => {
                                 CallPathGenericArgument::Lifetime(CallPathLifetime::new(l.ident.to_string()))
                             }
-                            GenericArgument::Binding(_)
+                            GenericArgument::AssocType(_)
+                            | GenericArgument::AssocConst(_)
                             | GenericArgument::Constraint(_)
-                            | GenericArgument::Const(_) => todo!(
-                                "We can only handle concrete types and the 'static lifetime as generic parameters for the time being."
+                            | GenericArgument::Const(_)
+                            | _ => todo!(
+                                "We can only handle concrete types and lifetimes as generic parameters for the time being."
                             ),
                         };
                         arguments.push(argument)

@@ -217,7 +217,7 @@ impl UserComponentDb {
                                             let mut inputs = item.sig.inputs.iter();
                                             inputs.nth(inner_error.parameter_index).cloned()
                                         } else if let Ok(item) =
-                                            syn::parse_str::<syn::ImplItemMethod>(span_contents)
+                                            syn::parse_str::<syn::ImplItemFn>(span_contents)
                                         {
                                             let mut inputs = item.sig.inputs.iter();
                                             inputs.nth(inner_error.parameter_index).cloned()
@@ -302,7 +302,7 @@ impl UserComponentDb {
                                         {
                                             item.sig.output
                                         } else if let Ok(item) =
-                                            syn::parse_str::<syn::ImplItemMethod>(&span_contents)
+                                            syn::parse_str::<syn::ImplItemFn>(&span_contents)
                                         {
                                             item.sig.output
                                         } else {

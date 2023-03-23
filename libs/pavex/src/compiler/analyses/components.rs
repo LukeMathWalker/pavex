@@ -1057,7 +1057,7 @@ impl ComponentDb {
                             if let Ok(item) = syn::parse_str::<syn::ItemFn>(&span_contents) {
                                 (item.sig.generics.params, item.sig.output)
                             } else if let Ok(item) =
-                                syn::parse_str::<syn::ImplItemMethod>(&span_contents)
+                                syn::parse_str::<syn::ImplItemFn>(&span_contents)
                             {
                                 (item.sig.generics.params, item.sig.output)
                             } else {
@@ -1160,7 +1160,7 @@ impl ComponentDb {
                             if let Ok(item) = syn::parse_str::<syn::ItemFn>(&span_contents) {
                                 item.sig.output
                             } else if let Ok(item) =
-                                syn::parse_str::<syn::ImplItemMethod>(&span_contents)
+                                syn::parse_str::<syn::ImplItemFn>(&span_contents)
                             {
                                 item.sig.output
                             } else {
@@ -1259,7 +1259,7 @@ impl ComponentDb {
                             if let Ok(item) = syn::parse_str::<syn::ItemFn>(&span_contents) {
                                 item.sig.generics.params
                             } else if let Ok(item) =
-                                syn::parse_str::<syn::ImplItemMethod>(&span_contents)
+                                syn::parse_str::<syn::ImplItemFn>(&span_contents)
                             {
                                 item.sig.generics.params
                             } else {
@@ -1447,7 +1447,7 @@ impl ComponentDb {
                             if let Ok(item) = syn::parse_str::<syn::ItemFn>(&span_contents) {
                                 (item.sig.generics.params, item.sig.inputs[error_ref_input_index].clone())
                             } else if let Ok(item) =
-                                syn::parse_str::<syn::ImplItemMethod>(&span_contents)
+                                syn::parse_str::<syn::ImplItemFn>(&span_contents)
                             {
                                 (item.sig.generics.params, item.sig.inputs[error_ref_input_index].clone())
                             } else {

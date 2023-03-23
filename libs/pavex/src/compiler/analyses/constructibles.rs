@@ -199,7 +199,7 @@ impl ConstructibleDb {
                     if let Ok(item) = syn::parse_str::<syn::ItemFn>(span_contents) {
                         let mut inputs = item.sig.inputs.iter();
                         inputs.nth(unconstructible_type_index).cloned()
-                    } else if let Ok(item) = syn::parse_str::<syn::ImplItemMethod>(span_contents) {
+                    } else if let Ok(item) = syn::parse_str::<syn::ImplItemFn>(span_contents) {
                         let mut inputs = item.sig.inputs.iter();
                         inputs.nth(unconstructible_type_index).cloned()
                     } else {
