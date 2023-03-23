@@ -1,8 +1,13 @@
+use std::str::FromStr;
+
 use anyhow::anyhow;
 use guppy::graph::PackageGraph;
 use indexmap::{IndexMap, IndexSet};
 use petgraph::Direction;
+use proc_macro2::TokenStream;
 use rustdoc_types::{ItemEnum, StructKind};
+use syn::parse::Parser;
+use syn::{parse_macro_input, Attribute, Meta};
 
 use crate::compiler::analyses::call_graph::{CallGraph, CallGraphNode};
 use crate::compiler::analyses::components::{ComponentDb, HydratedComponent};
@@ -55,7 +60,7 @@ pub(crate) fn verify_route_parameters(
                     match item.inner {
                         ItemEnum::Union(_) => Some(format!("`{t:?}` is an union")),
                         ItemEnum::Enum(_) => Some(format!("`{t:?}` is an enum")),
-                        ItemEnum::Struct(ref s) => match s.kind {
+                        ItemEnum::Struct(ref s) => match &s.kind {
                             StructKind::Unit => Some(format!(
                                 "`{t:?}` is a struct with no fields (a.k.a. unit struct)"
                             )),
