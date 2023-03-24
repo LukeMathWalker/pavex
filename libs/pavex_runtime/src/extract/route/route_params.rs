@@ -60,7 +60,7 @@ use super::RawRouteParams;
 /// `T` in `RouteParams<T>` must implement [`serde::Deserialize`]—it is automatically derived if
 /// you use the [`RouteParams`](macro@crate::extract::route::RouteParams) attribute macro, the
 /// approach we recommend.  
-/// `T` must be struct with named fields, where each field name matches one of the route parameter
+/// `T` must be a struct with named fields, where each field name matches one of the route parameter
 /// names used in the route's path template.
 ///
 /// ```rust
