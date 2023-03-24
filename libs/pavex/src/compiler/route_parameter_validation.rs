@@ -1,13 +1,9 @@
-
-
 use anyhow::anyhow;
 use guppy::graph::PackageGraph;
 use indexmap::{IndexMap, IndexSet};
 use petgraph::Direction;
 
 use rustdoc_types::{ItemEnum, StructKind};
-
-
 
 use crate::compiler::analyses::call_graph::{CallGraph, CallGraphNode};
 use crate::compiler::analyses::components::{ComponentDb, HydratedComponent};

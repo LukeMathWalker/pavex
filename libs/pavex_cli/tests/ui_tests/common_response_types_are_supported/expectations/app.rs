@@ -76,7 +76,9 @@ async fn route_request(
     };
     let route_id = matched_route.value;
     #[allow(unused)]
-    let url_params = matched_route.params;
+    let url_params: pavex_runtime::extract::route::RawRouteParams<'_, '_> = matched_route
+        .params
+        .into();
     match route_id {
         0u32 => {
             match request.method() {

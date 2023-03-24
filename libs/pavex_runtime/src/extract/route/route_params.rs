@@ -13,6 +13,8 @@ use super::RawRouteParams;
 /// - [Example](#example)
 /// - [Supported types](#supported-types)
 /// - [Unsupported types](#unsupported-types)
+/// - [Additional compile-time checks](#additional-compile-time-checks)
+/// - [Avoiding allocations](#avoiding-allocations)
 /// - [Working with raw route parameters](#working-with-raw-route-parameters)
 ///
 /// # Example
@@ -21,29 +23,31 @@ use super::RawRouteParams;
 /// use pavex_builder::{f, router::GET, Blueprint, Lifecycle};
 /// use pavex_runtime::extract::route::RouteParams;
 ///
-/// # fn main() {
-/// let mut bp = Blueprint::new();
-/// // Register the default constructor and error handler for `RouteParams`.
-/// bp.constructor(
-///     f!(pavex_runtime::extract::path::RouteParams::extract),
-///     Lifecycle::RequestScoped,
-/// ).error_handler(
-///     f!(pavex_runtime::extract::path::ExtractRouteParamsError::into_response)
-/// );
-/// // Register a route with a route parameter, `:home_id`.
-/// bp.route(GET, "/home/:home_id", f!(crate::get_home));
-/// # }
+/// fn blueprint() -> Blueprint {
+///     let mut bp = Blueprint::new();
+///     // Register the default constructor and error handler for `RouteParams`.
+///     bp.constructor(
+///         f!(pavex_runtime::extract::path::RouteParams::extract),
+///         Lifecycle::RequestScoped,
+///     ).error_handler(
+///         f!(pavex_runtime::extract::path::ExtractRouteParamsError::into_response)
+///     );
+///     // Register a route with a route parameter, `:home_id`.
+///     bp.route(GET, "/home/:home_id", f!(crate::get_home));
+///     bp
+/// }
 ///
-/// #[derive(serde::Deserialize)]
-/// struct HomeRouteParams {
+/// // The RouteParams attribute macro derives the necessary (de)serialization traits.
+/// #[RouteParams]
+/// struct Home {
 ///     // The name of the field must match the name of the route parameter
 ///     // used in `bp.route`.
 ///     home_id: u32
 /// }
 ///
-/// // The `RouteParams` extractor will deserialize the route parameters into
+/// // The `RouteParams` extractor deserializes the extracted route parameters into
 /// // the type you specified—`HomeRouteParams` in this case.
-/// fn get_home(params: &RouteParams<HomeRouteParams>) -> String {
+/// fn get_home(params: &RouteParams<Home>) -> String {
 ///    format!("The identifier for this home is: {}", params.0.home_id)
 /// }
 /// ```
@@ -53,7 +57,9 @@ use super::RawRouteParams;
 ///
 /// # Supported types
 ///
-/// `T` in `RouteParams<T>` must implement [`serde::Deserialize`].  
+/// `T` in `RouteParams<T>` must implement [`serde::Deserialize`]—it is automatically derived if
+/// you use the [`RouteParams`](macro@crate::extract::route::RouteParams) attribute macro, the
+/// approach we recommend.  
 /// `T` must be struct with named fields, where each field name matches one of the route parameter
 /// names used in the route's path template.
 ///
@@ -61,29 +67,27 @@ use super::RawRouteParams;
 /// use pavex_builder::{f, router::GET, Blueprint};
 /// use pavex_runtime::extract::route::RouteParams;
 ///
-/// # fn main() {
-/// let mut bp = Blueprint::new();
-/// // [...]
-/// // Register a route with a few route parameters.
-/// bp.route(GET, "/address/:address_id/home/:home_id/room/:room_id/", f!(crate::get_home));
-/// # }
+/// fn blueprint() -> Blueprint{
+///     let mut bp = Blueprint::new();
+///     // [...]
+///     // Register a route with a few route parameters.
+///     bp.route(GET, "/address/:address_id/home/:home_id/room/:room_id/", f!(crate::get_room));
+///     bp
+/// }
 ///
-/// #[derive(serde::Deserialize)]
-/// struct HomeRouteParams {
-///     // The name of the field must match the name of the route parameter
+/// #[RouteParams]
+/// struct Room {
+///     // The name of the extracted fields must match the names of the route parameters
 ///     // used in the template we passed to `bp.route`.
 ///     home_id: u32,
-///     // You can map a route parameter to a struct field with a different
-///     // name via the `rename` attribute.
-///     #[serde(rename(deserialize = "address_id"))]
 ///     street_id: String,
 ///     // You can also choose to ignore some route parameters—e.g. we are not
 ///     // extracting the `room_id` here.
 /// }
 ///
 /// // The `RouteParams` extractor will deserialize the route parameters into the
-/// // type you specified—`HomeRouteParams` in this case.
-/// fn get_home(params: &RouteParams<HomeRouteParams>) -> String {
+/// // type you specified—`Room` in this case.
+/// fn get_room(params: &RouteParams<Room>) -> String {
 ///     let params = &params.0;
 ///     format!("The home with id {} is in street {}", params.home_id, params.street_id)
 /// }
@@ -91,12 +95,39 @@ use super::RawRouteParams;
 ///
 /// # Unsupported types
 ///
-/// `pavex` wants to enable local reasoning, whenever possible: it should be easy to understand what
+/// `pavex` wants to enable local reasoning: it should be easy to understand what
 /// each extracted route parameter represents.  
 /// Plain structs with named fields are ideal in this regard: by looking at the field name you can
 /// immediately understand _which_ route parameter is being extracted.  
 /// The same is not true for other types, e.g. `(String, u64, u32)`, where you have to go and
 /// check the route's path template to understand what each entry represents.
+///
+///```rust
+/// use pavex_runtime::extract::route::RouteParams;
+///
+/// // This is self-documenting ✅
+/// // No need to check the route's path template to understand what each field represents.
+/// #[RouteParams]
+/// struct Room {
+///     home_id: u32,
+///     room_id: u32,
+///     street_id: u32,
+/// }
+///
+/// fn get_room(params: &RouteParams<Room>) -> String {
+///     // [...]
+/// # unimplemented!()
+/// }
+///
+/// // This isn't self-documenting ❌
+/// // What does the second u32 represent? The room id? The street id?
+/// // Impossible to tell without checking the route's path template.
+/// fn get_room_tuple(params: &RouteParams<(u32, u32, u32)>) -> String {
+///     // [...]
+/// # unimplemented!()
+/// }
+/// ```
+///
 /// For this reason, `pavex` does not support the following types as `T` in `RouteParams<T>`:
 ///
 /// - tuples, e.g. `(u32, String)`;
@@ -105,6 +136,75 @@ use super::RawRouteParams;
 /// - newtypes, e.g. `struct HomeId(MyParamsStruct)`;
 /// - sequence-like or map-like types, e.g. `Vec<String>` or `HashMap<String, String>`;
 /// - enums.
+///
+/// # Additional compile-time checks
+///
+///`pavex` is able to perform additional checks at compile-time if you use the
+/// [`RouteParams`](macro@crate::extract::route::RouteParams) macro instead
+/// of deriving [`serde::Deserialize`] on your own.
+///
+/// ```rust
+/// # mod home {
+/// use pavex_runtime::extract::route::RouteParams;
+///
+/// // Do this 👇
+/// #[RouteParams]
+/// struct Home {
+///     home_id: u32
+/// }
+/// # }
+///
+/// # mod home2 {
+/// // ..instead of this ❌
+/// #[derive(serde::Deserialize)]
+/// struct Home {
+///     home_id: u32
+/// }
+/// # }
+/// ```
+///
+/// In particular, `pavex` becomes able to:
+///
+/// - verify that for each field in the struct there is a corresponding route parameter
+///   in the route's path.
+/// - detect the usage of common unsupported types as fields, e.g. vectors, tuples.
+/// - detect common errors that might result in a runtime error, e.g. using `&str` as a field type
+///   instead of `Cow<'_, str>` (see [`Avoiding allocations`](#avoiding-allocations)).
+///
+/// Check out [`StructuralDeserialize`](crate::serialization::StructuralDeserialize) if you are curious
+/// to know more about the role played by the [`RouteParams`](macro@crate::extract::route::RouteParams)
+/// macro in enabling these additional compile-time checks.
+///
+/// # Avoiding allocations
+///
+/// If you want to squeeze out the last bit of performance from your application, you can try to
+/// avoid memory allocations when extracting string-like route parameters.  
+/// `pavex` supports this use case—you can borrow from the request's URL instead of cloning.
+///
+/// It is not always possible to avoid allocations, though.  
+/// In particular, if the route parameter is a URL-encoded string (e.g. `John%20Doe`, the URL-encoded
+/// version of `John Doe`) `pavex` must allocate a new `String` to store the decoded version.
+///
+/// Given the above, we recommend using `Cow<'_, str>` as field type: it borrows from the request's
+/// URL if possible, and allocates a new `String` only if strictly necessary.
+///
+/// ```rust
+/// use pavex_runtime::extract::route::RouteParams;
+/// use std::borrow::Cow;
+///
+/// #[RouteParams]
+/// struct Payee<'a> {
+///     name: Cow<'a, str>,
+/// }
+///
+/// fn get_payee(params: &RouteParams<Payee<'_>>) -> String {
+///    format!("The payee's name is {}", params.0.name)
+/// }
+/// ```
+///
+/// Using `&str` instead of `Cow<'_, str>` would result in a runtime error if the route parameter
+/// is URL-encoded. It is therefore discouraged and `pavex` will emit an error at compile-time
+/// if it detects this pattern.
 ///
 /// # Working with raw route parameters
 ///
@@ -126,14 +226,14 @@ impl<T> RouteParams<T> {
     /// The default constructor for [`RouteParams`].
     ///
     /// If the extraction fails, an [`ExtractRouteParamsError`] returned.
-    pub fn extract<'key, 'value>(
-        params: RawRouteParams<'key, 'value>,
+    pub fn extract<'server, 'request>(
+        params: RawRouteParams<'server, 'request>,
     ) -> Result<Self, ExtractRouteParamsError>
     where
-        T: Deserialize<'value>,
+        T: Deserialize<'request>,
         // The parameter ids live as long as the server, while the values are tied to the lifecycle
         // of an incoming request. So it's always true that 'key outlives 'value.
-        'key: 'value,
+        'server: 'request,
     {
         let mut decoded_params = Vec::with_capacity(params.len());
         for (id, value) in params.iter() {
