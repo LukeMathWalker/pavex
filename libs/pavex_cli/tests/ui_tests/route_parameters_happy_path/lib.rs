@@ -1,7 +1,7 @@
 use pavex_builder::{f, router::GET, Blueprint, Lifecycle};
 use pavex_runtime::extract::route::RouteParams;
 
-#[derive(serde::Deserialize)]
+#[RouteParams]
 pub struct HomeRouteParams {
     pub home_id: u32,
 }
@@ -10,7 +10,7 @@ pub fn get_home(RouteParams(HomeRouteParams { home_id }): RouteParams<HomeRouteP
     format!("{}", home_id)
 }
 
-#[derive(serde::Deserialize)]
+#[RouteParams]
 pub struct RoomRouteParams {
     pub home_id: u32,
     // This is not a valid type for a route parameter
