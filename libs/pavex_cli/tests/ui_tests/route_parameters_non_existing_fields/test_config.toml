@@ -1,0 +1,7 @@
+description = "Pavex will detect at compile-time if you are trying to extract a route parameter that does not exist in the route definition."
+
+[expectations]
+codegen = "fail"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }

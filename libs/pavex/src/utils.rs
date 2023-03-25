@@ -7,6 +7,7 @@ pub(crate) fn comma_separated_list<'a, T, I>(
     mut buffer: impl Write,
     iter: I,
     f: impl Fn(&'a T) -> String,
+    conjunction: &str,
 ) -> Result<(), std::fmt::Error>
 where
     T: 'a,
@@ -15,7 +16,7 @@ where
     let length = iter.len();
     for (i, item) in iter.enumerate() {
         if i == length.saturating_sub(1) {
-            write!(buffer, " and ")?;
+            write!(buffer, " {conjunction} ")?;
         }
         write!(buffer, "{}", &f(item))?;
         if i < length.saturating_sub(2) {

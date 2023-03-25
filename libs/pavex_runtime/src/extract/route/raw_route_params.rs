@@ -8,12 +8,13 @@ use matchit::{Params, ParamsIter};
 /// use pavex_builder::{f, router::GET, Blueprint};
 /// use pavex_runtime::extract::route::RawRouteParams;
 ///
-/// # fn main() {
-/// let mut bp = Blueprint::new();
-/// // [...]
-/// // Register a route with a few route parameters.
-/// bp.route(GET, "/address/:address_id/home/:home_id", f!(crate::get_home));
-/// # }
+/// fn blueprint() -> Blueprint {
+///     let mut bp = Blueprint::new();
+///     // [...]
+///     // Register a route with a few route parameters.
+///     bp.route(GET, "/address/:address_id/home/:home_id", f!(crate::get_home));
+///     bp
+/// }
 ///
 /// fn get_home(params: &RawRouteParams) -> String {
 ///     let home_id = &params.get("home_id").unwrap();
@@ -52,8 +53,8 @@ use matchit::{Params, ParamsIter};
 /// most of the time you'll want to use [`RouteParams`] instead—it performs percent-decoding
 /// and deserialization for you.
 ///
-/// [`RouteParams`]: crate::extract::route::RouteParams
-pub struct RawRouteParams<'server, 'request>(matchit::Params<'server, 'request>);
+/// [`RouteParams`]: struct@crate::extract::route::RouteParams
+pub struct RawRouteParams<'server, 'request>(Params<'server, 'request>);
 
 impl<'server, 'request> RawRouteParams<'server, 'request> {
     /// Returns the number of extracted route parameters.

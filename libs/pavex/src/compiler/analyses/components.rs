@@ -1111,8 +1111,13 @@ impl ComponentDb {
                     format!("`{}`", &parameters[0])
                 } else {
                     let mut buffer = String::new();
-                    comma_separated_list(&mut buffer, parameters.iter(), |p| format!("`{}`", p))
-                        .unwrap();
+                    comma_separated_list(
+                        &mut buffer,
+                        parameters.iter(),
+                        |p| format!("`{}`", p),
+                        "and",
+                    )
+                    .unwrap();
                     buffer
                 };
                 let error = anyhow::anyhow!(e)
@@ -1295,8 +1300,13 @@ impl ComponentDb {
                     format!("`{}`", &parameters[0])
                 } else {
                     let mut buffer = String::new();
-                    comma_separated_list(&mut buffer, parameters.iter(), |p| format!("`{}`", p))
-                        .unwrap();
+                    comma_separated_list(
+                        &mut buffer,
+                        parameters.iter(),
+                        |p| format!("`{}`", p),
+                        "and",
+                    )
+                    .unwrap();
                     buffer
                 };
                 let verb = if parameters.len() == 1 { "does" } else { "do" };
@@ -1497,7 +1507,7 @@ impl ComponentDb {
                     format!("`{}`", &parameters[0])
                 } else {
                     let mut buffer = String::new();
-                    comma_separated_list(&mut buffer, parameters.iter(), |p| format!("`{}`", p)).unwrap();
+                    comma_separated_list(&mut buffer, parameters.iter(), |p| format!("`{}`", p), "and").unwrap();
                     buffer
                 };
                 let error = anyhow::anyhow!(e)

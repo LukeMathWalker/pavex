@@ -26,6 +26,8 @@ pub enum ExtractRouteParamsError {
 
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
+/// One of the percent-decoded route parameters is not a valid UTF8 string.
+///
 /// URL parameters must be percent-encoded whenever they contain characters that are not
 /// URL safe—e.g. whitespaces.
 ///
@@ -137,7 +139,7 @@ impl std::error::Error for PathDeserializationError {}
 /// more precise error messages (e.g. implementing your own custom conversion from
 /// `PathDeserializationError` into an HTTP response).
 ///
-/// [`RouteParams`]: crate::extract::route::RouteParams
+/// [`RouteParams`]: struct@crate::extract::route::RouteParams
 #[derive(Debug, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum ErrorKind {

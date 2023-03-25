@@ -9,3 +9,5 @@ pub mod body;
 pub mod error;
 pub mod extract;
 pub mod response;
+
+pub mod serialization;
