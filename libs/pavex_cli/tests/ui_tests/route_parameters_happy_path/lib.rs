@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use pavex_builder::{f, router::GET, Blueprint, Lifecycle};
 use pavex_runtime::extract::route::RouteParams;
 
@@ -21,6 +23,15 @@ pub fn get_room(params: RouteParams<RoomRouteParams>) -> String {
     format!("{}", params.0.home_id)
 }
 
+#[RouteParams]
+pub struct TownRouteParams<'a> {
+    pub town: Cow<'a, str>,
+}
+
+pub fn get_town(params: RouteParams<TownRouteParams<'_>>) -> String {
+    format!("{}", params.0.town)
+}
+
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.constructor(
@@ -32,5 +43,6 @@ pub fn blueprint() -> Blueprint {
     ));
     bp.route(GET, "/home/:home_id", f!(crate::get_home));
     bp.route(GET, "/home/:home_id/room/:room_id", f!(crate::get_room));
+    bp.route(GET, "/town/*town", f!(crate::get_town));
     bp
 }

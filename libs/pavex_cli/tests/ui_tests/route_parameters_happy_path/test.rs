@@ -32,6 +32,42 @@ async fn route_parameter_extraction_works() {
 }
 
 #[tokio::test]
+async fn catch_all_extraction_works_on_a_single_segment() {
+    let port = spawn_test_server().await;
+    let response = reqwest::get(&format!("http://localhost:{}/town/123", port))
+        .await
+        .expect("Failed to make request")
+        .error_for_status()
+        .expect("Failed to get successful response");
+    let text = response.text().await.expect("Failed to get response body");
+    assert_eq!("123", text);
+}
+
+#[tokio::test]
+async fn catch_all_extraction_works_on_a_multiple_segments() {
+    let port = spawn_test_server().await;
+    let response = reqwest::get(&format!(
+        "http://localhost:{}/town/123/street/hello%20mate",
+        port
+    ))
+    .await
+    .expect("Failed to make request")
+    .error_for_status()
+    .expect("Failed to get successful response");
+    let text = response.text().await.expect("Failed to get response body");
+    assert_eq!("123/street/hello mate", text);
+}
+
+#[tokio::test]
+async fn catch_all_match_cannot_be_empty() {
+    let port = spawn_test_server().await;
+    let response = reqwest::get(&format!("http://localhost:{}/town/", port))
+        .await
+        .expect("Failed to make request");
+    assert_eq!(response.status(), 404);
+}
+
+#[tokio::test]
 async fn route_parameter_has_the_wrong_type() {
     let port = spawn_test_server().await;
     let response = reqwest::get(&format!("http://localhost:{}/home/abc", port))
