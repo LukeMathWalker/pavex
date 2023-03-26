@@ -48,6 +48,7 @@ fn build_router() -> Result<
     let mut router = pavex_runtime::routing::Router::new();
     router.insert("/home/:home_id", 0u32)?;
     router.insert("/home/:home_id/room/:room_id", 1u32)?;
+    router.insert("/town/*town", 2u32)?;
     Ok(router)
 }
 async fn route_request(
@@ -84,6 +85,18 @@ async fn route_request(
         1u32 => {
             match request.method() {
                 &pavex_runtime::http::Method::GET => route_handler_1(url_params).await,
+                _ => {
+                    pavex_runtime::response::Response::builder()
+                        .status(pavex_runtime::http::StatusCode::METHOD_NOT_ALLOWED)
+                        .header(pavex_runtime::http::header::ALLOW, "GET")
+                        .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
+                        .unwrap()
+                }
+            }
+        }
+        2u32 => {
+            match request.method() {
+                &pavex_runtime::http::Method::GET => route_handler_2(url_params).await,
                 _ => {
                     pavex_runtime::response::Response::builder()
                         .status(pavex_runtime::http::StatusCode::METHOD_NOT_ALLOWED)
@@ -133,6 +146,29 @@ pub async fn route_handler_1(
     match v1 {
         Ok(v2) => {
             let v3 = app::get_room(v2);
+            <alloc::string::String as pavex_runtime::response::IntoResponse>::into_response(
+                v3,
+            )
+        }
+        Err(v2) => {
+            let v3 = pavex_runtime::extract::route::errors::ExtractRouteParamsError::into_response(
+                &v2,
+            );
+            <http::Response<
+                alloc::string::String,
+            > as pavex_runtime::response::IntoResponse>::into_response(v3)
+        }
+    }
+}
+pub async fn route_handler_2(
+    v0: pavex_runtime::extract::route::RawRouteParams<'_, '_>,
+) -> http::Response<
+    http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
+> {
+    let v1 = pavex_runtime::extract::route::RouteParams::extract(v0);
+    match v1 {
+        Ok(v2) => {
+            let v3 = app::get_town(v2);
             <alloc::string::String as pavex_runtime::response::IntoResponse>::into_response(
                 v3,
             )

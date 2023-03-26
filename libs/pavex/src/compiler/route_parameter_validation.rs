@@ -19,7 +19,7 @@ use crate::compiler::traits::implements_trait;
 use crate::compiler::utils::process_framework_path;
 use crate::diagnostic;
 use crate::diagnostic::{CompilerDiagnostic, LocationExt, OptionalSourceSpanExt};
-use crate::language::{GenericArgument, ResolvedType};
+use crate::language::{GenericArgument, ResolvedPathType, ResolvedType};
 use crate::rustdoc::{CrateCollection, GlobalItemId};
 use crate::utils::comma_separated_list;
 
@@ -89,8 +89,7 @@ pub(crate) fn verify_route_parameters(
         let route_parameter_names = router_key
             .path
             .split('/')
-            // TODO: should we support catch all parameters?
-            .filter_map(|s| s.strip_prefix(':'))
+            .filter_map(|s| s.strip_prefix(':').or_else(|| s.strip_prefix('*')))
             .collect::<IndexSet<_>>();
 
         let struct_field_names = {
@@ -125,6 +124,7 @@ pub(crate) fn verify_route_parameters(
                 ok_route_params_component_id,
                 route_parameter_names,
                 non_existing_route_parameters,
+                extracted_type,
             )
         }
     }
@@ -143,6 +143,7 @@ fn report_non_existing_route_parameters(
     ok_route_params_component_id: &ComponentId,
     route_parameter_names: IndexSet<&str>,
     non_existing_route_parameters: IndexSet<String>,
+    extracted_type: &ResolvedType,
 ) {
     assert!(non_existing_route_parameters.len() > 0);
     // Find the compute nodes that consume the `RouteParams` extractor and report
