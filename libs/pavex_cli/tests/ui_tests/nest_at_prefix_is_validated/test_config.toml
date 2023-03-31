@@ -1,0 +1,4 @@
+description = "Pavex returns an error if you try to nest a blueprint with an empty prefix or a with prefix that does not start with a ="
+
+[expectations]
+codegen = "fail"

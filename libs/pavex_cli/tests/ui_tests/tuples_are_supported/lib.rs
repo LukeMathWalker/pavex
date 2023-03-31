@@ -1,4 +1,4 @@
-use pavex_builder::{f, router::GET, Blueprint, Lifecycle};
+use pavex_builder::{constructor::Lifecycle, f, router::GET, Blueprint};
 
 pub fn constructor_with_output_tuple() -> (usize, isize) {
     todo!()

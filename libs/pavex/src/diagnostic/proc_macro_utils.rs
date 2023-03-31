@@ -1,4 +1,4 @@
-use pavex_builder::Location;
+use pavex_builder::reflection::Location;
 
 pub trait ProcMacroSpanExt {
     /// Returns `true` if a `proc_macro::Span` contains a `Location`.

@@ -1,4 +1,4 @@
-use pavex_builder::Lifecycle;
+use pavex_builder::constructor::Lifecycle;
 
 use crate::compiler::analyses::call_graph::{
     build_call_graph, CallGraph, NumberOfAllowedInvocations,

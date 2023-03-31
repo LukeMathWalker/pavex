@@ -4,7 +4,7 @@ use bytes::{Bytes, BytesMut};
 use http::response::Parts;
 use http::status::StatusCode;
 use http_body::{Empty, Full};
-use pavex_builder::{f, router::GET, Blueprint, Lifecycle};
+use pavex_builder::{constructor::Lifecycle, f, router::GET, Blueprint};
 
 pub fn response() -> pavex_runtime::response::Response {
     todo!()

@@ -10,7 +10,7 @@ use guppy::PackageId;
 use itertools::Itertools;
 use quote::format_ident;
 
-use pavex_builder::RawCallableIdentifiers;
+use pavex_builder::reflection::RawCallableIdentifiers;
 
 use crate::language::callable_path::{CallPathGenericArgument, CallPathLifetime, CallPathType};
 use crate::language::resolved_type::{GenericArgument, Lifetime, ScalarPrimitive, Slice};

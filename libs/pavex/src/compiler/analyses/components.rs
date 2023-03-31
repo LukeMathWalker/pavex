@@ -9,7 +9,7 @@ use miette::NamedSource;
 use rustdoc_types::ItemEnum;
 use syn::spanned::Spanned;
 
-use pavex_builder::Lifecycle;
+use pavex_builder::constructor::Lifecycle;
 
 use crate::compiler::analyses::computations::{ComputationDb, ComputationId};
 use crate::compiler::analyses::user_components::{

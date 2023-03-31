@@ -19,7 +19,7 @@ use crate::compiler::traits::implements_trait;
 use crate::compiler::utils::process_framework_path;
 use crate::diagnostic;
 use crate::diagnostic::{CompilerDiagnostic, LocationExt, OptionalSourceSpanExt};
-use crate::language::{GenericArgument, ResolvedPathType, ResolvedType};
+use crate::language::{GenericArgument, ResolvedType};
 use crate::rustdoc::{CrateCollection, GlobalItemId};
 use crate::utils::comma_separated_list;
 

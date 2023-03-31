@@ -1,14 +1,20 @@
 use std::collections::BTreeSet;
 
 use ahash::{HashMap, HashMapExt};
+use anyhow::anyhow;
+use guppy::graph::PackageGraph;
 
+use pavex_builder::internals::{NestedBlueprint, RegisteredRoute};
 use pavex_builder::router::AllowedMethods;
-use pavex_builder::{Blueprint, Lifecycle, Location, RawCallableIdentifiers};
+use pavex_builder::{
+    constructor::Lifecycle, reflection::Location, reflection::RawCallableIdentifiers, Blueprint,
+};
 
 use crate::compiler::analyses::user_components::router_key::RouterKey;
 use crate::compiler::analyses::user_components::{ScopeId, ScopeTree};
 use crate::compiler::interner::Interner;
-use crate::diagnostic::CallableType;
+use crate::diagnostic;
+use crate::diagnostic::{CallableType, CompilerDiagnostic, LocationExt, SourceSpanExt};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 /// A component registered by a framework user against the `Blueprint` for their application.
@@ -113,21 +119,61 @@ pub(super) struct RawUserComponentDb {
 impl RawUserComponentDb {
     /// Process a `Blueprint` and return a `UserComponentDb` that contains all the user components
     /// that have been registered against it.
-    pub fn build(bp: &Blueprint) -> Self {
-        let mut identifiers_interner = Interner::new();
-        let mut component_interner = Interner::new();
-        let mut id2locations = HashMap::new();
-        let mut id2lifecycle = HashMap::new();
-        // We don't have the concept of nested scopes in Blueprint's API, but we are already
-        // introducing it in the internal machinery.
-        // In particular, all components belong to the root scope with the exception of
-        // request handlers and their error handlers, which belong to a nested scope (one per
-        // route).
-        let mut scope_tree = ScopeTree::new();
-        let root_scope_id = scope_tree.root_scope_id().into_owned();
+    pub fn build(
+        bp: &Blueprint,
+        package_graph: &PackageGraph,
+        diagnostics: &mut Vec<miette::Error>,
+    ) -> Self {
+        let mut self_ = Self {
+            component_interner: Interner::new(),
+            identifiers_interner: Interner::new(),
+            id2locations: HashMap::new(),
+            id2lifecycle: HashMap::new(),
+            scope_tree: ScopeTree::new(),
+        };
+        let root_scope_id = self_.scope_tree.root_scope_id().into_owned();
 
+        Self::process_blueprint(
+            &mut self_,
+            &bp,
+            root_scope_id.clone(),
+            None,
+            package_graph,
+            diagnostics,
+        );
+
+        for nested_bp in &bp.nested_blueprints {
+            let nested_scope_id = self_.scope_tree.add_scope(root_scope_id.clone());
+            self_.validate_nested_bp(&nested_bp, &package_graph, diagnostics);
+            Self::process_blueprint(
+                &mut self_,
+                &nested_bp.blueprint,
+                nested_scope_id,
+                nested_bp.path_prefix.as_deref(),
+                package_graph,
+                diagnostics,
+            );
+        }
+        self_
+    }
+
+    /// Register with [`RawUserComponentDb`] all the user components that have been
+    /// registered against the provided `Blueprint`.  
+    /// All components are associated with or nested under the provided `current_scope_id`.
+    ///
+    /// If `path_prefix` is `Some`, then it is prepended to the path of each route
+    /// in `Blueprint`.
+    fn process_blueprint(
+        &mut self,
+        bp: &Blueprint,
+        current_scope_id: ScopeId<'static>,
+        path_prefix: Option<&str>,
+        package_graph: &PackageGraph,
+        diagnostics: &mut Vec<miette::Error>,
+    ) {
         for registered_route in &bp.routes {
-            let raw_callable_identifiers_id = identifiers_interner
+            let raw_callable_identifiers_id = self
+                .identifiers_interner
                 .get_or_intern(registered_route.request_handler.callable.clone());
             let method_guard = match &registered_route.method_guard.allowed_methods {
                 AllowedMethods::All => None,
@@ -140,69 +186,78 @@ impl RawUserComponentDb {
                     methods.iter().map(|m| Some(m.to_string())).collect()
                 }
             };
-            let route_scope_id = scope_tree.add_scope(root_scope_id.clone());
+            let route_scope_id = self.scope_tree.add_scope(current_scope_id.clone());
+            let path = match path_prefix {
+                Some(prefix) => format!("{}{}", prefix, registered_route.path),
+                None => registered_route.path.to_owned(),
+            };
             let component = UserComponent::RequestHandler {
                 raw_callable_identifiers_id,
-                router_key: RouterKey {
-                    path: registered_route.path.to_owned(),
-                    method_guard,
-                },
+                router_key: RouterKey { path, method_guard },
                 scope_id: route_scope_id.clone(),
             };
-            let request_handler_id = component_interner.get_or_intern(component);
-            id2lifecycle.insert(request_handler_id, Lifecycle::RequestScoped);
-            id2locations.insert(
+            let request_handler_id = self.component_interner.get_or_intern(component);
+            self.id2lifecycle
+                .insert(request_handler_id, Lifecycle::RequestScoped);
+            self.id2locations.insert(
                 request_handler_id,
                 registered_route.request_handler.location.to_owned(),
             );
 
+            self.validate_route(
+                request_handler_id,
+                registered_route,
+                package_graph,
+                diagnostics,
+            );
+
             if let Some(error_handler) = &registered_route.error_handler {
-                let raw_callable_identifiers_id =
-                    identifiers_interner.get_or_intern(error_handler.callable.clone());
+                let raw_callable_identifiers_id = self
+                    .identifiers_interner
+                    .get_or_intern(error_handler.callable.clone());
                 let component = UserComponent::ErrorHandler {
                     raw_callable_identifiers_id,
                     fallible_callable_identifiers_id: request_handler_id,
                     scope_id: route_scope_id,
                 };
-                let error_handler_id = component_interner.get_or_intern(component);
-                id2lifecycle.insert(error_handler_id, Lifecycle::RequestScoped);
-                id2locations.insert(error_handler_id, error_handler.location.to_owned());
+                let error_handler_id = self.component_interner.get_or_intern(component);
+                self.id2lifecycle
+                    .insert(error_handler_id, Lifecycle::RequestScoped);
+                self.id2locations
+                    .insert(error_handler_id, error_handler.location.to_owned());
             }
         }
 
         for constructor in &bp.constructors {
             let raw_callable_identifiers_id =
-                identifiers_interner.get_or_intern(constructor.clone());
+                self.identifiers_interner.get_or_intern(constructor.clone());
             let component = UserComponent::Constructor {
                 raw_callable_identifiers_id,
-                scope_id: root_scope_id.clone(),
+                scope_id: current_scope_id.clone(),
             };
-            let constructor_id = component_interner.get_or_intern(component);
+            let constructor_id = self.component_interner.get_or_intern(component);
             let location = &bp.constructor_locations[constructor];
-            id2locations.insert(constructor_id, location.to_owned());
+            self.id2locations
+                .insert(constructor_id, location.to_owned());
             let lifecycle = &bp.component_lifecycles[constructor];
-            id2lifecycle.insert(constructor_id, lifecycle.to_owned());
+            self.id2lifecycle
+                .insert(constructor_id, lifecycle.to_owned());
             if let Some(error_handler) = bp.constructors_error_handlers.get(constructor) {
-                let raw_callable_identifiers_id =
-                    identifiers_interner.get_or_intern(error_handler.clone());
+                let raw_callable_identifiers_id = self
+                    .identifiers_interner
+                    .get_or_intern(error_handler.clone());
                 let component = UserComponent::ErrorHandler {
                     raw_callable_identifiers_id,
                     fallible_callable_identifiers_id: constructor_id,
-                    scope_id: root_scope_id.clone(),
+                    scope_id: current_scope_id.clone(),
                 };
-                let error_handler_id = component_interner.get_or_intern(component);
-                id2lifecycle.insert(error_handler_id, lifecycle.to_owned());
+                let error_handler_id = self.component_interner.get_or_intern(component);
+                self.id2lifecycle
+                    .insert(error_handler_id, lifecycle.to_owned());
                 let location = &bp.error_handler_locations[constructor];
-                id2locations.insert(error_handler_id, location.to_owned());
+                self.id2locations
+                    .insert(error_handler_id, location.to_owned());
             }
-        }
-
-        Self {
-            component_interner,
-            identifiers_interner,
-            id2locations,
-            id2lifecycle,
-            scope_tree,
         }
     }
 
@@ -219,6 +274,156 @@ impl RawUserComponentDb {
     /// application blueprint.
     pub fn get_location(&self, id: UserComponentId) -> &Location {
         &self.id2locations[&id]
+    }
+}
+
+/// Private validation routines.
+impl RawUserComponentDb {
+    /// Check the path of the registered route.
+    /// Emit diagnostics if the path is invalid—i.e. empty or missing a leading slash.
+    fn validate_route(
+        &self,
+        route_id: UserComponentId,
+        route: &RegisteredRoute,
+        package_graph: &PackageGraph,
+        diagnostics: &mut Vec<miette::Error>,
+    ) {
+        if route.path.is_empty() {
+            self.route_path_cannot_be_empty(route_id, package_graph, diagnostics);
+            return;
+        }
+
+        if !route.path.starts_with('/') {
+            self.route_path_must_start_with_a_slash(route, route_id, package_graph, diagnostics);
+            return;
+        }
+    }
+
+    /// Check the path prefix of the nested blueprint.
+    /// Emit diagnostics if the path prefix is invalid—i.e. empty or missing a leading slash.
+    fn validate_nested_bp(
+        &self,
+        nested_bp: &NestedBlueprint,
+        package_graph: &PackageGraph,
+        diagnostics: &mut Vec<miette::Error>,
+    ) {
+        if let Some(path_prefix) = nested_bp.path_prefix.as_deref() {
+            if path_prefix.is_empty() {
+                self.path_prefix_cannot_be_empty(nested_bp, package_graph, diagnostics);
+                return;
+            }
+
+            if !path_prefix.starts_with('/') {
+                self.path_prefix_must_start_with_a_slash(nested_bp, package_graph, diagnostics);
+                return;
+            }
+        }
+    }
+}
+
+/// All diagnostic-related code.
+impl RawUserComponentDb {
+    fn route_path_cannot_be_empty(
+        &self,
+        route_id: UserComponentId,
+        package_graph: &PackageGraph,
+        diagnostics: &mut Vec<miette::Error>,
+    ) {
+        let location = self.get_location(route_id);
+        let source = match location.source_file(package_graph) {
+            Ok(source) => source,
+            Err(e) => {
+                diagnostics.push(e.into());
+                return;
+            }
+        };
+        let label = diagnostic::get_route_path_span(&source, location)
+            .map(|s| s.labeled(format!("The empty route path")));
+        let err = anyhow!("The path for a route cannot be empty.");
+        let diagnostic = CompilerDiagnostic::builder(source, err)
+            .optional_label(label)
+            .help("If you want to match requests to the base URL, use `/` as route path instead of an empty one.".into());
+        diagnostics.push(diagnostic.build().into());
+    }
+
+    fn route_path_must_start_with_a_slash(
+        &self,
+        route: &RegisteredRoute,
+        route_id: UserComponentId,
+        package_graph: &PackageGraph,
+        diagnostics: &mut Vec<miette::Error>,
+    ) {
+        let location = self.get_location(route_id);
+        let source = match location.source_file(package_graph) {
+            Ok(source) => source,
+            Err(e) => {
+                diagnostics.push(e.into());
+                return;
+            }
+        };
+        let label = diagnostic::get_route_path_span(&source, location)
+            .map(|s| s.labeled(format!("The path missing a leading '/'")));
+        let path = &route.path;
+        let err =
+            anyhow!("All route paths must begin with a forward slash, `/`.\n`{path}` doesn't.",);
+        let diagnostic = CompilerDiagnostic::builder(source, err)
+            .optional_label(label)
+            .help(format!("Add a '/' at the beginning of the route path to fix this error: use `/{path}` instead of `{path}`."));
+        diagnostics.push(diagnostic.build().into());
+    }
+
+    fn path_prefix_cannot_be_empty(
+        &self,
+        nested_bp: &NestedBlueprint,
+        package_graph: &PackageGraph,
+        diagnostics: &mut Vec<miette::Error>,
+    ) {
+        let location = &nested_bp.location;
+        let source = match location.source_file(package_graph) {
+            Ok(source) => source,
+            Err(e) => {
+                diagnostics.push(e.into());
+                return;
+            }
+        };
+        let label = diagnostic::get_nest_at_prefix_span(&source, location)
+            .map(|s| s.labeled(format!("The empty prefix")));
+        let err = anyhow!("The path prefix passed to `nest_at` cannot be empty.");
+        let diagnostic = CompilerDiagnostic::builder(source, err)
+            .optional_label(label)
+            .help(
+                "If you don't want to add a common prefix to all routes in the nested blueprint, \
+                use the `nest` method instead of `nest_at`."
+                    .into(),
+            );
+        diagnostics.push(diagnostic.build().into());
+    }
+
+    fn path_prefix_must_start_with_a_slash(
+        &self,
+        nested_bp: &NestedBlueprint,
+        package_graph: &PackageGraph,
+        diagnostics: &mut Vec<miette::Error>,
+    ) {
+        let location = &nested_bp.location;
+        let source = match location.source_file(package_graph) {
+            Ok(source) => source,
+            Err(e) => {
+                diagnostics.push(e.into());
+                return;
+            }
+        };
+        let label = diagnostic::get_nest_at_prefix_span(&source, location)
+            .map(|s| s.labeled(format!("The prefix missing a leading '/'")));
+        let prefix = nested_bp.path_prefix.as_deref().unwrap();
+        let err = anyhow!(
+            "The path prefix passed to `nest_at` must begin with a forward slash, `/`.\n\
+            `{prefix}` doesn't.",
+        );
+        let diagnostic = CompilerDiagnostic::builder(source, err)
+            .optional_label(label)
+            .help(format!("Add a '/' at the beginning of the path prefix to fix this error: use `/{prefix}` instead of `{prefix}`."));
+        diagnostics.push(diagnostic.build().into());
     }
 }
 

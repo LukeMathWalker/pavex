@@ -8,7 +8,7 @@ use indexmap::{IndexMap, IndexSet};
 use petgraph::Direction;
 use proc_macro2::Ident;
 
-use pavex_builder::Lifecycle;
+use pavex_builder::constructor::Lifecycle;
 
 use crate::compiler::analyses::call_graph::{
     build_call_graph, CallGraph, CallGraphNode, NumberOfAllowedInvocations,

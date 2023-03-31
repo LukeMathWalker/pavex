@@ -1,0 +1,4 @@
+description = "Constructors registered in a nested blueprint are not visible to the parent blueprint"
+
+[expectations]
+codegen = "fail"

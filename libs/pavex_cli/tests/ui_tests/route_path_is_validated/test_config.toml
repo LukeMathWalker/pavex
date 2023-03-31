@@ -1,0 +1,4 @@
+description = "Pavex returns an error if you try to register a route with an empty path or a with path that does not start with a ="
+
+[expectations]
+codegen = "fail"

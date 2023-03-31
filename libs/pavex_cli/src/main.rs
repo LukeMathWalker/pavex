@@ -80,7 +80,7 @@ fn init_telemetry() {
         .with_span_events(FmtSpan::NEW | FmtSpan::EXIT)
         .with_timer(tracing_subscriber::fmt::time::uptime());
     let filter_layer = EnvFilter::try_from_default_env()
-        .or_else(|_| EnvFilter::try_new("info"))
+        .or_else(|_| EnvFilter::try_new("info,pavex=trace"))
         .unwrap();
 
     tracing_subscriber::registry()

@@ -3,9 +3,9 @@ use std::path::Path;
 use guppy::graph::PackageGraph;
 use miette::{MietteError, NamedSource};
 
-use pavex_builder::Location;
+use pavex_builder::reflection::Location;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ParsedSourceFile {
     pub(crate) path: std::path::PathBuf,
     pub(crate) contents: String,

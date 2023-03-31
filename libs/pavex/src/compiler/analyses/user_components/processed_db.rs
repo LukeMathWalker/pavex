@@ -3,7 +3,9 @@ use guppy::graph::PackageGraph;
 use miette::{miette, NamedSource};
 use syn::spanned::Spanned;
 
-use pavex_builder::{Blueprint, Lifecycle, Location, RawCallableIdentifiers};
+use pavex_builder::{
+    constructor::Lifecycle, reflection::Location, reflection::RawCallableIdentifiers, Blueprint,
+};
 
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::user_components::raw_db::RawUserComponentDb;
@@ -62,7 +64,7 @@ impl UserComponentDb {
             };
         }
 
-        let raw_db = RawUserComponentDb::build(bp);
+        let raw_db = RawUserComponentDb::build(bp, package_graph, diagnostics);
         validate_router(&raw_db, package_graph, diagnostics);
         let resolved_path_db = ResolvedPathDb::build(&raw_db, package_graph, diagnostics);
         exit_on_errors!(diagnostics);

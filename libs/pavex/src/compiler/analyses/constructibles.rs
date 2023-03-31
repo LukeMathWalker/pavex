@@ -1,14 +1,16 @@
 use ahash::{HashMap, HashMapExt, HashSet};
 use guppy::graph::PackageGraph;
-use indexmap::IndexSet;
+use indexmap::{IndexMap, IndexSet};
 use miette::NamedSource;
 use syn::spanned::Spanned;
 
-use pavex_builder::Lifecycle;
+use pavex_builder::constructor::Lifecycle;
 
 use crate::compiler::analyses::components::{ComponentDb, ComponentId, HydratedComponent};
 use crate::compiler::analyses::computations::ComputationDb;
-use crate::compiler::analyses::user_components::{UserComponentDb, UserComponentId};
+use crate::compiler::analyses::user_components::{
+    ScopeId, ScopeTree, UserComponentDb, UserComponentId,
+};
 use crate::diagnostic;
 use crate::diagnostic::{
     convert_proc_macro_span, convert_rustdoc_span, read_source_file, AnnotatedSnippet,
@@ -18,22 +20,16 @@ use crate::language::{Callable, ResolvedType};
 use crate::rustdoc::CrateCollection;
 
 #[derive(Debug)]
+/// The set of types that can be injected into request handlers, error handlers and (other) constructors.
 pub(crate) struct ConstructibleDb {
-    type2constructor_id: HashMap<ResolvedType, ComponentId>,
-    /// Every time we encounter a constructible type that contains an unassigned generic type
-    /// (e.g. `T` in `Vec<T>` instead of `u8` in `Vec<u8>`), we store it here.
-    ///
-    /// This enables us to quickly determine if there might be a constructor for a given concrete
-    /// type.
-    /// For example, if you have a `Vec<u8>`, you first look in `type2constructor_id` to see if
-    /// there is a constructor that returns `Vec<u8>`. If there isn't, you look in
-    /// `generic_base_types` to see if there is a constructor that returns `Vec<T>`.
-    ///
-    /// Specialization, in a nutshell!
-    templated_constructors: IndexSet<ResolvedType>,
+    scope_id2constructibles: IndexMap<ScopeId<'static>, ConstructiblesInScope>,
 }
 
 impl ConstructibleDb {
+    /// Compute the set of types that can be injected into request handlers, error handlers and
+    /// (other) constructors.
+    ///
+    /// Emits diagnostics for any missing constructors.
     pub(crate) fn build(
         component_db: &mut ComponentDb,
         computation_db: &mut ComputationDb,
@@ -42,24 +38,84 @@ impl ConstructibleDb {
         request_scoped_framework_types: &HashSet<&ResolvedType>,
         diagnostics: &mut Vec<miette::Error>,
     ) -> Self {
-        let mut type2constructor_id = HashMap::new();
-        let mut templated_constructors = IndexSet::new();
-        for (component_id, component) in component_db.constructors(computation_db) {
-            let output = component.output_type();
-            type2constructor_id.insert(output.to_owned(), component_id);
-            if output.is_a_template() {
-                templated_constructors.insert(output.to_owned());
+        let mut self_ = Self::_build(component_db, computation_db);
+        self_.detect_missing_constructors(
+            component_db,
+            computation_db,
+            package_graph,
+            krate_collection,
+            request_scoped_framework_types,
+            diagnostics,
+        );
+        self_.verify_singleton_ambiguity(component_db, computation_db, package_graph, diagnostics);
+
+        // For each type that supports dependency injection, we look up the constructors of their inputs.
+        // We assert that all their inputs are in a scope that is the same or a
+        // parent of the their own scope.
+        // This should always be the case, but we add an assertion to eagerly discover if our
+        // assumptions are wrong.
+        for (component_id, _) in component_db.iter() {
+            let component = component_db.hydrated_component(component_id, computation_db);
+            let component_scope = component_db.scope_id(component_id).into_owned();
+            for input_type in component.input_types().iter() {
+                // Some inputs are not constructible and will be injected by the framework
+                // or as part of the application state.
+                if let Some(input_constructor_id) = self_.get(
+                    component_scope.clone(),
+                    input_type,
+                    component_db.user_component_db.scope_tree(),
+                ) {
+                    let input_constructor_scope = component_db.scope_id(input_constructor_id);
+                    assert!(component_scope.is_child_of(
+                        &input_constructor_scope,
+                        component_db.user_component_db.scope_tree(),
+                    ));
+                }
             }
         }
-        let mut self_ = Self {
-            type2constructor_id,
-            templated_constructors,
-        };
 
+        self_
+    }
+
+    fn _build(component_db: &mut ComponentDb, computation_db: &mut ComputationDb) -> Self {
+        let mut scope_id2constructibles = IndexMap::new();
+        for (component_id, component) in component_db.constructors(computation_db) {
+            let scope_id = component_db.scope_id(component_id);
+            let scope_constructibles = scope_id2constructibles
+                .entry(scope_id)
+                .or_insert_with(ConstructiblesInScope::new);
+            let output = component.output_type();
+            scope_constructibles.insert(output.to_owned(), component_id);
+        }
+        Self {
+            scope_id2constructibles,
+        }
+    }
+
+    /// Check if any component is asking for a type as input parameter for which there is no
+    /// constructor.
+    ///
+    /// This check skips singletons, since they are going to be provided by the user as part
+    /// of the application state if there have no registered constructor.
+    fn detect_missing_constructors(
+        &mut self,
+        component_db: &mut ComponentDb,
+        computation_db: &mut ComputationDb,
+        package_graph: &PackageGraph,
+        krate_collection: &CrateCollection,
+        request_scoped_framework_types: &HashSet<&ResolvedType>,
+        diagnostics: &mut Vec<miette::Error>,
+    ) {
         let mut component_ids = component_db.iter().map(|(id, _)| id).collect::<Vec<_>>();
         let mut n_component_ids = component_ids.len();
+        // In the process of detecting missing constructors,
+        // we might generate _new_ constructors by specializing generic constructors.
+        // The newly generated constructors might themselves be missing constructors, so we
+        // add them to set of components to check and iterate until we no longer have any new
+        // components to check.
         loop {
             for component_id in component_ids {
+                let scope_id = component_db.scope_id(component_id).into_owned();
                 let resolved_component =
                     component_db.hydrated_component(component_id, computation_db);
                 // We don't support dependency injection for transformers (yet).
@@ -88,7 +144,7 @@ impl ConstructibleDb {
                     input_types
                 };
 
-                'outer: for (input_index, input) in input_types.into_iter().enumerate() {
+                for (input_index, input) in input_types.into_iter().enumerate() {
                     let input = match input.as_ref() {
                         Some(i) => i,
                         None => {
@@ -98,25 +154,14 @@ impl ConstructibleDb {
                     if request_scoped_framework_types.contains(input) {
                         continue;
                     }
-                    if self_.get(input).is_some() {
+                    if self
+                        .get_or_try_bind(scope_id.clone(), input, component_db, computation_db)
+                        .is_some()
+                    {
                         continue;
                     }
-                    for templated_constructible_type in &self_.templated_constructors {
-                        if let Some(bindings) =
-                            templated_constructible_type.is_a_template_for(input)
-                        {
-                            bind_and_register_constructor(
-                                self_[templated_constructible_type],
-                                component_db,
-                                computation_db,
-                                &mut self_,
-                                &bindings,
-                            );
-                            continue 'outer;
-                        }
-                    }
                     if let Some(user_component_id) = component_db.user_component_id(component_id) {
-                        ConstructibleDb::missing_constructor(
+                        Self::missing_constructor(
                             user_component_id,
                             &component_db.user_component_db,
                             input,
@@ -146,29 +191,196 @@ impl ConstructibleDb {
                 component_ids = new_component_ids;
             }
         }
+    }
 
-        // For each constructible type, we look up their constructor.
-        // We assert that all inputs of the constructor are in a scope that is the same or a
-        // parent of the scope of the constructor.
-        // This should always be the case, but we add an assertion to eagerly discover if our
-        // assumptions are wrong.
-        for (_, constructor_id) in self_.type2constructor_id.iter() {
-            let constructor = component_db.hydrated_component(*constructor_id, computation_db);
-            let constructor_scope = component_db.scope_id(*constructor_id);
-            for input_type in constructor.input_types().iter() {
-                // Some inputs are not constructible and will be injected by the framework
-                // or as part of the application state.
-                if let Some(input_constructor_id) = self_.type2constructor_id.get(input_type) {
-                    let input_constructor_scope = component_db.scope_id(*input_constructor_id);
-                    assert!(constructor_scope.is_child_of(
-                        &input_constructor_scope,
-                        component_db.user_component_db.scope_tree(),
-                    ));
+    /// `pavex` guarantees that there is at most one live instance for each singleton type.
+    ///
+    /// If there are multiple constructors for the same singleton type, we end up in an ambiguous
+    /// situation: which one do we use?
+    /// We can't use both, because that would mean that there are two live instances of the same
+    /// singleton type, which is not allowed.
+    ///
+    /// Disambiguating the constructors is the responsibility of the user.
+    ///
+    /// This method checks that there is at most one constructor for each singleton type.
+    /// If that's not the case, we report this ambiguity as an error to the user.
+    fn verify_singleton_ambiguity(
+        &self,
+        component_db: &ComponentDb,
+        computation_db: &ComputationDb,
+        package_graph: &PackageGraph,
+        diagnostics: &mut Vec<miette::Error>,
+    ) {
+        let mut singleton_type2component_ids = HashMap::new();
+        for (scope_id, constructibles) in &self.scope_id2constructibles {
+            for (type_, component_id) in constructibles.type2constructor_id.iter() {
+                let lifecycle = component_db.lifecycle(*component_id).unwrap();
+                if lifecycle != &Lifecycle::Singleton {
+                    continue;
                 }
+                let component_ids = singleton_type2component_ids
+                    .entry(type_.clone())
+                    .or_insert_with(IndexSet::new);
+                component_ids.insert((scope_id.clone(), component_id));
             }
         }
 
-        self_
+        'outer: for (type_, component_ids) in singleton_type2component_ids {
+            if component_ids.len() > 1 {
+                let n_unique_constructors = component_ids
+                    .iter()
+                    .map(|(_, &component_id)| {
+                        component_db.hydrated_component(component_id, computation_db)
+                    })
+                    .collect::<HashSet<_>>()
+                    .len();
+                let n_constructors = component_ids.len();
+
+                // For each component, we create an AnnotatedSnippet that points to the
+                // registration site for that constructor.
+                let mut snippets = Vec::new();
+                let mut source_code = None;
+                'inner: for (_, component_id) in component_ids {
+                    let Some(user_component_id) = component_db.user_component_id(*component_id) else {
+                        continue 'inner;
+                    };
+                    let location = component_db
+                        .user_component_db
+                        .get_location(user_component_id);
+                    let source = match location.source_file(package_graph) {
+                        Ok(s) => s,
+                        Err(e) => {
+                            diagnostics.push(e.into());
+                            continue 'inner;
+                        }
+                    };
+                    if source_code.is_none() {
+                        source_code = Some(source.clone());
+                    }
+                    let label = diagnostic::get_f_macro_invocation_span(&source, location)
+                        .map(|s| s.labeled(format!("A constructor was registered here")));
+                    if let Some(label) = label {
+                        let snippet = AnnotatedSnippet::new(source, label);
+                        snippets.push(snippet);
+                    }
+                }
+                let Some(source_code) = source_code else {
+                    continue 'outer;
+                };
+                let diagnostic = if n_unique_constructors > 1 {
+                    let error = anyhow::anyhow!(
+                        "You can't register multiple constructors for the same singleton type, `{type_:?}`.\n\
+                        There must be at most one live instance for each singleton type. \
+                        If you register multiple constructors, I don't know which one to use to build \
+                        that unique instance!\n\
+                        I have found {n_constructors} different constructors for `{type_:?}`:",
+                    );
+                    CompilerDiagnostic::builder(source_code, error)
+                        .additional_annotated_snippets(snippets.into_iter())
+                        .help(format!(
+                            "If you want a single instance of `{type_:?}`, remove \
+                            constructors for `{type_:?}` until there is only one left.\n\
+                            If you want different instances, consider creating separate newtypes \
+                            that wrap a `{type_:?}`."
+                        ))
+                        .build()
+                } else {
+                    let error = anyhow::anyhow!(
+                        "The constructor for a singleton must be registered once.\n\
+                        You registered the same constructor for `{type_:?}` against different \
+                        nested blueprints, but there can be at most one instance for each singleton \
+                        type.\n\
+                        I don't know how to proceed: do you want to share the same instance across \
+                        all nested blueprints, or do you want to create a new instance for each \
+                        nested blueprint?\n\
+                        You registered the same constructor for `{type_:?}` in {n_constructors} different places:",
+                    );
+                    CompilerDiagnostic::builder(source_code, error)
+                        .additional_annotated_snippets(snippets.into_iter())
+                        // TODO: add a code snippet in the suggestion showing which blueprint
+                        //   should be used to register the constructor.
+                        .help(format!(
+                            "If you want a single instance of `{type_:?}`, remove \
+                            constructors for `{type_:?}` until there is only one left. It should \
+                            be attached to a blueprint that is a parent of all the nested \
+                            ones that need to use it.\n\
+                            If you want different instances, consider creating separate newtypes \
+                            that wrap a `{type_:?}`."
+                        ))
+                        .build()
+                };
+                diagnostics.push(diagnostic.into());
+            }
+        }
+    }
+}
+
+impl ConstructibleDb {
+    /// Find the constructor for a given type in a given scope.
+    ///
+    /// If the type is not constructible in the given scope, we look for a constructor in the
+    /// parent scope, and so on until we reach the root scope.
+    /// If we reach the root scope and the type still doesn't have a constructor, we return `None`.
+    pub(crate) fn get(
+        &self,
+        scope_id: ScopeId<'static>,
+        type_: &ResolvedType,
+        scope_tree: &ScopeTree,
+    ) -> Option<ComponentId> {
+        let mut current_scope_id = scope_id;
+        loop {
+            if let Some(constructibles) = self.scope_id2constructibles.get(&current_scope_id) {
+                if let Some(constructor_id) = constructibles.get(type_) {
+                    return Some(constructor_id);
+                }
+            }
+            if let Some(parent_scope_id) = current_scope_id.parent_id(scope_tree) {
+                current_scope_id = parent_scope_id.clone().into_owned();
+            } else {
+                // We reached the root scope and didn't find a constructor.
+                // We can't go any further: there is no constructor for this type.
+                return None;
+            }
+        }
+    }
+
+    /// Find the constructor for a given type in a given scope.
+    ///
+    /// If the type is not constructible in the given scope, we look for a constructor in the
+    /// parent scope, and so on until we reach the root scope.
+    /// If we reach the root scope and the type still doesn't have a constructor, we return `None`.
+    ///
+    /// [`Self::get_or_try_bind`], compared to [`Self::get`], goes one step further: it inspects
+    /// templated types to see if they can be instantiated in such a way to build
+    /// the type that we want to construct.
+    /// If that's the case, we bind the generic constructor, add it to the database and return
+    /// the id of the newly bound constructor.
+    fn get_or_try_bind(
+        &mut self,
+        scope_id: ScopeId<'static>,
+        type_: &ResolvedType,
+        component_db: &mut ComponentDb,
+        computation_db: &mut ComputationDb,
+    ) -> Option<ComponentId> {
+        let mut current_scope_id = scope_id;
+        loop {
+            if let Some(constructibles) = self.scope_id2constructibles.get_mut(&current_scope_id) {
+                if let Some(constructor_id) =
+                    constructibles.get_or_try_bind(type_, component_db, computation_db)
+                {
+                    return Some(constructor_id);
+                }
+            }
+            if let Some(parent_scope_id) =
+                current_scope_id.parent_id(component_db.user_component_db.scope_tree())
+            {
+                current_scope_id = parent_scope_id.clone().into_owned();
+            } else {
+                // We reached the root scope and didn't find a constructor.
+                // We can't go any further: there is no constructor for this type.
+                return None;
+            }
+        }
     }
 
     fn missing_constructor(
@@ -265,38 +477,105 @@ impl ConstructibleDb {
             .build();
         diagnostics.push(diagnostic.into());
     }
-
-    pub(crate) fn get(&self, t: &ResolvedType) -> Option<ComponentId> {
-        self.type2constructor_id.get(t).cloned()
-    }
 }
 
-impl std::ops::Index<&ResolvedType> for ConstructibleDb {
-    type Output = ComponentId;
-
-    fn index(&self, index: &ResolvedType) -> &Self::Output {
-        &self.type2constructor_id[index]
-    }
+#[derive(Debug)]
+/// The set of constructibles that have been registered in a given scope.
+///
+/// Be careful! This is not the set of all types that can be constructed in the given scope!
+/// That's a much larger set, because it includes all types that can be constructed in this
+/// scope as well as any of its parent scope.
+struct ConstructiblesInScope {
+    type2constructor_id: HashMap<ResolvedType, ComponentId>,
+    /// Every time we encounter a constructible type that contains an unassigned generic type
+    /// (e.g. `T` in `Vec<T>` instead of `u8` in `Vec<u8>`), we store it here.
+    ///
+    /// This enables us to quickly determine if there might be a constructor for a given concrete
+    /// type.
+    /// For example, if you have a `Vec<u8>`, you first look in `type2constructor_id` to see if
+    /// there is a constructor that returns `Vec<u8>`. If there isn't, you look in
+    /// `generic_base_types` to see if there is a constructor that returns `Vec<T>`.
+    ///
+    /// Specialization, in a nutshell!
+    templated_constructors: IndexSet<ResolvedType>,
 }
 
-fn bind_and_register_constructor(
-    templated_component_id: ComponentId,
-    component_db: &mut ComponentDb,
-    computation_db: &mut ComputationDb,
-    constructible_db: &mut ConstructibleDb,
-    bindings: &HashMap<String, ResolvedType>,
-) {
-    let bound_component_id =
-        component_db.bind_generic_type_parameters(templated_component_id, bindings, computation_db);
-    let mut derived_component_ids = component_db.derived_component_ids(bound_component_id);
-    derived_component_ids.push(bound_component_id);
-    for derived_component_id in derived_component_ids {
-        if let HydratedComponent::Constructor(c) =
-            component_db.hydrated_component(derived_component_id, computation_db)
-        {
-            constructible_db
-                .type2constructor_id
-                .insert(c.output_type().clone(), derived_component_id);
+impl ConstructiblesInScope {
+    /// Create a new, empty set of constructibles.
+    fn new() -> Self {
+        Self {
+            type2constructor_id: HashMap::new(),
+            templated_constructors: IndexSet::new(),
+        }
+    }
+
+    /// Retrieve the constructor for a given type, if it exists.
+    fn get(&self, type_: &ResolvedType) -> Option<ComponentId> {
+        self.type2constructor_id.get(type_).copied()
+    }
+
+    /// Retrieve the constructor for a given type, if it exists.
+    ///
+    /// If it doesn't exist, check the templated constructors to see if there is a constructor
+    /// that can be specialized to construct the given type.
+    fn get_or_try_bind(
+        &mut self,
+        type_: &ResolvedType,
+        component_db: &mut ComponentDb,
+        computation_db: &mut ComputationDb,
+    ) -> Option<ComponentId> {
+        if let Some(constructor_id) = self.get(type_) {
+            return Some(constructor_id);
+        }
+        for templated_constructible_type in &self.templated_constructors {
+            if let Some(bindings) = templated_constructible_type.is_a_template_for(type_) {
+                let templated_component_id = self.get(templated_constructible_type).unwrap();
+                self.bind_and_register_constructor(
+                    templated_component_id,
+                    component_db,
+                    computation_db,
+                    &bindings,
+                );
+                return self.get(type_);
+            }
+        }
+        None
+    }
+
+    /// Register a type and its constructor.
+    fn insert(&mut self, output: ResolvedType, component_id: ComponentId) {
+        if output.is_a_template() {
+            self.templated_constructors.insert(output.clone());
+        }
+        self.type2constructor_id.insert(output, component_id);
+    }
+
+    /// Specialize a templated constructor to a concrete type.
+    ///
+    /// The newly bound components are added to all the relevant databases.
+    fn bind_and_register_constructor(
+        &mut self,
+        templated_component_id: ComponentId,
+        component_db: &mut ComponentDb,
+        computation_db: &mut ComputationDb,
+        bindings: &HashMap<String, ResolvedType>,
+    ) {
+        let bound_component_id = component_db.bind_generic_type_parameters(
+            templated_component_id,
+            bindings,
+            computation_db,
+        );
+
+        let mut derived_component_ids = component_db.derived_component_ids(bound_component_id);
+        derived_component_ids.push(bound_component_id);
+
+        for derived_component_id in derived_component_ids {
+            if let HydratedComponent::Constructor(c) =
+                component_db.hydrated_component(derived_component_id, computation_db)
+            {
+                self.type2constructor_id
+                    .insert(c.output_type().clone(), derived_component_id);
+            }
         }
     }
 }

@@ -2,7 +2,7 @@ use std::fmt::{Display, Formatter};
 
 use syn::{ExprPath, GenericArgument, PathArguments, Type};
 
-use pavex_builder::RawCallableIdentifiers;
+use pavex_builder::reflection::RawCallableIdentifiers;
 
 /// A path that can be used in expression position (i.e. to refer to a function or a static method).
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]

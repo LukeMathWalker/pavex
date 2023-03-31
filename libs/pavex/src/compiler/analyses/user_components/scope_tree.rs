@@ -44,6 +44,12 @@ impl<'a> ScopeId<'a> {
                 .unwrap()
                 .any(|id| id == self.0.as_ref())
     }
+
+    /// Return the ID of the parent scope, if any.
+    pub fn parent_id<'tree>(&self, scope_tree: &'tree ScopeTree) -> Option<ScopeId<'tree>> {
+        let node = scope_tree.tree.get(&self.0).ok()?;
+        node.parent().map(|id| ScopeId(Cow::Borrowed(&id)))
+    }
 }
 
 impl ScopeTree {

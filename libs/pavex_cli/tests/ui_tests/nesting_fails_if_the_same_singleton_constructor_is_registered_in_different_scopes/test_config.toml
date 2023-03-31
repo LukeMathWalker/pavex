@@ -1,0 +1,4 @@
+description = "Pavex returns an error if you try to register a singleton constructor in different scopes"
+
+[expectations]
+codegen = "fail"

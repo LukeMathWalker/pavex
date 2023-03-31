@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use pavex_builder::{f, router::GET, Blueprint, Lifecycle};
+use pavex_builder::{constructor::Lifecycle, f, router::GET, Blueprint};
 
 pub struct NonSendSingleton(Rc<()>);
 
