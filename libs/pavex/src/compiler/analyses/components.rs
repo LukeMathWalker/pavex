@@ -49,13 +49,13 @@ pub(crate) enum Component {
     Transformer {
         computation_id: ComputationId,
         transformed_component_id: ComponentId,
-        scope_id: ScopeId<'static>,
+        scope_id: ScopeId,
     },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) enum SourceId {
-    ComputationId(ComputationId, ScopeId<'static>),
+    ComputationId(ComputationId, ScopeId),
     UserComponentId(UserComponentId),
 }
 
@@ -515,7 +515,7 @@ impl ComponentDb {
         &mut self,
         c: Constructor<'static>,
         l: Lifecycle,
-        scope_id: ScopeId<'static>,
+        scope_id: ScopeId,
         computation_db: &mut ComputationDb,
     ) -> ComponentId {
         let computation_id = computation_db.get_or_intern(c);
@@ -592,7 +592,7 @@ impl ComponentDb {
         let callable = computation_db[callable_id].to_owned();
         TryInto::<Constructor>::try_into(callable)?;
         let constructor_component = Component::Constructor {
-            source_id: SourceId::ComputationId(callable_id, scope_id.into_owned()),
+            source_id: SourceId::ComputationId(callable_id, scope_id),
         };
         let constructor_id = self.interner.get_or_intern(constructor_component);
         self.id2lifecycle.insert(constructor_id, lifecycle);
@@ -604,7 +604,7 @@ impl ComponentDb {
         &mut self,
         computation: Computation<'static>,
         transformed_id: ComponentId,
-        scope_id: ScopeId<'static>,
+        scope_id: ScopeId,
         computation_db: &mut ComputationDb,
     ) -> ComponentId {
         let computation_id = computation_db.get_or_intern(computation);
@@ -615,7 +615,7 @@ impl ComponentDb {
         &mut self,
         callable_id: ComputationId,
         transformed_component_id: ComponentId,
-        scope_id: ScopeId<'static>,
+        scope_id: ScopeId,
         computation_db: &ComputationDb,
     ) -> ComponentId {
         let transformer = Component::Transformer {
@@ -784,31 +784,24 @@ impl ComponentDb {
     }
 
     /// Return the [`ScopeId`] of the given component.
-    pub fn scope_id(&self, component_id: ComponentId) -> ScopeId<'static> {
+    pub fn scope_id(&self, component_id: ComponentId) -> ScopeId {
         match &self[component_id] {
-            Component::RequestHandler { user_component_id } => self.user_component_db
-                [*user_component_id]
-                .scope_id()
-                .clone()
-                .into_owned(),
+            Component::RequestHandler { user_component_id } => {
+                self.user_component_db[*user_component_id].scope_id()
+            }
             Component::Constructor { source_id } | Component::ErrorHandler { source_id } => {
                 match source_id {
-                    SourceId::ComputationId(_, scope_id) => scope_id.clone().into_owned(),
-                    SourceId::UserComponentId(id) => {
-                        self.user_component_db[*id].scope_id().clone().into_owned()
-                    }
+                    SourceId::ComputationId(_, scope_id) => *scope_id,
+                    SourceId::UserComponentId(id) => self.user_component_db[*id].scope_id(),
                 }
             }
-            Component::Transformer { scope_id, .. } => scope_id.clone().into_owned(),
+            Component::Transformer { scope_id, .. } => *scope_id,
         }
     }
 
     /// Return the id of the root [`ScopeId`].
-    pub fn root_scope_id(&self) -> ScopeId<'static> {
-        self.user_component_db
-            .scope_tree()
-            .root_scope_id()
-            .into_owned()
+    pub fn root_scope_id(&self) -> ScopeId {
+        self.user_component_db.scope_graph().root_scope_id()
     }
 }
 

@@ -348,7 +348,7 @@ fn get_required_singleton_types<'a>(
     let mut singletons_to_be_built = IndexSet::new();
     for (_, handler_call_graph) in handler_call_graphs {
         let root_component_id = handler_call_graph.root_component_id();
-        let root_component_scope_id = component_db.scope_id(root_component_id).into_owned();
+        let root_component_scope_id = component_db.scope_id(root_component_id);
         for required_input in handler_call_graph.required_input_types() {
             let required_input = if let ResolvedType::Reference(t) = &required_input {
                 if !t.is_static {
@@ -366,7 +366,7 @@ fn get_required_singleton_types<'a>(
                     .get(
                         root_component_scope_id.clone(),
                         required_input,
-                        component_db.user_component_db.scope_tree(),
+                        component_db.user_component_db.scope_graph(),
                     )
                     .unwrap();
                 assert_eq!(

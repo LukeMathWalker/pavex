@@ -11,7 +11,7 @@ use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::user_components::raw_db::RawUserComponentDb;
 use crate::compiler::analyses::user_components::resolved_paths::ResolvedPathDb;
 use crate::compiler::analyses::user_components::router_validation::validate_router;
-use crate::compiler::analyses::user_components::{ScopeTree, UserComponent, UserComponentId};
+use crate::compiler::analyses::user_components::{ScopeGraph, UserComponent, UserComponentId};
 use crate::compiler::interner::Interner;
 use crate::compiler::resolvers::CallableResolutionError;
 use crate::diagnostic;
@@ -39,7 +39,7 @@ pub struct UserComponentDb {
     identifiers_interner: Interner<RawCallableIdentifiers>,
     id2locations: HashMap<UserComponentId, Location>,
     id2lifecycle: HashMap<UserComponentId, Lifecycle>,
-    scope_tree: ScopeTree,
+    scope_graph: ScopeGraph,
 }
 
 impl UserComponentDb {
@@ -64,7 +64,7 @@ impl UserComponentDb {
             };
         }
 
-        let raw_db = RawUserComponentDb::build(bp, package_graph, diagnostics);
+        let (raw_db, scope_graph) = RawUserComponentDb::build(bp, package_graph, diagnostics);
         validate_router(&raw_db, package_graph, diagnostics);
         let resolved_path_db = ResolvedPathDb::build(&raw_db, package_graph, diagnostics);
         exit_on_errors!(diagnostics);
@@ -83,7 +83,6 @@ impl UserComponentDb {
             component_interner,
             id2locations,
             id2lifecycle,
-            scope_tree,
             identifiers_interner,
         } = raw_db;
 
@@ -92,7 +91,7 @@ impl UserComponentDb {
             identifiers_interner,
             id2locations,
             id2lifecycle,
-            scope_tree,
+            scope_graph,
         })
     }
 
@@ -137,8 +136,8 @@ impl UserComponentDb {
     }
 
     /// Return the scope tree that was built from the application blueprint.
-    pub fn scope_tree(&self) -> &ScopeTree {
-        &self.scope_tree
+    pub fn scope_graph(&self) -> &ScopeGraph {
+        &self.scope_graph
     }
 
     /// Return the raw callable identifiers associated to the user component with the given id.

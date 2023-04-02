@@ -124,7 +124,7 @@ where
             // We need to recursively build the input types for all our compute components;
             if let CallGraphNode::Compute { component_id, .. } = call_graph[current_index].clone() {
                 let component = component_db.hydrated_component(component_id, computation_db);
-                let component_scope = component_db.scope_id(component_id).into_owned();
+                let component_scope = component_db.scope_id(component_id);
                 let input_types = match component {
                     HydratedComponent::Constructor(constructor) => {
                         constructor.input_types().to_vec()
@@ -146,7 +146,7 @@ where
                     if let Some(constructor_id) = constructible_db.get(
                         component_scope.clone(),
                         &input_type,
-                        component_db.user_component_db.scope_tree(),
+                        component_db.user_component_db.scope_graph(),
                     ) {
                         nodes_to_be_visited.insert(VisitorStackElement {
                             component_id: constructor_id,

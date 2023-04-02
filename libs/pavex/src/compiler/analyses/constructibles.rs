@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 use ahash::{HashMap, HashMapExt, HashSet};
 use guppy::graph::PackageGraph;
 use indexmap::{IndexMap, IndexSet};
@@ -9,7 +11,7 @@ use pavex_builder::constructor::Lifecycle;
 use crate::compiler::analyses::components::{ComponentDb, ComponentId, HydratedComponent};
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::user_components::{
-    ScopeId, ScopeTree, UserComponentDb, UserComponentId,
+    ScopeGraph, ScopeId, UserComponentDb, UserComponentId,
 };
 use crate::diagnostic;
 use crate::diagnostic::{
@@ -22,7 +24,7 @@ use crate::rustdoc::CrateCollection;
 #[derive(Debug)]
 /// The set of types that can be injected into request handlers, error handlers and (other) constructors.
 pub(crate) struct ConstructibleDb {
-    scope_id2constructibles: IndexMap<ScopeId<'static>, ConstructiblesInScope>,
+    scope_id2constructibles: IndexMap<ScopeId, ConstructiblesInScope>,
 }
 
 impl ConstructibleDb {
@@ -56,19 +58,19 @@ impl ConstructibleDb {
         // assumptions are wrong.
         for (component_id, _) in component_db.iter() {
             let component = component_db.hydrated_component(component_id, computation_db);
-            let component_scope = component_db.scope_id(component_id).into_owned();
+            let component_scope = component_db.scope_id(component_id);
             for input_type in component.input_types().iter() {
                 // Some inputs are not constructible and will be injected by the framework
                 // or as part of the application state.
                 if let Some(input_constructor_id) = self_.get(
                     component_scope.clone(),
                     input_type,
-                    component_db.user_component_db.scope_tree(),
+                    component_db.user_component_db.scope_graph(),
                 ) {
                     let input_constructor_scope = component_db.scope_id(input_constructor_id);
                     assert!(component_scope.is_child_of(
-                        &input_constructor_scope,
-                        component_db.user_component_db.scope_tree(),
+                        input_constructor_scope,
+                        component_db.user_component_db.scope_graph(),
                     ));
                 }
             }
@@ -115,7 +117,7 @@ impl ConstructibleDb {
         // components to check.
         loop {
             for component_id in component_ids {
-                let scope_id = component_db.scope_id(component_id).into_owned();
+                let scope_id = component_db.scope_id(component_id);
                 let resolved_component =
                     component_db.hydrated_component(component_id, computation_db);
                 // We don't support dependency injection for transformers (yet).
@@ -323,25 +325,21 @@ impl ConstructibleDb {
     /// If we reach the root scope and the type still doesn't have a constructor, we return `None`.
     pub(crate) fn get(
         &self,
-        scope_id: ScopeId<'static>,
+        scope_id: ScopeId,
         type_: &ResolvedType,
-        scope_tree: &ScopeTree,
+        scope_graph: &ScopeGraph,
     ) -> Option<ComponentId> {
-        let mut current_scope_id = scope_id;
-        loop {
-            if let Some(constructibles) = self.scope_id2constructibles.get(&current_scope_id) {
+        let mut fifo = VecDeque::with_capacity(1);
+        fifo.push_back(scope_id);
+        while let Some(scope_id) = fifo.pop_front() {
+            if let Some(constructibles) = self.scope_id2constructibles.get(&scope_id) {
                 if let Some(constructor_id) = constructibles.get(type_) {
                     return Some(constructor_id);
                 }
             }
-            if let Some(parent_scope_id) = current_scope_id.parent_id(scope_tree) {
-                current_scope_id = parent_scope_id.clone().into_owned();
-            } else {
-                // We reached the root scope and didn't find a constructor.
-                // We can't go any further: there is no constructor for this type.
-                return None;
-            }
+            fifo.extend(scope_id.parent_ids(scope_graph));
         }
+        None
     }
 
     /// Find the constructor for a given type in a given scope.
@@ -357,30 +355,24 @@ impl ConstructibleDb {
     /// the id of the newly bound constructor.
     fn get_or_try_bind(
         &mut self,
-        scope_id: ScopeId<'static>,
+        scope_id: ScopeId,
         type_: &ResolvedType,
         component_db: &mut ComponentDb,
         computation_db: &mut ComputationDb,
     ) -> Option<ComponentId> {
-        let mut current_scope_id = scope_id;
-        loop {
-            if let Some(constructibles) = self.scope_id2constructibles.get_mut(&current_scope_id) {
+        let mut fifo = VecDeque::with_capacity(1);
+        fifo.push_back(scope_id);
+        while let Some(scope_id) = fifo.pop_front() {
+            if let Some(constructibles) = self.scope_id2constructibles.get_mut(&scope_id) {
                 if let Some(constructor_id) =
                     constructibles.get_or_try_bind(type_, component_db, computation_db)
                 {
                     return Some(constructor_id);
                 }
             }
-            if let Some(parent_scope_id) =
-                current_scope_id.parent_id(component_db.user_component_db.scope_tree())
-            {
-                current_scope_id = parent_scope_id.clone().into_owned();
-            } else {
-                // We reached the root scope and didn't find a constructor.
-                // We can't go any further: there is no constructor for this type.
-                return None;
-            }
+            fifo.extend(scope_id.parent_ids(component_db.user_component_db.scope_graph()));
         }
+        None
     }
 
     fn missing_constructor(

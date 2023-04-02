@@ -11,7 +11,8 @@ use pavex_builder::{
 };
 
 use crate::compiler::analyses::user_components::router_key::RouterKey;
-use crate::compiler::analyses::user_components::{ScopeId, ScopeTree};
+use crate::compiler::analyses::user_components::scope_graph::ScopeGraphBuilder;
+use crate::compiler::analyses::user_components::{ScopeGraph, ScopeId};
 use crate::compiler::interner::Interner;
 use crate::diagnostic;
 use crate::diagnostic::{CallableType, CompilerDiagnostic, LocationExt, SourceSpanExt};
@@ -28,16 +29,16 @@ pub enum UserComponent {
     RequestHandler {
         raw_callable_identifiers_id: RawCallableIdentifierId,
         router_key: RouterKey,
-        scope_id: ScopeId<'static>,
+        scope_id: ScopeId,
     },
     ErrorHandler {
         raw_callable_identifiers_id: RawCallableIdentifierId,
         fallible_callable_identifiers_id: UserComponentId,
-        scope_id: ScopeId<'static>,
+        scope_id: ScopeId,
     },
     Constructor {
         raw_callable_identifiers_id: RawCallableIdentifierId,
-        scope_id: ScopeId<'static>,
+        scope_id: ScopeId,
     },
 }
 
@@ -73,11 +74,11 @@ impl UserComponent {
     }
 
     /// Returns the [`ScopeId`] for the scope that this [`UserComponent`] is associated with.
-    pub fn scope_id(&self) -> &ScopeId {
+    pub fn scope_id(&self) -> ScopeId {
         match self {
-            UserComponent::RequestHandler { scope_id, .. } => scope_id,
-            UserComponent::ErrorHandler { scope_id, .. } => scope_id,
-            UserComponent::Constructor { scope_id, .. } => scope_id,
+            UserComponent::RequestHandler { scope_id, .. } => *scope_id,
+            UserComponent::ErrorHandler { scope_id, .. } => *scope_id,
+            UserComponent::Constructor { scope_id, .. } => *scope_id,
         }
     }
 
@@ -113,7 +114,6 @@ pub(super) struct RawUserComponentDb {
     pub(super) identifiers_interner: Interner<RawCallableIdentifiers>,
     pub(super) id2locations: HashMap<UserComponentId, Location>,
     pub(super) id2lifecycle: HashMap<UserComponentId, Lifecycle>,
-    pub(super) scope_tree: ScopeTree,
 }
 
 impl RawUserComponentDb {
@@ -123,38 +123,41 @@ impl RawUserComponentDb {
         bp: &Blueprint,
         package_graph: &PackageGraph,
         diagnostics: &mut Vec<miette::Error>,
-    ) -> Self {
+    ) -> (Self, ScopeGraph) {
         let mut self_ = Self {
             component_interner: Interner::new(),
             identifiers_interner: Interner::new(),
             id2locations: HashMap::new(),
             id2lifecycle: HashMap::new(),
-            scope_tree: ScopeTree::new(),
         };
-        let root_scope_id = self_.scope_tree.root_scope_id().into_owned();
+        let mut scope_graph_builder = ScopeGraph::builder();
+        let root_scope_id = scope_graph_builder.root_scope_id();
 
         Self::process_blueprint(
             &mut self_,
             &bp,
             root_scope_id.clone(),
             None,
+            &mut scope_graph_builder,
             package_graph,
             diagnostics,
         );
 
         for nested_bp in &bp.nested_blueprints {
-            let nested_scope_id = self_.scope_tree.add_scope(root_scope_id.clone());
+            let nested_scope_id = scope_graph_builder.add_scope(root_scope_id.clone());
             self_.validate_nested_bp(&nested_bp, &package_graph, diagnostics);
             Self::process_blueprint(
                 &mut self_,
                 &nested_bp.blueprint,
                 nested_scope_id,
                 nested_bp.path_prefix.as_deref(),
+                &mut scope_graph_builder,
                 package_graph,
                 diagnostics,
             );
         }
-        self_
+        let scope_graph = scope_graph_builder.build();
+        (self_, scope_graph)
     }
 
     /// Register with [`RawUserComponentDb`] all the user components that have been
@@ -166,8 +169,9 @@ impl RawUserComponentDb {
     fn process_blueprint(
         &mut self,
         bp: &Blueprint,
-        current_scope_id: ScopeId<'static>,
+        current_scope_id: ScopeId,
         path_prefix: Option<&str>,
+        scope_graph_builder: &mut ScopeGraphBuilder,
         package_graph: &PackageGraph,
         diagnostics: &mut Vec<miette::Error>,
     ) {
@@ -186,7 +190,7 @@ impl RawUserComponentDb {
                     methods.iter().map(|m| Some(m.to_string())).collect()
                 }
             };
-            let route_scope_id = self.scope_tree.add_scope(current_scope_id.clone());
+            let route_scope_id = scope_graph_builder.add_scope(current_scope_id.clone());
             let path = match path_prefix {
                 Some(prefix) => format!("{}{}", prefix, registered_route.path),
                 None => registered_route.path.to_owned(),
