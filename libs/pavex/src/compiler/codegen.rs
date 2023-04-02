@@ -213,9 +213,18 @@ fn define_application_state(
     runtime_singletons: &BiHashMap<Ident, ResolvedType>,
     package_id2name: &BiHashMap<PackageId, String>,
 ) -> ItemStruct {
+    let mut runtime_singletons = runtime_singletons
+        .iter()
+        .map(|(field_name, type_)| {
+            let field_type = type_.syn_type(package_id2name);
+            (field_name, field_type)
+        })
+        .collect::<Vec<_>>();
+    // Sort the fields by name to ensure that the generated code is deterministic.
+    runtime_singletons.sort_by_key(|(field_name, _)| field_name.to_string());
+
     let singleton_fields = runtime_singletons.iter().map(|(field_name, type_)| {
-        let field_type = type_.syn_type(package_id2name);
-        quote! { #field_name: #field_type }
+        quote! { #field_name: #type_ }
     });
     syn::parse2(quote! {
         pub struct ApplicationState {

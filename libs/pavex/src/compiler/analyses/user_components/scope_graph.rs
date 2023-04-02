@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap};
 
 use indexmap::IndexSet;
 use petgraph::algo::has_path_connecting;
@@ -152,7 +152,7 @@ impl ScopeGraphBuilder {
                     .count()
                     == 0
             })
-            .collect::<IndexSet<_>>();
+            .collect::<BTreeSet<_>>();
         graph.add_node(application_state);
         for id in leaf_scopes {
             graph.add_edge(id, application_state, ());
