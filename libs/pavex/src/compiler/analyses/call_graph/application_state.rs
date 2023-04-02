@@ -1,4 +1,4 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use ahash::{HashMap, HashMapExt, HashSet};
 use bimap::BiHashMap;
@@ -58,7 +58,13 @@ pub(crate) fn application_state_call_graph(
         is_async: false,
         path: application_state_type.resolved_path(),
         output: Some(application_state_type.clone().into()),
-        inputs: runtime_singleton_bindings.right_values().cloned().collect(),
+        inputs: {
+            // Ensure that the inputs are sorted by name.
+            let b = runtime_singleton_bindings
+                .iter()
+                .collect::<BTreeMap<_, _>>();
+            b.into_values().cloned().collect()
+        },
         invocation_style: InvocationStyle::StructLiteral {
             field_names: runtime_singleton_bindings
                 .iter()

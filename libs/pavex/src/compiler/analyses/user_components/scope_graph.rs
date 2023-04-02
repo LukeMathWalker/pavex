@@ -1,6 +1,5 @@
 use std::collections::{BTreeSet, HashMap};
 
-use indexmap::IndexSet;
 use petgraph::algo::has_path_connecting;
 use petgraph::graphmap::DiGraphMap;
 use petgraph::visit::IntoNodeIdentifiers;
@@ -60,7 +59,7 @@ pub struct ScopeGraphBuilder {
     next_node_id: usize,
 }
 
-#[derive(Copy, Debug, Clone, Hash, Eq, PartialEq)]
+#[derive(Copy, Debug, Clone, Hash, Eq, PartialEq, Ord, PartialOrd)]
 /// The unique ID of a scope.
 ///
 /// See [`ScopeGraph`] for more information.
@@ -83,7 +82,7 @@ impl ScopeId {
     }
 
     /// Return the IDs of the parent scopes, if any.
-    pub fn parent_ids(&self, scope_graph: &ScopeGraph) -> IndexSet<ScopeId> {
+    pub fn parent_ids(&self, scope_graph: &ScopeGraph) -> BTreeSet<ScopeId> {
         scope_graph
             .graph
             .neighbors_directed(self.0, petgraph::Direction::Incoming)
