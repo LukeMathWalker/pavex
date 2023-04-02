@@ -22,9 +22,16 @@
   [31m│[0m     ·                              [35;1m╰── [35;1mA constructor was registered here[0m[0m
   [31m│[0m  [2m24[0m │     bp.route(GET, "/child", f!(crate::handler));
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mIf you want to share a single instance of `u64`, remove constructors
-  [31m│[0m         for `u64` until there is only one left. It should be attached to
-  [31m│[0m         a blueprint that is a parent of all the nested ones that need to
-  [31m│[0m         use it.
-  [31m│[0m         If you want different instances, consider creating separate newtypes
+  [31m│[0m   [36mhelp:[0m If you want to share a single instance of `u64`, remove constructors
+  [31m│[0m         for `u64` until there is only one left. It should be attached to a
+  [31m│[0m         blueprint that is a parent of all the nested ones that need to use it.
+  [31m│[0m        ☞
+  [31m│[0m          ╭─[[36;1;4msrc/lib.rs[0m:5:1]
+  [31m│[0m        [2m5[0m │ pub fn blueprint() -> Blueprint {
+  [31m│[0m        [2m6[0m │     let mut bp = Blueprint::new();
+  [31m│[0m          · [35;1m                 ────────┬───────[0m
+  [31m│[0m          ·                          [35;1m╰── [35;1mRegister your constructor against this blueprint[0m[0m
+  [31m│[0m        [2m7[0m │     bp.constructor(f!(crate::singleton), Lifecycle::Singleton);
+  [31m│[0m          ╰────
+  [31m│[0m [36m  help: [0mIf you want different instances, consider creating separate newtypes
   [31m│[0m         that wrap a `u64`.
