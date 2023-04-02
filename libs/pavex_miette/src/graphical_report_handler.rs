@@ -213,13 +213,22 @@ impl GraphicalReportHandler {
 
     fn render_causes(&self, f: &mut impl fmt::Write, diagnostic: &(dyn Diagnostic)) -> fmt::Result {
         let (severity_style, severity_icon) = match diagnostic.severity() {
-            Some(Severity::Error) | None => (self.theme.styles.error, &self.theme.characters.error),
-            Some(Severity::Warning) => (self.theme.styles.warning, &self.theme.characters.warning),
-            Some(Severity::Advice) => (self.theme.styles.advice, &self.theme.characters.advice),
+            Some(Severity::Error) | None => (
+                self.theme.styles.error,
+                self.theme.characters.error.as_str(),
+            ),
+            Some(Severity::Warning) => (
+                self.theme.styles.warning,
+                self.theme.characters.warning.as_str(),
+            ),
+            Some(Severity::Advice) => (self.theme.styles.advice, "help:"),
         };
 
         let initial_indent = format!("  {} ", severity_icon.style(severity_style));
-        let rest_indent = format!("  {} ", self.theme.characters.vbar.style(severity_style));
+        let rest_indent = match diagnostic.severity() {
+            Some(Severity::Advice) => format!("        "),
+            _ => format!("  {} ", self.theme.characters.vbar.style(severity_style)),
+        };
         let width = self.termwidth.saturating_sub(2);
         let opts = textwrap::Options::new(width)
             .initial_indent(&initial_indent)
@@ -291,8 +300,26 @@ impl GraphicalReportHandler {
         if let Some(related) = diagnostic.related() {
             for rel in related {
                 self.render_causes(f, rel)?;
+                let overall_indent = match rel.severity() {
+                    Some(Severity::Advice) => "      ",
+                    _ => "",
+                };
+                let mut buffer = String::new();
                 let src = rel.source_code().or(parent_src);
-                self.render_snippets(f, rel, src)?;
+                self.render_snippets(&mut buffer, rel, src)?;
+
+                if !buffer.is_empty() && rel.severity() == Some(Severity::Advice) {
+                    writeln!(
+                        f,
+                        "{}",
+                        textwrap::indent(
+                            &format!(" {}", &self.theme.characters.advice),
+                            &overall_indent,
+                        )
+                    )?;
+                }
+
+                write!(f, "{}", textwrap::indent(&buffer, &overall_indent))?;
             }
         }
         Ok(())

@@ -16,7 +16,7 @@ use crate::compiler::analyses::user_components::{
 use crate::diagnostic;
 use crate::diagnostic::{
     convert_proc_macro_span, convert_rustdoc_span, read_source_file, AnnotatedSnippet,
-    CompilerDiagnostic, LocationExt, SourceSpanExt,
+    CompilerDiagnostic, HelpWithSnippet, LocationExt, SourceSpanExt,
 };
 use crate::language::{Callable, ResolvedType};
 use crate::rustdoc::CrateCollection;
@@ -283,13 +283,54 @@ impl ConstructibleDb {
                         ))
                         .build()
                 } else {
-                    let _common_ancestor_scope_id =
-                        component_db.scope_graph().find_common_ancestor(
-                            component_ids
-                                .iter()
-                                .map(|(scope_id, _)| *scope_id)
-                                .collect(),
-                        );
+                    fn get_help_snippet(
+                        type_: &ResolvedType,
+                        common_ancestor_id: ScopeId,
+                        scope_graph: &ScopeGraph,
+                        package_graph: &PackageGraph,
+                        diagnostics: &mut Vec<miette::Error>,
+                    ) -> Option<HelpWithSnippet> {
+                        let location = scope_graph.get_location(common_ancestor_id).unwrap();
+                        let source = match location.source_file(package_graph) {
+                            Ok(s) => s,
+                            Err(e) => {
+                                diagnostics.push(e.into());
+                                return None;
+                            }
+                        };
+                        let label = diagnostic::get_bp_new_span(&source, &location).map(|s| {
+                            s.labeled(
+                                "Register your constructor against this blueprint".to_string(),
+                            )
+                        });
+                        if let Some(label) = label {
+                            Some(HelpWithSnippet::new(
+                                format!(
+                                    "If you want to share a single instance of `{type_:?}`, remove \
+                                    constructors for `{type_:?}` until there is only one left. It should \
+                                    be attached to a blueprint that is a parent of all the nested \
+                                    ones that need to use it."
+                                ),
+                                AnnotatedSnippet::new(source, label),
+                            ))
+                        } else {
+                            None
+                        }
+                    }
+
+                    let common_ancestor_scope_id = component_db.scope_graph().find_common_ancestor(
+                        component_ids
+                            .iter()
+                            .map(|(scope_id, _)| *scope_id)
+                            .collect(),
+                    );
+                    let help_snippet = get_help_snippet(
+                        &type_,
+                        common_ancestor_scope_id,
+                        component_db.scope_graph(),
+                        package_graph,
+                        diagnostics,
+                    );
                     let error = anyhow::anyhow!(
                         "The constructor for a singleton must be registered once.\n\
                         You registered the same constructor for `{type_:?}` against {n_constructors} \
@@ -300,14 +341,9 @@ impl ConstructibleDb {
                     );
                     CompilerDiagnostic::builder(source_code, error)
                         .additional_annotated_snippets(snippets.into_iter())
-                        // TODO: add a code snippet in the suggestion showing which blueprint
-                        //   should be used to register the constructor.
+                        .optional_help_with_snippet(help_snippet)
                         .help(format!(
-                            "If you want to share a single instance of `{type_:?}`, remove \
-                            constructors for `{type_:?}` until there is only one left. It should \
-                            be attached to a blueprint that is a parent of all the nested \
-                            ones that need to use it.\n\
-                            If you want different instances, consider creating separate newtypes \
+                            "If you want different instances, consider creating separate newtypes \
                             that wrap a `{type_:?}`."
                         ))
                         .build()
