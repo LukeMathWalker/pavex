@@ -130,7 +130,7 @@ impl RawUserComponentDb {
             id2locations: HashMap::new(),
             id2lifecycle: HashMap::new(),
         };
-        let mut scope_graph_builder = ScopeGraph::builder();
+        let mut scope_graph_builder = ScopeGraph::builder(bp.creation_location.clone());
         let root_scope_id = scope_graph_builder.root_scope_id();
 
         Self::process_blueprint(
@@ -144,7 +144,10 @@ impl RawUserComponentDb {
         );
 
         for nested_bp in &bp.nested_blueprints {
-            let nested_scope_id = scope_graph_builder.add_scope(root_scope_id);
+            let nested_scope_id = scope_graph_builder.add_scope(
+                root_scope_id,
+                Some(nested_bp.blueprint.creation_location.clone()),
+            );
             self_.validate_nested_bp(nested_bp, package_graph, diagnostics);
             Self::process_blueprint(
                 &mut self_,
@@ -190,7 +193,7 @@ impl RawUserComponentDb {
                     methods.iter().map(|m| Some(m.to_string())).collect()
                 }
             };
-            let route_scope_id = scope_graph_builder.add_scope(current_scope_id);
+            let route_scope_id = scope_graph_builder.add_scope(current_scope_id, None);
             let path = match path_prefix {
                 Some(prefix) => format!("{}{}", prefix, registered_route.path),
                 None => registered_route.path.to_owned(),
@@ -380,7 +383,7 @@ impl RawUserComponentDb {
         package_graph: &PackageGraph,
         diagnostics: &mut Vec<miette::Error>,
     ) {
-        let location = &nested_bp.location;
+        let location = &nested_bp.nesting_location;
         let source = match location.source_file(package_graph) {
             Ok(source) => source,
             Err(e) => {
@@ -407,7 +410,7 @@ impl RawUserComponentDb {
         package_graph: &PackageGraph,
         diagnostics: &mut Vec<miette::Error>,
     ) {
-        let location = &nested_bp.location;
+        let location = &nested_bp.nesting_location;
         let source = match location.source_file(package_graph) {
             Ok(source) => source,
             Err(e) => {

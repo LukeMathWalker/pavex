@@ -1,12 +1,14 @@
 use std::fmt::Display;
 
-use miette::{Diagnostic, LabeledSpan, NamedSource, SourceCode};
+use miette::{Diagnostic, LabeledSpan, NamedSource, Severity, SourceCode};
 
 /// A builder for a [`CompilerDiagnostic`].
 pub struct CompilerDiagnosticBuilder {
+    severity: Severity,
     source_code: NamedSource,
     labels: Option<Vec<LabeledSpan>>,
     help: Option<String>,
+    help_with_snippet: Option<Vec<HelpWithSnippet>>,
     error_source: anyhow::Error,
     additional_annotated_snippets: Option<Vec<AnnotatedSnippet>>,
 }
@@ -14,9 +16,11 @@ pub struct CompilerDiagnosticBuilder {
 impl CompilerDiagnosticBuilder {
     fn new(source_code: impl Into<NamedSource>, error: impl Into<anyhow::Error>) -> Self {
         Self {
+            severity: Severity::Error,
             source_code: source_code.into(),
             labels: None,
             help: None,
+            help_with_snippet: None,
             error_source: error.into(),
             additional_annotated_snippets: None,
         }
@@ -87,6 +91,26 @@ impl CompilerDiagnosticBuilder {
         self
     }
 
+    /// An optional version of [`Self::help_with_snippet`].
+    pub fn optional_help_with_snippet(self, help: Option<HelpWithSnippet>) -> Self {
+        if let Some(help) = help {
+            self.help_with_snippet(help)
+        } else {
+            self
+        }
+    }
+
+    /// Add an help message to this diagnostic to nudge the user in the right direction.
+    /// The help message includes an annotated code snippet.
+    pub fn help_with_snippet(mut self, help: HelpWithSnippet) -> Self {
+        let mut annotated_snippets = self
+            .help_with_snippet
+            .unwrap_or_else(|| Vec::with_capacity(1));
+        annotated_snippets.push(help);
+        self.help_with_snippet = Some(annotated_snippets);
+        self
+    }
+
     /// Add an help message to this diagnostic to nudge the user in the right direction.
     ///
     /// Help messages are rendered at the very end of the diagnostic, after the error message
@@ -99,9 +123,11 @@ impl CompilerDiagnosticBuilder {
     /// Finalize the builder and return a [`CompilerDiagnostic`].
     pub fn build(self) -> CompilerDiagnostic {
         let Self {
+            severity,
             source_code,
             labels,
             help,
+            help_with_snippet,
             error_source,
             additional_annotated_snippets,
         } = self;
@@ -111,22 +137,38 @@ impl CompilerDiagnosticBuilder {
         // with an empty error message.
         // Our custom `miette` handler in `pavex_miette` will make sure to render the "related errors"
         // as additional annotated snippets, which is what we want to see.
-        let related_errors = additional_annotated_snippets.map(|snippets| {
-            snippets
-                .into_iter()
-                .map(|s| {
-                    CompilerDiagnosticBuilder::new(s.source_code, anyhow::anyhow!(""))
-                        .labels(s.labels.into_iter())
-                        .build()
-                })
-                .collect()
-        });
+        let mut related_diagnostics = additional_annotated_snippets
+            .map(|snippets| {
+                snippets
+                    .into_iter()
+                    .map(|s| {
+                        CompilerDiagnosticBuilder::new(s.source_code, anyhow::anyhow!(""))
+                            .labels(s.labels.into_iter())
+                            .build()
+                    })
+                    .collect()
+            })
+            .unwrap_or(Vec::new());
+
+        if let Some(helps) = help_with_snippet {
+            related_diagnostics.extend(helps.into_iter().map(|s| {
+                let mut d = CompilerDiagnosticBuilder::new(
+                    s.snippet.source_code,
+                    anyhow::anyhow!("{}", s.help),
+                )
+                .labels(s.snippet.labels.into_iter())
+                .build();
+                d.severity = Severity::Advice;
+                d
+            }))
+        }
         CompilerDiagnostic {
             source_code,
+            severity,
             labels,
             help,
             error_source,
-            related_errors,
+            related_errors: Some(related_diagnostics),
         }
     }
 }
@@ -152,6 +194,18 @@ impl CompilerDiagnostic {
         error: impl Into<anyhow::Error>,
     ) -> CompilerDiagnosticBuilder {
         CompilerDiagnosticBuilder::new(source_code, error)
+    }
+}
+
+/// An help message supported by an annotated code snippet.
+pub struct HelpWithSnippet {
+    help: String,
+    snippet: AnnotatedSnippet,
+}
+
+impl HelpWithSnippet {
+    pub fn new(help: String, snippet: AnnotatedSnippet) -> Self {
+        Self { help, snippet }
     }
 }
 
@@ -193,6 +247,7 @@ impl AnnotatedSnippet {
 /// See [`CompilerDiagnostic::builder`] for how to create a diagnostic.
 pub struct CompilerDiagnostic {
     source_code: NamedSource,
+    severity: Severity,
     labels: Option<Vec<LabeledSpan>>,
     help: Option<String>,
     #[source]
@@ -201,6 +256,10 @@ pub struct CompilerDiagnostic {
 }
 
 impl miette::Diagnostic for CompilerDiagnostic {
+    fn severity(&self) -> Option<Severity> {
+        Some(self.severity)
+    }
+
     fn help<'a>(&'a self) -> Option<Box<dyn Display + 'a>> {
         self.help
             .as_ref()

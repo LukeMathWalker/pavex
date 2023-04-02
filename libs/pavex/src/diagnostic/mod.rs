@@ -1,11 +1,11 @@
 //! A toolkit to assemble and report errors and warnings to the user.
 use std::fmt::{Display, Formatter};
 
-pub(crate) use compiler_diagnostic::{AnnotatedSnippet, CompilerDiagnostic};
+pub(crate) use compiler_diagnostic::{AnnotatedSnippet, CompilerDiagnostic, HelpWithSnippet};
 pub(crate) use ordinals::ZeroBasedOrdinal;
 pub(crate) use proc_macro_utils::ProcMacroSpanExt;
 pub(crate) use registration_locations::{
-    get_f_macro_invocation_span, get_nest_at_prefix_span, get_route_path_span,
+    get_bp_new_span, get_f_macro_invocation_span, get_nest_at_prefix_span, get_route_path_span,
 };
 pub(crate) use source_file::{read_source_file, LocationExt, ParsedSourceFile};
 

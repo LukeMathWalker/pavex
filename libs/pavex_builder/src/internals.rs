@@ -36,5 +36,5 @@ pub struct NestedBlueprint {
     /// If `None`, the routes coming from the nested [`Blueprint`] will be registered as-they-are.
     pub path_prefix: Option<String>,
     /// The location where the [`Blueprint`] was nested under its parent [`Blueprint`].
-    pub location: Location,
+    pub nesting_location: Location,
 }

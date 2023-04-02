@@ -1,6 +1,10 @@
-use indexmap::IndexSet;
+use std::collections::{BTreeSet, HashMap};
+
+use petgraph::algo::has_path_connecting;
 use petgraph::graphmap::DiGraphMap;
 use petgraph::visit::IntoNodeIdentifiers;
+
+use pavex_builder::reflection::Location;
 
 /// Assign a unique ID to each *scope*.
 ///
@@ -44,16 +48,18 @@ pub struct ScopeGraph {
     root: ScopeId,
     application_state: ScopeId,
     graph: DiGraphMap<usize, ()>,
+    id2locations: HashMap<usize, Location>,
 }
 
 #[derive(Debug, Clone)]
 pub struct ScopeGraphBuilder {
     root: ScopeId,
     graph: DiGraphMap<usize, ()>,
+    id2locations: HashMap<usize, Location>,
     next_node_id: usize,
 }
 
-#[derive(Copy, Debug, Clone, Hash, Eq, PartialEq)]
+#[derive(Copy, Debug, Clone, Hash, Eq, PartialEq, Ord, PartialOrd)]
 /// The unique ID of a scope.
 ///
 /// See [`ScopeGraph`] for more information.
@@ -76,7 +82,7 @@ impl ScopeId {
     }
 
     /// Return the IDs of the parent scopes, if any.
-    pub fn parent_ids(&self, scope_graph: &ScopeGraph) -> IndexSet<ScopeId> {
+    pub fn parent_ids(&self, scope_graph: &ScopeGraph) -> BTreeSet<ScopeId> {
         scope_graph
             .graph
             .neighbors_directed(self.0, petgraph::Direction::Incoming)
@@ -87,12 +93,18 @@ impl ScopeId {
 
 impl ScopeGraphBuilder {
     /// Create a new scope graph with a single root scope.
-    fn new() -> Self {
+    fn new(root_bp_location: Location) -> Self {
         let mut graph = DiGraphMap::new();
         let root_id = graph.add_node(0);
+        let id2locations = {
+            let mut id2locations = HashMap::new();
+            id2locations.insert(root_id, root_bp_location);
+            id2locations
+        };
         Self {
             root: ScopeId(root_id),
             graph,
+            id2locations,
             next_node_id: 1,
         }
     }
@@ -103,7 +115,10 @@ impl ScopeGraphBuilder {
     }
 
     /// Add a new scope as a child of the specified parent scope.
-    pub fn add_scope(&mut self, parent_scope_id: ScopeId) -> ScopeId {
+    ///
+    /// If the scope is user-defined (e.g. a `nest` or `nest_at` call), the location of the scope is also
+    /// specified.
+    pub fn add_scope(&mut self, parent_scope_id: ScopeId, location: Option<Location>) -> ScopeId {
         let id = {
             let id = self.next_node_id;
             self.next_node_id += 1;
@@ -111,6 +126,9 @@ impl ScopeGraphBuilder {
         };
         self.graph.add_node(id);
         self.graph.add_edge(parent_scope_id.0, id, ());
+        if let Some(location) = location {
+            self.id2locations.insert(id, location);
+        }
         ScopeId(id)
     }
 
@@ -133,7 +151,7 @@ impl ScopeGraphBuilder {
                     .count()
                     == 0
             })
-            .collect::<IndexSet<_>>();
+            .collect::<BTreeSet<_>>();
         graph.add_node(application_state);
         for id in leaf_scopes {
             graph.add_edge(id, application_state, ());
@@ -142,15 +160,17 @@ impl ScopeGraphBuilder {
             root: self.root,
             application_state: ScopeId(application_state),
             graph,
+            id2locations: self.id2locations,
         }
     }
 }
 
 impl ScopeGraph {
     /// Start building a new scope graph.
-    /// It immediately initializes the root scope.
-    pub fn builder() -> ScopeGraphBuilder {
-        ScopeGraphBuilder::new()
+    ///
+    /// It immediately initializes the root scope, associating it with the provided location.
+    pub fn builder(root_bp_location: Location) -> ScopeGraphBuilder {
+        ScopeGraphBuilder::new(root_bp_location)
     }
 
     /// Return the ID of the root scope.
@@ -161,5 +181,46 @@ impl ScopeGraph {
     /// Return the ID of the application state scope.
     pub fn application_state_scope_id(&self) -> ScopeId {
         self.application_state
+    }
+
+    /// Return the location of the specified scope, if it is user-defined.
+    ///
+    /// The only scopes that are **not** user-defined are the scopes for request handlers and the
+    /// application state scope.
+    pub fn get_location(&self, scope_id: ScopeId) -> Option<Location> {
+        self.id2locations.get(&scope_id.0).cloned()
+    }
+
+    /// Return the ID of a scope that is a parent (either directly or transitively) of
+    /// all the specified [`ScopeId`]s.
+    ///
+    /// There is **always** a common ancestor, since the scope graph is a directed acyclic graph
+    /// rooted in the root scope.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `scope_ids` is empty.
+    pub fn find_common_ancestor(&self, scope_ids: Vec<ScopeId>) -> ScopeId {
+        assert!(scope_ids.len() > 0);
+        let mut common_ancestor = scope_ids[0];
+        let mut uncovered_scope_ids = scope_ids;
+
+        while let Some(scope_id) = uncovered_scope_ids.pop() {
+            if !has_path_connecting(&self.graph, common_ancestor.0, scope_id.0, None) {
+                common_ancestor = self
+                    .graph
+                    .neighbors_directed(common_ancestor.0, petgraph::Direction::Incoming)
+                    .next()
+                    .map(ScopeId)
+                    .unwrap();
+                // If we've reached the root, we're done.
+                if common_ancestor == self.root {
+                    return common_ancestor;
+                }
+                uncovered_scope_ids.push(scope_id);
+            }
+        }
+
+        common_ancestor
     }
 }

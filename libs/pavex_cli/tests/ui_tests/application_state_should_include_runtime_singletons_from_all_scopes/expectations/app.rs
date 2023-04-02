@@ -7,16 +7,16 @@ struct ServerState {
     application_state: ApplicationState,
 }
 pub struct ApplicationState {
-    s1: u64,
     s0: u32,
+    s1: u64,
 }
 pub async fn build_application_state() -> crate::ApplicationState {
-    let v0 = app::singleton_dep();
-    let v1 = app::nested_singleton(v0);
-    let v2 = app::parent_singleton();
+    let v0 = app::parent_singleton();
+    let v1 = app::singleton_dep();
+    let v2 = app::nested_singleton(v1);
     crate::ApplicationState {
-        s0: v1,
-        s1: v2,
+        s0: v2,
+        s1: v0,
     }
 }
 pub async fn run(

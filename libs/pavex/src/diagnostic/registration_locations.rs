@@ -3,7 +3,7 @@
 use miette::SourceSpan;
 use syn::spanned::Spanned;
 use syn::visit::Visit;
-use syn::{ExprMethodCall, Stmt};
+use syn::{ExprCall, ExprMethodCall, Stmt};
 
 use pavex_builder::reflection::Location;
 
@@ -35,18 +35,28 @@ pub(crate) fn get_f_macro_invocation_span(
 ) -> Option<SourceSpan> {
     let raw_source = &source.contents;
     let node = find_method_call(location, &source.parsed)?;
-    let argument = match node.method.to_string().as_str() {
-        "error_handler" | "constructor" => node.args.first(),
-        "route" => node.args.iter().nth(2),
-        s => {
-            tracing::trace!(
-                "Unknown method name when looking for component registration: {}",
-                s
-            );
-            return None;
+    match node {
+        Call::MethodCall(node) => {
+            let argument = match node.method.to_string().as_str() {
+                "error_handler" | "constructor" => node.args.first(),
+                "route" => node.args.iter().nth(2),
+                s => {
+                    tracing::trace!(
+                        "Unknown method name when looking for component registration: {}",
+                        s
+                    );
+                    return None;
+                }
+            }?;
+            Some(convert_proc_macro_span(raw_source, argument.span()))
         }
-    }?;
-    Some(convert_proc_macro_span(raw_source, argument.span()))
+        Call::FunctionCall(_) => {
+            tracing::trace!(
+                "We do not handle (yet) function call spans when looking for f-macro invoation spans in diagnostics",
+            );
+            None
+        }
+    }
 }
 
 /// Location, obtained via `#[track_caller]` and `std::panic::Location::caller`, points at the
@@ -72,28 +82,40 @@ pub(crate) fn get_route_path_span(
 ) -> Option<SourceSpan> {
     let raw_source = &source.contents;
     let node = find_method_call(location, &source.parsed)?;
-    let argument = match node.method.to_string().as_str() {
-        "route" => {
-            if node.args.len() == 3 {
-                // bp.route(method, path, handler)
-                node.args.iter().nth(1)
-            } else if node.args.len() == 4 {
+    let span = match node {
+        Call::MethodCall(node) => {
+            let argument = match node.method.to_string().as_str() {
+                "route" => {
+                    if node.args.len() == 3 {
+                        // bp.route(method, path, handler)
+                        node.args.iter().nth(1)
+                    } else {
+                        tracing::trace!("Unexpected number of arguments for `route` invocation");
+                        return None;
+                    }
+                }
+                s => {
+                    tracing::trace!(
+                        "Unknown method name when looking for a `route` invocation: {}",
+                        s
+                    );
+                    return None;
+                }
+            }?;
+            argument.span()
+        }
+        Call::FunctionCall(node) => {
+            let argument = if node.args.len() == 4 {
                 // Blueprint::route(bp, method, path, handler)
                 node.args.iter().nth(2)
             } else {
                 tracing::trace!("Unexpected number of arguments for `route` invocation");
                 return None;
-            }
+            };
+            argument.span()
         }
-        s => {
-            tracing::trace!(
-                "Unknown method name when looking for a `route` invocation: {}",
-                s
-            );
-            return None;
-        }
-    }?;
-    Some(convert_proc_macro_span(raw_source, argument.span()))
+    };
+    Some(convert_proc_macro_span(raw_source, span))
 }
 
 /// Location, obtained via `#[track_caller]` and `std::panic::Location::caller`, points at the
@@ -119,28 +141,75 @@ pub(crate) fn get_nest_at_prefix_span(
 ) -> Option<SourceSpan> {
     let raw_source = &source.contents;
     let node = find_method_call(location, &source.parsed)?;
-    let argument = match node.method.to_string().as_str() {
-        "nest_at" => {
-            if node.args.len() == 2 {
-                // bp.nest_at(prefix, sub_bp)
-                node.args.first()
-            } else if node.args.len() == 3 {
+    let span = match node {
+        Call::MethodCall(node) => {
+            let argument = match node.method.to_string().as_str() {
+                "nest_at" => {
+                    if node.args.len() == 2 {
+                        // bp.nest_at(prefix, sub_bp)
+                        node.args.first()
+                    } else if node.args.len() == 3 {
+                        // Blueprint::nest_at(bp, prefix, sub_bp)
+                        node.args.iter().nth(1)
+                    } else {
+                        tracing::trace!("Unexpected number of arguments for `nest_at` invocation");
+                        return None;
+                    }
+                }
+                s => {
+                    tracing::trace!(
+                        "Unknown method name when looking for a `nest_at` invocation: {}",
+                        s
+                    );
+                    return None;
+                }
+            }?;
+            argument.span()
+        }
+        Call::FunctionCall(node) => {
+            let argument = if node.args.len() == 3 {
                 // Blueprint::nest_at(bp, prefix, sub_bp)
                 node.args.iter().nth(1)
             } else {
                 tracing::trace!("Unexpected number of arguments for `nest_at` invocation");
                 return None;
-            }
+            };
+            argument.span()
         }
-        s => {
-            tracing::trace!(
-                "Unknown method name when looking for a `nest_at` invocation: {}",
-                s
-            );
-            return None;
-        }
-    }?;
-    Some(convert_proc_macro_span(raw_source, argument.span()))
+    };
+    Some(convert_proc_macro_span(raw_source, span))
+}
+
+/// Location, obtained via `#[track_caller]` and `std::panic::Location::caller`, points at the
+/// `(` in the method invocation for `Blueprint::new`.
+/// E.g.
+///
+/// ```rust,ignore
+/// let bp = Blueprint::new()
+///                      //^ `location` points here!
+/// ```
+///
+/// We build a `SourceSpan` that matches the method call.
+/// E.g.
+///
+/// ```rust,ignore
+/// let bp = Blueprint::new()
+/// //       ^^^^^^^^^^^^^^
+/// //       We want a SourceSpan that points here
+/// ```
+pub(crate) fn get_bp_new_span(
+    source: &ParsedSourceFile,
+    location: &Location,
+) -> Option<SourceSpan> {
+    let raw_source = &source.contents;
+    let node = find_method_call(location, &source.parsed)?;
+    let Call::FunctionCall(node) = node else { unreachable!() };
+    Some(convert_proc_macro_span(raw_source, node.span()))
+}
+
+enum Call<'a> {
+    MethodCall(&'a ExprMethodCall),
+    FunctionCall(&'a ExprCall),
 }
 
 /// [`CallableLocator`] visits the abstract syntax tree of a parsed `syn::File`.
@@ -153,17 +222,24 @@ pub(crate) fn get_nest_at_prefix_span(
 /// There are going to be multiple nodes that match if we are dealing with chained method calls.
 /// Luckily enough, the visit is pre-order, therefore the latest node that contains `location`
 /// is also the smallest node that contains it—exactly what we are looking for.
-fn find_method_call<'a>(location: &'a Location, file: &'a syn::File) -> Option<&'a ExprMethodCall> {
+fn find_method_call<'a>(location: &'a Location, file: &'a syn::File) -> Option<Call<'a>> {
     /// A visitor that locates the method call that contains the given `location`.
     struct CallableLocator<'a> {
         location: &'a Location,
-        node: Option<&'a ExprMethodCall>,
+        node: Option<Call<'a>>,
     }
 
     impl<'a> Visit<'a> for CallableLocator<'a> {
+        fn visit_expr_call(&mut self, node: &'a ExprCall) {
+            if node.span().contains(self.location) {
+                self.node = Some(Call::FunctionCall(node));
+                syn::visit::visit_expr_call(self, node)
+            }
+        }
+
         fn visit_expr_method_call(&mut self, node: &'a ExprMethodCall) {
             if node.span().contains(self.location) {
-                self.node = Some(node);
+                self.node = Some(Call::MethodCall(node));
                 syn::visit::visit_expr_method_call(self, node)
             }
         }

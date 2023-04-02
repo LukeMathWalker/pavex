@@ -5,7 +5,7 @@ use crate::internals::{NestedBlueprint, RegisteredCallable, RegisteredRoute};
 use crate::reflection::{Location, RawCallable, RawCallableIdentifiers};
 use crate::router::{MethodGuard, Route};
 
-#[derive(Default, serde::Serialize, serde::Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize)]
 /// The starting point for building an application with `pavex`.
 ///
 /// A blueprint defines the runtime behaviour of your application.  
@@ -20,6 +20,8 @@ use crate::router::{MethodGuard, Route};
 ///
 /// [`Constructor::error_handler`]: Constructor::error_handler
 pub struct Blueprint {
+    /// The location where the [`Blueprint`] was created.
+    pub creation_location: Location,
     /// The set of registered constructors.
     pub constructors: IndexSet<RawCallableIdentifiers>,
     /// - Keys: [`RawCallableIdentifiers`] of a **fallible** constructor.
@@ -46,9 +48,19 @@ pub struct Blueprint {
 }
 
 impl Blueprint {
+    #[track_caller]
     /// Create a new [`Blueprint`].
     pub fn new() -> Self {
-        Default::default()
+        Self {
+            creation_location: std::panic::Location::caller().into(),
+            constructors: Default::default(),
+            constructors_error_handlers: Default::default(),
+            component_lifecycles: Default::default(),
+            error_handler_locations: Default::default(),
+            constructor_locations: Default::default(),
+            routes: vec![],
+            nested_blueprints: vec![],
+        }
     }
 
     #[track_caller]
@@ -385,7 +397,7 @@ impl Blueprint {
         self.nested_blueprints.push(NestedBlueprint {
             blueprint,
             path_prefix: Some(prefix.into()),
-            location: std::panic::Location::caller().into(),
+            nesting_location: std::panic::Location::caller().into(),
         })
     }
 
@@ -397,7 +409,7 @@ impl Blueprint {
         self.nested_blueprints.push(NestedBlueprint {
             blueprint,
             path_prefix: None,
-            location: std::panic::Location::caller().into(),
+            nesting_location: std::panic::Location::caller().into(),
         })
     }
 }
