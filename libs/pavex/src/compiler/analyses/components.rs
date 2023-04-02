@@ -13,7 +13,7 @@ use pavex_builder::constructor::Lifecycle;
 
 use crate::compiler::analyses::computations::{ComputationDb, ComputationId};
 use crate::compiler::analyses::user_components::{
-    RouterKey, ScopeId, UserComponent, UserComponentDb, UserComponentId,
+    RouterKey, ScopeGraph, ScopeId, UserComponent, UserComponentDb, UserComponentId,
 };
 use crate::compiler::computation::{BorrowSharedReference, Computation, MatchResult};
 use crate::compiler::constructors::{Constructor, ConstructorValidationError};
@@ -114,7 +114,7 @@ impl<'a> HydratedComponent<'a> {
 
 #[derive(Debug)]
 pub(crate) struct ComponentDb {
-    pub(crate) user_component_db: UserComponentDb,
+    user_component_db: UserComponentDb,
     interner: Interner<Component>,
     err_ref_id2error_handler_id: HashMap<ComponentId, ComponentId>,
     fallible_id2match_ids: HashMap<ComponentId, (ComponentId, ComponentId)>,
@@ -259,7 +259,7 @@ impl ComponentDb {
                         let ok_id = self_.add_synthetic_transformer(
                             ok.into(),
                             handler_id,
-                            scope_id.clone(),
+                            scope_id,
                             computation_db,
                         );
 
@@ -268,7 +268,7 @@ impl ComponentDb {
                         let err_id = self_.add_synthetic_transformer(
                             err.into(),
                             handler_id,
-                            scope_id.clone(),
+                            scope_id,
                             computation_db,
                         );
                         self_
@@ -550,7 +550,7 @@ impl ComponentDb {
                 // that returns the unit type;
                 c.try_into().unwrap(),
                 lifecycle.to_owned(),
-                scope_id.clone(),
+                scope_id,
                 computation_db,
             );
             self.borrow_id2owned_id.insert(borrow_id, constructor_id);
@@ -564,7 +564,7 @@ impl ComponentDb {
             let ok_id = self.add_synthetic_constructor(
                 ok.into_owned(),
                 lifecycle,
-                scope_id.clone(),
+                scope_id,
                 computation_db,
             );
 
@@ -783,6 +783,16 @@ impl ComponentDb {
         }
     }
 
+    /// Return the [`UserComponentDb`] used as a seed for this component database.
+    pub fn user_component_db(&self) -> &UserComponentDb {
+        &self.user_component_db
+    }
+
+    /// Return the [`ScopeGraph`] that backs the [`ScopeId`]s for this component database.
+    pub fn scope_graph(&self) -> &ScopeGraph {
+        self.user_component_db.scope_graph()
+    }
+
     /// Return the [`ScopeId`] of the given component.
     pub fn scope_id(&self, component_id: ComponentId) -> ScopeId {
         match &self[component_id] {
@@ -797,11 +807,6 @@ impl ComponentDb {
             }
             Component::Transformer { scope_id, .. } => *scope_id,
         }
-    }
-
-    /// Return the id of the root [`ScopeId`].
-    pub fn root_scope_id(&self) -> ScopeId {
-        self.user_component_db.scope_graph().root_scope_id()
     }
 }
 
@@ -908,7 +913,7 @@ impl ComponentDb {
             .get_or_intern_constructor(
                 bound_computation_id,
                 lifecycle.clone(),
-                scope_id.clone(),
+                scope_id,
                 computation_db,
             )
             .unwrap();
@@ -966,7 +971,7 @@ impl ComponentDb {
                     bound_error_handler,
                     bound_component_id,
                     lifecycle,
-                    SourceId::ComputationId(bound_computation_id, scope_id.clone()),
+                    SourceId::ComputationId(bound_computation_id, scope_id),
                     computation_db,
                 );
 
@@ -980,7 +985,7 @@ impl ComponentDb {
                         self.add_synthetic_transformer(
                             bound_transformer,
                             bound_error_component_id,
-                            scope_id.clone(),
+                            scope_id,
                             computation_db,
                         );
                     }

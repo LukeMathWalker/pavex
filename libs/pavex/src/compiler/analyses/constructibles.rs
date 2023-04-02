@@ -62,16 +62,12 @@ impl ConstructibleDb {
             for input_type in component.input_types().iter() {
                 // Some inputs are not constructible and will be injected by the framework
                 // or as part of the application state.
-                if let Some(input_constructor_id) = self_.get(
-                    component_scope.clone(),
-                    input_type,
-                    component_db.user_component_db.scope_graph(),
-                ) {
+                if let Some(input_constructor_id) =
+                    self_.get(component_scope, input_type, component_db.scope_graph())
+                {
                     let input_constructor_scope = component_db.scope_id(input_constructor_id);
-                    assert!(component_scope.is_child_of(
-                        input_constructor_scope,
-                        component_db.user_component_db.scope_graph(),
-                    ));
+                    assert!(component_scope
+                        .is_child_of(input_constructor_scope, component_db.scope_graph(),));
                 }
             }
         }
@@ -157,7 +153,7 @@ impl ConstructibleDb {
                         continue;
                     }
                     if self
-                        .get_or_try_bind(scope_id.clone(), input, component_db, computation_db)
+                        .get_or_try_bind(scope_id, input, component_db, computation_db)
                         .is_some()
                     {
                         continue;
@@ -165,7 +161,7 @@ impl ConstructibleDb {
                     if let Some(user_component_id) = component_db.user_component_id(component_id) {
                         Self::missing_constructor(
                             user_component_id,
-                            &component_db.user_component_db,
+                            component_db.user_component_db(),
                             input,
                             input_index,
                             package_graph,
@@ -223,7 +219,7 @@ impl ConstructibleDb {
                 let component_ids = singleton_type2component_ids
                     .entry(type_.clone())
                     .or_insert_with(IndexSet::new);
-                component_ids.insert((scope_id.clone(), component_id));
+                component_ids.insert((*scope_id, component_id));
             }
         }
 
@@ -247,7 +243,7 @@ impl ConstructibleDb {
                         continue 'inner;
                     };
                     let location = component_db
-                        .user_component_db
+                        .user_component_db()
                         .get_location(user_component_id);
                     let source = match location.source_file(package_graph) {
                         Ok(s) => s,
@@ -260,7 +256,7 @@ impl ConstructibleDb {
                         source_code = Some(source.clone());
                     }
                     let label = diagnostic::get_f_macro_invocation_span(&source, location)
-                        .map(|s| s.labeled(format!("A constructor was registered here")));
+                        .map(|s| s.labeled("A constructor was registered here".to_string()));
                     if let Some(label) = label {
                         let snippet = AnnotatedSnippet::new(source, label);
                         snippets.push(snippet);
@@ -370,7 +366,7 @@ impl ConstructibleDb {
                     return Some(constructor_id);
                 }
             }
-            fifo.extend(scope_id.parent_ids(component_db.user_component_db.scope_graph()));
+            fifo.extend(scope_id.parent_ids(component_db.scope_graph()));
         }
         None
     }

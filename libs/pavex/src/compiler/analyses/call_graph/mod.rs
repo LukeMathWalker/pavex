@@ -144,9 +144,9 @@ where
                 };
                 for input_type in input_types {
                     if let Some(constructor_id) = constructible_db.get(
-                        component_scope.clone(),
+                        component_scope,
                         &input_type,
-                        component_db.user_component_db.scope_graph(),
+                        component_db.scope_graph(),
                     ) {
                         nodes_to_be_visited.insert(VisitorStackElement {
                             component_id: constructor_id,

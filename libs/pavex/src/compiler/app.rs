@@ -364,9 +364,9 @@ fn get_required_singleton_types<'a>(
             if !types_provided_by_the_framework.contains_right(required_input) {
                 let component_id = constructibles_db
                     .get(
-                        root_component_scope_id.clone(),
+                        root_component_scope_id,
                         required_input,
-                        component_db.user_component_db.scope_graph(),
+                        component_db.scope_graph(),
                     )
                     .unwrap();
                 assert_eq!(
@@ -444,7 +444,7 @@ fn verify_singletons(
             Computation::BorrowSharedReference(_) => component_db.owned_id(component_id),
         };
         let user_component_id = component_db.user_component_id(component_id).unwrap();
-        let user_component_db = &component_db.user_component_db;
+        let user_component_db = &component_db.user_component_db();
         let user_component = &user_component_db[user_component_id];
         let component_kind = user_component.callable_type();
         let location = user_component_db.get_location(user_component_id);

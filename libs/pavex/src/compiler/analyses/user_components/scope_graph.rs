@@ -80,8 +80,7 @@ impl ScopeId {
         scope_graph
             .graph
             .neighbors_directed(self.0, petgraph::Direction::Incoming)
-            .into_iter()
-            .map(|id| ScopeId(id))
+            .map(ScopeId)
             .collect()
     }
 }

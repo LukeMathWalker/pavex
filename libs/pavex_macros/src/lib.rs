@@ -99,7 +99,7 @@ fn reject_serde_attribute(attr: &Attribute) -> Result<(), TokenStream> {
        you give up compile-time checking of the route parameters!";
     if let Some(ident) = attr.path().get_ident() {
         if ident == "serde" {
-            return Err(Error::new_spanned(&attr, err_msg)
+            return Err(Error::new_spanned(attr, err_msg)
                 .into_compile_error()
                 .into());
         }

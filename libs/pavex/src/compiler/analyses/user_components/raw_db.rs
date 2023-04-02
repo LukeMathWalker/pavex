@@ -135,8 +135,8 @@ impl RawUserComponentDb {
 
         Self::process_blueprint(
             &mut self_,
-            &bp,
-            root_scope_id.clone(),
+            bp,
+            root_scope_id,
             None,
             &mut scope_graph_builder,
             package_graph,
@@ -144,8 +144,8 @@ impl RawUserComponentDb {
         );
 
         for nested_bp in &bp.nested_blueprints {
-            let nested_scope_id = scope_graph_builder.add_scope(root_scope_id.clone());
-            self_.validate_nested_bp(&nested_bp, &package_graph, diagnostics);
+            let nested_scope_id = scope_graph_builder.add_scope(root_scope_id);
+            self_.validate_nested_bp(nested_bp, package_graph, diagnostics);
             Self::process_blueprint(
                 &mut self_,
                 &nested_bp.blueprint,
@@ -190,7 +190,7 @@ impl RawUserComponentDb {
                     methods.iter().map(|m| Some(m.to_string())).collect()
                 }
             };
-            let route_scope_id = scope_graph_builder.add_scope(current_scope_id.clone());
+            let route_scope_id = scope_graph_builder.add_scope(current_scope_id);
             let path = match path_prefix {
                 Some(prefix) => format!("{}{}", prefix, registered_route.path),
                 None => registered_route.path.to_owned(),
@@ -198,7 +198,7 @@ impl RawUserComponentDb {
             let component = UserComponent::RequestHandler {
                 raw_callable_identifiers_id,
                 router_key: RouterKey { path, method_guard },
-                scope_id: route_scope_id.clone(),
+                scope_id: route_scope_id,
             };
             let request_handler_id = self.component_interner.get_or_intern(component);
             self.id2lifecycle
@@ -237,7 +237,7 @@ impl RawUserComponentDb {
                 self.identifiers_interner.get_or_intern(constructor.clone());
             let component = UserComponent::Constructor {
                 raw_callable_identifiers_id,
-                scope_id: current_scope_id.clone(),
+                scope_id: current_scope_id,
             };
             let constructor_id = self.component_interner.get_or_intern(component);
             let location = &bp.constructor_locations[constructor];
@@ -253,7 +253,7 @@ impl RawUserComponentDb {
                 let component = UserComponent::ErrorHandler {
                     raw_callable_identifiers_id,
                     fallible_callable_identifiers_id: constructor_id,
-                    scope_id: current_scope_id.clone(),
+                    scope_id: current_scope_id,
                 };
                 let error_handler_id = self.component_interner.get_or_intern(component);
                 self.id2lifecycle
@@ -299,7 +299,6 @@ impl RawUserComponentDb {
 
         if !route.path.starts_with('/') {
             self.route_path_must_start_with_a_slash(route, route_id, package_graph, diagnostics);
-            return;
         }
     }
 
@@ -319,7 +318,6 @@ impl RawUserComponentDb {
 
             if !path_prefix.starts_with('/') {
                 self.path_prefix_must_start_with_a_slash(nested_bp, package_graph, diagnostics);
-                return;
             }
         }
     }
@@ -342,7 +340,7 @@ impl RawUserComponentDb {
             }
         };
         let label = diagnostic::get_route_path_span(&source, location)
-            .map(|s| s.labeled(format!("The empty route path")));
+            .map(|s| s.labeled("The empty route path".to_string()));
         let err = anyhow!("The path for a route cannot be empty.");
         let diagnostic = CompilerDiagnostic::builder(source, err)
             .optional_label(label)
@@ -366,7 +364,7 @@ impl RawUserComponentDb {
             }
         };
         let label = diagnostic::get_route_path_span(&source, location)
-            .map(|s| s.labeled(format!("The path missing a leading '/'")));
+            .map(|s| s.labeled("The path missing a leading '/'".to_string()));
         let path = &route.path;
         let err =
             anyhow!("All route paths must begin with a forward slash, `/`.\n`{path}` doesn't.",);
@@ -391,7 +389,7 @@ impl RawUserComponentDb {
             }
         };
         let label = diagnostic::get_nest_at_prefix_span(&source, location)
-            .map(|s| s.labeled(format!("The empty prefix")));
+            .map(|s| s.labeled("The empty prefix".to_string()));
         let err = anyhow!("The path prefix passed to `nest_at` cannot be empty.");
         let diagnostic = CompilerDiagnostic::builder(source, err)
             .optional_label(label)
@@ -418,7 +416,7 @@ impl RawUserComponentDb {
             }
         };
         let label = diagnostic::get_nest_at_prefix_span(&source, location)
-            .map(|s| s.labeled(format!("The prefix missing a leading '/'")));
+            .map(|s| s.labeled("The prefix missing a leading '/'".to_string()));
         let prefix = nested_bp.path_prefix.as_deref().unwrap();
         let err = anyhow!(
             "The path prefix passed to `nest_at` must begin with a forward slash, `/`.\n\
