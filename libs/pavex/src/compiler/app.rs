@@ -12,15 +12,16 @@ use miette::miette;
 use proc_macro2::Ident;
 use quote::format_ident;
 
-use pavex_builder::{Blueprint, Lifecycle};
+use pavex_builder::{constructor::Lifecycle, Blueprint};
 
 use crate::compiler::analyses::call_graph::{
     application_state_call_graph, handler_call_graph, ApplicationStateCallGraph, CallGraph,
 };
-use crate::compiler::analyses::components::ComponentDb;
+use crate::compiler::analyses::components::{ComponentDb, ComponentId, HydratedComponent};
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::constructibles::ConstructibleDb;
 use crate::compiler::analyses::user_components::{RouterKey, UserComponentDb};
+use crate::compiler::computation::Computation;
 use crate::compiler::generated_app::GeneratedApp;
 use crate::compiler::resolvers::CallableResolutionError;
 use crate::compiler::traits::{assert_trait_is_implemented, MissingTraitImplementationError};
@@ -34,7 +35,7 @@ use crate::rustdoc::{CrateCollection, TOOLCHAIN_CRATES};
 pub(crate) const GENERATED_APP_PACKAGE_ID: &str = "crate";
 
 /// An in-memory representation that can be used to generate application code that matches
-/// the constraints and instructions from a [`Blueprint`] instance..
+/// the constraints and instructions from a [`Blueprint`] instance.
 pub struct App {
     package_graph: PackageGraph,
     handler_call_graphs: IndexMap<RouterKey, CallGraph>,
@@ -130,17 +131,18 @@ impl App {
             &mut diagnostics,
         );
 
-        let runtime_singletons: IndexSet<ResolvedType> = get_required_singleton_types(
-            handler_call_graphs.iter(),
-            &request_scoped_framework_bindings,
-            &constructible_db,
-            &component_db,
-        );
+        let runtime_singletons: IndexSet<(ResolvedType, ComponentId)> =
+            get_required_singleton_types(
+                handler_call_graphs.iter(),
+                &request_scoped_framework_bindings,
+                &constructible_db,
+                &component_db,
+            );
 
         verify_singletons(
             &runtime_singletons,
-            &constructible_db,
             &component_db,
+            &computation_db,
             &package_graph,
             &krate_collection,
             &mut diagnostics,
@@ -149,7 +151,7 @@ impl App {
             .iter()
             .enumerate()
             // Assign a unique name to each singleton
-            .map(|(i, type_)| (format_ident!("s{}", i), type_.to_owned()))
+            .map(|(i, (type_, _))| (format_ident!("s{}", i), type_.to_owned()))
             .collect();
         let application_state_call_graph = application_state_call_graph(
             &runtime_singleton_bindings,
@@ -342,9 +344,11 @@ fn get_required_singleton_types<'a>(
     types_provided_by_the_framework: &BiHashMap<Ident, ResolvedType>,
     constructibles_db: &ConstructibleDb,
     component_db: &ComponentDb,
-) -> IndexSet<ResolvedType> {
+) -> IndexSet<(ResolvedType, ComponentId)> {
     let mut singletons_to_be_built = IndexSet::new();
     for (_, handler_call_graph) in handler_call_graphs {
+        let root_component_id = handler_call_graph.root_component_id();
+        let root_component_scope_id = component_db.scope_id(root_component_id);
         for required_input in handler_call_graph.required_input_types() {
             let required_input = if let ResolvedType::Reference(t) = &required_input {
                 if !t.is_static {
@@ -358,12 +362,18 @@ fn get_required_singleton_types<'a>(
                 &required_input
             };
             if !types_provided_by_the_framework.contains_right(required_input) {
-                let component_id = constructibles_db[required_input];
+                let component_id = constructibles_db
+                    .get(
+                        root_component_scope_id,
+                        required_input,
+                        component_db.scope_graph(),
+                    )
+                    .unwrap();
                 assert_eq!(
                     component_db.lifecycle(component_id),
                     Some(&Lifecycle::Singleton)
                 );
-                singletons_to_be_built.insert(required_input.to_owned());
+                singletons_to_be_built.insert((required_input.to_owned(), component_id));
             }
         }
     }
@@ -410,32 +420,31 @@ fn codegen_types(
 /// Verify that all singletons needed at runtime implement `Send`, `Sync` and `Clone`.
 /// This is required since `pavex` runs on a multi-threaded `tokio` runtime.
 fn verify_singletons(
-    runtime_singletons: &IndexSet<ResolvedType>,
-    constructible_db: &ConstructibleDb,
+    runtime_singletons: &IndexSet<(ResolvedType, ComponentId)>,
     component_db: &ComponentDb,
+    computation_db: &ComputationDb,
     package_graph: &PackageGraph,
     krate_collection: &CrateCollection,
     diagnostics: &mut Vec<miette::Error>,
 ) {
     fn missing_trait_implementation(
         e: MissingTraitImplementationError,
+        component_id: ComponentId,
         package_graph: &PackageGraph,
-        constructible_db: &ConstructibleDb,
         component_db: &ComponentDb,
+        computation_db: &ComputationDb,
         diagnostics: &mut Vec<miette::Error>,
     ) {
-        let t = if let ResolvedType::Reference(ref t) = e.type_ {
-            if !t.is_static {
-                t.inner.deref().clone()
-            } else {
-                e.type_.clone()
-            }
-        } else {
-            e.type_.clone()
+        let HydratedComponent::Constructor(c) = component_db.hydrated_component(component_id, computation_db) else {
+            unreachable!()
         };
-        let component_id = constructible_db[&t];
+        let component_id = match c.0 {
+            Computation::Callable(_) => component_id,
+            Computation::MatchResult(_) => component_db.fallible_id(component_id),
+            Computation::BorrowSharedReference(_) => component_db.owned_id(component_id),
+        };
         let user_component_id = component_db.user_component_id(component_id).unwrap();
-        let user_component_db = &component_db.user_component_db;
+        let user_component_db = &component_db.user_component_db();
         let user_component = &user_component_db[user_component_id];
         let component_kind = user_component.callable_type();
         let location = user_component_db.get_location(user_component_id);
@@ -462,15 +471,16 @@ fn verify_singletons(
     let send = process_framework_path("core::marker::Send", package_graph, krate_collection);
     let sync = process_framework_path("core::marker::Sync", package_graph, krate_collection);
     let clone = process_framework_path("core::clone::Clone", package_graph, krate_collection);
-    for singleton_type in runtime_singletons {
+    for (singleton_type, component_id) in runtime_singletons {
         for trait_ in [&send, &sync, &clone] {
             let ResolvedType::ResolvedPath(trait_) = trait_ else { unreachable!() };
             if let Err(e) = assert_trait_is_implemented(krate_collection, singleton_type, trait_) {
                 missing_trait_implementation(
                     e,
+                    *component_id,
                     package_graph,
-                    constructible_db,
                     component_db,
+                    computation_db,
                     diagnostics,
                 );
             }

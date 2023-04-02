@@ -19,7 +19,7 @@ use crate::compiler::traits::implements_trait;
 use crate::compiler::utils::process_framework_path;
 use crate::diagnostic;
 use crate::diagnostic::{CompilerDiagnostic, LocationExt, OptionalSourceSpanExt};
-use crate::language::{GenericArgument, ResolvedPathType, ResolvedType};
+use crate::language::{GenericArgument, ResolvedType};
 use crate::rustdoc::{CrateCollection, GlobalItemId};
 use crate::utils::comma_separated_list;
 
@@ -145,7 +145,7 @@ fn report_non_existing_route_parameters(
     non_existing_route_parameters: IndexSet<String>,
     extracted_type: &ResolvedType,
 ) {
-    assert!(non_existing_route_parameters.len() > 0);
+    assert!(!non_existing_route_parameters.is_empty());
     // Find the compute nodes that consume the `RouteParams` extractor and report
     // an error on each of them.
     let consuming_ids = route_params_consumer_ids(
@@ -156,11 +156,11 @@ fn report_non_existing_route_parameters(
     );
     for user_component_id in consuming_ids {
         let raw_identifiers = component_db
-            .user_component_db
+            .user_component_db()
             .get_raw_callable_identifiers(user_component_id);
-        let callable_type = component_db.user_component_db[user_component_id].callable_type();
+        let callable_type = component_db.user_component_db()[user_component_id].callable_type();
         let location = component_db
-            .user_component_db
+            .user_component_db()
             .get_location(user_component_id);
         let source = match location.source_file(package_graph) {
             Ok(s) => s,
@@ -290,11 +290,11 @@ fn must_be_a_plain_struct(
 
     for user_component_id in consuming_ids {
         let raw_identifiers = component_db
-            .user_component_db
+            .user_component_db()
             .get_raw_callable_identifiers(user_component_id);
-        let callable_type = component_db.user_component_db[user_component_id].callable_type();
+        let callable_type = component_db.user_component_db()[user_component_id].callable_type();
         let location = component_db
-            .user_component_db
+            .user_component_db()
             .get_location(user_component_id);
         let source = match location.source_file(package_graph) {
             Ok(s) => s,

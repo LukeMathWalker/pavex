@@ -1,4 +1,4 @@
-use pavex_builder::{router::POST, Blueprint, RawCallable};
+use pavex_builder::{reflection::RawCallable, router::POST, Blueprint};
 
 pub fn my_f() {}
 

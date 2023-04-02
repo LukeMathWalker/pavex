@@ -4,7 +4,7 @@ use std::str::FromStr;
 use serde::ser::SerializeSeq;
 use serde::{Deserializer, Serializer};
 
-use pavex_runtime::http::Method;
+use http::Method;
 
 /// Match incoming requests based on their HTTP method.
 ///

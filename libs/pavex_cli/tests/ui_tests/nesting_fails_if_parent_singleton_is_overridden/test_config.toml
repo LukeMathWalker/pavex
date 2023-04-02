@@ -1,0 +1,4 @@
+description = "Pavex returns an error if you try to nest a blueprint that registers a singleton constructor that overrides a singleton constructor registered by a parent"
+
+[expectations]
+codegen = "fail"

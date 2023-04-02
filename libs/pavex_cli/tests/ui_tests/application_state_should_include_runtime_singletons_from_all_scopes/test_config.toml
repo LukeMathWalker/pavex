@@ -1,0 +1,4 @@
+description = "Pavex should include all runtime singletons in the application state, no matter the scope they were registered against"
+
+[expectations]
+codegen = "pass"

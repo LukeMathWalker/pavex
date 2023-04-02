@@ -12,7 +12,7 @@ use quote::{quote, ToTokens};
 use syn::ItemFn;
 
 pub(crate) use application_state::{application_state_call_graph, ApplicationStateCallGraph};
-use pavex_builder::Lifecycle;
+use pavex_builder::constructor::Lifecycle;
 pub(crate) use request_handler::handler_call_graph;
 
 use crate::compiler::analyses::components::{ComponentDb, ComponentId, HydratedComponent};
@@ -124,6 +124,7 @@ where
             // We need to recursively build the input types for all our compute components;
             if let CallGraphNode::Compute { component_id, .. } = call_graph[current_index].clone() {
                 let component = component_db.hydrated_component(component_id, computation_db);
+                let component_scope = component_db.scope_id(component_id);
                 let input_types = match component {
                     HydratedComponent::Constructor(constructor) => {
                         constructor.input_types().to_vec()
@@ -142,7 +143,11 @@ where
                     }
                 };
                 for input_type in input_types {
-                    if let Some(constructor_id) = constructible_db.get(&input_type) {
+                    if let Some(constructor_id) = constructible_db.get(
+                        component_scope,
+                        &input_type,
+                        component_db.scope_graph(),
+                    ) {
                         nodes_to_be_visited.insert(VisitorStackElement {
                             component_id: constructor_id,
                             neighbour_index: Some(VisitorIndex::Child(current_index)),
@@ -488,6 +493,14 @@ impl CallGraph {
             })
             .cloned()
             .collect()
+    }
+
+    /// Return the [`ComponentId`] of the callable at the root of this [`CallGraph`].
+    pub fn root_component_id(&self) -> ComponentId {
+        match &self.call_graph[self.root_node_index] {
+            CallGraphNode::Compute { component_id, .. } => *component_id,
+            _ => unreachable!(),
+        }
     }
 
     /// Generate the code for the dependency closure of the callable at the root of this

@@ -1,0 +1,26 @@
+[31m[1mERROR[0m[39m: 
+  [31m×[0m The path for a route cannot be empty.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:9:1]
+  [31m│[0m  [2m 9[0m │     // Empty path
+  [31m│[0m  [2m10[0m │     bp.route(GET, "", f!(crate::handler));
+  [31m│[0m     · [35;1m                  ─┬[0m
+  [31m│[0m     ·                    [35;1m╰── [35;1mThe empty route path[0m[0m
+  [31m│[0m  [2m11[0m │     // Path does not start with a `/`
+  [31m│[0m     ╰────
+  [31m│[0m [36m  help: [0mIf you want to match requests to the base URL, use `/` as route path
+  [31m│[0m         instead of an empty one.
+
+[31m[1mERROR[0m[39m: 
+  [31m×[0m All route paths must begin with a forward slash, `/`.
+  [31m│[0m `api` doesn't.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:11:1]
+  [31m│[0m  [2m11[0m │     // Path does not start with a `/`
+  [31m│[0m  [2m12[0m │     bp.route(GET, "api", f!(crate::handler));
+  [31m│[0m     · [35;1m                  ──┬──[0m
+  [31m│[0m     ·                     [35;1m╰── [35;1mThe path missing a leading '/'[0m[0m
+  [31m│[0m  [2m13[0m │     bp
+  [31m│[0m     ╰────
+  [31m│[0m [36m  help: [0mAdd a '/' at the beginning of the route path to fix this error: use
+  [31m│[0m         `/api` instead of `api`.

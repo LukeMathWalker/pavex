@@ -10,6 +10,16 @@ use crate::rustdoc::CrateCollection;
 pub(crate) type ComputationId = la_arena::Idx<Computation<'static>>;
 
 #[derive(Debug)]
+/// A database of all the computations (i.e. input(s)->output transformations) that are currently
+/// in use for generating application code.
+///
+/// The primary objectives of this database:
+/// - Assigning a unique id to each computation;
+/// - Allow us to go back from a computation to the user component it was derived from, if any;
+/// - Save memory by keeping a single copy of each computation in a central location, instead of
+///   duplicating them everywhere.
+///
+/// This database is a "data bag"—it doesn't have any special logic, it just stores data.
 pub struct ComputationDb {
     interner: Interner<Computation<'static>>,
     component_id2callable_id: HashMap<UserComponentId, ComputationId>,

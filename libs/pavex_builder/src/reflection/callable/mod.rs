@@ -5,7 +5,7 @@ mod identifiers;
 #[macro_export]
 macro_rules! f {
     ($($p:tt)*) => {{
-        pavex_builder::RawCallable {
+        $crate::reflection::RawCallable {
             import_path: stringify!($($p)*),
         }
     }};

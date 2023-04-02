@@ -5,7 +5,7 @@ use syn::spanned::Spanned;
 use syn::visit::Visit;
 use syn::{ExprMethodCall, Stmt};
 
-use pavex_builder::Location;
+use pavex_builder::reflection::Location;
 
 use crate::diagnostic::{convert_proc_macro_span, ParsedSourceFile, ProcMacroSpanExt};
 
@@ -14,39 +14,147 @@ use crate::diagnostic::{convert_proc_macro_span, ParsedSourceFile, ProcMacroSpan
 /// E.g.
 ///
 /// ```rust,ignore
-/// App::builder()
-///   .route(GET, "/home", f!(crate::stream_file::<std::path::PathBuf>))
+/// bp.route(GET, "/home", f!(crate::stream_file::<std::path::PathBuf>))
 /// //^ `location` points here!
 /// ```
 ///
-/// We want build a `SourceSpan` that matches the `f!` invocation.
+/// We build a `SourceSpan` that matches the `f!` invocation.
 /// E.g.
 ///
 /// ```rust,ignore
-/// App::builder()
-///   .route(GET, "/home", f!(crate::stream_file::<std::path::PathBuf>))
+/// bp.route(GET, "/home", f!(crate::stream_file::<std::path::PathBuf>))
 /// //                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 /// //                     We want a SourceSpan that points at this for routes
-///   .constructor(f!(crate::extract_file), Lifecycle::Singleton)
+/// bp.constructor(f!(crate::extract_file), Lifecycle::Singleton)
 /// //             ^^^^^^^^^^^^^^^^^^^^^^^
 /// //             We want a SourceSpan that points at this for constructors
 /// ```
+pub(crate) fn get_f_macro_invocation_span(
+    source: &ParsedSourceFile,
+    location: &Location,
+) -> Option<SourceSpan> {
+    let raw_source = &source.contents;
+    let node = find_method_call(location, &source.parsed)?;
+    let argument = match node.method.to_string().as_str() {
+        "error_handler" | "constructor" => node.args.first(),
+        "route" => node.args.iter().nth(2),
+        s => {
+            tracing::trace!(
+                "Unknown method name when looking for component registration: {}",
+                s
+            );
+            return None;
+        }
+    }?;
+    Some(convert_proc_macro_span(raw_source, argument.span()))
+}
+
+/// Location, obtained via `#[track_caller]` and `std::panic::Location::caller`, points at the
+/// `.` in the method invocation for `route`.
+/// E.g.
 ///
-/// How do we do it?
-/// We parse the source file via `syn` and then visit the abstract syntax tree.
-/// We know that we are looking for a method call, so we test every method call node to see
+/// ```rust,ignore
+/// bp.route(GET, "/home", f!(crate::stream_file::<std::path::PathBuf>))
+/// //^ `location` points here!
+/// ```
+///
+/// We build a `SourceSpan` that matches the path argument.
+/// E.g.
+///
+/// ```rust,ignore
+/// bp.route(GET, "/home", f!(crate::stream_file::<std::path::PathBuf>))
+/// //            ^^^^^^^
+/// //            We want a SourceSpan that points at this for routes
+/// ```
+pub(crate) fn get_route_path_span(
+    source: &ParsedSourceFile,
+    location: &Location,
+) -> Option<SourceSpan> {
+    let raw_source = &source.contents;
+    let node = find_method_call(location, &source.parsed)?;
+    let argument = match node.method.to_string().as_str() {
+        "route" => {
+            if node.args.len() == 3 {
+                // bp.route(method, path, handler)
+                node.args.iter().nth(1)
+            } else if node.args.len() == 4 {
+                // Blueprint::route(bp, method, path, handler)
+                node.args.iter().nth(2)
+            } else {
+                tracing::trace!("Unexpected number of arguments for `route` invocation");
+                return None;
+            }
+        }
+        s => {
+            tracing::trace!(
+                "Unknown method name when looking for a `route` invocation: {}",
+                s
+            );
+            return None;
+        }
+    }?;
+    Some(convert_proc_macro_span(raw_source, argument.span()))
+}
+
+/// Location, obtained via `#[track_caller]` and `std::panic::Location::caller`, points at the
+/// `.` in the method invocation for `nest_at`.
+/// E.g.
+///
+/// ```rust,ignore
+/// bp.nest_at("/home", sub_bp)
+/// //^ `location` points here!
+/// ```
+///
+/// We build a `SourceSpan` that matches the prefix path argument.
+/// E.g.
+///
+/// ```rust,ignore
+/// bp.nest_at("/home", sub_bp)
+/// //         ^^^^^^^
+/// //         We want a SourceSpan that points at this for nest_at
+/// ```
+pub(crate) fn get_nest_at_prefix_span(
+    source: &ParsedSourceFile,
+    location: &Location,
+) -> Option<SourceSpan> {
+    let raw_source = &source.contents;
+    let node = find_method_call(location, &source.parsed)?;
+    let argument = match node.method.to_string().as_str() {
+        "nest_at" => {
+            if node.args.len() == 2 {
+                // bp.nest_at(prefix, sub_bp)
+                node.args.first()
+            } else if node.args.len() == 3 {
+                // Blueprint::nest_at(bp, prefix, sub_bp)
+                node.args.iter().nth(1)
+            } else {
+                tracing::trace!("Unexpected number of arguments for `nest_at` invocation");
+                return None;
+            }
+        }
+        s => {
+            tracing::trace!(
+                "Unknown method name when looking for a `nest_at` invocation: {}",
+                s
+            );
+            return None;
+        }
+    }?;
+    Some(convert_proc_macro_span(raw_source, argument.span()))
+}
+
+/// [`CallableLocator`] visits the abstract syntax tree of a parsed `syn::File`.
+/// It looks for a method call node: it tests every method call node to see
 /// if `location` falls within its span.
-/// We then convert the span associated with the node to a [`miette::SourceSpan`].
+/// It then converts the span associated with the node to a [`SourceSpan`].
 ///
 /// # Ambiguity
 ///
 /// There are going to be multiple nodes that match if we are dealing with chained method calls.
 /// Luckily enough, the visit is pre-order, therefore the latest node that contains `location`
 /// is also the smallest node that contains it—exactly what we are looking for.
-pub(crate) fn get_f_macro_invocation_span(
-    source: &ParsedSourceFile,
-    location: &Location,
-) -> Option<SourceSpan> {
+fn find_method_call<'a>(location: &'a Location, file: &'a syn::File) -> Option<&'a ExprMethodCall> {
+    /// A visitor that locates the method call that contains the given `location`.
     struct CallableLocator<'a> {
         location: &'a Location,
         node: Option<&'a ExprMethodCall>,
@@ -69,24 +177,10 @@ pub(crate) fn get_f_macro_invocation_span(
         }
     }
 
-    let raw_source = &source.contents;
-    let parsed_source = &source.parsed;
     let mut locator = CallableLocator {
         location,
         node: None,
     };
-    locator.visit_file(parsed_source);
-    let node = locator.node?;
-    let argument = match node.method.to_string().as_str() {
-        "error_handler" | "constructor" => node.args.first(),
-        "route" => node.args.iter().nth(2),
-        s => {
-            tracing::trace!(
-                "Unknown method name when looking for component registration: {}",
-                s
-            );
-            return None;
-        }
-    }?;
-    Some(convert_proc_macro_span(raw_source, argument.span()))
+    locator.visit_file(file);
+    locator.node
 }
