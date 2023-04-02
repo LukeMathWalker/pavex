@@ -67,7 +67,7 @@ impl ConstructibleDb {
                 {
                     let input_constructor_scope = component_db.scope_id(input_constructor_id);
                     assert!(component_scope
-                        .is_child_of(input_constructor_scope, component_db.scope_graph(),));
+                        .is_child_of(input_constructor_scope, component_db.scope_graph()));
                 }
             }
         }
@@ -285,20 +285,18 @@ impl ConstructibleDb {
                 } else {
                     let error = anyhow::anyhow!(
                         "The constructor for a singleton must be registered once.\n\
-                        You registered the same constructor for `{type_:?}` against different \
-                        nested blueprints, but there can be at most one instance for each singleton \
-                        type.\n\
-                        I don't know how to proceed: do you want to share the same instance across \
-                        all nested blueprints, or do you want to create a new instance for each \
-                        nested blueprint?\n\
-                        You registered the same constructor for `{type_:?}` in {n_constructors} different places:",
+                        You registered the same constructor for `{type_:?}` against {n_constructors} \
+                        different nested blueprints.\n\
+                        I don't know how to proceed: do you want to share the same singleton instance across \
+                        all those nested blueprints, or do you want to create a new instance for each \
+                        nested blueprint?",
                     );
                     CompilerDiagnostic::builder(source_code, error)
                         .additional_annotated_snippets(snippets.into_iter())
                         // TODO: add a code snippet in the suggestion showing which blueprint
                         //   should be used to register the constructor.
                         .help(format!(
-                            "If you want a single instance of `{type_:?}`, remove \
+                            "If you want to share a single instance of `{type_:?}`, remove \
                             constructors for `{type_:?}` until there is only one left. It should \
                             be attached to a blueprint that is a parent of all the nested \
                             ones that need to use it.\n\
