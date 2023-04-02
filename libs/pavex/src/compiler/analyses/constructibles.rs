@@ -238,8 +238,8 @@ impl ConstructibleDb {
                 // registration site for that constructor.
                 let mut snippets = Vec::new();
                 let mut source_code = None;
-                'inner: for (_, component_id) in component_ids {
-                    let Some(user_component_id) = component_db.user_component_id(*component_id) else {
+                'inner: for (_, component_id) in &component_ids {
+                    let Some(user_component_id) = component_db.user_component_id(**component_id) else {
                         continue 'inner;
                     };
                     let location = component_db
@@ -283,6 +283,13 @@ impl ConstructibleDb {
                         ))
                         .build()
                 } else {
+                    let _common_ancestor_scope_id =
+                        component_db.scope_graph().find_common_ancestor(
+                            component_ids
+                                .iter()
+                                .map(|(scope_id, _)| *scope_id)
+                                .collect(),
+                        );
                     let error = anyhow::anyhow!(
                         "The constructor for a singleton must be registered once.\n\
                         You registered the same constructor for `{type_:?}` against {n_constructors} \

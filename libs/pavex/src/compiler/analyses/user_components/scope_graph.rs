@@ -1,4 +1,5 @@
 use indexmap::IndexSet;
+use petgraph::algo::has_path_connecting;
 use petgraph::graphmap::DiGraphMap;
 use petgraph::visit::IntoNodeIdentifiers;
 
@@ -161,5 +162,38 @@ impl ScopeGraph {
     /// Return the ID of the application state scope.
     pub fn application_state_scope_id(&self) -> ScopeId {
         self.application_state
+    }
+
+    /// Return the ID of a scope that is a parent (either directly or transitively) of
+    /// all the specified [`ScopeId`]s.
+    ///
+    /// There is **always** a common ancestor, since the scope graph is a directed acyclic graph
+    /// rooted in the root scope.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `scope_ids` is empty.
+    pub fn find_common_ancestor(&self, scope_ids: Vec<ScopeId>) -> ScopeId {
+        assert!(scope_ids.len() > 0);
+        let mut common_ancestor = scope_ids[0];
+        let mut uncovered_scope_ids = scope_ids;
+
+        while let Some(scope_id) = uncovered_scope_ids.pop() {
+            if !has_path_connecting(&self.graph, common_ancestor.0, scope_id.0, None) {
+                common_ancestor = self
+                    .graph
+                    .neighbors_directed(common_ancestor.0, petgraph::Direction::Incoming)
+                    .next()
+                    .map(ScopeId)
+                    .unwrap();
+                // If we've reached the root, we're done.
+                if common_ancestor == self.root {
+                    return common_ancestor;
+                }
+                uncovered_scope_ids.push(scope_id);
+            }
+        }
+
+        common_ancestor
     }
 }
