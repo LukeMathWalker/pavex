@@ -9,7 +9,7 @@ use miette::NamedSource;
 use rustdoc_types::ItemEnum;
 use syn::spanned::Spanned;
 
-use pavex_builder::constructor::Lifecycle;
+use pavex_builder::constructor::{CloningStrategy, Lifecycle};
 
 use crate::compiler::analyses::computations::{ComputationDb, ComputationId};
 use crate::compiler::analyses::user_components::{
@@ -122,6 +122,9 @@ pub(crate) struct ComponentDb {
     borrow_id2owned_id: BiHashMap<ComponentId, ComponentId>,
     id2transformer_ids: HashMap<ComponentId, IndexSet<ComponentId>>,
     id2lifecycle: HashMap<ComponentId, Lifecycle>,
+    /// Associate to each constructor component the respective cloning strategy.
+    /// It is not populated for request handlers, error handlers, and transformers.
+    id2cloning_strategy: HashMap<ComponentId, CloningStrategy>,
     error_handler_id2error_handler: HashMap<ComponentId, ErrorHandler>,
     router: BTreeMap<RouterKey, ComponentId>,
     into_response: PathType,
@@ -165,6 +168,7 @@ impl ComponentDb {
             borrow_id2owned_id: Default::default(),
             id2transformer_ids: Default::default(),
             id2lifecycle: Default::default(),
+            id2cloning_strategy: Default::default(),
             error_handler_id2error_handler: Default::default(),
             router: Default::default(),
             into_response,
@@ -198,6 +202,14 @@ impl ComponentDb {
                         source_id: SourceId::UserComponentId(user_component_id),
                     });
                     user_component_id2component_id.insert(user_component_id, constructor_id);
+                    self_.id2cloning_strategy.insert(
+                        constructor_id,
+                        self_
+                            .user_component_db
+                            .get_cloning_strategy(user_component_id)
+                            .unwrap()
+                            .to_owned(),
+                    );
                     self_
                         .id2lifecycle
                         .insert(constructor_id, lifecycle.to_owned());
@@ -516,6 +528,7 @@ impl ComponentDb {
         c: Constructor<'static>,
         l: Lifecycle,
         scope_id: ScopeId,
+        cloning_strategy: CloningStrategy,
         computation_db: &mut ComputationDb,
     ) -> ComponentId {
         let computation_id = computation_db.get_or_intern(c);
@@ -523,6 +536,7 @@ impl ComponentDb {
             source_id: SourceId::ComputationId(computation_id, scope_id),
         });
         self.id2lifecycle.insert(id, l);
+        self.id2cloning_strategy.insert(id, cloning_strategy);
         self.register_derived_constructors(id, computation_db);
         id
     }
@@ -538,6 +552,7 @@ impl ComponentDb {
             constructor.into_owned()
         };
         let output_type = constructor.output_type().to_owned();
+        let cloning_strategy = self.id2cloning_strategy[&constructor_id];
         let lifecycle = self.lifecycle(constructor_id).unwrap().to_owned();
         let scope_id = self.scope_id(constructor_id);
         if !matches!(output_type, ResolvedType::Reference(_)) {
@@ -551,6 +566,7 @@ impl ComponentDb {
                 c.try_into().unwrap(),
                 lifecycle.to_owned(),
                 scope_id,
+                cloning_strategy,
                 computation_db,
             );
             self.borrow_id2owned_id.insert(borrow_id, constructor_id);
@@ -565,6 +581,7 @@ impl ComponentDb {
                 ok.into_owned(),
                 lifecycle,
                 scope_id,
+                cloning_strategy,
                 computation_db,
             );
 
@@ -587,6 +604,7 @@ impl ComponentDb {
         callable_id: ComputationId,
         lifecycle: Lifecycle,
         scope_id: ScopeId,
+        cloning_strategy: CloningStrategy,
         computation_db: &mut ComputationDb,
     ) -> Result<ComponentId, ConstructorValidationError> {
         let callable = computation_db[callable_id].to_owned();
@@ -596,6 +614,8 @@ impl ComponentDb {
         };
         let constructor_id = self.interner.get_or_intern(constructor_component);
         self.id2lifecycle.insert(constructor_id, lifecycle);
+        self.id2cloning_strategy
+            .insert(constructor_id, cloning_strategy);
         self.register_derived_constructors(constructor_id, computation_db);
         Ok(constructor_id)
     }
@@ -902,6 +922,7 @@ impl ComponentDb {
         // the call graph for handlers where these derived components are used.
         let id = _get_root_component_id(id, self, computation_db);
         let scope_id = self.scope_id(id);
+        let cloning_strategy = self.id2cloning_strategy[&id];
         let HydratedComponent::Constructor(constructor) = self.hydrated_component(id, computation_db).into_owned() else { unreachable!() };
         let lifecycle = self.lifecycle(id).cloned().unwrap();
         let bound_computation = constructor
@@ -914,6 +935,7 @@ impl ComponentDb {
                 bound_computation_id,
                 lifecycle.clone(),
                 scope_id,
+                cloning_strategy,
                 computation_db,
             )
             .unwrap();

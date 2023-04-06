@@ -25,6 +25,7 @@ use crate::compiler::constructors::Constructor;
 use crate::language::ResolvedType;
 
 mod application_state;
+mod borrow_checker;
 mod request_handler;
 
 /// Build a [`CallGraph`] rooted in the `root_id` component.

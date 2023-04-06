@@ -1,3 +1,4 @@
+use crate::constructor::{CloningStrategy, Lifecycle};
 use crate::reflection::{Location, RawCallableIdentifiers};
 use crate::router::MethodGuard;
 use crate::Blueprint;
@@ -12,6 +13,19 @@ pub struct RegisteredRoute {
     /// The callable in charge of processing incoming requests for this route.
     pub request_handler: RegisteredCallable,
     /// The callable in charge of processing errors returned by the request handler, if any.
+    pub error_handler: Option<RegisteredCallable>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+/// A constructor registered against a [`Blueprint`] via [`Blueprint::constructor`].
+pub struct RegisteredConstructor {
+    /// The callable in charge of constructing the desired type.
+    pub constructor: RegisteredCallable,
+    /// The lifecycle of the constructed type.
+    pub lifecycle: Lifecycle,
+    /// The strategy dictating when the constructed type can be cloned.
+    pub cloning_strategy: Option<CloningStrategy>,
+    /// The callable in charge of processing errors returned by this constructor, if any.
     pub error_handler: Option<RegisteredCallable>,
 }
 
