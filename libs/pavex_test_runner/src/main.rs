@@ -103,7 +103,7 @@ enum Decision {
     Skip,
 }
 
-/// Retrieve the root of the current workspace.
+/// Retrieve the root directory of the current workspace.
 fn workspace_root() -> Result<PathBuf, anyhow::Error> {
     #[derive(serde::Deserialize)]
     struct LocateProject {
@@ -115,5 +115,5 @@ fn workspace_root() -> Result<PathBuf, anyhow::Error> {
         .arg("--workspace")
         .output()?;
     let json: LocateProject = serde_json::from_slice(&output.stdout)?;
-    Ok(json.root)
+    Ok(json.root.parent().unwrap().to_path_buf())
 }

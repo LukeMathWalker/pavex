@@ -11,9 +11,7 @@ use petgraph::Direction;
 
 use pavex_builder::constructor::CloningStrategy;
 
-use crate::compiler::analyses::call_graph::{
-    debug_dot, CallGraph, CallGraphNode, NumberOfAllowedInvocations,
-};
+use crate::compiler::analyses::call_graph::{CallGraph, CallGraphNode, NumberOfAllowedInvocations};
 use crate::compiler::analyses::components::{ComponentDb, ComponentId, HydratedComponent};
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::computation::Computation;
@@ -68,7 +66,8 @@ pub(super) fn borrow_checker(
 
     let mut strategy_on_block = StrategyOnBlock::Park;
     let mut unblocked_any_node = false;
-    let mut nodes_to_visit = IndexSet::from_iter(call_graph.externals(Direction::Outgoing));
+    let mut nodes_to_visit: IndexSet<NodeIndex> =
+        IndexSet::from_iter(call_graph.externals(Direction::Outgoing));
     let mut parked_nodes = IndexSet::new();
     let mut finished_nodes = IndexSet::new();
     let mut n_parked_nodes = None;
@@ -210,8 +209,8 @@ pub(super) fn borrow_checker(
             }
         }
         n_parked_nodes = Some(current_n_parked_nodes);
-        assert_eq!(nodes_to_visit.len(), 0);
-        std::mem::swap(&mut nodes_to_visit, &mut parked_nodes);
+        // Enqueue the parked nodes into the list of nodes to be visited in the next iteration.
+        nodes_to_visit.extend(std::mem::take(&mut parked_nodes));
     }
 
     CallGraph {
@@ -318,7 +317,7 @@ fn emit_borrow_checking_error(
                 {
                     let help_msg = format!(
                         "Allow me to clone `{type_:?}` in order to satisfy the borrow checker.\n\
-                        You can do so by invoking `.cloning_strategy(CloningStrategy::CloneIfNecessary)` on the type returned by `.constructor`.",
+                        You can do so by invoking `.cloning(CloningStrategy::CloneIfNecessary)` on the type returned by `.constructor`.",
                     );
                     let location = component_db
                         .user_component_db()

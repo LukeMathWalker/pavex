@@ -73,8 +73,8 @@ impl<'a> Constructor<'a> {
         self
     }
 
-    pub fn cloning(self, _strategy: CloningStrategy) -> Self {
-        // TODO!
+    pub fn cloning(self, strategy: CloningStrategy) -> Self {
+        self.blueprint.constructors[self.constructor_id].cloning_strategy = Some(strategy);
         self
     }
 }
