@@ -4,9 +4,12 @@ use ahash::HashMap;
 use guppy::graph::PackageGraph;
 use indexmap::IndexSet;
 use miette::NamedSource;
+use once_cell::sync::OnceCell;
 use petgraph::graph::NodeIndex;
 use petgraph::stable_graph::StableDiGraph;
 use petgraph::Direction;
+
+use pavex_builder::constructor::CloningStrategy;
 
 use crate::compiler::analyses::call_graph::{
     debug_dot, CallGraph, CallGraphNode, NumberOfAllowedInvocations,
@@ -16,10 +19,13 @@ use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::computation::Computation;
 use crate::compiler::constructors::Constructor;
 use crate::compiler::utils::process_framework_path;
-use crate::diagnostic::CompilerDiagnostic;
+use crate::diagnostic;
+use crate::diagnostic::{
+    AnnotatedSnippet, CompilerDiagnostic, HelpWithSnippet, LocationExt, OptionalSourceSpanExt,
+};
 use crate::language::{
-    Callable, InvocationStyle, ResolvedPath, ResolvedPathQualifiedSelf, ResolvedPathSegment,
-    ResolvedType, TypeReference,
+    Callable, InvocationStyle, PathType, ResolvedPath, ResolvedPathQualifiedSelf,
+    ResolvedPathSegment, ResolvedType, TypeReference,
 };
 use crate::rustdoc::CrateCollection;
 
@@ -66,8 +72,8 @@ pub(super) fn borrow_checker(
     let mut parked_nodes = IndexSet::new();
     let mut finished_nodes = IndexSet::new();
     let mut n_parked_nodes = None;
-    loop {
-        while let Some(node_index) = nodes_to_visit.pop() {
+    'fixed_point: loop {
+        'visiting: while let Some(node_index) = nodes_to_visit.pop() {
             let (incoming_blocked_ids, incoming_unblocked_ids): (IndexSet<_>, IndexSet<_>) =
                 call_graph
                     .neighbors_directed(node_index, Direction::Incoming)
@@ -100,9 +106,9 @@ pub(super) fn borrow_checker(
                         parked_nodes.insert(node_index);
                     }
                     StrategyOnBlock::Clone => {
-                        for incoming_blocked_id in incoming_blocked_ids {
+                        'incoming: for incoming_blocked_id in incoming_blocked_ids {
                             let CallGraphNode::Compute { component_id, .. } =
-                                &call_graph[incoming_blocked_id] else { continue; };
+                                &call_graph[incoming_blocked_id] else { continue 'incoming; };
                             let Some(clone_component_id) = get_clone_component_id(
                                 component_id,
                                 package_graph,
@@ -110,7 +116,7 @@ pub(super) fn borrow_checker(
                                 component_db,
                                 computation_db,
                             ) else {
-                                continue;
+                                continue 'incoming;
                             };
 
                             let clone_node_id = call_graph.add_node(CallGraphNode::Compute {
@@ -148,15 +154,16 @@ pub(super) fn borrow_checker(
                                 .node(clone_node_id)
                                 .borrows(incoming_blocked_id);
 
-                            break;
+                            break 'incoming;
                         }
 
                         // We break the `while` loop here because we want to avoid
                         // excessive cloning. Instead of cloning all blocked nodes, we
                         // want to see first if the clone of the blocked node above is enough
                         // to unblock any other node.
+                        parked_nodes.insert(node_index);
                         if unblocked_any_node {
-                            break;
+                            break 'visiting;
                         }
                     }
                     StrategyOnBlock::Error => {
@@ -164,6 +171,7 @@ pub(super) fn borrow_checker(
                             incoming_blocked_ids,
                             computation_db,
                             component_db,
+                            package_graph,
                             &call_graph,
                             diagnostics,
                         );
@@ -175,7 +183,7 @@ pub(super) fn borrow_checker(
         let current_n_parked_nodes = parked_nodes.len();
         if current_n_parked_nodes == 0 {
             // All good! We are done!
-            break;
+            break 'fixed_point;
         }
         if Some(current_n_parked_nodes) == n_parked_nodes {
             match strategy_on_block {
@@ -197,7 +205,7 @@ pub(super) fn borrow_checker(
                 StrategyOnBlock::Error => {
                     // We've reached a fixed point and emitted all the relevant borrow checker errors.
                     // We are done.
-                    break;
+                    break 'fixed_point;
                 }
             }
         }
@@ -223,15 +231,23 @@ fn get_clone_component_id(
     component_db: &mut ComponentDb,
     computation_db: &mut ComputationDb,
 ) -> Option<ComponentId> {
-    let clone = {
+    // We only need to resolve this once.
+    static CLONE_PATH_TYPE: OnceCell<PathType> = OnceCell::new();
+    let clone = CLONE_PATH_TYPE.get_or_init(|| {
         let clone = process_framework_path("std::clone::Clone", package_graph, krate_collection);
         let ResolvedType::ResolvedPath(clone) = clone else { unreachable!() };
         clone
-    };
+    });
 
     let HydratedComponent::Constructor(c) = component_db.hydrated_component(*component_id, computation_db)
         else { return None; };
     let output = c.output_type().to_owned();
+
+    // We only add a cloning node if the component is not marked as `NeverClone`.
+    let cloning_strategy = component_db.cloning_strategy(*component_id);
+    if cloning_strategy == CloningStrategy::NeverClone {
+        return None;
+    }
 
     let clone_path = clone.resolved_path();
     let clone_segments = {
@@ -281,6 +297,7 @@ fn emit_borrow_checking_error(
     incoming_blocked_ids: IndexSet<NodeIndex>,
     computation_db: &mut ComputationDb,
     component_db: &mut ComponentDb,
+    package_graph: &PackageGraph,
     call_graph: &StableDiGraph<CallGraphNode, ()>,
     diagnostics: &mut Vec<miette::Error>,
 ) {
@@ -290,24 +307,73 @@ fn emit_borrow_checking_error(
                 component_db.hydrated_component(*component_id, computation_db)
             {
                 let type_ = c.output_type();
-                let error = if let Computation::Callable(callable) = &c.0 {
-                    anyhow::anyhow!(
-                        "I can't generate code that will pass the borrow checker.\n\
-                        Consider making `{type_:?}` cloneable or change `{}`'s signature \
-                        to take a reference to `{type_:?}` as input parameter \
-                        instead of taking `{type_:?}` by value.",
-                        callable.path
-                    )
+                let error = anyhow::anyhow!(
+                    "I can't generate code that will pass the borrow checker *and* match \
+                    the instructions in your blueprint.\n\
+                    There are a few different ways to unblock me: check out the help messages below!\n\
+                    You only need to follow *one* of them."
+                );
+                let clone_help = if let Some(user_component_id) =
+                    component_db.user_component_id(*component_id)
+                {
+                    let help_msg = format!(
+                        "Allow me to clone `{type_:?}` in order to satisfy the borrow checker.\n\
+                        You can do so by invoking `.cloning_strategy(CloningStrategy::CloneIfNecessary)` on the type returned by `.constructor`.",
+                    );
+                    let location = component_db
+                        .user_component_db()
+                        .get_location(user_component_id);
+                    let source = match location.source_file(package_graph) {
+                        Ok(s) => Some(s),
+                        Err(e) => {
+                            diagnostics.push(e.into());
+                            None
+                        }
+                    };
+                    let help = match source {
+                        None => HelpWithSnippet::new(
+                            help_msg,
+                            AnnotatedSnippet::new_with_labels(NamedSource::new("", ""), vec![]),
+                        ),
+                        Some(source) => {
+                            let labeled_span =
+                                diagnostic::get_f_macro_invocation_span(&source, location)
+                                    .labeled("The constructor was registered here".into());
+                            HelpWithSnippet::new(
+                                help_msg,
+                                AnnotatedSnippet::new_optional(source, labeled_span),
+                            )
+                        }
+                    };
+                    Some(help)
                 } else {
-                    anyhow::anyhow!(
-                        "I can't generate code that will pass the borrow checker.\n\
-                        Consider making `{type_:?}` cloneable.",
-                    )
+                    None
                 };
-                // TODO: point at the registration site of the component that we want to
-                //   make cloneable.
+                let use_ref_help = if let Computation::Callable(callable) = &c.0 {
+                    let help_msg = format!(
+                        "Considering changing the signature of `{}`.\n\
+                        It takes `{type_:?}` by value. Would a shared reference, `&{type_:?}`, be enough?",
+                        callable.path
+                    );
+                    let help = HelpWithSnippet::new(
+                        help_msg,
+                        AnnotatedSnippet::new_with_labels(NamedSource::new("", ""), vec![]),
+                    );
+                    Some(help)
+                } else {
+                    None
+                };
+                let ref_counting_help = format!("If `{type_:?}` itself cannot implement `Clone`, consider wrapping it in an `std::sync::Rc` or `std::sync::Arc`.");
+                let ref_counting_help = HelpWithSnippet::new(
+                    ref_counting_help,
+                    AnnotatedSnippet::new_with_labels(NamedSource::new("", ""), vec![]),
+                );
                 let dummy_source = NamedSource::new("", "");
-                let diagnostic = CompilerDiagnostic::builder(dummy_source, error).build();
+                let diagnostic = CompilerDiagnostic::builder(dummy_source, error)
+                    .optional_help_with_snippet(use_ref_help)
+                    .optional_help_with_snippet(clone_help)
+                    .help_with_snippet(ref_counting_help)
+                    .build();
                 diagnostics.push(diagnostic.into());
             };
         };

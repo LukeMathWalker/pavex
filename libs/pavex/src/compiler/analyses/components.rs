@@ -725,6 +725,13 @@ impl ComponentDb {
             .unwrap()
     }
 
+    #[track_caller]
+    /// Given the id of a component, return the corresponding [`CloningStrategy`].
+    /// It panics if called for a non-constructor component.
+    pub fn cloning_strategy(&self, component_id: ComponentId) -> CloningStrategy {
+        self.id2cloning_strategy[&component_id]
+    }
+
     /// Given the id of a component, return the id of the corresponding
     /// component that borrows the value it returns (if it exists).
     pub fn borrow_id(&self, owned_component_id: ComponentId) -> Option<ComponentId> {
