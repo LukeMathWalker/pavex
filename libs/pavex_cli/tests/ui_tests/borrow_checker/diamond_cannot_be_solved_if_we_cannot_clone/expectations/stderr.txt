@@ -9,9 +9,8 @@
   [31m│[0m         It takes `app::A` by value. Would a shared reference, `&app::A`, be
   [31m│[0m         enough?
   [31m│[0m   [36mhelp:[0m Allow me to clone `app::A` in order to satisfy the borrow checker.
-  [31m│[0m         You can do so by invoking
-  [31m│[0m         `.cloning_strategy(CloningStrategy::CloneIfNecessary)` on the type
-  [31m│[0m         returned by `.constructor`.
+  [31m│[0m         You can do so by invoking `.cloning(CloningStrategy::CloneIfNecessary)`
+  [31m│[0m         on the type returned by `.constructor`.
   [31m│[0m        ☞
   [31m│[0m           ╭─[[36;1;4msrc/lib.rs[0m:35:1]
   [31m│[0m        [2m35[0m │     let mut bp = Blueprint::new();
@@ -34,9 +33,8 @@
   [31m│[0m         It takes `app::B` by value. Would a shared reference, `&app::B`, be
   [31m│[0m         enough?
   [31m│[0m   [36mhelp:[0m Allow me to clone `app::B` in order to satisfy the borrow checker.
-  [31m│[0m         You can do so by invoking
-  [31m│[0m         `.cloning_strategy(CloningStrategy::CloneIfNecessary)` on the type
-  [31m│[0m         returned by `.constructor`.
+  [31m│[0m         You can do so by invoking `.cloning(CloningStrategy::CloneIfNecessary)`
+  [31m│[0m         on the type returned by `.constructor`.
   [31m│[0m        ☞
   [31m│[0m           ╭─[[36;1;4msrc/lib.rs[0m:36:1]
   [31m│[0m        [2m36[0m │     bp.constructor(f!(crate::a), Lifecycle::RequestScoped);

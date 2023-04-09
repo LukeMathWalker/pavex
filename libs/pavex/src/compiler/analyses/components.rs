@@ -98,6 +98,16 @@ impl<'a> HydratedComponent<'a> {
         }
     }
 
+    /// Returns a [`Computation`] that matches the transformation carried out by this component.
+    pub(crate) fn computation(&self) -> Computation<'a> {
+        match self {
+            HydratedComponent::Constructor(c) => c.0.clone(),
+            HydratedComponent::RequestHandler(r) => r.callable.clone().into(),
+            HydratedComponent::ErrorHandler(e) => e.callable.clone().into(),
+            HydratedComponent::Transformer(t) => t.clone(),
+        }
+    }
+
     pub(crate) fn into_owned(self) -> HydratedComponent<'static> {
         match self {
             HydratedComponent::Constructor(c) => HydratedComponent::Constructor(c.into_owned()),

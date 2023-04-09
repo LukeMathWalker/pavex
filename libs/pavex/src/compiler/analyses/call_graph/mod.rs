@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use ahash::{HashMap, HashMapExt, HashSet, HashSetExt};
 use bimap::BiHashMap;
 use fixedbitset::FixedBitSet;
@@ -20,7 +22,7 @@ use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::constructibles::ConstructibleDb;
 use crate::compiler::codegen_utils;
 use crate::compiler::codegen_utils::{Fragment, VariableNameGenerator};
-use crate::compiler::computation::{Computation, MatchResultVariant};
+use crate::compiler::computation::{BorrowSharedReference, Computation, MatchResultVariant};
 use crate::compiler::constructors::Constructor;
 use crate::language::ResolvedType;
 
@@ -379,6 +381,34 @@ pub(crate) enum CallGraphNode {
     },
     MatchBranching,
     InputParameter(ResolvedType),
+}
+
+impl CallGraphNode {
+    pub fn as_hydrated_component<'a>(
+        &self,
+        component_db: &'a ComponentDb,
+        computation_db: &'a ComputationDb,
+    ) -> Option<HydratedComponent<'a>> {
+        let CallGraphNode::Compute { component_id, .. } = self else {
+            return None;
+        };
+        Some(component_db.hydrated_component(*component_id, computation_db))
+    }
+
+    pub fn as_borrow_computation<'a>(
+        &self,
+        component_db: &'a ComponentDb,
+        computation_db: &'a ComputationDb,
+    ) -> Option<Cow<'a, BorrowSharedReference>> {
+        let component = self.as_hydrated_component(component_db, computation_db)?;
+        match component {
+            HydratedComponent::Transformer(Computation::BorrowSharedReference(b))
+            | HydratedComponent::Constructor(Constructor(Computation::BorrowSharedReference(b))) => {
+                Some(b)
+            }
+            _ => None,
+        }
+    }
 }
 
 #[derive(Clone, Debug, Copy, Hash, Eq, PartialEq)]

@@ -1,6 +1,7 @@
 use std::borrow::Cow;
+use std::collections::VecDeque;
 
-use ahash::HashMap;
+use ahash::{HashMap, HashMapExt};
 use guppy::graph::PackageGraph;
 use indexmap::IndexSet;
 use miette::NamedSource;
@@ -15,7 +16,6 @@ use crate::compiler::analyses::call_graph::{CallGraph, CallGraphNode, NumberOfAl
 use crate::compiler::analyses::components::{ComponentDb, ComponentId, HydratedComponent};
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::computation::Computation;
-use crate::compiler::constructors::Constructor;
 use crate::compiler::utils::process_framework_path;
 use crate::diagnostic;
 use crate::diagnostic::{
@@ -26,6 +26,285 @@ use crate::language::{
     ResolvedPathSegment, ResolvedType, TypeReference,
 };
 use crate::rustdoc::CrateCollection;
+
+/// Given the node index for a `BorrowSharedReference` constructor node, returns the node index
+/// of the "owned" node it borrows from.
+fn get_owned_node_id(
+    call_graph: &StableDiGraph<CallGraphNode, ()>,
+    borrow_node_index: NodeIndex,
+) -> NodeIndex {
+    let mut incoming_nodes = call_graph.neighbors_directed(borrow_node_index, Direction::Incoming);
+    let owned_node_index = incoming_nodes
+        .next()
+        .expect("`BorrowSharedReference` node has no incoming edges, this cannot be!");
+    assert_eq!(
+        incoming_nodes.next(),
+        None,
+        "`BorrowSharedReference` node has more than one incoming edge, this cannot be!"
+    );
+    owned_node_index
+}
+
+/// Given the node index for a non-`BorrowSharedReference` constructor node, returns the node index
+/// of the node that borrows from it.
+///
+/// It returns `None` if the borrow node that does not exist.
+fn get_borrow_node_id(
+    call_graph: &StableDiGraph<CallGraphNode, ()>,
+    owned_node_index: NodeIndex,
+    component_db: &ComponentDb,
+    computation_db: &ComputationDb,
+) -> Option<NodeIndex> {
+    call_graph
+        .neighbors_directed(owned_node_index, Direction::Outgoing)
+        .find(|node_index| {
+            call_graph[*node_index]
+                .as_borrow_computation(component_db, computation_db)
+                .is_some()
+        })
+}
+
+fn causal_borrow_checker(
+    call_graph: CallGraph,
+    component_db: &mut ComponentDb,
+    computation_db: &mut ComputationDb,
+    package_graph: &PackageGraph,
+    krate_collection: &CrateCollection,
+    diagnostics: &mut Vec<miette::Error>,
+) -> CallGraph {
+    let CallGraph {
+        mut call_graph,
+        root_node_index,
+    } = call_graph;
+
+    // We start from sinks (i.e. nodes that do not have outgoing edges) and work our way up,
+    // traversing edges in the reverse direction (i.e. incoming edges).
+    // The following invariant MUST hold at all times: once we visit a node, we must have
+    // already visited all the nodes that are connected with it by an outgoing edge (i.e.
+    // all the nodes that depend on it).
+    let mut nodes_to_visit = VecDeque::from_iter(call_graph.externals(Direction::Outgoing));
+    let mut visited_nodes = IndexSet::new();
+    let mut downstream_borrows: HashMap<NodeIndex, IndexSet<NodeIndex>> = HashMap::new();
+
+    while let Some(node_index) = nodes_to_visit.pop_front() {
+        let mut borrowed_nodes: IndexSet<NodeIndex> = call_graph
+            .neighbors_directed(node_index, Direction::Outgoing)
+            .fold(IndexSet::new(), |mut acc, neighbor_index| {
+                if let Some(downstream_borrows) = downstream_borrows.get(&neighbor_index) {
+                    acc.extend(downstream_borrows);
+                }
+                acc
+            });
+        let dependencies: Vec<_> = call_graph
+            .neighbors_directed(node_index, Direction::Incoming)
+            .collect();
+
+        for dependency_index in dependencies {
+            if !visited_nodes.contains(&dependency_index) {
+                nodes_to_visit.push_back(dependency_index);
+            }
+
+            if call_graph[dependency_index]
+                .as_borrow_computation(component_db, computation_db)
+                .is_some()
+            {
+                let owned_node_index = get_owned_node_id(&call_graph, dependency_index);
+                borrowed_nodes.insert(owned_node_index);
+                continue;
+            }
+
+            if call_graph[node_index]
+                .as_borrow_computation(component_db, computation_db)
+                .is_some()
+            {
+                continue;
+            }
+
+            if borrowed_nodes.contains(&dependency_index) {
+                let CallGraphNode::Compute { component_id, n_allowed_invocations, } =
+                    call_graph[dependency_index].clone() else { continue; };
+                let Some(clone_component_id) = get_clone_component_id(
+                    &component_id,
+                    package_graph,
+                    krate_collection,
+                    component_db,
+                    computation_db,
+                ) else {
+                    emit_causal_borrow_checking_error(
+                        dependency_index,
+                        node_index,
+                        computation_db,
+                        component_db,
+                        package_graph,
+                        &call_graph,
+                        diagnostics,
+                    );
+                    continue;
+                };
+
+                let clone_node_id = call_graph.add_node(CallGraphNode::Compute {
+                    component_id: clone_component_id,
+                    n_allowed_invocations: NumberOfAllowedInvocations::One,
+                });
+
+                let borrow_node_id =
+                    get_borrow_node_id(&call_graph, dependency_index, component_db, computation_db)
+                        .unwrap_or_else(|| {
+                            let borrow_component_id = component_db.borrow_id(component_id).unwrap();
+                            let borrow_node_id = call_graph.add_node(CallGraphNode::Compute {
+                                component_id: borrow_component_id,
+                                n_allowed_invocations,
+                            });
+                            call_graph.update_edge(dependency_index, borrow_node_id, ());
+                            borrow_node_id
+                        });
+
+                // `Clone`'s signature is `fn clone(&self) -> Self`, therefore
+                // we must introduce the new node as a child of &Self instead of Self.
+                call_graph.update_edge(borrow_node_id, clone_node_id, ());
+                call_graph.update_edge(clone_node_id, node_index, ());
+                if let Some(edge) = call_graph.find_edge(dependency_index, node_index) {
+                    call_graph.remove_edge(edge);
+                }
+            }
+        }
+
+        downstream_borrows.insert(node_index, borrowed_nodes);
+        visited_nodes.insert(node_index);
+    }
+
+    CallGraph {
+        call_graph,
+        root_node_index,
+    }
+}
+
+fn emit_causal_borrow_checking_error(
+    contended_node_id: NodeIndex,
+    consuming_node_id: NodeIndex,
+    computation_db: &ComputationDb,
+    component_db: &ComponentDb,
+    package_graph: &PackageGraph,
+    call_graph: &StableDiGraph<CallGraphNode, ()>,
+    diagnostics: &mut Vec<miette::Error>,
+) {
+    let borrow_ref_contended_node_id =
+        get_borrow_node_id(call_graph, contended_node_id, component_db, computation_db).unwrap();
+
+    // Find the downstream node that is borrowing the contended node.
+    let mut downstream_borrow_node_id = None;
+    let mut nodes_to_visit =
+        VecDeque::from_iter(call_graph.neighbors_directed(consuming_node_id, Direction::Outgoing));
+    while let Some(node_id) = nodes_to_visit.pop_front() {
+        if call_graph
+            .neighbors_directed(node_id, Direction::Incoming)
+            .find(|&neighbor_id| neighbor_id == borrow_ref_contended_node_id)
+            .is_some()
+        {
+            downstream_borrow_node_id = Some(node_id);
+            break;
+        };
+        nodes_to_visit.extend(call_graph.neighbors_directed(node_id, Direction::Outgoing));
+    }
+
+    let downstream_borrow_node_id = downstream_borrow_node_id.unwrap();
+
+    let CallGraphNode::Compute { component_id: borrower_component_id, .. } = call_graph[downstream_borrow_node_id] else {
+        unreachable!()
+    };
+    let hydrated_borrower_component =
+        component_db.hydrated_component(borrower_component_id, computation_db);
+    let Computation::Callable(borrower_callable) = hydrated_borrower_component.computation() else {
+        unreachable!()
+    };
+
+    let CallGraphNode::Compute { component_id: consuming_component_id, .. } = call_graph[consuming_node_id] else {
+        unreachable!()
+    };
+    let hydrated_consumer_component =
+        component_db.hydrated_component(consuming_component_id, computation_db);
+    let Computation::Callable(consumer_callable) = hydrated_consumer_component.computation() else {
+        unreachable!()
+    };
+
+    let (contended_component_id, type_) = match &call_graph[contended_node_id] {
+        CallGraphNode::Compute { component_id, .. } => (
+            Some(*component_id),
+            component_db
+                .hydrated_component(*component_id, computation_db)
+                .output_type()
+                .to_owned(),
+        ),
+        CallGraphNode::InputParameter(o) => (None, o.to_owned()),
+        CallGraphNode::MatchBranching => {
+            unreachable!()
+        }
+    };
+
+    let borrower_path = &borrower_callable.path;
+    let consumer_path = &consumer_callable.path;
+    let error_msg = format!(
+        "I can't generate code that will pass the borrow checker *and* match the instructions \
+        in your blueprint.\n\
+        `{borrower_path}` wants to borrow `{type_:?}` but `{consumer_path}`, which is invoked \
+        earlier on, consumes `{type_:?}` by value.\n\
+        Since we cannot clone `{type_:?}`, I can't resolve this conflict."
+    );
+    let dummy_source = NamedSource::new("", "");
+    let mut diagnostic = CompilerDiagnostic::builder(dummy_source, anyhow::anyhow!(error_msg));
+
+    if let Some(component_id) = contended_component_id {
+        if let Some(user_component_id) = component_db.user_component_id(component_id) {
+            let help_msg = format!(
+                "Allow me to clone `{type_:?}` in order to satisfy the borrow checker.\n\
+                You can do so by invoking `.cloning(CloningStrategy::CloneIfNecessary)` on the type returned by `.constructor`.",
+            );
+            let location = component_db
+                .user_component_db()
+                .get_location(user_component_id);
+            let source = match location.source_file(package_graph) {
+                Ok(s) => Some(s),
+                Err(e) => {
+                    diagnostics.push(e.into());
+                    None
+                }
+            };
+            let help = match source {
+                None => HelpWithSnippet::new(
+                    help_msg,
+                    AnnotatedSnippet::new_with_labels(NamedSource::new("", ""), vec![]),
+                ),
+                Some(source) => {
+                    let labeled_span = diagnostic::get_f_macro_invocation_span(&source, location)
+                        .labeled("The constructor was registered here".into());
+                    HelpWithSnippet::new(
+                        help_msg,
+                        AnnotatedSnippet::new_optional(source, labeled_span),
+                    )
+                }
+            };
+            diagnostic = diagnostic.help_with_snippet(help);
+        }
+    }
+
+    let help = HelpWithSnippet::new(
+        format!(
+            "Considering changing the signature of `{consumer_path}`.\n\
+            It takes `{type_:?}` by value. Would a shared reference, `&{type_:?}`, be enough?",
+        ),
+        AnnotatedSnippet::new_with_labels(NamedSource::new("", ""), vec![]),
+    );
+    diagnostic = diagnostic.help_with_snippet(help);
+
+    let ref_counting_help = format!("If `{type_:?}` itself cannot implement `Clone`, consider wrapping it in an `std::sync::Rc` or `std::sync::Arc`.");
+    let ref_counting_help = HelpWithSnippet::new(
+        ref_counting_help,
+        AnnotatedSnippet::new_with_labels(NamedSource::new("", ""), vec![]),
+    );
+    diagnostic = diagnostic.help_with_snippet(ref_counting_help);
+
+    diagnostics.push(diagnostic.build().into());
+}
 
 /// Examine a call graph and check if it is possible to generate code that will
 /// not violate the Rust borrow checker.
@@ -42,6 +321,14 @@ pub(super) fn borrow_checker(
     krate_collection: &CrateCollection,
     diagnostics: &mut Vec<miette::Error>,
 ) -> CallGraph {
+    let call_graph = causal_borrow_checker(
+        call_graph,
+        component_db,
+        computation_db,
+        package_graph,
+        krate_collection,
+        diagnostics,
+    );
     let CallGraph {
         mut call_graph,
         root_node_index,
@@ -294,8 +581,8 @@ fn get_clone_component_id(
 /// and what they can do to fix it.
 fn emit_borrow_checking_error(
     incoming_blocked_ids: IndexSet<NodeIndex>,
-    computation_db: &mut ComputationDb,
-    component_db: &mut ComponentDb,
+    computation_db: &ComputationDb,
+    component_db: &ComponentDb,
     package_graph: &PackageGraph,
     call_graph: &StableDiGraph<CallGraphNode, ()>,
     diagnostics: &mut Vec<miette::Error>,
@@ -375,7 +662,7 @@ fn emit_borrow_checking_error(
                     .build();
                 diagnostics.push(diagnostic.into());
             };
-        };
+        }
     }
 }
 
@@ -407,19 +694,11 @@ impl OwnershipRelationships {
     ) -> Self {
         let mut self_ = Self::default();
         for node_index in call_graph.node_indices() {
-            let node = &call_graph[node_index];
-            let CallGraphNode::Compute { component_id, .. } = node else {
-                continue;
-            };
-            let HydratedComponent::Constructor(c) =
-                component_db.hydrated_component(*component_id, computation_db) else {
-                continue;
-            };
-            if let Computation::BorrowSharedReference(_) = &c.0 {
-                let owned_node_id = call_graph
-                    .neighbors_directed(node_index, Direction::Incoming)
-                    .next()
-                    .unwrap();
+            if call_graph[node_index]
+                .as_borrow_computation(component_db, computation_db)
+                .is_some()
+            {
+                let owned_node_id = get_owned_node_id(call_graph, node_index);
                 self_
                     .owned_node_id2borrow_shared_ref_node_id
                     .insert(owned_node_id, node_index);
@@ -432,28 +711,14 @@ impl OwnershipRelationships {
                 }
 
                 continue;
-            } else {
-                for neighbour_index in
-                    call_graph.neighbors_directed(node_index, Direction::Outgoing)
+            }
+
+            for neighbour_index in call_graph.neighbors_directed(node_index, Direction::Outgoing) {
+                if call_graph[neighbour_index]
+                    .as_borrow_computation(component_db, computation_db)
+                    .is_none()
                 {
-                    let CallGraphNode::Compute { component_id: neighbour_component_id, .. } = &call_graph[neighbour_index] else {
-                        continue;
-                    };
-                    let component =
-                        component_db.hydrated_component(*neighbour_component_id, computation_db);
-                    match component {
-                        HydratedComponent::Constructor(Constructor(
-                            Computation::BorrowSharedReference(_),
-                        ))
-                        | HydratedComponent::Transformer(Computation::BorrowSharedReference(_)) => {
-                        }
-                        HydratedComponent::Constructor(_)
-                        | HydratedComponent::Transformer(_)
-                        | HydratedComponent::RequestHandler(_)
-                        | HydratedComponent::ErrorHandler(_) => {
-                            self_.node(neighbour_index).consumes(node_index);
-                        }
-                    }
+                    self_.node(neighbour_index).consumes(node_index);
                 }
             }
         }
