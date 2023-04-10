@@ -8,7 +8,7 @@ use indexmap::{IndexMap, IndexSet};
 use petgraph::Direction;
 use proc_macro2::Ident;
 
-use pavex_builder::constructor::Lifecycle;
+use pavex_builder::constructor::{CloningStrategy, Lifecycle};
 
 use crate::compiler::analyses::call_graph::{
     build_call_graph, CallGraph, CallGraphNode, NumberOfAllowedInvocations,
@@ -79,6 +79,7 @@ pub(crate) fn application_state_call_graph(
             application_state_callable_id,
             Lifecycle::Singleton,
             application_state_scope_id,
+            CloningStrategy::NeverClone,
             computation_db,
         )
         .unwrap();

@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use console::{style, Key};
 
-use pavex_test_runner::print_changeset;
+use pavex_test_runner::{get_test_name, get_ui_test_directories, print_changeset};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     miette::set_hook(Box::new(move |_| {
@@ -10,13 +10,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Box::new(config.build())
     }))
     .unwrap();
-    let test_folder: PathBuf = "libs/pavex_cli/tests/ui_tests".into();
+    let test_folder = workspace_root()?.join("libs/pavex_cli/tests/ui_tests");
     let terminal = console::Term::stdout();
-    for ui_test_dir in fs_err::read_dir(&test_folder)? {
-        let ui_test_dir = ui_test_dir?;
-        assert!(ui_test_dir.metadata()?.is_dir());
-        let test_name = ui_test_dir.file_name().to_string_lossy().to_string();
-        let expectations_dir = ui_test_dir.path().join("expectations");
+    for ui_test_dir in get_ui_test_directories(&test_folder) {
+        assert!(ui_test_dir.as_path().metadata()?.is_dir());
+        let test_name = get_test_name(&test_folder, &ui_test_dir);
+        let expectations_dir = ui_test_dir.as_path().join("expectations");
         for file in fs_err::read_dir(&expectations_dir)? {
             let file = file?;
             let file_name = file.file_name().to_string_lossy().to_string();
@@ -102,4 +101,19 @@ enum Decision {
     Accept,
     Reject,
     Skip,
+}
+
+/// Retrieve the root directory of the current workspace.
+fn workspace_root() -> Result<PathBuf, anyhow::Error> {
+    #[derive(serde::Deserialize)]
+    struct LocateProject {
+        root: PathBuf,
+    }
+
+    let output = std::process::Command::new("cargo")
+        .arg("locate-project")
+        .arg("--workspace")
+        .output()?;
+    let json: LocateProject = serde_json::from_slice(&output.stdout)?;
+    Ok(json.root.parent().unwrap().to_path_buf())
 }

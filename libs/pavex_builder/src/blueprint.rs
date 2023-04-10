@@ -1,7 +1,7 @@
-use indexmap::{IndexMap, IndexSet};
-
 use crate::constructor::{Constructor, Lifecycle};
-use crate::internals::{NestedBlueprint, RegisteredCallable, RegisteredRoute};
+use crate::internals::{
+    NestedBlueprint, RegisteredCallable, RegisteredConstructor, RegisteredRoute,
+};
 use crate::reflection::{Location, RawCallable, RawCallableIdentifiers};
 use crate::router::{MethodGuard, Route};
 
@@ -22,25 +22,8 @@ use crate::router::{MethodGuard, Route};
 pub struct Blueprint {
     /// The location where the [`Blueprint`] was created.
     pub creation_location: Location,
-    /// The set of registered constructors.
-    pub constructors: IndexSet<RawCallableIdentifiers>,
-    /// - Keys: [`RawCallableIdentifiers`] of a **fallible** constructor.
-    /// - Values: [`RawCallableIdentifiers`] of an error handler for the error type returned by
-    /// the constructor.
-    pub constructors_error_handlers: IndexMap<RawCallableIdentifiers, RawCallableIdentifiers>,
-    /// - Keys: [`RawCallableIdentifiers`] of a constructor.
-    /// - Values: the [`Lifecycle`] for the type returned by the constructor.
-    pub component_lifecycles: IndexMap<RawCallableIdentifiers, Lifecycle>,
-    /// - Keys: [`RawCallableIdentifiers`] of the fallible constructor.
-    /// - Values: a [`Location`] pointing at the corresponding invocation of
-    /// [`Constructor::error_handler`].
-    ///
-    /// [`Constructor::error_handler`]: Constructor::error_handler
-    pub error_handler_locations: IndexMap<RawCallableIdentifiers, Location>,
-    /// - Keys: [`RawCallableIdentifiers`] of a constructor.
-    /// - Values: a [`Location`] pointing at the corresponding invocation of
-    /// [`Blueprint::constructor`].
-    pub constructor_locations: IndexMap<RawCallableIdentifiers, Location>,
+    /// All registered constructors, in the order they were registered.
+    pub constructors: Vec<RegisteredConstructor>,
     /// All registered routes, in the order they were registered.
     pub routes: Vec<RegisteredRoute>,
     /// All blueprints nested under this one, in the order they were nested.
@@ -54,12 +37,8 @@ impl Blueprint {
         Self {
             creation_location: std::panic::Location::caller().into(),
             constructors: Default::default(),
-            constructors_error_handlers: Default::default(),
-            component_lifecycles: Default::default(),
-            error_handler_locations: Default::default(),
-            constructor_locations: Default::default(),
-            routes: vec![],
-            nested_blueprints: vec![],
+            routes: Default::default(),
+            nested_blueprints: Default::default(),
         }
     }
 
@@ -253,16 +232,19 @@ impl Blueprint {
     ///
     /// If a constructor for the same type has already been registered, it will be overwritten.
     pub fn constructor(&mut self, callable: RawCallable, lifecycle: Lifecycle) -> Constructor {
-        let callable_identifiers = RawCallableIdentifiers::new(callable.import_path);
-        let location = std::panic::Location::caller();
-        self.constructor_locations
-            .entry(callable_identifiers.clone())
-            .or_insert_with(|| location.into());
-        self.component_lifecycles
-            .insert(callable_identifiers.clone(), lifecycle);
-        self.constructors.insert(callable_identifiers.clone());
+        let registered_constructor = RegisteredConstructor {
+            constructor: RegisteredCallable {
+                callable: RawCallableIdentifiers::new(callable.import_path),
+                location: std::panic::Location::caller().into(),
+            },
+            lifecycle,
+            cloning_strategy: None,
+            error_handler: None,
+        };
+        let constructor_id = self.constructors.len();
+        self.constructors.push(registered_constructor);
         Constructor {
-            constructor_identifiers: callable_identifiers,
+            constructor_id,
             blueprint: self,
         }
     }

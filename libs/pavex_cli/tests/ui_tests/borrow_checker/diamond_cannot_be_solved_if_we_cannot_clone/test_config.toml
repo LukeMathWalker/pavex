@@ -1,0 +1,4 @@
+description = "Test what happens when we give pavex a graph that can't satisfy the consstraints of the Rust borrow checker"
+
+[expectations]
+codegen = "fail"

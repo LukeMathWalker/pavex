@@ -3,6 +3,7 @@ use guppy::graph::PackageGraph;
 use miette::{miette, NamedSource};
 use syn::spanned::Spanned;
 
+use pavex_builder::constructor::CloningStrategy;
 use pavex_builder::{
     constructor::Lifecycle, reflection::Location, reflection::RawCallableIdentifiers, Blueprint,
 };
@@ -38,6 +39,7 @@ pub struct UserComponentDb {
     component_interner: Interner<UserComponent>,
     identifiers_interner: Interner<RawCallableIdentifiers>,
     id2locations: HashMap<UserComponentId, Location>,
+    id2cloning_strategy: HashMap<UserComponentId, CloningStrategy>,
     id2lifecycle: HashMap<UserComponentId, Lifecycle>,
     scope_graph: ScopeGraph,
 }
@@ -82,6 +84,7 @@ impl UserComponentDb {
         let RawUserComponentDb {
             component_interner,
             id2locations,
+            id2cloning_strategy,
             id2lifecycle,
             identifiers_interner,
         } = raw_db;
@@ -90,6 +93,7 @@ impl UserComponentDb {
             component_interner,
             identifiers_interner,
             id2locations,
+            id2cloning_strategy,
             id2lifecycle,
             scope_graph,
         })
@@ -133,6 +137,12 @@ impl UserComponentDb {
     /// application blueprint.
     pub fn get_location(&self, id: UserComponentId) -> &Location {
         &self.id2locations[&id]
+    }
+
+    /// Return the cloning strategy of the component with the given id.
+    /// This is going to be `Some(..)` for constructor components, and `None` for all other components.
+    pub fn get_cloning_strategy(&self, id: UserComponentId) -> Option<&CloningStrategy> {
+        self.id2cloning_strategy.get(&id)
     }
 
     /// Return the scope tree that was built from the application blueprint.

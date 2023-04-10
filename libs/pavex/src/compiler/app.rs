@@ -109,14 +109,17 @@ impl App {
         );
         exit_on_errors!(diagnostics);
         let handler_call_graphs = {
-            let router = component_db.router();
+            let router = component_db.router().clone();
             let mut handler_call_graphs = IndexMap::with_capacity(router.len());
             for (router_key, handler_id) in router {
                 let call_graph = handler_call_graph(
-                    *handler_id,
-                    &computation_db,
-                    &component_db,
+                    handler_id,
+                    &mut computation_db,
+                    &mut component_db,
                     &constructible_db,
+                    &package_graph,
+                    &krate_collection,
+                    &mut diagnostics,
                 );
                 handler_call_graphs.insert(router_key.to_owned(), call_graph);
             }

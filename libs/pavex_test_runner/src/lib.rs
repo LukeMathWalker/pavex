@@ -1,5 +1,5 @@
 use std::fmt::Write;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Output;
 
 use ahash::HashMap;
@@ -7,12 +7,39 @@ use anyhow::Context;
 use console::style;
 use libtest_mimic::{Conclusion, Failed};
 use toml::toml;
+use walkdir::WalkDir;
 
+use itertools::Itertools;
 pub use snapshot::print_changeset;
 
 use crate::snapshot::SnapshotTest;
 
 mod snapshot;
+
+/// Return an iterator over the directories containing a UI test.
+pub fn get_ui_test_directories(test_folder: &Path) -> impl Iterator<Item = PathBuf> {
+    WalkDir::new(test_folder)
+        .into_iter()
+        .filter_map(|entry| entry.ok())
+        .filter(|entry| entry.file_name() == "test_config.toml")
+        .map(|entry| entry.path().parent().unwrap().to_path_buf())
+}
+
+/// Return the name of a UI test given its folder path and the path of the overall UI test folder.
+pub fn get_test_name(ui_tests_folder: &Path, ui_test_folder: &Path) -> String {
+    ui_test_folder
+        .strip_prefix(ui_tests_folder)
+        .unwrap()
+        .components()
+        .filter_map(|c| {
+            if let std::path::Component::Normal(s) = c {
+                Some(s.to_string_lossy().to_string())
+            } else {
+                None
+            }
+        })
+        .join("::")
+}
 
 /// Create a test case for each folder in `definition_directory`.
 ///
@@ -34,17 +61,12 @@ pub fn run_tests(
 
     let cli_profile = std::env::var("PAVEX_TEST_CLI_PROFILE").unwrap_or("debug".to_string());
 
-    let entries = fs_err::read_dir(&definition_directory)?;
     let mut tests = Vec::new();
-    for entry in entries {
-        let entry = entry?;
-        let filename = entry.file_name();
-        let name = filename
-            .to_str()
-            .expect("The name of test folders must be valid unicode.")
-            .to_owned();
+    for entry in get_ui_test_directories(&definition_directory) {
+        let name = get_test_name(&definition_directory, &entry);
+        let filename = entry.file_name().unwrap();
         let test_data = TestData {
-            definition_directory: entry.path(),
+            definition_directory: entry.clone(),
             runtime_directory: runtime_directory.join("tests").join(filename),
         };
         let test_configuration = test_data

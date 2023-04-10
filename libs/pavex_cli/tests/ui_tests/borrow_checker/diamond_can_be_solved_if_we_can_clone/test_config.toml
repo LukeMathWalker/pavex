@@ -1,0 +1,4 @@
+description = "Pavex correctly solves the stalemate in the diamond problem if it can clone those components"
+
+[expectations]
+codegen = "pass"

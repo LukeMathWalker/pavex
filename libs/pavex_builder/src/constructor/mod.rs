@@ -5,6 +5,7 @@
 //! [`Blueprint::constructor`]: Blueprint::constructor
 pub use lifecycle::Lifecycle;
 
+use crate::internals::RegisteredCallable;
 use crate::reflection::{RawCallable, RawCallableIdentifiers};
 use crate::Blueprint;
 
@@ -15,7 +16,8 @@ mod lifecycle;
 /// It allows you to further configure the behaviour of the registered constructor.
 pub struct Constructor<'a> {
     pub(crate) blueprint: &'a mut Blueprint,
-    pub(crate) constructor_identifiers: RawCallableIdentifiers,
+    /// The index of the registered constructor in the blueprint's `constructors` vector.
+    pub(crate) constructor_id: usize,
 }
 
 impl<'a> Constructor<'a> {
@@ -61,15 +63,31 @@ impl<'a> Constructor<'a> {
     /// `pavex` will fail to generate the runtime code for your application if you register
     /// an error handler for an infallible constructor (i.e. a constructor that doesn't return
     /// a `Result`).
-    pub fn error_handler(self, handler: RawCallable) -> Self {
-        let callable_identifiers = RawCallableIdentifiers::new(handler.import_path);
-        self.blueprint.error_handler_locations.insert(
-            self.constructor_identifiers.clone(),
-            std::panic::Location::caller().into(),
-        );
-        self.blueprint
-            .constructors_error_handlers
-            .insert(self.constructor_identifiers.clone(), callable_identifiers);
+    pub fn error_handler(self, error_handler: RawCallable) -> Self {
+        let callable_identifiers = RawCallableIdentifiers::new(error_handler.import_path);
+        let callable = RegisteredCallable {
+            callable: callable_identifiers,
+            location: std::panic::Location::caller().into(),
+        };
+        self.blueprint.constructors[self.constructor_id].error_handler = Some(callable);
         self
     }
+
+    pub fn cloning(self, strategy: CloningStrategy) -> Self {
+        self.blueprint.constructors[self.constructor_id].cloning_strategy = Some(strategy);
+        self
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[non_exhaustive]
+/// Determines whether `pavex` is allowed to clone the output type returned by a constructor.
+///
+/// Check out [`Constructor::cloning`] for more information.
+pub enum CloningStrategy {
+    /// `pavex` will **never** try clone the output type returned by the constructor.
+    NeverClone,
+    /// `pavex` will only clone the output type returned by this constructor if it's
+    /// necessary to generate code that satisfies Rust's borrow checker.
+    CloneIfNecessary,
 }

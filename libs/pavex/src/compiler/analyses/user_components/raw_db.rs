@@ -4,6 +4,7 @@ use ahash::{HashMap, HashMapExt};
 use anyhow::anyhow;
 use guppy::graph::PackageGraph;
 
+use pavex_builder::constructor::CloningStrategy;
 use pavex_builder::internals::{NestedBlueprint, RegisteredRoute};
 use pavex_builder::router::AllowedMethods;
 use pavex_builder::{
@@ -104,6 +105,7 @@ pub type UserComponentId = la_arena::Idx<UserComponent>;
 /// - the raw identifiers for the callable that it is associated with;
 /// - the source code location where it was registered (for error reporting purposes);
 /// - the lifecycle of the component;
+/// - the cloning strategy of the component (if it is a constructor);
 /// - the scope that the component belongs to.
 ///
 /// We call them "raw" components because we are yet to resolve the paths to the actual
@@ -113,6 +115,7 @@ pub(super) struct RawUserComponentDb {
     pub(super) component_interner: Interner<UserComponent>,
     pub(super) identifiers_interner: Interner<RawCallableIdentifiers>,
     pub(super) id2locations: HashMap<UserComponentId, Location>,
+    pub(super) id2cloning_strategy: HashMap<UserComponentId, CloningStrategy>,
     pub(super) id2lifecycle: HashMap<UserComponentId, Lifecycle>,
 }
 
@@ -129,6 +132,7 @@ impl RawUserComponentDb {
             identifiers_interner: Interner::new(),
             id2locations: HashMap::new(),
             id2lifecycle: HashMap::new(),
+            id2cloning_strategy: HashMap::new(),
         };
         let mut scope_graph_builder = ScopeGraph::builder(bp.creation_location.clone());
         let root_scope_id = scope_graph_builder.root_scope_id();
@@ -236,23 +240,30 @@ impl RawUserComponentDb {
         }
 
         for constructor in &bp.constructors {
-            let raw_callable_identifiers_id =
-                self.identifiers_interner.get_or_intern(constructor.clone());
+            let raw_callable_identifiers_id = self
+                .identifiers_interner
+                .get_or_intern(constructor.constructor.callable.clone());
             let component = UserComponent::Constructor {
                 raw_callable_identifiers_id,
                 scope_id: current_scope_id,
             };
             let constructor_id = self.component_interner.get_or_intern(component);
-            let location = &bp.constructor_locations[constructor];
             self.id2locations
-                .insert(constructor_id, location.to_owned());
-            let lifecycle = &bp.component_lifecycles[constructor];
+                .insert(constructor_id, constructor.constructor.location.clone());
+            let lifecycle = &constructor.lifecycle;
             self.id2lifecycle
                 .insert(constructor_id, lifecycle.to_owned());
-            if let Some(error_handler) = bp.constructors_error_handlers.get(constructor) {
+            self.id2cloning_strategy.insert(
+                constructor_id,
+                constructor
+                    .cloning_strategy
+                    .unwrap_or(CloningStrategy::NeverClone),
+            );
+
+            if let Some(error_handler) = &constructor.error_handler {
                 let raw_callable_identifiers_id = self
                     .identifiers_interner
-                    .get_or_intern(error_handler.clone());
+                    .get_or_intern(error_handler.callable.clone());
                 let component = UserComponent::ErrorHandler {
                     raw_callable_identifiers_id,
                     fallible_callable_identifiers_id: constructor_id,
@@ -261,9 +272,8 @@ impl RawUserComponentDb {
                 let error_handler_id = self.component_interner.get_or_intern(component);
                 self.id2lifecycle
                     .insert(error_handler_id, lifecycle.to_owned());
-                let location = &bp.error_handler_locations[constructor];
                 self.id2locations
-                    .insert(error_handler_id, location.to_owned());
+                    .insert(error_handler_id, error_handler.location.clone());
             }
         }
     }
