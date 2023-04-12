@@ -7,13 +7,19 @@ use indexmap::IndexSet;
 use miette::NamedSource;
 use once_cell::sync::OnceCell;
 use petgraph::graph::NodeIndex;
-use petgraph::stable_graph::StableDiGraph;
+use petgraph::prelude::EdgeRef;
+use petgraph::visit::NodeRef;
 use petgraph::Direction;
 
 use pavex_builder::constructor::CloningStrategy;
 
-use crate::compiler::analyses::call_graph::{CallGraph, CallGraphNode, NumberOfAllowedInvocations};
-use crate::compiler::analyses::components::{ComponentDb, ComponentId, HydratedComponent};
+use crate::compiler::analyses::call_graph::core_graph::RawCallGraph;
+use crate::compiler::analyses::call_graph::{
+    CallGraph, CallGraphEdgeMetadata, CallGraphNode, NumberOfAllowedInvocations,
+};
+use crate::compiler::analyses::components::{
+    ComponentDb, ComponentId, ConsumptionMode, HydratedComponent,
+};
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::computation::Computation;
 use crate::compiler::utils::process_framework_path;
@@ -26,43 +32,6 @@ use crate::language::{
     ResolvedPathSegment, ResolvedType, TypeReference,
 };
 use crate::rustdoc::CrateCollection;
-
-/// Given the node index for a `BorrowSharedReference` constructor node, returns the node index
-/// of the "owned" node it borrows from.
-fn get_owned_node_id(
-    call_graph: &StableDiGraph<CallGraphNode, ()>,
-    borrow_node_index: NodeIndex,
-) -> NodeIndex {
-    let mut incoming_nodes = call_graph.neighbors_directed(borrow_node_index, Direction::Incoming);
-    let owned_node_index = incoming_nodes
-        .next()
-        .expect("`BorrowSharedReference` node has no incoming edges, this cannot be!");
-    assert_eq!(
-        incoming_nodes.next(),
-        None,
-        "`BorrowSharedReference` node has more than one incoming edge, this cannot be!"
-    );
-    owned_node_index
-}
-
-/// Given the node index for a non-`BorrowSharedReference` constructor node, returns the node index
-/// of the node that borrows from it.
-///
-/// It returns `None` if the borrow node that does not exist.
-fn get_borrow_node_id(
-    call_graph: &StableDiGraph<CallGraphNode, ()>,
-    owned_node_index: NodeIndex,
-    component_db: &ComponentDb,
-    computation_db: &ComputationDb,
-) -> Option<NodeIndex> {
-    call_graph
-        .neighbors_directed(owned_node_index, Direction::Outgoing)
-        .find(|node_index| {
-            call_graph[*node_index]
-                .as_borrow_computation(component_db, computation_db)
-                .is_some()
-        })
-}
 
 fn causal_borrow_checker(
     call_graph: CallGraph,
@@ -95,33 +64,25 @@ fn causal_borrow_checker(
                 }
                 acc
             });
-        let dependencies: Vec<_> = call_graph
-            .neighbors_directed(node_index, Direction::Incoming)
+        let dependency_edge_ids: Vec<_> = call_graph
+            .edges_directed(node_index, Direction::Incoming)
+            .map(|edge_ref| edge_ref.id())
             .collect();
 
-        for dependency_index in dependencies {
+        for edge_id in dependency_edge_ids {
+            let edge_metadata = call_graph.edge_weight(edge_id).unwrap();
+            let dependency_index = call_graph.edge_endpoints(edge_id).unwrap().0;
             if !visited_nodes.contains(&dependency_index) {
                 nodes_to_visit.push_back(dependency_index);
             }
 
-            if call_graph[dependency_index]
-                .as_borrow_computation(component_db, computation_db)
-                .is_some()
-            {
-                let owned_node_index = get_owned_node_id(&call_graph, dependency_index);
-                borrowed_nodes.insert(owned_node_index);
-                continue;
-            }
-
-            if call_graph[node_index]
-                .as_borrow_computation(component_db, computation_db)
-                .is_some()
-            {
+            if edge_metadata == &CallGraphEdgeMetadata::SharedBorrow {
+                borrowed_nodes.insert(dependency_index);
                 continue;
             }
 
             if borrowed_nodes.contains(&dependency_index) {
-                let CallGraphNode::Compute { component_id, n_allowed_invocations, } =
+                let CallGraphNode::Compute { component_id, .. } =
                     call_graph[dependency_index].clone() else { continue; };
                 let Some(clone_component_id) = get_clone_component_id(
                     &component_id,
@@ -147,25 +108,15 @@ fn causal_borrow_checker(
                     n_allowed_invocations: NumberOfAllowedInvocations::One,
                 });
 
-                let borrow_node_id =
-                    get_borrow_node_id(&call_graph, dependency_index, component_db, computation_db)
-                        .unwrap_or_else(|| {
-                            let borrow_component_id = component_db.borrow_id(component_id).unwrap();
-                            let borrow_node_id = call_graph.add_node(CallGraphNode::Compute {
-                                component_id: borrow_component_id,
-                                n_allowed_invocations,
-                            });
-                            call_graph.update_edge(dependency_index, borrow_node_id, ());
-                            borrow_node_id
-                        });
-
                 // `Clone`'s signature is `fn clone(&self) -> Self`, therefore
-                // we must introduce the new node as a child of &Self instead of Self.
-                call_graph.update_edge(borrow_node_id, clone_node_id, ());
-                call_graph.update_edge(clone_node_id, node_index, ());
-                if let Some(edge) = call_graph.find_edge(dependency_index, node_index) {
-                    call_graph.remove_edge(edge);
-                }
+                // we must introduce the new node with a "SharedBorrow" edge.
+                call_graph.update_edge(
+                    dependency_index,
+                    clone_node_id,
+                    CallGraphEdgeMetadata::SharedBorrow,
+                );
+                call_graph.update_edge(clone_node_id, node_index, CallGraphEdgeMetadata::Move);
+                call_graph.remove_edge(edge_id);
             }
         }
 
@@ -185,21 +136,17 @@ fn emit_causal_borrow_checking_error(
     computation_db: &ComputationDb,
     component_db: &ComponentDb,
     package_graph: &PackageGraph,
-    call_graph: &StableDiGraph<CallGraphNode, ()>,
+    call_graph: &RawCallGraph,
     diagnostics: &mut Vec<miette::Error>,
 ) {
-    let borrow_ref_contended_node_id =
-        get_borrow_node_id(call_graph, contended_node_id, component_db, computation_db).unwrap();
-
     // Find the downstream node that is borrowing the contended node.
     let mut downstream_borrow_node_id = None;
     let mut nodes_to_visit =
         VecDeque::from_iter(call_graph.neighbors_directed(consuming_node_id, Direction::Outgoing));
     while let Some(node_id) = nodes_to_visit.pop_front() {
         if call_graph
-            .neighbors_directed(node_id, Direction::Incoming)
-            .find(|&neighbor_id| neighbor_id == borrow_ref_contended_node_id)
-            .is_some()
+            .edges_directed(node_id, Direction::Incoming)
+            .any(|edge_ref| edge_ref.source().id() == contended_node_id)
         {
             downstream_borrow_node_id = Some(node_id);
             break;
@@ -334,8 +281,7 @@ pub(super) fn borrow_checker(
         root_node_index,
     } = call_graph;
 
-    let mut ownership_relationships =
-        OwnershipRelationships::compute(&call_graph, component_db, computation_db);
+    let mut ownership_relationships = OwnershipRelationships::compute(&call_graph);
 
     #[derive(Clone, Copy, Debug, Eq, PartialEq)]
     /// Determine what we should do when the node that we are processing wants to consume by value
@@ -410,16 +356,18 @@ pub(super) fn borrow_checker(
                                 n_allowed_invocations: NumberOfAllowedInvocations::One,
                             });
 
-                            let borrow_node_id = ownership_relationships
-                                .owned_node_id2borrow_shared_ref_node_id
-                                .get(&incoming_blocked_id)
-                                .copied()
-                                .unwrap();
-
                             // `Clone`'s signature is `fn clone(&self) -> Self`, therefore
-                            // we must introduce the new node as a child of &Self instead of Self.
-                            call_graph.update_edge(borrow_node_id, clone_node_id, ());
-                            call_graph.update_edge(clone_node_id, node_index, ());
+                            // we must introduce a `SharedBorrow` edge.
+                            call_graph.update_edge(
+                                incoming_blocked_id,
+                                clone_node_id,
+                                CallGraphEdgeMetadata::SharedBorrow,
+                            );
+                            call_graph.update_edge(
+                                clone_node_id,
+                                node_index,
+                                CallGraphEdgeMetadata::Move,
+                            );
                             if let Some(edge) =
                                 call_graph.find_edge(incoming_blocked_id, node_index)
                             {
@@ -572,7 +520,7 @@ fn get_clone_component_id(
         clone_computation_id,
         *component_id,
         component_db.scope_id(*component_id),
-        computation_db,
+        ConsumptionMode::SharedBorrow,
     );
     Some(clone_component_id)
 }
@@ -584,7 +532,7 @@ fn emit_borrow_checking_error(
     computation_db: &ComputationDb,
     component_db: &ComponentDb,
     package_graph: &PackageGraph,
-    call_graph: &StableDiGraph<CallGraphNode, ()>,
+    call_graph: &RawCallGraph,
     diagnostics: &mut Vec<miette::Error>,
 ) {
     for incoming_blocked_id in incoming_blocked_ids {
@@ -679,46 +627,21 @@ struct OwnershipRelationships {
     node_id2consumer_ids: HashMap<NodeIndex, IndexSet<NodeIndex>>,
     /// For each node, the set of nodes that consume it by value.
     node_id2consumed_ids: HashMap<NodeIndex, IndexSet<NodeIndex>>,
-    /// All maps above point at the "owned" node (the one that is borrowed, consumed, etc.).
-    /// This map associates the "borrowed" node (a `BorrowSharedReference` constructor)
-    /// to the "owned" node (either a `Callable` or `Match` constructor).
-    owned_node_id2borrow_shared_ref_node_id: HashMap<NodeIndex, NodeIndex>,
 }
 
 impl OwnershipRelationships {
     /// Bootstrap the relationship map from the underlying call graph.
-    fn compute(
-        call_graph: &StableDiGraph<CallGraphNode, ()>,
-        component_db: &ComponentDb,
-        computation_db: &ComputationDb,
-    ) -> Self {
+    fn compute(call_graph: &RawCallGraph) -> Self {
         let mut self_ = Self::default();
-        for node_index in call_graph.node_indices() {
-            if call_graph[node_index]
-                .as_borrow_computation(component_db, computation_db)
-                .is_some()
-            {
-                let owned_node_id = get_owned_node_id(call_graph, node_index);
-                self_
-                    .owned_node_id2borrow_shared_ref_node_id
-                    .insert(owned_node_id, node_index);
-                for neighbour_index in
-                    call_graph.neighbors_directed(node_index, Direction::Outgoing)
-                {
-                    if let CallGraphNode::Compute { .. } = &call_graph[neighbour_index] {
-                        self_.node(neighbour_index).borrows(owned_node_id);
-                    }
+        for edge_index in call_graph.edge_indices() {
+            match call_graph[edge_index] {
+                CallGraphEdgeMetadata::SharedBorrow => {
+                    let (source, target) = call_graph.edge_endpoints(edge_index).unwrap();
+                    self_.node(target).borrows(source);
                 }
-
-                continue;
-            }
-
-            for neighbour_index in call_graph.neighbors_directed(node_index, Direction::Outgoing) {
-                if call_graph[neighbour_index]
-                    .as_borrow_computation(component_db, computation_db)
-                    .is_none()
-                {
-                    self_.node(neighbour_index).consumes(node_index);
+                CallGraphEdgeMetadata::Move => {
+                    let (source, target) = call_graph.edge_endpoints(edge_index).unwrap();
+                    self_.node(target).consumes(source);
                 }
             }
         }

@@ -8,7 +8,9 @@ use syn::spanned::Spanned;
 
 use pavex_builder::constructor::Lifecycle;
 
-use crate::compiler::analyses::components::{ComponentDb, ComponentId, HydratedComponent};
+use crate::compiler::analyses::components::{
+    ComponentDb, ComponentId, ConsumptionMode, HydratedComponent,
+};
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::user_components::{
     ScopeGraph, ScopeId, UserComponentDb, UserComponentId,
@@ -62,7 +64,7 @@ impl ConstructibleDb {
             for input_type in component.input_types().iter() {
                 // Some inputs are not constructible and will be injected by the framework
                 // or as part of the application state.
-                if let Some(input_constructor_id) =
+                if let Some((input_constructor_id, _)) =
                     self_.get(component_scope, input_type, component_db.scope_graph())
                 {
                     let input_constructor_scope = component_db.scope_id(input_constructor_id);
@@ -365,13 +367,13 @@ impl ConstructibleDb {
         scope_id: ScopeId,
         type_: &ResolvedType,
         scope_graph: &ScopeGraph,
-    ) -> Option<ComponentId> {
+    ) -> Option<(ComponentId, ConsumptionMode)> {
         let mut fifo = VecDeque::with_capacity(1);
         fifo.push_back(scope_id);
         while let Some(scope_id) = fifo.pop_front() {
             if let Some(constructibles) = self.scope_id2constructibles.get(&scope_id) {
-                if let Some(constructor_id) = constructibles.get(type_) {
-                    return Some(constructor_id);
+                if let Some(output) = constructibles.get(type_) {
+                    return Some(output);
                 }
             }
             fifo.extend(scope_id.parent_ids(scope_graph));
@@ -396,15 +398,15 @@ impl ConstructibleDb {
         type_: &ResolvedType,
         component_db: &mut ComponentDb,
         computation_db: &mut ComputationDb,
-    ) -> Option<ComponentId> {
+    ) -> Option<(ComponentId, ConsumptionMode)> {
         let mut fifo = VecDeque::with_capacity(1);
         fifo.push_back(scope_id);
         while let Some(scope_id) = fifo.pop_front() {
             if let Some(constructibles) = self.scope_id2constructibles.get_mut(&scope_id) {
-                if let Some(constructor_id) =
+                if let Some(output) =
                     constructibles.get_or_try_bind(type_, component_db, computation_db)
                 {
-                    return Some(constructor_id);
+                    return Some(output);
                 }
             }
             fifo.extend(scope_id.parent_ids(component_db.scope_graph()));
@@ -539,8 +541,21 @@ impl ConstructiblesInScope {
     }
 
     /// Retrieve the constructor for a given type, if it exists.
-    fn get(&self, type_: &ResolvedType) -> Option<ComponentId> {
-        self.type2constructor_id.get(type_).copied()
+    fn get(&self, type_: &ResolvedType) -> Option<(ComponentId, ConsumptionMode)> {
+        if let Some(constructor_id) = self.type2constructor_id.get(type_).copied() {
+            return Some((constructor_id, ConsumptionMode::Move));
+        }
+
+        match type_ {
+            ResolvedType::Reference(ref_) if !ref_.is_static && !ref_.is_mutable => {
+                if let Some(constructor_id) = self.type2constructor_id.get(&ref_.inner).copied() {
+                    return Some((constructor_id, ConsumptionMode::SharedBorrow));
+                }
+            }
+            _ => {}
+        }
+
+        None
     }
 
     /// Retrieve the constructor for a given type, if it exists.
@@ -552,13 +567,13 @@ impl ConstructiblesInScope {
         type_: &ResolvedType,
         component_db: &mut ComponentDb,
         computation_db: &mut ComputationDb,
-    ) -> Option<ComponentId> {
-        if let Some(constructor_id) = self.get(type_) {
-            return Some(constructor_id);
+    ) -> Option<(ComponentId, ConsumptionMode)> {
+        if let Some(output) = self.get(type_) {
+            return Some(output);
         }
         for templated_constructible_type in &self.templated_constructors {
             if let Some(bindings) = templated_constructible_type.is_a_template_for(type_) {
-                let templated_component_id = self.get(templated_constructible_type).unwrap();
+                let (templated_component_id, _) = self.get(templated_constructible_type).unwrap();
                 self.bind_and_register_constructor(
                     templated_component_id,
                     component_db,
@@ -568,7 +583,15 @@ impl ConstructiblesInScope {
                 return self.get(type_);
             }
         }
-        None
+
+        match type_ {
+            ResolvedType::Reference(ref_) if !ref_.is_static && !ref_.is_mutable => {
+                let (component_id, _) =
+                    self.get_or_try_bind(&ref_.inner, component_db, computation_db)?;
+                Some((component_id, ConsumptionMode::SharedBorrow))
+            }
+            _ => None,
+        }
     }
 
     /// Register a type and its constructor.
@@ -599,9 +622,8 @@ impl ConstructiblesInScope {
         derived_component_ids.push(bound_component_id);
 
         for derived_component_id in derived_component_ids {
-            if let HydratedComponent::Constructor(c) =
-                component_db.hydrated_component(derived_component_id, computation_db)
-            {
+            let component = component_db.hydrated_component(derived_component_id, computation_db);
+            if let HydratedComponent::Constructor(c) = component {
                 self.type2constructor_id
                     .insert(c.output_type().clone(), derived_component_id);
             }

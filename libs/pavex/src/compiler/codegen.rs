@@ -580,10 +580,6 @@ fn collect_call_graph_package_ids<'a>(
             CallGraphNode::Compute { component_id, .. } => {
                 let component = component_db.hydrated_component(*component_id, computation_db);
                 match component {
-                    HydratedComponent::Transformer(Computation::BorrowSharedReference(b))
-                    | HydratedComponent::Constructor(Constructor(
-                        Computation::BorrowSharedReference(b),
-                    )) => collect_type_package_ids(package_ids, &b.input),
                     HydratedComponent::Transformer(Computation::Callable(c))
                     | HydratedComponent::Constructor(Constructor(Computation::Callable(c))) => {
                         collect_callable_package_ids(package_ids, &c);

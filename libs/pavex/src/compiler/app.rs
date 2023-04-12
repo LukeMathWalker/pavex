@@ -365,7 +365,7 @@ fn get_required_singleton_types<'a>(
                 &required_input
             };
             if !types_provided_by_the_framework.contains_right(required_input) {
-                let component_id = constructibles_db
+                let (component_id, _) = constructibles_db
                     .get(
                         root_component_scope_id,
                         required_input,
@@ -444,7 +444,6 @@ fn verify_singletons(
         let component_id = match c.0 {
             Computation::Callable(_) => component_id,
             Computation::MatchResult(_) => component_db.fallible_id(component_id),
-            Computation::BorrowSharedReference(_) => component_db.owned_id(component_id),
         };
         let user_component_id = component_db.user_component_id(component_id).unwrap();
         let user_component_db = &component_db.user_component_db();

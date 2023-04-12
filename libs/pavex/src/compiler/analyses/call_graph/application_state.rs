@@ -11,9 +11,11 @@ use proc_macro2::Ident;
 use pavex_builder::constructor::{CloningStrategy, Lifecycle};
 
 use crate::compiler::analyses::call_graph::{
-    build_call_graph, CallGraph, CallGraphNode, NumberOfAllowedInvocations,
+    core_graph::build_call_graph, CallGraph, CallGraphNode, NumberOfAllowedInvocations,
 };
-use crate::compiler::analyses::components::{ComponentDb, ComponentId, HydratedComponent};
+use crate::compiler::analyses::components::{
+    ComponentDb, ComponentId, ConsumptionMode, HydratedComponent,
+};
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::constructibles::ConstructibleDb;
 use crate::compiler::app::GENERATED_APP_PACKAGE_ID;
@@ -209,7 +211,7 @@ pub(crate) fn application_state_call_graph(
         computation_db.get_or_intern(ok_wrapper),
         application_state_id,
         application_state_scope_id,
-        computation_db,
+        ConsumptionMode::Move,
     );
 
     let mut error_variants = IndexMap::new();
@@ -272,14 +274,14 @@ pub(crate) fn application_state_call_graph(
                 computation_db.get_or_intern(error_variant_constructor.clone()),
                 *err_match_id,
                 application_state_scope_id,
-                computation_db,
+                ConsumptionMode::Move,
             );
             // We need to do an Err(..) wrap around the error variant returned by the transformer.
             component_db.get_or_intern_transformer(
                 computation_db.get_or_intern(err_wrapper.clone()),
                 transformer_id,
                 application_state_scope_id,
-                computation_db,
+                ConsumptionMode::Move,
             );
         }
     }

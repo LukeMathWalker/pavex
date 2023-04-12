@@ -4,7 +4,7 @@ use pavex_builder::constructor::Lifecycle;
 
 use crate::compiler::analyses::call_graph::borrow_checker::borrow_checker;
 use crate::compiler::analyses::call_graph::{
-    build_call_graph, CallGraph, NumberOfAllowedInvocations,
+    core_graph::build_call_graph, CallGraph, NumberOfAllowedInvocations,
 };
 use crate::compiler::analyses::components::{ComponentDb, ComponentId};
 use crate::compiler::analyses::computations::ComputationDb;

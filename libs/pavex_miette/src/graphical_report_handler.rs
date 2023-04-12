@@ -226,7 +226,7 @@ impl GraphicalReportHandler {
 
         let initial_indent = format!("  {} ", severity_icon.style(severity_style));
         let rest_indent = match diagnostic.severity() {
-            Some(Severity::Advice) => format!("        "),
+            Some(Severity::Advice) => "        ".to_string(),
             _ => format!("  {} ", self.theme.characters.vbar.style(severity_style)),
         };
         let width = self.termwidth.saturating_sub(2);
@@ -314,12 +314,12 @@ impl GraphicalReportHandler {
                         "{}",
                         textwrap::indent(
                             &format!(" {}", &self.theme.characters.advice),
-                            &overall_indent,
+                            overall_indent,
                         )
                     )?;
                 }
 
-                write!(f, "{}", textwrap::indent(&buffer, &overall_indent))?;
+                write!(f, "{}", textwrap::indent(&buffer, overall_indent))?;
             }
         }
         Ok(())
