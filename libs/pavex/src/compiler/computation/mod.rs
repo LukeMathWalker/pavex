@@ -3,12 +3,10 @@ use std::borrow::Cow;
 use ahash::HashMap;
 use indexmap::IndexSet;
 
-pub(crate) use borrow_shared_reference::BorrowSharedReference;
 pub(crate) use match_result::{MatchResult, MatchResultVariant};
 
 use crate::language::{Callable, ResolvedType};
 
-mod borrow_shared_reference;
 mod match_result;
 
 /// A computation takes zero or more inputs and returns a single output.
@@ -27,8 +25,6 @@ pub(crate) enum Computation<'a> {
     /// A branching constructor: extract either the `Ok(T)` or the `Err(E)` variant out of a
     /// [`Result<T,E>`](Result).
     MatchResult(Cow<'a, MatchResult>),
-    /// An inline transformation: construct a `&T` from a `T`.
-    BorrowSharedReference(Cow<'a, BorrowSharedReference>),
 }
 
 impl<'a> Computation<'a> {
@@ -37,9 +33,6 @@ impl<'a> Computation<'a> {
         match self {
             Computation::Callable(c) => Computation::Callable(Cow::Borrowed(c)),
             Computation::MatchResult(m) => Computation::MatchResult(Cow::Borrowed(m)),
-            Computation::BorrowSharedReference(b) => {
-                Computation::BorrowSharedReference(Cow::Borrowed(b))
-            }
         }
     }
 
@@ -51,9 +44,6 @@ impl<'a> Computation<'a> {
         match self {
             Computation::Callable(c) => Computation::Callable(Cow::Owned(c.into_owned())),
             Computation::MatchResult(c) => Computation::MatchResult(Cow::Owned(c.into_owned())),
-            Computation::BorrowSharedReference(b) => {
-                Computation::BorrowSharedReference(Cow::Owned(b.into_owned()))
-            }
         }
     }
 
@@ -62,7 +52,6 @@ impl<'a> Computation<'a> {
         match self {
             Computation::Callable(c) => Cow::Borrowed(c.inputs.as_slice()),
             Computation::MatchResult(m) => Cow::Owned(vec![m.input.clone()]),
-            Computation::BorrowSharedReference(b) => Cow::Owned(vec![b.input.clone()]),
         }
     }
 
@@ -73,7 +62,6 @@ impl<'a> Computation<'a> {
         match self {
             Computation::Callable(c) => c.output.as_ref(),
             Computation::MatchResult(m) => Some(&m.output),
-            Computation::BorrowSharedReference(b) => Some(&b.output),
         }
     }
 
@@ -92,9 +80,6 @@ impl<'a> Computation<'a> {
             Computation::MatchResult(m) => {
                 Computation::MatchResult(Cow::Owned(m.bind_generic_type_parameters(bindings)))
             }
-            Computation::BorrowSharedReference(b) => Computation::BorrowSharedReference(
-                Cow::Owned(b.bind_generic_type_parameters(bindings)),
-            ),
         }
     }
 
@@ -104,7 +89,6 @@ impl<'a> Computation<'a> {
         match self {
             Computation::Callable(c) => c.unassigned_generic_type_parameters(),
             Computation::MatchResult(m) => m.unassigned_generic_type_parameters(),
-            Computation::BorrowSharedReference(b) => b.unassigned_generic_type_parameters(),
         }
     }
 }
@@ -112,12 +96,6 @@ impl<'a> Computation<'a> {
 impl<'a> From<Callable> for Computation<'a> {
     fn from(value: Callable) -> Self {
         Self::Callable(Cow::Owned(value))
-    }
-}
-
-impl<'a> From<BorrowSharedReference> for Computation<'a> {
-    fn from(value: BorrowSharedReference) -> Self {
-        Self::BorrowSharedReference(Cow::Owned(value))
     }
 }
 
@@ -133,12 +111,6 @@ impl<'a> From<&'a Callable> for Computation<'a> {
     }
 }
 
-impl<'a> From<&'a BorrowSharedReference> for Computation<'a> {
-    fn from(value: &'a BorrowSharedReference) -> Self {
-        Self::BorrowSharedReference(Cow::Borrowed(value))
-    }
-}
-
 impl<'a> From<&'a MatchResult> for Computation<'a> {
     fn from(value: &'a MatchResult) -> Self {
         Self::MatchResult(Cow::Borrowed(value))
@@ -148,12 +120,6 @@ impl<'a> From<&'a MatchResult> for Computation<'a> {
 impl<'a> From<Cow<'a, Callable>> for Computation<'a> {
     fn from(value: Cow<'a, Callable>) -> Self {
         Self::Callable(value)
-    }
-}
-
-impl<'a> From<Cow<'a, BorrowSharedReference>> for Computation<'a> {
-    fn from(value: Cow<'a, BorrowSharedReference>) -> Self {
-        Self::BorrowSharedReference(value)
     }
 }
 

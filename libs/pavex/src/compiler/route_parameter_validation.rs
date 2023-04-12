@@ -10,7 +10,7 @@ use petgraph::Direction;
 use rustdoc_types::{ItemEnum, StructKind};
 
 use crate::compiler::analyses::call_graph::{CallGraph, CallGraphNode};
-use crate::compiler::analyses::components::{ComponentDb, ComponentId, HydratedComponent};
+use crate::compiler::analyses::components::{ComponentDb, HydratedComponent};
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::user_components::{RouterKey, UserComponentId};
 use crate::compiler::computation::{Computation, MatchResultVariant};
@@ -43,7 +43,7 @@ pub(crate) fn verify_route_parameters(
     };
 
     for (router_key, call_graph) in handler_call_graphs {
-        let Some((ok_route_params_node_id, ok_route_params_component_id, ty_)) = call_graph.call_graph.node_indices().find_map(|node_id| {
+        let Some((ok_route_params_node_id, ty_)) = call_graph.call_graph.node_indices().find_map(|node_id| {
             let node = &call_graph.call_graph[node_id];
             let CallGraphNode::Compute { component_id, .. } = node else { return None; };
             let hydrated_component = component_db.hydrated_component(*component_id, computation_db);
@@ -54,7 +54,7 @@ pub(crate) fn verify_route_parameters(
             }
             let ResolvedType::ResolvedPath(ty_) = &m.output else { return None; };
             if ty_.base_type == vec!["pavex_runtime", "extract", "route", "RouteParams"] {
-                Some((node_id, component_id, ty_.clone()))
+                Some((node_id, ty_.clone()))
             } else {
                 None
             }
@@ -69,7 +69,6 @@ pub(crate) fn verify_route_parameters(
             diagnostics,
             call_graph,
             ok_route_params_node_id,
-            ok_route_params_component_id,
             extracted_type,
         ) else {
             continue;
@@ -121,7 +120,6 @@ pub(crate) fn verify_route_parameters(
                 router_key,
                 call_graph,
                 ok_route_params_node_id,
-                ok_route_params_component_id,
                 route_parameter_names,
                 non_existing_route_parameters,
                 extracted_type,
@@ -140,7 +138,6 @@ fn report_non_existing_route_parameters(
     router_key: &RouterKey,
     call_graph: &CallGraph,
     ok_route_params_node_id: NodeIndex,
-    ok_route_params_component_id: &ComponentId,
     route_parameter_names: IndexSet<&str>,
     non_existing_route_parameters: IndexSet<String>,
     extracted_type: &ResolvedType,
@@ -148,12 +145,8 @@ fn report_non_existing_route_parameters(
     assert!(!non_existing_route_parameters.is_empty());
     // Find the compute nodes that consume the `RouteParams` extractor and report
     // an error on each of them.
-    let consuming_ids = route_params_consumer_ids(
-        component_db,
-        call_graph,
-        ok_route_params_node_id,
-        ok_route_params_component_id,
-    );
+    let consuming_ids =
+        route_params_consumer_ids(component_db, call_graph, ok_route_params_node_id);
     for user_component_id in consuming_ids {
         let raw_identifiers = component_db
             .user_component_db()
@@ -247,7 +240,6 @@ fn must_be_a_plain_struct(
     diagnostics: &mut Vec<Report>,
     call_graph: &CallGraph,
     ok_route_params_node_id: NodeIndex,
-    ok_route_params_component_id: &ComponentId,
     extracted_type: &ResolvedType,
 ) -> Result<rustdoc_types::Item, ()> {
     let error_suffix = match extracted_type {
@@ -281,12 +273,8 @@ fn must_be_a_plain_struct(
 
     // Find the compute nodes that consume the `RouteParams` extractor and report
     // an error on each of them.
-    let consuming_ids = route_params_consumer_ids(
-        component_db,
-        call_graph,
-        ok_route_params_node_id,
-        ok_route_params_component_id,
-    );
+    let consuming_ids =
+        route_params_consumer_ids(component_db, call_graph, ok_route_params_node_id);
 
     for user_component_id in consuming_ids {
         let raw_identifiers = component_db
@@ -334,25 +322,15 @@ fn route_params_consumer_ids(
     component_db: &ComponentDb,
     call_graph: &CallGraph,
     ok_route_params_node_id: NodeIndex,
-    ok_route_params_component_id: &ComponentId,
 ) -> IndexSet<UserComponentId> {
     let mut consumer_ids = IndexSet::new();
     let mut descendant_ids = call_graph
         .call_graph
         .neighbors_directed(ok_route_params_node_id, Direction::Outgoing)
         .collect::<IndexSet<_>>();
-    let borrow_component_id = component_db.borrow_id(*ok_route_params_component_id);
     while let Some(descendant_id) = descendant_ids.pop() {
         let descendant_node = &call_graph.call_graph[descendant_id];
         if let CallGraphNode::Compute { component_id, .. } = descendant_node {
-            if Some(component_id) == borrow_component_id.as_ref() {
-                descendant_ids.extend(
-                    call_graph
-                        .call_graph
-                        .neighbors_directed(descendant_id, Direction::Outgoing),
-                );
-                continue;
-            }
             if let Some(user_component_id) = component_db.user_component_id(*component_id) {
                 consumer_ids.insert(user_component_id);
             }

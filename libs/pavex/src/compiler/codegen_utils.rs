@@ -5,12 +5,12 @@ use petgraph::stable_graph::NodeIndex;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
 
-use crate::language::{Callable, InvocationStyle, ResolvedType};
+use crate::compiler::analyses::call_graph::CallGraphEdgeMetadata;
+use crate::language::{Callable, InvocationStyle, ResolvedType, TypeReference};
 
 #[derive(Debug, Clone)]
 pub(crate) enum Fragment {
     VariableReference(syn::Ident),
-    BorrowSharedReference(syn::Ident),
     Statement(Box<syn::Stmt>),
     Block(syn::Block),
 }
@@ -21,10 +21,6 @@ impl ToTokens for Fragment {
             Fragment::VariableReference(v) => v.to_tokens(tokens),
             Fragment::Statement(s) => s.to_tokens(tokens),
             Fragment::Block(b) => b.to_tokens(tokens),
-            Fragment::BorrowSharedReference(v) => quote! {
-                &#v
-            }
-            .to_tokens(tokens),
         }
     }
 }
@@ -57,33 +53,40 @@ pub(crate) fn codegen_call_block<I>(
     package_id2name: &BiHashMap<PackageId, String>,
 ) -> Result<Fragment, anyhow::Error>
 where
-    I: Iterator<Item = (NodeIndex, ResolvedType)>,
+    I: Iterator<Item = (NodeIndex, ResolvedType, CallGraphEdgeMetadata)>,
 {
     let mut block = quote! {};
     let mut dependency_bindings: HashMap<ResolvedType, Box<dyn ToTokens>> = HashMap::new();
-    for (dependency_index, dependency_type) in dependencies {
+    for (dependency_index, dependency_type, consumption_mode) in dependencies {
+        let type_ = match consumption_mode {
+            CallGraphEdgeMetadata::Move => dependency_type.to_owned(),
+            CallGraphEdgeMetadata::SharedBorrow => ResolvedType::Reference(TypeReference {
+                is_mutable: false,
+                is_static: false,
+                inner: Box::new(dependency_type.to_owned()),
+            }),
+        };
         let fragment = &blocks[&dependency_index];
         let mut to_be_removed = false;
-        match fragment {
-            Fragment::VariableReference(v) => {
-                dependency_bindings.insert(dependency_type.to_owned(), Box::new(v.to_owned()));
-            }
+        let tokens = match fragment {
+            Fragment::VariableReference(v) => match consumption_mode {
+                CallGraphEdgeMetadata::Move => Box::new(quote! { #v }),
+                CallGraphEdgeMetadata::SharedBorrow => Box::new(quote! { &#v }),
+            },
             Fragment::Block(_) | Fragment::Statement(_) => {
                 let parameter_name = variable_generator.generate();
-                dependency_bindings.insert(
-                    dependency_type.to_owned(),
-                    Box::new(parameter_name.to_owned()),
-                );
                 to_be_removed = true;
                 block = quote! {
                     #block
                     let #parameter_name = #fragment;
+                };
+                match consumption_mode {
+                    CallGraphEdgeMetadata::Move => Box::new(quote! { #parameter_name }),
+                    CallGraphEdgeMetadata::SharedBorrow => Box::new(quote! { &#parameter_name }),
                 }
             }
-            Fragment::BorrowSharedReference(v) => {
-                dependency_bindings.insert(dependency_type.to_owned(), Box::new(quote! { &#v }));
-            }
-        }
+        };
+        dependency_bindings.insert(type_, tokens);
         if to_be_removed {
             // It won't be needed in the future
             blocks.remove(&dependency_index);
