@@ -11,7 +11,10 @@ use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote};
 use syn::{ItemEnum, ItemFn, ItemStruct};
 
-use crate::compiler::analyses::call_graph::{ApplicationStateCallGraph, CallGraph, CallGraphNode};
+use crate::compiler::analyses::call_graph::{
+    ApplicationStateCallGraph, CallGraphNode, OrderedCallGraph, RawCallGraph,
+    RawCallGraphExt,
+};
 use crate::compiler::analyses::components::{ComponentDb, HydratedComponent};
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::user_components::RouterKey;
@@ -93,7 +96,7 @@ impl CodegenRequestHandler {
 }
 
 pub(crate) fn codegen_app(
-    handler_call_graphs: &IndexMap<RouterKey, CallGraph>,
+    handler_call_graphs: &IndexMap<RouterKey, OrderedCallGraph>,
     application_state_call_graph: &ApplicationStateCallGraph,
     request_scoped_framework_bindings: &BiHashMap<Ident, ResolvedType>,
     package_id2name: &BiHashMap<PackageId, String>,
@@ -124,7 +127,7 @@ pub(crate) fn codegen_app(
             handlers.push(code.clone());
             let handler = CodegenRequestHandler {
                 code,
-                input_types: call_graph.required_input_types(),
+                input_types: call_graph.call_graph.required_input_types(),
             };
             match router_key.method_guard.clone() {
                 None => {
@@ -390,15 +393,18 @@ fn get_request_dispatcher(
     }).unwrap()
 }
 
-pub(crate) fn codegen_manifest<'a>(
+pub(crate) fn codegen_manifest<'a, I>(
     package_graph: &guppy::graph::PackageGraph,
-    handler_call_graphs: &'a IndexMap<RouterKey, CallGraph>,
-    application_state_call_graph: &'a CallGraph,
+    handler_call_graphs: I,
+    application_state_call_graph: &'a RawCallGraph,
     request_scoped_framework_bindings: &'a BiHashMap<Ident, ResolvedType>,
     codegen_types: &'a HashSet<ResolvedType>,
     component_db: &'a ComponentDb,
     computation_db: &'a ComputationDb,
-) -> (cargo_manifest::Manifest, BiHashMap<PackageId, String>) {
+) -> (cargo_manifest::Manifest, BiHashMap<PackageId, String>)
+where
+    I: Iterator<Item = &'a RawCallGraph>,
+{
     let (dependencies, package_ids2deps) = compute_dependencies(
         package_graph,
         handler_call_graphs,
@@ -458,15 +464,18 @@ pub(crate) fn codegen_manifest<'a>(
     (manifest, package_ids2deps)
 }
 
-fn compute_dependencies<'a>(
+fn compute_dependencies<'a, I>(
     package_graph: &guppy::graph::PackageGraph,
-    handler_call_graphs: &'a IndexMap<RouterKey, CallGraph>,
-    application_state_call_graph: &'a CallGraph,
+    handler_call_graphs: I,
+    application_state_call_graph: &'a RawCallGraph,
     request_scoped_framework_bindings: &'a BiHashMap<Ident, ResolvedType>,
     codegen_types: &'a HashSet<ResolvedType>,
     component_db: &'a ComponentDb,
     computation_db: &'a ComputationDb,
-) -> (BTreeMap<String, Dependency>, BiHashMap<PackageId, String>) {
+) -> (BTreeMap<String, Dependency>, BiHashMap<PackageId, String>)
+where
+    I: Iterator<Item = &'a RawCallGraph>,
+{
     let package_ids = collect_package_ids(
         handler_call_graphs,
         application_state_call_graph,
@@ -537,14 +546,17 @@ fn compute_dependencies<'a>(
     (dependencies, package_ids2dependency_name)
 }
 
-fn collect_package_ids<'a>(
-    handler_call_graphs: &'a IndexMap<RouterKey, CallGraph>,
-    application_state_call_graph: &'a CallGraph,
+fn collect_package_ids<'a, I>(
+    handler_call_graphs: I,
+    application_state_call_graph: &'a RawCallGraph,
     request_scoped_framework_bindings: &'a BiHashMap<Ident, ResolvedType>,
     codegen_types: &'a HashSet<ResolvedType>,
     component_db: &'a ComponentDb,
     computation_db: &'a ComputationDb,
-) -> IndexSet<PackageId> {
+) -> IndexSet<PackageId>
+where
+    I: Iterator<Item = &'a RawCallGraph>,
+{
     let mut package_ids = IndexSet::new();
     for t in request_scoped_framework_bindings.right_values() {
         collect_type_package_ids(&mut package_ids, t);
@@ -558,7 +570,7 @@ fn collect_package_ids<'a>(
         computation_db,
         application_state_call_graph,
     );
-    for handler_call_graph in handler_call_graphs.values() {
+    for handler_call_graph in handler_call_graphs {
         collect_call_graph_package_ids(
             &mut package_ids,
             component_db,
@@ -573,9 +585,9 @@ fn collect_call_graph_package_ids<'a>(
     package_ids: &mut IndexSet<PackageId>,
     component_db: &'a ComponentDb,
     computation_db: &'a ComputationDb,
-    call_graph: &'a CallGraph,
+    call_graph: &'a RawCallGraph,
 ) {
-    for node in call_graph.call_graph.node_weights() {
+    for node in call_graph.node_weights() {
         match node {
             CallGraphNode::Compute { component_id, .. } => {
                 let component = component_db.hydrated_component(*component_id, computation_db);

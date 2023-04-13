@@ -9,7 +9,6 @@
   [31m│[0m     ·                                      [35;1m╰── [35;1mThe first conflicting handler[0m[0m
   [31m│[0m  [2m18[0m │     bp.route(GET, "/home", f!(crate::handler_2));
   [31m│[0m     ╰────
-  [31m│[0m   [31m×[0m 
   [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:17:1]
   [31m│[0m  [2m17[0m │     bp.route(ANY, "/home", f!(crate::handler_1));
   [31m│[0m  [2m18[0m │     bp.route(GET, "/home", f!(crate::handler_2));

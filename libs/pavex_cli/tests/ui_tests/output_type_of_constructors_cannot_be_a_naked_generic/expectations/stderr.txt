@@ -13,7 +13,6 @@
   [31m│[0m     ·                            [35;1m╰── [35;1mThe constructor was registered here[0m[0m
   [31m│[0m  [2m24[0m │     bp.constructor(f!(crate::fallible_naked), Lifecycle::RequestScoped)
   [31m│[0m     ╰────
-  [31m│[0m   [31m×[0m 
   [31m│[0m    ╭─[[36;1;4msrc/lib.rs[0m:1:1]
   [31m│[0m  [2m1[0m │ pub fn naked<T>() -> T {
   [31m│[0m    · [35;1m                     ┬[0m
@@ -39,7 +38,6 @@
   [31m│[0m     ·                                [35;1m╰── [35;1mThe constructor was registered here[0m[0m
   [31m│[0m  [2m25[0m │         .error_handler(f!(crate::error_handler));
   [31m│[0m     ╰────
-  [31m│[0m   [31m×[0m 
   [31m│[0m    ╭─[[36;1;4msrc/lib.rs[0m:1:1]
   [31m│[0m  [2m1[0m │ pub fn fallible_naked<T>() -> Result<T, FallibleError> {
   [31m│[0m    · [35;1m                              ────────────┬───────────[0m
