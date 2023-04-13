@@ -8,6 +8,22 @@ use pavex_builder::{
 };
 use pavex_runtime::response::Response;
 
+// The call graph looks like this:
+//
+//  A   B
+// &| X |&
+//  D   C
+//   \ /
+// handler
+//
+// If `D` is constructed before `C`, then `A` cannot be borrowed by `C`'s constructor after it
+// has been moved to construct `D`.
+// If `C` is constructed before `D`, then `B` cannot be borrowed by `D`'s constructor after it
+// has been moved to construct `C`.
+//
+// Both `A` and `B` are cloneable though!
+// Pavex should detect this and insert a `Clone` to break the empasse.
+
 #[derive(Clone)]
 pub struct A;
 

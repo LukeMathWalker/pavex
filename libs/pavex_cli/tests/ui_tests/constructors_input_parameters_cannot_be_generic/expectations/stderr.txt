@@ -12,7 +12,6 @@
   [31m│[0m     ·                                   [35;1m╰── [35;1mThe constructor was registered here[0m[0m
   [31m│[0m  [2m28[0m │     bp.constructor(
   [31m│[0m     ╰────
-  [31m│[0m   [31m×[0m 
   [31m│[0m    ╭─[[36;1;4msrc/lib.rs[0m:1:1]
   [31m│[0m  [2m1[0m │ pub fn generic_constructor<T>(generic_input: GenericType<T>) -> u8 {
   [31m│[0m    · [35;1m                           ┬[0m[33;1m                                    ─┬[0m
@@ -41,7 +40,6 @@
   [31m│[0m     ·                           [35;1m╰── [35;1mThe constructor was registered here[0m[0m
   [31m│[0m  [2m30[0m │         Lifecycle::RequestScoped,
   [31m│[0m     ╰────
-  [31m│[0m   [31m×[0m 
   [31m│[0m    ╭─[[36;1;4msrc/lib.rs[0m:1:1]
   [31m│[0m  [2m1[0m │ pub fn doubly_generic_constructor<T, S>(i1: GenericType<T>, i2: GenericType<S>) -> u16 {
   [31m│[0m    · [35;1m                                  ┬[0m[33;1m  ┬[0m[32;1m                                             ─┬─[0m
@@ -71,7 +69,6 @@
   [31m│[0m     ·                           [35;1m╰── [35;1mThe constructor was registered here[0m[0m
   [31m│[0m  [2m34[0m │         Lifecycle::RequestScoped,
   [31m│[0m     ╰────
-  [31m│[0m   [31m×[0m 
   [31m│[0m    ╭─[[36;1;4msrc/lib.rs[0m:1:1]
   [31m│[0m  [2m1[0m │ pub fn triply_generic_constructor<T, S, U>(
   [31m│[0m    · [35;1m                                  ┬[0m[33;1m  ┬[0m[32;1m  ┬[0m

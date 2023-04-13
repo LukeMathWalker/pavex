@@ -12,12 +12,12 @@
   [31m│[0m         You can do so by invoking `.cloning(CloningStrategy::CloneIfNecessary)`
   [31m│[0m         on the type returned by `.constructor`.
   [31m│[0m        ☞
-  [31m│[0m           ╭─[[36;1;4msrc/lib.rs[0m:35:1]
-  [31m│[0m        [2m35[0m │     let mut bp = Blueprint::new();
-  [31m│[0m        [2m36[0m │     bp.constructor(f!(crate::a), Lifecycle::RequestScoped);
+  [31m│[0m           ╭─[[36;1;4msrc/lib.rs[0m:50:1]
+  [31m│[0m        [2m50[0m │     let mut bp = Blueprint::new();
+  [31m│[0m        [2m51[0m │     bp.constructor(f!(crate::a), Lifecycle::RequestScoped);
   [31m│[0m           · [35;1m                   ──────┬─────[0m
   [31m│[0m           ·                          [35;1m╰── [35;1mThe constructor was registered here[0m[0m
-  [31m│[0m        [2m37[0m │     bp.constructor(f!(crate::b), Lifecycle::RequestScoped);
+  [31m│[0m        [2m52[0m │     bp.constructor(f!(crate::b), Lifecycle::RequestScoped);
   [31m│[0m           ╰────
   [31m│[0m   [36mhelp:[0m If `app::A` itself cannot implement `Clone`, consider wrapping it in
   [31m│[0m         an `std::sync::Rc` or `std::sync::Arc`.
@@ -36,12 +36,12 @@
   [31m│[0m         You can do so by invoking `.cloning(CloningStrategy::CloneIfNecessary)`
   [31m│[0m         on the type returned by `.constructor`.
   [31m│[0m        ☞
-  [31m│[0m           ╭─[[36;1;4msrc/lib.rs[0m:36:1]
-  [31m│[0m        [2m36[0m │     bp.constructor(f!(crate::a), Lifecycle::RequestScoped);
-  [31m│[0m        [2m37[0m │     bp.constructor(f!(crate::b), Lifecycle::RequestScoped);
+  [31m│[0m           ╭─[[36;1;4msrc/lib.rs[0m:51:1]
+  [31m│[0m        [2m51[0m │     bp.constructor(f!(crate::a), Lifecycle::RequestScoped);
+  [31m│[0m        [2m52[0m │     bp.constructor(f!(crate::b), Lifecycle::RequestScoped);
   [31m│[0m           · [35;1m                   ──────┬─────[0m
   [31m│[0m           ·                          [35;1m╰── [35;1mThe constructor was registered here[0m[0m
-  [31m│[0m        [2m38[0m │     bp.constructor(f!(crate::c), Lifecycle::RequestScoped);
+  [31m│[0m        [2m53[0m │     bp.constructor(f!(crate::c), Lifecycle::RequestScoped);
   [31m│[0m           ╰────
   [31m│[0m   [36mhelp:[0m If `app::B` itself cannot implement `Clone`, consider wrapping it in
   [31m│[0m         an `std::sync::Rc` or `std::sync::Arc`.

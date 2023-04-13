@@ -2,7 +2,7 @@ use guppy::graph::PackageGraph;
 
 use pavex_builder::constructor::Lifecycle;
 
-use crate::compiler::analyses::call_graph::borrow_checker::borrow_checker;
+use crate::compiler::analyses::call_graph::borrow_checker::OrderedCallGraph;
 use crate::compiler::analyses::call_graph::{
     core_graph::build_call_graph, CallGraph, NumberOfAllowedInvocations,
 };
@@ -21,7 +21,7 @@ pub(crate) fn handler_call_graph(
     package_graph: &PackageGraph,
     krate_collection: &CrateCollection,
     diagnostics: &mut Vec<miette::Error>,
-) -> CallGraph {
+) -> Result<OrderedCallGraph, ()> {
     fn lifecycle2invocations(l: &Lifecycle) -> Option<NumberOfAllowedInvocations> {
         match l {
             Lifecycle::Singleton => None,
@@ -40,7 +40,7 @@ pub(crate) fn handler_call_graph(
         lifecycle2invocations,
     );
 
-    borrow_checker(
+    OrderedCallGraph::new(
         CallGraph {
             call_graph,
             root_node_index,

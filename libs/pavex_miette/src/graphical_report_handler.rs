@@ -234,7 +234,10 @@ impl GraphicalReportHandler {
             .initial_indent(&initial_indent)
             .subsequent_indent(&rest_indent);
 
-        writeln!(f, "{}", textwrap::fill(&diagnostic.to_string(), opts))?;
+        let diagnostic_text = diagnostic.to_string();
+        if !diagnostic_text.is_empty() {
+            writeln!(f, "{}", textwrap::fill(&diagnostic.to_string(), opts))?;
+        }
 
         if !self.with_cause_chain {
             return Ok(());

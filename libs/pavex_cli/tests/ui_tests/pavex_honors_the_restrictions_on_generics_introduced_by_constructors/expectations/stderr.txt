@@ -10,7 +10,6 @@
   [31m│[0m     ·                                     [35;1m╰── [35;1mThe request handler was registered here[0m[0m
   [31m│[0m  [2m20[0m │     bp
   [31m│[0m     ╰────
-  [31m│[0m   [31m×[0m 
   [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:10:1]
   [31m│[0m  [2m10[0m │     // This can't be built because `tied` can only give you Tied<u8, u8> or Tied<char, char>!
   [31m│[0m  [2m11[0m │     tied: Tied<u8, char>,

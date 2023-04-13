@@ -710,7 +710,7 @@ trait RustdocCrateExt {
     /// We try to guess the crate version by parsing it out of the root URL for the HTML documentation.
     /// The extracted version is not guaranteed to be correct: crates can set an arbitrary root URL
     /// via `#[doc(html_root_url)]`—e.g. pointing at an outdated version of their docs (see
-    /// https://github.com/tokio-rs/tracing/pull/2384 as an example).
+    /// <https://github.com/tokio-rs/tracing/pull/2384> as an example).
     fn get_external_crate_name(&self, crate_id: u32) -> Option<(&ExternalCrate, Option<Version>)>;
 }
 

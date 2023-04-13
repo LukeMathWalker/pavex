@@ -212,7 +212,7 @@ enum Call<'a> {
     FunctionCall(&'a ExprCall),
 }
 
-/// [`CallableLocator`] visits the abstract syntax tree of a parsed `syn::File`.
+/// Visits the abstract syntax tree of a parsed `syn::File`.
 /// It looks for a method call node: it tests every method call node to see
 /// if `location` falls within its span.
 /// It then converts the span associated with the node to a [`SourceSpan`].

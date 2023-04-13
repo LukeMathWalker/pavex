@@ -1,18 +1,23 @@
+use std::cmp::Reverse;
+
 use ahash::{HashMap, HashMapExt};
 use bimap::BiHashMap;
 use fixedbitset::FixedBitSet;
 use guppy::PackageId;
 use indexmap::IndexMap;
+use itertools::Itertools;
 use petgraph::graph::NodeIndex;
 use petgraph::prelude::{DfsPostOrder, EdgeRef};
-use petgraph::visit::Reversed;
+use petgraph::visit::{GraphRef, IntoNeighbors, Reversed, VisitMap, Visitable};
 use petgraph::Direction;
 use proc_macro2::{Ident, TokenStream};
 use quote::{quote, ToTokens};
 use syn::ItemFn;
 
 use crate::compiler::analyses::call_graph::core_graph::{CallGraphEdgeMetadata, RawCallGraph};
-use crate::compiler::analyses::call_graph::{CallGraph, CallGraphNode, NumberOfAllowedInvocations};
+use crate::compiler::analyses::call_graph::{
+    CallGraphNode, NumberOfAllowedInvocations, OrderedCallGraph,
+};
 use crate::compiler::analyses::components::{ComponentDb, HydratedComponent};
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::codegen_utils;
@@ -21,11 +26,12 @@ use crate::compiler::computation::{Computation, MatchResultVariant};
 use crate::compiler::constructors::Constructor;
 use crate::language::ResolvedType;
 
-/// Generate the dependency closure of the [`CallGraph`]'s root callable.
+/// Generate the dependency closure of the [`OrderedCallGraph`]'s root callable.
 ///
-/// See [`CallGraph`] docs for more details.
+/// If the generation is successful, it returns a free function (an [`ItemFn`]) that wraps the
+/// underlying root callable.
 pub(crate) fn codegen_callable_closure(
-    call_graph: &CallGraph,
+    call_graph: &OrderedCallGraph,
     package_id2name: &BiHashMap<PackageId, String>,
     component_db: &ComponentDb,
     computation_db: &ComputationDb,
@@ -40,12 +46,7 @@ pub(crate) fn codegen_callable_closure(
             (type_.to_owned(), parameter_name)
         })
         .collect();
-    let CallGraph {
-        call_graph,
-        root_node_index: root_callable_node_index,
-    } = call_graph;
     let body = codegen_callable_closure_body(
-        *root_callable_node_index,
         call_graph,
         &parameter_bindings,
         package_id2name,
@@ -60,7 +61,7 @@ pub(crate) fn codegen_callable_closure(
             let variable_type = type_.syn_type(package_id2name);
             quote! { #variable_name: #variable_type }
         });
-        let component_id = match &call_graph[*root_callable_node_index] {
+        let component_id = match &call_graph.call_graph[call_graph.root_node_index] {
             CallGraphNode::Compute { component_id, .. } => component_id,
             n => {
                 dbg!(n);
@@ -81,12 +82,89 @@ pub(crate) fn codegen_callable_closure(
     Ok(function)
 }
 
+#[derive(Clone, Debug)]
+/// An adapted version of [`DfsPostOrder`] that takes into account our custom position when
+/// determining the order in which neighbours of a discovered node are visited.
+pub struct PositionAwareVisitor<'a> {
+    /// The stack of nodes to visit
+    pub stack: Vec<NodeIndex>,
+    /// The map of discovered nodes
+    pub discovered: FixedBitSet,
+    /// The map of finished nodes
+    pub finished: FixedBitSet,
+    /// The map that assigns each node to its position, establishing a total order
+    /// on the graph nodes.
+    pub node_id2position: &'a HashMap<NodeIndex, u16>,
+}
+
+impl<'a> PositionAwareVisitor<'a> {
+    /// Create a new [`PositionAwareVisitor`] using the graph's visitor map, and put
+    /// `start` in the stack of nodes to visit.
+    pub(crate) fn new(ordered_call_graph: &'a OrderedCallGraph) -> Self {
+        let graph = Reversed(&ordered_call_graph.call_graph);
+        let mut dfs = Self::empty(graph, &ordered_call_graph.node2position);
+        dfs.move_to(ordered_call_graph.root_node_index);
+        dfs
+    }
+
+    /// Create a new [`PositionAwareVisitor`] using the graph's visitor map, and no stack.
+    pub fn empty<G>(graph: G, node_id2position: &'a HashMap<NodeIndex, u16>) -> Self
+    where
+        G: GraphRef + Visitable<NodeId = NodeIndex, Map = FixedBitSet>,
+    {
+        PositionAwareVisitor {
+            stack: Vec::new(),
+            discovered: graph.visit_map(),
+            finished: graph.visit_map(),
+            node_id2position,
+        }
+    }
+
+    /// Keep the discovered and finished map, but clear the visit stack and restart
+    /// the dfs from a particular node.
+    pub fn move_to(&mut self, start: NodeIndex) {
+        self.stack.clear();
+        self.stack.push(start);
+    }
+
+    /// Return the next node in the traversal, or `None` if the traversal is done.
+    pub fn next<G>(&mut self, graph: G) -> Option<NodeIndex>
+    where
+        G: IntoNeighbors<NodeId = NodeIndex>,
+    {
+        while let Some(&nx) = self.stack.last() {
+            if self.discovered.visit(nx) {
+                // First time visiting `nx`: Push neighbors, don't pop `nx`
+                let mut neighbors = graph.neighbors(nx).collect::<Vec<_>>();
+                // We are using a stack, therefore the node that gets pushed last is the first one
+                // that gets popped.
+                // Given the above, to enforce our position-based ordering we need to sort the
+                // neighbors in *descending* order.
+                neighbors.sort_by_key(|n| Reverse(self.node_id2position[n]));
+                for succ in neighbors {
+                    if !self.discovered.is_visited(&succ) {
+                        self.stack.push(succ);
+                    }
+                }
+            } else {
+                self.stack.pop();
+                if self.finished.visit(nx) {
+                    // Second time: All reachable nodes must have been finished
+                    return Some(nx);
+                }
+            }
+        }
+        None
+    }
+}
+
 /// Generate the function body for the dependency closure of the [`CallGraph`]'s root callable.
 ///
 /// See [`CallGraph`] docs for more details.
+///
+/// [`CallGraph`]: crate::compiler::analyses::call_graph::CallGraph
 fn codegen_callable_closure_body(
-    root_callable_node_index: NodeIndex,
-    call_graph: &RawCallGraph,
+    ordered_call_graph: &OrderedCallGraph,
     parameter_bindings: &HashMap<ResolvedType, Ident>,
     package_id2name: &BiHashMap<PackageId, String>,
     component_db: &ComponentDb,
@@ -95,10 +173,11 @@ fn codegen_callable_closure_body(
 ) -> Result<TokenStream, anyhow::Error> {
     let mut at_most_once_constructor_blocks = IndexMap::<NodeIndex, TokenStream>::new();
     let mut blocks = HashMap::<NodeIndex, Fragment>::new();
-    let mut dfs = DfsPostOrder::new(Reversed(call_graph), root_callable_node_index);
+    let mut dfs = PositionAwareVisitor::new(ordered_call_graph);
     _codegen_callable_closure_body(
-        root_callable_node_index,
-        call_graph,
+        ordered_call_graph.root_node_index,
+        &ordered_call_graph.call_graph,
+        &ordered_call_graph.node2position,
         parameter_bindings,
         package_id2name,
         component_db,
@@ -113,6 +192,7 @@ fn codegen_callable_closure_body(
 fn _codegen_callable_closure_body(
     node_index: NodeIndex,
     call_graph: &RawCallGraph,
+    node_id2position: &HashMap<NodeIndex, u16>,
     parameter_bindings: &HashMap<ResolvedType, Ident>,
     package_id2name: &BiHashMap<PackageId, String>,
     component_db: &ComponentDb,
@@ -120,7 +200,7 @@ fn _codegen_callable_closure_body(
     variable_name_generator: &mut VariableNameGenerator,
     at_most_once_constructor_blocks: &mut IndexMap<NodeIndex, TokenStream>,
     blocks: &mut HashMap<NodeIndex, Fragment>,
-    dfs: &mut DfsPostOrder<NodeIndex, FixedBitSet>,
+    dfs: &mut PositionAwareVisitor,
 ) -> Result<TokenStream, anyhow::Error> {
     let terminal_index = find_terminal_descendant(node_index, call_graph);
     // We want to start the code-generation process from a `MatchBranching` node with
@@ -150,6 +230,7 @@ fn _codegen_callable_closure_body(
                                 call_graph,
                                 component_db,
                                 computation_db,
+                                node_id2position,
                             ),
                             callable.as_ref(),
                             blocks,
@@ -215,6 +296,7 @@ fn _codegen_callable_closure_body(
                     let match_arm_body = _codegen_callable_closure_body(
                         variant_index,
                         call_graph,
+                        node_id2position,
                         parameter_bindings,
                         package_id2name,
                         component_db,
@@ -344,6 +426,7 @@ fn get_node_type_inputs<'a, 'b: 'a>(
     call_graph: &'a RawCallGraph,
     component_db: &'b ComponentDb,
     computation_db: &'b ComputationDb,
+    node_id2position: &'a HashMap<NodeIndex, u16>,
 ) -> impl Iterator<Item = (NodeIndex, ResolvedType, CallGraphEdgeMetadata)> + 'a {
     call_graph
         .edges_directed(node_index, Direction::Incoming)
@@ -359,4 +442,5 @@ fn get_node_type_inputs<'a, 'b: 'a>(
             };
             (edge.source(), type_, edge.weight().to_owned())
         })
+        .sorted_by_key(|(node_index, _, _)| node_id2position[node_index])
 }

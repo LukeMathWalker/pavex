@@ -10,7 +10,6 @@
   [31m│[0m     ·                                       [35;1m╰── [35;1mThe request handler was registered here[0m[0m
   [31m│[0m  [2m12[0m │     bp
   [31m│[0m     ╰────
-  [31m│[0m   [31m×[0m 
   [31m│[0m    ╭─[[36;1;4msrc/lib.rs[0m:4:1]
   [31m│[0m  [2m4[0m │ 
   [31m│[0m  [2m5[0m │ pub fn stream_file(_inner: PathBuf) -> pavex_runtime::response::Response {

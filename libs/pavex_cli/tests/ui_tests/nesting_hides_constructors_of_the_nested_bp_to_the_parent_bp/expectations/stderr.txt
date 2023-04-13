@@ -9,7 +9,6 @@
   [31m│[0m    ·                                       [35;1m╰── [35;1mThe request handler was registered here[0m[0m
   [31m│[0m  [2m9[0m │     bp
   [31m│[0m    ╰────
-  [31m│[0m   [31m×[0m 
   [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:23:1]
   [31m│[0m  [2m23[0m │ 
   [31m│[0m  [2m24[0m │ pub fn handler(_x: u64, _y: u32, _z: u16) -> String {
@@ -30,7 +29,6 @@
   [31m│[0m    ·                                       [35;1m╰── [35;1mThe request handler was registered here[0m[0m
   [31m│[0m  [2m9[0m │     bp
   [31m│[0m    ╰────
-  [31m│[0m   [31m×[0m 
   [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:23:1]
   [31m│[0m  [2m23[0m │ 
   [31m│[0m  [2m24[0m │ pub fn handler(_x: u64, _y: u32, _z: u16) -> String {
@@ -51,7 +49,6 @@
   [31m│[0m    ·                                       [35;1m╰── [35;1mThe request handler was registered here[0m[0m
   [31m│[0m  [2m9[0m │     bp
   [31m│[0m    ╰────
-  [31m│[0m   [31m×[0m 
   [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:23:1]
   [31m│[0m  [2m23[0m │ 
   [31m│[0m  [2m24[0m │ pub fn handler(_x: u64, _y: u32, _z: u16) -> String {

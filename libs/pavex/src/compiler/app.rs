@@ -15,7 +15,8 @@ use quote::format_ident;
 use pavex_builder::{constructor::Lifecycle, Blueprint};
 
 use crate::compiler::analyses::call_graph::{
-    application_state_call_graph, handler_call_graph, ApplicationStateCallGraph, CallGraph,
+    application_state_call_graph, handler_call_graph, ApplicationStateCallGraph,
+    OrderedCallGraph, RawCallGraphExt,
 };
 use crate::compiler::analyses::components::{ComponentDb, ComponentId, HydratedComponent};
 use crate::compiler::analyses::computations::ComputationDb;
@@ -38,7 +39,7 @@ pub(crate) const GENERATED_APP_PACKAGE_ID: &str = "crate";
 /// the constraints and instructions from a [`Blueprint`] instance.
 pub struct App {
     package_graph: PackageGraph,
-    handler_call_graphs: IndexMap<RouterKey, CallGraph>,
+    handler_call_graphs: IndexMap<RouterKey, OrderedCallGraph>,
     application_state_call_graph: ApplicationStateCallGraph,
     runtime_singleton_bindings: BiHashMap<Ident, ResolvedType>,
     request_scoped_framework_bindings: BiHashMap<Ident, ResolvedType>,
@@ -112,7 +113,7 @@ impl App {
             let router = component_db.router().clone();
             let mut handler_call_graphs = IndexMap::with_capacity(router.len());
             for (router_key, handler_id) in router {
-                let call_graph = handler_call_graph(
+                let Ok(call_graph) = handler_call_graph(
                     handler_id,
                     &mut computation_db,
                     &mut component_db,
@@ -120,19 +121,24 @@ impl App {
                     &package_graph,
                     &krate_collection,
                     &mut diagnostics,
-                );
+                ) else {
+                    continue;
+                };
                 handler_call_graphs.insert(router_key.to_owned(), call_graph);
             }
             handler_call_graphs
         };
         route_parameter_validation::verify_route_parameters(
-            &handler_call_graphs,
+            handler_call_graphs
+                .iter()
+                .map(|(k, ocg)| (k, &ocg.call_graph)),
             &computation_db,
             &component_db,
             &package_graph,
             &krate_collection,
             &mut diagnostics,
         );
+        exit_on_errors!(diagnostics);
 
         let runtime_singletons: IndexSet<(ResolvedType, ComponentId)> =
             get_required_singleton_types(
@@ -156,13 +162,18 @@ impl App {
             // Assign a unique name to each singleton
             .map(|(i, (type_, _))| (format_ident!("s{}", i), type_.to_owned()))
             .collect();
-        let application_state_call_graph = application_state_call_graph(
+        let codegen_types = codegen_types(&package_graph, &krate_collection);
+        let Ok(application_state_call_graph) = application_state_call_graph(
             &runtime_singleton_bindings,
             &mut computation_db,
             &mut component_db,
             &mut constructible_db,
-        );
-        let codegen_types = codegen_types(&package_graph, &krate_collection);
+            &package_graph,
+            &krate_collection,
+            &mut diagnostics,
+        ) else {
+            return Err(diagnostics);
+        };
         exit_on_errors!(diagnostics);
         Ok(Self {
             package_graph,
@@ -182,8 +193,8 @@ impl App {
     pub fn codegen(&self) -> Result<GeneratedApp, anyhow::Error> {
         let (cargo_toml, mut package_ids2deps) = codegen::codegen_manifest(
             &self.package_graph,
-            &self.handler_call_graphs,
-            &self.application_state_call_graph.call_graph,
+            self.handler_call_graphs.values().map(|cg| &cg.call_graph),
+            &self.application_state_call_graph.call_graph.call_graph,
             &self.request_scoped_framework_bindings,
             &self.codegen_types,
             &self.component_db,
@@ -216,8 +227,8 @@ impl App {
         let mut handler_graphs = IndexMap::new();
         let (_, mut package_ids2deps) = codegen::codegen_manifest(
             &self.package_graph,
-            &self.handler_call_graphs,
-            &self.application_state_call_graph.call_graph,
+            self.handler_call_graphs.values().map(|c| &c.call_graph),
+            &self.application_state_call_graph.call_graph.call_graph,
             &self.request_scoped_framework_bindings,
             &self.codegen_types,
             &self.component_db,
@@ -343,7 +354,7 @@ impl AppDiagnostics {
 /// registered by the application.
 /// These singletons will be attached to the overall application state.
 fn get_required_singleton_types<'a>(
-    handler_call_graphs: impl Iterator<Item = (&'a RouterKey, &'a CallGraph)>,
+    handler_call_graphs: impl Iterator<Item = (&'a RouterKey, &'a OrderedCallGraph)>,
     types_provided_by_the_framework: &BiHashMap<Ident, ResolvedType>,
     constructibles_db: &ConstructibleDb,
     component_db: &ComponentDb,
@@ -352,7 +363,7 @@ fn get_required_singleton_types<'a>(
     for (_, handler_call_graph) in handler_call_graphs {
         let root_component_id = handler_call_graph.root_component_id();
         let root_component_scope_id = component_db.scope_id(root_component_id);
-        for required_input in handler_call_graph.required_input_types() {
+        for required_input in handler_call_graph.call_graph.required_input_types() {
             let required_input = if let ResolvedType::Reference(t) = &required_input {
                 if !t.is_static {
                     // We can't store non-'static references in the application state, so we expect

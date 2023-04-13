@@ -6,18 +6,18 @@ use petgraph::prelude::{StableDiGraph, StableGraph};
 use petgraph::stable_graph::NodeIndex;
 use petgraph::visit::Dfs;
 use petgraph::Direction;
-use syn::ItemFn;
+
 
 use pavex_builder::constructor::Lifecycle;
 
-use crate::compiler::analyses::call_graph::codegen::codegen_callable_closure;
+
 use crate::compiler::analyses::components::{
     ComponentDb, ComponentId, ConsumptionMode, HydratedComponent,
 };
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::constructibles::ConstructibleDb;
 use crate::compiler::computation::{Computation, MatchResultVariant};
-use crate::compiler::constructors::Constructor;
+
 use crate::language::{ResolvedType, TypeReference};
 
 /// Build a [`CallGraph`] rooted in the `root_id` component.
@@ -320,7 +320,7 @@ fn inject_match_branching_nodes(
             2,
             "Fallible nodes should have either none, one or two children. This is not the case for node {:?}.\nGraph:\n{}",
             node_index,
-            debug_dot(&call_graph, component_db, computation_db)
+            call_graph.debug_dot(component_db, computation_db)
         );
 
         let first_child_node_index = child_node_indexes[0];
@@ -434,13 +434,6 @@ pub(crate) struct CallGraph {
     pub(crate) root_node_index: NodeIndex,
 }
 
-/// The graph data structured that [`CallGraph`] is built on.
-///
-/// We use a [`StableDiGraph`] to represent the call graph because:
-/// - we want indices for existing nodes to be unaffected (i.e. "stable") when nodes are removed
-/// - node relationships are directed, e.g. `A -> B` means that `B` requires the output of `A` as an input.
-pub(crate) type RawCallGraph = StableDiGraph<CallGraphNode, CallGraphEdgeMetadata>;
-
 #[derive(Clone, Copy, Debug, Hash, Eq, PartialEq)]
 /// The edges in the call graph represent the dependency relationships between the nodes.
 /// The direction of the edge is from the node that provides the input to the node that requires it.
@@ -522,9 +515,51 @@ impl VisitorStackElement {
     }
 }
 
-impl CallGraph {
+/// The graph data structured that [`CallGraph`] is built on.
+///
+/// We use a [`StableDiGraph`] to represent the call graph because:
+/// - we want indices for existing nodes to be unaffected (i.e. "stable") when nodes are removed
+/// - node relationships are directed, e.g. `A -> B` means that `B` requires the output of `A` as an input.
+pub(crate) type RawCallGraph = StableDiGraph<CallGraphNode, CallGraphEdgeMetadata>;
+
+/// Methods for [`RawCallGraph`].
+///
+/// We use an extension trait since [`RawCallGraph`] is a type alias that points to a foreign type.
+pub(crate) trait RawCallGraphExt {
+    /// Return the set of types that must be provided as input to (recursively) build the handler's
+    /// input parameters and invoke it.
+    ///
+    /// We return a `IndexSet` instead of a `HashSet` because we want a consistent ordering for the input
+    /// parameters—it will be used in other parts of the crate to provide instances of those types
+    /// in the expected order.
+    fn required_input_types(&self) -> IndexSet<ResolvedType>;
     /// Return a representation of the [`CallGraph`] in graphviz's .DOT format.
-    pub fn dot(
+    fn dot(
+        &self,
+        package_ids2names: &BiHashMap<PackageId, String>,
+        component_db: &ComponentDb,
+        computation_db: &ComputationDb,
+    ) -> String;
+    /// Print a representation of the [`CallGraph`] in graphviz's .DOT format, geared towards
+    /// debugging.
+    fn print_debug_dot(&self, component_db: &ComponentDb, computation_db: &ComputationDb);
+    /// Return a representation of the [`CallGraph`] in graphviz's .DOT format, geared towards
+    /// debugging.
+    fn debug_dot(&self, component_db: &ComponentDb, computation_db: &ComputationDb) -> String;
+}
+
+impl RawCallGraphExt for RawCallGraph {
+    fn required_input_types(&self) -> IndexSet<ResolvedType> {
+        self.node_weights()
+            .filter_map(|node| match node {
+                CallGraphNode::Compute { .. } | CallGraphNode::MatchBranching => None,
+                CallGraphNode::InputParameter(i) => Some(i),
+            })
+            .cloned()
+            .collect()
+    }
+
+    fn dot(
         &self,
         package_ids2names: &BiHashMap<PackageId, String>,
         component_db: &ComponentDb,
@@ -537,7 +572,7 @@ impl CallGraph {
         format!(
             "{:?}",
             petgraph::dot::Dot::with_attr_getters(
-                &self.call_graph,
+                self,
                 &config,
                 &|_, edge| match edge.weight() {
                     CallGraphEdgeMetadata::Move => "".to_string(),
@@ -570,101 +605,48 @@ impl CallGraph {
         )
     }
 
-    /// Return the set of types that must be provided as input to (recursively) build the handler's
-    /// input parameters and invoke it.
-    ///
-    /// We return a `IndexSet` instead of a `HashSet` because we want a consistent ordering for the input
-    /// parameters—it will be used in other parts of the crate to provide instances of those types
-    /// in the expected order.
-    pub fn required_input_types(&self) -> IndexSet<ResolvedType> {
-        self.call_graph
-            .node_weights()
-            .filter_map(|node| match node {
-                CallGraphNode::Compute { .. } | CallGraphNode::MatchBranching => None,
-                CallGraphNode::InputParameter(i) => Some(i),
-            })
-            .cloned()
-            .collect()
+    #[allow(unused)]
+    fn print_debug_dot(&self, component_db: &ComponentDb, computation_db: &ComputationDb) {
+        eprintln!("{}", self.debug_dot(component_db, computation_db));
     }
 
-    /// Return the [`ComponentId`] of the callable at the root of this [`CallGraph`].
-    pub fn root_component_id(&self) -> ComponentId {
-        match &self.call_graph[self.root_node_index] {
-            CallGraphNode::Compute { component_id, .. } => *component_id,
-            _ => unreachable!(),
-        }
-    }
-
-    /// Generate the code for the dependency closure of the callable at the root of this
-    /// [`CallGraph`].
-    ///
-    /// See [`CallGraph`]'s documentation for more details.
-    pub fn codegen(
-        &self,
-        package_id2name: &BiHashMap<PackageId, String>,
-        component_db: &ComponentDb,
-        computation_db: &ComputationDb,
-    ) -> Result<ItemFn, anyhow::Error> {
-        codegen_callable_closure(self, package_id2name, component_db, computation_db)
-    }
-}
-
-/// Print a representation of the [`CallGraph`] in graphviz's .DOT format, geared towards
-/// debugging.
-#[allow(unused)]
-pub(crate) fn print_debug_dot(
-    g: &RawCallGraph,
-    component_db: &ComponentDb,
-    computation_db: &ComputationDb,
-) {
-    eprintln!("{}", debug_dot(g, component_db, computation_db));
-}
-
-/// Return a representation of the [`CallGraph`] in graphviz's .DOT format, geared towards
-/// debugging.
-#[allow(unused)]
-pub(crate) fn debug_dot(
-    g: &RawCallGraph,
-    component_db: &ComponentDb,
-    computation_db: &ComputationDb,
-) -> String {
-    let config = [
-        petgraph::dot::Config::EdgeNoLabel,
-        petgraph::dot::Config::NodeNoLabel,
-    ];
-    format!(
-        "{:?}",
-        petgraph::dot::Dot::with_attr_getters(
-            g,
-            &config,
-            &|_, _| "".to_string(),
-            &|_, (_, node)| {
-                match node {
-                    CallGraphNode::Compute { component_id, .. } => {
-                        match component_db.hydrated_component(*component_id, computation_db) {
-                            HydratedComponent::ErrorHandler(e) => {
-                                format!("label = \"{:?}\"", e.callable)
-                            }
-                            HydratedComponent::Transformer(t)
-                            | HydratedComponent::Constructor(Constructor(t)) => match t {
+    #[allow(unused)]
+    fn debug_dot(&self, component_db: &ComponentDb, computation_db: &ComputationDb) -> String {
+        let config = [
+            petgraph::dot::Config::EdgeNoLabel,
+            petgraph::dot::Config::NodeNoLabel,
+        ];
+        format!(
+            "{:?}",
+            petgraph::dot::Dot::with_attr_getters(
+                self,
+                &config,
+                &|_, edge| match edge.weight() {
+                    CallGraphEdgeMetadata::Move => "".to_string(),
+                    CallGraphEdgeMetadata::SharedBorrow => "label = \"&\"".to_string(),
+                },
+                &|_, (_, node)| {
+                    match node {
+                        CallGraphNode::Compute { component_id, .. } => {
+                            match component_db
+                                .hydrated_component(*component_id, computation_db)
+                                .computation()
+                            {
                                 Computation::MatchResult(m) => {
                                     format!("label = \"{:?} -> {:?}\"", m.input, m.output)
                                 }
                                 Computation::Callable(c) => {
                                     format!("label = \"{c:?}\"")
                                 }
-                            },
-                            HydratedComponent::RequestHandler(r) => {
-                                format!("label = \"{:?}\"", r.callable)
                             }
                         }
+                        CallGraphNode::InputParameter(t) => {
+                            format!("label = \"{t:?}\"")
+                        }
+                        CallGraphNode::MatchBranching => "label = \"`match`\"".to_string(),
                     }
-                    CallGraphNode::InputParameter(t) => {
-                        format!("label = \"{t:?}\"")
-                    }
-                    CallGraphNode::MatchBranching => "label = \"`match`\"".to_string(),
-                }
-            },
+                },
+            )
         )
-    )
+    }
 }

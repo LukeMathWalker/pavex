@@ -2,14 +2,16 @@ use std::fmt::Write;
 
 use anyhow::anyhow;
 use guppy::graph::PackageGraph;
-use indexmap::{IndexMap, IndexSet};
+use indexmap::{IndexSet};
 use itertools::Itertools;
 use miette::Report;
 use petgraph::graph::NodeIndex;
 use petgraph::Direction;
 use rustdoc_types::{ItemEnum, StructKind};
 
-use crate::compiler::analyses::call_graph::{CallGraph, CallGraphNode};
+use crate::compiler::analyses::call_graph::{
+    CallGraphNode, RawCallGraph,
+};
 use crate::compiler::analyses::components::{ComponentDb, HydratedComponent};
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::user_components::{RouterKey, UserComponentId};
@@ -26,14 +28,16 @@ use crate::utils::comma_separated_list;
 /// For each handler, check if route parameters are extracted from the URL of the incoming request.
 /// If so, check that the type of the route parameter is a struct with named fields and
 /// that each named field maps to a route parameter for the corresponding handler.
-pub(crate) fn verify_route_parameters(
-    handler_call_graphs: &IndexMap<RouterKey, CallGraph>,
+pub(crate) fn verify_route_parameters<'a, I>(
+    handler_call_graphs: I,
     computation_db: &ComputationDb,
     component_db: &ComponentDb,
     package_graph: &PackageGraph,
     krate_collection: &CrateCollection,
     diagnostics: &mut Vec<miette::Error>,
-) {
+) where
+    I: Iterator<Item = (&'a RouterKey, &'a RawCallGraph)>,
+{
     let ResolvedType::ResolvedPath(structural_deserialize) = process_framework_path(
         "pavex_runtime::serialization::StructuralDeserialize",
         package_graph,
@@ -43,8 +47,8 @@ pub(crate) fn verify_route_parameters(
     };
 
     for (router_key, call_graph) in handler_call_graphs {
-        let Some((ok_route_params_node_id, ty_)) = call_graph.call_graph.node_indices().find_map(|node_id| {
-            let node = &call_graph.call_graph[node_id];
+        let Some((ok_route_params_node_id, ty_)) = call_graph.node_indices().find_map(|node_id| {
+            let node = &call_graph[node_id];
             let CallGraphNode::Compute { component_id, .. } = node else { return None; };
             let hydrated_component = component_db.hydrated_component(*component_id, computation_db);
             let HydratedComponent::Constructor(Constructor(Computation::MatchResult(m))) =
@@ -136,7 +140,7 @@ fn report_non_existing_route_parameters(
     package_graph: &PackageGraph,
     diagnostics: &mut Vec<Report>,
     router_key: &RouterKey,
-    call_graph: &CallGraph,
+    call_graph: &RawCallGraph,
     ok_route_params_node_id: NodeIndex,
     route_parameter_names: IndexSet<&str>,
     non_existing_route_parameters: IndexSet<String>,
@@ -238,7 +242,7 @@ fn must_be_a_plain_struct(
     package_graph: &PackageGraph,
     krate_collection: &CrateCollection,
     diagnostics: &mut Vec<Report>,
-    call_graph: &CallGraph,
+    call_graph: &RawCallGraph,
     ok_route_params_node_id: NodeIndex,
     extracted_type: &ResolvedType,
 ) -> Result<rustdoc_types::Item, ()> {
@@ -320,16 +324,15 @@ fn must_be_a_plain_struct(
 /// as input parameter.
 fn route_params_consumer_ids(
     component_db: &ComponentDb,
-    call_graph: &CallGraph,
+    call_graph: &RawCallGraph,
     ok_route_params_node_id: NodeIndex,
 ) -> IndexSet<UserComponentId> {
     let mut consumer_ids = IndexSet::new();
     let mut descendant_ids = call_graph
-        .call_graph
         .neighbors_directed(ok_route_params_node_id, Direction::Outgoing)
         .collect::<IndexSet<_>>();
     while let Some(descendant_id) = descendant_ids.pop() {
-        let descendant_node = &call_graph.call_graph[descendant_id];
+        let descendant_node = &call_graph[descendant_id];
         if let CallGraphNode::Compute { component_id, .. } = descendant_node {
             if let Some(user_component_id) = component_db.user_component_id(*component_id) {
                 consumer_ids.insert(user_component_id);
