@@ -59,7 +59,7 @@ impl OrderedCallGraph {
     ) -> Result<CallGraph, ()> {
         let n_diagnostics = diagnostics.len();
         // We first check for "obvious" kind of borrow checking violations
-        let call_graph = ancestor_consumes_descendant_borrows(
+        let call_graph = multiple_consumers(
             call_graph,
             component_db,
             computation_db,
@@ -67,7 +67,7 @@ impl OrderedCallGraph {
             krate_collection,
             diagnostics,
         );
-        let call_graph = multiple_consumers(
+        let call_graph = ancestor_consumes_descendant_borrows(
             call_graph,
             component_db,
             computation_db,
