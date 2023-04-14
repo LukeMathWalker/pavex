@@ -92,11 +92,20 @@ pub async fn route_handler_0() -> http::Response<
     http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
 > {
     let v0 = app::a();
-    let v1 = <app::A as core::clone::Clone>::clone(&v0);
-    let v2 = app::c(v1);
-    let v3 = app::b(v0);
-    let v4 = app::handler(v3, v2);
-    <http::Response<
-        http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
-    > as pavex_runtime::response::IntoResponse>::into_response(v4)
+    match v0 {
+        Ok(v1) => {
+            let v2 = app::b();
+            let v3 = app::handler(v1, v2);
+            <http::Response<
+                http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
+            > as pavex_runtime::response::IntoResponse>::into_response(v3)
+        }
+        Err(v1) => {
+            let v2 = app::b();
+            let v3 = app::error_handler(&v1, v2);
+            <http::Response<
+                http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
+            > as pavex_runtime::response::IntoResponse>::into_response(v3)
+        }
+    }
 }
