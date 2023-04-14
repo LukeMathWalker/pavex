@@ -2,7 +2,7 @@
 
 > We want it all: great ergonomics and high performance—no sacrifices.  
 > As easy to use as Rails, Django or ASP.NET Core.  
-> As fast as any handwritten solution that strips away all abstractions.
+> As fast as a handwritten solution that strips away all abstractions.
 
 _< Insert cool logo here >_
 
