@@ -86,7 +86,7 @@ pub(crate) fn verify_route_parameters<'a, I>(
         // template if the struct implements `StructuralDeserialize`, our marker trait that stands
         // for "this struct implements serde::Deserialize using a #[derive(serde::Deserialize)] with
         // no customizations (e.g. renames)".
-        if assert_trait_is_implemented(krate_collection, extracted_type, &structural_deserialize).is_ok() {
+        if assert_trait_is_implemented(krate_collection, extracted_type, &structural_deserialize).is_err() {
             continue;
         }
 
