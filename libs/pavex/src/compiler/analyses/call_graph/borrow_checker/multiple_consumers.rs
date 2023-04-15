@@ -16,10 +16,13 @@ use crate::compiler::analyses::call_graph::{
 };
 use crate::compiler::analyses::components::ComponentDb;
 use crate::compiler::analyses::computations::ComputationDb;
+use crate::compiler::traits::implements_trait;
+use crate::compiler::utils::process_framework_path;
 use crate::diagnostic;
 use crate::diagnostic::{
     AnnotatedSnippet, CompilerDiagnostic, HelpWithSnippet, LocationExt, OptionalSourceSpanExt,
 };
+use crate::language::ResolvedType;
 use crate::rustdoc::CrateCollection;
 
 /// Scan the call graph for a specific kind of borrow-checking violation: node `A` is consumed
@@ -39,11 +42,22 @@ pub(super) fn multiple_consumers(
         mut call_graph,
         root_node_index,
     } = call_graph;
+    let copy = process_framework_path("core::marker::Copy", package_graph, krate_collection);
+    let ResolvedType::ResolvedPath(copy) = copy else { unreachable!() };
 
     let sink_ids = call_graph.externals(Outgoing).collect::<Vec<_>>();
     let indices = call_graph.node_indices().collect::<Vec<_>>();
     for node_id in indices {
-        if let CallGraphNode::MatchBranching = call_graph[node_id] {
+        let component_id = match call_graph[node_id] {
+            CallGraphNode::Compute { component_id, .. } => component_id,
+            CallGraphNode::MatchBranching | CallGraphNode::InputParameter(_) => {
+                continue;
+            }
+        };
+
+        let component = component_db.hydrated_component(component_id, computation_db);
+        if implements_trait(krate_collection, component.output_type(), &copy) {
+            // You can't have a "borrow after moved" error for a Copy type.
             continue;
         }
 
