@@ -2,6 +2,7 @@ use std::borrow::Cow;
 use std::collections::BTreeSet;
 use std::fmt;
 use std::fmt::{Display, Formatter};
+use std::sync::Arc;
 
 use ahash::{HashMap, HashMapExt};
 use anyhow::{anyhow, Context};
@@ -43,7 +44,13 @@ impl CrateCollection {
         &self,
         package_id: &PackageId,
     ) -> Result<&Crate, CannotGetCrateData> {
-        let package_spec = PackageIdSpecification::from_package_id(package_id, &self.1);
+        let package_spec =
+            PackageIdSpecification::from_package_id(package_id, &self.1).map_err(|e| {
+                CannotGetCrateData {
+                    package_spec: package_id.to_string(),
+                    source: Arc::new(e),
+                }
+            })?;
         if self.0.get(&package_spec).is_none() {
             let krate = compute_crate_docs(
                 self.1.workspace().target_directory().as_std_path(),
@@ -52,35 +59,35 @@ impl CrateCollection {
             let krate = Crate::new(self, krate, package_id.to_owned());
             self.0.insert(package_spec.clone(), Box::new(krate));
         }
-        Ok(self.get_crate_by_package_id_spec(&package_spec))
+        Ok(self.get_crate_by_package_id_spec(&package_spec).unwrap())
     }
 
     /// Retrieve the documentation for the crate associated with [`PackageId`] from
     /// [`CrateCollection`]'s internal cache if it was computed before.
     ///
-    /// It panics if no documentation is found for the specified [`PackageId`].
-    pub fn get_crate_by_package_id(&self, package_id: &PackageId) -> &Crate {
-        let package_spec = PackageIdSpecification::from_package_id(package_id, &self.1);
+    /// It returns `None` if no documentation is found for the specified [`PackageId`].
+    pub fn get_crate_by_package_id(&self, package_id: &PackageId) -> Option<&Crate> {
+        let package_spec = PackageIdSpecification::from_package_id(package_id, &self.1).ok()?;
         self.get_crate_by_package_id_spec(&package_spec)
     }
 
     /// Retrieve the documentation for the crate associated with [`PackageIdSpecification`] from
     /// [`CrateCollection`]'s internal cache if it was computed before.
     ///
-    /// It panics if no documentation is found for the specified [`PackageIdSpecification`].
-    pub fn get_crate_by_package_id_spec(&self, package_spec: &PackageIdSpecification) -> &Crate {
-        self.0.get(package_spec).unwrap_or_else(|| {
-            panic!(
-                "No JSON docs were found for the following package ID specification: {package_spec:?}"
-            )
-        })
+    /// It returns `None` if no documentation is found for the specified [`PackageIdSpecification`].
+    pub fn get_crate_by_package_id_spec(
+        &self,
+        package_spec: &PackageIdSpecification,
+    ) -> Option<&Crate> {
+        self.0.get(package_spec)
     }
 
     /// Retrieve type information given its [`GlobalItemId`].
     ///
     /// It panics if no item is found for the specified [`GlobalItemId`].
     pub fn get_type_by_global_type_id(&self, type_id: &GlobalItemId) -> &Item {
-        let krate = self.get_crate_by_package_id(&type_id.package_id);
+        // Safe to unwrap since the package id is coming from a GlobalItemId.
+        let krate = self.get_crate_by_package_id(&type_id.package_id).unwrap();
         krate.get_type_by_local_type_id(&type_id.rustdoc_item_id)
     }
 
@@ -195,7 +202,8 @@ impl CrateCollection {
         &self,
         type_id: &GlobalItemId,
     ) -> Result<&[String], anyhow::Error> {
-        let krate = self.get_crate_by_package_id(&type_id.package_id);
+        // Safe to unwrap since the package id is coming from a GlobalItemId.
+        let krate = self.get_crate_by_package_id(&type_id.package_id).unwrap();
         krate.get_canonical_path(type_id)
     }
 

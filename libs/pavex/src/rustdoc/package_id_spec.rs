@@ -1,5 +1,6 @@
 use std::fmt::{Display, Formatter};
 
+use anyhow::Context;
 use guppy::graph::{PackageGraph, PackageMetadata, PackageSource};
 use guppy::{PackageId, Version};
 
@@ -15,19 +16,19 @@ pub struct PackageIdSpecification {
 }
 
 impl PackageIdSpecification {
-    pub fn from_package_id(package_id: &PackageId, package_graph: &PackageGraph) -> Self {
+    pub fn from_package_id(package_id: &PackageId, package_graph: &PackageGraph) -> Result<Self, anyhow::Error> {
         // Toolchain crates don't appear in the package graph, therefore we special-case them.
         if TOOLCHAIN_CRATES.contains(&package_id.repr()) {
-            Self {
+            Ok(Self {
                 source: None,
                 name: package_id.repr().to_string(),
                 version: None,
-            }
+            })
         } else {
             let package_metadata = package_graph
                 .metadata(package_id)
-                .expect("Unknown package ID");
-            Self::from_package_metadata(&package_metadata)
+                .context("Unknown package ID")?;
+            Ok(Self::from_package_metadata(&package_metadata))
         }
     }
 

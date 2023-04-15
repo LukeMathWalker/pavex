@@ -17,13 +17,14 @@ use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::user_components::{RouterKey, UserComponentId};
 use crate::compiler::computation::{Computation, MatchResultVariant};
 use crate::compiler::constructors::Constructor;
-use crate::compiler::traits::implements_trait;
 use crate::compiler::utils::process_framework_path;
 use crate::diagnostic;
 use crate::diagnostic::{CompilerDiagnostic, LocationExt, OptionalSourceSpanExt};
 use crate::language::{GenericArgument, ResolvedType};
 use crate::rustdoc::{CrateCollection, GlobalItemId};
 use crate::utils::comma_separated_list;
+
+use super::traits::assert_trait_is_implemented;
 
 /// For each handler, check if route parameters are extracted from the URL of the incoming request.
 /// If so, check that the type of the route parameter is a struct with named fields and
@@ -85,7 +86,7 @@ pub(crate) fn verify_route_parameters<'a, I>(
         // template if the struct implements `StructuralDeserialize`, our marker trait that stands
         // for "this struct implements serde::Deserialize using a #[derive(serde::Deserialize)] with
         // no customizations (e.g. renames)".
-        if !implements_trait(krate_collection, extracted_type, &structural_deserialize) {
+        if assert_trait_is_implemented(krate_collection, extracted_type, &structural_deserialize).is_ok() {
             continue;
         }
 

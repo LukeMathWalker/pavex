@@ -16,7 +16,7 @@ use crate::compiler::analyses::call_graph::{
 };
 use crate::compiler::analyses::components::ComponentDb;
 use crate::compiler::analyses::computations::ComputationDb;
-use crate::compiler::traits::implements_trait;
+use crate::compiler::traits::assert_trait_is_implemented;
 use crate::compiler::utils::process_framework_path;
 use crate::diagnostic;
 use crate::diagnostic::{
@@ -56,7 +56,7 @@ pub(super) fn multiple_consumers(
         };
 
         let component = component_db.hydrated_component(component_id, computation_db);
-        if implements_trait(krate_collection, component.output_type(), &copy) {
+        if assert_trait_is_implemented(krate_collection, component.output_type(), &copy).is_ok() {
             // You can't have a "borrow after moved" error for a Copy type.
             continue;
         }
