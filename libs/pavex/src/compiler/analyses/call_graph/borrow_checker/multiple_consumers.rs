@@ -16,14 +16,13 @@ use crate::compiler::analyses::call_graph::{
 };
 use crate::compiler::analyses::components::ComponentDb;
 use crate::compiler::analyses::computations::ComputationDb;
-use crate::compiler::traits::assert_trait_is_implemented;
-use crate::compiler::utils::process_framework_path;
 use crate::diagnostic;
 use crate::diagnostic::{
     AnnotatedSnippet, CompilerDiagnostic, HelpWithSnippet, LocationExt, OptionalSourceSpanExt,
 };
-use crate::language::ResolvedType;
 use crate::rustdoc::CrateCollection;
+
+use super::copy::CopyChecker;
 
 /// Scan the call graph for a specific kind of borrow-checking violation: node `A` is consumed
 /// by value by two or more nodes.
@@ -32,6 +31,7 @@ use crate::rustdoc::CrateCollection;
 /// an error.
 pub(super) fn multiple_consumers(
     call_graph: CallGraph,
+    copy_checker: &CopyChecker,
     component_db: &mut ComponentDb,
     computation_db: &mut ComputationDb,
     package_graph: &PackageGraph,
@@ -42,22 +42,12 @@ pub(super) fn multiple_consumers(
         mut call_graph,
         root_node_index,
     } = call_graph;
-    let copy = process_framework_path("core::marker::Copy", package_graph, krate_collection);
-    let ResolvedType::ResolvedPath(copy) = copy else { unreachable!() };
 
     let sink_ids = call_graph.externals(Outgoing).collect::<Vec<_>>();
     let indices = call_graph.node_indices().collect::<Vec<_>>();
     for node_id in indices {
-        let component_id = match call_graph[node_id] {
-            CallGraphNode::Compute { component_id, .. } => component_id,
-            CallGraphNode::MatchBranching | CallGraphNode::InputParameter(_) => {
-                continue;
-            }
-        };
-
-        let component = component_db.hydrated_component(component_id, computation_db);
-        if assert_trait_is_implemented(krate_collection, component.output_type(), &copy).is_ok() {
-            // You can't have a "borrow after moved" error for a Copy type.
+        if copy_checker.is_copy(&call_graph, node_id, component_db, computation_db) {
+            // You can't have a "used after moved" error for a Copy type.
             continue;
         }
 

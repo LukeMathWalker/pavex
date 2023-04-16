@@ -19,6 +19,8 @@ use crate::diagnostic::{
 };
 use crate::rustdoc::CrateCollection;
 
+use super::copy::CopyChecker;
+
 /// This check is more subtle than [`ancestor_consumes_descendant_borrows`].
 /// It detects other kinds of issues that prevent us from generating code that passes the borrow checker.
 ///
@@ -45,6 +47,7 @@ use crate::rustdoc::CrateCollection;
 /// [`ancestor_consumes_descendant_borrows`]: super::ancestor_consumes_descendant_borrows::ancestor_consumes_descendant_borrows
 pub(super) fn complex_borrow_check(
     call_graph: CallGraph,
+    copy_checker: &CopyChecker,
     component_db: &mut ComponentDb,
     computation_db: &mut ComputationDb,
     package_graph: &PackageGraph,
@@ -86,8 +89,17 @@ pub(super) fn complex_borrow_check(
                     .neighbors_directed(node_index, Direction::Incoming)
                     .partition(|neighbour_index| {
                         let node_relationships = ownership_relationships.node(*neighbour_index);
-                        node_relationships.is_consumed_by(node_index)
-                            && node_relationships.is_borrowed()
+                        let mut is_blocked = node_relationships.is_consumed_by(node_index)
+                            && node_relationships.is_borrowed();
+
+                        if is_blocked {
+                            if copy_checker.is_copy(&call_graph, *neighbour_index, component_db, computation_db) {
+                                // You can't have a "used after moved" error for a Copy type.
+                                is_blocked = false;
+                            }
+                        }
+
+                        is_blocked
                     });
 
             // The nodes that are not currently blocked can be visited next.
