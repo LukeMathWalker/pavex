@@ -13,6 +13,8 @@ use crate::compiler::analyses::components::ComponentDb;
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::rustdoc::CrateCollection;
 
+use super::copy::{CopyChecker};
+
 impl OrderedCallGraph {
     /// Build an [`OrderedCallGraph`] from a [`CallGraph`].
     ///
@@ -30,15 +32,20 @@ impl OrderedCallGraph {
         krate_collection: &CrateCollection,
         diagnostics: &mut Vec<miette::Error>,
     ) -> Result<OrderedCallGraph, ()> {
+        let copy_checker = CopyChecker::new(
+            package_graph,
+            krate_collection,
+        );
         let call_graph = Self::borrow_check(
             call_graph,
+            &copy_checker,
             component_db,
             computation_db,
             package_graph,
             krate_collection,
             diagnostics,
         )?;
-        let ordered = Self::order(call_graph);
+        let ordered = Self::order(call_graph, &copy_checker, component_db, computation_db);
         Ok(ordered)
     }
 
@@ -51,6 +58,7 @@ impl OrderedCallGraph {
     /// returned.
     fn borrow_check(
         call_graph: CallGraph,
+        copy_checker: &CopyChecker,
         component_db: &mut ComponentDb,
         computation_db: &mut ComputationDb,
         package_graph: &PackageGraph,
@@ -58,9 +66,11 @@ impl OrderedCallGraph {
         diagnostics: &mut Vec<miette::Error>,
     ) -> Result<CallGraph, ()> {
         let n_diagnostics = diagnostics.len();
+
         // We first check for "obvious" kind of borrow checking violations
         let call_graph = multiple_consumers(
             call_graph,
+            copy_checker,
             component_db,
             computation_db,
             package_graph,
@@ -69,6 +79,7 @@ impl OrderedCallGraph {
         );
         let call_graph = ancestor_consumes_descendant_borrows(
             call_graph,
+            copy_checker,
             component_db,
             computation_db,
             package_graph,
@@ -83,6 +94,7 @@ impl OrderedCallGraph {
         // If there are no "obvious" violations, we check for more subtle ones!
         let call_graph = complex_borrow_check(
             call_graph,
+            copy_checker,
             component_db,
             computation_db,
             package_graph,
@@ -99,7 +111,12 @@ impl OrderedCallGraph {
     ///
     /// It assumes that all borrow checking analyses have already been performed and that, as
     /// a consequence, a suitable ordering *exists*.
-    fn order(call_graph: CallGraph) -> Self {
+    fn order(
+        call_graph: CallGraph,
+        copy_checker: &CopyChecker,
+        component_db: &ComponentDb,
+        computation_db: &ComputationDb,
+    ) -> Self {
         let CallGraph {
             call_graph,
             root_node_index,
@@ -144,8 +161,19 @@ impl OrderedCallGraph {
                             // - is consumed by the current node and but it must also be borrowed
                             //   by another node that has not been processed yet.
                             let node_relationships = ownership_relationships.node(neighbour_index);
-                            node_relationships.is_consumed_by(node_index)
-                                && node_relationships.is_borrowed()
+                            let mut is_blocked = node_relationships.is_consumed_by(node_index)
+                                && node_relationships.is_borrowed();
+                            if is_blocked {
+                                if copy_checker.is_copy(
+                                    &call_graph,
+                                    neighbour_index,
+                                    component_db,
+                                    computation_db,
+                                ) {
+                                    is_blocked = false;
+                                }
+                            }
+                            is_blocked
                         }
                     });
 

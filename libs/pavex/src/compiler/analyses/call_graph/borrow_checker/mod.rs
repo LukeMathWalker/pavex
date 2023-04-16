@@ -8,6 +8,7 @@ pub(crate) use ordered_call_graph::OrderedCallGraph;
 mod ancestor_consumes_descendant_borrows;
 mod assign_order;
 mod clone;
+mod copy;
 mod complex;
 mod multiple_consumers;
 mod ordered_call_graph;

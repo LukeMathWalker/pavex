@@ -22,6 +22,8 @@ use crate::diagnostic::{
 };
 use crate::rustdoc::CrateCollection;
 
+use super::copy::CopyChecker;
+
 /// Scan the call graph for a specific kind of borrow-checking violation: node `A` is consumed
 /// by value by two or more nodes.
 ///
@@ -29,6 +31,7 @@ use crate::rustdoc::CrateCollection;
 /// an error.
 pub(super) fn multiple_consumers(
     call_graph: CallGraph,
+    copy_checker: &CopyChecker,
     component_db: &mut ComponentDb,
     computation_db: &mut ComputationDb,
     package_graph: &PackageGraph,
@@ -43,7 +46,8 @@ pub(super) fn multiple_consumers(
     let sink_ids = call_graph.externals(Outgoing).collect::<Vec<_>>();
     let indices = call_graph.node_indices().collect::<Vec<_>>();
     for node_id in indices {
-        if let CallGraphNode::MatchBranching = call_graph[node_id] {
+        if copy_checker.is_copy(&call_graph, node_id, component_db, computation_db) {
+            // You can't have a "used after moved" error for a Copy type.
             continue;
         }
 

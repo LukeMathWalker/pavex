@@ -6,7 +6,7 @@ use rustdoc_types::{GenericParamDefKind, ItemEnum, Type};
 
 use crate::compiler::resolvers::resolve_type;
 use crate::language::{PathType, ResolvedType};
-use crate::rustdoc::CrateCollection;
+use crate::rustdoc::{Crate, CrateCollection};
 
 /// It returns an error if `type_` doesn't implement the specified trait.
 ///
@@ -17,14 +17,39 @@ pub(crate) fn assert_trait_is_implemented(
     type_: &ResolvedType,
     expected_trait: &PathType,
 ) -> Result<(), MissingTraitImplementationError> {
-    if !implements_trait(krate_collection, type_, expected_trait) {
-        Err(MissingTraitImplementationError {
-            type_: type_.to_owned(),
-            trait_: expected_trait.to_owned().into(),
-        })
-    } else {
-        Ok(())
+    match implements_trait(krate_collection, type_, expected_trait) {
+        Ok(implements) => {
+            if implements {
+                Ok(())
+            } else {
+                Err(MissingTraitImplementationError {
+                    type_: type_.to_owned(),
+                    trait_: expected_trait.to_owned().into(),
+                })
+            }
+        }
+        Err(e) => {
+            tracing::trace!(
+                "Failing to determine if `{:?}` implements `{:?}`. Assuming it does not—{:?}",
+                type_,
+                expected_trait,
+                e
+            );
+            Err(MissingTraitImplementationError {
+                type_: type_.to_owned(),
+                trait_: expected_trait.to_owned().into(),
+            })
+        }
     }
+}
+
+fn get_crate_by_package_id<'a>(
+    krate_collection: &'a CrateCollection,
+    package_id: &'a PackageId,
+) -> Result<&'a Crate, anyhow::Error> {
+    krate_collection
+        .get_crate_by_package_id(package_id)
+        .ok_or_else(|| anyhow::anyhow!("Unknown package id: {}", package_id))
 }
 
 /// It returns `true` if `type_` implements the specified trait.
@@ -35,12 +60,10 @@ pub(crate) fn implements_trait(
     krate_collection: &CrateCollection,
     type_: &ResolvedType,
     expected_trait: &PathType,
-) -> bool {
+) -> Result<bool, anyhow::Error> {
     let trait_definition_crate =
-        krate_collection.get_crate_by_package_id(&expected_trait.package_id);
-    let trait_item_id = trait_definition_crate
-        .get_type_id_by_path(&expected_trait.base_type)
-        .unwrap();
+        get_crate_by_package_id(krate_collection, &expected_trait.package_id)?;
+    let trait_item_id = trait_definition_crate.get_type_id_by_path(&expected_trait.base_type)?;
     let trait_item = krate_collection.get_type_by_global_type_id(trait_item_id);
     let ItemEnum::Trait(trait_item) = &trait_item.inner else { unreachable!() };
 
@@ -52,10 +75,8 @@ pub(crate) fn implements_trait(
     match type_ {
         ResolvedType::ResolvedPath(our_path_type) => {
             let type_definition_crate =
-                krate_collection.get_crate_by_package_id(&our_path_type.package_id);
-            let type_id = type_definition_crate
-                .get_type_id_by_path(&our_path_type.base_type)
-                .unwrap();
+                get_crate_by_package_id(krate_collection, &our_path_type.package_id)?;
+            let type_id = type_definition_crate.get_type_id_by_path(&our_path_type.base_type)?;
             let type_item = krate_collection.get_type_by_global_type_id(type_id);
             // We want to see through type aliases here.
             if let ItemEnum::Typedef(typedef) = &type_item.inner {
@@ -72,8 +93,7 @@ pub(crate) fn implements_trait(
                                 &our_path_type.package_id,
                                 krate_collection,
                                 &generic_bindings,
-                            )
-                            .unwrap();
+                            )?;
                             generic_bindings.insert(generic.name.to_string(), default);
                         }
                         GenericParamDefKind::Type { default: None, .. }
@@ -88,10 +108,9 @@ pub(crate) fn implements_trait(
                     &our_path_type.package_id,
                     krate_collection,
                     &generic_bindings,
-                )
-                .unwrap();
-                if implements_trait(krate_collection, &type_, expected_trait) {
-                    return true;
+                )?;
+                if implements_trait(krate_collection, &type_, expected_trait)? {
+                    return Ok(true);
                 }
             }
             let impls = match &type_item.inner {
@@ -126,7 +145,7 @@ pub(crate) fn implements_trait(
                             // "owned" version of our type.
                             && is_equivalent(implementer_type, type_, krate_collection, &our_path_type.package_id)
                         {
-                            return true;
+                            return Ok(true);
                         }
                     }
                 }
@@ -143,18 +162,24 @@ pub(crate) fn implements_trait(
                 || expected_trait.base_type == ["core", "clone", "Clone"])
                 && t.elements
                     .iter()
-                    .all(|t| implements_trait(krate_collection, t, expected_trait))
+                    .all(|t| match implements_trait(krate_collection, t, expected_trait) {
+                        Ok(t) => t,
+                        Err(e) => {
+                            tracing::trace!("Failing to determine if `{:?}` implements `{:?}`. Assuming it does not—{:?}", t, expected_trait, e);
+                            false
+                        }
+                    })
             {
-                return true;
+                return Ok(true);
             }
         }
         ResolvedType::Reference(r) => {
             // `& &T` is `Send` if `&T` is `Send`, therefore `&T` is `Sync` if `T` if `Sync`.
             if (expected_trait.base_type == ["core", "marker", "Sync"]
                 || expected_trait.base_type == ["core", "marker", "Send"])
-                && implements_trait(krate_collection, &r.inner, expected_trait)
+                && implements_trait(krate_collection, &r.inner, expected_trait)?
             {
-                return true;
+                return Ok(true);
             }
             // `&T` is always `Copy`, but `&mut T` is never `Copy`.
             // See https://doc.rust-lang.org/std/marker/trait.Copy.html#impl-Copy-for-%26T and
@@ -163,7 +188,7 @@ pub(crate) fn implements_trait(
             if !r.is_mutable && (expected_trait.base_type == ["core", "clone", "Copy"])
                 || (expected_trait.base_type == ["core", "clone", "Clone"])
             {
-                return true;
+                return Ok(true);
             }
             // TODO: Unpin and other traits
         }
@@ -174,23 +199,23 @@ pub(crate) fn implements_trait(
                 || expected_trait.base_type == ["core", "marker", "Unpin"]
                 || expected_trait.base_type == ["core", "clone", "Clone"]
             {
-                return true;
+                return Ok(true);
             }
             // TODO: handle other traits
         }
         ResolvedType::Slice(s) => {
             if (expected_trait.base_type == ["core", "marker", "Send"]
                 || expected_trait.base_type == ["core", "marker", "Sync"])
-                && implements_trait(krate_collection, &s.element_type, expected_trait)
+                && implements_trait(krate_collection, &s.element_type, expected_trait)?
             {
-                return true;
+                return Ok(true);
             }
             // TODO: handle Unpin + other traits
         }
         ResolvedType::Generic(_) => {
             // TODO: handle blanket implementations. As a first approximation,
             //   we assume that if the type is generic, it implements all traits.
-            return true;
+            return Ok(true);
         }
     }
 
@@ -200,7 +225,7 @@ pub(crate) fn implements_trait(
     // Auto-traits (e.g. Send, Sync, etc.) always appear as implemented in the crate where
     // the implementer is defined.
     if trait_item.is_auto {
-        return false;
+        return Ok(false);
     }
 
     for impl_id in &trait_item.implementations {
@@ -225,10 +250,10 @@ pub(crate) fn implements_trait(
             krate_collection,
             &trait_definition_crate.core.package_id,
         ) {
-            return true;
+            return Ok(true);
         }
     }
-    false
+    Ok(false)
 }
 
 fn is_equivalent(

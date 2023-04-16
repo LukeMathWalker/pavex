@@ -23,6 +23,8 @@ use crate::diagnostic::{
 };
 use crate::rustdoc::CrateCollection;
 
+use super::copy::CopyChecker;
+
 /// Scan the call graph for a specific kind of borrow-checking violation:
 ///
 /// - node `A` consumes one its dependencies, `B`, by value;
@@ -37,6 +39,7 @@ use crate::rustdoc::CrateCollection;
 /// The more subtle kind of violations are handled by [`super::complex::complex_borrow_check`].
 pub(super) fn ancestor_consumes_descendant_borrows(
     call_graph: CallGraph,
+    copy_checker: &CopyChecker,
     component_db: &mut ComponentDb,
     computation_db: &mut ComputationDb,
     package_graph: &PackageGraph,
@@ -84,8 +87,14 @@ pub(super) fn ancestor_consumes_descendant_borrows(
             }
 
             if borrowed_nodes.contains(&dependency_index) {
+                if copy_checker.is_copy(&call_graph, dependency_index, component_db, computation_db) {
+                    // You can't have a "borrow after moved" error for a Copy type.
+                    continue;
+                }
+
                 let CallGraphNode::Compute { component_id, .. } =
                     call_graph[dependency_index].clone() else { continue; };
+
                 let Some(clone_component_id) = get_clone_component_id(
                     &component_id,
                     package_graph,
