@@ -9,6 +9,7 @@ use crate::compiler::analyses::components::{
     ComponentDb, ComponentId, ConsumptionMode, HydratedComponent,
 };
 use crate::compiler::analyses::computations::ComputationDb;
+use crate::compiler::analyses::user_components::ScopeId;
 use crate::compiler::computation::Computation;
 use crate::compiler::utils::process_framework_path;
 use crate::language::{
@@ -27,6 +28,7 @@ pub(super) fn get_clone_component_id(
     krate_collection: &CrateCollection,
     component_db: &mut ComponentDb,
     computation_db: &mut ComputationDb,
+    scope_id: ScopeId,
 ) -> Option<ComponentId> {
     // We only need to resolve this once.
     static CLONE_PATH_TYPE: OnceCell<PathType> = OnceCell::new();
@@ -82,7 +84,7 @@ pub(super) fn get_clone_component_id(
     let clone_component_id = component_db.get_or_intern_transformer(
         clone_computation_id,
         *component_id,
-        component_db.scope_id(*component_id),
+        scope_id,
         ConsumptionMode::SharedBorrow,
     );
     Some(clone_component_id)

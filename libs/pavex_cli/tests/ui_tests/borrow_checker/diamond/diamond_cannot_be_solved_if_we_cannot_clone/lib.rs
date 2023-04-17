@@ -49,7 +49,8 @@ pub fn handler(_c: C, _d: D) -> Response {
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.constructor(f!(crate::a), Lifecycle::RequestScoped);
-    bp.constructor(f!(crate::b), Lifecycle::RequestScoped);
+    // Being a singleton, this will be an input type of the dependency closure for the request handler
+    bp.constructor(f!(crate::b), Lifecycle::Singleton);
     bp.constructor(f!(crate::c), Lifecycle::RequestScoped);
     bp.constructor(f!(crate::d), Lifecycle::RequestScoped);
     bp.route(GET, "/home", f!(crate::handler));

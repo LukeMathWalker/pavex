@@ -54,6 +54,7 @@ use matchit::{Params, ParamsIter};
 /// and deserialization for you.
 ///
 /// [`RouteParams`]: struct@crate::extract::route::RouteParams
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct RawRouteParams<'server, 'request>(Params<'server, 'request>);
 
 impl<'server, 'request> RawRouteParams<'server, 'request> {

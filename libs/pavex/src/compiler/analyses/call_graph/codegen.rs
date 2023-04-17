@@ -261,9 +261,14 @@ fn _codegen_callable_closure_body(
                         // We already bound the match result to a variable name when handling
                         // its parent `MatchBranching` node.
                     }
+                    Computation::FrameworkItem(_) => {
+                        unreachable!("Framework items should only appear as input parameters.")
+                    }
                 }
             }
-            CallGraphNode::InputParameter(input_type) => {
+            CallGraphNode::InputParameter {
+                type_: input_type, ..
+            } => {
                 let parameter_name = parameter_bindings[input_type].clone();
                 blocks.insert(current_index, Fragment::VariableReference(parameter_name));
             }
@@ -437,7 +442,7 @@ fn get_node_type_inputs<'a, 'b: 'a>(
                     let component = component_db.hydrated_component(*component_id, computation_db);
                     component.output_type().to_owned()
                 }
-                CallGraphNode::InputParameter(i) => i.to_owned(),
+                CallGraphNode::InputParameter { type_, .. } => type_.to_owned(),
                 CallGraphNode::MatchBranching => unreachable!(),
             };
             (edge.source(), type_, edge.weight().to_owned())

@@ -6,11 +6,11 @@ use petgraph::Direction;
 
 use crate::compiler::analyses::call_graph::borrow_checker::clone::get_clone_component_id;
 use crate::compiler::analyses::call_graph::borrow_checker::ownership_relationship::OwnershipRelationships;
-use crate::compiler::analyses::call_graph::core_graph::RawCallGraph;
+use crate::compiler::analyses::call_graph::core_graph::{InputParameterSource, RawCallGraph};
 use crate::compiler::analyses::call_graph::{
     CallGraph, CallGraphEdgeMetadata, CallGraphNode, NumberOfAllowedInvocations,
 };
-use crate::compiler::analyses::components::{ComponentDb, HydratedComponent};
+use crate::compiler::analyses::components::{ComponentDb};
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::computation::Computation;
 use crate::diagnostic;
@@ -20,6 +20,7 @@ use crate::diagnostic::{
 use crate::rustdoc::CrateCollection;
 
 use super::copy::CopyChecker;
+use super::diagnostic_helpers::suggest_wrapping_in_a_smart_pointer;
 
 /// This check is more subtle than [`ancestor_consumes_descendant_borrows`].
 /// It detects other kinds of issues that prevent us from generating code that passes the borrow checker.
@@ -57,6 +58,7 @@ pub(super) fn complex_borrow_check(
     let CallGraph {
         mut call_graph,
         root_node_index,
+        root_scope_id,
     } = call_graph;
 
     let mut ownership_relationships = OwnershipRelationships::compute(&call_graph);
@@ -93,7 +95,12 @@ pub(super) fn complex_borrow_check(
                             && node_relationships.is_borrowed();
 
                         if is_blocked {
-                            if copy_checker.is_copy(&call_graph, *neighbour_index, component_db, computation_db) {
+                            if copy_checker.is_copy(
+                                &call_graph,
+                                *neighbour_index,
+                                component_db,
+                                computation_db,
+                            ) {
                                 // You can't have a "used after moved" error for a Copy type.
                                 is_blocked = false;
                             }
@@ -126,14 +133,16 @@ pub(super) fn complex_borrow_check(
                     }
                     StrategyOnBlock::Clone => {
                         'incoming: for incoming_blocked_id in incoming_blocked_ids {
-                            let CallGraphNode::Compute { component_id, .. } =
-                                &call_graph[incoming_blocked_id] else { continue 'incoming; };
+                            let Some(component_id) = call_graph[incoming_blocked_id].component_id() else {
+                                continue 'incoming;
+                            };
                             let Some(clone_component_id) = get_clone_component_id(
-                                component_id,
+                                &component_id,
                                 package_graph,
                                 krate_collection,
                                 component_db,
                                 computation_db,
+                                root_scope_id
                             ) else {
                                 continue 'incoming;
                             };
@@ -238,6 +247,7 @@ pub(super) fn complex_borrow_check(
     CallGraph {
         call_graph,
         root_node_index,
+        root_scope_id,
     }
 }
 
@@ -252,80 +262,96 @@ fn emit_borrow_checking_error(
     diagnostics: &mut Vec<miette::Error>,
 ) {
     for incoming_blocked_id in incoming_blocked_ids {
-        if let CallGraphNode::Compute { component_id, .. } = &call_graph[incoming_blocked_id] {
-            if let HydratedComponent::Constructor(c) =
-                component_db.hydrated_component(*component_id, computation_db)
-            {
-                let type_ = c.output_type();
-                let error = anyhow::anyhow!(
+        let (component_id, type_) = match &call_graph[incoming_blocked_id] {
+            CallGraphNode::Compute { component_id, .. } => (
+                Some(*component_id),
+                component_db
+                    .hydrated_component(*component_id, computation_db)
+                    .output_type()
+                    .to_owned(),
+            ),
+            CallGraphNode::InputParameter { type_, source } => {
+                let id = if let InputParameterSource::Component(id) = source {
+                    Some(*id)
+                } else {
+                    None
+                };
+                (id, type_.to_owned())
+            }
+            CallGraphNode::MatchBranching => {
+                unreachable!()
+            }
+        };
+
+        if let Some(component_id) = component_id {
+            let error = anyhow::anyhow!(
                     "I can't generate code that will pass the borrow checker *and* match \
                     the instructions in your blueprint.\n\
                     There are a few different ways to unblock me: check out the help messages below!\n\
                     You only need to follow *one* of them."
                 );
-                let clone_help = if let Some(user_component_id) =
-                    component_db.user_component_id(*component_id)
-                {
-                    let help_msg = format!(
+            let dummy_source = NamedSource::new("", "");
+            let mut diagnostic = CompilerDiagnostic::builder(dummy_source, error);
+
+            if let Some(user_component_id) = component_db.user_component_id(component_id) {
+                let help_msg = format!(
                         "Allow me to clone `{type_:?}` in order to satisfy the borrow checker.\n\
                         You can do so by invoking `.cloning(CloningStrategy::CloneIfNecessary)` on the type returned by `.constructor`.",
                     );
-                    let location = component_db
-                        .user_component_db()
-                        .get_location(user_component_id);
-                    let source = match location.source_file(package_graph) {
-                        Ok(s) => Some(s),
-                        Err(e) => {
-                            diagnostics.push(e.into());
-                            None
-                        }
-                    };
-                    let help = match source {
-                        None => HelpWithSnippet::new(
-                            help_msg,
-                            AnnotatedSnippet::new_with_labels(NamedSource::new("", ""), vec![]),
-                        ),
-                        Some(source) => {
-                            let labeled_span =
-                                diagnostic::get_f_macro_invocation_span(&source, location)
-                                    .labeled("The constructor was registered here".into());
-                            HelpWithSnippet::new(
-                                help_msg,
-                                AnnotatedSnippet::new_optional(source, labeled_span),
-                            )
-                        }
-                    };
-                    Some(help)
-                } else {
-                    None
+                let location = component_db
+                    .user_component_db()
+                    .get_location(user_component_id);
+                let source = match location.source_file(package_graph) {
+                    Ok(s) => Some(s),
+                    Err(e) => {
+                        diagnostics.push(e.into());
+                        None
+                    }
                 };
-                let use_ref_help = if let Computation::Callable(callable) = &c.0 {
-                    let help_msg = format!(
+                let help = match source {
+                    None => HelpWithSnippet::new(
+                        help_msg,
+                        AnnotatedSnippet::new_with_labels(NamedSource::new("", ""), vec![]),
+                    ),
+                    Some(source) => {
+                        let callable_type =
+                            component_db.user_component_db()[user_component_id].callable_type();
+                        let labeled_span =
+                            diagnostic::get_f_macro_invocation_span(&source, location)
+                                .labeled(format!("The {callable_type} was registered here"));
+                        HelpWithSnippet::new(
+                            help_msg,
+                            AnnotatedSnippet::new_optional(source, labeled_span),
+                        )
+                    }
+                };
+                diagnostic = diagnostic.help_with_snippet(help);
+            }
+
+            if let Computation::Callable(callable) = component_db
+                .hydrated_component(component_id, computation_db)
+                .computation()
+            {
+                let help_msg = format!(
                         "Considering changing the signature of `{}`.\n\
                         It takes `{type_:?}` by value. Would a shared reference, `&{type_:?}`, be enough?",
                         callable.path
                     );
-                    let help = HelpWithSnippet::new(
-                        help_msg,
-                        AnnotatedSnippet::new_with_labels(NamedSource::new("", ""), vec![]),
-                    );
-                    Some(help)
-                } else {
-                    None
-                };
-                let ref_counting_help = format!("If `{type_:?}` itself cannot implement `Clone`, consider wrapping it in an `std::sync::Rc` or `std::sync::Arc`.");
-                let ref_counting_help = HelpWithSnippet::new(
-                    ref_counting_help,
+                let help = HelpWithSnippet::new(
+                    help_msg,
                     AnnotatedSnippet::new_with_labels(NamedSource::new("", ""), vec![]),
                 );
-                let dummy_source = NamedSource::new("", "");
-                let diagnostic = CompilerDiagnostic::builder(dummy_source, error)
-                    .optional_help_with_snippet(use_ref_help)
-                    .optional_help_with_snippet(clone_help)
-                    .help_with_snippet(ref_counting_help)
-                    .build();
-                diagnostics.push(diagnostic.into());
-            };
-        }
+                diagnostic = diagnostic.help_with_snippet(help);
+            }
+
+            diagnostic = suggest_wrapping_in_a_smart_pointer(
+                Some(component_id),
+                component_db,
+                computation_db,
+                diagnostic,
+            );
+
+            diagnostics.push(diagnostic.build().into());
+        };
     }
 }

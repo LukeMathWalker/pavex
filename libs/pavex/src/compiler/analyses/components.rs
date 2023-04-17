@@ -35,6 +35,8 @@ use crate::language::{
 use crate::rustdoc::CrateCollection;
 use crate::utils::comma_separated_list;
 
+use super::framework_items::FrameworkItemDb;
+
 /// Describe the relationship between this component and one of its input parameters with
 /// respect to Rust's ownership semantics.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -154,6 +156,7 @@ pub(crate) struct ComponentDb {
 impl ComponentDb {
     pub fn build(
         user_component_db: UserComponentDb,
+        framework_item_db: &FrameworkItemDb,
         computation_db: &mut ComputationDb,
         package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
@@ -487,6 +490,20 @@ impl ComponentDb {
             }
         }
 
+        for (id, type_) in framework_item_db.iter() {
+            let constructor = Constructor(Computation::FrameworkItem(Cow::Owned(type_.clone())));
+            let lifecycle = framework_item_db.lifecycle(id);
+            let cloning_strategy = framework_item_db.cloning_strategy(id);
+            let scope_id = self_.scope_graph().root_scope_id();
+            self_.add_synthetic_constructor(
+                constructor,
+                lifecycle,
+                scope_id,
+                cloning_strategy,
+                computation_db,
+            );
+        }
+
         self_
     }
 
@@ -558,10 +575,10 @@ impl ComponentDb {
                 else { unreachable!() };
             constructor.into_owned()
         };
-        let cloning_strategy = self.id2cloning_strategy[&constructor_id];
-        let lifecycle = self.lifecycle(constructor_id).unwrap().to_owned();
-        let scope_id = self.scope_id(constructor_id);
         if let Ok(constructor) = constructor.as_fallible() {
+            let cloning_strategy = self.id2cloning_strategy[&constructor_id];
+            let lifecycle = self.lifecycle(constructor_id).unwrap().to_owned();
+            let scope_id = self.scope_id(constructor_id);
             let m = constructor.matchers();
             let (ok, err) = (m.ok, m.err);
 
@@ -876,7 +893,7 @@ impl ComponentDb {
                 .into_owned();
             let HydratedComponent::Constructor(constructor) = templated_component else { unreachable!() };
             match &constructor.0 {
-                Computation::Callable(_) => component_id,
+                Computation::FrameworkItem(_) | Computation::Callable(_) => component_id,
                 Computation::MatchResult(_) => _get_root_component_id(
                     component_db.fallible_id(component_id),
                     component_db,

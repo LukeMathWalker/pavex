@@ -10,7 +10,7 @@ use petgraph::visit::NodeRef;
 use petgraph::Direction;
 
 use crate::compiler::analyses::call_graph::borrow_checker::clone::get_clone_component_id;
-use crate::compiler::analyses::call_graph::core_graph::RawCallGraph;
+use crate::compiler::analyses::call_graph::core_graph::{InputParameterSource, RawCallGraph};
 use crate::compiler::analyses::call_graph::{
     CallGraph, CallGraphEdgeMetadata, CallGraphNode, NumberOfAllowedInvocations,
 };
@@ -24,6 +24,7 @@ use crate::diagnostic::{
 use crate::rustdoc::CrateCollection;
 
 use super::copy::CopyChecker;
+use super::diagnostic_helpers::suggest_wrapping_in_a_smart_pointer;
 
 /// Scan the call graph for a specific kind of borrow-checking violation:
 ///
@@ -49,6 +50,7 @@ pub(super) fn ancestor_consumes_descendant_borrows(
     let CallGraph {
         mut call_graph,
         root_node_index,
+        root_scope_id,
     } = call_graph;
 
     // We start from sinks (i.e. nodes that do not have outgoing edges) and work our way up,
@@ -87,21 +89,25 @@ pub(super) fn ancestor_consumes_descendant_borrows(
             }
 
             if borrowed_nodes.contains(&dependency_index) {
-                if copy_checker.is_copy(&call_graph, dependency_index, component_db, computation_db) {
+                if copy_checker.is_copy(&call_graph, dependency_index, component_db, computation_db)
+                {
                     // You can't have a "borrow after moved" error for a Copy type.
                     continue;
                 }
 
-                let CallGraphNode::Compute { component_id, .. } =
-                    call_graph[dependency_index].clone() else { continue; };
+                let clone_component_id =
+                    call_graph[dependency_index].component_id().and_then(|id| {
+                        get_clone_component_id(
+                            &id,
+                            package_graph,
+                            krate_collection,
+                            component_db,
+                            computation_db,
+                            root_scope_id,
+                        )
+                    });
 
-                let Some(clone_component_id) = get_clone_component_id(
-                    &component_id,
-                    package_graph,
-                    krate_collection,
-                    component_db,
-                    computation_db,
-                ) else {
+                let Some(clone_component_id) = clone_component_id else {
                     emit_ancestor_descendant_borrow_error(
                         dependency_index,
                         node_index,
@@ -138,6 +144,7 @@ pub(super) fn ancestor_consumes_descendant_borrows(
     CallGraph {
         call_graph,
         root_node_index,
+        root_scope_id,
     }
 }
 
@@ -193,7 +200,14 @@ fn emit_ancestor_descendant_borrow_error(
                 .output_type()
                 .to_owned(),
         ),
-        CallGraphNode::InputParameter(o) => (None, o.to_owned()),
+        CallGraphNode::InputParameter { type_, source } => {
+            let id = if let InputParameterSource::Component(id) = source {
+                Some(*id)
+            } else {
+                None
+            };
+            (id, type_.to_owned())
+        }
         CallGraphNode::MatchBranching => {
             unreachable!()
         }
@@ -206,7 +220,7 @@ fn emit_ancestor_descendant_borrow_error(
         in your blueprint.\n\
         `{borrower_path}` wants to borrow `{type_:?}` but `{consumer_path}`, which is invoked \
         earlier on, consumes `{type_:?}` by value.\n\
-        Since I cannot clone `{type_:?}`, I can't resolve this conflict."
+        Since I'm not allowed to clone `{type_:?}`, I can't resolve this conflict."
     );
     let dummy_source = NamedSource::new("", "");
     let mut diagnostic = CompilerDiagnostic::builder(dummy_source, anyhow::anyhow!(error_msg));
@@ -254,12 +268,11 @@ fn emit_ancestor_descendant_borrow_error(
     );
     diagnostic = diagnostic.help_with_snippet(help);
 
-    let ref_counting_help = format!("If `{type_:?}` itself cannot implement `Clone`, consider wrapping it in an `std::sync::Rc` or `std::sync::Arc`.");
-    let ref_counting_help = HelpWithSnippet::new(
-        ref_counting_help,
-        AnnotatedSnippet::new_with_labels(NamedSource::new("", ""), vec![]),
+    diagnostic = suggest_wrapping_in_a_smart_pointer(
+        contended_component_id,
+        component_db,
+        computation_db,
+        diagnostic,
     );
-    diagnostic = diagnostic.help_with_snippet(ref_counting_help);
-
     diagnostics.push(diagnostic.build().into());
 }

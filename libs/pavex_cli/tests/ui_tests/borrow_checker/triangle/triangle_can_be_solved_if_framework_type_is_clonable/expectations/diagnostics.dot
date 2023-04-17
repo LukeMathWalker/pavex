@@ -1,0 +1,15 @@
+digraph "GET /home" {
+    0 [ label = "app::handler(&pavex_runtime::extract::route::RawRouteParams<'_, '_>, app::B) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
+    1 [ label = "app::b(pavex_runtime::extract::route::RawRouteParams<'_, '_>) -> app::B"]
+    2 [ label = "pavex_runtime::extract::route::RawRouteParams<'_, '_>"]
+    3 [ label = "<http::Response::<http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>> as pavex_runtime::response::IntoResponse>::into_response(http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
+    4 [ label = "<pavex_runtime::extract::route::RawRouteParams::<server, request> as core::clone::Clone>::clone(&pavex_runtime::extract::route::RawRouteParams<'_, '_>) -> pavex_runtime::extract::route::RawRouteParams<'_, '_>"]
+    1 -> 0 [ ]
+    2 -> 0 [ label = "&"]
+    0 -> 3 [ ]
+    2 -> 4 [ label = "&"]
+    4 -> 1 [ ]
+}
+digraph app_state {
+    0 [ label = "crate::ApplicationState() -> crate::ApplicationState"]
+}

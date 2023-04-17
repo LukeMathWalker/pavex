@@ -13,7 +13,7 @@ use crate::compiler::analyses::components::ComponentDb;
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::rustdoc::CrateCollection;
 
-use super::copy::{CopyChecker};
+use super::copy::CopyChecker;
 
 impl OrderedCallGraph {
     /// Build an [`OrderedCallGraph`] from a [`CallGraph`].
@@ -32,10 +32,7 @@ impl OrderedCallGraph {
         krate_collection: &CrateCollection,
         diagnostics: &mut Vec<miette::Error>,
     ) -> Result<OrderedCallGraph, ()> {
-        let copy_checker = CopyChecker::new(
-            package_graph,
-            krate_collection,
-        );
+        let copy_checker = CopyChecker::new(package_graph, krate_collection);
         let call_graph = Self::borrow_check(
             call_graph,
             &copy_checker,
@@ -120,6 +117,7 @@ impl OrderedCallGraph {
         let CallGraph {
             call_graph,
             root_node_index,
+            ..
         } = call_graph;
         let mut node_id2position = HashMap::with_capacity(call_graph.node_count());
         let mut ownership_relationships = OwnershipRelationships::compute(&call_graph);

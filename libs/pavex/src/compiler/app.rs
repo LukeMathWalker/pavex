@@ -15,12 +15,13 @@ use quote::format_ident;
 use pavex_builder::{constructor::Lifecycle, Blueprint};
 
 use crate::compiler::analyses::call_graph::{
-    application_state_call_graph, handler_call_graph, ApplicationStateCallGraph,
-    OrderedCallGraph, RawCallGraphExt,
+    application_state_call_graph, handler_call_graph, ApplicationStateCallGraph, OrderedCallGraph,
+    RawCallGraphExt,
 };
 use crate::compiler::analyses::components::{ComponentDb, ComponentId, HydratedComponent};
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::constructibles::ConstructibleDb;
+use crate::compiler::analyses::framework_items::FrameworkItemDb;
 use crate::compiler::analyses::user_components::{RouterKey, UserComponentDb};
 use crate::compiler::computation::Computation;
 use crate::compiler::generated_app::GeneratedApp;
@@ -41,8 +42,8 @@ pub struct App {
     package_graph: PackageGraph,
     handler_call_graphs: IndexMap<RouterKey, OrderedCallGraph>,
     application_state_call_graph: ApplicationStateCallGraph,
+    framework_item_db: FrameworkItemDb,
     runtime_singleton_bindings: BiHashMap<Ident, ResolvedType>,
-    request_scoped_framework_bindings: BiHashMap<Ident, ResolvedType>,
     codegen_types: HashSet<ResolvedType>,
     component_db: ComponentDb,
     computation_db: ComputationDb,
@@ -90,22 +91,22 @@ impl App {
         ) else {
             return Err(diagnostics);
         };
+        let framework_item_db = FrameworkItemDb::new(&package_graph, &krate_collection);
         let mut component_db = ComponentDb::build(
             user_component_db,
+            &framework_item_db,
             &mut computation_db,
             &package_graph,
             &krate_collection,
             &mut diagnostics,
         );
         exit_on_errors!(diagnostics);
-        let request_scoped_framework_bindings =
-            framework_bindings(&package_graph, &krate_collection);
         let mut constructible_db = ConstructibleDb::build(
             &mut component_db,
             &mut computation_db,
             &package_graph,
             &krate_collection,
-            &request_scoped_framework_bindings.right_values().collect(),
+            &framework_item_db,
             &mut diagnostics,
         );
         exit_on_errors!(diagnostics);
@@ -143,7 +144,7 @@ impl App {
         let runtime_singletons: IndexSet<(ResolvedType, ComponentId)> =
             get_required_singleton_types(
                 handler_call_graphs.iter(),
-                &request_scoped_framework_bindings,
+                &framework_item_db,
                 &constructible_db,
                 &component_db,
             );
@@ -181,8 +182,8 @@ impl App {
             component_db,
             computation_db,
             application_state_call_graph,
+            framework_item_db,
             runtime_singleton_bindings,
-            request_scoped_framework_bindings,
             codegen_types,
         })
     }
@@ -191,11 +192,12 @@ impl App {
     ///
     /// They are generated in-memory, they are not persisted to disk.
     pub fn codegen(&self) -> Result<GeneratedApp, anyhow::Error> {
+        let framework_bindings = self.framework_item_db.bindings();
         let (cargo_toml, mut package_ids2deps) = codegen::codegen_manifest(
             &self.package_graph,
             self.handler_call_graphs.values().map(|cg| &cg.call_graph),
             &self.application_state_call_graph.call_graph.call_graph,
-            &self.request_scoped_framework_bindings,
+            &framework_bindings,
             &self.codegen_types,
             &self.component_db,
             &self.computation_db,
@@ -213,7 +215,7 @@ impl App {
         let lib_rs = codegen::codegen_app(
             &self.handler_call_graphs,
             &self.application_state_call_graph,
-            &self.request_scoped_framework_bindings,
+            &framework_bindings,
             &package_ids2deps,
             &self.runtime_singleton_bindings,
             &self.component_db,
@@ -229,7 +231,7 @@ impl App {
             &self.package_graph,
             self.handler_call_graphs.values().map(|c| &c.call_graph),
             &self.application_state_call_graph.call_graph.call_graph,
-            &self.request_scoped_framework_bindings,
+            &self.framework_item_db.bindings(),
             &self.codegen_types,
             &self.component_db,
             &self.computation_db,
@@ -355,7 +357,7 @@ impl AppDiagnostics {
 /// These singletons will be attached to the overall application state.
 fn get_required_singleton_types<'a>(
     handler_call_graphs: impl Iterator<Item = (&'a RouterKey, &'a OrderedCallGraph)>,
-    types_provided_by_the_framework: &BiHashMap<Ident, ResolvedType>,
+    framework_item_db: &FrameworkItemDb,
     constructibles_db: &ConstructibleDb,
     component_db: &ComponentDb,
 ) -> IndexSet<(ResolvedType, ComponentId)> {
@@ -375,50 +377,25 @@ fn get_required_singleton_types<'a>(
             } else {
                 &required_input
             };
-            if !types_provided_by_the_framework.contains_right(required_input) {
-                let (component_id, _) = constructibles_db
-                    .get(
-                        root_component_scope_id,
-                        required_input,
-                        component_db.scope_graph(),
-                    )
-                    .unwrap();
-                assert_eq!(
-                    component_db.lifecycle(component_id),
-                    Some(&Lifecycle::Singleton)
-                );
-                singletons_to_be_built.insert((required_input.to_owned(), component_id));
+            // If it's a framework built-in, nothing to do!
+            if framework_item_db.get_id(required_input).is_some() {
+                continue;
             }
+            let (component_id, _) = constructibles_db
+                .get(
+                    root_component_scope_id,
+                    required_input,
+                    component_db.scope_graph(),
+                )
+                .unwrap();
+            assert_eq!(
+                component_db.lifecycle(component_id),
+                Some(&Lifecycle::Singleton)
+            );
+            singletons_to_be_built.insert((required_input.to_owned(), component_id));
         }
     }
     singletons_to_be_built
-}
-
-/// Return the set of name bindings injected by `pavex` into the processing context for
-/// an incoming request (e.g. the incoming request itself!).  
-/// The types injected here can be used by constructors and handlers even though no constructor
-/// has been explicitly registered for them by the developer.
-fn framework_bindings(
-    package_graph: &PackageGraph,
-    krate_collection: &CrateCollection,
-) -> BiHashMap<Ident, ResolvedType> {
-    let http_request = process_framework_path(
-        "pavex_runtime::http::Request::<pavex_runtime::hyper::Body>",
-        package_graph,
-        krate_collection,
-    );
-    let raw_path_parameters = process_framework_path(
-        "pavex_runtime::extract::route::RawRouteParams::<'server, 'request>",
-        package_graph,
-        krate_collection,
-    );
-    BiHashMap::from_iter(
-        [
-            (format_ident!("request"), http_request),
-            (format_ident!("url_params"), raw_path_parameters),
-        ]
-        .into_iter(),
-    )
 }
 
 /// Return the set of types that will be used in the generated code to build a functional
@@ -455,6 +432,7 @@ fn verify_singletons(
         let component_id = match c.0 {
             Computation::Callable(_) => component_id,
             Computation::MatchResult(_) => component_db.fallible_id(component_id),
+            Computation::FrameworkItem(_) => unreachable!(),
         };
         let user_component_id = component_db.user_component_id(component_id).unwrap();
         let user_component_db = &component_db.user_component_db();

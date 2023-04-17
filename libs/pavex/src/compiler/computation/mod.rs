@@ -25,6 +25,11 @@ pub(crate) enum Computation<'a> {
     /// A branching constructor: extract either the `Ok(T)` or the `Err(E)` variant out of a
     /// [`Result<T,E>`](Result).
     MatchResult(Cow<'a, MatchResult>),
+    /// A type that is provided by the framework.
+    ///
+    /// You could say that it's a bit of a hack to list this as a "computation".
+    /// Open to suggestions on how to model this better!
+    FrameworkItem(Cow<'a, ResolvedType>),
 }
 
 impl<'a> Computation<'a> {
@@ -33,6 +38,7 @@ impl<'a> Computation<'a> {
         match self {
             Computation::Callable(c) => Computation::Callable(Cow::Borrowed(c)),
             Computation::MatchResult(m) => Computation::MatchResult(Cow::Borrowed(m)),
+            Computation::FrameworkItem(i) => Computation::FrameworkItem(Cow::Borrowed(i)),
         }
     }
 
@@ -44,6 +50,7 @@ impl<'a> Computation<'a> {
         match self {
             Computation::Callable(c) => Computation::Callable(Cow::Owned(c.into_owned())),
             Computation::MatchResult(c) => Computation::MatchResult(Cow::Owned(c.into_owned())),
+            Computation::FrameworkItem(c) => Computation::FrameworkItem(Cow::Owned(c.into_owned())),
         }
     }
 
@@ -52,6 +59,7 @@ impl<'a> Computation<'a> {
         match self {
             Computation::Callable(c) => Cow::Borrowed(c.inputs.as_slice()),
             Computation::MatchResult(m) => Cow::Owned(vec![m.input.clone()]),
+            Computation::FrameworkItem(_) => Cow::Owned(vec![]),
         }
     }
 
@@ -62,6 +70,7 @@ impl<'a> Computation<'a> {
         match self {
             Computation::Callable(c) => c.output.as_ref(),
             Computation::MatchResult(m) => Some(&m.output),
+            Computation::FrameworkItem(i) => Some(i.as_ref()),
         }
     }
 
@@ -80,6 +89,9 @@ impl<'a> Computation<'a> {
             Computation::MatchResult(m) => {
                 Computation::MatchResult(Cow::Owned(m.bind_generic_type_parameters(bindings)))
             }
+            Computation::FrameworkItem(i) => {
+                Computation::FrameworkItem(Cow::Owned(i.bind_generic_type_parameters(bindings)))
+            }
         }
     }
 
@@ -89,6 +101,7 @@ impl<'a> Computation<'a> {
         match self {
             Computation::Callable(c) => c.unassigned_generic_type_parameters(),
             Computation::MatchResult(m) => m.unassigned_generic_type_parameters(),
+            Computation::FrameworkItem(i) => i.unassigned_generic_type_parameters(),
         }
     }
 }

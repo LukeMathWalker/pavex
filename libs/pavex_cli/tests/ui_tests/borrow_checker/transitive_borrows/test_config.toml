@@ -1,0 +1,7 @@
+description = """Test what happens when we give pavex a graph that can't satisfy the constraints 
+due to types that hold references to other types which have already been moved.
+Pavex is not smart enough to notice that the transitive type is holding a reference, therefore
+code generation will succeed"""
+
+[expectations]
+codegen = "pass"

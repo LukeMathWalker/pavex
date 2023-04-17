@@ -12,15 +12,13 @@ use quote::{format_ident, quote};
 use syn::{ItemEnum, ItemFn, ItemStruct};
 
 use crate::compiler::analyses::call_graph::{
-    ApplicationStateCallGraph, CallGraphNode, OrderedCallGraph, RawCallGraph,
-    RawCallGraphExt,
+    ApplicationStateCallGraph, CallGraphNode, OrderedCallGraph, RawCallGraph, RawCallGraphExt,
 };
-use crate::compiler::analyses::components::{ComponentDb, HydratedComponent};
+use crate::compiler::analyses::components::ComponentDb;
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::user_components::RouterKey;
 use crate::compiler::app::GENERATED_APP_PACKAGE_ID;
 use crate::compiler::computation::Computation;
-use crate::compiler::constructors::Constructor;
 use crate::language::{Callable, GenericArgument, ResolvedType};
 use crate::rustdoc::{ALLOC_PACKAGE_ID, TOOLCHAIN_CRATES};
 
@@ -591,25 +589,22 @@ fn collect_call_graph_package_ids<'a>(
         match node {
             CallGraphNode::Compute { component_id, .. } => {
                 let component = component_db.hydrated_component(*component_id, computation_db);
-                match component {
-                    HydratedComponent::Transformer(Computation::Callable(c))
-                    | HydratedComponent::Constructor(Constructor(Computation::Callable(c))) => {
+                match component.computation() {
+                    Computation::Callable(c) => {
                         collect_callable_package_ids(package_ids, &c);
                     }
-                    HydratedComponent::Transformer(Computation::MatchResult(m))
-                    | HydratedComponent::Constructor(Constructor(Computation::MatchResult(m))) => {
+                    Computation::MatchResult(m) => {
                         collect_type_package_ids(package_ids, &m.input);
                         collect_type_package_ids(package_ids, &m.output);
                     }
-                    HydratedComponent::RequestHandler(r) => {
-                        collect_callable_package_ids(package_ids, &r.callable);
-                    }
-                    HydratedComponent::ErrorHandler(e) => {
-                        collect_callable_package_ids(package_ids, &e.callable)
+                    Computation::FrameworkItem(i) => {
+                        collect_type_package_ids(package_ids, &i);
                     }
                 }
             }
-            CallGraphNode::InputParameter(t) => collect_type_package_ids(package_ids, t),
+            CallGraphNode::InputParameter { type_, .. } => {
+                collect_type_package_ids(package_ids, type_)
+            }
             CallGraphNode::MatchBranching => {}
         }
     }

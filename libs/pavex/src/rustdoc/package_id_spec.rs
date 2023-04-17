@@ -16,7 +16,10 @@ pub struct PackageIdSpecification {
 }
 
 impl PackageIdSpecification {
-    pub fn from_package_id(package_id: &PackageId, package_graph: &PackageGraph) -> Result<Self, anyhow::Error> {
+    pub fn from_package_id(
+        package_id: &PackageId,
+        package_graph: &PackageGraph,
+    ) -> Result<Self, anyhow::Error> {
         // Toolchain crates don't appear in the package graph, therefore we special-case them.
         if TOOLCHAIN_CRATES.contains(&package_id.repr()) {
             Ok(Self {

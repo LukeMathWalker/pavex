@@ -588,8 +588,10 @@ impl ResolvedPathGenericArgument {
                 ResolvedPathLifetime::Static => {
                     write!(buffer, "'static").unwrap();
                 }
-                ResolvedPathLifetime::Named(name) => {
-                    write!(buffer, "'{}", name).unwrap();
+                ResolvedPathLifetime::Named(_) => {
+                    // TODO: we should have proper name mapping for lifetimes here, but we know all our current
+                    //   usecases will work with lifetime elision.
+                    write!(buffer, "'_").unwrap();
                 }
             },
         }

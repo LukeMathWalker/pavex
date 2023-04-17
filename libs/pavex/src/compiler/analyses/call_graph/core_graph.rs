@@ -1,22 +1,19 @@
-use ahash::{HashMap, HashMapExt, HashSet, HashSetExt};
-use bimap::BiHashMap;
-use guppy::PackageId;
-use indexmap::IndexSet;
-use petgraph::prelude::{StableDiGraph, StableGraph};
-use petgraph::stable_graph::NodeIndex;
-use petgraph::visit::Dfs;
-use petgraph::Direction;
-
-
-use pavex_builder::constructor::Lifecycle;
-
-
 use crate::compiler::analyses::components::{
     ComponentDb, ComponentId, ConsumptionMode, HydratedComponent,
 };
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::constructibles::ConstructibleDb;
+use crate::compiler::analyses::user_components::ScopeId;
 use crate::compiler::computation::{Computation, MatchResultVariant};
+use ahash::{HashMap, HashMapExt, HashSet, HashSetExt};
+use bimap::BiHashMap;
+use guppy::PackageId;
+use indexmap::IndexSet;
+use pavex_builder::constructor::Lifecycle;
+use petgraph::prelude::{StableDiGraph, StableGraph};
+use petgraph::stable_graph::NodeIndex;
+use petgraph::visit::Dfs;
+use petgraph::Direction;
 
 use crate::language::{ResolvedType, TypeReference};
 
@@ -34,6 +31,7 @@ pub(super) fn build_call_graph<F>(
 where
     F: Fn(&Lifecycle) -> Option<NumberOfAllowedInvocations> + Clone,
 {
+    let root_scope_id = component_db.scope_id(root_id);
     let mut call_graph = RawCallGraph::new();
 
     let component_id2invocations = |component_id: ComponentId| {
@@ -43,16 +41,29 @@ where
         lifecycle2n_allowed_invocations(lifecycle)
     };
     let component_id2node = |id: ComponentId| {
-        let n_invocations = component_id2invocations(id);
-        match n_invocations {
-            None => {
-                let resolved_component = component_db.hydrated_component(id, computation_db);
-                CallGraphNode::InputParameter(resolved_component.output_type().to_owned())
+        if let Computation::FrameworkItem(i) = component_db
+            .hydrated_component(id, computation_db)
+            .computation()
+        {
+            CallGraphNode::InputParameter {
+                type_: i.into_owned(),
+                source: InputParameterSource::Component(id),
             }
-            Some(n_allowed_invocations) => CallGraphNode::Compute {
-                component_id: id,
-                n_allowed_invocations,
-            },
+        } else {
+            let n_invocations = component_id2invocations(id);
+            match n_invocations {
+                None => {
+                    let resolved_component = component_db.hydrated_component(id, computation_db);
+                    CallGraphNode::InputParameter {
+                        type_: resolved_component.output_type().to_owned(),
+                        source: InputParameterSource::Component(id),
+                    }
+                }
+                Some(n_allowed_invocations) => CallGraphNode::Compute {
+                    component_id: id,
+                    n_allowed_invocations,
+                },
+            }
         }
     };
 
@@ -91,7 +102,7 @@ where
                         n_allowed_invocations: NumberOfAllowedInvocations::One,
                         ..
                     }
-                    | CallGraphNode::InputParameter(_) => {
+                    | CallGraphNode::InputParameter { .. } => {
                         add_node_at_most_once(&mut call_graph, call_graph_node)
                     }
                     CallGraphNode::Compute {
@@ -150,7 +161,10 @@ where
                     } else {
                         let index = add_node_at_most_once(
                             &mut call_graph,
-                            CallGraphNode::InputParameter(input_type),
+                            CallGraphNode::InputParameter {
+                                type_: input_type,
+                                source: InputParameterSource::External,
+                            },
                         );
                         call_graph.update_edge(index, current_index, CallGraphEdgeMetadata::Move);
                     }
@@ -208,16 +222,20 @@ where
                     break 'inner;
                 };
                 for transformer_id in transformer_ids {
-                    let transformer_node_index = call_graph.add_node(CallGraphNode::Compute {
-                        component_id: *transformer_id,
-                        n_allowed_invocations,
-                    });
-                    // TODO: Is it correct to assume move semantics here?
-                    call_graph.update_edge(
-                        node_index,
-                        transformer_node_index,
-                        CallGraphEdgeMetadata::Move,
-                    );
+                    // Not all transformers might be relevant to this `CallGraph`, we need to take their scope into account.
+                    let transformer_scope_id = component_db.scope_id(*transformer_id);
+                    if root_scope_id.is_child_of(transformer_scope_id, component_db.scope_graph()) {
+                        let transformer_node_index = call_graph.add_node(CallGraphNode::Compute {
+                            component_id: *transformer_id,
+                            n_allowed_invocations,
+                        });
+                        // TODO: Is it correct to assume move semantics here?
+                        call_graph.update_edge(
+                            node_index,
+                            transformer_node_index,
+                            CallGraphEdgeMetadata::Move,
+                        );
+                    }
                 }
             }
             transformed_node_indexes.insert(node_index);
@@ -275,6 +293,7 @@ where
     CallGraph {
         call_graph,
         root_node_index,
+        root_scope_id,
     }
 }
 
@@ -374,7 +393,7 @@ fn take_references_as_inputs_if_they_suffice(
         .collect::<Vec<_>>();
     for node_index in indexes {
         let node = &call_graph[node_index];
-        let CallGraphNode::InputParameter(input_type) = node else { continue; };
+        let CallGraphNode::InputParameter { source, type_: input_type } = node else { continue; };
         match input_type {
             ResolvedType::Reference(_) => continue,
             _ => {
@@ -388,7 +407,10 @@ fn take_references_as_inputs_if_they_suffice(
                         inner: Box::new(input_type.to_owned()),
                     });
                     let reference_input_node_index =
-                        call_graph.add_node(CallGraphNode::InputParameter(reference_input_type));
+                        call_graph.add_node(CallGraphNode::InputParameter {
+                            source: *source,
+                            type_: reference_input_type,
+                        });
                     for neighbour_index in call_graph
                         .neighbors_directed(node_index, Direction::Outgoing)
                         .collect::<Vec<_>>()
@@ -432,6 +454,9 @@ pub(crate) struct CallGraph {
     /// See [`RawCallGraph`] for more details.
     pub(crate) call_graph: RawCallGraph,
     pub(crate) root_node_index: NodeIndex,
+    /// The [`ScopeId`] of the root callable.
+    /// Components registered against that [`ScopeId`] should only be visible to this call graph.
+    pub(crate) root_scope_id: ScopeId,
 }
 
 #[derive(Clone, Copy, Debug, Hash, Eq, PartialEq)]
@@ -463,7 +488,21 @@ pub(crate) enum CallGraphNode {
         n_allowed_invocations: NumberOfAllowedInvocations,
     },
     MatchBranching,
-    InputParameter(ResolvedType),
+    InputParameter {
+        /// Where we expect the input value to be sourced from.
+        source: InputParameterSource,
+        /// The type that will be taken as an input parameter by the generated dependency closure.
+        type_: ResolvedType,
+    },
+}
+
+#[derive(Clone, Copy, Debug, Hash, Eq, PartialEq)]
+/// The expected provider of the required input parameter.
+pub(crate) enum InputParameterSource {
+    /// It will be built by invoking a component.
+    Component(ComponentId),
+    /// It will be provided by the user of the generated code.
+    External,
 }
 
 impl CallGraphNode {
@@ -480,6 +519,18 @@ impl CallGraphNode {
             return None;
         };
         Some(component_db.hydrated_component(*component_id, computation_db))
+    }
+
+    /// Return the [`ComponentId`] associated with this node, if any.
+    pub fn component_id(&self) -> Option<ComponentId> {
+        match self {
+            CallGraphNode::Compute { component_id, .. } => Some(*component_id),
+            CallGraphNode::MatchBranching => None,
+            CallGraphNode::InputParameter { source, .. } => match source {
+                InputParameterSource::Component(id) => Some(*id),
+                InputParameterSource::External => None,
+            },
+        }
     }
 }
 
@@ -553,7 +604,7 @@ impl RawCallGraphExt for RawCallGraph {
         self.node_weights()
             .filter_map(|node| match node {
                 CallGraphNode::Compute { .. } | CallGraphNode::MatchBranching => None,
-                CallGraphNode::InputParameter(i) => Some(i),
+                CallGraphNode::InputParameter { type_, .. } => Some(type_),
             })
             .cloned()
             .collect()
@@ -594,9 +645,12 @@ impl RawCallGraphExt for RawCallGraph {
                                     m.output.render_type(package_ids2names)
                                 )
                             }
+                            Computation::FrameworkItem(i) => {
+                                format!("label = \"{}\"", i.render_type(package_ids2names))
+                            }
                         },
-                        CallGraphNode::InputParameter(t) => {
-                            format!("label = \"{}\"", t.render_type(package_ids2names))
+                        CallGraphNode::InputParameter { type_, .. } => {
+                            format!("label = \"{}\"", type_.render_type(package_ids2names))
                         }
                         CallGraphNode::MatchBranching => "label = \"`match`\"".to_string(),
                     }
@@ -638,10 +692,13 @@ impl RawCallGraphExt for RawCallGraph {
                                 Computation::Callable(c) => {
                                     format!("label = \"{c:?}\"")
                                 }
+                                Computation::FrameworkItem(i) => {
+                                    format!("label = \"{i:?}\"")
+                                }
                             }
                         }
-                        CallGraphNode::InputParameter(t) => {
-                            format!("label = \"{t:?}\"")
+                        CallGraphNode::InputParameter { type_, .. } => {
+                            format!("label = \"{type_:?}\"")
                         }
                         CallGraphNode::MatchBranching => "label = \"`match`\"".to_string(),
                     }
