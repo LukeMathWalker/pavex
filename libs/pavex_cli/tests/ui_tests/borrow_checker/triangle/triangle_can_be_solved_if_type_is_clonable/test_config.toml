@@ -1,0 +1,5 @@
+description = """Test what happens when we give pavex a graph that can't satisfy the constraints of the Rust borrow checker, 
+but allow pavex to clone the contended node"""
+
+[expectations]
+codegen = "pass"

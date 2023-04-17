@@ -2,16 +2,14 @@ use std::fmt::Write;
 
 use anyhow::anyhow;
 use guppy::graph::PackageGraph;
-use indexmap::{IndexSet};
+use indexmap::IndexSet;
 use itertools::Itertools;
 use miette::Report;
 use petgraph::graph::NodeIndex;
 use petgraph::Direction;
 use rustdoc_types::{ItemEnum, StructKind};
 
-use crate::compiler::analyses::call_graph::{
-    CallGraphNode, RawCallGraph,
-};
+use crate::compiler::analyses::call_graph::{CallGraphNode, RawCallGraph};
 use crate::compiler::analyses::components::{ComponentDb, HydratedComponent};
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::user_components::{RouterKey, UserComponentId};
@@ -86,7 +84,9 @@ pub(crate) fn verify_route_parameters<'a, I>(
         // template if the struct implements `StructuralDeserialize`, our marker trait that stands
         // for "this struct implements serde::Deserialize using a #[derive(serde::Deserialize)] with
         // no customizations (e.g. renames)".
-        if assert_trait_is_implemented(krate_collection, extracted_type, &structural_deserialize).is_err() {
+        if assert_trait_is_implemented(krate_collection, extracted_type, &structural_deserialize)
+            .is_err()
+        {
             continue;
         }
 

@@ -93,6 +93,7 @@ pub(crate) fn application_state_call_graph(
     let CallGraph {
         call_graph,
         root_node_index,
+        root_scope_id,
     } = build_call_graph(
         application_state_id,
         computation_db,
@@ -147,6 +148,7 @@ pub(crate) fn application_state_call_graph(
             CallGraph {
                 call_graph,
                 root_node_index,
+                root_scope_id,
             },
             Default::default(),
         )

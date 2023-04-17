@@ -1,4 +1,5 @@
-description = "A type that is clonable can be consumed by two different other constructors by value—pavex will insert a Clone invocation"
+description = """A type that is clonable can be consumed by two different other constructors by value.
+Pavex will insert a Clone invocation"""
 
 [expectations]
 codegen = "pass"

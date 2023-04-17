@@ -32,6 +32,7 @@ pub(crate) fn handler_call_graph(
     let CallGraph {
         call_graph,
         root_node_index,
+        root_scope_id,
     } = build_call_graph(
         request_handler,
         computation_db,
@@ -44,6 +45,7 @@ pub(crate) fn handler_call_graph(
         CallGraph {
             call_graph,
             root_node_index,
+            root_scope_id,
         },
         component_db,
         computation_db,

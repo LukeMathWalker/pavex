@@ -10,11 +10,11 @@ use petgraph::stable_graph::NodeIndex;
 use petgraph::Outgoing;
 
 use crate::compiler::analyses::call_graph::borrow_checker::clone::get_clone_component_id;
-use crate::compiler::analyses::call_graph::core_graph::RawCallGraph;
+use crate::compiler::analyses::call_graph::core_graph::{InputParameterSource, RawCallGraph};
 use crate::compiler::analyses::call_graph::{
     CallGraph, CallGraphEdgeMetadata, CallGraphNode, NumberOfAllowedInvocations,
 };
-use crate::compiler::analyses::components::ComponentDb;
+use crate::compiler::analyses::components::{ComponentDb};
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::diagnostic;
 use crate::diagnostic::{
@@ -23,6 +23,7 @@ use crate::diagnostic::{
 use crate::rustdoc::CrateCollection;
 
 use super::copy::CopyChecker;
+use super::diagnostic_helpers::suggest_wrapping_in_a_smart_pointer;
 
 /// Scan the call graph for a specific kind of borrow-checking violation: node `A` is consumed
 /// by value by two or more nodes.
@@ -41,16 +42,12 @@ pub(super) fn multiple_consumers(
     let CallGraph {
         mut call_graph,
         root_node_index,
+        root_scope_id,
     } = call_graph;
 
     let sink_ids = call_graph.externals(Outgoing).collect::<Vec<_>>();
     let indices = call_graph.node_indices().collect::<Vec<_>>();
     for node_id in indices {
-        if copy_checker.is_copy(&call_graph, node_id, component_db, computation_db) {
-            // You can't have a "used after moved" error for a Copy type.
-            continue;
-        }
-
         let consumer_ids: Vec<_> = call_graph
             .edges_directed(node_id, Outgoing)
             .filter_map(|edge| {
@@ -62,6 +59,11 @@ pub(super) fn multiple_consumers(
             })
             .collect();
         if consumer_ids.len() > 1 {
+            if copy_checker.is_copy(&call_graph, node_id, component_db, computation_db) {
+                // You can't have a "used after moved" error for a Copy type.
+                continue;
+            }
+
             // We have multiple consumers that want to take ownership of the
             // value.
             // This *could* be fine, if those consumers are never invoked in the same control flow
@@ -85,15 +87,17 @@ pub(super) fn multiple_consumers(
                 continue;
             }
 
-            let CallGraphNode::Compute { component_id, .. } =
-                call_graph[node_id].clone() else { continue; };
-            let Some(clone_component_id) = get_clone_component_id(
-                &component_id,
-                package_graph,
-                krate_collection,
-                component_db,
-                computation_db,
-            ) else {
+            let clone_component_id = call_graph[node_id].component_id().and_then(|id| {
+                get_clone_component_id(
+                    &id,
+                    package_graph,
+                    krate_collection,
+                    component_db,
+                    computation_db,
+                    root_scope_id,
+                )
+            });
+            let Some(clone_component_id) = clone_component_id else {
                 // We want each error to mention the nodes that are *actually* competing for the
                 // same value in a way that violates the borrow checker.
                 // A potential improvement here would be to capture, in the error message, the 
@@ -157,6 +161,7 @@ pub(super) fn multiple_consumers(
     CallGraph {
         call_graph,
         root_node_index,
+        root_scope_id,
     }
 }
 
@@ -177,7 +182,14 @@ fn emit_multiple_consumers_error(
                 .output_type()
                 .to_owned(),
         ),
-        CallGraphNode::InputParameter(o) => (None, o.to_owned()),
+        CallGraphNode::InputParameter { type_, source } => {
+            let id = if let InputParameterSource::Component(id) = source {
+                Some(*id)
+            } else {
+                None
+            };
+            (id, type_.to_owned())
+        }
         CallGraphNode::MatchBranching => {
             unreachable!()
         }
@@ -187,8 +199,8 @@ fn emit_multiple_consumers_error(
     let error_msg = format!(
         "I can't generate code that will pass the borrow checker *and* match the instructions \
         in your blueprint.\n\
-        There are {n_consumers} that take `{type_:?}` as an input parameter, consuming it by value. \
-        Since I cannot clone `{type_:?}`, I can't resolve this conflict."
+        There are {n_consumers} components that take `{type_:?}` as an input parameter, consuming it by value. \
+        Since I'm not allowed to clone `{type_:?}`, I can't resolve this conflict."
     );
     let dummy_source = NamedSource::new("", "");
     let mut diagnostic = CompilerDiagnostic::builder(dummy_source, anyhow::anyhow!(error_msg));
@@ -202,6 +214,7 @@ fn emit_multiple_consumers_error(
             let location = component_db
                 .user_component_db()
                 .get_location(user_component_id);
+            let callable_type = component_db.user_component_db()[user_component_id].callable_type();
             let source = match location.source_file(package_graph) {
                 Ok(s) => Some(s),
                 Err(e) => {
@@ -216,7 +229,7 @@ fn emit_multiple_consumers_error(
                 ),
                 Some(source) => {
                     let labeled_span = diagnostic::get_f_macro_invocation_span(&source, location)
-                        .labeled("The constructor was registered here".into());
+                        .labeled(format!("The {callable_type} was registered here"));
                     HelpWithSnippet::new(
                         help_msg,
                         AnnotatedSnippet::new_optional(source, labeled_span),
@@ -229,7 +242,7 @@ fn emit_multiple_consumers_error(
 
     let help = HelpWithSnippet::new(
         format!(
-            "Considering changing the signature of the constructors that consume `{type_:?}` by value.\n\
+            "Considering changing the signature of the components that consume `{type_:?}` by value.\n\
             Would a shared reference, `&{type_:?}`, be enough?",
         ),
         AnnotatedSnippet::new_with_labels(NamedSource::new("", ""), vec![]),
@@ -249,8 +262,9 @@ fn emit_multiple_consumers_error(
             }
         };
         if let Some(source) = source {
+            let callable_type = component_db.user_component_db()[user_component_id].callable_type();
             let labeled_span = diagnostic::get_f_macro_invocation_span(&source, location)
-                .labeled("One of the consuming constructors".into());
+                .labeled(format!("One of the consuming {callable_type}s"));
             diagnostic = diagnostic.help_with_snippet(HelpWithSnippet::new(
                 String::new(),
                 AnnotatedSnippet::new_optional(source, labeled_span),
@@ -258,12 +272,12 @@ fn emit_multiple_consumers_error(
         }
     }
 
-    let ref_counting_help = format!("If `{type_:?}` itself cannot implement `Clone`, consider wrapping it in an `std::sync::Rc` or `std::sync::Arc`.");
-    let ref_counting_help = HelpWithSnippet::new(
-        ref_counting_help,
-        AnnotatedSnippet::new_with_labels(NamedSource::new("", ""), vec![]),
+    let diagnostic = suggest_wrapping_in_a_smart_pointer(
+        consumed_component_id,
+        component_db,
+        computation_db,
+        diagnostic,
     );
-    diagnostic = diagnostic.help_with_snippet(ref_counting_help);
 
     diagnostics.push(diagnostic.build().into());
 }

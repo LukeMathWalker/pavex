@@ -27,7 +27,10 @@ impl<'a> CopyChecker<'a> {
         krate_collection: &'a CrateCollection,
     ) -> Self {
         let copy_trait = get_copy_trait(package_graph, krate_collection);
-        Self { copy_trait, krate_collection }
+        Self {
+            copy_trait,
+            krate_collection,
+        }
     }
 
     /// Returns `true` if a type implements the `Copy` trait. `false` otherwise (or if we can't determine it).
@@ -49,8 +52,8 @@ impl<'a> CopyChecker<'a> {
                 .is_ok()
             }
             CallGraphNode::MatchBranching => true,
-            CallGraphNode::InputParameter(t) => {
-                assert_trait_is_implemented(self.krate_collection, t, &self.copy_trait).is_ok()
+            CallGraphNode::InputParameter { type_, .. } => {
+                assert_trait_is_implemented(self.krate_collection, type_, &self.copy_trait).is_ok()
             }
         }
     }

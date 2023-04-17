@@ -23,6 +23,8 @@ use crate::diagnostic::{
 use crate::language::{Callable, ResolvedType};
 use crate::rustdoc::CrateCollection;
 
+use super::framework_items::FrameworkItemDb;
+
 #[derive(Debug)]
 /// The set of types that can be injected into request handlers, error handlers and (other) constructors.
 pub(crate) struct ConstructibleDb {
@@ -39,7 +41,7 @@ impl ConstructibleDb {
         computation_db: &mut ComputationDb,
         package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
-        request_scoped_framework_types: &HashSet<&ResolvedType>,
+        framework_items_db: &FrameworkItemDb,
         diagnostics: &mut Vec<miette::Error>,
     ) -> Self {
         let mut self_ = Self::_build(component_db, computation_db);
@@ -48,7 +50,7 @@ impl ConstructibleDb {
             computation_db,
             package_graph,
             krate_collection,
-            request_scoped_framework_types,
+            framework_items_db,
             diagnostics,
         );
         self_.verify_singleton_ambiguity(component_db, computation_db, package_graph, diagnostics);
@@ -103,7 +105,7 @@ impl ConstructibleDb {
         computation_db: &mut ComputationDb,
         package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
-        request_scoped_framework_types: &HashSet<&ResolvedType>,
+        framework_items_db: &FrameworkItemDb,
         diagnostics: &mut Vec<miette::Error>,
     ) {
         let mut component_ids = component_db.iter().map(|(id, _)| id).collect::<Vec<_>>();
@@ -151,8 +153,10 @@ impl ConstructibleDb {
                             continue;
                         }
                     };
-                    if request_scoped_framework_types.contains(input) {
-                        continue;
+                    if let Some(id) = framework_items_db.get_id(input) {
+                        if let Lifecycle::RequestScoped = framework_items_db.lifecycle(id) {
+                            continue;
+                        }
                     }
                     if self
                         .get_or_try_bind(scope_id, input, component_db, computation_db)
@@ -515,7 +519,7 @@ impl ConstructibleDb {
 ///
 /// Be careful! This is not the set of all types that can be constructed in the given scope!
 /// That's a much larger set, because it includes all types that can be constructed in this
-/// scope as well as any of its parent scope.
+/// scope as well as any of its parent scopes.
 struct ConstructiblesInScope {
     type2constructor_id: HashMap<ResolvedType, ComponentId>,
     /// Every time we encounter a constructible type that contains an unassigned generic type

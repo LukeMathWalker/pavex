@@ -1,0 +1,5 @@
+description = """A input type that is clonable can be consumed by two different other constructors by value.
+Pavex will insert a Clone invocation"""
+
+[expectations]
+codegen = "pass"

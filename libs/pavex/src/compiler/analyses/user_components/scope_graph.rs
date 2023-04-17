@@ -15,34 +15,35 @@ use pavex_builder::reflection::Location;
 /// "Normal" scopes have a single parent scope and zero or more child scopes.
 /// The root scope has no parent scope and zero or more child scopes.
 /// The application state scope has multiple parent scopes and no child scopes.
-/// Each request handler has a dedicated scope with the application state scope as its only child.
+/// Each request handler has a dedicated scope with no children—this allows us to register
+/// components that are only visible to the call graph of a specific request handler.
 ///
 /// All the components in a scope are visible to all the components in the scope's subgraph.
 ///
 /// ## Example
 ///
 /// ```text
-///       +---------------------+
-///       |        Root         |
-///       +---------------------+
-///                  |
-///      +-----------+-----------+
-///      |                       |
-/// +----+-----+           +-----+-----+
-/// |  Scope 1 |           |  Scope 2 |
-/// +----------+           +----------+
-///      |                       |
-/// +----+--------+      +-----+-------+
-/// |  RH Scope 1 |      |  RH Scope 2 |
-/// +-------------+      +-------------+
-///      |                     |
-///      +---------------------+
-///      |     Application     |
-///      |       State         |
-///      +---------------------+
+///                  +---------------------+
+///                  |        Root         |
+///                  +---------------------+
+///                             |
+///                 +-----------+-----------+
+///                 |                       |
+///            +----+-----+           +-----+-----+
+///            |  Scope 1 |           |  Scope 2  |
+///            +----------+           +-----------+
+///           /         |              |           \
+/// +------+------+     |              |      +------+------+
+/// |  RH Scope 1 |     |              |      |  RH Scope 2 |
+/// +-------------+     |              |      +-------------+
+///                     |              |
+///                  +---------------------+
+///                  |     Application     |
+///                  |       State         |
+///                  +---------------------+
 /// ```
 ///
-/// where `RH Scope 1` and `RH Scope 2` are the request handler scopes.
+/// where `RH Scope 1` and `RH Scope 2` are request handler scopes.
 #[derive(Debug, Clone)]
 pub struct ScopeGraph {
     root: ScopeId,
@@ -137,13 +138,13 @@ impl ScopeGraphBuilder {
     ///
     /// The scope graph is immutable after this point—you won't be able to add more scopes.
     ///
-    /// It also takes care of adding the application state scope as a child of all the "leaf" scopes.
+    /// It also takes care of adding the application state scope as a child of all the parent nodes of "leaf" scopes.
     pub fn build(self) -> ScopeGraph {
         let mut graph = self.graph;
         let application_state = self.next_node_id;
 
-        // Add application state scope as a child of all the "leaf" scopes.
-        let leaf_scopes = graph
+        // Add application state scope as a child of all the *parents* of "leaf" scopes.
+        let leaf_parent_ids = graph
             .node_identifiers()
             .filter(|id| {
                 graph
@@ -151,9 +152,13 @@ impl ScopeGraphBuilder {
                     .count()
                     == 0
             })
+            .map(|leaf_id| graph.neighbors_directed(leaf_id, petgraph::Direction::Incoming))
+            .flatten()
             .collect::<BTreeSet<_>>();
+
         graph.add_node(application_state);
-        for id in leaf_scopes {
+
+        for id in leaf_parent_ids {
             graph.add_edge(id, application_state, ());
         }
         ScopeGraph {

@@ -124,10 +124,13 @@ impl OrderedCallGraph {
                                 Computation::Callable(c) => {
                                     format!("label = \"{position}| {c:?}\"")
                                 }
+                                Computation::FrameworkItem(i) => {
+                                    format!("label = \"{position}| {i:?}\"")
+                                }
                             }
                         }
-                        CallGraphNode::InputParameter(t) => {
-                            format!("label = \"{position}| {t:?}\"")
+                        CallGraphNode::InputParameter { type_, .. } => {
+                            format!("label = \"{position}| {type_:?}\"")
                         }
                         CallGraphNode::MatchBranching => format!("label = \"{position}| `match`\""),
                     }

@@ -1,7 +1,9 @@
 //! A toolkit to assemble and report errors and warnings to the user.
 use std::fmt::{Display, Formatter};
 
-pub(crate) use compiler_diagnostic::{AnnotatedSnippet, CompilerDiagnostic, HelpWithSnippet};
+pub(crate) use compiler_diagnostic::{
+    AnnotatedSnippet, CompilerDiagnostic, CompilerDiagnosticBuilder, HelpWithSnippet,
+};
 pub(crate) use ordinals::ZeroBasedOrdinal;
 pub(crate) use proc_macro_utils::ProcMacroSpanExt;
 pub(crate) use registration_locations::{
