@@ -39,6 +39,7 @@ We publish project updates every 4-6 weeks:
 
 - [Progress report #1](https://www.lpalmieri.com/posts/pavex-progress-report-01/) [January 2023]
 - [Progress report #2](https://www.lpalmieri.com/posts/pavex-progress-report-02/) [March 2023]
+- [Progress report #3](https://www.lpalmieri.com/posts/pavex-progress-report-03/) [April 2023]
 
 ## Why does `pavex` exist?
 
