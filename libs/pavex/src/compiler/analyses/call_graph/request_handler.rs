@@ -29,17 +29,20 @@ pub(crate) fn handler_call_graph(
             Lifecycle::Transient => Some(NumberOfAllowedInvocations::Multiple),
         }
     }
-    let CallGraph {
+    let Ok(CallGraph {
         call_graph,
         root_node_index,
         root_scope_id,
-    } = build_call_graph(
+    }) = build_call_graph(
         request_handler,
         computation_db,
         component_db,
         constructible_db,
         lifecycle2invocations,
-    );
+        diagnostics,
+    ) else {
+        return Err(());
+    };
 
     OrderedCallGraph::new(
         CallGraph {

@@ -90,17 +90,20 @@ pub(crate) fn application_state_call_graph(
             computation_db,
         )
         .unwrap();
-    let CallGraph {
+    let Ok(CallGraph {
         call_graph,
         root_node_index,
         root_scope_id,
-    } = build_call_graph(
+    }) = build_call_graph(
         application_state_id,
         computation_db,
         component_db,
         constructible_db,
         lifecycle2invocations,
-    );
+        diagnostics
+    ) else {
+        return Err(());
+    };
 
     // We need to make sure that all paths return the same output type.
     // For `ApplicationState`, that's either `ApplicationState` or `Result<ApplicationState, E>`,
@@ -293,13 +296,17 @@ pub(crate) fn application_state_call_graph(
         }
 
         // With all the transformers in place, we can now build the final call graph!
-        let cg = build_call_graph(
+        let Ok(cg) = build_call_graph(
             application_state_id,
             computation_db,
             component_db,
             constructible_db,
             lifecycle2invocations,
-        );
+            diagnostics
+        ) else {
+            return Err(());
+        };
+
         (cg, error_variants)
     };
 

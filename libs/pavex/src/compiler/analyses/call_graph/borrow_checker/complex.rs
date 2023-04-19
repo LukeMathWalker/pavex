@@ -10,7 +10,7 @@ use crate::compiler::analyses::call_graph::core_graph::{InputParameterSource, Ra
 use crate::compiler::analyses::call_graph::{
     CallGraph, CallGraphEdgeMetadata, CallGraphNode, NumberOfAllowedInvocations,
 };
-use crate::compiler::analyses::components::{ComponentDb};
+use crate::compiler::analyses::components::ComponentDb;
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::computation::Computation;
 use crate::diagnostic;
