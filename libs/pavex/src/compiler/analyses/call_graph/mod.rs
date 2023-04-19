@@ -10,4 +10,5 @@ mod application_state;
 mod borrow_checker;
 mod codegen;
 mod core_graph;
+mod dependency_graph;
 mod request_handler;

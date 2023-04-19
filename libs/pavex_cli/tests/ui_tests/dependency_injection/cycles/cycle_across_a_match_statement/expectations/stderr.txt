@@ -1,0 +1,11 @@
+[31m[1mERROR[0m[39m: 
+  [31m×[0m The dependency graph cannot contain cycles, but I just found one!
+  [31m│[0m If I tried to build your dependencies, I would end up in an infinite loop.
+  [31m│[0m 
+  [31m│[0m The cycle looks like this:
+  [31m│[0m 
+  [31m│[0m - `app::b` depends on `app::A`, which is built by `app::a`
+  [31m│[0m - `app::a` depends on `app::B`, which is built by `app::b`
+  [31m│[0m
+  [31m│[0m [36m  help: [0mBreak the cycle! Remove one of the 'depends-on' relationship by
+  [31m│[0m         changing the signature of one of the components in the cycle.

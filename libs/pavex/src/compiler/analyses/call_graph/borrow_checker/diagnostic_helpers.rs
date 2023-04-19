@@ -1,7 +1,16 @@
 use miette::NamedSource;
 use pavex_builder::constructor::Lifecycle;
 
-use crate::{compiler::{analyses::{components::{ComponentId, ComponentDb}, computations::ComputationDb}, computation::Computation}, diagnostic::{CompilerDiagnosticBuilder, HelpWithSnippet, AnnotatedSnippet}};
+use crate::{
+    compiler::{
+        analyses::{
+            components::{ComponentDb, ComponentId},
+            computations::ComputationDb,
+        },
+        computation::Computation,
+    },
+    diagnostic::{AnnotatedSnippet, CompilerDiagnosticBuilder, HelpWithSnippet},
+};
 
 pub(super) fn suggest_wrapping_in_a_smart_pointer(
     consumed_component_id: Option<ComponentId>,

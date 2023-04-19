@@ -17,6 +17,38 @@ use petgraph::Direction;
 
 use crate::language::{ResolvedType, TypeReference};
 
+use super::dependency_graph::DependencyGraph;
+
+/// We want to code-generate a wrapping function for a given callable (the "root"), its **dependency closure**.
+/// The dependency closure, leveraging the registered constructors, should either require no input
+/// of its own or ask for "upstream" inputs (i.e. types that are recursive dependencies of the input
+/// types for the callable that we want to invoke).
+///
+/// We represent the dependency closure as a directed acyclic graph (DAG), where each node is a
+/// constructor (or an upstream input) and each edge represents a dependency between two constructors.
+///
+/// In the call graph, each constructor appears as many times as it needs to be invoked. A separate
+/// node type is used for types that we can't build, the ones that the callable closure will
+/// take as inputs.
+///
+/// # Example: request handling
+///
+/// Singletons should be constructed once and re-used throughout the entire lifetime of the
+/// application; this implies that the generated code for handling a single request should not
+/// call the singleton constructor—it should fetch it from the server state!
+/// Request-scoped types, instead, should be built by the request handler closure **at most once**.
+/// Transient types can be built multiple times within the lifecycle of each incoming request.
+#[derive(Debug)]
+pub(crate) struct CallGraph {
+    /// The actual graph data structure holding nodes and edges.
+    /// See [`RawCallGraph`] for more details.
+    pub(crate) call_graph: RawCallGraph,
+    pub(crate) root_node_index: NodeIndex,
+    /// The [`ScopeId`] of the root callable.
+    /// Components registered against that [`ScopeId`] should only be visible to this call graph.
+    pub(crate) root_scope_id: ScopeId,
+}
+
 /// Build a [`CallGraph`] rooted in the `root_id` component.
 /// The caller needs to provide the required look-up maps and a function that determines how
 /// many times a callable can be invoked given its [`Lifecycle`].
@@ -27,10 +59,25 @@ pub(super) fn build_call_graph<F>(
     component_db: &ComponentDb,
     constructible_db: &ConstructibleDb,
     lifecycle2n_allowed_invocations: F,
-) -> CallGraph
+    diagnostics: &mut Vec<miette::Error>,
+) -> Result<CallGraph, ()>
 where
     F: Fn(&Lifecycle) -> Option<NumberOfAllowedInvocations> + Clone,
 {
+    // If the dependency graph is not acyclic, we can't build a call graph—we'd get stuck in an infinite loop.
+    if DependencyGraph::build(
+        root_id,
+        computation_db,
+        component_db,
+        constructible_db,
+        lifecycle2n_allowed_invocations.clone(),
+    )
+    .assert_acyclic( component_db, computation_db, diagnostics)
+    .is_err()
+    {
+        return Err(());
+    }
+
     let root_scope_id = component_db.scope_id(root_id);
     let mut call_graph = RawCallGraph::new();
 
@@ -290,11 +337,11 @@ where
     } else {
         root_node_index
     };
-    CallGraph {
+    Ok(CallGraph {
         call_graph,
         root_node_index,
         root_scope_id,
-    }
+    })
 }
 
 /// We traverse the graph looking for fallible compute nodes.
@@ -427,36 +474,6 @@ fn take_references_as_inputs_if_they_suffice(
             }
         }
     }
-}
-
-/// We want to code-generate a wrapping function for a given callable (the "root"), its **dependency closure**.
-/// The dependency closure, leveraging the registered constructors, should either require no input
-/// of its own or ask for "upstream" inputs (i.e. types that are recursive dependencies of the input
-/// types for the callable that we want to invoke).
-///
-/// We represent the dependency closure as a directed acyclic graph (DAG), where each node is a
-/// constructor (or an upstream input) and each edge represents a dependency between two constructors.
-///
-/// In the call graph, each constructor appears as many times as it needs to be invoked. A separate
-/// node type is used for types that we can't build, the ones that the callable closure will
-/// take as inputs.
-///
-/// # Example: request handling
-///
-/// Singletons should be constructed once and re-used throughout the entire lifetime of the
-/// application; this implies that the generated code for handling a single request should not
-/// call the singleton constructor—it should fetch it from the server state!
-/// Request-scoped types, instead, should be built by the request handler closure **at most once**.
-/// Transient types can be built multiple times within the lifecycle of each incoming request.
-#[derive(Debug)]
-pub(crate) struct CallGraph {
-    /// The actual graph data structure holding nodes and edges.
-    /// See [`RawCallGraph`] for more details.
-    pub(crate) call_graph: RawCallGraph,
-    pub(crate) root_node_index: NodeIndex,
-    /// The [`ScopeId`] of the root callable.
-    /// Components registered against that [`ScopeId`] should only be visible to this call graph.
-    pub(crate) root_scope_id: ScopeId,
 }
 
 #[derive(Clone, Copy, Debug, Hash, Eq, PartialEq)]
