@@ -1,0 +1,43 @@
+[31m[1mERROR[0m[39m: 
+  [31m×[0m Singletons can't depend on request-scoped or transient components.
+  [31m│[0m They are constructed before the application starts, outside of the
+  [31m│[0m request-response lifecycle.
+  [31m│[0m But your singleton `app::A` depends on `app::B`, which has a request-
+  [31m│[0m scoped lifecycle.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:27:1]
+  [31m│[0m  [2m27[0m │     let mut bp = Blueprint::new();
+  [31m│[0m  [2m28[0m │     bp.constructor(f!(crate::a), Lifecycle::Singleton);
+  [31m│[0m     · [35;1m                   ──────┬─────[0m
+  [31m│[0m     ·                          [35;1m╰── [35;1mThe singleton was registered here[0m[0m
+  [31m│[0m  [2m29[0m │     bp.constructor(f!(crate::b), Lifecycle::RequestScoped);
+  [31m│[0m     ╰────
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:28:1]
+  [31m│[0m  [2m28[0m │     bp.constructor(f!(crate::a), Lifecycle::Singleton);
+  [31m│[0m  [2m29[0m │     bp.constructor(f!(crate::b), Lifecycle::RequestScoped);
+  [31m│[0m     · [35;1m                   ──────┬─────[0m
+  [31m│[0m     ·                          [35;1m╰── [35;1mThe request-scoped dependency was registered here[0m[0m
+  [31m│[0m  [2m30[0m │     bp.constructor(f!(crate::c), Lifecycle::Transient);
+  [31m│[0m     ╰────
+
+[31m[1mERROR[0m[39m: 
+  [31m×[0m Singletons can't depend on request-scoped or transient components.
+  [31m│[0m They are constructed before the application starts, outside of the
+  [31m│[0m request-response lifecycle.
+  [31m│[0m But your singleton `app::A` depends on `app::C`, which has a transient
+  [31m│[0m lifecycle.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:27:1]
+  [31m│[0m  [2m27[0m │     let mut bp = Blueprint::new();
+  [31m│[0m  [2m28[0m │     bp.constructor(f!(crate::a), Lifecycle::Singleton);
+  [31m│[0m     · [35;1m                   ──────┬─────[0m
+  [31m│[0m     ·                          [35;1m╰── [35;1mThe singleton was registered here[0m[0m
+  [31m│[0m  [2m29[0m │     bp.constructor(f!(crate::b), Lifecycle::RequestScoped);
+  [31m│[0m     ╰────
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:29:1]
+  [31m│[0m  [2m29[0m │     bp.constructor(f!(crate::b), Lifecycle::RequestScoped);
+  [31m│[0m  [2m30[0m │     bp.constructor(f!(crate::c), Lifecycle::Transient);
+  [31m│[0m     · [35;1m                   ──────┬─────[0m
+  [31m│[0m     ·                          [35;1m╰── [35;1mThe transient dependency was registered here[0m[0m
+  [31m│[0m  [2m31[0m │     bp.route(GET, "/", f!(crate::handler));
+  [31m│[0m     ╰────

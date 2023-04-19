@@ -42,11 +42,11 @@ pub(crate) fn application_state_call_graph(
     fn lifecycle2invocations(lifecycle: &Lifecycle) -> Option<NumberOfAllowedInvocations> {
         match lifecycle {
             Lifecycle::Singleton => Some(NumberOfAllowedInvocations::One),
-            Lifecycle::RequestScoped => {
-                panic!("Singletons should not depend on types with a request-scoped lifecycle.")
-            }
-            Lifecycle::Transient => {
-                panic!("Singletons should not depend on types with a transient lifecycle.")
+            Lifecycle::Transient | Lifecycle::RequestScoped => {
+                // Singletons cannot depend on components with a shorter lifecycle.
+                // This is enforced before trying to build the call graph, by `ConstructibleDb`, so
+                // we don't need to worry about it here.
+                unreachable!()
             }
         }
     }

@@ -103,7 +103,7 @@ An `Blueprint` captures two types of information:
 For each type constructor, the developer must specify the lifecycle of its output type:
 
 - _singleton_ - an instance is built once before, the application starts, and re-used for all incoming requests;
-- _request scoped_ - a new instance is built for every incoming request and re-used throughout the handling of that
+- _request-scoped_ - a new instance is built for every incoming request and re-used throughout the handling of that
   specific request;
 - _transient_ - a new instance is built every time the type is needed, potentially multiple times for each incoming
   request.

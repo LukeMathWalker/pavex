@@ -3,7 +3,7 @@ use std::collections::VecDeque;
 use ahash::{HashMap, HashMapExt, HashSet};
 use guppy::graph::PackageGraph;
 use indexmap::{IndexMap, IndexSet};
-use miette::NamedSource;
+use miette::{NamedSource, SourceSpan};
 use syn::spanned::Spanned;
 
 use pavex_builder::constructor::Lifecycle;
@@ -15,7 +15,7 @@ use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::user_components::{
     ScopeGraph, ScopeId, UserComponentDb, UserComponentId,
 };
-use crate::diagnostic;
+use crate::diagnostic::{self, ParsedSourceFile};
 use crate::diagnostic::{
     convert_proc_macro_span, convert_rustdoc_span, read_source_file, AnnotatedSnippet,
     CompilerDiagnostic, HelpWithSnippet, LocationExt, SourceSpanExt,
@@ -54,6 +54,12 @@ impl ConstructibleDb {
             diagnostics,
         );
         self_.verify_singleton_ambiguity(component_db, computation_db, package_graph, diagnostics);
+        self_.verify_lifecycle_of_singleton_dependencies(
+            component_db,
+            computation_db,
+            package_graph,
+            diagnostics,
+        );
 
         // For each type that supports dependency injection, we look up the constructors of their inputs.
         // We assert that all their inputs are in a scope that is the same or a
@@ -358,6 +364,44 @@ impl ConstructibleDb {
             }
         }
     }
+
+    /// Singletons are built before the application starts, outside of the request-response cycle.
+    ///
+    /// Therefore they cannot depend on types which have a shorter lifecycle—i.e. request-scoped
+    /// or transient.
+    /// It's the responsibility of this method to enforce this constraint.
+    fn verify_lifecycle_of_singleton_dependencies(
+        &self,
+        component_db: &ComponentDb,
+        computation_db: &ComputationDb,
+        package_graph: &PackageGraph,
+        diagnostics: &mut Vec<miette::Error>,
+    ) {
+        for (component_id, _) in component_db.iter() {
+            if component_db.lifecycle(component_id) != Some(&Lifecycle::Singleton) {
+                continue;
+            }
+            let component = component_db.hydrated_component(component_id, computation_db);
+            let component_scope = component_db.scope_id(component_id);
+            for input_type in component.input_types().iter() {
+                if let Some((input_constructor_id, _)) =
+                    self.get(component_scope, input_type, component_db.scope_graph())
+                {
+                    let input_lifecycle = component_db.lifecycle(input_constructor_id).unwrap();
+                    if input_lifecycle != &Lifecycle::Singleton {
+                        Self::singleton_must_depend_on_singletons(
+                            component_id,
+                            input_constructor_id,
+                            package_graph,
+                            component_db,
+                            computation_db,
+                            diagnostics,
+                        )
+                    }
+                }
+            }
+        }
+    }
 }
 
 impl ConstructibleDb {
@@ -511,6 +555,73 @@ impl ConstructibleDb {
             ))
             .build();
         diagnostics.push(diagnostic.into());
+    }
+
+    fn singleton_must_depend_on_singletons(
+        singleton_id: ComponentId,
+        dependency_id: ComponentId,
+        package_graph: &PackageGraph,
+        component_db: &ComponentDb,
+        computation_db: &ComputationDb,
+        diagnostics: &mut Vec<miette::Error>,
+    ) {
+        fn registration_span(
+            component_id: ComponentId,
+            package_graph: &PackageGraph,
+            component_db: &ComponentDb,
+            diagnostics: &mut Vec<miette::Error>,
+        ) -> Option<(ParsedSourceFile, SourceSpan)> {
+            let user_id = component_db.user_component_id(component_id)?;
+            let user_component_db = component_db.user_component_db();
+            let location = user_component_db.get_location(user_id);
+
+            let source = match location.source_file(package_graph) {
+                Ok(s) => s,
+                Err(e) => {
+                    diagnostics.push(e.into());
+                    return None;
+                }
+            };
+            let source_span = diagnostic::get_f_macro_invocation_span(&source, location)?;
+            Some((source, source_span))
+        }
+
+        let singleton_type = component_db
+            .hydrated_component(singleton_id, computation_db)
+            .output_type()
+            .to_owned();
+        let dependency_type = component_db
+            .hydrated_component(dependency_id, computation_db)
+            .output_type()
+            .to_owned();
+        let dependency_lifecycle = component_db.lifecycle(dependency_id).unwrap();
+
+        let e = anyhow::anyhow!(
+            "Singletons can't depend on request-scoped or transient components.\n\
+            They are constructed before the application starts, outside of the request-response lifecycle.\n\
+            But your singleton `{singleton_type:?}` depends on `{dependency_type:?}`, which has a {dependency_lifecycle} lifecycle.",
+        );
+        let mut diagnostic_builder =
+            match registration_span(singleton_id, package_graph, component_db, diagnostics) {
+                Some((source, source_span)) => CompilerDiagnostic::builder(source, e)
+                    .label(source_span.labeled("The singleton was registered here".into())),
+                None => {
+                    CompilerDiagnostic::builder(NamedSource::new("".to_string(), "".to_string()), e)
+                }
+            };
+
+        if let Some((source, source_span)) =
+            registration_span(dependency_id, package_graph, component_db, diagnostics)
+        {
+            diagnostic_builder =
+                diagnostic_builder.additional_annotated_snippet(AnnotatedSnippet::new(
+                    source,
+                    source_span.labeled(format!(
+                        "The {dependency_lifecycle} dependency was registered here"
+                    )),
+                ));
+        }
+        diagnostics.push(diagnostic_builder.build().into());
     }
 }
 
