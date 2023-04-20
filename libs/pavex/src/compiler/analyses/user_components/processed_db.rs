@@ -50,6 +50,7 @@ impl UserComponentDb {
     ///
     /// The callable associated to each component will be resolved and added to the
     /// provided [`ComputationDb`].
+    #[tracing::instrument(name = "Build user component database", skip_all)]
     pub fn build(
         bp: &Blueprint,
         computation_db: &mut ComputationDb,

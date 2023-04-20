@@ -297,7 +297,9 @@ impl ResolvedPath {
                     .expect("Bug: a `CallPath` with no path segments!");
                 // Unwrapping here is safe: there is always at least one path segment in a successfully
                 // parsed `ExprPath`.
-                first_segment.ident = format_ident!("{}", identifiers.registered_at());
+                // We must make sure to normalize the crate name, since it may contain hyphens.
+                first_segment.ident =
+                    format_ident!("{}", identifiers.registered_at().replace('-', "_"));
             }
             for segment in p.segments.iter_mut() {
                 for generic_argument in segment.generic_arguments.iter_mut() {
@@ -408,6 +410,12 @@ impl ResolvedPath {
         identifiers: &RawCallableIdentifiers,
         graph: &guppy::graph::PackageGraph,
     ) -> Result<Self, ParseError> {
+        // Keeping track of who returns a normalized crate name vs a "raw" crate name is a mess,
+        // therefore we normalize everything as a sanity measure.
+        fn normalize(crate_name: &str) -> String {
+            crate_name.replace('-', "_")
+        }
+
         let registered_at = identifiers.registered_at();
         let krate_name_candidate = path.leading_path_segment().to_string();
 
@@ -435,23 +443,24 @@ impl ResolvedPath {
         };
 
         let registration_package = graph.packages()
-            .find(|p| p.name() == registered_at)
+            .find(|p| normalize(p.name()) == normalize(registered_at))
             .expect("There is no package in the current workspace whose name matches the registration crate for these identifiers");
-        let package_id = if registration_package.name() == krate_name_candidate {
-            registration_package.id().to_owned()
-        } else if let Some(dependency) = registration_package
-            .direct_links()
-            .find(|d| d.resolved_name() == krate_name_candidate)
-        {
-            dependency.to().id().to_owned()
-        } else if TOOLCHAIN_CRATES.contains(&krate_name_candidate.as_str()) {
-            PackageId::new(krate_name_candidate.clone())
-        } else {
-            return Err(PathMustBeAbsolute {
-                relative_path: path.to_string(),
-            }
-            .into());
-        };
+        let package_id =
+            if normalize(registration_package.name()) == normalize(&krate_name_candidate) {
+                registration_package.id().to_owned()
+            } else if let Some(dependency) = registration_package
+                .direct_links()
+                .find(|d| normalize(d.resolved_name()) == normalize(&krate_name_candidate))
+            {
+                dependency.to().id().to_owned()
+            } else if TOOLCHAIN_CRATES.contains(&krate_name_candidate.as_str()) {
+                PackageId::new(krate_name_candidate.clone())
+            } else {
+                return Err(PathMustBeAbsolute {
+                    relative_path: path.to_string(),
+                }
+                .into());
+            };
         Ok(Self {
             segments,
             qualified_self: qself,
