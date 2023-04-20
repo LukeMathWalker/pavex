@@ -1,11 +1,10 @@
 use std::collections::BTreeMap;
-use std::path::PathBuf;
 
 use ahash::HashSet;
 use bimap::{BiBTreeMap, BiHashMap};
 use cargo_manifest::{Dependency, DependencyDetail, Edition, MaybeInherited};
-use guppy::graph::PackageSource;
-use guppy::{PackageId, Version};
+use guppy::graph::{ExternalSource, PackageSource};
+use guppy::PackageId;
 use indexmap::{IndexMap, IndexSet};
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote};
@@ -102,7 +101,7 @@ pub(crate) fn codegen_app(
     component_db: &ComponentDb,
     computation_db: &ComputationDb,
 ) -> Result<TokenStream, anyhow::Error> {
-    let define_application_state =
+    let application_state_def =
         define_application_state(runtime_singleton_bindings, package_id2name);
     let define_application_state_error = define_application_state_error(
         &application_state_call_graph.error_variants,
@@ -114,7 +113,7 @@ pub(crate) fn codegen_app(
         component_db,
         computation_db,
     )?;
-    let define_server_state = define_server_state();
+    let define_server_state = define_server_state(&application_state_def);
 
     let mut handlers = vec![];
     let path2codegen_router_entry = {
@@ -165,7 +164,14 @@ pub(crate) fn codegen_app(
     );
     let entrypoint = server_startup();
     let alloc_rename = if package_id2name.contains_right(ALLOC_PACKAGE_ID) {
-        quote! { use std as alloc; }
+        // The fact that an item from `alloc` is used in the generated code does not imply
+        // that we need to have an `alloc` import (e.g. it might not appear in function
+        // signatures).
+        // That's why we add `#[allow(unused_imports)]` to the `alloc` import.
+        quote! {
+            #[allow(unused_imports)]
+            use std as alloc;
+        }
     } else {
         quote! {}
     };
@@ -175,7 +181,7 @@ pub(crate) fn codegen_app(
         //! All manual edits will be lost next time the code is generated.
         #alloc_rename
         #define_server_state
-        #define_application_state
+        #application_state_def
         #define_application_state_error
         #application_state_init
         #entrypoint
@@ -259,10 +265,18 @@ fn define_application_state_error(
     )
 }
 
-fn define_server_state() -> ItemStruct {
+fn define_server_state(application_state_def: &ItemStruct) -> ItemStruct {
+    let attribute = if application_state_def.fields.is_empty() {
+        quote! {
+            #[allow(dead_code)]
+        }
+    } else {
+        quote! {}
+    };
     syn::parse2(quote! {
         struct ServerState {
             router: pavex_runtime::routing::Router<u32>,
+            #attribute
             application_state: ApplicationState
         }
     })
@@ -482,63 +496,96 @@ where
         component_db,
         computation_db,
     );
-    #[allow(clippy::type_complexity)]
-    let mut external_crates: IndexMap<&str, IndexSet<(&Version, PackageId, Option<PathBuf>)>> =
-        Default::default();
+    let mut external_crates: IndexMap<&str, IndexSet<PackageId>> = Default::default();
     let workspace_root = package_graph.workspace().root();
     for package_id in &package_ids {
         if package_id.repr() != GENERATED_APP_PACKAGE_ID
             && !TOOLCHAIN_CRATES.contains(&package_id.repr())
         {
             let metadata = package_graph.metadata(package_id).unwrap();
-            let path = match metadata.source() {
+            external_crates
+                .entry(metadata.name())
+                .or_default()
+                .insert(package_id.to_owned());
+        }
+    }
+    let mut dependencies = BTreeMap::new();
+    let mut package_ids2dependency_name = BiHashMap::new();
+    for (name, entries) in external_crates {
+        let needs_rename = entries.len() > 1;
+        for package_id in &entries {
+            let metadata = package_graph.metadata(package_id).unwrap();
+            let version = metadata.version();
+            let mut dependency_details = DependencyDetail {
+                package: Some(name.to_string()),
+                version: Some(version.to_string()),
+                ..DependencyDetail::default()
+            };
+
+            let source = metadata.source();
+            match source {
                 PackageSource::Workspace(p) | PackageSource::Path(p) => {
                     let path = if p.is_relative() {
                         workspace_root.join(p)
                     } else {
                         p.to_owned()
                     };
-                    Some(path.into_std_path_buf())
+                    dependency_details.path = Some(path.to_string());
                 }
-                // TODO: handle external deps
-                PackageSource::External(_) => None,
-            };
-            external_crates.entry(metadata.name()).or_default().insert((
-                metadata.version(),
-                package_id.to_owned(),
-                path,
-            ));
-        }
-    }
-    let mut dependencies = BTreeMap::new();
-    let mut package_ids2dependency_name = BiHashMap::new();
-    for (name, versions) in external_crates {
-        if versions.len() == 1 {
-            let (version, package_id, path) = versions.into_iter().next().unwrap();
-            let dependency = if let Some(path) = path {
-                cargo_manifest::Dependency::Detailed(DependencyDetail {
-                    package: Some(name.to_string()),
-                    version: Some(version.to_string()),
-                    path: Some(path.to_string_lossy().to_string()),
-                    ..DependencyDetail::default()
-                })
-            } else {
-                cargo_manifest::Dependency::Simple(version.to_string())
-            };
-            dependencies.insert(name.to_owned(), dependency);
-            package_ids2dependency_name.insert(package_id, name.replace('-', "_"));
-        } else {
-            for (i, (version, package_id, path)) in versions.into_iter().enumerate() {
-                let rename = format!("{}_{i}", name.replace('-', "_"));
-                let dependency = cargo_manifest::Dependency::Detailed(DependencyDetail {
-                    package: Some(name.to_string()),
-                    version: Some(version.to_string()),
-                    path: path.map(|p| p.to_string_lossy().to_string()),
-                    ..DependencyDetail::default()
-                });
-                dependencies.insert(rename.clone(), dependency);
-                package_ids2dependency_name.insert(package_id, rename);
+                PackageSource::External(_) => {
+                    if let Some(parsed_external) = source.parse_external() {
+                        match parsed_external {
+                            ExternalSource::Registry(registry) => {
+                                if registry != ExternalSource::CRATES_IO_URL {
+                                    // TODO: this is unlikely to work as is, because the `Cargo.toml` should contain
+                                    //   the registry alias, not the raw registry URL.
+                                    //   We can retrieve the alias from the .cargo/config.toml (probably).
+                                    dependency_details.registry = Some(registry.to_string());
+                                }
+                            }
+                            ExternalSource::Git {
+                                repository, req, ..
+                            } => {
+                                dependency_details.git = Some(repository.to_string());
+                                match req {
+                                    guppy::graph::GitReq::Branch(branch) => {
+                                        dependency_details.branch = Some(branch.to_string());
+                                    }
+                                    guppy::graph::GitReq::Tag(tag) => {
+                                        dependency_details.tag = Some(tag.to_string());
+                                    }
+                                    guppy::graph::GitReq::Rev(rev) => {
+                                        dependency_details.rev = Some(rev.to_string());
+                                    }
+                                    guppy::graph::GitReq::Default => {}
+                                    _ => panic!("Unknown git requirements: {:?}", req),
+                                }
+                            }
+                            _ => panic!("External source of unknown kind: {}", parsed_external),
+                        }
+                    } else {
+                        panic!("Could not parse external source: {}", source);
+                    }
+                }
             }
+
+            let dependency_name = if needs_rename {
+                // TODO: this won't be unique if there are multiple versions of the same crate that have the same
+                //   major/minor/patch version but differ in the pre-release version (e.g. `0.0.1-alpha` and `0.0.1-beta`).
+                format!(
+                    "{}_{}_{}_{}",
+                    name, version.major, version.minor, version.patch
+                )
+            } else {
+                name.to_string()
+            }
+            .replace('-', "_");
+
+            dependencies.insert(
+                dependency_name.clone(),
+                Dependency::Detailed(dependency_details),
+            );
+            package_ids2dependency_name.insert(package_id.to_owned(), dependency_name);
         }
     }
     (dependencies, package_ids2dependency_name)

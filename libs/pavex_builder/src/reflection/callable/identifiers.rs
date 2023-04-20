@@ -53,6 +53,8 @@ impl RawCallableIdentifiers {
     }
 
     /// Return an unambiguous fully-qualified path pointing at the callable.
+    /// 
+    /// The returned path can be used to import the callable.
     pub fn fully_qualified_path(&self) -> Vec<String> {
         let mut segments: Vec<_> = self
             .import_path
@@ -62,7 +64,10 @@ impl RawCallableIdentifiers {
             .collect();
         // Replace the relative portion of the path (`crate`) with the actual crate name.
         if segments[0] == "crate" {
-            segments[0] = self.registered_at.clone();
+            // Hyphens are allowed in crate names, but the Rust compiler doesn't
+            // allow them in actual import paths.
+            // They are "transparently" replaced with underscores.
+            segments[0] = self.registered_at.replace('-', "_");
         }
         segments
     }
@@ -73,6 +78,9 @@ impl RawCallableIdentifiers {
     }
 
     /// The name of the crate where this callable was registered with a builder.
+    /// 
+    /// This is the crate name as it appears in the `package` section of its `Cargo.toml`.
+    /// In particular, it has *not* been normalised—e.g. hyphens are not replaced with underscores.
     pub fn registered_at(&self) -> &str {
         &self.registered_at
     }
