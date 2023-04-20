@@ -7,7 +7,7 @@ edition = "2021"
 owo-colors = "3"
 textwrap = "0.16"
 unicode-width = "0.1"
-miette = "5"
+miette = { version = "5", features = ["fancy"] }
 supports-hyperlinks = { version = "2" }
 supports-color = { version = "2" }
 supports-unicode = { version = "2" }
