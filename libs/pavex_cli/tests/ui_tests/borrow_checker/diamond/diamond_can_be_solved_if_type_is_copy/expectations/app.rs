@@ -5,6 +5,7 @@
 use std as alloc;
 struct ServerState {
     router: pavex_runtime::routing::Router<u32>,
+    #[allow(dead_code)]
     application_state: ApplicationState,
 }
 pub struct ApplicationState {}

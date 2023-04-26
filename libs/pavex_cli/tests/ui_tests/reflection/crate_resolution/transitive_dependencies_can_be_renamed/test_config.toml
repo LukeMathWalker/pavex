@@ -1,0 +1,12 @@
+description = "pavex can resolve renamed *transitive* dependencies"
+
+[expectations]
+codegen = "pass"
+
+[ephemeral_dependencies.dep]
+path = "dep.rs"
+
+[ephemeral_dependencies.dep.dependencies]
+http_01 = { package = "http", version = "0.1" }
+http_02 = { package = "http", version = "0.2" }
+hyper = { version = "0.14", features = ["server", "http1", "http2"] }

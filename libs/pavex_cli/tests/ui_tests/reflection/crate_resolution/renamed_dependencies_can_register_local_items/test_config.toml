@@ -1,0 +1,13 @@
+description = "pavex can resolve fully-qualified paths from a dependency crate that start with `crate::`"
+
+ignore = true
+
+[expectations]
+codegen = "pass"
+
+[ephemeral_dependencies]
+dep_1 = { path = "dep_1.rs", package = "dep", version = "1.0.0" }
+dep_2 = { path = "dep_2.rs", package = "dep", version = "2.0.0" }
+
+
+

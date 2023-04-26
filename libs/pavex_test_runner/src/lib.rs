@@ -113,8 +113,23 @@ struct TestConfig {
 #[derive(serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 struct EphemeralDependency {
+    #[serde(default)]
+    /// The name of the package in the generated `Cargo.toml`.
+    /// If not specified, the corresponding key in [`TestConfig::ephemeral_dependencies`] will be used.
+    package: Option<String>,
     /// The path to the file that should be used as `lib.rs` in the generated library crate.
     path: PathBuf,
+    /// Crates that should be listed as dependencies of generated library crate.
+    #[serde(default)]
+    dependencies: toml::value::Table,
+    #[serde(default = "default_ephemeral_version")]
+    /// The version of the package in the generated `Cargo.toml`.
+    /// If not specified, it defaults to `0.1.0`.
+    version: String,
+}
+
+fn default_ephemeral_version() -> String {
+    "0.1.0".to_string()
 }
 
 #[derive(serde::Deserialize)]
@@ -156,6 +171,21 @@ struct TestData {
 }
 
 impl TestData {
+    /// The directory containing the source code of the project under test—i.e. the blueprint, the generate app
+    /// and any integration test, if defined.
+    fn test_runtime_directory(&self) -> PathBuf {
+        self.runtime_directory.join("project")
+    }
+
+    /// The directory containing the source code of all ephemeral dependencies.
+    /// 
+    /// We don't want to list ephemeral dependencies as members of the workspace of the project under test
+    /// in order to be able to have multiple versions of the same crate as dependencies of the project under test.
+    /// That would be forbidden by `cargo` if they were listed as members of the same workspace.
+    fn ephemeral_deps_runtime_directory(&self) -> PathBuf {
+        self.runtime_directory.join("ephemeral_deps")
+    }
+
     fn load_configuration(&self) -> Result<TestConfig, anyhow::Error> {
         let test_config =
             fs_err::read_to_string(self.definition_directory.join("test_config.toml")).context(
@@ -175,25 +205,32 @@ impl TestData {
         test_config: &TestConfig,
         cli_profile: &str,
     ) -> Result<ShouldRunTests, anyhow::Error> {
-        let source_directory = self.runtime_directory.join("src");
+        let source_directory = self.test_runtime_directory().join("src");
         fs_err::create_dir_all(&source_directory).context(
-            "Failed to create the runtime directory when setting up the test runtime environment",
+            "Failed to create the runtime directory for the project under test when setting up the test runtime environment",
         )?;
         fs_err::copy(
             self.definition_directory.join("lib.rs"),
             source_directory.join("lib.rs"),
         )?;
 
-        let deps_subdir = self.runtime_directory.join("ephemeral_dependencies");
+        let deps_subdir = self.ephemeral_deps_runtime_directory();
+        fs_err::create_dir_all(&source_directory).context(
+            "Failed to create the runtime directory for ephemeral dependencies when setting up the test runtime environment",
+        )?;
 
-        for (dependency_name, filepath) in &test_config.ephemeral_dependencies {
+        for (dependency_name, dependency_config) in &test_config.ephemeral_dependencies {
             let dep_runtime_directory = deps_subdir.join(dependency_name);
+            let package_name = dependency_config
+                .package
+                .clone()
+                .unwrap_or(dependency_name.to_owned());
             let dep_source_directory = dep_runtime_directory.join("src");
             fs_err::create_dir_all(&dep_source_directory).context(
                 "Failed to create the source directory for an ephemeral dependency when setting up the test runtime environment",
             )?;
             fs_err::copy(
-                self.definition_directory.join(&filepath.path),
+                self.definition_directory.join(&dependency_config.path),
                 dep_source_directory.join("lib.rs"),
             )?;
             let mut cargo_toml = toml! {
@@ -201,8 +238,20 @@ impl TestData {
                 name = "dummy"
                 version = "0.1.0"
                 edition = "2021"
+
+                [dependencies]
+                pavex_builder = { path = "../../../../../libs/pavex_builder" }
+                pavex_runtime = { path = "../../../../../libs/pavex_runtime" }
             };
-            cargo_toml["package"]["name"] = dependency_name.to_owned().into();
+            cargo_toml["package"]["name"] = package_name.into();
+            cargo_toml["package"]["version"] = dependency_config.version.clone().into();
+            let deps = cargo_toml
+                .get_mut("dependencies")
+                .unwrap()
+                .as_table_mut()
+                .unwrap();
+            deps.extend(dependency_config.dependencies.clone());
+
             fs_err::write(
                 dep_runtime_directory.join("Cargo.toml"),
                 toml::to_string(&cargo_toml)?,
@@ -212,7 +261,7 @@ impl TestData {
         let integration_test_file = self.definition_directory.join("test.rs");
         let has_tests = integration_test_file.exists();
         if has_tests {
-            let integration_test_directory = self.runtime_directory.join("integration");
+            let integration_test_directory = self.test_runtime_directory().join("integration");
             let integration_test_src_directory = integration_test_directory.join("src");
             let integration_test_test_directory = integration_test_directory.join("tests");
             fs_err::create_dir_all(&integration_test_src_directory).context(
@@ -239,7 +288,7 @@ impl TestData {
                 [dev-dependencies]
                 tokio = { version = "1", features = ["full"] }
                 reqwest = "0.11"
-                pavex_runtime = { path = "../../../../libs/pavex_runtime" }
+                pavex_runtime = { path = "../../../../../libs/pavex_runtime" }
             };
 
             let dev_deps = cargo_toml
@@ -257,7 +306,7 @@ impl TestData {
 
         // Dummy application crate, ahead of code generation.
         {
-            let application_dir = self.runtime_directory.join("generated_app");
+            let application_dir = self.test_runtime_directory().join("generated_app");
             let application_src_dir = application_dir.join("src");
             fs_err::create_dir_all(&application_src_dir).context(
                 "Failed to create the runtime directory for the generated application when setting up the test runtime environment",
@@ -286,15 +335,9 @@ impl TestData {
             edition = "2021"
 
             [dependencies]
-            pavex_builder = { path = "../../../libs/pavex_builder" }
-            pavex_runtime = { path = "../../../libs/pavex_runtime" }
+            pavex_builder = { path = "../../../../libs/pavex_builder" }
+            pavex_runtime = { path = "../../../../libs/pavex_runtime" }
         };
-        if !test_config.ephemeral_dependencies.is_empty() {
-            cargo_toml["workspace"]["members"]
-                .as_array_mut()
-                .unwrap()
-                .push("ephemeral_dependencies/*".into());
-        }
         if has_tests {
             cargo_toml["workspace"]["members"]
                 .as_array_mut()
@@ -307,18 +350,22 @@ impl TestData {
             .as_table_mut()
             .unwrap();
         deps.extend(test_config.dependencies.clone());
-        let ephemeral_dependencies = test_config.ephemeral_dependencies.keys().map(|name| {
-            let mut value = toml::value::Table::new();
-            value.insert(
-                "path".into(),
-                format!("ephemeral_dependencies/{name}").into(),
-            );
-            (name.to_owned(), toml::Value::Table(value))
-        });
+        let ephemeral_dependencies =
+            test_config
+                .ephemeral_dependencies
+                .iter()
+                .map(|(key, config)| {
+                    let mut value = toml::value::Table::new();
+                    value.insert("path".into(), format!("../ephemeral_deps/{key}").into());
+                    if let Some(package_name) = config.package.as_ref() {
+                        value.insert("package".into(), package_name.clone().into());
+                    }
+                    (key.to_owned(), toml::Value::Table(value))
+                });
         deps.extend(ephemeral_dependencies);
 
         fs_err::write(
-            self.runtime_directory.join("Cargo.toml"),
+            self.test_runtime_directory().join("Cargo.toml"),
             toml::to_string(&cargo_toml)?,
         )?;
 
@@ -343,7 +390,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {{
     let path = std::path::PathBuf::from_str("blueprint.json")?;
     blueprint().persist(&path)?;
 
-    let status = std::process::Command::new("../../../target/{cli_profile}/pavex_cli")
+    let status = std::process::Command::new("../../../../target/{cli_profile}/pavex_cli")
         .arg("--color")
         .arg("always")
         .arg("generate")
@@ -432,7 +479,7 @@ fn _run_test(
         .env("RUSTFLAGS", "-Awarnings")
         .arg("run")
         .arg("--quiet")
-        .current_dir(&test.runtime_directory)
+        .current_dir(&test.test_runtime_directory())
         .output()
         .context("Failed to perform code generation")?;
     let codegen_output: CommandOutput = (&output).try_into()?;
@@ -476,7 +523,7 @@ fn _run_test(
 
     let diagnostics_snapshot = SnapshotTest::new(expectations_directory.join("diagnostics.dot"));
     let actual_diagnostics =
-        fs_err::read_to_string(test.runtime_directory.join("diagnostics.dot"))?;
+        fs_err::read_to_string(test.test_runtime_directory().join("diagnostics.dot"))?;
     // We don't exit early here to get the generated code snapshot as well.
     // This allows to update both code snapshot and diagnostics snapshot in one go via
     // `cargo r --bin snaps` for a failing test instead of having to do them one at a time,
@@ -485,7 +532,7 @@ fn _run_test(
 
     let app_code_snapshot = SnapshotTest::new(expectations_directory.join("app.rs"));
     let actual_app_code = fs_err::read_to_string(
-        test.runtime_directory
+        test.test_runtime_directory()
             .join("generated_app")
             .join("src")
             .join("lib.rs"),
@@ -500,7 +547,7 @@ fn _run_test(
         .arg("-p")
         .arg("application")
         .arg("--quiet")
-        .current_dir(&test.runtime_directory)
+        .current_dir(&test.test_runtime_directory())
         .output()
         .unwrap();
     let compilation_output: Result<CommandOutput, _> = (&output).try_into();
@@ -542,7 +589,7 @@ fn _run_test(
             .arg("t")
             .arg("-p")
             .arg("integration")
-            .current_dir(&test.runtime_directory)
+            .current_dir(&test.test_runtime_directory())
             .output()
             .unwrap();
         let test_output: CommandOutput = (&output).try_into()?;

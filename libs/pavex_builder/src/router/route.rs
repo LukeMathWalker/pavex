@@ -58,7 +58,7 @@ impl<'a> Route<'a> {
     /// an error handler for an infallible request handler (i.e. a request handler that doesn't
     /// return a `Result`).
     pub fn error_handler(self, error_handler: RawCallable) -> Self {
-        let callable_identifiers = RawCallableIdentifiers::new(error_handler.import_path);
+        let callable_identifiers = RawCallableIdentifiers::from_raw_callable(error_handler);
         let callable = RegisteredCallable {
             callable: callable_identifiers,
             location: std::panic::Location::caller().into(),

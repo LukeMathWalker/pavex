@@ -93,10 +93,11 @@ async fn route_request(
 pub async fn route_handler_0() -> http::Response<
     http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
 > {
-    let v0 = app::a();
-    let v1 = app::b(v0);
-    let v2 = app::handler(&v0, v1);
+    let v1 = {
+        let v0 = dep::new_logger();
+        app::handler(v0)
+    };
     <http::Response<
         http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
-    > as pavex_runtime::response::IntoResponse>::into_response(v2)
+    > as pavex_runtime::response::IntoResponse>::into_response(v1)
 }

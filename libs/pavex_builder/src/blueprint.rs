@@ -198,7 +198,7 @@ impl Blueprint {
             path: path.to_owned(),
             method_guard,
             request_handler: RegisteredCallable {
-                callable: RawCallableIdentifiers::new(callable.import_path),
+                callable: RawCallableIdentifiers::from_raw_callable(callable),
                 location: std::panic::Location::caller().into(),
             },
             error_handler: None,
@@ -234,7 +234,7 @@ impl Blueprint {
     pub fn constructor(&mut self, callable: RawCallable, lifecycle: Lifecycle) -> Constructor {
         let registered_constructor = RegisteredConstructor {
             constructor: RegisteredCallable {
-                callable: RawCallableIdentifiers::new(callable.import_path),
+                callable: RawCallableIdentifiers::from_raw_callable(callable),
                 location: std::panic::Location::caller().into(),
             },
             lifecycle,
