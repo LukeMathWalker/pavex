@@ -56,7 +56,12 @@ impl CrateCollection {
                 self.1.workspace().target_directory().as_std_path(),
                 &package_spec,
             )?;
-            let krate = Crate::new(self, krate, package_id.to_owned());
+            let krate = Crate::new(self, krate, package_id.to_owned()).map_err(|e| {
+                CannotGetCrateData {
+                    package_spec: package_id.to_string(),
+                    source: Arc::new(e),
+                }
+            })?;
             self.0.insert(package_spec.clone(), Box::new(krate));
         }
         Ok(self.get_crate_by_package_id_spec(&package_spec).unwrap())
@@ -218,7 +223,7 @@ impl CrateCollection {
             let used_by_krate = self.get_or_compute_crate_by_package_id(used_by_package_id)?;
             let local_type_summary = used_by_krate.get_type_summary_by_local_type_id(item_id)?;
             (
-                used_by_krate.compute_package_id_for_crate_id(local_type_summary.crate_id, self),
+                used_by_krate.compute_package_id_for_crate_id(local_type_summary.crate_id, self)?,
                 local_type_summary.path.clone(),
             )
         };
@@ -290,7 +295,7 @@ impl CrateCore {
         &self,
         crate_id: u32,
         collection: &CrateCollection,
-    ) -> PackageId {
+    ) -> Result<PackageId, anyhow::Error> {
         #[derive(Debug, Hash, Eq, PartialEq)]
         struct PackageLinkMetadata<'a> {
             id: &'a PackageId,
@@ -299,7 +304,7 @@ impl CrateCore {
         }
 
         if crate_id == 0 {
-            return self.package_id.clone();
+            return Ok(self.package_id.clone());
         }
 
         let package_graph = &collection.1;
@@ -313,7 +318,7 @@ impl CrateCore {
                     )
                 }).unwrap();
         if TOOLCHAIN_CRATES.contains(&external_crate.name.as_str()) {
-            return PackageId::new(external_crate.name.clone());
+            return Ok(PackageId::new(external_crate.name.clone()));
         }
 
         let transitive_dependencies = package_graph
@@ -349,7 +354,7 @@ impl CrateCore {
             .unwrap()
         }
         if package_candidates.len() == 1 {
-            return package_candidates.first().unwrap().id.to_owned();
+            return Ok(package_candidates.first().unwrap().id.to_owned());
         }
 
         // We have multiple packages with the same name.
@@ -357,7 +362,7 @@ impl CrateCore {
         // If we don't have a version, we panic: better than picking one randomly and failing
         // later with a confusing message.
         if let Some(expected_link_version) = external_crate_version.as_ref() {
-            package_candidates
+            Ok(package_candidates
                 .into_iter()
                 .find(|l| l.version == expected_link_version)
                 .ok_or_else(|| {
@@ -367,7 +372,7 @@ impl CrateCore {
                         expected_link_name,
                         expected_link_version
                     )
-                }).unwrap().id.to_owned()
+                })?.id.to_owned())
         } else {
             Err(
                 anyhow!(
@@ -382,7 +387,7 @@ impl CrateCore {
                     expected_link_name,
                     self.package_id.repr()
                 )
-            ).unwrap()
+            )
         }
     }
 }
@@ -393,7 +398,7 @@ impl Crate {
         collection: &CrateCollection,
         krate: rustdoc_types::Crate,
         package_id: PackageId,
-    ) -> Self {
+    ) -> Result<Self, anyhow::Error> {
         let crate_core = CrateCore { package_id, krate };
         let mut types_path_index: HashMap<_, _> = crate_core
             .krate
@@ -417,7 +422,7 @@ impl Crate {
             &mut public_local_path_index,
             &crate_core.krate.root,
             None,
-        );
+        )?;
 
         types_path_index.reserve(public_local_path_index.len());
         for (id, public_paths) in &public_local_path_index {
@@ -428,11 +433,11 @@ impl Crate {
             }
         }
 
-        Self {
+        Ok(Self {
             core: crate_core,
             types_path_index,
             public_local_path_index,
-        }
+        })
     }
 
     /// Given a crate id, return the corresponding [`PackageId`].
@@ -443,7 +448,7 @@ impl Crate {
         &self,
         crate_id: u32,
         collection: &CrateCollection,
-    ) -> PackageId {
+    ) -> Result<PackageId, anyhow::Error> {
         self.core
             .compute_package_id_for_crate_id(crate_id, collection)
     }
@@ -511,7 +516,7 @@ fn index_local_types<'a>(
     // Set when a crate is being re-exported under a different name. E.g. `pub use hyper as server`
     // would have `renamed_module` set to `Some(server)`.
     renamed_module: Option<&'a str>,
-) {
+) -> Result<(), anyhow::Error> {
     // TODO: the way we handle `current_path` is extremely wasteful,
     //       we can likely reuse the same buffer throughout.
     let current_item = match crate_core.krate.index.get(current_item_id) {
@@ -519,7 +524,7 @@ fn index_local_types<'a>(
             if let Some(summary) = crate_core.krate.paths.get(current_item_id) {
                 if summary.kind == ItemKind::Primitive {
                     // This is a known bug—see https://github.com/rust-lang/rust/issues/104064
-                    return;
+                    return Ok(());
                 }
             }
             panic!(
@@ -535,7 +540,7 @@ fn index_local_types<'a>(
     if let Visibility::Default | Visibility::Crate | Visibility::Restricted { .. } =
         current_item.visibility
     {
-        return;
+        return Ok(());
     }
 
     match &current_item.inner {
@@ -557,7 +562,7 @@ fn index_local_types<'a>(
                     path_index,
                     item_id,
                     None,
-                );
+                )?;
             }
         }
         ItemEnum::Import(i) => {
@@ -576,11 +581,10 @@ fn index_local_types<'a>(
                                 // picture of all the types available in this crate.
                                 let external_crate_id = imported_summary.crate_id;
                                 let external_package_id = crate_core
-                                    .compute_package_id_for_crate_id(external_crate_id, collection);
+                                    .compute_package_id_for_crate_id(external_crate_id, collection)?;
                                 // TODO: remove unwraps
                                 let external_crate = collection
-                                    .get_or_compute_crate_by_package_id(&external_package_id)
-                                    .unwrap();
+                                    .get_or_compute_crate_by_package_id(&external_package_id)?;
                                 // It looks like we might fail to find the module item if there are
                                 // no public types inside it.
                                 // Example of this issue: `core::fmt::rt`.
@@ -595,7 +599,7 @@ fn index_local_types<'a>(
                                         path_index,
                                         &foreign_item_id,
                                         Some(&i.name),
-                                    );
+                                    )?;
                                 }
                             }
                         } else {
@@ -616,7 +620,7 @@ fn index_local_types<'a>(
                             path_index,
                             imported_id,
                             None,
-                        );
+                        )?;
                     }
                 }
             }
@@ -641,6 +645,7 @@ fn index_local_types<'a>(
         }
         _ => {}
     }
+    Ok(())
 }
 
 /// An identifier that unequivocally points to a type within a [`CrateCollection`].
