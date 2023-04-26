@@ -6,6 +6,8 @@
 pub struct RawCallable {
     #[doc(hidden)]
     pub import_path: &'static str,
+    #[doc(hidden)]
+    pub registered_at: &'static str,
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
@@ -35,16 +37,8 @@ pub struct RawCallableIdentifiers {
 }
 
 impl RawCallableIdentifiers {
+    #[doc(hidden)]
     #[track_caller]
-    #[doc(hidden)]
-    pub fn new(import_path: &'static str) -> Self {
-        Self {
-            registered_at: std::env::var("CARGO_PKG_NAME").expect("Failed to fetch the CARGO_CRATE_NAME environment variable. Are you using a custom build system?"),
-            import_path: import_path.to_string(),
-        }
-    }
-
-    #[doc(hidden)]
     pub fn from_raw_parts(import_path: String, registered_at: String) -> Self {
         Self {
             registered_at,
@@ -52,8 +46,14 @@ impl RawCallableIdentifiers {
         }
     }
 
+    #[doc(hidden)]
+    #[track_caller]
+    pub fn from_raw_callable(raw: RawCallable) -> Self {
+        Self::from_raw_parts(raw.import_path.to_string(), raw.registered_at.to_string())
+    }
+
     /// Return an unambiguous fully-qualified path pointing at the callable.
-    /// 
+    ///
     /// The returned path can be used to import the callable.
     pub fn fully_qualified_path(&self) -> Vec<String> {
         let mut segments: Vec<_> = self
@@ -78,7 +78,7 @@ impl RawCallableIdentifiers {
     }
 
     /// The name of the crate where this callable was registered with a builder.
-    /// 
+    ///
     /// This is the crate name as it appears in the `package` section of its `Cargo.toml`.
     /// In particular, it has *not* been normalised—e.g. hyphens are not replaced with underscores.
     pub fn registered_at(&self) -> &str {

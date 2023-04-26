@@ -5,6 +5,7 @@
 use std as alloc;
 struct ServerState {
     router: pavex_runtime::routing::Router<u32>,
+    #[allow(dead_code)]
     application_state: ApplicationState,
 }
 pub struct ApplicationState {}
@@ -47,7 +48,7 @@ fn build_router() -> Result<
     pavex_runtime::routing::InsertError,
 > {
     let mut router = pavex_runtime::routing::Router::new();
-    router.insert("/home", 0u32)?;
+    router.insert("/handler", 0u32)?;
     Ok(router)
 }
 async fn route_request(
@@ -89,13 +90,13 @@ async fn route_request(
         }
     }
 }
-pub async fn route_handler_0() -> http_0_2_8::Response<
+pub async fn route_handler_0() -> http_0_2_9::Response<
     http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
 > {
-    let v0 = app::header2();
-    let v1 = app::header1();
-    let v2 = app::stream_file(v1, v0);
-    <http_0_2_8::Response<
+    let v0 = dep::header2();
+    let v1 = dep::header1();
+    let v2 = dep::handler(v1, v0);
+    <http_0_2_9::Response<
         http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
     > as pavex_runtime::response::IntoResponse>::into_response(v2)
 }

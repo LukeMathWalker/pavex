@@ -416,8 +416,8 @@ impl ResolvedPath {
             crate_name.replace('-', "_")
         }
 
-        let registered_at = identifiers.registered_at();
-        let krate_name_candidate = path.leading_path_segment().to_string();
+        let registered_at = normalize(identifiers.registered_at());
+        let krate_name_candidate = normalize(&path.leading_path_segment().to_string());
 
         let mut segments = vec![];
         for raw_segment in &path.segments {
@@ -443,14 +443,16 @@ impl ResolvedPath {
         };
 
         let registration_package = graph.packages()
-            .find(|p| normalize(p.name()) == normalize(registered_at))
+            .find(|p| {
+                normalize(p.name()) == registered_at
+            })
             .expect("There is no package in the current workspace whose name matches the registration crate for these identifiers");
         let package_id =
-            if normalize(registration_package.name()) == normalize(&krate_name_candidate) {
+            if normalize(registration_package.name()) == krate_name_candidate {
                 registration_package.id().to_owned()
             } else if let Some(dependency) = registration_package
                 .direct_links()
-                .find(|d| normalize(d.resolved_name()) == normalize(&krate_name_candidate))
+                .find(|d| normalize(d.resolved_name()) == krate_name_candidate)
             {
                 dependency.to().id().to_owned()
             } else if TOOLCHAIN_CRATES.contains(&krate_name_candidate.as_str()) {

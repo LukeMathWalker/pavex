@@ -90,13 +90,13 @@ async fn route_request(
         }
     }
 }
-pub async fn route_handler_0() -> http::Response<
+pub async fn route_handler_0() -> http_0_2_9::Response<
     http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
 > {
-    let v0 = app::a();
-    let v1 = app::b(v0);
-    let v2 = app::handler(&v0, v1);
-    <http::Response<
+    let v0 = app::header2();
+    let v1 = app::header1();
+    let v2 = app::stream_file(v1, v0);
+    <http_0_2_9::Response<
         http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
     > as pavex_runtime::response::IntoResponse>::into_response(v2)
 }
