@@ -372,8 +372,11 @@ impl CrateCore {
             Err(
                 anyhow!(
                     "There are multiple packages named `{}` among the dependencies of {}. \
-                    I was not able to extract the expected version for `{}` from the JSON documentation for {}, \
-                    therefore I don't have a way to disambiguate among the matches we found",
+                    In order to disambiguate among them, I need to know their versions.\n\
+                    Unfortunately, I couldn't extract the expected version for `{}` from HTML root URL included in the \
+                    JSON documentation for `{}`.\n\
+                    This due to a limitation in `rustdoc` itself: follow https://github.com/rust-lang/compiler-team/issues/622 \
+                    to track progress on this issue.",
                     expected_link_name,
                     self.package_id.repr(),
                     expected_link_name,
