@@ -1,5 +1,5 @@
 <div align="center">
- <img src="https://raw.githubusercontent.com/LukeMathWalker/pavex/logo/logo.webp" width="300" alt="pavex" style="border-radius: 5%">
+ <img src="https://raw.githubusercontent.com/LukeMathWalker/pavex/main/logo.webp" width="300" alt="pavex" style="border-radius: 5%">
  <br>
  <strong>
    Re-imagining backend development in Rust
