@@ -1,6 +1,6 @@
-/test-target
-/ui_test_envs
-/target
+/libs/ui_test_envs
+/libs/target
+/examples/**/target
 /vendor
 .DS_Store
 *.snap

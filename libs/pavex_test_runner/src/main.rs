@@ -10,7 +10,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Box::new(config.build())
     }))
     .unwrap();
-    let test_folder = workspace_root()?.join("libs/pavex_cli/tests/ui_tests");
+    let test_folder = workspace_root()?.join("pavex_cli/tests/ui_tests");
     let terminal = console::Term::stdout();
     for ui_test_dir in get_ui_test_directories(&test_folder) {
         assert!(ui_test_dir.as_path().metadata()?.is_dir());

@@ -1,0 +1,2 @@
+[workspace]
+members = ["app_blueprint", "generated_app"]

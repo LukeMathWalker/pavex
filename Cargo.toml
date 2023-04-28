@@ -1,2 +1,0 @@
-[workspace]
-members = ["libs/*", "examples/*", "examples/generated_app"]
