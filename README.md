@@ -109,14 +109,14 @@ We publish project updates every 4-6 weeks:
 
 You can see `pavex` at work in the [`/examples` folder](./examples):
 
-- In [`examples/app_blueprint/src/lib.rs`](./examples/app_blueprint/src/lib.rs) we specify the app's behavior in
+- In [`examples/skeleton/app_blueprint/src/lib.rs`](./examples/skeleton/app_blueprint/src/lib.rs) we specify the app's behavior in
   a `Blueprint`—
   the endpoints it exposes and their request handlers, as well as the required constructors for the application state;
-- In [`examples/app_blueprint/src/bin.rs`](./examples/app_blueprint/src/bin.rs) we serialize the `Blueprint` and
+- In [`examples/skeleton/app_blueprint/src/bin.rs`](./examples/skeleton/app_blueprint/src/bin.rs) we serialize the `Blueprint` and
   invoke `pavex`'s CLI to generate the server code that will execute at runtime, which you can find in
-  [`examples/generated_app/src/lib.rs`](./examples/generated_app/src/lib.rs).
+  [`examples/skeleton/generated_app/src/lib.rs`](./examples/skeleeton/generated_app/src/lib.rs).
 
-In [`examples/app_blueprint/blueprint.ron`](./examples/app_blueprint/blueprint.ron) you can have a peek at what
+In [`examples/app_blueprint/blueprint.ron`](./examples/skeleton/app_blueprint/blueprint.ron) you can have a peek at what
 the `Blueprint` looks like when serialized.
 
 ## Architectural Overview
