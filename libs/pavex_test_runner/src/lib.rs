@@ -240,8 +240,8 @@ impl TestData {
                 edition = "2021"
 
                 [dependencies]
-                pavex_builder = { path = "../../../../../libs/pavex_builder" }
-                pavex_runtime = { path = "../../../../../libs/pavex_runtime" }
+                pavex_builder = { path = "../../../../../../libs/pavex_builder" }
+                pavex_runtime = { path = "../../../../../../libs/pavex_runtime" }
             };
             cargo_toml["package"]["name"] = package_name.into();
             cargo_toml["package"]["version"] = dependency_config.version.clone().into();
@@ -288,7 +288,7 @@ impl TestData {
                 [dev-dependencies]
                 tokio = { version = "1", features = ["full"] }
                 reqwest = "0.11"
-                pavex_runtime = { path = "../../../../../libs/pavex_runtime" }
+                pavex_runtime = { path = "../../../../../../libs/pavex_runtime" }
             };
 
             let dev_deps = cargo_toml
@@ -335,8 +335,8 @@ impl TestData {
             edition = "2021"
 
             [dependencies]
-            pavex_builder = { path = "../../../../libs/pavex_builder" }
-            pavex_runtime = { path = "../../../../libs/pavex_runtime" }
+            pavex_builder = { path = "../../../../../libs/pavex_builder" }
+            pavex_runtime = { path = "../../../../../libs/pavex_runtime" }
         };
         if has_tests {
             cargo_toml["workspace"]["members"]
@@ -390,7 +390,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {{
     let path = std::path::PathBuf::from_str("blueprint.json")?;
     blueprint().persist(&path)?;
 
-    let status = std::process::Command::new("../../../../target/{cli_profile}/pavex_cli")
+    let status = std::process::Command::new("../../../../../libs/target/{cli_profile}/pavex_cli")
         .arg("--color")
         .arg("always")
         .arg("generate")
@@ -482,6 +482,7 @@ fn _run_test(
         .current_dir(&test.test_runtime_directory())
         .output()
         .context("Failed to perform code generation")?;
+
     let codegen_output: CommandOutput = (&output).try_into()?;
 
     let expectations_directory = test.definition_directory.join("expectations");
@@ -495,6 +496,7 @@ fn _run_test(
                 test_output: None,
             }),
             ExpectedOutcome::Fail => {
+
                 let stderr_snapshot = SnapshotTest::new(expectations_directory.join("stderr.txt"));
                 if stderr_snapshot.verify(&codegen_output.stderr).is_err() {
                     return Ok(TestOutcome {

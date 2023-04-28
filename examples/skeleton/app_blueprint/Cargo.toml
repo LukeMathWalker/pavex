@@ -8,5 +8,5 @@ path = "src/bin.rs"
 name = "bp"
 
 [dependencies]
-pavex_builder = { path = "../../libs/pavex_builder" }
-pavex_runtime = { path = "../../libs/pavex_runtime" }
+pavex_builder = { path = "../../../libs/pavex_builder" }
+pavex_runtime = { path = "../../../libs/pavex_runtime" }

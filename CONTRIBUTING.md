@@ -39,9 +39,19 @@ The generated code or the graph diagnostics may not match our expectations.
 The test runner will save the unexpected output in a file named like the expectation file with an additional `.snap` suffix. You can then choose to update the saved snapshot via our utility CLI:
 
 ```bash
-# It must be run from the root folder of the workspace
+# It must be run from the root folder of the libs workspace
 cargo r --bin snaps
 ```
 
 It will cycle through all `.snap` files and print the changeset with respect to our previous expectations.  
 You will then be prompted to decide if you want to update the saved snapshot to match the new value or if you prefer to keep it as it.
+
+# Checking examples
+
+Each example project under the `examples` folder is its own workspace.  
+The easiest way to check that everything compiles and works as expected is to rely on the `./ci.sh` script at root of the repository.  
+It runs whatever `cargo` command you specify against all workspaces in this project (i.e. `libs` + all examples).
+
+E.g. `./ci.sh check` will run `cargo check` in each workspace. 
+
+It will also forward any flag to `cargo`—e.g. `./ci.sh check --all-features` will run `cargo check --all-features` in all workspaces.

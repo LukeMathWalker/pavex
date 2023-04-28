@@ -7,19 +7,28 @@ autoexamples = false
 autotests = false
 autobenches = false
 
-[dependencies]
-bytes = "1.4.0"
-http = "0.2.9"
-http-body = "0.4.5"
-hyper = "0.14.25"
-matchit = "0.7.0"
-
 [dependencies.app_blueprint]
 version = "0.1.0"
 path = "../app_blueprint"
 package = "app_blueprint"
 
+[dependencies.bytes]
+version = "1.4.0"
+package = "bytes"
+
+[dependencies.http]
+version = "0.2.9"
+package = "http"
+
+[dependencies.http_body]
+version = "0.4.5"
+package = "http-body"
+
+[dependencies.hyper]
+version = "0.14.26"
+package = "hyper"
+
 [dependencies.pavex_runtime]
 version = "0.1.0"
-path = "../../libs/pavex_runtime"
+path = "../../../libs/pavex_runtime"
 package = "pavex_runtime"
