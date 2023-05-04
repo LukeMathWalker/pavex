@@ -74,7 +74,7 @@ It will polished down the line, once the bulk of the work on `pavex_cli` is comp
 
 ### `pavex_builder`
 
-`pavex_builder` is the interface used to craft an `Blueprint` - a specification of how the application is supposed to
+`pavex_builder` is the interface used to craft A `Blueprint` - a specification of how the application is supposed to
 behave.
 
 ```rust
@@ -95,7 +95,7 @@ pub fn blueprint() -> Blueprint {
 }
 ```
 
-An `Blueprint` captures two types of information:
+A `Blueprint` captures two types of information:
 
 - route handlers (e.g. use `my_handler` for all incoming `/home` requests);
 - type constructors (e.g. use `my_constructor` every time you need to build an instance of type `MyType`).
@@ -108,12 +108,12 @@ For each type constructor, the developer must specify the lifecycle of its outpu
 - _transient_ - a new instance is built every time the type is needed, potentially multiple times for each incoming
   request.
 
-All this information is encoded into an `Blueprint` and passed as input to `pavex_cli` to generate the application's
+All this information is encoded into A `Blueprint` and passed as input to `pavex_cli` to generate the application's
 source code.
 
 ### `pavex_cli` and `pavex`
 
-`pavex_cli` is our transpiler, the component in charge of transforming an `Blueprint` into a ready-to-run web
+`pavex_cli` is our transpiler, the component in charge of transforming A `Blueprint` into a ready-to-run web
 server.  
 It is packaged as a binary, a thin wrapper over the (internal) `pavex` crate.
 
@@ -394,6 +394,4 @@ There seems to be no active effort to remove this limitation.
 
 _Remediations_:
 
-- Provide easy-to-consume repository templates to kick-start a `pavex` project;
-- Explore the possibility of leaning on the [`cargo-xtask` pattern](https://github.com/matklad/cargo-xtask)
-  like `rust-analyzer` does.
+`pavex` will rely on [`cargo-px`](https://github.com/LukeMathWalker/cargo-px) for code generation.

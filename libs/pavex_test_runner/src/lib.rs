@@ -304,7 +304,7 @@ impl TestData {
             )?;
         }
 
-        // Dummy application crate, ahead of code generation.
+        // Generated application crate, ahead of code generation.
         {
             let application_dir = self.test_runtime_directory().join("generated_app");
             let application_src_dir = application_dir.join("src");
@@ -318,6 +318,10 @@ impl TestData {
                 name = "application"
                 version = "0.1.0"
                 edition = "2021"
+
+                [package.metadata.px.generate]
+                generator_type = "cargo_workspace_binary"
+                generator_name = "app"
             };
             fs_err::write(
                 application_dir.join("Cargo.toml"),
@@ -337,6 +341,7 @@ impl TestData {
             [dependencies]
             pavex_builder = { path = "../../../../../libs/pavex_builder" }
             pavex_runtime = { path = "../../../../../libs/pavex_runtime" }
+            pavex_cli_client = { path = "../../../../../libs/pavex_cli_client" }
         };
         if has_tests {
             cargo_toml["workspace"]["members"]
@@ -384,30 +389,20 @@ impl TestData {
 
         let main_rs = format!(
             r#"use app::blueprint;
-use std::str::FromStr;
+use pavex_cli_client::{{Client, client::Color}};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {{
-    let path = std::path::PathBuf::from_str("blueprint.json")?;
-    blueprint().persist(&path)?;
-
-    let status = std::process::Command::new("../../../../../libs/target/{cli_profile}/pavex_cli")
-        .arg("--color")
-        .arg("always")
-        .arg("generate")
-        .arg("-b")
-        .arg(&path)
-        .arg("--diagnostics")
-        .arg("diagnostics.dot")
-        .arg("-o")
-        .arg("generated_app")
-        .status()?;
-       
-    if !status.success() {{
-        std::process::exit(1); 
+    if Client::new()
+        .color(Color::Always)
+        .pavex_cli_path("../../../../../libs/target/{cli_profile}/pavex_cli".into())
+        .generate(blueprint(), "generated_app".into())
+        .diagnostics_path("diagnostics.dot".into())
+        .execute().is_err() {{
+        std::process::exit(1);
     }}
-     
     Ok(())
-}}"#
+}}
+"#
         );
         fs_err::write(source_directory.join("main.rs"), main_rs)?;
         Ok(if has_tests {

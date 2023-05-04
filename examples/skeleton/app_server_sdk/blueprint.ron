@@ -1,0 +1,80 @@
+(
+    creation_location: (
+        line: 38,
+        column: 18,
+        file: "app_blueprint/src/lib.rs",
+    ),
+    constructors: [
+        (
+            constructor: (
+                callable: (
+                    registered_at: "app_blueprint",
+                    import_path: "crate :: http_client",
+                ),
+                location: (
+                    line: 39,
+                    column: 8,
+                    file: "app_blueprint/src/lib.rs",
+                ),
+            ),
+            lifecycle: Singleton,
+            cloning_strategy: None,
+            error_handler: None,
+        ),
+        (
+            constructor: (
+                callable: (
+                    registered_at: "app_blueprint",
+                    import_path: "crate :: extract_path",
+                ),
+                location: (
+                    line: 40,
+                    column: 8,
+                    file: "app_blueprint/src/lib.rs",
+                ),
+            ),
+            lifecycle: RequestScoped,
+            cloning_strategy: None,
+            error_handler: None,
+        ),
+        (
+            constructor: (
+                callable: (
+                    registered_at: "app_blueprint",
+                    import_path: "crate :: logger",
+                ),
+                location: (
+                    line: 41,
+                    column: 8,
+                    file: "app_blueprint/src/lib.rs",
+                ),
+            ),
+            lifecycle: Transient,
+            cloning_strategy: None,
+            error_handler: None,
+        ),
+    ],
+    routes: [
+        (
+            path: "/home",
+            method_guard: (
+                allowed_methods: [
+                    "GET",
+                ],
+            ),
+            request_handler: (
+                callable: (
+                    registered_at: "app_blueprint",
+                    import_path: "crate :: stream_file",
+                ),
+                location: (
+                    line: 42,
+                    column: 8,
+                    file: "app_blueprint/src/lib.rs",
+                ),
+            ),
+            error_handler: None,
+        ),
+    ],
+    nested_blueprints: [],
+)

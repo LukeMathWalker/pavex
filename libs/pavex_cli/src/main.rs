@@ -66,8 +66,8 @@ enum Commands {
         /// the application to the specified path.
         #[clap(long, value_parser)]
         diagnostics: Option<PathBuf>,
-        /// The target directory for the generated application crate.  
-        /// The path is interpreted as relative to the root of the current workspace.
+        /// The path to the directory that will contain the manifest and the source code for the generated application crate.  
+        /// If the provided path is relative, it is interpreted as relative to the root of the current workspace.
         #[clap(short, long, value_parser)]
         output: PathBuf,
     },
@@ -120,7 +120,8 @@ fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
             output,
         } => {
             let blueprint = Blueprint::load(&blueprint)?;
-            let app = match App::build(blueprint) {
+            let package_graph = guppy::MetadataCommand::new().exec()?.build_graph()?;
+            let app = match App::build(blueprint, package_graph) {
                 Ok(a) => a,
                 Err(errors) => {
                     for e in errors {
@@ -133,10 +134,6 @@ fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
                 app.diagnostic_representation()
                     .persist_flat(&diagnostic_path)?;
             }
-            assert!(
-                output.is_relative(),
-                "The output path must be relative to the root of the current `cargo` workspace."
-            );
             let generated_app = app.codegen()?;
             generated_app.persist(&output)?;
         }

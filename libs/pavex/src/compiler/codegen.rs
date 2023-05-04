@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use ahash::HashSet;
 use bimap::{BiBTreeMap, BiHashMap};
-use cargo_manifest::{Dependency, DependencyDetail, Edition, MaybeInherited};
+use cargo_manifest::{Dependency, DependencyDetail, Edition};
 use guppy::graph::{ExternalSource, PackageSource};
 use guppy::PackageId;
 use indexmap::{IndexMap, IndexSet};
@@ -20,6 +20,8 @@ use crate::compiler::app::GENERATED_APP_PACKAGE_ID;
 use crate::compiler::computation::Computation;
 use crate::language::{Callable, GenericArgument, ResolvedType};
 use crate::rustdoc::{ALLOC_PACKAGE_ID, TOOLCHAIN_CRATES};
+
+use super::generated_app::GeneratedManifest;
 
 #[derive(Debug, Clone)]
 enum CodegenRouterEntry {
@@ -413,7 +415,7 @@ pub(crate) fn codegen_manifest<'a, I>(
     codegen_types: &'a HashSet<ResolvedType>,
     component_db: &'a ComponentDb,
     computation_db: &'a ComputationDb,
-) -> (cargo_manifest::Manifest, BiHashMap<PackageId, String>)
+) -> (GeneratedManifest, BiHashMap<PackageId, String>)
 where
     I: Iterator<Item = &'a RawCallGraph>,
 {
@@ -426,52 +428,9 @@ where
         component_db,
         computation_db,
     );
-    let manifest = cargo_manifest::Manifest {
-        dependencies: Some(dependencies),
-        cargo_features: None,
-        package: Some(cargo_manifest::Package {
-            // TODO: this should be configurable
-            name: "application".to_string(),
-            edition: Some(MaybeInherited::Local(Edition::E2021)),
-            version: MaybeInherited::Local("0.1.0".to_string()),
-            build: None,
-            workspace: None,
-            authors: None,
-            links: None,
-            description: None,
-            homepage: None,
-            documentation: None,
-            readme: None,
-            keywords: None,
-            categories: None,
-            license: None,
-            license_file: None,
-            repository: None,
-            metadata: None,
-            rust_version: None,
-            exclude: None,
-            include: None,
-            default_run: None,
-            autobins: false,
-            autoexamples: false,
-            autotests: false,
-            autobenches: false,
-            publish: Default::default(),
-            resolver: None,
-        }),
-        workspace: None,
-        dev_dependencies: None,
-        build_dependencies: None,
-        target: None,
-        features: None,
-        bin: None,
-        bench: None,
-        test: None,
-        example: None,
-        patch: None,
-        lib: None,
-        profile: None,
-        badges: None,
+    let manifest = GeneratedManifest {
+        dependencies,
+        edition: Edition::E2021,
     };
     (manifest, package_ids2deps)
 }

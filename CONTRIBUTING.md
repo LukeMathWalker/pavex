@@ -9,6 +9,7 @@ You are more than free to play around with the code though! The instructions bel
 - Rust's nightly toolchain (`rustup toolchain install nightly`);
 - `sscache` (see [here](https://github.com/mozilla/sccache#installation) for installation instructions)
 - `cargo-nextest` (see [here](https://nexte.st/book/installation.html) for installation instructions)
+- `cargo-px` (`cargo install --locked cargo-px`)
 
 # Running tests
 

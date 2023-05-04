@@ -68,7 +68,7 @@ impl App {
     ///
     /// Many different things can go wrong during this process: this method tries its best to
     /// report all errors to the user, but it may not be able to do so in all cases.
-    pub fn build(bp: Blueprint) -> Result<Self, Vec<miette::Error>> {
+    pub fn build(bp: Blueprint, package_graph: PackageGraph) -> Result<Self, Vec<miette::Error>> {
         /// Exit early if there is at least one error.
         macro_rules! exit_on_errors {
             ($var:ident) => {
@@ -78,7 +78,6 @@ impl App {
             };
         }
 
-        let package_graph = compute_package_graph().map_err(|e| vec![e])?;
         let krate_collection = CrateCollection::new(package_graph.clone());
         let mut diagnostics = vec![];
         let mut computation_db = ComputationDb::new();
@@ -221,7 +220,7 @@ impl App {
             &self.component_db,
             &self.computation_db,
         )?;
-        Ok(GeneratedApp { lib_rs, cargo_toml })
+        Ok(GeneratedApp { lib_rs, cargo_toml, package_graph: self.package_graph.clone() })
     }
 
     /// A representation of an `App` geared towards debugging and testing.
