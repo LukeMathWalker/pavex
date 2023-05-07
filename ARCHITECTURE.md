@@ -74,7 +74,7 @@ It will polished down the line, once the bulk of the work on `pavex_cli` is comp
 
 ### `pavex_builder`
 
-`pavex_builder` is the interface used to craft A `Blueprint` - a specification of how the application is supposed to
+`pavex_builder` is the interface used to craft a `Blueprint` - a specification of how the application is supposed to
 behave.
 
 ```rust
@@ -108,12 +108,12 @@ For each type constructor, the developer must specify the lifecycle of its outpu
 - _transient_ - a new instance is built every time the type is needed, potentially multiple times for each incoming
   request.
 
-All this information is encoded into A `Blueprint` and passed as input to `pavex_cli` to generate the application's
+All this information is encoded into a `Blueprint` and passed as input to `pavex_cli` to generate the application's
 source code.
 
 ### `pavex_cli` and `pavex`
 
-`pavex_cli` is our transpiler, the component in charge of transforming A `Blueprint` into a ready-to-run web
+`pavex_cli` is our transpiler, the component in charge of transforming a `Blueprint` into a ready-to-run web
 server.  
 It is packaged as a binary, a thin wrapper over the (internal) `pavex` crate.
 
