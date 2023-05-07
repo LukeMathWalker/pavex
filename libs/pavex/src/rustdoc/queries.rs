@@ -13,8 +13,9 @@ use indexmap::IndexSet;
 use rustdoc_types::{ExternalCrate, Item, ItemEnum, ItemKind, Visibility};
 
 use crate::language::ImportPath;
-use crate::rustdoc::package_id_spec::PackageIdSpecification;
 use crate::rustdoc::{compute::compute_crate_docs, utils, CannotGetCrateData, TOOLCHAIN_CRATES};
+
+use super::cache::RustdocGlobalFsCache;
 
 /// The main entrypoint for accessing the documentation of the crates
 /// in a specific `PackageGraph`.
@@ -23,7 +24,11 @@ use crate::rustdoc::{compute::compute_crate_docs, utils, CannotGetCrateData, TOO
 /// - Computing and caching the JSON documentation for crates in the graph;
 /// - Execute queries that span the documentation of multiple crates (e.g. following crate
 ///   re-exports or star re-exports).
-pub struct CrateCollection(FrozenMap<PackageIdSpecification, Box<Crate>>, PackageGraph);
+pub struct CrateCollection(
+    FrozenMap<PackageId, Box<Crate>>,
+    PackageGraph,
+    RustdocGlobalFsCache,
+);
 
 impl fmt::Debug for CrateCollection {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
@@ -33,8 +38,9 @@ impl fmt::Debug for CrateCollection {
 
 impl CrateCollection {
     /// Initialise the collection for a `PackageGraph`.
-    pub fn new(package_graph: PackageGraph) -> Self {
-        Self(FrozenMap::new(), package_graph)
+    pub fn new(package_graph: PackageGraph) -> Result<Self, anyhow::Error> {
+        let cache = RustdocGlobalFsCache::new()?;
+        Ok(Self(FrozenMap::new(), package_graph, cache))
     }
 
     /// Compute the documentation for the crate associated with a specific [`PackageId`].
@@ -44,27 +50,63 @@ impl CrateCollection {
         &self,
         package_id: &PackageId,
     ) -> Result<&Crate, CannotGetCrateData> {
-        let package_spec =
-            PackageIdSpecification::from_package_id(package_id, &self.1).map_err(|e| {
-                CannotGetCrateData {
-                    package_spec: package_id.to_string(),
-                    source: Arc::new(e),
-                }
-            })?;
-        if self.0.get(&package_spec).is_none() {
-            let krate = compute_crate_docs(
-                self.1.workspace().target_directory().as_std_path(),
-                &package_spec,
-            )?;
-            let krate = Crate::new(self, krate, package_id.to_owned()).map_err(|e| {
-                CannotGetCrateData {
-                    package_spec: package_id.to_string(),
-                    source: Arc::new(e),
-                }
-            })?;
-            self.0.insert(package_spec.clone(), Box::new(krate));
+        // First check if we already have the crate docs in the in-memory cache.
+        if let Some(krate) = self.get_crate_by_package_id(package_id) {
+            return Ok(krate);
         }
-        Ok(self.get_crate_by_package_id_spec(&package_spec).unwrap())
+
+        // If not, let's try to retrieve them from the on-disk cache.
+        if let Ok(package_metadata) = self.1.metadata(package_id) {
+            match self.2.get(&package_metadata) {
+                Ok(Some(krate)) => {
+                    match Crate::new(self, krate, package_id.to_owned()) {
+                        Ok(krate) => {
+                            self.0.insert(package_id.to_owned(), Box::new(krate));
+                            return Ok(self.get_crate_by_package_id(package_id).unwrap());
+                        }
+                        Err(e) => {
+                            tracing::warn!(
+                                error.msg = tracing::field::display(&e),
+                                error.error_chain = tracing::field::debug(&e),
+                                package_id = package_id.repr(),
+                                "Failed to index the JSON docs retrieved from the on-disk cache",
+                            );
+                        }
+                    };
+                }
+                Err(e) => {
+                    tracing::warn!(
+                        error.msg = tracing::field::display(&e),
+                        error.error_chain = tracing::field::debug(&e),
+                        package_id = package_id.repr(),
+                        "Failed to retrieve the documentation from the on-disk cache",
+                    );
+                }
+                Ok(None) => {}
+            }
+        }
+
+        // If we don't have them in the on-disk cache, we need to compute them.
+        let krate = compute_crate_docs(&self.1, &package_id)?;
+        let krate =
+            Crate::new(self, krate, package_id.to_owned()).map_err(|e| CannotGetCrateData {
+                package_spec: package_id.to_string(),
+                source: Arc::new(e),
+            })?;
+
+        // If not, let's try to retrieve them from the on-disk cache.
+        if let Ok(package_metadata) = self.1.metadata(package_id) {
+            if let Err(e) = self.2.insert(&package_metadata, &krate.core.krate) {
+                tracing::warn!(
+                    error.msg = tracing::field::display(&e),
+                    error.error_chain = tracing::field::debug(&e),
+                    package_id = package_id.repr(),
+                    "Failed to store the computed JSON docs in the on-disk cache",
+                );
+            }
+        }
+        self.0.insert(package_id.to_owned(), Box::new(krate));
+        Ok(self.get_crate_by_package_id(package_id).unwrap())
     }
 
     /// Retrieve the documentation for the crate associated with [`PackageId`] from
@@ -72,19 +114,7 @@ impl CrateCollection {
     ///
     /// It returns `None` if no documentation is found for the specified [`PackageId`].
     pub fn get_crate_by_package_id(&self, package_id: &PackageId) -> Option<&Crate> {
-        let package_spec = PackageIdSpecification::from_package_id(package_id, &self.1).ok()?;
-        self.get_crate_by_package_id_spec(&package_spec)
-    }
-
-    /// Retrieve the documentation for the crate associated with [`PackageIdSpecification`] from
-    /// [`CrateCollection`]'s internal cache if it was computed before.
-    ///
-    /// It returns `None` if no documentation is found for the specified [`PackageIdSpecification`].
-    pub fn get_crate_by_package_id_spec(
-        &self,
-        package_spec: &PackageIdSpecification,
-    ) -> Option<&Crate> {
-        self.0.get(package_spec)
+        self.0.get(package_id)
     }
 
     /// Retrieve type information given its [`GlobalItemId`].
@@ -581,7 +611,10 @@ fn index_local_types<'a>(
                                 // picture of all the types available in this crate.
                                 let external_crate_id = imported_summary.crate_id;
                                 let external_package_id = crate_core
-                                    .compute_package_id_for_crate_id(external_crate_id, collection)?;
+                                    .compute_package_id_for_crate_id(
+                                        external_crate_id,
+                                        collection,
+                                    )?;
                                 // TODO: remove unwraps
                                 let external_crate = collection
                                     .get_or_compute_crate_by_package_id(&external_package_id)?;
