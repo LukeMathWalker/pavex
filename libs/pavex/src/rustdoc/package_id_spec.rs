@@ -4,8 +4,6 @@ use anyhow::Context;
 use guppy::graph::{PackageGraph, PackageMetadata, PackageSource};
 use guppy::{PackageId, Version};
 
-use crate::rustdoc::TOOLCHAIN_CRATES;
-
 /// A selector that follows the [package ID specification](https://doc.rust-lang.org/cargo/reference/pkgid-spec.html).
 /// It is used as argument to the `-p`/`--package` flag in `cargo`'s commands.
 #[derive(Debug, PartialEq, Hash, Eq, Clone)]
@@ -20,19 +18,14 @@ impl PackageIdSpecification {
         package_id: &PackageId,
         package_graph: &PackageGraph,
     ) -> Result<Self, anyhow::Error> {
-        // Toolchain crates don't appear in the package graph, therefore we special-case them.
-        if TOOLCHAIN_CRATES.contains(&package_id.repr()) {
-            Ok(Self {
-                source: None,
-                name: package_id.repr().to_string(),
-                version: None,
-            })
-        } else {
-            let package_metadata = package_graph
-                .metadata(package_id)
-                .context("Unknown package ID")?;
-            Ok(Self::from_package_metadata(&package_metadata))
-        }
+        let package_metadata = package_graph.metadata(package_id).with_context(|| {
+            format!(
+                "`{}` doesn't appear in the package graph",
+                package_id.repr()
+            )
+        })?;
+
+        Ok(Self::from_package_metadata(&package_metadata))
     }
 
     pub fn from_package_metadata(metadata: &PackageMetadata) -> Self {

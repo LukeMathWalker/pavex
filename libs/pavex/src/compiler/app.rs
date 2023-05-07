@@ -78,7 +78,8 @@ impl App {
             };
         }
 
-        let krate_collection = CrateCollection::new(package_graph.clone());
+        let krate_collection =
+            CrateCollection::new(package_graph.clone()).map_err(|e| vec![miette!(e)])?;
         let mut diagnostics = vec![];
         let mut computation_db = ComputationDb::new();
         let Ok(user_component_db) = UserComponentDb::build(
@@ -220,7 +221,11 @@ impl App {
             &self.component_db,
             &self.computation_db,
         )?;
-        Ok(GeneratedApp { lib_rs, cargo_toml, package_graph: self.package_graph.clone() })
+        Ok(GeneratedApp {
+            lib_rs,
+            cargo_toml,
+            package_graph: self.package_graph.clone(),
+        })
     }
 
     /// A representation of an `App` geared towards debugging and testing.
