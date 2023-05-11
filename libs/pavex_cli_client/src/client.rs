@@ -25,9 +25,7 @@ impl Client {
     /// Convert this `Client` into a `std::process::Command` that will run `pavex_cli`
     /// with the chosen configuration.
     fn command(self) -> Command {
-        let pavex_path = self
-            .pavex_cli_path
-            .unwrap_or_else(|| "pavex_cli".into());
+        let pavex_path = self.pavex_cli_path.unwrap_or_else(|| "pavex_cli".into());
         let mut cmd = Command::new(pavex_path);
 
         match self.color {

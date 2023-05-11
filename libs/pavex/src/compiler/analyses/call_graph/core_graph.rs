@@ -72,7 +72,7 @@ where
         constructible_db,
         lifecycle2n_allowed_invocations.clone(),
     )
-    .assert_acyclic( component_db, computation_db, diagnostics)
+    .assert_acyclic(component_db, computation_db, diagnostics)
     .is_err()
     {
         return Err(());

@@ -447,22 +447,21 @@ impl ResolvedPath {
                 normalize(p.name()) == registered_at
             })
             .expect("There is no package in the current workspace whose name matches the registration crate for these identifiers");
-        let package_id =
-            if normalize(registration_package.name()) == krate_name_candidate {
-                registration_package.id().to_owned()
-            } else if let Some(dependency) = registration_package
-                .direct_links()
-                .find(|d| normalize(d.resolved_name()) == krate_name_candidate)
-            {
-                dependency.to().id().to_owned()
-            } else if TOOLCHAIN_CRATES.contains(&krate_name_candidate.as_str()) {
-                PackageId::new(krate_name_candidate.clone())
-            } else {
-                return Err(PathMustBeAbsolute {
-                    relative_path: path.to_string(),
-                }
-                .into());
-            };
+        let package_id = if normalize(registration_package.name()) == krate_name_candidate {
+            registration_package.id().to_owned()
+        } else if let Some(dependency) = registration_package
+            .direct_links()
+            .find(|d| normalize(d.resolved_name()) == krate_name_candidate)
+        {
+            dependency.to().id().to_owned()
+        } else if TOOLCHAIN_CRATES.contains(&krate_name_candidate.as_str()) {
+            PackageId::new(krate_name_candidate.clone())
+        } else {
+            return Err(PathMustBeAbsolute {
+                relative_path: path.to_string(),
+            }
+            .into());
+        };
         Ok(Self {
             segments,
             qualified_self: qself,

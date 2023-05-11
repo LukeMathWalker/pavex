@@ -23,8 +23,8 @@ use super::NumberOfAllowedInvocations;
 
 /// A graph that represents the dependencies between components, ignoring their respective lifecycles.
 /// There is at most one node for each [`ComponentId`].
-/// 
-/// The primary purpose of this graph is to determine if there are cyclic dependencies, which would in 
+///
+/// The primary purpose of this graph is to determine if there are cyclic dependencies, which would in
 /// turn prevent us from building a [`CallGraph`] without getting stuck in an infinite loop.
 pub(super) struct DependencyGraph {
     graph: RawDependencyGraph,

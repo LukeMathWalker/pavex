@@ -15,7 +15,7 @@ use rustdoc_types::{ExternalCrate, Item, ItemEnum, ItemKind, Visibility};
 use crate::language::ImportPath;
 use crate::rustdoc::{compute::compute_crate_docs, utils, CannotGetCrateData, TOOLCHAIN_CRATES};
 
-use super::cache::RustdocGlobalFsCache;
+use super::compute::{RustdocCacheKey, RustdocGlobalFsCache};
 
 /// The main entrypoint for accessing the documentation of the crates
 /// in a specific `PackageGraph`.
@@ -56,34 +56,33 @@ impl CrateCollection {
         }
 
         // If not, let's try to retrieve them from the on-disk cache.
-        if let Ok(package_metadata) = self.1.metadata(package_id) {
-            match self.2.get(&package_metadata) {
-                Ok(Some(krate)) => {
-                    match Crate::new(self, krate, package_id.to_owned()) {
-                        Ok(krate) => {
-                            self.0.insert(package_id.to_owned(), Box::new(krate));
-                            return Ok(self.get_crate_by_package_id(package_id).unwrap());
-                        }
-                        Err(e) => {
-                            tracing::warn!(
-                                error.msg = tracing::field::display(&e),
-                                error.error_chain = tracing::field::debug(&e),
-                                package_id = package_id.repr(),
-                                "Failed to index the JSON docs retrieved from the on-disk cache",
-                            );
-                        }
-                    };
-                }
-                Err(e) => {
-                    tracing::warn!(
-                        error.msg = tracing::field::display(&e),
-                        error.error_chain = tracing::field::debug(&e),
-                        package_id = package_id.repr(),
-                        "Failed to retrieve the documentation from the on-disk cache",
-                    );
-                }
-                Ok(None) => {}
+        let cache_key = RustdocCacheKey::new(package_id, &self.1);
+        match self.2.get(&cache_key) {
+            Ok(Some(krate)) => {
+                match Crate::new(self, krate, package_id.to_owned()) {
+                    Ok(krate) => {
+                        self.0.insert(package_id.to_owned(), Box::new(krate));
+                        return Ok(self.get_crate_by_package_id(package_id).unwrap());
+                    }
+                    Err(e) => {
+                        tracing::warn!(
+                            error.msg = tracing::field::display(&e),
+                            error.error_chain = tracing::field::debug(&e),
+                            package_id = package_id.repr(),
+                            "Failed to index the JSON docs retrieved from the on-disk cache",
+                        );
+                    }
+                };
             }
+            Err(e) => {
+                tracing::warn!(
+                    error.msg = tracing::field::display(&e),
+                    error.error_chain = tracing::field::debug(&e),
+                    package_id = package_id.repr(),
+                    "Failed to retrieve the documentation from the on-disk cache",
+                );
+            }
+            Ok(None) => {}
         }
 
         // If we don't have them in the on-disk cache, we need to compute them.
@@ -94,16 +93,14 @@ impl CrateCollection {
                 source: Arc::new(e),
             })?;
 
-        // If not, let's try to retrieve them from the on-disk cache.
-        if let Ok(package_metadata) = self.1.metadata(package_id) {
-            if let Err(e) = self.2.insert(&package_metadata, &krate.core.krate) {
-                tracing::warn!(
-                    error.msg = tracing::field::display(&e),
-                    error.error_chain = tracing::field::debug(&e),
-                    package_id = package_id.repr(),
-                    "Failed to store the computed JSON docs in the on-disk cache",
-                );
-            }
+        // Let's make sure to store them in the on-disk cache for next time.
+        if let Err(e) = self.2.insert(&cache_key, &krate.core.krate) {
+            tracing::warn!(
+                error.msg = tracing::field::display(&e),
+                error.error_chain = tracing::field::debug(&e),
+                package_id = package_id.repr(),
+                "Failed to store the computed JSON docs in the on-disk cache",
+            );
         }
         self.0.insert(package_id.to_owned(), Box::new(krate));
         Ok(self.get_crate_by_package_id(package_id).unwrap())
@@ -615,25 +612,15 @@ fn index_local_types<'a>(
                                         external_crate_id,
                                         collection,
                                     )?;
-                                // TODO: remove unwraps
                                 let external_crate = collection
                                     .get_or_compute_crate_by_package_id(&external_package_id)?;
-                                // It looks like we might fail to find the module item if there are
-                                // no public types inside it.
-                                // Example of this issue: `core::fmt::rt`.
-                                if let Ok(foreign_item_id) =
-                                    external_crate.get_type_id_by_path(&imported_summary.path)
-                                {
-                                    let foreign_item_id = foreign_item_id.rustdoc_item_id.clone();
-                                    index_local_types(
-                                        &external_crate.core,
-                                        collection,
-                                        current_path,
-                                        path_index,
-                                        &foreign_item_id,
-                                        Some(&i.name),
-                                    )?;
-                                }
+                                current_path.push(&i.name);
+                                re_export(
+                                    external_crate,
+                                    current_path,
+                                    path_index,
+                                    &imported_summary.path,
+                                );
                             }
                         } else {
                             // TODO: this is firing for std's JSON docs. File a bug report.
@@ -679,6 +666,29 @@ fn index_local_types<'a>(
         _ => {}
     }
     Ok(())
+}
+
+/// Add foreign items to the local index when they are re-exported (e.g. `pub use hyper;` 
+/// or `pub use hyper::Server;`)
+/// 
+/// `re_exported_path` is the path to the re-exported item within the foreign crate. It can
+/// either be a module or a single item.
+fn re_export<'a>(
+    foreign_krate: &'a Crate,
+    current_path: Vec<&'a str>,
+    local_path_index: &mut HashMap<GlobalItemId, BTreeSet<Vec<String>>>,
+    re_exported_path: &[String],
+) {
+    for (path, id) in &foreign_krate.types_path_index {
+        // If the path starts with the re-exported path, we add it to the local index.
+        if re_exported_path.iter().zip(path.iter()).all(|(a, b)| a == b) {
+            // E.g. `hyper::server::Server` will be added as `my_crate::Server` if 
+            // the re-export was `pub use hyper::server::*` from the root of `my_crate`.
+            let mut p: Vec<_> = current_path.iter().map(|s| s.to_string()).collect();
+            p.extend(path.iter().skip(re_exported_path.len()).map(|s| s.to_owned()));
+            local_path_index.entry(id.clone()).or_default().insert(p);
+        }
+    }
 }
 
 /// An identifier that unequivocally points to a type within a [`CrateCollection`].
