@@ -169,7 +169,7 @@ impl GeneratedApp {
                 .unwrap()
                 .as_table_mut()
                 .unwrap();
-            // The `members` key is optional—you can omit it if your workspace has 
+            // The `members` key is optional—you can omit it if your workspace has
             // a single member, i.e. the package defined in the same manifest file.
             if let Some(members) = workspace.get_mut("members") {
                 if let Some(members) = members.as_array_mut() {

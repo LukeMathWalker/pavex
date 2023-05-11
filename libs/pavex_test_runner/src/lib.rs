@@ -178,7 +178,7 @@ impl TestData {
     }
 
     /// The directory containing the source code of all ephemeral dependencies.
-    /// 
+    ///
     /// We don't want to list ephemeral dependencies as members of the workspace of the project under test
     /// in order to be able to have multiple versions of the same crate as dependencies of the project under test.
     /// That would be forbidden by `cargo` if they were listed as members of the same workspace.
@@ -491,7 +491,6 @@ fn _run_test(
                 test_output: None,
             }),
             ExpectedOutcome::Fail => {
-
                 let stderr_snapshot = SnapshotTest::new(expectations_directory.join("stderr.txt"));
                 if stderr_snapshot.verify(&codegen_output.stderr).is_err() {
                     return Ok(TestOutcome {

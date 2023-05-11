@@ -9,7 +9,6 @@ pub use queries::{
     ResolvedItemWithParent, RustdocKindExt, UnknownItemPath,
 };
 
-mod cache;
 mod compute;
 mod package_id_spec;
 mod queries;
