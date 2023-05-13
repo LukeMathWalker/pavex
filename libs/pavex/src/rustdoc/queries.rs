@@ -10,7 +10,7 @@ use elsa::FrozenMap;
 use guppy::graph::PackageGraph;
 use guppy::{PackageId, Version};
 use indexmap::IndexSet;
-use rustdoc_types::{ExternalCrate, Item, ItemEnum, ItemKind, Visibility};
+use rustdoc_types::{ExternalCrate, Item, ItemEnum, ItemKind, ItemSummary, Visibility};
 
 use crate::language::ImportPath;
 use crate::rustdoc::{compute::compute_crate_docs, utils, CannotGetCrateData, TOOLCHAIN_CRATES};
@@ -59,20 +59,8 @@ impl CrateCollection {
         let cache_key = RustdocCacheKey::new(package_id, &self.1);
         match self.2.get(&cache_key) {
             Ok(Some(krate)) => {
-                match Crate::new(self, krate, package_id.to_owned()) {
-                    Ok(krate) => {
-                        self.0.insert(package_id.to_owned(), Box::new(krate));
-                        return Ok(self.get_crate_by_package_id(package_id).unwrap());
-                    }
-                    Err(e) => {
-                        tracing::warn!(
-                            error.msg = tracing::field::display(&e),
-                            error.error_chain = tracing::field::debug(&e),
-                            package_id = package_id.repr(),
-                            "Failed to index the JSON docs retrieved from the on-disk cache",
-                        );
-                    }
-                };
+                self.0.insert(package_id.to_owned(), Box::new(krate));
+                return Ok(self.get_crate_by_package_id(package_id).unwrap());
             }
             Err(e) => {
                 tracing::warn!(
@@ -94,7 +82,7 @@ impl CrateCollection {
             })?;
 
         // Let's make sure to store them in the on-disk cache for next time.
-        if let Err(e) = self.2.insert(&cache_key, &krate.core.krate) {
+        if let Err(e) = self.2.insert(&cache_key, &krate) {
             tracing::warn!(
                 error.msg = tracing::field::display(&e),
                 error.error_chain = tracing::field::debug(&e),
@@ -117,7 +105,7 @@ impl CrateCollection {
     /// Retrieve type information given its [`GlobalItemId`].
     ///
     /// It panics if no item is found for the specified [`GlobalItemId`].
-    pub fn get_type_by_global_type_id(&self, type_id: &GlobalItemId) -> &Item {
+    pub fn get_type_by_global_type_id(&self, type_id: &GlobalItemId) -> Cow<'_, Item> {
         // Safe to unwrap since the package id is coming from a GlobalItemId.
         let krate = self.get_crate_by_package_id(&type_id.package_id).unwrap();
         krate.get_type_by_local_type_id(&type_id.rustdoc_item_id)
@@ -132,11 +120,11 @@ impl CrateCollection {
     ) -> Result<Result<ResolvedItemWithParent<'_>, GetItemByResolvedPathError>, CannotGetCrateData>
     {
         let krate = self.get_or_compute_crate_by_package_id(package_id)?;
-        if let Ok(type_id) = krate.get_type_id_by_path(path) {
-            let i = self.get_type_by_global_type_id(type_id);
+        if let Ok(type_id) = krate.get_type_id_by_path(path, self)? {
+            let i = self.get_type_by_global_type_id(&type_id);
             return Ok(Ok(ResolvedItemWithParent {
                 item: ResolvedItem {
-                    item: Cow::Borrowed(i),
+                    item: i,
                     item_id: type_id.to_owned(),
                 },
                 parent: None,
@@ -155,8 +143,8 @@ impl CrateCollection {
         }
         let (method_name, type_path_segments) = path.split_last().unwrap();
 
-        if let Ok(parent_type_id) = krate.get_type_id_by_path(type_path_segments) {
-            let parent = self.get_type_by_global_type_id(parent_type_id);
+        if let Ok(parent_type_id) = krate.get_type_id_by_path(type_path_segments, self)? {
+            let parent = self.get_type_by_global_type_id(&parent_type_id);
             let children_ids = match &parent.inner {
                 ItemEnum::Struct(s) => &s.impls,
                 ItemEnum::Enum(enum_) => &enum_.impls,
@@ -182,14 +170,14 @@ impl CrateCollection {
                                 if let ItemEnum::Function(_) = &impl_item.inner {
                                     return Ok(Ok(ResolvedItemWithParent {
                                         item: ResolvedItem {
-                                            item: Cow::Borrowed(impl_item),
+                                            item: impl_item,
                                             item_id: GlobalItemId {
                                                 package_id: krate.core.package_id.clone(),
                                                 rustdoc_item_id: impl_item_id.to_owned(),
                                             },
                                         },
                                         parent: Some(ResolvedItem {
-                                            item: Cow::Borrowed(parent),
+                                            item: parent,
                                             item_id: parent_type_id.to_owned(),
                                         }),
                                     }));
@@ -201,14 +189,14 @@ impl CrateCollection {
                         if child.name.as_ref() == Some(method_name) {
                             return Ok(Ok(ResolvedItemWithParent {
                                 item: ResolvedItem {
-                                    item: Cow::Borrowed(child),
+                                    item: child,
                                     item_id: GlobalItemId {
                                         package_id: krate.core.package_id.clone(),
                                         rustdoc_item_id: child_id.to_owned(),
                                     },
                                 },
                                 parent: Some(ResolvedItem {
-                                    item: Cow::Borrowed(parent),
+                                    item: parent,
                                     item_id: parent_type_id.to_owned(),
                                 }),
                             }));
@@ -255,8 +243,8 @@ impl CrateCollection {
             )
         };
         let definition_krate = self.get_or_compute_crate_by_package_id(&definition_package_id)?;
-        let type_id = definition_krate.get_type_id_by_path(&path)?;
-        let canonical_path = self.get_canonical_path_by_global_type_id(type_id)?;
+        let type_id = definition_krate.get_type_id_by_path(&path, self)??;
+        let canonical_path = self.get_canonical_path_by_global_type_id(&type_id)?;
         Ok((type_id.clone(), canonical_path))
     }
 }
@@ -282,7 +270,7 @@ pub struct ResolvedItem<'a> {
 }
 
 /// Thin wrapper around [`rustdoc_types::Crate`] to:
-/// - bundle a derived index (path <> id);
+/// - bundle derived indexes;
 /// - provide query helpers with good error messages.
 ///
 /// It also records the `PackageId` for the corresponding crate within the dependency tree
@@ -290,30 +278,101 @@ pub struct ResolvedItem<'a> {
 #[derive(Debug, Clone)]
 pub struct Crate {
     pub(crate) core: CrateCore,
-    /// An index to lookup the global id of a type given a local importable path
-    /// that points at it.
+    /// An index to lookup the id of a type given a (publicly visible) 
+    /// path to it.
     ///
     /// The index does NOT contain macros, since macros and types live in two
     /// different namespaces and can contain items with the same name.
     /// E.g. `core::clone::Clone` is both a trait and a derive macro.
-    types_path_index: HashMap<Vec<String>, GlobalItemId>,
-    public_local_path_index: HashMap<GlobalItemId, BTreeSet<Vec<String>>>,
+    pub(super) import_path2id: HashMap<Vec<String>, rustdoc_types::Id>,
+    /// A mapping that keeps track of re-exports of types (or modules!) from
+    /// other crates.
+    /// 
+    /// The key is the path under which the type is re-exported.
+    /// The value is a tuple containing:
+    /// - the path of the type in the original crate;
+    /// - the id of the original crate in the `external_crates` section of the JSON documentation.
+    /// 
+    /// E.g. `pub use hyper::server as sx;` in `lib.rs` would have an entry in this map
+    /// with key `["my_crate", "sx"]` and value `(["hyper", "server"], _)`.
+    pub(super) re_exports: HashMap<Vec<String>, (Vec<String>, u32)>,
+    /// A mapping from a type id to all the paths under which it can be imported.
+    pub(super) id2import_paths: HashMap<rustdoc_types::Id, BTreeSet<Vec<String>>>,
 }
 
 #[derive(Debug, Clone)]
 pub(crate) struct CrateCore {
+    /// The `PackageId` for the corresponding crate within the dependency tree
+    /// for the workspace it belongs to.
     pub(crate) package_id: PackageId,
-    krate: rustdoc_types::Crate,
+    /// The JSON documentation for the crate.
+    pub(super) krate: CrateData,
+}
+
+#[derive(Debug, Clone)]
+/// The JSON documentation for a crate.
+pub(crate) struct CrateData {
+    /// The id of the root item for the crate.
+    pub root_item_id: rustdoc_types::Id,
+    /// A mapping from the id of an external crate to the information about it.
+    pub external_crates: std::collections::HashMap<u32, ExternalCrate>,
+    /// A mapping from the id of a type to its fully qualified path.
+    /// Primarily useful for foreign items that are being re-exported by this crate.
+    pub paths: std::collections::HashMap<rustdoc_types::Id, ItemSummary>,
+    /// The version of the JSON format used by rustdoc.
+    pub format_version: u32,
+    /// The index of all the items in the crate.
+    pub index: CrateItemIndex,
+}
+#[derive(Debug, Clone)]
+/// The index of all the items in the crate.
+/// 
+/// Since the index can be quite large, we try to avoid deserializing it all at once.
+/// 
+/// The `Eager` variant contains the entire index, fully deserialized. This is what we get
+/// when we have had to compute the documentation for the crate on the fly.
+/// 
+/// The `Lazy` variant contains the index as a byte array. There is a mapping from the 
+/// id of an item to the start and end index of the item's bytes in the byte array.
+/// We can therefore deserialize the item only if we need to access it.
+/// Since we only access a tiny portion of the items in the index (especially for large crates),
+/// this translates in a significant performance improvement. 
+pub(crate) enum CrateItemIndex {
+    Eager(EagerCrateItemIndex),
+    Lazy(LazyCrateItemIndex),
+}
+
+impl CrateItemIndex {
+    /// Retrieve an item from the index given its id.
+    pub fn get(&self, id: &rustdoc_types::Id) -> Option<Cow<'_, Item>> {
+        match self {
+            Self::Eager(index) => index.index.get(id).map(Cow::Borrowed),
+            Self::Lazy(index) => {
+                let (start, end) = index.item_id2delimiters.get(id)?;
+                let bytes = index.items[*start..*end].to_vec();
+                let item = serde_json::from_slice(&bytes).expect(
+                    "Failed to deserialize an item from a lazy `rustdoc` index. This is a bug.",
+                );
+                Some(Cow::Owned(item))
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+/// See [`CrateItemIndex`] for more information.
+pub(crate) struct EagerCrateItemIndex {
+    pub index: std::collections::HashMap<rustdoc_types::Id, Item>,
+}
+
+#[derive(Debug, Clone)]
+/// See [`CrateItemIndex`] for more information.
+pub(crate) struct LazyCrateItemIndex {
+    pub(super) items: Vec<u8>,
+    pub(super) item_id2delimiters: HashMap<rustdoc_types::Id, (usize, usize)>,
 }
 
 impl CrateCore {
-    /// Given a crate id, return the corresponding external crate object.
-    /// We also try to return the crate version, if we manage to parse it out of the crate HTML
-    /// root URL.
-    fn get_external_crate_name(&self, crate_id: u32) -> Option<(&ExternalCrate, Option<Version>)> {
-        self.krate.get_external_crate_name(crate_id)
-    }
-
     /// Given a crate id, return the corresponding [`PackageId`].
     ///
     /// It panics if the provided crate id doesn't appear in the JSON documentation
@@ -323,99 +382,12 @@ impl CrateCore {
         crate_id: u32,
         collection: &CrateCollection,
     ) -> Result<PackageId, anyhow::Error> {
-        #[derive(Debug, Hash, Eq, PartialEq)]
-        struct PackageLinkMetadata<'a> {
-            id: &'a PackageId,
-            name: &'a str,
-            version: &'a Version,
-        }
-
-        if crate_id == 0 {
-            return Ok(self.package_id.clone());
-        }
-
-        let package_graph = &collection.1;
-        let (external_crate, external_crate_version) =
-            self.get_external_crate_name(crate_id)
-                .ok_or_else(|| {
-                    anyhow!(
-                        "There is no external crate associated with id `{}` in the JSON documentation for `{}`",
-                        crate_id,
-                        self.package_id.repr()
-                    )
-                }).unwrap();
-        if TOOLCHAIN_CRATES.contains(&external_crate.name.as_str()) {
-            return Ok(PackageId::new(external_crate.name.clone()));
-        }
-
-        let transitive_dependencies = package_graph
-            .query_forward([&self.package_id])
-            .with_context(|| {
-                format!(
-                    "`{}` doesn't appear in the package graph for the current workspace",
-                    &self.package_id.repr()
-                )
-            })
-            .unwrap()
-            .resolve();
-        let expected_link_name = utils::normalize_crate_name(&external_crate.name);
-        let package_candidates: IndexSet<_> = transitive_dependencies
-            .links(guppy::graph::DependencyDirection::Forward)
-            .filter(|link| utils::normalize_crate_name(link.to().name()) == expected_link_name)
-            .map(|link| {
-                let l = link.to();
-                PackageLinkMetadata {
-                    id: l.id(),
-                    name: l.name(),
-                    version: l.version(),
-                }
-            })
-            .collect();
-
-        if package_candidates.is_empty() {
-            Err(anyhow!(
-                "I could not find any crate named `{}` among the dependencies of {}",
-                expected_link_name,
-                self.package_id
-            ))
-            .unwrap()
-        }
-        if package_candidates.len() == 1 {
-            return Ok(package_candidates.first().unwrap().id.to_owned());
-        }
-
-        // We have multiple packages with the same name.
-        // We try to use the version to identify the one we are looking for.
-        // If we don't have a version, we panic: better than picking one randomly and failing
-        // later with a confusing message.
-        if let Some(expected_link_version) = external_crate_version.as_ref() {
-            Ok(package_candidates
-                .into_iter()
-                .find(|l| l.version == expected_link_version)
-                .ok_or_else(|| {
-                    anyhow!(
-                        "None of the dependencies of {} named `{}` matches the version we expect ({})",
-                        self.package_id,
-                        expected_link_name,
-                        expected_link_version
-                    )
-                })?.id.to_owned())
-        } else {
-            Err(
-                anyhow!(
-                    "There are multiple packages named `{}` among the dependencies of {}. \
-                    In order to disambiguate among them, I need to know their versions.\n\
-                    Unfortunately, I couldn't extract the expected version for `{}` from HTML root URL included in the \
-                    JSON documentation for `{}`.\n\
-                    This due to a limitation in `rustdoc` itself: follow https://github.com/rust-lang/compiler-team/issues/622 \
-                    to track progress on this issue.",
-                    expected_link_name,
-                    self.package_id.repr(),
-                    expected_link_name,
-                    self.package_id.repr()
-                )
-            )
-        }
+        compute_package_id_for_crate_id(
+            &self.package_id,
+            &self.krate.external_crates,
+            crate_id,
+            &collection.1,
+        )
     }
 }
 
@@ -426,44 +398,50 @@ impl Crate {
         krate: rustdoc_types::Crate,
         package_id: PackageId,
     ) -> Result<Self, anyhow::Error> {
-        let crate_core = CrateCore { package_id, krate };
-        let mut types_path_index: HashMap<_, _> = crate_core
-            .krate
+        let mut import_path2id: HashMap<_, _> = krate
             .paths
             .iter()
             // We only want types, no macros
             .filter(|(_, summary)| !matches!(summary.kind, ItemKind::Macro | ItemKind::ProcDerive))
-            .map(|(id, summary)| {
-                (
-                    summary.path.clone(),
-                    GlobalItemId::new(id.to_owned(), crate_core.package_id.clone()),
-                )
-            })
+            .map(|(id, summary)| (summary.path.clone(), id.to_owned()))
             .collect();
 
-        let mut public_local_path_index = HashMap::new();
+        let mut id2import_paths = HashMap::new();
+        let mut re_exports = HashMap::new();
         index_local_types(
-            &crate_core,
+            &krate,
+            &package_id,
             collection,
             vec![],
-            &mut public_local_path_index,
-            &crate_core.krate.root,
+            &mut id2import_paths,
+            &mut re_exports,
+            &krate.root,
             None,
         )?;
 
-        types_path_index.reserve(public_local_path_index.len());
-        for (id, public_paths) in &public_local_path_index {
+        import_path2id.reserve(id2import_paths.len());
+        for (id, public_paths) in &id2import_paths {
             for public_path in public_paths {
-                if types_path_index.get(public_path).is_none() {
-                    types_path_index.insert(public_path.to_owned(), id.to_owned());
+                if import_path2id.get(public_path).is_none() {
+                    import_path2id.insert(public_path.to_owned(), id.to_owned());
                 }
             }
         }
 
         Ok(Self {
-            core: crate_core,
-            types_path_index,
-            public_local_path_index,
+            core: CrateCore {
+                package_id,
+                krate: CrateData {
+                    root_item_id: krate.root,
+                    index: CrateItemIndex::Eager(EagerCrateItemIndex { index: krate.index }),
+                    external_crates: krate.external_crates,
+                    format_version: krate.format_version,
+                    paths: krate.paths,
+                },
+            },
+            import_path2id,
+            id2import_paths,
+            re_exports,
         })
     }
 
@@ -480,12 +458,48 @@ impl Crate {
             .compute_package_id_for_crate_id(crate_id, collection)
     }
 
-    pub fn get_type_id_by_path(&self, path: &[String]) -> Result<&GlobalItemId, UnknownItemPath> {
-        self.types_path_index
-            .get(path)
-            .ok_or_else(|| UnknownItemPath {
-                path: path.to_owned(),
-            })
+    pub fn get_type_id_by_path(
+        &self,
+        path: &[String],
+        krate_collection: &CrateCollection,
+    ) -> Result<Result<GlobalItemId, UnknownItemPath>, CannotGetCrateData> {
+        if let Some(id) = self.import_path2id.get(path) {
+            return Ok(Ok(GlobalItemId::new(
+                id.to_owned(),
+                self.core.package_id.to_owned(),
+            )));
+        }
+
+        for (re_exported_path_prefix, (source_path_prefix, external_crate_num)) in &self.re_exports
+        {
+            if re_exported_path_prefix
+                .iter()
+                .zip(path)
+                .all(|(a, b)| a == b)
+            {
+                let mut original_source_path = source_path_prefix.clone();
+                for segment in path.iter().skip(re_exported_path_prefix.len()) {
+                    original_source_path.push(segment.to_owned());
+                }
+
+                let source_package_id = self
+                    .core
+                    .compute_package_id_for_crate_id(*external_crate_num, krate_collection)
+                    .unwrap();
+                let source_krate = krate_collection
+                    .get_or_compute_crate_by_package_id(&source_package_id)
+                    .unwrap();
+                if let Ok(source_id) =
+                    source_krate.get_type_id_by_path(&original_source_path, krate_collection)
+                {
+                    return Ok(source_id);
+                }
+            }
+        }
+
+        Ok(Err(UnknownItemPath {
+            path: path.to_owned(),
+        }))
     }
 
     /// Return the crate_id, path and item kind for a **local** type id.
@@ -506,7 +520,7 @@ impl Crate {
         })
     }
 
-    pub fn get_type_by_local_type_id(&self, id: &rustdoc_types::Id) -> &Item {
+    pub fn get_type_by_local_type_id(&self, id: &rustdoc_types::Id) -> Cow<'_, Item> {
         let type_ = self.core.krate.index.get(id);
         if type_.is_none() {
             panic!(
@@ -522,23 +536,26 @@ impl Crate {
     /// This method returns a "canonical" importable path—i.e. the shortest importable path
     /// pointing at the type you specified.
     fn get_canonical_path(&self, type_id: &GlobalItemId) -> Result<&[String], anyhow::Error> {
-        if let Some(path) = self.public_local_path_index.get(type_id) {
-            Ok(path.iter().next().unwrap())
-        } else {
-            Err(anyhow::anyhow!(
-                "Failed to find a publicly importable path for the type id `{:?}` in the index I computed for `{:?}`. \
-                 This is likely to be a bug in pavex's handling of rustdoc's JSON output or in rustdoc itself.",
-                type_id, self.core.package_id.repr()
-            ))
+        if type_id.package_id == self.core.package_id {
+            if let Some(path) = self.id2import_paths.get(&type_id.rustdoc_item_id) {
+                return Ok(path.iter().next().unwrap());
+            }
         }
+        Err(anyhow::anyhow!(
+            "Failed to find a publicly importable path for the type id `{:?}` in the index I computed for `{:?}`. \
+            This is likely to be a bug in pavex's handling of rustdoc's JSON output or in rustdoc itself.",
+            type_id, self.core.package_id.repr()
+        ))
     }
 }
 
 fn index_local_types<'a>(
-    crate_core: &'a CrateCore,
+    krate: &'a rustdoc_types::Crate,
+    package_id: &'a PackageId,
     collection: &'a CrateCollection,
     mut current_path: Vec<&'a str>,
-    path_index: &mut HashMap<GlobalItemId, BTreeSet<Vec<String>>>,
+    path_index: &mut HashMap<rustdoc_types::Id, BTreeSet<Vec<String>>>,
+    re_exports: &mut HashMap<Vec<String>, (Vec<String>, u32)>,
     current_item_id: &rustdoc_types::Id,
     // Set when a crate is being re-exported under a different name. E.g. `pub use hyper as server`
     // would have `renamed_module` set to `Some(server)`.
@@ -546,9 +563,9 @@ fn index_local_types<'a>(
 ) -> Result<(), anyhow::Error> {
     // TODO: the way we handle `current_path` is extremely wasteful,
     //       we can likely reuse the same buffer throughout.
-    let current_item = match crate_core.krate.index.get(current_item_id) {
+    let current_item = match krate.index.get(current_item_id) {
         None => {
-            if let Some(summary) = crate_core.krate.paths.get(current_item_id) {
+            if let Some(summary) = krate.paths.get(current_item_id) {
                 if summary.kind == ItemKind::Primitive {
                     // This is a known bug—see https://github.com/rust-lang/rust/issues/104064
                     return Ok(());
@@ -557,7 +574,7 @@ fn index_local_types<'a>(
             panic!(
                 "Failed to retrieve item id `{:?}` from the JSON `index` for package id `{}`.",
                 &current_item_id,
-                crate_core.package_id.repr()
+                package_id.repr()
             )
         }
         Some(i) => i,
@@ -583,10 +600,12 @@ fn index_local_types<'a>(
             }
             for item_id in &m.items {
                 index_local_types(
-                    crate_core,
+                    krate,
+                    package_id,
                     collection,
                     current_path.clone(),
                     path_index,
+                    re_exports,
                     item_id,
                     None,
                 )?;
@@ -594,9 +613,9 @@ fn index_local_types<'a>(
         }
         ItemEnum::Import(i) => {
             if let Some(imported_id) = &i.id {
-                match crate_core.krate.index.get(imported_id) {
+                match krate.index.get(imported_id) {
                     None => {
-                        if let Some(imported_summary) = crate_core.krate.paths.get(imported_id) {
+                        if let Some(imported_summary) = krate.paths.get(imported_id) {
                             debug_assert!(imported_summary.crate_id != 0);
                             if let ItemKind::Module = imported_summary.kind {
                                 // We are looking at a public re-export of another crate (e.g. `pub use hyper;`)
@@ -607,19 +626,12 @@ fn index_local_types<'a>(
                                 // We intentionally add foreign items to the index to get a "complete"
                                 // picture of all the types available in this crate.
                                 let external_crate_id = imported_summary.crate_id;
-                                let external_package_id = crate_core
-                                    .compute_package_id_for_crate_id(
-                                        external_crate_id,
-                                        collection,
-                                    )?;
-                                let external_crate = collection
-                                    .get_or_compute_crate_by_package_id(&external_package_id)?;
+                                let re_exported_path = &imported_summary.path;
                                 current_path.push(&i.name);
-                                re_export(
-                                    external_crate,
-                                    current_path,
-                                    path_index,
-                                    &imported_summary.path,
+
+                                re_exports.insert(
+                                    current_path.into_iter().map(|s| s.to_string()).collect(),
+                                    (re_exported_path.to_owned(), external_crate_id),
                                 );
                             }
                         } else {
@@ -634,10 +646,12 @@ fn index_local_types<'a>(
                             }
                         }
                         index_local_types(
-                            crate_core,
+                            krate,
+                            package_id,
                             collection,
                             current_path.clone(),
                             path_index,
+                            re_exports,
                             imported_id,
                             None,
                         )?;
@@ -656,39 +670,13 @@ fn index_local_types<'a>(
             current_path.push(name);
             let path = current_path.into_iter().map(|s| s.to_string()).collect();
             path_index
-                .entry(GlobalItemId::new(
-                    current_item_id.to_owned(),
-                    crate_core.package_id.to_owned(),
-                ))
+                .entry(current_item_id.to_owned())
                 .or_default()
                 .insert(path);
         }
         _ => {}
     }
     Ok(())
-}
-
-/// Add foreign items to the local index when they are re-exported (e.g. `pub use hyper;` 
-/// or `pub use hyper::Server;`)
-/// 
-/// `re_exported_path` is the path to the re-exported item within the foreign crate. It can
-/// either be a module or a single item.
-fn re_export<'a>(
-    foreign_krate: &'a Crate,
-    current_path: Vec<&'a str>,
-    local_path_index: &mut HashMap<GlobalItemId, BTreeSet<Vec<String>>>,
-    re_exported_path: &[String],
-) {
-    for (path, id) in &foreign_krate.types_path_index {
-        // If the path starts with the re-exported path, we add it to the local index.
-        if re_exported_path.iter().zip(path.iter()).all(|(a, b)| a == b) {
-            // E.g. `hyper::server::Server` will be added as `my_crate::Server` if 
-            // the re-export was `pub use hyper::server::*` from the root of `my_crate`.
-            let mut p: Vec<_> = current_path.iter().map(|s| s.to_string()).collect();
-            p.extend(path.iter().skip(re_exported_path.len()).map(|s| s.to_owned()));
-            local_path_index.entry(id.clone()).or_default().insert(p);
-        }
-    }
 }
 
 /// An identifier that unequivocally points to a type within a [`CrateCollection`].
@@ -825,5 +813,135 @@ impl RustdocCrateExt for rustdoc_types::Crate {
         } else {
             None
         }
+    }
+}
+
+fn get_external_crate_name(
+    external_crates: &std::collections::HashMap<u32, ExternalCrate>,
+    crate_id: u32,
+) -> Option<(&ExternalCrate, Option<Version>)> {
+    let external_crate = external_crates.get(&crate_id);
+    if let Some(external_crate) = external_crate {
+        let version = if let Some(url) = &external_crate.html_root_url {
+            url.trim_end_matches('/')
+                .split('/')
+                .last()
+                .map(Version::parse)
+                .and_then(|x| x.ok())
+        } else {
+            None
+        };
+        Some((external_crate, version))
+    } else {
+        None
+    }
+}
+
+/// Given a crate id for an external crate, return the corresponding [`PackageId`].
+///
+/// It panics if the provided crate id doesn't appear in the JSON documentation
+/// for this crate—i.e. if it's not `0` or assigned to one of its transitive dependencies.
+pub fn compute_package_id_for_crate_id(
+    // The package id of the crate whose documentation we are currently processing.
+    package_id: &PackageId,
+    // The mapping from crate id to external crate object.
+    external_crate_index: &std::collections::HashMap<u32, ExternalCrate>,
+    crate_id: u32,
+    package_graph: &PackageGraph,
+) -> Result<PackageId, anyhow::Error> {
+    #[derive(Debug, Hash, Eq, PartialEq)]
+    struct PackageLinkMetadata<'a> {
+        id: &'a PackageId,
+        name: &'a str,
+        version: &'a Version,
+    }
+
+    if crate_id == 0 {
+        return Ok(package_id.clone());
+    }
+
+    let (external_crate, external_crate_version) =
+        get_external_crate_name(external_crate_index, crate_id)
+            .ok_or_else(|| {
+                anyhow!(
+            "There is no external crate associated with id `{}` in the JSON documentation for `{}`",
+            crate_id,
+            package_id.repr()
+        )
+            })
+            .unwrap();
+    if TOOLCHAIN_CRATES.contains(&external_crate.name.as_str()) {
+        return Ok(PackageId::new(external_crate.name.clone()));
+    }
+
+    let transitive_dependencies = package_graph
+        .query_forward([package_id])
+        .with_context(|| {
+            format!(
+                "`{}` doesn't appear in the package graph for the current workspace",
+                package_id.repr()
+            )
+        })
+        .unwrap()
+        .resolve();
+    let expected_link_name = utils::normalize_crate_name(&external_crate.name);
+    let package_candidates: IndexSet<_> = transitive_dependencies
+        .links(guppy::graph::DependencyDirection::Forward)
+        .filter(|link| utils::normalize_crate_name(link.to().name()) == expected_link_name)
+        .map(|link| {
+            let l = link.to();
+            PackageLinkMetadata {
+                id: l.id(),
+                name: l.name(),
+                version: l.version(),
+            }
+        })
+        .collect();
+
+    if package_candidates.is_empty() {
+        Err(anyhow!(
+            "I could not find any crate named `{}` among the dependencies of {}",
+            expected_link_name,
+            package_id
+        ))
+        .unwrap()
+    }
+    if package_candidates.len() == 1 {
+        return Ok(package_candidates.first().unwrap().id.to_owned());
+    }
+
+    // We have multiple packages with the same name.
+    // We try to use the version to identify the one we are looking for.
+    // If we don't have a version, we panic: better than picking one randomly and failing
+    // later with a confusing message.
+    if let Some(expected_link_version) = external_crate_version.as_ref() {
+        Ok(package_candidates
+            .into_iter()
+            .find(|l| l.version == expected_link_version)
+            .ok_or_else(|| {
+                anyhow!(
+                    "None of the dependencies of {} named `{}` matches the version we expect ({})",
+                    package_id,
+                    expected_link_name,
+                    expected_link_version
+                )
+            })?
+            .id
+            .to_owned())
+    } else {
+        Err(
+            anyhow!(
+                "There are multiple packages named `{}` among the dependencies of {}. \
+                In order to disambiguate among them, I need to know their versions.\n\
+                Unfortunately, I couldn't extract the expected version for `{}` from HTML root URL included in the \
+                JSON documentation for `{}`.\n\
+                This due to a limitation in `rustdoc` itself: follow https://github.com/rust-lang/compiler-team/issues/622 \
+                to track progress on this issue.",
+                expected_link_name,
+                package_id.repr(),
+                expected_link_name,
+                package_id.repr()
+            )
+        )
     }
 }

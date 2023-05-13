@@ -262,7 +262,7 @@ fn must_be_a_plain_struct(
                         format!("`{t:?}` is a struct with no fields (a.k.a. unit struct)")
                     }
                     StructKind::Tuple(_) => format!("`{t:?}` is a tuple struct"),
-                    StructKind::Plain { .. } => return Ok(item.clone()),
+                    StructKind::Plain { .. } => return Ok(item.into_owned()),
                 },
                 _ => unreachable!(),
             }

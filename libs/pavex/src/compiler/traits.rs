@@ -63,8 +63,9 @@ pub(crate) fn implements_trait(
 ) -> Result<bool, anyhow::Error> {
     let trait_definition_crate =
         get_crate_by_package_id(krate_collection, &expected_trait.package_id)?;
-    let trait_item_id = trait_definition_crate.get_type_id_by_path(&expected_trait.base_type)?;
-    let trait_item = krate_collection.get_type_by_global_type_id(trait_item_id);
+    let trait_item_id = trait_definition_crate
+        .get_type_id_by_path(&expected_trait.base_type, krate_collection)??;
+    let trait_item = krate_collection.get_type_by_global_type_id(&trait_item_id);
     let ItemEnum::Trait(trait_item) = &trait_item.inner else { unreachable!() };
 
     // Due to Rust's orphan rule, a trait implementation for a type can live in two places:
@@ -76,8 +77,9 @@ pub(crate) fn implements_trait(
         ResolvedType::ResolvedPath(our_path_type) => {
             let type_definition_crate =
                 get_crate_by_package_id(krate_collection, &our_path_type.package_id)?;
-            let type_id = type_definition_crate.get_type_id_by_path(&our_path_type.base_type)?;
-            let type_item = krate_collection.get_type_by_global_type_id(type_id);
+            let type_id = type_definition_crate
+                .get_type_id_by_path(&our_path_type.base_type, krate_collection)??;
+            let type_item = krate_collection.get_type_by_global_type_id(&type_id);
             // We want to see through type aliases here.
             if let ItemEnum::Typedef(typedef) = &type_item.inner {
                 let mut generic_bindings = HashMap::new();
@@ -122,10 +124,8 @@ pub(crate) fn implements_trait(
                 }
             };
             for impl_id in impls {
-                let (trait_id, implementer_type) = match &type_definition_crate
-                    .get_type_by_local_type_id(impl_id)
-                    .inner
-                {
+                let item = type_definition_crate.get_type_by_local_type_id(impl_id);
+                let (trait_id, implementer_type) = match &item.inner {
                     ItemEnum::Impl(impl_) => {
                         if impl_.negative {
                             continue;
@@ -229,10 +229,8 @@ pub(crate) fn implements_trait(
     }
 
     for impl_id in &trait_item.implementations {
-        let implementer = match &trait_definition_crate
-            .get_type_by_local_type_id(impl_id)
-            .inner
-        {
+        let impl_item = trait_definition_crate.get_type_by_local_type_id(impl_id);
+        let implementer = match &impl_item.inner {
             ItemEnum::Impl(impl_) => {
                 if impl_.negative {
                     continue;
