@@ -15,7 +15,7 @@ use pavex_builder::reflection::RawCallableIdentifiers;
 use crate::language::callable_path::{CallPathGenericArgument, CallPathLifetime, CallPathType};
 use crate::language::resolved_type::{GenericArgument, Lifetime, ScalarPrimitive, Slice};
 use crate::language::{CallPath, InvalidCallPath, ResolvedType, Tuple, TypeReference};
-use crate::rustdoc::{CrateCollection, GlobalItemId};
+use crate::rustdoc::CrateCollection;
 use crate::rustdoc::{ResolvedItemWithParent, TOOLCHAIN_CRATES};
 
 /// A resolved import path.
@@ -475,30 +475,6 @@ impl ResolvedPath {
     pub fn crate_name(&self) -> &str {
         // This unwrap never fails thanks to the validation done in `parse`
         &self.segments.first().unwrap().ident
-    }
-
-    /// Return the unequivocal [`GlobalItemId`] that this path points at.
-    ///
-    /// This method only works for structs, enums and free functions.
-    /// It won't work for methods!
-    #[allow(unused)]
-    pub fn find_type_id(
-        &self,
-        krate_collection: &CrateCollection,
-    ) -> Result<GlobalItemId, UnknownPath> {
-        // TODO: remove unwrap here
-        let krate = krate_collection
-            .get_or_compute_crate_by_package_id(&self.package_id)
-            .unwrap();
-        let path_segments: Vec<_> = self
-            .segments
-            .iter()
-            .map(|path_segment| path_segment.ident.to_string())
-            .collect();
-        match krate.get_type_id_by_path(&path_segments) {
-            Ok(type_id) => Ok(type_id.to_owned()),
-            Err(e) => Err(UnknownPath(self.to_owned(), Arc::new(e.into()))),
-        }
     }
 
     /// Find information about the type that this path points at.
