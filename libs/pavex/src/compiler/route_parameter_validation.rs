@@ -27,6 +27,7 @@ use super::traits::assert_trait_is_implemented;
 /// For each handler, check if route parameters are extracted from the URL of the incoming request.
 /// If so, check that the type of the route parameter is a struct with named fields and
 /// that each named field maps to a route parameter for the corresponding handler.
+#[tracing::instrument(name = "Verify route parameters", skip_all)]
 pub(crate) fn verify_route_parameters<'a, I>(
     handler_call_graphs: I,
     computation_db: &ComputationDb,

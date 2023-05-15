@@ -1,0 +1,10 @@
+(
+    creation_location: (
+        line: 4,
+        column: 5,
+        file: "app_blueprint/src/lib.rs",
+    ),
+    constructors: [],
+    routes: [],
+    nested_blueprints: [],
+)

@@ -29,7 +29,7 @@ use crate::language::{
 use crate::rustdoc::{CrateCollection, CORE_PACKAGE_ID};
 
 /// Build an [`OrderedCallGraph`] for the application state.
-#[tracing::instrument(name = "compute_application_state_call_graph", skip_all)]
+#[tracing::instrument(name = "Compute the application state graph", skip_all)]
 pub(crate) fn application_state_call_graph(
     runtime_singleton_bindings: &BiHashMap<Ident, ResolvedType>,
     computation_db: &mut ComputationDb,

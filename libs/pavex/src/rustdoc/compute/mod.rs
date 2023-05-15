@@ -1,3 +1,4 @@
+use std::io::BufReader;
 use std::path::Path;
 use std::sync::Arc;
 
@@ -124,11 +125,16 @@ fn _compute_crate_docs(
         normalize_crate_name(&package_id_spec.name)
     ));
 
-    let json = fs_err::read_to_string(json_path).with_context(|| {
-        format!("Failed to read the output of a `cargo rustdoc` invocation.\n{cmd:?}")
+    let span = tracing::trace_span!("Read and deserialize JSON output");
+    let guard = span.enter();
+    let file = fs_err::File::open(json_path).with_context(|| {
+        format!("Failed to open the file containing the output of a `cargo rustdoc` invocation.\n{cmd:?}")
     })?;
-    let krate = serde_json::from_str::<rustdoc_types::Crate>(&json).with_context(|| {
+    let reader = BufReader::new(file);
+    let krate = serde_json::from_reader::<_, rustdoc_types::Crate>(reader).with_context(|| {
         format!("Failed to deserialize the output of a `cargo rustdoc` invocation.\n{cmd:?}")
     })?;
+    drop(guard);
+
     Ok(krate)
 }

@@ -1,6 +1,9 @@
 /libs/ui_test_envs
 /libs/target
+/libs/vendor
+/examples/**/vendor
 /examples/**/target
 /vendor
 .DS_Store
 *.snap
+trace-*.json

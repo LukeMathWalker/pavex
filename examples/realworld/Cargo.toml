@@ -1,0 +1,2 @@
+[workspace]
+members = ["app_blueprint", "app_server_sdk", "app"]

@@ -49,17 +49,6 @@ pub struct App {
     computation_db: ComputationDb,
 }
 
-#[tracing::instrument]
-fn compute_package_graph() -> Result<PackageGraph, miette::Error> {
-    // `cargo metadata` seems to be the only reliable way of retrieving the path to
-    // the root manifest of the current workspace for a Rust project.
-    guppy::MetadataCommand::new()
-        .exec()
-        .map_err(|e| miette!(e))?
-        .build_graph()
-        .map_err(|e| miette!(e))
-}
-
 impl App {
     #[tracing::instrument(skip_all)]
     /// Process the [`Blueprint`] created by user into an [`App`] instance—an in-memory
@@ -68,7 +57,7 @@ impl App {
     ///
     /// Many different things can go wrong during this process: this method tries its best to
     /// report all errors to the user, but it may not be able to do so in all cases.
-    pub fn build(bp: Blueprint, package_graph: PackageGraph) -> Result<Self, Vec<miette::Error>> {
+    pub fn build(bp: Blueprint) -> Result<Self, Vec<miette::Error>> {
         /// Exit early if there is at least one error.
         macro_rules! exit_on_errors {
             ($var:ident) => {
@@ -79,7 +68,8 @@ impl App {
         }
 
         let krate_collection =
-            CrateCollection::new(package_graph.clone()).map_err(|e| vec![miette!(e)])?;
+            CrateCollection::new().map_err(|e| vec![miette!(e)])?;
+        let package_graph = krate_collection.package_graph().to_owned();
         let mut diagnostics = vec![];
         let mut computation_db = ComputationDb::new();
         let Ok(user_component_db) = UserComponentDb::build(
@@ -191,6 +181,7 @@ impl App {
     /// Generate the manifest and the Rust code for the analysed application.
     ///
     /// They are generated in-memory, they are not persisted to disk.
+    #[tracing::instrument(skip_all, level=tracing::Level::INFO)]
     pub fn codegen(&self) -> Result<GeneratedApp, anyhow::Error> {
         let framework_bindings = self.framework_item_db.bindings();
         let (cargo_toml, mut package_ids2deps) = codegen::codegen_manifest(
@@ -414,6 +405,7 @@ fn codegen_types(
 
 /// Verify that all singletons needed at runtime implement `Send`, `Sync` and `Clone`.
 /// This is required since `pavex` runs on a multi-threaded `tokio` runtime.
+#[tracing::instrument(name = "Verify trait implementations for singletons", skip_all)]
 fn verify_singletons(
     runtime_singletons: &IndexSet<(ResolvedType, ComponentId)>,
     component_db: &ComponentDb,
