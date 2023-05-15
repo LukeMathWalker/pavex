@@ -27,6 +27,7 @@ impl FrameworkItemDb {
     ///
     /// The list is currently hard-coded, but we can imagine a future where it becomes configurable
     /// (e.g. if we want to reuse the DI machinery for more than a single web framework).
+    #[tracing::instrument("Build framework items database", skip_all)]
     pub fn new(package_graph: &PackageGraph, krate_collection: &CrateCollection) -> Self {
         let capacity = 2;
         let mut items = HashMap::with_capacity(capacity);

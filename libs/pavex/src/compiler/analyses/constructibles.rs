@@ -36,6 +36,7 @@ impl ConstructibleDb {
     /// (other) constructors.
     ///
     /// Emits diagnostics for any missing constructors.
+    #[tracing::instrument("Build constructibles database", skip_all)]
     pub(crate) fn build(
         component_db: &mut ComponentDb,
         computation_db: &mut ComputationDb,

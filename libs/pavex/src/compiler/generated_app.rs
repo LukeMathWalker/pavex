@@ -53,6 +53,7 @@ impl GeneratedManifest {
 impl GeneratedApp {
     /// Save the code and the manifest for the generated application to disk.
     /// The newly created library crate is also injected as a member into the current workspace.
+    #[tracing::instrument(skip_all, level=tracing::Level::INFO)]
     pub fn persist(self, directory: &Path) -> Result<(), anyhow::Error> {
         let Self {
             lib_rs,

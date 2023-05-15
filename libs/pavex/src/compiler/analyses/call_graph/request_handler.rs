@@ -12,7 +12,7 @@ use crate::compiler::analyses::constructibles::ConstructibleDb;
 use crate::rustdoc::CrateCollection;
 
 /// Build a [`CallGraph`] for a request handler.
-#[tracing::instrument(name = "compute_handler_call_graph", skip_all)]
+#[tracing::instrument(name = "Compute handler call graph", skip_all)]
 pub(crate) fn handler_call_graph(
     request_handler: ComponentId,
     computation_db: &mut ComputationDb,

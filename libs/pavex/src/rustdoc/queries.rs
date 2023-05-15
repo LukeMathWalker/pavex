@@ -1,8 +1,8 @@
 use std::borrow::Cow;
 use std::collections::BTreeSet;
-use std::fmt;
 use std::fmt::{Display, Formatter};
 use std::sync::Arc;
+use std::{fmt, thread};
 
 use ahash::{HashMap, HashMapExt};
 use anyhow::{anyhow, Context};
@@ -11,6 +11,7 @@ use guppy::graph::PackageGraph;
 use guppy::{PackageId, Version};
 use indexmap::IndexSet;
 use rustdoc_types::{ExternalCrate, Item, ItemEnum, ItemKind, ItemSummary, Visibility};
+use tracing::Span;
 
 use crate::language::ImportPath;
 use crate::rustdoc::{compute::compute_crate_docs, utils, CannotGetCrateData, TOOLCHAIN_CRATES};
@@ -36,11 +37,37 @@ impl fmt::Debug for CrateCollection {
     }
 }
 
+#[tracing::instrument]
+fn compute_package_graph() -> Result<PackageGraph, anyhow::Error> {
+    // `cargo metadata` seems to be the only reliable way of retrieving the path to
+    // the root manifest of the current workspace for a Rust project.
+    guppy::MetadataCommand::new()
+        .exec()
+        .map_err(|e| anyhow!(e))?
+        .build_graph()
+        .map_err(|e| anyhow!(e))
+}
+
 impl CrateCollection {
     /// Initialise the collection for a `PackageGraph`.
-    pub fn new(package_graph: PackageGraph) -> Result<Self, anyhow::Error> {
+    pub fn new() -> Result<Self, anyhow::Error> {
+        let span = Span::current();
+        let thread_handle = thread::spawn(move || {
+            let _guard = span.enter();
+            compute_package_graph()
+        });
         let cache = RustdocGlobalFsCache::new()?;
+
+        let package_graph = thread_handle
+            .join()
+            .map_err(|_| anyhow!("The thread computing the package graph panicked"))?
+            .context("Failed to compute the package graph for the current workspace")?;
+
         Ok(Self(FrozenMap::new(), package_graph, cache))
+    }
+
+    pub fn package_graph(&self) -> &PackageGraph {
+        &self.1
     }
 
     /// Compute the documentation for the crate associated with a specific [`PackageId`].
@@ -278,7 +305,7 @@ pub struct ResolvedItem<'a> {
 #[derive(Debug, Clone)]
 pub struct Crate {
     pub(crate) core: CrateCore,
-    /// An index to lookup the id of a type given a (publicly visible) 
+    /// An index to lookup the id of a type given a (publicly visible)
     /// path to it.
     ///
     /// The index does NOT contain macros, since macros and types live in two
@@ -287,12 +314,12 @@ pub struct Crate {
     pub(super) import_path2id: HashMap<Vec<String>, rustdoc_types::Id>,
     /// A mapping that keeps track of re-exports of types (or modules!) from
     /// other crates.
-    /// 
+    ///
     /// The key is the path under which the type is re-exported.
     /// The value is a tuple containing:
     /// - the path of the type in the original crate;
     /// - the id of the original crate in the `external_crates` section of the JSON documentation.
-    /// 
+    ///
     /// E.g. `pub use hyper::server as sx;` in `lib.rs` would have an entry in this map
     /// with key `["my_crate", "sx"]` and value `(["hyper", "server"], _)`.
     pub(super) re_exports: HashMap<Vec<String>, (Vec<String>, u32)>,
@@ -326,17 +353,17 @@ pub(crate) struct CrateData {
 }
 #[derive(Debug, Clone)]
 /// The index of all the items in the crate.
-/// 
+///
 /// Since the index can be quite large, we try to avoid deserializing it all at once.
-/// 
+///
 /// The `Eager` variant contains the entire index, fully deserialized. This is what we get
 /// when we have had to compute the documentation for the crate on the fly.
-/// 
-/// The `Lazy` variant contains the index as a byte array. There is a mapping from the 
+///
+/// The `Lazy` variant contains the index as a byte array. There is a mapping from the
 /// id of an item to the start and end index of the item's bytes in the byte array.
 /// We can therefore deserialize the item only if we need to access it.
 /// Since we only access a tiny portion of the items in the index (especially for large crates),
-/// this translates in a significant performance improvement. 
+/// this translates in a significant performance improvement.
 pub(crate) enum CrateItemIndex {
     Eager(EagerCrateItemIndex),
     Lazy(LazyCrateItemIndex),

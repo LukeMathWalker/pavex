@@ -5,6 +5,7 @@ use std::str::FromStr;
 
 use clap::{Parser, Subcommand};
 use owo_colors::OwoColorize;
+use tracing_chrome::{ChromeLayerBuilder, FlushGuard};
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
@@ -16,7 +17,11 @@ use pavex_builder::Blueprint;
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
 struct Cli {
-    /// Expose inner details in case of an error.
+    /// Pavex will expose the full error chain when reporting diagnostics.
+    ///
+    /// It will also emit tracing output, both to stdout and to disk.
+    /// The file serialized on disk (`trace-[...].json`) can be opened in
+    /// Google Chrome by visiting chrome://tracing for further analysis.
     #[clap(long, env = "PAVEX_DEBUG")]
     debug: bool,
     #[clap(long, env = "PAVEX_COLOR", default_value_t = Color::Auto)]
@@ -73,12 +78,13 @@ enum Commands {
     },
 }
 
-fn init_telemetry() {
+fn init_telemetry() -> FlushGuard {
     let fmt_layer = tracing_subscriber::fmt::layer()
         .with_file(false)
         .with_target(false)
         .with_span_events(FmtSpan::NEW | FmtSpan::EXIT)
         .with_timer(tracing_subscriber::fmt::time::uptime());
+    let (chrome_layer, guard) = ChromeLayerBuilder::new().include_args(true).build();
     let filter_layer = EnvFilter::try_from_default_env()
         .or_else(|_| EnvFilter::try_new("info,pavex=trace"))
         .unwrap();
@@ -86,7 +92,9 @@ fn init_telemetry() {
     tracing_subscriber::registry()
         .with(filter_layer)
         .with(fmt_layer)
+        .with(chrome_layer)
         .init();
+    guard
 }
 
 fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
@@ -110,33 +118,41 @@ fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
         Box::new(handler.build())
     }))
     .unwrap();
-    if cli.debug {
-        init_telemetry();
-    }
+    let _guard = if cli.debug {
+        Some(init_telemetry())
+    } else {
+        None
+    };
     match cli.command {
         Commands::Generate {
             blueprint,
             diagnostics,
             output,
-        } => {
-            let blueprint = Blueprint::load(&blueprint)?;
-            let package_graph = guppy::MetadataCommand::new().exec()?.build_graph()?;
-            let app = match App::build(blueprint, package_graph) {
-                Ok(a) => a,
-                Err(errors) => {
-                    for e in errors {
-                        eprintln!("{}: {:?}", "ERROR".bold().red(), e);
-                    }
-                    return Ok(ExitCode::FAILURE);
-                }
-            };
-            if let Some(diagnostic_path) = diagnostics {
-                app.diagnostic_representation()
-                    .persist_flat(&diagnostic_path)?;
-            }
-            let generated_app = app.codegen()?;
-            generated_app.persist(&output)?;
-        }
+        } => generate(blueprint, diagnostics, output),
     }
+}
+
+#[tracing::instrument("Generate API server sdk")]
+fn generate(
+    blueprint: PathBuf,
+    diagnostics: Option<PathBuf>,
+    output: PathBuf,
+) -> Result<ExitCode, Box<dyn std::error::Error>> {
+    let blueprint = Blueprint::load(&blueprint)?;
+    let app = match App::build(blueprint) {
+        Ok(a) => a,
+        Err(errors) => {
+            for e in errors {
+                eprintln!("{}: {:?}", "ERROR".bold().red(), e);
+            }
+            return Ok(ExitCode::FAILURE);
+        }
+    };
+    if let Some(diagnostic_path) = diagnostics {
+        app.diagnostic_representation()
+            .persist_flat(&diagnostic_path)?;
+    }
+    let generated_app = app.codegen()?;
+    generated_app.persist(&output)?;
     Ok(ExitCode::SUCCESS)
 }

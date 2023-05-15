@@ -1,0 +1,23 @@
+[package]
+name = "app_blueprint"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+path = "src/bin/bp.rs"
+name = "bp"
+
+[dependencies]
+anyhow = "1"
+pavex_builder = { path = "../../../libs/pavex_builder" }
+pavex_cli_client = { path = "../../../libs/pavex_cli_client" }
+cargo_px_env = "0.1"
+pavex_runtime = { path = "../../../libs/pavex_runtime" }
+
+sqlx = { version = "0.7.0-alpha.3", features = [ "runtime-tokio", "tls-rustls", "migrate", "uuid", "macros", "time" ] }
+serde_json = "1"
+thiserror = "1"
+tracing = "0.1"
+
+[dev-dependencies]
+wiremock = "0.5"

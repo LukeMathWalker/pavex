@@ -154,6 +154,7 @@ pub(crate) struct ComponentDb {
 }
 
 impl ComponentDb {
+    #[tracing::instrument("Build component database", skip_all)]
     pub fn build(
         user_component_db: UserComponentDb,
         framework_item_db: &FrameworkItemDb,
