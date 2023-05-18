@@ -45,12 +45,10 @@ where
 
 fn set_panic_hook() {
     std::panic::set_hook(Box::new(|panic_info| {
-        let message = panic_info.payload().downcast_ref::<&str>();
         let payload = panic_info.payload().downcast_ref::<&str>();
         let location = panic_info.location().map(|l| l.to_string());
 
         tracing::error!(
-            panic.message = message,
             panic.payload = payload,
             panic.location = location,
             "Uncaught panic",
