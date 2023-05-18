@@ -6,6 +6,20 @@ use tracing_log::LogTracer;
 use tracing_subscriber::fmt::MakeWriter;
 use tracing_subscriber::{layer::SubscriberExt, EnvFilter, Registry};
 
+/// Perform all the required setup steps for our telemetry:
+///
+/// - Register a subscriber as global default to process span data
+/// - Register a `tracing`<>`log` bridge to capture telemetry from crates that use the `log`
+///   crate instead of `tracing`
+/// - Register a panic hook to capture any panic and record its details
+///
+/// It should only be called once!
+pub fn init_telemetry(subscriber: impl Subscriber + Sync + Send) -> Result<(), anyhow::Error> {
+    LogTracer::init().context("Failed to set logger")?;
+    set_panic_hook();
+    set_global_default(subscriber).context("Failed to set a `tracing` global subscriber")
+}
+
 /// Compose multiple layers into a `tracing`'s subscriber.
 ///
 /// # Implementation Notes
@@ -29,10 +43,17 @@ where
         .with(formatting_layer)
 }
 
-/// Register a subscriber as global default to process span data.
-///
-/// It should only be called once!
-pub fn init_subscriber(subscriber: impl Subscriber + Sync + Send) -> Result<(), anyhow::Error> {
-    LogTracer::init().context("Failed to set logger")?;
-    set_global_default(subscriber).context("Failed to set a `tracing` global subscriber")
+fn set_panic_hook() {
+    std::panic::set_hook(Box::new(|panic_info| {
+        let message = panic_info.payload().downcast_ref::<&str>();
+        let payload = panic_info.payload().downcast_ref::<&str>();
+        let location = panic_info.location().map(|l| l.to_string());
+
+        tracing::error!(
+            panic.message = message,
+            panic.payload = payload,
+            panic.location = location,
+            "Uncaught panic",
+        );
+    }));
 }
