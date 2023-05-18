@@ -3,6 +3,8 @@
 /libs/vendor
 /examples/**/vendor
 /examples/**/target
+/examples/**/.cargo
+/.cargo
 /vendor
 .DS_Store
 *.snap
