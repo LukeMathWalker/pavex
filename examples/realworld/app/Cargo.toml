@@ -3,9 +3,12 @@ name = "app"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 tokio = { version = "1", features = ["full"] }
+anyhow = "1"
+
+# Telemetry
 tracing = "0.1"
-tracing-subscriber = "0.2"
+tracing-subscriber = { version = "0.3", default-features = false, features = ["env-filter", "smallvec", "std", "registry"] }
+tracing-log = "0.1"
+tracing-bunyan-formatter = "0.3"
