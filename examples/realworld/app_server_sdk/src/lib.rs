@@ -48,6 +48,7 @@ fn build_router() -> Result<
     pavex_runtime::routing::InsertError,
 > {
     let mut router = pavex_runtime::routing::Router::new();
+    router.insert("/ping", 0u32)?;
     Ok(router)
 }
 async fn route_request(
@@ -69,6 +70,18 @@ async fn route_request(
         .params
         .into();
     match route_id {
+        0u32 => {
+            match request.method() {
+                &pavex_runtime::http::Method::GET => route_handler_0().await,
+                _ => {
+                    pavex_runtime::response::Response::builder()
+                        .status(pavex_runtime::http::StatusCode::METHOD_NOT_ALLOWED)
+                        .header(pavex_runtime::http::header::ALLOW, "GET")
+                        .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
+                        .unwrap()
+                }
+            }
+        }
         _ => {
             pavex_runtime::response::Response::builder()
                 .status(pavex_runtime::http::StatusCode::NOT_FOUND)
@@ -76,4 +89,10 @@ async fn route_request(
                 .unwrap()
         }
     }
+}
+pub async fn route_handler_0() -> http::Response<
+    http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
+> {
+    let v0 = app_blueprint::ping();
+    <http::StatusCode as pavex_runtime::response::IntoResponse>::into_response(v0)
 }

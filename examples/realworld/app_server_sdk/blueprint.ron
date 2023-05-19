@@ -1,10 +1,31 @@
 (
     creation_location: (
-        line: 4,
-        column: 5,
+        line: 9,
+        column: 18,
         file: "app_blueprint/src/lib.rs",
     ),
     constructors: [],
-    routes: [],
+    routes: [
+        (
+            path: "/ping",
+            method_guard: (
+                allowed_methods: [
+                    "GET",
+                ],
+            ),
+            request_handler: (
+                callable: (
+                    registered_at: "app_blueprint",
+                    import_path: "crate :: ping",
+                ),
+                location: (
+                    line: 10,
+                    column: 8,
+                    file: "app_blueprint/src/lib.rs",
+                ),
+            ),
+            error_handler: None,
+        ),
+    ],
     nested_blueprints: [],
 )
