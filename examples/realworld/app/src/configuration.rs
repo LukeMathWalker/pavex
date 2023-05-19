@@ -1,11 +1,37 @@
+use std::net::SocketAddr;
+
 use anyhow::Context;
 use figment::{
     providers::{Env, Format, Yaml},
     Figment,
 };
+use std::net::TcpListener;
 
 #[derive(serde::Serialize, serde::Deserialize)]
-pub struct Config {}
+pub struct Config {
+    pub server: ServerConfig
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+/// Configuration for the HTTP server used to expose our API
+/// to users.
+pub struct ServerConfig {
+    /// The port that the server must listen on.
+    pub port: u16,
+    /// The network interface that the server must be bound to.
+    /// 
+    /// E.g. `0.0.0.0` for listening to incoming requests from
+    /// all sources.
+    pub ip: std::net::IpAddr
+}
+
+impl ServerConfig {
+    /// Bind a TCP listener according to the specified parameters.
+    pub fn listener(&self) -> Result<TcpListener, std::io::Error> {
+        let addr = SocketAddr::new(self.ip, self.port);
+        TcpListener::bind(addr)
+    }
+}
 
 /// Retrieve the application configuration by merging together multiple configuration sources.
 ///

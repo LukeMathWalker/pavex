@@ -6,6 +6,8 @@ edition = "2021"
 [dependencies]
 tokio = { version = "1", features = ["full"] }
 anyhow = "1"
+app_server_sdk = { path = "../app_server_sdk" }
+hyper = "0.14"
 
 # Configuration
 figment = { version = "0.10", features = ["env", "yaml"] }
