@@ -1,5 +1,5 @@
 [package]
-name = "app_server_sdk"
+name = "api_server_sdk"
 version = "0.1.0"
 edition = "2021"
 
@@ -8,8 +8,8 @@ generator_type = "cargo_workspace_binary"
 generator_name = "bp"
 
 [dependencies]
-app_blueprint = { version = "0.1.0", path = "../app_blueprint", package = "app_blueprint" }
 bytes = { version = "1.4.0", package = "bytes" }
+conduit_core = { version = "0.1.0", path = "../conduit_core", package = "conduit_core" }
 http = { version = "0.2.9", package = "http" }
 http_body = { version = "0.4.5", package = "http-body" }
 hyper = { version = "0.14.26", package = "hyper" }

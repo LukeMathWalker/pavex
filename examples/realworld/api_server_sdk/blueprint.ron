@@ -1,0 +1,71 @@
+(
+    creation_location: (
+        line: 12,
+        column: 18,
+        file: "conduit_core/src/lib.rs",
+    ),
+    constructors: [],
+    routes: [
+        (
+            path: "/api/ping",
+            method_guard: (
+                allowed_methods: [
+                    "GET",
+                ],
+            ),
+            request_handler: (
+                callable: (
+                    registered_at: "conduit_core",
+                    import_path: "crate :: ping",
+                ),
+                location: (
+                    line: 13,
+                    column: 8,
+                    file: "conduit_core/src/lib.rs",
+                ),
+            ),
+            error_handler: None,
+        ),
+    ],
+    nested_blueprints: [
+        (
+            blueprint: (
+                creation_location: (
+                    line: 5,
+                    column: 18,
+                    file: "conduit_core/src/articles/mod.rs",
+                ),
+                constructors: [],
+                routes: [
+                    (
+                        path: "/",
+                        method_guard: (
+                            allowed_methods: [
+                                "GET",
+                            ],
+                        ),
+                        request_handler: (
+                            callable: (
+                                registered_at: "conduit_core",
+                                import_path: "crate :: articles :: get_articles",
+                            ),
+                            location: (
+                                line: 6,
+                                column: 8,
+                                file: "conduit_core/src/articles/mod.rs",
+                            ),
+                        ),
+                        error_handler: None,
+                    ),
+                ],
+                nested_blueprints: [],
+            ),
+            path_prefix: Some("/articles"),
+            nesting_location: (
+                line: 14,
+                column: 8,
+                file: "conduit_core/src/lib.rs",
+            ),
+        ),
+    ],
+)

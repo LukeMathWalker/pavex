@@ -41,11 +41,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9c7d0618f0e0b7e8ff11427422b64564d5fb0be1940354bfe2e0529b18a9d9b8"
 
 [[package]]
-name = "app"
+name = "api_server"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "app_server_sdk",
+ "api_server_sdk",
  "figment",
  "hyper",
  "serde",
@@ -57,27 +57,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "app_blueprint"
+name = "api_server_sdk"
 version = "0.1.0"
 dependencies = [
- "anyhow",
- "cargo_px_env",
- "pavex_builder",
- "pavex_cli_client",
- "pavex_runtime",
- "serde_json",
- "sqlx",
- "thiserror",
- "tracing",
- "wiremock",
-]
-
-[[package]]
-name = "app_server_sdk"
-version = "0.1.0"
-dependencies = [
- "app_blueprint",
  "bytes",
+ "conduit_core",
  "http",
  "http-body",
  "hyper",
@@ -213,6 +197,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "62ec6771ecfa0762d24683ee5a32ad78487a3d3afdc0fb8cae19d2c5deb50b7c"
 dependencies = [
  "crossbeam-utils",
+]
+
+[[package]]
+name = "conduit_core"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "cargo_px_env",
+ "pavex_builder",
+ "pavex_cli_client",
+ "pavex_runtime",
+ "serde_json",
+ "sqlx",
+ "thiserror",
+ "tracing",
+ "wiremock",
 ]
 
 [[package]]

@@ -1,9 +1,9 @@
 use anyhow::Context;
-use app::{
+use api_server::{
     configuration::load_configuration,
     telemetry::{get_subscriber, init_telemetry},
 };
-use app_server_sdk::{build_application_state, run};
+use api_server_sdk::{build_application_state, run};
 use hyper::Server;
 
 #[tokio::main]
