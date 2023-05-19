@@ -76,7 +76,10 @@ dependencies = [
 name = "app_server_sdk"
 version = "0.1.0"
 dependencies = [
+ "app_blueprint",
+ "bytes",
  "http",
+ "http-body",
  "hyper",
  "pavex_runtime",
 ]
