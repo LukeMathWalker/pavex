@@ -7,6 +7,10 @@ edition = "2021"
 tokio = { version = "1", features = ["full"] }
 anyhow = "1"
 
+# Configuration
+figment = { version = "0.10", features = ["env", "yaml"] }
+serde = { version = "1", features = ["derive"]}
+
 # Telemetry
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", default-features = false, features = ["env-filter", "smallvec", "std", "registry"] }
