@@ -1,2 +1,2 @@
 [workspace]
-members = ["app_blueprint", "app_server_sdk", "app"]
+members = ["api_server", "api_server_sdk", "conduit_core"]

@@ -1,12 +1,16 @@
 [package]
-name = "app"
+name = "api_server"
 version = "0.1.0"
 edition = "2021"
+
+[[bin]]
+path = "src/bin/api.rs"
+name = "api"
 
 [dependencies]
 tokio = { version = "1", features = ["full"] }
 anyhow = "1"
-app_server_sdk = { path = "../app_server_sdk" }
+api_server_sdk = { path = "../api_server_sdk" }
 hyper = "0.14"
 
 # Configuration

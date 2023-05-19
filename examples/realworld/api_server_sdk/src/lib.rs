@@ -48,7 +48,8 @@ fn build_router() -> Result<
     pavex_runtime::routing::InsertError,
 > {
     let mut router = pavex_runtime::routing::Router::new();
-    router.insert("/ping", 0u32)?;
+    router.insert("/api/ping", 0u32)?;
+    router.insert("/articles/", 1u32)?;
     Ok(router)
 }
 async fn route_request(
@@ -82,6 +83,18 @@ async fn route_request(
                 }
             }
         }
+        1u32 => {
+            match request.method() {
+                &pavex_runtime::http::Method::GET => route_handler_1().await,
+                _ => {
+                    pavex_runtime::response::Response::builder()
+                        .status(pavex_runtime::http::StatusCode::METHOD_NOT_ALLOWED)
+                        .header(pavex_runtime::http::header::ALLOW, "GET")
+                        .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
+                        .unwrap()
+                }
+            }
+        }
         _ => {
             pavex_runtime::response::Response::builder()
                 .status(pavex_runtime::http::StatusCode::NOT_FOUND)
@@ -93,6 +106,12 @@ async fn route_request(
 pub async fn route_handler_0() -> http::Response<
     http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
 > {
-    let v0 = app_blueprint::ping();
+    let v0 = conduit_core::ping();
+    <http::StatusCode as pavex_runtime::response::IntoResponse>::into_response(v0)
+}
+pub async fn route_handler_1() -> http::Response<
+    http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
+> {
+    let v0 = conduit_core::articles::get_articles();
     <http::StatusCode as pavex_runtime::response::IntoResponse>::into_response(v0)
 }
