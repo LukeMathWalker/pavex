@@ -144,7 +144,7 @@ where
             // We need a new chunk!
             let mut names = IndexSet::new();
             names.insert(package_spec.name.clone());
-            chunk_id2names.insert(chunks.len() - 1, names);
+            chunk_id2names.insert(chunks.len(), names);
             chunks.push(vec![(package_id, package_spec)]);
         }
         chunks
