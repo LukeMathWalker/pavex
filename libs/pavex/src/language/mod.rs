@@ -12,6 +12,3 @@ mod callable;
 mod callable_path;
 mod resolved_path;
 mod resolved_type;
-
-// E.g. `["std", "path", "PathBuf"]`.
-pub type ImportPath = Vec<String>;

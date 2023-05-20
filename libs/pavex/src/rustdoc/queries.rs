@@ -13,7 +13,6 @@ use indexmap::IndexSet;
 use rustdoc_types::{ExternalCrate, Item, ItemEnum, ItemKind, ItemSummary, Visibility};
 use tracing::Span;
 
-use crate::language::ImportPath;
 use crate::rustdoc::{compute::compute_crate_docs, utils, CannotGetCrateData, TOOLCHAIN_CRATES};
 
 use super::compute::{RustdocCacheKey, RustdocGlobalFsCache};
@@ -305,8 +304,8 @@ pub struct ResolvedItem<'a> {
 #[derive(Debug, Clone)]
 pub struct Crate {
     pub(crate) core: CrateCore,
-    /// An index to lookup the id of a type given a (publicly visible)
-    /// path to it.
+    /// An index to lookup the id of a type given one of its import paths, either
+    /// public or private.
     ///
     /// The index does NOT contain macros, since macros and types live in two
     /// different namespaces and can contain items with the same name.
@@ -323,8 +322,12 @@ pub struct Crate {
     /// E.g. `pub use hyper::server as sx;` in `lib.rs` would have an entry in this map
     /// with key `["my_crate", "sx"]` and value `(["hyper", "server"], _)`.
     pub(super) re_exports: HashMap<Vec<String>, (Vec<String>, u32)>,
-    /// A mapping from a type id to all the paths under which it can be imported.
-    pub(super) id2import_paths: HashMap<rustdoc_types::Id, BTreeSet<Vec<String>>>,
+    /// A mapping from a type id to all the public paths under which it can be imported
+    /// from another crate.
+    pub(super) id2public_import_paths: HashMap<rustdoc_types::Id, BTreeSet<Vec<String>>>,
+    /// A mapping from a type id to all the non-public paths under which it can be imported
+    /// from within the same crate.
+    pub(super) id2private_import_paths: HashMap<rustdoc_types::Id, BTreeSet<Vec<String>>>,
 }
 
 #[derive(Debug, Clone)]
@@ -428,29 +431,45 @@ impl Crate {
         let mut import_path2id: HashMap<_, _> = krate
             .paths
             .iter()
-            // We only want types, no macros
-            .filter(|(_, summary)| !matches!(summary.kind, ItemKind::Macro | ItemKind::ProcDerive))
-            .map(|(id, summary)| (summary.path.clone(), id.to_owned()))
+            .filter_map(|(id, summary)| {
+                // We only want types, no macros
+                if matches!(summary.kind, ItemKind::Macro | ItemKind::ProcDerive) {
+                    return None;
+                }
+                // We will index local items on our own.
+                // We don't get them from `paths` because it may include private items
+                // as well, and we don't have a way to figure out if an item is private
+                // or not from the summary info.
+                if summary.crate_id == 0 {
+                    return None;
+                }
+
+                Some((summary.path.clone(), id.to_owned()))
+            })
             .collect();
 
-        let mut id2import_paths = HashMap::new();
+        let mut id2public_import_paths = HashMap::new();
+        let mut id2private_import_paths = HashMap::new();
         let mut re_exports = HashMap::new();
         index_local_types(
             &krate,
             &package_id,
             collection,
             vec![],
-            &mut id2import_paths,
+            &mut id2public_import_paths,
+            &mut id2private_import_paths,
             &mut re_exports,
             &krate.root,
-            None,
         )?;
 
-        import_path2id.reserve(id2import_paths.len());
-        for (id, public_paths) in &id2import_paths {
-            for public_path in public_paths {
-                if import_path2id.get(public_path).is_none() {
-                    import_path2id.insert(public_path.to_owned(), id.to_owned());
+        import_path2id.reserve(id2public_import_paths.len());
+        for (id, paths) in id2public_import_paths
+            .iter()
+            .chain(&id2private_import_paths)
+        {
+            for path in paths {
+                if import_path2id.get(path).is_none() {
+                    import_path2id.insert(path.to_owned(), id.to_owned());
                 }
             }
         }
@@ -467,7 +486,8 @@ impl Crate {
                 },
             },
             import_path2id,
-            id2import_paths,
+            id2public_import_paths,
+            id2private_import_paths,
             re_exports,
         })
     }
@@ -564,12 +584,15 @@ impl Crate {
     /// pointing at the type you specified.
     fn get_canonical_path(&self, type_id: &GlobalItemId) -> Result<&[String], anyhow::Error> {
         if type_id.package_id == self.core.package_id {
-            if let Some(path) = self.id2import_paths.get(&type_id.rustdoc_item_id) {
-                return Ok(path.iter().next().unwrap());
+            if let Some(paths) = self.id2public_import_paths.get(&type_id.rustdoc_item_id) {
+                return Ok(paths.first().unwrap());
+            }
+            if let Some(paths) = self.id2private_import_paths.get(&type_id.rustdoc_item_id) {
+                return Ok(paths.first().unwrap());
             }
         }
         Err(anyhow::anyhow!(
-            "Failed to find a publicly importable path for the type id `{:?}` in the index I computed for `{:?}`. \
+            "Failed to find an importable path for the type id `{:?}` in the index I computed for `{:?}`. \
             This is likely to be a bug in pavex's handling of rustdoc's JSON output or in rustdoc itself.",
             type_id, self.core.package_id.repr()
         ))
@@ -581,12 +604,10 @@ fn index_local_types<'a>(
     package_id: &'a PackageId,
     collection: &'a CrateCollection,
     mut current_path: Vec<&'a str>,
-    path_index: &mut HashMap<rustdoc_types::Id, BTreeSet<Vec<String>>>,
+    public_path_index: &mut HashMap<rustdoc_types::Id, BTreeSet<Vec<String>>>,
+    private_path_index: &mut HashMap<rustdoc_types::Id, BTreeSet<Vec<String>>>,
     re_exports: &mut HashMap<Vec<String>, (Vec<String>, u32)>,
     current_item_id: &rustdoc_types::Id,
-    // Set when a crate is being re-exported under a different name. E.g. `pub use hyper as server`
-    // would have `renamed_module` set to `Some(server)`.
-    renamed_module: Option<&'a str>,
 ) -> Result<(), anyhow::Error> {
     // TODO: the way we handle `current_path` is extremely wasteful,
     //       we can likely reuse the same buffer throughout.
@@ -607,34 +628,23 @@ fn index_local_types<'a>(
         Some(i) => i,
     };
 
-    // We don't want to index private items.
-    if let Visibility::Default | Visibility::Crate | Visibility::Restricted { .. } =
-        current_item.visibility
-    {
-        return Ok(());
-    }
-
     match &current_item.inner {
         ItemEnum::Module(m) => {
-            if let Some(renamed_module) = renamed_module {
-                current_path.push(renamed_module);
-            } else {
-                let current_path_segment = current_item
-                    .name
-                    .as_deref()
-                    .expect("All 'module' items have a 'name' property");
-                current_path.push(current_path_segment);
-            }
+            let current_path_segment = current_item
+                .name
+                .as_deref()
+                .expect("All 'module' items have a 'name' property");
+            current_path.push(current_path_segment);
             for item_id in &m.items {
                 index_local_types(
                     krate,
                     package_id,
                     collection,
                     current_path.clone(),
-                    path_index,
+                    public_path_index,
+                    private_path_index,
                     re_exports,
                     item_id,
-                    None,
                 )?;
             }
         }
@@ -677,10 +687,10 @@ fn index_local_types<'a>(
                             package_id,
                             collection,
                             current_path.clone(),
-                            path_index,
+                            public_path_index,
+                            private_path_index,
                             re_exports,
                             imported_id,
-                            None,
                         )?;
                     }
                 }
@@ -696,7 +706,13 @@ fn index_local_types<'a>(
             );
             current_path.push(name);
             let path = current_path.into_iter().map(|s| s.to_string()).collect();
-            path_index
+
+            let index = if current_item.visibility == Visibility::Public {
+                public_path_index
+            } else {
+                private_path_index
+            };
+            index
                 .entry(current_item_id.to_owned())
                 .or_default()
                 .insert(path);
@@ -748,7 +764,7 @@ impl From<UnknownItemPath> for GetItemByResolvedPathError {
 
 #[derive(thiserror::Error, Debug)]
 pub struct UnsupportedItemKind {
-    pub path: ImportPath,
+    pub path: Vec<String>,
     pub kind: String,
 }
 
@@ -765,7 +781,7 @@ impl Display for UnsupportedItemKind {
 
 #[derive(thiserror::Error, Debug)]
 pub struct UnknownItemPath {
-    pub path: ImportPath,
+    pub path: Vec<String>,
 }
 
 impl Display for UnknownItemPath {

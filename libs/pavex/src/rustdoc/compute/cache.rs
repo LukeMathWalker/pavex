@@ -150,7 +150,8 @@ impl ToolchainCache {
                 format_version,
                 items,
                 item_id2delimiters,
-                id2import_paths,
+                id2public_import_paths,
+                id2private_import_paths,
                 import_path2id,
                 re_exports
             FROM rustdoc_toolchain_crates_cache 
@@ -176,9 +177,10 @@ impl ToolchainCache {
         drop(guard);
 
         let item_id2delimiters = row.get_ref_unwrap(5).as_bytes()?;
-        let id2import_paths = row.get_ref_unwrap(6).as_bytes()?;
-        let import_path2id = row.get_ref_unwrap(7).as_bytes()?;
-        let re_exports = row.get_ref_unwrap(8).as_bytes()?;
+        let id2public_import_paths = row.get_ref_unwrap(6).as_bytes()?;
+        let id2private_import_paths = row.get_ref_unwrap(7).as_bytes()?;
+        let import_path2id = row.get_ref_unwrap(8).as_bytes()?;
+        let re_exports = row.get_ref_unwrap(9).as_bytes()?;
 
         let krate = CachedData {
             root_item_id,
@@ -187,7 +189,8 @@ impl ToolchainCache {
             format_version,
             items: Cow::Owned(items),
             item_id2delimiters: Cow::Borrowed(item_id2delimiters),
-            id2import_paths: Cow::Borrowed(id2import_paths),
+            id2public_import_paths: Cow::Borrowed(id2public_import_paths),
+            id2private_import_paths: Cow::Borrowed(id2private_import_paths),
             import_path2id: Cow::Borrowed(import_path2id),
             re_exports: Cow::Borrowed(re_exports),
         }
@@ -216,10 +219,11 @@ impl ToolchainCache {
                 format_version,
                 items,
                 item_id2delimiters,
-                id2import_paths,
+                id2public_import_paths,
+                id2private_import_paths,
                 import_path2id,
                 re_exports
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         )?;
         stmt.execute(params![
             name,
@@ -230,7 +234,8 @@ impl ToolchainCache {
             cached_data.format_version,
             cached_data.items,
             cached_data.item_id2delimiters,
-            cached_data.id2import_paths,
+            cached_data.id2public_import_paths,
+            cached_data.id2private_import_paths,
             cached_data.import_path2id,
             cached_data.re_exports
         ])?;
@@ -248,7 +253,8 @@ impl ToolchainCache {
                 format_version INTEGER NOT NULL,
                 items BLOB NOT NULL,
                 item_id2delimiters BLOB NOT NULL,
-                id2import_paths BLOB NOT NULL,
+                id2public_import_paths BLOB NOT NULL,
+                id2private_import_paths BLOB NOT NULL,
                 import_path2id BLOB NOT NULL,
                 re_exports BLOB NOT NULL,
                 PRIMARY KEY (name, cargo_fingerprint)
@@ -293,7 +299,8 @@ impl ThirdPartyCrateCache {
                     format_version,
                     items,
                     item_id2delimiters,
-                    id2import_paths,
+                    id2public_import_paths,
+                    id2private_import_paths,
                     import_path2id, 
                     re_exports
                 FROM rustdoc_3d_party_crates_cache 
@@ -332,9 +339,10 @@ impl ThirdPartyCrateCache {
         drop(guard);
 
         let item_id2delimiters = row.get_ref_unwrap(5).as_bytes()?;
-        let id2import_paths = row.get_ref_unwrap(6).as_bytes()?;
-        let import_path2id = row.get_ref_unwrap(7).as_bytes()?;
-        let re_exports = row.get_ref_unwrap(8).as_bytes()?;
+        let id2public_import_paths = row.get_ref_unwrap(6).as_bytes()?;
+        let id2private_import_paths = row.get_ref_unwrap(7).as_bytes()?;
+        let import_path2id = row.get_ref_unwrap(8).as_bytes()?;
+        let re_exports = row.get_ref_unwrap(9).as_bytes()?;
 
         let krate = CachedData {
             root_item_id,
@@ -343,7 +351,8 @@ impl ThirdPartyCrateCache {
             format_version,
             items: Cow::Owned(items),
             item_id2delimiters: Cow::Borrowed(item_id2delimiters),
-            id2import_paths: Cow::Borrowed(id2import_paths),
+            id2public_import_paths: Cow::Borrowed(id2public_import_paths),
+            id2private_import_paths: Cow::Borrowed(id2private_import_paths),
             import_path2id: Cow::Borrowed(import_path2id),
             re_exports: Cow::Borrowed(re_exports),
         }
@@ -381,10 +390,11 @@ impl ThirdPartyCrateCache {
                 format_version,
                 items,
                 item_id2delimiters,
-                id2import_paths,
+                id2public_import_paths,
+                id2private_import_paths,
                 import_path2id,
                 re_exports
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         )?;
         stmt.execute(params![
             cache_key.crate_name,
@@ -400,7 +410,8 @@ impl ThirdPartyCrateCache {
             cached_data.format_version,
             cached_data.items,
             cached_data.item_id2delimiters,
-            cached_data.id2import_paths,
+            cached_data.id2public_import_paths,
+            cached_data.id2private_import_paths,
             cached_data.import_path2id,
             cached_data.re_exports
         ])?;
@@ -423,7 +434,8 @@ impl ThirdPartyCrateCache {
                 format_version INTEGER NOT NULL,
                 items BLOB NOT NULL,
                 item_id2delimiters BLOB NOT NULL,
-                id2import_paths BLOB NOT NULL,
+                id2public_import_paths BLOB NOT NULL,
+                id2private_import_paths BLOB NOT NULL,
                 import_path2id BLOB NOT NULL,
                 re_exports BLOB NOT NULL,
                 PRIMARY KEY (crate_name, crate_source, crate_version, cargo_fingerprint, rustdoc_options, default_feature_is_enabled, active_named_features)
@@ -443,7 +455,8 @@ pub(super) struct CachedData<'a> {
     format_version: i64,
     items: Cow<'a, [u8]>,
     item_id2delimiters: Cow<'a, [u8]>,
-    id2import_paths: Cow<'a, [u8]>,
+    id2public_import_paths: Cow<'a, [u8]>,
+    id2private_import_paths: Cow<'a, [u8]>,
     import_path2id: Cow<'a, [u8]>,
     re_exports: Cow<'a, [u8]>,
 }
@@ -466,7 +479,8 @@ impl<'a> CachedData<'a> {
             item_id2delimiters.insert(item_id.0.as_str(), (start, end));
         }
 
-        let id2import_paths = bincode::serialize(&krate.id2import_paths)?;
+        let id2public_import_paths = bincode::serialize(&krate.id2public_import_paths)?;
+        let id2private_import_paths = bincode::serialize(&krate.id2private_import_paths)?;
         let import_path2id = bincode::serialize(&krate.import_path2id)?;
         let re_exports = bincode::serialize(&krate.re_exports)?;
         let external_crates = bincode::serialize(&crate_data.external_crates)?;
@@ -479,7 +493,8 @@ impl<'a> CachedData<'a> {
             format_version: crate_data.format_version as i64,
             items: Cow::Owned(items),
             item_id2delimiters: Cow::Owned(bincode::serialize(&item_id2delimiters)?),
-            id2import_paths: Cow::Owned(id2import_paths),
+            id2public_import_paths: Cow::Owned(id2public_import_paths),
+            id2private_import_paths: Cow::Owned(id2private_import_paths),
             import_path2id: Cow::Owned(import_path2id),
             re_exports: Cow::Owned(re_exports),
         })
@@ -530,14 +545,17 @@ impl<'a> CachedData<'a> {
         let re_exports =
             bincode::deserialize(&self.re_exports).context("Failed to deserialize re-exports")?;
 
-        let id2import_paths = bincode::deserialize(&self.id2import_paths)
-            .context("Failed to deserialize id2import_paths")?;
+        let id2public_import_paths = bincode::deserialize(&self.id2public_import_paths)
+            .context("Failed to deserialize id2public_import_paths")?;
+        let id2private_import_paths = bincode::deserialize(&self.id2private_import_paths)
+            .context("Failed to deserialize id2private_import_paths")?;
 
         let krate = crate::rustdoc::Crate {
             core,
             import_path2id,
             re_exports,
-            id2import_paths,
+            id2private_import_paths,
+            id2public_import_paths,
         };
         Ok(krate)
     }
