@@ -1,11 +1,12 @@
 use std::collections::BTreeMap;
-use std::io::Write;
+use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
 use cargo_manifest::{Dependency, Edition};
 use guppy::graph::PackageGraph;
 use proc_macro2::TokenStream;
 use serde::Serialize;
+use sha2::Digest;
 use toml_edit::ser::ValueSerializer;
 
 #[derive(Clone)]
@@ -76,7 +77,7 @@ impl GeneratedApp {
         Self::persist_manifest(&cargo_toml, &pkg_directory)?;
 
         let lib_rs = prettyplease::unparse(&syn::parse2(lib_rs)?);
-        fs_err::write(source_directory.join("lib.rs"), lib_rs)?;
+        persist_if_changed(&source_directory.join("lib.rs"), lib_rs.as_bytes())?;
 
         Ok(())
     }
@@ -188,12 +189,58 @@ impl GeneratedApp {
                 workspace.insert("members".into(), toml_edit::Item::Value(members));
             }
         }
-        let mut root_manifest_file = fs_err::OpenOptions::new()
-            .write(true)
-            .truncate(true)
-            .create(true)
-            .open(&root_manifest_path)?;
-        root_manifest_file.write_all(root_manifest.to_string().as_bytes())?;
+        let contents = root_manifest.to_string();
+        persist_if_changed(&root_manifest_path, contents.as_bytes())?;
         Ok(())
     }
+}
+
+/// Only persiste the content if it differs from the one already on disk.
+///
+/// It if the file does not exist, it will be created.
+/// 
+/// This is useful to avoid unnecessary rebuilds, since `cargo` takes into account
+/// the modification time of the files when determining if they have changed or not.
+fn persist_if_changed(path: &Path, content: &[u8]) -> Result<(), anyhow::Error> {
+    if let Ok(file_checksum) = compute_file_checksum(path) {
+        let buffer_checksum = compute_buffer_checksum(content);
+        if file_checksum == buffer_checksum {
+            return Ok(());
+        }
+    }
+    let mut file = fs_err::OpenOptions::new()
+        .write(true)
+        .truncate(true)
+        .create(true)
+        .open(path)?;
+    file.write_all(content)?;
+    Ok(())
+}
+
+/// Compute the checksum of a file, if it exists.
+fn compute_file_checksum(path: &Path) -> std::io::Result<String> {
+    let mut hasher = sha2::Sha256::new();
+
+    let file = fs_err::File::open(path)?;
+    let mut reader = std::io::BufReader::new(file);
+    let mut buffer = [0; 8192]; // Buffer size (adjust as needed)
+
+    loop {
+        let bytes_read = reader.read(&mut buffer)?;
+        if bytes_read == 0 {
+            break;
+        }
+        hasher.update(&buffer[..bytes_read]);
+    }
+
+    let result = hasher.finalize();
+    Ok(format!("{:x}", result))
+}
+
+/// Compute the checksum of an in-memory bytes buffer.
+fn compute_buffer_checksum(buffer: &[u8]) -> String {
+    let mut hasher = sha2::Sha256::new();
+    hasher.update(buffer);
+    let result = hasher.finalize();
+    format!("{:x}", result)
 }
