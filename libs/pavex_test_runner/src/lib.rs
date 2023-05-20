@@ -5,6 +5,7 @@ use std::process::Output;
 use ahash::HashMap;
 use anyhow::Context;
 use console::style;
+use fs::{copy_if_changed, persist_if_changed};
 use libtest_mimic::{Conclusion, Failed};
 use toml::toml;
 use walkdir::WalkDir;
@@ -14,6 +15,7 @@ pub use snapshot::print_changeset;
 
 use crate::snapshot::SnapshotTest;
 
+mod fs;
 mod snapshot;
 
 /// Return an iterator over the directories containing a UI test.
@@ -209,9 +211,9 @@ impl TestData {
         fs_err::create_dir_all(&source_directory).context(
             "Failed to create the runtime directory for the project under test when setting up the test runtime environment",
         )?;
-        fs_err::copy(
-            self.definition_directory.join("lib.rs"),
-            source_directory.join("lib.rs"),
+        copy_if_changed(
+            &self.definition_directory.join("lib.rs"),
+            &source_directory.join("lib.rs"),
         )?;
 
         let deps_subdir = self.ephemeral_deps_runtime_directory();
@@ -229,10 +231,12 @@ impl TestData {
             fs_err::create_dir_all(&dep_source_directory).context(
                 "Failed to create the source directory for an ephemeral dependency when setting up the test runtime environment",
             )?;
-            fs_err::copy(
-                self.definition_directory.join(&dependency_config.path),
-                dep_source_directory.join("lib.rs"),
+
+            copy_if_changed(
+                &self.definition_directory.join(&dependency_config.path),
+                &dep_source_directory.join("lib.rs"),
             )?;
+
             let mut cargo_toml = toml! {
                 [package]
                 name = "dummy"
@@ -252,9 +256,9 @@ impl TestData {
                 .unwrap();
             deps.extend(dependency_config.dependencies.clone());
 
-            fs_err::write(
-                dep_runtime_directory.join("Cargo.toml"),
-                toml::to_string(&cargo_toml)?,
+            persist_if_changed(
+                &dep_runtime_directory.join("Cargo.toml"),
+                toml::to_string(&cargo_toml)?.as_bytes(),
             )?;
         }
 
@@ -270,11 +274,11 @@ impl TestData {
             fs_err::create_dir_all(&integration_test_test_directory).context(
                 "Failed to create the runtime directory for integration tests when setting up the test runtime environment",
             )?;
-            fs_err::copy(
-                integration_test_file,
-                integration_test_test_directory.join("run.rs"),
+            copy_if_changed(
+                &integration_test_file,
+                &integration_test_test_directory.join("run.rs"),
             )?;
-            fs_err::write(integration_test_src_directory.join("lib.rs"), "")?;
+            persist_if_changed(&integration_test_src_directory.join("lib.rs"), b"")?;
 
             let mut cargo_toml = toml! {
                 [package]
@@ -298,9 +302,9 @@ impl TestData {
                 .unwrap();
             dev_deps.extend(test_config.dev_dependencies.clone());
 
-            fs_err::write(
-                integration_test_directory.join("Cargo.toml"),
-                toml::to_string(&cargo_toml)?,
+            persist_if_changed(
+                &integration_test_directory.join("Cargo.toml"),
+                toml::to_string(&cargo_toml)?.as_bytes(),
             )?;
         }
 
@@ -311,7 +315,7 @@ impl TestData {
             fs_err::create_dir_all(&application_src_dir).context(
                 "Failed to create the runtime directory for the generated application when setting up the test runtime environment",
             )?;
-            fs_err::write(application_src_dir.join("lib.rs"), "")?;
+            persist_if_changed(&application_src_dir.join("lib.rs"), b"")?;
 
             let cargo_toml = toml! {
                 [package]
@@ -323,9 +327,9 @@ impl TestData {
                 generator_type = "cargo_workspace_binary"
                 generator_name = "app"
             };
-            fs_err::write(
-                application_dir.join("Cargo.toml"),
-                toml::to_string(&cargo_toml)?,
+            persist_if_changed(
+                &application_dir.join("Cargo.toml"),
+                toml::to_string(&cargo_toml)?.as_bytes(),
             )?;
         }
 
@@ -369,9 +373,9 @@ impl TestData {
                 });
         deps.extend(ephemeral_dependencies);
 
-        fs_err::write(
-            self.test_runtime_directory().join("Cargo.toml"),
-            toml::to_string(&cargo_toml)?,
+        persist_if_changed(
+            &self.test_runtime_directory().join("Cargo.toml"),
+            toml::to_string(&cargo_toml)?.as_bytes(),
         )?;
 
         // Use sccache to avoid rebuilding the same dependencies
@@ -382,9 +386,9 @@ impl TestData {
         };
         let dot_cargo_folder = self.runtime_directory.join(".cargo");
         fs_err::create_dir_all(&dot_cargo_folder)?;
-        fs_err::write(
-            dot_cargo_folder.join("config.toml"),
-            toml::to_string(&cargo_config)?,
+        persist_if_changed(
+            &dot_cargo_folder.join("config.toml"),
+            toml::to_string(&cargo_config)?.as_bytes(),
         )?;
 
         let main_rs = format!(
@@ -404,7 +408,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {{
 }}
 "#
         );
-        fs_err::write(source_directory.join("main.rs"), main_rs)?;
+        persist_if_changed(&source_directory.join("main.rs"), main_rs.as_bytes())?;
         Ok(if has_tests {
             ShouldRunTests::Yes
         } else {
