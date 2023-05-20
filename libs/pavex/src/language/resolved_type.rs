@@ -13,7 +13,7 @@ use crate::language::resolved_type::generics_equivalence::{
     compute_generic_argument_equivalence_mapping, generic_arguments_are_equivalent,
     UnassignedIdGenerator,
 };
-use crate::language::{ImportPath, ResolvedPath, ResolvedPathSegment};
+use crate::language::{ResolvedPath, ResolvedPathSegment};
 
 #[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Hash, Clone)]
 pub enum ResolvedType {
@@ -455,7 +455,7 @@ pub struct PathType {
     /// The id is optional to allow for flexible usage patterns—e.g. to leverage [`ResolvedType`]
     /// to work with types that we want to code-generate into a new crate.  
     pub rustdoc_id: Option<rustdoc_types::Id>,
-    pub base_type: ImportPath,
+    pub base_type: Vec<String>,
     pub generic_arguments: Vec<GenericArgument>,
 }
 

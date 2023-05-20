@@ -79,8 +79,8 @@ pub(super) fn compute_crate_docs(
 /// options from various places in the codebase and maintain a single source of truth.
 ///
 /// In particular, they do affect our caching logic (see the `cache` module).
-pub(super) fn rustdoc_options() -> [&'static str; 3] {
-    ["--document-private-items", "-Zunstable-options", "-wjson"]
+pub(super) fn rustdoc_options() -> [&'static str; 4] {
+    ["--document-private-items", "-Zunstable-options", "-wjson", "--document-hidden-items"]
 }
 
 #[tracing::instrument(
