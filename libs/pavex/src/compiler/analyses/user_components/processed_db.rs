@@ -73,18 +73,8 @@ impl UserComponentDb {
         let resolved_path_db = ResolvedPathDb::build(&raw_db, package_graph, diagnostics);
         exit_on_errors!(diagnostics);
 
-        let mut package_ids = IndexSet::new();
-        for (_, path) in resolved_path_db.iter() {
-            package_ids.insert(&path.package_id);
-        }
-        if let Err(e) = krate_collection.batch_compute_crates(package_ids.into_iter().cloned()) {
-            diagnostics.push(
-                miette!(
-                    e.context("I failed to compute the JSON documentation for one or more crates in the workspace.")
-                )
-            );
-            return Err(());
-        }
+        precompute_crate_docs(krate_collection, &resolved_path_db, diagnostics);
+        exit_on_errors!(diagnostics);
 
         Self::resolve_and_intern_paths(
             &resolved_path_db,
@@ -172,6 +162,27 @@ impl UserComponentDb {
     pub fn get_raw_callable_identifiers(&self, id: UserComponentId) -> &RawCallableIdentifiers {
         let raw_id = self.component_interner[id].raw_callable_identifiers_id();
         &self.identifiers_interner[raw_id]
+    }
+}
+
+/// We try to batch together the computation of the JSON documentation for all the crates that,
+/// based on the information we have so far, will be needed to generate the application code.
+/// 
+/// This is not strictly necessary, but it can turn out to be a significant performance improvement
+/// for projects that pull in a lot of dependencies in the signature of their components. 
+fn precompute_crate_docs(
+    krate_collection: &CrateCollection,
+    resolved_path_db: &ResolvedPathDb,
+    diagnostics: &mut Vec<miette::Error>,
+) {
+    let mut package_ids = IndexSet::new();
+    for (_, path) in resolved_path_db.iter() {
+        package_ids.insert(&path.package_id);
+    }
+    if let Err(e) = krate_collection.batch_compute_crates(package_ids.into_iter().cloned()) {
+        diagnostics.push(miette!(e.context(
+            "I failed to compute the JSON documentation for one or more crates in the workspace."
+        )));
     }
 }
 
