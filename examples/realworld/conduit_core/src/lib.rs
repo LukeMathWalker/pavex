@@ -2,7 +2,7 @@ use articles::articles_bp;
 use pavex_builder::{f, router::GET, Blueprint};
 use pavex_runtime::hyper::StatusCode;
 
-mod articles;
+pub mod articles;
 
 pub fn ping() -> StatusCode {
     StatusCode::OK
