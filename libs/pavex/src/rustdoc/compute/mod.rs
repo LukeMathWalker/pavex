@@ -11,6 +11,7 @@ pub(crate) use cache::{RustdocCacheKey, RustdocGlobalFsCache};
 use anyhow::Context;
 use guppy::graph::PackageGraph;
 use guppy::{PackageId, Version};
+use indexmap::IndexSet;
 
 use crate::rustdoc::package_id_spec::PackageIdSpecification;
 use crate::rustdoc::utils::normalize_crate_name;
@@ -87,6 +88,15 @@ pub(super) fn compute_crate_docs(
 }
 
 #[tracing::instrument(skip_all, level = "trace")]
+/// A batch version of [`compute_crate_docs`].
+///
+/// This function is useful when you need to compute the documentation for multiple crates at once.
+/// It is more efficient than calling [`compute_crate_docs`] multiple times, because `cargo doc`
+/// (internally) can compute the documentation for multiple crates at once.
+///
+/// We can't obtain the same level of efficiency by calling `cargo rustdoc` multiple times, because
+/// each invocation of `cargo rustdoc` will take an exclusive lock over the entire target directory,
+/// causing the other invocations to queue, forcing us back into serial execution.
 pub(super) fn batch_compute_crate_docs<I>(
     package_graph: &PackageGraph,
     package_ids: I,
@@ -111,11 +121,42 @@ where
         return Ok(results);
     }
 
-    _compute_crate_docs(to_be_computed.iter().map(|(_, spec)| spec))?;
-    let target_directory = package_graph.workspace().target_directory().as_std_path();
-    for (package_id, package_spec) in to_be_computed {
-        let krate = load_json_docs(target_directory, &package_spec)?;
-        results.insert(package_id, krate);
+    // We need to chunk the crates into batches, because `cargo rustdoc` can only compute the
+    // documentation for multiple crates at once if all the crate names are unique within the
+    // batch.
+    //
+    // That's due to the output naming scheme of `rustdoc`: the output file is `{crate_name}.json`.
+    // If we were to pass multiple crates with the same name to `cargo rustdoc`, the output file
+    // would be overwritten multiple times, and we would only be left with the documentation for
+    // the last crate.
+    let chunks = {
+        let mut chunks: Vec<Vec<(PackageId, PackageIdSpecification)>> = vec![];
+        let mut chunk_id2names = HashMap::<usize, IndexSet<_>>::new();
+        'outer: for (package_id, package_spec) in to_be_computed {
+            for (index, chunk) in chunks.iter_mut().enumerate() {
+                let chunk_names = chunk_id2names.get_mut(&index).unwrap();
+                if chunk_names.insert(package_spec.name.clone()) {
+                    // We haven't seen this crate name before.
+                    chunk.push((package_id, package_spec));
+                    continue 'outer;
+                }
+            }
+            // We need a new chunk!
+            let mut names = IndexSet::new();
+            names.insert(package_spec.name.clone());
+            chunk_id2names.insert(chunks.len() - 1, names);
+            chunks.push(vec![(package_id, package_spec)]);
+        }
+        chunks
+    };
+
+    for chunk in chunks {
+        _compute_crate_docs(chunk.iter().map(|(_, spec)| spec))?;
+        let target_directory = package_graph.workspace().target_directory().as_std_path();
+        for (package_id, package_spec) in chunk {
+            let krate = load_json_docs(target_directory, &package_spec)?;
+            results.insert(package_id, krate);
+        }
     }
     Ok(results)
 }
@@ -143,7 +184,11 @@ where
     // TODO: check that we have the nightly toolchain available beforehand in order to return
     // a good error.
     let mut cmd = std::process::Command::new("cargo");
-    cmd.arg("+nightly").arg("doc").arg("--no-deps").arg("-q").arg("--lib");
+    cmd.arg("+nightly")
+        .arg("doc")
+        .arg("--no-deps")
+        .arg("-q")
+        .arg("--lib");
     for package_id_spec in package_id_specs {
         cmd.arg("-p").arg(package_id_spec.to_string());
     }
