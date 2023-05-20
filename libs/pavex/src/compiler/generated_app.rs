@@ -195,12 +195,13 @@ impl GeneratedApp {
     }
 }
 
-/// Only persiste the content if it differs from the one already on disk.
+/// Only persist the content if it differs from the one already on disk.
 ///
 /// It if the file does not exist, it will be created.
 /// 
 /// This is useful to avoid unnecessary rebuilds, since `cargo` takes into account
 /// the modification time of the files when determining if they have changed or not.
+#[tracing::instrument(skip_all, level=tracing::Level::TRACE)]
 fn persist_if_changed(path: &Path, content: &[u8]) -> Result<(), anyhow::Error> {
     if let Ok(file_checksum) = compute_file_checksum(path) {
         let buffer_checksum = compute_buffer_checksum(content);
@@ -218,6 +219,7 @@ fn persist_if_changed(path: &Path, content: &[u8]) -> Result<(), anyhow::Error> 
 }
 
 /// Compute the checksum of a file, if it exists.
+#[tracing::instrument(skip_all, level=tracing::Level::TRACE)]
 fn compute_file_checksum(path: &Path) -> std::io::Result<String> {
     let mut hasher = sha2::Sha256::new();
 
@@ -238,6 +240,7 @@ fn compute_file_checksum(path: &Path) -> std::io::Result<String> {
 }
 
 /// Compute the checksum of an in-memory bytes buffer.
+#[tracing::instrument(skip_all, level=tracing::Level::TRACE)]
 fn compute_buffer_checksum(buffer: &[u8]) -> String {
     let mut hasher = sha2::Sha256::new();
     hasher.update(buffer);
