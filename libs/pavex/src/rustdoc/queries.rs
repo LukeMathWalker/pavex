@@ -72,9 +72,11 @@ impl CrateCollection {
     /// Compute the documentation for multiple crates given their [`PackageId`]s.
     ///
     /// They won't be computed again if they are already in [`CrateCollection`]'s internal cache.
-    pub fn batch_compute_crates(&self, package_ids: Vec<PackageId>) -> Result<(), anyhow::Error> {
+    pub fn batch_compute_crates<I>(&self, package_ids: I) -> Result<(), anyhow::Error>
+    where
+        I: Iterator<Item = PackageId>,
+    {
         let missing_ids = package_ids
-            .into_iter()
             // First check if we already have the crate docs in the in-memory cache.
             .filter(|package_id| self.get_crate_by_package_id(package_id).is_none());
 

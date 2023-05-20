@@ -86,6 +86,7 @@ pub(super) fn compute_crate_docs(
     })
 }
 
+#[tracing::instrument(skip_all, level = "trace")]
 pub(super) fn batch_compute_crate_docs<I>(
     package_graph: &PackageGraph,
     package_ids: I,

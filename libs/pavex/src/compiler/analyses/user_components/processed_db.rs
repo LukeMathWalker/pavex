@@ -1,5 +1,6 @@
 use ahash::HashMap;
 use guppy::graph::PackageGraph;
+use indexmap::IndexSet;
 use miette::{miette, NamedSource};
 use syn::spanned::Spanned;
 
@@ -71,6 +72,19 @@ impl UserComponentDb {
         validate_router(&raw_db, package_graph, diagnostics);
         let resolved_path_db = ResolvedPathDb::build(&raw_db, package_graph, diagnostics);
         exit_on_errors!(diagnostics);
+
+        let mut package_ids = IndexSet::new();
+        for (_, path) in resolved_path_db.iter() {
+            package_ids.insert(&path.package_id);
+        }
+        if let Err(e) = krate_collection.batch_compute_crates(package_ids.into_iter().cloned()) {
+            diagnostics.push(
+                miette!(
+                    e.context("I failed to compute the JSON documentation for one or more crates in the workspace.")
+                )
+            );
+            return Err(());
+        }
 
         Self::resolve_and_intern_paths(
             &resolved_path_db,
@@ -164,6 +178,7 @@ impl UserComponentDb {
 impl UserComponentDb {
     /// Resolve and intern all the paths in the `ResolvedPathDb`.
     /// Report errors as diagnostics if any of the paths cannot be resolved.
+    #[tracing::instrument(name = "Resolve and intern paths", skip_all, level = "trace")]
     fn resolve_and_intern_paths(
         resolved_path_db: &ResolvedPathDb,
         raw_db: &RawUserComponentDb,
