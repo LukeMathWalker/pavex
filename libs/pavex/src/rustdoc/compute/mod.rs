@@ -176,7 +176,7 @@ pub(super) fn rustdoc_options() -> [&'static str; 4] {
     ]
 }
 
-#[tracing::instrument(skip_all)]
+#[tracing::instrument(skip_all, fields(package_id_specs))]
 fn _compute_crate_docs<'a, I>(package_id_specs: I) -> Result<(), anyhow::Error>
 where
     I: Iterator<Item = &'a PackageIdSpecification>,
@@ -189,9 +189,11 @@ where
         .arg("--no-deps")
         .arg("-q")
         .arg("--lib");
-    for package_id_spec in package_id_specs {
+    let package_id_specs: Vec<_> = package_id_specs.map(|p| p.to_string()).collect();
+    for package_id_spec in &package_id_specs {
         cmd.arg("-p").arg(package_id_spec.to_string());
     }
+    tracing::Span::current().record("package_id_specs", &package_id_specs.join(", "));
 
     cmd.env("RUSTDOCFLAGS", rustdoc_options().join(" "));
 
