@@ -16,6 +16,7 @@ pub(super) struct ResolvedPathDb {
 }
 
 impl ResolvedPathDb {
+    #[tracing::instrument("Build resolved path database", skip_all, level = "trace")]
     pub fn build(
         component_db: &RawUserComponentDb,
         package_graph: &PackageGraph,
@@ -43,6 +44,15 @@ impl ResolvedPathDb {
             interner,
             component_id2path_id,
         }
+    }
+
+    /// Iterate over all the resolved paths in the database, returning their id and the associated
+    /// `ResolvedPath`.
+    pub fn iter(
+        &self,
+    ) -> impl Iterator<Item = (ResolvedPathId, &ResolvedPath)> + ExactSizeIterator + DoubleEndedIterator
+    {
+        self.interner.iter()
     }
 
     fn capture_diagnostics(

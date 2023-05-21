@@ -1076,6 +1076,7 @@ dependencies = [
  "miette",
  "serde",
  "serde_json",
+ "sha2",
  "similar",
  "textwrap 0.16.0",
  "toml 0.7.4",

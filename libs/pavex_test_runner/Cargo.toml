@@ -21,3 +21,4 @@ miette = { version = "5.3.0", features = ["fancy"] }
 walkdir = "2"
 serde_json = "1"
 itertools = "0.10"
+sha2 = "0.10.6"

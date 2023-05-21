@@ -15,7 +15,7 @@ use tracing::Span;
 
 use crate::rustdoc::{compute::compute_crate_docs, utils, CannotGetCrateData, TOOLCHAIN_CRATES};
 
-use super::compute::{RustdocCacheKey, RustdocGlobalFsCache};
+use super::compute::{batch_compute_crate_docs, RustdocCacheKey, RustdocGlobalFsCache};
 
 /// The main entrypoint for accessing the documentation of the crates
 /// in a specific `PackageGraph`.
@@ -67,6 +67,65 @@ impl CrateCollection {
 
     pub fn package_graph(&self) -> &PackageGraph {
         &self.1
+    }
+
+    /// Compute the documentation for multiple crates given their [`PackageId`]s.
+    ///
+    /// They won't be computed again if they are already in [`CrateCollection`]'s internal cache.
+    pub fn batch_compute_crates<I>(&self, package_ids: I) -> Result<(), anyhow::Error>
+    where
+        I: Iterator<Item = PackageId>,
+    {
+        let missing_ids = package_ids
+            // First check if we already have the crate docs in the in-memory cache.
+            .filter(|package_id| self.get_crate_by_package_id(package_id).is_none());
+
+        let mut to_be_computed = vec![];
+        // If not, let's try to load them from the on-disk cache.
+        for package_id in missing_ids {
+            let cache_key = RustdocCacheKey::new(&package_id, &self.1);
+            match self.2.get(&cache_key) {
+                Ok(Some(krate)) => {
+                    self.0.insert(package_id, Box::new(krate));
+                    continue;
+                }
+                Err(e) => {
+                    tracing::warn!(
+                        error.msg = tracing::field::display(&e),
+                        error.error_chain = tracing::field::debug(&e),
+                        package_id = package_id.repr(),
+                        "Failed to retrieve the documentation from the on-disk cache",
+                    );
+                }
+                Ok(None) => {}
+            }
+            to_be_computed.push(package_id);
+        }
+
+        // The ones that are still missing need to be computed.
+        let results = batch_compute_crate_docs(&self.1, to_be_computed.into_iter())?;
+
+        for (package_id, krate) in results {
+            let krate =
+                Crate::new(self, krate, package_id.to_owned()).map_err(|e| CannotGetCrateData {
+                    package_spec: package_id.to_string(),
+                    source: Arc::new(e),
+                })?;
+
+            // Let's make sure to store them in the on-disk cache for next time.
+            let cache_key = RustdocCacheKey::new(&package_id, &self.1);
+            if let Err(e) = self.2.insert(&cache_key, &krate) {
+                tracing::warn!(
+                    error.msg = tracing::field::display(&e),
+                    error.error_chain = tracing::field::debug(&e),
+                    package_id = package_id.repr(),
+                    "Failed to store the computed JSON docs in the on-disk cache",
+                );
+            }
+            self.0.insert(package_id.to_owned(), Box::new(krate));
+        }
+
+        Ok(())
     }
 
     /// Compute the documentation for the crate associated with a specific [`PackageId`].

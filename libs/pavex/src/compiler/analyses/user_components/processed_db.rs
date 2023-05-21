@@ -1,5 +1,6 @@
 use ahash::HashMap;
 use guppy::graph::PackageGraph;
+use indexmap::IndexSet;
 use miette::{miette, NamedSource};
 use syn::spanned::Spanned;
 
@@ -70,6 +71,9 @@ impl UserComponentDb {
         let (raw_db, scope_graph) = RawUserComponentDb::build(bp, package_graph, diagnostics);
         validate_router(&raw_db, package_graph, diagnostics);
         let resolved_path_db = ResolvedPathDb::build(&raw_db, package_graph, diagnostics);
+        exit_on_errors!(diagnostics);
+
+        precompute_crate_docs(krate_collection, &resolved_path_db, diagnostics);
         exit_on_errors!(diagnostics);
 
         Self::resolve_and_intern_paths(
@@ -161,9 +165,31 @@ impl UserComponentDb {
     }
 }
 
+/// We try to batch together the computation of the JSON documentation for all the crates that,
+/// based on the information we have so far, will be needed to generate the application code.
+///
+/// This is not strictly necessary, but it can turn out to be a significant performance improvement
+/// for projects that pull in a lot of dependencies in the signature of their components.
+fn precompute_crate_docs(
+    krate_collection: &CrateCollection,
+    resolved_path_db: &ResolvedPathDb,
+    diagnostics: &mut Vec<miette::Error>,
+) {
+    let mut package_ids = IndexSet::new();
+    for (_, path) in resolved_path_db.iter() {
+        path.collect_package_ids(&mut package_ids);
+    }
+    if let Err(e) = krate_collection.batch_compute_crates(package_ids.into_iter().cloned()) {
+        diagnostics.push(miette!(e.context(
+            "I failed to compute the JSON documentation for one or more crates in the workspace."
+        )));
+    }
+}
+
 impl UserComponentDb {
     /// Resolve and intern all the paths in the `ResolvedPathDb`.
     /// Report errors as diagnostics if any of the paths cannot be resolved.
+    #[tracing::instrument(name = "Resolve and intern paths", skip_all, level = "trace")]
     fn resolve_and_intern_paths(
         resolved_path_db: &ResolvedPathDb,
         raw_db: &RawUserComponentDb,
