@@ -26,7 +26,7 @@ use crate::language::{
     Callable, GenericArgument, InvocationStyle, PathType, ResolvedPath, ResolvedPathSegment,
     ResolvedType,
 };
-use crate::rustdoc::{CrateCollection, CORE_PACKAGE_ID};
+use crate::rustdoc::{CrateCollection, CORE_PACKAGE_ID_REPR};
 
 /// Build an [`OrderedCallGraph`] for the application state.
 #[tracing::instrument(name = "Compute the application state graph", skip_all)]
@@ -163,7 +163,7 @@ pub(crate) fn application_state_call_graph(
             generic_arguments: vec![],
         };
         let application_state_result = PathType {
-            package_id: PackageId::new(CORE_PACKAGE_ID),
+            package_id: PackageId::new(CORE_PACKAGE_ID_REPR),
             rustdoc_id: None,
             base_type: vec!["core".into(), "result".into(), "Result".into()],
             generic_arguments: vec![
@@ -187,7 +187,7 @@ pub(crate) fn application_state_call_graph(
                 path: ResolvedPath {
                     segments: ok_wrapper_path,
                     qualified_self: None,
-                    package_id: PackageId::new(CORE_PACKAGE_ID),
+                    package_id: PackageId::new(CORE_PACKAGE_ID_REPR),
                 },
                 inputs: vec![application_state_type.into()],
                 invocation_style: InvocationStyle::FunctionCall,
@@ -209,7 +209,7 @@ pub(crate) fn application_state_call_graph(
                 path: ResolvedPath {
                     segments: err_wrapper_path,
                     qualified_self: None,
-                    package_id: PackageId::new(CORE_PACKAGE_ID),
+                    package_id: PackageId::new(CORE_PACKAGE_ID_REPR),
                 },
                 inputs: vec![error_enum.clone().into()],
                 invocation_style: InvocationStyle::FunctionCall,

@@ -19,7 +19,7 @@ use crate::compiler::analyses::user_components::RouterKey;
 use crate::compiler::app::GENERATED_APP_PACKAGE_ID;
 use crate::compiler::computation::Computation;
 use crate::language::{Callable, GenericArgument, ResolvedType};
-use crate::rustdoc::{ALLOC_PACKAGE_ID, TOOLCHAIN_CRATES};
+use crate::rustdoc::{ALLOC_PACKAGE_ID_REPR, TOOLCHAIN_CRATES};
 
 use super::generated_app::GeneratedManifest;
 
@@ -165,7 +165,7 @@ pub(crate) fn codegen_app(
         request_scoped_framework_bindings,
     );
     let entrypoint = server_startup();
-    let alloc_rename = if package_id2name.contains_right(ALLOC_PACKAGE_ID) {
+    let alloc_rename = if package_id2name.contains_right(ALLOC_PACKAGE_ID_REPR) {
         // The fact that an item from `alloc` is used in the generated code does not imply
         // that we need to have an `alloc` import (e.g. it might not appear in function
         // signatures).

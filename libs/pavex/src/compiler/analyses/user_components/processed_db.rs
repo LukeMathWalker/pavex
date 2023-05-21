@@ -167,9 +167,9 @@ impl UserComponentDb {
 
 /// We try to batch together the computation of the JSON documentation for all the crates that,
 /// based on the information we have so far, will be needed to generate the application code.
-/// 
+///
 /// This is not strictly necessary, but it can turn out to be a significant performance improvement
-/// for projects that pull in a lot of dependencies in the signature of their components. 
+/// for projects that pull in a lot of dependencies in the signature of their components.
 fn precompute_crate_docs(
     krate_collection: &CrateCollection,
     resolved_path_db: &ResolvedPathDb,
@@ -177,7 +177,7 @@ fn precompute_crate_docs(
 ) {
     let mut package_ids = IndexSet::new();
     for (_, path) in resolved_path_db.iter() {
-        package_ids.insert(&path.package_id);
+        path.collect_package_ids(&mut package_ids);
     }
     if let Err(e) = krate_collection.batch_compute_crates(package_ids.into_iter().cloned()) {
         diagnostics.push(miette!(e.context(

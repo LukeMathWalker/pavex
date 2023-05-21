@@ -7,6 +7,7 @@ use std::sync::Arc;
 use anyhow::Context;
 use bimap::BiHashMap;
 use guppy::PackageId;
+use indexmap::IndexSet;
 use itertools::Itertools;
 use quote::format_ident;
 
@@ -15,7 +16,7 @@ use pavex_builder::reflection::RawCallableIdentifiers;
 use crate::language::callable_path::{CallPathGenericArgument, CallPathLifetime, CallPathType};
 use crate::language::resolved_type::{GenericArgument, Lifetime, ScalarPrimitive, Slice};
 use crate::language::{CallPath, InvalidCallPath, ResolvedType, Tuple, TypeReference};
-use crate::rustdoc::CrateCollection;
+use crate::rustdoc::{CrateCollection, CORE_PACKAGE_ID};
 use crate::rustdoc::{ResolvedItemWithParent, TOOLCHAIN_CRATES};
 
 /// A resolved import path.
@@ -43,7 +44,32 @@ use crate::rustdoc::{ResolvedItemWithParent, TOOLCHAIN_CRATES};
 pub struct ResolvedPath {
     pub segments: Vec<ResolvedPathSegment>,
     pub qualified_self: Option<ResolvedPathQualifiedSelf>,
+    /// The package id of the crate that this path belongs to.
     pub package_id: PackageId,
+}
+
+impl ResolvedPath {
+    /// Collect all the package ids that are referenced in this path.
+    ///
+    /// This includes the package id of the crate that this path belongs to
+    /// as well as the package ids of all the crates that are referenced in its generic
+    /// arguments and qualified self (if any).
+    pub(crate) fn collect_package_ids<'a>(&'a self, package_ids: &mut IndexSet<&'a PackageId>) {
+        package_ids.insert(&self.package_id);
+        for segment in &self.segments {
+            for generic_argument in &segment.generic_arguments {
+                match generic_argument {
+                    ResolvedPathGenericArgument::Type(t) => {
+                        t.collect_package_ids(package_ids);
+                    }
+                    ResolvedPathGenericArgument::Lifetime(_) => {}
+                }
+            }
+        }
+        if let Some(qself) = &self.qualified_self {
+            qself.type_.collect_package_ids(package_ids);
+        }
+    }
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
@@ -137,6 +163,33 @@ impl ResolvedPathType {
                 Ok(ResolvedType::Slice(Slice {
                     element_type: Box::new(inner),
                 }))
+            }
+        }
+    }
+
+    /// Collect all the package ids that are referenced in this path type.
+    ///
+    /// This includes the package id of the crate that this path belongs to
+    /// as well as the package ids of all the crates that are referenced in its generic
+    /// arguments (if any).
+    fn collect_package_ids<'a>(&'a self, package_ids: &mut IndexSet<&'a PackageId>) {
+        match self {
+            ResolvedPathType::ResolvedPath(p) => {
+                p.path.collect_package_ids(package_ids);
+            }
+            ResolvedPathType::Reference(r) => {
+                r.inner.collect_package_ids(package_ids);
+            }
+            ResolvedPathType::Tuple(t) => {
+                for element in &t.elements {
+                    element.collect_package_ids(package_ids);
+                }
+            }
+            ResolvedPathType::ScalarPrimitive(_) => {
+                package_ids.insert(&CORE_PACKAGE_ID);
+            }
+            ResolvedPathType::Slice(s) => {
+                s.element.collect_package_ids(package_ids);
             }
         }
     }

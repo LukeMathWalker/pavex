@@ -3,7 +3,8 @@
 //!
 //! [`CrateCollection`] is the key entrypoint.
 pub use compute::CannotGetCrateData;
-pub use package_id_spec::PackageIdSpecification;
+use guppy::PackageId;
+use once_cell::sync::Lazy;
 pub use queries::{
     Crate, CrateCollection, GetItemByResolvedPathError, GlobalItemId, ResolvedItem,
     ResolvedItemWithParent, RustdocKindExt, UnknownItemPath,
@@ -14,7 +15,15 @@ mod package_id_spec;
 mod queries;
 mod utils;
 
-pub const STD_PACKAGE_ID: &str = "std";
-pub const CORE_PACKAGE_ID: &str = "core";
-pub const ALLOC_PACKAGE_ID: &str = "alloc";
-pub const TOOLCHAIN_CRATES: [&str; 3] = [STD_PACKAGE_ID, CORE_PACKAGE_ID, ALLOC_PACKAGE_ID];
+pub const STD_PACKAGE_ID_REPR: &str = "std";
+
+pub const CORE_PACKAGE_ID_REPR: &str = "core";
+pub static CORE_PACKAGE_ID: Lazy<PackageId> = Lazy::new(|| PackageId::new(CORE_PACKAGE_ID_REPR));
+
+pub const ALLOC_PACKAGE_ID_REPR: &str = "alloc";
+
+pub const TOOLCHAIN_CRATES: [&str; 3] = [
+    STD_PACKAGE_ID_REPR,
+    CORE_PACKAGE_ID_REPR,
+    ALLOC_PACKAGE_ID_REPR,
+];
