@@ -139,7 +139,9 @@ fn generate(
     output: PathBuf,
 ) -> Result<ExitCode, Box<dyn std::error::Error>> {
     let blueprint = Blueprint::load(&blueprint)?;
-    let app = match App::build(blueprint) {
+    // We use the path to the generated application crate as a fingerprint for the project.
+    let project_fingerprint = output.to_string_lossy().into_owned();
+    let app = match App::build(blueprint, project_fingerprint) {
         Ok(a) => a,
         Err(errors) => {
             for e in errors {

@@ -179,7 +179,7 @@ fn precompute_crate_docs(
     for (_, path) in resolved_path_db.iter() {
         path.collect_package_ids(&mut package_ids);
     }
-    if let Err(e) = krate_collection.batch_compute_crates(package_ids.into_iter().cloned()) {
+    if let Err(e) = krate_collection.bootstrap_collection(package_ids.into_iter().cloned()) {
         diagnostics.push(miette!(e.context(
             "I failed to compute the JSON documentation for one or more crates in the workspace."
         )));

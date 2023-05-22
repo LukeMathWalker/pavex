@@ -1,4 +1,4 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, collections::BTreeSet};
 
 use ahash::{HashMap, HashMapExt};
 use anyhow::Context;
@@ -6,6 +6,8 @@ use guppy::{
     graph::{feature::StandardFeatures, PackageGraph, PackageMetadata},
     PackageId,
 };
+use itertools::Itertools;
+use r2d2_sqlite::SqliteConnectionManager;
 use rusqlite::params;
 use tracing::instrument;
 
@@ -17,11 +19,12 @@ use super::rustdoc_options;
 ///  
 /// The cache is shared across all `pavex` projects of the current user.
 /// It is stored on disk, in the user home directory, using a SQLite database.
+#[derive(Debug, Clone)]
 pub(crate) struct RustdocGlobalFsCache {
     cargo_fingerprint: String,
     third_party_cache: ThirdPartyCrateCache,
     toolchain_cache: ToolchainCache,
-    connection: rusqlite::Connection,
+    connection_pool: r2d2::Pool<SqliteConnectionManager>,
 }
 
 pub(crate) enum RustdocCacheKey<'a> {
@@ -44,12 +47,14 @@ impl RustdocGlobalFsCache {
     #[tracing::instrument(name = "Initialize on-disk rustdoc cache", skip_all)]
     pub(crate) fn new() -> Result<Self, anyhow::Error> {
         let cargo_fingerprint = cargo_fingerprint()?;
-        let connection = Self::setup_database()?;
+        let pool = Self::setup_database()?;
+
+        let connection = pool.get()?;
         let third_party_cache = ThirdPartyCrateCache::new(&connection)?;
         let toolchain_cache = ToolchainCache::new(&connection)?;
         Ok(Self {
             cargo_fingerprint,
-            connection,
+            connection_pool: pool,
             third_party_cache,
             toolchain_cache,
         })
@@ -60,14 +65,15 @@ impl RustdocGlobalFsCache {
         &self,
         cache_key: &RustdocCacheKey,
     ) -> Result<Option<crate::rustdoc::Crate>, anyhow::Error> {
+        let connection = self.connection_pool.get()?;
         match cache_key {
             RustdocCacheKey::ThirdPartyCrate(metadata) => {
                 self.third_party_cache
-                    .get(metadata, &self.cargo_fingerprint, &self.connection)
+                    .get(metadata, &self.cargo_fingerprint, &connection)
             }
             RustdocCacheKey::ToolchainCrate(name) => {
                 self.toolchain_cache
-                    .get(name, &self.cargo_fingerprint, &self.connection)
+                    .get(name, &self.cargo_fingerprint, &connection)
             }
         }
     }
@@ -78,22 +84,70 @@ impl RustdocGlobalFsCache {
         cache_key: &RustdocCacheKey,
         krate: &crate::rustdoc::Crate,
     ) -> Result<(), anyhow::Error> {
+        let connection = self.connection_pool.get()?;
         match cache_key {
-            RustdocCacheKey::ThirdPartyCrate(metadata) => self.third_party_cache.insert(
-                metadata,
-                krate,
-                &self.cargo_fingerprint,
-                &self.connection,
-            ),
+            RustdocCacheKey::ThirdPartyCrate(metadata) => {
+                self.third_party_cache
+                    .insert(metadata, krate, &self.cargo_fingerprint, &connection)
+            }
             RustdocCacheKey::ToolchainCrate(name) => {
                 self.toolchain_cache
-                    .insert(name, krate, &self.cargo_fingerprint, &self.connection)
+                    .insert(name, krate, &self.cargo_fingerprint, &connection)
             }
         }
     }
 
+    #[tracing::instrument(skip_all, level = "trace")]
+    /// Persist the list of package IDs that were accessed during the processing of the
+    /// application blueprint for this project. 
+    pub(crate) fn persist_access_log(
+        &self,
+        package_ids: &BTreeSet<PackageId>,
+        project_fingerprint: &str,
+    ) -> Result<(), anyhow::Error> {
+        let connection = self.connection_pool.get()?;
+
+        let mut stmt = connection.prepare_cached(
+            "INSERT INTO project2package_id_access_log (
+                project_fingerprint,
+                package_ids
+            ) VALUES (?, ?)
+            ON CONFLICT(project_fingerprint) DO UPDATE SET package_ids=excluded.package_ids;
+            ",
+        )?;
+        stmt.execute(params![
+            project_fingerprint,
+            bincode::serialize(&package_ids.into_iter().map(|s| s.repr()).collect_vec())?
+        ])?;
+
+        Ok(())
+    }
+
+    #[tracing::instrument(skip_all, level = "trace")]
+    /// Retrieve the list of package IDs that were accessed during the last time we processed the  
+    /// application blueprint for this project. 
+    /// 
+    /// Returns an empty set if no access log is found for the given project fingerprint.
+    pub(crate) fn get_access_log(
+        &self,
+        project_fingerprint: &str,
+    ) -> Result<BTreeSet<PackageId>, anyhow::Error> {
+        let connection = self.connection_pool.get()?;
+
+        let mut stmt = connection.prepare_cached(
+            "SELECT package_ids FROM project2package_id_access_log WHERE project_fingerprint = ?",
+        )?;
+        let mut rows = stmt.query(params![project_fingerprint])?;
+        let Some(row) = rows.next()? else {
+            return Ok(BTreeSet::new());
+        };
+
+        let package_ids: Vec<&str> = bincode::deserialize(row.get_ref_unwrap(0).as_bytes()?)?;
+        Ok(package_ids.into_iter().map(|s| PackageId::new(s)).collect())
+    }
+
     /// Initialize the database, creating the file and the relevant tables if they don't exist yet.
-    fn setup_database() -> Result<rusqlite::Connection, anyhow::Error> {
+    fn setup_database() -> Result<r2d2::Pool<SqliteConnectionManager>, anyhow::Error> {
         let pavex_fingerprint =
             concat!(env!("CARGO_PKG_VERSION"), '-', env!("VERGEN_GIT_DESCRIBE"));
         let cache_dir = xdg_home::home_dir()
@@ -113,9 +167,23 @@ impl RustdocGlobalFsCache {
         // We can improve this in the future, if needed.
         let cache_path = cache_dir.join(format!("{}.db", pavex_fingerprint));
 
-        let connection = rusqlite::Connection::open(cache_dir.join(cache_path)).context("Failed to open/create a SQLite database to store the contents of pavex's rustdoc cache")?;
+        let manager = SqliteConnectionManager::file(cache_dir.join(cache_path));
+        let pool = r2d2::Pool::builder()
+            .max_size(num_cpus::get() as u32)
+            .build(manager)
+            .context("Failed to open/create a SQLite database to store the contents of pavex's rustdoc cache")?;
 
-        Ok(connection)
+        let connection = pool.get()?;
+        connection.execute(
+            "CREATE TABLE IF NOT EXISTS project2package_id_access_log (
+                project_fingerprint TEXT NOT NULL,
+                package_ids BLOB NOT NULL,
+                PRIMARY KEY (project_fingerprint)
+            )",
+            [],
+        )?;
+
+        Ok(pool)
     }
 }
 

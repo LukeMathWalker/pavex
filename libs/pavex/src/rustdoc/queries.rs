@@ -1,8 +1,7 @@
 use std::borrow::Cow;
 use std::collections::BTreeSet;
-use std::fmt::{Display, Formatter};
 use std::sync::Arc;
-use std::{fmt, thread};
+use std::thread;
 
 use ahash::{HashMap, HashMapExt};
 use anyhow::{anyhow, Context};
@@ -14,6 +13,7 @@ use rustdoc_types::{ExternalCrate, Item, ItemEnum, ItemKind, ItemSummary, Visibi
 use tracing::Span;
 
 use crate::rustdoc::{compute::compute_crate_docs, utils, CannotGetCrateData, TOOLCHAIN_CRATES};
+use crate::rustdoc::{ALLOC_PACKAGE_ID, CORE_PACKAGE_ID, STD_PACKAGE_ID};
 
 use super::compute::{batch_compute_crate_docs, RustdocCacheKey, RustdocGlobalFsCache};
 
@@ -24,15 +24,31 @@ use super::compute::{batch_compute_crate_docs, RustdocCacheKey, RustdocGlobalFsC
 /// - Computing and caching the JSON documentation for crates in the graph;
 /// - Execute queries that span the documentation of multiple crates (e.g. following crate
 ///   re-exports or star re-exports).
-pub struct CrateCollection(
-    FrozenMap<PackageId, Box<Crate>>,
-    PackageGraph,
-    RustdocGlobalFsCache,
-);
+pub struct CrateCollection {
+    package_id2krate: FrozenMap<PackageId, Box<Crate>>,
+    package_graph: PackageGraph,
+    disk_cache: RustdocGlobalFsCache,
+    /// An opaque string that uniquely identifies the current project (i.e. the current
+    /// blueprint and the crate we are generating from it).
+    project_fingerprint: String,
+    /// This map keeps track of the packages that are accessed while processing the
+    /// blueprint of an application.
+    ///
+    /// This is then used to pre-compute/eagerly retrieve from the cache the docs for
+    /// this crate the next time we process a blueprint for the same project.
+    ///
+    /// # Implementation notes
+    /// `elsa` doesn't expose a frozen BTreeSet yet, so we use a map with empty values
+    /// to emulate it.
+    access_log: FrozenMap<PackageId, Box<()>>,
+}
 
-impl fmt::Debug for CrateCollection {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self.1)
+impl std::fmt::Debug for CrateCollection {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("CrateCollection")
+            .field("package_graph", &self.package_graph)
+            .field("disk_cache", &self.disk_cache)
+            .finish()
     }
 }
 
@@ -49,7 +65,7 @@ fn compute_package_graph() -> Result<PackageGraph, anyhow::Error> {
 
 impl CrateCollection {
     /// Initialise the collection for a `PackageGraph`.
-    pub fn new() -> Result<Self, anyhow::Error> {
+    pub fn new(project_fingerprint: String) -> Result<Self, anyhow::Error> {
         let span = Span::current();
         let thread_handle = thread::spawn(move || {
             let _guard = span.enter();
@@ -62,33 +78,70 @@ impl CrateCollection {
             .map_err(|_| anyhow!("The thread computing the package graph panicked"))?
             .context("Failed to compute the package graph for the current workspace")?;
 
-        Ok(Self(FrozenMap::new(), package_graph, cache))
+        Ok(Self {
+            package_id2krate: FrozenMap::new(),
+            package_graph,
+            disk_cache: cache,
+            access_log: FrozenMap::new(),
+            project_fingerprint,
+        })
     }
 
     pub fn package_graph(&self) -> &PackageGraph {
-        &self.1
+        &self.package_graph
+    }
+
+    /// Bootstrap the crate collection by either fetching from the cache or computing 
+    /// on the fly the documentation of all the crates whose JSON docs are likely to be 
+    /// needed to process the application blueprint.
+    /// 
+    /// We rely on:
+    /// 
+    /// - Data from the previous run of `pavex` for this project, if available (the access log);
+    /// - Heuristics (toolchain crates);
+    /// - Data from the raw blueprint before any expensive processing has taken place (extra package ids).
+    /// 
+    /// This method should only be called once.
+    #[tracing::instrument(skip_all, level = "trace")]
+    pub fn bootstrap_collection<I>(&self, extra_package_ids: I) -> Result<(), anyhow::Error>
+    where
+        I: Iterator<Item = PackageId>,
+    {
+        let package_ids = self.disk_cache.get_access_log(&self.project_fingerprint)?;
+        let package_ids = package_ids
+            .into_iter()
+            .chain(extra_package_ids)
+            // Some package ids may not longer be part of the package graph,
+            // e.g. because the lockfile has been updated to use more recent versions
+            // or they have been removed as dependencies from one or more of the Cargo.toml 
+            // manifests.
+            .filter(|id| self.package_graph.metadata(id).is_ok())
+            // We always need the documentation for the toolchain crates.
+            .chain([
+                CORE_PACKAGE_ID.to_owned(),
+                ALLOC_PACKAGE_ID.to_owned(),
+                STD_PACKAGE_ID.to_owned(),
+            ])
+            .collect::<BTreeSet<_>>();
+        self.batch_compute_crates(package_ids.into_iter())
     }
 
     /// Compute the documentation for multiple crates given their [`PackageId`]s.
     ///
     /// They won't be computed again if they are already in [`CrateCollection`]'s internal cache.
+    #[tracing::instrument(skip_all, level = "trace")]
     pub fn batch_compute_crates<I>(&self, package_ids: I) -> Result<(), anyhow::Error>
     where
         I: Iterator<Item = PackageId>,
     {
-        let missing_ids = package_ids
-            // First check if we already have the crate docs in the in-memory cache.
-            .filter(|package_id| self.get_crate_by_package_id(package_id).is_none());
-
-        let mut to_be_computed = vec![];
-        // If not, let's try to load them from the on-disk cache.
-        for package_id in missing_ids {
-            let cache_key = RustdocCacheKey::new(&package_id, &self.1);
-            match self.2.get(&cache_key) {
-                Ok(Some(krate)) => {
-                    self.0.insert(package_id, Box::new(krate));
-                    continue;
-                }
+        fn get_if_cached(
+            package_id: PackageId,
+            package_graph: PackageGraph,
+            cache: RustdocGlobalFsCache,
+        ) -> (PackageId, Option<Crate>) {
+            let cache_key = RustdocCacheKey::new(&package_id, &package_graph);
+            match cache.get(&cache_key) {
+                Ok(o) => (package_id, o),
                 Err(e) => {
                     tracing::warn!(
                         error.msg = tracing::field::display(&e),
@@ -96,14 +149,35 @@ impl CrateCollection {
                         package_id = package_id.repr(),
                         "Failed to retrieve the documentation from the on-disk cache",
                     );
+                    (package_id, None)
                 }
-                Ok(None) => {}
+            }
+        }
+
+        let missing_ids = package_ids
+            // First check if we already have the crate docs in the in-memory cache.
+            .filter(|package_id| self.get_crate_by_package_id(package_id).is_none())
+            .collect::<BTreeSet<_>>();
+
+        // It can take a while to deserialize the JSON docs for a crate from the cache,
+        // so we parallelize the operation.
+        let package_graph = self.package_graph.clone();
+        let cache = self.disk_cache.clone();
+        let map_op = |id| get_if_cached(id, package_graph.clone(), cache.clone());
+
+        let mut to_be_computed = vec![];
+
+        use rayon::prelude::{IntoParallelIterator, ParallelIterator};
+        for (package_id, cached) in missing_ids.into_par_iter().map(map_op).collect::<Vec<_>>() {
+            if let Some(krate) = cached {
+                self.package_id2krate.insert(package_id, Box::new(krate));
+                continue;
             }
             to_be_computed.push(package_id);
         }
 
         // The ones that are still missing need to be computed.
-        let results = batch_compute_crate_docs(&self.1, to_be_computed.into_iter())?;
+        let results = batch_compute_crate_docs(&self.package_graph, to_be_computed.into_iter())?;
 
         for (package_id, krate) in results {
             let krate =
@@ -113,8 +187,8 @@ impl CrateCollection {
                 })?;
 
             // Let's make sure to store them in the on-disk cache for next time.
-            let cache_key = RustdocCacheKey::new(&package_id, &self.1);
-            if let Err(e) = self.2.insert(&cache_key, &krate) {
+            let cache_key = RustdocCacheKey::new(&package_id, &self.package_graph);
+            if let Err(e) = self.disk_cache.insert(&cache_key, &krate) {
                 tracing::warn!(
                     error.msg = tracing::field::display(&e),
                     error.error_chain = tracing::field::debug(&e),
@@ -122,7 +196,8 @@ impl CrateCollection {
                     "Failed to store the computed JSON docs in the on-disk cache",
                 );
             }
-            self.0.insert(package_id.to_owned(), Box::new(krate));
+            self.package_id2krate
+                .insert(package_id.to_owned(), Box::new(krate));
         }
 
         Ok(())
@@ -135,16 +210,19 @@ impl CrateCollection {
         &self,
         package_id: &PackageId,
     ) -> Result<&Crate, CannotGetCrateData> {
+        self.access_log.insert(package_id.to_owned(), Box::new(()));
+
         // First check if we already have the crate docs in the in-memory cache.
         if let Some(krate) = self.get_crate_by_package_id(package_id) {
             return Ok(krate);
         }
 
         // If not, let's try to retrieve them from the on-disk cache.
-        let cache_key = RustdocCacheKey::new(package_id, &self.1);
-        match self.2.get(&cache_key) {
+        let cache_key = RustdocCacheKey::new(package_id, &self.package_graph);
+        match self.disk_cache.get(&cache_key) {
             Ok(Some(krate)) => {
-                self.0.insert(package_id.to_owned(), Box::new(krate));
+                self.package_id2krate
+                    .insert(package_id.to_owned(), Box::new(krate));
                 return Ok(self.get_crate_by_package_id(package_id).unwrap());
             }
             Err(e) => {
@@ -159,7 +237,7 @@ impl CrateCollection {
         }
 
         // If we don't have them in the on-disk cache, we need to compute them.
-        let krate = compute_crate_docs(&self.1, &package_id)?;
+        let krate = compute_crate_docs(&self.package_graph, &package_id)?;
         let krate =
             Crate::new(self, krate, package_id.to_owned()).map_err(|e| CannotGetCrateData {
                 package_spec: package_id.to_string(),
@@ -167,7 +245,7 @@ impl CrateCollection {
             })?;
 
         // Let's make sure to store them in the on-disk cache for next time.
-        if let Err(e) = self.2.insert(&cache_key, &krate) {
+        if let Err(e) = self.disk_cache.insert(&cache_key, &krate) {
             tracing::warn!(
                 error.msg = tracing::field::display(&e),
                 error.error_chain = tracing::field::debug(&e),
@@ -175,7 +253,8 @@ impl CrateCollection {
                 "Failed to store the computed JSON docs in the on-disk cache",
             );
         }
-        self.0.insert(package_id.to_owned(), Box::new(krate));
+        self.package_id2krate
+            .insert(package_id.to_owned(), Box::new(krate));
         Ok(self.get_crate_by_package_id(package_id).unwrap())
     }
 
@@ -184,7 +263,7 @@ impl CrateCollection {
     ///
     /// It returns `None` if no documentation is found for the specified [`PackageId`].
     pub fn get_crate_by_package_id(&self, package_id: &PackageId) -> Option<&Crate> {
-        self.0.get(package_id)
+        self.package_id2krate.get(package_id)
     }
 
     /// Retrieve type information given its [`GlobalItemId`].
@@ -334,6 +413,23 @@ impl CrateCollection {
     }
 }
 
+impl Drop for CrateCollection {
+    fn drop(&mut self) {
+        let access_log = std::mem::take(&mut self.access_log);
+        let package_ids = access_log.into_map().into_keys().collect();
+        if let Err(e) = self
+            .disk_cache
+            .persist_access_log(&package_ids, &self.project_fingerprint)
+        {
+            tracing::warn!(
+                error.msg = tracing::field::display(&e),
+                error.error_chain = tracing::field::debug(&e),
+                "Failed to persist the crate access log to the on-disk cache",
+            );
+        }
+    }
+}
+
 /// The output of [`CrateCollection::get_item_by_resolved_path`].
 ///
 /// If the path points to a "free-standing" item, `parent` is set to `None`.
@@ -475,7 +571,7 @@ impl CrateCore {
             &self.package_id,
             &self.krate.external_crates,
             crate_id,
-            &collection.1,
+            &collection.package_graph,
         )
     }
 }
@@ -827,8 +923,8 @@ pub struct UnsupportedItemKind {
     pub kind: String,
 }
 
-impl Display for UnsupportedItemKind {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl std::fmt::Display for UnsupportedItemKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let path = self.path.join("::").replace(' ', "");
         write!(
             f,
@@ -843,8 +939,8 @@ pub struct UnknownItemPath {
     pub path: Vec<String>,
 }
 
-impl Display for UnknownItemPath {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl std::fmt::Display for UnknownItemPath {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let path = self.path.join("::").replace(' ', "");
         let krate = self.path.first().unwrap();
         write!(
