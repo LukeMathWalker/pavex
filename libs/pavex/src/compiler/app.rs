@@ -57,7 +57,7 @@ impl App {
     ///
     /// Many different things can go wrong during this process: this method tries its best to
     /// report all errors to the user, but it may not be able to do so in all cases.
-    pub fn build(bp: Blueprint) -> Result<Self, Vec<miette::Error>> {
+    pub fn build(bp: Blueprint, project_fingerprint: String) -> Result<Self, Vec<miette::Error>> {
         /// Exit early if there is at least one error.
         macro_rules! exit_on_errors {
             ($var:ident) => {
@@ -68,7 +68,7 @@ impl App {
         }
 
         let krate_collection =
-            CrateCollection::new().map_err(|e| vec![miette!(e)])?;
+            CrateCollection::new(project_fingerprint).map_err(|e| vec![miette!(e)])?;
         let package_graph = krate_collection.package_graph().to_owned();
         let mut diagnostics = vec![];
         let mut computation_db = ComputationDb::new();

@@ -35,8 +35,16 @@ convert_case = "0.6"
 textwrap = "0.16.0"
 once_cell = "1.17.1"
 toml_edit = { version = "0.19.8", features = ["serde"] }
-xdg-home = "1.0.0"
 semver = "1.0.17"
-rusqlite = { version = "0.29.0", features = ["bundled"] }
-bincode = "1"
+
+# Checksum
 sha2 = "0.10.6"
+
+# Sqlite cache
+xdg-home = "1.0.0"
+rusqlite = { version = "0.29.0", features = ["bundled"] }
+r2d2_sqlite = "0.22.0"
+r2d2 = "0.8"
+bincode = "1"
+rayon = "1.7"
+num_cpus = "1.15.0"

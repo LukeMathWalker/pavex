@@ -16,11 +16,13 @@ mod queries;
 mod utils;
 
 pub const STD_PACKAGE_ID_REPR: &str = "std";
+pub static STD_PACKAGE_ID: Lazy<PackageId> = Lazy::new(|| PackageId::new(STD_PACKAGE_ID_REPR));
 
 pub const CORE_PACKAGE_ID_REPR: &str = "core";
 pub static CORE_PACKAGE_ID: Lazy<PackageId> = Lazy::new(|| PackageId::new(CORE_PACKAGE_ID_REPR));
 
 pub const ALLOC_PACKAGE_ID_REPR: &str = "alloc";
+pub static ALLOC_PACKAGE_ID: Lazy<PackageId> = Lazy::new(|| PackageId::new(ALLOC_PACKAGE_ID_REPR));
 
 pub const TOOLCHAIN_CRATES: [&str; 3] = [
     STD_PACKAGE_ID_REPR,

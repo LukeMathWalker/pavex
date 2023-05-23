@@ -87,7 +87,6 @@ pub(super) fn compute_crate_docs(
     })
 }
 
-#[tracing::instrument(skip_all, level = "trace")]
 /// A batch version of [`compute_crate_docs`].
 ///
 /// This function is useful when you need to compute the documentation for multiple crates at once.
@@ -153,10 +152,18 @@ where
     for chunk in chunks {
         _compute_crate_docs(chunk.iter().map(|(_, spec)| spec))?;
         let target_directory = package_graph.workspace().target_directory().as_std_path();
-        for (package_id, package_spec) in chunk {
-            let krate = load_json_docs(target_directory, &package_spec)?;
-            results.insert(package_id, krate);
-        }
+
+        // It takes a while to deserialize the JSON output of `cargo rustdoc`, so we parallelize
+        // that part.
+        use rayon::prelude::{IntoParallelIterator, ParallelIterator};
+        for (package_id, krate) in chunk
+            .into_par_iter()
+            .map(|(package_id, package_spec)| {
+                let krate = load_json_docs(target_directory, &package_spec);
+                (package_id, krate)
+            }).collect::<Vec<_>>() {
+                results.insert(package_id, krate?);
+            }
     }
     Ok(results)
 }
