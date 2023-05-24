@@ -5,7 +5,7 @@ use std::process::Output;
 use ahash::HashMap;
 use anyhow::Context;
 use console::style;
-use fs::{copy_if_changed, persist_if_changed};
+use persist_if_changed::{copy_if_changed, persist_if_changed};
 use libtest_mimic::{Conclusion, Failed};
 use toml::toml;
 use walkdir::WalkDir;
@@ -15,7 +15,6 @@ pub use snapshot::print_changeset;
 
 use crate::snapshot::SnapshotTest;
 
-mod fs;
 mod snapshot;
 
 /// Return an iterator over the directories containing a UI test.

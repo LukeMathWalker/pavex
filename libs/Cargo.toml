@@ -1,2 +1,2 @@
 [workspace]
-members = ["./pavex*"]
+members = ["./pavex*", "persist_if_changed"]
