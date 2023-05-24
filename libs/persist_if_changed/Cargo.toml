@@ -1,0 +1,10 @@
+[package]
+name = "persist_if_changed"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tracing = "0.1"
+fs-err = "2.7"
+sha2 = "0.10"
+anyhow = "1"

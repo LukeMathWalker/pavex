@@ -36,9 +36,7 @@ textwrap = "0.16.0"
 once_cell = "1.17.1"
 toml_edit = { version = "0.19.8", features = ["serde"] }
 semver = "1.0.17"
-
-# Checksum
-sha2 = "0.10.6"
+persist_if_changed = { path = "../persist_if_changed" }
 
 # Sqlite cache
 xdg-home = "1.0.0"

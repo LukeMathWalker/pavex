@@ -1045,6 +1045,7 @@ dependencies = [
  "once_cell",
  "pathdiff",
  "pavex_builder",
+ "persist_if_changed",
  "petgraph",
  "prettyplease",
  "proc-macro2",
@@ -1057,7 +1058,6 @@ dependencies = [
  "semver",
  "serde",
  "serde_json",
- "sha2",
  "syn",
  "textwrap 0.16.0",
  "thiserror",
@@ -1163,6 +1163,7 @@ dependencies = [
  "itertools",
  "libtest-mimic",
  "miette",
+ "persist_if_changed",
  "serde",
  "serde_json",
  "sha2",
@@ -1177,6 +1178,16 @@ name = "percent-encoding"
 version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "478c572c3d73181ff3c2539045f6eb99e5491218eae919370993b890cdbdd98e"
+
+[[package]]
+name = "persist_if_changed"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "fs-err",
+ "sha2",
+ "tracing",
+]
 
 [[package]]
 name = "petgraph"
