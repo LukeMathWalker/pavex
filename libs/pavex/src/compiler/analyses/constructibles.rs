@@ -183,7 +183,11 @@ impl ConstructibleDb {
                             diagnostics,
                         )
                     } else {
-                        unreachable!()
+                        tracing::warn!(
+                            "Missing constructor for input type {:?} of component {:?}, but the component is not a user component.",
+                            input,
+                            component_id
+                        );
                     }
                 }
             }
@@ -204,7 +208,7 @@ impl ConstructibleDb {
         }
     }
 
-    /// `pavex` guarantees that there is at most one live instance for each singleton type.
+    /// Pavex guarantees that there is at most one live instance for each singleton type.
     ///
     /// If there are multiple constructors for the same singleton type, we end up in an ambiguous
     /// situation: which one do we use?

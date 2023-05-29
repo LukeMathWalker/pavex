@@ -5,8 +5,8 @@ use std::process::Output;
 use ahash::HashMap;
 use anyhow::Context;
 use console::style;
-use persist_if_changed::{copy_if_changed, persist_if_changed};
 use libtest_mimic::{Conclusion, Failed};
+use persist_if_changed::{copy_if_changed, persist_if_changed};
 use toml::toml;
 use walkdir::WalkDir;
 
@@ -100,7 +100,7 @@ struct TestConfig {
     #[serde(default)]
     ephemeral_dependencies: HashMap<String, EphemeralDependency>,
     /// Crates that should be listed as dependencies of the package under the test, in addition to
-    /// `pavex` itself.
+    /// Pavex itself.
     #[serde(default)]
     dependencies: toml::value::Table,
     /// Crates that should be listed as dev dependencies of the test package.
@@ -138,7 +138,7 @@ fn default_ephemeral_version() -> String {
 struct TestExpectations {
     /// By default, we expect code generation (i.e. `app.build()`) to succeed.
     /// If set to `fail`, the test runner will look for a snapshot of the expected failure message
-    /// returned by `pavex` to the user.
+    /// returned by Pavex to the user.
     #[serde(default = "ExpectedOutcome::pass")]
     codegen: ExpectedOutcome,
 }

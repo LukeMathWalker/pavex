@@ -37,7 +37,7 @@ use crate::body::BoxBody;
 
 /// Type alias for `http::Response`.
 /// The generic parameter for the body type defaults to `BoxBody`, the most common body
-/// type used in `pavex`.
+/// type used in Pavex.
 pub type Response<T = BoxBody> = http::Response<T>;
 
 /// Convert a type into an HTTP response.

@@ -91,16 +91,16 @@ impl CrateCollection {
         &self.package_graph
     }
 
-    /// Bootstrap the crate collection by either fetching from the cache or computing 
-    /// on the fly the documentation of all the crates whose JSON docs are likely to be 
+    /// Bootstrap the crate collection by either fetching from the cache or computing
+    /// on the fly the documentation of all the crates whose JSON docs are likely to be
     /// needed to process the application blueprint.
-    /// 
+    ///
     /// We rely on:
-    /// 
-    /// - Data from the previous run of `pavex` for this project, if available (the access log);
+    ///
+    /// - Data from the previous run of Pavex for this project, if available (the access log);
     /// - Heuristics (toolchain crates);
     /// - Data from the raw blueprint before any expensive processing has taken place (extra package ids).
-    /// 
+    ///
     /// This method should only be called once.
     #[tracing::instrument(skip_all, level = "trace")]
     pub fn bootstrap_collection<I>(&self, extra_package_ids: I) -> Result<(), anyhow::Error>
@@ -113,7 +113,7 @@ impl CrateCollection {
             .chain(extra_package_ids)
             // Some package ids may not longer be part of the package graph,
             // e.g. because the lockfile has been updated to use more recent versions
-            // or they have been removed as dependencies from one or more of the Cargo.toml 
+            // or they have been removed as dependencies from one or more of the Cargo.toml
             // manifests.
             .filter(|id| self.package_graph.metadata(id).is_ok())
             // We always need the documentation for the toolchain crates.

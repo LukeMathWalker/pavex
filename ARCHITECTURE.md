@@ -1,11 +1,11 @@
 # Architecture
 
-This document gives you a bird-eye view of the architecture of `pavex`.  
+This document gives you a bird-eye view of the architecture of Pavex.  
 This is an ideal starting point if you want to contribute or gain a deeper understanding of its inner workings.
 
-## How does `pavex` work?
+## How does Pavex work?
 
-A `pavex` project goes through three stages in order to generate runnable application code:
+A Pavex project goes through three stages in order to generate runnable application code:
 
 1. Build an instance of `Blueprint`, a representation of the desired application behaviour;
 2. Serialize `Blueprint`, either to a file or in-memory;
@@ -41,7 +41,7 @@ flowchart TB
     C -->|Consumed by| tests[Black-box tests]
 ```
 
-As you can see in the diagram, the `pavex` project is actually underpinned by three user-facing components:
+As you can see in the diagram, the Pavex project is actually underpinned by three user-facing components:
 
 - `pavex_builder`, where `Blueprint` lives;
 - `pavex_runtime`, the "typical" web framework;
@@ -111,11 +111,11 @@ For each type constructor, the developer must specify the lifecycle of its outpu
 All this information is encoded into a `Blueprint` and passed as input to `pavex_cli` to generate the application's
 source code.
 
-### `pavex_cli` and `pavex`
+### `pavex_cli` and Pavex
 
 `pavex_cli` is our transpiler, the component in charge of transforming a `Blueprint` into a ready-to-run web
 server.  
-It is packaged as a binary, a thin wrapper over the (internal) `pavex` crate.
+It is packaged as a binary, a thin wrapper over the (internal) Pavex crate.
 
 The transpiler is where most of the complexity lives.  
 It must generate:
@@ -197,7 +197,7 @@ cargo +nightly rustdoc -p library_name --lib -- -Zunstable-options -wjson
 ```
 
 You can get a structured representation of all the types in `library_name`.  
-This is what `pavex` does: for each registered route handler and constructor, it builds the documentation for the crate
+This is what Pavex does: for each registered route handler and constructor, it builds the documentation for the crate
 it belongs to and extracts the relevant bits of information from `rustdoc`'s output.
 
 If you are going through the source code, this is the process that converts a `RawCallableIdentifiers` into a `Callable`
@@ -279,7 +279,7 @@ flowchart TB
 You can spot how `reqwest::Client` is now fetched from `app::ServerState` instead of being built from scratch
 from `app::Config`.
 
-Armed with this representation, `pavex` can now generate the source code for the application library crate.  
+Armed with this representation, Pavex can now generate the source code for the application library crate.  
 Using the same example, assuming the application has a single route, we get the following code:
 
 ```rust
@@ -334,7 +334,7 @@ pub fn route_handler_0(
 
 ## Issues, limitations and risks
 
-This section focuses on issues, limitations and risks that sit outside the `pavex` project itself: obstacles that we
+This section focuses on issues, limitations and risks that sit outside the Pavex project itself: obstacles that we
 cannot remove on our own, but require coordination/collaboration with other projects.
 
 Each risk is classified over two dimensions: impact and resolution likelihood.
@@ -349,13 +349,13 @@ For resolution likelihood, we use the following emojis:
 - 🔴, unlikely to be remediated on a medium time-horizon (>6 months, <2 years);
 - 🟡, likely to be remediated on a medium time-horizon.
 
-We do not care about the short term since `pavex` itself still requires tons of work to be viable and it's unlikely to
+We do not care about the short term since Pavex itself still requires tons of work to be viable and it's unlikely to
 be ready for prime time in less than 6 months.
 
 ### `rustdoc`'s JSON output is unstable (🟡😢)
 
 `rustdoc`'s JSON output requires the `nightly` compiler.  
-This is not a showstopper for production usage of `pavex` since `nightly` is never used to compile
+This is not a showstopper for production usage of Pavex since `nightly` is never used to compile
 any code that is actually run at runtime, it is only used by the "reflection engine". Nonetheless, `nightly` can cause
 breakage and unnecessary disruption due to its instability. `rustdoc`'s JSON output itself is quickly evolving,
 including breaking changes that we must keep up with.
@@ -384,7 +384,7 @@ _Remediations_:
 
 Due to `cargo`'s very coarse locking scheme, it is not possible to invoke `cargo` itself from a `build.rs` script (
 see [tracking issue](https://github.com/rust-lang/cargo/issues/6412)).  
-`pavex` relies on `cargo` commands to:
+Pavex relies on `cargo` commands to:
 
 - build `rustdoc`'s JSON output for local and third-party crates;
 - analyze the dependency tree (via `guppy` which in turn relies on `cargo metadata`);
@@ -394,4 +394,4 @@ There seems to be no active effort to remove this limitation.
 
 _Remediations_:
 
-`pavex` will rely on [`cargo-px`](https://github.com/LukeMathWalker/cargo-px) for code generation.
+Pavex will rely on [`cargo-px`](https://github.com/LukeMathWalker/cargo-px) for code generation.

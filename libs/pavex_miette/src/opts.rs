@@ -269,7 +269,7 @@ impl PavexMietteHandlerOpts {
 A [`ReportHandler`] that displays a given [`Report`](miette::Report) in a
 quasi-graphical way, using terminal colors, unicode drawing characters, and
 other such things.
-This is the reporter used by `pavex`.
+This is the reporter used by Pavex.
  */
 #[allow(missing_debug_implementations)]
 pub struct PavexMietteHandler {

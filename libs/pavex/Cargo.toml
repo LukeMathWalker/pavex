@@ -9,7 +9,7 @@ vergen = { version = "8.0.0", features = [ "build", "git", "gitcl" ]}
 [dependencies]
 pavex_builder = { path = "../pavex_builder" }
 syn = { version = "2", features = ["full", "extra-traits", "visit"] }
-rustdoc-types = "0.20.0"
+rustdoc-types = "0.22.0"
 serde_json = "1"
 anyhow = "1.0.58"
 fs-err = "2.7.0"

@@ -1,6 +1,6 @@
 # Skeleton example
 
-A barebone example that showcases the _mechanics_ of `pavex`.  
+A barebone example that showcases the _mechanics_ of Pavex.  
 
 `app_blueprint` provides two entrypoints:
 

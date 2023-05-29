@@ -3,10 +3,9 @@ use std::io::{BufWriter, Write};
 use std::ops::Deref;
 use std::path::Path;
 
-use ahash::HashSet;
+use ahash::{HashMap, HashMapExt};
 use bimap::BiHashMap;
 use guppy::graph::PackageGraph;
-use guppy::PackageId;
 use indexmap::{IndexMap, IndexSet};
 use miette::miette;
 use proc_macro2::Ident;
@@ -32,7 +31,7 @@ use crate::compiler::{codegen, route_parameter_validation};
 use crate::diagnostic;
 use crate::diagnostic::{CompilerDiagnostic, LocationExt, SourceSpanExt};
 use crate::language::ResolvedType;
-use crate::rustdoc::{CrateCollection, TOOLCHAIN_CRATES};
+use crate::rustdoc::CrateCollection;
 
 pub(crate) const GENERATED_APP_PACKAGE_ID: &str = "crate";
 
@@ -44,7 +43,7 @@ pub struct App {
     application_state_call_graph: ApplicationStateCallGraph,
     framework_item_db: FrameworkItemDb,
     runtime_singleton_bindings: BiHashMap<Ident, ResolvedType>,
-    codegen_types: HashSet<ResolvedType>,
+    codegen_deps: HashMap<String, guppy::PackageId>,
     component_db: ComponentDb,
     computation_db: ComputationDb,
 }
@@ -153,7 +152,7 @@ impl App {
             // Assign a unique name to each singleton
             .map(|(i, (type_, _))| (format_ident!("s{}", i), type_.to_owned()))
             .collect();
-        let codegen_types = codegen_types(&package_graph, &krate_collection);
+        let codegen_deps = codegen_deps(&package_graph);
         let Ok(application_state_call_graph) = application_state_call_graph(
             &runtime_singleton_bindings,
             &mut computation_db,
@@ -174,7 +173,7 @@ impl App {
             application_state_call_graph,
             framework_item_db,
             runtime_singleton_bindings,
-            codegen_types,
+            codegen_deps,
         })
     }
 
@@ -184,31 +183,22 @@ impl App {
     #[tracing::instrument(skip_all, level=tracing::Level::INFO)]
     pub fn codegen(&self) -> Result<GeneratedApp, anyhow::Error> {
         let framework_bindings = self.framework_item_db.bindings();
-        let (cargo_toml, mut package_ids2deps) = codegen::codegen_manifest(
+        let (cargo_toml, package_ids2deps) = codegen::codegen_manifest(
             &self.package_graph,
             self.handler_call_graphs.values().map(|cg| &cg.call_graph),
             &self.application_state_call_graph.call_graph.call_graph,
             &framework_bindings,
-            &self.codegen_types,
+            &self.codegen_deps,
             &self.component_db,
             &self.computation_db,
         );
-        let generated_app_package_id = PackageId::new(GENERATED_APP_PACKAGE_ID);
-        let toolchain_package_ids = TOOLCHAIN_CRATES
-            .iter()
-            .map(|p| PackageId::new(*p))
-            .collect::<Vec<_>>();
-        for package_id in &toolchain_package_ids {
-            package_ids2deps.insert(package_id.clone(), package_id.repr().into());
-        }
-        package_ids2deps.insert(generated_app_package_id, "crate".into());
-
         let lib_rs = codegen::codegen_app(
             &self.handler_call_graphs,
             &self.application_state_call_graph,
             &framework_bindings,
             &package_ids2deps,
             &self.runtime_singleton_bindings,
+            &self.codegen_deps,
             &self.component_db,
             &self.computation_db,
         )?;
@@ -222,25 +212,15 @@ impl App {
     /// A representation of an `App` geared towards debugging and testing.
     pub fn diagnostic_representation(&self) -> AppDiagnostics {
         let mut handler_graphs = IndexMap::new();
-        let (_, mut package_ids2deps) = codegen::codegen_manifest(
+        let (_, package_ids2deps) = codegen::codegen_manifest(
             &self.package_graph,
             self.handler_call_graphs.values().map(|c| &c.call_graph),
             &self.application_state_call_graph.call_graph.call_graph,
             &self.framework_item_db.bindings(),
-            &self.codegen_types,
+            &self.codegen_deps,
             &self.component_db,
             &self.computation_db,
         );
-        // TODO: dry this up in one place.
-        let generated_app_package_id = PackageId::new(GENERATED_APP_PACKAGE_ID);
-        let toolchain_package_ids = TOOLCHAIN_CRATES
-            .iter()
-            .map(|p| PackageId::new(*p))
-            .collect::<Vec<_>>();
-        for package_id in &toolchain_package_ids {
-            package_ids2deps.insert(package_id.clone(), package_id.repr().into());
-        }
-        package_ids2deps.insert(generated_app_package_id, "crate".into());
 
         for (router_key, handler_call_graph) in &self.handler_call_graphs {
             let method = router_key
@@ -393,18 +373,41 @@ fn get_required_singleton_types<'a>(
     singletons_to_be_built
 }
 
-/// Return the set of types that will be used in the generated code to build a functional
-/// server scaffolding.  
-fn codegen_types(
-    package_graph: &PackageGraph,
-    krate_collection: &CrateCollection,
-) -> HashSet<ResolvedType> {
-    let error = process_framework_path("pavex_runtime::Error", package_graph, krate_collection);
-    HashSet::from_iter([error])
+/// Return the set of dependencies that must be used directly by the generated code to build the
+/// server scaffolding.
+///
+/// These lookups should never fail because `anyhow` and `http` are direct dependencies
+/// of `pavex_builder`, which must have been used in the first place to build the `Blueprint`.
+fn codegen_deps(package_graph: &PackageGraph) -> HashMap<String, guppy::PackageId> {
+    let mut name2id = HashMap::new();
+
+    let pavex_runtime = package_graph
+        .packages()
+        .find(|p| p.name() == "pavex_runtime" && p.version().major == 0 && p.version().minor == 1)
+        // TODO: Return a user diagnostic in case of a version mismatch between the
+        //  CLI and the dependencies of the project (i.e. the `pavex_runtime` and `pavex_builder`
+        //  versions).
+        .expect("Expected to find `pavex_runtime@0.1` in the package graph, but it was not there.")
+        .id();
+    let http = package_graph
+        .packages()
+        .find(|p| p.name() == "http" && p.version().major == 0 && p.version().minor == 2)
+        .expect("Expected to find `http@0.2` in the package graph, but it was not there.")
+        .id();
+    let hyper = package_graph
+        .packages()
+        .find(|p| p.name() == "hyper" && p.version().major == 0 && p.version().minor == 14)
+        .expect("Expected to find `hyper@0.14` in the package graph, but it was not there.")
+        .id();
+
+    name2id.insert("http".to_string(), http.clone());
+    name2id.insert("pavex_runtime".to_string(), pavex_runtime.clone());
+    name2id.insert("hyper".to_string(), hyper.clone());
+    name2id
 }
 
 /// Verify that all singletons needed at runtime implement `Send`, `Sync` and `Clone`.
-/// This is required since `pavex` runs on a multi-threaded `tokio` runtime.
+/// This is required since Pavex runs on a multi-threaded `tokio` runtime.
 #[tracing::instrument(name = "Verify trait implementations for singletons", skip_all)]
 fn verify_singletons(
     runtime_singletons: &IndexSet<(ResolvedType, ComponentId)>,
@@ -445,7 +448,7 @@ fn verify_singletons(
         let label = diagnostic::get_f_macro_invocation_span(&source, location)
             .map(|s| s.labeled(format!("The {component_kind} was registered here")));
         let help = "All singletons must implement the `Send`, `Sync` and `Clone` traits.\n \
-                `pavex` runs on a multi-threaded HTTP server and singletons must be shared \
+                Pavex runs on a multi-threaded HTTP server and singletons must be shared \
                  across all worker threads."
             .into();
         let diagnostic = CompilerDiagnostic::builder(source, e)

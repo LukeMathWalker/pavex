@@ -6,7 +6,7 @@ use crate::reflection::{Location, RawCallable, RawCallableIdentifiers};
 use crate::router::{MethodGuard, Route};
 
 #[derive(serde::Serialize, serde::Deserialize)]
-/// The starting point for building an application with `pavex`.
+/// The starting point for building an application with Pavex.
 ///
 /// A blueprint defines the runtime behaviour of your application.  
 /// It captures three types of information:
@@ -16,7 +16,7 @@ use crate::router::{MethodGuard, Route};
 /// - error handlers, via [`Constructor::error_handler`].
 ///
 /// This information is then serialized via [`Blueprint::persist`] and passed as input to
-/// `pavex`'s CLI to generate the application's source code.
+/// Pavex's CLI to generate the application's source code.
 ///
 /// [`Constructor::error_handler`]: Constructor::error_handler
 pub struct Blueprint {
@@ -55,9 +55,9 @@ impl Blueprint {
     ///
     /// ```rust
     /// use pavex_builder::{Blueprint, f, router::GET};
-    /// use pavex_runtime::{http::Request, hyper::Body, response::Response};
+    /// use pavex_runtime::{request::RequestHead, response::Response};
     ///
-    /// fn my_handler(request: Request<Body>) -> Response {
+    /// fn my_handler(request_head: &RequestHead) -> Response {
     ///     // [...]
     ///     # todo!()
     /// }
@@ -73,8 +73,8 @@ impl Blueprint {
     ///
     /// ```rust
     /// use pavex_builder::{Blueprint, f, router::{GET, POST, PUT, DELETE, PATCH}};
-    /// # use pavex_runtime::{http::Request, hyper::Body, response::Response};
-    /// # fn my_handler(request: Request<Body>) -> Response { todo!() }
+    /// # use pavex_runtime::{request::RequestHead, response::Response};
+    /// # fn my_handler(request: &RequestHead) -> Response { todo!() }
     /// # fn main() {
     /// # let mut bp = Blueprint::new();
     ///
@@ -95,8 +95,8 @@ impl Blueprint {
     /// ```rust
     /// use pavex_builder::{Blueprint, f, router::{MethodGuard, POST, PATCH}};
     /// use pavex_runtime::http::Method;
-    /// # use pavex_runtime::{http::Request, hyper::Body, response::Response};
-    /// # fn my_handler(request: Request<Body>) -> Response { todo!() }
+    /// # use pavex_runtime::{request::RequestHead, response::Response};
+    /// # fn my_handler(request: &RequestHead) -> Response { todo!() }
     /// # fn main() {
     /// # let mut bp = Blueprint::new();
     ///
@@ -114,8 +114,8 @@ impl Blueprint {
     ///
     /// ```rust
     /// use pavex_builder::{Blueprint, f, router::ANY};
-    /// # use pavex_runtime::{http::Request, hyper::Body, response::Response};
-    /// # fn my_handler(request: Request<Body>) -> Response { todo!() }
+    /// # use pavex_runtime::{request::RequestHead, response::Response};
+    /// # fn my_handler(request: RequestHead) -> Response { todo!() }
     /// # fn main() {
     /// # let mut bp = Blueprint::new();
     ///
@@ -135,8 +135,8 @@ impl Blueprint {
     ///
     /// ```rust
     /// use pavex_builder::{Blueprint, f, router::GET};
-    /// # use pavex_runtime::{http::Request, hyper::Body, response::Response};
-    /// # fn get_home(request: Request<Body>) -> Response { todo!() }
+    /// # use pavex_runtime::{request::RequestHead, response::Response};
+    /// # fn get_home(request: RequestHead) -> Response { todo!() }
     /// # fn main() {
     /// # let mut bp = Blueprint::new();
     ///
@@ -166,13 +166,13 @@ impl Blueprint {
     /// }
     /// ```
     ///
-    /// `pavex` supports **catch-all** parameters as well: they start with `*` and match
+    /// Pavex supports **catch-all** parameters as well: they start with `*` and match
     /// everything after the `/`.
     ///
     /// ```rust
     /// use pavex_builder::{Blueprint, f, router::GET};
-    /// # use pavex_runtime::{http::Request, hyper::Body, response::Response};
-    /// # fn get_town(request: Request<Body>) -> Response { todo!() }
+    /// # use pavex_runtime::{request::RequestHead, response::Response};
+    /// # fn get_town(request: RequestHead) -> Response { todo!() }
     /// # fn main() {
     /// # let mut bp = Blueprint::new();
     ///
@@ -313,7 +313,7 @@ impl Blueprint {
     ///
     /// Since we are **nesting** the `user_bp` blueprint, the `get_session` constructor will only
     /// be available to the routes declared in the `user_bp` blueprint.  
-    /// If a route declared in `home_bp` tries to inject a `Session`, `pavex` will report an error
+    /// If a route declared in `home_bp` tries to inject a `Session`, Pavex will report an error
     /// at compile-time, complaining that there is no registered constructor for `Session`.
     /// In other words, all constructors declared against the `user_bp` blueprint are **private**
     /// and **isolated** from the rest of the application.
@@ -361,7 +361,7 @@ impl Blueprint {
     ///
     /// There is one exception to the precedence rule: constructors for singletons (i.e.
     /// using [`Lifecycle::Singleton`]).  
-    /// `pavex` guarantees that there will be only one instance of a singleton type for the entire
+    /// Pavex guarantees that there will be only one instance of a singleton type for the entire
     /// lifecycle of the application. What should happen if two different constructors are registered for
     /// the same `Singleton` type by two nested blueprints that share the same parent?  
     /// We can't honor both constructors without ending up with two different instances of the same
@@ -371,7 +371,7 @@ impl Blueprint {
     /// behaviour? Does the user expect the same singleton instance to be injected in both blueprints?
     /// Or does the user expect two different singleton instances to be injected in each nested blueprint?
     ///
-    /// To avoid this ambiguity, `pavex` takes a conservative approach: a singleton constructor
+    /// To avoid this ambiguity, Pavex takes a conservative approach: a singleton constructor
     /// must be registered **exactly once** for each type.  
     /// If multiple nested blueprints need access to the singleton, the constructor must be
     /// registered against a common parent blueprint—the root blueprint, if necessary.
@@ -397,7 +397,7 @@ impl Blueprint {
 }
 
 /// Methods to serialize and deserialize a [`Blueprint`].  
-/// These are used to pass the blueprint data to `pavex`'s CLI.
+/// These are used to pass the blueprint data to Pavex's CLI.
 impl Blueprint {
     /// Serialize the [`Blueprint`] to a file in RON format.
     pub fn persist(&self, filepath: &std::path::Path) -> Result<(), anyhow::Error> {

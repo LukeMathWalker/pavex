@@ -71,12 +71,12 @@ impl GenerateBuilder {
         Ok(self.cmd)
     }
 
-    /// Set the path to the file that `pavex` will use to serialize diagnostic
+    /// Set the path to the file that Pavex will use to serialize diagnostic
     /// information about the application.
     ///
     /// Diagnostics are primarily used for debugging the generator itself.
     ///
-    /// If this is not set, `pavex` will not persist any diagnostic information.
+    /// If this is not set, Pavex will not persist any diagnostic information.
     pub fn diagnostics_path(mut self, path: PathBuf) -> Self {
         self.diagnostics_path = Some(path);
         self

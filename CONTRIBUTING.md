@@ -17,7 +17,7 @@ You are more than free to play around with the code though! The instructions bel
 cargo nextest run
 ```
 
-We primarily rely on end-to-end testing to check that `pavex`'s behaviour meets our expectations.  
+We primarily rely on end-to-end testing to check that Pavex's behaviour meets our expectations.  
 All tests are located in `libs/pavex_cli/tests` and are launched using a custom test runner that you can find in `libs/pavex_test_runner`.
 
 In a nutshell:
@@ -30,7 +30,7 @@ In a nutshell:
 
 ## Test runtime environment
 
-For each test, a runtime environment is created as a sub-folder of `ui_test_envs`, which is in turn generated at the root of `pavex`'s workspace.  
+For each test, a runtime environment is created as a sub-folder of `ui_test_envs`, which is in turn generated at the root of Pavex's workspace.  
 We use a consistent folder to leverage `cargo` caching and speed up successive test runs. It also allows you to easily inspect the artifacts generated during the test run.  
 If you suspect that something funny is going on due to cross-run contamination, delete the `ui_test_envs` folder to get a clean slate.
 

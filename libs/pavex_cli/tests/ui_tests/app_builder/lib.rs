@@ -6,7 +6,7 @@ use pavex_runtime::response::Response;
 pub struct Logger;
 
 pub async fn extract_path(
-    _inner: pavex_runtime::http::Request<pavex_runtime::hyper::body::Body>,
+    _inner: pavex_runtime::request::RequestHead,
 ) -> Result<PathBuf, ExtractPathError<String>> {
     todo!()
 }

@@ -30,7 +30,7 @@ use super::RawRouteParams;
 ///         f!(pavex_runtime::extract::path::RouteParams::extract),
 ///         Lifecycle::RequestScoped,
 ///     ).error_handler(
-///         f!(pavex_runtime::extract::path::ExtractRouteParamsError::into_response)
+///         f!(pavex_runtime::extract::path::errors::ExtractRouteParamsError::into_response)
 ///     );
 ///     // Register a route with a route parameter, `:home_id`.
 ///     bp.route(GET, "/home/:home_id", f!(crate::get_home));
@@ -95,7 +95,7 @@ use super::RawRouteParams;
 ///
 /// # Unsupported types
 ///
-/// `pavex` wants to enable local reasoning: it should be easy to understand what
+/// Pavex wants to enable local reasoning: it should be easy to understand what
 /// each extracted route parameter represents.  
 /// Plain structs with named fields are ideal in this regard: by looking at the field name you can
 /// immediately understand _which_ route parameter is being extracted.  
@@ -128,7 +128,7 @@ use super::RawRouteParams;
 /// }
 /// ```
 ///
-/// For this reason, `pavex` does not support the following types as `T` in `RouteParams<T>`:
+/// For this reason, Pavex does not support the following types as `T` in `RouteParams<T>`:
 ///
 /// - tuples, e.g. `(u32, String)`;
 /// - tuple structs, e.g. `struct HomeId(u32, String)`;
@@ -139,7 +139,7 @@ use super::RawRouteParams;
 ///
 /// # Additional compile-time checks
 ///
-///`pavex` is able to perform additional checks at compile-time if you use the
+///Pavex is able to perform additional checks at compile-time if you use the
 /// [`RouteParams`](macro@crate::extract::route::RouteParams) macro instead
 /// of deriving [`serde::Deserialize`] on your own.
 ///
@@ -163,7 +163,7 @@ use super::RawRouteParams;
 /// # }
 /// ```
 ///
-/// In particular, `pavex` becomes able to:
+/// In particular, Pavex becomes able to:
 ///
 /// - verify that for each field in the struct there is a corresponding route parameter
 ///   in the route's path.
@@ -179,11 +179,11 @@ use super::RawRouteParams;
 ///
 /// If you want to squeeze out the last bit of performance from your application, you can try to
 /// avoid memory allocations when extracting string-like route parameters.  
-/// `pavex` supports this use case—you can borrow from the request's URL instead of cloning.
+/// Pavex supports this use case—you can borrow from the request's URL instead of cloning.
 ///
 /// It is not always possible to avoid allocations, though.  
 /// In particular, if the route parameter is a URL-encoded string (e.g. `John%20Doe`, the URL-encoded
-/// version of `John Doe`) `pavex` must allocate a new `String` to store the decoded version.
+/// version of `John Doe`) Pavex must allocate a new `String` to store the decoded version.
 ///
 /// Given the above, we recommend using `Cow<'_, str>` as field type: it borrows from the request's
 /// URL if possible, and allocates a new `String` only if strictly necessary.
@@ -203,7 +203,7 @@ use super::RawRouteParams;
 /// ```
 ///
 /// Using `&str` instead of `Cow<'_, str>` would result in a runtime error if the route parameter
-/// is URL-encoded. It is therefore discouraged and `pavex` will emit an error at compile-time
+/// is URL-encoded. It is therefore discouraged and Pavex will emit an error at compile-time
 /// if it detects this pattern.
 ///
 /// # Working with raw route parameters
@@ -225,7 +225,7 @@ pub struct RouteParams<T>(
 impl<T> RouteParams<T> {
     /// The default constructor for [`RouteParams`].
     ///
-    /// If the extraction fails, an [`ExtractRouteParamsError`] returned.
+    /// If the extraction fails, an [`ExtractRouteParamsError`] is returned.
     pub fn extract<'server, 'request>(
         params: RawRouteParams<'server, 'request>,
     ) -> Result<Self, ExtractRouteParamsError>

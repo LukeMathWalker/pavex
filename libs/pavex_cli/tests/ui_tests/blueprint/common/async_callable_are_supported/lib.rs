@@ -4,9 +4,7 @@ use pavex_builder::{constructor::Lifecycle, f, router::GET, Blueprint};
 
 pub struct Logger;
 
-pub async fn extract_path(
-    _inner: pavex_runtime::http::Request<pavex_runtime::hyper::body::Body>,
-) -> PathBuf {
+pub async fn extract_path(_inner: pavex_runtime::request::RequestHead) -> PathBuf {
     todo!()
 }
 

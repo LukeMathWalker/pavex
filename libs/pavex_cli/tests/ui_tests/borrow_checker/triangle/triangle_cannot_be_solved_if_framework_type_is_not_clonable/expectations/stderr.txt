@@ -1,12 +1,12 @@
 [31m[1mERROR[0m[39m: 
   [31m×[0m I can't generate code that will pass the borrow checker *and* match the
   [31m│[0m instructions in your blueprint.
-  [31m│[0m `app::handler` wants to borrow `http::Request<hyper::Body>` but `app::b`,
-  [31m│[0m which is invoked earlier on, consumes `http::Request<hyper::Body>` by
-  [31m│[0m value.
-  [31m│[0m Since I'm not allowed to clone `http::Request<hyper::Body>`, I can't
-  [31m│[0m resolve this conflict.
+  [31m│[0m `app::handler` wants to borrow `pavex_runtime::request::RequestHead`
+  [31m│[0m but `app::b`, which is invoked earlier on, consumes
+  [31m│[0m `pavex_runtime::request::RequestHead` by value.
+  [31m│[0m Since I'm not allowed to clone `pavex_runtime::request::RequestHead`, I
+  [31m│[0m can't resolve this conflict.
   [31m│[0m
   [31m│[0m   [36mhelp:[0m Considering changing the signature of `app::b`.
-  [31m│[0m         It takes `http::Request<hyper::Body>` by value. Would a shared
-  [31m│[0m         reference, `&http::Request<hyper::Body>`, be enough?
+  [31m│[0m         It takes `pavex_runtime::request::RequestHead` by value. Would a
+  [31m│[0m         shared reference, `&pavex_runtime::request::RequestHead`, be enough?

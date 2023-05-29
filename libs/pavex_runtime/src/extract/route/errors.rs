@@ -9,7 +9,7 @@ use crate::response::Response;
 ///
 /// See [`RouteParams::extract`] and the documentation of each error variant for more details.
 ///
-/// `pavex` provides [`ExtractRouteParamsError::into_response`] as the default error handler for
+/// Pavex provides [`ExtractRouteParamsError::into_response`] as the default error handler for
 /// this failure.
 ///
 /// [`RouteParams::extract`]: crate::extract::route::RouteParams::extract
@@ -31,8 +31,8 @@ pub enum ExtractRouteParamsError {
 /// URL parameters must be percent-encoded whenever they contain characters that are not
 /// URL safe—e.g. whitespaces.
 ///
-/// `pavex` automatically percent-decodes URL parameters before trying to deserialize them
-/// in `Path<T>`.
+/// Pavex automatically percent-decodes URL parameters before trying to deserialize them
+/// in [`RouteParams<T>`].
 /// This error is returned whenever the percent-decoding step fails—i.e. the decoded data is not a
 /// valid UTF8 string.
 ///
@@ -40,11 +40,13 @@ pub enum ExtractRouteParamsError {
 ///
 /// One of our routes is `/address/:address_id`.
 /// We receive a request with `/address/the%20street` as path—`address_id` is set to
-/// `the%20street` and `pavex` automatically decodes it into `the street`.
+/// `the%20street` and Pavex automatically decodes it into `the street`.
 ///
 /// We could also receive a request using `/address/dirty%DE~%C7%1FY` as path—`address_id`, when
 /// decoded, is a sequence of bytes that cannot be interpreted as a well-formed UTF8 string.
 /// This error is then returned.
+///
+/// [`RouteParams<T>`]: struct@crate::extract::route::RouteParams
 #[error(
     "`{invalid_raw_segment}` cannot be used as `{invalid_key}` \
 since it is not a well-formed UTF8 string when percent-decoded"
@@ -60,8 +62,10 @@ impl ExtractRouteParamsError {
     /// Convert an [`ExtractRouteParamsError`] into an HTTP response.
     ///
     /// It returns a `500 Internal Server Error` to the caller if the failure was caused by a
-    /// programmer error (e.g. `T` in `Path<T>` is an unsupported type).  
+    /// programmer error (e.g. `T` in [`RouteParams<T>`] is an unsupported type).  
     /// It returns a `400 Bad Request` for all other cases.
+    ///
+    /// [`RouteParams<T>`]: struct@crate::extract::route::RouteParams
     pub fn into_response(&self) -> Response<String> {
         match self {
             ExtractRouteParamsError::InvalidUtf8InPathParameter(e) => Response::builder()
@@ -89,9 +93,11 @@ impl ExtractRouteParamsError {
 
 #[derive(Debug)]
 /// Something went wrong when trying to deserialize the percent-decoded URL parameters into
-/// the target type you specified—`T` in `Path<T>`.
+/// the target type you specified—`T` in [`RouteParams<T>`].
 ///
 /// You can use [`PathDeserializationError::kind`] to get more details about the error.
+///
+/// [`RouteParams<T>`]: struct@crate::extract::route::RouteParams
 pub struct PathDeserializationError {
     pub(super) kind: ErrorKind,
 }
@@ -137,7 +143,7 @@ impl std::error::Error for PathDeserializationError {}
 ///
 /// This type is obtained through [`PathDeserializationError::kind`] and is useful for building
 /// more precise error messages (e.g. implementing your own custom conversion from
-/// `PathDeserializationError` into an HTTP response).
+/// [`PathDeserializationError`] into an HTTP response).
 ///
 /// [`RouteParams`]: struct@crate::extract::route::RouteParams
 #[derive(Debug, PartialEq, Eq)]
