@@ -90,7 +90,7 @@ fn reject_serde_attributes(ast: &DeriveInput) -> Result<(), TokenStream> {
 fn reject_serde_attribute(attr: &Attribute) -> Result<(), TokenStream> {
     let err_msg = "`RouteParams` does not support `serde` attributes on the top-level struct or any of its fields.\n\n\
       `RouteParams` takes care of deriving `serde::Serialize` and `serde::Deserialize` for your struct, using the default \
-       configuration. This allow `pavex` to determine, at code-generation time, if the route params can \
+       configuration. This allow Pavex to determine, at code-generation time, if the route params can \
        be successfully extracted from the URL of incoming requests for the relevant routes (e.g. do you \
        have a named field that doesn't map to any of the registered route parameters?).\n\n\
        If the default `serde` configuration won't work for your case, you should not derive `RouteParams` and \

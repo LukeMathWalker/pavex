@@ -33,18 +33,32 @@ impl FrameworkItemDb {
         let mut items = HashMap::with_capacity(capacity);
         let mut id2metadata = HashMap::with_capacity(capacity);
 
-        let http_request = process_framework_path(
-            "pavex_runtime::http::Request::<pavex_runtime::hyper::Body>",
+        let request_head = process_framework_path(
+            "pavex_runtime::request::RequestHead",
             package_graph,
             krate_collection,
         );
-        items.insert(http_request, 0);
+        items.insert(request_head, 0);
         id2metadata.insert(
             0,
             FrameworkItemMetadata {
                 lifecycle: Lifecycle::RequestScoped,
                 cloning_strategy: CloningStrategy::NeverClone,
-                binding: format_ident!("request"),
+                binding: format_ident!("request_head"),
+            },
+        );
+        let http_request = process_framework_path(
+            "pavex_runtime::hyper::Body",
+            package_graph,
+            krate_collection,
+        );
+        items.insert(http_request, 1);
+        id2metadata.insert(
+            1,
+            FrameworkItemMetadata {
+                lifecycle: Lifecycle::RequestScoped,
+                cloning_strategy: CloningStrategy::NeverClone,
+                binding: format_ident!("request_body"),
             },
         );
         let raw_path_parameters = process_framework_path(
@@ -52,9 +66,9 @@ impl FrameworkItemDb {
             package_graph,
             krate_collection,
         );
-        items.insert(raw_path_parameters, 1);
+        items.insert(raw_path_parameters, 2);
         id2metadata.insert(
-            1,
+            2,
             FrameworkItemMetadata {
                 lifecycle: Lifecycle::RequestScoped,
                 cloning_strategy: CloningStrategy::CloneIfNecessary,

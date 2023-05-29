@@ -67,9 +67,9 @@ impl Client {
         self
     }
 
-    /// Set whether to use colors in the output of `pavex`'s code generator.
+    /// Set whether to use colors in the output of Pavex's code generator.
     ///
-    /// If this is not set, `pavex` will automatically determine whether to use colors or not.
+    /// If this is not set, Pavex will automatically determine whether to use colors or not.
     pub fn color(mut self, color: Color) -> Self {
         self.color = color;
         self
@@ -93,7 +93,7 @@ impl Client {
     }
 }
 
-/// Control whether to use colors in the output of `pavex`'s code generator.
+/// Control whether to use colors in the output of Pavex's code generator.
 #[derive(Clone, Debug)]
 #[non_exhaustive]
 pub enum Color {

@@ -1,6 +1,6 @@
 //! Register constructors for the types that can be injected into your request and error handlers.  
 //!
-//! Check out [`Blueprint::constructor`] for a brief introduction to dependency injection in `pavex`.
+//! Check out [`Blueprint::constructor`] for a brief introduction to dependency injection in Pavex.
 //!
 //! [`Blueprint::constructor`]: Blueprint::constructor
 pub use lifecycle::Lifecycle;
@@ -60,7 +60,7 @@ impl<'a> Constructor<'a> {
     ///
     /// ## Common Errors
     ///
-    /// `pavex` will fail to generate the runtime code for your application if you register
+    /// Pavex will fail to generate the runtime code for your application if you register
     /// an error handler for an infallible constructor (i.e. a constructor that doesn't return
     /// a `Result`).
     pub fn error_handler(self, error_handler: RawCallable) -> Self {
@@ -81,13 +81,13 @@ impl<'a> Constructor<'a> {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[non_exhaustive]
-/// Determines whether `pavex` is allowed to clone the output type returned by a constructor.
+/// Determines whether Pavex is allowed to clone the output type returned by a constructor.
 ///
 /// Check out [`Constructor::cloning`] for more information.
 pub enum CloningStrategy {
-    /// `pavex` will **never** try clone the output type returned by the constructor.
+    /// Pavex will **never** try clone the output type returned by the constructor.
     NeverClone,
-    /// `pavex` will only clone the output type returned by this constructor if it's
+    /// Pavex will only clone the output type returned by this constructor if it's
     /// necessary to generate code that satisfies Rust's borrow checker.
     CloneIfNecessary,
 }

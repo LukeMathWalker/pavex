@@ -1,4 +1,4 @@
-//! The error type used by `pavex` for runtime failures.
+//! The error type used by Pavex for runtime failures.
 // Most of this module is a direct copy (with, from time to time,
 // minor modifications) of the corresponding `error` module in
 // `axum-core`.
@@ -30,7 +30,7 @@
 // DEALINGS IN THE SOFTWARE.
 use std::fmt;
 
-/// `pavex`'s error type: a thin shim over `Box<dyn std::error::Error + Send + Sync>`.
+/// Pavex's error type: a thin shim over `Box<dyn std::error::Error + Send + Sync>`.
 #[derive(Debug)]
 pub struct Error {
     inner: Box<dyn std::error::Error + Send + Sync>,

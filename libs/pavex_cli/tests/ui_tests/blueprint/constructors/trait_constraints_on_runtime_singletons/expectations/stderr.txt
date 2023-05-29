@@ -9,7 +9,7 @@
   [31m│[0m  [2m53[0m │     bp.constructor(f!(crate::NonSyncSingleton::new), Lifecycle::Singleton);
   [31m│[0m     ╰────
   [31m│[0m [36m  help: [0mAll singletons must implement the `Send`, `Sync` and `Clone` traits.
-  [31m│[0m          `pavex` runs on a multi-threaded HTTP server and singletons must be
+  [31m│[0m          Pavex runs on a multi-threaded HTTP server and singletons must be
   [31m│[0m         shared across all worker threads.
 
 [31m[1mERROR[0m[39m: 
@@ -23,7 +23,7 @@
   [31m│[0m  [2m54[0m │     // The handler is needed because bounds are only checked for singletons
   [31m│[0m     ╰────
   [31m│[0m [36m  help: [0mAll singletons must implement the `Send`, `Sync` and `Clone` traits.
-  [31m│[0m          `pavex` runs on a multi-threaded HTTP server and singletons must be
+  [31m│[0m          Pavex runs on a multi-threaded HTTP server and singletons must be
   [31m│[0m         shared across all worker threads.
 
 [31m[1mERROR[0m[39m: 
@@ -37,7 +37,7 @@
   [31m│[0m  [2m52[0m │     bp.constructor(f!(crate::NonCloneSingleton::new), Lifecycle::Singleton);
   [31m│[0m     ╰────
   [31m│[0m [36m  help: [0mAll singletons must implement the `Send`, `Sync` and `Clone` traits.
-  [31m│[0m          `pavex` runs on a multi-threaded HTTP server and singletons must be
+  [31m│[0m          Pavex runs on a multi-threaded HTTP server and singletons must be
   [31m│[0m         shared across all worker threads.
 
 [31m[1mERROR[0m[39m: 
@@ -51,5 +51,5 @@
   [31m│[0m  [2m52[0m │     bp.constructor(f!(crate::NonCloneSingleton::new), Lifecycle::Singleton);
   [31m│[0m     ╰────
   [31m│[0m [36m  help: [0mAll singletons must implement the `Send`, `Sync` and `Clone` traits.
-  [31m│[0m          `pavex` runs on a multi-threaded HTTP server and singletons must be
+  [31m│[0m          Pavex runs on a multi-threaded HTTP server and singletons must be
   [31m│[0m         shared across all worker threads.

@@ -27,13 +27,13 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
 // IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
-//! Body types and utilities used by `pavex`.
+//! Body types and utilities used by Pavex.
 use bytes::Bytes;
 use http_body::Body;
 
 use crate::Error;
 
-/// The most common body type in `pavex`.
+/// The most common body type in Pavex.
 pub type BoxBody = http_body::combinators::BoxBody<Bytes, Error>;
 
 /// Convert a [`http_body::Body`] into a [`BoxBody`].

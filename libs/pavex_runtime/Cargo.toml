@@ -5,17 +5,22 @@ edition = "2021"
 
 [dependencies]
 hyper = { version = "0.14", features = ["server", "http1", "http2", "tcp"] }
-matchit = "0.7"
-http = "0.2"
 bytes = "1"
+http = "0.2"
 http-body = "0.4.5"
 anyhow = "1"
 futures-util = "0.3"
 mime = "0.3"
-percent-encoding = "2"
 thiserror = "1"
 serde = "1"
 pavex_macros = { path = "../pavex_macros" }
+
+# Route parameters
+matchit = "0.7"
+percent-encoding = "2"
+
+# Query parameters
+serde_html_form = "0.1"
 
 [dev-dependencies]
 serde = { version = "1", features = ["derive"] }

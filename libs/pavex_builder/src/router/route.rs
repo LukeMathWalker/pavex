@@ -54,7 +54,7 @@ impl<'a> Route<'a> {
     ///
     /// ## Common Errors
     ///
-    /// `pavex` will fail to generate the runtime code for your application if you register
+    /// Pavex will fail to generate the runtime code for your application if you register
     /// an error handler for an infallible request handler (i.e. a request handler that doesn't
     /// return a `Result`).
     pub fn error_handler(self, error_handler: RawCallable) -> Self {

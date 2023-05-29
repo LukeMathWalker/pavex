@@ -1,4 +1,3 @@
-pub use http;
 pub use hyper;
 pub use matchit as routing;
 
@@ -6,8 +5,10 @@ pub use matchit as routing;
 pub use error::Error;
 
 pub mod body;
-pub mod error;
+mod error;
+pub mod http;
 pub mod extract;
+pub mod request;
 pub mod response;
 
 pub mod serialization;

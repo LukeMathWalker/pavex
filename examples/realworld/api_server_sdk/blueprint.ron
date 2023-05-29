@@ -31,11 +31,38 @@
         (
             blueprint: (
                 creation_location: (
-                    line: 5,
+                    line: 7,
                     column: 18,
                     file: "conduit_core/src/articles/mod.rs",
                 ),
-                constructors: [],
+                constructors: [
+                    (
+                        constructor: (
+                            callable: (
+                                registered_at: "conduit_core",
+                                import_path: "pavex_runtime :: extract :: query :: QueryParams :: extract",
+                            ),
+                            location: (
+                                line: 9,
+                                column: 8,
+                                file: "conduit_core/src/articles/mod.rs",
+                            ),
+                        ),
+                        lifecycle: RequestScoped,
+                        cloning_strategy: None,
+                        error_handler: Some((
+                            callable: (
+                                registered_at: "conduit_core",
+                                import_path: "pavex_runtime :: extract :: query :: errors :: ExtractQueryParamsError ::\ninto_response",
+                            ),
+                            location: (
+                                line: 13,
+                                column: 6,
+                                file: "conduit_core/src/articles/mod.rs",
+                            ),
+                        )),
+                    ),
+                ],
                 routes: [
                     (
                         path: "/",
@@ -47,10 +74,10 @@
                         request_handler: (
                             callable: (
                                 registered_at: "conduit_core",
-                                import_path: "crate :: articles :: get_articles",
+                                import_path: "crate :: articles :: list_articles",
                             ),
                             location: (
-                                line: 6,
+                                line: 17,
                                 column: 8,
                                 file: "conduit_core/src/articles/mod.rs",
                             ),

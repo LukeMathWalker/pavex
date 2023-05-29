@@ -8,10 +8,10 @@
 
 <br>
 
-## What is `pavex`?
+## What is Pavex?
 
-`pavex` is a new framework to build APIs with Rust.  
-It is remarkably different: you can think of `pavex` as a **specialised compiler** for building Rust APIs.  
+Pavex is a new framework to build APIs with Rust.  
+It is remarkably different: you can think of Pavex as a **specialised compiler** for building Rust APIs.  
 
 It takes as input a high-level description of what your application should do, a `Blueprint`:
 
@@ -29,14 +29,14 @@ pub fn app_blueprint() -> Blueprint {
 It generates as output the source code for a fully-fleshed web-server, behaving according to your specification, ready
 to be launched.
 
-`pavex` aims to have it all: great ergonomics and high performance.   
+Pavex aims to have it all: great ergonomics and high performance.   
 As **easy** to use as Rails, Django or ASP.NET Core.  
 As **fast** as a handwritten solution that strips away all abstractions.
 
 ### Great error messages
 
-`pavex` operates at the **right level of abstraction**—it understands the specific challenges and requirements of API development.  
-The intermediate code generation step (`Blueprint` -> runtime code) allows `pavex` to perform in-depth static analysis. Potential issues
+Pavex operates at the **right level of abstraction**—it understands the specific challenges and requirements of API development.  
+The intermediate code generation step (`Blueprint` -> runtime code) allows Pavex to perform in-depth static analysis. Potential issues
 are caught at compile-time with an **informative error message**:
 
 ```text
@@ -62,15 +62,15 @@ ERROR:
 
 ### Compile-time dependency injection
 
-Your `Blueprint` tells `pavex`:
+Your `Blueprint` tells Pavex:
 
 - What routes should be exposed;
 - What components can be built, what inputs they need and what is their lifecycle;
 - How to handle errors.
 
-`pavex` uses this information to perform **compile-time dependency injection**.  
+Pavex uses this information to perform **compile-time dependency injection**.  
 
-Each endpoint gets its own **call graph** and `pavex` makes sure to **exclusively** build what is required to invoke every single endpoint, 
+Each endpoint gets its own **call graph** and Pavex makes sure to **exclusively** build what is required to invoke every single endpoint, 
 avoiding unnecessary computations.
 
 ```mermaid
@@ -89,11 +89,11 @@ flowchart TB
     request --&--> path
 ```
 
-You write straight-forward Rust, `pavex` takes care of assembling together all the components. 
+You write straight-forward Rust, Pavex takes care of assembling together all the components. 
 
 ## Project status
 
-`pavex` is under active development and far from being ready for hobby or production usage.  
+Pavex is under active development and far from being ready for hobby or production usage.  
 It has not yet been released on crates.io and you can expect breaking changes on every commit to the `main` branch.
 
 We are aiming for an alpha release by the end of summer 2023.
@@ -108,13 +108,13 @@ We publish project updates every 4-6 weeks:
 
 ## Examples
 
-You can see `pavex` at work in the [`/examples` folder](./examples):
+You can see Pavex at work in the [`/examples` folder](./examples):
 
 - In [`examples/skeleton/app_blueprint/src/lib.rs`](./examples/skeleton/app_blueprint/src/lib.rs) we specify the app's behavior in
   a `Blueprint`—
   the endpoints it exposes and their request handlers, as well as the required constructors for the application state;
 - In [`examples/skeleton/app_blueprint/src/bin.rs`](./examples/skeleton/app_blueprint/src/bin.rs) we serialize the `Blueprint` and
-  invoke `pavex`'s CLI to generate the server code that will execute at runtime, which you can find in
+  invoke Pavex's CLI to generate the server code that will execute at runtime, which you can find in
   [`examples/skeleton/app_server_sdk/src/lib.rs`](./examples/skeleeton/app_server_sdk/src/lib.rs).
 
 In [`examples/skeleton/blueprint.ron`](./examples/skeleton/blueprint.ron) you can have a peek at what
@@ -123,7 +123,7 @@ the `Blueprint` looks like when serialized.
 ## Architectural Overview
 
 If the section above was enough to get you intrigued, you can check out the architectural deep-dive
-in [`ARCHITECTURE.md`](ARCHITECTURE.md) to learn how `pavex` works under the hood.
+in [`ARCHITECTURE.md`](ARCHITECTURE.md) to learn how Pavex works under the hood.
 
 ## Contributing
 

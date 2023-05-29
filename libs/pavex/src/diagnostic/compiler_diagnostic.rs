@@ -250,7 +250,7 @@ impl AnnotatedSnippet {
 
 #[derive(Debug, thiserror::Error)]
 #[error("{error_source}")]
-/// A diagnostic is a single error or warning message returned by `pavex` to the user.
+/// A diagnostic is a single error or warning message returned by Pavex to the user.
 ///
 /// See [`CompilerDiagnostic::builder`] for how to create a diagnostic.
 pub struct CompilerDiagnostic {

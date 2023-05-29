@@ -3,9 +3,9 @@ use conduit_core::api_blueprint;
 use pavex_cli_client::Client;
 use std::error::Error;
 
-/// Generate the `api_server_sdk` crate using `pavex`'s CLI.
-/// 
-/// `pavex` will automatically wire all our routes, constructors and error handlers
+/// Generate the `api_server_sdk` crate using Pavex's CLI.
+///
+/// Pavex will automatically wire all our routes, constructors and error handlers
 /// into the a "server SDK" that can be used by the final API server binary to launch
 /// the application.
 fn main() -> Result<(), Box<dyn Error>> {

@@ -28,7 +28,7 @@ use pavex_runtime::response::Response;
 // `handler `and `C` are in the same control flow branch, so that can't work since they both consume `B`
 // and `B` is not cloneable.
 //
-// `pavex`'s error should not mention `error handler`.
+// Pavex's error should not mention `error handler`.
 
 pub struct A;
 

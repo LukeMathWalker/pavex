@@ -1,9 +1,14 @@
 use std::path::PathBuf;
 
-use pavex_builder::{constructor::{Lifecycle, CloningStrategy}, f, router::GET, Blueprint};
-use pavex_runtime::response::Response;
-use pavex_runtime::http::Request;
+use pavex_builder::{
+    constructor::{CloningStrategy, Lifecycle},
+    f,
+    router::GET,
+    Blueprint,
+};
 use pavex_runtime::hyper::Body;
+use pavex_runtime::request::RequestHead;
+use pavex_runtime::response::Response;
 
 // The call graph looks like this:
 //
@@ -21,11 +26,11 @@ pub struct B;
 
 pub struct C;
 
-pub fn b(_p: Request<Body>) -> B {
+pub fn b(_p: RequestHead) -> B {
     todo!()
 }
 
-pub fn c(_p: Request<Body>) -> C {
+pub fn c(_p: RequestHead) -> C {
     todo!()
 }
 

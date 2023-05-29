@@ -21,7 +21,7 @@ use pavex_runtime::response::Response;
 //
 // The type B is not cloneable and has two consumers that take it by value (`handler` and `error handler`).
 // But those consumers are in different control flow branches, so they'll never be invoked
-// one after the other, therefore the graph is fine as is and `pavex` should accept it.
+// one after the other, therefore the graph is fine as is and Pavex should accept it.
 
 pub struct A;
 
