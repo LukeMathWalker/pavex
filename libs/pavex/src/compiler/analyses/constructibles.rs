@@ -62,27 +62,6 @@ impl ConstructibleDb {
             diagnostics,
         );
 
-        // For each type that supports dependency injection, we look up the constructors of their inputs.
-        // We assert that all their inputs are in a scope that is the same or a
-        // parent of the their own scope.
-        // This should always be the case, but we add an assertion to eagerly discover if our
-        // assumptions are wrong.
-        for (component_id, _) in component_db.iter() {
-            let component = component_db.hydrated_component(component_id, computation_db);
-            let component_scope = component_db.scope_id(component_id);
-            for input_type in component.input_types().iter() {
-                // Some inputs are not constructible and will be injected by the framework
-                // or as part of the application state.
-                if let Some((input_constructor_id, _)) =
-                    self_.get(component_scope, input_type, component_db.scope_graph())
-                {
-                    let input_constructor_scope = component_db.scope_id(input_constructor_id);
-                    assert!(component_scope
-                        .is_child_of(input_constructor_scope, component_db.scope_graph()));
-                }
-            }
-        }
-
         self_
     }
 

@@ -10,6 +10,7 @@ use crate::request::RequestHead;
 /// - [Supported types](#supported-types)
 ///   - [Sequences](#sequences)
 /// - [Unsupported types](#unsupported-types)
+/// - [Avoiding allocations](#avoiding-allocations)
 ///
 /// # Example
 ///
@@ -18,13 +19,13 @@ use crate::request::RequestHead;
 /// // You must derive `serde::Deserialize` for the type you want to extract,
 /// // in this case `Home`.
 /// #[derive(serde::Deserialize)]
-/// struct Home {
+/// pub struct Home {
 ///     home_id: u32
 /// }
 ///
 /// // The `RouteParams` extractor deserializes the extracted route parameters into
 /// // the type you specified—`HomeRouteParams` in this case.
-/// fn get_home(params: &QueryParams<Home>) -> String {
+/// pub fn get_home(params: &QueryParams<Home>) -> String {
 ///    format!("The identifier for this home is: {}", params.0.home_id)
 /// }
 /// ```
@@ -71,7 +72,7 @@ use crate::request::RequestHead;
 /// use pavex_runtime::extract::query::QueryParams;
 /// 
 /// #[derive(serde::Deserialize)]
-/// struct Home {
+/// pub struct Home {
 ///    // This will convert the query string `?room_id=1&room_id=2&room_id=3`
 ///    // into a vector `vec![1, 2, 3]`.  
 ///    //
@@ -92,7 +93,7 @@ use crate::request::RequestHead;
 /// use pavex_runtime::extract::query::QueryParams;
 /// 
 /// #[derive(serde::Deserialize)]
-/// struct Home {
+/// pub struct Home {
 ///     // This will convert the query string `?room_id[]=1&room_id[]=2&room_id[]=3`
 ///     // into a vector `vec![1, 2, 3]`.
 ///     #[serde(rename = "room_id[]")]
@@ -102,26 +103,65 @@ use crate::request::RequestHead;
 /// 
 /// # Unsupported types
 /// 
-/// `QueryParams` doesn't support deserializing nested structures as query parameters.
+/// Pavex does not support the following types as `T` in `RouteParams<T>`:
+///
+/// - tuples, e.g. `(u32, String)`;
+/// - tuple structs, e.g. `struct HomeId(u32, String)`;
+/// - unit structs, e.g. `struct HomeId`;
+/// 
+/// You should always prefer a struct with named fields as the type parameter of `QueryParams`.
+/// 
+/// When it comes to structs, it's important to keep in mind that `QueryParams` doesn't 
+/// support deserializing **nested** structures as query parameters.  
 /// For example, the following can't be deserialized from the wire using `QueryParams`:
 /// 
 /// ```rust
 /// use pavex_runtime::extract::query::QueryParams;
 /// 
 /// #[derive(serde::Deserialize)]
-/// struct Home {
+/// pub struct Home {
 ///    address: Address
 /// }
-///     
+/// 
 /// #[derive(serde::Deserialize)]
-/// struct Address {
+/// pub struct Address {
 ///    street: String,
 ///    city: String,
 /// }
 /// ```
 /// 
-/// If you need to deserialize complex structures from query parameters, you might want to
+/// If you need to deserialize nested structures from query parameters, you might want to
 /// look into writing your own extractor on top of [`serde_qs`](https://crates.io/crates/serde_qs).
+/// 
+/// # Avoiding allocations
+///
+/// If you want to minimize memory usage, you can try to avoid unnecessary memory allocations when 
+/// deserializing string-like fields from the query parameters of the incoming request.    
+/// Pavex supports this use case—you can borrow from the query string instead of having to 
+/// allocate a brand new string.
+///
+/// It is not always possible to avoid allocations, though.  
+/// In particular, Pavex *must* allocate a new `String` if the parameter you are trying to 
+/// deserialize is a URL-encoded string (e.g. `John%20Doe`, the URL-encoded
+/// version of `John Doe`)
+/// Using a `&str` in this case would result in a runtime error when attempting the deserialization.
+///
+/// Given the above, we recommend using `Cow<'_, str>` as field type: it borrows from the request
+/// body if possible, and allocates a new `String` only if strictly necessary.
+///
+/// ```rust
+/// use pavex_runtime::extract::query::QueryParams;
+/// use std::borrow::Cow;
+///
+/// #[derive(serde::Deserialize)]
+/// pub struct Payee<'a> {
+///     name: Cow<'a, str>,
+/// }
+///
+/// pub fn get_payee(params: &QueryParams<Payee<'_>>) -> String {
+///    format!("The payee's name is {}", params.0.name)
+/// }
+/// ```
 #[doc(alias = "Query")]
 pub struct QueryParams<T>(
     /// The extracted query parameters, deserialized into `T`, the type you specified.

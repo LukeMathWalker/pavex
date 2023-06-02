@@ -42,7 +42,6 @@ where
     B: Body<Data = Bytes> + Send + Sync + 'static,
     B::Error: Into<Box<dyn std::error::Error + Sync + Send>>,
 {
-    // We
     try_downcast(body).unwrap_or_else(|body| body.map_err(Error::new).boxed())
 }
 

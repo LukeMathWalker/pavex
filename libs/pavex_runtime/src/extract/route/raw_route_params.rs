@@ -16,7 +16,7 @@ use matchit::{Params, ParamsIter};
 ///     bp
 /// }
 ///
-/// fn get_home(params: &RawRouteParams) -> String {
+/// pub fn get_home(params: &RawRouteParams) -> String {
 ///     let home_id = &params.get("home_id").unwrap();
 ///     let street_id = &params.get("street_id").unwrap();
 ///     format!("The home with id {} is in street {}", home_id, street_id)

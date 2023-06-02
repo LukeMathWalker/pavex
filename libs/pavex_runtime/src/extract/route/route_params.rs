@@ -27,10 +27,10 @@ use super::RawRouteParams;
 ///     let mut bp = Blueprint::new();
 ///     // Register the default constructor and error handler for `RouteParams`.
 ///     bp.constructor(
-///         f!(pavex_runtime::extract::path::RouteParams::extract),
+///         f!(pavex_runtime::extract::route::RouteParams::extract),
 ///         Lifecycle::RequestScoped,
 ///     ).error_handler(
-///         f!(pavex_runtime::extract::path::errors::ExtractRouteParamsError::into_response)
+///         f!(pavex_runtime::extract::route::errors::ExtractRouteParamsError::into_response)
 ///     );
 ///     // Register a route with a route parameter, `:home_id`.
 ///     bp.route(GET, "/home/:home_id", f!(crate::get_home));
@@ -39,7 +39,7 @@ use super::RawRouteParams;
 ///
 /// // The RouteParams attribute macro derives the necessary (de)serialization traits.
 /// #[RouteParams]
-/// struct Home {
+/// pub struct Home {
 ///     // The name of the field must match the name of the route parameter
 ///     // used in `bp.route`.
 ///     home_id: u32
@@ -47,7 +47,7 @@ use super::RawRouteParams;
 ///
 /// // The `RouteParams` extractor deserializes the extracted route parameters into
 /// // the type you specified—`HomeRouteParams` in this case.
-/// fn get_home(params: &RouteParams<Home>) -> String {
+/// pub fn get_home(params: &RouteParams<Home>) -> String {
 ///    format!("The identifier for this home is: {}", params.0.home_id)
 /// }
 /// ```
@@ -76,7 +76,7 @@ use super::RawRouteParams;
 /// }
 ///
 /// #[RouteParams]
-/// struct Room {
+/// pub struct Room {
 ///     // The name of the extracted fields must match the names of the route parameters
 ///     // used in the template we passed to `bp.route`.
 ///     home_id: u32,
@@ -87,7 +87,7 @@ use super::RawRouteParams;
 ///
 /// // The `RouteParams` extractor will deserialize the route parameters into the
 /// // type you specified—`Room` in this case.
-/// fn get_room(params: &RouteParams<Room>) -> String {
+/// pub fn get_room(params: &RouteParams<Room>) -> String {
 ///     let params = &params.0;
 ///     format!("The home with id {} is in street {}", params.home_id, params.street_id)
 /// }
@@ -108,13 +108,13 @@ use super::RawRouteParams;
 /// // This is self-documenting ✅
 /// // No need to check the route's path template to understand what each field represents.
 /// #[RouteParams]
-/// struct Room {
+/// pub struct Room {
 ///     home_id: u32,
 ///     room_id: u32,
 ///     street_id: u32,
 /// }
 ///
-/// fn get_room(params: &RouteParams<Room>) -> String {
+/// pub fn get_room(params: &RouteParams<Room>) -> String {
 ///     // [...]
 /// # unimplemented!()
 /// }
@@ -122,7 +122,7 @@ use super::RawRouteParams;
 /// // This isn't self-documenting ❌
 /// // What does the second u32 represent? The room id? The street id?
 /// // Impossible to tell without checking the route's path template.
-/// fn get_room_tuple(params: &RouteParams<(u32, u32, u32)>) -> String {
+/// pub fn get_room_tuple(params: &RouteParams<(u32, u32, u32)>) -> String {
 ///     // [...]
 /// # unimplemented!()
 /// }
@@ -139,7 +139,7 @@ use super::RawRouteParams;
 ///
 /// # Additional compile-time checks
 ///
-///Pavex is able to perform additional checks at compile-time if you use the
+/// Pavex is able to perform additional checks at compile-time if you use the
 /// [`RouteParams`](macro@crate::extract::route::RouteParams) macro instead
 /// of deriving [`serde::Deserialize`] on your own.
 ///
@@ -149,7 +149,7 @@ use super::RawRouteParams;
 ///
 /// // Do this 👇
 /// #[RouteParams]
-/// struct Home {
+/// pub struct Home {
 ///     home_id: u32
 /// }
 /// # }
@@ -157,7 +157,7 @@ use super::RawRouteParams;
 /// # mod home2 {
 /// // ..instead of this ❌
 /// #[derive(serde::Deserialize)]
-/// struct Home {
+/// pub struct Home {
 ///     home_id: u32
 /// }
 /// # }
@@ -193,11 +193,11 @@ use super::RawRouteParams;
 /// use std::borrow::Cow;
 ///
 /// #[RouteParams]
-/// struct Payee<'a> {
+/// pub struct Payee<'a> {
 ///     name: Cow<'a, str>,
 /// }
 ///
-/// fn get_payee(params: &RouteParams<Payee<'_>>) -> String {
+/// pub fn get_payee(params: &RouteParams<Payee<'_>>) -> String {
 ///    format!("The payee's name is {}", params.0.name)
 /// }
 /// ```
