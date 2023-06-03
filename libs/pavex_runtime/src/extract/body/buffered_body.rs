@@ -117,7 +117,7 @@ use hyper::body::to_bytes;
 /// You can leverage nesting for this purpose:
 /// 
 /// ```rust
-/// use pavex_builder::{f, Blueprint, constructor::Lifecycle};
+/// use pavex_builder::{f, Blueprint, constructor::Lifecycle, router::{GET, POST}};
 /// use pavex_runtime::extract::body::BodySizeLimit;
 /// # pub fn home() -> String { todo!() }
 /// # pub fn upload() -> String { todo!() }

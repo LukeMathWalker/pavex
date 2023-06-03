@@ -5,10 +5,14 @@ use crate::request::RequestHead;
 
 use super::{
     buffered_body::BufferedBody,
-    errors::{ExtractJsonBodyError, JsonContentTypeMismatch, MissingJsonContentType},
+    errors::{
+        ExtractJsonBodyError, JsonContentTypeMismatch, JsonDeserializationError,
+        MissingJsonContentType,
+    },
 };
 
 #[doc(alias = "Json")]
+#[derive(Debug)]
 /// Parse the body of an incoming request as JSON.
 ///
 /// # Sections
@@ -130,8 +134,9 @@ impl<T> JsonBody<T> {
         T: Deserialize<'body>,
     {
         check_json_content_type(&request_head.headers)?;
-        // TODO: improve error message if deserialization fails here.
-        let body = serde_json::from_slice(&buffered_body.bytes)?;
+        let mut deserializer = serde_json::Deserializer::from_slice(buffered_body.bytes.as_ref());
+        let body = serde_path_to_error::deserialize(&mut deserializer)
+            .map_err(|e| JsonDeserializationError { source: e })?;
         Ok(JsonBody(body))
     }
 }
@@ -167,6 +172,8 @@ fn check_json_content_type(headers: &HeaderMap) -> Result<(), ExtractJsonBodyErr
 
 #[cfg(test)]
 mod tests {
+    use crate::extract::body::JsonBody;
+
     #[test]
     fn missing_content_type() {
         let headers = http::HeaderMap::new();
@@ -248,5 +255,61 @@ mod tests {
 
         let outcome = super::check_json_content_type(&headers);
         assert!(outcome.is_ok());
+    }
+
+    #[test]
+    /// Let's check the error quality when the request body is missing 
+    /// a required field.
+    fn missing_json_field() {
+        // Arrange
+        #[derive(serde::Deserialize, Debug)]
+        #[allow(dead_code)]
+        struct BodySchema {
+            name: String,
+            surname: String,
+            age: u8,
+        }
+
+        let mut headers = http::HeaderMap::new();
+        headers.insert(
+            http::header::CONTENT_TYPE,
+            "application/json; charset=utf-8".parse().unwrap(),
+        );
+        let request_head = crate::request::RequestHead {
+            headers,
+            method: http::Method::GET,
+            uri: "/".parse().unwrap(),
+            version: http::Version::HTTP_11,
+        };
+        let body = serde_json::json!({
+            "name": "John Doe",
+            "age": 43,
+        });
+
+        // Act
+        let buffered_body = crate::extract::body::BufferedBody {
+            bytes: serde_json::to_vec(&body).unwrap().into(),
+        };
+        let outcome: Result<JsonBody<BodySchema>, _> =
+            JsonBody::extract(&request_head, &buffered_body);
+
+        // Assert
+        let err = outcome.unwrap_err();
+        insta::assert_display_snapshot!(err, @r###"
+        Failed to deserialize the body as a JSON document.
+        missing field `surname` at line 1 column 28
+        "###);
+        insta::assert_debug_snapshot!(err, @r###"
+        DeserializationError(
+            JsonDeserializationError {
+                source: Error {
+                    path: Path {
+                        segments: [],
+                    },
+                    original: Error("missing field `surname`", line: 1, column: 28),
+                },
+            },
+        )
+        "###);
     }
 }
