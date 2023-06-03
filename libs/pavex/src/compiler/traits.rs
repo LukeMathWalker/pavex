@@ -52,6 +52,12 @@ fn get_crate_by_package_id<'a>(
         .ok_or_else(|| anyhow::anyhow!("Unknown package id: {}", package_id))
 }
 
+const COPY_TRAIT_PATH: [&str; 3] = ["core", "marker", "Copy"];
+const SEND_TRAIT_PATH: [&str; 3] = ["core", "marker", "Send"];
+const SYNC_TRAIT_PATH: [&str; 3] = ["core", "marker", "Sync"];
+const UNPIN_TRAIT_PATH: [&str; 3] = ["core", "marker", "Unpin"];
+const CLONE_TRAIT_PATH: [&str; 3] = ["core", "clone", "Clone"];
+
 /// It returns `true` if `type_` implements the specified trait.
 ///
 /// The trait path must be fully resolved: it should NOT point to a re-export
@@ -155,11 +161,11 @@ pub(crate) fn implements_trait(
             // Tuple trait implementations in std are somewhat magical
             // (see https://doc.rust-lang.org/std/primitive.tuple.html#trait-implementations-1).
             // We handle the ones we know we care about (marker traits and Clone).
-            if (expected_trait.base_type == ["core", "marker", "Send"]
-                || expected_trait.base_type == ["core", "marker", "Sync"]
-                || expected_trait.base_type == ["core", "marker", "Copy"]
-                || expected_trait.base_type == ["core", "marker", "Unpin"]
-                || expected_trait.base_type == ["core", "clone", "Clone"])
+            if (expected_trait.base_type == SEND_TRAIT_PATH
+                || expected_trait.base_type == SYNC_TRAIT_PATH
+                || expected_trait.base_type == COPY_TRAIT_PATH
+                || expected_trait.base_type == UNPIN_TRAIT_PATH
+                || expected_trait.base_type == CLONE_TRAIT_PATH)
                 && t.elements
                     .iter()
                     .all(|t| match implements_trait(krate_collection, t, expected_trait) {
@@ -175,8 +181,8 @@ pub(crate) fn implements_trait(
         }
         ResolvedType::Reference(r) => {
             // `& &T` is `Send` if `&T` is `Send`, therefore `&T` is `Sync` if `T` if `Sync`.
-            if (expected_trait.base_type == ["core", "marker", "Sync"]
-                || expected_trait.base_type == ["core", "marker", "Send"])
+            if (expected_trait.base_type == SYNC_TRAIT_PATH
+                || expected_trait.base_type == SEND_TRAIT_PATH)
                 && implements_trait(krate_collection, &r.inner, expected_trait)?
             {
                 return Ok(true);
@@ -185,27 +191,28 @@ pub(crate) fn implements_trait(
             // See https://doc.rust-lang.org/std/marker/trait.Copy.html#impl-Copy-for-%26T and
             // https://doc.rust-lang.org/std/marker/trait.Copy.html#when-cant-my-type-be-copy
             // `Copy` implies `Clone`.
-            if !r.is_mutable && (expected_trait.base_type == ["core", "clone", "Copy"])
-                || (expected_trait.base_type == ["core", "clone", "Clone"])
+            if !r.is_mutable && (expected_trait.base_type == COPY_TRAIT_PATH)
+                || (expected_trait.base_type == CLONE_TRAIT_PATH)
             {
                 return Ok(true);
             }
             // TODO: Unpin and other traits
         }
         ResolvedType::ScalarPrimitive(_) => {
-            if expected_trait.base_type == ["core", "marker", "Send"]
-                || expected_trait.base_type == ["core", "marker", "Sync"]
-                || expected_trait.base_type == ["core", "marker", "Copy"]
-                || expected_trait.base_type == ["core", "marker", "Unpin"]
-                || expected_trait.base_type == ["core", "clone", "Clone"]
+
+            if expected_trait.base_type == SEND_TRAIT_PATH
+                || expected_trait.base_type == SYNC_TRAIT_PATH
+                || expected_trait.base_type == COPY_TRAIT_PATH
+                || expected_trait.base_type == UNPIN_TRAIT_PATH
+                || expected_trait.base_type == CLONE_TRAIT_PATH
             {
                 return Ok(true);
             }
             // TODO: handle other traits
         }
         ResolvedType::Slice(s) => {
-            if (expected_trait.base_type == ["core", "marker", "Send"]
-                || expected_trait.base_type == ["core", "marker", "Sync"])
+            if (expected_trait.base_type == SEND_TRAIT_PATH
+                || expected_trait.base_type == SYNC_TRAIT_PATH)
                 && implements_trait(krate_collection, &s.element_type, expected_trait)?
             {
                 return Ok(true);

@@ -1105,6 +1105,7 @@ dependencies = [
  "percent-encoding",
  "serde",
  "serde_html_form",
+ "serde_json",
  "thiserror",
 ]
 
