@@ -15,8 +15,8 @@ pub enum ExtractJsonBodyError {
     /// See [`JsonContentTypeMismatch`] for details.
     ContentTypeMismatch(#[from] JsonContentTypeMismatch),
     #[error(transparent)]
-    // TODO: should we use an opaque `JsonDeserializationError` instead?
-    DeserializationError(#[from] serde_json::Error),
+    /// See [`JsonDeserializationError`] for details.
+    DeserializationError(#[from] JsonDeserializationError),
 }
 
 impl ExtractJsonBodyError {
@@ -28,9 +28,9 @@ impl ExtractJsonBodyError {
                 .status(StatusCode::UNSUPPORTED_MEDIA_TYPE)
                 .body(format!("{}", self))
                 .unwrap(),
-            ExtractJsonBodyError::DeserializationError(e) => Response::builder()
+            ExtractJsonBodyError::DeserializationError(_) => Response::builder()
                 .status(StatusCode::BAD_REQUEST)
-                .body(format!("Invalid JSON.\n{}", e))
+                .body(format!("{}", self))
                 .unwrap(),
         }
     }
@@ -99,6 +99,15 @@ pub struct UnexpectedBufferError {
 /// The `Content-Type` header is missing, while we expected it to be set to `application/json`, or
 /// another `application/*+json` MIME type.
 pub struct MissingJsonContentType;
+
+#[derive(Debug, thiserror::Error)]
+#[error("Failed to deserialize the body as a JSON document.\n{source}")]
+#[non_exhaustive]
+/// Something went wrong when deserializing the request body into the specified type.
+pub struct JsonDeserializationError {
+    #[source]
+    pub(super) source: serde_path_to_error::Error<serde_json::Error>,
+}
 
 #[derive(Debug, thiserror::Error)]
 #[error(
