@@ -147,22 +147,57 @@ impl RawUserComponentDb {
             diagnostics,
         );
 
+        struct QueueItem<'a> {
+            parent_scope_id: ScopeId,
+            parent_path_prefix: Option<String>,
+            nested_bp: &'a NestedBlueprint,
+        }
+        let mut processing_queue = vec![];
         for nested_bp in &bp.nested_blueprints {
-            let nested_scope_id = scope_graph_builder.add_scope(
-                root_scope_id,
-                Some(nested_bp.blueprint.creation_location.clone()),
-            );
+            processing_queue.push(QueueItem {
+                parent_scope_id: root_scope_id,
+                nested_bp: &nested_bp,
+                parent_path_prefix: None,
+            });
+        }
+
+        while let Some(item) = processing_queue.pop() {
+            let QueueItem {
+                parent_scope_id,
+                nested_bp,
+                parent_path_prefix,
+            } = item;
+            let nested_scope_id = scope_graph_builder
+                .add_scope(parent_scope_id, Some(nested_bp.nesting_location.clone()));
             self_.validate_nested_bp(nested_bp, package_graph, diagnostics);
+
+            let path_prefix = match parent_path_prefix {
+                Some(prefix) => Some(format!(
+                    "{}{}",
+                    prefix,
+                    nested_bp.path_prefix.as_deref().unwrap_or("")
+                )),
+                None => nested_bp.path_prefix.clone(),
+            };
+
             Self::process_blueprint(
                 &mut self_,
                 &nested_bp.blueprint,
                 nested_scope_id,
-                nested_bp.path_prefix.as_deref(),
+                path_prefix.as_deref(),
                 &mut scope_graph_builder,
                 package_graph,
                 diagnostics,
             );
+            for nested_bp in &nested_bp.blueprint.nested_blueprints {
+                processing_queue.push(QueueItem {
+                    parent_scope_id: nested_scope_id,
+                    nested_bp,
+                    parent_path_prefix: path_prefix.clone(),
+                });
+            }
         }
+
         let scope_graph = scope_graph_builder.build();
         (self_, scope_graph)
     }

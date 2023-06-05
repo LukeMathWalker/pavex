@@ -1,0 +1,4 @@
+description = "Pavex correctly combines path prefixes and constructors for deeply nested blueprints"
+
+[expectations]
+codegen = "pass"
