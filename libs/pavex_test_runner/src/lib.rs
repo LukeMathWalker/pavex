@@ -7,6 +7,7 @@ use anyhow::Context;
 use console::style;
 use libtest_mimic::{Conclusion, Failed};
 use persist_if_changed::{copy_if_changed, persist_if_changed};
+use target_directory::TargetDirectoryPool;
 use toml::toml;
 use walkdir::WalkDir;
 
@@ -16,6 +17,7 @@ pub use snapshot::print_changeset;
 use crate::snapshot::SnapshotTest;
 
 mod snapshot;
+mod target_directory;
 
 /// Return an iterator over the directories containing a UI test.
 pub fn get_ui_test_directories(test_folder: &Path) -> impl Iterator<Item = PathBuf> {
@@ -61,6 +63,7 @@ pub fn run_tests(
     let arguments = libtest_mimic::Arguments::from_args();
 
     let cli_profile = std::env::var("PAVEX_TEST_CLI_PROFILE").unwrap_or("debug".to_string());
+    let target_directory_pool = TargetDirectoryPool::new(None, &runtime_directory);
 
     let mut tests = Vec::new();
     for entry in get_ui_test_directories(&definition_directory) {
@@ -75,8 +78,9 @@ pub fn run_tests(
             .expect("Failed to load test configuration");
         let is_ignored = test_configuration.ignore;
         let profile = cli_profile.clone();
+        let pool = target_directory_pool.clone();
         let test = libtest_mimic::Trial::test(name.clone(), move || {
-            run_test(test_data, test_configuration, profile)
+            run_test(test_data, test_configuration, profile, pool)
         })
         .with_ignored_flag(is_ignored);
         tests.push(test);
@@ -205,7 +209,9 @@ impl TestData {
         &self,
         test_config: &TestConfig,
         cli_profile: &str,
+        target_dir: &Path,
     ) -> Result<ShouldRunTests, anyhow::Error> {
+        Self::remove_target_junk(target_dir).context("Failed to clean up target directory")?;
         let source_directory = self.test_runtime_directory().join("src");
         fs_err::create_dir_all(&source_directory).context(
             "Failed to create the runtime directory for the project under test when setting up the test runtime environment",
@@ -380,13 +386,18 @@ impl TestData {
         // - Use sccache to avoid rebuilding the same dependencies
         // over and over again.
         // - Use the new sparse registry to speed up registry operations.
-        let cargo_config = toml! {
+        let mut cargo_config = toml! {
             [build]
             rustc-wrapper = "sccache"
+            incremental = false
 
             [registries.crates-io]
             protocol = "sparse"
         };
+        cargo_config["build"]
+            .as_table_mut()
+            .unwrap()
+            .insert("target-dir".into(), target_dir.to_str().unwrap().into());
         let dot_cargo_folder = self.runtime_directory.join(".cargo");
         fs_err::create_dir_all(&dot_cargo_folder)?;
         persist_if_changed(
@@ -418,6 +429,33 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {{
             ShouldRunTests::No
         })
     }
+
+    /// Some intermediate artefacts that are left behind by the execution of a previous
+    /// test case might cause the current test case to fail (e.g. it won't recompile
+    /// the binary that generated the blueprint file).
+    ///
+    /// It's unclear why this happens (`cargo` bug?) but we can work around it by
+    /// removing the offending artefacts before running the test.
+    fn remove_target_junk(target_directory: &Path) -> Result<(), anyhow::Error> {
+        let library_name = "app";
+        let walker = globwalk::GlobWalkerBuilder::from_patterns(
+            target_directory,
+            &[
+                format!("/**/lib{}.*", library_name),
+                format!("/**/lib{}-*", library_name),
+            ],
+        )
+        .build()?;
+        for file in walker {
+            let file = file?;
+            if file.file_type().is_file() {
+                fs_err::remove_file(file.path())?;
+            } else if file.file_type().is_dir() {
+                fs_err::remove_dir_all(file.path())?;
+            }
+        }
+        Ok(())
+    }
 }
 
 enum ShouldRunTests {
@@ -425,8 +463,13 @@ enum ShouldRunTests {
     No,
 }
 
-fn run_test(test: TestData, config: TestConfig, cli_profile: String) -> Result<(), Failed> {
-    match _run_test(&config, &test, &cli_profile) {
+fn run_test(
+    test: TestData,
+    config: TestConfig,
+    cli_profile: String,
+    target_dir_pool: TargetDirectoryPool,
+) -> Result<(), Failed> {
+    match _run_test(&config, &test, &cli_profile, &target_dir_pool) {
         Ok(TestOutcome {
             outcome: Err(mut msg),
             codegen_output,
@@ -471,12 +514,13 @@ fn _run_test(
     test_config: &TestConfig,
     test: &TestData,
     cli_profile: &str,
+    target_dir_pool: &TargetDirectoryPool,
 ) -> Result<TestOutcome, anyhow::Error> {
+    let target_dir = target_dir_pool.pull();
     let should_run_tests = test
-        .seed_test_filesystem(test_config, cli_profile)
+        .seed_test_filesystem(test_config, cli_profile, &target_dir)
         .context("Failed to seed the filesystem for the test runtime folder")?;
 
-    // Generate the application code
     let output = std::process::Command::new("cargo")
         .env("RUSTFLAGS", "-Awarnings")
         .arg("run")
