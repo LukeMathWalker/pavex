@@ -377,11 +377,15 @@ impl TestData {
             toml::to_string(&cargo_toml)?.as_bytes(),
         )?;
 
-        // Use sccache to avoid rebuilding the same dependencies
+        // - Use sccache to avoid rebuilding the same dependencies
         // over and over again.
+        // - Use the new sparse registry to speed up registry operations.
         let cargo_config = toml! {
             [build]
             rustc-wrapper = "sccache"
+
+            [registries.crates-io]
+            protocol = "sparse"
         };
         let dot_cargo_folder = self.runtime_directory.join(".cargo");
         fs_err::create_dir_all(&dot_cargo_folder)?;
