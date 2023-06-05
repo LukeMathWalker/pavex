@@ -1,2 +1,3 @@
 [workspace]
 members = ["./pavex*", "persist_if_changed"]
+resolver = "2"

@@ -1,17 +1,4 @@
 [31m[1mERROR[0m[39m: 
-  [31m×[0m The path prefix passed to `nest_at` cannot be empty.
-  [31m│[0m
-  [31m│[0m    ╭─[[36;1;4msrc/lib.rs[0m:7:1]
-  [31m│[0m  [2m7[0m │     // Empty prefix
-  [31m│[0m  [2m8[0m │     bp.nest_at("", sub_blueprint());
-  [31m│[0m    · [35;1m               ─┬[0m
-  [31m│[0m    ·                 [35;1m╰── [35;1mThe empty prefix[0m[0m
-  [31m│[0m  [2m9[0m │     // Prefix does not start with a `/`
-  [31m│[0m    ╰────
-  [31m│[0m [36m  help: [0mIf you don't want to add a common prefix to all routes in the nested
-  [31m│[0m         blueprint, use the `nest` method instead of `nest_at`.
-
-[31m[1mERROR[0m[39m: 
   [31m×[0m The path prefix passed to `nest_at` must begin with a forward slash, `/`.
   [31m│[0m `api` doesn't.
   [31m│[0m
@@ -24,3 +11,16 @@
   [31m│[0m     ╰────
   [31m│[0m [36m  help: [0mAdd a '/' at the beginning of the path prefix to fix this error: use
   [31m│[0m         `/api` instead of `api`.
+
+[31m[1mERROR[0m[39m: 
+  [31m×[0m The path prefix passed to `nest_at` cannot be empty.
+  [31m│[0m
+  [31m│[0m    ╭─[[36;1;4msrc/lib.rs[0m:7:1]
+  [31m│[0m  [2m7[0m │     // Empty prefix
+  [31m│[0m  [2m8[0m │     bp.nest_at("", sub_blueprint());
+  [31m│[0m    · [35;1m               ─┬[0m
+  [31m│[0m    ·                 [35;1m╰── [35;1mThe empty prefix[0m[0m
+  [31m│[0m  [2m9[0m │     // Prefix does not start with a `/`
+  [31m│[0m    ╰────
+  [31m│[0m [36m  help: [0mIf you don't want to add a common prefix to all routes in the nested
+  [31m│[0m         blueprint, use the `nest` method instead of `nest_at`.
