@@ -209,7 +209,7 @@ impl DependencyGraph {
                         // Not all transformers might be relevant to this `CallGraph`, we need to take their scope into account.
                         let transformer_scope_id = component_db.scope_id(*transformer_id);
                         if root_scope_id
-                            .is_child_of(transformer_scope_id, component_db.scope_graph())
+                            .is_descendant_of(transformer_scope_id, component_db.scope_graph())
                         {
                             let transformer_node_index = add_node(
                                 &mut graph,

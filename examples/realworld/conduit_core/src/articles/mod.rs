@@ -14,7 +14,7 @@ pub fn body_size_limit() -> BodySizeLimit {
 
 pub(crate) fn articles_bp() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.constructor(f!(crate::articles::body_size_limit), Lifecycle::Singleton);
+    bp.constructor(f!(crate::articles::body_size_limit), Lifecycle::RequestScoped);
 
     bp.route(GET, "", f!(crate::articles::list_articles));
     bp.route(POST, "", f!(crate::articles::publish_article));

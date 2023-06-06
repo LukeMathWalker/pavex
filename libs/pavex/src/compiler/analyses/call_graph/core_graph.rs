@@ -271,7 +271,9 @@ where
                 for transformer_id in transformer_ids {
                     // Not all transformers might be relevant to this `CallGraph`, we need to take their scope into account.
                     let transformer_scope_id = component_db.scope_id(*transformer_id);
-                    if root_scope_id.is_child_of(transformer_scope_id, component_db.scope_graph()) {
+                    if root_scope_id
+                        .is_descendant_of(transformer_scope_id, component_db.scope_graph())
+                    {
                         let transformer_node_index = call_graph.add_node(CallGraphNode::Compute {
                             component_id: *transformer_id,
                             n_allowed_invocations,
@@ -696,29 +698,31 @@ impl RawCallGraphExt for RawCallGraph {
                     CallGraphEdgeMetadata::Move => "".to_string(),
                     CallGraphEdgeMetadata::SharedBorrow => "label = \"&\"".to_string(),
                 },
-                &|_, (_, node)| {
-                    match node {
+                &|_, (index, node)| {
+                    let label = match node {
                         CallGraphNode::Compute { component_id, .. } => {
-                            match component_db
+                            let component_label = match component_db
                                 .hydrated_component(*component_id, computation_db)
                                 .computation()
                             {
                                 Computation::MatchResult(m) => {
-                                    format!("label = \"{:?} -> {:?}\"", m.input, m.output)
+                                    format!("{:?} -> {:?}", m.input, m.output)
                                 }
                                 Computation::Callable(c) => {
-                                    format!("label = \"{c:?}\"")
+                                    format!("{c:?}")
                                 }
                                 Computation::FrameworkItem(i) => {
-                                    format!("label = \"{i:?}\"")
+                                    format!("{i:?}")
                                 }
-                            }
+                            };
+                            format!("{component_label} (Component ix: {component_id:?})")
                         }
                         CallGraphNode::InputParameter { type_, .. } => {
-                            format!("label = \"{type_:?}\"")
+                            format!("{type_:?}")
                         }
-                        CallGraphNode::MatchBranching => "label = \"`match`\"".to_string(),
-                    }
+                        CallGraphNode::MatchBranching => "`match`".to_string(),
+                    };
+                    format!("label = \"{label} (Node ix: {index:?})\"")
                 },
             )
         )

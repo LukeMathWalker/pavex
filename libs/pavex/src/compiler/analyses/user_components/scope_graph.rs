@@ -2,7 +2,7 @@ use std::collections::{BTreeSet, HashMap};
 
 use petgraph::algo::has_path_connecting;
 use petgraph::graphmap::DiGraphMap;
-use petgraph::visit::IntoNodeIdentifiers;
+use petgraph::visit::{IntoNodeIdentifiers, Reversed};
 
 use pavex_builder::reflection::Location;
 
@@ -73,17 +73,21 @@ impl PartialEq<ScopeId> for &ScopeId {
 }
 
 impl ScopeId {
-    /// Return `true` if the `other` scope is a parent of this scope or if the two scopes are equal.
-    pub fn is_child_of(&self, other: ScopeId, scope_graph: &ScopeGraph) -> bool {
-        self == other
-            || scope_graph
-                .graph
-                .neighbors_directed(other.0, petgraph::Direction::Outgoing)
-                .any(|id| id == self.0)
+    /// Return `true` if the `other` scope is a parent of this scope (either directly or 
+    /// indirectly) or if the two scopes are equal.
+    pub fn is_descendant_of(&self, other: ScopeId, scope_graph: &ScopeGraph) -> bool {
+        use petgraph::visit::{Dfs, Walker};
+
+        Dfs::new(Reversed(&scope_graph.graph), self.0)
+            .iter(Reversed(&scope_graph.graph))
+            .any(|node_index| node_index == other.0)
     }
 
-    /// Return the IDs of the parent scopes, if any.
-    pub fn parent_ids(&self, scope_graph: &ScopeGraph) -> BTreeSet<ScopeId> {
+    /// Return the IDs of the scopes that are direct parents of this scope, if any.
+    ///
+    /// E.g. if this scope is `RH Scope 1` in the example in [`ScopeGraph`], this method will return
+    /// `Scope 1`, but it won't return `Root`.
+    pub fn direct_parent_ids(&self, scope_graph: &ScopeGraph) -> BTreeSet<ScopeId> {
         scope_graph
             .graph
             .neighbors_directed(self.0, petgraph::Direction::Incoming)
@@ -227,5 +231,14 @@ impl ScopeGraph {
         }
 
         common_ancestor
+    }
+
+    /// Print a .dot representation of the scope graph, for debugging purposes.
+    #[allow(unused)]
+    pub fn debug_print(&self) {
+        eprintln!(
+            "{:?}",
+            petgraph::dot::Dot::with_config(&self.graph, &[petgraph::dot::Config::EdgeNoLabel])
+        )
     }
 }

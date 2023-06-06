@@ -169,7 +169,7 @@
                                 file: "conduit_core/src/articles/mod.rs",
                             ),
                         ),
-                        lifecycle: Singleton,
+                        lifecycle: RequestScoped,
                         cloning_strategy: None,
                         error_handler: None,
                     ),

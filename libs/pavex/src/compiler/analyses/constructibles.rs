@@ -408,7 +408,7 @@ impl ConstructibleDb {
                     return Some(output);
                 }
             }
-            fifo.extend(scope_id.parent_ids(scope_graph));
+            fifo.extend(scope_id.direct_parent_ids(scope_graph));
         }
         None
     }
@@ -441,7 +441,7 @@ impl ConstructibleDb {
                     return Some(output);
                 }
             }
-            fifo.extend(scope_id.parent_ids(component_db.scope_graph()));
+            fifo.extend(scope_id.direct_parent_ids(component_db.scope_graph()));
         }
         None
     }
