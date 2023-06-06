@@ -39,6 +39,10 @@ pub fn api_blueprint() -> Blueprint {
     .error_handler(f!(
         pavex_runtime::extract::body::errors::ExtractBufferedBodyError::into_response
     ));
+    bp.constructor(
+        f!(<pavex_runtime::extract::body::BodySizeLimit as std::default::Default>::default),
+        Lifecycle::RequestScoped,
+    );
 
     bp.route(GET, "/api/ping", f!(crate::ping));
     bp.nest_at("/articles", articles_bp());

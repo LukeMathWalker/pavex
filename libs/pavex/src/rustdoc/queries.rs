@@ -321,6 +321,10 @@ impl CrateCollection {
                     .into()));
                 }
             };
+            // The parent trait/struct might have been a re-export, so we need to make sure that we 
+            // are looking at the crate where it was originally defined when we start
+            // following the local type ids that are encoded in the parent. 
+            let krate = self.get_or_compute_crate_by_package_id(&parent_type_id.package_id)?;
             for child_id in children_ids {
                 let child = krate.get_type_by_local_type_id(child_id);
                 match &child.inner {
