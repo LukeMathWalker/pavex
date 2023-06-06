@@ -109,6 +109,22 @@
                 ),
             )),
         ),
+        (
+            constructor: (
+                callable: (
+                    registered_at: "conduit_core",
+                    import_path: "< pavex_runtime :: extract :: body :: BodySizeLimit as std :: default ::\nDefault > :: default",
+                ),
+                location: (
+                    line: 42,
+                    column: 8,
+                    file: "conduit_core/src/lib.rs",
+                ),
+            ),
+            lifecycle: RequestScoped,
+            cloning_strategy: None,
+            error_handler: None,
+        ),
     ],
     routes: [
         (
@@ -124,7 +140,7 @@
                     import_path: "crate :: ping",
                 ),
                 location: (
-                    line: 43,
+                    line: 47,
                     column: 8,
                     file: "conduit_core/src/lib.rs",
                 ),
@@ -284,7 +300,7 @@
             ),
             path_prefix: Some("/articles"),
             nesting_location: (
-                line: 44,
+                line: 48,
                 column: 8,
                 file: "conduit_core/src/lib.rs",
             ),

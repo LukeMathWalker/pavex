@@ -546,13 +546,18 @@ impl ResolvedPath {
             .collect();
         let ty = krate_collection
             .get_item_by_resolved_path(&path, &self.package_id)
-            // TODO: Remove this unwrap
-            .unwrap()
+            .map_err(|e| UnknownPath(self.to_owned(), Arc::new(e.into())))?
             .map_err(|e| UnknownPath(self.to_owned(), Arc::new(e.into())))?;
         let qself_ty = self
             .qualified_self
             .as_ref()
-            .map(|qself| qself.type_.resolve(krate_collection).unwrap());
+            .map(|qself| {
+                qself
+                    .type_
+                    .resolve(krate_collection)
+                    .map_err(|e| UnknownPath(self.to_owned(), Arc::new(e.into())))
+            })
+            .transpose()?;
         Ok((ty, qself_ty))
     }
 
