@@ -1,2 +1,3 @@
 [workspace]
 members = ["api_server", "api_server_sdk", "conduit_core"]
+resolver = "2"

@@ -1,2 +1,3 @@
 [workspace]
 members = ["app_blueprint", "app_server_sdk"]
+resolver = "2"
