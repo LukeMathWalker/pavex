@@ -5,14 +5,12 @@
 use std as alloc;
 struct ServerState {
     router: pavex_runtime::routing::Router<u32>,
+    #[allow(dead_code)]
     application_state: ApplicationState,
 }
-pub struct ApplicationState {
-    s0: pavex_runtime::extract::body::BodySizeLimit,
-}
+pub struct ApplicationState {}
 pub async fn build_application_state() -> crate::ApplicationState {
-    let v0 = conduit_core::articles::body_size_limit();
-    crate::ApplicationState { s0: v0 }
+    crate::ApplicationState {}
 }
 pub async fn run(
     server_builder: pavex_runtime::hyper::server::Builder<
@@ -51,7 +49,7 @@ fn build_router() -> Result<
 > {
     let mut router = pavex_runtime::routing::Router::new();
     router.insert("/api/ping", 0u32)?;
-    router.insert("/articles/", 1u32)?;
+    router.insert("/articles", 1u32)?;
     router.insert("/articles/:slug", 2u32)?;
     router.insert("/articles/feed", 3u32)?;
     Ok(router)
@@ -94,12 +92,7 @@ async fn route_request(
             match &request_head.method {
                 &pavex_runtime::http::Method::GET => route_handler_1(&request_head).await,
                 &pavex_runtime::http::Method::POST => {
-                    route_handler_2(
-                            server_state.application_state.s0.clone(),
-                            request_body,
-                            &request_head,
-                        )
-                        .await
+                    route_handler_2(request_body, &request_head).await
                 }
                 _ => {
                     pavex_runtime::response::Response::builder()
@@ -115,13 +108,7 @@ async fn route_request(
                 &pavex_runtime::http::Method::DELETE => route_handler_3(url_params).await,
                 &pavex_runtime::http::Method::GET => route_handler_4(url_params).await,
                 &pavex_runtime::http::Method::PUT => {
-                    route_handler_5(
-                            server_state.application_state.s0.clone(),
-                            request_body,
-                            url_params,
-                            &request_head,
-                        )
-                        .await
+                    route_handler_5(request_body, url_params, &request_head).await
                 }
                 _ => {
                     pavex_runtime::response::Response::builder()
@@ -182,16 +169,16 @@ pub async fn route_handler_1(
     }
 }
 pub async fn route_handler_2(
-    v0: pavex_runtime::extract::body::BodySizeLimit,
-    v1: hyper::Body,
-    v2: &pavex_runtime::request::RequestHead,
+    v0: hyper::Body,
+    v1: &pavex_runtime::request::RequestHead,
 ) -> http::Response<
     http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
 > {
-    let v3 = pavex_runtime::extract::body::BufferedBody::extract(v2, v1, v0).await;
+    let v2 = <pavex_runtime::extract::body::BodySizeLimit as std::default::Default>::default();
+    let v3 = pavex_runtime::extract::body::BufferedBody::extract(v1, v0, v2).await;
     match v3 {
         Ok(v4) => {
-            let v5 = pavex_runtime::extract::body::JsonBody::extract(v2, &v4);
+            let v5 = pavex_runtime::extract::body::JsonBody::extract(v1, &v4);
             match v5 {
                 Ok(v6) => {
                     let v7 = conduit_core::articles::publish_article(v6);
@@ -266,20 +253,20 @@ pub async fn route_handler_4(
     }
 }
 pub async fn route_handler_5(
-    v0: pavex_runtime::extract::body::BodySizeLimit,
-    v1: hyper::Body,
-    v2: pavex_runtime::extract::route::RawRouteParams<'_, '_>,
-    v3: &pavex_runtime::request::RequestHead,
+    v0: hyper::Body,
+    v1: pavex_runtime::extract::route::RawRouteParams<'_, '_>,
+    v2: &pavex_runtime::request::RequestHead,
 ) -> http::Response<
     http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
 > {
-    let v4 = pavex_runtime::extract::body::BufferedBody::extract(v3, v1, v0).await;
+    let v3 = <pavex_runtime::extract::body::BodySizeLimit as std::default::Default>::default();
+    let v4 = pavex_runtime::extract::body::BufferedBody::extract(v2, v0, v3).await;
     match v4 {
         Ok(v5) => {
-            let v6 = pavex_runtime::extract::body::JsonBody::extract(v3, &v5);
+            let v6 = pavex_runtime::extract::body::JsonBody::extract(v2, &v5);
             match v6 {
                 Ok(v7) => {
-                    let v8 = pavex_runtime::extract::route::RouteParams::extract(v2);
+                    let v8 = pavex_runtime::extract::route::RouteParams::extract(v1);
                     match v8 {
                         Ok(v9) => {
                             let v10 = conduit_core::articles::update_article(v9, v7);
