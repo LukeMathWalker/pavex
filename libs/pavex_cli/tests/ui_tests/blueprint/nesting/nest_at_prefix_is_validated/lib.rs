@@ -4,10 +4,12 @@ use pavex_builder::{constructor::Lifecycle, f, router::GET, Blueprint};
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    // Empty prefix
+    // The prefix cannot be empty
     bp.nest_at("", sub_blueprint());
-    // Prefix does not start with a `/`
+    // If the prefix is not empty, it **must** start with a `/`
     bp.nest_at("api", sub_blueprint());
+    // If the prefix is not empty, it **cannot** end with a `/`
+    bp.nest_at("/api/", sub_blueprint());
     bp
 }
 

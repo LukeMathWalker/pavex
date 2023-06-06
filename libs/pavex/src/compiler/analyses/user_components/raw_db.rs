@@ -340,11 +340,10 @@ impl RawUserComponentDb {
         package_graph: &PackageGraph,
         diagnostics: &mut Vec<miette::Error>,
     ) {
+        // Empty paths are OK.
         if route.path.is_empty() {
-            self.route_path_cannot_be_empty(route_id, package_graph, diagnostics);
             return;
         }
-
         if !route.path.starts_with('/') {
             self.route_path_must_start_with_a_slash(route, route_id, package_graph, diagnostics);
         }
@@ -367,35 +366,16 @@ impl RawUserComponentDb {
             if !path_prefix.starts_with('/') {
                 self.path_prefix_must_start_with_a_slash(nested_bp, package_graph, diagnostics);
             }
+
+            if path_prefix.ends_with('/') {
+                self.path_prefix_cannot_end_with_a_slash(nested_bp, package_graph, diagnostics);
+            }
         }
     }
 }
 
 /// All diagnostic-related code.
 impl RawUserComponentDb {
-    fn route_path_cannot_be_empty(
-        &self,
-        route_id: UserComponentId,
-        package_graph: &PackageGraph,
-        diagnostics: &mut Vec<miette::Error>,
-    ) {
-        let location = self.get_location(route_id);
-        let source = match location.source_file(package_graph) {
-            Ok(source) => source,
-            Err(e) => {
-                diagnostics.push(e.into());
-                return;
-            }
-        };
-        let label = diagnostic::get_route_path_span(&source, location)
-            .map(|s| s.labeled("The empty route path".to_string()));
-        let err = anyhow!("The path for a route cannot be empty.");
-        let diagnostic = CompilerDiagnostic::builder(source, err)
-            .optional_label(label)
-            .help("If you want to match requests to the base URL, use `/` as route path instead of an empty one.".into());
-        diagnostics.push(diagnostic.build().into());
-    }
-
     fn route_path_must_start_with_a_slash(
         &self,
         route: &RegisteredRoute,
@@ -473,6 +453,38 @@ impl RawUserComponentDb {
         let diagnostic = CompilerDiagnostic::builder(source, err)
             .optional_label(label)
             .help(format!("Add a '/' at the beginning of the path prefix to fix this error: use `/{prefix}` instead of `{prefix}`."));
+        diagnostics.push(diagnostic.build().into());
+    }
+
+    fn path_prefix_cannot_end_with_a_slash(
+        &self,
+        nested_bp: &NestedBlueprint,
+        package_graph: &PackageGraph,
+        diagnostics: &mut Vec<miette::Error>,
+    ) {
+        let location = &nested_bp.nesting_location;
+        let source = match location.source_file(package_graph) {
+            Ok(source) => source,
+            Err(e) => {
+                diagnostics.push(e.into());
+                return;
+            }
+        };
+        let label = diagnostic::get_nest_at_prefix_span(&source, location)
+            .map(|s| s.labeled("The prefix ending with a trailing '/'".to_string()));
+        let prefix = nested_bp.path_prefix.as_deref().unwrap();
+        let err = anyhow!(
+            "The path prefix passed to `nest_at` can't end with a trailing slash, `/`. \
+            `{prefix}` does.\n\
+            Trailing slashes in path prefixes increase the likelihood of having consecutive \
+            slashes in the final route path, which is rarely desireable. If you want consecutive \
+            slashes in the final route path, you can add them explicitly in the paths of the routes \
+            registered against the nested blueprint.",
+        );
+        let correct_prefix = prefix.trim_end_matches('/');
+        let diagnostic = CompilerDiagnostic::builder(source, err)
+            .optional_label(label)
+            .help(format!("Remove the '/' at the end of the path prefix to fix this error: use `{correct_prefix}` instead of `{prefix}`."));
         diagnostics.push(diagnostic.build().into());
     }
 }

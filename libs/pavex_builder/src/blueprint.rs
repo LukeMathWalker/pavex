@@ -257,6 +257,32 @@ impl Blueprint {
     /// `prefix` will be prepended to all the routes coming from the nested blueprint.  
     /// `prefix` must be non-empty and it must start with a `/`.  
     /// If you don't want to add a common prefix, check out [`Blueprint::nest`].
+    /// 
+    /// ## Trailing slashes
+    /// 
+    /// `prefix` **can't** end with a trailing `/`.  
+    /// This would result in routes with two consecutive `/` in their paths—e.g. 
+    /// `/prefix//path`—which is rarely desirable.  
+    /// If you actually need consecutive slashes in your route, you can add them explicitly to 
+    /// the path of the route registered in the nested blueprint:
+    /// 
+    /// ```rust
+    /// use pavex_builder::{Blueprint, f, router::GET};
+    /// 
+    /// fn app() -> Blueprint {
+    ///     let mut bp = Blueprint::new();
+    ///     bp.nest_at("/api", api_bp());
+    ///     bp
+    /// }
+    /// 
+    /// fn api_bp() -> Blueprint {
+    ///     let mut bp = Blueprint::new();
+    ///     // This will match `GET` requests to `/api//path`.
+    ///     bp.route(GET, "//path", f!(crate::handler));
+    ///     bp
+    /// }
+    /// # pub fn handler() {}
+    /// ```
     ///
     /// # Constructors
     ///

@@ -6,9 +6,9 @@ pub fn handler() -> String {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    // Empty path
+    // Empty path is accepted
     bp.route(GET, "", f!(crate::handler));
-    // Path does not start with a `/`
+    // If the path is not empty, it *must* start with a `/`
     bp.route(GET, "api", f!(crate::handler));
     bp
 }
