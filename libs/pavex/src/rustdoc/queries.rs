@@ -321,9 +321,9 @@ impl CrateCollection {
                     .into()));
                 }
             };
-            // The parent trait/struct might have been a re-export, so we need to make sure that we 
+            // The parent trait/struct might have been a re-export, so we need to make sure that we
             // are looking at the crate where it was originally defined when we start
-            // following the local type ids that are encoded in the parent. 
+            // following the local type ids that are encoded in the parent.
             let krate = self.get_or_compute_crate_by_package_id(&parent_type_id.package_id)?;
             for child_id in children_ids {
                 let child = krate.get_type_by_local_type_id(child_id);
@@ -836,21 +836,34 @@ fn index_local_types<'a>(
                         }
                     }
                     Some(imported_item) => {
-                        if let ItemEnum::Module(_) = imported_item.inner {
+                        if let ItemEnum::Module(re_exported_module) = &imported_item.inner {
                             if !i.glob {
                                 current_path.push(&i.name);
                             }
+                            for re_exported_item_id in &re_exported_module.items {
+                                index_local_types(
+                                    krate,
+                                    package_id,
+                                    collection,
+                                    current_path.clone(),
+                                    public_path_index,
+                                    private_path_index,
+                                    re_exports,
+                                    re_exported_item_id,
+                                )?;
+                            }
+                        } else {
+                            index_local_types(
+                                krate,
+                                package_id,
+                                collection,
+                                current_path.clone(),
+                                public_path_index,
+                                private_path_index,
+                                re_exports,
+                                imported_id,
+                            )?;
                         }
-                        index_local_types(
-                            krate,
-                            package_id,
-                            collection,
-                            current_path.clone(),
-                            public_path_index,
-                            private_path_index,
-                            re_exports,
-                            imported_id,
-                        )?;
                     }
                 }
             }

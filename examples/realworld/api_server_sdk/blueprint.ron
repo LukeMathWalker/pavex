@@ -1,20 +1,20 @@
 (
     creation_location: (
-        line: 12,
+        line: 9,
         column: 18,
-        file: "conduit_core/src/lib.rs",
+        file: "conduit_core/src/api/mod.rs",
     ),
     constructors: [
         (
             constructor: (
                 callable: (
                     registered_at: "conduit_core",
-                    import_path: "pavex_runtime :: extract :: query :: QueryParams :: extract",
+                    import_path: "pavex_runtime::extract::query::QueryParams::extract",
                 ),
                 location: (
-                    line: 14,
+                    line: 19,
                     column: 8,
-                    file: "conduit_core/src/lib.rs",
+                    file: "conduit_core/src/api/mod.rs",
                 ),
             ),
             lifecycle: RequestScoped,
@@ -22,12 +22,12 @@
             error_handler: Some((
                 callable: (
                     registered_at: "conduit_core",
-                    import_path: "pavex_runtime :: extract :: query :: errors :: ExtractQueryParamsError ::\ninto_response",
+                    import_path: "pavex_runtime::extract::query::errors::ExtractQueryParamsError::into_response",
                 ),
                 location: (
-                    line: 18,
+                    line: 23,
                     column: 6,
-                    file: "conduit_core/src/lib.rs",
+                    file: "conduit_core/src/api/mod.rs",
                 ),
             )),
         ),
@@ -35,38 +35,12 @@
             constructor: (
                 callable: (
                     registered_at: "conduit_core",
-                    import_path: "pavex_runtime :: extract :: route :: RouteParams :: extract",
-                ),
-                location: (
-                    line: 21,
-                    column: 8,
-                    file: "conduit_core/src/lib.rs",
-                ),
-            ),
-            lifecycle: RequestScoped,
-            cloning_strategy: None,
-            error_handler: Some((
-                callable: (
-                    registered_at: "conduit_core",
-                    import_path: "pavex_runtime :: extract :: route :: errors :: ExtractRouteParamsError ::\ninto_response",
-                ),
-                location: (
-                    line: 25,
-                    column: 6,
-                    file: "conduit_core/src/lib.rs",
-                ),
-            )),
-        ),
-        (
-            constructor: (
-                callable: (
-                    registered_at: "conduit_core",
-                    import_path: "pavex_runtime :: extract :: body :: JsonBody :: extract",
+                    import_path: "pavex_runtime::extract::route::RouteParams::extract",
                 ),
                 location: (
                     line: 28,
                     column: 8,
-                    file: "conduit_core/src/lib.rs",
+                    file: "conduit_core/src/api/mod.rs",
                 ),
             ),
             lifecycle: RequestScoped,
@@ -74,12 +48,12 @@
             error_handler: Some((
                 callable: (
                     registered_at: "conduit_core",
-                    import_path: "pavex_runtime :: extract :: body :: errors :: ExtractJsonBodyError ::\ninto_response",
+                    import_path: "pavex_runtime::extract::route::errors::ExtractRouteParamsError::into_response",
                 ),
                 location: (
                     line: 32,
                     column: 6,
-                    file: "conduit_core/src/lib.rs",
+                    file: "conduit_core/src/api/mod.rs",
                 ),
             )),
         ),
@@ -87,12 +61,12 @@
             constructor: (
                 callable: (
                     registered_at: "conduit_core",
-                    import_path: "pavex_runtime :: extract :: body :: BufferedBody :: extract",
+                    import_path: "pavex_runtime::extract::body::JsonBody::extract",
                 ),
                 location: (
-                    line: 35,
+                    line: 37,
                     column: 8,
-                    file: "conduit_core/src/lib.rs",
+                    file: "conduit_core/src/api/mod.rs",
                 ),
             ),
             lifecycle: RequestScoped,
@@ -100,12 +74,12 @@
             error_handler: Some((
                 callable: (
                     registered_at: "conduit_core",
-                    import_path: "pavex_runtime :: extract :: body :: errors :: ExtractBufferedBodyError ::\ninto_response",
+                    import_path: "pavex_runtime::extract::body::errors::ExtractJsonBodyError::into_response",
                 ),
                 location: (
-                    line: 39,
+                    line: 41,
                     column: 6,
-                    file: "conduit_core/src/lib.rs",
+                    file: "conduit_core/src/api/mod.rs",
                 ),
             )),
         ),
@@ -113,12 +87,38 @@
             constructor: (
                 callable: (
                     registered_at: "conduit_core",
-                    import_path: "< pavex_runtime :: extract :: body :: BodySizeLimit as std :: default ::\nDefault > :: default",
+                    import_path: "pavex_runtime::extract::body::BufferedBody::extract",
                 ),
                 location: (
-                    line: 42,
+                    line: 44,
                     column: 8,
-                    file: "conduit_core/src/lib.rs",
+                    file: "conduit_core/src/api/mod.rs",
+                ),
+            ),
+            lifecycle: RequestScoped,
+            cloning_strategy: None,
+            error_handler: Some((
+                callable: (
+                    registered_at: "conduit_core",
+                    import_path: "pavex_runtime::extract::body::errors::ExtractBufferedBodyError::into_response",
+                ),
+                location: (
+                    line: 48,
+                    column: 6,
+                    file: "conduit_core/src/api/mod.rs",
+                ),
+            )),
+        ),
+        (
+            constructor: (
+                callable: (
+                    registered_at: "conduit_core",
+                    import_path: "<pavex_runtime::extract::body::BodySizeLimit as\n    std::default::Default>::default",
+                ),
+                location: (
+                    line: 51,
+                    column: 8,
+                    file: "conduit_core/src/api/mod.rs",
                 ),
             ),
             lifecycle: RequestScoped,
@@ -137,12 +137,12 @@
             request_handler: (
                 callable: (
                     registered_at: "conduit_core",
-                    import_path: "crate :: ping",
+                    import_path: "crate::api::status::ping",
                 ),
                 location: (
-                    line: 47,
+                    line: 11,
                     column: 8,
-                    file: "conduit_core/src/lib.rs",
+                    file: "conduit_core/src/api/mod.rs",
                 ),
             ),
             error_handler: None,
@@ -152,28 +152,11 @@
         (
             blueprint: (
                 creation_location: (
-                    line: 16,
+                    line: 5,
                     column: 18,
-                    file: "conduit_core/src/articles/mod.rs",
+                    file: "conduit_core/src/api/articles/mod.rs",
                 ),
-                constructors: [
-                    (
-                        constructor: (
-                            callable: (
-                                registered_at: "conduit_core",
-                                import_path: "crate :: articles :: body_size_limit",
-                            ),
-                            location: (
-                                line: 17,
-                                column: 8,
-                                file: "conduit_core/src/articles/mod.rs",
-                            ),
-                        ),
-                        lifecycle: RequestScoped,
-                        cloning_strategy: None,
-                        error_handler: None,
-                    ),
-                ],
+                constructors: [],
                 routes: [
                     (
                         path: "",
@@ -185,12 +168,12 @@
                         request_handler: (
                             callable: (
                                 registered_at: "conduit_core",
-                                import_path: "crate :: articles :: list_articles",
+                                import_path: "crate::api::articles::list_articles",
                             ),
                             location: (
-                                line: 19,
+                                line: 6,
                                 column: 8,
-                                file: "conduit_core/src/articles/mod.rs",
+                                file: "conduit_core/src/api/articles/mod.rs",
                             ),
                         ),
                         error_handler: None,
@@ -205,12 +188,12 @@
                         request_handler: (
                             callable: (
                                 registered_at: "conduit_core",
-                                import_path: "crate :: articles :: publish_article",
+                                import_path: "crate::api::articles::publish_article",
                             ),
                             location: (
-                                line: 20,
+                                line: 7,
                                 column: 8,
-                                file: "conduit_core/src/articles/mod.rs",
+                                file: "conduit_core/src/api/articles/mod.rs",
                             ),
                         ),
                         error_handler: None,
@@ -225,12 +208,12 @@
                         request_handler: (
                             callable: (
                                 registered_at: "conduit_core",
-                                import_path: "crate :: articles :: get_feed",
+                                import_path: "crate::api::articles::get_feed",
                             ),
                             location: (
-                                line: 21,
+                                line: 8,
                                 column: 8,
-                                file: "conduit_core/src/articles/mod.rs",
+                                file: "conduit_core/src/api/articles/mod.rs",
                             ),
                         ),
                         error_handler: None,
@@ -245,12 +228,12 @@
                         request_handler: (
                             callable: (
                                 registered_at: "conduit_core",
-                                import_path: "crate :: articles :: get_article",
+                                import_path: "crate::api::articles::get_article",
                             ),
                             location: (
-                                line: 22,
+                                line: 9,
                                 column: 8,
-                                file: "conduit_core/src/articles/mod.rs",
+                                file: "conduit_core/src/api/articles/mod.rs",
                             ),
                         ),
                         error_handler: None,
@@ -265,12 +248,12 @@
                         request_handler: (
                             callable: (
                                 registered_at: "conduit_core",
-                                import_path: "crate :: articles :: delete_article",
+                                import_path: "crate::api::articles::delete_article",
                             ),
                             location: (
-                                line: 23,
+                                line: 10,
                                 column: 8,
-                                file: "conduit_core/src/articles/mod.rs",
+                                file: "conduit_core/src/api/articles/mod.rs",
                             ),
                         ),
                         error_handler: None,
@@ -285,12 +268,112 @@
                         request_handler: (
                             callable: (
                                 registered_at: "conduit_core",
-                                import_path: "crate :: articles :: update_article",
+                                import_path: "crate::api::articles::update_article",
                             ),
                             location: (
-                                line: 24,
+                                line: 11,
                                 column: 8,
-                                file: "conduit_core/src/articles/mod.rs",
+                                file: "conduit_core/src/api/articles/mod.rs",
+                            ),
+                        ),
+                        error_handler: None,
+                    ),
+                    (
+                        path: "/:slug/favorite",
+                        method_guard: (
+                            allowed_methods: [
+                                "DELETE",
+                            ],
+                        ),
+                        request_handler: (
+                            callable: (
+                                registered_at: "conduit_core",
+                                import_path: "crate::api::articles::unfavorite_article",
+                            ),
+                            location: (
+                                line: 12,
+                                column: 8,
+                                file: "conduit_core/src/api/articles/mod.rs",
+                            ),
+                        ),
+                        error_handler: None,
+                    ),
+                    (
+                        path: "/:slug/favorite",
+                        method_guard: (
+                            allowed_methods: [
+                                "POST",
+                            ],
+                        ),
+                        request_handler: (
+                            callable: (
+                                registered_at: "conduit_core",
+                                import_path: "crate::api::articles::favorite_article",
+                            ),
+                            location: (
+                                line: 17,
+                                column: 8,
+                                file: "conduit_core/src/api/articles/mod.rs",
+                            ),
+                        ),
+                        error_handler: None,
+                    ),
+                    (
+                        path: "/:slug/comments",
+                        method_guard: (
+                            allowed_methods: [
+                                "GET",
+                            ],
+                        ),
+                        request_handler: (
+                            callable: (
+                                registered_at: "conduit_core",
+                                import_path: "crate::api::articles::list_comments",
+                            ),
+                            location: (
+                                line: 22,
+                                column: 8,
+                                file: "conduit_core/src/api/articles/mod.rs",
+                            ),
+                        ),
+                        error_handler: None,
+                    ),
+                    (
+                        path: "/:slug/comments",
+                        method_guard: (
+                            allowed_methods: [
+                                "POST",
+                            ],
+                        ),
+                        request_handler: (
+                            callable: (
+                                registered_at: "conduit_core",
+                                import_path: "crate::api::articles::publish_comment",
+                            ),
+                            location: (
+                                line: 27,
+                                column: 8,
+                                file: "conduit_core/src/api/articles/mod.rs",
+                            ),
+                        ),
+                        error_handler: None,
+                    ),
+                    (
+                        path: "/:slug/comments/:comment_id",
+                        method_guard: (
+                            allowed_methods: [
+                                "DELETE",
+                            ],
+                        ),
+                        request_handler: (
+                            callable: (
+                                registered_at: "conduit_core",
+                                import_path: "crate::api::articles::delete_comment",
+                            ),
+                            location: (
+                                line: 32,
+                                column: 8,
+                                file: "conduit_core/src/api/articles/mod.rs",
                             ),
                         ),
                         error_handler: None,
@@ -300,9 +383,9 @@
             ),
             path_prefix: Some("/articles"),
             nesting_location: (
-                line: 48,
+                line: 12,
                 column: 8,
-                file: "conduit_core/src/lib.rs",
+                file: "conduit_core/src/api/mod.rs",
             ),
         ),
     ],
