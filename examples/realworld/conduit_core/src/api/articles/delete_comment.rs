@@ -1,6 +1,7 @@
 use pavex_runtime::{extract::route::RouteParams, hyper::StatusCode};
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug)]
+#[RouteParams]
 pub struct DeleteComment {
     pub slug: String,
     pub comment_id: u64

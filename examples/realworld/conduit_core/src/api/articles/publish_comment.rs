@@ -1,6 +1,7 @@
 use pavex_runtime::{extract::{body::JsonBody, route::RouteParams}, hyper::StatusCode};
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug)]
+#[RouteParams]
 pub struct PublishCommentRoute {
     pub slug: String,
 }

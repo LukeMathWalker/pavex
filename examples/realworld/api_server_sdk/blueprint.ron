@@ -1,6 +1,6 @@
 (
     creation_location: (
-        line: 9,
+        line: 12,
         column: 18,
         file: "conduit_core/src/api/mod.rs",
     ),
@@ -12,7 +12,7 @@
                     import_path: "pavex_runtime::extract::query::QueryParams::extract",
                 ),
                 location: (
-                    line: 19,
+                    line: 25,
                     column: 8,
                     file: "conduit_core/src/api/mod.rs",
                 ),
@@ -25,7 +25,7 @@
                     import_path: "pavex_runtime::extract::query::errors::ExtractQueryParamsError::into_response",
                 ),
                 location: (
-                    line: 23,
+                    line: 29,
                     column: 6,
                     file: "conduit_core/src/api/mod.rs",
                 ),
@@ -38,7 +38,7 @@
                     import_path: "pavex_runtime::extract::route::RouteParams::extract",
                 ),
                 location: (
-                    line: 28,
+                    line: 34,
                     column: 8,
                     file: "conduit_core/src/api/mod.rs",
                 ),
@@ -51,7 +51,7 @@
                     import_path: "pavex_runtime::extract::route::errors::ExtractRouteParamsError::into_response",
                 ),
                 location: (
-                    line: 32,
+                    line: 38,
                     column: 6,
                     file: "conduit_core/src/api/mod.rs",
                 ),
@@ -64,7 +64,7 @@
                     import_path: "pavex_runtime::extract::body::JsonBody::extract",
                 ),
                 location: (
-                    line: 37,
+                    line: 43,
                     column: 8,
                     file: "conduit_core/src/api/mod.rs",
                 ),
@@ -77,7 +77,7 @@
                     import_path: "pavex_runtime::extract::body::errors::ExtractJsonBodyError::into_response",
                 ),
                 location: (
-                    line: 41,
+                    line: 47,
                     column: 6,
                     file: "conduit_core/src/api/mod.rs",
                 ),
@@ -90,7 +90,7 @@
                     import_path: "pavex_runtime::extract::body::BufferedBody::extract",
                 ),
                 location: (
-                    line: 44,
+                    line: 50,
                     column: 8,
                     file: "conduit_core/src/api/mod.rs",
                 ),
@@ -103,7 +103,7 @@
                     import_path: "pavex_runtime::extract::body::errors::ExtractBufferedBodyError::into_response",
                 ),
                 location: (
-                    line: 48,
+                    line: 54,
                     column: 6,
                     file: "conduit_core/src/api/mod.rs",
                 ),
@@ -116,7 +116,7 @@
                     import_path: "<pavex_runtime::extract::body::BodySizeLimit as\n    std::default::Default>::default",
                 ),
                 location: (
-                    line: 51,
+                    line: 57,
                     column: 8,
                     file: "conduit_core/src/api/mod.rs",
                 ),
@@ -140,7 +140,27 @@
                     import_path: "crate::api::status::ping",
                 ),
                 location: (
-                    line: 11,
+                    line: 17,
+                    column: 8,
+                    file: "conduit_core/src/api/mod.rs",
+                ),
+            ),
+            error_handler: None,
+        ),
+        (
+            path: "/tags",
+            method_guard: (
+                allowed_methods: [
+                    "GET",
+                ],
+            ),
+            request_handler: (
+                callable: (
+                    registered_at: "conduit_core",
+                    import_path: "crate::api::tags::get_tags",
+                ),
+                location: (
+                    line: 18,
                     column: 8,
                     file: "conduit_core/src/api/mod.rs",
                 ),
@@ -383,7 +403,185 @@
             ),
             path_prefix: Some("/articles"),
             nesting_location: (
-                line: 12,
+                line: 14,
+                column: 8,
+                file: "conduit_core/src/api/mod.rs",
+            ),
+        ),
+        (
+            blueprint: (
+                creation_location: (
+                    line: 5,
+                    column: 18,
+                    file: "conduit_core/src/api/profiles/mod.rs",
+                ),
+                constructors: [],
+                routes: [
+                    (
+                        path: "/:username",
+                        method_guard: (
+                            allowed_methods: [
+                                "GET",
+                            ],
+                        ),
+                        request_handler: (
+                            callable: (
+                                registered_at: "conduit_core",
+                                import_path: "crate::api::profiles::get_user",
+                            ),
+                            location: (
+                                line: 6,
+                                column: 8,
+                                file: "conduit_core/src/api/profiles/mod.rs",
+                            ),
+                        ),
+                        error_handler: None,
+                    ),
+                    (
+                        path: "/:username/follow",
+                        method_guard: (
+                            allowed_methods: [
+                                "POST",
+                            ],
+                        ),
+                        request_handler: (
+                            callable: (
+                                registered_at: "conduit_core",
+                                import_path: "crate::api::profiles::follow_user",
+                            ),
+                            location: (
+                                line: 7,
+                                column: 8,
+                                file: "conduit_core/src/api/profiles/mod.rs",
+                            ),
+                        ),
+                        error_handler: None,
+                    ),
+                    (
+                        path: "/:username/follow",
+                        method_guard: (
+                            allowed_methods: [
+                                "DELETE",
+                            ],
+                        ),
+                        request_handler: (
+                            callable: (
+                                registered_at: "conduit_core",
+                                import_path: "crate::api::profiles::unfollow_user",
+                            ),
+                            location: (
+                                line: 8,
+                                column: 8,
+                                file: "conduit_core/src/api/profiles/mod.rs",
+                            ),
+                        ),
+                        error_handler: None,
+                    ),
+                ],
+                nested_blueprints: [],
+            ),
+            path_prefix: Some("/profiles"),
+            nesting_location: (
+                line: 15,
+                column: 8,
+                file: "conduit_core/src/api/mod.rs",
+            ),
+        ),
+        (
+            blueprint: (
+                creation_location: (
+                    line: 5,
+                    column: 18,
+                    file: "conduit_core/src/api/users/mod.rs",
+                ),
+                constructors: [],
+                routes: [
+                    (
+                        path: "/users",
+                        method_guard: (
+                            allowed_methods: [
+                                "POST",
+                            ],
+                        ),
+                        request_handler: (
+                            callable: (
+                                registered_at: "conduit_core",
+                                import_path: "crate::api::users::signup",
+                            ),
+                            location: (
+                                line: 6,
+                                column: 8,
+                                file: "conduit_core/src/api/users/mod.rs",
+                            ),
+                        ),
+                        error_handler: None,
+                    ),
+                    (
+                        path: "/users/login",
+                        method_guard: (
+                            allowed_methods: [
+                                "POST",
+                            ],
+                        ),
+                        request_handler: (
+                            callable: (
+                                registered_at: "conduit_core",
+                                import_path: "crate::api::users::login",
+                            ),
+                            location: (
+                                line: 7,
+                                column: 8,
+                                file: "conduit_core/src/api/users/mod.rs",
+                            ),
+                        ),
+                        error_handler: None,
+                    ),
+                    (
+                        path: "/user",
+                        method_guard: (
+                            allowed_methods: [
+                                "GET",
+                            ],
+                        ),
+                        request_handler: (
+                            callable: (
+                                registered_at: "conduit_core",
+                                import_path: "crate::api::users::get_user",
+                            ),
+                            location: (
+                                line: 8,
+                                column: 8,
+                                file: "conduit_core/src/api/users/mod.rs",
+                            ),
+                        ),
+                        error_handler: None,
+                    ),
+                    (
+                        path: "/user",
+                        method_guard: (
+                            allowed_methods: [
+                                "PUT",
+                            ],
+                        ),
+                        request_handler: (
+                            callable: (
+                                registered_at: "conduit_core",
+                                import_path: "crate::api::users::update_user",
+                            ),
+                            location: (
+                                line: 9,
+                                column: 8,
+                                file: "conduit_core/src/api/users/mod.rs",
+                            ),
+                        ),
+                        error_handler: None,
+                    ),
+                ],
+                nested_blueprints: [],
+            ),
+            path_prefix: None,
+            nesting_location: (
+                line: 16,
                 column: 8,
                 file: "conduit_core/src/api/mod.rs",
             ),
