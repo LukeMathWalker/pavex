@@ -208,6 +208,7 @@ dependencies = [
  "pavex_builder",
  "pavex_cli_client",
  "pavex_runtime",
+ "secrecy",
  "serde",
  "serde_json",
  "sqlx",
@@ -1482,6 +1483,16 @@ checksum = "d53dcdb7c9f8158937a7981b48accfd39a43af418591a5d008c7b22b5e1b7ca4"
 dependencies = [
  "ring",
  "untrusted",
+]
+
+[[package]]
+name = "secrecy"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9bd1c54ea06cfd2f6b63219704de0b9b4f72dcc2b8fdef820be6cd799780e91e"
+dependencies = [
+ "serde",
+ "zeroize",
 ]
 
 [[package]]

@@ -7,7 +7,8 @@ use syn::{parse_macro_input, Attribute, Data, DeriveInput, Error, GenericParam, 
 #[allow(non_snake_case)]
 #[proc_macro_attribute]
 pub fn RouteParams(_metadata: TokenStream, input: TokenStream) -> TokenStream {
-    let ast = parse_macro_input!(input as DeriveInput);
+    let mut ast = parse_macro_input!(input as DeriveInput);
+    ast.attrs.push(syn::parse_quote!(#[derive(serde::Serialize, serde::Deserialize)]));
 
     if let Err(mut e) = reject_serde_attributes(&ast) {
         // We emit both the error AND the original struct.
@@ -36,11 +37,8 @@ pub fn RouteParams(_metadata: TokenStream, input: TokenStream) -> TokenStream {
             }
         })
         .collect::<Punctuated<_, Token![,]>>();
-    let mut attrs = ast.attrs.clone();
-    attrs.push(syn::parse_quote!(#[derive(serde::Serialize, serde::Deserialize)]));
     let struct_name = &ast.ident;
     let expanded = quote! {
-        #(#attrs)*
         #ast
 
         impl #generics_with_bounds pavex_runtime::serialization::StructuralDeserialize for #struct_name < #generics_without_bounds > {}

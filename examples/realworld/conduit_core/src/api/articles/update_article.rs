@@ -7,7 +7,8 @@ pub struct UpdateArticleBody {
     pub body: Option<String>,
 }
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug)]
+#[RouteParams]
 pub struct UpdateArticleRoute {
     pub slug: String,
 }

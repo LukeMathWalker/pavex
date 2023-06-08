@@ -1,6 +1,7 @@
 use pavex_runtime::{hyper::StatusCode, extract::route::RouteParams};
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug)]
+#[RouteParams]
 pub struct FavoriteArticle {
     pub slug: String,
 }

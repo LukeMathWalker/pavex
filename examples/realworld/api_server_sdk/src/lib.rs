@@ -55,6 +55,12 @@ fn build_router() -> Result<
     router.insert("/articles/:slug/comments/:comment_id", 4u32)?;
     router.insert("/articles/:slug/favorite", 5u32)?;
     router.insert("/articles/feed", 6u32)?;
+    router.insert("/profiles/:username", 7u32)?;
+    router.insert("/profiles/:username/follow", 8u32)?;
+    router.insert("/tags", 9u32)?;
+    router.insert("/user", 10u32)?;
+    router.insert("/users", 11u32)?;
+    router.insert("/users/login", 12u32)?;
     Ok(router)
 }
 async fn route_request(
@@ -171,6 +177,88 @@ async fn route_request(
                     pavex_runtime::response::Response::builder()
                         .status(pavex_runtime::http::StatusCode::METHOD_NOT_ALLOWED)
                         .header(pavex_runtime::http::header::ALLOW, "GET")
+                        .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
+                        .unwrap()
+                }
+            }
+        }
+        7u32 => {
+            match &request_head.method {
+                &pavex_runtime::http::Method::GET => route_handler_12(url_params).await,
+                _ => {
+                    pavex_runtime::response::Response::builder()
+                        .status(pavex_runtime::http::StatusCode::METHOD_NOT_ALLOWED)
+                        .header(pavex_runtime::http::header::ALLOW, "GET")
+                        .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
+                        .unwrap()
+                }
+            }
+        }
+        8u32 => {
+            match &request_head.method {
+                &pavex_runtime::http::Method::DELETE => {
+                    route_handler_13(url_params).await
+                }
+                &pavex_runtime::http::Method::POST => route_handler_14(url_params).await,
+                _ => {
+                    pavex_runtime::response::Response::builder()
+                        .status(pavex_runtime::http::StatusCode::METHOD_NOT_ALLOWED)
+                        .header(pavex_runtime::http::header::ALLOW, "DELETE, POST")
+                        .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
+                        .unwrap()
+                }
+            }
+        }
+        9u32 => {
+            match &request_head.method {
+                &pavex_runtime::http::Method::GET => route_handler_15().await,
+                _ => {
+                    pavex_runtime::response::Response::builder()
+                        .status(pavex_runtime::http::StatusCode::METHOD_NOT_ALLOWED)
+                        .header(pavex_runtime::http::header::ALLOW, "GET")
+                        .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
+                        .unwrap()
+                }
+            }
+        }
+        10u32 => {
+            match &request_head.method {
+                &pavex_runtime::http::Method::GET => route_handler_16().await,
+                &pavex_runtime::http::Method::PUT => {
+                    route_handler_17(request_body, &request_head).await
+                }
+                _ => {
+                    pavex_runtime::response::Response::builder()
+                        .status(pavex_runtime::http::StatusCode::METHOD_NOT_ALLOWED)
+                        .header(pavex_runtime::http::header::ALLOW, "GET, PUT")
+                        .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
+                        .unwrap()
+                }
+            }
+        }
+        11u32 => {
+            match &request_head.method {
+                &pavex_runtime::http::Method::POST => {
+                    route_handler_18(request_body, &request_head).await
+                }
+                _ => {
+                    pavex_runtime::response::Response::builder()
+                        .status(pavex_runtime::http::StatusCode::METHOD_NOT_ALLOWED)
+                        .header(pavex_runtime::http::header::ALLOW, "POST")
+                        .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
+                        .unwrap()
+                }
+            }
+        }
+        12u32 => {
+            match &request_head.method {
+                &pavex_runtime::http::Method::POST => {
+                    route_handler_19(request_body, &request_head).await
+                }
+                _ => {
+                    pavex_runtime::response::Response::builder()
+                        .status(pavex_runtime::http::StatusCode::METHOD_NOT_ALLOWED)
+                        .header(pavex_runtime::http::header::ALLOW, "POST")
                         .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
                         .unwrap()
                 }
@@ -523,6 +611,201 @@ pub async fn route_handler_11(
             <http::Response<
                 alloc::string::String,
             > as pavex_runtime::response::IntoResponse>::into_response(v3)
+        }
+    }
+}
+pub async fn route_handler_12(
+    v0: pavex_runtime::extract::route::RawRouteParams<'_, '_>,
+) -> http::Response<
+    http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
+> {
+    let v1 = pavex_runtime::extract::route::RouteParams::extract(v0);
+    match v1 {
+        Ok(v2) => {
+            let v3 = conduit_core::api::profiles::get_user(v2);
+            <http::StatusCode as pavex_runtime::response::IntoResponse>::into_response(
+                v3,
+            )
+        }
+        Err(v2) => {
+            let v3 = pavex_runtime::extract::route::errors::ExtractRouteParamsError::into_response(
+                &v2,
+            );
+            <http::Response<
+                alloc::string::String,
+            > as pavex_runtime::response::IntoResponse>::into_response(v3)
+        }
+    }
+}
+pub async fn route_handler_13(
+    v0: pavex_runtime::extract::route::RawRouteParams<'_, '_>,
+) -> http::Response<
+    http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
+> {
+    let v1 = pavex_runtime::extract::route::RouteParams::extract(v0);
+    match v1 {
+        Ok(v2) => {
+            let v3 = conduit_core::api::profiles::unfollow_user(v2);
+            <http::StatusCode as pavex_runtime::response::IntoResponse>::into_response(
+                v3,
+            )
+        }
+        Err(v2) => {
+            let v3 = pavex_runtime::extract::route::errors::ExtractRouteParamsError::into_response(
+                &v2,
+            );
+            <http::Response<
+                alloc::string::String,
+            > as pavex_runtime::response::IntoResponse>::into_response(v3)
+        }
+    }
+}
+pub async fn route_handler_14(
+    v0: pavex_runtime::extract::route::RawRouteParams<'_, '_>,
+) -> http::Response<
+    http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
+> {
+    let v1 = pavex_runtime::extract::route::RouteParams::extract(v0);
+    match v1 {
+        Ok(v2) => {
+            let v3 = conduit_core::api::profiles::follow_user(v2);
+            <http::StatusCode as pavex_runtime::response::IntoResponse>::into_response(
+                v3,
+            )
+        }
+        Err(v2) => {
+            let v3 = pavex_runtime::extract::route::errors::ExtractRouteParamsError::into_response(
+                &v2,
+            );
+            <http::Response<
+                alloc::string::String,
+            > as pavex_runtime::response::IntoResponse>::into_response(v3)
+        }
+    }
+}
+pub async fn route_handler_15() -> http::Response<
+    http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
+> {
+    let v0 = conduit_core::api::tags::get_tags();
+    <http::StatusCode as pavex_runtime::response::IntoResponse>::into_response(v0)
+}
+pub async fn route_handler_16() -> http::Response<
+    http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
+> {
+    let v0 = conduit_core::api::users::get_user();
+    <http::StatusCode as pavex_runtime::response::IntoResponse>::into_response(v0)
+}
+pub async fn route_handler_17(
+    v0: hyper::Body,
+    v1: &pavex_runtime::request::RequestHead,
+) -> http::Response<
+    http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
+> {
+    let v2 = <pavex_runtime::extract::body::BodySizeLimit as std::default::Default>::default();
+    let v3 = pavex_runtime::extract::body::BufferedBody::extract(v1, v0, v2).await;
+    match v3 {
+        Ok(v4) => {
+            let v5 = pavex_runtime::extract::body::JsonBody::extract(v1, &v4);
+            match v5 {
+                Ok(v6) => {
+                    let v7 = conduit_core::api::users::update_user(v6);
+                    <http::StatusCode as pavex_runtime::response::IntoResponse>::into_response(
+                        v7,
+                    )
+                }
+                Err(v6) => {
+                    let v7 = pavex_runtime::extract::body::errors::ExtractJsonBodyError::into_response(
+                        &v6,
+                    );
+                    <http::Response<
+                        alloc::string::String,
+                    > as pavex_runtime::response::IntoResponse>::into_response(v7)
+                }
+            }
+        }
+        Err(v4) => {
+            let v5 = pavex_runtime::extract::body::errors::ExtractBufferedBodyError::into_response(
+                &v4,
+            );
+            <http::Response<
+                alloc::string::String,
+            > as pavex_runtime::response::IntoResponse>::into_response(v5)
+        }
+    }
+}
+pub async fn route_handler_18(
+    v0: hyper::Body,
+    v1: &pavex_runtime::request::RequestHead,
+) -> http::Response<
+    http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
+> {
+    let v2 = <pavex_runtime::extract::body::BodySizeLimit as std::default::Default>::default();
+    let v3 = pavex_runtime::extract::body::BufferedBody::extract(v1, v0, v2).await;
+    match v3 {
+        Ok(v4) => {
+            let v5 = pavex_runtime::extract::body::JsonBody::extract(v1, &v4);
+            match v5 {
+                Ok(v6) => {
+                    let v7 = conduit_core::api::users::signup(v6);
+                    <http::StatusCode as pavex_runtime::response::IntoResponse>::into_response(
+                        v7,
+                    )
+                }
+                Err(v6) => {
+                    let v7 = pavex_runtime::extract::body::errors::ExtractJsonBodyError::into_response(
+                        &v6,
+                    );
+                    <http::Response<
+                        alloc::string::String,
+                    > as pavex_runtime::response::IntoResponse>::into_response(v7)
+                }
+            }
+        }
+        Err(v4) => {
+            let v5 = pavex_runtime::extract::body::errors::ExtractBufferedBodyError::into_response(
+                &v4,
+            );
+            <http::Response<
+                alloc::string::String,
+            > as pavex_runtime::response::IntoResponse>::into_response(v5)
+        }
+    }
+}
+pub async fn route_handler_19(
+    v0: hyper::Body,
+    v1: &pavex_runtime::request::RequestHead,
+) -> http::Response<
+    http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
+> {
+    let v2 = <pavex_runtime::extract::body::BodySizeLimit as std::default::Default>::default();
+    let v3 = pavex_runtime::extract::body::BufferedBody::extract(v1, v0, v2).await;
+    match v3 {
+        Ok(v4) => {
+            let v5 = pavex_runtime::extract::body::JsonBody::extract(v1, &v4);
+            match v5 {
+                Ok(v6) => {
+                    let v7 = conduit_core::api::users::login(v6);
+                    <http::StatusCode as pavex_runtime::response::IntoResponse>::into_response(
+                        v7,
+                    )
+                }
+                Err(v6) => {
+                    let v7 = pavex_runtime::extract::body::errors::ExtractJsonBodyError::into_response(
+                        &v6,
+                    );
+                    <http::Response<
+                        alloc::string::String,
+                    > as pavex_runtime::response::IntoResponse>::into_response(v7)
+                }
+            }
+        }
+        Err(v4) => {
+            let v5 = pavex_runtime::extract::body::errors::ExtractBufferedBodyError::into_response(
+                &v4,
+            );
+            <http::Response<
+                alloc::string::String,
+            > as pavex_runtime::response::IntoResponse>::into_response(v5)
         }
     }
 }
