@@ -1,0 +1,8 @@
+digraph "GET /home" {
+    0 [ label = "app::nested::function() -> alloc::string::String"]
+    1 [ label = "<alloc::string::String as pavex_runtime::response::IntoResponse>::into_response(alloc::string::String) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
+    0 -> 1 [ ]
+}
+digraph app_state {
+    0 [ label = "crate::ApplicationState() -> crate::ApplicationState"]
+}

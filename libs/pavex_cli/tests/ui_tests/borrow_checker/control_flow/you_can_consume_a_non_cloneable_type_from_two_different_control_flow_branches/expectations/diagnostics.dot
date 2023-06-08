@@ -1,10 +1,10 @@
 digraph "GET /home" {
     0 [ label = "app::handler(app::A, app::B) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
     1 [ label = "app::b() -> app::B"]
-    2 [ label = "core::prelude::rust_2015::v1::Result<app::A, app::Error> -> app::A"]
-    3 [ label = "app::a() -> core::prelude::rust_2015::v1::Result<app::A, app::Error>"]
+    2 [ label = "core::prelude::rust_2015::Result<app::A, app::Error> -> app::A"]
+    3 [ label = "app::a() -> core::prelude::rust_2015::Result<app::A, app::Error>"]
     4 [ label = "<http::Response::<http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>> as pavex_runtime::response::IntoResponse>::into_response(http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
-    5 [ label = "core::prelude::rust_2015::v1::Result<app::A, app::Error> -> app::Error"]
+    5 [ label = "core::prelude::rust_2015::Result<app::A, app::Error> -> app::Error"]
     6 [ label = "app::error_handler(&app::Error, app::B) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
     7 [ label = "<http::Response::<http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>> as pavex_runtime::response::IntoResponse>::into_response(http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
     8 [ label = "`match`"]
