@@ -1,4 +1,4 @@
-description = "pavex is abled to handle glob re-exports from local modules"
+description = "Pavex is able to handle glob re-exports from local modules"
 
 [expectations]
 codegen = "pass"

@@ -1,0 +1,11 @@
+description = """
+Pavex handles types whose generic parameter are not defined in the same crate 
+that defines the base type
+"""
+
+[expectations]
+codegen = "pass"
+
+[dependencies]
+http-body = "0.4"
+bytes = "1"

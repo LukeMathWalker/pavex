@@ -1,0 +1,8 @@
+digraph "GET /home" {
+    0 [ label = "app::handler() -> http::Response<app::BodyType>"]
+    1 [ label = "<http::Response::<app::BodyType> as pavex_runtime::response::IntoResponse>::into_response(http::Response<app::BodyType>) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
+    0 -> 1 [ ]
+}
+digraph app_state {
+    0 [ label = "crate::ApplicationState() -> crate::ApplicationState"]
+}
