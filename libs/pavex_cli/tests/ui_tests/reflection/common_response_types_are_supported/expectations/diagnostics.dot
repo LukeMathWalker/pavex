@@ -1,66 +1,66 @@
 digraph "GET /bytes" {
     0 [ label = "app::bytes() -> bytes::Bytes"]
-    1 [ label = "<bytes::Bytes as pavex_runtime::response::IntoResponse>::into_response(bytes::Bytes) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
+    1 [ label = "<bytes::Bytes as pavex_runtime::response::IntoResponse>::into_response(bytes::Bytes) -> pavex_runtime::response::Response"]
     0 -> 1 [ ]
 }
 digraph "GET /bytes_mut" {
     0 [ label = "app::bytes_mut() -> bytes::BytesMut"]
-    1 [ label = "<bytes::BytesMut as pavex_runtime::response::IntoResponse>::into_response(bytes::BytesMut) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
+    1 [ label = "<bytes::BytesMut as pavex_runtime::response::IntoResponse>::into_response(bytes::BytesMut) -> pavex_runtime::response::Response"]
     0 -> 1 [ ]
 }
 digraph "GET /cow_static_str" {
     0 [ label = "app::cow_static_str() -> alloc::borrow::Cow<'static, str>"]
-    1 [ label = "<alloc::borrow::Cow::<'static, str> as pavex_runtime::response::IntoResponse>::into_response(alloc::borrow::Cow<'static, str>) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
+    1 [ label = "<alloc::borrow::Cow::<'static, str> as pavex_runtime::response::IntoResponse>::into_response(alloc::borrow::Cow<'static, str>) -> pavex_runtime::response::Response"]
     0 -> 1 [ ]
 }
 digraph "GET /cow_static_u8_slice" {
     0 [ label = "app::cow_static_u8_slice() -> alloc::borrow::Cow<'static, [u8]>"]
-    1 [ label = "<alloc::borrow::Cow::<'static, [u8]> as pavex_runtime::response::IntoResponse>::into_response(alloc::borrow::Cow<'static, [u8]>) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
+    1 [ label = "<alloc::borrow::Cow::<'static, [u8]> as pavex_runtime::response::IntoResponse>::into_response(alloc::borrow::Cow<'static, [u8]>) -> pavex_runtime::response::Response"]
     0 -> 1 [ ]
 }
 digraph "GET /empty" {
     0 [ label = "app::empty() -> http_body::Empty<bytes::Bytes>"]
-    1 [ label = "<http_body::Empty::<bytes::Bytes> as pavex_runtime::response::IntoResponse>::into_response(http_body::Empty<bytes::Bytes>) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
+    1 [ label = "<http_body::Empty::<bytes::Bytes> as pavex_runtime::response::IntoResponse>::into_response(http_body::Empty<bytes::Bytes>) -> pavex_runtime::response::Response"]
     0 -> 1 [ ]
 }
 digraph "GET /full" {
     0 [ label = "app::full() -> http_body::Full<bytes::Bytes>"]
-    1 [ label = "<http_body::Full::<bytes::Bytes> as pavex_runtime::response::IntoResponse>::into_response(http_body::Full<bytes::Bytes>) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
+    1 [ label = "<http_body::Full::<bytes::Bytes> as pavex_runtime::response::IntoResponse>::into_response(http_body::Full<bytes::Bytes>) -> pavex_runtime::response::Response"]
     0 -> 1 [ ]
 }
 digraph "GET /parts" {
     0 [ label = "app::parts() -> http::response::Parts"]
-    1 [ label = "<http::response::Parts as pavex_runtime::response::IntoResponse>::into_response(http::response::Parts) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
+    1 [ label = "<http::response::Parts as pavex_runtime::response::IntoResponse>::into_response(http::response::Parts) -> pavex_runtime::response::Response"]
     0 -> 1 [ ]
 }
 digraph "GET /response" {
-    0 [ label = "app::response() -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
-    1 [ label = "<http::Response::<http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>> as pavex_runtime::response::IntoResponse>::into_response(http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
+    0 [ label = "app::response() -> pavex_runtime::response::Response"]
+    1 [ label = "<pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(pavex_runtime::response::Response) -> pavex_runtime::response::Response"]
     0 -> 1 [ ]
 }
 digraph "GET /static_str" {
     0 [ label = "app::static_str() -> &'static str"]
-    1 [ label = "<&str as pavex_runtime::response::IntoResponse>::into_response(&'static str) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
+    1 [ label = "<&str as pavex_runtime::response::IntoResponse>::into_response(&'static str) -> pavex_runtime::response::Response"]
     0 -> 1 [ ]
 }
 digraph "GET /static_u8_slice" {
     0 [ label = "app::static_u8_slice() -> &'static [u8]"]
-    1 [ label = "<&[u8] as pavex_runtime::response::IntoResponse>::into_response(&'static [u8]) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
+    1 [ label = "<&[u8] as pavex_runtime::response::IntoResponse>::into_response(&'static [u8]) -> pavex_runtime::response::Response"]
     0 -> 1 [ ]
 }
 digraph "GET /status_code" {
     0 [ label = "app::status_code() -> http::StatusCode"]
-    1 [ label = "<http::StatusCode as pavex_runtime::response::IntoResponse>::into_response(http::StatusCode) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
+    1 [ label = "<http::StatusCode as pavex_runtime::response::IntoResponse>::into_response(http::StatusCode) -> pavex_runtime::response::Response"]
     0 -> 1 [ ]
 }
 digraph "GET /string" {
     0 [ label = "app::string() -> alloc::string::String"]
-    1 [ label = "<alloc::string::String as pavex_runtime::response::IntoResponse>::into_response(alloc::string::String) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
+    1 [ label = "<alloc::string::String as pavex_runtime::response::IntoResponse>::into_response(alloc::string::String) -> pavex_runtime::response::Response"]
     0 -> 1 [ ]
 }
 digraph "GET /vec_u8" {
     0 [ label = "app::vec_u8() -> alloc::vec::Vec<u8>"]
-    1 [ label = "<alloc::vec::Vec::<u8> as pavex_runtime::response::IntoResponse>::into_response(alloc::vec::Vec<u8>) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
+    1 [ label = "<alloc::vec::Vec::<u8> as pavex_runtime::response::IntoResponse>::into_response(alloc::vec::Vec<u8>) -> pavex_runtime::response::Response"]
     0 -> 1 [ ]
 }
 digraph app_state {

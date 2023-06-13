@@ -286,6 +286,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b7e5500299e16ebb147ae15a00a942af264cf3688f47923b8fc2cd5858f23ad3"
 
 [[package]]
+name = "paste"
+version = "1.0.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9f746c4065a8fa3fe23974dd82f15431cc8d40779821001404d10d2e79ca7d79"
+
+[[package]]
 name = "pavex_builder"
 version = "0.1.0"
 dependencies = [
@@ -327,6 +333,7 @@ dependencies = [
  "hyper",
  "matchit",
  "mime",
+ "paste",
  "pavex_macros",
  "percent-encoding",
  "serde",

@@ -1,8 +1,8 @@
 digraph "GET /home" {
-    0 [ label = "app::handler(&pavex_runtime::extract::route::RawRouteParams<'_, '_>, app::B) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
+    0 [ label = "app::handler(&pavex_runtime::extract::route::RawRouteParams<'_, '_>, app::B) -> pavex_runtime::response::Response"]
     1 [ label = "app::b(pavex_runtime::extract::route::RawRouteParams<'_, '_>) -> app::B"]
     2 [ label = "pavex_runtime::extract::route::RawRouteParams<'_, '_>"]
-    3 [ label = "<http::Response::<http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>> as pavex_runtime::response::IntoResponse>::into_response(http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
+    3 [ label = "<pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(pavex_runtime::response::Response) -> pavex_runtime::response::Response"]
     4 [ label = "<pavex_runtime::extract::route::RawRouteParams::<server, request> as core::clone::Clone>::clone(&pavex_runtime::extract::route::RawRouteParams<'_, '_>) -> pavex_runtime::extract::route::RawRouteParams<'_, '_>"]
     1 -> 0 [ ]
     2 -> 0 [ label = "&"]

@@ -1,7 +1,8 @@
 //! Errors that can happen when extracting route parameters.
 use std::str::Utf8Error;
 
-use http::StatusCode;
+use bytes::Bytes;
+use http_body::Full;
 
 use crate::response::Response;
 
@@ -66,26 +67,22 @@ impl ExtractRouteParamsError {
     /// It returns a `400 Bad Request` for all other cases.
     ///
     /// [`RouteParams<T>`]: struct@crate::extract::route::RouteParams
-    pub fn into_response(&self) -> Response<String> {
+    pub fn into_response(&self) -> Response<Full<Bytes>> {
         match self {
-            ExtractRouteParamsError::InvalidUtf8InPathParameter(e) => Response::builder()
-                .status(StatusCode::BAD_REQUEST)
-                .body(format!("Invalid URL.\n{}", e))
-                .unwrap(),
+            ExtractRouteParamsError::InvalidUtf8InPathParameter(e) => {
+                Response::bad_request().set_typed_body(format!("Invalid URL.\n{}", e))
+            }
             ExtractRouteParamsError::PathDeserializationError(e) => match e.kind {
                 ErrorKind::ParseErrorAtKey { .. } | ErrorKind::ParseError { .. } => {
-                    Response::builder()
-                        .status(StatusCode::BAD_REQUEST)
-                        .body(format!("Invalid URL.\n{}", e.kind))
-                        .unwrap()
+                    Response::bad_request().set_typed_body(format!("Invalid URL.\n{}", e.kind))
                 }
                 // We put the "custom" message variant here as well because it's not clear
                 // whether it's a programmer error or not. We err on the side of safety and
                 // prefer to return a 500 with an opaque error message.
-                ErrorKind::Message(_) | ErrorKind::UnsupportedType { .. } => Response::builder()
-                    .status(StatusCode::INTERNAL_SERVER_ERROR)
-                    .body("Something went wrong when trying to process the request".to_string())
-                    .unwrap(),
+                ErrorKind::Message(_) | ErrorKind::UnsupportedType { .. } => {
+                    Response::internal_server_error()
+                        .set_typed_body("Something went wrong when trying to process the request")
+                }
             },
         }
     }

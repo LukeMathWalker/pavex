@@ -1,9 +1,9 @@
 digraph "GET /home" {
-    0 [ label = "app::handler(app::B, app::C) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
+    0 [ label = "app::handler(app::B, app::C) -> pavex_runtime::response::Response"]
     1 [ label = "app::c(app::A) -> app::C"]
     2 [ label = "app::a() -> app::A"]
     3 [ label = "app::b(app::A) -> app::B"]
-    4 [ label = "<http::Response::<http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>> as pavex_runtime::response::IntoResponse>::into_response(http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
+    4 [ label = "<pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(pavex_runtime::response::Response) -> pavex_runtime::response::Response"]
     1 -> 0 [ ]
     2 -> 1 [ ]
     3 -> 0 [ ]

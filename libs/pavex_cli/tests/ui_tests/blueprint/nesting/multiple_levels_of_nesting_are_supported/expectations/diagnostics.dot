@@ -3,7 +3,7 @@ digraph "GET /first/second/third/home" {
     1 [ label = "app::third(u32) -> alloc::string::String"]
     2 [ label = "app::second(u16) -> u32"]
     3 [ label = "app::first() -> u16"]
-    4 [ label = "<alloc::string::String as pavex_runtime::response::IntoResponse>::into_response(alloc::string::String) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
+    4 [ label = "<alloc::string::String as pavex_runtime::response::IntoResponse>::into_response(alloc::string::String) -> pavex_runtime::response::Response"]
     1 -> 0 [ ]
     2 -> 1 [ ]
     3 -> 2 [ ]

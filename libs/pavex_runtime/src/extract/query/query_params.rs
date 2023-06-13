@@ -53,7 +53,7 @@ use crate::request::RequestHead;
 ///     bp
 /// }
 /// ```
-/// 
+///
 /// You can then use the `QueryParams` extractor as input to your route handlers and constructors.
 ///
 /// # Supported types
@@ -61,37 +61,37 @@ use crate::request::RequestHead;
 /// `T` in `QueryParams<T>` must implement [`serde::Deserialize`].  
 /// You can derive this trait automatically by applying `#[derive(serde::Deserialize)]`
 /// to your type.
-/// 
+///
 /// ## Sequences
-/// 
+///
 /// There is no standard way to represent sequences in query parameters.  
 /// Pavex supports the [form style](https://swagger.io/docs/specification/serialization/#query), as
 /// specified by OpenAPI:
-/// 
+///
 /// ```rust
 /// use pavex_runtime::extract::query::QueryParams;
-/// 
+///
 /// #[derive(serde::Deserialize)]
 /// pub struct Home {
 ///    // This will convert the query string `?room_id=1&room_id=2&room_id=3`
 ///    // into a vector `vec![1, 2, 3]`.  
 ///    //
-///    // Pavex does not perform any pluralization, therefore you must use 
-///    // `serde`'s rename attribute if you want to use a pluralized name 
-///    // as struct field but a singularized name in the query string. 
+///    // Pavex does not perform any pluralization, therefore you must use
+///    // `serde`'s rename attribute if you want to use a pluralized name
+///    // as struct field but a singularized name in the query string.
 ///    #[serde(rename = "room_id")]
 ///    room_ids: Vec<u32>
 /// }
 /// ```
-/// 
+///
 /// Another common way to represent sequences in query parameters is to use brackets.
 /// E.g. `?room_ids[]=1&room_ids[]=2&room_ids[]=3`.
-/// 
+///
 /// You can use the `serde`'s rename attribute to support this style:
-/// 
+///
 /// ```rust
 /// use pavex_runtime::extract::query::QueryParams;
-/// 
+///
 /// #[derive(serde::Deserialize)]
 /// pub struct Home {
 ///     // This will convert the query string `?room_id[]=1&room_id[]=2&room_id[]=3`
@@ -100,48 +100,48 @@ use crate::request::RequestHead;
 ///     room_ids: Vec<u32>
 /// }
 /// ```
-/// 
+///
 /// # Unsupported types
-/// 
+///
 /// Pavex does not support the following types as `T` in `RouteParams<T>`:
 ///
 /// - tuples, e.g. `(u32, String)`;
 /// - tuple structs, e.g. `struct HomeId(u32, String)`;
 /// - unit structs, e.g. `struct HomeId`;
-/// 
+///
 /// You should always prefer a struct with named fields as the type parameter of `QueryParams`.
-/// 
-/// When it comes to structs, it's important to keep in mind that `QueryParams` doesn't 
+///
+/// When it comes to structs, it's important to keep in mind that `QueryParams` doesn't
 /// support deserializing **nested** structures as query parameters.  
 /// For example, the following can't be deserialized from the wire using `QueryParams`:
-/// 
+///
 /// ```rust
 /// use pavex_runtime::extract::query::QueryParams;
-/// 
+///
 /// #[derive(serde::Deserialize)]
 /// pub struct Home {
 ///    address: Address
 /// }
-/// 
+///
 /// #[derive(serde::Deserialize)]
 /// pub struct Address {
 ///    street: String,
 ///    city: String,
 /// }
 /// ```
-/// 
+///
 /// If you need to deserialize nested structures from query parameters, you might want to
 /// look into writing your own extractor on top of [`serde_qs`](https://crates.io/crates/serde_qs).
-/// 
+///
 /// # Avoiding allocations
 ///
-/// If you want to minimize memory usage, you can try to avoid unnecessary memory allocations when 
+/// If you want to minimize memory usage, you can try to avoid unnecessary memory allocations when
 /// deserializing string-like fields from the query parameters of the incoming request.    
-/// Pavex supports this use case—you can borrow from the query string instead of having to 
+/// Pavex supports this use case—you can borrow from the query string instead of having to
 /// allocate a brand new string.
 ///
 /// It is not always possible to avoid allocations, though.  
-/// In particular, Pavex *must* allocate a new `String` if the parameter you are trying to 
+/// In particular, Pavex *must* allocate a new `String` if the parameter you are trying to
 /// deserialize is a URL-encoded string (e.g. `John%20Doe`, the URL-encoded
 /// version of `John Doe`)
 /// Using a `&str` in this case would result in a runtime error when attempting the deserialization.

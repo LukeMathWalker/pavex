@@ -1,8 +1,8 @@
 digraph "GET /handler" {
-    0 [ label = "dep::handler(http_0_1_21::header::HeaderName, http_0_2_9::HeaderName) -> http_0_2_9::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
+    0 [ label = "dep::handler(http_0_1_21::header::HeaderName, http_0_2_9::HeaderName) -> pavex_runtime::response::Response"]
     1 [ label = "dep::header2() -> http_0_2_9::HeaderName"]
     2 [ label = "dep::header1() -> http_0_1_21::header::HeaderName"]
-    3 [ label = "<http::Response::<http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>> as pavex_runtime::response::IntoResponse>::into_response(http_0_2_9::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>) -> http_0_2_9::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
+    3 [ label = "<pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(pavex_runtime::response::Response) -> pavex_runtime::response::Response"]
     1 -> 0 [ ]
     2 -> 0 [ ]
     0 -> 3 [ ]

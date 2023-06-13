@@ -130,7 +130,7 @@ pub(crate) fn codegen_app(
     };
     let pavex_runtime_import_name = get_codegen_dep_import_name("pavex_runtime");
     let http_import_name = get_codegen_dep_import_name("http");
-    let hyper_import_name = get_codegen_dep_import_name("hyper");
+    let _hyper_import_name = get_codegen_dep_import_name("hyper");
 
     let define_server_state =
         define_server_state(&application_state_def, &pavex_runtime_import_name);
@@ -183,7 +183,6 @@ pub(crate) fn codegen_app(
         request_scoped_framework_bindings,
         &pavex_runtime_import_name,
         &http_import_name,
-        &hyper_import_name,
     );
     let entrypoint = server_startup(&pavex_runtime_import_name);
     let alloc_rename = if package_id2name.contains_right(ALLOC_PACKAGE_ID_REPR) {
@@ -230,11 +229,17 @@ fn server_startup(pavex_runtime: &Ident) -> ItemFn {
                 async move {
                     Ok::<_, #pavex_runtime::hyper::Error>(#pavex_runtime::hyper::service::service_fn(move |request| {
                         let server_state = server_state.clone();
-                        async move { Ok::<_, #pavex_runtime::hyper::Error>(route_request(request, server_state).await) }
+                        async move { 
+                            let response = route_request(request, server_state).await;
+                            let response = #pavex_runtime::hyper::Response::from(response);
+                            Ok::<_, #pavex_runtime::hyper::Error>(response) 
+                        }
                     }))
                 }
             });
-            server_builder.serve(make_service).await.map_err(#pavex_runtime::Error::new)
+            server_builder.serve(make_service)
+                .await
+                .map_err(#pavex_runtime::Error::new)
         }
     }).unwrap()
 }
@@ -359,7 +364,6 @@ fn get_request_dispatcher(
     request_scoped_bindings: &BiHashMap<Ident, ResolvedType>,
     pavex_runtime: &Ident,
     http: &Ident,
-    hyper: &Ident,
 ) -> ItemFn {
     let mut route_dispatch_table = quote! {};
     let server_state_ident = format_ident!("server_state");
@@ -387,11 +391,10 @@ fn get_request_dispatcher(
                     match &request_head.method {
                         #sub_router_dispatch_table
                         _ => {
-                            #pavex_runtime::response::Response::builder()
-                                .status(#pavex_runtime::http::StatusCode::METHOD_NOT_ALLOWED)
-                                .header(#pavex_runtime::http::header::ALLOW, #allow_header_value)
-                                .body(#pavex_runtime::body::boxed(#hyper::body::Body::empty()))
-                                .unwrap()
+                            let header_value = #pavex_runtime::http::HeaderValue::from_static(#allow_header_value);
+                            #pavex_runtime::response::Response::method_not_allowed()
+                                .insert_header(#pavex_runtime::http::header::ALLOW, header_value)
+                                .box_body()
                         }
                     }
                 }
@@ -419,10 +422,7 @@ fn get_request_dispatcher(
             let matched_route = match server_state.router.at(&request_head.uri.path()) {
                 Ok(m) => m,
                 Err(_) => {
-                    return #pavex_runtime::response::Response::builder()
-                        .status(#pavex_runtime::http::StatusCode::NOT_FOUND)
-                        .body(#pavex_runtime::body::boxed(#hyper::body::Body::empty()))
-                        .unwrap();
+                    return #pavex_runtime::response::Response::not_found().box_body();
                 }
             };
             let route_id = matched_route.value;
@@ -432,12 +432,7 @@ fn get_request_dispatcher(
                 .into();
             match route_id {
                 #route_dispatch_table
-                _ => {
-                    #pavex_runtime::response::Response::builder()
-                        .status(#pavex_runtime::http::StatusCode::NOT_FOUND)
-                        .body(#pavex_runtime::body::boxed(#hyper::body::Body::empty()))
-                        .unwrap()
-                }
+                _ => #pavex_runtime::response::Response::not_found().box_body(),
             }
         }
     })

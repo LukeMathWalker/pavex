@@ -1,6 +1,6 @@
 #[derive(Debug, Clone, Copy)]
 /// An upper limit on the size of incoming request bodies.  
-/// 
+///
 /// Check out the documentation of [`BufferedBody`](crate::extract::body::BufferedBody) for more details.
 pub enum BodySizeLimit {
     /// There is an active limit on the size of incoming request bodies.
@@ -15,7 +15,7 @@ pub enum BodySizeLimit {
 impl Default for BodySizeLimit {
     fn default() -> Self {
         Self::Enabled {
-            max_n_bytes: 2_097_152 // 2 MBs
+            max_n_bytes: 2_097_152, // 2 MBs
         }
     }
 }

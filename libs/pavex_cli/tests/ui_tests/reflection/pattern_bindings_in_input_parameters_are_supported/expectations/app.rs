@@ -34,10 +34,9 @@ pub async fn run(
                 pavex_runtime::hyper::service::service_fn(move |request| {
                     let server_state = server_state.clone();
                     async move {
-                        Ok::<
-                            _,
-                            pavex_runtime::hyper::Error,
-                        >(route_request(request, server_state).await)
+                        let response = route_request(request, server_state).await;
+                        let response = pavex_runtime::hyper::Response::from(response);
+                        Ok::<_, pavex_runtime::hyper::Error>(response)
                     }
                 }),
             )
@@ -63,10 +62,7 @@ async fn route_request(
     let matched_route = match server_state.router.at(&request_head.uri.path()) {
         Ok(m) => m,
         Err(_) => {
-            return pavex_runtime::response::Response::builder()
-                .status(pavex_runtime::http::StatusCode::NOT_FOUND)
-                .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
-                .unwrap();
+            return pavex_runtime::response::Response::not_found().box_body();
         }
     };
     let route_id = matched_route.value;
@@ -81,29 +77,21 @@ async fn route_request(
                     route_handler_0(server_state.application_state.s0.clone()).await
                 }
                 _ => {
-                    pavex_runtime::response::Response::builder()
-                        .status(pavex_runtime::http::StatusCode::METHOD_NOT_ALLOWED)
-                        .header(pavex_runtime::http::header::ALLOW, "GET")
-                        .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
-                        .unwrap()
+                    let header_value = pavex_runtime::http::HeaderValue::from_static(
+                        "GET",
+                    );
+                    pavex_runtime::response::Response::method_not_allowed()
+                        .insert_header(pavex_runtime::http::header::ALLOW, header_value)
+                        .box_body()
                 }
             }
         }
-        _ => {
-            pavex_runtime::response::Response::builder()
-                .status(pavex_runtime::http::StatusCode::NOT_FOUND)
-                .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
-                .unwrap()
-        }
+        _ => pavex_runtime::response::Response::not_found().box_body(),
     }
 }
-pub async fn route_handler_0(
-    v0: app::Streamer,
-) -> http::Response<
-    http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
-> {
+pub async fn route_handler_0(v0: app::Streamer) -> pavex_runtime::response::Response {
     let v1 = app::stream_file(v0);
-    <http::Response<
-        http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
-    > as pavex_runtime::response::IntoResponse>::into_response(v1)
+    <pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(
+        v1,
+    )
 }

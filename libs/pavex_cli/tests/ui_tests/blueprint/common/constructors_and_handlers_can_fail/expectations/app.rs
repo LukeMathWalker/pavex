@@ -49,10 +49,9 @@ pub async fn run(
                 pavex_runtime::hyper::service::service_fn(move |request| {
                     let server_state = server_state.clone();
                     async move {
-                        Ok::<
-                            _,
-                            pavex_runtime::hyper::Error,
-                        >(route_request(request, server_state).await)
+                        let response = route_request(request, server_state).await;
+                        let response = pavex_runtime::hyper::Response::from(response);
+                        Ok::<_, pavex_runtime::hyper::Error>(response)
                     }
                 }),
             )
@@ -78,10 +77,7 @@ async fn route_request(
     let matched_route = match server_state.router.at(&request_head.uri.path()) {
         Ok(m) => m,
         Err(_) => {
-            return pavex_runtime::response::Response::builder()
-                .status(pavex_runtime::http::StatusCode::NOT_FOUND)
-                .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
-                .unwrap();
+            return pavex_runtime::response::Response::not_found().box_body();
         }
     };
     let route_id = matched_route.value;
@@ -100,28 +96,22 @@ async fn route_request(
                         .await
                 }
                 _ => {
-                    pavex_runtime::response::Response::builder()
-                        .status(pavex_runtime::http::StatusCode::METHOD_NOT_ALLOWED)
-                        .header(pavex_runtime::http::header::ALLOW, "GET")
-                        .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
-                        .unwrap()
+                    let header_value = pavex_runtime::http::HeaderValue::from_static(
+                        "GET",
+                    );
+                    pavex_runtime::response::Response::method_not_allowed()
+                        .insert_header(pavex_runtime::http::header::ALLOW, header_value)
+                        .box_body()
                 }
             }
         }
-        _ => {
-            pavex_runtime::response::Response::builder()
-                .status(pavex_runtime::http::StatusCode::NOT_FOUND)
-                .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
-                .unwrap()
-        }
+        _ => pavex_runtime::response::Response::not_found().box_body(),
     }
 }
 pub async fn route_handler_0(
     v0: app::HttpClient,
     v1: pavex_runtime::request::RequestHead,
-) -> http::Response<
-    http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
-> {
+) -> pavex_runtime::response::Response {
     match app::logger() {
         Ok(v2) => {
             let v3 = app::extract_path(v1);
@@ -130,23 +120,13 @@ pub async fn route_handler_0(
                     let v5 = app::request_handler(v4, v2, v0);
                     match v5 {
                         Ok(v6) => {
-                            <http::Response<
-                                http_body::combinators::BoxBody<
-                                    bytes::Bytes,
-                                    pavex_runtime::Error,
-                                >,
-                            > as pavex_runtime::response::IntoResponse>::into_response(
+                            <pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(
                                 v6,
                             )
                         }
                         Err(v6) => {
                             let v7 = app::handle_handler_error(&v6);
-                            <http::Response<
-                                http_body::combinators::BoxBody<
-                                    bytes::Bytes,
-                                    pavex_runtime::Error,
-                                >,
-                            > as pavex_runtime::response::IntoResponse>::into_response(
+                            <pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(
                                 v7,
                             )
                         }
@@ -156,23 +136,13 @@ pub async fn route_handler_0(
                     match app::logger() {
                         Ok(v5) => {
                             let v6 = app::handle_extract_path_error(&v4, v5);
-                            <http::Response<
-                                http_body::combinators::BoxBody<
-                                    bytes::Bytes,
-                                    pavex_runtime::Error,
-                                >,
-                            > as pavex_runtime::response::IntoResponse>::into_response(
+                            <pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(
                                 v6,
                             )
                         }
                         Err(v5) => {
                             let v6 = app::handle_logger_error(&v5);
-                            <http::Response<
-                                http_body::combinators::BoxBody<
-                                    bytes::Bytes,
-                                    pavex_runtime::Error,
-                                >,
-                            > as pavex_runtime::response::IntoResponse>::into_response(
+                            <pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(
                                 v6,
                             )
                         }
@@ -182,9 +152,9 @@ pub async fn route_handler_0(
         }
         Err(v2) => {
             let v3 = app::handle_logger_error(&v2);
-            <http::Response<
-                http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
-            > as pavex_runtime::response::IntoResponse>::into_response(v3)
+            <pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(
+                v3,
+            )
         }
     }
 }

@@ -258,7 +258,7 @@ mod tests {
     }
 
     #[test]
-    /// Let's check the error quality when the request body is missing 
+    /// Let's check the error quality when the request body is missing
     /// a required field.
     fn missing_json_field() {
         // Arrange

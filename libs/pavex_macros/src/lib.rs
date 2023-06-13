@@ -8,14 +8,14 @@ use syn::{parse_macro_input, Attribute, Data, DeriveInput, Error, GenericParam, 
 #[proc_macro_attribute]
 pub fn RouteParams(_metadata: TokenStream, input: TokenStream) -> TokenStream {
     let mut ast = parse_macro_input!(input as DeriveInput);
-    ast.attrs.push(syn::parse_quote!(#[derive(serde::Serialize, serde::Deserialize)]));
-
     if let Err(mut e) = reject_serde_attributes(&ast) {
         // We emit both the error AND the original struct.
         // This is useful to avoid spurious "the type doesn't exist anymore" additional errors
         e.extend(vec![TokenStream::from(quote! { #ast })]);
         return e;
     }
+    ast.attrs
+        .push(syn::parse_quote!(#[derive(serde::Serialize, serde::Deserialize)]));
 
     let generics_with_bounds = &ast.generics;
     let generics_without_bounds = &ast

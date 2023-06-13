@@ -33,12 +33,7 @@ use http::{header, HeaderValue, StatusCode};
 use http_body::combinators::{MapData, MapErr};
 use http_body::{Empty, Full};
 
-use crate::body::BoxBody;
-
-/// Type alias for `http::Response`.
-/// The generic parameter for the body type defaults to `BoxBody`, the most common body
-/// type used in Pavex.
-pub type Response<T = BoxBody> = http::Response<T>;
+use super::Response;
 
 /// Convert a type into an HTTP response.
 ///
@@ -68,37 +63,35 @@ pub trait IntoResponse {
 
 impl IntoResponse for Empty<Bytes> {
     fn into_response(self) -> Response {
-        Response::new(crate::body::boxed(self))
+        Response::ok().set_raw_body(super::body::boxed(self))
     }
 }
 
 impl IntoResponse for StatusCode {
     fn into_response(self) -> Response {
-        let mut res = Empty::new().into_response();
-        *res.status_mut() = self;
-        res
+        Empty::new().into_response().set_status(self)
     }
 }
 
-impl<B> IntoResponse for Response<B>
+impl<B> IntoResponse for http::Response<B>
 where
     B: http_body::Body<Data = Bytes> + Send + Sync + 'static,
     B::Error: Into<Box<dyn std::error::Error + Send + Sync>> + 'static,
 {
     fn into_response(self) -> Response {
-        self.map(crate::body::boxed)
+        self.map(super::body::boxed).into()
     }
 }
 
 impl IntoResponse for http::response::Parts {
     fn into_response(self) -> Response {
-        Response::from_parts(self, crate::body::boxed(Empty::new()))
+        http::Response::from_parts(self, super::body::boxed(Empty::new())).into()
     }
 }
 
 impl IntoResponse for Full<Bytes> {
     fn into_response(self) -> Response {
-        Response::new(crate::body::boxed(self))
+        Response::ok().set_raw_body(super::body::boxed(self))
     }
 }
 
@@ -107,7 +100,7 @@ where
     E: Into<Box<dyn std::error::Error + Send + Sync>> + 'static,
 {
     fn into_response(self) -> Response {
-        Response::new(crate::body::boxed(self))
+        Response::ok().set_raw_body(super::body::boxed(self))
     }
 }
 
@@ -118,7 +111,7 @@ where
     B::Error: Into<Box<dyn std::error::Error + Send + Sync>>,
 {
     fn into_response(self) -> Response {
-        Response::new(crate::body::boxed(self))
+        Response::ok().set_raw_body(super::body::boxed(self))
     }
 }
 
@@ -129,7 +122,7 @@ where
     E: Into<Box<dyn std::error::Error + Send + Sync>>,
 {
     fn into_response(self) -> Response {
-        Response::new(crate::body::boxed(self))
+        Response::ok().set_raw_body(super::body::boxed(self))
     }
 }
 

@@ -14,6 +14,7 @@ mime = "0.3"
 thiserror = "1"
 serde = "1"
 pavex_macros = { path = "../pavex_macros" }
+paste = "1"
 
 # Route parameters
 matchit = "0.7"

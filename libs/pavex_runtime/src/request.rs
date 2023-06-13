@@ -1,4 +1,4 @@
-use http::{Method, Uri, Version, HeaderMap};
+use http::{HeaderMap, Method, Uri, Version};
 
 #[non_exhaustive]
 #[derive(Debug)]
@@ -19,4 +19,3 @@ impl From<http::request::Parts> for RequestHead {
         }
     }
 }
-

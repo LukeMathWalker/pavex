@@ -32,10 +32,9 @@ pub async fn run(
                 pavex_runtime::hyper::service::service_fn(move |request| {
                     let server_state = server_state.clone();
                     async move {
-                        Ok::<
-                            _,
-                            pavex_runtime::hyper::Error,
-                        >(route_request(request, server_state).await)
+                        let response = route_request(request, server_state).await;
+                        let response = pavex_runtime::hyper::Response::from(response);
+                        Ok::<_, pavex_runtime::hyper::Error>(response)
                     }
                 }),
             )
@@ -61,10 +60,7 @@ async fn route_request(
     let matched_route = match server_state.router.at(&request_head.uri.path()) {
         Ok(m) => m,
         Err(_) => {
-            return pavex_runtime::response::Response::builder()
-                .status(pavex_runtime::http::StatusCode::NOT_FOUND)
-                .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
-                .unwrap();
+            return pavex_runtime::response::Response::not_found().box_body();
         }
     };
     let route_id = matched_route.value;
@@ -77,25 +73,19 @@ async fn route_request(
             match &request_head.method {
                 &pavex_runtime::http::Method::GET => route_handler_0().await,
                 _ => {
-                    pavex_runtime::response::Response::builder()
-                        .status(pavex_runtime::http::StatusCode::METHOD_NOT_ALLOWED)
-                        .header(pavex_runtime::http::header::ALLOW, "GET")
-                        .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
-                        .unwrap()
+                    let header_value = pavex_runtime::http::HeaderValue::from_static(
+                        "GET",
+                    );
+                    pavex_runtime::response::Response::method_not_allowed()
+                        .insert_header(pavex_runtime::http::header::ALLOW, header_value)
+                        .box_body()
                 }
             }
         }
-        _ => {
-            pavex_runtime::response::Response::builder()
-                .status(pavex_runtime::http::StatusCode::NOT_FOUND)
-                .body(pavex_runtime::body::boxed(hyper::body::Body::empty()))
-                .unwrap()
-        }
+        _ => pavex_runtime::response::Response::not_found().box_body(),
     }
 }
-pub async fn route_handler_0() -> http::Response<
-    http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
-> {
+pub async fn route_handler_0() -> pavex_runtime::response::Response {
     let v0 = app::fallible_with_generic_error2();
     match v0 {
         Ok(v1) => {
@@ -112,23 +102,13 @@ pub async fn route_handler_0() -> http::Response<
                                     let v9 = app::json();
                                     let v10 = app::json();
                                     let v11 = app::handler(v8, v10, &v9, v7, v5, &v3, &v1);
-                                    <http::Response<
-                                        http_body::combinators::BoxBody<
-                                            bytes::Bytes,
-                                            pavex_runtime::Error,
-                                        >,
-                                    > as pavex_runtime::response::IntoResponse>::into_response(
+                                    <pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(
                                         v11,
                                     )
                                 }
                                 Err(v7) => {
                                     let v8 = app::error_handler(&v7);
-                                    <http::Response<
-                                        http_body::combinators::BoxBody<
-                                            bytes::Bytes,
-                                            pavex_runtime::Error,
-                                        >,
-                                    > as pavex_runtime::response::IntoResponse>::into_response(
+                                    <pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(
                                         v8,
                                     )
                                 }
@@ -136,12 +116,7 @@ pub async fn route_handler_0() -> http::Response<
                         }
                         Err(v5) => {
                             let v6 = app::generic_error_handler(&v5);
-                            <http::Response<
-                                http_body::combinators::BoxBody<
-                                    bytes::Bytes,
-                                    pavex_runtime::Error,
-                                >,
-                            > as pavex_runtime::response::IntoResponse>::into_response(
+                            <pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(
                                 v6,
                             )
                         }
@@ -149,21 +124,18 @@ pub async fn route_handler_0() -> http::Response<
                 }
                 Err(v3) => {
                     let v4 = app::generic_error_handler(&v3);
-                    <http::Response<
-                        http_body::combinators::BoxBody<
-                            bytes::Bytes,
-                            pavex_runtime::Error,
-                        >,
-                    > as pavex_runtime::response::IntoResponse>::into_response(v4)
+                    <pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(
+                        v4,
+                    )
                 }
             }
         }
         Err(v1) => {
             let v2 = app::json();
             let v3 = app::doubly_generic_error_handler(&v1, &v2);
-            <http::Response<
-                http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>,
-            > as pavex_runtime::response::IntoResponse>::into_response(v3)
+            <pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(
+                v3,
+            )
         }
     }
 }
