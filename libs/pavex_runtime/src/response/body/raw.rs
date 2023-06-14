@@ -57,7 +57,7 @@ mod boxed {
         try_downcast(body).unwrap_or_else(|body| body.map_err(Error::new).boxed())
     }
 
-    pub(crate) fn try_downcast<T, K>(k: K) -> Result<T, K>
+    fn try_downcast<T, K>(k: K) -> Result<T, K>
     where
         T: 'static,
         K: Send + 'static,
