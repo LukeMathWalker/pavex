@@ -10,11 +10,11 @@ use crate::http::StatusCode;
 use crate::http::{HeaderMap, Version};
 
 /// Represents an HTTP response.
-/// 
+///
 /// ```rust
 /// use pavex_runtime::response::Response;
 /// use pavex_runtime::http::{HeaderValue, header::SERVER};
-/// 
+///
 /// // Create a new response with:
 /// // - status code `OK`
 /// // - HTTP version `HTTP/1.1`
@@ -31,13 +31,13 @@ use crate::http::{HeaderMap, Version};
 /// Check out [`Response::new`] for details on how to build a new [`Response`].  
 /// You might also want to check out the following methods to further customize
 /// your response:
-/// 
+///
 /// - [`set_status`](Response::set_status) to change the status code.
 /// - [`set_version`](Response::set_version) to change the HTTP version.
 /// - [`append_header`](Response::append_header) to append a value to a header.
 /// - [`insert_header`](Response::insert_header) to upsert a header value.
 /// - [`set_typed_body`](Response::set_typed_body) to set the body and automatically set the `Content-Type` header.
-/// 
+///
 /// There are other methods available on [`Response`] that you might find useful, but the
 /// ones listed above are the most commonly used and should be enough to get you started.
 pub struct Response<Body = BoxBody> {
@@ -149,7 +149,7 @@ impl<Body> Response<Body> {
     /// // Append a value to the `host` header.
     /// let value = HeaderValue::from_static("world");
     /// response = response.append_header(HOST, value);
-    /// 
+    ///
     /// let headers: Vec<_> = response.headers().get_all("host").iter().collect();
     /// assert_eq!(headers.len(), 1);
     /// assert_eq!(headers[0], "world");
@@ -163,9 +163,9 @@ impl<Body> Response<Body> {
     /// assert_eq!(headers[0], "world");
     /// assert_eq!(headers[1], "earth");
     /// ```
-    /// 
+    ///
     /// # Alternatives
-    /// 
+    ///
     /// If you want to replace the value of a header instead of appending to it,
     /// use [`insert_header`](Response::insert_header) instead.
     pub fn append_header(
@@ -178,12 +178,12 @@ impl<Body> Response<Body> {
     }
 
     /// Insert a header value into the [`Response`].
-    /// 
+    ///
     /// If the header key is not present, it is added with the given value.
     /// If the header key is present, its value is replaced with the given value.
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     /// ```rust
     /// use pavex_runtime::http::{header::HOST, HeaderValue};
     /// use pavex_runtime::response::Response;
@@ -194,11 +194,11 @@ impl<Body> Response<Body> {
     /// // Insert a value into the `host` header.
     /// let value = HeaderValue::from_static("world");
     /// response = response.insert_header(HOST, value);
-    /// 
+    ///
     /// let headers: Vec<_> = response.headers().get_all("host").iter().collect();
     /// assert_eq!(headers.len(), 1);
     /// assert_eq!(headers[0], "world");
-    /// 
+    ///
     /// // Insert another value into the `host` header.
     /// let value = HeaderValue::from_static("earth");
     /// response = response.insert_header(HOST, value);
@@ -207,9 +207,9 @@ impl<Body> Response<Body> {
     /// assert_eq!(headers.len(), 1);
     /// assert_eq!(headers[0], "earth");
     /// ```
-    /// 
+    ///
     /// # Alternatives
-    /// 
+    ///
     /// If you want to append to the current header value instead of replacing it,
     /// use [`append_header`](Response::append_header) instead.
     pub fn insert_header(
@@ -221,74 +221,46 @@ impl<Body> Response<Body> {
         self
     }
 
-
-    /// Set the body of the [`Response`] to the given value, without setting
-    /// the `Content-Type` header.
-    /// 
-    /// This method should only be used if you need fine-grained control over
-    /// the `Content-Type` header or the body type. In all other circumstances, use
-    /// [`set_typed_body`](Response::set_typed_body).
-    /// 
-    /// # Example
-    /// 
-    /// ```rust
-    /// use pavex_runtime::response::Response;
-    /// use pavex_runtime::http::header::CONTENT_TYPE;
-    /// use bytes::Bytes;
-    /// use http_body::{Full, Body};
-    ///     
-    /// let raw_body: Full<Bytes> = Full::new("Hello, world!".into());
-    /// let response = Response::ok().set_raw_body(raw_body);
-    /// 
-    /// // The `Content-Type` header is not set automatically
-    /// // when using `set_raw_body`.
-    /// assert_eq!(response.headers().get(CONTENT_TYPE), None);
-    /// ```
-    pub fn set_raw_body<NewBody>(self, body: NewBody) -> Response<NewBody> 
-    where
-        NewBody: http_body::Body<Data = Bytes> + Send + Sync + 'static,
-    {
-        let (head, _) = self.inner.into_parts();
-        http::Response::from_parts(head, body).into()
-    }
-
     /// Set the [`Response`] body.
-    /// 
+    ///
     /// The provided body must implement the [`TypedBody`] trait.  
-    /// The `Content-Type` header is automatically set to the value returned 
+    /// The `Content-Type` header is automatically set to the value returned
     /// by [`TypedBody::content_type`].
-    /// 
+    ///
     /// If a body is already set, it is replaced.
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     /// ```rust
     /// use pavex_runtime::response::{Response, body::Html};
     /// use pavex_runtime::http::header::CONTENT_TYPE;
-    /// 
+    ///
     /// let typed_body = Html::from_static("<h1>Hello, world!</h1>");
     /// let response = Response::ok().set_typed_body(typed_body);
-    /// 
+    ///
     /// // The `Content-Type` header is set automatically
     /// // when using `set_typed_body`.
     /// assert_eq!(response.headers()[CONTENT_TYPE], "text/html; charset=utf-8");
     /// ```
-    /// 
+    ///
     /// # Built-in `TypedBody` implementations
-    /// 
+    ///
     /// Pavex provides several implementations of [`TypedBody`] out of the box,
     /// to cover the most common use cases:
-    /// 
+    ///
     /// - [`String`](std::string::String), [`&'static str`](std::primitive::str)
     ///   and [`Cow<'static, str>`](std::borrow::Cow) for `text/plain` responses.
     /// - [`Vec<u8>`](std::vec::Vec), [`&'static [u8]`](std::primitive::u8),
     ///  [`Cow<'static, [u8]>`](std::borrow::Cow) and [`Bytes`](bytes::Bytes) for `application/octet-stream` responses.
     /// - [`Json`](crate::response::body::Json) for `application/json` responses.
     /// - [`Html`](crate::response::body::Html) for `text/html` responses.
-    /// 
+    ///
     /// Check out the [`body`](super::body) sub-module for an exhaustive list.
     /// 
-    /// # Example
+    /// # Raw body 
+    /// 
+    /// If you don't want Pavex to automatically set the `Content-Type` header,
+    /// you might want to use [`Response::set_raw_body`] instead.
     pub fn set_typed_body<NewBody>(self, body: NewBody) -> Response<<NewBody as TypedBody>::Body>
     where
         NewBody: TypedBody,
@@ -298,24 +270,54 @@ impl<Body> Response<Body> {
         http::Response::from_parts(head, body.body()).into()
     }
 
+    /// Set the body of the [`Response`] to the given value, without setting
+    /// the `Content-Type` header.
+    ///
+    /// This method should only be used if you need fine-grained control over
+    /// the `Content-Type` header or the body type. In all other circumstances, use
+    /// [`set_typed_body`](Response::set_typed_body).
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use pavex_runtime::response::Response;
+    /// use pavex_runtime::http::header::CONTENT_TYPE;
+    /// use bytes::Bytes;
+    /// use http_body::{Full, Body};
+    ///     
+    /// let raw_body: Full<Bytes> = Full::new("Hello, world!".into());
+    /// let response = Response::ok().set_raw_body(raw_body);
+    ///
+    /// // The `Content-Type` header is not set automatically
+    /// // when using `set_raw_body`.
+    /// assert_eq!(response.headers().get(CONTENT_TYPE), None);
+    /// ```
+    pub fn set_raw_body<NewBody>(self, body: NewBody) -> Response<NewBody>
+    where
+        NewBody: http_body::Body<Data = Bytes> + Send + Sync + 'static,
+    {
+        let (head, _) = self.inner.into_parts();
+        http::Response::from_parts(head, body).into()
+    }
+
     /// Box the current [`Response`] body.
-    /// 
+    ///
     /// This can be useful when:
-    /// 
-    /// - you need to return a [`Response`] with a body that implements [`http_body::Body`] 
+    ///
+    /// - you need to return a [`Response`] with a body that implements [`http_body::Body`]
     ///   but you don't know the exact type of the body at compile time.
-    /// 
+    ///
     /// - you need to return the same type of body from different branches of an `if` or `match`
     ///   statement.
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     /// ```rust
     /// use pavex_runtime::response::Response;
     /// use pavex_runtime::http::StatusCode;
     /// use bytes::Bytes;
     /// use http_body::{Full, Body};
-    /// 
+    ///
     /// # let user_exists = true;
     /// // The call to `.box_body` is necessary here because the two branches
     /// // of the `if` statement return different types of body: one returns
@@ -326,7 +328,7 @@ impl<Body> Response<Body> {
     /// } else {
     ///    Response::not_found().box_body()
     /// };
-    /// 
+    /// ```
     pub fn box_body(self) -> Response<BoxBody>
     where
         Body: http_body::Body<Data = Bytes> + Send + Sync + 'static,
@@ -342,28 +344,28 @@ impl<Body> Response<Body> {
     }
 
     /// Get a mutable reference to the [`Response`] headers.
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     /// ```rust
     /// use pavex_runtime::response::Response;
     /// use pavex_runtime::http::{header::CONTENT_TYPE, HeaderValue};
     /// use mime::TEXT_PLAIN_UTF_8;
-    /// 
+    ///
     /// let mut response = Response::ok();
-    /// 
+    ///
     /// // Get a mutable reference to the headers.
     /// let headers = response.headers_mut();
-    /// 
+    ///
     /// // Insert a header.
     /// let value = HeaderValue::from_static(TEXT_PLAIN_UTF_8.as_ref());
     /// headers.insert(CONTENT_TYPE, value);
-    /// 
+    ///
     /// assert_eq!(headers.len(), 1);
-    /// 
+    ///
     /// // Remove a header.
     /// headers.remove(CONTENT_TYPE);
-    /// 
+    ///
     /// assert!(headers.is_empty());
     /// ```
     pub fn headers_mut(&mut self) -> &mut crate::http::HeaderMap {
@@ -372,29 +374,117 @@ impl<Body> Response<Body> {
 }
 
 impl<Body> Response<Body> {
+    /// Get a reference to the [`Response`] status code.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use pavex_runtime::{http::StatusCode, response::Response};
+    ///
+    /// let response = Response::bad_request();
+    /// assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    /// ```
+    ///
+    /// # Mutation
+    ///
+    /// Check out [`Response::set_status`] if you need to modify the
+    /// status code of the [`Response`].
     pub fn status(&self) -> StatusCode {
         self.inner.status()
     }
 
+    /// Get a reference to the version of the HTTP protocol used by the [`Response`].
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use pavex_runtime::http::Version;
+    /// use pavex_runtime::response::Response;
+    ///
+    /// let mut response = Response::ok();
+    /// // By default, the HTTP version is HTTP/1.1.
+    /// assert_eq!(response.version(), Version::HTTP_11);
+    /// ```
+    ///
+    /// # Mutation
+    ///
+    /// Check out [`Response::set_version`] if you need to modify the
+    /// HTTP protocol version used by the [`Response`].
     pub fn version(&self) -> crate::http::Version {
         self.inner.version()
     }
 
+    /// Get a reference to the [`Response`] headers.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use pavex_runtime::http::{header::{HOST, SERVER}, HeaderValue};
+    /// use pavex_runtime::response::Response;
+    ///     
+    /// let response = Response::ok()
+    ///     .append_header(HOST, HeaderValue::from_static("world"))
+    ///     .append_header(HOST, HeaderValue::from_static("earth"))
+    ///     .insert_header(SERVER, HeaderValue::from_static("Pavex"));
+    ///
+    /// let headers = response.headers();
+    /// assert_eq!(headers.len(), 3);
+    ///
+    /// let host_values: Vec<_> = response.headers().get_all("host").iter().collect();
+    /// assert_eq!(host_values.len(), 2);
+    /// assert_eq!(host_values[0], "world");
+    /// assert_eq!(host_values[1], "earth");
+    ///
+    /// assert_eq!(headers[SERVER], "Pavex");
+    /// ```
+    ///
+    /// # Mutation
+    ///
+    /// If you need to modify the [`Response`] headers, check out:
+    ///
+    /// - [`Response::append_header`]
+    /// - [`Response::insert_header`]
+    /// - [`Response::headers_mut`]
     pub fn headers(&self) -> &crate::http::HeaderMap {
         self.inner.headers()
     }
 
+    /// Get a reference to the [`Response`] body.
+    /// 
+    /// # Mutation
+    /// 
+    /// If you need to modify the [`Response`] body, check out:
+    /// 
+    /// - [`Response::set_typed_body`]
+    /// - [`Response::set_raw_body`]
+    /// - [`Response::body_mut`]
     pub fn body(&self) -> &Body {
         self.inner.body()
     }
 }
 
 impl<Body> Response<Body> {
+    /// Break down the [`Response`] into its two components: the [`ResponseHead`]
+    /// and the body.
+    /// 
+    /// This method consumes the [`Response`].
+    /// 
+    /// # Related
+    /// 
+    /// You can use [`Response::from_parts`] to reconstruct a [`Response`] from
+    /// a [`ResponseHead`] and a body.
     pub fn into_parts(self) -> (ResponseHead, Body) {
         let (head, body) = self.inner.into_parts();
         (head.into(), body)
     }
 
+    /// Build a [`Response`] from its two components: the [`ResponseHead`]
+    /// and the body.
+    /// 
+    /// # Related
+    /// 
+    /// You can use [`Response::into_parts`] to decompose a [`Response`] from
+    /// a [`ResponseHead`] and a body.
     pub fn from_parts(head: ResponseHead, body: Body) -> Self {
         Self {
             inner: http::Response::from_parts(head.into(), body),
