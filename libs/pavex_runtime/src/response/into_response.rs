@@ -30,7 +30,7 @@ use bytes::Bytes;
 use http::StatusCode;
 use http_body::Empty;
 
-use super::{Response, ResponseHead};
+use super::{Response, ResponseHead, body::raw::boxed};
 
 /// Convert a type into an HTTP response.
 ///
@@ -87,12 +87,12 @@ impl IntoResponse for StatusCode {
 
 impl IntoResponse for http::response::Parts {
     fn into_response(self) -> Response {
-        http::Response::from_parts(self, super::body::boxed(Empty::new())).into()
+        http::Response::from_parts(self, boxed(Empty::new())).into()
     }
 }
 
 impl IntoResponse for ResponseHead {
     fn into_response(self) -> Response {
-        Response::from_parts(self, super::body::boxed(Empty::new())).into()
+        Response::from_parts(self, Empty::new()).box_body()
     }
 }

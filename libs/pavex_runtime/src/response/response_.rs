@@ -2,9 +2,8 @@ use bytes::Bytes;
 use http::header::CONTENT_TYPE;
 use http_body::Empty;
 
-use super::body::boxed;
 use super::body::TypedBody;
-use super::BoxBody;
+use super::body::raw::{BoxBody, boxed};
 use crate::http::StatusCode;
 use crate::http::{HeaderMap, Version};
 
@@ -234,12 +233,12 @@ impl<Body> Response<Body> {
     /// use pavex_runtime::response::{Response, body::Html};
     /// use pavex_runtime::http::header::CONTENT_TYPE;
     ///
-    /// let typed_body = Html::from_static("<h1>Hello, world!</h1>");
+    /// let typed_body = "Hello, world!";
     /// let response = Response::ok().set_typed_body(typed_body);
     ///
     /// // The `Content-Type` header is set automatically
     /// // when using `set_typed_body`.
-    /// assert_eq!(response.headers()[CONTENT_TYPE], "text/html; charset=utf-8");
+    /// assert_eq!(response.headers()[CONTENT_TYPE], "text/plain; charset=utf-8");
     /// ```
     ///
     /// # Built-in `TypedBody` implementations
@@ -248,11 +247,11 @@ impl<Body> Response<Body> {
     /// to cover the most common use cases:
     ///
     /// - [`String`](std::string::String), [`&'static str`](std::primitive::str)
-    ///   and [`Cow<'static, str>`](std::borrow::Cow) for `text/plain` responses.
+    ///   and [`Cow<'static, str>`](std::borrow::Cow) for `text/plain; charset=utf-8` responses.
     /// - [`Vec<u8>`](std::vec::Vec), [`&'static [u8]`](std::primitive::u8),
     ///  [`Cow<'static, [u8]>`](std::borrow::Cow) and [`Bytes`](bytes::Bytes) for `application/octet-stream` responses.
     /// - [`Json`](crate::response::body::Json) for `application/json` responses.
-    /// - [`Html`](crate::response::body::Html) for `text/html` responses.
+    /// - [`Html`](crate::response::body::Html) for `text/html; charset=utf-8` responses.
     ///
     /// Check out the [`body`](super::body) sub-module for an exhaustive list.
     /// 

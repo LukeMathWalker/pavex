@@ -1,7 +1,6 @@
 //! Build HTTP responses, from scratch or by converting existing types.
 //!
 //! Check out the [`Response`] type for more details.
-pub use body::BoxBody;
 pub use into_response::IntoResponse;
 
 pub mod body;
