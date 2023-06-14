@@ -279,9 +279,8 @@ impl<Body> Response<Body> {
     ///
     /// ```rust
     /// use pavex_runtime::response::Response;
+    /// use pavex_runtime::response::body::raw::{Bytes, Full};
     /// use pavex_runtime::http::header::CONTENT_TYPE;
-    /// use bytes::Bytes;
-    /// use http_body::{Full, Body};
     ///     
     /// let raw_body: Full<Bytes> = Full::new("Hello, world!".into());
     /// let response = Response::ok().set_raw_body(raw_body);
@@ -312,9 +311,6 @@ impl<Body> Response<Body> {
     ///
     /// ```rust
     /// use pavex_runtime::response::Response;
-    /// use pavex_runtime::http::StatusCode;
-    /// use bytes::Bytes;
-    /// use http_body::{Full, Body};
     ///
     /// # let user_exists = true;
     /// // The call to `.box_body` is necessary here because the two branches

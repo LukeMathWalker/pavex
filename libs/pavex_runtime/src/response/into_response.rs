@@ -32,8 +32,8 @@ use http_body::Empty;
 
 use super::{Response, ResponseHead, body::raw::boxed};
 
-/// Convert a type into an HTTP response.
-///
+/// Convert a type into a [`Response`].
+/// 
 /// Types that implement `IntoResponse` can be returned:
 ///
 /// - as the output type of an infallible route handler,
