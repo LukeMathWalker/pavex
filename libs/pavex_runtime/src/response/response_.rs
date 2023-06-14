@@ -5,7 +5,6 @@ use http_body::Empty;
 use super::body::boxed;
 use super::body::TypedBody;
 use super::BoxBody;
-use super::IntoResponse;
 use crate::http::StatusCode;
 use crate::http::{HeaderMap, Version};
 
@@ -489,16 +488,6 @@ impl<Body> Response<Body> {
         Self {
             inner: http::Response::from_parts(head.into(), body),
         }
-    }
-}
-
-impl<B> IntoResponse for Response<B>
-where
-    B: http_body::Body<Data = Bytes> + Send + Sync + 'static,
-    B::Error: Into<Box<dyn std::error::Error + Send + Sync>> + 'static,
-{
-    fn into_response(self) -> Response {
-        self.inner.into_response()
     }
 }
 
