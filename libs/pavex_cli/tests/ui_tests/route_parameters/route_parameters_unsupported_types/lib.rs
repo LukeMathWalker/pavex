@@ -1,15 +1,16 @@
 use pavex_builder::{constructor::Lifecycle, f, router::GET, Blueprint};
+use pavex_runtime::http::StatusCode;
 use pavex_runtime::extract::route::RouteParams;
 
-pub fn tuple(params: RouteParams<(u32, u32)>) -> String {
+pub fn tuple(params: RouteParams<(u32, u32)>) -> StatusCode {
     todo!()
 }
 
-pub fn primitive(params: RouteParams<u32>) -> String {
+pub fn primitive(params: RouteParams<u32>) -> StatusCode {
     todo!()
 }
 
-pub fn slice_ref(params: RouteParams<&[u32]>) -> String {
+pub fn slice_ref(params: RouteParams<&[u32]>) -> StatusCode {
     todo!()
 }
 
@@ -19,7 +20,7 @@ pub struct MyStruct {
     y: u32,
 }
 
-pub fn reference<T>(params: RouteParams<&T>) -> String {
+pub fn reference<T>(params: RouteParams<&T>) -> StatusCode {
     todo!()
 }
 
@@ -30,21 +31,21 @@ pub enum MyEnum {
     C { x: u32, y: u32 },
 }
 
-pub fn enum_(params: RouteParams<MyEnum>) -> String {
+pub fn enum_(params: RouteParams<MyEnum>) -> StatusCode {
     todo!()
 }
 
 #[RouteParams]
 pub struct UnitStruct;
 
-pub fn unit_struct(params: RouteParams<UnitStruct>) -> String {
+pub fn unit_struct(params: RouteParams<UnitStruct>) -> StatusCode {
     todo!()
 }
 
 #[RouteParams]
 pub struct TupleStruct(u32, u32);
 
-pub fn tuple_struct(params: RouteParams<TupleStruct>) -> String {
+pub fn tuple_struct(params: RouteParams<TupleStruct>) -> StatusCode {
     todo!()
 }
 

@@ -90,5 +90,5 @@ pub async fn route_handler_0() -> pavex_runtime::response::Response {
     let v1 = app::second(v0);
     let v2 = app::third(v1);
     let v3 = app::handler(v2);
-    <alloc::string::String as pavex_runtime::response::IntoResponse>::into_response(v3)
+    <http::StatusCode as pavex_runtime::response::IntoResponse>::into_response(v3)
 }

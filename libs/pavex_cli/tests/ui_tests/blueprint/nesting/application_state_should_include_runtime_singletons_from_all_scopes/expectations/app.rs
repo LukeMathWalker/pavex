@@ -113,9 +113,9 @@ async fn route_request(
 }
 pub async fn route_handler_0(v0: u32) -> pavex_runtime::response::Response {
     let v1 = app::nested_handler(v0);
-    <alloc::string::String as pavex_runtime::response::IntoResponse>::into_response(v1)
+    <http::StatusCode as pavex_runtime::response::IntoResponse>::into_response(v1)
 }
 pub async fn route_handler_1(v0: u64) -> pavex_runtime::response::Response {
     let v1 = app::parent_handler(v0);
-    <alloc::string::String as pavex_runtime::response::IntoResponse>::into_response(v1)
+    <http::StatusCode as pavex_runtime::response::IntoResponse>::into_response(v1)
 }

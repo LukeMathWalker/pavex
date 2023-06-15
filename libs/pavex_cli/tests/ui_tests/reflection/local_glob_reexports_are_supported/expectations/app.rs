@@ -87,5 +87,5 @@ async fn route_request(
 }
 pub async fn route_handler_0() -> pavex_runtime::response::Response {
     let v0 = app::nested::function();
-    <alloc::string::String as pavex_runtime::response::IntoResponse>::into_response(v0)
+    <http::StatusCode as pavex_runtime::response::IntoResponse>::into_response(v0)
 }

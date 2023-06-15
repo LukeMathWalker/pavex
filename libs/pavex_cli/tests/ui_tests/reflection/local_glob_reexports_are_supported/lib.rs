@@ -8,8 +8,9 @@ pub fn blueprint() -> Blueprint {
 
 pub mod nested {
     pub mod module {
-        pub fn function() -> String {
-            "Hello, world!".to_string()
+        use pavex_runtime::http::StatusCode;
+        pub fn function() -> StatusCode {
+            StatusCode::OK
         }
     }
 

@@ -47,19 +47,10 @@ fn build_router() -> Result<
     pavex_runtime::routing::InsertError,
 > {
     let mut router = pavex_runtime::routing::Router::new();
-    router.insert("/bytes", 0u32)?;
-    router.insert("/bytes_mut", 1u32)?;
-    router.insert("/cow_static_str", 2u32)?;
-    router.insert("/cow_static_u8_slice", 3u32)?;
-    router.insert("/empty", 4u32)?;
-    router.insert("/full", 5u32)?;
-    router.insert("/parts", 6u32)?;
-    router.insert("/response", 7u32)?;
-    router.insert("/static_str", 8u32)?;
-    router.insert("/static_u8_slice", 9u32)?;
-    router.insert("/status_code", 10u32)?;
-    router.insert("/string", 11u32)?;
-    router.insert("/vec_u8", 12u32)?;
+    router.insert("/head", 0u32)?;
+    router.insert("/parts", 1u32)?;
+    router.insert("/response", 2u32)?;
+    router.insert("/status_code", 3u32)?;
     Ok(router)
 }
 async fn route_request(
@@ -133,187 +124,26 @@ async fn route_request(
                 }
             }
         }
-        4u32 => {
-            match &request_head.method {
-                &pavex_runtime::http::Method::GET => route_handler_4().await,
-                _ => {
-                    let header_value = pavex_runtime::http::HeaderValue::from_static(
-                        "GET",
-                    );
-                    pavex_runtime::response::Response::method_not_allowed()
-                        .insert_header(pavex_runtime::http::header::ALLOW, header_value)
-                        .box_body()
-                }
-            }
-        }
-        5u32 => {
-            match &request_head.method {
-                &pavex_runtime::http::Method::GET => route_handler_5().await,
-                _ => {
-                    let header_value = pavex_runtime::http::HeaderValue::from_static(
-                        "GET",
-                    );
-                    pavex_runtime::response::Response::method_not_allowed()
-                        .insert_header(pavex_runtime::http::header::ALLOW, header_value)
-                        .box_body()
-                }
-            }
-        }
-        6u32 => {
-            match &request_head.method {
-                &pavex_runtime::http::Method::GET => route_handler_6().await,
-                _ => {
-                    let header_value = pavex_runtime::http::HeaderValue::from_static(
-                        "GET",
-                    );
-                    pavex_runtime::response::Response::method_not_allowed()
-                        .insert_header(pavex_runtime::http::header::ALLOW, header_value)
-                        .box_body()
-                }
-            }
-        }
-        7u32 => {
-            match &request_head.method {
-                &pavex_runtime::http::Method::GET => route_handler_7().await,
-                _ => {
-                    let header_value = pavex_runtime::http::HeaderValue::from_static(
-                        "GET",
-                    );
-                    pavex_runtime::response::Response::method_not_allowed()
-                        .insert_header(pavex_runtime::http::header::ALLOW, header_value)
-                        .box_body()
-                }
-            }
-        }
-        8u32 => {
-            match &request_head.method {
-                &pavex_runtime::http::Method::GET => route_handler_8().await,
-                _ => {
-                    let header_value = pavex_runtime::http::HeaderValue::from_static(
-                        "GET",
-                    );
-                    pavex_runtime::response::Response::method_not_allowed()
-                        .insert_header(pavex_runtime::http::header::ALLOW, header_value)
-                        .box_body()
-                }
-            }
-        }
-        9u32 => {
-            match &request_head.method {
-                &pavex_runtime::http::Method::GET => route_handler_9().await,
-                _ => {
-                    let header_value = pavex_runtime::http::HeaderValue::from_static(
-                        "GET",
-                    );
-                    pavex_runtime::response::Response::method_not_allowed()
-                        .insert_header(pavex_runtime::http::header::ALLOW, header_value)
-                        .box_body()
-                }
-            }
-        }
-        10u32 => {
-            match &request_head.method {
-                &pavex_runtime::http::Method::GET => route_handler_10().await,
-                _ => {
-                    let header_value = pavex_runtime::http::HeaderValue::from_static(
-                        "GET",
-                    );
-                    pavex_runtime::response::Response::method_not_allowed()
-                        .insert_header(pavex_runtime::http::header::ALLOW, header_value)
-                        .box_body()
-                }
-            }
-        }
-        11u32 => {
-            match &request_head.method {
-                &pavex_runtime::http::Method::GET => route_handler_11().await,
-                _ => {
-                    let header_value = pavex_runtime::http::HeaderValue::from_static(
-                        "GET",
-                    );
-                    pavex_runtime::response::Response::method_not_allowed()
-                        .insert_header(pavex_runtime::http::header::ALLOW, header_value)
-                        .box_body()
-                }
-            }
-        }
-        12u32 => {
-            match &request_head.method {
-                &pavex_runtime::http::Method::GET => route_handler_12().await,
-                _ => {
-                    let header_value = pavex_runtime::http::HeaderValue::from_static(
-                        "GET",
-                    );
-                    pavex_runtime::response::Response::method_not_allowed()
-                        .insert_header(pavex_runtime::http::header::ALLOW, header_value)
-                        .box_body()
-                }
-            }
-        }
         _ => pavex_runtime::response::Response::not_found().box_body(),
     }
 }
 pub async fn route_handler_0() -> pavex_runtime::response::Response {
-    let v0 = app::bytes();
-    <bytes::Bytes as pavex_runtime::response::IntoResponse>::into_response(v0)
+    let v0 = app::response_head();
+    <pavex_runtime::response::ResponseHead as pavex_runtime::response::IntoResponse>::into_response(
+        v0,
+    )
 }
 pub async fn route_handler_1() -> pavex_runtime::response::Response {
-    let v0 = app::bytes_mut();
-    <bytes::BytesMut as pavex_runtime::response::IntoResponse>::into_response(v0)
-}
-pub async fn route_handler_2() -> pavex_runtime::response::Response {
-    let v0 = app::cow_static_str();
-    <alloc::borrow::Cow<
-        'static,
-        str,
-    > as pavex_runtime::response::IntoResponse>::into_response(v0)
-}
-pub async fn route_handler_3() -> pavex_runtime::response::Response {
-    let v0 = app::cow_static_u8_slice();
-    <alloc::borrow::Cow<
-        'static,
-        [u8],
-    > as pavex_runtime::response::IntoResponse>::into_response(v0)
-}
-pub async fn route_handler_4() -> pavex_runtime::response::Response {
-    let v0 = app::empty();
-    <http_body::Empty<
-        bytes::Bytes,
-    > as pavex_runtime::response::IntoResponse>::into_response(v0)
-}
-pub async fn route_handler_5() -> pavex_runtime::response::Response {
-    let v0 = app::full();
-    <http_body::Full<
-        bytes::Bytes,
-    > as pavex_runtime::response::IntoResponse>::into_response(v0)
-}
-pub async fn route_handler_6() -> pavex_runtime::response::Response {
     let v0 = app::parts();
     <http::response::Parts as pavex_runtime::response::IntoResponse>::into_response(v0)
 }
-pub async fn route_handler_7() -> pavex_runtime::response::Response {
+pub async fn route_handler_2() -> pavex_runtime::response::Response {
     let v0 = app::response();
     <pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(
         v0,
     )
 }
-pub async fn route_handler_8() -> pavex_runtime::response::Response {
-    let v0 = app::static_str();
-    <&str as pavex_runtime::response::IntoResponse>::into_response(v0)
-}
-pub async fn route_handler_9() -> pavex_runtime::response::Response {
-    let v0 = app::static_u8_slice();
-    <&[u8] as pavex_runtime::response::IntoResponse>::into_response(v0)
-}
-pub async fn route_handler_10() -> pavex_runtime::response::Response {
+pub async fn route_handler_3() -> pavex_runtime::response::Response {
     let v0 = app::status_code();
     <http::StatusCode as pavex_runtime::response::IntoResponse>::into_response(v0)
-}
-pub async fn route_handler_11() -> pavex_runtime::response::Response {
-    let v0 = app::string();
-    <alloc::string::String as pavex_runtime::response::IntoResponse>::into_response(v0)
-}
-pub async fn route_handler_12() -> pavex_runtime::response::Response {
-    let v0 = app::vec_u8();
-    <alloc::vec::Vec<u8> as pavex_runtime::response::IntoResponse>::into_response(v0)
 }

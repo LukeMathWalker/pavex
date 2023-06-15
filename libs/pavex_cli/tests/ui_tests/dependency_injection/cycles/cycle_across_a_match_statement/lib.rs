@@ -1,4 +1,5 @@
 use pavex_builder::{constructor::Lifecycle, f, router::GET, Blueprint};
+use pavex_runtime::http::StatusCode;
 
 // The dependency graph for the request handler looks like this:
 //
@@ -32,11 +33,11 @@ pub fn b(_c: &A) -> B {
     todo!()
 }
 
-pub fn handler(_b: &B) -> String {
+pub fn handler(_b: &B) -> StatusCode {
     todo!()
 }
 
-pub fn error_handler(_e: &Error) -> String {
+pub fn error_handler(_e: &Error) -> StatusCode {
     todo!()
 }
 

@@ -6,12 +6,12 @@
   [31m│[0m primitive, not a plain struct type. I don't support this: the extraction
   [31m│[0m would fail at runtime, when trying to process an incoming request.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:59:1]
-  [31m│[0m  [2m59[0m │     ));
-  [31m│[0m  [2m60[0m │     bp.route(GET, "/a/:x", f!(crate::primitive));
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:60:1]
+  [31m│[0m  [2m60[0m │     ));
+  [31m│[0m  [2m61[0m │     bp.route(GET, "/a/:x", f!(crate::primitive));
   [31m│[0m     · [35;1m                           ──────────┬─────────[0m
   [31m│[0m     ·                                      [35;1m╰── [35;1mThe request handler asking for `RouteParams<u32>`[0m[0m
-  [31m│[0m  [2m61[0m │     bp.route(GET, "/b/:x/:y", f!(crate::tuple));
+  [31m│[0m  [2m62[0m │     bp.route(GET, "/b/:x/:y", f!(crate::tuple));
   [31m│[0m     ╰────
   [31m│[0m [36m  help: [0mUse a plain struct with named fields to extract route parameters.
   [31m│[0m         Check out `RouteParams`' documentation for all the details!
@@ -25,12 +25,12 @@
   [31m│[0m extraction would fail at runtime, when trying to process an incoming
   [31m│[0m request.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:60:1]
-  [31m│[0m  [2m60[0m │     bp.route(GET, "/a/:x", f!(crate::primitive));
-  [31m│[0m  [2m61[0m │     bp.route(GET, "/b/:x/:y", f!(crate::tuple));
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:61:1]
+  [31m│[0m  [2m61[0m │     bp.route(GET, "/a/:x", f!(crate::primitive));
+  [31m│[0m  [2m62[0m │     bp.route(GET, "/b/:x/:y", f!(crate::tuple));
   [31m│[0m     · [35;1m                              ────────┬───────[0m
   [31m│[0m     ·                                       [35;1m╰── [35;1mThe request handler asking for `RouteParams<(u32, u32)>`[0m[0m
-  [31m│[0m  [2m62[0m │     bp.route(GET, "/c/:x/:z", f!(crate::slice_ref));
+  [31m│[0m  [2m63[0m │     bp.route(GET, "/c/:x/:z", f!(crate::slice_ref));
   [31m│[0m     ╰────
   [31m│[0m [36m  help: [0mUse a plain struct with named fields to extract route parameters.
   [31m│[0m         Check out `RouteParams`' documentation for all the details!
@@ -44,12 +44,12 @@
   [31m│[0m extraction would fail at runtime, when trying to process an incoming
   [31m│[0m request.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:61:1]
-  [31m│[0m  [2m61[0m │     bp.route(GET, "/b/:x/:y", f!(crate::tuple));
-  [31m│[0m  [2m62[0m │     bp.route(GET, "/c/:x/:z", f!(crate::slice_ref));
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:62:1]
+  [31m│[0m  [2m62[0m │     bp.route(GET, "/b/:x/:y", f!(crate::tuple));
+  [31m│[0m  [2m63[0m │     bp.route(GET, "/c/:x/:z", f!(crate::slice_ref));
   [31m│[0m     · [35;1m                              ──────────┬─────────[0m
   [31m│[0m     ·                                         [35;1m╰── [35;1mThe request handler asking for `RouteParams<&[u32]>`[0m[0m
-  [31m│[0m  [2m63[0m │     bp.route(GET, "/d/:x/:y", f!(crate::reference::<crate::MyStruct>));
+  [31m│[0m  [2m64[0m │     bp.route(GET, "/d/:x/:y", f!(crate::reference::<crate::MyStruct>));
   [31m│[0m     ╰────
   [31m│[0m [36m  help: [0mUse a plain struct with named fields to extract route parameters.
   [31m│[0m         Check out `RouteParams`' documentation for all the details!
@@ -63,12 +63,12 @@
   [31m│[0m a plain struct type. I don't support this: the extraction would fail at
   [31m│[0m runtime, when trying to process an incoming request.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:62:1]
-  [31m│[0m  [2m62[0m │     bp.route(GET, "/c/:x/:z", f!(crate::slice_ref));
-  [31m│[0m  [2m63[0m │     bp.route(GET, "/d/:x/:y", f!(crate::reference::<crate::MyStruct>));
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:63:1]
+  [31m│[0m  [2m63[0m │     bp.route(GET, "/c/:x/:z", f!(crate::slice_ref));
+  [31m│[0m  [2m64[0m │     bp.route(GET, "/d/:x/:y", f!(crate::reference::<crate::MyStruct>));
   [31m│[0m     · [35;1m                              ───────────────────┬───────────────────[0m
   [31m│[0m     ·                                                  [35;1m╰── [35;1mThe request handler asking for `RouteParams<&app::MyStruct>`[0m[0m
-  [31m│[0m  [2m64[0m │     bp.route(GET, "/e/:x/:y", f!(crate::enum_));
+  [31m│[0m  [2m65[0m │     bp.route(GET, "/e/:x/:y", f!(crate::enum_));
   [31m│[0m     ╰────
   [31m│[0m [36m  help: [0mUse a plain struct with named fields to extract route parameters.
   [31m│[0m         Check out `RouteParams`' documentation for all the details!
@@ -82,12 +82,12 @@
   [31m│[0m the extraction would fail at runtime, when trying to process an incoming
   [31m│[0m request.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:63:1]
-  [31m│[0m  [2m63[0m │     bp.route(GET, "/d/:x/:y", f!(crate::reference::<crate::MyStruct>));
-  [31m│[0m  [2m64[0m │     bp.route(GET, "/e/:x/:y", f!(crate::enum_));
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:64:1]
+  [31m│[0m  [2m64[0m │     bp.route(GET, "/d/:x/:y", f!(crate::reference::<crate::MyStruct>));
+  [31m│[0m  [2m65[0m │     bp.route(GET, "/e/:x/:y", f!(crate::enum_));
   [31m│[0m     · [35;1m                              ────────┬───────[0m
   [31m│[0m     ·                                       [35;1m╰── [35;1mThe request handler asking for `RouteParams<app::MyEnum>`[0m[0m
-  [31m│[0m  [2m65[0m │     bp.route(GET, "/f/:x/:y", f!(crate::tuple_struct));
+  [31m│[0m  [2m66[0m │     bp.route(GET, "/f/:x/:y", f!(crate::tuple_struct));
   [31m│[0m     ╰────
   [31m│[0m [36m  help: [0mUse a plain struct with named fields to extract route parameters.
   [31m│[0m         Check out `RouteParams`' documentation for all the details!
@@ -101,12 +101,12 @@
   [31m│[0m support this: the extraction would fail at runtime, when trying to process
   [31m│[0m an incoming request.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:64:1]
-  [31m│[0m  [2m64[0m │     bp.route(GET, "/e/:x/:y", f!(crate::enum_));
-  [31m│[0m  [2m65[0m │     bp.route(GET, "/f/:x/:y", f!(crate::tuple_struct));
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:65:1]
+  [31m│[0m  [2m65[0m │     bp.route(GET, "/e/:x/:y", f!(crate::enum_));
+  [31m│[0m  [2m66[0m │     bp.route(GET, "/f/:x/:y", f!(crate::tuple_struct));
   [31m│[0m     · [35;1m                              ───────────┬───────────[0m
   [31m│[0m     ·                                          [35;1m╰── [35;1mThe request handler asking for `RouteParams<app::TupleStruct>`[0m[0m
-  [31m│[0m  [2m66[0m │     bp.route(GET, "/g/:x/:y", f!(crate::unit_struct));
+  [31m│[0m  [2m67[0m │     bp.route(GET, "/g/:x/:y", f!(crate::unit_struct));
   [31m│[0m     ╰────
   [31m│[0m [36m  help: [0mUse a plain struct with named fields to extract route parameters.
   [31m│[0m         Check out `RouteParams`' documentation for all the details!
@@ -120,12 +120,12 @@
   [31m│[0m a plain struct type. I don't support this: the extraction would fail at
   [31m│[0m runtime, when trying to process an incoming request.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:65:1]
-  [31m│[0m  [2m65[0m │     bp.route(GET, "/f/:x/:y", f!(crate::tuple_struct));
-  [31m│[0m  [2m66[0m │     bp.route(GET, "/g/:x/:y", f!(crate::unit_struct));
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:66:1]
+  [31m│[0m  [2m66[0m │     bp.route(GET, "/f/:x/:y", f!(crate::tuple_struct));
+  [31m│[0m  [2m67[0m │     bp.route(GET, "/g/:x/:y", f!(crate::unit_struct));
   [31m│[0m     · [35;1m                              ───────────┬──────────[0m
   [31m│[0m     ·                                          [35;1m╰── [35;1mThe request handler asking for `RouteParams<app::UnitStruct>`[0m[0m
-  [31m│[0m  [2m67[0m │     bp
+  [31m│[0m  [2m68[0m │     bp
   [31m│[0m     ╰────
   [31m│[0m [36m  help: [0mUse a plain struct with named fields to extract route parameters.
   [31m│[0m         Check out `RouteParams`' documentation for all the details!

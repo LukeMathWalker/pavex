@@ -120,7 +120,7 @@ pub async fn route_handler_0(
     match v1 {
         Ok(v2) => {
             let v3 = app::get_home(v2);
-            <alloc::string::String as pavex_runtime::response::IntoResponse>::into_response(
+            <pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(
                 v3,
             )
         }
@@ -141,7 +141,7 @@ pub async fn route_handler_1(
     match v1 {
         Ok(v2) => {
             let v3 = app::get_room(v2);
-            <alloc::string::String as pavex_runtime::response::IntoResponse>::into_response(
+            <pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(
                 v3,
             )
         }
@@ -162,7 +162,7 @@ pub async fn route_handler_2(
     match v1 {
         Ok(v2) => {
             let v3 = app::get_town(v2);
-            <alloc::string::String as pavex_runtime::response::IntoResponse>::into_response(
+            <pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(
                 v3,
             )
         }

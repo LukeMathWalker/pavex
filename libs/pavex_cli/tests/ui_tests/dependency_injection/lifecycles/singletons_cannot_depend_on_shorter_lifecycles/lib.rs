@@ -1,4 +1,5 @@
 use pavex_builder::{constructor::Lifecycle, f, router::GET, Blueprint};
+use pavex_runtime::http::StatusCode;
 
 #[derive(Clone)]
 pub struct A;
@@ -19,7 +20,7 @@ pub fn c() -> C {
     todo!()
 }
 
-pub fn handler(_a: &A) -> String {
+pub fn handler(_a: &A) -> StatusCode {
     todo!()
 }
 
