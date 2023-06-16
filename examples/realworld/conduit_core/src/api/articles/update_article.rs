@@ -1,4 +1,7 @@
-use pavex_runtime::{extract::{route::RouteParams, body::JsonBody}, hyper::StatusCode};
+use pavex::{
+    extract::{body::JsonBody, route::RouteParams},
+    hyper::StatusCode,
+};
 
 #[derive(Debug, serde::Deserialize)]
 pub struct UpdateArticleBody {

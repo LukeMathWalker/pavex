@@ -1,7 +1,7 @@
 [31m[1mERROR[0m[39m: 
   [31m×[0m I can't use the type returned by this request handler to create an HTTP
   [31m│[0m response.
-  [31m│[0m It doesn't implement `pavex_runtime::response::IntoResponse`.
+  [31m│[0m It doesn't implement `pavex::response::IntoResponse`.
   [31m│[0m
   [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:24:1]
   [31m│[0m  [2m24[0m │         .error_handler(f!(crate::error_handler));
@@ -10,13 +10,13 @@
   [31m│[0m     ·                                     [35;1m╰── [35;1mThe request handler was registered here[0m[0m
   [31m│[0m  [2m26[0m │         .error_handler(f!(crate::error_handler));
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mImplement `pavex_runtime::response::IntoResponse` for
+  [31m│[0m [36m  help: [0mImplement `pavex::response::IntoResponse` for
   [31m│[0m         `app::MyCustomOutputType`.
 
 [31m[1mERROR[0m[39m: 
   [31m×[0m I can't use the type returned by this error handler to create an HTTP
   [31m│[0m response.
-  [31m│[0m It doesn't implement `pavex_runtime::response::IntoResponse`.
+  [31m│[0m It doesn't implement `pavex::response::IntoResponse`.
   [31m│[0m
   [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:25:1]
   [31m│[0m  [2m25[0m │     bp.route(GET, "/home", f!(crate::handler))
@@ -25,13 +25,13 @@
   [31m│[0m     ·                                    [35;1m╰── [35;1mThe error handler was registered here[0m[0m
   [31m│[0m  [2m27[0m │     bp
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mImplement `pavex_runtime::response::IntoResponse` for
+  [31m│[0m [36m  help: [0mImplement `pavex::response::IntoResponse` for
   [31m│[0m         `app::MyCustomOutputType`.
 
 [31m[1mERROR[0m[39m: 
   [31m×[0m I can't use the type returned by this error handler to create an HTTP
   [31m│[0m response.
-  [31m│[0m It doesn't implement `pavex_runtime::response::IntoResponse`.
+  [31m│[0m It doesn't implement `pavex::response::IntoResponse`.
   [31m│[0m
   [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:23:1]
   [31m│[0m  [2m23[0m │     bp.constructor(f!(crate::request_scoped), Lifecycle::RequestScoped)
@@ -40,5 +40,5 @@
   [31m│[0m     ·                                    [35;1m╰── [35;1mThe error handler was registered here[0m[0m
   [31m│[0m  [2m25[0m │     bp.route(GET, "/home", f!(crate::handler))
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mImplement `pavex_runtime::response::IntoResponse` for
+  [31m│[0m [36m  help: [0mImplement `pavex::response::IntoResponse` for
   [31m│[0m         `app::MyCustomOutputType`.

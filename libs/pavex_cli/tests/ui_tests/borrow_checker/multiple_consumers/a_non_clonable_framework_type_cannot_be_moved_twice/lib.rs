@@ -1,14 +1,14 @@
 use std::path::PathBuf;
 
+use pavex::hyper::Body;
+use pavex::request::RequestHead;
+use pavex::response::Response;
 use pavex_builder::{
     constructor::{CloningStrategy, Lifecycle},
     f,
     router::GET,
     Blueprint,
 };
-use pavex_runtime::hyper::Body;
-use pavex_runtime::request::RequestHead;
-use pavex_runtime::response::Response;
 
 // The call graph looks like this:
 //

@@ -1,21 +1,21 @@
 digraph "GET /head" {
-    0 [ label = "app::response_head() -> pavex_runtime::response::ResponseHead"]
-    1 [ label = "<pavex_runtime::response::ResponseHead as pavex_runtime::response::IntoResponse>::into_response(pavex_runtime::response::ResponseHead) -> pavex_runtime::response::Response"]
+    0 [ label = "app::response_head() -> pavex::response::ResponseHead"]
+    1 [ label = "<pavex::response::ResponseHead as pavex::response::IntoResponse>::into_response(pavex::response::ResponseHead) -> pavex::response::Response"]
     0 -> 1 [ ]
 }
 digraph "GET /parts" {
     0 [ label = "app::parts() -> http::response::Parts"]
-    1 [ label = "<http::response::Parts as pavex_runtime::response::IntoResponse>::into_response(http::response::Parts) -> pavex_runtime::response::Response"]
+    1 [ label = "<http::response::Parts as pavex::response::IntoResponse>::into_response(http::response::Parts) -> pavex::response::Response"]
     0 -> 1 [ ]
 }
 digraph "GET /response" {
-    0 [ label = "app::response() -> pavex_runtime::response::Response"]
-    1 [ label = "<pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(pavex_runtime::response::Response) -> pavex_runtime::response::Response"]
+    0 [ label = "app::response() -> pavex::response::Response"]
+    1 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     0 -> 1 [ ]
 }
 digraph "GET /status_code" {
     0 [ label = "app::status_code() -> http::StatusCode"]
-    1 [ label = "<http::StatusCode as pavex_runtime::response::IntoResponse>::into_response(http::StatusCode) -> pavex_runtime::response::Response"]
+    1 [ label = "<http::StatusCode as pavex::response::IntoResponse>::into_response(http::StatusCode) -> pavex::response::Response"]
     0 -> 1 [ ]
 }
 digraph app_state {

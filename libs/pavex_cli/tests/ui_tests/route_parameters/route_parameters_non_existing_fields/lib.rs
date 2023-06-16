@@ -1,5 +1,5 @@
+use pavex::{extract::route::RouteParams, http::StatusCode};
 use pavex_builder::{constructor::Lifecycle, f, router::GET, Blueprint};
-use pavex_runtime::{extract::route::RouteParams, http::StatusCode};
 
 #[RouteParams]
 pub struct MissingOne {
@@ -35,11 +35,11 @@ pub fn no_route_params(params: RouteParams<NoRouteParams>) -> StatusCode {
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.constructor(
-        f!(pavex_runtime::extract::route::RouteParams::extract),
+        f!(pavex::extract::route::RouteParams::extract),
         Lifecycle::RequestScoped,
     )
     .error_handler(f!(
-        pavex_runtime::extract::route::errors::ExtractRouteParamsError::into_response
+        pavex::extract::route::errors::ExtractRouteParamsError::into_response
     ));
     bp.route(GET, "/a/:x", f!(crate::missing_one));
     bp.route(GET, "/b/:x", f!(crate::missing_two));

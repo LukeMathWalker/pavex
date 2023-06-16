@@ -1,6 +1,6 @@
 digraph "GET /home" {
-    0 [ label = "app::Streamer::stream_file() -> pavex_runtime::response::Response"]
-    1 [ label = "<pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(pavex_runtime::response::Response) -> pavex_runtime::response::Response"]
+    0 [ label = "app::Streamer::stream_file() -> pavex::response::Response"]
+    1 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     0 -> 1 [ ]
 }
 digraph app_state {

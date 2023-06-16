@@ -4,7 +4,7 @@ pub fn static_str() -> &'static str {
     todo!()
 }
 
-pub fn handler(_x: &'static str) -> pavex_runtime::response::Response {
+pub fn handler(_x: &'static str) -> pavex::response::Response {
     todo!()
 }
 

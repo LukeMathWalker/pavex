@@ -1,5 +1,5 @@
+use pavex::http::StatusCode;
 use pavex_builder::{constructor::Lifecycle, f, router::GET, Blueprint};
-use pavex_runtime::http::StatusCode;
 
 // The dependency graph for the request handler looks like this:
 //

@@ -6,7 +6,7 @@ use matchit::{Params, ParamsIter};
 ///
 /// ```rust
 /// use pavex_builder::{f, router::GET, Blueprint};
-/// use pavex_runtime::extract::route::RawRouteParams;
+/// use pavex::extract::route::RawRouteParams;
 ///
 /// fn blueprint() -> Blueprint {
 ///     let mut bp = Blueprint::new();

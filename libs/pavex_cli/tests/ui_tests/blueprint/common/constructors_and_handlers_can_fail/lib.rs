@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
+use pavex::{hyper::body::Body, request::RequestHead, response::Response};
 use pavex_builder::{constructor::Lifecycle, f, router::GET, Blueprint};
-use pavex_runtime::{request::RequestHead, hyper::body::Body, response::Response};
 
 pub struct Logger;
 
@@ -15,7 +15,7 @@ pub struct ExtractPathError<T>(T);
 pub fn handle_extract_path_error(
     _e: &ExtractPathError<String>,
     _logger: Logger,
-) -> pavex_runtime::response::Response {
+) -> pavex::response::Response {
     todo!()
 }
 

@@ -1,4 +1,4 @@
-use pavex_runtime::{extract::query::QueryParams, hyper::StatusCode};
+use pavex::{extract::query::QueryParams, hyper::StatusCode};
 
 #[derive(Debug, serde::Deserialize)]
 pub struct ListArticles {

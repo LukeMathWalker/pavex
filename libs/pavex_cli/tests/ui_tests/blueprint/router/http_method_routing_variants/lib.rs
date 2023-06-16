@@ -4,7 +4,7 @@ use pavex_builder::{
     Blueprint,
 };
 
-pub fn handler() -> pavex_runtime::response::Response {
+pub fn handler() -> pavex::response::Response {
     todo!()
 }
 
@@ -21,10 +21,7 @@ pub fn blueprint() -> Blueprint {
     bp.route(TRACE, "/trace", f!(crate::handler));
     bp.route(ANY, "/any", f!(crate::handler));
     bp.route(
-        MethodGuard::new([
-            pavex_runtime::http::Method::PATCH,
-            pavex_runtime::http::Method::POST,
-        ]),
+        MethodGuard::new([pavex::http::Method::PATCH, pavex::http::Method::POST]),
         "/mixed",
         f!(crate::handler),
     );

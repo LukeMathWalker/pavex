@@ -1,4 +1,4 @@
-use pavex_runtime::{hyper::StatusCode, extract::route::RouteParams};
+use pavex::{extract::route::RouteParams, hyper::StatusCode};
 
 #[derive(Debug)]
 #[RouteParams]

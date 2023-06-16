@@ -16,7 +16,7 @@ pub fn fallible<T>() -> Result<Form<T>, FallibleError> {
 
 pub struct FallibleError;
 
-pub fn error_handler(e: &FallibleError) -> pavex_runtime::response::Response {
+pub fn error_handler(e: &FallibleError) -> pavex::response::Response {
     todo!()
 }
 
@@ -27,7 +27,7 @@ pub fn fallible_with_generic_error<T>() -> Result<FallibleForm<T>, GenericError<
     todo!()
 }
 
-pub fn generic_error_handler<S>(e: &GenericError<S>) -> pavex_runtime::response::Response {
+pub fn generic_error_handler<S>(e: &GenericError<S>) -> pavex::response::Response {
     todo!()
 }
 
@@ -41,7 +41,7 @@ pub fn fallible_with_generic_error2<T>() -> Result<FallibleForm2<T>, GenericErro
 pub fn doubly_generic_error_handler<S>(
     e: &GenericError<S>,
     v: &Json<S>,
-) -> pavex_runtime::response::Response {
+) -> pavex::response::Response {
     todo!()
 }
 
@@ -58,7 +58,7 @@ pub fn handler(
     fallible_with_generic_error: FallibleForm<AType>,
     fallible_ref_with_generic_error: &FallibleForm<u16>,
     fallible_ref_with_generic_error2: &FallibleForm2<u8>,
-) -> pavex_runtime::response::Response {
+) -> pavex::response::Response {
     todo!()
 }
 

@@ -51,8 +51,8 @@ mod typed_body {
     /// as a reference example:
     ///
     /// ```rust,
-    /// use pavex_runtime::http::HeaderValue;
-    /// use pavex_runtime::response::body::{
+    /// use pavex::http::HeaderValue;
+    /// use pavex::response::body::{
     ///     TypedBody,
     ///     raw::{Full, Bytes}
     /// };

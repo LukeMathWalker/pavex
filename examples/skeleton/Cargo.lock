@@ -14,9 +14,9 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "cargo_px_env",
+ "pavex",
  "pavex_builder",
  "pavex_cli_client",
- "pavex_runtime",
 ]
 
 [[package]]
@@ -24,11 +24,9 @@ name = "app_sdk"
 version = "0.1.0"
 dependencies = [
  "app_blueprint",
- "bytes",
  "http",
- "http-body",
  "hyper",
- "pavex_runtime",
+ "pavex",
 ]
 
 [[package]]
@@ -292,6 +290,28 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9f746c4065a8fa3fe23974dd82f15431cc8d40779821001404d10d2e79ca7d79"
 
 [[package]]
+name = "pavex"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bytes",
+ "futures-util",
+ "http",
+ "http-body",
+ "hyper",
+ "matchit",
+ "mime",
+ "paste",
+ "pavex_macros",
+ "percent-encoding",
+ "serde",
+ "serde_html_form",
+ "serde_json",
+ "serde_path_to_error",
+ "thiserror",
+]
+
+[[package]]
 name = "pavex_builder"
 version = "0.1.0"
 dependencies = [
@@ -299,7 +319,7 @@ dependencies = [
  "fs-err",
  "http",
  "indexmap",
- "pavex_runtime",
+ "pavex",
  "ron",
  "serde",
 ]
@@ -319,28 +339,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "pavex_runtime"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bytes",
- "futures-util",
- "http",
- "http-body",
- "hyper",
- "matchit",
- "mime",
- "paste",
- "pavex_macros",
- "percent-encoding",
- "serde",
- "serde_html_form",
- "serde_json",
- "serde_path_to_error",
- "thiserror",
 ]
 
 [[package]]

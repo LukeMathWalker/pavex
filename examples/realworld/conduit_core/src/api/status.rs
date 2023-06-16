@@ -1,4 +1,4 @@
-use pavex_runtime::hyper::StatusCode;
+use pavex::hyper::StatusCode;
 
 pub fn ping() -> StatusCode {
     StatusCode::OK

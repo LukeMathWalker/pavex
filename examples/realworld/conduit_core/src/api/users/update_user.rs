@@ -1,4 +1,4 @@
-use pavex_runtime::{extract::body::JsonBody, http::StatusCode};
+use pavex::{extract::body::JsonBody, http::StatusCode};
 use secrecy::Secret;
 
 #[derive(serde::Deserialize)]

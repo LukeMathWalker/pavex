@@ -250,7 +250,7 @@ impl TestData {
 
                 [dependencies]
                 pavex_builder = { path = "../../../../../../libs/pavex_builder" }
-                pavex_runtime = { path = "../../../../../../libs/pavex_runtime" }
+                pavex ={ path = "../../../../../../libs/pavex" }
             };
             cargo_toml["package"]["name"] = package_name.into();
             cargo_toml["package"]["version"] = dependency_config.version.clone().into();
@@ -297,7 +297,7 @@ impl TestData {
                 [dev-dependencies]
                 tokio = { version = "1", features = ["full"] }
                 reqwest = "0.11"
-                pavex_runtime = { path = "../../../../../../libs/pavex_runtime" }
+                pavex ={ path = "../../../../../../libs/pavex" }
             };
 
             let dev_deps = cargo_toml
@@ -349,7 +349,7 @@ impl TestData {
 
             [dependencies]
             pavex_builder = { path = "../../../../../libs/pavex_builder" }
-            pavex_runtime = { path = "../../../../../libs/pavex_runtime" }
+            pavex ={ path = "../../../../../libs/pavex" }
             pavex_cli_client = { path = "../../../../../libs/pavex_cli_client" }
         };
         if has_tests {

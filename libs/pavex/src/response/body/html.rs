@@ -5,20 +5,20 @@ use http_body::Full;
 use mime::TEXT_HTML_UTF_8;
 use std::borrow::Cow;
 
-/// A [`Response`](crate::response::Response) body with `Content-Type` set to 
+/// A [`Response`](crate::response::Response) body with `Content-Type` set to
 /// `text/html; charset=utf-8`.
-/// 
+///
 /// # Example
-/// 
+///
 /// ```rust
-/// use pavex_runtime::response::{Response, body::Html};
-/// use pavex_runtime::http::header::CONTENT_TYPE;
-/// 
+/// use pavex::response::{Response, body::Html};
+/// use pavex::http::header::CONTENT_TYPE;
+///
 /// let html: Html = r#"<body>
 ///     <h1>Hey there!</h1>
 /// </body>"#.into();
 /// let response = Response::ok().set_typed_body(html);
-/// 
+///
 /// assert_eq!(response.headers()[CONTENT_TYPE], "text/html; charset=utf-8");
 /// ```
 pub struct Html(Bytes);

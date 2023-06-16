@@ -21,11 +21,7 @@ pub fn transient() -> Transient {
     todo!()
 }
 
-pub fn stream_file(
-    s: &Singleton,
-    r: &RequestScoped,
-    t: &Transient,
-) -> pavex_runtime::response::Response {
+pub fn stream_file(s: &Singleton, r: &RequestScoped, t: &Transient) -> pavex::response::Response {
     todo!()
 }
 

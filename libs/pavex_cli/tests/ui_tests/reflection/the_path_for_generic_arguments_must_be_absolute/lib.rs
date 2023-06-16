@@ -6,7 +6,7 @@ pub fn new_logger<T>() -> Logger<T> {
     todo!()
 }
 
-pub fn handler<T>(logger: Logger<T>) -> pavex_runtime::response::Response {
+pub fn handler<T>(logger: Logger<T>) -> pavex::response::Response {
     todo!()
 }
 

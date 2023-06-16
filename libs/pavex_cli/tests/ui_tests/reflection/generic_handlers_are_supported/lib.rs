@@ -6,7 +6,7 @@ pub fn path() -> PathBuf {
     todo!()
 }
 
-pub fn stream_file<T>(_inner: T) -> pavex_runtime::response::Response {
+pub fn stream_file<T>(_inner: T) -> pavex::response::Response {
     todo!()
 }
 

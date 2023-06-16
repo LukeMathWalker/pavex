@@ -1,14 +1,13 @@
 [31m[1mERROR[0m[39m: 
   [31m×[0m I can't generate code that will pass the borrow checker *and* match the
   [31m│[0m instructions in your blueprint.
-  [31m│[0m There are 2 components that take `pavex_runtime::request::RequestHead` as
-  [31m│[0m an input parameter, consuming it by value. Since I'm not allowed to clone
-  [31m│[0m `pavex_runtime::request::RequestHead`, I can't resolve this conflict.
+  [31m│[0m There are 2 components that take `pavex::request::RequestHead` as an
+  [31m│[0m input parameter, consuming it by value. Since I'm not allowed to clone
+  [31m│[0m `pavex::request::RequestHead`, I can't resolve this conflict.
   [31m│[0m
   [31m│[0m   [36mhelp:[0m Considering changing the signature of the components that consume
-  [31m│[0m         `pavex_runtime::request::RequestHead` by value.
-  [31m│[0m         Would a shared reference, `&pavex_runtime::request::RequestHead`,
-  [31m│[0m         be enough?
+  [31m│[0m         `pavex::request::RequestHead` by value.
+  [31m│[0m         Would a shared reference, `&pavex::request::RequestHead`, be enough?
   [31m│[0m        ☞
   [31m│[0m           ╭─[[36;1;4msrc/lib.rs[0m:43:1]
   [31m│[0m        [2m43[0m │     bp.constructor(f!(crate::b), Lifecycle::RequestScoped);

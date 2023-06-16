@@ -4,11 +4,11 @@ use pavex_builder::{
     Blueprint,
 };
 
-pub fn handler_1() -> pavex_runtime::response::Response {
+pub fn handler_1() -> pavex::response::Response {
     todo!()
 }
 
-pub fn handler_2() -> pavex_runtime::response::Response {
+pub fn handler_2() -> pavex::response::Response {
     todo!()
 }
 

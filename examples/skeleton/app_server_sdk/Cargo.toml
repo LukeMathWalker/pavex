@@ -9,8 +9,6 @@ generator_name = "bp"
 
 [dependencies]
 app_blueprint = { version = "0.1.0", path = "../app_blueprint", package = "app_blueprint" }
-bytes = { version = "1.4.0", package = "bytes" }
 http = { version = "0.2.9", package = "http" }
-http_body = { version = "0.4.5", package = "http-body" }
 hyper = { version = "0.14.26", package = "hyper" }
-pavex_runtime = { version = "0.1.0", path = "../../../libs/pavex_runtime", package = "pavex_runtime" }
+pavex = { version = "0.1.0", path = "../../../libs/pavex", package = "pavex" }

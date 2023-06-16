@@ -19,7 +19,7 @@ pub fn error_handler(e: &Error) {
     todo!()
 }
 
-pub fn handler() -> pavex_runtime::response::Response {
+pub fn handler() -> pavex::response::Response {
     todo!()
 }
 

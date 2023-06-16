@@ -25,7 +25,7 @@ use super::{
 /// # Example
 ///
 /// ```rust
-/// use pavex_runtime::extract::body::JsonBody;
+/// use pavex::extract::body::JsonBody;
 ///
 /// // You must derive `serde::Deserialize` for the type you want to extract,
 /// // in this case `HomeListing`.
@@ -58,10 +58,10 @@ use super::{
 ///    let mut bp = Blueprint::new();
 ///    // Register the default constructor and error handler for `JsonBody`.
 ///    bp.constructor(
-///         f!(pavex_runtime::extract::body::JsonBody::extract),
+///         f!(pavex::extract::body::JsonBody::extract),
 ///         Lifecycle::RequestScoped,
 ///     ).error_handler(
-///         f!(pavex_runtime::extract::body::errors::ExtractJsonBodyError::into_response)
+///         f!(pavex::extract::body::errors::ExtractJsonBodyError::into_response)
 ///     );
 ///     // [...]
 ///     bp
@@ -86,7 +86,7 @@ use super::{
 /// body if possible, and allocates a new `String` only if strictly necessary.
 ///
 /// ```rust
-/// use pavex_runtime::extract::body::JsonBody;
+/// use pavex::extract::body::JsonBody;
 /// use std::borrow::Cow;
 ///
 /// #[derive(serde::Deserialize)]

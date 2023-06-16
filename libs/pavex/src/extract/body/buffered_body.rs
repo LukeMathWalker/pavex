@@ -28,7 +28,7 @@ use hyper::body::to_bytes;
 /// # Example
 ///
 /// ```rust
-/// use pavex_runtime::extract::body::BufferedBody;
+/// use pavex::extract::body::BufferedBody;
 ///
 /// // The `BufferedBody` extractor consumes the raw request body stream
 /// // and buffers its entire contents in memory.
@@ -52,10 +52,10 @@ use hyper::body::to_bytes;
 ///    let mut bp = Blueprint::new();
 ///    // Register the default constructor and error handler for `BufferedBody`.
 ///    bp.constructor(
-///         f!(pavex_runtime::extract::body::BufferedBody::extract),
+///         f!(pavex::extract::body::BufferedBody::extract),
 ///         Lifecycle::RequestScoped,
 ///     ).error_handler(
-///         f!(pavex_runtime::extract::body::errors::ExtractBufferedBodyError::into_response)
+///         f!(pavex::extract::body::errors::ExtractBufferedBodyError::into_response)
 ///     );
 ///     // [...]
 ///     bp
@@ -76,7 +76,7 @@ use hyper::body::to_bytes;
 ///
 /// ```rust
 /// use pavex_builder::{f, Blueprint, constructor::Lifecycle};
-/// use pavex_runtime::extract::body::BodySizeLimit;
+/// use pavex::extract::body::BodySizeLimit;
 ///
 /// pub fn body_size_limit() -> BodySizeLimit {
 ///     BodySizeLimit::Enabled {
@@ -97,7 +97,7 @@ use hyper::body::to_bytes;
 ///
 /// ```rust
 /// use pavex_builder::{f, Blueprint, constructor::Lifecycle};
-/// use pavex_runtime::extract::body::BodySizeLimit;
+/// use pavex::extract::body::BodySizeLimit;
 ///
 /// pub fn body_size_limit() -> BodySizeLimit {
 ///    BodySizeLimit::Disabled
@@ -118,7 +118,7 @@ use hyper::body::to_bytes;
 ///
 /// ```rust
 /// use pavex_builder::{f, Blueprint, constructor::Lifecycle, router::{GET, POST}};
-/// use pavex_runtime::extract::body::BodySizeLimit;
+/// use pavex::extract::body::BodySizeLimit;
 /// # pub fn home() -> String { todo!() }
 /// # pub fn upload() -> String { todo!() }
 ///

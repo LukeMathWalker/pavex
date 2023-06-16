@@ -1,6 +1,6 @@
 use pavex_builder::{f, router::GET, Blueprint};
 
-pub fn handler() -> pavex_runtime::response::Response {
+pub fn handler() -> pavex::response::Response {
     todo!()
 }
 

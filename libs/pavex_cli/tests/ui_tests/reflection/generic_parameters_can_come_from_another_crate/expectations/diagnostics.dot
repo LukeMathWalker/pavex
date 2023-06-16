@@ -1,6 +1,6 @@
 digraph "GET /home" {
-    0 [ label = "app::handler() -> pavex_runtime::response::Response<app::BodyType>"]
-    1 [ label = "<pavex_runtime::response::Response::<app::BodyType> as pavex_runtime::response::IntoResponse>::into_response(pavex_runtime::response::Response<app::BodyType>) -> pavex_runtime::response::Response"]
+    0 [ label = "app::handler() -> pavex::response::Response<app::BodyType>"]
+    1 [ label = "<pavex::response::Response::<app::BodyType> as pavex::response::IntoResponse>::into_response(pavex::response::Response<app::BodyType>) -> pavex::response::Response"]
     0 -> 1 [ ]
 }
 digraph app_state {

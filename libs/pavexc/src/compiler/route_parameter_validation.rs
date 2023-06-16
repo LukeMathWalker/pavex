@@ -39,7 +39,7 @@ pub(crate) fn verify_route_parameters<'a, I>(
     I: Iterator<Item = (&'a RouterKey, &'a RawCallGraph)>,
 {
     let ResolvedType::ResolvedPath(structural_deserialize) = process_framework_path(
-        "pavex_runtime::serialization::StructuralDeserialize",
+        "pavex::serialization::StructuralDeserialize",
         package_graph,
         krate_collection,
     ) else {
@@ -57,7 +57,7 @@ pub(crate) fn verify_route_parameters<'a, I>(
                 return None;
             }
             let ResolvedType::ResolvedPath(ty_) = &m.output else { return None; };
-            if ty_.base_type == vec!["pavex_runtime", "extract", "route", "RouteParams"] {
+            if ty_.base_type == vec!["pavex", "extract", "route", "RouteParams"] {
                 Some((node_id, ty_.clone()))
             } else {
                 None

@@ -1164,6 +1164,121 @@ dependencies = [
 name = "pavex"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
+ "bytes",
+ "futures-util",
+ "http",
+ "http-body",
+ "hyper",
+ "insta",
+ "matchit",
+ "mime",
+ "paste",
+ "pavex_builder",
+ "pavex_macros",
+ "percent-encoding",
+ "serde",
+ "serde_html_form",
+ "serde_json",
+ "serde_path_to_error",
+ "thiserror",
+ "tokio",
+]
+
+[[package]]
+name = "pavex_builder"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "fs-err",
+ "http",
+ "indexmap",
+ "pavex",
+ "ron",
+ "serde",
+]
+
+[[package]]
+name = "pavex_cli"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "fs-err",
+ "guppy",
+ "miette",
+ "owo-colors",
+ "pavex_builder",
+ "pavex_miette",
+ "pavex_test_runner",
+ "pavexc",
+ "tracing",
+ "tracing-chrome",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "pavex_cli_client"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "pavex_builder",
+]
+
+[[package]]
+name = "pavex_macros"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "proc-macro2",
+ "quote",
+ "serde",
+ "syn",
+ "trybuild",
+]
+
+[[package]]
+name = "pavex_miette"
+version = "0.1.0"
+dependencies = [
+ "miette",
+ "owo-colors",
+ "supports-color",
+ "supports-hyperlinks",
+ "supports-unicode",
+ "terminal_size 0.2.6",
+ "textwrap 0.16.0",
+ "unicode-width",
+]
+
+[[package]]
+name = "pavex_test_runner"
+version = "0.1.0"
+dependencies = [
+ "ahash 0.8.3",
+ "anyhow",
+ "console",
+ "fs-err",
+ "globwalk",
+ "itertools",
+ "libtest-mimic",
+ "miette",
+ "num_cpus",
+ "object-pool",
+ "persist_if_changed",
+ "serde",
+ "serde_json",
+ "sha2",
+ "similar",
+ "textwrap 0.16.0",
+ "toml 0.7.4",
+ "walkdir",
+]
+
+[[package]]
+name = "pavexc"
+version = "0.1.0"
+dependencies = [
  "ahash 0.8.3",
  "anyhow",
  "bimap",
@@ -1202,121 +1317,6 @@ dependencies = [
  "tracing",
  "vergen",
  "xdg-home",
-]
-
-[[package]]
-name = "pavex_builder"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "fs-err",
- "http",
- "indexmap",
- "pavex_runtime",
- "ron",
- "serde",
-]
-
-[[package]]
-name = "pavex_cli"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "clap",
- "fs-err",
- "guppy",
- "miette",
- "owo-colors",
- "pavex",
- "pavex_builder",
- "pavex_miette",
- "pavex_test_runner",
- "tracing",
- "tracing-chrome",
- "tracing-subscriber",
-]
-
-[[package]]
-name = "pavex_cli_client"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "pavex_builder",
-]
-
-[[package]]
-name = "pavex_macros"
-version = "0.1.0"
-dependencies = [
- "pavex_runtime",
- "proc-macro2",
- "quote",
- "serde",
- "syn",
- "trybuild",
-]
-
-[[package]]
-name = "pavex_miette"
-version = "0.1.0"
-dependencies = [
- "miette",
- "owo-colors",
- "supports-color",
- "supports-hyperlinks",
- "supports-unicode",
- "terminal_size 0.2.6",
- "textwrap 0.16.0",
- "unicode-width",
-]
-
-[[package]]
-name = "pavex_runtime"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bytes",
- "futures-util",
- "http",
- "http-body",
- "hyper",
- "insta",
- "matchit",
- "mime",
- "paste",
- "pavex_builder",
- "pavex_macros",
- "percent-encoding",
- "serde",
- "serde_html_form",
- "serde_json",
- "serde_path_to_error",
- "thiserror",
- "tokio",
-]
-
-[[package]]
-name = "pavex_test_runner"
-version = "0.1.0"
-dependencies = [
- "ahash 0.8.3",
- "anyhow",
- "console",
- "fs-err",
- "globwalk",
- "itertools",
- "libtest-mimic",
- "miette",
- "num_cpus",
- "object-pool",
- "persist_if_changed",
- "serde",
- "serde_json",
- "sha2",
- "similar",
- "textwrap 0.16.0",
- "toml 0.7.4",
- "walkdir",
 ]
 
 [[package]]

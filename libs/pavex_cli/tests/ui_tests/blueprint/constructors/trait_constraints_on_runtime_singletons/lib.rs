@@ -42,7 +42,7 @@ pub fn handler(
     _s: NonSendSingleton,
     _a: NonSyncSingleton,
     _c: NonCloneSingleton,
-) -> pavex_runtime::response::Response {
+) -> pavex::response::Response {
     todo!()
 }
 

@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
+use pavex::http::StatusCode;
 use pavex_builder::{constructor::Lifecycle, f, router::GET, Blueprint};
-use pavex_runtime::http::StatusCode;
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();

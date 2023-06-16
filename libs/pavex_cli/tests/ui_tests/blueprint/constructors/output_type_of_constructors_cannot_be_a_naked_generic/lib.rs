@@ -10,11 +10,11 @@ pub fn fallible_naked<T>() -> Result<T, FallibleError> {
 
 pub struct FallibleError;
 
-pub fn error_handler(e: &FallibleError) -> pavex_runtime::response::Response {
+pub fn error_handler(e: &FallibleError) -> pavex::response::Response {
     todo!()
 }
 
-pub fn handler(a: u8, b: u16) -> pavex_runtime::response::Response {
+pub fn handler(a: u8, b: u16) -> pavex::response::Response {
     todo!()
 }
 

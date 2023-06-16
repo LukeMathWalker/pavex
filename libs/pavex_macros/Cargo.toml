@@ -13,5 +13,5 @@ syn = "2.0"
 
 [dev-dependencies]
 trybuild = "1.0"
-pavex_runtime = { path = "../pavex_runtime" }
+pavex = { path = "../pavex" }
 serde = { version = "1.0", features = ["derive"] }

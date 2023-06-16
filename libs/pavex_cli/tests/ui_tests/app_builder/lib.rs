@@ -1,12 +1,12 @@
 use std::path::PathBuf;
 
+use pavex::response::Response;
 use pavex_builder::{constructor::Lifecycle, f, router::GET, Blueprint};
-use pavex_runtime::response::Response;
 
 pub struct Logger;
 
 pub async fn extract_path(
-    _inner: pavex_runtime::request::RequestHead,
+    _inner: pavex::request::RequestHead,
 ) -> Result<PathBuf, ExtractPathError<String>> {
     todo!()
 }

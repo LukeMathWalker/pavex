@@ -18,7 +18,7 @@ pub fn triply_generic_constructor<T, S, U>(
     todo!()
 }
 
-pub fn handler(i: u8, j: u16, k: u32) -> pavex_runtime::response::Response {
+pub fn handler(i: u8, j: u16, k: u32) -> pavex::response::Response {
     todo!()
 }
 

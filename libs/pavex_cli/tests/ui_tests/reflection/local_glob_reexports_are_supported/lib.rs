@@ -8,7 +8,7 @@ pub fn blueprint() -> Blueprint {
 
 pub mod nested {
     pub mod module {
-        use pavex_runtime::http::StatusCode;
+        use pavex::http::StatusCode;
         pub fn function() -> StatusCode {
             StatusCode::OK
         }

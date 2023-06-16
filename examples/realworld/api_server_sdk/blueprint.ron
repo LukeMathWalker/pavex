@@ -9,7 +9,7 @@
             constructor: (
                 callable: (
                     registered_at: "conduit_core",
-                    import_path: "pavex_runtime::extract::query::QueryParams::extract",
+                    import_path: "pavex::extract::query::QueryParams::extract",
                 ),
                 location: (
                     line: 25,
@@ -22,7 +22,7 @@
             error_handler: Some((
                 callable: (
                     registered_at: "conduit_core",
-                    import_path: "pavex_runtime::extract::query::errors::ExtractQueryParamsError::into_response",
+                    import_path: "pavex::extract::query::errors::ExtractQueryParamsError::into_response",
                 ),
                 location: (
                     line: 29,
@@ -35,7 +35,7 @@
             constructor: (
                 callable: (
                     registered_at: "conduit_core",
-                    import_path: "pavex_runtime::extract::route::RouteParams::extract",
+                    import_path: "pavex::extract::route::RouteParams::extract",
                 ),
                 location: (
                     line: 34,
@@ -48,7 +48,7 @@
             error_handler: Some((
                 callable: (
                     registered_at: "conduit_core",
-                    import_path: "pavex_runtime::extract::route::errors::ExtractRouteParamsError::into_response",
+                    import_path: "pavex::extract::route::errors::ExtractRouteParamsError::into_response",
                 ),
                 location: (
                     line: 38,
@@ -61,7 +61,7 @@
             constructor: (
                 callable: (
                     registered_at: "conduit_core",
-                    import_path: "pavex_runtime::extract::body::JsonBody::extract",
+                    import_path: "pavex::extract::body::JsonBody::extract",
                 ),
                 location: (
                     line: 43,
@@ -74,7 +74,7 @@
             error_handler: Some((
                 callable: (
                     registered_at: "conduit_core",
-                    import_path: "pavex_runtime::extract::body::errors::ExtractJsonBodyError::into_response",
+                    import_path: "pavex::extract::body::errors::ExtractJsonBodyError::into_response",
                 ),
                 location: (
                     line: 47,
@@ -87,7 +87,7 @@
             constructor: (
                 callable: (
                     registered_at: "conduit_core",
-                    import_path: "pavex_runtime::extract::body::BufferedBody::extract",
+                    import_path: "pavex::extract::body::BufferedBody::extract",
                 ),
                 location: (
                     line: 50,
@@ -100,7 +100,7 @@
             error_handler: Some((
                 callable: (
                     registered_at: "conduit_core",
-                    import_path: "pavex_runtime::extract::body::errors::ExtractBufferedBodyError::into_response",
+                    import_path: "pavex::extract::body::errors::ExtractBufferedBodyError::into_response",
                 ),
                 location: (
                     line: 54,
@@ -113,7 +113,7 @@
             constructor: (
                 callable: (
                     registered_at: "conduit_core",
-                    import_path: "<pavex_runtime::extract::body::BodySizeLimit as\n    std::default::Default>::default",
+                    import_path: "<pavex::extract::body::BodySizeLimit as std::default::Default>::default",
                 ),
                 location: (
                     line: 57,

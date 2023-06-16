@@ -1,7 +1,13 @@
-pub use compiler::App;
+pub use hyper;
+pub use matchit as routing;
 
-mod compiler;
-mod diagnostic;
-pub(crate) mod language;
-mod rustdoc;
-mod utils;
+// Re-export the dependencies that we use in the generated application code.
+pub use error::Error;
+
+mod error;
+pub mod extract;
+pub mod http;
+pub mod request;
+pub mod response;
+
+pub mod serialization;
