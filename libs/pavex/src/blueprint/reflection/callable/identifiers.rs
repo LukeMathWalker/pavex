@@ -15,7 +15,7 @@ pub struct RawCallable {
 ///
 /// It is an implementation detail of the builder.
 ///
-/// [`Blueprint`]: crate::Blueprint
+/// [`Blueprint`]: crate::blueprint::Blueprint
 pub struct RawCallableIdentifiers {
     /// The name of the crate that registered the callable against the blueprint builder.
     /// This information is needed to resolve the callable import path unambiguously.

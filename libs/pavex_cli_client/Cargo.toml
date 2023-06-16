@@ -5,4 +5,4 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1"
-pavex_builder = { path = "../pavex_builder" }
+pavex = { path = "../pavex" }

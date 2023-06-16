@@ -1,5 +1,5 @@
-use pavex_builder::{
-    f,
+use pavex::f;
+use pavex::blueprint::{
     router::{ANY, GET},
     Blueprint,
 };

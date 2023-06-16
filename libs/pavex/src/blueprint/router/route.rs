@@ -1,5 +1,5 @@
-use crate::internals::RegisteredCallable;
-use crate::{
+use crate::blueprint::internals::RegisteredCallable;
+use crate::blueprint::{
     reflection::{RawCallable, RawCallableIdentifiers},
     Blueprint,
 };
@@ -26,7 +26,8 @@ impl<'a> Route<'a> {
     /// are constructors registered for those parameter types.
     ///
     /// ```rust
-    /// use pavex_builder::{Blueprint, f, router::GET};
+    /// use pavex::f;
+    /// use pavex::blueprint::{Blueprint, router::GET};
     /// use pavex::{response::Response, hyper::body::Body};
     /// # struct LogLevel;
     /// # struct RuntimeError;

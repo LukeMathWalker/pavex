@@ -3,7 +3,7 @@ use std::fmt::Write;
 use ahash::{HashMap, HashMapExt, HashSet, HashSetExt};
 use indexmap::IndexSet;
 use miette::NamedSource;
-use pavex_builder::constructor::Lifecycle;
+use pavex::blueprint::constructor::Lifecycle;
 use petgraph::stable_graph::{NodeIndex, StableDiGraph};
 
 use crate::{

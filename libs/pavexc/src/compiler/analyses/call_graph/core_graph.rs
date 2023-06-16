@@ -9,7 +9,7 @@ use ahash::{HashMap, HashMapExt, HashSet, HashSetExt};
 use bimap::BiHashMap;
 use guppy::PackageId;
 use indexmap::IndexSet;
-use pavex_builder::constructor::Lifecycle;
+use pavex::blueprint::constructor::Lifecycle;
 use petgraph::prelude::{StableDiGraph, StableGraph};
 use petgraph::stable_graph::NodeIndex;
 use petgraph::visit::Dfs;

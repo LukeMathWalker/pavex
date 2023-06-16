@@ -1,5 +1,5 @@
 use anyhow::Context;
-use pavex_builder::Blueprint;
+use pavex::blueprint::Blueprint;
 use std::{path::PathBuf, process::Command};
 
 /// The configuration for `pavex_cli`'s `generate` command.
@@ -50,7 +50,7 @@ impl GenerateBuilder {
     /// It **will** persist the blueprint to a file, though.
     ///
     /// This method can be useful if you need to customize the command before running it.  
-    /// If that's not your usecase, consider using [`GeneratorConfig::execute`] instead.
+    /// If that's not your usecase, consider using [`GenerateBuilder::execute`] instead.
     pub fn command(mut self) -> Result<std::process::Command, anyhow::Error> {
         // TODO: Pass the blueprint via `stdin` instead of writing it to a file.
         let bp_path = self.output_directory.join("blueprint.ron");

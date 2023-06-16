@@ -1,6 +1,6 @@
 (
     creation_location: (
-        line: 12,
+        line: 13,
         column: 18,
         file: "conduit_core/src/api/mod.rs",
     ),
@@ -12,7 +12,7 @@
                     import_path: "pavex::extract::query::QueryParams::extract",
                 ),
                 location: (
-                    line: 25,
+                    line: 26,
                     column: 8,
                     file: "conduit_core/src/api/mod.rs",
                 ),
@@ -25,7 +25,7 @@
                     import_path: "pavex::extract::query::errors::ExtractQueryParamsError::into_response",
                 ),
                 location: (
-                    line: 29,
+                    line: 30,
                     column: 6,
                     file: "conduit_core/src/api/mod.rs",
                 ),
@@ -38,7 +38,7 @@
                     import_path: "pavex::extract::route::RouteParams::extract",
                 ),
                 location: (
-                    line: 34,
+                    line: 35,
                     column: 8,
                     file: "conduit_core/src/api/mod.rs",
                 ),
@@ -51,7 +51,7 @@
                     import_path: "pavex::extract::route::errors::ExtractRouteParamsError::into_response",
                 ),
                 location: (
-                    line: 38,
+                    line: 39,
                     column: 6,
                     file: "conduit_core/src/api/mod.rs",
                 ),
@@ -64,7 +64,7 @@
                     import_path: "pavex::extract::body::JsonBody::extract",
                 ),
                 location: (
-                    line: 43,
+                    line: 44,
                     column: 8,
                     file: "conduit_core/src/api/mod.rs",
                 ),
@@ -77,7 +77,7 @@
                     import_path: "pavex::extract::body::errors::ExtractJsonBodyError::into_response",
                 ),
                 location: (
-                    line: 47,
+                    line: 48,
                     column: 6,
                     file: "conduit_core/src/api/mod.rs",
                 ),
@@ -90,7 +90,7 @@
                     import_path: "pavex::extract::body::BufferedBody::extract",
                 ),
                 location: (
-                    line: 50,
+                    line: 51,
                     column: 8,
                     file: "conduit_core/src/api/mod.rs",
                 ),
@@ -103,7 +103,7 @@
                     import_path: "pavex::extract::body::errors::ExtractBufferedBodyError::into_response",
                 ),
                 location: (
-                    line: 54,
+                    line: 55,
                     column: 6,
                     file: "conduit_core/src/api/mod.rs",
                 ),
@@ -116,7 +116,7 @@
                     import_path: "<pavex::extract::body::BodySizeLimit as std::default::Default>::default",
                 ),
                 location: (
-                    line: 57,
+                    line: 58,
                     column: 8,
                     file: "conduit_core/src/api/mod.rs",
                 ),
@@ -140,7 +140,7 @@
                     import_path: "crate::api::status::ping",
                 ),
                 location: (
-                    line: 17,
+                    line: 18,
                     column: 8,
                     file: "conduit_core/src/api/mod.rs",
                 ),
@@ -160,7 +160,7 @@
                     import_path: "crate::api::tags::get_tags",
                 ),
                 location: (
-                    line: 18,
+                    line: 19,
                     column: 8,
                     file: "conduit_core/src/api/mod.rs",
                 ),
@@ -172,7 +172,7 @@
         (
             blueprint: (
                 creation_location: (
-                    line: 5,
+                    line: 6,
                     column: 18,
                     file: "conduit_core/src/api/articles/mod.rs",
                 ),
@@ -191,7 +191,7 @@
                                 import_path: "crate::api::articles::list_articles",
                             ),
                             location: (
-                                line: 6,
+                                line: 7,
                                 column: 8,
                                 file: "conduit_core/src/api/articles/mod.rs",
                             ),
@@ -211,7 +211,7 @@
                                 import_path: "crate::api::articles::publish_article",
                             ),
                             location: (
-                                line: 7,
+                                line: 8,
                                 column: 8,
                                 file: "conduit_core/src/api/articles/mod.rs",
                             ),
@@ -231,7 +231,7 @@
                                 import_path: "crate::api::articles::get_feed",
                             ),
                             location: (
-                                line: 8,
+                                line: 9,
                                 column: 8,
                                 file: "conduit_core/src/api/articles/mod.rs",
                             ),
@@ -251,7 +251,7 @@
                                 import_path: "crate::api::articles::get_article",
                             ),
                             location: (
-                                line: 9,
+                                line: 10,
                                 column: 8,
                                 file: "conduit_core/src/api/articles/mod.rs",
                             ),
@@ -271,7 +271,7 @@
                                 import_path: "crate::api::articles::delete_article",
                             ),
                             location: (
-                                line: 10,
+                                line: 11,
                                 column: 8,
                                 file: "conduit_core/src/api/articles/mod.rs",
                             ),
@@ -291,7 +291,7 @@
                                 import_path: "crate::api::articles::update_article",
                             ),
                             location: (
-                                line: 11,
+                                line: 12,
                                 column: 8,
                                 file: "conduit_core/src/api/articles/mod.rs",
                             ),
@@ -311,7 +311,7 @@
                                 import_path: "crate::api::articles::unfavorite_article",
                             ),
                             location: (
-                                line: 12,
+                                line: 13,
                                 column: 8,
                                 file: "conduit_core/src/api/articles/mod.rs",
                             ),
@@ -331,7 +331,7 @@
                                 import_path: "crate::api::articles::favorite_article",
                             ),
                             location: (
-                                line: 17,
+                                line: 18,
                                 column: 8,
                                 file: "conduit_core/src/api/articles/mod.rs",
                             ),
@@ -351,7 +351,7 @@
                                 import_path: "crate::api::articles::list_comments",
                             ),
                             location: (
-                                line: 22,
+                                line: 23,
                                 column: 8,
                                 file: "conduit_core/src/api/articles/mod.rs",
                             ),
@@ -371,7 +371,7 @@
                                 import_path: "crate::api::articles::publish_comment",
                             ),
                             location: (
-                                line: 27,
+                                line: 28,
                                 column: 8,
                                 file: "conduit_core/src/api/articles/mod.rs",
                             ),
@@ -391,7 +391,7 @@
                                 import_path: "crate::api::articles::delete_comment",
                             ),
                             location: (
-                                line: 32,
+                                line: 33,
                                 column: 8,
                                 file: "conduit_core/src/api/articles/mod.rs",
                             ),
@@ -403,7 +403,7 @@
             ),
             path_prefix: Some("/articles"),
             nesting_location: (
-                line: 14,
+                line: 15,
                 column: 8,
                 file: "conduit_core/src/api/mod.rs",
             ),
@@ -411,7 +411,7 @@
         (
             blueprint: (
                 creation_location: (
-                    line: 5,
+                    line: 6,
                     column: 18,
                     file: "conduit_core/src/api/profiles/mod.rs",
                 ),
@@ -430,7 +430,7 @@
                                 import_path: "crate::api::profiles::get_user",
                             ),
                             location: (
-                                line: 6,
+                                line: 7,
                                 column: 8,
                                 file: "conduit_core/src/api/profiles/mod.rs",
                             ),
@@ -450,7 +450,7 @@
                                 import_path: "crate::api::profiles::follow_user",
                             ),
                             location: (
-                                line: 7,
+                                line: 8,
                                 column: 8,
                                 file: "conduit_core/src/api/profiles/mod.rs",
                             ),
@@ -470,7 +470,7 @@
                                 import_path: "crate::api::profiles::unfollow_user",
                             ),
                             location: (
-                                line: 8,
+                                line: 13,
                                 column: 8,
                                 file: "conduit_core/src/api/profiles/mod.rs",
                             ),
@@ -482,7 +482,7 @@
             ),
             path_prefix: Some("/profiles"),
             nesting_location: (
-                line: 15,
+                line: 16,
                 column: 8,
                 file: "conduit_core/src/api/mod.rs",
             ),
@@ -490,7 +490,7 @@
         (
             blueprint: (
                 creation_location: (
-                    line: 5,
+                    line: 6,
                     column: 18,
                     file: "conduit_core/src/api/users/mod.rs",
                 ),
@@ -509,7 +509,7 @@
                                 import_path: "crate::api::users::signup",
                             ),
                             location: (
-                                line: 6,
+                                line: 7,
                                 column: 8,
                                 file: "conduit_core/src/api/users/mod.rs",
                             ),
@@ -529,7 +529,7 @@
                                 import_path: "crate::api::users::login",
                             ),
                             location: (
-                                line: 7,
+                                line: 8,
                                 column: 8,
                                 file: "conduit_core/src/api/users/mod.rs",
                             ),
@@ -549,7 +549,7 @@
                                 import_path: "crate::api::users::get_user",
                             ),
                             location: (
-                                line: 8,
+                                line: 9,
                                 column: 8,
                                 file: "conduit_core/src/api/users/mod.rs",
                             ),
@@ -569,7 +569,7 @@
                                 import_path: "crate::api::users::update_user",
                             ),
                             location: (
-                                line: 9,
+                                line: 10,
                                 column: 8,
                                 file: "conduit_core/src/api/users/mod.rs",
                             ),
@@ -581,7 +581,7 @@
             ),
             path_prefix: None,
             nesting_location: (
-                line: 16,
+                line: 17,
                 column: 8,
                 file: "conduit_core/src/api/mod.rs",
             ),

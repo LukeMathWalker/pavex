@@ -5,7 +5,8 @@ use matchit::{Params, ParamsIter};
 /// # Example
 ///
 /// ```rust
-/// use pavex_builder::{f, router::GET, Blueprint};
+/// use pavex::f;
+/// use pavex::blueprint::{router::GET, Blueprint};
 /// use pavex::extract::route::RawRouteParams;
 ///
 /// fn blueprint() -> Blueprint {

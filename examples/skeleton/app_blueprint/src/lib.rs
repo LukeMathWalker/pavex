@@ -1,7 +1,8 @@
 use std::path::PathBuf;
 
-use pavex_builder::router::GET;
-use pavex_builder::{constructor::Lifecycle, f, Blueprint};
+use pavex::f;
+use pavex::blueprint::router::GET;
+use pavex::blueprint::{constructor::Lifecycle, Blueprint};
 
 pub struct Logger;
 

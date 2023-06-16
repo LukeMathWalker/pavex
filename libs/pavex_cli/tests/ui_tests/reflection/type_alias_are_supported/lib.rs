@@ -1,4 +1,5 @@
-use pavex_builder::{constructor::Lifecycle, f, router::GET, Blueprint};
+use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
+use pavex::f;
 
 pub type MyTupleAlias = (bool, char, u8);
 

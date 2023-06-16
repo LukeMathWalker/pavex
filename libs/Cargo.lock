@@ -1166,36 +1166,25 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bytes",
+ "fs-err",
  "futures-util",
  "http",
  "http-body",
  "hyper",
+ "indexmap",
  "insta",
  "matchit",
  "mime",
  "paste",
- "pavex_builder",
  "pavex_macros",
  "percent-encoding",
+ "ron",
  "serde",
  "serde_html_form",
  "serde_json",
  "serde_path_to_error",
  "thiserror",
  "tokio",
-]
-
-[[package]]
-name = "pavex_builder"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "fs-err",
- "http",
- "indexmap",
- "pavex",
- "ron",
- "serde",
 ]
 
 [[package]]
@@ -1208,7 +1197,7 @@ dependencies = [
  "guppy",
  "miette",
  "owo-colors",
- "pavex_builder",
+ "pavex",
  "pavex_miette",
  "pavex_test_runner",
  "pavexc",
@@ -1222,7 +1211,7 @@ name = "pavex_cli_client"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "pavex_builder",
+ "pavex",
 ]
 
 [[package]]
@@ -1296,7 +1285,7 @@ dependencies = [
  "num_cpus",
  "once_cell",
  "pathdiff",
- "pavex_builder",
+ "pavex",
  "persist_if_changed",
  "petgraph",
  "prettyplease",

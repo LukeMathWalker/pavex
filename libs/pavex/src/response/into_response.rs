@@ -46,7 +46,7 @@ use super::{Response, ResponseHead, body::raw::boxed};
 // This is our primary divergence from `axum-core`'s API: we do NOT implement
 // `IntoResponse` for `Result<T, E>` if `T: IntoResponse` and `E: IntoResponse`.
 // It would create ambiguity: how should I handle errors? Do I need to implement
-// `IntoResponse` for `E`? Do I need to specify an error handler via `pavex_builder`?
+// `IntoResponse` for `E`? Do I need to specify an error handler in the blueprint?
 // What if I do both, what gets invoked?
 //
 // ## Other minor divergences

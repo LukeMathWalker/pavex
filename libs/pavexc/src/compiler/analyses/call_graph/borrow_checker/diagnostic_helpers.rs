@@ -1,5 +1,5 @@
 use miette::NamedSource;
-use pavex_builder::constructor::Lifecycle;
+use pavex::blueprint::constructor::Lifecycle;
 
 use crate::{
     compiler::{

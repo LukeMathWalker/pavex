@@ -5,6 +5,7 @@ pub use matchit as routing;
 pub use error::Error;
 
 mod error;
+pub mod blueprint;
 pub mod extract;
 pub mod http;
 pub mod request;

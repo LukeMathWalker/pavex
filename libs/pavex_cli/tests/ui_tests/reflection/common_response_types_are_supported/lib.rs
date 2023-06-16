@@ -1,9 +1,10 @@
 use std::borrow::Cow;
 
 use http::response::Parts;
+use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
+use pavex::f;
 use pavex::http::StatusCode;
 use pavex::response::{Response, ResponseHead};
-use pavex_builder::{constructor::Lifecycle, f, router::GET, Blueprint};
 
 pub fn response() -> Response {
     todo!()

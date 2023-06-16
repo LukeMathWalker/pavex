@@ -206,7 +206,6 @@ dependencies = [
  "anyhow",
  "cargo_px_env",
  "pavex",
- "pavex_builder",
  "pavex_cli_client",
  "secrecy",
  "serde",
@@ -1066,15 +1065,18 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bytes",
+ "fs-err",
  "futures-util",
  "http",
  "http-body",
  "hyper",
+ "indexmap",
  "matchit",
  "mime",
  "paste",
  "pavex_macros",
  "percent-encoding",
+ "ron",
  "serde",
  "serde_html_form",
  "serde_json",
@@ -1083,24 +1085,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "pavex_builder"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "fs-err",
- "http",
- "indexmap",
- "pavex",
- "ron",
- "serde",
-]
-
-[[package]]
 name = "pavex_cli_client"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "pavex_builder",
+ "pavex",
 ]
 
 [[package]]

@@ -38,7 +38,8 @@ use crate::request::RequestHead;
 /// `QueryParams` in your `Blueprint`:
 ///
 /// ```rust
-/// use pavex_builder::{f, Blueprint, constructor::Lifecycle};
+/// use pavex::f;
+/// use pavex::blueprint::{Blueprint, constructor::Lifecycle};
 ///
 /// fn blueprint() -> Blueprint {
 ///     let mut bp = Blueprint::new();

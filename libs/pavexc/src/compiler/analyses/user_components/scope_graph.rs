@@ -4,7 +4,7 @@ use petgraph::algo::has_path_connecting;
 use petgraph::graphmap::DiGraphMap;
 use petgraph::visit::{IntoNodeIdentifiers, Reversed};
 
-use pavex_builder::reflection::Location;
+use pavex::blueprint::reflection::Location;
 
 /// Assign a unique ID to each *scope*.
 ///
@@ -73,7 +73,7 @@ impl PartialEq<ScopeId> for &ScopeId {
 }
 
 impl ScopeId {
-    /// Return `true` if the `other` scope is a parent of this scope (either directly or 
+    /// Return `true` if the `other` scope is a parent of this scope (either directly or
     /// indirectly) or if the two scopes are equal.
     pub fn is_descendant_of(&self, other: ScopeId, scope_graph: &ScopeGraph) -> bool {
         use petgraph::visit::{Dfs, Walker};

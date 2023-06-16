@@ -1,9 +1,9 @@
-use crate::constructor::{Constructor, Lifecycle};
-use crate::internals::{
+use super::constructor::{Constructor, Lifecycle};
+use super::internals::{
     NestedBlueprint, RegisteredCallable, RegisteredConstructor, RegisteredRoute,
 };
-use crate::reflection::{Location, RawCallable, RawCallableIdentifiers};
-use crate::router::{MethodGuard, Route};
+use super::reflection::{Location, RawCallable, RawCallableIdentifiers};
+use super::router::{MethodGuard, Route};
 
 #[derive(serde::Serialize, serde::Deserialize)]
 /// The starting point for building an application with Pavex.
@@ -54,7 +54,7 @@ impl Blueprint {
     /// The simplest route is a combination of a single HTTP method, a path and a request handler:
     ///
     /// ```rust
-    /// use pavex_builder::{Blueprint, f, router::GET};
+    /// use pavex::{f, blueprint::{Blueprint, router::GET}};
     /// use pavex::{request::RequestHead, response::Response};
     ///
     /// fn my_handler(request_head: &RequestHead) -> Response {
@@ -72,7 +72,8 @@ impl Blueprint {
     /// HTTP methods:
     ///
     /// ```rust
-    /// use pavex_builder::{Blueprint, f, router::{GET, POST, PUT, DELETE, PATCH}};
+    /// use pavex::f;
+    /// use pavex::blueprint::{Blueprint, router::{GET, POST, PUT, DELETE, PATCH}};
     /// # use pavex::{request::RequestHead, response::Response};
     /// # fn my_handler(request: &RequestHead) -> Response { todo!() }
     /// # fn main() {
@@ -93,7 +94,8 @@ impl Blueprint {
     /// for the same path:
     ///
     /// ```rust
-    /// use pavex_builder::{Blueprint, f, router::{MethodGuard, POST, PATCH}};
+    /// use pavex::blueprint::{Blueprint, router::{MethodGuard, POST, PATCH}};
+    /// use pavex::f;
     /// use pavex::http::Method;
     /// # use pavex::{request::RequestHead, response::Response};
     /// # fn my_handler(request: &RequestHead) -> Response { todo!() }
@@ -113,7 +115,8 @@ impl Blueprint {
     /// the HTTP method being used:
     ///
     /// ```rust
-    /// use pavex_builder::{Blueprint, f, router::ANY};
+    /// use pavex::f;
+    /// use pavex::blueprint::{Blueprint, router::ANY};
     /// # use pavex::{request::RequestHead, response::Response};
     /// # fn my_handler(request: RequestHead) -> Response { todo!() }
     /// # fn main() {
@@ -134,7 +137,7 @@ impl Blueprint {
     /// Let's look at an example—a route with a single route parameter, `home_id`:
     ///
     /// ```rust
-    /// use pavex_builder::{Blueprint, f, router::GET};
+    /// use pavex::{f, blueprint::{Blueprint, router::GET}};
     /// # use pavex::{request::RequestHead, response::Response};
     /// # fn get_home(request: RequestHead) -> Response { todo!() }
     /// # fn main() {
@@ -170,7 +173,7 @@ impl Blueprint {
     /// everything after the `/`.
     ///
     /// ```rust
-    /// use pavex_builder::{Blueprint, f, router::GET};
+    /// use pavex::{f, blueprint::{Blueprint, router::GET}};
     /// # use pavex::{request::RequestHead, response::Response};
     /// # fn get_town(request: RequestHead) -> Response { todo!() }
     /// # fn main() {
@@ -191,8 +194,8 @@ impl Blueprint {
     /// Check out [`RouteParams`] in `pavex` for more information
     /// on how to extract and work with route parameters.
     ///
-    /// [`router`]: crate::router
-    /// [`RouteParams`]: struct@pavex::extract::route::RouteParams
+    /// [`router`]: crate::blueprint::router
+    /// [`RouteParams`]: struct@crate::extract::route::RouteParams
     pub fn route(&mut self, method_guard: MethodGuard, path: &str, callable: RawCallable) -> Route {
         let registered_route = RegisteredRoute {
             path: path.to_owned(),
@@ -215,7 +218,8 @@ impl Blueprint {
     /// Register a constructor.
     ///
     /// ```rust
-    /// use pavex_builder::{Blueprint, f, constructor::Lifecycle};
+    /// use pavex::f;
+    /// use pavex::blueprint::{Blueprint, constructor::Lifecycle};
     /// # struct LogLevel;
     /// # struct Logger;
     ///
@@ -267,7 +271,8 @@ impl Blueprint {
     /// the path of the route registered in the nested blueprint:
     ///
     /// ```rust
-    /// use pavex_builder::{Blueprint, f, router::GET};
+    /// use pavex::f;
+    /// use pavex::blueprint::{Blueprint, router::GET};
     ///
     /// fn app() -> Blueprint {
     ///     let mut bp = Blueprint::new();
@@ -296,8 +301,9 @@ impl Blueprint {
     /// ## Visibility
     ///
     /// ```rust
-    /// use pavex_builder::{Blueprint, f, router::GET};
-    /// use pavex_builder::constructor::Lifecycle;
+    /// use pavex::f;
+    /// use pavex::blueprint::{Blueprint, router::GET};
+    /// use pavex::blueprint::constructor::Lifecycle;
     ///
     /// fn app() -> Blueprint {
     ///     let mut bp = Blueprint::new();
@@ -354,8 +360,9 @@ impl Blueprint {
     /// declared against the nested blueprint takes precedence.
     ///
     /// ```rust
-    /// use pavex_builder::{Blueprint, f, router::GET};
-    /// use pavex_builder::constructor::Lifecycle;
+    /// use pavex::f;
+    /// use pavex::blueprint::{Blueprint, router::GET};
+    /// use pavex::blueprint::constructor::Lifecycle;
     ///
     /// fn app() -> Blueprint {
     ///     let mut bp = Blueprint::new();

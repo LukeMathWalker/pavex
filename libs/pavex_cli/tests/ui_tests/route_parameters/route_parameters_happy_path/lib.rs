@@ -1,7 +1,8 @@
 use std::borrow::Cow;
 
+use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
+use pavex::f;
 use pavex::{extract::route::RouteParams, response::Response};
-use pavex_builder::{constructor::Lifecycle, f, router::GET, Blueprint};
 
 #[RouteParams]
 pub struct HomeRouteParams {

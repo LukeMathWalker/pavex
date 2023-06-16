@@ -1,6 +1,6 @@
 use std::{path::PathBuf, process::Command};
 
-use pavex_builder::Blueprint;
+use pavex::blueprint::Blueprint;
 
 use crate::commands::generate::GenerateBuilder;
 

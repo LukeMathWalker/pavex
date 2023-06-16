@@ -7,7 +7,7 @@
 /// You can build a `Location` instance starting from a [`std::panic::Location`]:
 ///
 /// ```rust
-/// use pavex_builder::reflection::Location;
+/// use pavex::blueprint::reflection::Location;
 ///
 /// let location: Location = std::panic::Location::caller().into();
 /// ```

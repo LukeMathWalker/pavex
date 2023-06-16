@@ -1,6 +1,7 @@
+use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
 use pavex::extract::route::RouteParams;
+use pavex::f;
 use pavex::http::StatusCode;
-use pavex_builder::{constructor::Lifecycle, f, router::GET, Blueprint};
 
 pub fn tuple(params: RouteParams<(u32, u32)>) -> StatusCode {
     todo!()

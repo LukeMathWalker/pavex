@@ -1,5 +1,5 @@
-use pavex_builder::{
-    f,
+use pavex::f;
+use pavex::blueprint::{
     router::{MethodGuard, ANY, CONNECT, DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT, TRACE},
     Blueprint,
 };

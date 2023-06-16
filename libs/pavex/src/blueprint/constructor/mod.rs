@@ -5,9 +5,9 @@
 //! [`Blueprint::constructor`]: Blueprint::constructor
 pub use lifecycle::Lifecycle;
 
-use crate::internals::RegisteredCallable;
-use crate::reflection::{RawCallable, RawCallableIdentifiers};
-use crate::Blueprint;
+use crate::blueprint::internals::RegisteredCallable;
+use crate::blueprint::reflection::{RawCallable, RawCallableIdentifiers};
+use crate::blueprint::Blueprint;
 
 mod lifecycle;
 
@@ -32,7 +32,8 @@ impl<'a> Constructor<'a> {
     /// are constructors registered for those parameter types.
     ///
     /// ```rust
-    /// use pavex_builder::{Blueprint, f, constructor::Lifecycle};
+    /// use pavex::f;
+    /// use pavex::blueprint::{Blueprint, constructor::Lifecycle};
     /// use pavex::{response::Response, hyper::body::Body};
     /// # struct LogLevel;
     /// # struct Logger;

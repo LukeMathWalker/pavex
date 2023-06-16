@@ -1,6 +1,6 @@
 use guppy::graph::PackageGraph;
 
-use pavex_builder::constructor::Lifecycle;
+use pavex::blueprint::constructor::Lifecycle;
 
 use crate::compiler::analyses::call_graph::borrow_checker::OrderedCallGraph;
 use crate::compiler::analyses::call_graph::{

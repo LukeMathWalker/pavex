@@ -4,8 +4,8 @@ use indexmap::IndexSet;
 use miette::{miette, NamedSource};
 use syn::spanned::Spanned;
 
-use pavex_builder::constructor::CloningStrategy;
-use pavex_builder::{
+use pavex::blueprint::constructor::CloningStrategy;
+use pavex::blueprint::{
     constructor::Lifecycle, reflection::Location, reflection::RawCallableIdentifiers, Blueprint,
 };
 
