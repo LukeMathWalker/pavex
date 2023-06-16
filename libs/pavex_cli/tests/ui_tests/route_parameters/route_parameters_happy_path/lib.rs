@@ -1,15 +1,19 @@
 use std::borrow::Cow;
 
 use pavex_builder::{constructor::Lifecycle, f, router::GET, Blueprint};
-use pavex_runtime::extract::route::RouteParams;
+use pavex_runtime::{extract::route::RouteParams, response::Response};
 
 #[RouteParams]
 pub struct HomeRouteParams {
     pub home_id: u32,
 }
 
-pub fn get_home(RouteParams(HomeRouteParams { home_id }): RouteParams<HomeRouteParams>) -> String {
-    format!("{}", home_id)
+pub fn get_home(
+    RouteParams(HomeRouteParams { home_id }): RouteParams<HomeRouteParams>,
+) -> Response {
+    Response::ok()
+        .set_typed_body(format!("{}", home_id))
+        .box_body()
 }
 
 #[RouteParams]
@@ -19,8 +23,10 @@ pub struct RoomRouteParams {
     pub room_id: Vec<u32>,
 }
 
-pub fn get_room(params: RouteParams<RoomRouteParams>) -> String {
-    format!("{}", params.0.home_id)
+pub fn get_room(params: RouteParams<RoomRouteParams>) -> Response {
+    Response::ok()
+        .set_typed_body(format!("{}", params.0.home_id))
+        .box_body()
 }
 
 #[RouteParams]
@@ -28,8 +34,10 @@ pub struct TownRouteParams<'a> {
     pub town: Cow<'a, str>,
 }
 
-pub fn get_town(params: RouteParams<TownRouteParams<'_>>) -> String {
-    format!("{}", params.0.town)
+pub fn get_town(params: RouteParams<TownRouteParams<'_>>) -> Response {
+    Response::ok()
+        .set_typed_body(format!("{}", params.0.town))
+        .box_body()
 }
 
 pub fn blueprint() -> Blueprint {

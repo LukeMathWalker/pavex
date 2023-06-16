@@ -1,56 +1,56 @@
 digraph "* /any" {
-    0 [ label = "app::handler() -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
-    1 [ label = "<http::Response::<http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>> as pavex_runtime::response::IntoResponse>::into_response(http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
+    0 [ label = "app::handler() -> pavex_runtime::response::Response"]
+    1 [ label = "<pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(pavex_runtime::response::Response) -> pavex_runtime::response::Response"]
     0 -> 1 [ ]
 }
 digraph "CONNECT /connect" {
-    0 [ label = "app::handler() -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
-    1 [ label = "<http::Response::<http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>> as pavex_runtime::response::IntoResponse>::into_response(http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
+    0 [ label = "app::handler() -> pavex_runtime::response::Response"]
+    1 [ label = "<pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(pavex_runtime::response::Response) -> pavex_runtime::response::Response"]
     0 -> 1 [ ]
 }
 digraph "DELETE /delete" {
-    0 [ label = "app::handler() -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
-    1 [ label = "<http::Response::<http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>> as pavex_runtime::response::IntoResponse>::into_response(http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
+    0 [ label = "app::handler() -> pavex_runtime::response::Response"]
+    1 [ label = "<pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(pavex_runtime::response::Response) -> pavex_runtime::response::Response"]
     0 -> 1 [ ]
 }
 digraph "GET /get" {
-    0 [ label = "app::handler() -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
-    1 [ label = "<http::Response::<http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>> as pavex_runtime::response::IntoResponse>::into_response(http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
+    0 [ label = "app::handler() -> pavex_runtime::response::Response"]
+    1 [ label = "<pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(pavex_runtime::response::Response) -> pavex_runtime::response::Response"]
     0 -> 1 [ ]
 }
 digraph "HEAD /head" {
-    0 [ label = "app::handler() -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
-    1 [ label = "<http::Response::<http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>> as pavex_runtime::response::IntoResponse>::into_response(http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
+    0 [ label = "app::handler() -> pavex_runtime::response::Response"]
+    1 [ label = "<pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(pavex_runtime::response::Response) -> pavex_runtime::response::Response"]
     0 -> 1 [ ]
 }
 digraph "PATCH | POST /mixed" {
-    0 [ label = "app::handler() -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
-    1 [ label = "<http::Response::<http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>> as pavex_runtime::response::IntoResponse>::into_response(http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
+    0 [ label = "app::handler() -> pavex_runtime::response::Response"]
+    1 [ label = "<pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(pavex_runtime::response::Response) -> pavex_runtime::response::Response"]
     0 -> 1 [ ]
 }
 digraph "OPTIONS /options" {
-    0 [ label = "app::handler() -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
-    1 [ label = "<http::Response::<http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>> as pavex_runtime::response::IntoResponse>::into_response(http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
+    0 [ label = "app::handler() -> pavex_runtime::response::Response"]
+    1 [ label = "<pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(pavex_runtime::response::Response) -> pavex_runtime::response::Response"]
     0 -> 1 [ ]
 }
 digraph "PATCH /patch" {
-    0 [ label = "app::handler() -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
-    1 [ label = "<http::Response::<http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>> as pavex_runtime::response::IntoResponse>::into_response(http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
+    0 [ label = "app::handler() -> pavex_runtime::response::Response"]
+    1 [ label = "<pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(pavex_runtime::response::Response) -> pavex_runtime::response::Response"]
     0 -> 1 [ ]
 }
 digraph "POST /post" {
-    0 [ label = "app::handler() -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
-    1 [ label = "<http::Response::<http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>> as pavex_runtime::response::IntoResponse>::into_response(http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
+    0 [ label = "app::handler() -> pavex_runtime::response::Response"]
+    1 [ label = "<pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(pavex_runtime::response::Response) -> pavex_runtime::response::Response"]
     0 -> 1 [ ]
 }
 digraph "PUT /put" {
-    0 [ label = "app::handler() -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
-    1 [ label = "<http::Response::<http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>> as pavex_runtime::response::IntoResponse>::into_response(http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
+    0 [ label = "app::handler() -> pavex_runtime::response::Response"]
+    1 [ label = "<pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(pavex_runtime::response::Response) -> pavex_runtime::response::Response"]
     0 -> 1 [ ]
 }
 digraph "TRACE /trace" {
-    0 [ label = "app::handler() -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
-    1 [ label = "<http::Response::<http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>> as pavex_runtime::response::IntoResponse>::into_response(http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
+    0 [ label = "app::handler() -> pavex_runtime::response::Response"]
+    1 [ label = "<pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(pavex_runtime::response::Response) -> pavex_runtime::response::Response"]
     0 -> 1 [ ]
 }
 digraph app_state {

@@ -71,19 +71,19 @@ use hyper::body::to_bytes;
 ///
 /// [`BufferedBody::extract`] will return the [`SizeLimitExceeded`](ExtractBufferedBodyError::SizeLimitExceeded) error variant if the limit is exceeded.
 ///
-/// You can customize the limit by registering a constructor for [`BodySizeLimit`] in 
+/// You can customize the limit by registering a constructor for [`BodySizeLimit`] in
 /// your `Blueprint`:
-/// 
+///
 /// ```rust
 /// use pavex_builder::{f, Blueprint, constructor::Lifecycle};
 /// use pavex_runtime::extract::body::BodySizeLimit;
-/// 
+///
 /// pub fn body_size_limit() -> BodySizeLimit {
 ///     BodySizeLimit::Enabled {
 ///         max_n_bytes: 10_485_760 // 10 MBs
 ///     }
 /// }
-/// 
+///
 /// fn blueprint() -> Blueprint {
 ///     let mut bp = Blueprint::new();
 ///     // Register a custom constructor for `BodySizeLimit`.
@@ -92,17 +92,17 @@ use hyper::body::to_bytes;
 ///     bp
 /// }
 /// ```
-/// 
+///
 /// You can also disable the limit entirely:  
-/// 
+///
 /// ```rust
 /// use pavex_builder::{f, Blueprint, constructor::Lifecycle};
 /// use pavex_runtime::extract::body::BodySizeLimit;
-/// 
+///
 /// pub fn body_size_limit() -> BodySizeLimit {
 ///    BodySizeLimit::Disabled
 /// }
-/// 
+///
 /// fn blueprint() -> Blueprint {
 ///     let mut bp = Blueprint::new();
 ///     // Register a custom constructor for `BodySizeLimit`.
@@ -111,17 +111,17 @@ use hyper::body::to_bytes;
 ///     bp
 /// }
 /// ```
-/// 
-/// There might be situations where you want granular control instead of having 
+///
+/// There might be situations where you want granular control instead of having
 /// a single global limit for all incoming requests.  
 /// You can leverage nesting for this purpose:
-/// 
+///
 /// ```rust
 /// use pavex_builder::{f, Blueprint, constructor::Lifecycle, router::{GET, POST}};
 /// use pavex_runtime::extract::body::BodySizeLimit;
 /// # pub fn home() -> String { todo!() }
 /// # pub fn upload() -> String { todo!() }
-/// 
+///
 /// fn blueprint() -> Blueprint {
 ///     let mut bp = Blueprint::new();
 ///     bp.route(GET, "/", f!(crate::home));
@@ -129,7 +129,7 @@ use hyper::body::to_bytes;
 ///     // [...]
 ///     bp
 /// }
-/// 
+///
 /// fn upload_bp() -> Blueprint {
 ///     let mut bp = Blueprint::new();
 ///     // This limit will only apply to the routes registered
@@ -138,14 +138,14 @@ use hyper::body::to_bytes;
 ///     bp.route(POST, "/upload", f!(crate::upload));
 ///     bp
 /// }
-/// 
+///
 /// pub fn upload_size_limit() -> BodySizeLimit {
 ///     BodySizeLimit::Enabled {
 ///         max_n_bytes: 1_073_741_824 // 1GB
 ///     }
 /// }
 /// ```
-/// 
+///
 /// Check out `Blueprint::nest` and `Blueprint::nest_at` for more details on nesting.
 pub struct BufferedBody {
     /// The buffer of bytes that represents the body of the incoming request.

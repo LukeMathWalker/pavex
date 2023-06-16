@@ -1102,6 +1102,7 @@ dependencies = [
  "hyper",
  "matchit",
  "mime",
+ "paste",
  "pavex_macros",
  "percent-encoding",
  "serde",

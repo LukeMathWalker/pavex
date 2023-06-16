@@ -26,22 +26,14 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
 // IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
-use std::borrow::Cow;
+use bytes::Bytes;
+use http::StatusCode;
+use http_body::Empty;
 
-use bytes::{Bytes, BytesMut};
-use http::{header, HeaderValue, StatusCode};
-use http_body::combinators::{MapData, MapErr};
-use http_body::{Empty, Full};
+use super::{Response, ResponseHead, body::raw::boxed};
 
-use crate::body::BoxBody;
-
-/// Type alias for `http::Response`.
-/// The generic parameter for the body type defaults to `BoxBody`, the most common body
-/// type used in Pavex.
-pub type Response<T = BoxBody> = http::Response<T>;
-
-/// Convert a type into an HTTP response.
-///
+/// Convert a type into a [`Response`].
+/// 
 /// Types that implement `IntoResponse` can be returned:
 ///
 /// - as the output type of an infallible route handler,
@@ -66,17 +58,14 @@ pub trait IntoResponse {
     fn into_response(self) -> Response;
 }
 
-impl IntoResponse for Empty<Bytes> {
+impl<B> IntoResponse for http::Response<B>
+where
+    B: http_body::Body<Data = Bytes> + Send + Sync + 'static,
+    B::Error: Into<Box<dyn std::error::Error + Send + Sync>> + 'static,
+{
     fn into_response(self) -> Response {
-        Response::new(crate::body::boxed(self))
-    }
-}
-
-impl IntoResponse for StatusCode {
-    fn into_response(self) -> Response {
-        let mut res = Empty::new().into_response();
-        *res.status_mut() = self;
-        res
+        let r: Response<B> = self.into();
+        r.into_response()
     }
 }
 
@@ -86,112 +75,24 @@ where
     B::Error: Into<Box<dyn std::error::Error + Send + Sync>> + 'static,
 {
     fn into_response(self) -> Response {
-        self.map(crate::body::boxed)
+        self.box_body()
+    }
+}
+
+impl IntoResponse for StatusCode {
+    fn into_response(self) -> Response {
+        Response::new(self).box_body()
     }
 }
 
 impl IntoResponse for http::response::Parts {
     fn into_response(self) -> Response {
-        Response::from_parts(self, crate::body::boxed(Empty::new()))
+        http::Response::from_parts(self, boxed(Empty::new())).into()
     }
 }
 
-impl IntoResponse for Full<Bytes> {
+impl IntoResponse for ResponseHead {
     fn into_response(self) -> Response {
-        Response::new(crate::body::boxed(self))
-    }
-}
-
-impl<E> IntoResponse for http_body::combinators::BoxBody<Bytes, E>
-where
-    E: Into<Box<dyn std::error::Error + Send + Sync>> + 'static,
-{
-    fn into_response(self) -> Response {
-        Response::new(crate::body::boxed(self))
-    }
-}
-
-impl<B, F> IntoResponse for MapData<B, F>
-where
-    B: http_body::Body + Send + Sync + 'static,
-    F: FnMut(B::Data) -> Bytes + Send + Sync + 'static,
-    B::Error: Into<Box<dyn std::error::Error + Send + Sync>>,
-{
-    fn into_response(self) -> Response {
-        Response::new(crate::body::boxed(self))
-    }
-}
-
-impl<B, F, E> IntoResponse for MapErr<B, F>
-where
-    B: http_body::Body<Data = Bytes> + Send + Sync + 'static,
-    F: FnMut(B::Error) -> E + Send + Sync + 'static,
-    E: Into<Box<dyn std::error::Error + Send + Sync>>,
-{
-    fn into_response(self) -> Response {
-        Response::new(crate::body::boxed(self))
-    }
-}
-
-impl IntoResponse for &'static str {
-    fn into_response(self) -> Response {
-        Cow::Borrowed(self).into_response()
-    }
-}
-
-impl IntoResponse for String {
-    fn into_response(self) -> Response {
-        Cow::<'static, str>::Owned(self).into_response()
-    }
-}
-
-impl IntoResponse for Cow<'static, str> {
-    fn into_response(self) -> Response {
-        let mut res = Full::from(self).into_response();
-        res.headers_mut().insert(
-            header::CONTENT_TYPE,
-            HeaderValue::from_static(mime::TEXT_PLAIN_UTF_8.as_ref()),
-        );
-        res
-    }
-}
-
-impl IntoResponse for Bytes {
-    fn into_response(self) -> Response {
-        let mut res = Full::from(self).into_response();
-        res.headers_mut().insert(
-            header::CONTENT_TYPE,
-            HeaderValue::from_static(mime::APPLICATION_OCTET_STREAM.as_ref()),
-        );
-        res
-    }
-}
-
-impl IntoResponse for BytesMut {
-    fn into_response(self) -> Response {
-        self.freeze().into_response()
-    }
-}
-
-impl IntoResponse for &'static [u8] {
-    fn into_response(self) -> Response {
-        Cow::Borrowed(self).into_response()
-    }
-}
-
-impl IntoResponse for Vec<u8> {
-    fn into_response(self) -> Response {
-        Cow::<'static, [u8]>::Owned(self).into_response()
-    }
-}
-
-impl IntoResponse for Cow<'static, [u8]> {
-    fn into_response(self) -> Response {
-        let mut res = Full::from(self).into_response();
-        res.headers_mut().insert(
-            header::CONTENT_TYPE,
-            HeaderValue::from_static(mime::APPLICATION_OCTET_STREAM.as_ref()),
-        );
-        res
+        Response::from_parts(self, Empty::new()).box_body()
     }
 }

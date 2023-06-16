@@ -1,7 +1,12 @@
-use http::{Method, Uri, Version, HeaderMap};
+//! An incoming HTTP request.
+use http::{HeaderMap, Method, Uri, Version};
 
 #[non_exhaustive]
 #[derive(Debug)]
+/// All the information that is transmitted as part of an HTTP request ahead of the body.
+///
+/// It includes the [method](Method), the [URI](Uri), 
+/// the [HTTP version](Version), and the [headers](HeaderMap).
 pub struct RequestHead {
     pub method: Method,
     pub uri: Uri,
@@ -19,4 +24,3 @@ impl From<http::request::Parts> for RequestHead {
         }
     }
 }
-

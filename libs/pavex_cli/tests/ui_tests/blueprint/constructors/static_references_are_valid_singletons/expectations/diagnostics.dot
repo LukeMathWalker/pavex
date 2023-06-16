@@ -1,7 +1,7 @@
 digraph "GET /handler" {
-    0 [ label = "app::handler(&'static str) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
+    0 [ label = "app::handler(&'static str) -> pavex_runtime::response::Response"]
     1 [ label = "&'static str"]
-    2 [ label = "<http::Response::<http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>> as pavex_runtime::response::IntoResponse>::into_response(http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
+    2 [ label = "<pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(pavex_runtime::response::Response) -> pavex_runtime::response::Response"]
     1 -> 0 [ ]
     0 -> 2 [ ]
 }

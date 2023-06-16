@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use pavex_builder::{constructor::Lifecycle, f, router::GET, Blueprint};
+use pavex_runtime::http::StatusCode;
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
@@ -21,7 +22,7 @@ pub fn transient() -> u16 {
     todo!()
 }
 
-pub fn handler(_x: u64, _y: u32, _z: u16) -> String {
+pub fn handler(_x: u64, _y: u32, _z: u16) -> StatusCode {
     todo!()
 }
 

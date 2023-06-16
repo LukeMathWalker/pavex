@@ -1,5 +1,5 @@
 use pavex_builder::{constructor::Lifecycle, f, router::GET, Blueprint};
-use pavex_runtime::extract::route::RouteParams;
+use pavex_runtime::{extract::route::RouteParams, http::StatusCode};
 
 #[RouteParams]
 pub struct MissingOne {
@@ -7,7 +7,7 @@ pub struct MissingOne {
     y: u32,
 }
 
-pub fn missing_one(params: RouteParams<MissingOne>) -> String {
+pub fn missing_one(params: RouteParams<MissingOne>) -> StatusCode {
     todo!()
 }
 
@@ -18,7 +18,7 @@ pub struct MissingTwo {
     z: u32,
 }
 
-pub fn missing_two(params: RouteParams<MissingTwo>) -> String {
+pub fn missing_two(params: RouteParams<MissingTwo>) -> StatusCode {
     todo!()
 }
 
@@ -28,7 +28,7 @@ pub struct NoRouteParams {
     y: u32,
 }
 
-pub fn no_route_params(params: RouteParams<NoRouteParams>) -> String {
+pub fn no_route_params(params: RouteParams<NoRouteParams>) -> StatusCode {
     todo!()
 }
 

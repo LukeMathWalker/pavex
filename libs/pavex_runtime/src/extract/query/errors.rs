@@ -1,6 +1,7 @@
 //! Errors that can happen when extracting query parameters.
 
-use http::StatusCode;
+use bytes::Bytes;
+use http_body::Full;
 
 use crate::response::Response;
 
@@ -24,12 +25,10 @@ impl ExtractQueryParamsError {
     /// Convert an [`ExtractQueryParamsError`] into an HTTP response.
     ///
     /// It returns a `400 Bad Request` to the caller.
-    pub fn into_response(&self) -> Response<String> {
+    pub fn into_response(&self) -> Response<Full<Bytes>> {
         match self {
-            Self::QueryDeserializationError(e) => Response::builder()
-                .status(StatusCode::BAD_REQUEST)
-                .body(format!("Invalid query parameters.\n{:?}", e))
-                .unwrap(),
+            Self::QueryDeserializationError(e) => Response::bad_request()
+                .set_typed_body(format!("Invalid query parameters.\n{:?}", e)),
         }
     }
 }

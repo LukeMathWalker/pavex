@@ -1,11 +1,11 @@
 digraph "GET /home" {
-    0 [ label = "app::handler(app::A, app::C, app::D, app::E) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
+    0 [ label = "app::handler(app::A, app::C, app::D, app::E) -> pavex_runtime::response::Response"]
     1 [ label = "<app::C as app::GenericTrait::<std::string::String>>::a_method(&app::C) -> app::E"]
     2 [ label = "<app::B as app::AnotherTrait>::a_method_that_consumes_self(app::B) -> app::C"]
     3 [ label = "<app::A as app::MyTrait>::a_method_that_borrows_self(&app::A) -> app::B"]
     4 [ label = "<app::A as app::MyTrait>::a_method_that_returns_self() -> app::A"]
     5 [ label = "<app::A as app::MyTrait>::a_method_with_a_generic::<std::string::String>(&app::A) -> app::D"]
-    6 [ label = "<http::Response::<http_body::combinators::BoxBody::<bytes::Bytes, pavex_runtime::Error>> as pavex_runtime::response::IntoResponse>::into_response(http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>) -> http::Response<http_body::combinators::BoxBody<bytes::Bytes, pavex_runtime::Error>>"]
+    6 [ label = "<pavex_runtime::response::Response as pavex_runtime::response::IntoResponse>::into_response(pavex_runtime::response::Response) -> pavex_runtime::response::Response"]
     1 -> 0 [ ]
     2 -> 1 [ label = "&"]
     3 -> 2 [ ]

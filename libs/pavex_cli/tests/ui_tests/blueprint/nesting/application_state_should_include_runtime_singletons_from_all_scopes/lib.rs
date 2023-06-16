@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use pavex_builder::{constructor::Lifecycle, f, router::GET, Blueprint};
+use pavex_runtime::http::StatusCode;
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
@@ -10,7 +11,7 @@ pub fn blueprint() -> Blueprint {
     bp
 }
 
-pub fn parent_handler(_x: u64) -> String {
+pub fn parent_handler(_x: u64) -> StatusCode {
     todo!()
 }
 
@@ -34,6 +35,6 @@ pub fn nested_singleton(_x: u16) -> u32 {
     todo!()
 }
 
-pub fn nested_handler(_x: u32) -> String {
+pub fn nested_handler(_x: u32) -> StatusCode {
     todo!()
 }

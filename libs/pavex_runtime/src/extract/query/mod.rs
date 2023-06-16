@@ -1,6 +1,6 @@
 //! Extract data from the query parameters of incoming requests.
- 
-mod query_params;
+
 pub mod errors;
+mod query_params;
 
 pub use query_params::QueryParams;
