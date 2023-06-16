@@ -21,16 +21,16 @@ use super::RawRouteParams;
 ///
 /// ```rust
 /// use pavex_builder::{f, router::GET, Blueprint, constructor::Lifecycle};
-/// use pavex_runtime::extract::route::RouteParams;
+/// use pavex::extract::route::RouteParams;
 ///
 /// fn blueprint() -> Blueprint {
 ///     let mut bp = Blueprint::new();
 ///     // Register the default constructor and error handler for `RouteParams`.
 ///     bp.constructor(
-///         f!(pavex_runtime::extract::route::RouteParams::extract),
+///         f!(pavex::extract::route::RouteParams::extract),
 ///         Lifecycle::RequestScoped,
 ///     ).error_handler(
-///         f!(pavex_runtime::extract::route::errors::ExtractRouteParamsError::into_response)
+///         f!(pavex::extract::route::errors::ExtractRouteParamsError::into_response)
 ///     );
 ///     // Register a route with a route parameter, `:home_id`.
 ///     bp.route(GET, "/home/:home_id", f!(crate::get_home));
@@ -65,7 +65,7 @@ use super::RawRouteParams;
 ///
 /// ```rust
 /// use pavex_builder::{f, router::GET, Blueprint};
-/// use pavex_runtime::extract::route::RouteParams;
+/// use pavex::extract::route::RouteParams;
 ///
 /// fn blueprint() -> Blueprint{
 ///     let mut bp = Blueprint::new();
@@ -103,7 +103,7 @@ use super::RawRouteParams;
 /// check the route's path template to understand what each entry represents.
 ///
 ///```rust
-/// use pavex_runtime::extract::route::RouteParams;
+/// use pavex::extract::route::RouteParams;
 ///
 /// // This is self-documenting ✅
 /// // No need to check the route's path template to understand what each field represents.
@@ -145,7 +145,7 @@ use super::RawRouteParams;
 ///
 /// ```rust
 /// # mod home {
-/// use pavex_runtime::extract::route::RouteParams;
+/// use pavex::extract::route::RouteParams;
 ///
 /// // Do this 👇
 /// #[RouteParams]
@@ -189,7 +189,7 @@ use super::RawRouteParams;
 /// URL if possible, and allocates a new `String` only if strictly necessary.
 ///
 /// ```rust
-/// use pavex_runtime::extract::route::RouteParams;
+/// use pavex::extract::route::RouteParams;
 /// use std::borrow::Cow;
 ///
 /// #[RouteParams]

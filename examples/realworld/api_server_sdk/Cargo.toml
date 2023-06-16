@@ -13,4 +13,4 @@ conduit_core = { version = "0.1.0", path = "../conduit_core", package = "conduit
 http = { version = "0.2.9", package = "http" }
 http_body = { version = "0.4.5", package = "http-body" }
 hyper = { version = "0.14.26", package = "hyper" }
-pavex_runtime = { version = "0.1.0", path = "../../../libs/pavex_runtime", package = "pavex_runtime" }
+pavex = { version = "0.1.0", path = "../../../libs/pavex", package = "pavex" }

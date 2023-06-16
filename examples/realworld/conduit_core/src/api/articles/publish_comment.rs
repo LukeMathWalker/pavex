@@ -1,4 +1,7 @@
-use pavex_runtime::{extract::{body::JsonBody, route::RouteParams}, hyper::StatusCode};
+use pavex::{
+    extract::{body::JsonBody, route::RouteParams},
+    hyper::StatusCode,
+};
 
 #[derive(Debug)]
 #[RouteParams]

@@ -1,6 +1,6 @@
 digraph "GET /home" {
     0 [ label = "app::nested::function() -> http::StatusCode"]
-    1 [ label = "<http::StatusCode as pavex_runtime::response::IntoResponse>::into_response(http::StatusCode) -> pavex_runtime::response::Response"]
+    1 [ label = "<http::StatusCode as pavex::response::IntoResponse>::into_response(http::StatusCode) -> pavex::response::Response"]
     0 -> 1 [ ]
 }
 digraph app_state {

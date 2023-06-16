@@ -55,7 +55,7 @@ impl Blueprint {
     ///
     /// ```rust
     /// use pavex_builder::{Blueprint, f, router::GET};
-    /// use pavex_runtime::{request::RequestHead, response::Response};
+    /// use pavex::{request::RequestHead, response::Response};
     ///
     /// fn my_handler(request_head: &RequestHead) -> Response {
     ///     // [...]
@@ -73,7 +73,7 @@ impl Blueprint {
     ///
     /// ```rust
     /// use pavex_builder::{Blueprint, f, router::{GET, POST, PUT, DELETE, PATCH}};
-    /// # use pavex_runtime::{request::RequestHead, response::Response};
+    /// # use pavex::{request::RequestHead, response::Response};
     /// # fn my_handler(request: &RequestHead) -> Response { todo!() }
     /// # fn main() {
     /// # let mut bp = Blueprint::new();
@@ -94,8 +94,8 @@ impl Blueprint {
     ///
     /// ```rust
     /// use pavex_builder::{Blueprint, f, router::{MethodGuard, POST, PATCH}};
-    /// use pavex_runtime::http::Method;
-    /// # use pavex_runtime::{request::RequestHead, response::Response};
+    /// use pavex::http::Method;
+    /// # use pavex::{request::RequestHead, response::Response};
     /// # fn my_handler(request: &RequestHead) -> Response { todo!() }
     /// # fn main() {
     /// # let mut bp = Blueprint::new();
@@ -114,7 +114,7 @@ impl Blueprint {
     ///
     /// ```rust
     /// use pavex_builder::{Blueprint, f, router::ANY};
-    /// # use pavex_runtime::{request::RequestHead, response::Response};
+    /// # use pavex::{request::RequestHead, response::Response};
     /// # fn my_handler(request: RequestHead) -> Response { todo!() }
     /// # fn main() {
     /// # let mut bp = Blueprint::new();
@@ -135,7 +135,7 @@ impl Blueprint {
     ///
     /// ```rust
     /// use pavex_builder::{Blueprint, f, router::GET};
-    /// # use pavex_runtime::{request::RequestHead, response::Response};
+    /// # use pavex::{request::RequestHead, response::Response};
     /// # fn get_home(request: RequestHead) -> Response { todo!() }
     /// # fn main() {
     /// # let mut bp = Blueprint::new();
@@ -150,7 +150,7 @@ impl Blueprint {
     /// (or any other constructor that has access to the request):
     ///
     /// ```rust
-    /// use pavex_runtime::extract::route::RouteParams;
+    /// use pavex::extract::route::RouteParams;
     ///
     /// #[RouteParams]
     /// struct HomeRouteParams {
@@ -171,7 +171,7 @@ impl Blueprint {
     ///
     /// ```rust
     /// use pavex_builder::{Blueprint, f, router::GET};
-    /// # use pavex_runtime::{request::RequestHead, response::Response};
+    /// # use pavex::{request::RequestHead, response::Response};
     /// # fn get_town(request: RequestHead) -> Response { todo!() }
     /// # fn main() {
     /// # let mut bp = Blueprint::new();
@@ -188,11 +188,11 @@ impl Blueprint {
     /// There can be at most one catch-all parameter in a route, and
     /// it **must** be at the end of the route template
     ///
-    /// Check out [`RouteParams`] in `pavex_runtime` for more information
+    /// Check out [`RouteParams`] in `pavex` for more information
     /// on how to extract and work with route parameters.
     ///
     /// [`router`]: crate::router
-    /// [`RouteParams`]: struct@pavex_runtime::extract::route::RouteParams
+    /// [`RouteParams`]: struct@pavex::extract::route::RouteParams
     pub fn route(&mut self, method_guard: MethodGuard, path: &str, callable: RawCallable) -> Route {
         let registered_route = RegisteredRoute {
             path: path.to_owned(),
@@ -257,24 +257,24 @@ impl Blueprint {
     /// `prefix` will be prepended to all the routes coming from the nested blueprint.  
     /// `prefix` must be non-empty and it must start with a `/`.  
     /// If you don't want to add a common prefix, check out [`Blueprint::nest`].
-    /// 
+    ///
     /// ## Trailing slashes
-    /// 
+    ///
     /// `prefix` **can't** end with a trailing `/`.  
-    /// This would result in routes with two consecutive `/` in their paths—e.g. 
+    /// This would result in routes with two consecutive `/` in their paths—e.g.
     /// `/prefix//path`—which is rarely desirable.  
-    /// If you actually need consecutive slashes in your route, you can add them explicitly to 
+    /// If you actually need consecutive slashes in your route, you can add them explicitly to
     /// the path of the route registered in the nested blueprint:
-    /// 
+    ///
     /// ```rust
     /// use pavex_builder::{Blueprint, f, router::GET};
-    /// 
+    ///
     /// fn app() -> Blueprint {
     ///     let mut bp = Blueprint::new();
     ///     bp.nest_at("/api", api_bp());
     ///     bp
     /// }
-    /// 
+    ///
     /// fn api_bp() -> Blueprint {
     ///     let mut bp = Blueprint::new();
     ///     // This will match `GET` requests to `/api//path`.

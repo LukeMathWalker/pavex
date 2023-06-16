@@ -7,7 +7,7 @@ impl Streamer {
         todo!()
     }
 
-    pub fn stream_file(&self, logger: Logger) -> pavex_runtime::response::Response {
+    pub fn stream_file(&self, logger: Logger) -> pavex::response::Response {
         todo!()
     }
 }

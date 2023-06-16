@@ -1161,6 +1161,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "pavex"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bytes",
+ "futures-util",
+ "http",
+ "http-body",
+ "hyper",
+ "insta",
+ "matchit",
+ "mime",
+ "paste",
+ "pavex_builder",
+ "pavex_macros",
+ "percent-encoding",
+ "serde",
+ "serde_html_form",
+ "serde_json",
+ "serde_path_to_error",
+ "thiserror",
+ "tokio",
+]
+
+[[package]]
 name = "pavex_builder"
 version = "0.1.0"
 dependencies = [
@@ -1168,7 +1193,7 @@ dependencies = [
  "fs-err",
  "http",
  "indexmap",
- "pavex_runtime",
+ "pavex",
  "ron",
  "serde",
 ]
@@ -1204,7 +1229,7 @@ dependencies = [
 name = "pavex_macros"
 version = "0.1.0"
 dependencies = [
- "pavex_runtime",
+ "pavex",
  "proc-macro2",
  "quote",
  "serde",
@@ -1224,31 +1249,6 @@ dependencies = [
  "terminal_size 0.2.6",
  "textwrap 0.16.0",
  "unicode-width",
-]
-
-[[package]]
-name = "pavex_runtime"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bytes",
- "futures-util",
- "http",
- "http-body",
- "hyper",
- "insta",
- "matchit",
- "mime",
- "paste",
- "pavex_builder",
- "pavex_macros",
- "percent-encoding",
- "serde",
- "serde_html_form",
- "serde_json",
- "serde_path_to_error",
- "thiserror",
- "tokio",
 ]
 
 [[package]]

@@ -9,11 +9,11 @@ pub fn infallible_constructor() -> PathBuf {
 #[derive(Debug)]
 pub struct ExtractPathError;
 
-pub fn error_handler(_e: &ExtractPathError) -> pavex_runtime::response::Response {
+pub fn error_handler(_e: &ExtractPathError) -> pavex::response::Response {
     todo!()
 }
 
-pub fn request_handler(_inner: PathBuf) -> pavex_runtime::response::Response {
+pub fn request_handler(_inner: PathBuf) -> pavex::response::Response {
     todo!()
 }
 

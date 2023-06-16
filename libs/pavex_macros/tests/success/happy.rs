@@ -42,7 +42,7 @@ struct StructWithTwoLifetimes<'a, 'b: 'a> {
 /// Verify that the given type implements the traits we expect.
 fn has_required_traits<
     'a,
-    T: pavex_runtime::serialization::StructuralDeserialize + serde::Deserialize<'a> + serde::Serialize,
+    T: pavex::serialization::StructuralDeserialize + serde::Deserialize<'a> + serde::Serialize,
 >(
     _t: T,
 ) {

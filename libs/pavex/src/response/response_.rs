@@ -2,16 +2,16 @@ use bytes::Bytes;
 use http::header::CONTENT_TYPE;
 use http_body::Empty;
 
+use super::body::raw::{boxed, BoxBody};
 use super::body::TypedBody;
-use super::body::raw::{BoxBody, boxed};
 use crate::http::StatusCode;
 use crate::http::{HeaderMap, Version};
 
 /// Represents an HTTP response.
 ///
 /// ```rust
-/// use pavex_runtime::response::Response;
-/// use pavex_runtime::http::{HeaderValue, header::SERVER};
+/// use pavex::response::Response;
+/// use pavex::http::{HeaderValue, header::SERVER};
 ///
 /// // Create a new response with:
 /// // - status code `OK`
@@ -61,8 +61,8 @@ impl Response<Empty<Bytes>> {
     /// # Example
     ///
     /// ```rust
-    /// use pavex_runtime::http::StatusCode;
-    /// use pavex_runtime::response::Response;
+    /// use pavex::http::StatusCode;
+    /// use pavex::response::Response;
     ///     
     /// let response = Response::new(StatusCode::OK);
     /// ```
@@ -74,7 +74,7 @@ impl Response<Empty<Bytes>> {
     /// example above:
     ///
     /// ```rust
-    /// use pavex_runtime::response::Response;
+    /// use pavex::response::Response;
     ///     
     /// let response = Response::ok();
     /// ```
@@ -93,8 +93,8 @@ impl<Body> Response<Body> {
     /// # Example
     ///
     /// ```rust
-    /// use pavex_runtime::http::StatusCode;
-    /// use pavex_runtime::response::Response;
+    /// use pavex::http::StatusCode;
+    /// use pavex::response::Response;
     ///
     /// let mut response = Response::ok();
     /// assert_eq!(response.status(), StatusCode::OK);
@@ -113,8 +113,8 @@ impl<Body> Response<Body> {
     /// # Example
     ///
     /// ```rust
-    /// use pavex_runtime::http::Version;
-    /// use pavex_runtime::response::Response;
+    /// use pavex::http::Version;
+    /// use pavex::response::Response;
     ///
     /// let mut response = Response::ok();
     /// // By default, the HTTP version is HTTP/1.1.
@@ -138,8 +138,8 @@ impl<Body> Response<Body> {
     /// # Example
     ///
     /// ```rust
-    /// use pavex_runtime::http::{header::HOST, HeaderValue};
-    /// use pavex_runtime::response::Response;
+    /// use pavex::http::{header::HOST, HeaderValue};
+    /// use pavex::response::Response;
     ///
     /// let mut response = Response::ok();
     /// assert!(response.headers().get("host").is_none());
@@ -183,8 +183,8 @@ impl<Body> Response<Body> {
     /// # Example
     ///
     /// ```rust
-    /// use pavex_runtime::http::{header::HOST, HeaderValue};
-    /// use pavex_runtime::response::Response;
+    /// use pavex::http::{header::HOST, HeaderValue};
+    /// use pavex::response::Response;
     ///     
     /// let mut response = Response::ok();
     /// assert!(response.headers().get("host").is_none());
@@ -230,8 +230,8 @@ impl<Body> Response<Body> {
     /// # Example
     ///
     /// ```rust
-    /// use pavex_runtime::response::{Response, body::Html};
-    /// use pavex_runtime::http::header::CONTENT_TYPE;
+    /// use pavex::response::{Response, body::Html};
+    /// use pavex::http::header::CONTENT_TYPE;
     ///
     /// let typed_body = "Hello, world!";
     /// let response = Response::ok().set_typed_body(typed_body);
@@ -254,9 +254,9 @@ impl<Body> Response<Body> {
     /// - [`Html`](crate::response::body::Html) for `text/html; charset=utf-8` responses.
     ///
     /// Check out the [`body`](super::body) sub-module for an exhaustive list.
-    /// 
-    /// # Raw body 
-    /// 
+    ///
+    /// # Raw body
+    ///
     /// If you don't want Pavex to automatically set the `Content-Type` header,
     /// you might want to use [`Response::set_raw_body`] instead.
     pub fn set_typed_body<NewBody>(self, body: NewBody) -> Response<<NewBody as TypedBody>::Body>
@@ -278,9 +278,9 @@ impl<Body> Response<Body> {
     /// # Example
     ///
     /// ```rust
-    /// use pavex_runtime::response::Response;
-    /// use pavex_runtime::response::body::raw::{Bytes, Full};
-    /// use pavex_runtime::http::header::CONTENT_TYPE;
+    /// use pavex::response::Response;
+    /// use pavex::response::body::raw::{Bytes, Full};
+    /// use pavex::http::header::CONTENT_TYPE;
     ///     
     /// let raw_body: Full<Bytes> = Full::new("Hello, world!".into());
     /// let response = Response::ok().set_raw_body(raw_body);
@@ -310,7 +310,7 @@ impl<Body> Response<Body> {
     /// # Example
     ///
     /// ```rust
-    /// use pavex_runtime::response::Response;
+    /// use pavex::response::Response;
     ///
     /// # let user_exists = true;
     /// // The call to `.box_body` is necessary here because the two branches
@@ -342,8 +342,8 @@ impl<Body> Response<Body> {
     /// # Example
     ///
     /// ```rust
-    /// use pavex_runtime::response::Response;
-    /// use pavex_runtime::http::{header::CONTENT_TYPE, HeaderValue};
+    /// use pavex::response::Response;
+    /// use pavex::http::{header::CONTENT_TYPE, HeaderValue};
     /// use mime::TEXT_PLAIN_UTF_8;
     ///
     /// let mut response = Response::ok();
@@ -373,7 +373,7 @@ impl<Body> Response<Body> {
     /// # Example
     ///
     /// ```rust
-    /// use pavex_runtime::{http::StatusCode, response::Response};
+    /// use pavex::{http::StatusCode, response::Response};
     ///
     /// let response = Response::bad_request();
     /// assert_eq!(response.status(), StatusCode::BAD_REQUEST);
@@ -392,8 +392,8 @@ impl<Body> Response<Body> {
     /// # Example
     ///
     /// ```rust
-    /// use pavex_runtime::http::Version;
-    /// use pavex_runtime::response::Response;
+    /// use pavex::http::Version;
+    /// use pavex::response::Response;
     ///
     /// let mut response = Response::ok();
     /// // By default, the HTTP version is HTTP/1.1.
@@ -413,8 +413,8 @@ impl<Body> Response<Body> {
     /// # Example
     ///
     /// ```rust
-    /// use pavex_runtime::http::{header::{HOST, SERVER}, HeaderValue};
-    /// use pavex_runtime::response::Response;
+    /// use pavex::http::{header::{HOST, SERVER}, HeaderValue};
+    /// use pavex::response::Response;
     ///     
     /// let response = Response::ok()
     ///     .append_header(HOST, HeaderValue::from_static("world"))
@@ -444,11 +444,11 @@ impl<Body> Response<Body> {
     }
 
     /// Get a reference to the [`Response`] body.
-    /// 
+    ///
     /// # Mutation
-    /// 
+    ///
     /// If you need to modify the [`Response`] body, check out:
-    /// 
+    ///
     /// - [`Response::set_typed_body`]
     /// - [`Response::set_raw_body`]
     /// - [`Response::body_mut`]
@@ -460,11 +460,11 @@ impl<Body> Response<Body> {
 impl<Body> Response<Body> {
     /// Break down the [`Response`] into its two components: the [`ResponseHead`]
     /// and the body.
-    /// 
+    ///
     /// This method consumes the [`Response`].
-    /// 
+    ///
     /// # Related
-    /// 
+    ///
     /// You can use [`Response::from_parts`] to reconstruct a [`Response`] from
     /// a [`ResponseHead`] and a body.
     pub fn into_parts(self) -> (ResponseHead, Body) {
@@ -474,9 +474,9 @@ impl<Body> Response<Body> {
 
     /// Build a [`Response`] from its two components: the [`ResponseHead`]
     /// and the body.
-    /// 
+    ///
     /// # Related
-    /// 
+    ///
     /// You can use [`Response::into_parts`] to decompose a [`Response`] from
     /// a [`ResponseHead`] and a body.
     pub fn from_parts(head: ResponseHead, body: Body) -> Self {

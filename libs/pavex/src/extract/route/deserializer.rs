@@ -734,7 +734,7 @@ mod tests {
             vec![("a", "c"), ("a", "B")],
             Vec<MyEnum>,
             ErrorKind::UnsupportedType {
-                name: "alloc::vec::Vec<pavex_runtime::extract::route::deserializer::tests::MyEnum>"
+                name: "alloc::vec::Vec<pavex::extract::route::deserializer::tests::MyEnum>"
             }
         );
 
@@ -745,7 +745,7 @@ mod tests {
             TupleStruct,
             ErrorKind::UnsupportedType {
                 name:
-                    "pavex_runtime::extract::route::deserializer::tests::test_unsupported_seq::TupleStruct"
+                    "pavex::extract::route::deserializer::tests::test_unsupported_seq::TupleStruct"
             }
         );
 

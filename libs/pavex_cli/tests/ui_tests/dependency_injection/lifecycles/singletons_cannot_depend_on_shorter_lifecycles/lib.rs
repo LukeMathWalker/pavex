@@ -1,5 +1,5 @@
+use pavex::http::StatusCode;
 use pavex_builder::{constructor::Lifecycle, f, router::GET, Blueprint};
-use pavex_runtime::http::StatusCode;
 
 #[derive(Clone)]
 pub struct A;

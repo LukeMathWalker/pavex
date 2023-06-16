@@ -9,7 +9,7 @@ pub fn new_logger() -> Logger {
 pub struct Streamer;
 
 impl Streamer {
-    pub fn stream_file(_logger: Logger) -> pavex_runtime::response::Response {
+    pub fn stream_file(_logger: Logger) -> pavex::response::Response {
         todo!()
     }
 }

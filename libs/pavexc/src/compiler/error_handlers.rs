@@ -156,7 +156,7 @@ impl Display for ErrorHandlerValidationError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             ErrorHandlerValidationError::CannotReturnTheUnitType(_) => {
-                write!(f, "All error handlers must return a type that implements `pavex_runtime::response::IntoResponse`.\nThis error handler doesn't: it returns the unit type, `()`. I can't convert `()` into an HTTP response!")
+                write!(f, "All error handlers must return a type that implements `pavex::response::IntoResponse`.\nThis error handler doesn't: it returns the unit type, `()`. I can't convert `()` into an HTTP response!")
             }
             ErrorHandlerValidationError::DoesNotTakeErrorReferenceAsInput {
                 ref fallible_callable,

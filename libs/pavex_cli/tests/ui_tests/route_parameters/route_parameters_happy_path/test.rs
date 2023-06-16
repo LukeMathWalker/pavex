@@ -8,8 +8,7 @@ async fn spawn_test_server() -> u16 {
         .local_addr()
         .expect("Failed to get local address")
         .port();
-    let server =
-        pavex_runtime::hyper::Server::from_tcp(listener).expect("Failed to create a hyper server");
+    let server = pavex::hyper::Server::from_tcp(listener).expect("Failed to create a hyper server");
     let application_state = build_application_state().await;
     tokio::task::spawn(async move {
         run(server, application_state)

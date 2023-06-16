@@ -381,13 +381,13 @@ fn get_required_singleton_types<'a>(
 fn codegen_deps(package_graph: &PackageGraph) -> HashMap<String, guppy::PackageId> {
     let mut name2id = HashMap::new();
 
-    let pavex_runtime = package_graph
+    let pavex = package_graph
         .packages()
-        .find(|p| p.name() == "pavex_runtime" && p.version().major == 0 && p.version().minor == 1)
+        .find(|p| p.name() == "pavex" && p.version().major == 0 && p.version().minor == 1)
         // TODO: Return a user diagnostic in case of a version mismatch between the
-        //  CLI and the dependencies of the project (i.e. the `pavex_runtime` and `pavex_builder`
+        //  CLI and the dependencies of the project (i.e. the `pavex` and `pavex_builder`
         //  versions).
-        .expect("Expected to find `pavex_runtime@0.1` in the package graph, but it was not there.")
+        .expect("Expected to find `pavex@0.1` in the package graph, but it was not there.")
         .id();
     let http = package_graph
         .packages()
@@ -401,7 +401,7 @@ fn codegen_deps(package_graph: &PackageGraph) -> HashMap<String, guppy::PackageI
         .id();
 
     name2id.insert("http".to_string(), http.clone());
-    name2id.insert("pavex_runtime".to_string(), pavex_runtime.clone());
+    name2id.insert("pavex".to_string(), pavex.clone());
     name2id.insert("hyper".to_string(), hyper.clone());
     name2id
 }

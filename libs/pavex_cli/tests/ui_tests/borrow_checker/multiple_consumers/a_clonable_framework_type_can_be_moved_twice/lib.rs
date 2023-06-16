@@ -1,8 +1,13 @@
 use std::path::PathBuf;
 
-use pavex_builder::{constructor::{Lifecycle, CloningStrategy}, f, router::GET, Blueprint};
-use pavex_runtime::response::Response;
-use pavex_runtime::extract::route::RawRouteParams;
+use pavex::extract::route::RawRouteParams;
+use pavex::response::Response;
+use pavex_builder::{
+    constructor::{CloningStrategy, Lifecycle},
+    f,
+    router::GET,
+    Blueprint,
+};
 
 // The call graph looks like this:
 //

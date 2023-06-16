@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
+use pavex::{extract::route::RouteParams, response::Response};
 use pavex_builder::{constructor::Lifecycle, f, router::GET, Blueprint};
-use pavex_runtime::{extract::route::RouteParams, response::Response};
 
 #[RouteParams]
 pub struct HomeRouteParams {
@@ -43,11 +43,11 @@ pub fn get_town(params: RouteParams<TownRouteParams<'_>>) -> Response {
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.constructor(
-        f!(pavex_runtime::extract::route::RouteParams::extract),
+        f!(pavex::extract::route::RouteParams::extract),
         Lifecycle::RequestScoped,
     )
     .error_handler(f!(
-        pavex_runtime::extract::route::errors::ExtractRouteParamsError::into_response
+        pavex::extract::route::errors::ExtractRouteParamsError::into_response
     ));
     bp.route(GET, "/home/:home_id", f!(crate::get_home));
     bp.route(GET, "/home/:home_id/room/:room_id", f!(crate::get_room));

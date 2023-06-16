@@ -1,4 +1,4 @@
-use pavex_runtime::{extract::body::JsonBody, hyper::StatusCode};
+use pavex::{extract::body::JsonBody, hyper::StatusCode};
 
 #[derive(Debug, serde::Deserialize)]
 pub struct PublishArticle {

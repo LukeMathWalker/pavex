@@ -41,7 +41,7 @@ pub fn RouteParams(_metadata: TokenStream, input: TokenStream) -> TokenStream {
     let expanded = quote! {
         #ast
 
-        impl #generics_with_bounds pavex_runtime::serialization::StructuralDeserialize for #struct_name < #generics_without_bounds > {}
+        impl #generics_with_bounds pavex::serialization::StructuralDeserialize for #struct_name < #generics_without_bounds > {}
     };
 
     TokenStream::from(expanded)

@@ -4,7 +4,7 @@ use pavex_builder::{constructor::Lifecycle, f, router::GET, Blueprint};
 
 pub struct Logger;
 
-pub async fn extract_path(_inner: pavex_runtime::request::RequestHead) -> PathBuf {
+pub async fn extract_path(_inner: pavex::request::RequestHead) -> PathBuf {
     todo!()
 }
 
@@ -16,7 +16,7 @@ pub async fn stream_file(
     _inner: PathBuf,
     _logger: Logger,
     _http_client: HttpClient,
-) -> pavex_runtime::response::Response {
+) -> pavex::response::Response {
     todo!()
 }
 

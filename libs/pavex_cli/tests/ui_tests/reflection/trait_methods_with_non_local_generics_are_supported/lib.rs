@@ -18,7 +18,7 @@ impl<T> GenericTrait<T> for B {
     }
 }
 
-pub fn handler(_a: A, _b: B) -> pavex_runtime::response::Response {
+pub fn handler(_a: A, _b: B) -> pavex::response::Response {
     todo!()
 }
 

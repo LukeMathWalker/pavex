@@ -3,7 +3,7 @@ use pavex_builder::{constructor::Lifecycle, f, router::GET, Blueprint};
 pub struct Streamer;
 
 impl Streamer {
-    pub fn stream_file(_logger: dep::Logger) -> pavex_runtime::response::Response {
+    pub fn stream_file(_logger: dep::Logger) -> pavex::response::Response {
         todo!()
     }
 }

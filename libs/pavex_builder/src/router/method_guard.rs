@@ -28,7 +28,7 @@ impl MethodGuard {
     ///
     /// ```rust
     /// use pavex_builder::router::MethodGuard;
-    /// use pavex_runtime::http::Method;
+    /// use pavex::http::Method;
     ///
     /// // Using an array of methods known at compile-time..
     /// let guard = MethodGuard::new([Method::GET, Method::POST]);

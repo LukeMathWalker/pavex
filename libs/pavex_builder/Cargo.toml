@@ -8,9 +8,9 @@ indexmap = { version = "1.9.1", features = ["serde-1"] }
 serde = { version = "1.0.139", features = ["derive"] }
 fs-err = "2.7.0"
 ron = "0.8"
-# This ensures that pavex_runtime, anyhow and http are part of the dependency tree for the workspace
+# This ensures that pavex, anyhow and http are part of the dependency tree for the workspace
 # as soon as the build-side of pavex is used.
 # It's not ideal, but...
 http = "0.2"
-pavex_runtime = { path = "../pavex_runtime" }
+pavex = { path = "../pavex" }
 anyhow = "1"

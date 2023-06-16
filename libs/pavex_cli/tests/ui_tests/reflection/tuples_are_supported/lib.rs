@@ -4,7 +4,7 @@ pub fn constructor_with_output_tuple() -> (usize, isize) {
     todo!()
 }
 
-pub fn handler_with_input_tuple(input: (usize, isize)) -> pavex_runtime::response::Response {
+pub fn handler_with_input_tuple(input: (usize, isize)) -> pavex::response::Response {
     todo!()
 }
 

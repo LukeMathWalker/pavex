@@ -33,7 +33,7 @@ impl<'a> Constructor<'a> {
     ///
     /// ```rust
     /// use pavex_builder::{Blueprint, f, constructor::Lifecycle};
-    /// use pavex_runtime::{response::Response, hyper::body::Body};
+    /// use pavex::{response::Response, hyper::body::Body};
     /// # struct LogLevel;
     /// # struct Logger;
     /// # struct ConfigurationError;

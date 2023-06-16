@@ -11,7 +11,7 @@ pub fn header2() -> http_02::header::HeaderName {
 pub fn handler(
     _h1: http_01::header::HeaderName,
     _h2: http_02::header::HeaderName,
-) -> pavex_runtime::response::Response {
+) -> pavex::response::Response {
     todo!()
 }
 

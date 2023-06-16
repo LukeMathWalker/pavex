@@ -176,7 +176,7 @@ impl ComponentDb {
         let mut user_component_id2component_id = HashMap::new();
         let into_response = {
             let into_response = process_framework_path(
-                "pavex_runtime::response::IntoResponse",
+                "pavex::response::IntoResponse",
                 package_graph,
                 krate_collection,
             );
@@ -413,7 +413,7 @@ impl ComponentDb {
 
         // We need to make sure that all output nodes return the same output type.
         // We do this by adding a "response transformer" node that converts the output type to a
-        // common type—`pavex_runtime::response::Response`.
+        // common type—`pavex::response::Response`.
         let into_response_path = self_.into_response.resolved_path();
         let iter: Vec<_> = self_
             .interner
@@ -1362,10 +1362,9 @@ impl ComponentDb {
         let error = anyhow::Error::from(e).context(format!(
             "I can't use the type returned by this {callable_type} to create an HTTP \
                 response.\n\
-                It doesn't implement `pavex_runtime::response::IntoResponse`."
+                It doesn't implement `pavex::response::IntoResponse`."
         ));
-        let help =
-            format!("Implement `pavex_runtime::response::IntoResponse` for `{output_type:?}`.");
+        let help = format!("Implement `pavex::response::IntoResponse` for `{output_type:?}`.");
         let diagnostic = CompilerDiagnostic::builder(source, error)
             .optional_label(label)
             .help(help)
@@ -1395,7 +1394,7 @@ impl ComponentDb {
             .map(|s| s.labeled(format!("The {callable_type} was registered here")));
         let error = anyhow::Error::from(e).context(format!(
             "Something went wrong when I tried to analyze the implementation of \
-                `pavex_runtime::response::IntoResponse` for {output_type:?}, the type returned by 
+                `pavex::response::IntoResponse` for {output_type:?}, the type returned by 
                 one of your {callable_type}s.\n\
                 This is definitely a bug, I am sorry! Please file an issue on \
                 https://github.com/LukeMathWalker/pavex"

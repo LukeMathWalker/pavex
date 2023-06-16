@@ -1,7 +1,12 @@
 use std::path::PathBuf;
 
-use pavex_builder::{constructor::{Lifecycle, CloningStrategy}, f, router::GET, Blueprint};
-use pavex_runtime::response::Response;
+use pavex::response::Response;
+use pavex_builder::{
+    constructor::{CloningStrategy, Lifecycle},
+    f,
+    router::GET,
+    Blueprint,
+};
 
 // The call graph looks like this:
 //
@@ -11,7 +16,7 @@ use pavex_runtime::response::Response;
 //  \ /
 // handler
 //
-// The type A is a singleton and therefore cloneable. 
+// The type A is a singleton and therefore cloneable.
 // Pavex should detect this and insert a `Clone` invocation.
 
 #[derive(Clone)]

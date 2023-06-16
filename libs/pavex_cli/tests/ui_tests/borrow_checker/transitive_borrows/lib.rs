@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
+use pavex::response::Response;
 use pavex_builder::{constructor::Lifecycle, f, router::GET, Blueprint};
-use pavex_runtime::response::Response;
 
 // The call graph looks like this:
 //
@@ -23,7 +23,7 @@ pub struct A;
 pub struct B;
 
 pub struct C<'a> {
-    a: &'a A
+    a: &'a A,
 }
 
 pub fn a() -> A {
