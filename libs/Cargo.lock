@@ -1161,50 +1161,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pavex"
-version = "0.1.0"
-dependencies = [
- "ahash 0.8.3",
- "anyhow",
- "bimap",
- "bincode",
- "cargo-manifest",
- "convert_case",
- "elsa",
- "fixedbitset",
- "fs-err",
- "guppy",
- "indexmap",
- "itertools",
- "la-arena",
- "miette",
- "num_cpus",
- "once_cell",
- "pathdiff",
- "pavex_builder",
- "persist_if_changed",
- "petgraph",
- "prettyplease",
- "proc-macro2",
- "quote",
- "r2d2",
- "r2d2_sqlite",
- "rayon",
- "rusqlite",
- "rustdoc-types",
- "semver",
- "serde",
- "serde_json",
- "syn",
- "textwrap 0.16.0",
- "thiserror",
- "toml_edit",
- "tracing",
- "vergen",
- "xdg-home",
-]
-
-[[package]]
 name = "pavex_builder"
 version = "0.1.0"
 dependencies = [
@@ -1227,10 +1183,10 @@ dependencies = [
  "guppy",
  "miette",
  "owo-colors",
- "pavex",
  "pavex_builder",
  "pavex_miette",
  "pavex_test_runner",
+ "pavexc",
  "tracing",
  "tracing-chrome",
  "tracing-subscriber",
@@ -1317,6 +1273,50 @@ dependencies = [
  "textwrap 0.16.0",
  "toml 0.7.4",
  "walkdir",
+]
+
+[[package]]
+name = "pavexc"
+version = "0.1.0"
+dependencies = [
+ "ahash 0.8.3",
+ "anyhow",
+ "bimap",
+ "bincode",
+ "cargo-manifest",
+ "convert_case",
+ "elsa",
+ "fixedbitset",
+ "fs-err",
+ "guppy",
+ "indexmap",
+ "itertools",
+ "la-arena",
+ "miette",
+ "num_cpus",
+ "once_cell",
+ "pathdiff",
+ "pavex_builder",
+ "persist_if_changed",
+ "petgraph",
+ "prettyplease",
+ "proc-macro2",
+ "quote",
+ "r2d2",
+ "r2d2_sqlite",
+ "rayon",
+ "rusqlite",
+ "rustdoc-types",
+ "semver",
+ "serde",
+ "serde_json",
+ "syn",
+ "textwrap 0.16.0",
+ "thiserror",
+ "toml_edit",
+ "tracing",
+ "vergen",
+ "xdg-home",
 ]
 
 [[package]]

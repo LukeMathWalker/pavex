@@ -11,8 +11,8 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::EnvFilter;
 
-use pavex::App;
 use pavex_builder::Blueprint;
+use pavexc::App;
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
