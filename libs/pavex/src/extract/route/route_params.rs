@@ -20,7 +20,8 @@ use super::RawRouteParams;
 /// # Example
 ///
 /// ```rust
-/// use pavex_builder::{f, router::GET, Blueprint, constructor::Lifecycle};
+/// use pavex::f;
+/// use pavex::blueprint::{router::GET, Blueprint, constructor::Lifecycle};
 /// use pavex::extract::route::RouteParams;
 ///
 /// fn blueprint() -> Blueprint {
@@ -64,7 +65,8 @@ use super::RawRouteParams;
 /// names used in the route's path template.
 ///
 /// ```rust
-/// use pavex_builder::{f, router::GET, Blueprint};
+/// use pavex::f;
+/// use pavex::blueprint::{router::GET, Blueprint};
 /// use pavex::extract::route::RouteParams;
 ///
 /// fn blueprint() -> Blueprint{

@@ -1,4 +1,5 @@
-use pavex_builder::{Blueprint, constructor::Lifecycle, f, router::GET};
+use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
+use pavex::f;
 
 pub mod articles;
 pub mod profiles;
@@ -29,7 +30,7 @@ fn register_common_constructors(bp: &mut Blueprint) {
     .error_handler(f!(
         pavex::extract::query::errors::ExtractQueryParamsError::into_response
     ));
-    
+
     // Route parameters
     bp.constructor(
         f!(pavex::extract::route::RouteParams::extract),

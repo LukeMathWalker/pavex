@@ -5,12 +5,12 @@
   [31m│[0m in the error type processed by this error handler. This is not the case
   [31m│[0m for `T`, since it isn't used by the error type.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:52:1]
-  [31m│[0m  [2m52[0m │     bp.constructor(f!(crate::constructor1), Lifecycle::RequestScoped)
-  [31m│[0m  [2m53[0m │         .error_handler(f!(crate::generic_error_handler));
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:53:1]
+  [31m│[0m  [2m53[0m │     bp.constructor(f!(crate::constructor1), Lifecycle::RequestScoped)
+  [31m│[0m  [2m54[0m │         .error_handler(f!(crate::generic_error_handler));
   [31m│[0m     · [35;1m                       ────────────────┬───────────────[0m
   [31m│[0m     ·                                        [35;1m╰── [35;1mThe error handler was registered here[0m[0m
-  [31m│[0m  [2m54[0m │     bp.constructor(f!(crate::constructor2), Lifecycle::RequestScoped)
+  [31m│[0m  [2m55[0m │     bp.constructor(f!(crate::constructor2), Lifecycle::RequestScoped)
   [31m│[0m     ╰────
   [31m│[0m    ╭─[[36;1;4msrc/lib.rs[0m:1:1]
   [31m│[0m  [2m1[0m │ pub fn generic_error_handler<T>(error: &Error, generic_input: GenericType<T>) -> Response {
@@ -33,12 +33,12 @@
   [31m│[0m in the error type processed by this error handler. This is not the case
   [31m│[0m for `T` and `S`, since they aren't used by the error type.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:54:1]
-  [31m│[0m  [2m54[0m │     bp.constructor(f!(crate::constructor2), Lifecycle::RequestScoped)
-  [31m│[0m  [2m55[0m │         .error_handler(f!(crate::doubly_generic_error_handler));
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:55:1]
+  [31m│[0m  [2m55[0m │     bp.constructor(f!(crate::constructor2), Lifecycle::RequestScoped)
+  [31m│[0m  [2m56[0m │         .error_handler(f!(crate::doubly_generic_error_handler));
   [31m│[0m     · [35;1m                       ───────────────────┬───────────────────[0m
   [31m│[0m     ·                                           [35;1m╰── [35;1mThe error handler was registered here[0m[0m
-  [31m│[0m  [2m56[0m │     bp.constructor(f!(crate::constructor3), Lifecycle::Transient)
+  [31m│[0m  [2m57[0m │     bp.constructor(f!(crate::constructor3), Lifecycle::Transient)
   [31m│[0m     ╰────
   [31m│[0m    ╭─[[36;1;4msrc/lib.rs[0m:1:1]
   [31m│[0m  [2m1[0m │ pub fn doubly_generic_error_handler<T, S>(
@@ -64,12 +64,12 @@
   [31m│[0m in the error type processed by this error handler. This is not the case
   [31m│[0m for `T`, `S` and `U`, since they aren't used by the error type.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:56:1]
-  [31m│[0m  [2m56[0m │     bp.constructor(f!(crate::constructor3), Lifecycle::Transient)
-  [31m│[0m  [2m57[0m │         .error_handler(f!(crate::triply_generic_error_handler));
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:57:1]
+  [31m│[0m  [2m57[0m │     bp.constructor(f!(crate::constructor3), Lifecycle::Transient)
+  [31m│[0m  [2m58[0m │         .error_handler(f!(crate::triply_generic_error_handler));
   [31m│[0m     · [35;1m                       ───────────────────┬───────────────────[0m
   [31m│[0m     ·                                           [35;1m╰── [35;1mThe error handler was registered here[0m[0m
-  [31m│[0m  [2m58[0m │     bp.route(GET, "/home", f!(crate::handler));
+  [31m│[0m  [2m59[0m │     bp.route(GET, "/home", f!(crate::handler));
   [31m│[0m     ╰────
   [31m│[0m    ╭─[[36;1;4msrc/lib.rs[0m:1:1]
   [31m│[0m  [2m1[0m │ pub fn triply_generic_error_handler<T, S, U>(

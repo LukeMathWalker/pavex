@@ -11,7 +11,7 @@ use miette::miette;
 use proc_macro2::Ident;
 use quote::format_ident;
 
-use pavex_builder::{constructor::Lifecycle, Blueprint};
+use pavex::blueprint::{constructor::Lifecycle, Blueprint};
 
 use crate::compiler::analyses::call_graph::{
     application_state_call_graph, handler_call_graph, ApplicationStateCallGraph, OrderedCallGraph,
@@ -377,7 +377,7 @@ fn get_required_singleton_types<'a>(
 /// server scaffolding.
 ///
 /// These lookups should never fail because `anyhow` and `http` are direct dependencies
-/// of `pavex_builder`, which must have been used in the first place to build the `Blueprint`.
+/// of `pavex`, which must have been used in the first place to build the `Blueprint`.
 fn codegen_deps(package_graph: &PackageGraph) -> HashMap<String, guppy::PackageId> {
     let mut name2id = HashMap::new();
 
@@ -385,7 +385,7 @@ fn codegen_deps(package_graph: &PackageGraph) -> HashMap<String, guppy::PackageI
         .packages()
         .find(|p| p.name() == "pavex" && p.version().major == 0 && p.version().minor == 1)
         // TODO: Return a user diagnostic in case of a version mismatch between the
-        //  CLI and the dependencies of the project (i.e. the `pavex` and `pavex_builder`
+        //  CLI and the dependencies of the project (i.e. the `pavex` and `pavex_cli`
         //  versions).
         .expect("Expected to find `pavex@0.1` in the package graph, but it was not there.")
         .id();

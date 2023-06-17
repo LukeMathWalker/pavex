@@ -1,6 +1,7 @@
+use pavex::blueprint::{router::GET, Blueprint};
+use pavex::f;
 use pavex::response::IntoResponse;
 use pavex::response::Response;
-use pavex_builder::{f, router::GET, Blueprint};
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();

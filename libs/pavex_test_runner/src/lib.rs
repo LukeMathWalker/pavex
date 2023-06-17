@@ -50,7 +50,7 @@ pub fn get_test_name(ui_tests_folder: &Path, ui_test_folder: &Path) -> String {
 /// same sub-folder is reused across multiple test runs to benefit from cargo's incremental compilation.
 ///
 /// Custom configuration can be specified on a per-test basis by including a `test_config.toml` file
-/// in the test folder. The available test options are detailed in [`TestConfig`].
+/// in the test folder. The available test options are detailed in `TestConfig`.
 ///
 /// # cargo-nextest
 ///
@@ -249,7 +249,6 @@ impl TestData {
                 edition = "2021"
 
                 [dependencies]
-                pavex_builder = { path = "../../../../../../libs/pavex_builder" }
                 pavex ={ path = "../../../../../../libs/pavex" }
             };
             cargo_toml["package"]["name"] = package_name.into();
@@ -348,7 +347,6 @@ impl TestData {
             edition = "2021"
 
             [dependencies]
-            pavex_builder = { path = "../../../../../libs/pavex_builder" }
             pavex ={ path = "../../../../../libs/pavex" }
             pavex_cli_client = { path = "../../../../../libs/pavex_cli_client" }
         };

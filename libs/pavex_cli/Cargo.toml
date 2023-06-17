@@ -10,7 +10,7 @@ harness = false
 [dependencies]
 clap = { version = "4", features = ["derive", "env"] }
 pavexc = { path = "../pavexc" }
-pavex_builder = { path = "../pavex_builder" }
+pavex = { path = "../pavex" }
 pavex_miette = { path = "../pavex_miette" }
 miette = { version = "5.3.0" }
 fs-err = "2.7.0"

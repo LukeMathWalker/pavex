@@ -6,7 +6,7 @@ use indexmap::{IndexMap, IndexSet};
 use miette::{NamedSource, SourceSpan};
 use syn::spanned::Spanned;
 
-use pavex_builder::constructor::Lifecycle;
+use pavex::blueprint::constructor::Lifecycle;
 
 use crate::compiler::analyses::components::{
     ComponentDb, ComponentId, ConsumptionMode, HydratedComponent,

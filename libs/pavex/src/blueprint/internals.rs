@@ -1,7 +1,7 @@
-use crate::constructor::{CloningStrategy, Lifecycle};
-use crate::reflection::{Location, RawCallableIdentifiers};
-use crate::router::MethodGuard;
-use crate::Blueprint;
+use super::constructor::{CloningStrategy, Lifecycle};
+use super::reflection::{Location, RawCallableIdentifiers};
+use super::router::MethodGuard;
+use super::Blueprint;
 
 #[derive(serde::Serialize, serde::Deserialize)]
 /// A route registered against a [`Blueprint`] via [`Blueprint::route`].

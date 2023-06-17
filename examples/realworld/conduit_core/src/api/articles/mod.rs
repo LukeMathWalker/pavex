@@ -1,5 +1,6 @@
-use pavex_builder::router::{DELETE, POST, PUT};
-use pavex_builder::{f, router::GET, Blueprint};
+use pavex::blueprint::router::{DELETE, GET, POST, PUT};
+use pavex::blueprint::Blueprint;
+use pavex::f;
 
 pub(crate) fn articles_bp() -> Blueprint {
     let mut bp = Blueprint::new();

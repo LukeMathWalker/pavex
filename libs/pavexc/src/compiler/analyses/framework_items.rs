@@ -1,7 +1,7 @@
 use ahash::{HashMap, HashMapExt};
 use bimap::BiHashMap;
 use guppy::graph::PackageGraph;
-use pavex_builder::constructor::{CloningStrategy, Lifecycle};
+use pavex::blueprint::constructor::{CloningStrategy, Lifecycle};
 use proc_macro2::Ident;
 use quote::format_ident;
 

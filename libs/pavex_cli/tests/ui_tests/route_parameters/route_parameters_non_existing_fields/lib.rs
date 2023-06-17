@@ -1,5 +1,6 @@
+use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
+use pavex::f;
 use pavex::{extract::route::RouteParams, http::StatusCode};
-use pavex_builder::{constructor::Lifecycle, f, router::GET, Blueprint};
 
 #[RouteParams]
 pub struct MissingOne {

@@ -4,10 +4,10 @@ use ahash::{HashMap, HashMapExt};
 use anyhow::anyhow;
 use guppy::graph::PackageGraph;
 
-use pavex_builder::constructor::CloningStrategy;
-use pavex_builder::internals::{NestedBlueprint, RegisteredRoute};
-use pavex_builder::router::AllowedMethods;
-use pavex_builder::{
+use pavex::blueprint::constructor::CloningStrategy;
+use pavex::blueprint::internals::{NestedBlueprint, RegisteredRoute};
+use pavex::blueprint::router::AllowedMethods;
+use pavex::blueprint::{
     constructor::Lifecycle, reflection::Location, reflection::RawCallableIdentifiers, Blueprint,
 };
 

@@ -2,7 +2,7 @@
 //!
 //! Check out [`Blueprint::route`] for a brief introduction to request routing in Pavex.
 //!
-//! [`Blueprint::route`]: crate::Blueprint::route
+//! [`Blueprint::route`]: crate::blueprint::Blueprint::route
 pub use http::Method;
 
 pub use method_guard::{

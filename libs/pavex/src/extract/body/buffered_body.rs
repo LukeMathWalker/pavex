@@ -46,7 +46,8 @@ use hyper::body::to_bytes;
 /// `BufferedBody` in your `Blueprint`:
 ///
 /// ```rust
-/// use pavex_builder::{f, Blueprint, constructor::Lifecycle};
+/// use pavex::f; 
+/// use pavex::blueprint::{Blueprint, constructor::Lifecycle};
 ///
 /// fn blueprint() -> Blueprint {
 ///    let mut bp = Blueprint::new();
@@ -75,7 +76,8 @@ use hyper::body::to_bytes;
 /// your `Blueprint`:
 ///
 /// ```rust
-/// use pavex_builder::{f, Blueprint, constructor::Lifecycle};
+/// use pavex::f; 
+/// use pavex::blueprint::{Blueprint, constructor::Lifecycle};
 /// use pavex::extract::body::BodySizeLimit;
 ///
 /// pub fn body_size_limit() -> BodySizeLimit {
@@ -96,7 +98,8 @@ use hyper::body::to_bytes;
 /// You can also disable the limit entirely:  
 ///
 /// ```rust
-/// use pavex_builder::{f, Blueprint, constructor::Lifecycle};
+/// use pavex::f; 
+/// use pavex::blueprint::{Blueprint, constructor::Lifecycle};
 /// use pavex::extract::body::BodySizeLimit;
 ///
 /// pub fn body_size_limit() -> BodySizeLimit {
@@ -117,7 +120,8 @@ use hyper::body::to_bytes;
 /// You can leverage nesting for this purpose:
 ///
 /// ```rust
-/// use pavex_builder::{f, Blueprint, constructor::Lifecycle, router::{GET, POST}};
+/// use pavex::f; 
+/// use pavex::blueprint::{Blueprint, constructor::Lifecycle, router::{GET, POST}};
 /// use pavex::extract::body::BodySizeLimit;
 /// # pub fn home() -> String { todo!() }
 /// # pub fn upload() -> String { todo!() }

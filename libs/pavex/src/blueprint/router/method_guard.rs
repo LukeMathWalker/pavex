@@ -15,7 +15,7 @@ use http::Method;
 /// module ([`GET`], [`POST`], [`PATCH`], [`DELETE`], etc.).  
 /// If you want to match a list of HTTP methods, use [`MethodGuard::new`].  
 ///
-/// [`Blueprint::route`]: crate::Blueprint::route
+/// [`Blueprint::route`]: crate::blueprint::Blueprint::route
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct MethodGuard {
     // TODO: it should not be public, even if it's hidden
@@ -27,7 +27,7 @@ impl MethodGuard {
     /// Build a new [`MethodGuard`] that matches the specified list of HTTP methods.
     ///
     /// ```rust
-    /// use pavex_builder::router::MethodGuard;
+    /// use pavex::blueprint::router::MethodGuard;
     /// use pavex::http::Method;
     ///
     /// // Using an array of methods known at compile-time..

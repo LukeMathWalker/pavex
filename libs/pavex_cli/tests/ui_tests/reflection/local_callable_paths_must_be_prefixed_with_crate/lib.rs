@@ -1,4 +1,5 @@
-use pavex_builder::{f, router::GET, Blueprint};
+use pavex::blueprint::{router::GET, Blueprint};
+use pavex::f;
 
 pub fn handler() -> pavex::response::Response {
     todo!()

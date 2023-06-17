@@ -1,6 +1,6 @@
 //! This crate provides a custom graphical Miette handler for the Pavex project.
 //!
-//! The handler is largely based on the [`miette::handlers::GraphicalHandler`], with
+//! The handler is largely based on the `miette::handlers::GraphicalHandler`, with
 //! one key difference: we only report the code snippets from the related errors associated
 //! with a report.
 //! We have also done other minor tweaks to the graphical layout to better suit our needs.

@@ -7,7 +7,7 @@ edition = "2021"
 vergen = { version = "8.0.0", features = [ "build", "git", "gitcl" ]}
 
 [dependencies]
-pavex_builder = { path = "../pavex_builder" }
+pavex = { path = "../pavex" }
 syn = { version = "2", features = ["full", "extra-traits", "visit"] }
 rustdoc-types = "0.22.0"
 serde_json = "1"

@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
-use pavex_builder::{f, router::GET, Blueprint};
+use pavex::blueprint::{router::GET, Blueprint};
+use pavex::f;
 
 pub fn stream_file(_inner: PathBuf) -> pavex::response::Response {
     todo!()

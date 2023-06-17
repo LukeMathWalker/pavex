@@ -1,7 +1,8 @@
 //! Extract data from the URL of incoming requests.
 //!
 //! ```rust
-//! use pavex_builder::{f, router::GET, Blueprint, constructor::Lifecycle};
+//! use pavex::f;
+//! use pavex::blueprint::{router::GET, Blueprint, constructor::Lifecycle};
 //! use pavex::extract::route::RouteParams;
 //!
 //! fn blueprint() -> Blueprint{
@@ -44,7 +45,8 @@
 /// # Example
 ///
 /// ```rust
-/// use pavex_builder::{f, router::GET, Blueprint, constructor::Lifecycle};
+/// use pavex::f;
+/// use pavex::blueprint::{router::GET, Blueprint, constructor::Lifecycle};
 /// use pavex::extract::route::RouteParams;
 ///
 /// fn blueprint() -> Blueprint { ///

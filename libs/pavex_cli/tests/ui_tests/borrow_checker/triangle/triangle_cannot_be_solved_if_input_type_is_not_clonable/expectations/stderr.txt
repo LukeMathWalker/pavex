@@ -9,12 +9,12 @@
   [31m│[0m         You can do so by invoking `.cloning(CloningStrategy::CloneIfNecessary)`
   [31m│[0m         on the type returned by `.constructor`.
   [31m│[0m        ☞
-  [31m│[0m           ╭─[[36;1;4msrc/lib.rs[0m:36:1]
-  [31m│[0m        [2m36[0m │     // A is a singleton, so it will be an input parameter of the dependency closure for `handler`
-  [31m│[0m        [2m37[0m │     bp.constructor(f!(crate::a), Lifecycle::Singleton);
+  [31m│[0m           ╭─[[36;1;4msrc/lib.rs[0m:37:1]
+  [31m│[0m        [2m37[0m │     // A is a singleton, so it will be an input parameter of the dependency closure for `handler`
+  [31m│[0m        [2m38[0m │     bp.constructor(f!(crate::a), Lifecycle::Singleton);
   [31m│[0m           · [35;1m                   ──────┬─────[0m
   [31m│[0m           ·                          [35;1m╰── [35;1mThe constructor was registered here[0m[0m
-  [31m│[0m        [2m38[0m │     bp.constructor(f!(crate::b), Lifecycle::RequestScoped);
+  [31m│[0m        [2m39[0m │     bp.constructor(f!(crate::b), Lifecycle::RequestScoped);
   [31m│[0m           ╰────
   [31m│[0m   [36mhelp:[0m Considering changing the signature of `app::b`.
   [31m│[0m         It takes `app::A` by value. Would a shared reference, `&app::A`, be

@@ -11,7 +11,7 @@ use indexmap::IndexSet;
 use itertools::Itertools;
 use quote::format_ident;
 
-use pavex_builder::reflection::RawCallableIdentifiers;
+use pavex::blueprint::reflection::RawCallableIdentifiers;
 
 use crate::language::callable_path::{CallPathGenericArgument, CallPathLifetime, CallPathType};
 use crate::language::resolved_type::{GenericArgument, Lifetime, ScalarPrimitive, Slice};
