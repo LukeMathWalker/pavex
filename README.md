@@ -79,8 +79,8 @@ flowchart TB
     client[Client]
     logger["logger() -> Logger"]
     state[ServerState]
-    path["extract_path(&Request)->PathBuf"]
-    request[Request]
+    path["extract_path(&RequestHead)->PathBuf"]
+    request[RequestHead]
 
     state --> client
     client --&--> handler
