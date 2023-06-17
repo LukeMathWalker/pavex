@@ -11,8 +11,12 @@
 ## What is Pavex?
 
 Pavex is a new framework to build APIs with Rust.  
-It is remarkably different: you can think of Pavex as a **specialised compiler** for building Rust APIs.  
 
+Pavex aims to have it all: great ergonomics and high performance.   
+The same **productivity boost** of Ruby on Rails, Spring or ASP.NET Core.  
+As **fast** as a handwritten solution that strips away all abstractions.
+
+Pavex takes a significantly different approach compared to the current generation of Rust web frameworks: you can think of Pavex as a **specialised compiler** for building Rust APIs.  
 It takes as input a high-level description of what your application should do, a `Blueprint`:
 
 ```rust
@@ -26,12 +30,8 @@ pub fn app_blueprint() -> Blueprint {
 }
 ```
 
-It generates as output the source code for a fully-fleshed web-server, behaving according to your specification, ready
-to be launched.
-
-Pavex aims to have it all: great ergonomics and high performance.   
-As **easy** to use as Rails, Django or ASP.NET Core.  
-As **fast** as a handwritten solution that strips away all abstractions.
+It generates as output a standalone API server SDK crate, behaving according to your specification, ready
+to be configured and launched.
 
 ### Great error messages
 
