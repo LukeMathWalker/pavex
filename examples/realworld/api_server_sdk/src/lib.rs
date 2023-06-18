@@ -557,7 +557,7 @@ pub async fn route_handler_12(
     let v1 = pavex::extract::route::RouteParams::extract(v0);
     match v1 {
         Ok(v2) => {
-            let v3 = conduit_core::api::profiles::get_user(v2);
+            let v3 = conduit_core::api::profiles::get_profile(v2);
             <http::StatusCode as pavex::response::IntoResponse>::into_response(v3)
         }
         Err(v2) => {
@@ -576,7 +576,7 @@ pub async fn route_handler_13(
     let v1 = pavex::extract::route::RouteParams::extract(v0);
     match v1 {
         Ok(v2) => {
-            let v3 = conduit_core::api::profiles::unfollow_user(v2);
+            let v3 = conduit_core::api::profiles::unfollow_profile(v2);
             <http::StatusCode as pavex::response::IntoResponse>::into_response(v3)
         }
         Err(v2) => {
@@ -595,7 +595,7 @@ pub async fn route_handler_14(
     let v1 = pavex::extract::route::RouteParams::extract(v0);
     match v1 {
         Ok(v2) => {
-            let v3 = conduit_core::api::profiles::follow_user(v2);
+            let v3 = conduit_core::api::profiles::follow_profile(v2);
             <http::StatusCode as pavex::response::IntoResponse>::into_response(v3)
         }
         Err(v2) => {

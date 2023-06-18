@@ -427,7 +427,7 @@
                         request_handler: (
                             callable: (
                                 registered_at: "conduit_core",
-                                import_path: "crate::api::profiles::get_user",
+                                import_path: "crate::api::profiles::get_profile",
                             ),
                             location: (
                                 line: 7,
@@ -447,7 +447,7 @@
                         request_handler: (
                             callable: (
                                 registered_at: "conduit_core",
-                                import_path: "crate::api::profiles::follow_user",
+                                import_path: "crate::api::profiles::follow_profile",
                             ),
                             location: (
                                 line: 8,
@@ -467,7 +467,7 @@
                         request_handler: (
                             callable: (
                                 registered_at: "conduit_core",
-                                import_path: "crate::api::profiles::unfollow_user",
+                                import_path: "crate::api::profiles::unfollow_profile",
                             ),
                             location: (
                                 line: 13,
