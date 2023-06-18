@@ -3,7 +3,10 @@ use pavex::{
     hyper::StatusCode,
 };
 
+use crate::schemas::Article;
+
 #[derive(Debug, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UpdateArticleBody {
     pub title: Option<String>,
     pub description: Option<String>,
@@ -14,6 +17,12 @@ pub struct UpdateArticleBody {
 #[RouteParams]
 pub struct UpdateArticleRoute {
     pub slug: String,
+}
+
+#[derive(Debug, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateArticleResponse {
+    pub article: Article,
 }
 
 pub fn update_article(
