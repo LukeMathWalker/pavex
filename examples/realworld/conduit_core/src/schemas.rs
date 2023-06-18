@@ -1,6 +1,8 @@
 //! A collection of typed schemas that are used across multiple
 //! routes as a fragment of the incoming request or the returned response.
 
+use time::OffsetDateTime;
+
 #[derive(Debug, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Article {
@@ -9,8 +11,10 @@ pub struct Article {
     pub description: String,
     pub body: String,
     pub tag_list: Vec<String>,
-    pub created_at: String,
-    pub updated_at: String,
+    #[serde(with = "time::serde::rfc3339")]
+    pub created_at: OffsetDateTime,
+    #[serde(with = "time::serde::rfc3339")]
+    pub updated_at: OffsetDateTime,
     pub favorited: bool,
     pub favorites_count: u64,
     pub author: Profile,
@@ -20,8 +24,10 @@ pub struct Article {
 #[serde(rename_all = "camelCase")]
 pub struct Comment {
     pub id: u64,
-    pub created_at: String,
-    pub updated_at: String,
+    #[serde(with = "time::serde::rfc3339")]
+    pub created_at: OffsetDateTime,
+    #[serde(with = "time::serde::rfc3339")]
+    pub updated_at: OffsetDateTime,
     pub body: String,
     pub author: Profile,
 }
