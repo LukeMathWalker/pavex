@@ -18,6 +18,16 @@ pub struct Article {
 
 #[derive(Debug, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct Comment {
+    pub id: u64,
+    pub created_at: String,
+    pub updated_at: String,
+    pub body: String,
+    pub author: Profile,
+}
+
+#[derive(Debug, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Profile {
     pub username: String,
     pub bio: String,
