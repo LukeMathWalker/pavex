@@ -4,10 +4,10 @@ use pavex::f;
 
 pub(crate) fn users_bp() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.route(POST, "/users", f!(crate::api::users::signup));
-    bp.route(POST, "/users/login", f!(crate::api::users::login));
-    bp.route(GET, "/user", f!(crate::api::users::get_user));
-    bp.route(PUT, "/user", f!(crate::api::users::update_user));
+    bp.route(POST, "/users", f!(crate::routes::users::signup));
+    bp.route(POST, "/users/login", f!(crate::routes::users::login));
+    bp.route(GET, "/user", f!(crate::routes::users::get_user));
+    bp.route(PUT, "/user", f!(crate::routes::users::update_user));
     bp
 }
 

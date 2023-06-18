@@ -254,7 +254,7 @@ async fn route_request(
     }
 }
 pub async fn route_handler_0() -> pavex::response::Response {
-    let v0 = conduit_core::api::status::ping();
+    let v0 = conduit_core::routes::status::ping();
     <http::StatusCode as pavex::response::IntoResponse>::into_response(v0)
 }
 pub async fn route_handler_1(
@@ -263,7 +263,7 @@ pub async fn route_handler_1(
     let v1 = pavex::extract::query::QueryParams::extract(v0);
     match v1 {
         Ok(v2) => {
-            let v3 = conduit_core::api::articles::list_articles(v2);
+            let v3 = conduit_core::routes::articles::list_articles(v2);
             <http::StatusCode as pavex::response::IntoResponse>::into_response(v3)
         }
         Err(v2) => {
@@ -287,7 +287,7 @@ pub async fn route_handler_2(
             let v5 = pavex::extract::body::JsonBody::extract(v1, &v4);
             match v5 {
                 Ok(v6) => {
-                    let v7 = conduit_core::api::articles::publish_article(v6);
+                    let v7 = conduit_core::routes::articles::publish_article(v6);
                     <http::StatusCode as pavex::response::IntoResponse>::into_response(
                         v7,
                     )
@@ -318,7 +318,7 @@ pub async fn route_handler_3(
     let v1 = pavex::extract::route::RouteParams::extract(v0);
     match v1 {
         Ok(v2) => {
-            let v3 = conduit_core::api::articles::delete_article(v2);
+            let v3 = conduit_core::routes::articles::delete_article(v2);
             <http::StatusCode as pavex::response::IntoResponse>::into_response(v3)
         }
         Err(v2) => {
@@ -337,7 +337,7 @@ pub async fn route_handler_4(
     let v1 = pavex::extract::route::RouteParams::extract(v0);
     match v1 {
         Ok(v2) => {
-            let v3 = conduit_core::api::articles::get_article(v2);
+            let v3 = conduit_core::routes::articles::get_article(v2);
             <http::StatusCode as pavex::response::IntoResponse>::into_response(v3)
         }
         Err(v2) => {
@@ -365,7 +365,7 @@ pub async fn route_handler_5(
                     let v8 = pavex::extract::route::RouteParams::extract(v1);
                     match v8 {
                         Ok(v9) => {
-                            let v10 = conduit_core::api::articles::update_article(
+                            let v10 = conduit_core::routes::articles::update_article(
                                 v9,
                                 v7,
                             );
@@ -409,7 +409,7 @@ pub async fn route_handler_6(
     let v1 = pavex::extract::route::RouteParams::extract(v0);
     match v1 {
         Ok(v2) => {
-            let v3 = conduit_core::api::articles::list_comments(v2);
+            let v3 = conduit_core::routes::articles::list_comments(v2);
             <http::StatusCode as pavex::response::IntoResponse>::into_response(v3)
         }
         Err(v2) => {
@@ -437,7 +437,7 @@ pub async fn route_handler_7(
                     let v8 = pavex::extract::route::RouteParams::extract(v1);
                     match v8 {
                         Ok(v9) => {
-                            let v10 = conduit_core::api::articles::publish_comment(
+                            let v10 = conduit_core::routes::articles::publish_comment(
                                 v9,
                                 v7,
                             );
@@ -481,7 +481,7 @@ pub async fn route_handler_8(
     let v1 = pavex::extract::route::RouteParams::extract(v0);
     match v1 {
         Ok(v2) => {
-            let v3 = conduit_core::api::articles::delete_comment(v2);
+            let v3 = conduit_core::routes::articles::delete_comment(v2);
             <http::StatusCode as pavex::response::IntoResponse>::into_response(v3)
         }
         Err(v2) => {
@@ -500,7 +500,7 @@ pub async fn route_handler_9(
     let v1 = pavex::extract::route::RouteParams::extract(v0);
     match v1 {
         Ok(v2) => {
-            let v3 = conduit_core::api::articles::unfavorite_article(v2);
+            let v3 = conduit_core::routes::articles::unfavorite_article(v2);
             <http::StatusCode as pavex::response::IntoResponse>::into_response(v3)
         }
         Err(v2) => {
@@ -519,7 +519,7 @@ pub async fn route_handler_10(
     let v1 = pavex::extract::route::RouteParams::extract(v0);
     match v1 {
         Ok(v2) => {
-            let v3 = conduit_core::api::articles::favorite_article(v2);
+            let v3 = conduit_core::routes::articles::favorite_article(v2);
             <http::StatusCode as pavex::response::IntoResponse>::into_response(v3)
         }
         Err(v2) => {
@@ -538,7 +538,7 @@ pub async fn route_handler_11(
     let v1 = pavex::extract::query::QueryParams::extract(v0);
     match v1 {
         Ok(v2) => {
-            let v3 = conduit_core::api::articles::get_feed(v2);
+            let v3 = conduit_core::routes::articles::get_feed(v2);
             <http::StatusCode as pavex::response::IntoResponse>::into_response(v3)
         }
         Err(v2) => {
@@ -557,7 +557,7 @@ pub async fn route_handler_12(
     let v1 = pavex::extract::route::RouteParams::extract(v0);
     match v1 {
         Ok(v2) => {
-            let v3 = conduit_core::api::profiles::get_user(v2);
+            let v3 = conduit_core::routes::profiles::get_profile(v2);
             <http::StatusCode as pavex::response::IntoResponse>::into_response(v3)
         }
         Err(v2) => {
@@ -576,7 +576,7 @@ pub async fn route_handler_13(
     let v1 = pavex::extract::route::RouteParams::extract(v0);
     match v1 {
         Ok(v2) => {
-            let v3 = conduit_core::api::profiles::unfollow_user(v2);
+            let v3 = conduit_core::routes::profiles::unfollow_profile(v2);
             <http::StatusCode as pavex::response::IntoResponse>::into_response(v3)
         }
         Err(v2) => {
@@ -595,7 +595,7 @@ pub async fn route_handler_14(
     let v1 = pavex::extract::route::RouteParams::extract(v0);
     match v1 {
         Ok(v2) => {
-            let v3 = conduit_core::api::profiles::follow_user(v2);
+            let v3 = conduit_core::routes::profiles::follow_profile(v2);
             <http::StatusCode as pavex::response::IntoResponse>::into_response(v3)
         }
         Err(v2) => {
@@ -609,11 +609,11 @@ pub async fn route_handler_14(
     }
 }
 pub async fn route_handler_15() -> pavex::response::Response {
-    let v0 = conduit_core::api::tags::get_tags();
+    let v0 = conduit_core::routes::tags::get_tags();
     <http::StatusCode as pavex::response::IntoResponse>::into_response(v0)
 }
 pub async fn route_handler_16() -> pavex::response::Response {
-    let v0 = conduit_core::api::users::get_user();
+    let v0 = conduit_core::routes::users::get_user();
     <http::StatusCode as pavex::response::IntoResponse>::into_response(v0)
 }
 pub async fn route_handler_17(
@@ -627,7 +627,7 @@ pub async fn route_handler_17(
             let v5 = pavex::extract::body::JsonBody::extract(v1, &v4);
             match v5 {
                 Ok(v6) => {
-                    let v7 = conduit_core::api::users::update_user(v6);
+                    let v7 = conduit_core::routes::users::update_user(v6);
                     <http::StatusCode as pavex::response::IntoResponse>::into_response(
                         v7,
                     )
@@ -663,7 +663,7 @@ pub async fn route_handler_18(
             let v5 = pavex::extract::body::JsonBody::extract(v1, &v4);
             match v5 {
                 Ok(v6) => {
-                    let v7 = conduit_core::api::users::signup(v6);
+                    let v7 = conduit_core::routes::users::signup(v6);
                     <http::StatusCode as pavex::response::IntoResponse>::into_response(
                         v7,
                     )
@@ -699,7 +699,7 @@ pub async fn route_handler_19(
             let v5 = pavex::extract::body::JsonBody::extract(v1, &v4);
             match v5 {
                 Ok(v6) => {
-                    let v7 = conduit_core::api::users::login(v6);
+                    let v7 = conduit_core::routes::users::login(v6);
                     <http::StatusCode as pavex::response::IntoResponse>::into_response(
                         v7,
                     )

@@ -15,8 +15,8 @@ pub fn api_blueprint() -> Blueprint {
     bp.nest_at("/articles", articles::articles_bp());
     bp.nest_at("/profiles", profiles::profiles_bp());
     bp.nest(users::users_bp());
-    bp.route(GET, "/api/ping", f!(crate::api::status::ping));
-    bp.route(GET, "/tags", f!(crate::api::tags::get_tags));
+    bp.route(GET, "/api/ping", f!(crate::routes::status::ping));
+    bp.route(GET, "/tags", f!(crate::routes::tags::get_tags));
     bp
 }
 

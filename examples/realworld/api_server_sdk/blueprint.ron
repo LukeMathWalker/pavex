@@ -2,7 +2,7 @@
     creation_location: (
         line: 13,
         column: 18,
-        file: "conduit_core/src/api/mod.rs",
+        file: "conduit_core/src/routes/mod.rs",
     ),
     constructors: [
         (
@@ -14,7 +14,7 @@
                 location: (
                     line: 26,
                     column: 8,
-                    file: "conduit_core/src/api/mod.rs",
+                    file: "conduit_core/src/routes/mod.rs",
                 ),
             ),
             lifecycle: RequestScoped,
@@ -27,7 +27,7 @@
                 location: (
                     line: 30,
                     column: 6,
-                    file: "conduit_core/src/api/mod.rs",
+                    file: "conduit_core/src/routes/mod.rs",
                 ),
             )),
         ),
@@ -40,7 +40,7 @@
                 location: (
                     line: 35,
                     column: 8,
-                    file: "conduit_core/src/api/mod.rs",
+                    file: "conduit_core/src/routes/mod.rs",
                 ),
             ),
             lifecycle: RequestScoped,
@@ -53,7 +53,7 @@
                 location: (
                     line: 39,
                     column: 6,
-                    file: "conduit_core/src/api/mod.rs",
+                    file: "conduit_core/src/routes/mod.rs",
                 ),
             )),
         ),
@@ -66,7 +66,7 @@
                 location: (
                     line: 44,
                     column: 8,
-                    file: "conduit_core/src/api/mod.rs",
+                    file: "conduit_core/src/routes/mod.rs",
                 ),
             ),
             lifecycle: RequestScoped,
@@ -79,7 +79,7 @@
                 location: (
                     line: 48,
                     column: 6,
-                    file: "conduit_core/src/api/mod.rs",
+                    file: "conduit_core/src/routes/mod.rs",
                 ),
             )),
         ),
@@ -92,7 +92,7 @@
                 location: (
                     line: 51,
                     column: 8,
-                    file: "conduit_core/src/api/mod.rs",
+                    file: "conduit_core/src/routes/mod.rs",
                 ),
             ),
             lifecycle: RequestScoped,
@@ -105,7 +105,7 @@
                 location: (
                     line: 55,
                     column: 6,
-                    file: "conduit_core/src/api/mod.rs",
+                    file: "conduit_core/src/routes/mod.rs",
                 ),
             )),
         ),
@@ -118,7 +118,7 @@
                 location: (
                     line: 58,
                     column: 8,
-                    file: "conduit_core/src/api/mod.rs",
+                    file: "conduit_core/src/routes/mod.rs",
                 ),
             ),
             lifecycle: RequestScoped,
@@ -137,12 +137,12 @@
             request_handler: (
                 callable: (
                     registered_at: "conduit_core",
-                    import_path: "crate::api::status::ping",
+                    import_path: "crate::routes::status::ping",
                 ),
                 location: (
                     line: 18,
                     column: 8,
-                    file: "conduit_core/src/api/mod.rs",
+                    file: "conduit_core/src/routes/mod.rs",
                 ),
             ),
             error_handler: None,
@@ -157,12 +157,12 @@
             request_handler: (
                 callable: (
                     registered_at: "conduit_core",
-                    import_path: "crate::api::tags::get_tags",
+                    import_path: "crate::routes::tags::get_tags",
                 ),
                 location: (
                     line: 19,
                     column: 8,
-                    file: "conduit_core/src/api/mod.rs",
+                    file: "conduit_core/src/routes/mod.rs",
                 ),
             ),
             error_handler: None,
@@ -174,7 +174,7 @@
                 creation_location: (
                     line: 6,
                     column: 18,
-                    file: "conduit_core/src/api/articles/mod.rs",
+                    file: "conduit_core/src/routes/articles/mod.rs",
                 ),
                 constructors: [],
                 routes: [
@@ -188,12 +188,12 @@
                         request_handler: (
                             callable: (
                                 registered_at: "conduit_core",
-                                import_path: "crate::api::articles::list_articles",
+                                import_path: "crate::routes::articles::list_articles",
                             ),
                             location: (
                                 line: 7,
                                 column: 8,
-                                file: "conduit_core/src/api/articles/mod.rs",
+                                file: "conduit_core/src/routes/articles/mod.rs",
                             ),
                         ),
                         error_handler: None,
@@ -208,12 +208,12 @@
                         request_handler: (
                             callable: (
                                 registered_at: "conduit_core",
-                                import_path: "crate::api::articles::publish_article",
+                                import_path: "crate::routes::articles::publish_article",
                             ),
                             location: (
                                 line: 8,
                                 column: 8,
-                                file: "conduit_core/src/api/articles/mod.rs",
+                                file: "conduit_core/src/routes/articles/mod.rs",
                             ),
                         ),
                         error_handler: None,
@@ -228,12 +228,12 @@
                         request_handler: (
                             callable: (
                                 registered_at: "conduit_core",
-                                import_path: "crate::api::articles::get_feed",
+                                import_path: "crate::routes::articles::get_feed",
                             ),
                             location: (
                                 line: 9,
                                 column: 8,
-                                file: "conduit_core/src/api/articles/mod.rs",
+                                file: "conduit_core/src/routes/articles/mod.rs",
                             ),
                         ),
                         error_handler: None,
@@ -248,12 +248,12 @@
                         request_handler: (
                             callable: (
                                 registered_at: "conduit_core",
-                                import_path: "crate::api::articles::get_article",
+                                import_path: "crate::routes::articles::get_article",
                             ),
                             location: (
                                 line: 10,
                                 column: 8,
-                                file: "conduit_core/src/api/articles/mod.rs",
+                                file: "conduit_core/src/routes/articles/mod.rs",
                             ),
                         ),
                         error_handler: None,
@@ -268,12 +268,12 @@
                         request_handler: (
                             callable: (
                                 registered_at: "conduit_core",
-                                import_path: "crate::api::articles::delete_article",
+                                import_path: "crate::routes::articles::delete_article",
                             ),
                             location: (
                                 line: 11,
                                 column: 8,
-                                file: "conduit_core/src/api/articles/mod.rs",
+                                file: "conduit_core/src/routes/articles/mod.rs",
                             ),
                         ),
                         error_handler: None,
@@ -288,12 +288,12 @@
                         request_handler: (
                             callable: (
                                 registered_at: "conduit_core",
-                                import_path: "crate::api::articles::update_article",
+                                import_path: "crate::routes::articles::update_article",
                             ),
                             location: (
                                 line: 12,
                                 column: 8,
-                                file: "conduit_core/src/api/articles/mod.rs",
+                                file: "conduit_core/src/routes/articles/mod.rs",
                             ),
                         ),
                         error_handler: None,
@@ -308,12 +308,12 @@
                         request_handler: (
                             callable: (
                                 registered_at: "conduit_core",
-                                import_path: "crate::api::articles::unfavorite_article",
+                                import_path: "crate::routes::articles::unfavorite_article",
                             ),
                             location: (
                                 line: 13,
                                 column: 8,
-                                file: "conduit_core/src/api/articles/mod.rs",
+                                file: "conduit_core/src/routes/articles/mod.rs",
                             ),
                         ),
                         error_handler: None,
@@ -328,12 +328,12 @@
                         request_handler: (
                             callable: (
                                 registered_at: "conduit_core",
-                                import_path: "crate::api::articles::favorite_article",
+                                import_path: "crate::routes::articles::favorite_article",
                             ),
                             location: (
                                 line: 18,
                                 column: 8,
-                                file: "conduit_core/src/api/articles/mod.rs",
+                                file: "conduit_core/src/routes/articles/mod.rs",
                             ),
                         ),
                         error_handler: None,
@@ -348,12 +348,12 @@
                         request_handler: (
                             callable: (
                                 registered_at: "conduit_core",
-                                import_path: "crate::api::articles::list_comments",
+                                import_path: "crate::routes::articles::list_comments",
                             ),
                             location: (
                                 line: 23,
                                 column: 8,
-                                file: "conduit_core/src/api/articles/mod.rs",
+                                file: "conduit_core/src/routes/articles/mod.rs",
                             ),
                         ),
                         error_handler: None,
@@ -368,12 +368,12 @@
                         request_handler: (
                             callable: (
                                 registered_at: "conduit_core",
-                                import_path: "crate::api::articles::publish_comment",
+                                import_path: "crate::routes::articles::publish_comment",
                             ),
                             location: (
                                 line: 28,
                                 column: 8,
-                                file: "conduit_core/src/api/articles/mod.rs",
+                                file: "conduit_core/src/routes/articles/mod.rs",
                             ),
                         ),
                         error_handler: None,
@@ -388,12 +388,12 @@
                         request_handler: (
                             callable: (
                                 registered_at: "conduit_core",
-                                import_path: "crate::api::articles::delete_comment",
+                                import_path: "crate::routes::articles::delete_comment",
                             ),
                             location: (
                                 line: 33,
                                 column: 8,
-                                file: "conduit_core/src/api/articles/mod.rs",
+                                file: "conduit_core/src/routes/articles/mod.rs",
                             ),
                         ),
                         error_handler: None,
@@ -405,7 +405,7 @@
             nesting_location: (
                 line: 15,
                 column: 8,
-                file: "conduit_core/src/api/mod.rs",
+                file: "conduit_core/src/routes/mod.rs",
             ),
         ),
         (
@@ -413,7 +413,7 @@
                 creation_location: (
                     line: 6,
                     column: 18,
-                    file: "conduit_core/src/api/profiles/mod.rs",
+                    file: "conduit_core/src/routes/profiles/mod.rs",
                 ),
                 constructors: [],
                 routes: [
@@ -427,12 +427,12 @@
                         request_handler: (
                             callable: (
                                 registered_at: "conduit_core",
-                                import_path: "crate::api::profiles::get_user",
+                                import_path: "crate::routes::profiles::get_profile",
                             ),
                             location: (
                                 line: 7,
                                 column: 8,
-                                file: "conduit_core/src/api/profiles/mod.rs",
+                                file: "conduit_core/src/routes/profiles/mod.rs",
                             ),
                         ),
                         error_handler: None,
@@ -447,12 +447,12 @@
                         request_handler: (
                             callable: (
                                 registered_at: "conduit_core",
-                                import_path: "crate::api::profiles::follow_user",
+                                import_path: "crate::routes::profiles::follow_profile",
                             ),
                             location: (
                                 line: 8,
                                 column: 8,
-                                file: "conduit_core/src/api/profiles/mod.rs",
+                                file: "conduit_core/src/routes/profiles/mod.rs",
                             ),
                         ),
                         error_handler: None,
@@ -467,12 +467,12 @@
                         request_handler: (
                             callable: (
                                 registered_at: "conduit_core",
-                                import_path: "crate::api::profiles::unfollow_user",
+                                import_path: "crate::routes::profiles::unfollow_profile",
                             ),
                             location: (
                                 line: 13,
                                 column: 8,
-                                file: "conduit_core/src/api/profiles/mod.rs",
+                                file: "conduit_core/src/routes/profiles/mod.rs",
                             ),
                         ),
                         error_handler: None,
@@ -484,7 +484,7 @@
             nesting_location: (
                 line: 16,
                 column: 8,
-                file: "conduit_core/src/api/mod.rs",
+                file: "conduit_core/src/routes/mod.rs",
             ),
         ),
         (
@@ -492,7 +492,7 @@
                 creation_location: (
                     line: 6,
                     column: 18,
-                    file: "conduit_core/src/api/users/mod.rs",
+                    file: "conduit_core/src/routes/users/mod.rs",
                 ),
                 constructors: [],
                 routes: [
@@ -506,12 +506,12 @@
                         request_handler: (
                             callable: (
                                 registered_at: "conduit_core",
-                                import_path: "crate::api::users::signup",
+                                import_path: "crate::routes::users::signup",
                             ),
                             location: (
                                 line: 7,
                                 column: 8,
-                                file: "conduit_core/src/api/users/mod.rs",
+                                file: "conduit_core/src/routes/users/mod.rs",
                             ),
                         ),
                         error_handler: None,
@@ -526,12 +526,12 @@
                         request_handler: (
                             callable: (
                                 registered_at: "conduit_core",
-                                import_path: "crate::api::users::login",
+                                import_path: "crate::routes::users::login",
                             ),
                             location: (
                                 line: 8,
                                 column: 8,
-                                file: "conduit_core/src/api/users/mod.rs",
+                                file: "conduit_core/src/routes/users/mod.rs",
                             ),
                         ),
                         error_handler: None,
@@ -546,12 +546,12 @@
                         request_handler: (
                             callable: (
                                 registered_at: "conduit_core",
-                                import_path: "crate::api::users::get_user",
+                                import_path: "crate::routes::users::get_user",
                             ),
                             location: (
                                 line: 9,
                                 column: 8,
-                                file: "conduit_core/src/api/users/mod.rs",
+                                file: "conduit_core/src/routes/users/mod.rs",
                             ),
                         ),
                         error_handler: None,
@@ -566,12 +566,12 @@
                         request_handler: (
                             callable: (
                                 registered_at: "conduit_core",
-                                import_path: "crate::api::users::update_user",
+                                import_path: "crate::routes::users::update_user",
                             ),
                             location: (
                                 line: 10,
                                 column: 8,
-                                file: "conduit_core/src/api/users/mod.rs",
+                                file: "conduit_core/src/routes/users/mod.rs",
                             ),
                         ),
                         error_handler: None,
@@ -583,7 +583,7 @@
             nesting_location: (
                 line: 17,
                 column: 8,
-                file: "conduit_core/src/api/mod.rs",
+                file: "conduit_core/src/routes/mod.rs",
             ),
         ),
     ],

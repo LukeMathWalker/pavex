@@ -1,5 +1,5 @@
 use cargo_px_env::generated_pkg_manifest_path;
-use conduit_core::api::api_blueprint;
+use conduit_core::routes::api_blueprint;
 use pavex_cli_client::Client;
 use std::error::Error;
 
