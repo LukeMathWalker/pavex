@@ -4,16 +4,16 @@ use pavex::f;
 
 pub(crate) fn profiles_bp() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.route(GET, "/:username", f!(crate::api::profiles::get_profile));
+    bp.route(GET, "/:username", f!(crate::routes::profiles::get_profile));
     bp.route(
         POST,
         "/:username/follow",
-        f!(crate::api::profiles::follow_profile),
+        f!(crate::routes::profiles::follow_profile),
     );
     bp.route(
         DELETE,
         "/:username/follow",
-        f!(crate::api::profiles::unfollow_profile),
+        f!(crate::routes::profiles::unfollow_profile),
     );
     bp
 }

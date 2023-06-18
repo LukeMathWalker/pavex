@@ -34,3 +34,13 @@ pub struct Profile {
     pub image: String,
     pub following: bool,
 }
+
+#[derive(Debug, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct User {
+    pub email: String,
+    pub token: String,
+    pub username: String,
+    pub bio: String,
+    pub image: String,
+}
