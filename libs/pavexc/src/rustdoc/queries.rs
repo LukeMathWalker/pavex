@@ -107,7 +107,19 @@ impl CrateCollection {
     where
         I: Iterator<Item = PackageId>,
     {
-        let package_ids = self.disk_cache.get_access_log(&self.project_fingerprint)?;
+        let package_ids = self
+            .disk_cache
+            .get_access_log(&self.project_fingerprint)
+            .unwrap_or_else(|e| {
+                tracing::warn!(
+                    error.msg = tracing::field::display(&e),
+                    error.error_chain = tracing::field::debug(&e),
+                    "Failed to retrieve the crate access log from the on-disk cache"
+                );
+                // This is an optimisation, therefore we should not
+                // fail if the retrieval fails.
+                BTreeSet::new()
+            });
         let package_ids = package_ids
             .into_iter()
             .chain(extra_package_ids)
@@ -163,7 +175,10 @@ impl CrateCollection {
         // so we parallelize the operation.
         let package_graph = self.package_graph.clone();
         let cache = self.disk_cache.clone();
-        let map_op = |id| get_if_cached(id, package_graph.clone(), cache.clone());
+        let tracing_span = Span::current().clone();
+        let map_op = move |id| {
+            tracing_span.in_scope(|| get_if_cached(id, package_graph.clone(), cache.clone()))
+        };
 
         let mut to_be_computed = vec![];
 

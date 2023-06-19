@@ -12,6 +12,7 @@ use anyhow::Context;
 use guppy::graph::PackageGraph;
 use guppy::{PackageId, Version};
 use indexmap::IndexSet;
+use serde::Deserialize;
 
 use crate::rustdoc::package_id_spec::PackageIdSpecification;
 use crate::rustdoc::utils::normalize_crate_name;
@@ -161,9 +162,11 @@ where
             .map(|(package_id, package_spec)| {
                 let krate = load_json_docs(target_directory, &package_spec);
                 (package_id, krate)
-            }).collect::<Vec<_>>() {
-                results.insert(package_id, krate?);
-            }
+            })
+            .collect::<Vec<_>>()
+        {
+            results.insert(package_id, krate?);
+        }
     }
     Ok(results)
 }
@@ -240,7 +243,12 @@ fn load_json_docs(
         "Failed to open the file containing the output of a `cargo rustdoc` invocation.",
     )?;
     let reader = BufReader::new(file);
-    let krate = serde_json::from_reader::<_, rustdoc_types::Crate>(reader).with_context(|| {
+    let mut deserializer = serde_json::Deserializer::from_reader(reader);
+    // The documention for some crates (e.g. typenum) causes a "recursion limit exceeded" when 
+    // deserializing their docs using the default recursion limit.
+    deserializer.disable_recursion_limit();
+    let deserializer = serde_stacker::Deserializer::new(&mut deserializer);
+    let krate = rustdoc_types::Crate::deserialize(deserializer).with_context(|| {
         format!(
             "Failed to deserialize the output of a `cargo rustdoc` invocation (`{}`).",
             json_path.to_string_lossy()
