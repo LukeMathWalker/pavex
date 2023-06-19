@@ -16,6 +16,9 @@ hyper = "0.14"
 # Configuration
 figment = { version = "0.10", features = ["env", "yaml"] }
 serde = { version = "1", features = ["derive"]}
+secrecy = "0.8"
+serde-aux = "4"
+sqlx = { version = "0.7.0-alpha.3", features = [ "runtime-tokio", "tls-rustls", "migrate", "uuid", "macros", "time", "postgres" ] }
 
 # Telemetry
 tracing = "0.1"

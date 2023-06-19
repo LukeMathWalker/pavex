@@ -16,8 +16,8 @@ async fn main() -> anyhow::Result<()> {
     // that will cause the application to exit.
     if let Err(e) = _main().await {
         tracing::error!(
-            error.msg = %e, 
-            error.error_chain = ?e, 
+            error.msg = %e,
+            error.error_chain = ?e,
             "The application is exiting due to an error"
         )
     }
@@ -27,7 +27,9 @@ async fn main() -> anyhow::Result<()> {
 
 async fn _main() -> anyhow::Result<()> {
     let config = load_configuration()?;
-    let application_state = build_application_state().await;
+    let application_state = build_application_state(config.database.connection_options())
+        .await
+        .unwrap();
 
     let tcp_listener = config
         .server

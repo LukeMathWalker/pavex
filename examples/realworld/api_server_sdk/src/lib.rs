@@ -5,12 +5,29 @@
 use std as alloc;
 struct ServerState {
     router: pavex::routing::Router<u32>,
-    #[allow(dead_code)]
     application_state: ApplicationState,
 }
-pub struct ApplicationState {}
-pub async fn build_application_state() -> crate::ApplicationState {
-    crate::ApplicationState {}
+pub struct ApplicationState {
+    s0: sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
+}
+#[derive(Debug)]
+pub enum ApplicationStateError {
+    CreateDbPool(sqlx_core::Error),
+}
+pub async fn build_application_state(
+    v0: sqlx_postgres::PgConnectOptions,
+) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
+    let v1 = conduit_core::routes::create_db_pool(v0).await;
+    match v1 {
+        Ok(v2) => {
+            let v3 = crate::ApplicationState { s0: v2 };
+            core::result::Result::Ok(v3)
+        }
+        Err(v2) => {
+            let v3 = crate::ApplicationStateError::CreateDbPool(v2);
+            core::result::Result::Err(v3)
+        }
+    }
 }
 pub async fn run(
     server_builder: pavex::hyper::server::Builder<
@@ -240,7 +257,12 @@ async fn route_request(
         12u32 => {
             match &request_head.method {
                 &pavex::http::Method::POST => {
-                    route_handler_19(request_body, &request_head).await
+                    route_handler_19(
+                            &request_head,
+                            request_body,
+                            &server_state.application_state.s0,
+                        )
+                        .await
                 }
                 _ => {
                     let header_value = pavex::http::HeaderValue::from_static("POST");
@@ -689,38 +711,39 @@ pub async fn route_handler_18(
     }
 }
 pub async fn route_handler_19(
-    v0: hyper::Body,
-    v1: &pavex::request::RequestHead,
+    v0: &pavex::request::RequestHead,
+    v1: hyper::Body,
+    v2: &sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
 ) -> pavex::response::Response {
-    let v2 = <pavex::extract::body::BodySizeLimit as std::default::Default>::default();
-    let v3 = pavex::extract::body::BufferedBody::extract(v1, v0, v2).await;
-    match v3 {
-        Ok(v4) => {
-            let v5 = pavex::extract::body::JsonBody::extract(v1, &v4);
-            match v5 {
-                Ok(v6) => {
-                    let v7 = conduit_core::routes::users::login(v6);
+    let v3 = <pavex::extract::body::BodySizeLimit as std::default::Default>::default();
+    let v4 = pavex::extract::body::BufferedBody::extract(v0, v1, v3).await;
+    match v4 {
+        Ok(v5) => {
+            let v6 = pavex::extract::body::JsonBody::extract(v0, &v5);
+            match v6 {
+                Ok(v7) => {
+                    let v8 = conduit_core::routes::users::login(v7, v2).await;
                     <http::StatusCode as pavex::response::IntoResponse>::into_response(
-                        v7,
+                        v8,
                     )
                 }
-                Err(v6) => {
-                    let v7 = pavex::extract::body::errors::ExtractJsonBodyError::into_response(
-                        &v6,
+                Err(v7) => {
+                    let v8 = pavex::extract::body::errors::ExtractJsonBodyError::into_response(
+                        &v7,
                     );
                     <pavex::response::Response<
                         http_body::Full<bytes::Bytes>,
-                    > as pavex::response::IntoResponse>::into_response(v7)
+                    > as pavex::response::IntoResponse>::into_response(v8)
                 }
             }
         }
-        Err(v4) => {
-            let v5 = pavex::extract::body::errors::ExtractBufferedBodyError::into_response(
-                &v4,
+        Err(v5) => {
+            let v6 = pavex::extract::body::errors::ExtractBufferedBodyError::into_response(
+                &v5,
             );
             <pavex::response::Response<
                 http_body::Full<bytes::Bytes>,
-            > as pavex::response::IntoResponse>::into_response(v5)
+            > as pavex::response::IntoResponse>::into_response(v6)
         }
     }
 }

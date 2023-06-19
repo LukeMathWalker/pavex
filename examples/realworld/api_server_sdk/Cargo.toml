@@ -14,3 +14,5 @@ http = { version = "0.2.9", package = "http" }
 http_body = { version = "0.4.5", package = "http-body" }
 hyper = { version = "0.14.26", package = "hyper" }
 pavex = { version = "0.1.0", path = "../../../libs/pavex", package = "pavex" }
+sqlx_core = { version = "0.7.0-alpha.3", package = "sqlx-core" }
+sqlx_postgres = { version = "0.7.0-alpha.3", package = "sqlx-postgres" }

@@ -1,5 +1,6 @@
 use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
 use pavex::f;
+use sqlx::postgres::PgConnectOptions;
 
 pub mod articles;
 pub mod profiles;
@@ -12,6 +13,8 @@ pub mod users;
 pub fn api_blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     register_common_constructors(&mut bp);
+    register_db_constructor(&mut bp);
+
     bp.nest_at("/articles", articles::articles_bp());
     bp.nest_at("/profiles", profiles::profiles_bp());
     bp.nest(users::users_bp());
@@ -59,4 +62,12 @@ fn register_common_constructors(bp: &mut Blueprint) {
         f!(<pavex::extract::body::BodySizeLimit as std::default::Default>::default),
         Lifecycle::RequestScoped,
     );
+}
+
+fn register_db_constructor(bp: &mut Blueprint) {
+    bp.constructor(f!(crate::routes::create_db_pool), Lifecycle::Singleton);
+}
+
+pub async fn create_db_pool(options: PgConnectOptions) -> Result<sqlx::PgPool, sqlx::Error> {
+    sqlx::PgPool::connect_with(options).await
 }
