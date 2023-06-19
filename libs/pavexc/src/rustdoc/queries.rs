@@ -813,23 +813,21 @@ fn index_local_types<'a>(
                     None => {
                         if let Some(imported_summary) = krate.paths.get(imported_id) {
                             debug_assert!(imported_summary.crate_id != 0);
-                            if let ItemKind::Module = imported_summary.kind {
-                                // We are looking at a public re-export of another crate (e.g. `pub use hyper;`)
-                                // or one of its modules.
-                                // Due to how re-exports are handled in `rustdoc`, the re-exported
-                                // items inside that foreign module will not be found in the `index`
-                                // for this crate.
-                                // We intentionally add foreign items to the index to get a "complete"
-                                // picture of all the types available in this crate.
-                                let external_crate_id = imported_summary.crate_id;
-                                let re_exported_path = &imported_summary.path;
-                                current_path.push(&i.name);
+                            // We are looking at a public re-export of another crate 
+                            // (e.g. `pub use hyper;`), one of its modules or one of its items.
+                            // Due to how re-exports are handled in `rustdoc`, the re-exported
+                            // items inside that foreign module will not be found in the `index`
+                            // for this crate.
+                            // We intentionally add foreign items to the index to get a "complete"
+                            // picture of all the types available in this crate.
+                            let external_crate_id = imported_summary.crate_id;
+                            let re_exported_path = &imported_summary.path;
+                            current_path.push(&i.name);
 
-                                re_exports.insert(
-                                    current_path.into_iter().map(|s| s.to_string()).collect(),
-                                    (re_exported_path.to_owned(), external_crate_id),
-                                );
-                            }
+                            re_exports.insert(
+                                current_path.into_iter().map(|s| s.to_string()).collect(),
+                                (re_exported_path.to_owned(), external_crate_id),
+                            );
                         } else {
                             // TODO: this is firing for std's JSON docs. File a bug report.
                             // panic!("The imported id ({}) is not listed in the index nor in the path section of rustdoc's JSON output", imported_id.0)
