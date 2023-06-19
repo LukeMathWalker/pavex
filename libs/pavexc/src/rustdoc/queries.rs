@@ -307,8 +307,42 @@ impl CrateCollection {
         }
         let (method_name, type_path_segments) = path.split_last().unwrap();
 
-        if let Ok(parent_type_id) = krate.get_type_id_by_path(type_path_segments, self)? {
-            let parent = self.get_type_by_global_type_id(&parent_type_id);
+        if let Ok(mut parent_type_id) = krate.get_type_id_by_path(type_path_segments, self)? {
+            let mut parent = self.get_type_by_global_type_id(&parent_type_id);
+            // The parent trait/struct might have been a re-export, so we need to make sure that we
+            // are looking at the crate where it was originally defined when we start
+            // following the local type ids that are encoded in the parent.
+            let mut krate = self.get_or_compute_crate_by_package_id(&parent_type_id.package_id)?;
+
+            // We eagerly check if the parent item is an alias, and if so we follow it
+            // to the original type.
+            // This might take multiple iterations, since the alias might point to another
+            // alias.
+            loop {
+                let ItemEnum::Typedef(typedef) = &parent.inner else { break; };
+                let rustdoc_types::Type::ResolvedPath(p) = &typedef.type_ else { break; };
+                // The aliased type might be a re-export of a foreign type,
+                // therefore we go through the summary here rather than
+                // going straight for a local id lookup.
+                let summary = krate.get_type_summary_by_local_type_id(&p.id).unwrap();
+                let source_package_id = krate
+                    .compute_package_id_for_crate_id(summary.crate_id, &self)
+                    .map_err(|e| CannotGetCrateData {
+                        package_spec: summary.crate_id.to_string(),
+                        source: Arc::new(e),
+                    })?;
+                krate = self.get_or_compute_crate_by_package_id(&source_package_id)?;
+                if let Ok(type_id) = krate.get_type_id_by_path(&summary.path, &self)? {
+                    parent_type_id = type_id;
+                } else {
+                    return Ok(Err(UnknownItemPath {
+                        path: summary.path.clone(),
+                    }
+                    .into()));
+                }
+                parent = self.get_type_by_global_type_id(&parent_type_id);
+            }
+
             let children_ids = match &parent.inner {
                 ItemEnum::Struct(s) => &s.impls,
                 ItemEnum::Enum(enum_) => &enum_.impls,
@@ -321,10 +355,6 @@ impl CrateCollection {
                     .into()));
                 }
             };
-            // The parent trait/struct might have been a re-export, so we need to make sure that we
-            // are looking at the crate where it was originally defined when we start
-            // following the local type ids that are encoded in the parent.
-            let krate = self.get_or_compute_crate_by_package_id(&parent_type_id.package_id)?;
             for child_id in children_ids {
                 let child = krate.get_type_by_local_type_id(child_id);
                 match &child.inner {
@@ -813,7 +843,7 @@ fn index_local_types<'a>(
                     None => {
                         if let Some(imported_summary) = krate.paths.get(imported_id) {
                             debug_assert!(imported_summary.crate_id != 0);
-                            // We are looking at a public re-export of another crate 
+                            // We are looking at a public re-export of another crate
                             // (e.g. `pub use hyper;`), one of its modules or one of its items.
                             // Due to how re-exports are handled in `rustdoc`, the re-exported
                             // items inside that foreign module will not be found in the `index`
