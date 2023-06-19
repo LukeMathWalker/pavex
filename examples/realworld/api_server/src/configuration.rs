@@ -1,69 +1,9 @@
-use std::net::SocketAddr;
-
 use anyhow::Context;
+use conduit_core::configuration::Config;
 use figment::{
     providers::{Env, Format, Yaml},
     Figment,
 };
-use secrecy::{ExposeSecret, Secret};
-use serde_aux::field_attributes::deserialize_number_from_string;
-use sqlx::postgres::{PgConnectOptions, PgSslMode};
-use std::net::TcpListener;
-
-#[derive(serde::Deserialize)]
-pub struct Config {
-    pub server: ServerConfig,
-    pub database: DatabaseConfig,
-}
-
-#[derive(serde::Deserialize, Clone)]
-/// Configuration for the HTTP server used to expose our API
-/// to users.
-pub struct ServerConfig {
-    /// The port that the server must listen on.
-    pub port: u16,
-    /// The network interface that the server must be bound to.
-    ///
-    /// E.g. `0.0.0.0` for listening to incoming requests from
-    /// all sources.
-    pub ip: std::net::IpAddr,
-}
-
-impl ServerConfig {
-    /// Bind a TCP listener according to the specified parameters.
-    pub fn listener(&self) -> Result<TcpListener, std::io::Error> {
-        let addr = SocketAddr::new(self.ip, self.port);
-        TcpListener::bind(addr)
-    }
-}
-
-#[derive(serde::Deserialize, Clone)]
-pub struct DatabaseConfig {
-    pub username: String,
-    pub password: Secret<String>,
-    #[serde(deserialize_with = "deserialize_number_from_string")]
-    pub port: u16,
-    pub host: String,
-    pub database_name: String,
-    pub require_ssl: bool,
-}
-
-impl DatabaseConfig {
-    /// Return the database connection options.
-    pub fn connection_options(&self) -> PgConnectOptions {
-        let ssl_mode = if self.require_ssl {
-            PgSslMode::Require
-        } else {
-            PgSslMode::Prefer
-        };
-        PgConnectOptions::new()
-            .host(&self.host)
-            .username(&self.username)
-            .password(self.password.expose_secret())
-            .port(self.port)
-            .ssl_mode(ssl_mode)
-    }
-}
 
 /// Retrieve the application configuration by merging together multiple configuration sources.
 ///

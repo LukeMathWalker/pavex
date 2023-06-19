@@ -10,8 +10,9 @@ struct ServerState {
 pub struct ApplicationState {
     s0: app::HttpClient,
 }
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum ApplicationStateError {
+    #[error(transparent)]
     HttpClient(app::HttpClientError),
 }
 pub async fn build_application_state(

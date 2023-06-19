@@ -13,27 +13,17 @@ pub enum AuthError {
     UnexpectedError(#[source] anyhow::Error),
 }
 
-#[tracing::instrument(name = "Get stored credentials", skip_all)]
-async fn get_stored_credentials(
-    username: &str,
-    pool: &PgPool,
-) -> Result<Option<(uuid::Uuid, Secret<String>)>, anyhow::Error> {
-    let row = sqlx::query!(
-        r#"
-        SELECT id, password_hash
-        FROM users
-        WHERE username = $1
-        "#,
-        username,
-    )
-    .fetch_optional(pool)
-    .await
-    .context("Failed to performed a query to retrieve stored credentials.")?
-    .map(|row| (row.id, Secret::new(row.password_hash)));
-    Ok(row)
-}
-
 #[tracing::instrument(name = "Validate credentials", skip_all)]
+/// We want this function to take a constant time to avoid user enumeration
+/// attacks—i.e. an attacker should not be able to guess whether a given
+/// email address is registered in our database or not by measuring the
+/// response time of the login endpoint.
+/// 
+/// To achieve this, we always perform a credential comparison using 
+/// a dummy password hash, even if the email address is not registered.
+/// 
+/// If you want to learn more about this topic, check out 
+/// <https://www.lpalmieri.com/posts/password-authentication-in-rust/>
 pub async fn validate_credentials(
     email: &str,
     password: Secret<String>,
@@ -84,6 +74,26 @@ fn verify_password_hash(
         )
         .context("Invalid password.")
         .map_err(AuthError::InvalidCredentials)
+}
+
+#[tracing::instrument(name = "Get stored credentials", skip_all)]
+async fn get_stored_credentials(
+    username: &str,
+    pool: &PgPool,
+) -> Result<Option<(uuid::Uuid, Secret<String>)>, anyhow::Error> {
+    let row = sqlx::query!(
+        r#"
+        SELECT id, password_hash
+        FROM users
+        WHERE username = $1
+        "#,
+        username,
+    )
+    .fetch_optional(pool)
+    .await
+    .context("Failed to performed a query to retrieve stored credentials.")?
+    .map(|row| (row.id, Secret::new(row.password_hash)));
+    Ok(row)
 }
 
 fn compute_password_hash(password: Secret<String>) -> Result<Secret<String>, anyhow::Error> {

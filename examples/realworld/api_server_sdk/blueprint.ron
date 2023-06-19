@@ -12,7 +12,7 @@
                     import_path: "pavex::extract::query::QueryParams::extract",
                 ),
                 location: (
-                    line: 29,
+                    line: 33,
                     column: 8,
                     file: "conduit_core/src/routes/mod.rs",
                 ),
@@ -25,7 +25,7 @@
                     import_path: "pavex::extract::query::errors::ExtractQueryParamsError::into_response",
                 ),
                 location: (
-                    line: 33,
+                    line: 37,
                     column: 6,
                     file: "conduit_core/src/routes/mod.rs",
                 ),
@@ -38,7 +38,7 @@
                     import_path: "pavex::extract::route::RouteParams::extract",
                 ),
                 location: (
-                    line: 38,
+                    line: 42,
                     column: 8,
                     file: "conduit_core/src/routes/mod.rs",
                 ),
@@ -51,7 +51,7 @@
                     import_path: "pavex::extract::route::errors::ExtractRouteParamsError::into_response",
                 ),
                 location: (
-                    line: 42,
+                    line: 46,
                     column: 6,
                     file: "conduit_core/src/routes/mod.rs",
                 ),
@@ -64,7 +64,7 @@
                     import_path: "pavex::extract::body::JsonBody::extract",
                 ),
                 location: (
-                    line: 47,
+                    line: 51,
                     column: 8,
                     file: "conduit_core/src/routes/mod.rs",
                 ),
@@ -77,7 +77,7 @@
                     import_path: "pavex::extract::body::errors::ExtractJsonBodyError::into_response",
                 ),
                 location: (
-                    line: 51,
+                    line: 55,
                     column: 6,
                     file: "conduit_core/src/routes/mod.rs",
                 ),
@@ -90,7 +90,7 @@
                     import_path: "pavex::extract::body::BufferedBody::extract",
                 ),
                 location: (
-                    line: 54,
+                    line: 58,
                     column: 8,
                     file: "conduit_core/src/routes/mod.rs",
                 ),
@@ -103,7 +103,7 @@
                     import_path: "pavex::extract::body::errors::ExtractBufferedBodyError::into_response",
                 ),
                 location: (
-                    line: 58,
+                    line: 62,
                     column: 6,
                     file: "conduit_core/src/routes/mod.rs",
                 ),
@@ -116,7 +116,7 @@
                     import_path: "<pavex::extract::body::BodySizeLimit as std::default::Default>::default",
                 ),
                 location: (
-                    line: 61,
+                    line: 65,
                     column: 8,
                     file: "conduit_core/src/routes/mod.rs",
                 ),
@@ -132,7 +132,23 @@
                     import_path: "crate::routes::create_db_pool",
                 ),
                 location: (
-                    line: 68,
+                    line: 16,
+                    column: 8,
+                    file: "conduit_core/src/routes/mod.rs",
+                ),
+            ),
+            lifecycle: Singleton,
+            cloning_strategy: None,
+            error_handler: None,
+        ),
+        (
+            constructor: (
+                callable: (
+                    registered_at: "conduit_core",
+                    import_path: "crate::configuration::AuthConfig::decoding_key",
+                ),
+                location: (
+                    line: 17,
                     column: 8,
                     file: "conduit_core/src/routes/mod.rs",
                 ),
@@ -156,7 +172,7 @@
                     import_path: "crate::routes::status::ping",
                 ),
                 location: (
-                    line: 21,
+                    line: 25,
                     column: 8,
                     file: "conduit_core/src/routes/mod.rs",
                 ),
@@ -176,7 +192,7 @@
                     import_path: "crate::routes::tags::get_tags",
                 ),
                 location: (
-                    line: 22,
+                    line: 26,
                     column: 8,
                     file: "conduit_core/src/routes/mod.rs",
                 ),
@@ -419,7 +435,7 @@
             ),
             path_prefix: Some("/articles"),
             nesting_location: (
-                line: 18,
+                line: 22,
                 column: 8,
                 file: "conduit_core/src/routes/mod.rs",
             ),
@@ -498,7 +514,7 @@
             ),
             path_prefix: Some("/profiles"),
             nesting_location: (
-                line: 19,
+                line: 23,
                 column: 8,
                 file: "conduit_core/src/routes/mod.rs",
             ),
@@ -506,11 +522,28 @@
         (
             blueprint: (
                 creation_location: (
-                    line: 6,
+                    line: 7,
                     column: 18,
                     file: "conduit_core/src/routes/users/mod.rs",
                 ),
-                constructors: [],
+                constructors: [
+                    (
+                        constructor: (
+                            callable: (
+                                registered_at: "conduit_core",
+                                import_path: "crate::configuration::AuthConfig::encoding_key",
+                            ),
+                            location: (
+                                line: 9,
+                                column: 8,
+                                file: "conduit_core/src/routes/users/mod.rs",
+                            ),
+                        ),
+                        lifecycle: Singleton,
+                        cloning_strategy: None,
+                        error_handler: None,
+                    ),
+                ],
                 routes: [
                     (
                         path: "/users",
@@ -525,7 +558,7 @@
                                 import_path: "crate::routes::users::signup",
                             ),
                             location: (
-                                line: 7,
+                                line: 14,
                                 column: 8,
                                 file: "conduit_core/src/routes/users/mod.rs",
                             ),
@@ -545,12 +578,22 @@
                                 import_path: "crate::routes::users::login",
                             ),
                             location: (
-                                line: 8,
+                                line: 15,
                                 column: 8,
                                 file: "conduit_core/src/routes/users/mod.rs",
                             ),
                         ),
-                        error_handler: None,
+                        error_handler: Some((
+                            callable: (
+                                registered_at: "conduit_core",
+                                import_path: "crate::routes::users::LoginError::into_response",
+                            ),
+                            location: (
+                                line: 16,
+                                column: 10,
+                                file: "conduit_core/src/routes/users/mod.rs",
+                            ),
+                        )),
                     ),
                     (
                         path: "/user",
@@ -565,7 +608,7 @@
                                 import_path: "crate::routes::users::get_user",
                             ),
                             location: (
-                                line: 9,
+                                line: 19,
                                 column: 8,
                                 file: "conduit_core/src/routes/users/mod.rs",
                             ),
@@ -585,7 +628,7 @@
                                 import_path: "crate::routes::users::update_user",
                             ),
                             location: (
-                                line: 10,
+                                line: 20,
                                 column: 8,
                                 file: "conduit_core/src/routes/users/mod.rs",
                             ),
@@ -597,7 +640,7 @@
             ),
             path_prefix: None,
             nesting_location: (
-                line: 20,
+                line: 24,
                 column: 8,
                 file: "conduit_core/src/routes/mod.rs",
             ),

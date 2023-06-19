@@ -13,7 +13,11 @@ pub mod users;
 pub fn api_blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     register_common_constructors(&mut bp);
-    register_db_constructor(&mut bp);
+    bp.constructor(f!(crate::routes::create_db_pool), Lifecycle::Singleton);
+    bp.constructor(
+        f!(crate::configuration::AuthConfig::decoding_key),
+        Lifecycle::Singleton,
+    );
 
     bp.nest_at("/articles", articles::articles_bp());
     bp.nest_at("/profiles", profiles::profiles_bp());
@@ -62,10 +66,6 @@ fn register_common_constructors(bp: &mut Blueprint) {
         f!(<pavex::extract::body::BodySizeLimit as std::default::Default>::default),
         Lifecycle::RequestScoped,
     );
-}
-
-fn register_db_constructor(bp: &mut Blueprint) {
-    bp.constructor(f!(crate::routes::create_db_pool), Lifecycle::Singleton);
 }
 
 pub async fn create_db_pool(options: PgConnectOptions) -> Result<sqlx::PgPool, sqlx::Error> {
