@@ -9,10 +9,15 @@ struct ServerState {
 }
 pub struct ApplicationState {
     s0: (bool, char, u8),
+    s1: dep::ActualType,
 }
 pub async fn build_application_state() -> crate::ApplicationState {
-    let v0 = app::constructor_with_output_tuple();
-    crate::ApplicationState { s0: v0 }
+    let v0 = app::RemoteAlias::new();
+    let v1 = app::constructor_with_output_tuple();
+    crate::ApplicationState {
+        s0: v1,
+        s1: v0,
+    }
 }
 pub async fn run(
     server_builder: pavex::hyper::server::Builder<
@@ -71,7 +76,11 @@ async fn route_request(
         0u32 => {
             match &request_head.method {
                 &pavex::http::Method::GET => {
-                    route_handler_0(server_state.application_state.s0.clone()).await
+                    route_handler_0(
+                            server_state.application_state.s0.clone(),
+                            &server_state.application_state.s1,
+                        )
+                        .await
                 }
                 _ => {
                     let header_value = pavex::http::HeaderValue::from_static("GET");
@@ -84,7 +93,10 @@ async fn route_request(
         _ => pavex::response::Response::not_found().box_body(),
     }
 }
-pub async fn route_handler_0(v0: (bool, char, u8)) -> pavex::response::Response {
-    let v1 = app::handler_with_input_tuple(v0);
-    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
+pub async fn route_handler_0(
+    v0: (bool, char, u8),
+    v1: &dep::ActualType,
+) -> pavex::response::Response {
+    let v2 = app::handler_with_input_tuple(v0, v1);
+    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
 }
