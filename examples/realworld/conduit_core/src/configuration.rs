@@ -2,10 +2,10 @@ use jsonwebtoken::{DecodingKey, EncodingKey};
 use secrecy::{ExposeSecret, Secret};
 use serde_aux::field_attributes::deserialize_number_from_string;
 use sqlx::postgres::{PgConnectOptions, PgSslMode};
-use std::net::{TcpListener, SocketAddr};
+use std::net::{SocketAddr, TcpListener};
 
 #[derive(serde::Deserialize)]
-/// The top-level configuration, holding all the values required 
+/// The top-level configuration, holding all the values required
 /// to configure the entire application.
 pub struct Config {
     pub server: ServerConfig,
@@ -59,6 +59,12 @@ impl DatabaseConfig {
             .password(self.password.expose_secret())
             .port(self.port)
             .ssl_mode(ssl_mode)
+    }
+
+    /// Return a database connection pool.
+    pub async fn get_pool(&self) -> Result<sqlx::PgPool, sqlx::Error> {
+        let pool = sqlx::PgPool::connect_with(self.connection_options()).await?;
+        Ok(pool)
     }
 }
 

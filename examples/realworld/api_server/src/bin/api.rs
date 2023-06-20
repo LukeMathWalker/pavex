@@ -27,8 +27,7 @@ async fn main() -> anyhow::Result<()> {
 
 async fn _main() -> anyhow::Result<()> {
     let config = load_configuration()?;
-    let db_connection_options = config.database.connection_options();
-    let application_state = build_application_state(&config.auth, db_connection_options)
+    let application_state = build_application_state(&config.auth, &config.database)
         .await
         .context("Failed to build the application state")?;
 

@@ -1,8 +1,8 @@
 (
     creation_location: (
-        line: 14,
+        line: 8,
         column: 18,
-        file: "conduit_core/src/routes/mod.rs",
+        file: "conduit_core/src/blueprint.rs",
     ),
     constructors: [
         (
@@ -12,9 +12,9 @@
                     import_path: "pavex::extract::query::QueryParams::extract",
                 ),
                 location: (
-                    line: 33,
+                    line: 30,
                     column: 8,
-                    file: "conduit_core/src/routes/mod.rs",
+                    file: "conduit_core/src/blueprint.rs",
                 ),
             ),
             lifecycle: RequestScoped,
@@ -25,9 +25,9 @@
                     import_path: "pavex::extract::query::errors::ExtractQueryParamsError::into_response",
                 ),
                 location: (
-                    line: 37,
+                    line: 34,
                     column: 6,
-                    file: "conduit_core/src/routes/mod.rs",
+                    file: "conduit_core/src/blueprint.rs",
                 ),
             )),
         ),
@@ -38,9 +38,9 @@
                     import_path: "pavex::extract::route::RouteParams::extract",
                 ),
                 location: (
-                    line: 42,
+                    line: 39,
                     column: 8,
-                    file: "conduit_core/src/routes/mod.rs",
+                    file: "conduit_core/src/blueprint.rs",
                 ),
             ),
             lifecycle: RequestScoped,
@@ -51,9 +51,9 @@
                     import_path: "pavex::extract::route::errors::ExtractRouteParamsError::into_response",
                 ),
                 location: (
-                    line: 46,
+                    line: 43,
                     column: 6,
-                    file: "conduit_core/src/routes/mod.rs",
+                    file: "conduit_core/src/blueprint.rs",
                 ),
             )),
         ),
@@ -64,9 +64,9 @@
                     import_path: "pavex::extract::body::JsonBody::extract",
                 ),
                 location: (
-                    line: 51,
+                    line: 48,
                     column: 8,
-                    file: "conduit_core/src/routes/mod.rs",
+                    file: "conduit_core/src/blueprint.rs",
                 ),
             ),
             lifecycle: RequestScoped,
@@ -77,9 +77,9 @@
                     import_path: "pavex::extract::body::errors::ExtractJsonBodyError::into_response",
                 ),
                 location: (
-                    line: 55,
+                    line: 52,
                     column: 6,
-                    file: "conduit_core/src/routes/mod.rs",
+                    file: "conduit_core/src/blueprint.rs",
                 ),
             )),
         ),
@@ -90,9 +90,9 @@
                     import_path: "pavex::extract::body::BufferedBody::extract",
                 ),
                 location: (
-                    line: 58,
+                    line: 55,
                     column: 8,
-                    file: "conduit_core/src/routes/mod.rs",
+                    file: "conduit_core/src/blueprint.rs",
                 ),
             ),
             lifecycle: RequestScoped,
@@ -103,9 +103,9 @@
                     import_path: "pavex::extract::body::errors::ExtractBufferedBodyError::into_response",
                 ),
                 location: (
-                    line: 62,
+                    line: 59,
                     column: 6,
-                    file: "conduit_core/src/routes/mod.rs",
+                    file: "conduit_core/src/blueprint.rs",
                 ),
             )),
         ),
@@ -116,9 +116,9 @@
                     import_path: "<pavex::extract::body::BodySizeLimit as std::default::Default>::default",
                 ),
                 location: (
-                    line: 65,
+                    line: 62,
                     column: 8,
-                    file: "conduit_core/src/routes/mod.rs",
+                    file: "conduit_core/src/blueprint.rs",
                 ),
             ),
             lifecycle: RequestScoped,
@@ -129,12 +129,12 @@
             constructor: (
                 callable: (
                     registered_at: "conduit_core",
-                    import_path: "crate::routes::create_db_pool",
+                    import_path: "crate::configuration::DatabaseConfig::get_pool",
                 ),
                 location: (
-                    line: 16,
+                    line: 10,
                     column: 8,
-                    file: "conduit_core/src/routes/mod.rs",
+                    file: "conduit_core/src/blueprint.rs",
                 ),
             ),
             lifecycle: Singleton,
@@ -148,9 +148,9 @@
                     import_path: "crate::configuration::AuthConfig::decoding_key",
                 ),
                 location: (
-                    line: 17,
+                    line: 14,
                     column: 8,
-                    file: "conduit_core/src/routes/mod.rs",
+                    file: "conduit_core/src/blueprint.rs",
                 ),
             ),
             lifecycle: Singleton,
@@ -172,9 +172,9 @@
                     import_path: "crate::routes::status::ping",
                 ),
                 location: (
-                    line: 25,
+                    line: 22,
                     column: 8,
-                    file: "conduit_core/src/routes/mod.rs",
+                    file: "conduit_core/src/blueprint.rs",
                 ),
             ),
             error_handler: None,
@@ -192,9 +192,9 @@
                     import_path: "crate::routes::tags::get_tags",
                 ),
                 location: (
-                    line: 26,
+                    line: 23,
                     column: 8,
-                    file: "conduit_core/src/routes/mod.rs",
+                    file: "conduit_core/src/blueprint.rs",
                 ),
             ),
             error_handler: None,
@@ -435,9 +435,9 @@
             ),
             path_prefix: Some("/articles"),
             nesting_location: (
-                line: 22,
+                line: 19,
                 column: 8,
-                file: "conduit_core/src/routes/mod.rs",
+                file: "conduit_core/src/blueprint.rs",
             ),
         ),
         (
@@ -514,9 +514,9 @@
             ),
             path_prefix: Some("/profiles"),
             nesting_location: (
-                line: 23,
+                line: 20,
                 column: 8,
-                file: "conduit_core/src/routes/mod.rs",
+                file: "conduit_core/src/blueprint.rs",
             ),
         ),
         (
@@ -534,7 +534,7 @@
                                 import_path: "crate::configuration::AuthConfig::encoding_key",
                             ),
                             location: (
-                                line: 9,
+                                line: 10,
                                 column: 8,
                                 file: "conduit_core/src/routes/users/mod.rs",
                             ),
@@ -558,12 +558,22 @@
                                 import_path: "crate::routes::users::signup",
                             ),
                             location: (
-                                line: 14,
+                                line: 15,
                                 column: 8,
                                 file: "conduit_core/src/routes/users/mod.rs",
                             ),
                         ),
-                        error_handler: None,
+                        error_handler: Some((
+                            callable: (
+                                registered_at: "conduit_core",
+                                import_path: "crate::routes::users::SignupError::into_response",
+                            ),
+                            location: (
+                                line: 16,
+                                column: 10,
+                                file: "conduit_core/src/routes/users/mod.rs",
+                            ),
+                        )),
                     ),
                     (
                         path: "/users/login",
@@ -578,7 +588,7 @@
                                 import_path: "crate::routes::users::login",
                             ),
                             location: (
-                                line: 15,
+                                line: 17,
                                 column: 8,
                                 file: "conduit_core/src/routes/users/mod.rs",
                             ),
@@ -589,7 +599,7 @@
                                 import_path: "crate::routes::users::LoginError::into_response",
                             ),
                             location: (
-                                line: 16,
+                                line: 18,
                                 column: 10,
                                 file: "conduit_core/src/routes/users/mod.rs",
                             ),
@@ -640,9 +650,9 @@
             ),
             path_prefix: None,
             nesting_location: (
-                line: 24,
+                line: 21,
                 column: 8,
-                file: "conduit_core/src/routes/mod.rs",
+                file: "conduit_core/src/blueprint.rs",
             ),
         ),
     ],

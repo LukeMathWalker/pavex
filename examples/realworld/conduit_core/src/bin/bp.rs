@@ -1,5 +1,5 @@
 use cargo_px_env::generated_pkg_manifest_path;
-use conduit_core::routes::api_blueprint;
+use conduit_core::blueprint;
 use pavex_cli_client::Client;
 use std::error::Error;
 
@@ -10,10 +10,12 @@ use std::error::Error;
 /// the application.
 fn main() -> Result<(), Box<dyn Error>> {
     let generated_dir = generated_pkg_manifest_path()?.parent().unwrap().into();
-    let blueprint = api_blueprint();
     Client::new()
+        // This customization is only needed because the example lives in the same
+        // repository of Pavex itself. In a real-world scenario, you would just
+        // use the binary path.
         .pavex_cli_path("../../libs/target/release/pavex_cli".into())
-        .generate(blueprint, generated_dir)
+        .generate(blueprint(), generated_dir)
         .execute()?;
     Ok(())
 }

@@ -1,5 +1,6 @@
 use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use pavex::http::HeaderMap;
+use secrecy::Secret;
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -25,7 +26,7 @@ impl Claims {
 }
 
 /// Create a new token for the given user id.
-pub fn encode_token(user_id: Uuid, jwt_key: &EncodingKey) -> String {
+pub fn encode_token(user_id: Uuid, jwt_key: &EncodingKey) -> Result<Secret<String>, anyhow::Error> {
     let claims = Claims {
         sub: user_id,
         exp: seconds_from_now(3600),
@@ -34,7 +35,7 @@ pub fn encode_token(user_id: Uuid, jwt_key: &EncodingKey) -> String {
         alg: ALGORITHM,
         ..Default::default()
     };
-    encode(&header, &claims, jwt_key).unwrap()
+    Ok(Secret::new(encode(&header, &claims, jwt_key)?))
 }
 
 fn seconds_from_now(secs: u64) -> u64 {
@@ -69,13 +70,14 @@ pub fn extract_claims(headers: &HeaderMap, jwt_key: &DecodingKey) -> Option<Clai
 
 fn decode_token(token: &str, jwt_key: &DecodingKey) -> Result<Claims, anyhow::Error> {
     let validation = Validation::new(ALGORITHM);
-    let decoded = decode::<Claims>(&token, jwt_key, &validation)?;
+    let decoded = decode::<Claims>(token, jwt_key, &validation)?;
     Ok(decoded.claims)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use secrecy::ExposeSecret;
     use uuid::Uuid;
 
     #[test]
@@ -85,8 +87,8 @@ mod tests {
         let (encoding_key, decoding_key) = generate_keys();
 
         // Act
-        let token = encode_token(sub, &encoding_key);
-        let decoded = decode_token(&token, &decoding_key);
+        let token = encode_token(sub, &encoding_key).unwrap();
+        let decoded = decode_token(&token.expose_secret(), &decoding_key);
 
         // Assert
         let decoded = decoded.expect("Failed to decode token");

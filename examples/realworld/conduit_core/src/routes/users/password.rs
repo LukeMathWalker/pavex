@@ -1,3 +1,5 @@
+//! This module contains the tools required to validate user-provided passwords 
+//! and store them securely in the database as PHC-encoded password hashes.
 use crate::telemetry::spawn_blocking_with_tracing;
 use anyhow::Context;
 use argon2::password_hash::SaltString;
@@ -13,7 +15,28 @@ pub enum AuthError {
     UnexpectedError(#[source] anyhow::Error),
 }
 
+/// Compute the password hash using the Argon2id algorithm.
+/// 
+/// The returned hash is in the PHC string format, which includes the salt and
+/// the algorithm parameters.
+pub fn compute_password_hash(password: Secret<String>) -> Result<Secret<String>, anyhow::Error> {
+    let salt = SaltString::generate(&mut rand::thread_rng());
+    let password_hash = Argon2::new(
+        Algorithm::Argon2id,
+        Version::V0x13,
+        Params::new(15000, 2, 1, None).unwrap(),
+    )
+    .hash_password(password.expose_secret().as_bytes(), &salt)?
+    .to_string();
+    Ok(Secret::new(password_hash))
+}
+
 #[tracing::instrument(name = "Validate credentials", skip_all)]
+/// Retrieve the stored password hash for the given email address and compare
+/// it with the given password.
+/// 
+/// # Timing attacks
+/// 
 /// We want this function to take a constant time to avoid user enumeration
 /// attacks—i.e. an attacker should not be able to guess whether a given
 /// email address is registered in our database or not by measuring the
@@ -94,16 +117,4 @@ async fn get_stored_credentials(
     .context("Failed to performed a query to retrieve stored credentials.")?
     .map(|row| (row.id, Secret::new(row.password_hash)));
     Ok(row)
-}
-
-fn compute_password_hash(password: Secret<String>) -> Result<Secret<String>, anyhow::Error> {
-    let salt = SaltString::generate(&mut rand::thread_rng());
-    let password_hash = Argon2::new(
-        Algorithm::Argon2id,
-        Version::V0x13,
-        Params::new(15000, 2, 1, None).unwrap(),
-    )
-    .hash_password(password.expose_secret().as_bytes(), &salt)?
-    .to_string();
-    Ok(Secret::new(password_hash))
 }

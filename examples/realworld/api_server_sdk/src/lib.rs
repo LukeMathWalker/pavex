@@ -16,16 +16,16 @@ pub enum ApplicationStateError {
     #[error(transparent)]
     EncodingKey(jsonwebtoken::errors::Error),
     #[error(transparent)]
-    CreateDbPool(sqlx_core::Error),
+    GetPool(sqlx_core::Error),
 }
 pub async fn build_application_state(
     v0: &conduit_core::configuration::AuthConfig,
-    v1: sqlx_postgres::PgConnectOptions,
+    v1: &conduit_core::configuration::DatabaseConfig,
 ) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
     let v2 = conduit_core::configuration::AuthConfig::encoding_key(v0);
     match v2 {
         Ok(v3) => {
-            let v4 = conduit_core::routes::create_db_pool(v1).await;
+            let v4 = conduit_core::configuration::DatabaseConfig::get_pool(v1).await;
             match v4 {
                 Ok(v5) => {
                     let v6 = crate::ApplicationState {
@@ -35,7 +35,7 @@ pub async fn build_application_state(
                     core::result::Result::Ok(v6)
                 }
                 Err(v5) => {
-                    let v6 = crate::ApplicationStateError::CreateDbPool(v5);
+                    let v6 = crate::ApplicationStateError::GetPool(v5);
                     core::result::Result::Err(v6)
                 }
             }
@@ -261,7 +261,13 @@ async fn route_request(
         11u32 => {
             match &request_head.method {
                 &pavex::http::Method::POST => {
-                    route_handler_18(request_body, &request_head).await
+                    route_handler_18(
+                            &server_state.application_state.s0,
+                            &request_head,
+                            request_body,
+                            &server_state.application_state.s1,
+                        )
+                        .await
                 }
                 _ => {
                     let header_value = pavex::http::HeaderValue::from_static("POST");
@@ -693,38 +699,52 @@ pub async fn route_handler_17(
     }
 }
 pub async fn route_handler_18(
-    v0: hyper::Body,
+    v0: &sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
     v1: &pavex::request::RequestHead,
+    v2: hyper::Body,
+    v3: &jsonwebtoken::EncodingKey,
 ) -> pavex::response::Response {
-    let v2 = <pavex::extract::body::BodySizeLimit as std::default::Default>::default();
-    let v3 = pavex::extract::body::BufferedBody::extract(v1, v0, v2).await;
-    match v3 {
-        Ok(v4) => {
-            let v5 = pavex::extract::body::JsonBody::extract(v1, &v4);
-            match v5 {
-                Ok(v6) => {
-                    let v7 = conduit_core::routes::users::signup(v6);
-                    <http::StatusCode as pavex::response::IntoResponse>::into_response(
-                        v7,
-                    )
+    let v4 = <pavex::extract::body::BodySizeLimit as std::default::Default>::default();
+    let v5 = pavex::extract::body::BufferedBody::extract(v1, v2, v4).await;
+    match v5 {
+        Ok(v6) => {
+            let v7 = pavex::extract::body::JsonBody::extract(v1, &v6);
+            match v7 {
+                Ok(v8) => {
+                    let v9 = conduit_core::routes::users::signup(v8, v0, v3).await;
+                    match v9 {
+                        Ok(v10) => {
+                            <pavex::response::Response<
+                                http_body::Full<bytes::Bytes>,
+                            > as pavex::response::IntoResponse>::into_response(v10)
+                        }
+                        Err(v10) => {
+                            let v11 = conduit_core::routes::users::SignupError::into_response(
+                                &v10,
+                            );
+                            <pavex::response::Response<
+                                http_body::Full<bytes::Bytes>,
+                            > as pavex::response::IntoResponse>::into_response(v11)
+                        }
+                    }
                 }
-                Err(v6) => {
-                    let v7 = pavex::extract::body::errors::ExtractJsonBodyError::into_response(
-                        &v6,
+                Err(v8) => {
+                    let v9 = pavex::extract::body::errors::ExtractJsonBodyError::into_response(
+                        &v8,
                     );
                     <pavex::response::Response<
                         http_body::Full<bytes::Bytes>,
-                    > as pavex::response::IntoResponse>::into_response(v7)
+                    > as pavex::response::IntoResponse>::into_response(v9)
                 }
             }
         }
-        Err(v4) => {
-            let v5 = pavex::extract::body::errors::ExtractBufferedBodyError::into_response(
-                &v4,
+        Err(v6) => {
+            let v7 = pavex::extract::body::errors::ExtractBufferedBodyError::into_response(
+                &v6,
             );
             <pavex::response::Response<
                 http_body::Full<bytes::Bytes>,
-            > as pavex::response::IntoResponse>::into_response(v5)
+            > as pavex::response::IntoResponse>::into_response(v7)
         }
     }
 }

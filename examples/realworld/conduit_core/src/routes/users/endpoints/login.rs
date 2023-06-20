@@ -1,5 +1,4 @@
-use super::password;
-use crate::{jwt_auth, schemas::User};
+use crate::{jwt_auth, schemas::User, routes::users::password};
 use anyhow::Context;
 use jsonwebtoken::EncodingKey;
 use pavex::{
@@ -31,7 +30,8 @@ pub async fn login(
     let user_record = get_user_by_id(&user_id, db_pool)
         .await
         .map_err(LoginError::UnexpectedError)?;
-    let jwt_token = jwt_auth::encode_token(user_id, jwt_key);
+    let jwt_token = jwt_auth::encode_token(user_id, jwt_key)
+        .map_err(LoginError::UnexpectedError)?;
 
     let body = LoginResponse {
         user: User {
@@ -49,11 +49,13 @@ pub async fn login(
 }
 
 #[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct LoginBody {
     pub user: UserCredentials,
 }
 
 #[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UserCredentials {
     pub email: String,
     pub password: Secret<String>,
@@ -91,6 +93,9 @@ struct GetUserRecord {
 }
 
 #[tracing::instrument(name = "Get user by id", skip_all)]
+/// Retrieve a user from the database using its id.
+///
+/// It returns an error if the query fails or if the user doesn't exist.
 async fn get_user_by_id(user_id: &Uuid, pool: &PgPool) -> Result<GetUserRecord, anyhow::Error> {
     let row = sqlx::query!(
         r#"
