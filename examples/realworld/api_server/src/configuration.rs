@@ -1,3 +1,5 @@
+use std::env::VarError;
+
 use anyhow::Context;
 use conduit_core::configuration::Config;
 use figment::{
@@ -19,6 +21,11 @@ use figment::{
 /// This makes it easier to avoid leaking sensitive information by mistake (e.g.
 /// by committing configuration values for the `dev` profile to the repository).
 ///
+/// You primary mechanism to specify the desired application profile is the `APP_PROFILE`
+/// environment variable.
+/// You can pass a `default_profile` value that will be used if the environment variable
+/// is not set.
+///
 /// # Hierarchy
 ///
 /// The configuration sources are:
@@ -33,9 +40,11 @@ use figment::{
 /// For example, if the same configuration key is defined in both
 /// the YAML file and the environment, the value from the environment
 /// will be used.
-pub fn load_configuration() -> Result<Config, anyhow::Error> {
-    let application_profile =
-        load_app_profile().context("Failed to load the desired application profile")?;
+pub fn load_configuration(
+    default_profile: Option<ApplicationProfile>,
+) -> Result<Config, anyhow::Error> {
+    let application_profile = load_app_profile(default_profile)
+        .context("Failed to load the desired application profile")?;
 
     let configuration_dir = {
         let manifest_dir = env!(
@@ -62,20 +71,25 @@ pub fn load_configuration() -> Result<Config, anyhow::Error> {
 }
 
 /// Load the application profile from the `APP_PROFILE` environment variable.
-fn load_app_profile() -> Result<ApplicationProfile, anyhow::Error> {
+fn load_app_profile(
+    default_profile: Option<ApplicationProfile>,
+) -> Result<ApplicationProfile, anyhow::Error> {
     static PROFILE_ENV_VAR: &str = "APP_PROFILE";
 
-    let raw_value = std::env::var(PROFILE_ENV_VAR)
-        .with_context(|| format!("Failed to read the `{PROFILE_ENV_VAR}` environment variable"))?;
-
-    raw_value
-        .parse()
-        .with_context(|| format!("Failed to parse the `{PROFILE_ENV_VAR}` environment variable"))
+    match std::env::var(PROFILE_ENV_VAR) {
+        Ok(raw_value) => raw_value.parse().with_context(|| {
+            format!("Failed to parse the `{PROFILE_ENV_VAR}` environment variable")
+        }),
+        Err(VarError::NotPresent) if default_profile.is_some() => Ok(default_profile.unwrap()),
+        Err(e) => Err(anyhow::anyhow!(e).context(format!(
+            "Failed to read the `{PROFILE_ENV_VAR}` environment variable"
+        ))),
+    }
 }
 
 /// The application profile, i.e. the type of environment the application is running in.
 /// See [`load_configuration`] for more details.
-enum ApplicationProfile {
+pub enum ApplicationProfile {
     /// Test profile.
     ///
     /// This is the profile used by the integration test suite.

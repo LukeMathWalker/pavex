@@ -34,5 +34,4 @@ jsonwebtoken = "8"
 serde-aux = "4"
 
 [dev-dependencies]
-wiremock = "0.5"
 jwt-simple = "0.11"

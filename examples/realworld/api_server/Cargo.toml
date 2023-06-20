@@ -11,7 +11,7 @@ name = "api"
 tokio = { version = "1", features = ["full"] }
 anyhow = "1"
 api_server_sdk = { path = "../api_server_sdk" }
-hyper = "0.14"
+pavex = { path = "../../../libs/pavex" }
 conduit_core = { path = "../conduit_core" }
 
 # Configuration
@@ -23,3 +23,8 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", default-features = false, features = ["env-filter", "smallvec", "std", "registry"] }
 tracing-log = "0.1"
 tracing-bunyan-formatter = "0.3"
+
+[dev-dependencies]
+reqwest = "0.11"
+jwt-simple = "0.11"
+secrecy = "0.8"

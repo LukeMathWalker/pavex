@@ -4,7 +4,7 @@ use api_server::{
     telemetry::{get_subscriber, init_telemetry},
 };
 use api_server_sdk::{build_application_state, run};
-use hyper::Server;
+use pavex::hyper::Server;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -26,7 +26,7 @@ async fn main() -> anyhow::Result<()> {
 }
 
 async fn _main() -> anyhow::Result<()> {
-    let config = load_configuration()?;
+    let config = load_configuration(None)?;
     let application_state = build_application_state(&config.auth, &config.database)
         .await
         .context("Failed to build the application state")?;
