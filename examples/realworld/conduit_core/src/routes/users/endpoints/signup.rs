@@ -1,3 +1,6 @@
+use crate::{
+    jwt_auth::encode_token, routes::users::password::compute_password_hash, schemas::User,
+};
 use anyhow::Context;
 use jsonwebtoken::EncodingKey;
 use pavex::{
@@ -13,28 +16,7 @@ use pavex::{
 use secrecy::{ExposeSecret, Secret};
 use sqlx::PgPool;
 
-use crate::{
-    jwt_auth::encode_token, routes::users::password::compute_password_hash, schemas::User,
-};
-
-#[derive(serde::Deserialize)]
-pub struct Signup {
-    pub user: UserDetails,
-}
-
-#[derive(serde::Deserialize)]
-pub struct UserDetails {
-    pub username: String,
-    pub email: String,
-    pub password: Secret<String>,
-}
-
-#[derive(Debug, serde::Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SignupResponse {
-    pub user: User,
-}
-
+/// Create a new user.
 pub async fn signup(
     body: JsonBody<Signup>,
     db_pool: &PgPool,
@@ -63,7 +45,25 @@ pub async fn signup(
     let body = Json::new(body)
         .map_err(Into::into)
         .map_err(SignupError::UnexpectedError)?;
-    Ok(Response::ok().set_typed_body(body))
+    Ok(Response::created().set_typed_body(body))
+}
+
+#[derive(serde::Deserialize)]
+pub struct Signup {
+    pub user: UserDetails,
+}
+
+#[derive(serde::Deserialize)]
+pub struct UserDetails {
+    pub username: String,
+    pub email: String,
+    pub password: Secret<String>,
+}
+
+#[derive(Debug, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SignupResponse {
+    pub user: User,
 }
 
 #[derive(Debug, thiserror::Error)]
