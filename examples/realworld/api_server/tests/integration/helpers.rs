@@ -5,7 +5,6 @@ use pavex::hyper::Server;
 
 pub struct TestApi {
     pub api_address: String,
-    pub api_port: u16,
     pub api_client: reqwest::Client,
 }
 
@@ -34,8 +33,7 @@ impl TestApi {
         });
 
         TestApi {
-            api_address: format!("http://{}", config.server.ip),
-            api_port: address.port(),
+            api_address: format!("http://{}:{}", config.server.ip, address.port()),
             api_client: reqwest::Client::new(),
         }
     }
@@ -51,4 +49,20 @@ impl TestApi {
         config.auth.eddsa_private_key_pem = secrecy::Secret::new(key_pair.to_pem());
         config
     }
+}
+
+/// Convenient methods for calling the API under test.
+impl TestApi {
+    pub async fn post_signup<Body>(&self, body: &Body) -> reqwest::Response
+    where
+        Body: serde::Serialize,
+    {
+        self.api_client
+            .post(&format!("{}/users", &self.api_address))
+            .json(body)
+            .send()
+            .await
+            .expect("Failed to execute request.")
+    }
+
 }
