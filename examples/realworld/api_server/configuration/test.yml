@@ -1,0 +1,21 @@
+# This file contains the configuration for the API when spawned
+# in black-box tests.
+# None of the values here are actually secret, so it's fine
+# to commit this file to the repository.
+server:
+  ip: "127.0.0.1"
+  # The OS will assign a random port to the test server.
+  port: 0
+auth:
+  # Placeholder values, they'll be replaced with real values
+  # generated on the fly before launching the test server.
+  eddsa_private_key_pem: "secret"
+  eddsa_public_key_pem: "secret"
+# Same parameters used in /scripts/init_db.sh
+database:
+  host: "127.0.0.1"
+  port: 5432
+  username: "postgres"
+  password: "password"
+  database_name: "conduit"
+  require_ssl: false

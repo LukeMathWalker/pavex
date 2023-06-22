@@ -107,7 +107,19 @@ impl CrateCollection {
     where
         I: Iterator<Item = PackageId>,
     {
-        let package_ids = self.disk_cache.get_access_log(&self.project_fingerprint)?;
+        let package_ids = self
+            .disk_cache
+            .get_access_log(&self.project_fingerprint)
+            .unwrap_or_else(|e| {
+                tracing::warn!(
+                    error.msg = tracing::field::display(&e),
+                    error.error_chain = tracing::field::debug(&e),
+                    "Failed to retrieve the crate access log from the on-disk cache"
+                );
+                // This is an optimisation, therefore we should not
+                // fail if the retrieval fails.
+                BTreeSet::new()
+            });
         let package_ids = package_ids
             .into_iter()
             .chain(extra_package_ids)
@@ -163,7 +175,10 @@ impl CrateCollection {
         // so we parallelize the operation.
         let package_graph = self.package_graph.clone();
         let cache = self.disk_cache.clone();
-        let map_op = |id| get_if_cached(id, package_graph.clone(), cache.clone());
+        let tracing_span = Span::current().clone();
+        let map_op = move |id| {
+            tracing_span.in_scope(|| get_if_cached(id, package_graph.clone(), cache.clone()))
+        };
 
         let mut to_be_computed = vec![];
 
@@ -307,8 +322,42 @@ impl CrateCollection {
         }
         let (method_name, type_path_segments) = path.split_last().unwrap();
 
-        if let Ok(parent_type_id) = krate.get_type_id_by_path(type_path_segments, self)? {
-            let parent = self.get_type_by_global_type_id(&parent_type_id);
+        if let Ok(mut parent_type_id) = krate.get_type_id_by_path(type_path_segments, self)? {
+            let mut parent = self.get_type_by_global_type_id(&parent_type_id);
+            // The parent trait/struct might have been a re-export, so we need to make sure that we
+            // are looking at the crate where it was originally defined when we start
+            // following the local type ids that are encoded in the parent.
+            let mut krate = self.get_or_compute_crate_by_package_id(&parent_type_id.package_id)?;
+
+            // We eagerly check if the parent item is an alias, and if so we follow it
+            // to the original type.
+            // This might take multiple iterations, since the alias might point to another
+            // alias.
+            loop {
+                let ItemEnum::Typedef(typedef) = &parent.inner else { break; };
+                let rustdoc_types::Type::ResolvedPath(p) = &typedef.type_ else { break; };
+                // The aliased type might be a re-export of a foreign type,
+                // therefore we go through the summary here rather than
+                // going straight for a local id lookup.
+                let summary = krate.get_type_summary_by_local_type_id(&p.id).unwrap();
+                let source_package_id = krate
+                    .compute_package_id_for_crate_id(summary.crate_id, &self)
+                    .map_err(|e| CannotGetCrateData {
+                        package_spec: summary.crate_id.to_string(),
+                        source: Arc::new(e),
+                    })?;
+                krate = self.get_or_compute_crate_by_package_id(&source_package_id)?;
+                if let Ok(type_id) = krate.get_type_id_by_path(&summary.path, &self)? {
+                    parent_type_id = type_id;
+                } else {
+                    return Ok(Err(UnknownItemPath {
+                        path: summary.path.clone(),
+                    }
+                    .into()));
+                }
+                parent = self.get_type_by_global_type_id(&parent_type_id);
+            }
+
             let children_ids = match &parent.inner {
                 ItemEnum::Struct(s) => &s.impls,
                 ItemEnum::Enum(enum_) => &enum_.impls,
@@ -321,10 +370,6 @@ impl CrateCollection {
                     .into()));
                 }
             };
-            // The parent trait/struct might have been a re-export, so we need to make sure that we
-            // are looking at the crate where it was originally defined when we start
-            // following the local type ids that are encoded in the parent.
-            let krate = self.get_or_compute_crate_by_package_id(&parent_type_id.package_id)?;
             for child_id in children_ids {
                 let child = krate.get_type_by_local_type_id(child_id);
                 match &child.inner {
@@ -813,23 +858,21 @@ fn index_local_types<'a>(
                     None => {
                         if let Some(imported_summary) = krate.paths.get(imported_id) {
                             debug_assert!(imported_summary.crate_id != 0);
-                            if let ItemKind::Module = imported_summary.kind {
-                                // We are looking at a public re-export of another crate (e.g. `pub use hyper;`)
-                                // or one of its modules.
-                                // Due to how re-exports are handled in `rustdoc`, the re-exported
-                                // items inside that foreign module will not be found in the `index`
-                                // for this crate.
-                                // We intentionally add foreign items to the index to get a "complete"
-                                // picture of all the types available in this crate.
-                                let external_crate_id = imported_summary.crate_id;
-                                let re_exported_path = &imported_summary.path;
-                                current_path.push(&i.name);
+                            // We are looking at a public re-export of another crate
+                            // (e.g. `pub use hyper;`), one of its modules or one of its items.
+                            // Due to how re-exports are handled in `rustdoc`, the re-exported
+                            // items inside that foreign module will not be found in the `index`
+                            // for this crate.
+                            // We intentionally add foreign items to the index to get a "complete"
+                            // picture of all the types available in this crate.
+                            let external_crate_id = imported_summary.crate_id;
+                            let re_exported_path = &imported_summary.path;
+                            current_path.push(&i.name);
 
-                                re_exports.insert(
-                                    current_path.into_iter().map(|s| s.to_string()).collect(),
-                                    (re_exported_path.to_owned(), external_crate_id),
-                                );
-                            }
+                            re_exports.insert(
+                                current_path.into_iter().map(|s| s.to_string()).collect(),
+                                (re_exported_path.to_owned(), external_crate_id),
+                            );
                         } else {
                             // TODO: this is firing for std's JSON docs. File a bug report.
                             // panic!("The imported id ({}) is not listed in the index nor in the path section of rustdoc's JSON output", imported_id.0)

@@ -3,4 +3,5 @@ description = "pavex is abled to handle (i.e. see through) type aliases"
 [expectations]
 codegen = "pass"
 
-
+[ephemeral_dependencies]
+dep = { path = "dep.rs" }

@@ -56,7 +56,8 @@ pub fn config() -> Config {
 #[derive(Clone)]
 pub struct HttpClient;
 
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
+#[error("Http client error")]
 pub struct HttpClientError;
 
 pub fn http_client(_config: Config) -> Result<HttpClient, HttpClientError> {

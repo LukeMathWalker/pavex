@@ -110,19 +110,6 @@ pub(crate) fn codegen_app(
     component_db: &ComponentDb,
     computation_db: &ComputationDb,
 ) -> Result<TokenStream, anyhow::Error> {
-    let application_state_def =
-        define_application_state(runtime_singleton_bindings, package_id2name);
-    let define_application_state_error = define_application_state_error(
-        &application_state_call_graph.error_variants,
-        package_id2name,
-    );
-    let application_state_init = get_application_state_init(
-        application_state_call_graph,
-        package_id2name,
-        component_db,
-        computation_db,
-    )?;
-
     let get_codegen_dep_import_name = |name: &str| {
         let pkg_id = codegen_deps.get(name).unwrap();
         let import_name = package_id2name.get_by_left(pkg_id).unwrap().clone();
@@ -130,7 +117,22 @@ pub(crate) fn codegen_app(
     };
     let pavex_import_name = get_codegen_dep_import_name("pavex");
     let http_import_name = get_codegen_dep_import_name("http");
+    let thiserror_import_name = get_codegen_dep_import_name("thiserror");
     let _hyper_import_name = get_codegen_dep_import_name("hyper");
+
+    let application_state_def =
+        define_application_state(runtime_singleton_bindings, package_id2name);
+    let define_application_state_error = define_application_state_error(
+        &application_state_call_graph.error_variants,
+        package_id2name,
+        &thiserror_import_name
+    );
+    let application_state_init = get_application_state_init(
+        application_state_call_graph,
+        package_id2name,
+        component_db,
+        computation_db,
+    )?;
 
     let define_server_state =
         define_server_state(&application_state_def, &pavex_import_name);
@@ -272,6 +274,7 @@ fn define_application_state(
 fn define_application_state_error(
     error_types: &IndexMap<String, ResolvedType>,
     package_id2name: &BiHashMap<PackageId, String>,
+    thiserror_import_name: &Ident,
 ) -> Option<ItemEnum> {
     if error_types.is_empty() {
         return None;
@@ -279,12 +282,14 @@ fn define_application_state_error(
     let singleton_fields = error_types.iter().map(|(variant_name, type_)| {
         let variant_type = type_.syn_type(package_id2name);
         let variant_name = format_ident!("{}", variant_name);
-        quote! { #variant_name(#variant_type) }
+        quote! { 
+            #[error(transparent)]
+            #variant_name(#variant_type) 
+        }
     });
-    // TODO: implement `Display` + `Error` for `ApplicationStateError`
     Some(
         syn::parse2(quote! {
-            #[derive(Debug)]
+            #[derive(Debug, #thiserror_import_name::Error)]
             pub enum ApplicationStateError {
                 #(#singleton_fields),*
             }

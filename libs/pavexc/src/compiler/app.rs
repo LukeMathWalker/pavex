@@ -399,10 +399,16 @@ fn codegen_deps(package_graph: &PackageGraph) -> HashMap<String, guppy::PackageI
         .find(|p| p.name() == "hyper" && p.version().major == 0 && p.version().minor == 14)
         .expect("Expected to find `hyper@0.14` in the package graph, but it was not there.")
         .id();
+    let thiserror = package_graph
+        .packages()
+        .find(|p| p.name() == "thiserror" && p.version().major == 1)
+        .expect("Expected to find `thiserror@1` in the package graph, but it was not there.")
+        .id();
 
     name2id.insert("http".to_string(), http.clone());
     name2id.insert("pavex".to_string(), pavex.clone());
     name2id.insert("hyper".to_string(), hyper.clone());
+    name2id.insert("thiserror".to_string(), thiserror.clone());
     name2id
 }
 

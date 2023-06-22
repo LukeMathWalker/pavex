@@ -180,9 +180,10 @@ fn precompute_crate_docs(
         path.collect_package_ids(&mut package_ids);
     }
     if let Err(e) = krate_collection.bootstrap_collection(package_ids.into_iter().cloned()) {
-        diagnostics.push(miette!(e.context(
-            "I failed to compute the JSON documentation for one or more crates in the workspace."
-        )));
+        let e = e.context(
+            "I failed to compute the JSON documentation for one or more crates in the workspace.",
+        );
+        diagnostics.push(miette!(e));
     }
 }
 

@@ -4,7 +4,7 @@ use api_server::{
     telemetry::{get_subscriber, init_telemetry},
 };
 use api_server_sdk::{build_application_state, run};
-use hyper::Server;
+use pavex::hyper::Server;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -16,8 +16,8 @@ async fn main() -> anyhow::Result<()> {
     // that will cause the application to exit.
     if let Err(e) = _main().await {
         tracing::error!(
-            error.msg = %e, 
-            error.error_chain = ?e, 
+            error.msg = %e,
+            error.error_chain = ?e,
             "The application is exiting due to an error"
         )
     }
@@ -26,8 +26,10 @@ async fn main() -> anyhow::Result<()> {
 }
 
 async fn _main() -> anyhow::Result<()> {
-    let config = load_configuration()?;
-    let application_state = build_application_state().await;
+    let config = load_configuration(None)?;
+    let application_state = build_application_state(&config.auth, &config.database)
+        .await
+        .context("Failed to build the application state")?;
 
     let tcp_listener = config
         .server
