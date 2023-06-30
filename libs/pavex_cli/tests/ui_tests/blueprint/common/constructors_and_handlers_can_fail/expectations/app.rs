@@ -19,16 +19,17 @@ pub async fn build_application_state(
     v0: app::Config,
 ) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
     let v1 = app::http_client(v0);
-    match v1 {
-        Ok(v2) => {
-            let v3 = crate::ApplicationState { s0: v2 };
-            core::result::Result::Ok(v3)
-        }
+    let v2 = match v1 {
+        Ok(ok) => ok,
         Err(v2) => {
-            let v3 = crate::ApplicationStateError::HttpClient(v2);
-            core::result::Result::Err(v3)
+            return {
+                let v3 = crate::ApplicationStateError::HttpClient(v2);
+                core::result::Result::Err(v3)
+            };
         }
-    }
+    };
+    let v3 = crate::ApplicationState { s0: v2 };
+    core::result::Result::Ok(v3)
 }
 pub async fn run(
     server_builder: pavex::hyper::server::Builder<
@@ -108,49 +109,51 @@ pub async fn route_handler_0(
     v0: app::HttpClient,
     v1: pavex::request::RequestHead,
 ) -> pavex::response::Response {
-    match app::logger() {
-        Ok(v2) => {
-            let v3 = app::extract_path(v1);
-            match v3 {
-                Ok(v4) => {
-                    let v5 = app::request_handler(v4, v2, v0);
-                    match v5 {
-                        Ok(v6) => {
-                            <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                                v6,
-                            )
-                        }
-                        Err(v6) => {
-                            let v7 = app::handle_handler_error(&v6);
-                            <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                                v7,
-                            )
-                        }
-                    }
-                }
-                Err(v4) => {
-                    match app::logger() {
-                        Ok(v5) => {
-                            let v6 = app::handle_extract_path_error(&v4, v5);
-                            <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                                v6,
-                            )
-                        }
-                        Err(v5) => {
+    let v2 = match app::logger() {
+        Ok(ok) => ok,
+        Err(v2) => {
+            return {
+                let v3 = app::handle_logger_error(&v2);
+                <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                    v3,
+                )
+            };
+        }
+    };
+    let v3 = app::extract_path(v1);
+    let v4 = match v3 {
+        Ok(ok) => ok,
+        Err(v4) => {
+            return {
+                let v5 = match app::logger() {
+                    Ok(ok) => ok,
+                    Err(v5) => {
+                        return {
                             let v6 = app::handle_logger_error(&v5);
                             <pavex::response::Response as pavex::response::IntoResponse>::into_response(
                                 v6,
                             )
-                        }
+                        };
                     }
-                }
-            }
+                };
+                let v6 = app::handle_extract_path_error(&v4, v5);
+                <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                    v6,
+                )
+            };
         }
-        Err(v2) => {
-            let v3 = app::handle_logger_error(&v2);
-            <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                v3,
-            )
+    };
+    let v5 = app::request_handler(v4, v2, v0);
+    let v6 = match v5 {
+        Ok(ok) => ok,
+        Err(v6) => {
+            return {
+                let v7 = app::handle_handler_error(&v6);
+                <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                    v7,
+                )
+            };
         }
-    }
+    };
+    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
 }

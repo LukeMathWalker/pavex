@@ -82,20 +82,19 @@ async fn route_request(
 }
 pub async fn route_handler_0() -> pavex::response::Response {
     let v0 = app::a();
-    match v0 {
-        Ok(v1) => {
-            let v2 = app::b();
-            let v3 = app::handler(v1, v2);
-            <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                v3,
-            )
-        }
+    let v1 = match v0 {
+        Ok(ok) => ok,
         Err(v1) => {
-            let v2 = app::b();
-            let v3 = app::error_handler(&v1, v2);
-            <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                v3,
-            )
+            return {
+                let v2 = app::b();
+                let v3 = app::error_handler(&v1, v2);
+                <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                    v3,
+                )
+            };
         }
-    }
+    };
+    let v2 = app::b();
+    let v3 = app::handler(v1, v2);
+    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
 }
