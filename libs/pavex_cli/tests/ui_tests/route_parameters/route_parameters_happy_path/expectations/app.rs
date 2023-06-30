@@ -108,62 +108,59 @@ pub async fn route_handler_0(
     v0: pavex::extract::route::RawRouteParams<'_, '_>,
 ) -> pavex::response::Response {
     let v1 = pavex::extract::route::RouteParams::extract(v0);
-    match v1 {
-        Ok(v2) => {
-            let v3 = app::get_home(v2);
-            <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                v3,
-            )
-        }
+    let v2 = match v1 {
+        Ok(ok) => ok,
         Err(v2) => {
-            let v3 = pavex::extract::route::errors::ExtractRouteParamsError::into_response(
-                &v2,
-            );
-            <pavex::response::Response<
-                http_body::Full<bytes::Bytes>,
-            > as pavex::response::IntoResponse>::into_response(v3)
+            return {
+                let v3 = pavex::extract::route::errors::ExtractRouteParamsError::into_response(
+                    &v2,
+                );
+                <pavex::response::Response<
+                    http_body::Full<bytes::Bytes>,
+                > as pavex::response::IntoResponse>::into_response(v3)
+            };
         }
-    }
+    };
+    let v3 = app::get_home(v2);
+    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
 }
 pub async fn route_handler_1(
     v0: pavex::extract::route::RawRouteParams<'_, '_>,
 ) -> pavex::response::Response {
     let v1 = pavex::extract::route::RouteParams::extract(v0);
-    match v1 {
-        Ok(v2) => {
-            let v3 = app::get_room(v2);
-            <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                v3,
-            )
-        }
+    let v2 = match v1 {
+        Ok(ok) => ok,
         Err(v2) => {
-            let v3 = pavex::extract::route::errors::ExtractRouteParamsError::into_response(
-                &v2,
-            );
-            <pavex::response::Response<
-                http_body::Full<bytes::Bytes>,
-            > as pavex::response::IntoResponse>::into_response(v3)
+            return {
+                let v3 = pavex::extract::route::errors::ExtractRouteParamsError::into_response(
+                    &v2,
+                );
+                <pavex::response::Response<
+                    http_body::Full<bytes::Bytes>,
+                > as pavex::response::IntoResponse>::into_response(v3)
+            };
         }
-    }
+    };
+    let v3 = app::get_room(v2);
+    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
 }
 pub async fn route_handler_2(
     v0: pavex::extract::route::RawRouteParams<'_, '_>,
 ) -> pavex::response::Response {
     let v1 = pavex::extract::route::RouteParams::extract(v0);
-    match v1 {
-        Ok(v2) => {
-            let v3 = app::get_town(v2);
-            <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                v3,
-            )
-        }
+    let v2 = match v1 {
+        Ok(ok) => ok,
         Err(v2) => {
-            let v3 = pavex::extract::route::errors::ExtractRouteParamsError::into_response(
-                &v2,
-            );
-            <pavex::response::Response<
-                http_body::Full<bytes::Bytes>,
-            > as pavex::response::IntoResponse>::into_response(v3)
+            return {
+                let v3 = pavex::extract::route::errors::ExtractRouteParamsError::into_response(
+                    &v2,
+                );
+                <pavex::response::Response<
+                    http_body::Full<bytes::Bytes>,
+                > as pavex::response::IntoResponse>::into_response(v3)
+            };
         }
-    }
+    };
+    let v3 = app::get_town(v2);
+    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
 }

@@ -279,6 +279,7 @@ fn _codegen_callable_closure_body(
                 assert_eq!(2, variants.len());
                 assert_eq!(current_index, traversal_start_index);
                 let mut ok_arm = None;
+                let mut ok_binding_variable = None;
                 let mut err_arm = None;
                 for variant_index in variants {
                     let mut at_most_once_constructor_blocks = IndexMap::new();
@@ -323,33 +324,24 @@ fn _codegen_callable_closure_body(
                         }
                         _ => unreachable!(),
                     };
-                    let match_arm_binding = match variant_type {
-                        MatchResultVariant::Ok => {
-                            quote! {
-                                Ok(#match_binding_parameter_name)
-                            }
-                        }
-                        MatchResultVariant::Err => {
-                            quote! {
-                                Err(#match_binding_parameter_name)
-                            }
-                        }
-                    };
-                    let match_arm = quote! {
-                        #match_arm_binding => {
-                            #match_arm_body
-                        },
-                    };
                     match variant_type {
                         MatchResultVariant::Ok => {
-                            ok_arm = Some(match_arm);
+                            ok_binding_variable = Some(match_binding_parameter_name.clone());
+                            ok_arm = Some(match_arm_body);
                         }
-                        MatchResultVariant::Err => err_arm = Some(match_arm),
+                        MatchResultVariant::Err => {
+                            err_arm = Some(quote! {
+                                Err(#match_binding_parameter_name) => return {
+                                    #match_arm_body
+                                }
+                            });
+                        }
                     }
                 }
                 // We do this to make sure that the Ok arm is always before the Err arm in the
                 // generated code.
                 let ok_arm = ok_arm.unwrap();
+                let ok_binding_variable = ok_binding_variable.unwrap();
                 let err_arm = err_arm.unwrap();
                 let result_node_index = call_graph
                     .neighbors_directed(current_index, Direction::Incoming)
@@ -358,10 +350,11 @@ fn _codegen_callable_closure_body(
                 let result_binding = &blocks[&result_node_index];
                 let block = quote! {
                     {
-                        match #result_binding {
-                            #ok_arm
+                        let #ok_binding_variable = match #result_binding {
+                            Ok(ok) => ok,
                             #err_arm
-                        }
+                        };
+                        #ok_arm
                     }
                 };
                 blocks.insert(current_index, Fragment::Block(syn::parse2(block).unwrap()));

@@ -82,55 +82,57 @@ async fn route_request(
 }
 pub async fn route_handler_0() -> pavex::response::Response {
     let v0 = app::fallible_with_generic_error2();
-    match v0 {
-        Ok(v1) => {
-            let v2 = app::fallible_with_generic_error();
-            match v2 {
-                Ok(v3) => {
-                    let v4 = app::fallible_with_generic_error();
-                    match v4 {
-                        Ok(v5) => {
-                            let v6 = app::fallible();
-                            match v6 {
-                                Ok(v7) => {
-                                    let v8 = app::json();
-                                    let v9 = app::json();
-                                    let v10 = app::json();
-                                    let v11 = app::handler(v8, v10, &v9, v7, v5, &v3, &v1);
-                                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                                        v11,
-                                    )
-                                }
-                                Err(v7) => {
-                                    let v8 = app::error_handler(&v7);
-                                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                                        v8,
-                                    )
-                                }
-                            }
-                        }
-                        Err(v5) => {
-                            let v6 = app::generic_error_handler(&v5);
-                            <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                                v6,
-                            )
-                        }
-                    }
-                }
-                Err(v3) => {
-                    let v4 = app::generic_error_handler(&v3);
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v4,
-                    )
-                }
-            }
-        }
+    let v1 = match v0 {
+        Ok(ok) => ok,
         Err(v1) => {
-            let v2 = app::json();
-            let v3 = app::doubly_generic_error_handler(&v1, &v2);
-            <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                v3,
-            )
+            return {
+                let v2 = app::json();
+                let v3 = app::doubly_generic_error_handler(&v1, &v2);
+                <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                    v3,
+                )
+            };
         }
-    }
+    };
+    let v2 = app::fallible_with_generic_error();
+    let v3 = match v2 {
+        Ok(ok) => ok,
+        Err(v3) => {
+            return {
+                let v4 = app::generic_error_handler(&v3);
+                <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                    v4,
+                )
+            };
+        }
+    };
+    let v4 = app::fallible_with_generic_error();
+    let v5 = match v4 {
+        Ok(ok) => ok,
+        Err(v5) => {
+            return {
+                let v6 = app::generic_error_handler(&v5);
+                <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                    v6,
+                )
+            };
+        }
+    };
+    let v6 = app::fallible();
+    let v7 = match v6 {
+        Ok(ok) => ok,
+        Err(v7) => {
+            return {
+                let v8 = app::error_handler(&v7);
+                <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                    v8,
+                )
+            };
+        }
+    };
+    let v8 = app::json();
+    let v9 = app::json();
+    let v10 = app::json();
+    let v11 = app::handler(v8, v10, &v9, v7, v5, &v3, &v1);
+    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v11)
 }
