@@ -100,7 +100,7 @@ We are aiming for an alpha release by the end of summer 2023.
 
 We publish project updates every 4 weeks:
 
-- [Vision](https://www.lpalmieri.com/posts/a-taste-of-pavex-rust-web-framework/) [December 2023]
+- [Vision](https://www.lpalmieri.com/posts/a-taste-of-pavex-rust-web-framework/) [December 2022]
 - [Progress report #1](https://www.lpalmieri.com/posts/pavex-progress-report-01/) [January 2023]
 - [Progress report #2](https://www.lpalmieri.com/posts/pavex-progress-report-02/) [March 2023]
 - [Progress report #3](https://www.lpalmieri.com/posts/pavex-progress-report-03/) [April 2023]
