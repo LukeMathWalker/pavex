@@ -1178,6 +1178,7 @@ dependencies = [
  "paste",
  "pavex_macros",
  "percent-encoding",
+ "pin-project-lite",
  "ron",
  "serde",
  "serde_html_form",
@@ -1185,6 +1186,7 @@ dependencies = [
  "serde_path_to_error",
  "thiserror",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
