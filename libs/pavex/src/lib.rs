@@ -8,6 +8,7 @@ mod error;
 pub mod blueprint;
 pub mod extract;
 pub mod http;
+pub mod middleware;
 pub mod request;
 pub mod response;
 
