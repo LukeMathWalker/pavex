@@ -32,6 +32,7 @@ impl<C> Next<C>
 where
     C: Future<Output = Response>,
 {
+    /// Creates a new [`Next`] instance.
     pub fn new(request_pipeline: C) -> Self {
         Self { request_pipeline }
     }
