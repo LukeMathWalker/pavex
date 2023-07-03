@@ -398,22 +398,8 @@ impl Blueprint {
     /// [`Response`]: crate::response::Response
     /// [`Future`]: std::future::Future
     #[doc(alias = "middleware")]
-    pub fn wrap(&mut self, callable: RawCallable) -> Constructor {
-        let registered_constructor = RegisteredConstructor {
-            constructor: RegisteredCallable {
-                callable: RawCallableIdentifiers::from_raw_callable(callable),
-                location: std::panic::Location::caller().into(),
-            },
-            lifecycle: Lifecycle::Transient,
-            cloning_strategy: None,
-            error_handler: None,
-        };
-        let constructor_id = self.constructors.len();
-        self.constructors.push(registered_constructor);
-        Constructor {
-            constructor_id,
-            blueprint: self,
-        }
+    pub fn wrap(&mut self, _callable: RawCallable) {
+        todo!()
     }
 
     #[track_caller]
