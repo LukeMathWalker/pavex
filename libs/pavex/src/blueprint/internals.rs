@@ -34,6 +34,15 @@ pub struct RegisteredConstructor {
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]
+/// A middleware registered against a [`Blueprint`] via [`Blueprint::wrap`].
+pub struct RegisteredWrappingMiddleware {
+    /// The callable that executes the middleware's logic.
+    pub middleware: RegisteredCallable,
+    /// The callable in charge of processing errors returned by this middleware, if any.
+    pub error_handler: Option<RegisteredCallable>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
 /// A "callable" registered against a [`Blueprint`]—either a free function or a method,
 /// used as a request handler, error handler or constructor.
 pub struct RegisteredCallable {
