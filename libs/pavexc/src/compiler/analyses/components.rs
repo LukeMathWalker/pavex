@@ -328,7 +328,9 @@ impl ComponentDb {
                     fallible_callable_identifiers_id,
                     ..
                 } => Some((id, *fallible_callable_identifiers_id)),
-                UserComponent::RequestHandler { .. } | UserComponent::Constructor { .. } => None,
+                UserComponent::RequestHandler { .. }
+                | UserComponent::Constructor { .. }
+                | UserComponent::WrappingMiddleware { .. } => None,
             })
             .collect::<Vec<_>>();
         for (error_handler_user_component_id, fallible_user_component_id) in iter {

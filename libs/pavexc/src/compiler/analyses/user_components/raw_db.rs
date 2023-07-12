@@ -41,6 +41,10 @@ pub enum UserComponent {
         raw_callable_identifiers_id: RawCallableIdentifierId,
         scope_id: ScopeId,
     },
+    WrappingMiddleware {
+        raw_callable_identifiers_id: RawCallableIdentifierId,
+        scope_id: ScopeId,
+    },
 }
 
 impl UserComponent {
@@ -52,6 +56,7 @@ impl UserComponent {
             UserComponent::RequestHandler { .. } => CallableType::RequestHandler,
             UserComponent::ErrorHandler { .. } => CallableType::ErrorHandler,
             UserComponent::Constructor { .. } => CallableType::Constructor,
+            UserComponent::WrappingMiddleware { .. } => CallableType::WrappingMiddleware,
         }
     }
 
@@ -59,15 +64,19 @@ impl UserComponent {
     /// this [`UserComponent`] is associated with.
     pub fn raw_callable_identifiers_id(&self) -> RawCallableIdentifierId {
         match self {
-            UserComponent::RequestHandler {
+            UserComponent::WrappingMiddleware {
                 raw_callable_identifiers_id,
                 ..
-            } => *raw_callable_identifiers_id,
-            UserComponent::ErrorHandler {
+            }
+            | UserComponent::RequestHandler {
                 raw_callable_identifiers_id,
                 ..
-            } => *raw_callable_identifiers_id,
-            UserComponent::Constructor {
+            }
+            | UserComponent::ErrorHandler {
+                raw_callable_identifiers_id,
+                ..
+            }
+            | UserComponent::Constructor {
                 raw_callable_identifiers_id,
                 ..
             } => *raw_callable_identifiers_id,
@@ -77,8 +86,9 @@ impl UserComponent {
     /// Returns the [`ScopeId`] for the scope that this [`UserComponent`] is associated with.
     pub fn scope_id(&self) -> ScopeId {
         match self {
-            UserComponent::RequestHandler { scope_id, .. } => *scope_id,
-            UserComponent::ErrorHandler { scope_id, .. } => *scope_id,
+            UserComponent::RequestHandler { scope_id, .. } |
+            UserComponent::ErrorHandler { scope_id, .. } |
+            UserComponent::WrappingMiddleware { scope_id, .. } |
             UserComponent::Constructor { scope_id, .. } => *scope_id,
         }
     }
