@@ -1377,6 +1377,7 @@ dependencies = [
  "paste",
  "pavex_macros",
  "percent-encoding",
+ "pin-project-lite",
  "ron",
  "serde",
  "serde_html_form",

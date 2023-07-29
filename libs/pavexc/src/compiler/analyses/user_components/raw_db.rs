@@ -5,7 +5,7 @@ use anyhow::anyhow;
 use guppy::graph::PackageGraph;
 
 use pavex::blueprint::constructor::CloningStrategy;
-use pavex::blueprint::internals::{NestedBlueprint, RegisteredRoute};
+use pavex::blueprint::internals::{NestedBlueprint, RegisteredConstructor, RegisteredRoute};
 use pavex::blueprint::router::AllowedMethods;
 use pavex::blueprint::{
     constructor::Lifecycle, reflection::Location, reflection::RawCallableIdentifiers, Blueprint,
@@ -86,10 +86,10 @@ impl UserComponent {
     /// Returns the [`ScopeId`] for the scope that this [`UserComponent`] is associated with.
     pub fn scope_id(&self) -> ScopeId {
         match self {
-            UserComponent::RequestHandler { scope_id, .. } |
-            UserComponent::ErrorHandler { scope_id, .. } |
-            UserComponent::WrappingMiddleware { scope_id, .. } |
-            UserComponent::Constructor { scope_id, .. } => *scope_id,
+            UserComponent::RequestHandler { scope_id, .. }
+            | UserComponent::ErrorHandler { scope_id, .. }
+            | UserComponent::WrappingMiddleware { scope_id, .. }
+            | UserComponent::Constructor { scope_id, .. } => *scope_id,
         }
     }
 
@@ -162,14 +162,15 @@ impl RawUserComponentDb {
             parent_path_prefix: Option<String>,
             nested_bp: &'a NestedBlueprint,
         }
-        let mut processing_queue = vec![];
-        for nested_bp in &bp.nested_blueprints {
-            processing_queue.push(QueueItem {
+        let mut processing_queue: Vec<_> = bp
+            .nested_blueprints
+            .iter()
+            .map(|nested_bp| QueueItem {
                 parent_scope_id: root_scope_id,
                 nested_bp: &nested_bp,
                 parent_path_prefix: None,
-            });
-        }
+            })
+            .collect();
 
         while let Some(item) = processing_queue.pop() {
             let QueueItem {
@@ -227,36 +228,62 @@ impl RawUserComponentDb {
         package_graph: &PackageGraph,
         diagnostics: &mut Vec<miette::Error>,
     ) {
-        for registered_route in &bp.routes {
+        self.process_routes(
+            &bp.routes,
+            current_scope_id,
+            path_prefix,
+            scope_graph_builder,
+            package_graph,
+            diagnostics,
+        );
+        self.process_constructors(&bp.constructors, current_scope_id)
+    }
+
+    /// Register with [`RawUserComponentDb`] all the routes that have been
+    /// registered against the provided `Blueprint`, including their error handlers
+    /// (if present).  
+    fn process_routes(
+        &mut self,
+        routes: &[RegisteredRoute],
+        current_scope_id: ScopeId,
+        path_prefix: Option<&str>,
+        scope_graph_builder: &mut ScopeGraphBuilder,
+        package_graph: &PackageGraph,
+        diagnostics: &mut Vec<miette::Error>,
+    ) {
+        const ROUTE_LIFECYCLE: Lifecycle = Lifecycle::RequestScoped;
+
+        for registered_route in routes {
             let raw_callable_identifiers_id = self
                 .identifiers_interner
                 .get_or_intern(registered_route.request_handler.callable.clone());
-            let method_guard = match &registered_route.method_guard.allowed_methods {
-                AllowedMethods::All => None,
-                AllowedMethods::Single(m) => {
-                    let mut set = BTreeSet::new();
-                    set.insert(m.to_string());
-                    Some(set)
-                }
-                AllowedMethods::Multiple(methods) => {
-                    methods.iter().map(|m| Some(m.to_string())).collect()
-                }
-            };
             let route_scope_id = scope_graph_builder.add_scope(current_scope_id, None);
-            let path = match path_prefix {
-                Some(prefix) => format!("{}{}", prefix, registered_route.path),
-                None => registered_route.path.to_owned(),
+            let router_key = {
+                let method_guard = match &registered_route.method_guard.allowed_methods {
+                    AllowedMethods::All => None,
+                    AllowedMethods::Single(m) => {
+                        let mut set = BTreeSet::new();
+                        set.insert(m.to_string());
+                        Some(set)
+                    }
+                    AllowedMethods::Multiple(methods) => {
+                        methods.iter().map(|m| Some(m.to_string())).collect()
+                    }
+                };
+                let path = match path_prefix {
+                    Some(prefix) => format!("{}{}", prefix, registered_route.path),
+                    None => registered_route.path.to_owned(),
+                };
+                RouterKey { path, method_guard }
             };
             let component = UserComponent::RequestHandler {
                 raw_callable_identifiers_id,
-                router_key: RouterKey { path, method_guard },
+                router_key,
                 scope_id: route_scope_id,
             };
-            let request_handler_id = self.component_interner.get_or_intern(component);
-            self.id2lifecycle
-                .insert(request_handler_id, Lifecycle::RequestScoped);
-            self.id2locations.insert(
-                request_handler_id,
+            let request_handler_id = self.intern_component(
+                component,
+                ROUTE_LIFECYCLE,
                 registered_route.request_handler.location.to_owned(),
             );
 
@@ -276,15 +303,25 @@ impl RawUserComponentDb {
                     fallible_callable_identifiers_id: request_handler_id,
                     scope_id: route_scope_id,
                 };
-                let error_handler_id = self.component_interner.get_or_intern(component);
-                self.id2lifecycle
-                    .insert(error_handler_id, Lifecycle::RequestScoped);
-                self.id2locations
-                    .insert(error_handler_id, error_handler.location.to_owned());
+                self.intern_component(
+                    component,
+                    ROUTE_LIFECYCLE,
+                    error_handler.location.to_owned(),
+                );
             }
         }
+    }
 
-        for constructor in &bp.constructors {
+    /// Register with [`RawUserComponentDb`] all the constructors that have been
+    /// registered against the provided `Blueprint`, including their error handlers
+    /// (if present).  
+    /// All components are associated with or nested under the provided `current_scope_id`.
+    fn process_constructors(
+        &mut self,
+        constructors: &[RegisteredConstructor],
+        current_scope_id: ScopeId,
+    ) {
+        for constructor in constructors {
             let raw_callable_identifiers_id = self
                 .identifiers_interner
                 .get_or_intern(constructor.constructor.callable.clone());
@@ -292,12 +329,12 @@ impl RawUserComponentDb {
                 raw_callable_identifiers_id,
                 scope_id: current_scope_id,
             };
-            let constructor_id = self.component_interner.get_or_intern(component);
-            self.id2locations
-                .insert(constructor_id, constructor.constructor.location.clone());
-            let lifecycle = &constructor.lifecycle;
-            self.id2lifecycle
-                .insert(constructor_id, lifecycle.to_owned());
+            let lifecycle = constructor.lifecycle;
+            let constructor_id = self.intern_component(
+                component,
+                lifecycle,
+                constructor.constructor.location.clone(),
+            );
             self.id2cloning_strategy.insert(
                 constructor_id,
                 constructor
@@ -314,13 +351,24 @@ impl RawUserComponentDb {
                     fallible_callable_identifiers_id: constructor_id,
                     scope_id: current_scope_id,
                 };
-                let error_handler_id = self.component_interner.get_or_intern(component);
-                self.id2lifecycle
-                    .insert(error_handler_id, lifecycle.to_owned());
-                self.id2locations
-                    .insert(error_handler_id, error_handler.location.clone());
+                self.intern_component(component, lifecycle, error_handler.location.to_owned());
             }
         }
+    }
+
+    /// A helper function to intern a component without forgetting to do the necessary
+    /// bookeeping for the metadata (location and lifecycle) that are common to all
+    /// components.
+    fn intern_component(
+        &mut self,
+        component: UserComponent,
+        lifecycle: Lifecycle,
+        location: Location,
+    ) -> UserComponentId {
+        let component_id = self.component_interner.get_or_intern(component);
+        self.id2lifecycle.insert(component_id, lifecycle);
+        self.id2locations.insert(component_id, location);
+        component_id
     }
 
     /// Iterate over all the user components in the database, returning their id and the associated
