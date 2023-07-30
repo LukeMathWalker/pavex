@@ -6,6 +6,13 @@ edition = "2021"
 [build-dependencies]
 vergen = { version = "8.0.0", features = [ "build", "git", "gitcl" ]}
 
+[features]
+# Enable additional debug assertions to ensure correctness
+# Some of these assertions can be computationally expensive,
+# that's why they are hidden behind a feature flag (i.e. not enabled)
+# by default in the builds that we distribute to users.
+debug_assertions = []
+
 [dependencies]
 pavex = { path = "../pavex" }
 syn = { version = "2", features = ["full", "extra-traits", "visit"] }

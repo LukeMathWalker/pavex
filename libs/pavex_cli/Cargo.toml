@@ -23,3 +23,5 @@ guppy = "0.15"
 
 [dev-dependencies]
 pavex_test_runner = { path = "../pavex_test_runner" }
+# Enable more expensive debug assertions when building for testing purposes
+pavexc = { path = "../pavexc", features = ["debug_assertions"] }
