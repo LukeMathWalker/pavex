@@ -5,7 +5,10 @@ use anyhow::anyhow;
 use guppy::graph::PackageGraph;
 
 use pavex::blueprint::constructor::CloningStrategy;
-use pavex::blueprint::internals::{NestedBlueprint, RegisteredConstructor, RegisteredRoute};
+use pavex::blueprint::internals::{
+    NestedBlueprint, RegisteredCallable, RegisteredConstructor, RegisteredRoute,
+    RegisteredWrappingMiddleware,
+};
 use pavex::blueprint::router::AllowedMethods;
 use pavex::blueprint::{
     constructor::Lifecycle, reflection::Location, reflection::RawCallableIdentifiers, Blueprint,
@@ -250,7 +253,8 @@ impl RawUserComponentDb {
             package_graph,
             diagnostics,
         );
-        self.process_constructors(&bp.constructors, current_scope_id)
+        self.process_constructors(&bp.constructors, current_scope_id);
+        self.process_middlewares(&bp.middlewares, current_scope_id);
     }
 
     /// Register with [`RawUserComponentDb`] all the routes that have been
@@ -308,21 +312,45 @@ impl RawUserComponentDb {
                 diagnostics,
             );
 
-            if let Some(error_handler) = &registered_route.error_handler {
-                let raw_callable_identifiers_id = self
-                    .identifiers_interner
-                    .get_or_intern(error_handler.callable.clone());
-                let component = UserComponent::ErrorHandler {
-                    raw_callable_identifiers_id,
-                    fallible_callable_identifiers_id: request_handler_id,
-                    scope_id: route_scope_id,
-                };
-                self.intern_component(
-                    component,
-                    ROUTE_LIFECYCLE,
-                    error_handler.location.to_owned(),
-                );
-            }
+            self.process_error_handler(
+                &registered_route.error_handler,
+                ROUTE_LIFECYCLE,
+                current_scope_id,
+                request_handler_id,
+            );
+        }
+    }
+
+    /// Register with [`RawUserComponentDb`] all the routes that have been
+    /// registered against the provided `Blueprint`, including their error handlers
+    /// (if present).  
+    fn process_middlewares(
+        &mut self,
+        middlewares: &[RegisteredWrappingMiddleware],
+        current_scope_id: ScopeId,
+    ) {
+        const MIDDLEWARE_LIFECYCLE: Lifecycle = Lifecycle::RequestScoped;
+
+        for middleware in middlewares {
+            let raw_callable_identifiers_id = self
+                .identifiers_interner
+                .get_or_intern(middleware.middleware.callable.clone());
+            let component = UserComponent::WrappingMiddleware {
+                raw_callable_identifiers_id,
+                scope_id: current_scope_id,
+            };
+            let component_id = self.intern_component(
+                component,
+                MIDDLEWARE_LIFECYCLE,
+                middleware.middleware.location.clone(),
+            );
+
+            self.process_error_handler(
+                &middleware.error_handler,
+                MIDDLEWARE_LIFECYCLE,
+                current_scope_id,
+                component_id,
+            );
         }
     }
 
@@ -356,17 +384,12 @@ impl RawUserComponentDb {
                     .unwrap_or(CloningStrategy::NeverClone),
             );
 
-            if let Some(error_handler) = &constructor.error_handler {
-                let raw_callable_identifiers_id = self
-                    .identifiers_interner
-                    .get_or_intern(error_handler.callable.clone());
-                let component = UserComponent::ErrorHandler {
-                    raw_callable_identifiers_id,
-                    fallible_callable_identifiers_id: constructor_id,
-                    scope_id: current_scope_id,
-                };
-                self.intern_component(component, lifecycle, error_handler.location.to_owned());
-            }
+            self.process_error_handler(
+                &constructor.error_handler,
+                lifecycle,
+                current_scope_id,
+                constructor_id,
+            );
         }
     }
 
@@ -383,6 +406,27 @@ impl RawUserComponentDb {
         self.id2lifecycle.insert(component_id, lifecycle);
         self.id2locations.insert(component_id, location);
         component_id
+    }
+
+    /// Process the error handler registered against a (supposedly) fallible component, if
+    /// any.
+    fn process_error_handler(
+        &mut self,
+        error_handler: &Option<RegisteredCallable>,
+        lifecycle: Lifecycle,
+        scope_id: ScopeId,
+        fallible_component_id: UserComponentId,
+    ) {
+        let Some(error_handler) = error_handler else { return; };
+        let raw_callable_identifiers_id = self
+            .identifiers_interner
+            .get_or_intern(error_handler.callable.clone());
+        let component = UserComponent::ErrorHandler {
+            raw_callable_identifiers_id,
+            fallible_callable_identifiers_id: fallible_component_id,
+            scope_id,
+        };
+        self.intern_component(component, lifecycle, error_handler.location.to_owned());
     }
 
     /// Check the path of the registered route.
