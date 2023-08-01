@@ -164,6 +164,7 @@ pub(crate) struct ComponentDb {
     into_response: PathType,
 }
 
+/// The `build` method and its auxiliary routines.
 impl ComponentDb {
     #[tracing::instrument("Build component database", skip_all)]
     pub fn build(
@@ -174,17 +175,6 @@ impl ComponentDb {
         krate_collection: &CrateCollection,
         diagnostics: &mut Vec<miette::Error>,
     ) -> ComponentDb {
-        enum ErrorHandlerId {
-            Id(ComponentId),
-            // Used when the error handler failed to pass its own validation.
-            // It allows us to keep track of the fact that an error *was* registered for a fallible
-            // constructor/request handler, preventing us from reporting (incorrectly) that an error
-            // handler was missing.
-            UserId(UserComponentId),
-        }
-        let mut fallible_component_id2error_handler_id =
-            HashMap::<UserComponentId, Option<ErrorHandlerId>>::new();
-        let mut user_component_id2component_id = HashMap::new();
         let into_response = {
             let into_response = process_framework_path(
                 "pavex::response::IntoResponse",
@@ -210,208 +200,46 @@ impl ComponentDb {
             into_response,
         };
 
-        let constructor_ids = self_
-            .user_component_db
-            .constructors()
-            .map(|(id, _)| id)
-            .collect::<Vec<_>>();
-        for user_component_id in constructor_ids {
-            let c: Computation = computation_db[user_component_id].clone().into();
-            match TryInto::<Constructor>::try_into(c) {
-                Err(e) => {
-                    Self::invalid_constructor(
-                        e,
-                        user_component_id,
-                        &self_.user_component_db,
-                        computation_db,
-                        package_graph,
-                        krate_collection,
-                        diagnostics,
-                    );
-                }
-                Ok(c) => {
-                    let lifecycle = *self_.user_component_db.get_lifecycle(user_component_id);
-                    let constructor_id = self_.interner.get_or_intern(Component::Constructor {
-                        source_id: user_component_id.into(),
-                    });
-                    user_component_id2component_id.insert(user_component_id, constructor_id);
-                    self_.id2cloning_strategy.insert(
-                        constructor_id,
-                        self_
-                            .user_component_db
-                            .get_cloning_strategy(user_component_id)
-                            .unwrap()
-                            .to_owned(),
-                    );
-                    self_.id2lifecycle.insert(constructor_id, lifecycle);
 
-                    self_.register_derived_constructors(constructor_id, computation_db);
-                    if is_result(c.output_type()) && lifecycle != Lifecycle::Singleton {
-                        // We'll try to match all fallible constructors with an error handler later.
-                        // We skip singletons since we don't "handle" errors when constructing them.
-                        // They are just bubbled up to the caller by the function that builds
-                        // the application state.
-                        fallible_component_id2error_handler_id.insert(user_component_id, None);
-                    }
-                }
-            }
-        }
-
-        let request_handler_ids = self_
-            .user_component_db
-            .request_handlers()
-            .map(|(id, _)| id)
-            .collect::<Vec<_>>();
-        for user_component_id in request_handler_ids {
-            let user_component = &self_.user_component_db[user_component_id];
-            let callable = &computation_db[user_component_id];
-            let UserComponent::RequestHandler { router_key, .. } = user_component else {
-                unreachable!()
-            };
-            match RequestHandler::new(Cow::Borrowed(callable)) {
-                Err(e) => {
-                    Self::invalid_request_handler(
-                        e,
-                        user_component_id,
-                        &self_.user_component_db,
-                        computation_db,
-                        krate_collection,
-                        package_graph,
-                        diagnostics,
-                    );
-                }
-                Ok(h) => {
-                    let handler_id = self_
-                        .interner
-                        .get_or_intern(Component::RequestHandler { user_component_id });
-                    user_component_id2component_id.insert(user_component_id, handler_id);
-                    self_.router.insert(router_key.to_owned(), handler_id);
-                    let lifecycle = Lifecycle::RequestScoped;
-                    let scope_id = self_.scope_id(handler_id);
-                    self_.id2lifecycle.insert(handler_id, lifecycle.clone());
-
-                    if is_result(h.output_type()) {
-                        // We'll try to match it with an error handler later.
-                        fallible_component_id2error_handler_id.insert(user_component_id, None);
-
-                        // For each Result type, register two match transformers that de-structure
-                        // `Result<T,E>` into `T` or `E`.
-                        let m = MatchResult::match_result(h.output_type());
-                        let (ok, err) = (m.ok, m.err);
-
-                        let ok_id = self_.add_synthetic_transformer(
-                            ok.into(),
-                            handler_id,
-                            scope_id,
-                            ConsumptionMode::Move,
-                            computation_db,
-                        );
-
-                        // For each Result type register a match transformer that
-                        // transforms `Result<T,E>` into `E`.
-                        let err_id = self_.add_synthetic_transformer(
-                            err.into(),
-                            handler_id,
-                            scope_id,
-                            ConsumptionMode::Move,
-                            computation_db,
-                        );
-                        self_
-                            .fallible_id2match_ids
-                            .insert(handler_id, (ok_id, err_id));
-                        self_.match_id2fallible_id.insert(ok_id, handler_id);
-                        self_.match_id2fallible_id.insert(err_id, handler_id);
-                    }
-                }
-            }
-        }
-
-        let iter = self_
-            .user_component_db
-            .iter()
-            .filter_map(|(id, c)| match c {
-                UserComponent::ErrorHandler {
-                    fallible_callable_identifiers_id,
-                    ..
-                } => Some((id, *fallible_callable_identifiers_id)),
-                UserComponent::RequestHandler { .. }
-                | UserComponent::Constructor { .. }
-                | UserComponent::WrappingMiddleware { .. } => None,
-            })
-            .collect::<Vec<_>>();
-        for (error_handler_user_component_id, fallible_user_component_id) in iter {
-            let lifecycle = self_
-                .user_component_db
-                .get_lifecycle(fallible_user_component_id);
-            if lifecycle == &Lifecycle::Singleton {
-                Self::error_handler_for_a_singleton(
-                    error_handler_user_component_id,
-                    fallible_user_component_id,
-                    &self_.user_component_db,
-                    package_graph,
-                    diagnostics,
-                );
-                continue;
-            }
-            let fallible_callable = &computation_db[fallible_user_component_id];
-            if is_result(fallible_callable.output.as_ref().unwrap()) {
-                let error_handler_callable = &computation_db[error_handler_user_component_id];
-                // Capture immediately that an error handler was registered for this fallible component.
-                // We will later overwrite the associated id if it passes validation.
-                fallible_component_id2error_handler_id.insert(
-                    fallible_user_component_id,
-                    Some(ErrorHandlerId::UserId(error_handler_user_component_id)),
-                );
-                match ErrorHandler::new(error_handler_callable.to_owned(), fallible_callable) {
-                    Ok(e) => {
-                        // This may be `None` if the fallible component failed to pass its own
-                        // validation—e.g. the constructor callable was not deemed to be a valid
-                        // constructor.
-                        if let Some(fallible_component_id) =
-                            user_component_id2component_id.get(&fallible_user_component_id)
-                        {
-                            let error_handler_id = self_.add_error_handler(
-                                e,
-                                *fallible_component_id,
-                                lifecycle.to_owned(),
-                                error_handler_user_component_id.into(),
-                            );
-                            user_component_id2component_id
-                                .insert(error_handler_user_component_id, error_handler_id);
-                            fallible_component_id2error_handler_id.insert(
-                                fallible_user_component_id,
-                                Some(ErrorHandlerId::Id(error_handler_id)),
-                            );
-                        }
-                    }
-                    Err(e) => {
-                        Self::invalid_error_handler(
-                            e,
-                            error_handler_user_component_id,
-                            &self_.user_component_db,
-                            computation_db,
-                            krate_collection,
-                            package_graph,
-                            diagnostics,
-                        );
-                    }
-                };
-            } else {
-                Self::error_handler_for_infallible_component(
-                    error_handler_user_component_id,
-                    fallible_user_component_id,
-                    &self_.user_component_db,
-                    package_graph,
-                    diagnostics,
-                );
-            }
-        }
-
-        for (fallible_user_component_id, error_handler_id) in fallible_component_id2error_handler_id
         {
-            if error_handler_id.is_none() {
+            // Keep a look-up map to "revert" the conversion process.
+            // It's needed to match error handlers with the respective fallible components
+            // after they have been converted into components.
+            let mut user_component_id2component_id = HashMap::new();
+            // Keep track of which fallible components don't have a registered error
+            // handler in order to emit a diagnostic at the end.
+            let mut missing_error_handlers = IndexSet::new();
+
+            self_.process_constructors(
+                &mut missing_error_handlers,
+                &mut user_component_id2component_id,
+                computation_db,
+                package_graph,
+                krate_collection,
+                diagnostics,
+            );
+
+            self_.process_request_handlers(
+                &mut missing_error_handlers,
+                &mut user_component_id2component_id,
+                computation_db,
+                package_graph,
+                krate_collection,
+                diagnostics,
+            );
+
+            self_.process_error_handlers(
+                &mut missing_error_handlers,
+                user_component_id2component_id,
+                computation_db,
+                package_graph,
+                krate_collection,
+                diagnostics,
+            );
+
+            for fallible_id in missing_error_handlers {
                 Self::missing_error_handler(
-                    fallible_user_component_id,
+                    fallible_id,
                     &self_.user_component_db,
                     package_graph,
                     diagnostics,
@@ -516,6 +344,223 @@ impl ComponentDb {
         self_
     }
 
+    /// Validate all user-registered constructors.
+    /// We add their information to the relevant metadata stores.
+    /// In particular, we keep track of their associated error handler, if one exists.
+    fn process_constructors(
+        &mut self,
+        missing_error_handlers: &mut IndexSet<UserComponentId>,
+        user_component_id2component_id: &mut HashMap<UserComponentId, ComponentId>,
+        computation_db: &mut ComputationDb,
+        package_graph: &PackageGraph,
+        krate_collection: &CrateCollection,
+        diagnostics: &mut Vec<miette::Error>,
+    ) {
+        let constructor_ids = self
+            .user_component_db
+            .constructors()
+            .map(|(id, _)| id)
+            .collect::<Vec<_>>();
+        for user_component_id in constructor_ids {
+            let c: Computation = computation_db[user_component_id].clone().into();
+            match TryInto::<Constructor>::try_into(c) {
+                Err(e) => {
+                    Self::invalid_constructor(
+                        e,
+                        user_component_id,
+                        &self.user_component_db,
+                        computation_db,
+                        package_graph,
+                        krate_collection,
+                        diagnostics,
+                    );
+                }
+                Ok(c) => {
+                    let lifecycle = *self.user_component_db.get_lifecycle(user_component_id);
+                    let constructor_id = self.interner.get_or_intern(Component::Constructor {
+                        source_id: user_component_id.into(),
+                    });
+                    user_component_id2component_id.insert(user_component_id, constructor_id);
+                    self.id2cloning_strategy.insert(
+                        constructor_id,
+                        self.user_component_db
+                            .get_cloning_strategy(user_component_id)
+                            .unwrap()
+                            .to_owned(),
+                    );
+                    self.id2lifecycle.insert(constructor_id, lifecycle);
+
+                    self.register_derived_constructors(constructor_id, computation_db);
+                    if is_result(c.output_type()) && lifecycle != Lifecycle::Singleton {
+                        // We'll try to match all fallible constructors with an error handler later.
+                        // We skip singletons since we don't "handle" errors when constructing them.
+                        // They are just bubbled up to the caller by the function that builds
+                        // the application state.
+                        missing_error_handlers.insert(user_component_id);
+                    }
+                }
+            }
+        }
+    }
+
+    fn process_request_handlers(
+        &mut self,
+        missing_error_handlers: &mut IndexSet<UserComponentId>,
+        user_component_id2component_id: &mut HashMap<UserComponentId, ComponentId>,
+        computation_db: &mut ComputationDb,
+        package_graph: &PackageGraph,
+        krate_collection: &CrateCollection,
+        diagnostics: &mut Vec<miette::Error>,
+    ) {
+        let request_handler_ids = self
+            .user_component_db
+            .request_handlers()
+            .map(|(id, _)| id)
+            .collect::<Vec<_>>();
+        for user_component_id in request_handler_ids {
+            let user_component = &self.user_component_db[user_component_id];
+            let callable = &computation_db[user_component_id];
+            let UserComponent::RequestHandler { router_key, .. } = user_component else {
+                unreachable!()
+            };
+            match RequestHandler::new(Cow::Borrowed(callable)) {
+                Err(e) => {
+                    Self::invalid_request_handler(
+                        e,
+                        user_component_id,
+                        &self.user_component_db,
+                        computation_db,
+                        krate_collection,
+                        package_graph,
+                        diagnostics,
+                    );
+                }
+                Ok(h) => {
+                    let handler_id = self
+                        .interner
+                        .get_or_intern(Component::RequestHandler { user_component_id });
+                    user_component_id2component_id.insert(user_component_id, handler_id);
+                    self.router.insert(router_key.to_owned(), handler_id);
+                    let lifecycle = Lifecycle::RequestScoped;
+                    let scope_id = self.scope_id(handler_id);
+                    self.id2lifecycle.insert(handler_id, lifecycle);
+
+                    if is_result(h.output_type()) {
+                        // We'll try to match it with an error handler later.
+                        missing_error_handlers.insert(user_component_id);
+
+                        // For each Result type, register two match transformers that de-structure
+                        // `Result<T,E>` into `T` or `E`.
+                        let m = MatchResult::match_result(h.output_type());
+                        let (ok, err) = (m.ok, m.err);
+
+                        let ok_id = self.add_synthetic_transformer(
+                            ok.into(),
+                            handler_id,
+                            scope_id,
+                            ConsumptionMode::Move,
+                            computation_db,
+                        );
+                        let err_id = self.add_synthetic_transformer(
+                            err.into(),
+                            handler_id,
+                            scope_id,
+                            ConsumptionMode::Move,
+                            computation_db,
+                        );
+                        self.fallible_id2match_ids
+                            .insert(handler_id, (ok_id, err_id));
+                        self.match_id2fallible_id.insert(ok_id, handler_id);
+                        self.match_id2fallible_id.insert(err_id, handler_id);
+                    }
+                }
+            }
+        }
+    }
+
+    fn process_error_handlers(
+        &mut self,
+        missing_error_handlers: &mut IndexSet<UserComponentId>,
+        user_component_id2component_id: HashMap<UserComponentId, ComponentId>,
+        computation_db: &mut ComputationDb,
+        package_graph: &PackageGraph,
+        krate_collection: &CrateCollection,
+        diagnostics: &mut Vec<miette::Error>,
+    ) {
+        let iter = self
+            .user_component_db
+            .iter()
+            .filter_map(|(id, c)| match c {
+                UserComponent::ErrorHandler {
+                    fallible_callable_identifiers_id,
+                    ..
+                } => Some((id, *fallible_callable_identifiers_id)),
+                UserComponent::RequestHandler { .. }
+                | UserComponent::Constructor { .. }
+                | UserComponent::WrappingMiddleware { .. } => None,
+            })
+            .collect::<Vec<_>>();
+        for (error_handler_user_component_id, fallible_user_component_id) in iter {
+            let lifecycle = *self
+                .user_component_db
+                .get_lifecycle(fallible_user_component_id);
+            if lifecycle == Lifecycle::Singleton {
+                Self::error_handler_for_a_singleton(
+                    error_handler_user_component_id,
+                    fallible_user_component_id,
+                    &self.user_component_db,
+                    package_graph,
+                    diagnostics,
+                );
+                continue;
+            }
+            let fallible_callable = &computation_db[fallible_user_component_id];
+            if is_result(fallible_callable.output.as_ref().unwrap()) {
+                let error_handler_callable = &computation_db[error_handler_user_component_id];
+                // Capture immediately that an error handler was registered for this fallible component.
+                missing_error_handlers.remove(&fallible_user_component_id);
+                match ErrorHandler::new(error_handler_callable.to_owned(), fallible_callable) {
+                    Ok(e) => {
+                        // This may be `None` if the fallible component failed to pass its own
+                        // validation—e.g. the constructor callable was not deemed to be a valid
+                        // constructor.
+                        if let Some(fallible_component_id) =
+                            user_component_id2component_id.get(&fallible_user_component_id)
+                        {
+                            self.add_error_handler(
+                                e,
+                                *fallible_component_id,
+                                lifecycle,
+                                error_handler_user_component_id.into(),
+                            );
+                        }
+                    }
+                    Err(e) => {
+                        Self::invalid_error_handler(
+                            e,
+                            error_handler_user_component_id,
+                            &self.user_component_db,
+                            computation_db,
+                            krate_collection,
+                            package_graph,
+                            diagnostics,
+                        );
+                    }
+                };
+            } else {
+                Self::error_handler_for_infallible_component(
+                    error_handler_user_component_id,
+                    fallible_user_component_id,
+                    &self.user_component_db,
+                    package_graph,
+                    diagnostics,
+                );
+            }
+        }
+    }
+}
+
+impl ComponentDb {
     fn add_error_handler(
         &mut self,
         e: ErrorHandler,
@@ -536,24 +581,6 @@ impl ComponentDb {
         );
 
         error_handler_id
-    }
-
-    /// Retrieve the lifecycle for a component.
-    pub fn lifecycle(&self, id: ComponentId) -> Option<&Lifecycle> {
-        self.id2lifecycle.get(&id)
-    }
-
-    /// The mapping from a route to its dedicated request handler.
-    pub fn router(&self) -> &BTreeMap<RouterKey, ComponentId> {
-        &self.router
-    }
-
-    /// Iterate over all the components in the database alongside their ids.
-    pub fn iter(
-        &self,
-    ) -> impl Iterator<Item = (ComponentId, &Component)> + ExactSizeIterator + DoubleEndedIterator
-    {
-        self.interner.iter()
     }
 
     fn add_synthetic_constructor(
@@ -601,7 +628,8 @@ impl ComponentDb {
                 computation_db,
             );
 
-            // For each Result type, register a match transformer that transforms `Result<T,E>` into `E`.
+            // For each Result type, register a match transformer that transforms
+            // `Result<T,E>` into `E`.
             let err_id = self.add_synthetic_transformer(
                 err.into(),
                 constructor_id,
@@ -614,6 +642,18 @@ impl ComponentDb {
             self.match_id2fallible_id.insert(ok_id, constructor_id);
             self.match_id2fallible_id.insert(err_id, constructor_id);
         }
+    }
+
+    fn add_synthetic_transformer(
+        &mut self,
+        computation: Computation<'static>,
+        transformed_id: ComponentId,
+        scope_id: ScopeId,
+        consumption_mode: ConsumptionMode,
+        computation_db: &mut ComputationDb,
+    ) -> ComponentId {
+        let computation_id = computation_db.get_or_intern(computation);
+        self.get_or_intern_transformer(computation_id, transformed_id, scope_id, consumption_mode)
     }
 
     pub fn get_or_intern_constructor(
@@ -635,18 +675,6 @@ impl ComponentDb {
             .insert(constructor_id, cloning_strategy);
         self.register_derived_constructors(constructor_id, computation_db);
         Ok(constructor_id)
-    }
-
-    fn add_synthetic_transformer(
-        &mut self,
-        computation: Computation<'static>,
-        transformed_id: ComponentId,
-        scope_id: ScopeId,
-        consumption_mode: ConsumptionMode,
-        computation_db: &mut ComputationDb,
-    ) -> ComponentId {
-        let computation_id = computation_db.get_or_intern(computation);
-        self.get_or_intern_transformer(computation_id, transformed_id, scope_id, consumption_mode)
     }
 
     pub fn get_or_intern_transformer(
@@ -672,6 +700,24 @@ impl ComponentDb {
             self.lifecycle(transformed_component_id).unwrap().to_owned(),
         );
         transformer_id
+    }
+
+    /// Retrieve the lifecycle for a component.
+    pub fn lifecycle(&self, id: ComponentId) -> Option<&Lifecycle> {
+        self.id2lifecycle.get(&id)
+    }
+
+    /// The mapping from a route to its dedicated request handler.
+    pub fn router(&self) -> &BTreeMap<RouterKey, ComponentId> {
+        &self.router
+    }
+
+    /// Iterate over all the components in the database alongside their ids.
+    pub fn iter(
+        &self,
+    ) -> impl Iterator<Item = (ComponentId, &Component)> + ExactSizeIterator + DoubleEndedIterator
+    {
+        self.interner.iter()
     }
 
     /// If the component is an error match node, return the id of the
