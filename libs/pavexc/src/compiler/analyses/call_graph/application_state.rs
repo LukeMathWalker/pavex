@@ -234,6 +234,7 @@ pub(crate) fn application_state_call_graph(
                         let Computation::Callable(c) = &c.0 else { unreachable!() };
                         c
                     }
+                    HydratedComponent::WrappingMiddleware(w) => &w.callable,
                     HydratedComponent::RequestHandler(r) => &r.callable,
                     HydratedComponent::ErrorHandler(_) | HydratedComponent::Transformer(_) => {
                         unreachable!()

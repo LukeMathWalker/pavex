@@ -15,6 +15,7 @@ use crate::compiler::analyses::computations::{ComputationDb, ComputationId};
 use crate::compiler::analyses::user_components::{
     RouterKey, ScopeGraph, ScopeId, UserComponent, UserComponentDb, UserComponentId,
 };
+use crate::compiler::component::WrappingMiddleware;
 use crate::compiler::computation::{Computation, MatchResult};
 use crate::compiler::constructors::{Constructor, ConstructorValidationError};
 use crate::compiler::error_handlers::{ErrorHandler, ErrorHandlerValidationError};
@@ -52,6 +53,9 @@ pub(crate) enum Component {
     RequestHandler {
         user_component_id: UserComponentId,
     },
+    WrappingMiddleware {
+        user_component_id: UserComponentId,
+    },
     ErrorHandler {
         source_id: SourceId,
     },
@@ -85,6 +89,7 @@ pub(crate) type ComponentId = la_arena::Idx<Component>;
 pub(crate) enum HydratedComponent<'a> {
     Constructor(Constructor<'a>),
     RequestHandler(RequestHandler<'a>),
+    WrappingMiddleware(WrappingMiddleware<'a>),
     ErrorHandler(Cow<'a, ErrorHandler>),
     Transformer(Computation<'a>),
 }
@@ -96,6 +101,7 @@ impl<'a> HydratedComponent<'a> {
             HydratedComponent::RequestHandler(r) => Cow::Borrowed(r.input_types()),
             HydratedComponent::ErrorHandler(e) => Cow::Borrowed(e.input_types()),
             HydratedComponent::Transformer(c) => c.input_types(),
+            HydratedComponent::WrappingMiddleware(c) => Cow::Borrowed(c.input_types()),
         }
     }
 
@@ -104,6 +110,7 @@ impl<'a> HydratedComponent<'a> {
             HydratedComponent::Constructor(c) => c.output_type(),
             HydratedComponent::RequestHandler(r) => r.output_type(),
             HydratedComponent::ErrorHandler(e) => e.output_type(),
+            HydratedComponent::WrappingMiddleware(e) => e.output_type(),
             // TODO: we are not enforcing that the output type of a transformer is not
             //  the unit type. In particular, you can successfully register a `Result<T, ()>`
             //  type, which will result into a `MatchResult` with output `()` for the error.
@@ -116,6 +123,7 @@ impl<'a> HydratedComponent<'a> {
         match self {
             HydratedComponent::Constructor(c) => c.0.clone(),
             HydratedComponent::RequestHandler(r) => r.callable.clone().into(),
+            HydratedComponent::WrappingMiddleware(w) => w.callable.clone().into(),
             HydratedComponent::ErrorHandler(e) => e.callable.clone().into(),
             HydratedComponent::Transformer(t) => t.clone(),
         }
@@ -126,6 +134,9 @@ impl<'a> HydratedComponent<'a> {
             HydratedComponent::Constructor(c) => HydratedComponent::Constructor(c.into_owned()),
             HydratedComponent::RequestHandler(r) => {
                 HydratedComponent::RequestHandler(r.into_owned())
+            }
+            HydratedComponent::WrappingMiddleware(w) => {
+                HydratedComponent::WrappingMiddleware(w.into_owned())
             }
             HydratedComponent::ErrorHandler(e) => {
                 HydratedComponent::ErrorHandler(Cow::Owned(e.into_owned()))
@@ -219,12 +230,9 @@ impl ComponentDb {
                     );
                 }
                 Ok(c) => {
-                    let lifecycle = self_
-                        .user_component_db
-                        .get_lifecycle(user_component_id)
-                        .clone();
+                    let lifecycle = *self_.user_component_db.get_lifecycle(user_component_id);
                     let constructor_id = self_.interner.get_or_intern(Component::Constructor {
-                        source_id: SourceId::UserComponentId(user_component_id),
+                        source_id: user_component_id.into(),
                     });
                     user_component_id2component_id.insert(user_component_id, constructor_id);
                     self_.id2cloning_strategy.insert(
@@ -235,9 +243,7 @@ impl ComponentDb {
                             .unwrap()
                             .to_owned(),
                     );
-                    self_
-                        .id2lifecycle
-                        .insert(constructor_id, lifecycle.to_owned());
+                    self_.id2lifecycle.insert(constructor_id, lifecycle);
 
                     self_.register_derived_constructors(constructor_id, computation_db);
                     if is_result(c.output_type()) && lifecycle != Lifecycle::Singleton {
@@ -734,6 +740,7 @@ impl ComponentDb {
         self.interner.iter().filter_map(|(id, c)| match c {
             Component::RequestHandler { .. }
             | Component::ErrorHandler { .. }
+            | Component::WrappingMiddleware { .. }
             | Component::Transformer { .. } => None,
             Component::Constructor { source_id } => {
                 let computation = match source_id {
@@ -753,6 +760,7 @@ impl ComponentDb {
             | Component::ErrorHandler {
                 source_id: SourceId::UserComponentId(user_component_id),
             }
+            | Component::WrappingMiddleware { user_component_id }
             | Component::RequestHandler { user_component_id } => Some(*user_component_id),
             Component::ErrorHandler {
                 source_id: SourceId::ComputationId(..),
@@ -777,6 +785,13 @@ impl ComponentDb {
                     callable: Cow::Borrowed(callable),
                 };
                 HydratedComponent::RequestHandler(request_handler)
+            }
+            Component::WrappingMiddleware { user_component_id } => {
+                let callable = &computation_db[*user_component_id];
+                let w = WrappingMiddleware {
+                    callable: Cow::Borrowed(callable),
+                };
+                HydratedComponent::WrappingMiddleware(w)
             }
             Component::ErrorHandler { .. } => {
                 let error_handler = &self.error_handler_id2error_handler[&id];
@@ -809,7 +824,8 @@ impl ComponentDb {
     /// Return the [`ScopeId`] of the given component.
     pub fn scope_id(&self, component_id: ComponentId) -> ScopeId {
         match &self[component_id] {
-            Component::RequestHandler { user_component_id } => {
+            Component::WrappingMiddleware { user_component_id }
+            | Component::RequestHandler { user_component_id } => {
                 self.user_component_db[*user_component_id].scope_id()
             }
             Component::Constructor { source_id } | Component::ErrorHandler { source_id } => {

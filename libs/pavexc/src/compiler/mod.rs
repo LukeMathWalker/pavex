@@ -7,6 +7,7 @@ mod app;
 mod codegen;
 mod codegen_utils;
 mod computation;
+mod component;
 mod constructors;
 mod error_handlers;
 mod generated_app;
