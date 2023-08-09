@@ -2,6 +2,7 @@
 name = "pavex"
 version = "0.1.0"
 edition = "2021"
+repository = "https://github.com/LukeMathWalker/pavex"
 
 [dependencies]
 hyper = { version = "0.14", features = ["server", "http1", "http2", "tcp"] }
