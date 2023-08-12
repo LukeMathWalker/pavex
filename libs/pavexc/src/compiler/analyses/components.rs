@@ -23,7 +23,7 @@ use crate::compiler::interner::Interner;
 use crate::compiler::request_handlers::{RequestHandler, RequestHandlerValidationError};
 use crate::compiler::resolvers::CallableResolutionError;
 use crate::compiler::traits::{assert_trait_is_implemented, MissingTraitImplementationError};
-use crate::compiler::utils::{get_err_variant, get_ok_variant, is_result, process_framework_path};
+use crate::compiler::utils::{get_err_variant, get_ok_variant, process_framework_path};
 use crate::diagnostic;
 use crate::diagnostic::{
     convert_proc_macro_span, convert_rustdoc_span, AnnotatedSnippet, CallableType,
@@ -200,7 +200,6 @@ impl ComponentDb {
             into_response,
         };
 
-
         {
             // Keep a look-up map to "revert" the conversion process.
             // It's needed to match error handlers with the respective fallible components
@@ -273,7 +272,7 @@ impl ComponentDb {
                 };
             let callable = &computation_db[user_component_id];
             let output = callable.output.as_ref().unwrap();
-            let output = if is_result(output) {
+            let output = if output.is_result() {
                 get_ok_variant(output)
             } else {
                 output
@@ -391,7 +390,7 @@ impl ComponentDb {
                     self.id2lifecycle.insert(constructor_id, lifecycle);
 
                     self.register_derived_constructors(constructor_id, computation_db);
-                    if is_result(c.output_type()) && lifecycle != Lifecycle::Singleton {
+                    if c.is_fallible() && lifecycle != Lifecycle::Singleton {
                         // We'll try to match all fallible constructors with an error handler later.
                         // We skip singletons since we don't "handle" errors when constructing them.
                         // They are just bubbled up to the caller by the function that builds
@@ -445,7 +444,9 @@ impl ComponentDb {
                     let scope_id = self.scope_id(handler_id);
                     self.id2lifecycle.insert(handler_id, lifecycle);
 
-                    if is_result(h.output_type()) {
+                    let is_fallible = h.is_fallible();
+
+                    if is_fallible {
                         // We'll try to match it with an error handler later.
                         missing_error_handlers.insert(user_component_id);
 
@@ -515,7 +516,7 @@ impl ComponentDb {
                 continue;
             }
             let fallible_callable = &computation_db[fallible_user_component_id];
-            if is_result(fallible_callable.output.as_ref().unwrap()) {
+            if fallible_callable.is_fallible() {
                 let error_handler_callable = &computation_db[error_handler_user_component_id];
                 // Capture immediately that an error handler was registered for this fallible component.
                 missing_error_handlers.remove(&fallible_user_component_id);

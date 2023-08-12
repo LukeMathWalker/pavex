@@ -3,7 +3,6 @@ use std::fmt::{Display, Formatter};
 use ahash::HashMap;
 use indexmap::IndexSet;
 
-use crate::compiler::utils::is_result;
 use crate::language::{Callable, GenericArgument, ResolvedPath, ResolvedType, TypeReference};
 
 /// A transformation that, given a reference to an error type (and, optionally, other inputs),
@@ -31,7 +30,7 @@ impl ErrorHandler {
             .expect("Fallible callable must have an output type")
             .clone();
         assert!(
-            is_result(&result_type),
+            result_type.is_result(),
             "Fallible callable must return a Result"
         );
         let error_type_ref = {

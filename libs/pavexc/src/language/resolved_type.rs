@@ -28,6 +28,17 @@ pub enum ResolvedType {
 impl ResolvedType {
     pub const UNIT_TYPE: ResolvedType = ResolvedType::Tuple(Tuple { elements: vec![] });
 
+    /// Returns `true` if `t` is a `Result` type.
+    pub fn is_result(&self) -> bool {
+        let ResolvedType::ResolvedPath(t) = self else {
+            return false;
+        };
+        t.base_type == ["core", "result", "Result"]
+            || t.base_type == ["core", "prelude", "rust_2015", "Result"]
+            || t.base_type == ["core", "prelude", "rust_2018", "Result"]
+            || t.base_type == ["core", "prelude", "rust_2021", "Result"]
+    }
+
     /// Replace unassigned generic type parameters in `templated_type` with the concrete generic type
     /// parameters defined in `bindings`.
     ///
