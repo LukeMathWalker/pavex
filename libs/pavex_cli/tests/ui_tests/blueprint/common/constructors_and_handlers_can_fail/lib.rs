@@ -71,7 +71,7 @@ pub fn handle_middleware_error(_e: &MiddlewareError) -> Response {
     todo!()
 }
 
-pub fn fallible_wrapping_middleware() -> Result<(), MiddlewareError> {
+pub fn fallible_wrapping_middleware() -> Result<Response, MiddlewareError> {
     todo!()
 }
 

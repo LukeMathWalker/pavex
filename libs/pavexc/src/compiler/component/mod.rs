@@ -1,3 +1,3 @@
 mod wrapping_middleware;
 
-pub(crate) use wrapping_middleware::WrappingMiddleware;
+pub(crate) use wrapping_middleware::{WrappingMiddleware, WrappingMiddlewareValidationError};
