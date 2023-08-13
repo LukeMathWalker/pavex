@@ -54,6 +54,11 @@ impl<'a> WrappingMiddleware<'a> {
         self.callable.inputs.as_slice()
     }
 
+    /// Returns `true` if this middleware is fallible—that is, if it returns a `Result`.
+    pub fn is_fallible(&self) -> bool {
+        self.output_type().is_result()
+    }
+
     pub fn into_owned(self) -> WrappingMiddleware<'static> {
         WrappingMiddleware {
             callable: Cow::Owned(self.callable.into_owned()),

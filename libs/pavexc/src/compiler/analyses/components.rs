@@ -262,13 +262,18 @@ impl ComponentDb {
         let iter: Vec<_> = self_
             .interner
             .iter()
-            .filter_map(|(id, c)| match c {
-                Component::RequestHandler { user_component_id }
-                | Component::ErrorHandler {
-                    // There are no error handlers with a `ComputationId` source at this stage.
-                    source_id: SourceId::UserComponentId(user_component_id),
-                } => Some((id, *user_component_id)),
-                _ => None,
+            .filter_map(|(id, c)| {
+                use Component::*;
+
+                match c {
+                    WrappingMiddleware { user_component_id }
+                    | RequestHandler { user_component_id }
+                    | ErrorHandler {
+                        // There are no error handlers with a `ComputationId` source at this stage.
+                        source_id: SourceId::UserComponentId(user_component_id),
+                    } => Some((id, *user_component_id)),
+                    Constructor { .. } | Transformer { .. } | ErrorHandler { .. } => None,
+                }
             })
             .collect();
         for (component_id, user_component_id) in iter.into_iter() {
@@ -520,7 +525,45 @@ impl ComponentDb {
                         diagnostics,
                     );
                 }
-                Ok(_) => todo!(),
+                Ok(mw) => {
+                    let mw_id = self
+                        .interner
+                        .get_or_intern(Component::WrappingMiddleware { user_component_id });
+                    user_component_id2component_id.insert(user_component_id, mw_id);
+                    let scope_id = self.scope_id(mw_id);
+                    let lifecycle = Lifecycle::RequestScoped;
+                    self.id2lifecycle.insert(mw_id, lifecycle);
+
+                    let is_fallible = mw.is_fallible();
+
+                    if is_fallible {
+                        // We'll try to match it with an error handler later.
+                        missing_error_handlers.insert(user_component_id);
+
+                        // For each Result type, register two match transformers that de-structure
+                        // `Result<T,E>` into `T` or `E`.
+                        let m = MatchResult::match_result(mw.output_type());
+                        let (ok, err) = (m.ok, m.err);
+
+                        let ok_id = self.add_synthetic_transformer(
+                            ok.into(),
+                            mw_id,
+                            scope_id,
+                            ConsumptionMode::Move,
+                            computation_db,
+                        );
+                        let err_id = self.add_synthetic_transformer(
+                            err.into(),
+                            mw_id,
+                            scope_id,
+                            ConsumptionMode::Move,
+                            computation_db,
+                        );
+                        self.fallible_id2match_ids.insert(mw_id, (ok_id, err_id));
+                        self.match_id2fallible_id.insert(ok_id, mw_id);
+                        self.match_id2fallible_id.insert(err_id, mw_id);
+                    }
+                }
             }
         }
     }
@@ -537,14 +580,15 @@ impl ComponentDb {
         let iter = self
             .user_component_db
             .iter()
-            .filter_map(|(id, c)| match c {
-                UserComponent::ErrorHandler {
-                    fallible_callable_identifiers_id,
-                    ..
-                } => Some((id, *fallible_callable_identifiers_id)),
-                UserComponent::RequestHandler { .. }
-                | UserComponent::Constructor { .. }
-                | UserComponent::WrappingMiddleware { .. } => None,
+            .filter_map(|(id, c)| {
+                use UserComponent::*;
+                match c {
+                    ErrorHandler {
+                        fallible_callable_identifiers_id,
+                        ..
+                    } => Some((id, *fallible_callable_identifiers_id)),
+                    RequestHandler { .. } | Constructor { .. } | WrappingMiddleware { .. } => None,
+                }
             })
             .collect::<Vec<_>>();
         for (error_handler_user_component_id, fallible_user_component_id) in iter {
