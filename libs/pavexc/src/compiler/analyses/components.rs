@@ -479,6 +479,33 @@ impl ComponentDb {
         }
     }
 
+    fn process_wrapping_middlewares(
+        &mut self,
+        missing_error_handlers: &mut IndexSet<UserComponentId>,
+        user_component_id2component_id: &mut HashMap<UserComponentId, ComponentId>,
+        computation_db: &mut ComputationDb,
+        package_graph: &PackageGraph,
+        krate_collection: &CrateCollection,
+        diagnostics: &mut Vec<miette::Error>,
+    ) {
+        let wrapping_middleware_ids = self
+            .user_component_db
+            .wrapping_middlewares()
+            .map(|(id, _)| id)
+            .collect::<Vec<_>>();
+        for user_component_id in wrapping_middleware_ids {
+            let user_component = &self.user_component_db[user_component_id];
+            let callable = &computation_db[user_component_id];
+            let UserComponent::WrappingMiddleware { .. } = user_component else {
+                unreachable!()
+            };
+            match WrappingMiddleware::new(Cow::Borrowed(callable)) {
+                Err(_) => todo!(),
+                Ok(_) => todo!(),
+            }
+        }
+    }
+
     fn process_error_handlers(
         &mut self,
         missing_error_handlers: &mut IndexSet<UserComponentId>,

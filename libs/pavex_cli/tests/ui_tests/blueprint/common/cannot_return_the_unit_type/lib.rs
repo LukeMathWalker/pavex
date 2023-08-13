@@ -24,6 +24,14 @@ pub fn handler() -> pavex::response::Response {
     todo!()
 }
 
+pub fn unit_wrapping_middleware() {
+    todo!()
+}
+
+pub fn fallible_wrapping_middleware() -> Result<(), Error> {
+    todo!()
+}
+
 pub fn unit_handler() {
     todo!()
 }
@@ -40,6 +48,10 @@ pub fn blueprint() -> Blueprint {
         Lifecycle::RequestScoped,
     );
     bp.constructor(f!(crate::fallible_constructor), Lifecycle::RequestScoped)
+        .error_handler(f!(crate::error_handler));
+
+    bp.wrap(f!(crate::unit_wrapping_middleware));
+    bp.wrap(f!(crate::fallible_wrapping_middleware))
         .error_handler(f!(crate::error_handler));
     bp.route(GET, "/home", f!(crate::handler));
     bp.route(GET, "/unit", f!(crate::unit_handler));

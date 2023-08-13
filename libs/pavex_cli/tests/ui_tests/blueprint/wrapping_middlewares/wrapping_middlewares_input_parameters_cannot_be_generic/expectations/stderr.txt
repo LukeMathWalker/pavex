@@ -1,0 +1,92 @@
+[31m[1mERROR[0m[39m: 
+  [31m×[0m I am not smart enough to figure out the concrete type for all the generic
+  [31m│[0m parameters in `app::generic_constructor`.
+  [31m│[0m I can only infer the type of an unassigned generic parameter if it appears
+  [31m│[0m in the output type returned by the constructor. This is not the case for
+  [31m│[0m `T`, since it is only used by the input parameters.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:27:1]
+  [31m│[0m  [2m27[0m │     let mut bp = Blueprint::new();
+  [31m│[0m  [2m28[0m │     bp.constructor(f!(crate::generic_constructor), Lifecycle::RequestScoped);
+  [31m│[0m     · [35;1m                   ───────────────┬──────────────[0m
+  [31m│[0m     ·                                   [35;1m╰── [35;1mThe constructor was registered here[0m[0m
+  [31m│[0m  [2m29[0m │     bp.constructor(
+  [31m│[0m     ╰────
+  [31m│[0m    ╭─[[36;1;4msrc/lib.rs[0m:1:1]
+  [31m│[0m  [2m1[0m │ pub fn generic_constructor<T>(generic_input: GenericType<T>) -> u8 {
+  [31m│[0m    · [35;1m                           ┬[0m[33;1m                                    ─┬[0m
+  [31m│[0m    ·                            [35;1m│[0m                                     [33;1m╰── [33;1m..because it is not used here[0m[0m
+  [31m│[0m    ·                            [35;1m╰── [35;1mI can't infer this..[0m[0m
+  [31m│[0m  [2m2[0m │     todo!()
+  [31m│[0m    ╰────
+  [31m│[0m [36m  help: [0mSpecify the concrete type(s) for the problematic generic
+  [31m│[0m         parameter(s) when registering the constructor against the blueprint:
+  [31m│[0m         |  bp.constructor(
+  [31m│[0m         |    f!(my_crate::my_constructor::<ConcreteType>),
+  [31m│[0m         |    ..
+  [31m│[0m         |  )
+
+[31m[1mERROR[0m[39m: 
+  [31m×[0m I am not smart enough to figure out the concrete type for all the generic
+  [31m│[0m parameters in `app::doubly_generic_constructor`.
+  [31m│[0m I can only infer the type of an unassigned generic parameter if it appears
+  [31m│[0m in the output type returned by the constructor. This is not the case for
+  [31m│[0m `T` and `S`, since they are only used by the input parameters.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:29:1]
+  [31m│[0m  [2m29[0m │     bp.constructor(
+  [31m│[0m  [2m30[0m │         f!(crate::doubly_generic_constructor),
+  [31m│[0m     · [35;1m        ──────────────────┬──────────────────[0m
+  [31m│[0m     ·                           [35;1m╰── [35;1mThe constructor was registered here[0m[0m
+  [31m│[0m  [2m31[0m │         Lifecycle::RequestScoped,
+  [31m│[0m     ╰────
+  [31m│[0m    ╭─[[36;1;4msrc/lib.rs[0m:1:1]
+  [31m│[0m  [2m1[0m │ pub fn doubly_generic_constructor<T, S>(i1: GenericType<T>, i2: GenericType<S>) -> u16 {
+  [31m│[0m    · [35;1m                                  ┬[0m[33;1m  ┬[0m[32;1m                                             ─┬─[0m
+  [31m│[0m    ·                                   [35;1m│[0m  [33;1m│[0m                                              [32;1m╰── [32;1m..because they are not used here[0m[0m
+  [31m│[0m    ·                                   [35;1m│[0m  [33;1m╰── [33;1mI can't infer this..[0m[0m
+  [31m│[0m    ·                                   [35;1m╰── [35;1mI can't infer this..[0m[0m
+  [31m│[0m  [2m2[0m │     todo!()
+  [31m│[0m    ╰────
+  [31m│[0m [36m  help: [0mSpecify the concrete type(s) for the problematic generic
+  [31m│[0m         parameter(s) when registering the constructor against the blueprint:
+  [31m│[0m         |  bp.constructor(
+  [31m│[0m         |    f!(my_crate::my_constructor::<ConcreteType>),
+  [31m│[0m         |    ..
+  [31m│[0m         |  )
+
+[31m[1mERROR[0m[39m: 
+  [31m×[0m I am not smart enough to figure out the concrete type for all the generic
+  [31m│[0m parameters in `app::triply_generic_constructor`.
+  [31m│[0m I can only infer the type of an unassigned generic parameter if it appears
+  [31m│[0m in the output type returned by the constructor. This is not the case for
+  [31m│[0m `T`, `S` and `U`, since they are only used by the input parameters.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:33:1]
+  [31m│[0m  [2m33[0m │     bp.constructor(
+  [31m│[0m  [2m34[0m │         f!(crate::triply_generic_constructor),
+  [31m│[0m     · [35;1m        ──────────────────┬──────────────────[0m
+  [31m│[0m     ·                           [35;1m╰── [35;1mThe constructor was registered here[0m[0m
+  [31m│[0m  [2m35[0m │         Lifecycle::RequestScoped,
+  [31m│[0m     ╰────
+  [31m│[0m    ╭─[[36;1;4msrc/lib.rs[0m:1:1]
+  [31m│[0m  [2m1[0m │ pub fn triply_generic_constructor<T, S, U>(
+  [31m│[0m    · [35;1m                                  ┬[0m[33;1m  ┬[0m[32;1m  ┬[0m
+  [31m│[0m    ·                                   [35;1m│[0m  [33;1m│[0m  [32;1m╰── [32;1mI can't infer this..[0m[0m
+  [31m│[0m    ·                                   [35;1m│[0m  [33;1m╰── [33;1mI can't infer this..[0m[0m
+  [31m│[0m    ·                                   [35;1m╰── [35;1mI can't infer this..[0m[0m
+  [31m│[0m  [2m2[0m │     i1: GenericType<T>,
+  [31m│[0m    ╰────
+  [31m│[0m    ╭─[[36;1;4msrc/lib.rs[0m:4:1]
+  [31m│[0m  [2m4[0m │     i3: GenericType<U>,
+  [31m│[0m  [2m5[0m │ ) -> u32 {
+  [31m│[0m    · [35;1m     ─┬─[0m
+  [31m│[0m    ·       [35;1m╰── [35;1m..because they are not used here[0m[0m
+  [31m│[0m  [2m6[0m │     todo!()
+  [31m│[0m    ╰────
+  [31m│[0m [36m  help: [0mSpecify the concrete type(s) for the problematic generic
+  [31m│[0m         parameter(s) when registering the constructor against the blueprint:
+  [31m│[0m         |  bp.constructor(
+  [31m│[0m         |    f!(my_crate::my_constructor::<ConcreteType>),
+  [31m│[0m         |    ..
+  [31m│[0m         |  )

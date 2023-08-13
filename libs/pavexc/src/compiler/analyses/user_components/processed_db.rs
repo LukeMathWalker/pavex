@@ -133,6 +133,16 @@ impl UserComponentDb {
             .filter(|(_, c)| matches!(c, UserComponent::RequestHandler { .. }))
     }
 
+    /// Iterate over all the wrapping middleware components in the database, returning their id and the
+    /// associated `UserComponent`.
+    pub fn wrapping_middlewares(
+        &self,
+    ) -> impl Iterator<Item = (UserComponentId, &UserComponent)> + DoubleEndedIterator {
+        self.component_interner
+            .iter()
+            .filter(|(_, c)| matches!(c, UserComponent::WrappingMiddleware { .. }))
+    }
+
     /// Return the lifecycle of the component with the given id.
     pub fn get_lifecycle(&self, id: UserComponentId) -> &Lifecycle {
         &self.id2lifecycle[&id]
