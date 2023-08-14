@@ -43,22 +43,16 @@ impl<'a> WrappingMiddleware<'a> {
             }
         }
 
-        // We verify that one of the input parameters is a `Next<_>`.
+        // We verify that exactly one of the input parameters is a `Next<_>`.
         let next_unassigned_generic_parameters = {
-            let mut next_parameter = None;
-            let mut next_unassigned_generic_parameters = IndexSet::new();
-            for input in c.inputs.iter() {
-                if is_next(input) {
-                    next_parameter = Some(input);
-                    next_unassigned_generic_parameters
-                        .extend(input.unassigned_generic_type_parameters());
-                    break;
-                }
-            }
-            if next_parameter.is_none() {
+            let next_parameters: Vec<_> = c.inputs.iter().filter(|t| is_next(*t)).collect();
+            if next_parameters.is_empty() {
                 return Err(MustTakeNextAsInputParameter);
             }
-            next_unassigned_generic_parameters
+            if next_parameters.len() > 1 {
+                return Err(CannotTakeMoreThanOneNextAsInputParameter);
+            }
+            next_parameters[0].unassigned_generic_type_parameters()
         };
 
         // We make sure that the callable doesn't have any unassigned generic type parameters
@@ -138,6 +132,11 @@ pub(crate) enum WrappingMiddlewareValidationError {
         This middleware doesn't."
     )]
     MustTakeNextAsInputParameter,
+    #[error(
+        "Wrapping middlewares can't take more than one instance of `pavex::middleware::Next<_>` as input parameter.\n\
+        This middleware does."
+    )]
+    CannotTakeMoreThanOneNextAsInputParameter,
     #[error(
         "Input parameters for a wrapping middleware can't have any *unassigned* generic type parameters \
         that appear exclusively in its input parameters."

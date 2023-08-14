@@ -1519,6 +1519,12 @@ impl ComponentDb {
                     .optional_label(label)
                     .build()
             }
+            CannotTakeMoreThanOneNextAsInputParameter => {
+                CompilerDiagnostic::builder(source, e)
+                    .optional_label(label)
+                    .help("Remove the extra `Next` input parameters until only one is left.".into())
+                    .build()
+            }
             UnderconstrainedGenericParameters { ref parameters } => {
                 fn get_definition_span(
                     callable: &Callable,
