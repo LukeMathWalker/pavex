@@ -15,12 +15,13 @@ use crate::compiler::analyses::computations::{ComputationDb, ComputationId};
 use crate::compiler::analyses::user_components::{
     RouterKey, ScopeGraph, ScopeId, UserComponent, UserComponentDb, UserComponentId,
 };
-use crate::compiler::component::{WrappingMiddleware, WrappingMiddlewareValidationError};
+use crate::compiler::component::{
+    Constructor, ConstructorValidationError, ErrorHandler, ErrorHandlerValidationError,
+    RequestHandler, RequestHandlerValidationError, WrappingMiddleware,
+    WrappingMiddlewareValidationError,
+};
 use crate::compiler::computation::{Computation, MatchResult};
-use crate::compiler::constructors::{Constructor, ConstructorValidationError};
-use crate::compiler::error_handlers::{ErrorHandler, ErrorHandlerValidationError};
 use crate::compiler::interner::Interner;
-use crate::compiler::request_handlers::{RequestHandler, RequestHandlerValidationError};
 use crate::compiler::resolvers::CallableResolutionError;
 use crate::compiler::traits::{assert_trait_is_implemented, MissingTraitImplementationError};
 use crate::compiler::utils::{get_err_variant, get_ok_variant, process_framework_path};
@@ -1514,17 +1515,15 @@ impl ComponentDb {
         let label = diagnostic::get_f_macro_invocation_span(&source, location)
             .map(|s| s.labeled("The wrapping middleware was registered here".into()));
         let diagnostic = match e {
-            CannotReturnTheUnitType | CannotFalliblyReturnTheUnitType | MustTakeNextAsInputParameter => {
-                CompilerDiagnostic::builder(source, e)
-                    .optional_label(label)
-                    .build()
-            }
-            CannotTakeMoreThanOneNextAsInputParameter => {
-                CompilerDiagnostic::builder(source, e)
-                    .optional_label(label)
-                    .help("Remove the extra `Next` input parameters until only one is left.".into())
-                    .build()
-            }
+            CannotReturnTheUnitType
+            | CannotFalliblyReturnTheUnitType
+            | MustTakeNextAsInputParameter => CompilerDiagnostic::builder(source, e)
+                .optional_label(label)
+                .build(),
+            CannotTakeMoreThanOneNextAsInputParameter => CompilerDiagnostic::builder(source, e)
+                .optional_label(label)
+                .help("Remove the extra `Next` input parameters until only one is left.".into())
+                .build(),
             UnderconstrainedGenericParameters { ref parameters } => {
                 fn get_definition_span(
                     callable: &Callable,

@@ -22,8 +22,8 @@ use crate::compiler::analyses::components::{ComponentDb, HydratedComponent};
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::codegen_utils;
 use crate::compiler::codegen_utils::{Fragment, VariableNameGenerator};
+use crate::compiler::component::Constructor;
 use crate::compiler::computation::{Computation, MatchResultVariant};
-use crate::compiler::constructors::Constructor;
 use crate::language::ResolvedType;
 
 /// Generate the dependency closure of the [`OrderedCallGraph`]'s root callable.
