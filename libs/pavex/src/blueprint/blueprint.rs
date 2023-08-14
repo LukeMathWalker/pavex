@@ -11,16 +11,14 @@ use super::router::{MethodGuard, Route};
 /// The starting point for building an application with Pavex.
 ///
 /// A blueprint defines the runtime behaviour of your application.  
-/// It captures three types of information:
+/// It keeps track of:
 ///
-/// - route handlers, via [`Blueprint::route`].
-/// - constructors, via [`Blueprint::constructor`].
-/// - error handlers, via [`Constructor::error_handler`].
+/// - route handlers, registered via [`Blueprint::route`]
+/// - constructors, registered via [`Blueprint::constructor`]
+/// - wrapping middlewares, registered via [`Blueprint::wrap`]
 ///
 /// This information is then serialized via [`Blueprint::persist`] and passed as input to
 /// Pavex's CLI to generate the application's source code.
-///
-/// [`Constructor::error_handler`]: Constructor::error_handler
 pub struct Blueprint {
     /// The location where the [`Blueprint`] was created.
     pub creation_location: Location,
