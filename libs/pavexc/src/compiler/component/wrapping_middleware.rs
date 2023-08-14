@@ -44,19 +44,22 @@ impl<'a> WrappingMiddleware<'a> {
         }
 
         // We verify that one of the input parameters is a `Next<_>`.
-        let mut next_parameter = None;
-        let mut next_unassigned_generic_parameters = IndexSet::new();
-        for input in c.inputs.iter() {
-            if is_next(input) {
-                next_parameter = Some(input);
-                next_unassigned_generic_parameters
-                    .extend(input.unassigned_generic_type_parameters());
-                break;
+        let next_unassigned_generic_parameters = {
+            let mut next_parameter = None;
+            let mut next_unassigned_generic_parameters = IndexSet::new();
+            for input in c.inputs.iter() {
+                if is_next(input) {
+                    next_parameter = Some(input);
+                    next_unassigned_generic_parameters
+                        .extend(input.unassigned_generic_type_parameters());
+                    break;
+                }
             }
-        }
-        if next_parameter.is_none() {
-            return Err(MustTakeNextAsInputParameter);
-        }
+            if next_parameter.is_none() {
+                return Err(MustTakeNextAsInputParameter);
+            }
+            next_unassigned_generic_parameters
+        };
 
         // We make sure that the callable doesn't have any unassigned generic type parameters
         // that appear exclusively in its input parameters.
@@ -94,6 +97,11 @@ impl<'a> WrappingMiddleware<'a> {
     /// Returns `true` if this middleware is fallible—that is, if it returns a `Result`.
     pub fn is_fallible(&self) -> bool {
         self.output_type().is_result()
+    }
+
+    /// Returns the index of the input parameter that is a `Next<_>`.
+    pub fn next_input_index(&self) -> usize {
+        self.callable.inputs.iter().position(is_next).unwrap()
     }
 
     pub fn into_owned(self) -> WrappingMiddleware<'static> {

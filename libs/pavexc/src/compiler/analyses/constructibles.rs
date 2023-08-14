@@ -124,10 +124,21 @@ impl ConstructibleDb {
                         .iter()
                         .map(|i| Some(i.to_owned()))
                         .collect();
-                    // Errors happen, they are not "constructed" (we use a transformer instead).
-                    // Therefore we skip the error input type for error handlers.
-                    if let HydratedComponent::ErrorHandler(e) = &resolved_component {
-                        input_types[e.error_input_index] = None;
+                    match &resolved_component {
+                        // `Next` is a special case: it's not a pre-determined type, but rather
+                        // an ad-hoc type that is constructed by the framework at compile-time,
+                        // specific to each request handling chain.
+                        HydratedComponent::WrappingMiddleware(mw) => {
+                            input_types[mw.next_input_index()] = None;
+                        }
+                        // Errors happen, they are not "constructed" (we use a transformer instead).
+                        // Therefore we skip the error input type for error handlers.
+                        HydratedComponent::ErrorHandler(e) => {
+                            input_types[e.error_input_index] = None;
+                        }
+                        HydratedComponent::Constructor(_)
+                        | HydratedComponent::RequestHandler(_)
+                        | HydratedComponent::Transformer(_) => {}
                     }
                     input_types
                 };
