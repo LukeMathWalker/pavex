@@ -54,6 +54,7 @@
             error_handler: None,
         ),
     ],
+    middlewares: [],
     routes: [
         (
             path: "/home",

@@ -3,7 +3,6 @@ use std::borrow::Cow;
 use indexmap::IndexSet;
 
 use crate::compiler::computation::MatchResult;
-use crate::compiler::utils::is_result;
 use crate::language::{Callable, ResolvedType};
 
 /// A callable that handles incoming requests for one or more routes.
@@ -24,7 +23,7 @@ impl<'a> RequestHandler<'a> {
 
         // If the constructor is fallible, we make sure that it returns a non-unit type on
         // the happy path.
-        if is_result(&output_type) {
+        if output_type.is_result() {
             let m = MatchResult::match_result(&output_type);
             output_type = m.ok.output;
             if output_type == ResolvedType::UNIT_TYPE {
@@ -59,6 +58,11 @@ impl<'a> RequestHandler<'a> {
 
     pub fn input_types(&self) -> &[ResolvedType] {
         self.callable.inputs.as_slice()
+    }
+
+    /// Returns `true` if the request handler is fallible.
+    pub fn is_fallible(&self) -> bool {
+        self.callable.is_fallible()
     }
 
     pub fn into_owned(self) -> RequestHandler<'static> {

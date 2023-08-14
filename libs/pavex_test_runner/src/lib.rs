@@ -192,14 +192,14 @@ impl TestData {
     }
 
     fn load_configuration(&self) -> Result<TestConfig, anyhow::Error> {
-        let test_config =
-            fs_err::read_to_string(self.definition_directory.join("test_config.toml")).context(
-                "All UI tests must have an associated `test_config.toml` file with, \
+        let path = self.definition_directory.join("test_config.toml");
+        let test_config = fs_err::read_to_string(&path).context(
+            "All UI tests must have an associated `test_config.toml` file with, \
                     at the very least, a `description` field explaining what the test is trying \
                     to verify.",
-            )?;
-        toml::from_str(&test_config).context(
-            "Failed to deserialize `test_config.toml`. Check the file against the expected schema!",
+        )?;
+        toml::from_str(&test_config).with_context(
+            || format!("Failed to deserialize {:?}. Check the file against the expected schema!", &path)
         )
     }
 

@@ -14,7 +14,7 @@ use crate::compiler::analyses::components::{ComponentDb, HydratedComponent};
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::user_components::{RouterKey, UserComponentId};
 use crate::compiler::computation::{Computation, MatchResultVariant};
-use crate::compiler::constructors::Constructor;
+use crate::compiler::component::Constructor;
 use crate::compiler::utils::process_framework_path;
 use crate::diagnostic;
 use crate::diagnostic::{CompilerDiagnostic, LocationExt, OptionalSourceSpanExt};

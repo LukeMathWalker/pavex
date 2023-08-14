@@ -191,6 +191,7 @@ where
                         // We don't allow/need dependency injection for transformers at the moment.
                         vec![]
                     }
+                    HydratedComponent::WrappingMiddleware(_) => todo!(),
                 };
                 for input_type in input_types {
                     if let Some((constructor_id, consumption_mode)) = constructible_db.get(

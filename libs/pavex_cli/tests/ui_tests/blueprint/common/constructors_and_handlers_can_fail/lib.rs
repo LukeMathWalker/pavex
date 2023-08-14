@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
 use pavex::f;
+use pavex::middleware::Next;
 use pavex::{hyper::body::Body, request::RequestHead, response::Response};
 
 pub struct Logger;
@@ -64,6 +65,17 @@ pub fn http_client(_config: Config) -> Result<HttpClient, HttpClientError> {
     todo!()
 }
 
+#[derive(Debug)]
+pub struct MiddlewareError;
+
+pub fn handle_middleware_error(_e: &MiddlewareError) -> Response {
+    todo!()
+}
+
+pub fn fallible_wrapping_middleware<T>(_next: Next<T>) -> Result<Response, MiddlewareError> {
+    todo!()
+}
+
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.constructor(f!(crate::http_client), Lifecycle::Singleton);
@@ -71,6 +83,8 @@ pub fn blueprint() -> Blueprint {
         .error_handler(f!(crate::handle_extract_path_error));
     bp.constructor(f!(crate::logger), Lifecycle::Transient)
         .error_handler(f!(crate::handle_logger_error));
+    bp.wrap(f!(crate::fallible_wrapping_middleware))
+        .error_handler(f!(crate::handle_middleware_error));
     bp.route(GET, "/home", f!(crate::request_handler))
         .error_handler(f!(crate::handle_handler_error));
     bp

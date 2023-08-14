@@ -82,6 +82,15 @@ impl Callable {
         }
         result
     }
+
+    /// Returns `true` if this callable is fallible—i.e. if it returns a `Result` type.
+    pub fn is_fallible(&self) -> bool {
+        if let Some(output) = &self.output {
+            output.is_result()
+        } else {
+            false
+        }
+    }
 }
 
 /// Rust supports different types of callables which rely on different invocation syntax.

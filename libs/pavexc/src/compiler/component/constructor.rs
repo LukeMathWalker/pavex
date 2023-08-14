@@ -3,7 +3,6 @@ use std::borrow::Cow;
 use indexmap::IndexSet;
 
 use crate::compiler::computation::{Computation, MatchResult};
-use crate::compiler::utils::is_result;
 use crate::language::ResolvedType;
 
 /// Build a new instance of a type by performing a computation.
@@ -29,7 +28,7 @@ impl<'a> TryFrom<Computation<'a>> for Constructor<'a> {
 
         // If the constructor is fallible, we make sure that it returns a non-unit type on
         // the happy path.
-        if is_result(&output_type) {
+        if output_type.is_result() {
             let m = MatchResult::match_result(&output_type);
             output_type = m.ok.output;
             if output_type == ResolvedType::UNIT_TYPE {
@@ -69,7 +68,7 @@ impl<'a> TryFrom<Constructor<'a>> for FallibleConstructor<'a> {
     type Error = FallibleConstructorValidationError;
 
     fn try_from(c: Constructor<'a>) -> Result<Self, Self::Error> {
-        if !is_result(c.output_type()) {
+        if !c.is_fallible() {
             Err(FallibleConstructorValidationError::CannotBeInfallible)
         } else {
             Ok(Self(c.0))
@@ -100,6 +99,11 @@ impl<'a> Constructor<'a> {
         &self,
     ) -> Result<FallibleConstructor<'a>, FallibleConstructorValidationError> {
         self.clone().try_into()
+    }
+
+    /// Returns `true` if the constructor is fallible—that is, if it returns a `Result`.
+    pub fn is_fallible(&self) -> bool {
+        self.output_type().is_result()
     }
 
     pub fn into_owned(self) -> Constructor<'static> {

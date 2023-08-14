@@ -1,7 +1,9 @@
 use super::constructor::{Constructor, Lifecycle};
 use super::internals::{
     NestedBlueprint, RegisteredCallable, RegisteredConstructor, RegisteredRoute,
+    RegisteredWrappingMiddleware,
 };
+use super::middleware::WrappingMiddleware;
 use super::reflection::{Location, RawCallable, RawCallableIdentifiers};
 use super::router::{MethodGuard, Route};
 
@@ -9,21 +11,21 @@ use super::router::{MethodGuard, Route};
 /// The starting point for building an application with Pavex.
 ///
 /// A blueprint defines the runtime behaviour of your application.  
-/// It captures three types of information:
+/// It keeps track of:
 ///
-/// - route handlers, via [`Blueprint::route`].
-/// - constructors, via [`Blueprint::constructor`].
-/// - error handlers, via [`Constructor::error_handler`].
+/// - route handlers, registered via [`Blueprint::route`]
+/// - constructors, registered via [`Blueprint::constructor`]
+/// - wrapping middlewares, registered via [`Blueprint::wrap`]
 ///
 /// This information is then serialized via [`Blueprint::persist`] and passed as input to
 /// Pavex's CLI to generate the application's source code.
-///
-/// [`Constructor::error_handler`]: Constructor::error_handler
 pub struct Blueprint {
     /// The location where the [`Blueprint`] was created.
     pub creation_location: Location,
     /// All registered constructors, in the order they were registered.
     pub constructors: Vec<RegisteredConstructor>,
+    /// All registered middlewares, in the order they were registered.
+    pub middlewares: Vec<RegisteredWrappingMiddleware>,
     /// All registered routes, in the order they were registered.
     pub routes: Vec<RegisteredRoute>,
     /// All blueprints nested under this one, in the order they were nested.
@@ -39,6 +41,7 @@ impl Blueprint {
             constructors: Default::default(),
             routes: Default::default(),
             nested_blueprints: Default::default(),
+            middlewares: Default::default(),
         }
     }
 
@@ -255,35 +258,34 @@ impl Blueprint {
 
     #[track_caller]
     /// Register a wrapping middleware.  
-    /// 
+    ///
     /// A wrapping middleware is invoked before the request handler and it is given
     /// the opportunity to *wrap* the execution of the rest of the request processing
     /// pipeline, including the request handler itself.
-    /// 
+    ///
     /// It is primarily useful for functionality that requires access to the [`Future`]
     /// representing the rest of the request processing pipeline, such as:
-    /// 
+    ///
     /// - structured logging (e.g. attaching a `tracing` span to the request execution);
     /// - timeouts;
     /// - metric timers;
     /// - etc.
-    /// 
+    ///
     /// # Example: a timeout wrapper
-    /// 
+    ///
     /// ```rust
-    /// use pavex::middleware::Next;
-    /// use pavex::response::Response;
+    /// use pavex::{f, blueprint::Blueprint, middleware::Next, response::Response};
     /// use std::future::Future;
     /// use std::time::Duration;
     /// use tokio::time::{timeout, error::Elapsed};
-    /// 
+    ///
     /// pub async fn timeout_wrapper<C>(next: Next<C>) -> Result<Response, Elapsed>
     /// where
     ///     C: Future<Output = Response>
     /// {
     ///     timeout(Duration::from_secs(2), next).await
     /// }
-    /// 
+    ///
     /// pub fn api() -> Blueprint {
     ///     let mut bp = Blueprint::new();
     ///     // Register the wrapping middleware against the blueprint.
@@ -292,29 +294,29 @@ impl Blueprint {
     ///     bp
     /// }
     /// ```
-    /// 
+    ///
     /// # Signature
-    /// 
-    /// A wrapping middleware is an asynchronous function (or a method) that takes [`Next`] 
+    ///
+    /// A wrapping middleware is an asynchronous function (or a method) that takes [`Next`]
     /// as input and returns a [`Response`], either directly (if infallible) or wrapped in a
     /// [`Result`] (if fallible).
-    /// 
+    ///
     /// ```rust
     /// use pavex::{middleware::Next, response::Response};
     /// use std::{future::Future, time::Duration};
     /// use tokio::time::{timeout, error::Elapsed};
     /// use tracing::Instrument;
-    /// 
+    ///
     /// // This is an infallible wrapping middleware. It returns a `Response` directly.
-    /// pub async fn logging_wrapper<C>(next: Next<C>) -> Response 
+    /// pub async fn logging_wrapper<C>(next: Next<C>) -> Response
     /// where
     ///     C: Future<Output = Response>
     /// {
     ///     let span = tracing::info_span!("Incoming request");
     ///     next.instrument(span).await
     /// }
-    /// 
-    /// // This is a fallible wrapping middleware. 
+    ///
+    /// // This is a fallible wrapping middleware.
     /// // It returns a `Result<Response, Elapsed>`.
     /// pub async fn timeout_wrapper<C>(next: Next<C>) -> Result<Response, Elapsed>
     /// where
@@ -323,26 +325,29 @@ impl Blueprint {
     ///     timeout(Duration::from_secs(1), next).await
     /// }
     /// ```
-    /// 
+    ///
     /// ## Dependency injection
-    /// 
+    ///
     /// Wrapping middlewares can take advantage of dependency injection, like any
     /// other component.  
-    /// You list what you want to inject as function parameters (in _addition_ to [`Next`]) 
+    /// You list what you want to inject as function parameters (in _addition_ to [`Next`])
     /// and Pavex will inject them for you in the generated code:
-    /// 
+    ///
     /// ```rust
-    /// use pavex::{middleware::Next, response::Response};
+    /// use pavex::{
+    ///     blueprint::{Blueprint, constructor::Lifecycle},
+    ///     f, middleware::Next, response::Response
+    /// };
     /// use std::{future::Future, time::Duration};
     /// use tokio::time::{timeout, error::Elapsed};
-    /// 
+    ///
     /// #[derive(Copy, Clone)]
     /// pub struct TimeoutConfig {
     ///     request_timeout: Duration
     /// }
-    /// 
+    ///
     /// pub async fn timeout_wrapper<C>(
-    ///     next: Next<C>, 
+    ///     next: Next<C>,
     ///     // This parameter will be injected by the framework.
     ///     config: TimeoutConfig
     /// ) -> Result<Response, Elapsed>
@@ -351,10 +356,10 @@ impl Blueprint {
     /// {
     ///     timeout(config.request_timeout, next).await
     /// }
-    /// 
+    ///
     /// pub fn api() -> Blueprint {
     ///     let mut bp = Blueprint::new();
-    ///     // We need to register a constructor for the dependencies 
+    ///     // We need to register a constructor for the dependencies
     ///     // that we want to inject
     ///     bp.constructor(f!(crate::timeout_config), Lifecycle::RequestScoped);
     ///     bp.wrap(f!(crate::timeout_wrapper));
@@ -362,11 +367,11 @@ impl Blueprint {
     ///     bp
     /// }
     /// ```
-    /// 
+    ///
     /// # Execution order
-    /// 
+    ///
     /// Wrapping middlewares are invoked in the order they are registered.
-    /// 
+    ///
     /// ```rust
     /// use pavex::{f, blueprint::{Blueprint, router::GET}};
     /// # use pavex::{request::RequestHead, response::Response, middleware::Next};
@@ -380,26 +385,38 @@ impl Blueprint {
     /// bp.route(GET, "/home", f!(crate::handler));
     /// # }
     /// ```
-    /// 
-    /// `first` will be invoked before `second`, which is in turn invoked before the 
+    ///
+    /// `first` will be invoked before `second`, which is in turn invoked before the
     /// request handler.  
     /// Or, in other words:
-    /// 
+    ///
     /// - `second` is invoked when `first` calls `.await` on its `Next` input
     /// - the request handler is invoked when `second` calls `.await` on its `Next` input
-    /// 
-    /// ## Nesting 
-    /// 
+    ///
+    /// ## Nesting
+    ///
     /// If a blueprint is nested under another blueprint, the wrapping middlewares registered
     /// against the parent blueprint will be invoked before the wrapping middlewares registered
     /// against the nested blueprint.
-    /// 
+    ///
     /// [`Next`]: crate::middleware::Next
     /// [`Response`]: crate::response::Response
     /// [`Future`]: std::future::Future
     #[doc(alias = "middleware")]
-    pub fn wrap(&mut self, _callable: RawCallable) {
-        todo!()
+    pub fn wrap(&mut self, callable: RawCallable) -> WrappingMiddleware {
+        let registered = RegisteredWrappingMiddleware {
+            middleware: RegisteredCallable {
+                callable: RawCallableIdentifiers::from_raw_callable(callable),
+                location: std::panic::Location::caller().into(),
+            },
+            error_handler: None,
+        };
+        let middleware_id = self.middlewares.len();
+        self.middlewares.push(registered);
+        WrappingMiddleware {
+            blueprint: self,
+            middleware_id,
+        }
     }
 
     #[track_caller]
