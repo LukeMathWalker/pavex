@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
 use pavex::f;
+use pavex::middleware::Next;
 use pavex::{hyper::body::Body, request::RequestHead, response::Response};
 
 pub struct Logger;
@@ -71,7 +72,7 @@ pub fn handle_middleware_error(_e: &MiddlewareError) -> Response {
     todo!()
 }
 
-pub fn fallible_wrapping_middleware() -> Result<Response, MiddlewareError> {
+pub fn fallible_wrapping_middleware<T>(_next: Next<T>) -> Result<Response, MiddlewareError> {
     todo!()
 }
 

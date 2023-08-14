@@ -45,9 +45,12 @@ impl<'a> WrappingMiddleware<'a> {
 
         // We verify that one of the input parameters is a `Next<_>`.
         let mut next_parameter = None;
+        let mut next_unassigned_generic_parameters = IndexSet::new();
         for input in c.inputs.iter() {
             if is_next(input) {
                 next_parameter = Some(input);
+                next_unassigned_generic_parameters
+                    .extend(input.unassigned_generic_type_parameters());
                 break;
             }
         }
@@ -57,13 +60,17 @@ impl<'a> WrappingMiddleware<'a> {
 
         // We make sure that the callable doesn't have any unassigned generic type parameters
         // that appear exclusively in its input parameters.
-        let output_unassigned_generic_parameters = output_type.unassigned_generic_type_parameters();
+        let allowed_unassigned_generic_parameters: IndexSet<_> = {
+            let mut set = next_unassigned_generic_parameters;
+            set.extend(output_type.unassigned_generic_type_parameters());
+            set
+        };
         let mut free_parameters = IndexSet::new();
         for input in c.inputs.iter() {
             free_parameters.extend(
                 input
                     .unassigned_generic_type_parameters()
-                    .difference(&output_unassigned_generic_parameters)
+                    .difference(&allowed_unassigned_generic_parameters)
                     .cloned(),
             );
         }
