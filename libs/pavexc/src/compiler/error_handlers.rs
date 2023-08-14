@@ -47,7 +47,6 @@ impl ErrorHandler {
             })
         };
         // TODO: verify that the error handler does NOT return a `Result`
-        // TODO: verify that the error handler returns a type that implements `IntoResponse`
         // TODO: return a more specific error if the error handler takes the error as an input
         //  parameter by value instead of taking it by reference.
         let error_input_index = error_handler
