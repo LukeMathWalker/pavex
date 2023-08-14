@@ -1,18 +1,34 @@
 use indexmap::IndexSet;
 
-use crate::{language::{Callable, ResolvedType}, compiler::computation::MatchResult};
+use crate::{
+    compiler::computation::MatchResult,
+    language::{Callable, ResolvedType},
+};
 use std::borrow::Cow;
 
 /// A callable that gets invoked during the processing of incoming requests
 /// for one or more routes.
-/// It must return a type that implements `pavex::response::IntoResponse`.
-/// It can be fallible, as long as the `Ok` type implements `pavex::response::IntoResponse`.
+///
+/// # Input parameters
+///
+/// Middlewares must take a `Next<_>` as input parameter—it encapsulates the rest of the processing
+/// of the request (i.e. the next middlewares and, eventually, the request handler).
+///
+/// # Output type
+///
+/// If infallible, the output type must implement `pavex::response::IntoResponse`.
+/// If fallible, the output type must be a `Result<T, E>` where `T` implements
+/// `pavex::response::IntoResponse`.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) struct WrappingMiddleware<'a> {
     pub(crate) callable: Cow<'a, Callable>,
 }
 
 impl<'a> WrappingMiddleware<'a> {
+    /// Creates a new wrapping middleware from a callable, either owned or borrowed.
+    ///
+    /// This function validates that the callable satisfies all the constraints of
+    /// a wrapping middleware. An error is returned if it doesn't.
     pub fn new(c: Cow<'a, Callable>) -> Result<Self, WrappingMiddlewareValidationError> {
         use WrappingMiddlewareValidationError::*;
 
@@ -27,6 +43,20 @@ impl<'a> WrappingMiddleware<'a> {
             }
         }
 
+        // We verify that one of the input parameters is a `Next<_>`.
+        let mut next_parameter = None;
+        for input in c.inputs.iter() {
+            if is_next(input) {
+                next_parameter = Some(input);
+                break;
+            }
+        }
+        if next_parameter.is_none() {
+            return Err(MustTakeNextAsInputParameter);
+        }
+
+        // We make sure that the callable doesn't have any unassigned generic type parameters
+        // that appear exclusively in its input parameters.
         let output_unassigned_generic_parameters = output_type.unassigned_generic_type_parameters();
         let mut free_parameters = IndexSet::new();
         for input in c.inputs.iter() {
@@ -66,20 +96,36 @@ impl<'a> WrappingMiddleware<'a> {
     }
 }
 
+/// Returns `true` if the given type is an owned `Next<_>`.
+fn is_next(t: &ResolvedType) -> bool {
+    let ResolvedType::ResolvedPath(t) = t else {
+            return false;
+        };
+    t.base_type == ["pavex", "middleware", "Next"]
+}
+
 #[derive(thiserror::Error, Debug, Clone)]
 pub(crate) enum WrappingMiddlewareValidationError {
     #[error(
-        "All wrapping middlewares must return a type that can be converted into a \
+        "Wrapping middlewares must return a type that can be converted into a \
         `pavex::response::Response`.\n\
         This middleware doesn't: it returns the unit type, `()`. I can't convert `()` into an HTTP response."
     )]
     CannotReturnTheUnitType,
     #[error(
-        "All wrapping middlewares must return a type that can be converted into a \
+        "Wrapping middlewares must return a type that can be converted into a \
         `pavex::response::Response`.\n\
         This middleware doesn't: it returns the unit type, `()`, when successful. I can't convert `()` into an HTTP response."
     )]
     CannotFalliblyReturnTheUnitType,
-    #[error("Input parameters for a wrapping middleware can't have any *unassigned* generic type parameters that appear exclusively in its input parameters.")]
+    #[error(
+        "Wrapping middlewares must take an instance of `pavex::middleware::Next<_>` as input parameter.\n\
+        This middleware doesn't."
+    )]
+    MustTakeNextAsInputParameter,
+    #[error(
+        "Input parameters for a wrapping middleware can't have any *unassigned* generic type parameters \
+        that appear exclusively in its input parameters."
+    )]
     UnderconstrainedGenericParameters { parameters: IndexSet<String> },
 }

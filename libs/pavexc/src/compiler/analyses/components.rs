@@ -205,12 +205,12 @@ impl ComponentDb {
             // It's needed to match error handlers with the respective fallible components
             // after they have been converted into components.
             let mut user_component_id2component_id = HashMap::new();
-            // Keep track of which fallible components don't have a registered error
-            // handler in order to emit a diagnostic at the end.
-            let mut missing_error_handlers = IndexSet::new();
+            // Keep track of which components are fallible in order to emit a diagnostic
+            // if they were not paired with an error handler.
+            let mut needs_error_handler = IndexSet::new();
 
             self_.process_constructors(
-                &mut missing_error_handlers,
+                &mut needs_error_handler,
                 &mut user_component_id2component_id,
                 computation_db,
                 package_graph,
@@ -219,7 +219,7 @@ impl ComponentDb {
             );
 
             self_.process_request_handlers(
-                &mut missing_error_handlers,
+                &mut needs_error_handler,
                 &mut user_component_id2component_id,
                 computation_db,
                 package_graph,
@@ -228,7 +228,7 @@ impl ComponentDb {
             );
 
             self_.process_wrapping_middlewares(
-                &mut missing_error_handlers,
+                &mut needs_error_handler,
                 &mut user_component_id2component_id,
                 computation_db,
                 package_graph,
@@ -237,7 +237,7 @@ impl ComponentDb {
             );
 
             self_.process_error_handlers(
-                &mut missing_error_handlers,
+                &mut needs_error_handler,
                 user_component_id2component_id,
                 computation_db,
                 package_graph,
@@ -245,7 +245,7 @@ impl ComponentDb {
                 diagnostics,
             );
 
-            for fallible_id in missing_error_handlers {
+            for fallible_id in needs_error_handler {
                 Self::missing_error_handler(
                     fallible_id,
                     &self_.user_component_db,
@@ -362,7 +362,7 @@ impl ComponentDb {
     /// In particular, we keep track of their associated error handler, if one exists.
     fn process_constructors(
         &mut self,
-        missing_error_handlers: &mut IndexSet<UserComponentId>,
+        needs_error_handler: &mut IndexSet<UserComponentId>,
         user_component_id2component_id: &mut HashMap<UserComponentId, ComponentId>,
         computation_db: &mut ComputationDb,
         package_graph: &PackageGraph,
@@ -409,7 +409,7 @@ impl ComponentDb {
                         // We skip singletons since we don't "handle" errors when constructing them.
                         // They are just bubbled up to the caller by the function that builds
                         // the application state.
-                        missing_error_handlers.insert(user_component_id);
+                        needs_error_handler.insert(user_component_id);
                     }
                 }
             }
@@ -418,7 +418,7 @@ impl ComponentDb {
 
     fn process_request_handlers(
         &mut self,
-        missing_error_handlers: &mut IndexSet<UserComponentId>,
+        needs_error_handler: &mut IndexSet<UserComponentId>,
         user_component_id2component_id: &mut HashMap<UserComponentId, ComponentId>,
         computation_db: &mut ComputationDb,
         package_graph: &PackageGraph,
@@ -462,7 +462,7 @@ impl ComponentDb {
 
                     if is_fallible {
                         // We'll try to match it with an error handler later.
-                        missing_error_handlers.insert(user_component_id);
+                        needs_error_handler.insert(user_component_id);
 
                         // For each Result type, register two match transformers that de-structure
                         // `Result<T,E>` into `T` or `E`.
@@ -495,7 +495,7 @@ impl ComponentDb {
 
     fn process_wrapping_middlewares(
         &mut self,
-        missing_error_handlers: &mut IndexSet<UserComponentId>,
+        needs_error_handler: &mut IndexSet<UserComponentId>,
         user_component_id2component_id: &mut HashMap<UserComponentId, ComponentId>,
         computation_db: &mut ComputationDb,
         package_graph: &PackageGraph,
@@ -534,11 +534,9 @@ impl ComponentDb {
                     let lifecycle = Lifecycle::RequestScoped;
                     self.id2lifecycle.insert(mw_id, lifecycle);
 
-                    let is_fallible = mw.is_fallible();
-
-                    if is_fallible {
+                    if mw.is_fallible() {
                         // We'll try to match it with an error handler later.
-                        missing_error_handlers.insert(user_component_id);
+                        needs_error_handler.insert(user_component_id);
 
                         // For each Result type, register two match transformers that de-structure
                         // `Result<T,E>` into `T` or `E`.
@@ -1516,7 +1514,7 @@ impl ComponentDb {
         let label = diagnostic::get_f_macro_invocation_span(&source, location)
             .map(|s| s.labeled("The wrapping middleware was registered here".into()));
         let diagnostic = match e {
-            CannotReturnTheUnitType | CannotFalliblyReturnTheUnitType => {
+            CannotReturnTheUnitType | CannotFalliblyReturnTheUnitType | MustTakeNextAsInputParameter => {
                 CompilerDiagnostic::builder(source, e)
                     .optional_label(label)
                     .build()

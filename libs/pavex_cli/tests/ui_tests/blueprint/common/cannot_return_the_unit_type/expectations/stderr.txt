@@ -52,7 +52,7 @@
   [31m│[0m     ╰────
 
 [31m[1mERROR[0m[39m: 
-  [31m×[0m All wrapping middlewares must return a type that can be converted into a
+  [31m×[0m Wrapping middlewares must return a type that can be converted into a
   [31m│[0m `pavex::response::Response`.
   [31m│[0m This middleware doesn't: it returns the unit type, `()`. I can't convert
   [31m│[0m `()` into an HTTP response.
@@ -66,7 +66,7 @@
   [31m│[0m     ╰────
 
 [31m[1mERROR[0m[39m: 
-  [31m×[0m All wrapping middlewares must return a type that can be converted into a
+  [31m×[0m Wrapping middlewares must return a type that can be converted into a
   [31m│[0m `pavex::response::Response`.
   [31m│[0m This middleware doesn't: it returns the unit type, `()`, when successful.
   [31m│[0m I can't convert `()` into an HTTP response.

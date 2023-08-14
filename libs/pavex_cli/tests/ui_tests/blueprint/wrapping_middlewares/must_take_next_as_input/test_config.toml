@@ -1,0 +1,4 @@
+description = """Wrapping middlewares must take Next<_> as an input parameter"""
+
+[expectations]
+codegen = "fail"
