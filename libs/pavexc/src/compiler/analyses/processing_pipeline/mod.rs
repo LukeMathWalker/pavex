@@ -1,27 +1,29 @@
 use crate::compiler::analyses::call_graph::{
     request_scoped_call_graph, CallGraphNode, InputParameterSource, OrderedCallGraph, RawCallGraph,
 };
-use crate::compiler::analyses::components::{ComponentDb, ComponentId};
+use crate::compiler::analyses::components::{ComponentDb, ComponentId, HydratedComponent};
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::constructibles::ConstructibleDb;
+use crate::compiler::app::GENERATED_APP_PACKAGE_ID;
+use crate::language::{Callable, InvocationStyle, PathType, ResolvedType};
 use crate::rustdoc::CrateCollection;
 use ahash::{HashMap, HashMapExt};
 use guppy::graph::PackageGraph;
+use guppy::PackageId;
 use indexmap::{IndexMap, IndexSet};
-use pavex::blueprint::constructor::Lifecycle;
+use pavex::blueprint::constructor::{CloningStrategy, Lifecycle};
+use std::collections::BTreeMap;
 
-/// A processing pipeline is the combination of a root computation (e.g. a request handler) and
-/// an ordered sequence of wrapping middlewares ahead of it, feeding into each other.
-///
-/// For each stage in the pipeline, we will generate an ordered call graph, and then combine them
-/// together to form the call graph of the pipeline as a whole.
 pub(crate) struct ProcessingPipeline {
     stages: Vec<OrderedCallGraph>,
 }
 
+/// A request handler pipeline is the combination of a root compute node (i.e. the request handler)
+/// and an ordered sequence of wrapping middlewares ahead of it, feeding into each other.
 pub(crate) struct RequestHandlerPipeline {
     handler_id: ComponentId,
-    pipeline: ProcessingPipeline,
+    handler_call_graph: OrderedCallGraph,
+    middleware_id2stage_data: IndexMap<ComponentId, (OrderedCallGraph, PathType)>,
 }
 
 impl RequestHandlerPipeline {
@@ -123,14 +125,113 @@ impl RequestHandlerPipeline {
             );
         }
 
-        // Step 4: Check that the entire pipeline satisfies the constraints imposed by the
+        // TODO: borrow-checker
+        // Step X: Check that the entire pipeline satisfies the constraints imposed by the
         //   borrow-checker.
-        // Step 4a: Determine, for each middleware, if they consume a request-scoped component
+        //   Determine, for each middleware, if they consume a request-scoped component
         //   that is also needed by later stages of the pipeline.
-        // Step 4b: If that's the case, insert a "cloning" node into the call graph ahead of
-        //   using that component to build the `Next` container for that middleware stage.
-        //   If the component is not cloneable, emit a diagnostic and abort.
-        todo!()
+
+        // Since we now know which request-scoped components are needed by each middleware, we can
+        // now make the call graph for each middleware concrete—i.e. we can replace the generic
+        // `Next<_>` parameter with a concrete type (that we will codegen later on).
+        let mut middleware_id2stage_data: IndexMap<ComponentId, (OrderedCallGraph, PathType)> =
+            IndexMap::new();
+        for (i, (middleware_id, next_state_types)) in
+            middleware_id2next_field_types.iter().enumerate()
+        {
+            let next_state_bindings = next_state_types
+                .iter()
+                .enumerate()
+                .map(|(i, component_id)| {
+                    let component =
+                        component_db.hydrated_component(*component_id, &mut computation_db);
+                    let type_ = component.output_type();
+                    // TODO: naming can be improved here.
+                    (format!("rs_{i}"), type_.to_owned())
+                })
+                .collect::<BTreeMap<_, _>>();
+            // We build a "mock" callable that has the right inputs in order to drive the machinery
+            // that builds the dependency graph.
+            let package_id = PackageId::new(GENERATED_APP_PACKAGE_ID);
+            let next_type = PathType {
+                package_id: package_id.clone(),
+                rustdoc_id: None,
+                // TODO: we should put everything in a sub-module specific to the request handler
+                //   that we're currently processing.
+                base_type: vec!["crate".into(), format!("Next{i}")],
+                generic_arguments: vec![],
+            };
+
+            // We register a constructor, in order to make it possible to build an instance of
+            // `Next<{ConcreteType}>`.
+            let next_type_constructor = Callable {
+                is_async: false,
+                path: next_type.resolved_path(),
+                output: Some(next_type.clone().into()),
+                inputs: next_state_bindings.values().cloned().collect(),
+                invocation_style: InvocationStyle::StructLiteral {
+                    field_names: next_state_bindings,
+                },
+                source_coordinates: None,
+            };
+            let next_type_callable_id = computation_db.get_or_intern(next_type_constructor);
+            component_db
+                .get_or_intern_constructor(
+                    next_type_callable_id,
+                    Lifecycle::Singleton,
+                    component_db.scope_id(*middleware_id),
+                    CloningStrategy::NeverClone,
+                    computation_db,
+                )
+                .unwrap();
+
+            // TODO: add constructor for `Next<{ConcreteType}>` to the component db.
+
+            // Since we now have the concrete type of the generic in `Next<_>`, we can bind
+            // the generic type parameter of the middleware to that concrete type.
+            let HydratedComponent::WrappingMiddleware(mw) = component_db.hydrated_component(*middleware_id, computation_db) else {
+                unreachable!()
+            };
+            let next_input = &mw.input_types()[mw.next_input_index()];
+            let next_generic_parameters = next_input.unassigned_generic_type_parameters();
+
+            #[cfg(debug_assertions)]
+            assert_eq!(
+                next_generic_parameters.len(),
+                1,
+                "Next<_> should have exactly one unassigned generic type parameter"
+            );
+
+            let next_generic_parameter = next_generic_parameters.iter().next().unwrap().to_owned();
+
+            let mut bindings = HashMap::with_capacity(1);
+            bindings.insert(next_generic_parameter, next_type.clone().into());
+            let bound_middleware_id = component_db.bind_generic_type_parameters(
+                *middleware_id,
+                &bindings,
+                computation_db,
+            );
+
+            // We can now build the call graph for the middleware, using the concrete type of
+            // `Next<_>` as the input type.
+            let middleware_call_graph = request_scoped_call_graph(
+                bound_middleware_id,
+                &request_scoped_prebuilt_ids,
+                &mut computation_db,
+                &mut component_db,
+                &constructible_db,
+                &package_graph,
+                &krate_collection,
+                &mut diagnostics,
+            )?;
+            middleware_id2stage_data.insert(*middleware_id, (middleware_call_graph, next_type));
+        }
+
+        Ok(Self {
+            handler_id,
+            handler_call_graph,
+            middleware_id2stage_data,
+        })
     }
 }
 
