@@ -1,12 +1,14 @@
 use crate::compiler::analyses::call_graph::{
-    request_scoped_call_graph, CallGraphNode, OrderedCallGraph,
+    request_scoped_call_graph, CallGraph, CallGraphNode, InputParameterSource, OrderedCallGraph,
+    RawCallGraph,
 };
 use crate::compiler::analyses::components::{ComponentDb, ComponentId};
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::constructibles::ConstructibleDb;
 use crate::rustdoc::CrateCollection;
+use ahash::{HashMap, HashMapExt};
 use guppy::graph::PackageGraph;
-use indexmap::IndexSet;
+use indexmap::{IndexMap, IndexSet};
 use pavex::blueprint::constructor::Lifecycle;
 
 /// A processing pipeline is the combination of a root computation (e.g. a request handler) and
@@ -38,7 +40,7 @@ impl RequestHandlerPipeline {
             .middleware_chain(handler_id)
             .unwrap()
             .to_owned();
-        let mut middleware_call_graphs = Vec::with_capacity(middleware_ids.len());
+        let mut middleware_call_graphs = IndexMap::with_capacity(middleware_ids.len());
         // Step 2: For each middleware, build an ordered call graph.
 
         // We need to make sure that request-scoped components are built at most once per request,
@@ -72,7 +74,7 @@ impl RequestHandlerPipeline {
                 }
             }
 
-            middleware_call_graphs.push(middleware_call_graph);
+            middleware_call_graphs.insert(middleware_id, middleware_call_graph);
         }
         let handler_call_graph = request_scoped_call_graph(
             handler_id,
@@ -85,6 +87,43 @@ impl RequestHandlerPipeline {
             &mut diagnostics,
         )?;
         // Step 3: Combine the ordered call graphs together.
+
+        // Step 3a: For each middleware, determine which request-scoped components must be actually
+        //   passed down through the `Next<_>` parameter to the downstream stages of the pipeline.
+        //
+        // In order to pull this off, we walk the chain in reverse order and accumulate the set of
+        // request-scoped components that are expected as input.
+        let mut next_field_types: IndexSet<ComponentId> = IndexSet::new();
+        extract_request_scoped_inputs(
+            &handler_call_graph.call_graph,
+            &component_db,
+            &mut next_field_types,
+        );
+        let mut middleware_id2next_field_types: HashMap<ComponentId, IndexSet<ComponentId>> =
+            HashMap::new();
+        for (middleware_id, middleware_call_graph) in middleware_call_graphs.iter().rev() {
+            middleware_id2next_field_types.insert(*middleware_id, next_field_types.clone());
+
+            // Remove all the request-scoped components initialised by this middleware from the set.
+            // They can't be needed upstream since they were initialised here!
+            for node in middleware_call_graph.call_graph.node_weights() {
+                if let CallGraphNode::Compute { component_id, .. } = node {
+                    if component_db.lifecycle(*component_id) == Some(&Lifecycle::RequestScoped) {
+                        next_field_types.remove(component_id);
+                    }
+                }
+            }
+
+            // But this middleware can in turn ask for some request-scoped components to be passed
+            // down from the upstream stages of the pipeline, therefore we need to add those to
+            // the set.
+            extract_request_scoped_inputs(
+                &middleware_call_graph.call_graph,
+                &component_db,
+                &mut next_field_types,
+            );
+        }
+
         // Step 4: Check that the entire pipeline satisfies the constraints imposed by the
         //   borrow-checker.
         // Step 4a: Determine, for each middleware, if they consume a request-scoped component
@@ -93,5 +132,22 @@ impl RequestHandlerPipeline {
         //   using that component to build the `Next` container for that middleware stage.
         //   If the component is not cloneable, emit a diagnostic and abort.
         todo!()
+    }
+}
+
+/// Extract the set of request-scoped components that are used as inputs in the provided call graph.
+///
+/// The extracted component ids are inserted into the provided buffer set.
+fn extract_request_scoped_inputs(
+    call_graph: &RawCallGraph,
+    component_db: &ComponentDb,
+    buffer: &mut IndexSet<ComponentId>,
+) {
+    for node in call_graph.node_weights() {
+        let CallGraphNode::InputParameter { source, .. } = node else { continue; };
+        let InputParameterSource::Component(component_id) = source else { continue; };
+        if component_db.lifecycle(*component_id) == Some(&Lifecycle::RequestScoped) {
+            buffer.insert(*component_id);
+        }
     }
 }
