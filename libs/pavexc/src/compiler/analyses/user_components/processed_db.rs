@@ -39,8 +39,18 @@ use crate::rustdoc::CrateCollection;
 pub struct UserComponentDb {
     component_interner: Interner<UserComponent>,
     identifiers_interner: Interner<RawCallableIdentifiers>,
+    /// Associate each user-registered component with the location it was
+    /// registered at against the `Blueprint` in the user's source code.
+    ///
+    /// Invariants: there is an entry for every single user component.
     id2locations: HashMap<UserComponentId, Location>,
+    /// For each constructor component, determine if it can be cloned or not.
+    ///
+    /// Invariants: there is an entry for every constructor.
     id2cloning_strategy: HashMap<UserComponentId, CloningStrategy>,
+    /// Associate each user-registered component with its lifecycle.
+    ///
+    /// Invariants: there is an entry for every single user component.
     id2lifecycle: HashMap<UserComponentId, Lifecycle>,
     scope_graph: ScopeGraph,
 }
