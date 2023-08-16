@@ -11,7 +11,7 @@ use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::constructibles::ConstructibleDb;
 use crate::rustdoc::CrateCollection;
 
-/// Build a [`CallGraph`] for a request handler.
+/// Build an [`OrderedCallGraph`] for a request handler.
 #[tracing::instrument(name = "Compute handler call graph", skip_all)]
 pub(crate) fn handler_call_graph(
     request_handler: ComponentId,
