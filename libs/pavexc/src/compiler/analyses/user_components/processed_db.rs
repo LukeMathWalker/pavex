@@ -44,14 +44,18 @@ pub struct UserComponentDb {
     ///
     /// Invariants: there is an entry for every single user component.
     id2locations: HashMap<UserComponentId, Location>,
-    /// For each constructor component, determine if it can be cloned or not.
-    ///
-    /// Invariants: there is an entry for every constructor.
-    id2cloning_strategy: HashMap<UserComponentId, CloningStrategy>,
     /// Associate each user-registered component with its lifecycle.
     ///
     /// Invariants: there is an entry for every single user component.
     id2lifecycle: HashMap<UserComponentId, Lifecycle>,
+    /// For each constructor component, determine if it can be cloned or not.
+    ///
+    /// Invariants: there is an entry for every constructor.
+    constructor_id2cloning_strategy: HashMap<UserComponentId, CloningStrategy>,
+    /// Associate each request handler with the ordered list of middlewares that wrap around it.
+    ///
+    /// Invariants: there is an entry for every single request handler.
+    handler_id2middleware_ids: HashMap<UserComponentId, Vec<UserComponentId>>,
     scope_graph: ScopeGraph,
 }
 
@@ -99,17 +103,19 @@ impl UserComponentDb {
         let RawUserComponentDb {
             component_interner,
             id2locations,
-            id2cloning_strategy,
+            constructor_id2cloning_strategy,
             id2lifecycle,
             identifiers_interner,
+            handler_id2middleware_ids,
         } = raw_db;
 
         Ok(Self {
             component_interner,
             identifiers_interner,
             id2locations,
-            id2cloning_strategy,
+            constructor_id2cloning_strategy,
             id2lifecycle,
+            handler_id2middleware_ids,
             scope_graph,
         })
     }
@@ -167,7 +173,7 @@ impl UserComponentDb {
     /// Return the cloning strategy of the component with the given id.
     /// This is going to be `Some(..)` for constructor components, and `None` for all other components.
     pub fn get_cloning_strategy(&self, id: UserComponentId) -> Option<&CloningStrategy> {
-        self.id2cloning_strategy.get(&id)
+        self.constructor_id2cloning_strategy.get(&id)
     }
 
     /// Return the scope tree that was built from the application blueprint.
