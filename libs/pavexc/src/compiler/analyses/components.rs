@@ -157,9 +157,14 @@ pub(crate) struct ComponentDb {
     borrow_id2owned_id: BiHashMap<ComponentId, ComponentId>,
     id2transformer_ids: HashMap<ComponentId, IndexSet<ComponentId>>,
     id2lifecycle: HashMap<ComponentId, Lifecycle>,
-    /// Associate to each constructor component the respective cloning strategy.
-    /// It is not populated for request handlers, error handlers, and transformers.
-    id2cloning_strategy: HashMap<ComponentId, CloningStrategy>,
+    /// For each constructor component, determine if it can be cloned or not.
+    ///
+    /// Invariants: there is an entry for every constructor.
+    constructor_id2cloning_strategy: HashMap<ComponentId, CloningStrategy>,
+    /// Associate each request handler with the ordered list of middlewares that wrap around it.
+    ///
+    /// Invariants: there is an entry for every single request handler.
+    handler_id2middleware_ids: HashMap<ComponentId, Vec<ComponentId>>,
     error_handler_id2error_handler: HashMap<ComponentId, ErrorHandler>,
     router: BTreeMap<RouterKey, ComponentId>,
     into_response: PathType,
@@ -195,7 +200,8 @@ impl ComponentDb {
             borrow_id2owned_id: Default::default(),
             id2transformer_ids: Default::default(),
             id2lifecycle: Default::default(),
-            id2cloning_strategy: Default::default(),
+            constructor_id2cloning_strategy: Default::default(),
+            handler_id2middleware_ids: Default::default(),
             error_handler_id2error_handler: Default::default(),
             router: Default::default(),
             into_response,
@@ -203,8 +209,11 @@ impl ComponentDb {
 
         {
             // Keep a look-up map to "revert" the conversion process.
-            // It's needed to match error handlers with the respective fallible components
-            // after they have been converted into components.
+            // It's needed to "lift" mappings that use `UserComponentId` into mappings that
+            // use `ComponentId`. In particular:
+            // - match error handlers with the respective fallible components after they have been
+            //   converted into components.
+            // - match request handlers with the sequence of middlewares that wrap around them.
             let mut user_component_id2component_id = HashMap::new();
             // Keep track of which components are fallible in order to emit a diagnostic
             // if they were not paired with an error handler.
@@ -237,6 +246,7 @@ impl ComponentDb {
                 diagnostics,
             );
 
+            self_.compute_request2middleware_chain(&user_component_id2component_id);
             self_.process_error_handlers(
                 &mut needs_error_handler,
                 user_component_id2component_id,
@@ -395,7 +405,7 @@ impl ComponentDb {
                         source_id: user_component_id.into(),
                     });
                     user_component_id2component_id.insert(user_component_id, constructor_id);
-                    self.id2cloning_strategy.insert(
+                    self.constructor_id2cloning_strategy.insert(
                         constructor_id,
                         self.user_component_db
                             .get_cloning_strategy(user_component_id)
@@ -648,6 +658,33 @@ impl ComponentDb {
             }
         }
     }
+
+    /// Compute the middleware chain for each request handler that was successfully validated.
+    /// The middleware chain only includes wrapping middlewares that were successfully validated.
+    /// Invalid middlewares are ignored.
+    fn compute_request2middleware_chain(
+        &mut self,
+        user_component_id2component_id: &HashMap<UserComponentId, ComponentId>,
+    ) {
+        for (request_handler_id, _) in self.user_component_db.request_handlers() {
+            let Some(handler_component_id) = user_component_id2component_id.get(&request_handler_id) else {
+                continue;
+            };
+            let mut middleware_chain = vec![];
+            for middleware_id in self
+                .user_component_db
+                .get_middleware_ids(request_handler_id)
+            {
+                if let Some(middleware_component_id) =
+                    user_component_id2component_id.get(&middleware_id)
+                {
+                    middleware_chain.push(*middleware_component_id);
+                }
+            }
+            self.handler_id2middleware_ids
+                .insert(*handler_component_id, middleware_chain);
+        }
+    }
 }
 
 impl ComponentDb {
@@ -686,7 +723,8 @@ impl ComponentDb {
             source_id: SourceId::ComputationId(computation_id, scope_id),
         });
         self.id2lifecycle.insert(id, l);
-        self.id2cloning_strategy.insert(id, cloning_strategy);
+        self.constructor_id2cloning_strategy
+            .insert(id, cloning_strategy);
         self.register_derived_constructors(id, computation_db);
         id
     }
@@ -702,7 +740,7 @@ impl ComponentDb {
             constructor.into_owned()
         };
         if let Ok(constructor) = constructor.as_fallible() {
-            let cloning_strategy = self.id2cloning_strategy[&constructor_id];
+            let cloning_strategy = self.constructor_id2cloning_strategy[&constructor_id];
             let lifecycle = self.lifecycle(constructor_id).unwrap().to_owned();
             let scope_id = self.scope_id(constructor_id);
             let m = constructor.matchers();
@@ -761,7 +799,7 @@ impl ComponentDb {
         };
         let constructor_id = self.interner.get_or_intern(constructor_component);
         self.id2lifecycle.insert(constructor_id, lifecycle);
-        self.id2cloning_strategy
+        self.constructor_id2cloning_strategy
             .insert(constructor_id, cloning_strategy);
         self.register_derived_constructors(constructor_id, computation_db);
         Ok(constructor_id)
@@ -865,7 +903,7 @@ impl ComponentDb {
     /// Given the id of a component, return the corresponding [`CloningStrategy`].
     /// It panics if called for a non-constructor component.
     pub fn cloning_strategy(&self, component_id: ComponentId) -> CloningStrategy {
-        self.id2cloning_strategy[&component_id]
+        self.constructor_id2cloning_strategy[&component_id]
     }
 
     /// Iterate over all constructors in the component database, either user-provided or synthetic.
@@ -1062,7 +1100,7 @@ impl ComponentDb {
         // the call graph for handlers where these derived components are used.
         let id = _get_root_component_id(id, self, computation_db);
         let scope_id = self.scope_id(id);
-        let cloning_strategy = self.id2cloning_strategy[&id];
+        let cloning_strategy = self.constructor_id2cloning_strategy[&id];
         let HydratedComponent::Constructor(constructor) = self.hydrated_component(id, computation_db).into_owned() else { unreachable!() };
         let lifecycle = self.lifecycle(id).cloned().unwrap();
         let bound_computation = constructor

@@ -189,6 +189,13 @@ impl UserComponentDb {
         let raw_id = self.component_interner[id].raw_callable_identifiers_id();
         &self.identifiers_interner[raw_id]
     }
+
+    /// Return the ids of the middlewares that wrap around the request handler with the given id.
+    ///
+    /// It panics if the component with the given id is not a request handler.
+    pub fn get_middleware_ids(&self, id: UserComponentId) -> &[UserComponentId] {
+        &self.handler_id2middleware_ids[&id]
+    }
 }
 
 /// We try to batch together the computation of the JSON documentation for all the crates that,
