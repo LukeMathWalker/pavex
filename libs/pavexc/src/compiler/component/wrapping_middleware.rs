@@ -56,12 +56,8 @@ impl<'a> WrappingMiddleware<'a> {
         };
 
         // We make sure that the callable doesn't have any unassigned generic type parameters
-        // that appear exclusively in its input parameters.
-        let allowed_unassigned_generic_parameters: IndexSet<_> = {
-            let mut set = next_unassigned_generic_parameters;
-            set.extend(output_type.unassigned_generic_type_parameters());
-            set
-        };
+        // apart from the one used in Next.
+        let allowed_unassigned_generic_parameters = next_unassigned_generic_parameters;
         let mut free_parameters = IndexSet::new();
         for input in c.inputs.iter() {
             free_parameters.extend(
@@ -138,8 +134,8 @@ pub(crate) enum WrappingMiddlewareValidationError {
     )]
     CannotTakeMoreThanOneNextAsInputParameter,
     #[error(
-        "Input parameters for a wrapping middleware can't have any *unassigned* generic type parameters \
-        that appear exclusively in its input parameters."
+        "Wrapping middlewares can't have any *unassigned* generic type parameters \
+        apart from the one used in `pavex::middleware::Next<_>`."
     )]
     UnderconstrainedGenericParameters { parameters: IndexSet<String> },
 }
