@@ -1,4 +1,5 @@
 use guppy::graph::PackageGraph;
+use indexmap::IndexSet;
 
 use pavex::blueprint::constructor::Lifecycle;
 
@@ -11,10 +12,14 @@ use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::constructibles::ConstructibleDb;
 use crate::rustdoc::CrateCollection;
 
-/// Build an [`OrderedCallGraph`] for a request handler.
-#[tracing::instrument(name = "Compute handler call graph", skip_all)]
-pub(crate) fn handler_call_graph(
-    request_handler: ComponentId,
+/// Build an [`OrderedCallGraph`] for a computation that gets trigger on a per-request basis
+/// (e.g. a request handler or a middleware).
+#[tracing::instrument(name = "Compute request-scoped call graph", skip_all)]
+pub(crate) fn request_scoped_call_graph(
+    root_component_id: ComponentId,
+    // The set of request-scoped components that have already been initialised in the upstream
+    // stages of the pipeline.
+    request_scoped_prebuilt_ids: &IndexSet<ComponentId>,
     computation_db: &mut ComputationDb,
     component_db: &mut ComponentDb,
     constructible_db: &ConstructibleDb,
@@ -34,7 +39,8 @@ pub(crate) fn handler_call_graph(
         root_node_index,
         root_scope_id,
     }) = build_call_graph(
-        request_handler,
+        root_component_id,
+        request_scoped_prebuilt_ids,
         computation_db,
         component_db,
         constructible_db,

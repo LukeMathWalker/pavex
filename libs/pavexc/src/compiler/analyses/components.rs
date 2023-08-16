@@ -855,6 +855,15 @@ impl ComponentDb {
         self.match_err_id2error_handler_id.get(&err_match_id)
     }
 
+    /// If the component is a request handler, return the ids of the middlewares that wrap around
+    /// it.
+    /// Otherwise, return `None`.
+    pub fn middleware_chain(&self, handler_id: ComponentId) -> Option<&[ComponentId]> {
+        self.handler_id2middleware_ids
+            .get(&handler_id)
+            .map(|v| &v[..])
+    }
+
     /// If transformations must be applied to the component, return their ids.
     /// Otherwise, return `None`.
     pub fn transformer_ids(&self, component_id: ComponentId) -> Option<&IndexSet<ComponentId>> {

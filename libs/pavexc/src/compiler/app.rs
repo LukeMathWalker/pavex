@@ -14,8 +14,8 @@ use quote::format_ident;
 use pavex::blueprint::{constructor::Lifecycle, Blueprint};
 
 use crate::compiler::analyses::call_graph::{
-    application_state_call_graph, handler_call_graph, ApplicationStateCallGraph, OrderedCallGraph,
-    RawCallGraphExt,
+    application_state_call_graph, request_scoped_call_graph, ApplicationStateCallGraph,
+    OrderedCallGraph, RawCallGraphExt,
 };
 use crate::compiler::analyses::components::{ComponentDb, ComponentId, HydratedComponent};
 use crate::compiler::analyses::computations::ComputationDb;
@@ -103,8 +103,9 @@ impl App {
             let router = component_db.router().clone();
             let mut handler_call_graphs = IndexMap::with_capacity(router.len());
             for (router_key, handler_id) in router {
-                let Ok(call_graph) = handler_call_graph(
+                let Ok(call_graph) = request_scoped_call_graph(
                     handler_id,
+                    &IndexSet::new(),
                     &mut computation_db,
                     &mut component_db,
                     &constructible_db,
