@@ -136,7 +136,13 @@ impl DependencyGraph {
                             // We don't allow/need dependency injection for transformers at the moment.
                             vec![]
                         }
-                        HydratedComponent::WrappingMiddleware(_) => todo!(),
+                        HydratedComponent::WrappingMiddleware(mw) => {
+                            let mut input_types = mw.input_types().to_vec();
+                            // `Next` doesn't matter when it comes to verifying that we don't
+                            // have cyclic dependencies, so we can skip it.
+                            input_types.remove(mw.next_input_index());
+                            input_types
+                        }
                     };
                     for input_type in input_types {
                         if let Some((constructor_id, _)) = constructible_db.get(

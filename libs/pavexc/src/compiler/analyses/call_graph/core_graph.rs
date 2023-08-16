@@ -201,7 +201,17 @@ where
                         // We don't allow/need dependency injection for transformers at the moment.
                         vec![]
                     }
-                    HydratedComponent::WrappingMiddleware(_) => todo!(),
+                    HydratedComponent::WrappingMiddleware(mw) => {
+                        let mut input_types = mw.input_types().to_vec();
+                        let next_type = &input_types[mw.next_input_index()];
+                        if !next_type.unassigned_generic_type_parameters().is_empty() {
+                            // If we haven't assigned a concrete type to the `Next` type parameter,
+                            // we have no idea what its input types are going to be, therefore
+                            // we skip it for now.
+                            input_types.remove(mw.next_input_index());
+                        }
+                        input_types
+                    }
                 };
                 for input_type in input_types {
                     if let Some((constructor_id, consumption_mode)) = constructible_db.get(

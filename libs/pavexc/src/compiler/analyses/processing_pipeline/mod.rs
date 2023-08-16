@@ -1,6 +1,5 @@
 use crate::compiler::analyses::call_graph::{
-    request_scoped_call_graph, CallGraph, CallGraphNode, InputParameterSource, OrderedCallGraph,
-    RawCallGraph,
+    request_scoped_call_graph, CallGraphNode, InputParameterSource, OrderedCallGraph, RawCallGraph,
 };
 use crate::compiler::analyses::components::{ComponentDb, ComponentId};
 use crate::compiler::analyses::computations::ComputationDb;
