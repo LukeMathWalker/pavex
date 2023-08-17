@@ -14,8 +14,7 @@ use quote::format_ident;
 use pavex::blueprint::{constructor::Lifecycle, Blueprint};
 
 use crate::compiler::analyses::call_graph::{
-    application_state_call_graph, request_scoped_call_graph, ApplicationStateCallGraph,
-    OrderedCallGraph, RawCallGraphExt,
+    application_state_call_graph, ApplicationStateCallGraph, OrderedCallGraph, RawCallGraphExt,
 };
 use crate::compiler::analyses::components::{ComponentDb, ComponentId, HydratedComponent};
 use crate::compiler::analyses::computations::ComputationDb;
@@ -336,37 +335,46 @@ fn get_required_singleton_types<'a>(
     component_db: &ComponentDb,
 ) -> IndexSet<(ResolvedType, ComponentId)> {
     let mut singletons_to_be_built = IndexSet::new();
-    for (_, handler_call_graph) in handler_pipelines {
-        let root_component_id = handler_call_graph.root_component_id();
-        let root_component_scope_id = component_db.scope_id(root_component_id);
-        for required_input in handler_call_graph.call_graph.required_input_types() {
-            let required_input = if let ResolvedType::Reference(t) = &required_input {
-                if !t.is_static {
-                    // We can't store non-'static references in the application state, so we expect
-                    // to see the referenced type in there.
-                    t.inner.deref()
+    for (_, handler_pipeline) in handler_pipelines {
+        for graph in handler_pipeline.graph_iter() {
+            let root_component_id = graph.root_component_id();
+            let root_component_scope_id = component_db.scope_id(root_component_id);
+            for required_input in graph.call_graph.required_input_types() {
+                let required_input = if let ResolvedType::Reference(t) = &required_input {
+                    if !t.is_static {
+                        // We can't store non-'static references in the application state, so we expect
+                        // to see the referenced type in there.
+                        t.inner.deref()
+                    } else {
+                        &required_input
+                    }
                 } else {
                     &required_input
+                };
+                // If it's a framework built-in, nothing to do!
+                if framework_item_db.get_id(required_input).is_some() {
+                    continue;
                 }
-            } else {
-                &required_input
-            };
-            // If it's a framework built-in, nothing to do!
-            if framework_item_db.get_id(required_input).is_some() {
-                continue;
+                let (component_id, _) = constructibles_db
+                    .get(
+                        root_component_scope_id,
+                        required_input,
+                        component_db.scope_graph(),
+                    )
+                    .unwrap();
+                let lifecycle = component_db.lifecycle(component_id).unwrap();
+                #[cfg(debug_assertions)]
+                {
+                    // No scenario where this should/could happen.
+                    assert_ne!(*lifecycle, Lifecycle::Transient);
+                }
+
+                // Some inputs are request-scoped because they come from the `Next<_>` pass-along
+                // state. We don't care about those here.
+                if *lifecycle == Lifecycle::Singleton {
+                    singletons_to_be_built.insert((required_input.to_owned(), component_id));
+                }
             }
-            let (component_id, _) = constructibles_db
-                .get(
-                    root_component_scope_id,
-                    required_input,
-                    component_db.scope_graph(),
-                )
-                .unwrap();
-            assert_eq!(
-                component_db.lifecycle(component_id),
-                Some(&Lifecycle::Singleton)
-            );
-            singletons_to_be_built.insert((required_input.to_owned(), component_id));
         }
     }
     singletons_to_be_built
