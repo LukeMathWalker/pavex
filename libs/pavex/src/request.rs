@@ -5,7 +5,7 @@ use http::{HeaderMap, Method, Uri, Version};
 #[derive(Debug)]
 /// All the information that is transmitted as part of an HTTP request ahead of the body.
 ///
-/// It includes the [method](Method), the [URI](Uri), 
+/// It includes the [method](Method), the [URI](Uri),
 /// the [HTTP version](Version), and the [headers](HeaderMap).
 pub struct RequestHead {
     pub method: Method,

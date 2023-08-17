@@ -37,8 +37,7 @@ pub(crate) fn process_framework_path(
     // We are relying on a little hack to anchor our search:
     // all framework types belong to crates that are direct dependencies of `pavex`.
     // TODO: find a better way in the future.
-    let identifiers =
-        RawCallableIdentifiers::from_raw_parts(raw_path.into(), "pavex".into());
+    let identifiers = RawCallableIdentifiers::from_raw_parts(raw_path.into(), "pavex".into());
     let path = ResolvedPath::parse(&identifiers, package_graph).unwrap();
     let (item, _) = path.find_rustdoc_items(krate_collection).unwrap();
     resolve_type_path(&path, &item.item, krate_collection).unwrap()

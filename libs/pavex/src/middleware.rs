@@ -1,7 +1,7 @@
 //! Middleware types and utilities.
-//! 
+//!
 //! See [`Blueprint::wrap`] and [`Next`] for more information.
-//! 
+//!
 //! [`Blueprint::wrap`]: crate::blueprint::Blueprint::wrap
 use std::{
     future::Future,
@@ -15,12 +15,12 @@ use crate::response::Response;
 
 pin_project! {
     /// A [`Future`] that represents the next step in the request processing pipeline.
-    /// 
+    ///
     /// It is used by wrapping middlewares to delegate the processing of the request to the next
     /// middleware in the pipeline (or to the request handler).
-    /// 
+    ///
     /// Check out [`Blueprint::wrap`] for more information.
-    /// 
+    ///
     /// [`Blueprint`]: crate::blueprint::Blueprint
     pub struct Next<C> {
         #[pin]

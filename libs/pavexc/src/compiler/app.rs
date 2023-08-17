@@ -21,6 +21,7 @@ use crate::compiler::analyses::components::{ComponentDb, ComponentId, HydratedCo
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::constructibles::ConstructibleDb;
 use crate::compiler::analyses::framework_items::FrameworkItemDb;
+use crate::compiler::analyses::processing_pipeline::RequestHandlerPipeline;
 use crate::compiler::analyses::user_components::{RouterKey, UserComponentDb};
 use crate::compiler::computation::Computation;
 use crate::compiler::generated_app::GeneratedApp;
@@ -99,30 +100,27 @@ impl App {
             &mut diagnostics,
         );
         exit_on_errors!(diagnostics);
-        let handler_call_graphs = {
+        let handler_pipelines = {
             let router = component_db.router().clone();
-            let mut handler_call_graphs = IndexMap::with_capacity(router.len());
+            let mut handler_pipelines = IndexMap::with_capacity(router.len());
             for (router_key, handler_id) in router {
-                let Ok(call_graph) = request_scoped_call_graph(
+                let Ok(processing_pipeline) = RequestHandlerPipeline::new(
                     handler_id,
-                    &IndexSet::new(),
                     &mut computation_db,
                     &mut component_db,
-                    &constructible_db,
+                    &mut constructible_db,
                     &package_graph,
                     &krate_collection,
                     &mut diagnostics,
                 ) else {
                     continue;
                 };
-                handler_call_graphs.insert(router_key.to_owned(), call_graph);
+                handler_pipelines.insert(router_key.to_owned(), processing_pipeline);
             }
-            handler_call_graphs
+            handler_pipelines
         };
         route_parameter_validation::verify_route_parameters(
-            handler_call_graphs
-                .iter()
-                .map(|(k, ocg)| (k, &ocg.call_graph)),
+            handler_pipelines.iter(),
             &computation_db,
             &component_db,
             &package_graph,
@@ -133,7 +131,7 @@ impl App {
 
         let runtime_singletons: IndexSet<(ResolvedType, ComponentId)> =
             get_required_singleton_types(
-                handler_call_graphs.iter(),
+                handler_pipelines.iter(),
                 &framework_item_db,
                 &constructible_db,
                 &component_db,
@@ -168,7 +166,7 @@ impl App {
         exit_on_errors!(diagnostics);
         Ok(Self {
             package_graph,
-            handler_call_graphs,
+            handler_call_graphs: handler_pipelines,
             component_db,
             computation_db,
             application_state_call_graph,
@@ -332,13 +330,13 @@ impl AppDiagnostics {
 /// registered by the application.
 /// These singletons will be attached to the overall application state.
 fn get_required_singleton_types<'a>(
-    handler_call_graphs: impl Iterator<Item = (&'a RouterKey, &'a OrderedCallGraph)>,
+    handler_pipelines: impl Iterator<Item = (&'a RouterKey, &'a RequestHandlerPipeline)>,
     framework_item_db: &FrameworkItemDb,
     constructibles_db: &ConstructibleDb,
     component_db: &ComponentDb,
 ) -> IndexSet<(ResolvedType, ComponentId)> {
     let mut singletons_to_be_built = IndexSet::new();
-    for (_, handler_call_graph) in handler_call_graphs {
+    for (_, handler_call_graph) in handler_pipelines {
         let root_component_id = handler_call_graph.root_component_id();
         let root_component_scope_id = component_db.scope_id(root_component_id);
         for required_input in handler_call_graph.call_graph.required_input_types() {

@@ -30,10 +30,10 @@ use bytes::Bytes;
 use http::StatusCode;
 use http_body::Empty;
 
-use super::{Response, ResponseHead, body::raw::boxed};
+use super::{body::raw::boxed, Response, ResponseHead};
 
 /// Convert a type into a [`Response`].
-/// 
+///
 /// Types that implement `IntoResponse` can be returned:
 ///
 /// - as the output type of an infallible route handler,

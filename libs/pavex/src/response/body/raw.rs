@@ -1,6 +1,6 @@
 //! Low-level tools for building and manipulating [`Response`](crate::response::Response) bodies.
 //!
-//! Primarily useful if you are working with 
+//! Primarily useful if you are working with
 //! [`Response::set_raw_body`](crate::response::Response::set_raw_body).
 pub use bytes::{Bytes, BytesMut};
 /// Trait representing a streaming [`Response`](crate::response::Response) body.  
@@ -10,7 +10,7 @@ pub use http_body::{Empty, Full};
 
 /// A type-erased streaming [`Response`](crate::response::Response) body. The
 /// most common body type in Pavex.
-/// 
+///
 pub type BoxBody = http_body::combinators::BoxBody<Bytes, crate::Error>;
 pub use boxed::boxed;
 

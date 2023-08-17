@@ -1,14 +1,17 @@
 //! A tiny utility library to avoid touching the filesystem if the content has not changed.
-//! 
-//! This is useful to avoid triggering unnecessary rebuilds in systems that look at 
+//!
+//! This is useful to avoid triggering unnecessary rebuilds in systems that look at
 //! the modification time (`mtime`) as part of their file fingerprint (e.g. `cargo`).
 use sha2::Digest;
-use std::{io::{Write, Read}, path::Path};
+use std::{
+    io::{Read, Write},
+    path::Path,
+};
 
 /// Only persist the content if it differs from the one already on disk.
 ///
 /// It if the file does not exist, it will be created.
-/// 
+///
 /// This is useful to avoid unnecessary rebuilds, since `cargo` takes into account
 /// the modification time of the files when determining if they have changed or not.
 #[tracing::instrument(skip_all, level=tracing::Level::TRACE)]
@@ -26,7 +29,7 @@ pub fn persist_if_changed(path: &Path, content: &[u8]) -> Result<(), anyhow::Err
     Ok(())
 }
 
-/// Only copy the file if its contents differ from the contents stored at 
+/// Only copy the file if its contents differ from the contents stored at
 /// the destination path.
 #[tracing::instrument(skip_all, level=tracing::Level::TRACE)]
 pub fn copy_if_changed(from: &Path, to: &Path) -> Result<(), anyhow::Error> {
@@ -39,9 +42,9 @@ pub fn copy_if_changed(from: &Path, to: &Path) -> Result<(), anyhow::Error> {
 }
 
 /// Returns `true` if the file contents are different, `false` otherwise.
-/// 
+///
 /// It returns an error if we could not determine the outcome due to a
-/// failure in any of the intermediate operations (e.g. there is no file 
+/// failure in any of the intermediate operations (e.g. there is no file
 /// at the destination path).
 fn has_changed_file2file(from: &Path, to: &Path) -> Result<bool, anyhow::Error> {
     let from_file = fs_err::File::open(from)?;
@@ -61,14 +64,14 @@ fn has_changed_file2file(from: &Path, to: &Path) -> Result<bool, anyhow::Error> 
 }
 
 /// Returns `true` if the file contents are different from the buffer, `false` otherwise.
-/// 
+///
 /// It returns an error if we could not determine the outcome due to a
 /// failure in any of the intermediate operations (e.g. the file doesn't exist).
 fn has_changed_file2buffer(path: &Path, contents: &[u8]) -> Result<bool, anyhow::Error> {
     let file = fs_err::File::open(path)?;
-    // Cheaper check first: if the file size is not the same, 
+    // Cheaper check first: if the file size is not the same,
     // we can skip computing the checksum.
-    let metadata = file.metadata()?; 
+    let metadata = file.metadata()?;
     if metadata.len() != contents.len() as u64 {
         return Ok(true);
     }

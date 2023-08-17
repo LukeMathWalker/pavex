@@ -198,9 +198,12 @@ impl TestData {
                     at the very least, a `description` field explaining what the test is trying \
                     to verify.",
         )?;
-        toml::from_str(&test_config).with_context(
-            || format!("Failed to deserialize {:?}. Check the file against the expected schema!", &path)
-        )
+        toml::from_str(&test_config).with_context(|| {
+            format!(
+                "Failed to deserialize {:?}. Check the file against the expected schema!",
+                &path
+            )
+        })
     }
 
     /// Populate the runtime test folder using the directives and the files in the test

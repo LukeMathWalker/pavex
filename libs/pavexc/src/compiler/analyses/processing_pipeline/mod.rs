@@ -5,7 +5,8 @@ use crate::compiler::analyses::components::{ComponentDb, ComponentId, HydratedCo
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::constructibles::ConstructibleDb;
 use crate::compiler::app::GENERATED_APP_PACKAGE_ID;
-use crate::language::{Callable, InvocationStyle, PathType, ResolvedType};
+use crate::compiler::utils::process_framework_path;
+use crate::language::{Callable, InvocationStyle, PathType, ResolvedPathSegment, ResolvedType};
 use crate::rustdoc::CrateCollection;
 use ahash::{HashMap, HashMapExt};
 use guppy::graph::PackageGraph;
@@ -150,11 +151,8 @@ impl RequestHandlerPipeline {
                     (format!("rs_{i}"), type_.to_owned())
                 })
                 .collect::<BTreeMap<_, _>>();
-            // We build a "mock" callable that has the right inputs in order to drive the machinery
-            // that builds the dependency graph.
-            let package_id = PackageId::new(GENERATED_APP_PACKAGE_ID);
-            let next_type = PathType {
-                package_id: package_id.clone(),
+            let next_state_type = PathType {
+                package_id: PackageId::new(GENERATED_APP_PACKAGE_ID),
                 rustdoc_id: None,
                 // TODO: we should put everything in a sub-module specific to the request handler
                 //   that we're currently processing.
@@ -163,29 +161,27 @@ impl RequestHandlerPipeline {
             };
 
             // We register a constructor, in order to make it possible to build an instance of
-            // `Next<{ConcreteType}>`.
-            let next_type_constructor = Callable {
+            // `next_type`.
+            let next_state_constructor = Callable {
                 is_async: false,
-                path: next_type.resolved_path(),
-                output: Some(next_type.clone().into()),
+                path: next_state_type.resolved_path(),
+                output: Some(next_state_type.clone().into()),
                 inputs: next_state_bindings.values().cloned().collect(),
                 invocation_style: InvocationStyle::StructLiteral {
                     field_names: next_state_bindings,
                 },
                 source_coordinates: None,
             };
-            let next_type_callable_id = computation_db.get_or_intern(next_type_constructor);
+            let next_state_callable_id = computation_db.get_or_intern(next_state_constructor);
             component_db
                 .get_or_intern_constructor(
-                    next_type_callable_id,
-                    Lifecycle::Singleton,
+                    next_state_callable_id,
+                    Lifecycle::RequestScoped,
                     component_db.scope_id(*middleware_id),
                     CloningStrategy::NeverClone,
                     computation_db,
                 )
                 .unwrap();
-
-            // TODO: add constructor for `Next<{ConcreteType}>` to the component db.
 
             // Since we now have the concrete type of the generic in `Next<_>`, we can bind
             // the generic type parameter of the middleware to that concrete type.
@@ -205,12 +201,44 @@ impl RequestHandlerPipeline {
             let next_generic_parameter = next_generic_parameters.iter().next().unwrap().to_owned();
 
             let mut bindings = HashMap::with_capacity(1);
-            bindings.insert(next_generic_parameter, next_type.clone().into());
+            bindings.insert(next_generic_parameter, next_state_type.clone().into());
             let bound_middleware_id = component_db.bind_generic_type_parameters(
                 *middleware_id,
                 &bindings,
                 computation_db,
             );
+
+            // We also need to create a bound constructor for `Next<{ConcreteType}>`.
+            let next =
+                process_framework_path("pavex::middleware::Next", package_graph, krate_collection);
+            let bound_next_type = next.bind_generic_type_parameters(&bindings);
+            let ResolvedType::ResolvedPath(bound_next_type) = bound_next_type else { unreachable!() };
+            let constructor_path = {
+                let mut path = bound_next_type.resolved_path();
+                path.segments.push(ResolvedPathSegment {
+                    ident: "new".into(),
+                    generic_arguments: vec![],
+                });
+                path
+            };
+            let bound_next_constructor = Callable {
+                is_async: false,
+                output: Some(bound_next_type.into()),
+                path: constructor_path,
+                inputs: vec![next_state_type.clone().into()],
+                invocation_style: InvocationStyle::FunctionCall,
+                source_coordinates: None,
+            };
+            let bound_next_callable_id = computation_db.get_or_intern(bound_next_constructor);
+            component_db
+                .get_or_intern_constructor(
+                    bound_next_callable_id,
+                    Lifecycle::RequestScoped,
+                    component_db.scope_id(*middleware_id),
+                    CloningStrategy::NeverClone,
+                    computation_db,
+                )
+                .unwrap();
 
             // We can now build the call graph for the middleware, using the concrete type of
             // `Next<_>` as the input type.
@@ -224,7 +252,8 @@ impl RequestHandlerPipeline {
                 &krate_collection,
                 &mut diagnostics,
             )?;
-            middleware_id2stage_data.insert(*middleware_id, (middleware_call_graph, next_type));
+            middleware_id2stage_data
+                .insert(*middleware_id, (middleware_call_graph, next_state_type));
         }
 
         Ok(Self {
@@ -232,6 +261,39 @@ impl RequestHandlerPipeline {
             handler_call_graph,
             middleware_id2stage_data,
         })
+    }
+}
+
+impl RequestHandlerPipeline {
+    /// Iterate over all the call graphs in the pipeline, in execution order (middlewares first,
+    /// request handler last).
+    pub(crate) fn graph_iter(&self) -> PipelineGraphIterator {
+        PipelineGraphIterator {
+            pipeline: self,
+            current_stage: Some(0),
+        }
+    }
+}
+
+/// See [`RequestHandlerPipeline::graph_iter`] for more information.
+pub(crate) struct PipelineGraphIterator<'a> {
+    pipeline: &'a RequestHandlerPipeline,
+    current_stage: Option<usize>,
+}
+
+impl<'a> Iterator for PipelineGraphIterator<'a> {
+    type Item = &'a OrderedCallGraph;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let Some(stage) = self.current_stage else { return None; };
+        let stage_data = self.pipeline.middleware_id2stage_data.get_index(stage);
+        if let Some((_, (graph, _))) = stage_data {
+            self.current_stage = Some(stage + 1);
+            Some(graph)
+        } else {
+            self.current_stage = None;
+            Some(&self.pipeline.handler_call_graph)
+        }
     }
 }
 

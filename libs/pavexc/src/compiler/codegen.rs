@@ -125,7 +125,7 @@ pub(crate) fn codegen_app(
     let define_application_state_error = define_application_state_error(
         &application_state_call_graph.error_variants,
         package_id2name,
-        &thiserror_import_name
+        &thiserror_import_name,
     );
     let application_state_init = get_application_state_init(
         application_state_call_graph,
@@ -134,8 +134,7 @@ pub(crate) fn codegen_app(
         computation_db,
     )?;
 
-    let define_server_state =
-        define_server_state(&application_state_def, &pavex_import_name);
+    let define_server_state = define_server_state(&application_state_def, &pavex_import_name);
 
     let mut handlers = vec![];
     let path2codegen_router_entry = {
@@ -282,9 +281,9 @@ fn define_application_state_error(
     let singleton_fields = error_types.iter().map(|(variant_name, type_)| {
         let variant_type = type_.syn_type(package_id2name);
         let variant_name = format_ident!("{}", variant_name);
-        quote! { 
+        quote! {
             #[error(transparent)]
-            #variant_name(#variant_type) 
+            #variant_name(#variant_type)
         }
     });
     Some(
@@ -342,10 +341,7 @@ fn get_application_state_init(
     Ok(function)
 }
 
-fn get_router_init(
-    route_id2path: &BiBTreeMap<u32, String>,
-    pavex_import_name: &Ident,
-) -> ItemFn {
+fn get_router_init(route_id2path: &BiBTreeMap<u32, String>, pavex_import_name: &Ident) -> ItemFn {
     let mut router_init = quote! {
         let mut router = #pavex_import_name::routing::Router::new();
     };

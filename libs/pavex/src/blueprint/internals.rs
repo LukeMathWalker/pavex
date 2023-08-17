@@ -1,5 +1,5 @@
 //! Internal types used by [`Blueprint`]s to keep track of what you registered.
-//! 
+//!
 //! This module is not meant to be used directly by users of the framework. It is only meant to be
 //! used by Pavex's CLI.
 use super::constructor::{CloningStrategy, Lifecycle};
