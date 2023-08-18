@@ -209,7 +209,7 @@ impl App {
 
     /// A representation of an `App` geared towards debugging and testing.
     pub fn diagnostic_representation(&self) -> AppDiagnostics {
-        let mut handler_graphs = IndexMap::new();
+        let mut handlers = IndexMap::new();
         let (_, package_ids2deps) = codegen::codegen_manifest(
             &self.package_graph,
             self.handler_pipelines.values().map(|c| &c.call_graph),
@@ -220,7 +220,7 @@ impl App {
             &self.computation_db,
         );
 
-        for (router_key, handler_call_graph) in &self.handler_pipelines {
+        for (router_key, handler_pipeline) in &self.handler_pipelines {
             let method = router_key
                 .method_guard
                 .as_ref()
@@ -232,15 +232,18 @@ impl App {
                         .join(" | ")
                 })
                 .unwrap_or("*".to_string());
-            handler_graphs.insert(
-                router_key.to_owned(),
-                handler_call_graph
-                    .dot(&package_ids2deps, &self.component_db, &self.computation_db)
-                    .replace(
-                        "digraph",
-                        &format!("digraph \"{method} {}\"", router_key.path),
-                    ),
-            );
+            let mut handler_graphs = Vec::new();
+            for (i, graph) in handler_pipeline.graph_iter().enumerate() {
+                handler_graphs.push(
+                    graph
+                        .dot(&package_ids2deps, &self.component_db, &self.computation_db)
+                        .replace(
+                            "digraph",
+                            &format!("digraph \"{method} {} - {i}\"", router_key.path),
+                        ),
+                );
+            }
+            handlers.insert(router_key.to_owned(), handler_graphs);
         }
         let application_state_graph = self
             .application_state_call_graph
@@ -248,7 +251,7 @@ impl App {
             .dot(&package_ids2deps, &self.component_db, &self.computation_db)
             .replace("digraph", "digraph app_state");
         AppDiagnostics {
-            handlers: handler_graphs,
+            handlers,
             application_state: application_state_graph,
         }
     }
@@ -267,7 +270,9 @@ pub(crate) enum BuildError {
 /// It contains the DOT representation of all the call graphs underpinning the originating `App`.
 /// The DOT representation can be used for snapshot testing and/or troubleshooting.
 pub struct AppDiagnostics {
-    pub handlers: IndexMap<RouterKey, String>,
+    /// For each handler, we have a sequence of DOT graphs representing the call graph of each
+    /// middleware in their pipeline and the request handler itself.
+    pub handlers: IndexMap<RouterKey, Vec<String>>,
     pub application_state: String,
 }
 
@@ -277,7 +282,7 @@ impl AppDiagnostics {
     pub fn persist(&self, directory: &Path) -> Result<(), anyhow::Error> {
         let handler_directory = directory.join("handlers");
         fs_err::create_dir_all(&handler_directory)?;
-        for (router_key, handler) in &self.handlers {
+        for (router_key, handler_graphs) in &self.handlers {
             let method = router_key
                 .method_guard
                 .as_ref()
@@ -296,7 +301,11 @@ impl AppDiagnostics {
                 .create(true)
                 .truncate(true)
                 .open(filepath)?;
-            file.write_all(handler.as_bytes())?;
+            for handler_graph in handler_graphs {
+                file.write_all(handler_graph.as_bytes())?;
+                // Add a newline between graphs for readability
+                file.write("\n".as_bytes())?;
+            }
         }
         let mut file = fs_err::OpenOptions::new()
             .write(true)
@@ -316,8 +325,12 @@ impl AppDiagnostics {
             .open(filepath)?;
         let mut file = BufWriter::new(file);
 
-        for handler in self.handlers.values() {
-            file.write_all(handler.as_bytes())?;
+        for handler_graphs in self.handlers.values() {
+            for handler_graph in handler_graphs {
+                file.write_all(handler_graph.as_bytes())?;
+                // Add a newline between graphs for readability
+                file.write("\n".as_bytes())?;
+            }
         }
         file.write_all(self.application_state.as_bytes())?;
         file.flush()?;
