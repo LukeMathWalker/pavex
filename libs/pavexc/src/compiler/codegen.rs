@@ -102,7 +102,7 @@ impl CodegenRequestHandler {
 }
 
 pub(crate) fn codegen_app(
-    handler_call_graphs: &IndexMap<RouterKey, RequestHandlerPipeline>,
+    handler_pipelines: &IndexMap<RouterKey, RequestHandlerPipeline>,
     application_state_call_graph: &ApplicationStateCallGraph,
     request_scoped_framework_bindings: &BiHashMap<Ident, ResolvedType>,
     package_id2name: &BiHashMap<PackageId, String>,
@@ -140,7 +140,7 @@ pub(crate) fn codegen_app(
     let mut handlers = vec![];
     let path2codegen_router_entry = {
         let mut map: IndexMap<String, CodegenRouterEntry> = IndexMap::new();
-        for (i, (router_key, call_graph)) in handler_call_graphs.iter().enumerate() {
+        for (i, (router_key, pipeline)) in handler_pipelines.iter().enumerate() {
             let mut code = call_graph.codegen(package_id2name, component_db, computation_db)?;
             code.sig.ident = format_ident!("route_handler_{}", i);
             handlers.push(code.clone());
