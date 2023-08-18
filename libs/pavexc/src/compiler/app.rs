@@ -14,7 +14,7 @@ use quote::format_ident;
 use pavex::blueprint::{constructor::Lifecycle, Blueprint};
 
 use crate::compiler::analyses::call_graph::{
-    application_state_call_graph, ApplicationStateCallGraph, OrderedCallGraph, RawCallGraphExt,
+    application_state_call_graph, ApplicationStateCallGraph, RawCallGraphExt,
 };
 use crate::compiler::analyses::components::{ComponentDb, ComponentId, HydratedComponent};
 use crate::compiler::analyses::computations::ComputationDb;
@@ -183,7 +183,7 @@ impl App {
         let framework_bindings = self.framework_item_db.bindings();
         let (cargo_toml, package_ids2deps) = codegen::codegen_manifest(
             &self.package_graph,
-            self.handler_pipelines.values().map(|cg| &cg.call_graph),
+            self.handler_pipelines.values(),
             &self.application_state_call_graph.call_graph.call_graph,
             &framework_bindings,
             &self.codegen_deps,
@@ -212,7 +212,7 @@ impl App {
         let mut handlers = IndexMap::new();
         let (_, package_ids2deps) = codegen::codegen_manifest(
             &self.package_graph,
-            self.handler_pipelines.values().map(|c| &c.call_graph),
+            self.handler_pipelines.values(),
             &self.application_state_call_graph.call_graph.call_graph,
             &self.framework_item_db.bindings(),
             &self.codegen_deps,

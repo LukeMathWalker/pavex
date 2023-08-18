@@ -11,10 +11,11 @@ use quote::{format_ident, quote};
 use syn::{ItemEnum, ItemFn, ItemStruct};
 
 use crate::compiler::analyses::call_graph::{
-    ApplicationStateCallGraph, CallGraphNode, OrderedCallGraph, RawCallGraph, RawCallGraphExt,
+    ApplicationStateCallGraph, CallGraphNode, RawCallGraph,
 };
 use crate::compiler::analyses::components::ComponentDb;
 use crate::compiler::analyses::computations::ComputationDb;
+use crate::compiler::analyses::processing_pipeline::RequestHandlerPipeline;
 use crate::compiler::analyses::user_components::RouterKey;
 use crate::compiler::app::GENERATED_APP_PACKAGE_ID;
 use crate::compiler::computation::Computation;
@@ -101,7 +102,7 @@ impl CodegenRequestHandler {
 }
 
 pub(crate) fn codegen_app(
-    handler_call_graphs: &IndexMap<RouterKey, OrderedCallGraph>,
+    handler_call_graphs: &IndexMap<RouterKey, RequestHandlerPipeline>,
     application_state_call_graph: &ApplicationStateCallGraph,
     request_scoped_framework_bindings: &BiHashMap<Ident, ResolvedType>,
     package_id2name: &BiHashMap<PackageId, String>,
@@ -230,10 +231,10 @@ fn server_startup(pavex: &Ident) -> ItemFn {
                 async move {
                     Ok::<_, #pavex::hyper::Error>(#pavex::hyper::service::service_fn(move |request| {
                         let server_state = server_state.clone();
-                        async move { 
+                        async move {
                             let response = route_request(request, server_state).await;
                             let response = #pavex::hyper::Response::from(response);
-                            Ok::<_, #pavex::hyper::Error>(response) 
+                            Ok::<_, #pavex::hyper::Error>(response)
                         }
                     }))
                 }
@@ -450,7 +451,7 @@ pub(crate) fn codegen_manifest<'a, I>(
     computation_db: &'a ComputationDb,
 ) -> (GeneratedManifest, BiHashMap<PackageId, String>)
 where
-    I: Iterator<Item = &'a RawCallGraph>,
+    I: Iterator<Item = &'a RequestHandlerPipeline>,
 {
     let (dependencies, mut package_ids2deps) = compute_dependencies(
         package_graph,
@@ -485,7 +486,7 @@ where
 
 fn compute_dependencies<'a, I>(
     package_graph: &guppy::graph::PackageGraph,
-    handler_call_graphs: I,
+    handler_pipelines: I,
     application_state_call_graph: &'a RawCallGraph,
     request_scoped_framework_bindings: &'a BiHashMap<Ident, ResolvedType>,
     codegen_deps: &'a HashMap<String, PackageId>,
@@ -493,10 +494,10 @@ fn compute_dependencies<'a, I>(
     computation_db: &'a ComputationDb,
 ) -> (BTreeMap<String, Dependency>, BiHashMap<PackageId, String>)
 where
-    I: Iterator<Item = &'a RawCallGraph>,
+    I: Iterator<Item = &'a RequestHandlerPipeline>,
 {
     let package_ids = collect_package_ids(
-        handler_call_graphs,
+        handler_pipelines,
         application_state_call_graph,
         request_scoped_framework_bindings,
         codegen_deps,
@@ -599,7 +600,7 @@ where
 }
 
 fn collect_package_ids<'a, I>(
-    handler_call_graphs: I,
+    handler_pipelines: I,
     application_state_call_graph: &'a RawCallGraph,
     request_scoped_framework_bindings: &'a BiHashMap<Ident, ResolvedType>,
     codegen_deps: &'a HashMap<String, PackageId>,
@@ -607,7 +608,7 @@ fn collect_package_ids<'a, I>(
     computation_db: &'a ComputationDb,
 ) -> IndexSet<PackageId>
 where
-    I: Iterator<Item = &'a RawCallGraph>,
+    I: Iterator<Item = &'a RequestHandlerPipeline>,
 {
     let mut package_ids = IndexSet::new();
     for t in request_scoped_framework_bindings.right_values() {
@@ -622,13 +623,15 @@ where
         computation_db,
         application_state_call_graph,
     );
-    for handler_call_graph in handler_call_graphs {
-        collect_call_graph_package_ids(
-            &mut package_ids,
-            component_db,
-            computation_db,
-            handler_call_graph,
-        );
+    for handler_pipeline in handler_pipelines {
+        for graph in handler_pipeline.graph_iter() {
+            collect_call_graph_package_ids(
+                &mut package_ids,
+                component_db,
+                computation_db,
+                &graph.call_graph,
+            );
+        }
     }
     package_ids
 }
