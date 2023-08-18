@@ -39,7 +39,7 @@ pub(crate) const GENERATED_APP_PACKAGE_ID: &str = "crate";
 /// the constraints and instructions from a [`Blueprint`] instance.
 pub struct App {
     package_graph: PackageGraph,
-    handler_call_graphs: IndexMap<RouterKey, OrderedCallGraph>,
+    handler_pipelines: IndexMap<RouterKey, RequestHandlerPipeline>,
     application_state_call_graph: ApplicationStateCallGraph,
     framework_item_db: FrameworkItemDb,
     runtime_singleton_bindings: BiHashMap<Ident, ResolvedType>,
@@ -165,7 +165,7 @@ impl App {
         exit_on_errors!(diagnostics);
         Ok(Self {
             package_graph,
-            handler_call_graphs: handler_pipelines,
+            handler_pipelines,
             component_db,
             computation_db,
             application_state_call_graph,
@@ -183,7 +183,7 @@ impl App {
         let framework_bindings = self.framework_item_db.bindings();
         let (cargo_toml, package_ids2deps) = codegen::codegen_manifest(
             &self.package_graph,
-            self.handler_call_graphs.values().map(|cg| &cg.call_graph),
+            self.handler_pipelines.values().map(|cg| &cg.call_graph),
             &self.application_state_call_graph.call_graph.call_graph,
             &framework_bindings,
             &self.codegen_deps,
@@ -191,7 +191,7 @@ impl App {
             &self.computation_db,
         );
         let lib_rs = codegen::codegen_app(
-            &self.handler_call_graphs,
+            &self.handler_pipelines,
             &self.application_state_call_graph,
             &framework_bindings,
             &package_ids2deps,
@@ -212,7 +212,7 @@ impl App {
         let mut handler_graphs = IndexMap::new();
         let (_, package_ids2deps) = codegen::codegen_manifest(
             &self.package_graph,
-            self.handler_call_graphs.values().map(|c| &c.call_graph),
+            self.handler_pipelines.values().map(|c| &c.call_graph),
             &self.application_state_call_graph.call_graph.call_graph,
             &self.framework_item_db.bindings(),
             &self.codegen_deps,
@@ -220,7 +220,7 @@ impl App {
             &self.computation_db,
         );
 
-        for (router_key, handler_call_graph) in &self.handler_call_graphs {
+        for (router_key, handler_call_graph) in &self.handler_pipelines {
             let method = router_key
                 .method_guard
                 .as_ref()
