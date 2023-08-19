@@ -1,3 +1,5 @@
+extern crate core;
+
 pub use compiler::App;
 
 mod compiler;

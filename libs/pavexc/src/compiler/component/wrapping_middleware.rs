@@ -94,6 +94,11 @@ impl<'a> WrappingMiddleware<'a> {
         self.callable.inputs.iter().position(is_next).unwrap()
     }
 
+    /// Returns the type of the input parameter that is a `Next<_>`.
+    pub fn next_input_type(&self) -> &ResolvedType {
+        &self.callable.inputs[self.next_input_index()]
+    }
+
     pub fn into_owned(self) -> WrappingMiddleware<'static> {
         WrappingMiddleware {
             callable: Cow::Owned(self.callable.into_owned()),

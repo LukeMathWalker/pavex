@@ -6,8 +6,7 @@ use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::constructibles::ConstructibleDb;
 use crate::compiler::analyses::processing_pipeline::graph_iter::PipelineGraphIterator;
 use crate::compiler::app::GENERATED_APP_PACKAGE_ID;
-use crate::compiler::utils::process_framework_path;
-use crate::language::{Callable, InvocationStyle, PathType, ResolvedPathSegment, ResolvedType};
+use crate::language::{Callable, InvocationStyle, PathType};
 use crate::rustdoc::CrateCollection;
 use ahash::{HashMap, HashMapExt};
 use guppy::graph::PackageGraph;
@@ -30,7 +29,7 @@ impl RequestHandlerPipeline {
         handler_id: ComponentId,
         mut computation_db: &mut ComputationDb,
         mut component_db: &mut ComponentDb,
-        constructible_db: &ConstructibleDb,
+        constructible_db: &mut ConstructibleDb,
         package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
         mut diagnostics: &mut Vec<miette::Error>,
@@ -171,15 +170,17 @@ impl RequestHandlerPipeline {
                 source_coordinates: None,
             };
             let next_state_callable_id = computation_db.get_or_intern(next_state_constructor);
-            component_db
+            let next_state_scope_id = component_db.scope_id(*middleware_id);
+            let next_state_constructor_id = component_db
                 .get_or_intern_constructor(
                     next_state_callable_id,
                     Lifecycle::RequestScoped,
-                    component_db.scope_id(*middleware_id),
+                    next_state_scope_id,
                     CloningStrategy::NeverClone,
                     computation_db,
                 )
                 .unwrap();
+            constructible_db.insert(next_state_constructor_id, component_db, computation_db);
 
             // Since we now have the concrete type of the generic in `Next<_>`, we can bind
             // the generic type parameter of the middleware to that concrete type.
@@ -206,37 +207,19 @@ impl RequestHandlerPipeline {
                 computation_db,
             );
 
-            // We also need to create a bound constructor for `Next<{ConcreteType}>`.
-            let next =
-                process_framework_path("pavex::middleware::Next", package_graph, krate_collection);
-            let bound_next_type = next.bind_generic_type_parameters(&bindings);
-            let ResolvedType::ResolvedPath(bound_next_type) = bound_next_type else { unreachable!() };
-            let constructor_path = {
-                let mut path = bound_next_type.resolved_path();
-                path.segments.push(ResolvedPathSegment {
-                    ident: "new".into(),
-                    generic_arguments: vec![],
-                });
-                path
+            let HydratedComponent::WrappingMiddleware(bound_mw) = component_db.hydrated_component(bound_middleware_id, computation_db) else {
+                unreachable!()
             };
-            let bound_next_constructor = Callable {
-                is_async: false,
-                output: Some(bound_next_type.into()),
-                path: constructor_path,
-                inputs: vec![next_state_type.clone().into()],
-                invocation_style: InvocationStyle::FunctionCall,
-                source_coordinates: None,
-            };
-            let bound_next_callable_id = computation_db.get_or_intern(bound_next_constructor);
-            component_db
-                .get_or_intern_constructor(
-                    bound_next_callable_id,
-                    Lifecycle::RequestScoped,
-                    component_db.scope_id(*middleware_id),
-                    CloningStrategy::NeverClone,
+            // Force the constructibles database to bind a constructor for `Next<{NextState}>`.
+            // Really ugly, but alas.
+            assert!(constructible_db
+                .get_or_try_bind(
+                    next_state_scope_id,
+                    &bound_mw.next_input_type().to_owned(),
+                    component_db,
                     computation_db,
                 )
-                .unwrap();
+                .is_some());
 
             // We can now build the call graph for the middleware, using the concrete type of
             // `Next<_>` as the input type.

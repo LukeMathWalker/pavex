@@ -66,18 +66,13 @@ impl ConstructibleDb {
     }
 
     fn _build(component_db: &mut ComponentDb, computation_db: &mut ComputationDb) -> Self {
-        let mut scope_id2constructibles = IndexMap::new();
-        for (component_id, component) in component_db.constructors(computation_db) {
-            let scope_id = component_db.scope_id(component_id);
-            let scope_constructibles = scope_id2constructibles
-                .entry(scope_id)
-                .or_insert_with(ConstructiblesInScope::new);
-            let output = component.output_type();
-            scope_constructibles.insert(output.to_owned(), component_id);
+        let mut self_ = Self {
+            scope_id2constructibles: IndexMap::new(),
+        };
+        for (component_id, _) in component_db.constructors(computation_db) {
+            self_.insert(component_id, component_db, computation_db);
         }
-        Self {
-            scope_id2constructibles,
-        }
+        self_
     }
 
     /// Check if any component is asking for a type as input parameter for which there is no
@@ -424,6 +419,24 @@ impl ConstructibleDb {
         None
     }
 
+    /// Add a new constructible type to the database.
+    pub(crate) fn insert(
+        &mut self,
+        component_id: ComponentId,
+        component_db: &ComponentDb,
+        computation_db: &ComputationDb,
+    ) {
+        let component = component_db.hydrated_component(component_id, computation_db);
+        assert!(matches!(component, HydratedComponent::Constructor(_)));
+        let scope_id = component_db.scope_id(component_id);
+        let scope_constructibles = self
+            .scope_id2constructibles
+            .entry(scope_id)
+            .or_insert_with(ConstructiblesInScope::new);
+        let output = component.output_type();
+        scope_constructibles.insert(output.to_owned(), component_id);
+    }
+
     /// Find the constructor for a given type in a given scope.
     ///
     /// If the type is not constructible in the given scope, we look for a constructor in the
@@ -435,7 +448,7 @@ impl ConstructibleDb {
     /// the type that we want to construct.
     /// If that's the case, we bind the generic constructor, add it to the database and return
     /// the id of the newly bound constructor.
-    fn get_or_try_bind(
+    pub(crate) fn get_or_try_bind(
         &mut self,
         scope_id: ScopeId,
         type_: &ResolvedType,
