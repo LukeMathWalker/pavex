@@ -1,4 +1,4 @@
-digraph "GET /home" {
+digraph "GET /home - 0" {
     0 [ label = "app::handler(app::A, app::B) -> pavex::response::Response"]
     1 [ label = "app::b_constructor() -> app::B"]
     2 [ label = "<app::B as app::GenericTrait::<app::A>>::a_method_using_the_trait_generic_param() -> app::A"]
@@ -7,6 +7,7 @@ digraph "GET /home" {
     2 -> 0 [ ]
     0 -> 3 [ ]
 }
+
 digraph app_state {
     0 [ label = "crate::ApplicationState() -> crate::ApplicationState"]
 }

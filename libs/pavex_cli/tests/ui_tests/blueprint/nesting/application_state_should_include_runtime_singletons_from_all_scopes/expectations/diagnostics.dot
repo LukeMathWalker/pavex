@@ -1,17 +1,19 @@
-digraph "GET /child" {
+digraph "GET /child - 0" {
     0 [ label = "app::nested_handler(u32) -> http::StatusCode"]
     1 [ label = "u32"]
     2 [ label = "<http::StatusCode as pavex::response::IntoResponse>::into_response(http::StatusCode) -> pavex::response::Response"]
     1 -> 0 [ ]
     0 -> 2 [ ]
 }
-digraph "GET /parent" {
+
+digraph "GET /parent - 0" {
     0 [ label = "app::parent_handler(u64) -> http::StatusCode"]
     1 [ label = "u64"]
     2 [ label = "<http::StatusCode as pavex::response::IntoResponse>::into_response(http::StatusCode) -> pavex::response::Response"]
     1 -> 0 [ ]
     0 -> 2 [ ]
 }
+
 digraph app_state {
     0 [ label = "crate::ApplicationState(u32, u64) -> crate::ApplicationState"]
     1 [ label = "app::parent_singleton() -> u64"]

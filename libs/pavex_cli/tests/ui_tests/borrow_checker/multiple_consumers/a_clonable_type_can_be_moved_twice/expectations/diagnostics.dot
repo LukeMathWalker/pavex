@@ -1,4 +1,4 @@
-digraph "GET /home" {
+digraph "GET /home - 0" {
     0 [ label = "app::handler(app::B, app::C) -> pavex::response::Response"]
     1 [ label = "app::c(app::A) -> app::C"]
     2 [ label = "app::a() -> app::A"]
@@ -12,6 +12,7 @@ digraph "GET /home" {
     2 -> 5 [ label = "&"]
     5 -> 1 [ ]
 }
+
 digraph app_state {
     0 [ label = "crate::ApplicationState() -> crate::ApplicationState"]
 }

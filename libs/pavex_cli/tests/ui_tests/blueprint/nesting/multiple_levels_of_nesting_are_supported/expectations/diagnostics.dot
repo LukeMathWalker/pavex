@@ -1,4 +1,4 @@
-digraph "GET /first/second/third/home" {
+digraph "GET /first/second/third/home - 0" {
     0 [ label = "app::handler(alloc::string::String) -> http::StatusCode"]
     1 [ label = "app::third(u32) -> alloc::string::String"]
     2 [ label = "app::second(u16) -> u32"]
@@ -9,6 +9,7 @@ digraph "GET /first/second/third/home" {
     3 -> 2 [ ]
     0 -> 4 [ ]
 }
+
 digraph app_state {
     0 [ label = "crate::ApplicationState() -> crate::ApplicationState"]
 }

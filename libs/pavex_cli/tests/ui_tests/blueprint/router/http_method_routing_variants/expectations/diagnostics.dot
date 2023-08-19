@@ -1,58 +1,69 @@
-digraph "* /any" {
+digraph "* /any - 0" {
     0 [ label = "app::handler() -> pavex::response::Response"]
     1 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     0 -> 1 [ ]
 }
-digraph "CONNECT /connect" {
+
+digraph "CONNECT /connect - 0" {
     0 [ label = "app::handler() -> pavex::response::Response"]
     1 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     0 -> 1 [ ]
 }
-digraph "DELETE /delete" {
+
+digraph "DELETE /delete - 0" {
     0 [ label = "app::handler() -> pavex::response::Response"]
     1 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     0 -> 1 [ ]
 }
-digraph "GET /get" {
+
+digraph "GET /get - 0" {
     0 [ label = "app::handler() -> pavex::response::Response"]
     1 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     0 -> 1 [ ]
 }
-digraph "HEAD /head" {
+
+digraph "HEAD /head - 0" {
     0 [ label = "app::handler() -> pavex::response::Response"]
     1 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     0 -> 1 [ ]
 }
-digraph "PATCH | POST /mixed" {
+
+digraph "PATCH | POST /mixed - 0" {
     0 [ label = "app::handler() -> pavex::response::Response"]
     1 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     0 -> 1 [ ]
 }
-digraph "OPTIONS /options" {
+
+digraph "OPTIONS /options - 0" {
     0 [ label = "app::handler() -> pavex::response::Response"]
     1 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     0 -> 1 [ ]
 }
-digraph "PATCH /patch" {
+
+digraph "PATCH /patch - 0" {
     0 [ label = "app::handler() -> pavex::response::Response"]
     1 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     0 -> 1 [ ]
 }
-digraph "POST /post" {
+
+digraph "POST /post - 0" {
     0 [ label = "app::handler() -> pavex::response::Response"]
     1 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     0 -> 1 [ ]
 }
-digraph "PUT /put" {
+
+digraph "PUT /put - 0" {
     0 [ label = "app::handler() -> pavex::response::Response"]
     1 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     0 -> 1 [ ]
 }
-digraph "TRACE /trace" {
+
+digraph "TRACE /trace - 0" {
     0 [ label = "app::handler() -> pavex::response::Response"]
     1 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     0 -> 1 [ ]
 }
+
 digraph app_state {
     0 [ label = "crate::ApplicationState() -> crate::ApplicationState"]
 }

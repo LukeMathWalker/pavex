@@ -1,4 +1,4 @@
-digraph "GET /home" {
+digraph "GET /home - 0" {
     0 [ label = "app::handler(app::Json<u8>, app::Json<alloc::vec::Vec<u8>>, &app::Json<char>, app::Form<u64>, app::FallibleForm<app::AType>, &app::FallibleForm<u16>, &app::FallibleForm2<u8>) -> pavex::response::Response"]
     1 [ label = "core::prelude::rust_2015::Result<app::FallibleForm2<u8>, app::GenericError<u8>> -> app::FallibleForm2<u8>"]
     2 [ label = "app::fallible_with_generic_error2() -> core::prelude::rust_2015::Result<app::FallibleForm2<u8>, app::GenericError<u8>>"]
@@ -58,6 +58,7 @@ digraph "GET /home" {
     6 -> 27 [ ]
     8 -> 28 [ ]
 }
+
 digraph app_state {
     0 [ label = "crate::ApplicationState() -> crate::ApplicationState"]
 }

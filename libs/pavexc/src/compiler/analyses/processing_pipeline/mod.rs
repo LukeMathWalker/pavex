@@ -1,3 +1,4 @@
+mod codegen;
 mod graph_iter;
 mod pipeline;
 

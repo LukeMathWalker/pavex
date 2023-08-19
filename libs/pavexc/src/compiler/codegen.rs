@@ -11,7 +11,7 @@ use quote::{format_ident, quote};
 use syn::{ItemEnum, ItemFn, ItemStruct};
 
 use crate::compiler::analyses::call_graph::{
-    ApplicationStateCallGraph, CallGraphNode, RawCallGraph,
+    ApplicationStateCallGraph, CallGraphNode, RawCallGraph, RawCallGraphExt,
 };
 use crate::compiler::analyses::components::ComponentDb;
 use crate::compiler::analyses::computations::ComputationDb;
@@ -141,12 +141,15 @@ pub(crate) fn codegen_app(
     let path2codegen_router_entry = {
         let mut map: IndexMap<String, CodegenRouterEntry> = IndexMap::new();
         for (i, (router_key, pipeline)) in handler_pipelines.iter().enumerate() {
-            let mut code = call_graph.codegen(package_id2name, component_db, computation_db)?;
+            let mut code = pipeline.codegen(package_id2name, component_db, computation_db)?;
             code.sig.ident = format_ident!("route_handler_{}", i);
             handlers.push(code.clone());
             let handler = CodegenRequestHandler {
                 code,
-                input_types: call_graph.call_graph.required_input_types(),
+                input_types: pipeline
+                    .handler_call_graph
+                    .call_graph
+                    .required_input_types(),
             };
             match router_key.method_guard.clone() {
                 None => {
