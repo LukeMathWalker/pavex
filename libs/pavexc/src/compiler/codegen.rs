@@ -69,11 +69,11 @@ pub(crate) fn codegen_app(
     let mut handler_modules = vec![];
     let path2codegen_router_entry = {
         let mut map: IndexMap<String, CodegenRouterEntry> = IndexMap::new();
-        for (i, (router_key, pipeline)) in handler_pipelines.iter().enumerate() {
-            let module_name = format_ident!("route_{}", i);
+        for (router_key, pipeline) in handler_pipelines {
+            let module_name = format_ident!("{}", &pipeline.module_name);
             let pipeline_code = pipeline.codegen(package_id2name, component_db, computation_db)?;
             let first_stage = pipeline_code.stages[0].clone();
-            handler_modules.push(pipeline_code.as_inline_module(module_name.clone()));
+            handler_modules.push(pipeline_code.as_inline_module());
             match router_key.method_guard.clone() {
                 None => {
                     map.insert(

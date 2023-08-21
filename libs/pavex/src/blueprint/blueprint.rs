@@ -275,7 +275,7 @@ impl Blueprint {
     ///
     /// ```rust
     /// use pavex::{f, blueprint::Blueprint, middleware::Next, response::Response};
-    /// use std::future::Future;
+    /// use std::future::{IntoFuture, Future};
     /// use std::time::Duration;
     /// use tokio::time::{timeout, error::Elapsed};
     ///
@@ -283,7 +283,7 @@ impl Blueprint {
     /// where
     ///     C: Future<Output = Response>
     /// {
-    ///     timeout(Duration::from_secs(2), next).await
+    ///     timeout(Duration::from_secs(2), next.into_future()).await
     /// }
     ///
     /// pub fn api() -> Blueprint {
@@ -303,7 +303,7 @@ impl Blueprint {
     ///
     /// ```rust
     /// use pavex::{middleware::Next, response::Response};
-    /// use std::{future::Future, time::Duration};
+    /// use std::{future::{IntoFuture, Future}, time::Duration};
     /// use tokio::time::{timeout, error::Elapsed};
     /// use tracing::Instrument;
     ///
@@ -313,7 +313,7 @@ impl Blueprint {
     ///     C: Future<Output = Response>
     /// {
     ///     let span = tracing::info_span!("Incoming request");
-    ///     next.instrument(span).await
+    ///     next.into_future().instrument(span).await
     /// }
     ///
     /// // This is a fallible wrapping middleware.
@@ -322,7 +322,7 @@ impl Blueprint {
     /// where
     ///     C: Future<Output = Response>
     /// {
-    ///     timeout(Duration::from_secs(1), next).await
+    ///     timeout(Duration::from_secs(1), next.into_future()).await
     /// }
     /// ```
     ///
@@ -338,7 +338,7 @@ impl Blueprint {
     ///     blueprint::{Blueprint, constructor::Lifecycle},
     ///     f, middleware::Next, response::Response
     /// };
-    /// use std::{future::Future, time::Duration};
+    /// use std::{future::{IntoFuture, Future}, time::Duration};
     /// use tokio::time::{timeout, error::Elapsed};
     ///
     /// #[derive(Copy, Clone)]
@@ -354,7 +354,7 @@ impl Blueprint {
     /// where
     ///     C: Future<Output = Response>
     /// {
-    ///     timeout(config.request_timeout, next).await
+    ///     timeout(config.request_timeout, next.into_future()).await
     /// }
     ///
     /// pub fn api() -> Blueprint {

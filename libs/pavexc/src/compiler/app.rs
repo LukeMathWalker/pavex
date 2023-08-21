@@ -102,9 +102,10 @@ impl App {
         let handler_pipelines = {
             let router = component_db.router().clone();
             let mut handler_pipelines = IndexMap::with_capacity(router.len());
-            for (router_key, handler_id) in router {
+            for (i, (router_key, handler_id)) in router.into_iter().enumerate() {
                 let Ok(processing_pipeline) = RequestHandlerPipeline::new(
                     handler_id,
+                    format!("route_{i}"),
                     &mut computation_db,
                     &mut component_db,
                     &mut constructible_db,

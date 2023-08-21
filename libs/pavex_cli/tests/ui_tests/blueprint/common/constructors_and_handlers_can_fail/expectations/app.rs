@@ -110,7 +110,10 @@ pub mod route_0 {
         v0: pavex::request::RequestHead,
         v1: app::HttpClient,
     ) -> pavex::response::Response {
-        let v2 = crate::Next0 { s_0: v1, s_1: v0 };
+        let v2 = crate::route_0::Next0 {
+            s_0: v1,
+            s_1: v0,
+        };
         let v3 = pavex::middleware::Next::new(v2);
         let v4 = app::fallible_wrapping_middleware(v3);
         let v5 = match v4 {

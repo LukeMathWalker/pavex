@@ -1,7 +1,7 @@
 digraph "GET /home - 0" {
-    0 [ label = "app::fallible_wrapping_middleware(pavex::middleware::Next<crate::Next0>) -> core::prelude::rust_2015::Result<pavex::response::Response, app::MiddlewareError>"]
-    1 [ label = "pavex::middleware::Next::new(crate::Next0) -> pavex::middleware::Next<crate::Next0>"]
-    2 [ label = "crate::Next0(app::HttpClient, pavex::request::RequestHead) -> crate::Next0"]
+    0 [ label = "app::fallible_wrapping_middleware(pavex::middleware::Next<crate::route_0::Next0>) -> core::prelude::rust_2015::Result<pavex::response::Response, app::MiddlewareError>"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_0::Next0) -> pavex::middleware::Next<crate::route_0::Next0>"]
+    2 [ label = "crate::route_0::Next0(app::HttpClient, pavex::request::RequestHead) -> crate::route_0::Next0"]
     3 [ label = "pavex::request::RequestHead"]
     4 [ label = "app::HttpClient"]
     5 [ label = "core::prelude::rust_2015::Result<pavex::response::Response, app::MiddlewareError> -> pavex::response::Response"]

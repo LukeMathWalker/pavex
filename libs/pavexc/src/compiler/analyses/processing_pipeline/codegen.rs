@@ -88,6 +88,7 @@ impl RequestHandlerPipeline {
         Ok(CodegenedRequestHandlerPipeline {
             stages,
             next_states,
+            module_name: self.module_name.clone(),
         })
     }
 }
@@ -96,16 +97,19 @@ impl RequestHandlerPipeline {
 pub(crate) struct CodegenedRequestHandlerPipeline {
     pub(crate) stages: Vec<CodegenedFn>,
     pub(crate) next_states: Vec<CodegenedNextState>,
+    pub(crate) module_name: String,
 }
 
 impl CodegenedRequestHandlerPipeline {
     /// Generates an inline module containing the code generated for the pipeline
     /// of this request handler.
-    pub(crate) fn as_inline_module(&self, module_name: Ident) -> TokenStream {
+    pub(crate) fn as_inline_module(&self) -> TokenStream {
         let Self {
             stages,
             next_states,
+            module_name,
         } = self;
+        let module_name = format_ident!("{}", module_name);
         quote! {
             pub mod #module_name {
                 #(#stages)*

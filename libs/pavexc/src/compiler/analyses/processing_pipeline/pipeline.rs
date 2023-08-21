@@ -18,6 +18,9 @@ use std::collections::BTreeMap;
 /// A request handler pipeline is the combination of a root compute node (i.e. the request handler)
 /// and an ordered sequence of wrapping middlewares ahead of it, feeding into each other.
 pub(crate) struct RequestHandlerPipeline {
+    /// The name of the local module where the generated types (e.g. `{ConcreteType}` in
+    /// `Next<{ConcreteType}>`) will be defined.
+    pub(crate) module_name: String,
     pub(crate) handler_id: ComponentId,
     pub(crate) handler_call_graph: OrderedCallGraph,
     pub(crate) middleware_id2stage_data:
@@ -28,6 +31,7 @@ impl RequestHandlerPipeline {
     /// Build a [`RequestHandlerPipeline`] for the request handler with the provided [`ComponentId`].
     pub(crate) fn new(
         handler_id: ComponentId,
+        module_name: String,
         mut computation_db: &mut ComputationDb,
         mut component_db: &mut ComponentDb,
         constructible_db: &mut ConstructibleDb,
@@ -155,9 +159,11 @@ impl RequestHandlerPipeline {
             let next_state_type = PathType {
                 package_id: PackageId::new(GENERATED_APP_PACKAGE_ID),
                 rustdoc_id: None,
-                // TODO: we should put everything in a sub-module specific to the request handler
-                //   that we're currently processing.
-                base_type: vec!["crate".into(), format!("Next{i}")],
+                base_type: vec![
+                    "crate".into(),
+                    module_name.clone().into(),
+                    format!("Next{i}"),
+                ],
                 generic_arguments: vec![],
             };
 
@@ -244,6 +250,7 @@ impl RequestHandlerPipeline {
         }
 
         Ok(Self {
+            module_name,
             handler_id,
             handler_call_graph,
             middleware_id2stage_data,
