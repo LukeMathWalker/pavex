@@ -33,7 +33,9 @@ impl RequestHandlerPipeline {
         }
 
         let mut next_states = Vec::with_capacity(n_middlewares);
-        for (_, next_state_type, next_state_fields) in self.middleware_id2stage_data.values() {
+        for (i, (_, next_state_type, next_state_fields)) in
+            self.middleware_id2stage_data.values().enumerate()
+        {
             let mut fields = Vec::with_capacity(next_state_fields.len());
             for (name, ty_) in next_state_fields {
                 let name = format_ident!("{}", name);
@@ -51,6 +53,20 @@ impl RequestHandlerPipeline {
             })
             .unwrap();
 
+            let next_stage = &stages[i + 1];
+            let inputs: Vec<_> = next_stage
+                .input_parameters
+                .iter()
+                .map(|input| {
+                    let field_name = next_state_fields
+                        .iter()
+                        .find(|(_, ty_)| ty_ == &input)
+                        .unwrap()
+                        .0;
+                    format_ident!("{}", field_name)
+                })
+                .collect();
+            let callable_path = &next_stage.fn_.sig.ident;
             let into_future_impl = syn::parse2(quote! {
                 impl std::future::IntoFuture for #struct_name {
                     type Output = pavex::response::Response;
@@ -58,7 +74,7 @@ impl RequestHandlerPipeline {
 
                     fn into_future(self) -> Self::IntoFuture {
                         Box::pin(async {
-                            todo!()
+                            #callable_path(#(self.#inputs),*).await
                         })
                     }
                 }

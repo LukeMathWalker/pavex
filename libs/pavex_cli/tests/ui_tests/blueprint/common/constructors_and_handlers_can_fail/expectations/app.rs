@@ -188,7 +188,7 @@ pub mod route_0 {
             Box<dyn std::future::Future<Output = Self::Output>>,
         >;
         fn into_future(self) -> Self::IntoFuture {
-            Box::pin(async { todo!() })
+            Box::pin(async { handler(self.s_0, self.s_1).await })
         }
     }
 }
