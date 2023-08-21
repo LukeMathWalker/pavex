@@ -68,7 +68,7 @@ async fn route_request(
     match route_id {
         0u32 => {
             match &request_head.method {
-                &pavex::http::Method::GET => route_handler_0().await,
+                &pavex::http::Method::GET => route_0::handler().await,
                 _ => {
                     let header_value = pavex::http::HeaderValue::from_static("GET");
                     pavex::response::Response::method_not_allowed()
@@ -80,10 +80,12 @@ async fn route_request(
         _ => pavex::response::Response::not_found().box_body(),
     }
 }
-pub async fn route_handler_0() -> pavex::response::Response {
-    let v1 = {
-        let v0 = dep::new_logger();
-        app::handler(v0)
-    };
-    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
+pub mod route_0 {
+    pub async fn handler() -> pavex::response::Response {
+        let v1 = {
+            let v0 = dep::new_logger();
+            app::handler(v0)
+        };
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
+    }
 }

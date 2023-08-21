@@ -68,7 +68,7 @@ async fn route_request(
     match route_id {
         0u32 => {
             match &request_head.method {
-                &pavex::http::Method::GET => route_handler_0().await,
+                &pavex::http::Method::GET => route_0::handler().await,
                 _ => {
                     let header_value = pavex::http::HeaderValue::from_static("GET");
                     pavex::response::Response::method_not_allowed()
@@ -80,11 +80,13 @@ async fn route_request(
         _ => pavex::response::Response::not_found().box_body(),
     }
 }
-pub async fn route_handler_0() -> pavex::response::Response {
-    let v0 = app::b_constructor();
-    let v1 = <app::B as app::GenericTrait<
-        app::A,
-    >>::a_method_using_the_trait_generic_param();
-    let v2 = app::handler(v1, v0);
-    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
+pub mod route_0 {
+    pub async fn handler() -> pavex::response::Response {
+        let v0 = app::b_constructor();
+        let v1 = <app::B as app::GenericTrait<
+            app::A,
+        >>::a_method_using_the_trait_generic_param();
+        let v2 = app::handler(v1, v0);
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
+    }
 }

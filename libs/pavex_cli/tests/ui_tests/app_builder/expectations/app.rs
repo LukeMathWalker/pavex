@@ -71,7 +71,7 @@ async fn route_request(
         0u32 => {
             match &request_head.method {
                 &pavex::http::Method::GET => {
-                    route_handler_0(
+                    route_0::handler(
                             server_state.application_state.s0.clone(),
                             request_head,
                         )
@@ -88,28 +88,30 @@ async fn route_request(
         _ => pavex::response::Response::not_found().box_body(),
     }
 }
-pub async fn route_handler_0(
-    v0: app::HttpClient,
-    v1: pavex::request::RequestHead,
-) -> pavex::response::Response {
-    let v2 = app::extract_path(v1).await;
-    let v3 = match v2 {
-        Ok(ok) => ok,
-        Err(v3) => {
-            return {
-                let v5 = {
-                    let v4 = app::logger();
-                    app::handle_extract_path_error(&v3, v4)
+pub mod route_0 {
+    pub async fn handler(
+        v0: app::HttpClient,
+        v1: pavex::request::RequestHead,
+    ) -> pavex::response::Response {
+        let v2 = app::extract_path(v1).await;
+        let v3 = match v2 {
+            Ok(ok) => ok,
+            Err(v3) => {
+                return {
+                    let v5 = {
+                        let v4 = app::logger();
+                        app::handle_extract_path_error(&v3, v4)
+                    };
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v5,
+                    )
                 };
-                <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                    v5,
-                )
-            };
-        }
-    };
-    let v5 = {
-        let v4 = app::logger();
-        app::stream_file(v3, v4, v0)
-    };
-    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v5)
+            }
+        };
+        let v5 = {
+            let v4 = app::logger();
+            app::stream_file(v3, v4, v0)
+        };
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v5)
+    }
 }

@@ -70,7 +70,7 @@ async fn route_request(
     match route_id {
         0u32 => {
             match &request_head.method {
-                &pavex::http::Method::GET => route_handler_0(url_params).await,
+                &pavex::http::Method::GET => route_0::handler(url_params).await,
                 _ => {
                     let header_value = pavex::http::HeaderValue::from_static("GET");
                     pavex::response::Response::method_not_allowed()
@@ -81,7 +81,7 @@ async fn route_request(
         }
         1u32 => {
             match &request_head.method {
-                &pavex::http::Method::GET => route_handler_1(url_params).await,
+                &pavex::http::Method::GET => route_1::handler(url_params).await,
                 _ => {
                     let header_value = pavex::http::HeaderValue::from_static("GET");
                     pavex::response::Response::method_not_allowed()
@@ -92,7 +92,7 @@ async fn route_request(
         }
         2u32 => {
             match &request_head.method {
-                &pavex::http::Method::GET => route_handler_2(url_params).await,
+                &pavex::http::Method::GET => route_2::handler(url_params).await,
                 _ => {
                     let header_value = pavex::http::HeaderValue::from_static("GET");
                     pavex::response::Response::method_not_allowed()
@@ -104,63 +104,69 @@ async fn route_request(
         _ => pavex::response::Response::not_found().box_body(),
     }
 }
-pub async fn route_handler_0(
-    v0: pavex::extract::route::RawRouteParams<'_, '_>,
-) -> pavex::response::Response {
-    let v1 = pavex::extract::route::RouteParams::extract(v0);
-    let v2 = match v1 {
-        Ok(ok) => ok,
-        Err(v2) => {
-            return {
-                let v3 = pavex::extract::route::errors::ExtractRouteParamsError::into_response(
-                    &v2,
-                );
-                <pavex::response::Response<
-                    http_body::Full<bytes::Bytes>,
-                > as pavex::response::IntoResponse>::into_response(v3)
-            };
-        }
-    };
-    let v3 = app::get_home(v2);
-    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
+pub mod route_0 {
+    pub async fn handler(
+        v0: pavex::extract::route::RawRouteParams<'_, '_>,
+    ) -> pavex::response::Response {
+        let v1 = pavex::extract::route::RouteParams::extract(v0);
+        let v2 = match v1 {
+            Ok(ok) => ok,
+            Err(v2) => {
+                return {
+                    let v3 = pavex::extract::route::errors::ExtractRouteParamsError::into_response(
+                        &v2,
+                    );
+                    <pavex::response::Response<
+                        http_body::Full<bytes::Bytes>,
+                    > as pavex::response::IntoResponse>::into_response(v3)
+                };
+            }
+        };
+        let v3 = app::get_home(v2);
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
+    }
 }
-pub async fn route_handler_1(
-    v0: pavex::extract::route::RawRouteParams<'_, '_>,
-) -> pavex::response::Response {
-    let v1 = pavex::extract::route::RouteParams::extract(v0);
-    let v2 = match v1 {
-        Ok(ok) => ok,
-        Err(v2) => {
-            return {
-                let v3 = pavex::extract::route::errors::ExtractRouteParamsError::into_response(
-                    &v2,
-                );
-                <pavex::response::Response<
-                    http_body::Full<bytes::Bytes>,
-                > as pavex::response::IntoResponse>::into_response(v3)
-            };
-        }
-    };
-    let v3 = app::get_room(v2);
-    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
+pub mod route_1 {
+    pub async fn handler(
+        v0: pavex::extract::route::RawRouteParams<'_, '_>,
+    ) -> pavex::response::Response {
+        let v1 = pavex::extract::route::RouteParams::extract(v0);
+        let v2 = match v1 {
+            Ok(ok) => ok,
+            Err(v2) => {
+                return {
+                    let v3 = pavex::extract::route::errors::ExtractRouteParamsError::into_response(
+                        &v2,
+                    );
+                    <pavex::response::Response<
+                        http_body::Full<bytes::Bytes>,
+                    > as pavex::response::IntoResponse>::into_response(v3)
+                };
+            }
+        };
+        let v3 = app::get_room(v2);
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
+    }
 }
-pub async fn route_handler_2(
-    v0: pavex::extract::route::RawRouteParams<'_, '_>,
-) -> pavex::response::Response {
-    let v1 = pavex::extract::route::RouteParams::extract(v0);
-    let v2 = match v1 {
-        Ok(ok) => ok,
-        Err(v2) => {
-            return {
-                let v3 = pavex::extract::route::errors::ExtractRouteParamsError::into_response(
-                    &v2,
-                );
-                <pavex::response::Response<
-                    http_body::Full<bytes::Bytes>,
-                > as pavex::response::IntoResponse>::into_response(v3)
-            };
-        }
-    };
-    let v3 = app::get_town(v2);
-    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
+pub mod route_2 {
+    pub async fn handler(
+        v0: pavex::extract::route::RawRouteParams<'_, '_>,
+    ) -> pavex::response::Response {
+        let v1 = pavex::extract::route::RouteParams::extract(v0);
+        let v2 = match v1 {
+            Ok(ok) => ok,
+            Err(v2) => {
+                return {
+                    let v3 = pavex::extract::route::errors::ExtractRouteParamsError::into_response(
+                        &v2,
+                    );
+                    <pavex::response::Response<
+                        http_body::Full<bytes::Bytes>,
+                    > as pavex::response::IntoResponse>::into_response(v3)
+                };
+            }
+        };
+        let v3 = app::get_town(v2);
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
+    }
 }

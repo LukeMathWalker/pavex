@@ -11,11 +11,11 @@ use quote::{format_ident, quote};
 use syn::{ItemEnum, ItemFn, ItemStruct};
 
 use crate::compiler::analyses::call_graph::{
-    ApplicationStateCallGraph, CallGraphNode, RawCallGraph, RawCallGraphExt,
+    ApplicationStateCallGraph, CallGraphNode, RawCallGraph,
 };
 use crate::compiler::analyses::components::ComponentDb;
 use crate::compiler::analyses::computations::ComputationDb;
-use crate::compiler::analyses::processing_pipeline::RequestHandlerPipeline;
+use crate::compiler::analyses::processing_pipeline::{CodegenedFn, RequestHandlerPipeline};
 use crate::compiler::analyses::user_components::RouterKey;
 use crate::compiler::app::GENERATED_APP_PACKAGE_ID;
 use crate::compiler::computation::Computation;
@@ -26,79 +26,8 @@ use super::generated_app::GeneratedManifest;
 
 #[derive(Debug, Clone)]
 enum CodegenRouterEntry {
-    MethodSubRouter(BTreeMap<String, CodegenRequestHandler>),
-    CatchAllHandler(CodegenRequestHandler),
-}
-
-#[derive(Debug, Clone)]
-struct CodegenRequestHandler {
-    code: ItemFn,
-    input_types: IndexSet<ResolvedType>,
-}
-
-impl CodegenRequestHandler {
-    fn invocation(
-        &self,
-        singleton_bindings: &BiHashMap<Ident, ResolvedType>,
-        request_scoped_bindings: &BiHashMap<Ident, ResolvedType>,
-        server_state_ident: &Ident,
-    ) -> TokenStream {
-        let handler = &self.code;
-        let handler_input_types = &self.input_types;
-        let is_handler_async = handler.sig.asyncness.is_some();
-        let handler_function_name = &handler.sig.ident;
-        let input_parameters = handler_input_types.iter().map(|type_| {
-            let mut is_shared_reference = false;
-            let inner_type = match type_ {
-                ResolvedType::Reference(r) => {
-                    if !r.is_static {
-                        is_shared_reference = true;
-                        &r.inner
-                    } else {
-                        type_
-                    }
-                }
-                ResolvedType::Slice(_)
-                | ResolvedType::ResolvedPath(_)
-                | ResolvedType::Tuple(_)
-                | ResolvedType::ScalarPrimitive(_) => type_,
-                ResolvedType::Generic(_) => {
-                    unreachable!("Generic types should have been resolved by now")
-                }
-            };
-            if let Some(field_name) = singleton_bindings.get_by_right(inner_type) {
-                if is_shared_reference {
-                    quote! {
-                        &#server_state_ident.application_state.#field_name
-                    }
-                } else {
-                    quote! {
-                        #server_state_ident.application_state.#field_name.clone()
-                    }
-                }
-            } else if let Some(field_name) = request_scoped_bindings.get_by_right(type_) {
-                quote! {
-                    #field_name
-                }
-            } else {
-                let field_name = request_scoped_bindings.get_by_right(inner_type).unwrap();
-                if is_shared_reference {
-                    quote! {
-                        &#field_name
-                    }
-                } else {
-                    quote! {
-                        #field_name
-                    }
-                }
-            }
-        });
-        let mut handler_invocation = quote! { #handler_function_name(#(#input_parameters),*) };
-        if is_handler_async {
-            handler_invocation = quote! { #handler_invocation.await };
-        }
-        handler_invocation
-    }
+    MethodSubRouter(BTreeMap<String, (Ident, CodegenedFn)>),
+    CatchAllHandler(Ident, CodegenedFn),
 }
 
 pub(crate) fn codegen_app(
@@ -137,25 +66,19 @@ pub(crate) fn codegen_app(
 
     let define_server_state = define_server_state(&application_state_def, &pavex_import_name);
 
-    let mut handlers = vec![];
+    let mut handler_modules = vec![];
     let path2codegen_router_entry = {
         let mut map: IndexMap<String, CodegenRouterEntry> = IndexMap::new();
         for (i, (router_key, pipeline)) in handler_pipelines.iter().enumerate() {
-            let mut code = pipeline.codegen(package_id2name, component_db, computation_db)?;
-            code.sig.ident = format_ident!("route_handler_{}", i);
-            handlers.push(code.clone());
-            let handler = CodegenRequestHandler {
-                code,
-                input_types: pipeline
-                    .handler_call_graph
-                    .call_graph
-                    .required_input_types(),
-            };
+            let module_name = format_ident!("route_{}", i);
+            let pipeline_code = pipeline.codegen(package_id2name, component_db, computation_db)?;
+            let first_stage = pipeline_code.stages[0].clone();
+            handler_modules.push(pipeline_code.as_inline_module(module_name.clone()));
             match router_key.method_guard.clone() {
                 None => {
                     map.insert(
                         router_key.path.clone(),
-                        CodegenRouterEntry::CatchAllHandler(handler),
+                        CodegenRouterEntry::CatchAllHandler(module_name, first_stage),
                     );
                 }
                 Some(methods) => {
@@ -166,7 +89,7 @@ pub(crate) fn codegen_app(
                         unreachable!("Cannot have a catch-all handler and a method sub-router for the same path");
                     };
                     for method in methods {
-                        sub_router.insert(method, handler.clone());
+                        sub_router.insert(method, (module_name.clone(), first_stage.clone()));
                     }
                 }
             }
@@ -214,7 +137,7 @@ pub(crate) fn codegen_app(
         #entrypoint
         #router_init
         #route_request
-        #(#handlers)*
+        #(#handler_modules)*
     };
     Ok(code)
 }
@@ -378,8 +301,9 @@ fn get_request_dispatcher(
             CodegenRouterEntry::MethodSubRouter(sub_router) => {
                 let mut sub_router_dispatch_table = quote! {};
                 let mut allowed_methods = vec![];
-                for (method, handler) in sub_router {
+                for (method, (module_name, handler)) in sub_router {
                     let invocation = handler.invocation(
+                        module_name,
                         singleton_bindings,
                         request_scoped_bindings,
                         &server_state_ident,
@@ -404,7 +328,8 @@ fn get_request_dispatcher(
                     }
                 }
             }
-            CodegenRouterEntry::CatchAllHandler(h) => h.invocation(
+            CodegenRouterEntry::CatchAllHandler(module_name, h) => h.invocation(
+                module_name,
                 singleton_bindings,
                 request_scoped_bindings,
                 &server_state_ident,

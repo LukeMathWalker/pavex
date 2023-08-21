@@ -71,7 +71,7 @@ async fn route_request(
         0u32 => {
             match &request_head.method {
                 &pavex::http::Method::GET => {
-                    route_handler_0(&server_state.application_state.s0).await
+                    route_0::handler(&server_state.application_state.s0).await
                 }
                 _ => {
                     let header_value = pavex::http::HeaderValue::from_static("GET");
@@ -84,11 +84,13 @@ async fn route_request(
         _ => pavex::response::Response::not_found().box_body(),
     }
 }
-pub async fn route_handler_0(v0: &app::LoggerFactory) -> pavex::response::Response {
-    let v1 = app::Streamer::new();
-    let v3 = {
-        let v2 = app::LoggerFactory::logger(v0);
-        app::Streamer::stream_file(&v1, v2)
-    };
-    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
+pub mod route_0 {
+    pub async fn handler(v0: &app::LoggerFactory) -> pavex::response::Response {
+        let v1 = app::Streamer::new();
+        let v3 = {
+            let v2 = app::LoggerFactory::logger(v0);
+            app::Streamer::stream_file(&v1, v2)
+        };
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
+    }
 }

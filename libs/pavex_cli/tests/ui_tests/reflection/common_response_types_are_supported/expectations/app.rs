@@ -71,7 +71,7 @@ async fn route_request(
     match route_id {
         0u32 => {
             match &request_head.method {
-                &pavex::http::Method::GET => route_handler_0().await,
+                &pavex::http::Method::GET => route_0::handler().await,
                 _ => {
                     let header_value = pavex::http::HeaderValue::from_static("GET");
                     pavex::response::Response::method_not_allowed()
@@ -82,7 +82,7 @@ async fn route_request(
         }
         1u32 => {
             match &request_head.method {
-                &pavex::http::Method::GET => route_handler_1().await,
+                &pavex::http::Method::GET => route_1::handler().await,
                 _ => {
                     let header_value = pavex::http::HeaderValue::from_static("GET");
                     pavex::response::Response::method_not_allowed()
@@ -93,7 +93,7 @@ async fn route_request(
         }
         2u32 => {
             match &request_head.method {
-                &pavex::http::Method::GET => route_handler_2().await,
+                &pavex::http::Method::GET => route_2::handler().await,
                 _ => {
                     let header_value = pavex::http::HeaderValue::from_static("GET");
                     pavex::response::Response::method_not_allowed()
@@ -104,7 +104,7 @@ async fn route_request(
         }
         3u32 => {
             match &request_head.method {
-                &pavex::http::Method::GET => route_handler_3().await,
+                &pavex::http::Method::GET => route_3::handler().await,
                 _ => {
                     let header_value = pavex::http::HeaderValue::from_static("GET");
                     pavex::response::Response::method_not_allowed()
@@ -116,19 +116,29 @@ async fn route_request(
         _ => pavex::response::Response::not_found().box_body(),
     }
 }
-pub async fn route_handler_0() -> pavex::response::Response {
-    let v0 = app::response_head();
-    <pavex::response::ResponseHead as pavex::response::IntoResponse>::into_response(v0)
+pub mod route_0 {
+    pub async fn handler() -> pavex::response::Response {
+        let v0 = app::response_head();
+        <pavex::response::ResponseHead as pavex::response::IntoResponse>::into_response(
+            v0,
+        )
+    }
 }
-pub async fn route_handler_1() -> pavex::response::Response {
-    let v0 = app::parts();
-    <http::response::Parts as pavex::response::IntoResponse>::into_response(v0)
+pub mod route_1 {
+    pub async fn handler() -> pavex::response::Response {
+        let v0 = app::parts();
+        <http::response::Parts as pavex::response::IntoResponse>::into_response(v0)
+    }
 }
-pub async fn route_handler_2() -> pavex::response::Response {
-    let v0 = app::response();
-    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v0)
+pub mod route_2 {
+    pub async fn handler() -> pavex::response::Response {
+        let v0 = app::response();
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v0)
+    }
 }
-pub async fn route_handler_3() -> pavex::response::Response {
-    let v0 = app::status_code();
-    <http::StatusCode as pavex::response::IntoResponse>::into_response(v0)
+pub mod route_3 {
+    pub async fn handler() -> pavex::response::Response {
+        let v0 = app::status_code();
+        <http::StatusCode as pavex::response::IntoResponse>::into_response(v0)
+    }
 }

@@ -71,7 +71,7 @@ async fn route_request(
         0u32 => {
             match &request_head.method {
                 &pavex::http::Method::GET => {
-                    route_handler_0(server_state.application_state.s0.clone()).await
+                    route_0::handler(server_state.application_state.s0.clone()).await
                 }
                 _ => {
                     let header_value = pavex::http::HeaderValue::from_static("GET");
@@ -84,10 +84,12 @@ async fn route_request(
         _ => pavex::response::Response::not_found().box_body(),
     }
 }
-pub async fn route_handler_0(v0: app::A) -> pavex::response::Response {
-    let v1 = <app::A as core::clone::Clone>::clone(&v0);
-    let v2 = app::c(v1);
-    let v3 = app::b(v0);
-    let v4 = app::handler(v3, v2);
-    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
+pub mod route_0 {
+    pub async fn handler(v0: app::A) -> pavex::response::Response {
+        let v1 = <app::A as core::clone::Clone>::clone(&v0);
+        let v2 = app::c(v1);
+        let v3 = app::b(v0);
+        let v4 = app::handler(v3, v2);
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
+    }
 }

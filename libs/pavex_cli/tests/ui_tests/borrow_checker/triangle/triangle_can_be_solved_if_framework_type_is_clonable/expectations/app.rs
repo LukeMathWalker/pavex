@@ -68,7 +68,7 @@ async fn route_request(
     match route_id {
         0u32 => {
             match &request_head.method {
-                &pavex::http::Method::GET => route_handler_0(url_params).await,
+                &pavex::http::Method::GET => route_0::handler(url_params).await,
                 _ => {
                     let header_value = pavex::http::HeaderValue::from_static("GET");
                     pavex::response::Response::method_not_allowed()
@@ -80,14 +80,16 @@ async fn route_request(
         _ => pavex::response::Response::not_found().box_body(),
     }
 }
-pub async fn route_handler_0(
-    v0: pavex::extract::route::RawRouteParams<'_, '_>,
-) -> pavex::response::Response {
-    let v1 = <pavex::extract::route::RawRouteParams<
-        '_,
-        '_,
-    > as core::clone::Clone>::clone(&v0);
-    let v2 = app::b(v1);
-    let v3 = app::handler(&v0, v2);
-    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
+pub mod route_0 {
+    pub async fn handler(
+        v0: pavex::extract::route::RawRouteParams<'_, '_>,
+    ) -> pavex::response::Response {
+        let v1 = <pavex::extract::route::RawRouteParams<
+            '_,
+            '_,
+        > as core::clone::Clone>::clone(&v0);
+        let v2 = app::b(v1);
+        let v3 = app::handler(&v0, v2);
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
+    }
 }
