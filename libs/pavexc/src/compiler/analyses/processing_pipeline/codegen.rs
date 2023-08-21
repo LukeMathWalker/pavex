@@ -16,27 +16,21 @@ impl RequestHandlerPipeline {
         component_db: &ComponentDb,
         computation_db: &ComputationDb,
     ) -> Result<CodegenedRequestHandlerPipeline, anyhow::Error> {
-        let mut stages = Vec::with_capacity(self.middleware_id2stage_data.len() + 1);
-        for (i, (_mw_id, (call_graph, _next_state_ty))) in
-            self.middleware_id2stage_data.iter().enumerate()
-        {
+        let n_middlewares = self.middleware_id2stage_data.len();
+        let mut stages = Vec::with_capacity(n_middlewares + 1);
+        for (i, call_graph) in self.graph_iter().enumerate() {
             let mut fn_ = call_graph.codegen(package_id2name, component_db, computation_db)?;
-            fn_.sig.ident = format_ident!("middleware_{}", i);
+            fn_.sig.ident = if i < n_middlewares {
+                format_ident!("middleware_{}", i)
+            } else {
+                format_ident!("handler")
+            };
             let stage = CodegenedFn {
                 fn_,
                 input_parameters: call_graph.required_input_types(),
             };
             stages.push(stage);
         }
-
-        let fn_ = self
-            .handler_call_graph
-            .codegen(package_id2name, component_db, computation_db)?;
-        let stage = CodegenedFn {
-            fn_,
-            input_parameters: self.handler_call_graph.required_input_types(),
-        };
-        stages.push(stage);
 
         Ok(CodegenedRequestHandlerPipeline {
             stages,
