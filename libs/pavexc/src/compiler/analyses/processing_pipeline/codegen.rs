@@ -32,6 +32,22 @@ impl RequestHandlerPipeline {
             stages.push(stage);
         }
 
+        // struct Next0 {
+        //     rs_0: pavex::request::RequestHead,
+        // }
+        //
+        // impl std::future::IntoFuture for Next0 {
+        //     type Output = pavex::response::Response;
+        //     type IntoFuture = std::pin::Pin<Box<dyn std::future::Future<Output = Self::Output>>>;
+        //
+        //     fn into_future(self) -> Self::IntoFuture {
+        //         Box::pin(async {
+        //             let x = todo!();
+        //             handler(x, self.rs_0).await
+        //         })
+        //     }
+        // }
+
         Ok(CodegenedRequestHandlerPipeline {
             stages,
             next_states: vec![],

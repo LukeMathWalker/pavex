@@ -87,13 +87,14 @@ impl RequestHandlerPipeline {
         )?;
         // Step 3: Combine the ordered call graphs together.
 
-        // Step 3a: For each middleware, determine which request-scoped components must be actually
-        //   passed down through the `Next<_>` parameter to the downstream stages of the pipeline.
+        // Step 3a: For each middleware, determine which request-scoped and singleton components
+        //   must be actually passed down through the `Next<_>` parameter to the downstream
+        //   stages of the pipeline.
         //
         // In order to pull this off, we walk the chain in reverse order and accumulate the set of
-        // request-scoped components that are expected as input.
+        // request-scoped and singleton components that are expected as input.
         let mut next_field_types: IndexSet<ComponentId> = IndexSet::new();
-        extract_request_scoped_inputs(
+        extract_long_lived_inputs(
             &handler_call_graph.call_graph,
             &component_db,
             &mut next_field_types,
@@ -113,10 +114,10 @@ impl RequestHandlerPipeline {
                 }
             }
 
-            // But this middleware can in turn ask for some request-scoped components to be passed
+            // But this middleware can in turn ask for some long-lived components to be passed
             // down from the upstream stages of the pipeline, therefore we need to add those to
             // the set.
-            extract_request_scoped_inputs(
+            extract_long_lived_inputs(
                 &middleware_call_graph.call_graph,
                 &component_db,
                 &mut next_field_types,
@@ -145,7 +146,7 @@ impl RequestHandlerPipeline {
                         component_db.hydrated_component(*component_id, &mut computation_db);
                     let type_ = component.output_type();
                     // TODO: naming can be improved here.
-                    (format!("rs_{i}"), type_.to_owned())
+                    (format!("s_{i}"), type_.to_owned())
                 })
                 .collect::<BTreeMap<_, _>>();
             let next_state_type = PathType {
@@ -256,10 +257,11 @@ impl RequestHandlerPipeline {
     }
 }
 
-/// Extract the set of request-scoped components that are used as inputs in the provided call graph.
+/// Extract the set of request-scoped and singleton components that are used as inputs
+/// in the provided call graph.
 ///
 /// The extracted component ids are inserted into the provided buffer set.
-fn extract_request_scoped_inputs(
+fn extract_long_lived_inputs(
     call_graph: &RawCallGraph,
     component_db: &ComponentDb,
     buffer: &mut IndexSet<ComponentId>,
@@ -267,8 +269,11 @@ fn extract_request_scoped_inputs(
     for node in call_graph.node_weights() {
         let CallGraphNode::InputParameter { source, .. } = node else { continue; };
         let InputParameterSource::Component(component_id) = source else { continue; };
-        if component_db.lifecycle(*component_id) == Some(&Lifecycle::RequestScoped) {
-            buffer.insert(*component_id);
-        }
+        assert_ne!(
+            component_db.lifecycle(*component_id),
+            Some(&Lifecycle::Transient),
+            "Transient components should not appear as inputs in a call graph"
+        );
+        buffer.insert(*component_id);
     }
 }

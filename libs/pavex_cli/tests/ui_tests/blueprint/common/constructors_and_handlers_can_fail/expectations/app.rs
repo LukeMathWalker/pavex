@@ -87,7 +87,13 @@ async fn route_request(
     match route_id {
         0u32 => {
             match &request_head.method {
-                &pavex::http::Method::GET => route_0::middleware_0(request_head).await,
+                &pavex::http::Method::GET => {
+                    route_0::middleware_0(
+                            request_head,
+                            server_state.application_state.s0.clone(),
+                        )
+                        .await
+                }
                 _ => {
                     let header_value = pavex::http::HeaderValue::from_static("GET");
                     pavex::response::Response::method_not_allowed()
@@ -102,22 +108,23 @@ async fn route_request(
 pub mod route_0 {
     pub async fn middleware_0(
         v0: pavex::request::RequestHead,
+        v1: app::HttpClient,
     ) -> pavex::response::Response {
-        let v1 = crate::Next0 { rs_0: v0 };
-        let v2 = pavex::middleware::Next::new(v1);
-        let v3 = app::fallible_wrapping_middleware(v2);
-        let v4 = match v3 {
+        let v2 = crate::Next0 { s_0: v1, s_1: v0 };
+        let v3 = pavex::middleware::Next::new(v2);
+        let v4 = app::fallible_wrapping_middleware(v3);
+        let v5 = match v4 {
             Ok(ok) => ok,
-            Err(v4) => {
+            Err(v5) => {
                 return {
-                    let v5 = app::handle_middleware_error(&v4);
+                    let v6 = app::handle_middleware_error(&v5);
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v5,
+                        v6,
                     )
                 };
             }
         };
-        v4
+        v5
     }
     pub async fn handler(
         v0: app::HttpClient,

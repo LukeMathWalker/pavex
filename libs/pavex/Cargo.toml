@@ -16,7 +16,6 @@ thiserror = "1"
 serde = { version = "1", features = ["derive"] }
 pavex_macros = { path = "../pavex_macros" }
 paste = "1"
-pin-project-lite = "0.2"
 
 # Route parameters
 matchit = "0.7"
