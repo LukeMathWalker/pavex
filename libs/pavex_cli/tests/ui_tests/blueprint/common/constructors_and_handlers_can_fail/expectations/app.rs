@@ -178,4 +178,17 @@ pub mod route_0 {
         };
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
     }
+    pub struct Next0 {
+        s_0: app::HttpClient,
+        s_1: pavex::request::RequestHead,
+    }
+    impl std::future::IntoFuture for Next0 {
+        type Output = pavex::response::Response;
+        type IntoFuture = std::pin::Pin<
+            Box<dyn std::future::Future<Output = Self::Output>>,
+        >;
+        fn into_future(self) -> Self::IntoFuture {
+            Box::pin(async { todo!() })
+        }
+    }
 }

@@ -32,25 +32,46 @@ impl RequestHandlerPipeline {
             stages.push(stage);
         }
 
-        // struct Next0 {
-        //     rs_0: pavex::request::RequestHead,
-        // }
-        //
-        // impl std::future::IntoFuture for Next0 {
-        //     type Output = pavex::response::Response;
-        //     type IntoFuture = std::pin::Pin<Box<dyn std::future::Future<Output = Self::Output>>>;
-        //
-        //     fn into_future(self) -> Self::IntoFuture {
-        //         Box::pin(async {
-        //             let x = todo!();
-        //             handler(x, self.rs_0).await
-        //         })
-        //     }
-        // }
+        let mut next_states = Vec::with_capacity(n_middlewares);
+        for (_, next_state_type, next_state_fields) in self.middleware_id2stage_data.values() {
+            let mut fields = Vec::with_capacity(next_state_fields.len());
+            for (name, ty_) in next_state_fields {
+                let name = format_ident!("{}", name);
+                let ty_ = ty_.syn_type(package_id2name);
+                fields.push(quote! {
+                    #name: #ty_
+                });
+            }
+
+            let struct_name = format_ident!("{}", next_state_type.base_type.last().unwrap());
+            let def = syn::parse2(quote! {
+                pub struct #struct_name {
+                    #(#fields),*
+                }
+            })
+            .unwrap();
+
+            let into_future_impl = syn::parse2(quote! {
+                impl std::future::IntoFuture for #struct_name {
+                    type Output = pavex::response::Response;
+                    type IntoFuture = std::pin::Pin<Box<dyn std::future::Future<Output = Self::Output>>>;
+
+                    fn into_future(self) -> Self::IntoFuture {
+                        Box::pin(async {
+                            todo!()
+                        })
+                    }
+                }
+            }).unwrap();
+            next_states.push(CodegenedNextState {
+                state: def,
+                into_future_impl,
+            });
+        }
 
         Ok(CodegenedRequestHandlerPipeline {
             stages,
-            next_states: vec![],
+            next_states,
         })
     }
 }
@@ -163,12 +184,12 @@ impl ToTokens for CodegenedFn {
 #[derive(Debug, Clone)]
 pub(crate) struct CodegenedNextState {
     pub(crate) state: syn::ItemStruct,
-    pub(crate) future_impl_: syn::ItemImpl,
+    pub(crate) into_future_impl: syn::ItemImpl,
 }
 
 impl ToTokens for CodegenedNextState {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         self.state.to_tokens(tokens);
-        self.future_impl_.to_tokens(tokens);
+        self.into_future_impl.to_tokens(tokens);
     }
 }

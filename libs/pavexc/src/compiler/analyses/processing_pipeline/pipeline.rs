@@ -6,7 +6,7 @@ use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::constructibles::ConstructibleDb;
 use crate::compiler::analyses::processing_pipeline::graph_iter::PipelineGraphIterator;
 use crate::compiler::app::GENERATED_APP_PACKAGE_ID;
-use crate::language::{Callable, InvocationStyle, PathType};
+use crate::language::{Callable, InvocationStyle, PathType, ResolvedType};
 use crate::rustdoc::CrateCollection;
 use ahash::{HashMap, HashMapExt};
 use guppy::graph::PackageGraph;
@@ -20,7 +20,8 @@ use std::collections::BTreeMap;
 pub(crate) struct RequestHandlerPipeline {
     pub(crate) handler_id: ComponentId,
     pub(crate) handler_call_graph: OrderedCallGraph,
-    pub(crate) middleware_id2stage_data: IndexMap<ComponentId, (OrderedCallGraph, PathType)>,
+    pub(crate) middleware_id2stage_data:
+        IndexMap<ComponentId, (OrderedCallGraph, PathType, BTreeMap<String, ResolvedType>)>,
 }
 
 impl RequestHandlerPipeline {
@@ -133,8 +134,10 @@ impl RequestHandlerPipeline {
         // Since we now know which request-scoped components are needed by each middleware, we can
         // now make the call graph for each middleware concrete—i.e. we can replace the generic
         // `Next<_>` parameter with a concrete type (that we will codegen later on).
-        let mut middleware_id2stage_data: IndexMap<ComponentId, (OrderedCallGraph, PathType)> =
-            IndexMap::new();
+        let mut middleware_id2stage_data: IndexMap<
+            ComponentId,
+            (OrderedCallGraph, PathType, BTreeMap<String, ResolvedType>),
+        > = IndexMap::new();
         for (i, (middleware_id, next_state_types)) in
             middleware_id2next_field_types.iter().enumerate()
         {
@@ -166,7 +169,7 @@ impl RequestHandlerPipeline {
                 output: Some(next_state_type.clone().into()),
                 inputs: next_state_bindings.values().cloned().collect(),
                 invocation_style: InvocationStyle::StructLiteral {
-                    field_names: next_state_bindings,
+                    field_names: next_state_bindings.clone(),
                 },
                 source_coordinates: None,
             };
@@ -234,8 +237,10 @@ impl RequestHandlerPipeline {
                 &krate_collection,
                 &mut diagnostics,
             )?;
-            middleware_id2stage_data
-                .insert(*middleware_id, (middleware_call_graph, next_state_type));
+            middleware_id2stage_data.insert(
+                *middleware_id,
+                (middleware_call_graph, next_state_type, next_state_bindings),
+            );
         }
 
         Ok(Self {
