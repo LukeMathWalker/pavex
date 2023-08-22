@@ -10,6 +10,16 @@ use quote::{format_ident, quote, ToTokens};
 use syn::ItemFn;
 
 impl RequestHandlerPipeline {
+    /// Generates the code required to wire together this request handler pipeline.
+    ///
+    /// This method generates the code for the following:
+    /// - The closure of the request handler function
+    /// - The closure of each middleware functions
+    /// - The `Next` state for each middleware invocation
+    ///
+    /// You can wrap the generated code in an inline module by calling the
+    /// [`as_inline_module`](CodegenedRequestHandlerPipeline::as_inline_module) method on
+    /// the output.
     pub(crate) fn codegen(
         &self,
         package_id2name: &BiHashMap<PackageId, String>,
@@ -98,8 +108,11 @@ impl RequestHandlerPipeline {
 
 #[derive(Debug, Clone)]
 pub(crate) struct CodegenedRequestHandlerPipeline {
+    /// The closure for each stage (i.e. middleware or request handler) of the pipeline.
     pub(crate) stages: Vec<CodegenedFn>,
+    /// The `Next` state for each middleware invocation.
     pub(crate) next_states: Vec<CodegenedNextState>,
+    /// The name of the module that will contain the generated code.
     pub(crate) module_name: String,
 }
 
@@ -120,30 +133,25 @@ impl CodegenedRequestHandlerPipeline {
             }
         }
     }
-}
 
-#[derive(Debug, Clone)]
-pub(crate) struct CodegenedFn {
-    pub(crate) fn_: ItemFn,
-    /// We use an `IndexSet` rather than a `Vec` because we know that, due to the Pavex's constraints,
-    /// there won't be two input parameters with the same type.
-    /// This will have to be changed if we ever support multiple input parameters with the same type.
-    pub(crate) input_parameters: IndexSet<ResolvedType>,
-}
-
-impl CodegenedFn {
-    pub(crate) fn invocation(
+    /// Generates the code for invoking the first stage of the pipeline, kicking off
+    /// the request processing.
+    pub(crate) fn entrypoint_invocation(
         &self,
-        module_name: &Ident,
-        singleton_bindings: &BiHashMap<Ident, ResolvedType>,
+        // The name and type of each field of the application state struct.
+        server_state_bindings: &BiHashMap<Ident, ResolvedType>,
+        // The name and type of each field, provided by the framework, with a
+        // request-scoped lifecycle.
         request_scoped_bindings: &BiHashMap<Ident, ResolvedType>,
+        // The name of the variable that holds the application state.
         server_state_ident: &Ident,
     ) -> TokenStream {
-        let handler = &self.fn_;
-        let handler_input_types = &self.input_parameters;
-        let is_handler_async = handler.sig.asyncness.is_some();
-        let handler_function_name = &handler.sig.ident;
-        let input_parameters = handler_input_types.iter().map(|type_| {
+        let first_stage = &self.stages[0];
+        let entrypoint = &first_stage.fn_;
+        let entrypoint_input_types = &first_stage.input_parameters;
+        let is_handler_async = entrypoint.sig.asyncness.is_some();
+        let handler_function_name = &entrypoint.sig.ident;
+        let input_parameters = entrypoint_input_types.iter().map(|type_| {
             let mut is_shared_reference = false;
             let inner_type = match type_ {
                 ResolvedType::Reference(r) => {
@@ -162,7 +170,7 @@ impl CodegenedFn {
                     unreachable!("Generic types should have been resolved by now")
                 }
             };
-            if let Some(field_name) = singleton_bindings.get_by_right(inner_type) {
+            if let Some(field_name) = server_state_bindings.get_by_right(inner_type) {
                 if is_shared_reference {
                     quote! {
                         &#server_state_ident.application_state.#field_name
@@ -189,6 +197,7 @@ impl CodegenedFn {
                 }
             }
         });
+        let module_name = format_ident!("{}", self.module_name);
         let mut handler_invocation =
             quote! { #module_name::#handler_function_name(#(#input_parameters),*) };
         if is_handler_async {
@@ -196,6 +205,15 @@ impl CodegenedFn {
         }
         handler_invocation
     }
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct CodegenedFn {
+    pub(crate) fn_: ItemFn,
+    /// We use an `IndexSet` rather than a `Vec` because we know that, due to Pavex's constraints,
+    /// there won't be two input parameters with the same type.
+    /// This will have to be changed if we ever support multiple input parameters with the same type.
+    pub(crate) input_parameters: IndexSet<ResolvedType>,
 }
 
 impl ToTokens for CodegenedFn {

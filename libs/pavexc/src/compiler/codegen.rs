@@ -15,7 +15,9 @@ use crate::compiler::analyses::call_graph::{
 };
 use crate::compiler::analyses::components::ComponentDb;
 use crate::compiler::analyses::computations::ComputationDb;
-use crate::compiler::analyses::processing_pipeline::{CodegenedFn, RequestHandlerPipeline};
+use crate::compiler::analyses::processing_pipeline::{
+    CodegenedRequestHandlerPipeline, RequestHandlerPipeline,
+};
 use crate::compiler::analyses::user_components::RouterKey;
 use crate::compiler::app::GENERATED_APP_PACKAGE_ID;
 use crate::compiler::computation::Computation;
@@ -26,8 +28,8 @@ use super::generated_app::GeneratedManifest;
 
 #[derive(Debug, Clone)]
 enum CodegenRouterEntry {
-    MethodSubRouter(BTreeMap<String, (Ident, CodegenedFn)>),
-    CatchAllHandler(Ident, CodegenedFn),
+    MethodSubRouter(BTreeMap<String, CodegenedRequestHandlerPipeline>),
+    CatchAllHandler(CodegenedRequestHandlerPipeline),
 }
 
 pub(crate) fn codegen_app(
@@ -70,15 +72,13 @@ pub(crate) fn codegen_app(
     let path2codegen_router_entry = {
         let mut map: IndexMap<String, CodegenRouterEntry> = IndexMap::new();
         for (router_key, pipeline) in handler_pipelines {
-            let module_name = format_ident!("{}", &pipeline.module_name);
             let pipeline_code = pipeline.codegen(package_id2name, component_db, computation_db)?;
-            let first_stage = pipeline_code.stages[0].clone();
             handler_modules.push(pipeline_code.as_inline_module());
             match router_key.method_guard.clone() {
                 None => {
                     map.insert(
                         router_key.path.clone(),
-                        CodegenRouterEntry::CatchAllHandler(module_name, first_stage),
+                        CodegenRouterEntry::CatchAllHandler(pipeline_code.clone()),
                     );
                 }
                 Some(methods) => {
@@ -89,7 +89,7 @@ pub(crate) fn codegen_app(
                         unreachable!("Cannot have a catch-all handler and a method sub-router for the same path");
                     };
                     for method in methods {
-                        sub_router.insert(method, (module_name.clone(), first_stage.clone()));
+                        sub_router.insert(method, pipeline_code.clone());
                     }
                 }
             }
@@ -301,9 +301,8 @@ fn get_request_dispatcher(
             CodegenRouterEntry::MethodSubRouter(sub_router) => {
                 let mut sub_router_dispatch_table = quote! {};
                 let mut allowed_methods = vec![];
-                for (method, (module_name, handler)) in sub_router {
-                    let invocation = handler.invocation(
-                        module_name,
+                for (method, request_pipeline) in sub_router {
+                    let invocation = request_pipeline.entrypoint_invocation(
                         singleton_bindings,
                         request_scoped_bindings,
                         &server_state_ident,
@@ -328,12 +327,12 @@ fn get_request_dispatcher(
                     }
                 }
             }
-            CodegenRouterEntry::CatchAllHandler(module_name, h) => h.invocation(
-                module_name,
-                singleton_bindings,
-                request_scoped_bindings,
-                &server_state_ident,
-            ),
+            CodegenRouterEntry::CatchAllHandler(request_pipeline) => request_pipeline
+                .entrypoint_invocation(
+                    singleton_bindings,
+                    request_scoped_bindings,
+                    &server_state_ident,
+                ),
         };
         route_dispatch_table = quote! {
             #route_dispatch_table

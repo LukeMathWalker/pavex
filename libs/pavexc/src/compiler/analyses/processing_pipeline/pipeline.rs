@@ -151,7 +151,7 @@ impl RequestHandlerPipeline {
         // that is also needed by later stages of the pipeline.
 
         // Since we now know which request-scoped components are needed by each middleware, we can
-        // now make the call graph for each middleware concrete—i.e. we can replace the generic
+        // make the call graph for each middleware concrete—i.e. we can replace the generic
         // `Next<_>` parameter with a concrete type (that we will codegen later on).
         let mut middleware_id2stage_data = IndexMap::new();
         for (i, (middleware_id, next_state_types)) in
