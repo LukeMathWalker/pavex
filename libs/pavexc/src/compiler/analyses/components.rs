@@ -1670,6 +1670,14 @@ impl ComponentDb {
                 .optional_label(label)
                 .help("Remove the extra `Next` input parameters until only one is left.".into())
                 .build(),
+            NextGenericParameterMustBeNaked { ref parameter } => {
+                let help =
+                    format!("Take `Next<T>` rather than `Next<{parameter}>` as input parameter in your middleware.");
+                CompilerDiagnostic::builder(source, e)
+                    .optional_label(label)
+                    .help(help)
+                    .build()
+            }
             UnderconstrainedGenericParameters { ref parameters } => {
                 fn get_definition_span(
                     callable: &Callable,
