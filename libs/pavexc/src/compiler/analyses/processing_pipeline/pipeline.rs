@@ -1,5 +1,6 @@
 use crate::compiler::analyses::call_graph::{
-    request_scoped_call_graph, CallGraphNode, InputParameterSource, OrderedCallGraph, RawCallGraph,
+    request_scoped_call_graph, request_scoped_ordered_call_graph, CallGraphNode,
+    InputParameterSource, OrderedCallGraph, RawCallGraph,
 };
 use crate::compiler::analyses::components::{ComponentDb, ComponentId, HydratedComponent};
 use crate::compiler::analyses::computations::ComputationDb;
@@ -21,7 +22,6 @@ pub(crate) struct RequestHandlerPipeline {
     /// The name of the local module where the generated types (e.g. `{ConcreteType}` in
     /// `Next<{ConcreteType}>`) will be defined.
     pub(crate) module_name: String,
-    pub(crate) handler_id: ComponentId,
     pub(crate) handler_call_graph: OrderedCallGraph,
     pub(crate) middleware_id2stage_data:
         IndexMap<ComponentId, (OrderedCallGraph, PathType, BTreeMap<String, ResolvedType>)>,
@@ -44,9 +44,8 @@ impl RequestHandlerPipeline {
             .middleware_chain(handler_id)
             .unwrap()
             .to_owned();
-        let mut middleware_call_graphs = IndexMap::with_capacity(middleware_ids.len());
-        // Step 2: For each middleware, build an ordered call graph.
 
+        // Step 2: For each middleware, build an ordered call graph.
         // We need to make sure that request-scoped components are built at most once per request,
         // no matter *where* they are initialised in the overall pipeline.
         // In order to do that, we:
@@ -57,6 +56,7 @@ impl RequestHandlerPipeline {
         //   by the upstream stages.
         let mut request_scoped_prebuilt_ids = IndexSet::new();
 
+        let mut middleware_call_graphs = IndexMap::with_capacity(middleware_ids.len());
         for middleware_id in middleware_ids {
             let middleware_call_graph = request_scoped_call_graph(
                 middleware_id,
@@ -64,23 +64,19 @@ impl RequestHandlerPipeline {
                 &mut computation_db,
                 &mut component_db,
                 &constructible_db,
-                &package_graph,
-                &krate_collection,
                 &mut diagnostics,
             )?;
 
             // Add all request-scoped components initialised by this middleware to the set.
-            for node in middleware_call_graph.call_graph.node_weights() {
-                if let CallGraphNode::Compute { component_id, .. } = node {
-                    if component_db.lifecycle(*component_id) == Some(&Lifecycle::RequestScoped) {
-                        request_scoped_prebuilt_ids.insert(*component_id);
-                    }
-                }
-            }
+            extract_request_scoped_compute_nodes(
+                &middleware_call_graph.call_graph,
+                &component_db,
+                &mut request_scoped_prebuilt_ids,
+            );
 
             middleware_call_graphs.insert(middleware_id, middleware_call_graph);
         }
-        let handler_call_graph = request_scoped_call_graph(
+        let handler_call_graph = request_scoped_ordered_call_graph(
             handler_id,
             &request_scoped_prebuilt_ids,
             &mut computation_db,
@@ -90,11 +86,10 @@ impl RequestHandlerPipeline {
             &krate_collection,
             &mut diagnostics,
         )?;
-        // Step 3: Combine the ordered call graphs together.
-
-        // Step 3a: For each middleware, determine which request-scoped and singleton components
-        //   must be actually passed down through the `Next<_>` parameter to the downstream
-        //   stages of the pipeline.
+        // Step 3: Combine the call graphs together.
+        // For each middleware, determine which request-scoped and singleton components
+        // must actually be passed down through the `Next<_>` parameter to the downstream
+        // stages of the pipeline.
         //
         // In order to pull this off, we walk the chain in reverse order and accumulate the set of
         // request-scoped and singleton components that are expected as input.
@@ -233,7 +228,7 @@ impl RequestHandlerPipeline {
 
             // We can now build the call graph for the middleware, using the concrete type of
             // `Next<_>` as the input type.
-            let middleware_call_graph = request_scoped_call_graph(
+            let middleware_call_graph = request_scoped_ordered_call_graph(
                 bound_middleware_id,
                 &request_scoped_prebuilt_ids,
                 &mut computation_db,
@@ -251,7 +246,6 @@ impl RequestHandlerPipeline {
 
         Ok(Self {
             module_name,
-            handler_id,
             handler_call_graph,
             middleware_id2stage_data,
         })
@@ -287,5 +281,18 @@ fn extract_long_lived_inputs(
             "Transient components should not appear as inputs in a call graph"
         );
         buffer.insert(*component_id);
+    }
+}
+
+fn extract_request_scoped_compute_nodes(
+    call_graph: &RawCallGraph,
+    component_db: &ComponentDb,
+    buffer: &mut IndexSet<ComponentId>,
+) {
+    for node in call_graph.node_weights() {
+        let CallGraphNode::Compute { component_id, .. } = node else { continue; };
+        if component_db.lifecycle(*component_id) == Some(&Lifecycle::RequestScoped) {
+            buffer.insert(*component_id);
+        }
     }
 }

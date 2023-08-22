@@ -4,7 +4,7 @@ pub(crate) use core_graph::{
     CallGraph, CallGraphEdgeMetadata, CallGraphNode, InputParameterSource,
     NumberOfAllowedInvocations, RawCallGraph, RawCallGraphExt,
 };
-pub(crate) use request_scoped::request_scoped_call_graph;
+pub(crate) use request_scoped::{request_scoped_call_graph, request_scoped_ordered_call_graph};
 
 mod application_state;
 mod borrow_checker;
