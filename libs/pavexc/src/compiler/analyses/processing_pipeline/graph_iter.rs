@@ -13,9 +13,9 @@ impl<'a> Iterator for PipelineGraphIterator<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         let Some(stage) = self.current_stage else { return None; };
         let stage_data = self.pipeline.middleware_id2stage_data.get_index(stage);
-        if let Some((_, (graph, ..))) = stage_data {
+        if let Some((_, stage_data)) = stage_data {
             self.current_stage = Some(stage + 1);
-            Some(graph)
+            Some(&stage_data.call_graph)
         } else {
             self.current_stage = None;
             Some(&self.pipeline.handler_call_graph)

@@ -33,19 +33,21 @@ impl RequestHandlerPipeline {
         }
 
         let mut next_states = Vec::with_capacity(n_middlewares);
-        for (i, (_, next_state_type, next_state_fields)) in
-            self.middleware_id2stage_data.values().enumerate()
-        {
-            let mut fields = Vec::with_capacity(next_state_fields.len());
-            for (name, ty_) in next_state_fields {
-                let name = format_ident!("{}", name);
-                let ty_ = ty_.syn_type(package_id2name);
-                fields.push(quote! {
-                    #name: #ty_
-                });
-            }
+        for (i, stage_data) in self.middleware_id2stage_data.values().enumerate() {
+            let next_state = &stage_data.next_state;
+            let fields: Vec<_> = next_state
+                .field_bindings
+                .iter()
+                .map(|(name, ty_)| {
+                    let name = format_ident!("{}", name);
+                    let ty_ = ty_.syn_type(package_id2name);
+                    quote! {
+                        #name: #ty_
+                    }
+                })
+                .collect();
 
-            let struct_name = format_ident!("{}", next_state_type.base_type.last().unwrap());
+            let struct_name = format_ident!("{}", next_state.type_.base_type.last().unwrap());
             let def = syn::parse2(quote! {
                 pub struct #struct_name {
                     #(#fields),*
@@ -58,7 +60,8 @@ impl RequestHandlerPipeline {
                 .input_parameters
                 .iter()
                 .map(|input| {
-                    let field_name = next_state_fields
+                    let field_name = next_state
+                        .field_bindings
                         .iter()
                         .find(|(_, ty_)| ty_ == &input)
                         .unwrap()

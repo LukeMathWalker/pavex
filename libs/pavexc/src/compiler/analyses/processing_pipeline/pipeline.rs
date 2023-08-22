@@ -23,8 +23,27 @@ pub(crate) struct RequestHandlerPipeline {
     /// `Next<{ConcreteType}>`) will be defined.
     pub(crate) module_name: String,
     pub(crate) handler_call_graph: OrderedCallGraph,
-    pub(crate) middleware_id2stage_data:
-        IndexMap<ComponentId, (OrderedCallGraph, PathType, BTreeMap<String, ResolvedType>)>,
+    pub(crate) middleware_id2stage_data: IndexMap<ComponentId, MiddlewareData>,
+}
+
+/// Additional per-middleware data that is required to generate code for the over-arching
+/// request handler pipeline.
+pub(crate) struct MiddlewareData {
+    pub(crate) call_graph: OrderedCallGraph,
+    pub(crate) next_state: NextState,
+}
+
+/// The "state" for `Next<T>` is the concrete type for `T` used in a specific middleware invocation.
+///
+/// It is computed on a per-pipeline and per-middleware basis, in order to pass down the
+/// strict minimum of request-scoped and singleton components that are needed by the downstream
+/// stages of the pipeline.
+pub(crate) struct NextState {
+    pub(crate) type_: PathType,
+    /// The state is always a struct.
+    /// This map contains the bindings for the fields of the struct: the field name and the type
+    /// of the field.
+    pub(crate) field_bindings: BTreeMap<String, ResolvedType>,
 }
 
 impl RequestHandlerPipeline {
@@ -86,6 +105,7 @@ impl RequestHandlerPipeline {
             &krate_collection,
             &mut diagnostics,
         )?;
+
         // Step 3: Combine the call graphs together.
         // For each middleware, determine which request-scoped and singleton components
         // must actually be passed down through the `Next<_>` parameter to the downstream
@@ -126,17 +146,14 @@ impl RequestHandlerPipeline {
 
         // TODO: borrow-checker
         // Step X: Check that the entire pipeline satisfies the constraints imposed by the
-        //   borrow-checker.
-        //   Determine, for each middleware, if they consume a request-scoped component
-        //   that is also needed by later stages of the pipeline.
+        // borrow-checker.
+        // Determine, for each middleware, if they consume a request-scoped component
+        // that is also needed by later stages of the pipeline.
 
         // Since we now know which request-scoped components are needed by each middleware, we can
         // now make the call graph for each middleware concrete—i.e. we can replace the generic
         // `Next<_>` parameter with a concrete type (that we will codegen later on).
-        let mut middleware_id2stage_data: IndexMap<
-            ComponentId,
-            (OrderedCallGraph, PathType, BTreeMap<String, ResolvedType>),
-        > = IndexMap::new();
+        let mut middleware_id2stage_data = IndexMap::new();
         for (i, (middleware_id, next_state_types)) in
             middleware_id2next_field_types.iter().enumerate()
         {
@@ -240,7 +257,13 @@ impl RequestHandlerPipeline {
             )?;
             middleware_id2stage_data.insert(
                 *middleware_id,
-                (middleware_call_graph, next_state_type, next_state_bindings),
+                MiddlewareData {
+                    call_graph: middleware_call_graph,
+                    next_state: NextState {
+                        type_: next_state_type,
+                        field_bindings: next_state_bindings,
+                    },
+                },
             );
         }
 
