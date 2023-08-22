@@ -301,6 +301,11 @@ impl Blueprint {
     /// as input and returns a [`Response`], either directly (if infallible) or wrapped in a
     /// [`Result`] (if fallible).
     ///
+    /// [`Next`] represents the rest of the request processing pipeline, including the request
+    /// handler itself.  
+    /// It can be awaited directly or converted into a [`Future`] via the
+    /// [`into_future`](std::future::IntoFuture) method.
+    ///
     /// ```rust
     /// use pavex::{middleware::Next, response::Response};
     /// use std::{future::{IntoFuture, Future}, time::Duration};
