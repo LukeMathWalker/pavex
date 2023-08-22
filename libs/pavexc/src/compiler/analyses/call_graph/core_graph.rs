@@ -55,6 +55,9 @@ pub(crate) struct CallGraph {
 /// All the graph-traversing machinery is taken care of.
 pub(super) fn build_call_graph<F>(
     root_id: ComponentId,
+    // The set of long-lived components that have already been initialised and should be
+    // taken as inputs rather than built again.
+    prebuilt_ids: &IndexSet<ComponentId>,
     computation_db: &ComputationDb,
     component_db: &ComponentDb,
     constructible_db: &ConstructibleDb,
@@ -92,25 +95,32 @@ where
             .hydrated_component(id, computation_db)
             .computation()
         {
-            CallGraphNode::InputParameter {
+            return CallGraphNode::InputParameter {
                 type_: i.into_owned(),
                 source: InputParameterSource::Component(id),
-            }
-        } else {
-            let n_invocations = component_id2invocations(id);
-            match n_invocations {
-                None => {
-                    let resolved_component = component_db.hydrated_component(id, computation_db);
-                    CallGraphNode::InputParameter {
-                        type_: resolved_component.output_type().to_owned(),
-                        source: InputParameterSource::Component(id),
-                    }
+            };
+        }
+        if prebuilt_ids.contains(&id) {
+            return CallGraphNode::InputParameter {
+                type_: component_db
+                    .hydrated_component(id, computation_db)
+                    .output_type()
+                    .to_owned(),
+                source: InputParameterSource::Component(id),
+            };
+        }
+        match component_id2invocations(id) {
+            None => {
+                let resolved_component = component_db.hydrated_component(id, computation_db);
+                CallGraphNode::InputParameter {
+                    type_: resolved_component.output_type().to_owned(),
+                    source: InputParameterSource::Component(id),
                 }
-                Some(n_allowed_invocations) => CallGraphNode::Compute {
-                    component_id: id,
-                    n_allowed_invocations,
-                },
             }
+            Some(n_allowed_invocations) => CallGraphNode::Compute {
+                component_id: id,
+                n_allowed_invocations,
+            },
         }
     };
 
@@ -191,7 +201,17 @@ where
                         // We don't allow/need dependency injection for transformers at the moment.
                         vec![]
                     }
-                    HydratedComponent::WrappingMiddleware(_) => todo!(),
+                    HydratedComponent::WrappingMiddleware(mw) => {
+                        let mut input_types = mw.input_types().to_vec();
+                        let next_type = &input_types[mw.next_input_index()];
+                        if !next_type.unassigned_generic_type_parameters().is_empty() {
+                            // If we haven't assigned a concrete type to the `Next` type parameter,
+                            // we have no idea what its input types are going to be, therefore
+                            // we skip it for now.
+                            input_types.remove(mw.next_input_index());
+                        }
+                        input_types
+                    }
                 };
                 for input_type in input_types {
                     if let Some((constructor_id, consumption_mode)) = constructible_db.get(

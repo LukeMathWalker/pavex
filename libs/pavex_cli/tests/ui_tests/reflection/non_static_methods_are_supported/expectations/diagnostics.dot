@@ -1,4 +1,4 @@
-digraph "GET /home" {
+digraph "GET /home - 0" {
     0 [ label = "app::Streamer::stream_file(&app::Streamer, app::Logger) -> pavex::response::Response"]
     1 [ label = "app::LoggerFactory::logger(&app::LoggerFactory) -> app::Logger"]
     3 [ label = "app::Streamer::new() -> app::Streamer"]
@@ -9,6 +9,7 @@ digraph "GET /home" {
     0 -> 4 [ ]
     5 -> 1 [ ]
 }
+
 digraph app_state {
     0 [ label = "crate::ApplicationState(app::LoggerFactory) -> crate::ApplicationState"]
     1 [ label = "app::LoggerFactory::new() -> app::LoggerFactory"]

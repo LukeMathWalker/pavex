@@ -244,7 +244,7 @@ fn load_json_docs(
     )?;
     let reader = BufReader::new(file);
     let mut deserializer = serde_json::Deserializer::from_reader(reader);
-    // The documention for some crates (e.g. typenum) causes a "recursion limit exceeded" when 
+    // The documention for some crates (e.g. typenum) causes a "recursion limit exceeded" when
     // deserializing their docs using the default recursion limit.
     deserializer.disable_recursion_limit();
     let deserializer = serde_stacker::Deserializer::new(&mut deserializer);

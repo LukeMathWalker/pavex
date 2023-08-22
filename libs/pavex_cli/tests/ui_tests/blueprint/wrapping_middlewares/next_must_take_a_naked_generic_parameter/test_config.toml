@@ -1,0 +1,5 @@
+description = """The generic parameter for Next<_> inputs in wrapping middlewares
+must be a naked generic parameter (i.e. `Next<T>`, not `Next<Custom<T>>`)."""
+
+[expectations]
+codegen = "fail"

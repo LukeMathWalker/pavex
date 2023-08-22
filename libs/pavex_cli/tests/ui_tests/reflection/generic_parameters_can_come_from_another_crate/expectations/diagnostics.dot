@@ -1,8 +1,9 @@
-digraph "GET /home" {
+digraph "GET /home - 0" {
     0 [ label = "app::handler() -> pavex::response::Response<app::BodyType>"]
     1 [ label = "<pavex::response::Response::<app::BodyType> as pavex::response::IntoResponse>::into_response(pavex::response::Response<app::BodyType>) -> pavex::response::Response"]
     0 -> 1 [ ]
 }
+
 digraph app_state {
     0 [ label = "crate::ApplicationState() -> crate::ApplicationState"]
 }

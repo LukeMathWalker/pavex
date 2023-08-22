@@ -132,14 +132,18 @@ pub(super) struct RawUserComponentDb {
     ///
     /// Invariants: there is an entry for every single user component.
     pub(super) id2locations: HashMap<UserComponentId, Location>,
-    /// For each constructor component, determine if it can be cloned or not.
-    ///
-    /// Invariants: there is an entry for every constructor.
-    pub(super) id2cloning_strategy: HashMap<UserComponentId, CloningStrategy>,
     /// Associate each user-registered component with its lifecycle.
     ///
     /// Invariants: there is an entry for every single user component.
     pub(super) id2lifecycle: HashMap<UserComponentId, Lifecycle>,
+    /// For each constructor component, determine if it can be cloned or not.
+    ///
+    /// Invariants: there is an entry for every constructor.
+    pub(super) constructor_id2cloning_strategy: HashMap<UserComponentId, CloningStrategy>,
+    /// Associate each request handler with the ordered list of middlewares that wrap around it.
+    ///
+    /// Invariants: there is an entry for every single request handler.
+    pub(super) handler_id2middleware_ids: HashMap<UserComponentId, Vec<UserComponentId>>,
 }
 
 // The public `build` method alongside its private supporting routines.
@@ -156,10 +160,16 @@ impl RawUserComponentDb {
             identifiers_interner: Interner::new(),
             id2locations: HashMap::new(),
             id2lifecycle: HashMap::new(),
-            id2cloning_strategy: HashMap::new(),
+            constructor_id2cloning_strategy: HashMap::new(),
+            handler_id2middleware_ids: HashMap::new(),
         };
         let mut scope_graph_builder = ScopeGraph::builder(bp.creation_location.clone());
         let root_scope_id = scope_graph_builder.root_scope_id();
+        // The middleware chain that will wrap around all the request handlers in the current scope.
+        // We discover and add more middlewares to this chain as we process the root blueprint and
+        // its nested blueprints.
+        // By default, the middleware chain is empty.
+        let mut current_middleware_chain = Vec::new();
 
         Self::process_blueprint(
             &mut self_,
@@ -167,6 +177,7 @@ impl RawUserComponentDb {
             root_scope_id,
             None,
             &mut scope_graph_builder,
+            &mut current_middleware_chain,
             package_graph,
             diagnostics,
         );
@@ -175,6 +186,7 @@ impl RawUserComponentDb {
             parent_scope_id: ScopeId,
             parent_path_prefix: Option<String>,
             nested_bp: &'a NestedBlueprint,
+            current_middleware_chain: Vec<UserComponentId>,
         }
         let mut processing_queue: Vec<_> = bp
             .nested_blueprints
@@ -183,6 +195,7 @@ impl RawUserComponentDb {
                 parent_scope_id: root_scope_id,
                 nested_bp: &nested_bp,
                 parent_path_prefix: None,
+                current_middleware_chain: current_middleware_chain.clone(),
             })
             .collect();
 
@@ -191,6 +204,7 @@ impl RawUserComponentDb {
                 parent_scope_id,
                 nested_bp,
                 parent_path_prefix,
+                mut current_middleware_chain,
             } = item;
             let nested_scope_id = scope_graph_builder
                 .add_scope(parent_scope_id, Some(nested_bp.nesting_location.clone()));
@@ -211,6 +225,7 @@ impl RawUserComponentDb {
                 nested_scope_id,
                 path_prefix.as_deref(),
                 &mut scope_graph_builder,
+                &mut current_middleware_chain,
                 package_graph,
                 diagnostics,
             );
@@ -219,6 +234,7 @@ impl RawUserComponentDb {
                     parent_scope_id: nested_scope_id,
                     nested_bp,
                     parent_path_prefix: path_prefix.clone(),
+                    current_middleware_chain: current_middleware_chain.clone(),
                 });
             }
         }
@@ -242,11 +258,14 @@ impl RawUserComponentDb {
         current_scope_id: ScopeId,
         path_prefix: Option<&str>,
         scope_graph_builder: &mut ScopeGraphBuilder,
+        current_middleware_chain: &mut Vec<UserComponentId>,
         package_graph: &PackageGraph,
         diagnostics: &mut Vec<miette::Error>,
     ) {
+        self.process_middlewares(&bp.middlewares, current_scope_id, current_middleware_chain);
         self.process_routes(
             &bp.routes,
+            &current_middleware_chain,
             current_scope_id,
             path_prefix,
             scope_graph_builder,
@@ -254,7 +273,6 @@ impl RawUserComponentDb {
             diagnostics,
         );
         self.process_constructors(&bp.constructors, current_scope_id);
-        self.process_middlewares(&bp.middlewares, current_scope_id);
     }
 
     /// Register with [`RawUserComponentDb`] all the routes that have been
@@ -263,6 +281,7 @@ impl RawUserComponentDb {
     fn process_routes(
         &mut self,
         routes: &[RegisteredRoute],
+        current_middleware_chain: &[UserComponentId],
         current_scope_id: ScopeId,
         path_prefix: Option<&str>,
         scope_graph_builder: &mut ScopeGraphBuilder,
@@ -305,6 +324,9 @@ impl RawUserComponentDb {
                 registered_route.request_handler.location.to_owned(),
             );
 
+            self.handler_id2middleware_ids
+                .insert(request_handler_id, current_middleware_chain.to_owned());
+
             self.validate_route(
                 request_handler_id,
                 registered_route,
@@ -328,6 +350,7 @@ impl RawUserComponentDb {
         &mut self,
         middlewares: &[RegisteredWrappingMiddleware],
         current_scope_id: ScopeId,
+        current_middleware_chain: &mut Vec<UserComponentId>,
     ) {
         const MIDDLEWARE_LIFECYCLE: Lifecycle = Lifecycle::RequestScoped;
 
@@ -344,6 +367,7 @@ impl RawUserComponentDb {
                 MIDDLEWARE_LIFECYCLE,
                 middleware.middleware.location.clone(),
             );
+            current_middleware_chain.push(component_id);
 
             self.process_error_handler(
                 &middleware.error_handler,
@@ -377,7 +401,7 @@ impl RawUserComponentDb {
                 lifecycle,
                 constructor.constructor.location.clone(),
             );
-            self.id2cloning_strategy.insert(
+            self.constructor_id2cloning_strategy.insert(
                 constructor_id,
                 constructor
                     .cloning_strategy
@@ -488,14 +512,19 @@ impl RawUserComponentDb {
             match component {
                 UserComponent::Constructor { .. } => {
                     assert!(
-                        self.id2cloning_strategy.get(&id).is_some(),
+                        self.constructor_id2cloning_strategy.get(&id).is_some(),
                         "There is no cloning strategy registered for the user-registered constructor #{:?}",
                         id
                     );
                 }
-                UserComponent::RequestHandler { .. }
-                | UserComponent::ErrorHandler { .. }
-                | UserComponent::WrappingMiddleware { .. } => {}
+                UserComponent::RequestHandler { .. } => {
+                    assert!(
+                        self.handler_id2middleware_ids.get(&id).is_some(),
+                        "The middleware chain is missing for the user-registered request handler #{:?}",
+                        id
+                    );
+                }
+                UserComponent::ErrorHandler { .. } | UserComponent::WrappingMiddleware { .. } => {}
             }
         }
     }

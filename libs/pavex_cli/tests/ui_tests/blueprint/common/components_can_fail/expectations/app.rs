@@ -88,9 +88,9 @@ async fn route_request(
         0u32 => {
             match &request_head.method {
                 &pavex::http::Method::GET => {
-                    route_handler_0(
-                            server_state.application_state.s0.clone(),
+                    route_0::middleware_0(
                             request_head,
+                            server_state.application_state.s0.clone(),
                         )
                         .await
                 }
@@ -105,55 +105,93 @@ async fn route_request(
         _ => pavex::response::Response::not_found().box_body(),
     }
 }
-pub async fn route_handler_0(
-    v0: app::HttpClient,
-    v1: pavex::request::RequestHead,
-) -> pavex::response::Response {
-    let v2 = match app::logger() {
-        Ok(ok) => ok,
-        Err(v2) => {
-            return {
-                let v3 = app::handle_logger_error(&v2);
-                <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                    v3,
-                )
-            };
-        }
-    };
-    let v3 = app::extract_path(v1);
-    let v4 = match v3 {
-        Ok(ok) => ok,
-        Err(v4) => {
-            return {
-                let v5 = match app::logger() {
-                    Ok(ok) => ok,
-                    Err(v5) => {
-                        return {
-                            let v6 = app::handle_logger_error(&v5);
-                            <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                                v6,
-                            )
-                        };
-                    }
+pub mod route_0 {
+    pub async fn middleware_0(
+        v0: pavex::request::RequestHead,
+        v1: app::HttpClient,
+    ) -> pavex::response::Response {
+        let v2 = crate::route_0::Next0 {
+            s_0: v1,
+            s_1: v0,
+        };
+        let v3 = pavex::middleware::Next::new(v2);
+        let v4 = app::fallible_wrapping_middleware(v3);
+        let v5 = match v4 {
+            Ok(ok) => ok,
+            Err(v5) => {
+                return {
+                    let v6 = app::handle_middleware_error(&v5);
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v6,
+                    )
                 };
-                let v6 = app::handle_extract_path_error(&v4, v5);
-                <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                    v6,
-                )
-            };
+            }
+        };
+        v5
+    }
+    pub async fn handler(
+        v0: app::HttpClient,
+        v1: pavex::request::RequestHead,
+    ) -> pavex::response::Response {
+        let v2 = match app::logger() {
+            Ok(ok) => ok,
+            Err(v2) => {
+                return {
+                    let v3 = app::handle_logger_error(&v2);
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v3,
+                    )
+                };
+            }
+        };
+        let v3 = app::extract_path(v1);
+        let v4 = match v3 {
+            Ok(ok) => ok,
+            Err(v4) => {
+                return {
+                    let v5 = match app::logger() {
+                        Ok(ok) => ok,
+                        Err(v5) => {
+                            return {
+                                let v6 = app::handle_logger_error(&v5);
+                                <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                                    v6,
+                                )
+                            };
+                        }
+                    };
+                    let v6 = app::handle_extract_path_error(&v4, v5);
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v6,
+                    )
+                };
+            }
+        };
+        let v5 = app::request_handler(v4, v2, v0);
+        let v6 = match v5 {
+            Ok(ok) => ok,
+            Err(v6) => {
+                return {
+                    let v7 = app::handle_handler_error(&v6);
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v7,
+                    )
+                };
+            }
+        };
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
+    }
+    pub struct Next0 {
+        s_0: app::HttpClient,
+        s_1: pavex::request::RequestHead,
+    }
+    impl std::future::IntoFuture for Next0 {
+        type Output = pavex::response::Response;
+        type IntoFuture = std::pin::Pin<
+            Box<dyn std::future::Future<Output = Self::Output>>,
+        >;
+        fn into_future(self) -> Self::IntoFuture {
+            Box::pin(async { handler(self.s_0, self.s_1).await })
         }
-    };
-    let v5 = app::request_handler(v4, v2, v0);
-    let v6 = match v5 {
-        Ok(ok) => ok,
-        Err(v6) => {
-            return {
-                let v7 = app::handle_handler_error(&v6);
-                <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                    v7,
-                )
-            };
-        }
-    };
-    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
+    }
 }

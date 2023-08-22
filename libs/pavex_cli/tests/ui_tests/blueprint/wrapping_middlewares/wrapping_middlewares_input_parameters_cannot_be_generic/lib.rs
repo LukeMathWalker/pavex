@@ -1,17 +1,23 @@
 use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
 use pavex::f;
+use pavex::middleware::Next;
 
 pub struct GenericType<V>(V);
 
-pub fn generic_wrapping_middleware<T>(generic_input: GenericType<T>) -> u8 {
+pub fn generic_wrapping_middleware<A, T>(_next: Next<A>, generic_input: GenericType<T>) -> u8 {
     todo!()
 }
 
-pub fn doubly_generic_wrapping_middleware<T, S>(i1: GenericType<T>, i2: GenericType<S>) -> u16 {
+pub fn doubly_generic_wrapping_middleware<A, T, S>(
+    _next: Next<A>,
+    i1: GenericType<T>,
+    i2: GenericType<S>,
+) -> u16 {
     todo!()
 }
 
-pub fn triply_generic_wrapping_middleware<T, S, U>(
+pub fn triply_generic_wrapping_middleware<A, T, S, U>(
+    _next: Next<A>,
     i1: GenericType<T>,
     i2: GenericType<S>,
     i3: GenericType<U>,

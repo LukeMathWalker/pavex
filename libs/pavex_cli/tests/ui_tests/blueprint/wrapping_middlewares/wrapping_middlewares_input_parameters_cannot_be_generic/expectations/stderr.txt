@@ -5,17 +5,17 @@
   [31m│[0m apart from the one in `Next<_>`, but `T` does not seem to have been
   [31m│[0m assigned a concrete type.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:27:1]
-  [31m│[0m  [2m27[0m │     let mut bp = Blueprint::new();
-  [31m│[0m  [2m28[0m │     bp.wrap(f!(crate::generic_wrapping_middleware));
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:33:1]
+  [31m│[0m  [2m33[0m │     let mut bp = Blueprint::new();
+  [31m│[0m  [2m34[0m │     bp.wrap(f!(crate::generic_wrapping_middleware));
   [31m│[0m     · [35;1m            ───────────────────┬──────────────────[0m
   [31m│[0m     ·                                [35;1m╰── [35;1mThe wrapping middleware was registered here[0m[0m
-  [31m│[0m  [2m29[0m │     bp.wrap(f!(crate::doubly_generic_wrapping_middleware));
+  [31m│[0m  [2m35[0m │     bp.wrap(f!(crate::doubly_generic_wrapping_middleware));
   [31m│[0m     ╰────
   [31m│[0m    ╭─[[36;1;4msrc/lib.rs[0m:1:1]
-  [31m│[0m  [2m1[0m │ pub fn generic_wrapping_middleware<T>(generic_input: GenericType<T>) -> u8 {
-  [31m│[0m    · [35;1m                                   ┬[0m
-  [31m│[0m    ·                                    [35;1m╰── [35;1mThe generic parameter without a concrete type[0m[0m
+  [31m│[0m  [2m1[0m │ pub fn generic_wrapping_middleware<A, T>(_next: Next<A>, generic_input: GenericType<T>) -> u8 {
+  [31m│[0m    · [35;1m                                      ┬[0m
+  [31m│[0m    ·                                       [35;1m╰── [35;1mThe generic parameter without a concrete type[0m[0m
   [31m│[0m  [2m2[0m │     todo!()
   [31m│[0m    ╰────
   [31m│[0m [36m  help: [0mSpecify the concrete type for `T` when registering the wrapping
@@ -31,19 +31,19 @@
   [31m│[0m apart from the one in `Next<_>`, but `T` and `S` do not seem to have been
   [31m│[0m assigned a concrete type.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:28:1]
-  [31m│[0m  [2m28[0m │     bp.wrap(f!(crate::generic_wrapping_middleware));
-  [31m│[0m  [2m29[0m │     bp.wrap(f!(crate::doubly_generic_wrapping_middleware));
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:34:1]
+  [31m│[0m  [2m34[0m │     bp.wrap(f!(crate::generic_wrapping_middleware));
+  [31m│[0m  [2m35[0m │     bp.wrap(f!(crate::doubly_generic_wrapping_middleware));
   [31m│[0m     · [35;1m            ──────────────────────┬──────────────────────[0m
   [31m│[0m     ·                                   [35;1m╰── [35;1mThe wrapping middleware was registered here[0m[0m
-  [31m│[0m  [2m30[0m │     bp.wrap(f!(crate::triply_generic_wrapping_middleware));
+  [31m│[0m  [2m36[0m │     bp.wrap(f!(crate::triply_generic_wrapping_middleware));
   [31m│[0m     ╰────
   [31m│[0m    ╭─[[36;1;4msrc/lib.rs[0m:1:1]
-  [31m│[0m  [2m1[0m │ pub fn doubly_generic_wrapping_middleware<T, S>(i1: GenericType<T>, i2: GenericType<S>) -> u16 {
-  [31m│[0m    · [35;1m                                          ┬[0m[33;1m  ┬[0m
-  [31m│[0m    ·                                           [35;1m│[0m  [33;1m╰── [33;1mThe generic parameter without a concrete type[0m[0m
-  [31m│[0m    ·                                           [35;1m╰── [35;1mThe generic parameter without a concrete type[0m[0m
-  [31m│[0m  [2m2[0m │     todo!()
+  [31m│[0m  [2m1[0m │ pub fn doubly_generic_wrapping_middleware<A, T, S>(
+  [31m│[0m    · [35;1m                                             ┬[0m[33;1m  ┬[0m
+  [31m│[0m    ·                                              [35;1m│[0m  [33;1m╰── [33;1mThe generic parameter without a concrete type[0m[0m
+  [31m│[0m    ·                                              [35;1m╰── [35;1mThe generic parameter without a concrete type[0m[0m
+  [31m│[0m  [2m2[0m │     _next: Next<A>,
   [31m│[0m    ╰────
   [31m│[0m [36m  help: [0mSpecify the concrete types for `T` and `S` when registering the
   [31m│[0m         wrapping middleware against the blueprint:
@@ -58,20 +58,20 @@
   [31m│[0m apart from the one in `Next<_>`, but `T`, `S` and `U` do not seem to have
   [31m│[0m been assigned a concrete type.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:29:1]
-  [31m│[0m  [2m29[0m │     bp.wrap(f!(crate::doubly_generic_wrapping_middleware));
-  [31m│[0m  [2m30[0m │     bp.wrap(f!(crate::triply_generic_wrapping_middleware));
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:35:1]
+  [31m│[0m  [2m35[0m │     bp.wrap(f!(crate::doubly_generic_wrapping_middleware));
+  [31m│[0m  [2m36[0m │     bp.wrap(f!(crate::triply_generic_wrapping_middleware));
   [31m│[0m     · [35;1m            ──────────────────────┬──────────────────────[0m
   [31m│[0m     ·                                   [35;1m╰── [35;1mThe wrapping middleware was registered here[0m[0m
-  [31m│[0m  [2m31[0m │     bp.route(GET, "/home", f!(crate::handler));
+  [31m│[0m  [2m37[0m │     bp.route(GET, "/home", f!(crate::handler));
   [31m│[0m     ╰────
   [31m│[0m    ╭─[[36;1;4msrc/lib.rs[0m:1:1]
-  [31m│[0m  [2m1[0m │ pub fn triply_generic_wrapping_middleware<T, S, U>(
-  [31m│[0m    · [35;1m                                          ┬[0m[33;1m  ┬[0m[32;1m  ┬[0m
-  [31m│[0m    ·                                           [35;1m│[0m  [33;1m│[0m  [32;1m╰── [32;1mThe generic parameter without a concrete type[0m[0m
-  [31m│[0m    ·                                           [35;1m│[0m  [33;1m╰── [33;1mThe generic parameter without a concrete type[0m[0m
-  [31m│[0m    ·                                           [35;1m╰── [35;1mThe generic parameter without a concrete type[0m[0m
-  [31m│[0m  [2m2[0m │     i1: GenericType<T>,
+  [31m│[0m  [2m1[0m │ pub fn triply_generic_wrapping_middleware<A, T, S, U>(
+  [31m│[0m    · [35;1m                                             ┬[0m[33;1m  ┬[0m[32;1m  ┬[0m
+  [31m│[0m    ·                                              [35;1m│[0m  [33;1m│[0m  [32;1m╰── [32;1mThe generic parameter without a concrete type[0m[0m
+  [31m│[0m    ·                                              [35;1m│[0m  [33;1m╰── [33;1mThe generic parameter without a concrete type[0m[0m
+  [31m│[0m    ·                                              [35;1m╰── [35;1mThe generic parameter without a concrete type[0m[0m
+  [31m│[0m  [2m2[0m │     _next: Next<A>,
   [31m│[0m    ╰────
   [31m│[0m [36m  help: [0mSpecify the concrete types for `T`, `S` and `U` when registering the
   [31m│[0m         wrapping middleware against the blueprint:

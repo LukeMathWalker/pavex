@@ -24,7 +24,9 @@ use crate::compiler::computation::{Computation, MatchResult};
 use crate::compiler::interner::Interner;
 use crate::compiler::resolvers::CallableResolutionError;
 use crate::compiler::traits::{assert_trait_is_implemented, MissingTraitImplementationError};
-use crate::compiler::utils::{get_err_variant, get_ok_variant, process_framework_path};
+use crate::compiler::utils::{
+    get_err_variant, get_ok_variant, process_framework_callable_path, process_framework_path,
+};
 use crate::diagnostic;
 use crate::diagnostic::{
     convert_proc_macro_span, convert_rustdoc_span, AnnotatedSnippet, CallableType,
@@ -55,7 +57,7 @@ pub(crate) enum Component {
         user_component_id: UserComponentId,
     },
     WrappingMiddleware {
-        user_component_id: UserComponentId,
+        source_id: SourceId,
     },
     ErrorHandler {
         source_id: SourceId,
@@ -157,9 +159,14 @@ pub(crate) struct ComponentDb {
     borrow_id2owned_id: BiHashMap<ComponentId, ComponentId>,
     id2transformer_ids: HashMap<ComponentId, IndexSet<ComponentId>>,
     id2lifecycle: HashMap<ComponentId, Lifecycle>,
-    /// Associate to each constructor component the respective cloning strategy.
-    /// It is not populated for request handlers, error handlers, and transformers.
-    id2cloning_strategy: HashMap<ComponentId, CloningStrategy>,
+    /// For each constructor component, determine if it can be cloned or not.
+    ///
+    /// Invariants: there is an entry for every constructor.
+    constructor_id2cloning_strategy: HashMap<ComponentId, CloningStrategy>,
+    /// Associate each request handler with the ordered list of middlewares that wrap around it.
+    ///
+    /// Invariants: there is an entry for every single request handler.
+    handler_id2middleware_ids: HashMap<ComponentId, Vec<ComponentId>>,
     error_handler_id2error_handler: HashMap<ComponentId, ErrorHandler>,
     router: BTreeMap<RouterKey, ComponentId>,
     into_response: PathType,
@@ -195,7 +202,8 @@ impl ComponentDb {
             borrow_id2owned_id: Default::default(),
             id2transformer_ids: Default::default(),
             id2lifecycle: Default::default(),
-            id2cloning_strategy: Default::default(),
+            constructor_id2cloning_strategy: Default::default(),
+            handler_id2middleware_ids: Default::default(),
             error_handler_id2error_handler: Default::default(),
             router: Default::default(),
             into_response,
@@ -203,8 +211,11 @@ impl ComponentDb {
 
         {
             // Keep a look-up map to "revert" the conversion process.
-            // It's needed to match error handlers with the respective fallible components
-            // after they have been converted into components.
+            // It's needed to "lift" mappings that use `UserComponentId` into mappings that
+            // use `ComponentId`. In particular:
+            // - match error handlers with the respective fallible components after they have been
+            //   converted into components.
+            // - match request handlers with the sequence of middlewares that wrap around them.
             let mut user_component_id2component_id = HashMap::new();
             // Keep track of which components are fallible in order to emit a diagnostic
             // if they were not paired with an error handler.
@@ -237,6 +248,7 @@ impl ComponentDb {
                 diagnostics,
             );
 
+            self_.compute_request2middleware_chain(&user_component_id2component_id);
             self_.process_error_handlers(
                 &mut needs_error_handler,
                 user_component_id2component_id,
@@ -267,13 +279,19 @@ impl ComponentDb {
                 use Component::*;
 
                 match c {
-                    WrappingMiddleware { user_component_id }
-                    | RequestHandler { user_component_id }
+                    RequestHandler { user_component_id }
+                    | WrappingMiddleware {
+                        // There are no error handlers with a `ComputationId` source at this stage.
+                        source_id: SourceId::UserComponentId(user_component_id),
+                    }
                     | ErrorHandler {
                         // There are no error handlers with a `ComputationId` source at this stage.
                         source_id: SourceId::UserComponentId(user_component_id),
                     } => Some((id, *user_component_id)),
-                    Constructor { .. } | Transformer { .. } | ErrorHandler { .. } => None,
+                    Constructor { .. }
+                    | Transformer { .. }
+                    | WrappingMiddleware { .. }
+                    | ErrorHandler { .. } => None,
                 }
             })
             .collect();
@@ -355,6 +373,23 @@ impl ComponentDb {
             );
         }
 
+        // Add a synthetic constructor for the `pavex::middleware::Next` type.
+        {
+            let callable = process_framework_callable_path(
+                "pavex::middleware::Next::new",
+                package_graph,
+                krate_collection,
+            );
+            let computation = Computation::Callable(Cow::Owned(callable));
+            self_.add_synthetic_constructor(
+                Constructor(computation),
+                Lifecycle::RequestScoped,
+                self_.scope_graph().root_scope_id(),
+                CloningStrategy::NeverClone,
+                computation_db,
+            );
+        }
+
         self_
     }
 
@@ -395,7 +430,7 @@ impl ComponentDb {
                         source_id: user_component_id.into(),
                     });
                     user_component_id2component_id.insert(user_component_id, constructor_id);
-                    self.id2cloning_strategy.insert(
+                    self.constructor_id2cloning_strategy.insert(
                         constructor_id,
                         self.user_component_db
                             .get_cloning_strategy(user_component_id)
@@ -527,9 +562,9 @@ impl ComponentDb {
                     );
                 }
                 Ok(mw) => {
-                    let mw_id = self
-                        .interner
-                        .get_or_intern(Component::WrappingMiddleware { user_component_id });
+                    let mw_id = self.interner.get_or_intern(Component::WrappingMiddleware {
+                        source_id: user_component_id.into(),
+                    });
                     user_component_id2component_id.insert(user_component_id, mw_id);
                     let scope_id = self.scope_id(mw_id);
                     let lifecycle = Lifecycle::RequestScoped;
@@ -648,6 +683,33 @@ impl ComponentDb {
             }
         }
     }
+
+    /// Compute the middleware chain for each request handler that was successfully validated.
+    /// The middleware chain only includes wrapping middlewares that were successfully validated.
+    /// Invalid middlewares are ignored.
+    fn compute_request2middleware_chain(
+        &mut self,
+        user_component_id2component_id: &HashMap<UserComponentId, ComponentId>,
+    ) {
+        for (request_handler_id, _) in self.user_component_db.request_handlers() {
+            let Some(handler_component_id) = user_component_id2component_id.get(&request_handler_id) else {
+                continue;
+            };
+            let mut middleware_chain = vec![];
+            for middleware_id in self
+                .user_component_db
+                .get_middleware_ids(request_handler_id)
+            {
+                if let Some(middleware_component_id) =
+                    user_component_id2component_id.get(&middleware_id)
+                {
+                    middleware_chain.push(*middleware_component_id);
+                }
+            }
+            self.handler_id2middleware_ids
+                .insert(*handler_component_id, middleware_chain);
+        }
+    }
 }
 
 impl ComponentDb {
@@ -686,7 +748,8 @@ impl ComponentDb {
             source_id: SourceId::ComputationId(computation_id, scope_id),
         });
         self.id2lifecycle.insert(id, l);
-        self.id2cloning_strategy.insert(id, cloning_strategy);
+        self.constructor_id2cloning_strategy
+            .insert(id, cloning_strategy);
         self.register_derived_constructors(id, computation_db);
         id
     }
@@ -702,7 +765,7 @@ impl ComponentDb {
             constructor.into_owned()
         };
         if let Ok(constructor) = constructor.as_fallible() {
-            let cloning_strategy = self.id2cloning_strategy[&constructor_id];
+            let cloning_strategy = self.constructor_id2cloning_strategy[&constructor_id];
             let lifecycle = self.lifecycle(constructor_id).unwrap().to_owned();
             let scope_id = self.scope_id(constructor_id);
             let m = constructor.matchers();
@@ -761,10 +824,27 @@ impl ComponentDb {
         };
         let constructor_id = self.interner.get_or_intern(constructor_component);
         self.id2lifecycle.insert(constructor_id, lifecycle);
-        self.id2cloning_strategy
+        self.constructor_id2cloning_strategy
             .insert(constructor_id, cloning_strategy);
         self.register_derived_constructors(constructor_id, computation_db);
         Ok(constructor_id)
+    }
+
+    pub fn get_or_intern_wrapping_middleware<'a>(
+        &mut self,
+        callable: Cow<'a, Callable>,
+        scope_id: ScopeId,
+        computation_db: &mut ComputationDb,
+    ) -> ComponentId {
+        let computation = Computation::Callable(callable).into_owned();
+        let computation_id = computation_db.get_or_intern(computation);
+        let middleware_component = Component::WrappingMiddleware {
+            source_id: SourceId::ComputationId(computation_id, scope_id),
+        };
+        let middleware_id = self.interner.get_or_intern(middleware_component);
+        self.id2lifecycle
+            .insert(middleware_id, Lifecycle::RequestScoped);
+        middleware_id
     }
 
     pub fn get_or_intern_transformer(
@@ -817,6 +897,15 @@ impl ComponentDb {
         self.match_err_id2error_handler_id.get(&err_match_id)
     }
 
+    /// If the component is a request handler, return the ids of the middlewares that wrap around
+    /// it.
+    /// Otherwise, return `None`.
+    pub fn middleware_chain(&self, handler_id: ComponentId) -> Option<&[ComponentId]> {
+        self.handler_id2middleware_ids
+            .get(&handler_id)
+            .map(|v| &v[..])
+    }
+
     /// If transformations must be applied to the component, return their ids.
     /// Otherwise, return `None`.
     pub fn transformer_ids(&self, component_id: ComponentId) -> Option<&IndexSet<ComponentId>> {
@@ -865,7 +954,7 @@ impl ComponentDb {
     /// Given the id of a component, return the corresponding [`CloningStrategy`].
     /// It panics if called for a non-constructor component.
     pub fn cloning_strategy(&self, component_id: ComponentId) -> CloningStrategy {
-        self.id2cloning_strategy[&component_id]
+        self.constructor_id2cloning_strategy[&component_id]
     }
 
     /// Iterate over all constructors in the component database, either user-provided or synthetic.
@@ -896,12 +985,17 @@ impl ComponentDb {
             | Component::ErrorHandler {
                 source_id: SourceId::UserComponentId(user_component_id),
             }
-            | Component::WrappingMiddleware { user_component_id }
+            | Component::WrappingMiddleware {
+                source_id: SourceId::UserComponentId(user_component_id),
+            }
             | Component::RequestHandler { user_component_id } => Some(*user_component_id),
             Component::ErrorHandler {
                 source_id: SourceId::ComputationId(..),
             }
             | Component::Constructor {
+                source_id: SourceId::ComputationId(..),
+            }
+            | Component::WrappingMiddleware {
                 source_id: SourceId::ComputationId(..),
             }
             | Component::Transformer { .. } => None,
@@ -922,11 +1016,13 @@ impl ComponentDb {
                 };
                 HydratedComponent::RequestHandler(request_handler)
             }
-            Component::WrappingMiddleware { user_component_id } => {
-                let callable = &computation_db[*user_component_id];
-                let w = WrappingMiddleware {
-                    callable: Cow::Borrowed(callable),
+            Component::WrappingMiddleware { source_id } => {
+                let c = match source_id {
+                    SourceId::ComputationId(id, _) => computation_db[*id].clone(),
+                    SourceId::UserComponentId(id) => computation_db[*id].clone().into(),
                 };
+                let Computation::Callable(callable) = c else { unreachable!() };
+                let w = WrappingMiddleware { callable };
                 HydratedComponent::WrappingMiddleware(w)
             }
             Component::ErrorHandler { .. } => {
@@ -960,16 +1056,15 @@ impl ComponentDb {
     /// Return the [`ScopeId`] of the given component.
     pub fn scope_id(&self, component_id: ComponentId) -> ScopeId {
         match &self[component_id] {
-            Component::WrappingMiddleware { user_component_id }
-            | Component::RequestHandler { user_component_id } => {
+            Component::RequestHandler { user_component_id } => {
                 self.user_component_db[*user_component_id].scope_id()
             }
-            Component::Constructor { source_id } | Component::ErrorHandler { source_id } => {
-                match source_id {
-                    SourceId::ComputationId(_, scope_id) => *scope_id,
-                    SourceId::UserComponentId(id) => self.user_component_db[*id].scope_id(),
-                }
-            }
+            Component::WrappingMiddleware { source_id }
+            | Component::Constructor { source_id }
+            | Component::ErrorHandler { source_id } => match source_id {
+                SourceId::ComputationId(_, scope_id) => *scope_id,
+                SourceId::UserComponentId(id) => self.user_component_db[*id].scope_id(),
+            },
             Component::Transformer { scope_id, .. } => *scope_id,
         }
     }
@@ -1021,17 +1116,6 @@ impl ComponentDb {
 
 // All methods related to the logic for binding generic components.
 impl ComponentDb {
-    /// Replace all unassigned generic type parameters in the constructor component with id set to `id` with
-    /// the concrete types specified in `bindings`.
-    ///
-    /// The newly "bound" component will be added to the component database and its id returned.
-    ///
-    /// The same process will be applied to all derived components (borrowed references,
-    /// error handlers, etc.), recursively.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the component with id `id` is not a constructor.
     pub fn bind_generic_type_parameters(
         &mut self,
         id: ComponentId,
@@ -1046,72 +1130,129 @@ impl ComponentDb {
             let templated_component = component_db
                 .hydrated_component(component_id, computation_db)
                 .into_owned();
-            let HydratedComponent::Constructor(constructor) = templated_component else { unreachable!() };
-            match &constructor.0 {
-                Computation::FrameworkItem(_) | Computation::Callable(_) => component_id,
-                Computation::MatchResult(_) => _get_root_component_id(
-                    component_db.fallible_id(component_id),
-                    component_db,
-                    computation_db,
-                ),
+            match templated_component {
+                HydratedComponent::WrappingMiddleware(_) => component_id,
+                // We want to make sure we are binding the root component (i.e. a constructor registered
+                // by the user), not a derived one. If not, we might have resolution issues when computing
+                // the call graph for handlers where these derived components are used.
+                HydratedComponent::Constructor(constructor) => match &constructor.0 {
+                    Computation::FrameworkItem(_) | Computation::Callable(_) => component_id,
+                    Computation::MatchResult(_) => _get_root_component_id(
+                        component_db.fallible_id(component_id),
+                        component_db,
+                        computation_db,
+                    ),
+                },
+                HydratedComponent::RequestHandler(_)
+                | HydratedComponent::ErrorHandler(_)
+                | HydratedComponent::Transformer(_) => {
+                    todo!()
+                }
             }
         }
 
-        // We want to make sure we are binding the root component (i.e. a constructor registered
-        // by the user), not a derived one. If not, we might have resolution issues when computing
-        // the call graph for handlers where these derived components are used.
         let id = _get_root_component_id(id, self, computation_db);
         let scope_id = self.scope_id(id);
-        let cloning_strategy = self.id2cloning_strategy[&id];
-        let HydratedComponent::Constructor(constructor) = self.hydrated_component(id, computation_db).into_owned() else { unreachable!() };
+
         let lifecycle = self.lifecycle(id).cloned().unwrap();
-        let bound_computation = constructor
-            .0
-            .bind_generic_type_parameters(bindings)
-            .into_owned();
-        let bound_computation_id = computation_db.get_or_intern(bound_computation);
-        let bound_component_id = self
-            .get_or_intern_constructor(
-                bound_computation_id,
-                lifecycle.clone(),
-                scope_id,
-                cloning_strategy,
-                computation_db,
-            )
-            .unwrap();
-        // ^ This registers all "derived" constructors as well (borrowed references, matchers, etc.)
-        // but it doesn't take care of the error handler, in case `id` pointed to a fallible constructor.
-        // We need to do that manually.
+        let bound_component_id = match self.hydrated_component(id, computation_db).into_owned() {
+            HydratedComponent::Constructor(constructor) => {
+                let cloning_strategy = self.constructor_id2cloning_strategy[&id];
+                let bound_computation = constructor
+                    .0
+                    .bind_generic_type_parameters(bindings)
+                    .into_owned();
+                let bound_computation_id = computation_db.get_or_intern(bound_computation);
+                let bound_component_id = self
+                    .get_or_intern_constructor(
+                        bound_computation_id,
+                        lifecycle.clone(),
+                        scope_id,
+                        cloning_strategy,
+                        computation_db,
+                    )
+                    .unwrap();
+                // ^ This registers all "derived" constructors as well (borrowed references, matchers, etc.)
+                // but it doesn't take care of the error handler, in case `id` pointed to a fallible constructor.
+                // We need to do that manually.
+                bound_component_id
+            }
+            HydratedComponent::WrappingMiddleware(mw) => {
+                let bound_callable = mw.callable.bind_generic_type_parameters(bindings);
+                let bound_component_id = self.get_or_intern_wrapping_middleware(
+                    Cow::Owned(bound_callable),
+                    scope_id,
+                    computation_db,
+                );
+                let HydratedComponent::WrappingMiddleware(mw) = self.hydrated_component(bound_component_id, computation_db) else { unreachable!() };
+                if mw.is_fallible() {
+                    // For each Result type, register two match transformers that de-structure
+                    // `Result<T,E>` into `T` or `E`.
+                    let m = MatchResult::match_result(mw.output_type());
+                    let (ok, err) = (m.ok, m.err);
+
+                    let ok_id = self.add_synthetic_transformer(
+                        ok.into(),
+                        bound_component_id,
+                        scope_id,
+                        ConsumptionMode::Move,
+                        computation_db,
+                    );
+                    let err_id = self.add_synthetic_transformer(
+                        err.into(),
+                        bound_component_id,
+                        scope_id,
+                        ConsumptionMode::Move,
+                        computation_db,
+                    );
+                    self.fallible_id2match_ids
+                        .insert(bound_component_id, (ok_id, err_id));
+                    self.match_id2fallible_id.insert(ok_id, bound_component_id);
+                    self.match_id2fallible_id.insert(err_id, bound_component_id);
+                }
+                bound_component_id
+            }
+            HydratedComponent::RequestHandler(_)
+            | HydratedComponent::ErrorHandler(_)
+            | HydratedComponent::Transformer(_) => {
+                todo!()
+            }
+        };
+
         if let Some((_, err_match_id)) = self.fallible_id2match_ids.get(&id) {
             let err_handler_id = self.match_err_id2error_handler_id[err_match_id];
             let HydratedComponent::ErrorHandler(error_handler) = self.hydrated_component(err_handler_id, computation_db) else { unreachable!() };
 
             // `bindings` contains the concrete types for all the unassigned generic
-            // type parameters that appear in the signature of the constructor.
+            // type parameters that appear in the signature of the templated component.
             // The error handler might itself have unassigned generic parameters that are
-            // _equivalent_ to those in the constructor, but named differently.
+            // _equivalent_ to those in the fallible component, but named differently.
             //
             // E.g.
             // - Constructor: `fn constructor<T>(x: u64) -> Result<T, Error<T>>`
             // - Error handler: `fn error_handler<S>(e: &Error<S>) -> Response`
             //
-            // This little utility function "adapts" the bindings from the constructor to the
-            // bindings required by the error handler.
+            // This little utility function "adapts" the bindings from the naming of the fallible
+            // component to the ones required by the error handler.
             let error_handler_bindings = {
-                let ref_constructor_error_type = ResolvedType::Reference(TypeReference {
+                let templated_output = self
+                    .hydrated_component(id, computation_db)
+                    .output_type()
+                    .to_owned();
+                let ref_component_error_type = ResolvedType::Reference(TypeReference {
                     is_mutable: false,
                     is_static: false,
-                    inner: Box::new(get_err_variant(constructor.output_type()).to_owned()),
+                    inner: Box::new(get_err_variant(&templated_output).to_owned()),
                 });
                 let ref_error_handler_error_type = error_handler.error_type_ref();
 
-                let remapping = ref_constructor_error_type
+                let remapping = ref_component_error_type
                     .is_equivalent_to(ref_error_handler_error_type)
                     .unwrap();
                 let mut error_handler_bindings = HashMap::new();
                 for (generic, concrete) in bindings {
                     // `bindings` contains the concrete types for all the unassigned generic
-                    // type parameters that appear in the signature of the constructor.
+                    // type parameters that appear in the signature of the templated component.
                     // It is not guaranteed that ALL those generic type parameters appear in the
                     // signature of the error handler, so we need to mindful here.
                     //
@@ -1128,11 +1269,15 @@ impl ComponentDb {
 
             let bound_error_handler =
                 error_handler.bind_generic_type_parameters(&error_handler_bindings);
+            let bound_computation =
+                Computation::Callable(Cow::Borrowed(&bound_error_handler.callable)).into_owned();
+            let bound_error_handler_computation_id =
+                computation_db.get_or_intern(bound_computation);
             let bound_error_component_id = self.add_error_handler(
                 bound_error_handler,
                 bound_component_id,
                 lifecycle,
-                SourceId::ComputationId(bound_computation_id, scope_id),
+                SourceId::ComputationId(bound_error_handler_computation_id, scope_id),
             );
 
             // Finally, we need to bound the error handler's transformers.
@@ -1152,6 +1297,7 @@ impl ComponentDb {
                 }
             }
         }
+
         bound_component_id
     }
 }
@@ -1524,6 +1670,14 @@ impl ComponentDb {
                 .optional_label(label)
                 .help("Remove the extra `Next` input parameters until only one is left.".into())
                 .build(),
+            NextGenericParameterMustBeNaked { ref parameter } => {
+                let help =
+                    format!("Take `Next<T>` rather than `Next<{parameter}>` as input parameter in your middleware.");
+                CompilerDiagnostic::builder(source, e)
+                    .optional_label(label)
+                    .help(help)
+                    .build()
+            }
             UnderconstrainedGenericParameters { ref parameters } => {
                 fn get_definition_span(
                     callable: &Callable,

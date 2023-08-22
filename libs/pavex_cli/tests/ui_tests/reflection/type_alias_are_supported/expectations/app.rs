@@ -76,7 +76,7 @@ async fn route_request(
         0u32 => {
             match &request_head.method {
                 &pavex::http::Method::GET => {
-                    route_handler_0(
+                    route_0::handler(
                             server_state.application_state.s0.clone(),
                             &server_state.application_state.s1,
                         )
@@ -93,10 +93,12 @@ async fn route_request(
         _ => pavex::response::Response::not_found().box_body(),
     }
 }
-pub async fn route_handler_0(
-    v0: (bool, char, u8),
-    v1: &dep::ActualType,
-) -> pavex::response::Response {
-    let v2 = app::handler_with_input_tuple(v0, v1);
-    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
+pub mod route_0 {
+    pub async fn handler(
+        v0: (bool, char, u8),
+        v1: &dep::ActualType,
+    ) -> pavex::response::Response {
+        let v2 = app::handler_with_input_tuple(v0, v1);
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
+    }
 }

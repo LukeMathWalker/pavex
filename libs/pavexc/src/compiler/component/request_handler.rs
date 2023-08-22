@@ -21,7 +21,7 @@ impl<'a> RequestHandler<'a> {
             .ok_or(RequestHandlerValidationError::CannotReturnTheUnitType)?
             .clone();
 
-        // If the constructor is fallible, we make sure that it returns a non-unit type on
+        // If the request handler is fallible, we make sure that it returns a non-unit type on
         // the happy path.
         if output_type.is_result() {
             let m = MatchResult::match_result(&output_type);
@@ -31,15 +31,9 @@ impl<'a> RequestHandler<'a> {
             }
         }
 
-        let output_unassigned_generic_parameters = output_type.unassigned_generic_type_parameters();
         let mut free_parameters = IndexSet::new();
         for input in c.inputs.iter() {
-            free_parameters.extend(
-                input
-                    .unassigned_generic_type_parameters()
-                    .difference(&output_unassigned_generic_parameters)
-                    .cloned(),
-            );
+            free_parameters.extend(input.unassigned_generic_type_parameters());
         }
         if !free_parameters.is_empty() {
             return Err(
@@ -86,6 +80,6 @@ pub(crate) enum RequestHandlerValidationError {
         This request handler doesn't: it returns the unit type, `()`, when successful. I can't convert `()` into an HTTP response."
     )]
     CannotFalliblyReturnTheUnitType,
-    #[error("Input parameters for a request handler can't have any *unassigned* generic type parameters that appear exclusively in its input parameters.")]
+    #[error("Input parameters for a request handler can't have any *unassigned* generic type parameters.")]
     UnderconstrainedGenericParameters { parameters: IndexSet<String> },
 }

@@ -1,4 +1,8 @@
-use crate::blueprint::{Blueprint, reflection::{RawCallable, RawCallableIdentifiers}, internals::RegisteredCallable};
+use crate::blueprint::{
+    internals::RegisteredCallable,
+    reflection::{RawCallable, RawCallableIdentifiers},
+    Blueprint,
+};
 
 /// The type returned by [`Blueprint::wrap`].
 ///
@@ -7,7 +11,7 @@ use crate::blueprint::{Blueprint, reflection::{RawCallable, RawCallableIdentifie
 pub struct WrappingMiddleware<'a> {
     #[allow(dead_code)]
     pub(crate) blueprint: &'a mut Blueprint,
-    /// The index of the registered wrapping middleware in the 
+    /// The index of the registered wrapping middleware in the
     /// [`Blueprint`]'s `middlewares` vector.
     pub(crate) middleware_id: usize,
 }
@@ -31,7 +35,7 @@ impl<'a> WrappingMiddleware<'a> {
     /// # struct Logger;
     /// # struct TimeoutError;
     ///
-    /// fn timeout_middleware<C>(next: Next<C>) -> Result<Response, TimeoutError> 
+    /// fn timeout_middleware<C>(next: Next<C>) -> Result<Response, TimeoutError>
     /// where
     ///     C: Future<Output = Response>
     /// {

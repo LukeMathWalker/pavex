@@ -199,7 +199,6 @@ pub(crate) fn implements_trait(
             // TODO: Unpin and other traits
         }
         ResolvedType::ScalarPrimitive(_) => {
-
             if expected_trait.base_type == SEND_TRAIT_PATH
                 || expected_trait.base_type == SYNC_TRAIT_PATH
                 || expected_trait.base_type == COPY_TRAIT_PATH

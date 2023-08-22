@@ -1,5 +1,6 @@
 use indexmap::IndexSet;
 
+use crate::language::GenericArgument;
 use crate::{
     compiler::computation::MatchResult,
     language::{Callable, ResolvedType},
@@ -44,7 +45,7 @@ impl<'a> WrappingMiddleware<'a> {
         }
 
         // We verify that exactly one of the input parameters is a `Next<_>`.
-        let next_unassigned_generic_parameters = {
+        let next_type = {
             let next_parameters: Vec<_> = c.inputs.iter().filter(|t| is_next(*t)).collect();
             if next_parameters.is_empty() {
                 return Err(MustTakeNextAsInputParameter);
@@ -52,16 +53,26 @@ impl<'a> WrappingMiddleware<'a> {
             if next_parameters.len() > 1 {
                 return Err(CannotTakeMoreThanOneNextAsInputParameter);
             }
-            next_parameters[0].unassigned_generic_type_parameters()
+            next_parameters[0]
         };
 
-        // We make sure that the callable doesn't have any unassigned generic type parameters
-        // that appear exclusively in its input parameters.
-        let allowed_unassigned_generic_parameters: IndexSet<_> = {
-            let mut set = next_unassigned_generic_parameters;
-            set.extend(output_type.unassigned_generic_type_parameters());
-            set
+        // We verify that the generic parameter in `Next<_>` is a naked type parameter.
+        let ResolvedType::ResolvedPath(next_path_type) = next_type else {
+            unreachable!()
         };
+        let generic_argument = next_path_type.generic_arguments.first().unwrap();
+        match generic_argument {
+            GenericArgument::TypeParameter(ResolvedType::Generic(_)) => {}
+            t => {
+                return Err(NextGenericParameterMustBeNaked {
+                    parameter: format!("{:?}", t),
+                });
+            }
+        }
+
+        // We make sure that the callable doesn't have any unassigned generic type parameters
+        // apart from the one used in Next.
+        let allowed_unassigned_generic_parameters = next_type.unassigned_generic_type_parameters();
         let mut free_parameters = IndexSet::new();
         for input in c.inputs.iter() {
             free_parameters.extend(
@@ -96,6 +107,11 @@ impl<'a> WrappingMiddleware<'a> {
     /// Returns the index of the input parameter that is a `Next<_>`.
     pub fn next_input_index(&self) -> usize {
         self.callable.inputs.iter().position(is_next).unwrap()
+    }
+
+    /// Returns the type of the input parameter that is a `Next<_>`.
+    pub fn next_input_type(&self) -> &ResolvedType {
+        &self.callable.inputs[self.next_input_index()]
     }
 
     pub fn into_owned(self) -> WrappingMiddleware<'static> {
@@ -138,8 +154,13 @@ pub(crate) enum WrappingMiddlewareValidationError {
     )]
     CannotTakeMoreThanOneNextAsInputParameter,
     #[error(
-        "Input parameters for a wrapping middleware can't have any *unassigned* generic type parameters \
-        that appear exclusively in its input parameters."
+        "The generic parameter in `pavex::middleware::Next<_>` must a naked type parameter—i.e. `T` in `Next<T>`.\n\
+        This wrapping middleware, instead, uses `{parameter}` as generic parameter for `Next`."
+    )]
+    NextGenericParameterMustBeNaked { parameter: String },
+    #[error(
+        "Wrapping middlewares can't have any *unassigned* generic type parameters \
+        apart from the one used in `pavex::middleware::Next<_>`."
     )]
     UnderconstrainedGenericParameters { parameters: IndexSet<String> },
 }

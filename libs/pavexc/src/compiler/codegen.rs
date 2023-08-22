@@ -11,10 +11,13 @@ use quote::{format_ident, quote};
 use syn::{ItemEnum, ItemFn, ItemStruct};
 
 use crate::compiler::analyses::call_graph::{
-    ApplicationStateCallGraph, CallGraphNode, OrderedCallGraph, RawCallGraph, RawCallGraphExt,
+    ApplicationStateCallGraph, CallGraphNode, RawCallGraph,
 };
 use crate::compiler::analyses::components::ComponentDb;
 use crate::compiler::analyses::computations::ComputationDb;
+use crate::compiler::analyses::processing_pipeline::{
+    CodegenedRequestHandlerPipeline, RequestHandlerPipeline,
+};
 use crate::compiler::analyses::user_components::RouterKey;
 use crate::compiler::app::GENERATED_APP_PACKAGE_ID;
 use crate::compiler::computation::Computation;
@@ -25,83 +28,12 @@ use super::generated_app::GeneratedManifest;
 
 #[derive(Debug, Clone)]
 enum CodegenRouterEntry {
-    MethodSubRouter(BTreeMap<String, CodegenRequestHandler>),
-    CatchAllHandler(CodegenRequestHandler),
-}
-
-#[derive(Debug, Clone)]
-struct CodegenRequestHandler {
-    code: ItemFn,
-    input_types: IndexSet<ResolvedType>,
-}
-
-impl CodegenRequestHandler {
-    fn invocation(
-        &self,
-        singleton_bindings: &BiHashMap<Ident, ResolvedType>,
-        request_scoped_bindings: &BiHashMap<Ident, ResolvedType>,
-        server_state_ident: &Ident,
-    ) -> TokenStream {
-        let handler = &self.code;
-        let handler_input_types = &self.input_types;
-        let is_handler_async = handler.sig.asyncness.is_some();
-        let handler_function_name = &handler.sig.ident;
-        let input_parameters = handler_input_types.iter().map(|type_| {
-            let mut is_shared_reference = false;
-            let inner_type = match type_ {
-                ResolvedType::Reference(r) => {
-                    if !r.is_static {
-                        is_shared_reference = true;
-                        &r.inner
-                    } else {
-                        type_
-                    }
-                }
-                ResolvedType::Slice(_)
-                | ResolvedType::ResolvedPath(_)
-                | ResolvedType::Tuple(_)
-                | ResolvedType::ScalarPrimitive(_) => type_,
-                ResolvedType::Generic(_) => {
-                    unreachable!("Generic types should have been resolved by now")
-                }
-            };
-            if let Some(field_name) = singleton_bindings.get_by_right(inner_type) {
-                if is_shared_reference {
-                    quote! {
-                        &#server_state_ident.application_state.#field_name
-                    }
-                } else {
-                    quote! {
-                        #server_state_ident.application_state.#field_name.clone()
-                    }
-                }
-            } else if let Some(field_name) = request_scoped_bindings.get_by_right(type_) {
-                quote! {
-                    #field_name
-                }
-            } else {
-                let field_name = request_scoped_bindings.get_by_right(inner_type).unwrap();
-                if is_shared_reference {
-                    quote! {
-                        &#field_name
-                    }
-                } else {
-                    quote! {
-                        #field_name
-                    }
-                }
-            }
-        });
-        let mut handler_invocation = quote! { #handler_function_name(#(#input_parameters),*) };
-        if is_handler_async {
-            handler_invocation = quote! { #handler_invocation.await };
-        }
-        handler_invocation
-    }
+    MethodSubRouter(BTreeMap<String, CodegenedRequestHandlerPipeline>),
+    CatchAllHandler(CodegenedRequestHandlerPipeline),
 }
 
 pub(crate) fn codegen_app(
-    handler_call_graphs: &IndexMap<RouterKey, OrderedCallGraph>,
+    handler_pipelines: &IndexMap<RouterKey, RequestHandlerPipeline>,
     application_state_call_graph: &ApplicationStateCallGraph,
     request_scoped_framework_bindings: &BiHashMap<Ident, ResolvedType>,
     package_id2name: &BiHashMap<PackageId, String>,
@@ -125,7 +57,7 @@ pub(crate) fn codegen_app(
     let define_application_state_error = define_application_state_error(
         &application_state_call_graph.error_variants,
         package_id2name,
-        &thiserror_import_name
+        &thiserror_import_name,
     );
     let application_state_init = get_application_state_init(
         application_state_call_graph,
@@ -134,25 +66,19 @@ pub(crate) fn codegen_app(
         computation_db,
     )?;
 
-    let define_server_state =
-        define_server_state(&application_state_def, &pavex_import_name);
+    let define_server_state = define_server_state(&application_state_def, &pavex_import_name);
 
-    let mut handlers = vec![];
+    let mut handler_modules = vec![];
     let path2codegen_router_entry = {
         let mut map: IndexMap<String, CodegenRouterEntry> = IndexMap::new();
-        for (i, (router_key, call_graph)) in handler_call_graphs.iter().enumerate() {
-            let mut code = call_graph.codegen(package_id2name, component_db, computation_db)?;
-            code.sig.ident = format_ident!("route_handler_{}", i);
-            handlers.push(code.clone());
-            let handler = CodegenRequestHandler {
-                code,
-                input_types: call_graph.call_graph.required_input_types(),
-            };
+        for (router_key, pipeline) in handler_pipelines {
+            let pipeline_code = pipeline.codegen(package_id2name, component_db, computation_db)?;
+            handler_modules.push(pipeline_code.as_inline_module());
             match router_key.method_guard.clone() {
                 None => {
                     map.insert(
                         router_key.path.clone(),
-                        CodegenRouterEntry::CatchAllHandler(handler),
+                        CodegenRouterEntry::CatchAllHandler(pipeline_code.clone()),
                     );
                 }
                 Some(methods) => {
@@ -163,7 +89,7 @@ pub(crate) fn codegen_app(
                         unreachable!("Cannot have a catch-all handler and a method sub-router for the same path");
                     };
                     for method in methods {
-                        sub_router.insert(method, handler.clone());
+                        sub_router.insert(method, pipeline_code.clone());
                     }
                 }
             }
@@ -211,7 +137,7 @@ pub(crate) fn codegen_app(
         #entrypoint
         #router_init
         #route_request
-        #(#handlers)*
+        #(#handler_modules)*
     };
     Ok(code)
 }
@@ -231,10 +157,10 @@ fn server_startup(pavex: &Ident) -> ItemFn {
                 async move {
                     Ok::<_, #pavex::hyper::Error>(#pavex::hyper::service::service_fn(move |request| {
                         let server_state = server_state.clone();
-                        async move { 
+                        async move {
                             let response = route_request(request, server_state).await;
                             let response = #pavex::hyper::Response::from(response);
-                            Ok::<_, #pavex::hyper::Error>(response) 
+                            Ok::<_, #pavex::hyper::Error>(response)
                         }
                     }))
                 }
@@ -282,9 +208,9 @@ fn define_application_state_error(
     let singleton_fields = error_types.iter().map(|(variant_name, type_)| {
         let variant_type = type_.syn_type(package_id2name);
         let variant_name = format_ident!("{}", variant_name);
-        quote! { 
+        quote! {
             #[error(transparent)]
-            #variant_name(#variant_type) 
+            #variant_name(#variant_type)
         }
     });
     Some(
@@ -342,10 +268,7 @@ fn get_application_state_init(
     Ok(function)
 }
 
-fn get_router_init(
-    route_id2path: &BiBTreeMap<u32, String>,
-    pavex_import_name: &Ident,
-) -> ItemFn {
+fn get_router_init(route_id2path: &BiBTreeMap<u32, String>, pavex_import_name: &Ident) -> ItemFn {
     let mut router_init = quote! {
         let mut router = #pavex_import_name::routing::Router::new();
     };
@@ -378,8 +301,8 @@ fn get_request_dispatcher(
             CodegenRouterEntry::MethodSubRouter(sub_router) => {
                 let mut sub_router_dispatch_table = quote! {};
                 let mut allowed_methods = vec![];
-                for (method, handler) in sub_router {
-                    let invocation = handler.invocation(
+                for (method, request_pipeline) in sub_router {
+                    let invocation = request_pipeline.entrypoint_invocation(
                         singleton_bindings,
                         request_scoped_bindings,
                         &server_state_ident,
@@ -404,11 +327,12 @@ fn get_request_dispatcher(
                     }
                 }
             }
-            CodegenRouterEntry::CatchAllHandler(h) => h.invocation(
-                singleton_bindings,
-                request_scoped_bindings,
-                &server_state_ident,
-            ),
+            CodegenRouterEntry::CatchAllHandler(request_pipeline) => request_pipeline
+                .entrypoint_invocation(
+                    singleton_bindings,
+                    request_scoped_bindings,
+                    &server_state_ident,
+                ),
         };
         route_dispatch_table = quote! {
             #route_dispatch_table
@@ -454,7 +378,7 @@ pub(crate) fn codegen_manifest<'a, I>(
     computation_db: &'a ComputationDb,
 ) -> (GeneratedManifest, BiHashMap<PackageId, String>)
 where
-    I: Iterator<Item = &'a RawCallGraph>,
+    I: Iterator<Item = &'a RequestHandlerPipeline>,
 {
     let (dependencies, mut package_ids2deps) = compute_dependencies(
         package_graph,
@@ -489,7 +413,7 @@ where
 
 fn compute_dependencies<'a, I>(
     package_graph: &guppy::graph::PackageGraph,
-    handler_call_graphs: I,
+    handler_pipelines: I,
     application_state_call_graph: &'a RawCallGraph,
     request_scoped_framework_bindings: &'a BiHashMap<Ident, ResolvedType>,
     codegen_deps: &'a HashMap<String, PackageId>,
@@ -497,10 +421,10 @@ fn compute_dependencies<'a, I>(
     computation_db: &'a ComputationDb,
 ) -> (BTreeMap<String, Dependency>, BiHashMap<PackageId, String>)
 where
-    I: Iterator<Item = &'a RawCallGraph>,
+    I: Iterator<Item = &'a RequestHandlerPipeline>,
 {
     let package_ids = collect_package_ids(
-        handler_call_graphs,
+        handler_pipelines,
         application_state_call_graph,
         request_scoped_framework_bindings,
         codegen_deps,
@@ -603,7 +527,7 @@ where
 }
 
 fn collect_package_ids<'a, I>(
-    handler_call_graphs: I,
+    handler_pipelines: I,
     application_state_call_graph: &'a RawCallGraph,
     request_scoped_framework_bindings: &'a BiHashMap<Ident, ResolvedType>,
     codegen_deps: &'a HashMap<String, PackageId>,
@@ -611,7 +535,7 @@ fn collect_package_ids<'a, I>(
     computation_db: &'a ComputationDb,
 ) -> IndexSet<PackageId>
 where
-    I: Iterator<Item = &'a RawCallGraph>,
+    I: Iterator<Item = &'a RequestHandlerPipeline>,
 {
     let mut package_ids = IndexSet::new();
     for t in request_scoped_framework_bindings.right_values() {
@@ -626,13 +550,15 @@ where
         computation_db,
         application_state_call_graph,
     );
-    for handler_call_graph in handler_call_graphs {
-        collect_call_graph_package_ids(
-            &mut package_ids,
-            component_db,
-            computation_db,
-            handler_call_graph,
-        );
+    for handler_pipeline in handler_pipelines {
+        for graph in handler_pipeline.graph_iter() {
+            collect_call_graph_package_ids(
+                &mut package_ids,
+                component_db,
+                computation_db,
+                &graph.call_graph,
+            );
+        }
     }
     package_ids
 }

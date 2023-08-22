@@ -1,4 +1,4 @@
-digraph "GET /handler" {
+digraph "GET /handler - 0" {
     0 [ label = "dep::handler(http_0_1_21::header::HeaderName, http_0_2_9::HeaderName) -> pavex::response::Response"]
     1 [ label = "dep::header2() -> http_0_2_9::HeaderName"]
     2 [ label = "dep::header1() -> http_0_1_21::header::HeaderName"]
@@ -7,6 +7,7 @@ digraph "GET /handler" {
     2 -> 0 [ ]
     0 -> 3 [ ]
 }
+
 digraph app_state {
     0 [ label = "crate::ApplicationState() -> crate::ApplicationState"]
 }

@@ -14,13 +14,13 @@ use quote::format_ident;
 use pavex::blueprint::{constructor::Lifecycle, Blueprint};
 
 use crate::compiler::analyses::call_graph::{
-    application_state_call_graph, handler_call_graph, ApplicationStateCallGraph, OrderedCallGraph,
-    RawCallGraphExt,
+    application_state_call_graph, ApplicationStateCallGraph, RawCallGraphExt,
 };
 use crate::compiler::analyses::components::{ComponentDb, ComponentId, HydratedComponent};
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::constructibles::ConstructibleDb;
 use crate::compiler::analyses::framework_items::FrameworkItemDb;
+use crate::compiler::analyses::processing_pipeline::RequestHandlerPipeline;
 use crate::compiler::analyses::user_components::{RouterKey, UserComponentDb};
 use crate::compiler::computation::Computation;
 use crate::compiler::generated_app::GeneratedApp;
@@ -39,7 +39,7 @@ pub(crate) const GENERATED_APP_PACKAGE_ID: &str = "crate";
 /// the constraints and instructions from a [`Blueprint`] instance.
 pub struct App {
     package_graph: PackageGraph,
-    handler_call_graphs: IndexMap<RouterKey, OrderedCallGraph>,
+    handler_pipelines: IndexMap<RouterKey, RequestHandlerPipeline>,
     application_state_call_graph: ApplicationStateCallGraph,
     framework_item_db: FrameworkItemDb,
     runtime_singleton_bindings: BiHashMap<Ident, ResolvedType>,
@@ -99,29 +99,28 @@ impl App {
             &mut diagnostics,
         );
         exit_on_errors!(diagnostics);
-        let handler_call_graphs = {
+        let handler_pipelines = {
             let router = component_db.router().clone();
-            let mut handler_call_graphs = IndexMap::with_capacity(router.len());
-            for (router_key, handler_id) in router {
-                let Ok(call_graph) = handler_call_graph(
+            let mut handler_pipelines = IndexMap::with_capacity(router.len());
+            for (i, (router_key, handler_id)) in router.into_iter().enumerate() {
+                let Ok(processing_pipeline) = RequestHandlerPipeline::new(
                     handler_id,
+                    format!("route_{i}"),
                     &mut computation_db,
                     &mut component_db,
-                    &constructible_db,
+                    &mut constructible_db,
                     &package_graph,
                     &krate_collection,
                     &mut diagnostics,
                 ) else {
                     continue;
                 };
-                handler_call_graphs.insert(router_key.to_owned(), call_graph);
+                handler_pipelines.insert(router_key.to_owned(), processing_pipeline);
             }
-            handler_call_graphs
+            handler_pipelines
         };
         route_parameter_validation::verify_route_parameters(
-            handler_call_graphs
-                .iter()
-                .map(|(k, ocg)| (k, &ocg.call_graph)),
+            handler_pipelines.iter(),
             &computation_db,
             &component_db,
             &package_graph,
@@ -132,7 +131,7 @@ impl App {
 
         let runtime_singletons: IndexSet<(ResolvedType, ComponentId)> =
             get_required_singleton_types(
-                handler_call_graphs.iter(),
+                handler_pipelines.iter(),
                 &framework_item_db,
                 &constructible_db,
                 &component_db,
@@ -167,7 +166,7 @@ impl App {
         exit_on_errors!(diagnostics);
         Ok(Self {
             package_graph,
-            handler_call_graphs,
+            handler_pipelines,
             component_db,
             computation_db,
             application_state_call_graph,
@@ -185,7 +184,7 @@ impl App {
         let framework_bindings = self.framework_item_db.bindings();
         let (cargo_toml, package_ids2deps) = codegen::codegen_manifest(
             &self.package_graph,
-            self.handler_call_graphs.values().map(|cg| &cg.call_graph),
+            self.handler_pipelines.values(),
             &self.application_state_call_graph.call_graph.call_graph,
             &framework_bindings,
             &self.codegen_deps,
@@ -193,7 +192,7 @@ impl App {
             &self.computation_db,
         );
         let lib_rs = codegen::codegen_app(
-            &self.handler_call_graphs,
+            &self.handler_pipelines,
             &self.application_state_call_graph,
             &framework_bindings,
             &package_ids2deps,
@@ -211,10 +210,10 @@ impl App {
 
     /// A representation of an `App` geared towards debugging and testing.
     pub fn diagnostic_representation(&self) -> AppDiagnostics {
-        let mut handler_graphs = IndexMap::new();
+        let mut handlers = IndexMap::new();
         let (_, package_ids2deps) = codegen::codegen_manifest(
             &self.package_graph,
-            self.handler_call_graphs.values().map(|c| &c.call_graph),
+            self.handler_pipelines.values(),
             &self.application_state_call_graph.call_graph.call_graph,
             &self.framework_item_db.bindings(),
             &self.codegen_deps,
@@ -222,7 +221,7 @@ impl App {
             &self.computation_db,
         );
 
-        for (router_key, handler_call_graph) in &self.handler_call_graphs {
+        for (router_key, handler_pipeline) in &self.handler_pipelines {
             let method = router_key
                 .method_guard
                 .as_ref()
@@ -234,15 +233,18 @@ impl App {
                         .join(" | ")
                 })
                 .unwrap_or("*".to_string());
-            handler_graphs.insert(
-                router_key.to_owned(),
-                handler_call_graph
-                    .dot(&package_ids2deps, &self.component_db, &self.computation_db)
-                    .replace(
-                        "digraph",
-                        &format!("digraph \"{method} {}\"", router_key.path),
-                    ),
-            );
+            let mut handler_graphs = Vec::new();
+            for (i, graph) in handler_pipeline.graph_iter().enumerate() {
+                handler_graphs.push(
+                    graph
+                        .dot(&package_ids2deps, &self.component_db, &self.computation_db)
+                        .replace(
+                            "digraph",
+                            &format!("digraph \"{method} {} - {i}\"", router_key.path),
+                        ),
+                );
+            }
+            handlers.insert(router_key.to_owned(), handler_graphs);
         }
         let application_state_graph = self
             .application_state_call_graph
@@ -250,7 +252,7 @@ impl App {
             .dot(&package_ids2deps, &self.component_db, &self.computation_db)
             .replace("digraph", "digraph app_state");
         AppDiagnostics {
-            handlers: handler_graphs,
+            handlers,
             application_state: application_state_graph,
         }
     }
@@ -269,7 +271,9 @@ pub(crate) enum BuildError {
 /// It contains the DOT representation of all the call graphs underpinning the originating `App`.
 /// The DOT representation can be used for snapshot testing and/or troubleshooting.
 pub struct AppDiagnostics {
-    pub handlers: IndexMap<RouterKey, String>,
+    /// For each handler, we have a sequence of DOT graphs representing the call graph of each
+    /// middleware in their pipeline and the request handler itself.
+    pub handlers: IndexMap<RouterKey, Vec<String>>,
     pub application_state: String,
 }
 
@@ -279,7 +283,7 @@ impl AppDiagnostics {
     pub fn persist(&self, directory: &Path) -> Result<(), anyhow::Error> {
         let handler_directory = directory.join("handlers");
         fs_err::create_dir_all(&handler_directory)?;
-        for (router_key, handler) in &self.handlers {
+        for (router_key, handler_graphs) in &self.handlers {
             let method = router_key
                 .method_guard
                 .as_ref()
@@ -298,7 +302,11 @@ impl AppDiagnostics {
                 .create(true)
                 .truncate(true)
                 .open(filepath)?;
-            file.write_all(handler.as_bytes())?;
+            for handler_graph in handler_graphs {
+                file.write_all(handler_graph.as_bytes())?;
+                // Add a newline between graphs for readability
+                file.write("\n".as_bytes())?;
+            }
         }
         let mut file = fs_err::OpenOptions::new()
             .write(true)
@@ -318,8 +326,12 @@ impl AppDiagnostics {
             .open(filepath)?;
         let mut file = BufWriter::new(file);
 
-        for handler in self.handlers.values() {
-            file.write_all(handler.as_bytes())?;
+        for handler_graphs in self.handlers.values() {
+            for handler_graph in handler_graphs {
+                file.write_all(handler_graph.as_bytes())?;
+                // Add a newline between graphs for readability
+                file.write("\n".as_bytes())?;
+            }
         }
         file.write_all(self.application_state.as_bytes())?;
         file.flush()?;
@@ -331,43 +343,52 @@ impl AppDiagnostics {
 /// registered by the application.
 /// These singletons will be attached to the overall application state.
 fn get_required_singleton_types<'a>(
-    handler_call_graphs: impl Iterator<Item = (&'a RouterKey, &'a OrderedCallGraph)>,
+    handler_pipelines: impl Iterator<Item = (&'a RouterKey, &'a RequestHandlerPipeline)>,
     framework_item_db: &FrameworkItemDb,
     constructibles_db: &ConstructibleDb,
     component_db: &ComponentDb,
 ) -> IndexSet<(ResolvedType, ComponentId)> {
     let mut singletons_to_be_built = IndexSet::new();
-    for (_, handler_call_graph) in handler_call_graphs {
-        let root_component_id = handler_call_graph.root_component_id();
-        let root_component_scope_id = component_db.scope_id(root_component_id);
-        for required_input in handler_call_graph.call_graph.required_input_types() {
-            let required_input = if let ResolvedType::Reference(t) = &required_input {
-                if !t.is_static {
-                    // We can't store non-'static references in the application state, so we expect
-                    // to see the referenced type in there.
-                    t.inner.deref()
+    for (_, handler_pipeline) in handler_pipelines {
+        for graph in handler_pipeline.graph_iter() {
+            let root_component_id = graph.root_component_id();
+            let root_component_scope_id = component_db.scope_id(root_component_id);
+            for required_input in graph.call_graph.required_input_types() {
+                let required_input = if let ResolvedType::Reference(t) = &required_input {
+                    if !t.is_static {
+                        // We can't store non-'static references in the application state, so we expect
+                        // to see the referenced type in there.
+                        t.inner.deref()
+                    } else {
+                        &required_input
+                    }
                 } else {
                     &required_input
+                };
+                // If it's a framework built-in, nothing to do!
+                if framework_item_db.get_id(required_input).is_some() {
+                    continue;
                 }
-            } else {
-                &required_input
-            };
-            // If it's a framework built-in, nothing to do!
-            if framework_item_db.get_id(required_input).is_some() {
-                continue;
+                let (component_id, _) = constructibles_db
+                    .get(
+                        root_component_scope_id,
+                        required_input,
+                        component_db.scope_graph(),
+                    )
+                    .unwrap();
+                let lifecycle = component_db.lifecycle(component_id).unwrap();
+                #[cfg(debug_assertions)]
+                {
+                    // No scenario where this should/could happen.
+                    assert_ne!(*lifecycle, Lifecycle::Transient);
+                }
+
+                // Some inputs are request-scoped because they come from the `Next<_>` pass-along
+                // state. We don't care about those here.
+                if *lifecycle == Lifecycle::Singleton {
+                    singletons_to_be_built.insert((required_input.to_owned(), component_id));
+                }
             }
-            let (component_id, _) = constructibles_db
-                .get(
-                    root_component_scope_id,
-                    required_input,
-                    component_db.scope_graph(),
-                )
-                .unwrap();
-            assert_eq!(
-                component_db.lifecycle(component_id),
-                Some(&Lifecycle::Singleton)
-            );
-            singletons_to_be_built.insert((required_input.to_owned(), component_id));
         }
     }
     singletons_to_be_built

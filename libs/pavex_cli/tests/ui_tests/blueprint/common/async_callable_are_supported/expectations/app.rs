@@ -71,7 +71,7 @@ async fn route_request(
         0u32 => {
             match &request_head.method {
                 &pavex::http::Method::GET => {
-                    route_handler_0(
+                    route_0::handler(
                             server_state.application_state.s0.clone(),
                             request_head,
                         )
@@ -88,14 +88,16 @@ async fn route_request(
         _ => pavex::response::Response::not_found().box_body(),
     }
 }
-pub async fn route_handler_0(
-    v0: app::HttpClient,
-    v1: pavex::request::RequestHead,
-) -> pavex::response::Response {
-    let v2 = app::extract_path(v1).await;
-    let v4 = {
-        let v3 = app::logger().await;
-        app::stream_file(v2, v3, v0).await
-    };
-    <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
+pub mod route_0 {
+    pub async fn handler(
+        v0: app::HttpClient,
+        v1: pavex::request::RequestHead,
+    ) -> pavex::response::Response {
+        let v2 = app::extract_path(v1).await;
+        let v4 = {
+            let v3 = app::logger().await;
+            app::stream_file(v2, v3, v0).await
+        };
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
+    }
 }

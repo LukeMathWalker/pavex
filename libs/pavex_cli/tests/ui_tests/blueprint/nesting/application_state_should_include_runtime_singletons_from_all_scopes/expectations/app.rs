@@ -78,7 +78,7 @@ async fn route_request(
         0u32 => {
             match &request_head.method {
                 &pavex::http::Method::GET => {
-                    route_handler_0(server_state.application_state.s0.clone()).await
+                    route_0::handler(server_state.application_state.s0.clone()).await
                 }
                 _ => {
                     let header_value = pavex::http::HeaderValue::from_static("GET");
@@ -91,7 +91,7 @@ async fn route_request(
         1u32 => {
             match &request_head.method {
                 &pavex::http::Method::GET => {
-                    route_handler_1(server_state.application_state.s1.clone()).await
+                    route_1::handler(server_state.application_state.s1.clone()).await
                 }
                 _ => {
                     let header_value = pavex::http::HeaderValue::from_static("GET");
@@ -104,11 +104,15 @@ async fn route_request(
         _ => pavex::response::Response::not_found().box_body(),
     }
 }
-pub async fn route_handler_0(v0: u32) -> pavex::response::Response {
-    let v1 = app::nested_handler(v0);
-    <http::StatusCode as pavex::response::IntoResponse>::into_response(v1)
+pub mod route_0 {
+    pub async fn handler(v0: u32) -> pavex::response::Response {
+        let v1 = app::nested_handler(v0);
+        <http::StatusCode as pavex::response::IntoResponse>::into_response(v1)
+    }
 }
-pub async fn route_handler_1(v0: u64) -> pavex::response::Response {
-    let v1 = app::parent_handler(v0);
-    <http::StatusCode as pavex::response::IntoResponse>::into_response(v1)
+pub mod route_1 {
+    pub async fn handler(v0: u64) -> pavex::response::Response {
+        let v1 = app::parent_handler(v0);
+        <http::StatusCode as pavex::response::IntoResponse>::into_response(v1)
+    }
 }

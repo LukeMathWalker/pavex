@@ -12,9 +12,10 @@ use rustdoc_types::{ItemEnum, StructKind};
 use crate::compiler::analyses::call_graph::{CallGraphNode, RawCallGraph};
 use crate::compiler::analyses::components::{ComponentDb, HydratedComponent};
 use crate::compiler::analyses::computations::ComputationDb;
+use crate::compiler::analyses::processing_pipeline::RequestHandlerPipeline;
 use crate::compiler::analyses::user_components::{RouterKey, UserComponentId};
-use crate::compiler::computation::{Computation, MatchResultVariant};
 use crate::compiler::component::Constructor;
+use crate::compiler::computation::{Computation, MatchResultVariant};
 use crate::compiler::utils::process_framework_path;
 use crate::diagnostic;
 use crate::diagnostic::{CompilerDiagnostic, LocationExt, OptionalSourceSpanExt};
@@ -29,14 +30,14 @@ use super::traits::assert_trait_is_implemented;
 /// that each named field maps to a route parameter for the corresponding handler.
 #[tracing::instrument(name = "Verify route parameters", skip_all)]
 pub(crate) fn verify_route_parameters<'a, I>(
-    handler_call_graphs: I,
+    handler_pipelines: I,
     computation_db: &ComputationDb,
     component_db: &ComponentDb,
     package_graph: &PackageGraph,
     krate_collection: &CrateCollection,
     diagnostics: &mut Vec<miette::Error>,
 ) where
-    I: Iterator<Item = (&'a RouterKey, &'a RawCallGraph)>,
+    I: Iterator<Item = (&'a RouterKey, &'a RequestHandlerPipeline)>,
 {
     let ResolvedType::ResolvedPath(structural_deserialize) = process_framework_path(
         "pavex::serialization::StructuralDeserialize",
@@ -46,22 +47,29 @@ pub(crate) fn verify_route_parameters<'a, I>(
         unreachable!()
     };
 
-    for (router_key, call_graph) in handler_call_graphs {
-        let Some((ok_route_params_node_id, ty_)) = call_graph.node_indices().find_map(|node_id| {
-            let node = &call_graph[node_id];
-            let CallGraphNode::Compute { component_id, .. } = node else { return None; };
-            let hydrated_component = component_db.hydrated_component(*component_id, computation_db);
-            let HydratedComponent::Constructor(Constructor(Computation::MatchResult(m))) =
-                hydrated_component else { return None; };
-            if m.variant != MatchResultVariant::Ok {
-                return None;
-            }
-            let ResolvedType::ResolvedPath(ty_) = &m.output else { return None; };
-            if ty_.base_type == vec!["pavex", "extract", "route", "RouteParams"] {
-                Some((node_id, ty_.clone()))
-            } else {
-                None
-            }
+    for (router_key, pipeline) in handler_pipelines {
+        // If `RouteParams` is used, it will appear as a `Compute` node in *at most* one of the
+        // call graphs in the processing pipeline for the handler, since it's a `RequestScoped`
+        // component.
+        let Some((graph, ok_route_params_node_id, ty_)) = pipeline.graph_iter().find_map(|graph| {
+            let graph = &graph.call_graph;
+            graph.node_indices().find_map(|node_id| {
+                let node = &graph[node_id];
+                let CallGraphNode::Compute { component_id, .. } = node else { return None; };
+                let hydrated_component =
+                    component_db.hydrated_component(*component_id, computation_db);
+                let HydratedComponent::Constructor(Constructor(Computation::MatchResult(m))) =
+                    hydrated_component else { return None; };
+                if m.variant != MatchResultVariant::Ok {
+                    return None;
+                }
+                let ResolvedType::ResolvedPath(ty_) = &m.output else { return None; };
+                if ty_.base_type == vec!["pavex", "extract", "route", "RouteParams"] {
+                    Some((node_id, ty_.clone()))
+                } else {
+                    None
+                }
+            }).map(|(node_id, ty_)| (graph, node_id, ty_))
         }) else { continue; };
 
         let GenericArgument::TypeParameter(extracted_type) = &ty_.generic_arguments[0] else { unreachable!() };
@@ -71,15 +79,15 @@ pub(crate) fn verify_route_parameters<'a, I>(
             package_graph,
             krate_collection,
             diagnostics,
-            call_graph,
+            graph,
             ok_route_params_node_id,
             extracted_type,
         ) else {
             continue;
         };
         let ItemEnum::Struct(struct_inner_item) = &struct_item.inner else {
-            unreachable!()
-        };
+                unreachable!()
+            };
 
         // We only want to check alignment between struct fields and the route parameters in the
         // template if the struct implements `StructuralDeserialize`, our marker trait that stands
@@ -124,7 +132,7 @@ pub(crate) fn verify_route_parameters<'a, I>(
                 package_graph,
                 diagnostics,
                 router_key,
-                call_graph,
+                graph,
                 ok_route_params_node_id,
                 route_parameter_names,
                 non_existing_route_parameters,

@@ -96,6 +96,7 @@ pub(crate) fn application_state_call_graph(
         root_scope_id,
     }) = build_call_graph(
         application_state_id,
+        &IndexSet::new(),
         computation_db,
         component_db,
         constructible_db,
@@ -299,6 +300,7 @@ pub(crate) fn application_state_call_graph(
         // With all the transformers in place, we can now build the final call graph!
         let Ok(cg) = build_call_graph(
             application_state_id,
+            &IndexSet::new(),
             computation_db,
             component_db,
             constructible_db,

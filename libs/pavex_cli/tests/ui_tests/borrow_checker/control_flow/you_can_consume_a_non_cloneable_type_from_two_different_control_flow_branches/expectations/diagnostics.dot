@@ -1,4 +1,4 @@
-digraph "GET /home" {
+digraph "GET /home - 0" {
     0 [ label = "app::handler(app::A, app::B) -> pavex::response::Response"]
     1 [ label = "app::b() -> app::B"]
     2 [ label = "core::prelude::rust_2015::Result<app::A, app::Error> -> app::A"]
@@ -18,6 +18,7 @@ digraph "GET /home" {
     6 -> 7 [ ]
     3 -> 8 [ ]
 }
+
 digraph app_state {
     0 [ label = "crate::ApplicationState() -> crate::ApplicationState"]
 }
