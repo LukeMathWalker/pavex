@@ -7,7 +7,7 @@ use std::future::IntoFuture;
 
 use crate::response::Response;
 
-/// A [`Future`] that represents the next step in the request processing pipeline.
+/// A handle to trigger the execution of the rest of the request processing pipeline.
 ///
 /// It is used by wrapping middlewares to delegate the processing of the request to the next
 /// middleware in the pipeline (or to the request handler).
@@ -15,7 +15,6 @@ use crate::response::Response;
 /// Check out [`Blueprint::wrap`] for more information.
 ///
 /// [`Blueprint::wrap`]: crate::blueprint::Blueprint::wrap
-/// [`Future`]: std::future::Future
 pub struct Next<C> {
     request_pipeline: C,
 }
