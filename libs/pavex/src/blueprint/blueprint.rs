@@ -357,7 +357,7 @@ impl Blueprint {
     ///     config: TimeoutConfig
     /// ) -> Result<Response, Elapsed>
     /// where
-    ///     C: Future<Output = Response>
+    ///     C: IntoFuture<Output = Response>
     /// {
     ///     timeout(config.request_timeout, next.into_future()).await
     /// }

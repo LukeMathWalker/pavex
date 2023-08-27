@@ -1,10 +1,16 @@
+use std::future::IntoFuture;
+
 use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
 use pavex::f;
 use pavex::middleware::Next;
+use pavex::response::Response;
 
 pub struct GenericType<V>(V);
 
-pub fn generic_wrapping_middleware<A, T>(_next: Next<A>, generic_input: GenericType<T>) -> u8 {
+pub fn generic_wrapping_middleware<A, T>(_next: Next<A>, generic_input: GenericType<T>) -> u8
+where
+    A: IntoFuture<Output = Response>,
+{
     todo!()
 }
 
@@ -12,7 +18,10 @@ pub fn doubly_generic_wrapping_middleware<A, T, S>(
     _next: Next<A>,
     i1: GenericType<T>,
     i2: GenericType<S>,
-) -> u16 {
+) -> u16
+where
+    A: IntoFuture<Output = Response>,
+{
     todo!()
 }
 
@@ -21,7 +30,10 @@ pub fn triply_generic_wrapping_middleware<A, T, S, U>(
     i1: GenericType<T>,
     i2: GenericType<S>,
     i3: GenericType<U>,
-) -> u32 {
+) -> u32
+where
+    A: IntoFuture<Output = Response>,
+{
     todo!()
 }
 

@@ -1,6 +1,8 @@
 use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
-use pavex::middleware::Next;
 use pavex::f;
+use pavex::middleware::Next;
+use pavex::response::Response;
+use std::future::IntoFuture;
 
 pub fn request_scoped() -> Result<String, ErrorType> {
     todo!()
@@ -20,7 +22,10 @@ pub fn error_handler(e: &ErrorType) -> MyCustomOutputType {
     todo!()
 }
 
-pub fn wrapping_middleware<T>(_next: Next<T>) -> Result<MyCustomOutputType, ErrorType> {
+pub fn wrapping_middleware<T>(_next: Next<T>) -> Result<MyCustomOutputType, ErrorType>
+where
+    T: IntoFuture<Output = Response>,
+{
     todo!()
 }
 
