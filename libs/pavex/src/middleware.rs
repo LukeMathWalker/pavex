@@ -15,16 +15,19 @@ use crate::response::Response;
 /// Check out [`Blueprint::wrap`] for more information.
 ///
 /// [`Blueprint::wrap`]: crate::blueprint::Blueprint::wrap
-pub struct Next<C> {
+pub struct Next<C>
+where
+    C: IntoFuture<Output = Response>,
+{
     request_pipeline: C,
 }
 
-impl<C> Next<C> {
+impl<C> Next<C>
+where
+    C: IntoFuture<Output = Response>,
+{
     /// Creates a new [`Next`] instance.
-    pub fn new(request_pipeline: C) -> Self
-    where
-        C: IntoFuture<Output = Response>,
-    {
+    pub fn new(request_pipeline: C) -> Self {
         Self { request_pipeline }
     }
 }

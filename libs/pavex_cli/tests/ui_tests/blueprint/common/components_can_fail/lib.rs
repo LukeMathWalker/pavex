@@ -1,3 +1,4 @@
+use std::future::IntoFuture;
 use std::path::PathBuf;
 
 use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
@@ -72,7 +73,10 @@ pub fn handle_middleware_error(_e: &MiddlewareError) -> Response {
     todo!()
 }
 
-pub fn fallible_wrapping_middleware<T>(_next: Next<T>) -> Result<Response, MiddlewareError> {
+pub fn fallible_wrapping_middleware<T>(_next: Next<T>) -> Result<Response, MiddlewareError>
+where
+    T: IntoFuture<Output = Response>,
+{
     todo!()
 }
 
