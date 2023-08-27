@@ -175,7 +175,7 @@ impl CrateCollection {
         // so we parallelize the operation.
         let package_graph = self.package_graph.clone();
         let cache = self.disk_cache.clone();
-        let tracing_span = Span::current().clone();
+        let tracing_span = Span::current();
         let map_op = move |id| {
             tracing_span.in_scope(|| get_if_cached(id, package_graph.clone(), cache.clone()))
         };
@@ -196,7 +196,7 @@ impl CrateCollection {
 
         for (package_id, krate) in results {
             let krate =
-                Crate::new(self, krate, package_id.to_owned()).map_err(|e| CannotGetCrateData {
+                Crate::new(krate, package_id.to_owned()).map_err(|e| CannotGetCrateData {
                     package_spec: package_id.to_string(),
                     source: Arc::new(e),
                 })?;
@@ -252,12 +252,11 @@ impl CrateCollection {
         }
 
         // If we don't have them in the on-disk cache, we need to compute them.
-        let krate = compute_crate_docs(&self.package_graph, &package_id)?;
-        let krate =
-            Crate::new(self, krate, package_id.to_owned()).map_err(|e| CannotGetCrateData {
-                package_spec: package_id.to_string(),
-                source: Arc::new(e),
-            })?;
+        let krate = compute_crate_docs(&self.package_graph, package_id)?;
+        let krate = Crate::new(krate, package_id.to_owned()).map_err(|e| CannotGetCrateData {
+            package_spec: package_id.to_string(),
+            source: Arc::new(e),
+        })?;
 
         // Let's make sure to store them in the on-disk cache for next time.
         if let Err(e) = self.disk_cache.insert(&cache_key, &krate) {
@@ -334,20 +333,24 @@ impl CrateCollection {
             // This might take multiple iterations, since the alias might point to another
             // alias.
             loop {
-                let ItemEnum::Typedef(typedef) = &parent.inner else { break; };
-                let rustdoc_types::Type::ResolvedPath(p) = &typedef.type_ else { break; };
+                let ItemEnum::Typedef(typedef) = &parent.inner else {
+                    break;
+                };
+                let rustdoc_types::Type::ResolvedPath(p) = &typedef.type_ else {
+                    break;
+                };
                 // The aliased type might be a re-export of a foreign type,
                 // therefore we go through the summary here rather than
                 // going straight for a local id lookup.
                 let summary = krate.get_type_summary_by_local_type_id(&p.id).unwrap();
                 let source_package_id = krate
-                    .compute_package_id_for_crate_id(summary.crate_id, &self)
+                    .compute_package_id_for_crate_id(summary.crate_id, self)
                     .map_err(|e| CannotGetCrateData {
                         package_spec: summary.crate_id.to_string(),
                         source: Arc::new(e),
                     })?;
                 krate = self.get_or_compute_crate_by_package_id(&source_package_id)?;
-                if let Ok(type_id) = krate.get_type_id_by_path(&summary.path, &self)? {
+                if let Ok(type_id) = krate.get_type_id_by_path(&summary.path, self)? {
                     parent_type_id = type_id;
                 } else {
                     return Ok(Err(UnknownItemPath {
@@ -549,9 +552,11 @@ pub(crate) struct CrateData {
     /// The id of the root item for the crate.
     pub root_item_id: rustdoc_types::Id,
     /// A mapping from the id of an external crate to the information about it.
+    #[allow(clippy::disallowed_types)]
     pub external_crates: std::collections::HashMap<u32, ExternalCrate>,
     /// A mapping from the id of a type to its fully qualified path.
     /// Primarily useful for foreign items that are being re-exported by this crate.
+    #[allow(clippy::disallowed_types)]
     pub paths: std::collections::HashMap<rustdoc_types::Id, ItemSummary>,
     /// The version of the JSON format used by rustdoc.
     pub format_version: u32,
@@ -596,6 +601,7 @@ impl CrateItemIndex {
 #[derive(Debug, Clone)]
 /// See [`CrateItemIndex`] for more information.
 pub(crate) struct EagerCrateItemIndex {
+    #[allow(clippy::disallowed_types)]
     pub index: std::collections::HashMap<rustdoc_types::Id, Item>,
 }
 
@@ -627,11 +633,8 @@ impl CrateCore {
 
 impl Crate {
     #[tracing::instrument(skip_all, name = "index_crate_docs", fields(package.id = package_id.repr()))]
-    fn new(
-        collection: &CrateCollection,
-        krate: rustdoc_types::Crate,
-        package_id: PackageId,
-    ) -> Result<Self, anyhow::Error> {
+    #[allow(clippy::disallowed_types)]
+    fn new(krate: rustdoc_types::Crate, package_id: PackageId) -> Result<Self, anyhow::Error> {
         let mut import_path2id: HashMap<_, _> = krate
             .paths
             .iter()
@@ -658,7 +661,6 @@ impl Crate {
         index_local_types(
             &krate,
             &package_id,
-            collection,
             vec![],
             &mut id2public_import_paths,
             &mut id2private_import_paths,
@@ -806,7 +808,6 @@ impl Crate {
 fn index_local_types<'a>(
     krate: &'a rustdoc_types::Crate,
     package_id: &'a PackageId,
-    collection: &'a CrateCollection,
     mut current_path: Vec<&'a str>,
     public_path_index: &mut HashMap<rustdoc_types::Id, BTreeSet<Vec<String>>>,
     private_path_index: &mut HashMap<rustdoc_types::Id, BTreeSet<Vec<String>>>,
@@ -843,7 +844,6 @@ fn index_local_types<'a>(
                 index_local_types(
                     krate,
                     package_id,
-                    collection,
                     current_path.clone(),
                     public_path_index,
                     private_path_index,
@@ -887,7 +887,6 @@ fn index_local_types<'a>(
                                 index_local_types(
                                     krate,
                                     package_id,
-                                    collection,
                                     current_path.clone(),
                                     public_path_index,
                                     private_path_index,
@@ -899,7 +898,6 @@ fn index_local_types<'a>(
                             index_local_types(
                                 krate,
                                 package_id,
-                                collection,
                                 current_path.clone(),
                                 public_path_index,
                                 private_path_index,
@@ -1074,6 +1072,7 @@ impl RustdocCrateExt for rustdoc_types::Crate {
     }
 }
 
+#[allow(clippy::disallowed_types)]
 fn get_external_crate_name(
     external_crates: &std::collections::HashMap<u32, ExternalCrate>,
     crate_id: u32,
@@ -1099,6 +1098,7 @@ fn get_external_crate_name(
 ///
 /// It panics if the provided crate id doesn't appear in the JSON documentation
 /// for this crate—i.e. if it's not `0` or assigned to one of its transitive dependencies.
+#[allow(clippy::disallowed_types)]
 pub fn compute_package_id_for_crate_id(
     // The package id of the crate whose documentation we are currently processing.
     package_id: &PackageId,
@@ -1157,12 +1157,10 @@ pub fn compute_package_id_for_crate_id(
         .collect();
 
     if package_candidates.is_empty() {
-        Err(anyhow!(
+        panic!(
             "I could not find any crate named `{}` among the dependencies of {}",
-            expected_link_name,
-            package_id
-        ))
-        .unwrap()
+            expected_link_name, package_id
+        )
     }
     if package_candidates.len() == 1 {
         return Ok(package_candidates.first().unwrap().id.to_owned());

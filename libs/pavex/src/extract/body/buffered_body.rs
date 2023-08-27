@@ -211,7 +211,7 @@ impl BufferedBody {
         match to_bytes(limited_body).await {
             Ok(bytes) => Ok(Self { bytes }),
             Err(e) => {
-                if let Some(_) = e.downcast_ref::<http_body::LengthLimitError>() {
+                if e.downcast_ref::<http_body::LengthLimitError>().is_some() {
                     Err(limit_error().into())
                 } else {
                     Err(UnexpectedBufferError { source: e }.into())

@@ -54,7 +54,7 @@ impl PackageIdSpecification {
                 // The source URL for the `git` repository can sometimes contain query parameters,
                 // e.g. `?rev=abcdef`. We need to strip them away, since the specification requires
                 // "hostname+path", no query params (see https://doc.rust-lang.org/cargo/reference/pkgid-spec.html).
-                s.split("?").next().unwrap().to_owned()
+                s.split('?').next().unwrap().to_owned()
             }
         };
         let source = if source.is_empty() {

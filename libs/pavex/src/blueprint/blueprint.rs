@@ -32,10 +32,8 @@ pub struct Blueprint {
     pub nested_blueprints: Vec<NestedBlueprint>,
 }
 
-impl Blueprint {
-    #[track_caller]
-    /// Create a new [`Blueprint`].
-    pub fn new() -> Self {
+impl Default for Blueprint {
+    fn default() -> Self {
         Self {
             creation_location: std::panic::Location::caller().into(),
             constructors: Default::default(),
@@ -43,6 +41,14 @@ impl Blueprint {
             nested_blueprints: Default::default(),
             middlewares: Default::default(),
         }
+    }
+}
+
+impl Blueprint {
+    #[track_caller]
+    /// Create a new [`Blueprint`].
+    pub fn new() -> Self {
+        Self::default()
     }
 
     #[track_caller]

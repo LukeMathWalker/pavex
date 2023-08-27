@@ -193,7 +193,7 @@ impl RawUserComponentDb {
             .iter()
             .map(|nested_bp| QueueItem {
                 parent_scope_id: root_scope_id,
-                nested_bp: &nested_bp,
+                nested_bp,
                 parent_path_prefix: None,
                 current_middleware_chain: current_middleware_chain.clone(),
             })
@@ -265,7 +265,7 @@ impl RawUserComponentDb {
         self.process_middlewares(&bp.middlewares, current_scope_id, current_middleware_chain);
         self.process_routes(
             &bp.routes,
-            &current_middleware_chain,
+            current_middleware_chain,
             current_scope_id,
             path_prefix,
             scope_graph_builder,

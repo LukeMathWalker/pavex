@@ -12,14 +12,20 @@ pub struct Client {
     debug: bool,
 }
 
-impl Client {
-    /// Create a new `Client` with the default configuration.
-    pub fn new() -> Self {
+impl Default for Client {
+    fn default() -> Self {
         Self {
             pavex_cli_path: None,
             color: Color::Auto,
             debug: false,
         }
+    }
+}
+
+impl Client {
+    /// Create a new `Client` with the default configuration.
+    pub fn new() -> Self {
+        Self::default()
     }
 
     /// Convert this `Client` into a `std::process::Command` that will run `pavex_cli`

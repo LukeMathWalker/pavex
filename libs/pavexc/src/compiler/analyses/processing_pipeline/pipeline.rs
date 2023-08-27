@@ -51,12 +51,12 @@ impl RequestHandlerPipeline {
     pub(crate) fn new(
         handler_id: ComponentId,
         module_name: String,
-        mut computation_db: &mut ComputationDb,
-        mut component_db: &mut ComponentDb,
+        computation_db: &mut ComputationDb,
+        component_db: &mut ComponentDb,
         constructible_db: &mut ConstructibleDb,
         package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
-        mut diagnostics: &mut Vec<miette::Error>,
+        diagnostics: &mut Vec<miette::Error>,
     ) -> Result<Self, ()> {
         // Step 1: Determine the sequence of middlewares that the request handler is wrapped in.
         let middleware_ids = component_db
@@ -80,16 +80,16 @@ impl RequestHandlerPipeline {
             let middleware_call_graph = request_scoped_call_graph(
                 middleware_id,
                 &request_scoped_prebuilt_ids,
-                &mut computation_db,
-                &mut component_db,
-                &constructible_db,
-                &mut diagnostics,
+                computation_db,
+                component_db,
+                constructible_db,
+                diagnostics,
             )?;
 
             // Add all request-scoped components initialised by this middleware to the set.
             extract_request_scoped_compute_nodes(
                 &middleware_call_graph.call_graph,
-                &component_db,
+                component_db,
                 &mut request_scoped_prebuilt_ids,
             );
 
@@ -98,12 +98,12 @@ impl RequestHandlerPipeline {
         let handler_call_graph = request_scoped_ordered_call_graph(
             handler_id,
             &request_scoped_prebuilt_ids,
-            &mut computation_db,
-            &mut component_db,
-            &constructible_db,
-            &package_graph,
-            &krate_collection,
-            &mut diagnostics,
+            computation_db,
+            component_db,
+            constructible_db,
+            package_graph,
+            krate_collection,
+            diagnostics,
         )?;
 
         // Step 3: Combine the call graphs together.
@@ -116,7 +116,7 @@ impl RequestHandlerPipeline {
         let mut next_field_types: IndexSet<ComponentId> = IndexSet::new();
         extract_long_lived_inputs(
             &handler_call_graph.call_graph,
-            &component_db,
+            component_db,
             &mut next_field_types,
         );
         let mut middleware_id2next_field_types: HashMap<ComponentId, IndexSet<ComponentId>> =
@@ -139,7 +139,7 @@ impl RequestHandlerPipeline {
             // the set.
             extract_long_lived_inputs(
                 &middleware_call_graph.call_graph,
-                &component_db,
+                component_db,
                 &mut next_field_types,
             );
         }
@@ -161,8 +161,7 @@ impl RequestHandlerPipeline {
                 .iter()
                 .enumerate()
                 .map(|(i, component_id)| {
-                    let component =
-                        component_db.hydrated_component(*component_id, &mut computation_db);
+                    let component = component_db.hydrated_component(*component_id, computation_db);
                     let type_ = component.output_type();
                     // TODO: naming can be improved here.
                     (format!("s_{i}"), type_.to_owned())
@@ -171,11 +170,7 @@ impl RequestHandlerPipeline {
             let next_state_type = PathType {
                 package_id: PackageId::new(GENERATED_APP_PACKAGE_ID),
                 rustdoc_id: None,
-                base_type: vec![
-                    "crate".into(),
-                    module_name.clone().into(),
-                    format!("Next{i}"),
-                ],
+                base_type: vec!["crate".into(), module_name.clone(), format!("Next{i}")],
                 generic_arguments: vec![],
             };
 
@@ -248,12 +243,12 @@ impl RequestHandlerPipeline {
             let middleware_call_graph = request_scoped_ordered_call_graph(
                 bound_middleware_id,
                 &request_scoped_prebuilt_ids,
-                &mut computation_db,
-                &mut component_db,
-                &constructible_db,
-                &package_graph,
-                &krate_collection,
-                &mut diagnostics,
+                computation_db,
+                component_db,
+                constructible_db,
+                package_graph,
+                krate_collection,
+                diagnostics,
             )?;
             middleware_id2stage_data.insert(
                 *middleware_id,

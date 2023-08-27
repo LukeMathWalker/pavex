@@ -83,12 +83,12 @@ impl DependencyGraph {
         // For each component id, we should have at most one node in the dependency graph, no matter the lifecycle.
         let mut node2index = HashMap::<DependencyGraphNode, NodeIndex>::new();
         let mut add_node = |graph: &mut RawDependencyGraph, node: DependencyGraphNode| {
-            if node2index.contains_key(&node) {
-                node2index[&node]
-            } else {
-                let index = graph.add_node(node.clone());
-                node2index.insert(node, index);
+            if let std::collections::hash_map::Entry::Vacant(e) = node2index.entry(node.clone()) {
+                let index = graph.add_node(node);
+                e.insert(index);
                 index
+            } else {
+                node2index[&node]
             }
         };
 
@@ -294,7 +294,7 @@ fn cycle_error(
     cycle_components.reverse();
 
     for (i, dependency_id) in cycle_components.iter().enumerate() {
-        writeln!(&mut error_msg, "").unwrap();
+        writeln!(&mut error_msg).unwrap();
         let dependent_id = if i == 0 {
             *cycle_components.last().unwrap()
         } else {
@@ -335,7 +335,7 @@ fn cycle_error(
         .unwrap();
     }
 
-    let dummy_source = NamedSource::new("".to_string(), "".to_string());
+    let dummy_source = NamedSource::new("", "".to_string());
     let diagnostic_builder = CompilerDiagnostic::builder(dummy_source, anyhow::anyhow!(error_msg));
 
     diagnostic_builder.help(

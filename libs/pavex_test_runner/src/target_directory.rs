@@ -30,7 +30,7 @@ pub struct TargetDirectoryPool {
 
 impl TargetDirectoryPool {
     pub fn new(size: Option<usize>, test_env_dir: &Path) -> Self {
-        let size = size.unwrap_or_else(|| num_cpus::get());
+        let size = size.unwrap_or_else(num_cpus::get);
         // The function signature here is awkward because it doesn't allow us to
         // borrow from the environment in the closure, which in turns means we can't guarantee deterministic names for the target directories.
         // We work around the issue by attaching objects to the pool manually

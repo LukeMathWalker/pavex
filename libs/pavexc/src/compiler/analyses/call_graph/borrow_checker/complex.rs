@@ -94,16 +94,14 @@ pub(super) fn complex_borrow_check(
                         let mut is_blocked = node_relationships.is_consumed_by(node_index)
                             && node_relationships.is_borrowed();
 
-                        if is_blocked {
-                            if copy_checker.is_copy(
+                        if is_blocked && copy_checker.is_copy(
                                 &call_graph,
                                 *neighbour_index,
                                 component_db,
                                 computation_db,
                             ) {
-                                // You can't have a "used after moved" error for a Copy type.
-                                is_blocked = false;
-                            }
+                            // You can't have a "used after moved" error for a Copy type.
+                            is_blocked = false;
                         }
 
                         is_blocked

@@ -117,7 +117,7 @@ impl RustdocGlobalFsCache {
         )?;
         stmt.execute(params![
             project_fingerprint,
-            bincode::serialize(&package_ids.into_iter().map(|s| s.repr()).collect_vec())?
+            bincode::serialize(&package_ids.iter().map(|s| s.repr()).collect_vec())?
         ])?;
 
         Ok(())
@@ -143,7 +143,7 @@ impl RustdocGlobalFsCache {
         };
 
         let package_ids: Vec<&str> = bincode::deserialize(row.get_ref_unwrap(0).as_bytes()?)?;
-        Ok(package_ids.into_iter().map(|s| PackageId::new(s)).collect())
+        Ok(package_ids.into_iter().map(PackageId::new).collect())
     }
 
     /// Initialize the database, creating the file and the relevant tables if they don't exist yet.
@@ -355,7 +355,7 @@ impl ThirdPartyCrateCache {
         cargo_fingerprint: &str,
         connection: &rusqlite::Connection,
     ) -> Result<Option<crate::rustdoc::Crate>, anyhow::Error> {
-        let Some(cache_key) = ThirdPartyCrateCacheKey::build(package_metadata, &cargo_fingerprint) else {
+        let Some(cache_key) = ThirdPartyCrateCacheKey::build(package_metadata, cargo_fingerprint) else {
             return Ok(None);
         };
         // Retrieve from rustdoc's output from cache, if available.
@@ -442,7 +442,7 @@ impl ThirdPartyCrateCache {
         let Some(cache_key) = ThirdPartyCrateCacheKey::build(package_metadata, cargo_fingerprint) else {
             return Ok(());
         };
-        let cached_data = CachedData::new(&krate).context("Failed to serialize docs")?;
+        let cached_data = CachedData::new(krate).context("Failed to serialize docs")?;
         let mut stmt = connection.prepare_cached(
             "INSERT INTO rustdoc_3d_party_crates_cache (
                 crate_name,
@@ -599,7 +599,7 @@ impl<'a> CachedData<'a> {
             }),
         };
         let core = crate::rustdoc::queries::CrateCore {
-            package_id: package_id.clone(),
+            package_id,
             krate: crate_data,
         };
 
@@ -667,7 +667,7 @@ impl<'a> ThirdPartyCrateCacheKey<'a> {
             crate_name: package_metadata.name(),
             crate_source: source,
             crate_version: package_metadata.version().to_string(),
-            cargo_fingerprint: cargo_fingerprint,
+            cargo_fingerprint,
             default_feature_is_enabled,
             // SQLite doesn't support arrays, so we have to serialize these two collections as strings.
             // This is well defined, since the order is well-defined.

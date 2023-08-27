@@ -201,7 +201,7 @@ where
         .arg("--lib");
     let package_id_specs: Vec<_> = package_id_specs.map(|p| p.to_string()).collect();
     for package_id_spec in &package_id_specs {
-        cmd.arg("-p").arg(package_id_spec.to_string());
+        cmd.arg("-p").arg(package_id_spec);
     }
     tracing::Span::current().record("package_id_specs", &package_id_specs.join(", "));
 

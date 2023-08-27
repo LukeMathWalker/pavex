@@ -1,5 +1,6 @@
-use std::collections::{BTreeSet, HashMap};
+use std::collections::BTreeSet;
 
+use ahash::{HashMap, HashMapExt};
 use petgraph::algo::has_path_connecting;
 use petgraph::graphmap::DiGraphMap;
 use petgraph::visit::{IntoNodeIdentifiers, Reversed};
@@ -156,8 +157,7 @@ impl ScopeGraphBuilder {
                     .count()
                     == 0
             })
-            .map(|leaf_id| graph.neighbors_directed(leaf_id, petgraph::Direction::Incoming))
-            .flatten()
+            .flat_map(|leaf_id| graph.neighbors_directed(leaf_id, petgraph::Direction::Incoming))
             .collect::<BTreeSet<_>>();
 
         graph.add_node(application_state);
@@ -210,7 +210,7 @@ impl ScopeGraph {
     ///
     /// Panics if `scope_ids` is empty.
     pub fn find_common_ancestor(&self, scope_ids: Vec<ScopeId>) -> ScopeId {
-        assert!(scope_ids.len() > 0);
+        assert!(!scope_ids.is_empty());
         let mut common_ancestor = scope_ids[0];
         let mut uncovered_scope_ids = scope_ids;
 
