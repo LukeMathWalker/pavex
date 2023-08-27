@@ -25,7 +25,7 @@ impl NonCloneSingleton {
     }
 }
 
-pub struct NonSyncSingleton(std::sync::mpsc::Sender<()>);
+pub struct NonSyncSingleton(std::cell::Cell<()>);
 
 impl Clone for NonSyncSingleton {
     fn clone(&self) -> NonSyncSingleton {
