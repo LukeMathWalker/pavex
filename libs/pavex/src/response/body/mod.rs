@@ -43,7 +43,7 @@ mod typed_body {
     ///
     /// [`Full<Bytes>`](super::raw::Full) is the "canonical" choice if your body is fully
     /// buffered in memory before being transmitted over the network.  
-    /// You need to convert your body type into a buffer ([`Bytes`](super::raw::Bytes))
+    /// You need to convert your body type into a buffer ([`Bytes`])
     /// which is then wrapped in [`Full`](super::raw::Full) to signal that the entire
     /// body is a single "chunk".  
     ///

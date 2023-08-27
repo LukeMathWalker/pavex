@@ -246,10 +246,10 @@ impl<Body> Response<Body> {
     /// Pavex provides several implementations of [`TypedBody`] out of the box,
     /// to cover the most common use cases:
     ///
-    /// - [`String`](std::string::String), [`&'static str`](std::primitive::str)
+    /// - [`String`], [`&'static str`](std::primitive::str)
     ///   and [`Cow<'static, str>`](std::borrow::Cow) for `text/plain; charset=utf-8` responses.
-    /// - [`Vec<u8>`](std::vec::Vec), [`&'static [u8]`](std::primitive::u8),
-    ///  [`Cow<'static, [u8]>`](std::borrow::Cow) and [`Bytes`](bytes::Bytes) for `application/octet-stream` responses.
+    /// - [`Vec<u8>`], [`&'static [u8]`](std::primitive::u8),
+    ///  [`Cow<'static, [u8]>`](std::borrow::Cow) and [`Bytes`] for `application/octet-stream` responses.
     /// - [`Json`](crate::response::body::Json) for `application/json` responses.
     /// - [`Html`](crate::response::body::Html) for `text/html; charset=utf-8` responses.
     ///

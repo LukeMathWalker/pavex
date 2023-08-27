@@ -31,7 +31,7 @@ pub(crate) fn resolve_type(
                 krate_collection.get_canonical_path_by_local_type_id(used_by_package_id, id)?;
             let type_item = krate_collection.get_type_by_global_type_id(&global_type_id);
             // We want to remove any indirections (e.g. `type Foo = Bar;`) and get the actual type.
-            if let ItemEnum::Typedef(typedef) = &type_item.inner {
+            if let ItemEnum::TypeAlias(type_alias) = &type_item.inner {
                 let mut generic_bindings = HashMap::new();
                 // The generic arguments that have been passed to the type alias.
                 // E.g. `u32` in `Foo<u32>` for `type Foo<T=u64> = Bar<T>;`
@@ -46,7 +46,7 @@ pub(crate) fn resolve_type(
                 };
                 // The generic parameters that have been defined for the type alias.
                 // E.g. `T` in `type Foo<T> = Bar<T, u64>;`
-                let generic_param_defs = &typedef.generics.params;
+                let generic_param_defs = &type_alias.generics.params;
                 for (i, generic_param_def) in generic_param_defs.iter().enumerate() {
                     // We also try to handle generic parameters, as long as they have a default value.
                     match &generic_param_def.kind {
@@ -85,7 +85,7 @@ pub(crate) fn resolve_type(
                     }
                 }
                 let type_ = resolve_type(
-                    &typedef.type_,
+                    &type_alias.type_,
                     &global_type_id.package_id,
                     krate_collection,
                     &generic_bindings,
@@ -383,7 +383,9 @@ fn get_trait_generic_bindings(
     generic_bindings: &mut HashMap<String, ResolvedType>,
 ) -> Result<(), anyhow::Error> {
     let inner = &resolved_item.item.inner;
-    let ItemEnum::Trait(trait_item) = inner else { unreachable!() };
+    let ItemEnum::Trait(trait_item) = inner else {
+        unreachable!()
+    };
     // TODO: handle defaults
     for (generic_slot, assigned_parameter) in trait_item
         .generics

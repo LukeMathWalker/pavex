@@ -72,7 +72,9 @@ pub(crate) fn implements_trait(
     let trait_item_id = trait_definition_crate
         .get_type_id_by_path(&expected_trait.base_type, krate_collection)??;
     let trait_item = krate_collection.get_type_by_global_type_id(&trait_item_id);
-    let ItemEnum::Trait(trait_item) = &trait_item.inner else { unreachable!() };
+    let ItemEnum::Trait(trait_item) = &trait_item.inner else {
+        unreachable!()
+    };
 
     // Due to Rust's orphan rule, a trait implementation for a type can live in two places:
     // - In the crate where the type was defined;
@@ -87,9 +89,9 @@ pub(crate) fn implements_trait(
                 .get_type_id_by_path(&our_path_type.base_type, krate_collection)??;
             let type_item = krate_collection.get_type_by_global_type_id(&type_id);
             // We want to see through type aliases here.
-            if let ItemEnum::Typedef(typedef) = &type_item.inner {
+            if let ItemEnum::TypeAlias(type_alias) = &type_item.inner {
                 let mut generic_bindings = HashMap::new();
-                for generic in &typedef.generics.params {
+                for generic in &type_alias.generics.params {
                     // We also try to handle generic parameters, as long as they have a default value.
                     match &generic.kind {
                         GenericParamDefKind::Type {
@@ -112,7 +114,7 @@ pub(crate) fn implements_trait(
                     }
                 }
                 let type_ = resolve_type(
-                    &typedef.type_,
+                    &type_alias.type_,
                     &our_path_type.package_id,
                     krate_collection,
                     &generic_bindings,
@@ -268,30 +270,32 @@ fn is_equivalent(
 ) -> bool {
     match rustdoc_type {
         Type::ResolvedPath(p) => {
-            let ResolvedType::ResolvedPath(our_path_type) = our_type else { return false; };
+            let ResolvedType::ResolvedPath(our_path_type) = our_type else {
+                return false;
+            };
             let rustdoc_type_id = &p.id;
             let Ok((rustdoc_global_type_id, _)) = krate_collection
                 .get_canonical_path_by_local_type_id(used_by_package_id, rustdoc_type_id)
-                else {
-                    tracing::trace!("Failed to look up {:?}", rustdoc_type_id);
-                    return false;
-                };
+            else {
+                tracing::trace!("Failed to look up {:?}", rustdoc_type_id);
+                return false;
+            };
             let rustdoc_item = krate_collection.get_type_by_global_type_id(&rustdoc_global_type_id);
             // We want to see through type aliases
-            if let ItemEnum::Typedef(typedef) = &rustdoc_item.inner {
+            if let ItemEnum::TypeAlias(type_alias) = &rustdoc_item.inner {
                 return is_equivalent(
-                    &typedef.type_,
+                    &type_alias.type_,
                     our_type,
                     krate_collection,
                     used_by_package_id,
                 );
             }
-            let Ok(rustdoc_type_path) = krate_collection
-                .get_canonical_path_by_global_type_id(&rustdoc_global_type_id)
-                else {
-                    tracing::trace!("Failed to look up {:?}", rustdoc_global_type_id);
-                    return false;
-                };
+            let Ok(rustdoc_type_path) =
+                krate_collection.get_canonical_path_by_global_type_id(&rustdoc_global_type_id)
+            else {
+                tracing::trace!("Failed to look up {:?}", rustdoc_global_type_id);
+                return false;
+            };
             // This is a much weaker check than the one we should actually be performing.
             // We are only checking that the base path of the two types is the same, without inspecting
             // where bounds or which generic parameters are being used.

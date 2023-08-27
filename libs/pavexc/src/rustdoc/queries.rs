@@ -333,10 +333,10 @@ impl CrateCollection {
             // This might take multiple iterations, since the alias might point to another
             // alias.
             loop {
-                let ItemEnum::Typedef(typedef) = &parent.inner else {
+                let ItemEnum::TypeAlias(type_alias) = &parent.inner else {
                     break;
                 };
-                let rustdoc_types::Type::ResolvedPath(p) = &typedef.type_ else {
+                let rustdoc_types::Type::ResolvedPath(p) = &type_alias.type_ else {
                     break;
                 };
                 // The aliased type might be a re-export of a foreign type,
@@ -913,9 +913,9 @@ fn index_local_types<'a>(
         | ItemEnum::Function(_)
         | ItemEnum::Enum(_)
         | ItemEnum::Struct(_)
-        | ItemEnum::Typedef(_) => {
+        | ItemEnum::TypeAlias(_) => {
             let name = current_item.name.as_deref().expect(
-                "All 'struct', 'function', 'enum', 'typedef' and 'trait' items have a 'name' property",
+                "All 'struct', 'function', 'enum', 'type_alias' and 'trait' items have a 'name' property",
             );
             current_path.push(name);
             let path = current_path.into_iter().map(|s| s.to_string()).collect();
@@ -1038,7 +1038,7 @@ impl RustdocKindExt for ItemEnum {
             ItemEnum::Trait(_) => "a trait",
             ItemEnum::TraitAlias(_) => "a trait alias",
             ItemEnum::Impl(_) => "an impl block",
-            ItemEnum::Typedef(_) => "a type definition",
+            ItemEnum::TypeAlias(_) => "a type alias",
             ItemEnum::OpaqueTy(_) => "an opaque type",
             ItemEnum::Constant(_) => "a constant",
             ItemEnum::Static(_) => "a static",

@@ -86,7 +86,7 @@ fn init_telemetry() -> FlushGuard {
         .with_timer(tracing_subscriber::fmt::time::uptime());
     let (chrome_layer, guard) = ChromeLayerBuilder::new().include_args(true).build();
     let filter_layer = EnvFilter::try_from_default_env()
-        .or_else(|_| EnvFilter::try_new("info,pavex=trace"))
+        .or_else(|_| EnvFilter::try_new("info,pavexc=trace"))
         .unwrap();
 
     tracing_subscriber::registry()

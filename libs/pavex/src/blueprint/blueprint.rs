@@ -33,6 +33,7 @@ pub struct Blueprint {
 }
 
 impl Default for Blueprint {
+    #[track_caller]
     fn default() -> Self {
         Self {
             creation_location: std::panic::Location::caller().into(),

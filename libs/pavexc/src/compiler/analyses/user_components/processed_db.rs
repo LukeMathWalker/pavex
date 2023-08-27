@@ -213,9 +213,10 @@ fn precompute_crate_docs(
         path.collect_package_ids(&mut package_ids);
     }
     if let Err(e) = krate_collection.bootstrap_collection(package_ids.into_iter().cloned()) {
-        let e = e.context(
+        let e = anyhow::anyhow!(e).context(
             "I failed to compute the JSON documentation for one or more crates in the workspace.",
         );
+        // TODO: This throws away the error history, it sucks.
         diagnostics.push(miette!(e));
     }
 }
