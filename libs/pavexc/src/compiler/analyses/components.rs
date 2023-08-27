@@ -1163,7 +1163,11 @@ impl ComponentDb {
                     .bind_generic_type_parameters(bindings)
                     .into_owned();
                 let bound_computation_id = computation_db.get_or_intern(bound_computation);
-                let bound_component_id = self
+                
+                // ^ This registers all "derived" constructors as well (borrowed references, matchers, etc.)
+                // but it doesn't take care of the error handler, in case `id` pointed to a fallible constructor.
+                // We need to do that manually.
+                self
                     .get_or_intern_constructor(
                         bound_computation_id,
                         lifecycle,
@@ -1171,11 +1175,7 @@ impl ComponentDb {
                         cloning_strategy,
                         computation_db,
                     )
-                    .unwrap();
-                // ^ This registers all "derived" constructors as well (borrowed references, matchers, etc.)
-                // but it doesn't take care of the error handler, in case `id` pointed to a fallible constructor.
-                // We need to do that manually.
-                bound_component_id
+                    .unwrap()
             }
             HydratedComponent::WrappingMiddleware(mw) => {
                 let bound_callable = mw.callable.bind_generic_type_parameters(bindings);

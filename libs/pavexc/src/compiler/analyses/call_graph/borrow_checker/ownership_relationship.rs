@@ -106,27 +106,40 @@ impl NodeRelationships<'_> {
     /// Remove all "borrows" relationships from the current node.
     /// It also removes the "borrower" relationships in the other direction.
     pub(super) fn remove_all_borrows(&mut self) {
-        self.relationships
+        if let Some(borrowed) = self
+            .relationships
             .node_id2borrowed_ids
             .get_mut(&self.node_index)
-            .map(|borrowed| {
-                for borrowed_node_index in borrowed.iter() {
-                    if let Some(borrowers) = self.relationships
-                        .node_id2borrower_ids
-                        .get_mut(&borrowed_node_index) { borrowers.remove(&self.node_index); }
+        {
+            for borrowed_node_index in borrowed.iter() {
+                if let Some(borrowers) = self
+                    .relationships
+                    .node_id2borrower_ids
+                    .get_mut(&borrowed_node_index)
+                {
+                    borrowers.remove(&self.node_index);
                 }
-                borrowed.clear();
-            });
+            }
+            borrowed.clear();
+        }
     }
 
     /// Remove a consumer relationship with respect to `consumer_index` from the current node, if one exists.
     /// It also removes the "consumed" relationship in the other direction.
     pub(super) fn remove_consumer(&mut self, consumer_index: NodeIndex) {
-        if let Some(consumers) = self.relationships
+        if let Some(consumers) = self
+            .relationships
             .node_id2consumer_ids
-            .get_mut(&self.node_index) { consumers.remove(&consumer_index); }
-        if let Some(consumed) = self.relationships
+            .get_mut(&self.node_index)
+        {
+            consumers.remove(&consumer_index);
+        }
+        if let Some(consumed) = self
+            .relationships
             .node_id2consumed_ids
-            .get_mut(&consumer_index) { consumed.remove(&self.node_index); }
+            .get_mut(&consumer_index)
+        {
+            consumed.remove(&self.node_index);
+        }
     }
 }
