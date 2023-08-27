@@ -305,7 +305,7 @@ impl AppDiagnostics {
             for handler_graph in handler_graphs {
                 file.write_all(handler_graph.as_bytes())?;
                 // Add a newline between graphs for readability
-                file.write("\n".as_bytes())?;
+                file.write_all("\n".as_bytes())?;
             }
         }
         let mut file = fs_err::OpenOptions::new()
@@ -330,7 +330,7 @@ impl AppDiagnostics {
             for handler_graph in handler_graphs {
                 file.write_all(handler_graph.as_bytes())?;
                 // Add a newline between graphs for readability
-                file.write("\n".as_bytes())?;
+                file.write_all("\n".as_bytes())?;
             }
         }
         file.write_all(self.application_state.as_bytes())?;

@@ -161,8 +161,7 @@ impl RequestHandlerPipeline {
                 .iter()
                 .enumerate()
                 .map(|(i, component_id)| {
-                    let component =
-                        component_db.hydrated_component(*component_id, &mut computation_db);
+                    let component = component_db.hydrated_component(*component_id, computation_db);
                     let type_ = component.output_type();
                     // TODO: naming can be improved here.
                     (format!("s_{i}"), type_.to_owned())
@@ -171,11 +170,7 @@ impl RequestHandlerPipeline {
             let next_state_type = PathType {
                 package_id: PackageId::new(GENERATED_APP_PACKAGE_ID),
                 rustdoc_id: None,
-                base_type: vec![
-                    "crate".into(),
-                    module_name.clone().into(),
-                    format!("Next{i}"),
-                ],
+                base_type: vec!["crate".into(), module_name.clone(), format!("Next{i}")],
                 generic_arguments: vec![],
             };
 
@@ -248,12 +243,12 @@ impl RequestHandlerPipeline {
             let middleware_call_graph = request_scoped_ordered_call_graph(
                 bound_middleware_id,
                 &request_scoped_prebuilt_ids,
-                &mut computation_db,
-                &mut component_db,
-                &constructible_db,
-                &package_graph,
-                &krate_collection,
-                &mut diagnostics,
+                computation_db,
+                component_db,
+                constructible_db,
+                package_graph,
+                krate_collection,
+                diagnostics,
             )?;
             middleware_id2stage_data.insert(
                 *middleware_id,

@@ -46,7 +46,7 @@ impl<'a> WrappingMiddleware<'a> {
 
         // We verify that exactly one of the input parameters is a `Next<_>`.
         let next_type = {
-            let next_parameters: Vec<_> = c.inputs.iter().filter(|t| is_next(*t)).collect();
+            let next_parameters: Vec<_> = c.inputs.iter().filter(|t| is_next(t)).collect();
             if next_parameters.is_empty() {
                 return Err(MustTakeNextAsInputParameter);
             }

@@ -157,14 +157,14 @@ impl GeneratedApp {
                 let members = {
                     let mut members = toml_edit::Array::new();
                     members.push(".".to_string());
-                    members.push(member_path.clone());
+                    members.push(member_path);
                     toml_edit::Value::Array(members)
                 };
                 let mut ws = toml_edit::Table::new();
-                ws.insert("members".into(), toml_edit::Item::Value(members));
+                ws.insert("members", toml_edit::Item::Value(members));
                 toml_edit::Item::Table(ws)
             };
-            root_manifest.insert("workspace".into(), workspace);
+            root_manifest.insert("workspace", workspace);
         } else {
             let workspace = root_manifest
                 .get_mut("workspace")
@@ -183,10 +183,10 @@ impl GeneratedApp {
                 let members = {
                     let mut members = toml_edit::Array::new();
                     members.push(".".to_string());
-                    members.push(member_path.clone());
+                    members.push(member_path);
                     toml_edit::Value::Array(members)
                 };
-                workspace.insert("members".into(), toml_edit::Item::Value(members));
+                workspace.insert("members", toml_edit::Item::Value(members));
             }
         }
         let contents = root_manifest.to_string();

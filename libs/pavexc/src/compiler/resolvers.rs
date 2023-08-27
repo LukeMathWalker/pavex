@@ -56,7 +56,7 @@ pub(crate) fn resolve_type(
                                 if let GenericArg::Type(provided_arg) = provided_arg {
                                     resolve_type(
                                         provided_arg,
-                                        &used_by_package_id,
+                                        used_by_package_id,
                                         krate_collection,
                                         &generic_bindings,
                                     )?

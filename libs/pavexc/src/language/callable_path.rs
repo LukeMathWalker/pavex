@@ -150,9 +150,10 @@ impl CallPath {
                             | GenericArgument::AssocConst(_)
                             | GenericArgument::Constraint(_)
                             | GenericArgument::Const(_)
-                            | _ => todo!(
+                             => todo!(
                                 "We can only handle concrete types and lifetimes as generic parameters for the time being."
                             ),
+                            a => todo!("Unknown class of generic arguments: {:?}", a),
                         };
                         arguments.push(argument)
                     }

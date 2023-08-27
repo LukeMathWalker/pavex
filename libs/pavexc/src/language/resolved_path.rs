@@ -555,7 +555,7 @@ impl ResolvedPath {
                 qself
                     .type_
                     .resolve(krate_collection)
-                    .map_err(|e| UnknownPath(self.to_owned(), Arc::new(e.into())))
+                    .map_err(|e| UnknownPath(self.to_owned(), Arc::new(e)))
             })
             .transpose()?;
         Ok((ty, qself_ty))
