@@ -65,7 +65,7 @@ impl ConstructibleDb {
         self_
     }
 
-    fn _build(component_db: &mut ComponentDb, computation_db: &mut ComputationDb) -> Self {
+    fn _build(component_db: &ComponentDb, computation_db: &ComputationDb) -> Self {
         let mut self_ = Self {
             scope_id2constructibles: IndexMap::new(),
         };
@@ -241,7 +241,8 @@ impl ConstructibleDb {
                 let mut snippets = Vec::new();
                 let mut source_code = None;
                 'inner: for (_, component_id) in &component_ids {
-                    let Some(user_component_id) = component_db.user_component_id(**component_id) else {
+                    let Some(user_component_id) = component_db.user_component_id(**component_id)
+                    else {
                         continue 'inner;
                     };
                     let location = component_db
@@ -609,9 +610,7 @@ impl ConstructibleDb {
             match registration_span(singleton_id, package_graph, component_db, diagnostics) {
                 Some((source, source_span)) => CompilerDiagnostic::builder(source, e)
                     .label(source_span.labeled("The singleton was registered here".into())),
-                None => {
-                    CompilerDiagnostic::builder(NamedSource::new("", "".to_string()), e)
-                }
+                None => CompilerDiagnostic::builder(NamedSource::new("", "".to_string()), e),
             };
 
         if let Some((source, source_span)) =

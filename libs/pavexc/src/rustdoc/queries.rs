@@ -333,8 +333,12 @@ impl CrateCollection {
             // This might take multiple iterations, since the alias might point to another
             // alias.
             loop {
-                let ItemEnum::Typedef(typedef) = &parent.inner else { break; };
-                let rustdoc_types::Type::ResolvedPath(p) = &typedef.type_ else { break; };
+                let ItemEnum::Typedef(typedef) = &parent.inner else {
+                    break;
+                };
+                let rustdoc_types::Type::ResolvedPath(p) = &typedef.type_ else {
+                    break;
+                };
                 // The aliased type might be a re-export of a foreign type,
                 // therefore we go through the summary here rather than
                 // going straight for a local id lookup.
@@ -1153,12 +1157,10 @@ pub fn compute_package_id_for_crate_id(
         .collect();
 
     if package_candidates.is_empty() {
-        Err(anyhow!(
+        panic!(
             "I could not find any crate named `{}` among the dependencies of {}",
-            expected_link_name,
-            package_id
-        ))
-        .unwrap()
+            expected_link_name, package_id
+        )
     }
     if package_candidates.len() == 1 {
         return Ok(package_candidates.first().unwrap().id.to_owned());
