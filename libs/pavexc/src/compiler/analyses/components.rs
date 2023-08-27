@@ -701,7 +701,7 @@ impl ComponentDb {
                 .get_middleware_ids(request_handler_id)
             {
                 if let Some(middleware_component_id) =
-                    user_component_id2component_id.get(&middleware_id)
+                    user_component_id2component_id.get(middleware_id)
                 {
                     middleware_chain.push(*middleware_component_id);
                 }
@@ -830,9 +830,9 @@ impl ComponentDb {
         Ok(constructor_id)
     }
 
-    pub fn get_or_intern_wrapping_middleware<'a>(
+    pub fn get_or_intern_wrapping_middleware(
         &mut self,
-        callable: Cow<'a, Callable>,
+        callable: Cow<'_, Callable>,
         scope_id: ScopeId,
         computation_db: &mut ComputationDb,
     ) -> ComponentId {
@@ -1166,7 +1166,7 @@ impl ComponentDb {
                 let bound_component_id = self
                     .get_or_intern_constructor(
                         bound_computation_id,
-                        lifecycle.clone(),
+                        lifecycle,
                         scope_id,
                         cloning_strategy,
                         computation_db,

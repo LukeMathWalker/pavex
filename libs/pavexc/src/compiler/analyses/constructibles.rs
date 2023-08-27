@@ -305,8 +305,7 @@ impl ConstructibleDb {
                                 "Register your constructor against this blueprint".to_string(),
                             )
                         });
-                        if let Some(label) = label {
-                            Some(HelpWithSnippet::new(
+                        label.map(|label| HelpWithSnippet::new(
                                 format!(
                                     "If you want to share a single instance of `{type_:?}`, remove \
                                     constructors for `{type_:?}` until there is only one left. It should \
@@ -315,9 +314,6 @@ impl ConstructibleDb {
                                 ),
                                 AnnotatedSnippet::new(source, label),
                             ))
-                        } else {
-                            None
-                        }
                     }
 
                     let common_ancestor_scope_id = component_db.scope_graph().find_common_ancestor(
@@ -614,7 +610,7 @@ impl ConstructibleDb {
                 Some((source, source_span)) => CompilerDiagnostic::builder(source, e)
                     .label(source_span.labeled("The singleton was registered here".into())),
                 None => {
-                    CompilerDiagnostic::builder(NamedSource::new("".to_string(), "".to_string()), e)
+                    CompilerDiagnostic::builder(NamedSource::new("", "".to_string()), e)
                 }
             };
 

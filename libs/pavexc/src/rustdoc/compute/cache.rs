@@ -667,7 +667,7 @@ impl<'a> ThirdPartyCrateCacheKey<'a> {
             crate_name: package_metadata.name(),
             crate_source: source,
             crate_version: package_metadata.version().to_string(),
-            cargo_fingerprint: cargo_fingerprint,
+            cargo_fingerprint,
             default_feature_is_enabled,
             // SQLite doesn't support arrays, so we have to serialize these two collections as strings.
             // This is well defined, since the order is well-defined.

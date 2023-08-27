@@ -63,7 +63,7 @@ pub(super) fn get_clone_component_id(
             position: clone_path.segments.len(),
             type_: output.clone().into(),
         }),
-        package_id: clone_path.package_id.clone(),
+        package_id: clone_path.package_id,
     };
 
     let clone_callable = Callable {

@@ -110,13 +110,10 @@ impl NodeRelationships<'_> {
             .node_id2borrowed_ids
             .get_mut(&self.node_index)
             .map(|borrowed| {
-                for borrowed_node_index in borrowed.iter().copied() {
-                    self.relationships
+                for borrowed_node_index in borrowed.iter() {
+                    if let Some(borrowers) = self.relationships
                         .node_id2borrower_ids
-                        .get_mut(&borrowed_node_index)
-                        .map(|borrowers| {
-                            borrowers.remove(&self.node_index);
-                        });
+                        .get_mut(&borrowed_node_index) { borrowers.remove(&self.node_index); }
                 }
                 borrowed.clear();
             });
@@ -125,17 +122,11 @@ impl NodeRelationships<'_> {
     /// Remove a consumer relationship with respect to `consumer_index` from the current node, if one exists.
     /// It also removes the "consumed" relationship in the other direction.
     pub(super) fn remove_consumer(&mut self, consumer_index: NodeIndex) {
-        self.relationships
+        if let Some(consumers) = self.relationships
             .node_id2consumer_ids
-            .get_mut(&self.node_index)
-            .map(|consumers| {
-                consumers.remove(&consumer_index);
-            });
-        self.relationships
+            .get_mut(&self.node_index) { consumers.remove(&consumer_index); }
+        if let Some(consumed) = self.relationships
             .node_id2consumed_ids
-            .get_mut(&consumer_index)
-            .map(|consumed| {
-                consumed.remove(&self.node_index);
-            });
+            .get_mut(&consumer_index) { consumed.remove(&self.node_index); }
     }
 }

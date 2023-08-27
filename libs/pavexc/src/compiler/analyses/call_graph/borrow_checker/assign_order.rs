@@ -141,7 +141,6 @@ impl OrderedCallGraph {
                     nodes_to_visit.extend(
                         call_graph
                             .neighbors_directed(node_index, Direction::Incoming)
-                            .into_iter()
                             .filter(|neighbour_index| {
                                 !node_id2position.contains_key(neighbour_index)
                             }),
@@ -161,15 +160,13 @@ impl OrderedCallGraph {
                             let node_relationships = ownership_relationships.node(neighbour_index);
                             let mut is_blocked = node_relationships.is_consumed_by(node_index)
                                 && node_relationships.is_borrowed();
-                            if is_blocked {
-                                if copy_checker.is_copy(
+                            if is_blocked && copy_checker.is_copy(
                                     &call_graph,
                                     neighbour_index,
                                     component_db,
                                     computation_db,
                                 ) {
-                                    is_blocked = false;
-                                }
+                                is_blocked = false;
                             }
                             is_blocked
                         }
@@ -189,7 +186,6 @@ impl OrderedCallGraph {
                     nodes_to_visit.extend(
                         call_graph
                             .neighbors_directed(node_index, Direction::Incoming)
-                            .into_iter()
                             .filter(|neighbour_index| {
                                 !(node_id2position.contains_key(neighbour_index)
                                     || parked_nodes.contains(neighbour_index))
