@@ -115,7 +115,7 @@ impl NodeRelationships<'_> {
                 if let Some(borrowers) = self
                     .relationships
                     .node_id2borrower_ids
-                    .get_mut(&borrowed_node_index)
+                    .get_mut(borrowed_node_index)
                 {
                     borrowers.remove(&self.node_index);
                 }
