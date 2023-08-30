@@ -73,10 +73,28 @@ impl RequestHandlerPipeline {
                     let field_name = next_state
                         .field_bindings
                         .iter()
-                        .find(|(_, ty_)| ty_ == &input)
-                        .unwrap()
-                        .0;
-                    format_ident!("{}", field_name)
+                        .find(|(_, ty_)| ty_ == &input);
+                    if let Some((field_name, _)) = field_name {
+                        let ident = format_ident!("{}", field_name);
+                        quote! {
+                            self.#ident
+                        }
+                    } else {
+                        if let ResolvedType::Reference(r) = input {
+                            let field_name = next_state
+                                .field_bindings
+                                .iter()
+                                .find(|(_, ty_)| *ty_ == r.inner.as_ref())
+                                .unwrap()
+                                .0;
+                            let ident = format_ident!("{}", field_name);
+                            quote! {
+                                &self.#ident
+                            }
+                        } else {
+                            panic!("Could not find field name for input type `{:?}` in `Next`'s state, `{:?}`", input, next_state.field_bindings);
+                        }
+                    }
                 })
                 .collect();
             let callable_path = &next_stage.fn_.sig.ident;
@@ -87,7 +105,7 @@ impl RequestHandlerPipeline {
 
                     fn into_future(self) -> Self::IntoFuture {
                         Box::pin(async {
-                            #callable_path(#(self.#inputs),*).await
+                            #callable_path(#(#inputs),*).await
                         })
                     }
                 }
