@@ -16,6 +16,8 @@ pub fn blueprint() -> Blueprint {
         Lifecycle::Singleton,
     );
 
+    bp.wrap(f!(crate::telemetry::logger));
+
     bp.nest_at("/articles", routes::articles::articles_bp());
     bp.nest_at("/profiles", routes::profiles::profiles_bp());
     bp.nest(routes::users::users_bp());
