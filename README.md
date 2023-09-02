@@ -106,6 +106,7 @@ We publish project updates every 4 weeks:
 - [Progress report #3](https://www.lpalmieri.com/posts/pavex-progress-report-03/) [April 2023]
 - [Progress report #4](https://www.lpalmieri.com/posts/pavex-progress-report-04/) [May 2023]
 - [Progress report #5](https://www.lpalmieri.com/posts/pavex-progress-report-05/) [June 2023]
+- [Progress report #6](https://www.lpalmieri.com/posts/pavex-progress-report-06/) [August 2023]
 
 
 ## Examples
