@@ -118,7 +118,7 @@ You can see Pavex at work in the [`/examples` folder](./examples):
   the endpoints it exposes and their request handlers, as well as the required constructors for the application state;
 - In [`examples/skeleton/app_blueprint/src/bin.rs`](./examples/skeleton/app_blueprint/src/bin.rs) we serialize the `Blueprint` and
   invoke Pavex's CLI to generate the server code that will execute at runtime, which you can find in
-  [`examples/skeleton/app_server_sdk/src/lib.rs`](./examples/skeleeton/app_server_sdk/src/lib.rs).
+  [`examples/skeleton/app_server_sdk/src/lib.rs`](./examples/skeleton/app_server_sdk/src/lib.rs).
 
 In [`examples/skeleton/blueprint.ron`](./examples/skeleton/blueprint.ron) you can have a peek at what
 the `Blueprint` looks like when serialized.
