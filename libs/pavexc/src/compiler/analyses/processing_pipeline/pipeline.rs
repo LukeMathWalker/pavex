@@ -154,6 +154,7 @@ impl RequestHandlerPipeline {
         // make the call graph for each middleware concrete—i.e. we can replace the generic
         // `Next<_>` parameter with a concrete type (that we will codegen later on).
         let mut middleware_id2stage_data = IndexMap::new();
+        let mut request_scoped_prebuilt_ids = IndexSet::new();
         for (i, (middleware_id, next_state_types)) in
             middleware_id2next_field_types.iter().enumerate()
         {
@@ -201,7 +202,9 @@ impl RequestHandlerPipeline {
 
             // Since we now have the concrete type of the generic in `Next<_>`, we can bind
             // the generic type parameter of the middleware to that concrete type.
-            let HydratedComponent::WrappingMiddleware(mw) = component_db.hydrated_component(*middleware_id, computation_db) else {
+            let HydratedComponent::WrappingMiddleware(mw) =
+                component_db.hydrated_component(*middleware_id, computation_db)
+            else {
                 unreachable!()
             };
             let next_input = &mw.input_types()[mw.next_input_index()];
@@ -224,7 +227,9 @@ impl RequestHandlerPipeline {
                 computation_db,
             );
 
-            let HydratedComponent::WrappingMiddleware(bound_mw) = component_db.hydrated_component(bound_middleware_id, computation_db) else {
+            let HydratedComponent::WrappingMiddleware(bound_mw) =
+                component_db.hydrated_component(bound_middleware_id, computation_db)
+            else {
                 unreachable!()
             };
             // Force the constructibles database to bind a constructor for `Next<{NextState}>`.
@@ -250,6 +255,12 @@ impl RequestHandlerPipeline {
                 krate_collection,
                 diagnostics,
             )?;
+            // Add all request-scoped components initialised by this middleware to the set.
+            extract_request_scoped_compute_nodes(
+                &middleware_call_graph.call_graph,
+                component_db,
+                &mut request_scoped_prebuilt_ids,
+            );
             middleware_id2stage_data.insert(
                 *middleware_id,
                 MiddlewareData {
@@ -279,6 +290,19 @@ impl RequestHandlerPipeline {
             current_stage: Some(0),
         }
     }
+
+    /// Print a representation of the pipeline in graphviz's .DOT format, geared towards
+    /// debugging.
+    #[allow(unused)]
+    pub(crate) fn print_debug_dot(
+        &self,
+        component_db: &ComponentDb,
+        computation_db: &ComputationDb,
+    ) {
+        for graph in self.graph_iter() {
+            graph.print_debug_dot(component_db, computation_db)
+        }
+    }
 }
 
 /// Extract the set of request-scoped and singleton components that are used as inputs
@@ -291,8 +315,12 @@ fn extract_long_lived_inputs(
     buffer: &mut IndexSet<ComponentId>,
 ) {
     for node in call_graph.node_weights() {
-        let CallGraphNode::InputParameter { source, .. } = node else { continue; };
-        let InputParameterSource::Component(component_id) = source else { continue; };
+        let CallGraphNode::InputParameter { source, .. } = node else {
+            continue;
+        };
+        let InputParameterSource::Component(component_id) = source else {
+            continue;
+        };
         assert_ne!(
             component_db.lifecycle(*component_id),
             Some(&Lifecycle::Transient),
@@ -308,7 +336,9 @@ fn extract_request_scoped_compute_nodes(
     buffer: &mut IndexSet<ComponentId>,
 ) {
     for node in call_graph.node_weights() {
-        let CallGraphNode::Compute { component_id, .. } = node else { continue; };
+        let CallGraphNode::Compute { component_id, .. } = node else {
+            continue;
+        };
         if component_db.lifecycle(*component_id) == Some(&Lifecycle::RequestScoped) {
             buffer.insert(*component_id);
         }

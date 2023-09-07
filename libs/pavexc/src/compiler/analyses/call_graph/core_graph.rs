@@ -253,11 +253,7 @@ where
             }
             'inner: {
                 let node = call_graph[node_index].clone();
-                let CallGraphNode::Compute {
-                    component_id,
-                    ..
-                } = node else
-                {
+                let CallGraphNode::Compute { component_id, .. } = node else {
                     break 'inner;
                 };
                 if let Some(error_handler_id) = component_db.error_handler_id(component_id) {
@@ -282,8 +278,10 @@ where
             'inner: {
                 let node = call_graph[node_index].clone();
                 let CallGraphNode::Compute {
-                    component_id, n_allowed_invocations,
-                } = node else {
+                    component_id,
+                    n_allowed_invocations,
+                } = node
+                else {
                     break 'inner;
                 };
                 let Some(transformer_ids) = component_db.transformer_ids(component_id) else {
@@ -367,6 +365,68 @@ where
     })
 }
 
+impl CallGraph {
+    /// Print a representation of the [`CallGraph`] in graphviz's .DOT format, geared towards
+    /// debugging.
+    #[allow(unused)]
+    pub(crate) fn print_debug_dot(
+        &self,
+        component_db: &ComponentDb,
+        computation_db: &ComputationDb,
+    ) {
+        eprintln!("{}", self.debug_dot(component_db, computation_db));
+    }
+
+    /// Return a representation of the [`CallGraph`] in graphviz's .DOT format, geared towards
+    /// debugging.
+    #[allow(unused)]
+    pub(crate) fn debug_dot(
+        &self,
+        component_db: &ComponentDb,
+        computation_db: &ComputationDb,
+    ) -> String {
+        let config = [
+            petgraph::dot::Config::EdgeNoLabel,
+            petgraph::dot::Config::NodeNoLabel,
+        ];
+        format!(
+            "{:?}",
+            petgraph::dot::Dot::with_attr_getters(
+                &self.call_graph,
+                &config,
+                &|_, edge| match edge.weight() {
+                    CallGraphEdgeMetadata::Move => "".to_string(),
+                    CallGraphEdgeMetadata::SharedBorrow => "label = \"&\"".to_string(),
+                },
+                &|_, (id, node)| {
+                    match node {
+                        CallGraphNode::Compute { component_id, .. } => {
+                            match component_db
+                                .hydrated_component(*component_id, computation_db)
+                                .computation()
+                            {
+                                Computation::MatchResult(m) => {
+                                    format!("label = \"{:?} -> {:?}\"", m.input, m.output)
+                                }
+                                Computation::Callable(c) => {
+                                    format!("label = \"{c:?}\"")
+                                }
+                                Computation::FrameworkItem(i) => {
+                                    format!("label = \"{i:?}\"")
+                                }
+                            }
+                        }
+                        CallGraphNode::InputParameter { type_, .. } => {
+                            format!("label = \"{type_:?}\"")
+                        }
+                        CallGraphNode::MatchBranching => format!("label = \"`match`\""),
+                    }
+                },
+            )
+        )
+    }
+}
+
 /// We traverse the graph looking for fallible compute nodes.
 /// For each of them we add a `MatchBranching` node, in between the ancestor `Compute` node
 /// for a `Result` type and the corresponding descendants `MatchResult` nodes.
@@ -392,9 +452,7 @@ fn inject_match_branching_nodes(
     let indexes = call_graph.node_indices().collect::<Vec<_>>();
     for node_index in indexes {
         let node = call_graph[node_index].clone();
-        let CallGraphNode::Compute {
-            component_id, ..
-        } = node else {
+        let CallGraphNode::Compute { component_id, .. } = node else {
             continue;
         };
         let Some((ok_match_id, err_match_id)) = component_db.match_ids(component_id) else {
@@ -463,7 +521,13 @@ fn take_references_as_inputs_if_they_suffice(
         .collect::<Vec<_>>();
     for node_index in indexes {
         let node = &call_graph[node_index];
-        let CallGraphNode::InputParameter { source, type_: input_type } = node else { continue; };
+        let CallGraphNode::InputParameter {
+            source,
+            type_: input_type,
+        } = node
+        else {
+            continue;
+        };
         match input_type {
             ResolvedType::Reference(_) => continue,
             _ => {
