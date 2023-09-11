@@ -68,6 +68,7 @@ pub(super) fn get_clone_component_id(
 
     let clone_callable = Callable {
         is_async: false,
+        takes_self_as_ref: true,
         output: Some(output.clone()),
         path: type_clone_path,
         inputs: vec![ResolvedType::Reference(TypeReference {

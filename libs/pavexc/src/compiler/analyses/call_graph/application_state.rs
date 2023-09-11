@@ -63,6 +63,7 @@ pub(crate) fn application_state_call_graph(
     };
     let application_state_constructor = Callable {
         is_async: false,
+        takes_self_as_ref: false,
         path: application_state_type.resolved_path(),
         output: Some(application_state_type.clone().into()),
         inputs: {
@@ -184,6 +185,7 @@ pub(crate) fn application_state_call_graph(
             };
             Callable {
                 is_async: false,
+                takes_self_as_ref: false,
                 output: Some(application_state_result.clone().into()),
                 path: ResolvedPath {
                     segments: ok_wrapper_path,
@@ -206,6 +208,7 @@ pub(crate) fn application_state_call_graph(
             };
             Callable {
                 is_async: false,
+                takes_self_as_ref: false,
                 output: Some(application_state_result.into()),
                 path: ResolvedPath {
                     segments: err_wrapper_path,
@@ -258,6 +261,7 @@ pub(crate) fn application_state_call_graph(
                 *n_duplicates += 1;
                 let error_variant_constructor = Callable {
                     is_async: false,
+                    takes_self_as_ref: false,
                     path: ResolvedPath {
                         segments: vec![
                             ResolvedPathSegment {

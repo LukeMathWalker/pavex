@@ -20,6 +20,12 @@ pub struct Callable {
     /// It is **NOT** set to `true` if the function doesn't use the `async` keyword but returns
     /// a type that implements the `Future` trait.
     pub is_async: bool,
+    /// `true` if the first input parameter to the callable is `&self` or `&mut self`.  
+    /// This is relevant to determine borrow relationships between the callable inputs and outputs
+    /// in case some lifetime parameters were elided.
+    /// 
+    /// See https://doc.rust-lang.org/nomicon/lifetime-elision.html for more details.
+    pub takes_self_as_ref: bool,
     /// `None` if the callable returns the unit type (`()`).
     /// Otherwise, the type of the callable return value.
     pub output: Option<ResolvedType>,
