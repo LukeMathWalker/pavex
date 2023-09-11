@@ -19,6 +19,8 @@ use crate::language::{CallPath, InvalidCallPath, ResolvedType, Tuple, TypeRefere
 use crate::rustdoc::{CrateCollection, CORE_PACKAGE_ID};
 use crate::rustdoc::{ResolvedItemWithParent, TOOLCHAIN_CRATES};
 
+use super::resolved_type::GenericLifetimeParameter;
+
 /// A resolved import path.
 ///
 /// What does "resolved" mean in this contest?
@@ -126,10 +128,10 @@ impl ResolvedPathType {
                             }
                             ResolvedPathGenericArgument::Lifetime(l) => match l {
                                 ResolvedPathLifetime::Static => {
-                                    GenericArgument::Lifetime(Lifetime::Static)
+                                    GenericArgument::Lifetime(GenericLifetimeParameter::Static)
                                 }
                                 ResolvedPathLifetime::Named(name) => {
-                                    GenericArgument::Lifetime(Lifetime::Named(name.clone()))
+                                    GenericArgument::Lifetime(GenericLifetimeParameter::Named(name.clone()))
                                 }
                             },
                         };
@@ -146,7 +148,7 @@ impl ResolvedPathType {
             }
             ResolvedPathType::Reference(r) => Ok(ResolvedType::Reference(TypeReference {
                 is_mutable: r.is_mutable,
-                is_static: r.is_static,
+                lifetime: r.lifetime.clone(),
                 inner: Box::new(r.inner.resolve(krate_collection)?),
             })),
             ResolvedPathType::Tuple(t) => {
@@ -216,10 +218,10 @@ impl From<ResolvedType> for ResolvedPathType {
                                 ResolvedPathGenericArgument::Type(t.into())
                             }
                             GenericArgument::Lifetime(l) => match l {
-                                Lifetime::Static => ResolvedPathGenericArgument::Lifetime(
+                                GenericLifetimeParameter::Static => ResolvedPathGenericArgument::Lifetime(
                                     ResolvedPathLifetime::Static,
                                 ),
-                                Lifetime::Named(name) => ResolvedPathGenericArgument::Lifetime(
+                                GenericLifetimeParameter::Named(name) => ResolvedPathGenericArgument::Lifetime(
                                     ResolvedPathLifetime::Named(name),
                                 ),
                             },
@@ -236,7 +238,7 @@ impl From<ResolvedType> for ResolvedPathType {
             }
             ResolvedType::Reference(r) => ResolvedPathType::Reference(ResolvedPathReference {
                 is_mutable: r.is_mutable,
-                is_static: r.is_static,
+                lifetime: r.lifetime,
                 inner: Box::new((*r.inner).into()),
             }),
             ResolvedType::Tuple(t) => ResolvedPathType::Tuple(ResolvedPathTuple {
@@ -262,7 +264,7 @@ pub struct ResolvedPathResolvedPathType {
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct ResolvedPathReference {
     pub is_mutable: bool,
-    pub is_static: bool,
+    pub lifetime: Lifetime,
     pub inner: Box<ResolvedPathType>,
 }
 
@@ -434,7 +436,7 @@ impl ResolvedPath {
             }
             CallPathType::Reference(r) => Ok(ResolvedPathType::Reference(ResolvedPathReference {
                 is_mutable: r.is_mutable,
-                is_static: r.is_static,
+                lifetime: r.lifetime.clone(),
                 inner: Box::new(Self::parse_call_path_type(
                     r.inner.deref(),
                     identifiers,

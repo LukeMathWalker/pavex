@@ -34,7 +34,7 @@ use crate::diagnostic::{
 };
 use crate::language::{
     Callable, PathType, ResolvedPath, ResolvedPathQualifiedSelf, ResolvedPathSegment, ResolvedType,
-    TypeReference,
+    TypeReference, Lifetime,
 };
 use crate::rustdoc::CrateCollection;
 use crate::utils::comma_separated_list;
@@ -1257,7 +1257,7 @@ impl ComponentDb {
                     .to_owned();
                 let ref_component_error_type = ResolvedType::Reference(TypeReference {
                     is_mutable: false,
-                    is_static: false,
+                    lifetime: Lifetime::Elided,
                     inner: Box::new(get_err_variant(&templated_output).to_owned()),
                 });
                 let ref_error_handler_error_type = error_handler.error_type_ref();

@@ -173,7 +173,7 @@ impl CodegenedRequestHandlerPipeline {
             let mut is_shared_reference = false;
             let inner_type = match type_ {
                 ResolvedType::Reference(r) => {
-                    if !r.is_static {
+                    if !r.lifetime.is_static() {
                         is_shared_reference = true;
                         &r.inner
                     } else {

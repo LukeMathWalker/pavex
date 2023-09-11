@@ -6,6 +6,7 @@ pub(crate) use resolved_path::{
 };
 pub(crate) use resolved_type::{
     Generic, GenericArgument, Lifetime, PathType, ResolvedType, Slice, Tuple, TypeReference,
+    GenericLifetimeParameter
 };
 
 mod callable;

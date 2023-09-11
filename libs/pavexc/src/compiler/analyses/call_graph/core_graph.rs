@@ -15,7 +15,7 @@ use petgraph::stable_graph::NodeIndex;
 use petgraph::visit::Dfs;
 use petgraph::Direction;
 
-use crate::language::{ResolvedType, TypeReference};
+use crate::language::{ResolvedType, TypeReference, Lifetime};
 
 use super::dependency_graph::DependencyGraph;
 
@@ -537,7 +537,7 @@ fn take_references_as_inputs_if_they_suffice(
                 if is_only_borrowed {
                     let reference_input_type = ResolvedType::Reference(TypeReference {
                         is_mutable: false,
-                        is_static: false,
+                        lifetime: Lifetime::Elided,
                         inner: Box::new(input_type.to_owned()),
                     });
                     let reference_input_node_index =

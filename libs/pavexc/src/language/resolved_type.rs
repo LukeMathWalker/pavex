@@ -71,7 +71,7 @@ impl ResolvedType {
             ResolvedType::Reference(r) => ResolvedType::Reference(TypeReference {
                 is_mutable: r.is_mutable,
                 inner: Box::new(r.inner.bind_generic_type_parameters(bindings)),
-                is_static: r.is_static,
+                lifetime: r.lifetime.clone(),
             }),
             ResolvedType::Tuple(t) => {
                 let mut bound_elements = Vec::with_capacity(t.elements.len());
@@ -103,8 +103,8 @@ impl ResolvedType {
             ResolvedType::ResolvedPath(path) => {
                 path.generic_arguments.iter().any(|arg| match arg {
                     GenericArgument::TypeParameter(g) => g.is_a_template(),
-                    GenericArgument::Lifetime(Lifetime::Static) => false,
-                    GenericArgument::Lifetime(Lifetime::Named(_)) => true,
+                    GenericArgument::Lifetime(GenericLifetimeParameter::Static) => false,
+                    GenericArgument::Lifetime(GenericLifetimeParameter::Named(_)) => true,
                 })
             }
             ResolvedType::Reference(r) => r.inner.is_a_template(),
@@ -292,14 +292,25 @@ impl ResolvedType {
                         GenericArgument::TypeParameter(g) => {
                             g._named_lifetime_parameters(set);
                         }
-                        GenericArgument::Lifetime(Lifetime::Static) => {}
-                        GenericArgument::Lifetime(Lifetime::Named(l)) => {
+                        GenericArgument::Lifetime(GenericLifetimeParameter::Static) => {}
+                        GenericArgument::Lifetime(GenericLifetimeParameter::Named(l)) => {
                             set.insert(l.clone());
                         }
                     }
                 }
             }
-            ResolvedType::Reference(r) => r.inner._named_lifetime_parameters(set),
+            ResolvedType::Reference(r) => {
+                match &r.lifetime {
+                    Lifetime::Static => {}
+                    Lifetime::Named(l) => {
+                        set.insert(l.clone());
+                    }
+                    Lifetime::Elided => {
+                        // TODO: what should we do here?
+                    }
+                }
+                r.inner._named_lifetime_parameters(set)
+            }
             ResolvedType::Tuple(t) => {
                 for inner in &t.elements {
                     inner._named_lifetime_parameters(set);
@@ -483,7 +494,7 @@ pub struct Slice {
 /// A Rust reference—e.g. `&mut u32` or `&'static mut Vec<u8>`.
 pub struct TypeReference {
     pub is_mutable: bool,
-    pub is_static: bool,
+    pub lifetime: Lifetime,
     pub inner: Box<ResolvedType>,
 }
 
@@ -684,14 +695,52 @@ impl Hash for PathType {
 pub enum GenericArgument {
     /// A generic type parameter, e.g. `u32` in `Vec<u32>` or `T` in `HashSet<T>`.
     TypeParameter(ResolvedType),
-    /// A lifetime parameter, e.g. `'a` in `&'a str` or `'static` in `&'static str`.
-    Lifetime(Lifetime),
+    /// A lifetime parameter, e.g. `'a` in `Cow<'a, str>`.
+    Lifetime(GenericLifetimeParameter),
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Hash, Clone, Debug)]
+pub enum GenericLifetimeParameter {
+    Named(String),
+    Static,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Hash, Clone)]
 pub enum Lifetime {
+    /// The `'static` lifetime.
     Static,
+    /// A named lifetime, e.g. `'a` in `&'a str`.
+    /// It also include the "inferred" lifetime, which is represented as `'_`.
     Named(String),
+    /// A lifetime that is omitted from the source thanks to lifetime elision
+    /// (see https://doc.rust-lang.org/nomicon/lifetime-elision.html).
+    ///
+    /// E.g. `&str`.
+    Elided,
+}
+
+impl From<Option<String>> for Lifetime {
+    fn from(s: Option<String>) -> Self {
+        match s {
+            Some(s) => {
+                if &s == "'static" {
+                    Lifetime::Static
+                } else {
+                    Lifetime::Named(s)
+                }
+            }
+            None => Lifetime::Elided,
+        }
+    }
+}
+
+impl Lifetime {
+    pub fn is_static(&self) -> bool {
+        match self {
+            Lifetime::Named(_) | Lifetime::Elided => false,
+            Lifetime::Static => true,
+        }
+    }
 }
 
 fn serialize_package_id<S>(package_id: &PackageId, serializer: S) -> Result<S::Ok, S::Error>
@@ -744,10 +793,10 @@ impl ResolvedType {
                                 write!(buffer, "{}", t.render_type(id2name)).unwrap();
                             }
                             GenericArgument::Lifetime(l) => match l {
-                                Lifetime::Static => {
+                                GenericLifetimeParameter::Static => {
                                     write!(buffer, "'static").unwrap();
                                 }
-                                Lifetime::Named(_) => {
+                                GenericLifetimeParameter::Named(_) => {
                                     // TODO: We should have a dedicated lifetime mapping here.
                                     //  For now we hack around it since we know that all the usecases
                                     //  we currently support will work out with lifetime elision.
@@ -764,7 +813,7 @@ impl ResolvedType {
             }
             ResolvedType::Reference(r) => {
                 write!(buffer, "&").unwrap();
-                if r.is_static {
+                if r.lifetime.is_static() {
                     write!(buffer, "'static ").unwrap();
                 }
                 if r.is_mutable {
@@ -846,6 +895,7 @@ impl Debug for Lifetime {
         match self {
             Lifetime::Static => write!(f, "'static"),
             Lifetime::Named(name) => write!(f, "'{}", name),
+            Lifetime::Elided => Ok(()),
         }
     }
 }
@@ -892,7 +942,7 @@ impl Debug for Tuple {
 impl Debug for TypeReference {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "&")?;
-        if self.is_static {
+        if self.lifetime.is_static() {
             write!(f, "'static ")?;
         }
         if self.is_mutable {

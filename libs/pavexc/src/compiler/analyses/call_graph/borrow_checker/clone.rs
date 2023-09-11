@@ -14,7 +14,7 @@ use crate::compiler::computation::Computation;
 use crate::compiler::utils::process_framework_path;
 use crate::language::{
     Callable, InvocationStyle, PathType, ResolvedPath, ResolvedPathQualifiedSelf,
-    ResolvedPathSegment, ResolvedType, TypeReference,
+    ResolvedPathSegment, ResolvedType, TypeReference, Lifetime,
 };
 use crate::rustdoc::CrateCollection;
 
@@ -72,7 +72,7 @@ pub(super) fn get_clone_component_id(
         path: type_clone_path,
         inputs: vec![ResolvedType::Reference(TypeReference {
             is_mutable: false,
-            is_static: false,
+            lifetime: Lifetime::Elided,
             inner: Box::new(output),
         })],
         invocation_style: InvocationStyle::FunctionCall,

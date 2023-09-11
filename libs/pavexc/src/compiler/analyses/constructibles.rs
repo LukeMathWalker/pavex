@@ -665,7 +665,7 @@ impl ConstructiblesInScope {
         }
 
         match type_ {
-            ResolvedType::Reference(ref_) if !ref_.is_static && !ref_.is_mutable => {
+            ResolvedType::Reference(ref_) if !ref_.lifetime.is_static() && !ref_.is_mutable => {
                 if let Some(constructor_id) = self.type2constructor_id.get(&ref_.inner).copied() {
                     return Some((constructor_id, ConsumptionMode::SharedBorrow));
                 }
@@ -703,7 +703,7 @@ impl ConstructiblesInScope {
         }
 
         match type_ {
-            ResolvedType::Reference(ref_) if !ref_.is_static && !ref_.is_mutable => {
+            ResolvedType::Reference(ref_) if !ref_.lifetime.is_static() && !ref_.is_mutable => {
                 let (component_id, _) =
                     self.get_or_try_bind(&ref_.inner, component_db, computation_db)?;
                 Some((component_id, ConsumptionMode::SharedBorrow))

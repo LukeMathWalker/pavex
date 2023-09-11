@@ -157,7 +157,8 @@ fn check_json_content_type(headers: &HeaderMap) -> Result<(), ExtractJsonBodyErr
     let Ok(mime) = content_type.parse::<mime::Mime>() else {
         return Err(JsonContentTypeMismatch {
             actual: content_type.to_string(),
-        }.into());
+        }
+        .into());
     };
 
     let is_json_content_type = mime.type_() == "application"

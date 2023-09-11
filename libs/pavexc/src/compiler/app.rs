@@ -355,7 +355,7 @@ fn get_required_singleton_types<'a>(
             let root_component_scope_id = component_db.scope_id(root_component_id);
             for required_input in graph.call_graph.required_input_types() {
                 let required_input = if let ResolvedType::Reference(t) = &required_input {
-                    if !t.is_static {
+                    if !t.lifetime.is_static() {
                         // We can't store non-'static references in the application state, so we expect
                         // to see the referenced type in there.
                         t.inner.deref()

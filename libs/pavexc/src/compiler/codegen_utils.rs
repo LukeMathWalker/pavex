@@ -6,7 +6,7 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
 
 use crate::compiler::analyses::call_graph::CallGraphEdgeMetadata;
-use crate::language::{Callable, InvocationStyle, ResolvedType, TypeReference};
+use crate::language::{Callable, InvocationStyle, ResolvedType, TypeReference, Lifetime};
 
 #[derive(Debug, Clone)]
 pub(crate) enum Fragment {
@@ -62,7 +62,7 @@ where
             CallGraphEdgeMetadata::Move => dependency_type.to_owned(),
             CallGraphEdgeMetadata::SharedBorrow => ResolvedType::Reference(TypeReference {
                 is_mutable: false,
-                is_static: false,
+                lifetime: Lifetime::Named("'_".into()),
                 inner: Box::new(dependency_type.to_owned()),
             }),
         };
