@@ -276,6 +276,40 @@ impl ResolvedType {
             (_, _) => unreachable!(),
         }
     }
+
+    /// Return the set of named lifetime parameters (i.e. non `'static`) for this type.
+    pub fn named_lifetime_parameters(&self) -> IndexSet<String> {
+        let mut set = IndexSet::new();
+        self._named_lifetime_parameters(&mut set);
+        set
+    }
+
+    fn _named_lifetime_parameters(&self, set: &mut IndexSet<String>) {
+        match self {
+            ResolvedType::ResolvedPath(path) => {
+                for arg in &path.generic_arguments {
+                    match arg {
+                        GenericArgument::TypeParameter(g) => {
+                            g._named_lifetime_parameters(set);
+                        }
+                        GenericArgument::Lifetime(Lifetime::Static) => {}
+                        GenericArgument::Lifetime(Lifetime::Named(l)) => {
+                            set.insert(l.clone());
+                        }
+                    }
+                }
+            }
+            ResolvedType::Reference(r) => r.inner._named_lifetime_parameters(set),
+            ResolvedType::Tuple(t) => {
+                for inner in &t.elements {
+                    inner._named_lifetime_parameters(set);
+                }
+            }
+            ResolvedType::ScalarPrimitive(_) => {}
+            ResolvedType::Slice(s) => s.element_type._named_lifetime_parameters(set),
+            ResolvedType::Generic(_) => {}
+        }
+    }
 }
 
 impl PathType {

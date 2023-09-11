@@ -174,7 +174,11 @@ fn emit_ancestor_descendant_borrow_error(
 
     let downstream_borrow_node_id = downstream_borrow_node_id.unwrap();
 
-    let CallGraphNode::Compute { component_id: borrower_component_id, .. } = call_graph[downstream_borrow_node_id] else {
+    let CallGraphNode::Compute {
+        component_id: borrower_component_id,
+        ..
+    } = call_graph[downstream_borrow_node_id]
+    else {
         unreachable!()
     };
     let hydrated_borrower_component =
@@ -183,7 +187,11 @@ fn emit_ancestor_descendant_borrow_error(
         unreachable!()
     };
 
-    let CallGraphNode::Compute { component_id: consuming_component_id, .. } = call_graph[consuming_node_id] else {
+    let CallGraphNode::Compute {
+        component_id: consuming_component_id,
+        ..
+    } = call_graph[consuming_node_id]
+    else {
         unreachable!()
     };
     let hydrated_consumer_component =
