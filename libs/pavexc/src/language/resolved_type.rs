@@ -941,10 +941,7 @@ impl Debug for Tuple {
 
 impl Debug for TypeReference {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "&")?;
-        if self.lifetime.is_static() {
-            write!(f, "'static ")?;
-        }
+        write!(f, "&{:?}", self.lifetime)?;
         if self.is_mutable {
             write!(f, "mut ")?;
         }

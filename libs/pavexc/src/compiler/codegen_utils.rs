@@ -62,7 +62,7 @@ where
             CallGraphEdgeMetadata::Move => dependency_type.to_owned(),
             CallGraphEdgeMetadata::SharedBorrow => ResolvedType::Reference(TypeReference {
                 is_mutable: false,
-                lifetime: Lifetime::Named("'_".into()),
+                lifetime: Lifetime::Elided,
                 inner: Box::new(dependency_type.to_owned()),
             }),
         };
@@ -121,6 +121,10 @@ pub(crate) fn codegen_call(
     };
     let mut invocation = match &callable.invocation_style {
         InvocationStyle::FunctionCall => {
+            dbg!(&callable.inputs);
+            dbg!(variable_bindings.iter().map(|(k, _)| {
+                k
+            }).collect::<Vec<_>>());
             let parameters = callable.inputs.iter().map(|i| &variable_bindings[i]);
             quote! {
                 #callable_path(#(#parameters),*)
