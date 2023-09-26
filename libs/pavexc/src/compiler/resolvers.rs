@@ -124,13 +124,7 @@ pub(crate) fn resolve_type(
                                         } else {
                                             let name = l.trim_start_matches('\'');
                                             let lifetime = if name == "_" {
-                                                // TODO: we must make sure to choose a unique
-                                                //  name for this lifetime.
-                                                //  As in, one that is not used by any other lifetime
-                                                //  in the context of the function we are processing.
-                                                GenericLifetimeParameter::Named(format!(
-                                                    "_{arg_def_name}"
-                                                ))
+                                                GenericLifetimeParameter::Named(format!("_"))
                                             } else {
                                                 GenericLifetimeParameter::Named(name.to_owned())
                                             };

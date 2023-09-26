@@ -1,8 +1,9 @@
 [31m[1mERROR[0m[39m: 
   [31m×[0m I can't generate code that will pass the borrow checker *and* match the
-  [31m│[0m instructions in your blueprint.
-  [31m│[0m `app::handler` wants to borrow `app::A` but `app::b`, which is invoked
-  [31m│[0m earlier on, consumes `app::A` by value.
+  [31m│[0m instructions in your blueprint:
+  [31m│[0m - `app::handler` wants to borrow `app::A`
+  [31m│[0m - but `app::b`, which is invoked earlier on, consumes `app::A` by value
+  [31m│[0m 
   [31m│[0m Since I'm not allowed to clone `app::A`, I can't resolve this conflict.
   [31m│[0m
   [31m│[0m   [36mhelp:[0m Allow me to clone `app::A` in order to satisfy the borrow checker.
@@ -16,7 +17,7 @@
   [31m│[0m           ·                          [35;1m╰── [35;1mThe constructor was registered here[0m[0m
   [31m│[0m        [2m38[0m │     bp.constructor(f!(crate::b), Lifecycle::RequestScoped);
   [31m│[0m           ╰────
-  [31m│[0m   [36mhelp:[0m Considering changing the signature of `app::b`.
+  [31m│[0m   [36mhelp:[0m Consider changing the signature of `app::b`.
   [31m│[0m         It takes `app::A` by value. Would a shared reference, `&app::A`, be
   [31m│[0m         enough?
   [31m│[0m   [36mhelp:[0m If `app::A` itself cannot implement `Clone`, consider wrapping it in

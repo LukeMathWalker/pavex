@@ -3,7 +3,5 @@ due to types that hold references to other types which have already been moved.
 Pavex is not smart enough to notice that the transitive type is holding a reference, therefore
 code generation will succeed"""
 
-ignore = true
-
 [expectations]
-codegen = "pass"
+codegen = "fail"
