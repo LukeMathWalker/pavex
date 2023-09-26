@@ -1,9 +1,10 @@
 use ahash::{HashMap, HashMapExt};
 use bimap::BiHashMap;
 use guppy::graph::PackageGraph;
-use pavex::blueprint::constructor::{CloningStrategy, Lifecycle};
 use proc_macro2::Ident;
 use quote::format_ident;
+
+use pavex::blueprint::constructor::{CloningStrategy, Lifecycle};
 
 use crate::{
     compiler::utils::process_framework_path, language::ResolvedType, rustdoc::CrateCollection,

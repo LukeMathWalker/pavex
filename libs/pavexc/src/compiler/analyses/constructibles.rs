@@ -307,14 +307,14 @@ impl ConstructibleDb {
                             )
                         });
                         label.map(|label| HelpWithSnippet::new(
-                                format!(
-                                    "If you want to share a single instance of `{type_:?}`, remove \
+                            format!(
+                                "If you want to share a single instance of `{type_:?}`, remove \
                                     constructors for `{type_:?}` until there is only one left. It should \
                                     be attached to a blueprint that is a parent of all the nested \
                                     ones that need to use it."
-                                ),
-                                AnnotatedSnippet::new(source, label),
-                            ))
+                            ),
+                            AnnotatedSnippet::new(source, label),
+                        ))
                     }
 
                     let common_ancestor_scope_id = component_db.scope_graph().find_common_ancestor(
