@@ -1,3 +1,12 @@
+use std::collections::BTreeMap;
+
+use ahash::{HashMap, HashMapExt};
+use guppy::graph::PackageGraph;
+use guppy::PackageId;
+use indexmap::{IndexMap, IndexSet};
+
+use pavex::blueprint::constructor::{CloningStrategy, Lifecycle};
+
 use crate::compiler::analyses::call_graph::{
     request_scoped_call_graph, request_scoped_ordered_call_graph, CallGraphNode,
     InputParameterSource, OrderedCallGraph, RawCallGraph,
@@ -9,12 +18,6 @@ use crate::compiler::analyses::processing_pipeline::graph_iter::PipelineGraphIte
 use crate::compiler::app::GENERATED_APP_PACKAGE_ID;
 use crate::language::{Callable, InvocationStyle, PathType, ResolvedType};
 use crate::rustdoc::CrateCollection;
-use ahash::{HashMap, HashMapExt};
-use guppy::graph::PackageGraph;
-use guppy::PackageId;
-use indexmap::{IndexMap, IndexSet};
-use pavex::blueprint::constructor::{CloningStrategy, Lifecycle};
-use std::collections::BTreeMap;
 
 /// A request handler pipeline is the combination of a root compute node (i.e. the request handler)
 /// and an ordered sequence of wrapping middlewares ahead of it, feeding into each other.
@@ -113,13 +116,13 @@ impl RequestHandlerPipeline {
         //
         // In order to pull this off, we walk the chain in reverse order and accumulate the set of
         // request-scoped and singleton components that are expected as input.
-        let mut next_field_types: IndexSet<ComponentId> = IndexSet::new();
+        let mut next_field_types: IndexSet<ResolvedType> = IndexSet::new();
         extract_long_lived_inputs(
             &handler_call_graph.call_graph,
             component_db,
             &mut next_field_types,
         );
-        let mut middleware_id2next_field_types: HashMap<ComponentId, IndexSet<ComponentId>> =
+        let mut middleware_id2next_field_types: HashMap<ComponentId, IndexSet<ResolvedType>> =
             HashMap::new();
         for (middleware_id, middleware_call_graph) in middleware_call_graphs.iter().rev() {
             middleware_id2next_field_types.insert(*middleware_id, next_field_types.clone());
@@ -129,7 +132,9 @@ impl RequestHandlerPipeline {
             for node in middleware_call_graph.call_graph.node_weights() {
                 if let CallGraphNode::Compute { component_id, .. } = node {
                     if component_db.lifecycle(*component_id) == Some(&Lifecycle::RequestScoped) {
-                        next_field_types.remove(component_id);
+                        let component =
+                            component_db.hydrated_component(*component_id, computation_db);
+                        next_field_types.remove(component.output_type());
                     }
                 }
             }
@@ -161,9 +166,7 @@ impl RequestHandlerPipeline {
             let next_state_bindings = next_state_types
                 .iter()
                 .enumerate()
-                .map(|(i, component_id)| {
-                    let component = component_db.hydrated_component(*component_id, computation_db);
-                    let type_ = component.output_type();
+                .map(|(i, type_)| {
                     // TODO: naming can be improved here.
                     (format!("s_{i}"), type_.to_owned())
                 })
@@ -313,10 +316,10 @@ impl RequestHandlerPipeline {
 fn extract_long_lived_inputs(
     call_graph: &RawCallGraph,
     component_db: &ComponentDb,
-    buffer: &mut IndexSet<ComponentId>,
+    buffer: &mut IndexSet<ResolvedType>,
 ) {
     for node in call_graph.node_weights() {
-        let CallGraphNode::InputParameter { source, .. } = node else {
+        let CallGraphNode::InputParameter { type_, source } = node else {
             continue;
         };
         let InputParameterSource::Component(component_id) = source else {
@@ -327,7 +330,7 @@ fn extract_long_lived_inputs(
             Some(&Lifecycle::Transient),
             "Transient components should not appear as inputs in a call graph"
         );
-        buffer.insert(*component_id);
+        buffer.insert(type_.to_owned());
     }
 }
 
