@@ -78,20 +78,25 @@ impl RequestHandlerPipeline {
                 .collect();
 
             let struct_name = format_ident!("{}", next_state.type_.base_type.last().unwrap());
-            let def = syn::parse2(if state_lifetimes.is_empty() {
-                quote! {
-                    pub struct #struct_name {
-                        #(#fields),*
-                    }
-                }
-            } else {
-                let state_lifetimes = state_lifetimes.into_iter().map(|lifetime| {
+            let state_lifetimes: Vec<_> = state_lifetimes
+                .iter()
+                .map(|lifetime| {
                     syn::Lifetime::new(&format!("'{lifetime}"), proc_macro2::Span::call_site())
-                });
-                quote! {
-                    pub struct #struct_name<#(#state_lifetimes),*> {
-                        #(#fields),*
-                    }
+                })
+                .collect();
+            let generics = if state_lifetimes.is_empty() {
+                quote! {}
+            } else {
+                quote! { <#(#state_lifetimes),*> }
+            };
+            let lifetime_bounds = if state_lifetimes.is_empty() {
+                quote! {}
+            } else {
+                quote! { + 'a }
+            };
+            let def = syn::parse2(quote! {
+                pub struct #struct_name #generics {
+                    #(#fields),*
                 }
             })
             .unwrap();
@@ -129,13 +134,21 @@ impl RequestHandlerPipeline {
                 })
                 .collect();
             let callable_path = &next_stage.fn_.sig.ident;
+            let (future_impl_generics, future_generics) = if state_lifetimes.is_empty() {
+                (quote! {}, quote! {})
+            } else {
+                let implied_lifetimes = state_lifetimes
+                    .iter()
+                    .map(|_lifetime| syn::Lifetime::new("'a", proc_macro2::Span::call_site()));
+                (quote! { <'a> }, quote! { <#(#implied_lifetimes),*> })
+            };
             let into_future_impl = syn::parse2(quote! {
-                impl std::future::IntoFuture for #struct_name {
+                impl #future_impl_generics std::future::IntoFuture for #struct_name #future_generics {
                     type Output = pavex::response::Response;
-                    type IntoFuture = std::pin::Pin<Box<dyn std::future::Future<Output = Self::Output>>>;
+                    type IntoFuture = std::pin::Pin<Box<dyn std::future::Future<Output = Self::Output> #lifetime_bounds>>;
 
                     fn into_future(self) -> Self::IntoFuture {
-                        Box::pin(async {
+                        Box::pin(async move {
                             #callable_path(#(#inputs),*).await
                         })
                     }

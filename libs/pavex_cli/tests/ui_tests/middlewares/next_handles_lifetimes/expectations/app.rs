@@ -82,26 +82,31 @@ async fn route_request(
 }
 pub mod route_0 {
     pub async fn middleware_0() -> pavex::response::Response {
-        let v0 = app::a();
-        let v1 = app::b(&v0);
-        let v2 = crate::route_0::Next0 { s_0: &v0 };
-        let v3 = pavex::middleware::Next::new(v2);
-        app::mw(v3, v1)
+        let v0 = app::c();
+        let v1 = app::a();
+        let v2 = app::b(&v1, &v0);
+        let v3 = crate::route_0::Next0 {
+            s_0: &v1,
+            s_1: &v0,
+        };
+        let v4 = pavex::middleware::Next::new(v3);
+        app::mw(v4, v2)
     }
-    pub async fn handler(v0: &app::A) -> pavex::response::Response {
-        let v1 = app::handler(v0);
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
+    pub async fn handler(v0: &app::A, v1: &app::C) -> pavex::response::Response {
+        let v2 = app::handler(v0, v1);
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
     }
-    pub struct Next0<'a> {
+    pub struct Next0<'a, 'b> {
         s_0: &'a app::A,
+        s_1: &'b app::C,
     }
-    impl std::future::IntoFuture for Next0 {
+    impl<'a> std::future::IntoFuture for Next0<'a, 'a> {
         type Output = pavex::response::Response;
         type IntoFuture = std::pin::Pin<
-            Box<dyn std::future::Future<Output = Self::Output>>,
+            Box<dyn std::future::Future<Output = Self::Output> + 'a>,
         >;
         fn into_future(self) -> Self::IntoFuture {
-            Box::pin(async { handler(self.s_0).await })
+            Box::pin(async move { handler(self.s_0, self.s_1).await })
         }
     }
 }
