@@ -1,13 +1,15 @@
-use crate::compiler::analyses::components::ComponentDb;
-use crate::compiler::analyses::computations::ComputationDb;
-use crate::compiler::analyses::processing_pipeline::RequestHandlerPipeline;
-use crate::language::ResolvedType;
+use ahash::HashMap;
 use bimap::BiHashMap;
 use guppy::PackageId;
 use indexmap::IndexSet;
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote, ToTokens};
 use syn::ItemFn;
+
+use crate::compiler::analyses::components::ComponentDb;
+use crate::compiler::analyses::computations::ComputationDb;
+use crate::compiler::analyses::processing_pipeline::RequestHandlerPipeline;
+use crate::language::ResolvedType;
 
 impl RequestHandlerPipeline {
     /// Generates the code required to wire together this request handler pipeline.
@@ -45,9 +47,27 @@ impl RequestHandlerPipeline {
         let mut next_states = Vec::with_capacity(n_middlewares);
         for (i, stage_data) in self.middleware_id2stage_data.values().enumerate() {
             let next_state = &stage_data.next_state;
-            let fields: Vec<_> = next_state
-                .field_bindings
-                .iter()
+            let mut lifetime_generator = LifetimeGenerator::new();
+            let mut state_lifetimes = IndexSet::new();
+            let fields_bindings = next_state.field_bindings.iter().map(|(name, ty_)| {
+                let mut ty_ = ty_.to_owned();
+
+                let lifetime2binding: HashMap<_, _> = ty_
+                    .named_lifetime_parameters()
+                    .into_iter()
+                    .map(|lifetime| (lifetime, lifetime_generator.next()))
+                    .collect();
+                ty_.rename_lifetime_parameters(&lifetime2binding);
+                state_lifetimes.extend(lifetime2binding.values().cloned());
+
+                if ty_.has_implicit_lifetime_parameters() {
+                    let implicit_lifetime_binding = lifetime_generator.next();
+                    state_lifetimes.insert(implicit_lifetime_binding.clone());
+                    ty_.set_implicit_lifetimes(implicit_lifetime_binding);
+                }
+                (name, ty_)
+            });
+            let fields: Vec<_> = fields_bindings
                 .map(|(name, ty_)| {
                     let name = format_ident!("{}", name);
                     let ty_ = ty_.syn_type(package_id2name);
@@ -58,9 +78,20 @@ impl RequestHandlerPipeline {
                 .collect();
 
             let struct_name = format_ident!("{}", next_state.type_.base_type.last().unwrap());
-            let def = syn::parse2(quote! {
-                pub struct #struct_name {
-                    #(#fields),*
+            let def = syn::parse2(if state_lifetimes.is_empty() {
+                quote! {
+                    pub struct #struct_name {
+                        #(#fields),*
+                    }
+                }
+            } else {
+                let state_lifetimes = state_lifetimes.into_iter().map(|lifetime| {
+                    syn::Lifetime::new(&format!("'{lifetime}"), proc_macro2::Span::call_site())
+                });
+                quote! {
+                    pub struct #struct_name<#(#state_lifetimes),*> {
+                        #(#fields),*
+                    }
                 }
             })
             .unwrap();
@@ -121,6 +152,35 @@ impl RequestHandlerPipeline {
             next_states,
             module_name: self.module_name.clone(),
         })
+    }
+}
+
+/// A generator of unique lifetime names.
+struct LifetimeGenerator {
+    next: usize,
+}
+
+impl LifetimeGenerator {
+    const ALPHABET: [char; 26] = [
+        'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r',
+        's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+    ];
+
+    fn new() -> Self {
+        Self { next: 0 }
+    }
+
+    /// Generates a new lifetime name.
+    fn next(&mut self) -> String {
+        let next = self.next;
+        self.next += 1;
+        let round = next / Self::ALPHABET.len();
+        let letter = Self::ALPHABET[next % Self::ALPHABET.len()];
+        if round == 0 {
+            format!("{letter}")
+        } else {
+            format!("{letter}{round}")
+        }
     }
 }
 

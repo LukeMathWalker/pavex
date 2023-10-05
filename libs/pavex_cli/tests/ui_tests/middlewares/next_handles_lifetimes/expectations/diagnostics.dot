@@ -1,14 +1,14 @@
 digraph "GET /home - 0" {
-    0 [ label = "app::mw(pavex::middleware::Next<crate::route_0::Next0>, app::B<'_>) -> pavex::response::Response"]
+    0 [ label = "app::mw(pavex::middleware::Next<crate::route_0::Next0>, app::B<'l>) -> pavex::response::Response"]
     1 [ label = "app::b(&app::A) -> app::B<'_>"]
     2 [ label = "app::a() -> app::A"]
     3 [ label = "pavex::middleware::Next::new(crate::route_0::Next0) -> pavex::middleware::Next<crate::route_0::Next0>"]
-    4 [ label = "crate::route_0::Next0(app::A) -> crate::route_0::Next0"]
+    4 [ label = "crate::route_0::Next0(&app::A) -> crate::route_0::Next0"]
     1 -> 0 [ ]
     2 -> 1 [ label = "&"]
     3 -> 0 [ ]
     4 -> 3 [ ]
-    2 -> 4 [ ]
+    2 -> 4 [ label = "&"]
 }
 
 digraph "GET /home - 1" {

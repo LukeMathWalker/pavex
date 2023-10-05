@@ -380,6 +380,50 @@ impl ResolvedType {
         }
     }
 
+    /// Rename named lifetime parameters in this type according to the provided mapping.
+    ///
+    /// You don't need to provide a mapping for lifetimes that you don't want to rename.
+    pub fn rename_lifetime_parameters(&mut self, original2renamed: &HashMap<String, String>) {
+        match self {
+            ResolvedType::ResolvedPath(t) => {
+                for arg in t.generic_arguments.iter_mut() {
+                    match arg {
+                        GenericArgument::TypeParameter(tp) => {
+                            tp.rename_lifetime_parameters(original2renamed);
+                        }
+                        GenericArgument::Lifetime(l) => {
+                            if let GenericLifetimeParameter::Named(l) = l {
+                                if let Some(new_name) = original2renamed.get(l) {
+                                    *l = new_name.clone();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            ResolvedType::Reference(r) => {
+                match &mut r.lifetime {
+                    Lifetime::Named(l) => {
+                        if let Some(new_name) = original2renamed.get(l) {
+                            *l = new_name.clone();
+                        }
+                    }
+                    Lifetime::Static | Lifetime::Elided => {}
+                }
+                r.inner.rename_lifetime_parameters(original2renamed);
+            }
+            ResolvedType::Tuple(t) => {
+                for e in t.elements.iter_mut() {
+                    e.rename_lifetime_parameters(original2renamed);
+                }
+            }
+            ResolvedType::Slice(s) => {
+                s.element_type.rename_lifetime_parameters(original2renamed);
+            }
+            ResolvedType::Generic(_) | ResolvedType::ScalarPrimitive(_) => {}
+        }
+    }
+
     /// Return the set of free lifetime parameters (i.e. non `'static`) for this type.
     pub fn named_lifetime_parameters(&self) -> IndexSet<String> {
         let mut set = IndexSet::new();
@@ -941,11 +985,8 @@ impl ResolvedType {
                                 GenericLifetimeParameter::Static => {
                                     write!(buffer, "'static").unwrap();
                                 }
-                                GenericLifetimeParameter::Named(_) => {
-                                    // TODO: We should have a dedicated lifetime mapping here.
-                                    //  For now we hack around it since we know that all the usecases
-                                    //  we currently support will work out with lifetime elision.
-                                    write!(buffer, "'_").unwrap();
+                                GenericLifetimeParameter::Named(l) => {
+                                    write!(buffer, "'{l}").unwrap();
                                 }
                             },
                         }
@@ -958,8 +999,14 @@ impl ResolvedType {
             }
             ResolvedType::Reference(r) => {
                 write!(buffer, "&").unwrap();
-                if r.lifetime.is_static() {
-                    write!(buffer, "'static ").unwrap();
+                match &r.lifetime {
+                    Lifetime::Static => {
+                        write!(buffer, "'static ").unwrap();
+                    }
+                    Lifetime::Named(l) => {
+                        write!(buffer, "'{l} ").unwrap();
+                    }
+                    Lifetime::Elided => {}
                 }
                 if r.is_mutable {
                     write!(buffer, "mut ").unwrap();
