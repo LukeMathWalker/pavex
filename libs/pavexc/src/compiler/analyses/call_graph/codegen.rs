@@ -56,8 +56,15 @@ pub(crate) fn codegen_callable_closure(
     )?;
 
     let function = {
-        let inputs = input_parameter_types.iter().map(|type_| {
-            let variable_name = &parameter_bindings[type_];
+        let inputs = input_parameter_types.into_iter().map(|mut type_| {
+            let variable_name = &parameter_bindings[&type_];
+            // We can set all the non-'static lifetimes to implied (i.e. '_) in function signatures.
+            let original2renamed = type_
+                .named_lifetime_parameters()
+                .into_iter()
+                .map(|l| (l, "_".to_string()))
+                .collect();
+            type_.rename_lifetime_parameters(&original2renamed);
             let variable_type = type_.syn_type(package_id2name);
             quote! { #variable_name: #variable_type }
         });

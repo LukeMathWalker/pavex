@@ -1,8 +1,8 @@
 digraph "GET /home/:home_id - 0" {
     0 [ label = "app::get_home(pavex::extract::route::RouteParams<app::HomeRouteParams>) -> pavex::response::Response"]
     1 [ label = "core::prelude::rust_2015::Result<pavex::extract::route::RouteParams<app::HomeRouteParams>, pavex::extract::route::errors::ExtractRouteParamsError> -> pavex::extract::route::RouteParams<app::HomeRouteParams>"]
-    2 [ label = "pavex::extract::route::RouteParams::extract(pavex::extract::route::RawRouteParams<'_, '_>) -> core::prelude::rust_2015::Result<pavex::extract::route::RouteParams<app::HomeRouteParams>, pavex::extract::route::errors::ExtractRouteParamsError>"]
-    3 [ label = "pavex::extract::route::RawRouteParams<'_, '_>"]
+    2 [ label = "pavex::extract::route::RouteParams::extract(pavex::extract::route::RawRouteParams<'server, 'request>) -> core::prelude::rust_2015::Result<pavex::extract::route::RouteParams<app::HomeRouteParams>, pavex::extract::route::errors::ExtractRouteParamsError>"]
+    3 [ label = "pavex::extract::route::RawRouteParams<'server, 'request>"]
     4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     5 [ label = "core::prelude::rust_2015::Result<pavex::extract::route::RouteParams<app::HomeRouteParams>, pavex::extract::route::errors::ExtractRouteParamsError> -> pavex::extract::route::errors::ExtractRouteParamsError"]
     6 [ label = "pavex::extract::route::errors::ExtractRouteParamsError::into_response(&pavex::extract::route::errors::ExtractRouteParamsError) -> pavex::response::Response<http_body::Full<bytes::Bytes>>"]
@@ -21,8 +21,8 @@ digraph "GET /home/:home_id - 0" {
 digraph "GET /home/:home_id/room/:room_id - 0" {
     0 [ label = "app::get_room(pavex::extract::route::RouteParams<app::RoomRouteParams>) -> pavex::response::Response"]
     1 [ label = "core::prelude::rust_2015::Result<pavex::extract::route::RouteParams<app::RoomRouteParams>, pavex::extract::route::errors::ExtractRouteParamsError> -> pavex::extract::route::RouteParams<app::RoomRouteParams>"]
-    2 [ label = "pavex::extract::route::RouteParams::extract(pavex::extract::route::RawRouteParams<'_, '_>) -> core::prelude::rust_2015::Result<pavex::extract::route::RouteParams<app::RoomRouteParams>, pavex::extract::route::errors::ExtractRouteParamsError>"]
-    3 [ label = "pavex::extract::route::RawRouteParams<'_, '_>"]
+    2 [ label = "pavex::extract::route::RouteParams::extract(pavex::extract::route::RawRouteParams<'server, 'request>) -> core::prelude::rust_2015::Result<pavex::extract::route::RouteParams<app::RoomRouteParams>, pavex::extract::route::errors::ExtractRouteParamsError>"]
+    3 [ label = "pavex::extract::route::RawRouteParams<'server, 'request>"]
     4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     5 [ label = "core::prelude::rust_2015::Result<pavex::extract::route::RouteParams<app::RoomRouteParams>, pavex::extract::route::errors::ExtractRouteParamsError> -> pavex::extract::route::errors::ExtractRouteParamsError"]
     6 [ label = "pavex::extract::route::errors::ExtractRouteParamsError::into_response(&pavex::extract::route::errors::ExtractRouteParamsError) -> pavex::response::Response<http_body::Full<bytes::Bytes>>"]
@@ -41,8 +41,8 @@ digraph "GET /home/:home_id/room/:room_id - 0" {
 digraph "GET /town/*town - 0" {
     0 [ label = "app::get_town(pavex::extract::route::RouteParams<app::TownRouteParams<'_>>) -> pavex::response::Response"]
     1 [ label = "core::prelude::rust_2015::Result<pavex::extract::route::RouteParams<app::TownRouteParams<'_>>, pavex::extract::route::errors::ExtractRouteParamsError> -> pavex::extract::route::RouteParams<app::TownRouteParams<'_>>"]
-    2 [ label = "pavex::extract::route::RouteParams::extract(pavex::extract::route::RawRouteParams<'_, '_>) -> core::prelude::rust_2015::Result<pavex::extract::route::RouteParams<app::TownRouteParams<'_>>, pavex::extract::route::errors::ExtractRouteParamsError>"]
-    3 [ label = "pavex::extract::route::RawRouteParams<'_, '_>"]
+    2 [ label = "pavex::extract::route::RouteParams::extract(pavex::extract::route::RawRouteParams<'server, 'request>) -> core::prelude::rust_2015::Result<pavex::extract::route::RouteParams<app::TownRouteParams<'_>>, pavex::extract::route::errors::ExtractRouteParamsError>"]
+    3 [ label = "pavex::extract::route::RawRouteParams<'server, 'request>"]
     4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     5 [ label = "core::prelude::rust_2015::Result<pavex::extract::route::RouteParams<app::TownRouteParams<'_>>, pavex::extract::route::errors::ExtractRouteParamsError> -> pavex::extract::route::errors::ExtractRouteParamsError"]
     6 [ label = "pavex::extract::route::errors::ExtractRouteParamsError::into_response(&pavex::extract::route::errors::ExtractRouteParamsError) -> pavex::response::Response<http_body::Full<bytes::Bytes>>"]
