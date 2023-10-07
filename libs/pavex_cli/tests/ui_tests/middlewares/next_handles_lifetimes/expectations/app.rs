@@ -103,7 +103,7 @@ pub mod route_0 {
     {
         s_0: &'a app::A,
         s_1: &'b app::C,
-        next: fn(&app::A, &app::C) -> T,
+        next: fn(&'a app::A, &'b app::C) -> T,
     }
     impl<'a, 'b, T> std::future::IntoFuture for Next0<'a, 'b, T>
     where

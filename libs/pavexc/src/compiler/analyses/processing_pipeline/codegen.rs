@@ -49,43 +49,35 @@ impl RequestHandlerPipeline {
             let next_state = &stage_data.next_state;
             let mut lifetime_generator = LifetimeGenerator::new();
             let mut state_lifetimes = IndexSet::new();
-            let fields_bindings = next_state.field_bindings.iter().map(|(name, ty_)| {
-                let mut ty_ = ty_.to_owned();
-
-                let lifetime2binding: HashMap<_, _> = ty_
-                    .named_lifetime_parameters()
-                    .into_iter()
-                    .map(|lifetime| (lifetime, lifetime_generator.next()))
-                    .collect();
-                ty_.rename_lifetime_parameters(&lifetime2binding);
-                state_lifetimes.extend(lifetime2binding.values().cloned());
-
-                if ty_.has_implicit_lifetime_parameters() {
-                    let implicit_lifetime_binding = lifetime_generator.next();
-                    state_lifetimes.insert(implicit_lifetime_binding.clone());
-                    ty_.set_implicit_lifetimes(implicit_lifetime_binding);
-                }
-                (name, ty_)
-            });
-            let fields: Vec<_> = fields_bindings
+            let field_bindings: Vec<_> = next_state
+                .field_bindings
+                .iter()
                 .map(|(name, ty_)| {
-                    let name = format_ident!("{}", name);
-                    let ty_ = ty_.syn_type(package_id2name);
-                    quote! {
-                        #name: #ty_
+                    let mut ty_ = ty_.to_owned();
+
+                    let lifetime2binding: HashMap<_, _> = ty_
+                        .named_lifetime_parameters()
+                        .into_iter()
+                        .map(|lifetime| (lifetime, lifetime_generator.next()))
+                        .collect();
+                    ty_.rename_lifetime_parameters(&lifetime2binding);
+                    state_lifetimes.extend(lifetime2binding.values().cloned());
+
+                    if ty_.has_implicit_lifetime_parameters() {
+                        let implicit_lifetime_binding = lifetime_generator.next();
+                        state_lifetimes.insert(implicit_lifetime_binding.clone());
+                        ty_.set_implicit_lifetimes(implicit_lifetime_binding);
                     }
+                    (name, ty_)
                 })
                 .collect();
 
             let next_stage = &stages[i + 1];
-            let inputs_types: Vec<_> = next_stage
+            let input_types: Vec<_> = next_stage
                 .input_parameters
                 .iter()
                 .map(|input| {
-                    let field = next_state
-                        .field_bindings
-                        .iter()
-                        .find(|(_, ty_)| ty_ == &input);
+                    let field = field_bindings.iter().find(|(_, ty_)| ty_ == input);
                     let Some((_, ty_)) = field else {
                         unreachable!();
                     };
@@ -93,6 +85,16 @@ impl RequestHandlerPipeline {
                     quote! { #ty_ }
                 })
                 .collect();
+            let fields = field_bindings
+                .iter()
+                .map(|(name, ty_)| {
+                    let name = format_ident!("{}", name);
+                    let ty_ = ty_.syn_type(package_id2name);
+                    quote! {
+                        #name: #ty_
+                    }
+                })
+                .chain(std::iter::once(quote! { next: fn(#(#input_types),*) -> T }));
 
             let struct_name = format_ident!("{}", next_state.type_.base_type.last().unwrap());
             let state_generics: Vec<_> = state_lifetimes
@@ -107,8 +109,7 @@ impl RequestHandlerPipeline {
             let def = syn::parse2(quote! {
                 pub struct #struct_name #generics
                 where T: std::future::Future<Output = pavex::response::Response> {
-                    #(#fields),*,
-                    next: fn(#(#inputs_types),*) -> T,
+                    #(#fields),*
                 }
             })
             .unwrap();
@@ -143,7 +144,6 @@ impl RequestHandlerPipeline {
                     }
                 })
                 .collect();
-            let callable_path = &next_stage.fn_.sig.ident;
             let into_future_impl = syn::parse2(quote! {
                 impl #generics std::future::IntoFuture for #struct_name #generics
                 where

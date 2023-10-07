@@ -113,6 +113,7 @@ pub mod route_0 {
         let v2 = crate::route_0::Next0 {
             s_0: v1,
             s_1: v0,
+            next: handler,
         };
         let v3 = pavex::middleware::Next::new(v2);
         let v4 = app::fallible_wrapping_middleware(v3);
@@ -181,17 +182,22 @@ pub mod route_0 {
         };
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
     }
-    pub struct Next0 {
+    pub struct Next0<T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
         s_0: app::HttpClient,
         s_1: pavex::request::RequestHead,
+        next: fn(app::HttpClient, pavex::request::RequestHead) -> T,
     }
-    impl std::future::IntoFuture for Next0 {
+    impl<T> std::future::IntoFuture for Next0<T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
         type Output = pavex::response::Response;
-        type IntoFuture = std::pin::Pin<
-            Box<dyn std::future::Future<Output = Self::Output>>,
-        >;
+        type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            Box::pin(async move { handler(self.s_0, self.s_1).await })
+            (self.next)(self.s_0, self.s_1)
         }
     }
 }
