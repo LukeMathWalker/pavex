@@ -4,6 +4,8 @@ use syn::{ExprPath, GenericArgument, PathArguments, Type};
 
 use pavex::blueprint::reflection::RawCallableIdentifiers;
 
+use super::Lifetime;
+
 /// A path that can be used in expression position (i.e. to refer to a function or a static method).
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub(crate) struct CallPath {
@@ -39,7 +41,7 @@ pub(crate) struct CallPathSlice {
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub(crate) struct CallPathReference {
     pub is_mutable: bool,
-    pub is_static: bool,
+    pub lifetime: Lifetime,
     pub inner: Box<CallPathType>,
 }
 
@@ -105,10 +107,7 @@ impl CallPath {
                 let inner = Box::new(Self::parse_type(*r.elem)?);
                 Ok(CallPathType::Reference(CallPathReference {
                     is_mutable,
-                    is_static: r
-                        .lifetime
-                        .map(|l| l.ident.to_string().as_str() == "'static")
-                        .unwrap_or(false),
+                    lifetime: r.lifetime.map(|l| l.ident.to_string()).into(),
                     inner,
                 }))
             }

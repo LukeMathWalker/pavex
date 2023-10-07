@@ -71,7 +71,7 @@ impl ResolvedType {
             ResolvedType::Reference(r) => ResolvedType::Reference(TypeReference {
                 is_mutable: r.is_mutable,
                 inner: Box::new(r.inner.bind_generic_type_parameters(bindings)),
-                is_static: r.is_static,
+                lifetime: r.lifetime.clone(),
             }),
             ResolvedType::Tuple(t) => {
                 let mut bound_elements = Vec::with_capacity(t.elements.len());
@@ -103,8 +103,11 @@ impl ResolvedType {
             ResolvedType::ResolvedPath(path) => {
                 path.generic_arguments.iter().any(|arg| match arg {
                     GenericArgument::TypeParameter(g) => g.is_a_template(),
-                    GenericArgument::Lifetime(Lifetime::Static) => false,
-                    GenericArgument::Lifetime(Lifetime::Named(_)) => true,
+                    GenericArgument::Lifetime(GenericLifetimeParameter::Static) => false,
+                    // One might want to do a more precise level of analysis wrt lifetimes,
+                    // but for now we just assume that named lifetimes are not relevant for
+                    // specialization.
+                    GenericArgument::Lifetime(GenericLifetimeParameter::Named(_)) => false,
                 })
             }
             ResolvedType::Reference(r) => r.inner.is_a_template(),
@@ -276,6 +279,166 @@ impl ResolvedType {
             (_, _) => unreachable!(),
         }
     }
+
+    /// Return `true` if there is at least one elided lifetime parameter in this type.
+    ///
+    /// E.g. `&'_ str` and `&str` would both return `true`. `&'static str` or `&'a str` wouldn't.
+    pub fn has_implicit_lifetime_parameters(&self) -> bool {
+        match self {
+            ResolvedType::ResolvedPath(path) => {
+                path.generic_arguments.iter().any(|arg| match arg {
+                    GenericArgument::TypeParameter(g) => g.has_implicit_lifetime_parameters(),
+                    GenericArgument::Lifetime(GenericLifetimeParameter::Named(l)) if l == "_" => {
+                        true
+                    }
+                    GenericArgument::Lifetime(GenericLifetimeParameter::Named(_))
+                    | GenericArgument::Lifetime(GenericLifetimeParameter::Static) => false,
+                })
+            }
+            ResolvedType::Reference(r) => {
+                match &r.lifetime {
+                    Lifetime::Named(s) if s == "_" => {
+                        return true;
+                    }
+                    Lifetime::Elided => {
+                        return true;
+                    }
+                    Lifetime::Named(_) | Lifetime::Static => {}
+                }
+                r.inner.has_implicit_lifetime_parameters()
+            }
+            ResolvedType::Tuple(t) => t
+                .elements
+                .iter()
+                .any(|t| t.has_implicit_lifetime_parameters()),
+            ResolvedType::ScalarPrimitive(_) => false,
+            ResolvedType::Slice(s) => s.element_type.has_implicit_lifetime_parameters(),
+            ResolvedType::Generic(_) => false,
+        }
+    }
+
+    /// Replace all implicit lifetimes (e.g. `&'_ str` or the elided lifetime in `&str`) to
+    /// the provided named lifetime.
+    pub fn set_implicit_lifetimes(&mut self, inferred_lifetime: String) {
+        match self {
+            ResolvedType::ResolvedPath(path) => {
+                for arg in path.generic_arguments.iter_mut() {
+                    if let GenericArgument::Lifetime(lifetime) = arg {
+                        if lifetime == &GenericLifetimeParameter::Named("_".to_string()) {
+                            *lifetime = GenericLifetimeParameter::Named(inferred_lifetime.clone());
+                        }
+                    }
+                }
+            }
+            ResolvedType::Reference(r) => {
+                match &mut r.lifetime {
+                    Lifetime::Named(s) if s == "_" => {
+                        r.lifetime = Lifetime::Named(inferred_lifetime.clone());
+                    }
+                    Lifetime::Elided => {
+                        r.lifetime = Lifetime::Named(inferred_lifetime.clone());
+                    }
+                    Lifetime::Static | Lifetime::Named(_) => {}
+                }
+                r.inner.set_implicit_lifetimes(inferred_lifetime);
+            }
+            ResolvedType::Tuple(t) => t
+                .elements
+                .iter_mut()
+                .for_each(|e| e.set_implicit_lifetimes(inferred_lifetime.clone())),
+            ResolvedType::Slice(s) => s.element_type.set_implicit_lifetimes(inferred_lifetime),
+            ResolvedType::Generic(_) | ResolvedType::ScalarPrimitive(_) => {}
+        }
+    }
+
+    /// Rename named lifetime parameters in this type according to the provided mapping.
+    ///
+    /// You don't need to provide a mapping for lifetimes that you don't want to rename.
+    pub fn rename_lifetime_parameters(&mut self, original2renamed: &HashMap<String, String>) {
+        match self {
+            ResolvedType::ResolvedPath(t) => {
+                for arg in t.generic_arguments.iter_mut() {
+                    match arg {
+                        GenericArgument::TypeParameter(tp) => {
+                            tp.rename_lifetime_parameters(original2renamed);
+                        }
+                        GenericArgument::Lifetime(l) => {
+                            if let GenericLifetimeParameter::Named(l) = l {
+                                if let Some(new_name) = original2renamed.get(l) {
+                                    *l = new_name.clone();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            ResolvedType::Reference(r) => {
+                match &mut r.lifetime {
+                    Lifetime::Named(l) => {
+                        if let Some(new_name) = original2renamed.get(l) {
+                            *l = new_name.clone();
+                        }
+                    }
+                    Lifetime::Static | Lifetime::Elided => {}
+                }
+                r.inner.rename_lifetime_parameters(original2renamed);
+            }
+            ResolvedType::Tuple(t) => {
+                for e in t.elements.iter_mut() {
+                    e.rename_lifetime_parameters(original2renamed);
+                }
+            }
+            ResolvedType::Slice(s) => {
+                s.element_type.rename_lifetime_parameters(original2renamed);
+            }
+            ResolvedType::Generic(_) | ResolvedType::ScalarPrimitive(_) => {}
+        }
+    }
+
+    /// Return the set of free lifetime parameters (i.e. non `'static`) for this type.
+    pub fn named_lifetime_parameters(&self) -> IndexSet<String> {
+        let mut set = IndexSet::new();
+        self._named_lifetime_parameters(&mut set);
+        set
+    }
+
+    fn _named_lifetime_parameters(&self, set: &mut IndexSet<String>) {
+        match self {
+            ResolvedType::ResolvedPath(path) => {
+                for arg in &path.generic_arguments {
+                    match arg {
+                        GenericArgument::TypeParameter(g) => {
+                            g._named_lifetime_parameters(set);
+                        }
+                        GenericArgument::Lifetime(GenericLifetimeParameter::Static) => {}
+                        GenericArgument::Lifetime(GenericLifetimeParameter::Named(l)) => {
+                            if l != "_" {
+                                set.insert(l.clone());
+                            }
+                        }
+                    }
+                }
+            }
+            ResolvedType::Reference(r) => {
+                match &r.lifetime {
+                    Lifetime::Named(l) => {
+                        if l != "_" {
+                            set.insert(l.clone());
+                        }
+                    }
+                    Lifetime::Static | Lifetime::Elided => {}
+                }
+                r.inner._named_lifetime_parameters(set)
+            }
+            ResolvedType::Tuple(t) => {
+                for inner in &t.elements {
+                    inner._named_lifetime_parameters(set);
+                }
+            }
+            ResolvedType::Slice(s) => s.element_type._named_lifetime_parameters(set),
+            ResolvedType::ScalarPrimitive(_) | ResolvedType::Generic(_) => {}
+        }
+    }
 }
 
 impl PathType {
@@ -445,11 +608,11 @@ pub struct Slice {
     pub element_type: Box<ResolvedType>,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Hash, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, PartialEq, Eq, Hash, Clone)]
 /// A Rust reference—e.g. `&mut u32` or `&'static mut Vec<u8>`.
 pub struct TypeReference {
     pub is_mutable: bool,
-    pub is_static: bool,
+    pub lifetime: Lifetime,
     pub inner: Box<ResolvedType>,
 }
 
@@ -500,8 +663,6 @@ mod generics_equivalence {
         }
         let mut first_id_gen = UnassignedIdGenerator::new();
         let mut second_id_gen = UnassignedIdGenerator::new();
-        let mut first_lifetime_id_gen = UnassignedIdGenerator::new();
-        let mut second_lifetime_id_gen = UnassignedIdGenerator::new();
         first_generic_args
             .iter()
             .zip(second_generic_args)
@@ -511,10 +672,6 @@ mod generics_equivalence {
                 match (first, second) {
                     (TypeParameter(Generic(first)), TypeParameter(Generic(second))) => {
                         first_id_gen.id(&first.name) == second_id_gen.id(&second.name)
-                    }
-                    (Lifetime(first), Lifetime(second)) => {
-                        first_lifetime_id_gen.id(format!("{first:?}"))
-                            == second_lifetime_id_gen.id(format!("{second:?}"))
                     }
                     (first, second) => first == second,
                 }
@@ -535,8 +692,6 @@ mod generics_equivalence {
         }
         let mut first_id_gen = UnassignedIdGenerator::new();
         let mut second_id_gen = UnassignedIdGenerator::new();
-        let mut first_lifetime_id_gen = UnassignedIdGenerator::new();
-        let mut second_lifetime_id_gen = UnassignedIdGenerator::new();
         let mut mapping = HashMap::new();
         for (first, second) in first_generic_args.iter().zip(second_generic_args) {
             use GenericArgument::*;
@@ -551,13 +706,8 @@ mod generics_equivalence {
                         return None;
                     }
                 }
-                (Lifetime(first), Lifetime(second)) => {
-                    let first_id = first_lifetime_id_gen.id(format!("{first:?}"));
-                    let second_id = second_lifetime_id_gen.id(format!("{second:?}"));
-                    // TODO: include lifetimes in the mapping
-                    if first_id != second_id {
-                        return None;
-                    }
+                (Lifetime(_), Lifetime(_)) => {
+                    // Lifetimes are not relevant for specialization (yet).
                 }
                 (first, second) => {
                     if first != second {
@@ -629,18 +779,22 @@ impl Hash for PathType {
         rustdoc_id.hash(state);
         base_type.hash(state);
         let mut id_gen = UnassignedIdGenerator::new();
-        let mut lifetime_id_gen = UnassignedIdGenerator::new();
         for generic_argument in generic_arguments {
             match generic_argument {
                 GenericArgument::Lifetime(lifetime) => {
-                    lifetime_id_gen.id(format!("{lifetime:?}")).hash(state);
+                    state.write_u8(0);
+                    lifetime.hash(state);
                 }
                 GenericArgument::TypeParameter(ResolvedType::Generic(
                     unassigned_type_parameter,
                 )) => {
+                    state.write_u8(1);
                     id_gen.id(&unassigned_type_parameter.name).hash(state);
                 }
-                _ => generic_argument.hash(state),
+                _ => {
+                    state.write_u8(1);
+                    generic_argument.hash(state);
+                }
             }
         }
     }
@@ -650,14 +804,103 @@ impl Hash for PathType {
 pub enum GenericArgument {
     /// A generic type parameter, e.g. `u32` in `Vec<u32>` or `T` in `HashSet<T>`.
     TypeParameter(ResolvedType),
-    /// A lifetime parameter, e.g. `'a` in `&'a str` or `'static` in `&'static str`.
-    Lifetime(Lifetime),
+    /// A lifetime parameter, e.g. `'a` in `Cow<'a, str>`.
+    Lifetime(GenericLifetimeParameter),
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Hash, Clone)]
-pub enum Lifetime {
-    Static,
+#[derive(serde::Serialize, serde::Deserialize, Eq, Clone)]
+pub enum GenericLifetimeParameter {
     Named(String),
+    Static,
+}
+
+impl PartialEq for GenericLifetimeParameter {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (GenericLifetimeParameter::Static, GenericLifetimeParameter::Static) => true,
+            (GenericLifetimeParameter::Static, _) => false,
+            // We don't care about the name of the lifetime, only that it is not static.
+            _ => true,
+        }
+    }
+}
+
+impl Hash for GenericLifetimeParameter {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        match self {
+            GenericLifetimeParameter::Static => {
+                state.write_u8(0);
+            }
+            GenericLifetimeParameter::Named(_) => {
+                // We don't care about the name of the lifetime, only that it is not static.
+                state.write_u8(1);
+            }
+        }
+    }
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Eq, Clone)]
+pub enum Lifetime {
+    /// The `'static` lifetime.
+    Static,
+    /// A named lifetime, e.g. `'a` in `&'a str`.
+    /// It also include the "inferred" lifetime, which is represented as `'_`.
+    Named(String),
+    /// A lifetime that is omitted from the source thanks to lifetime elision
+    /// (see https://doc.rust-lang.org/nomicon/lifetime-elision.html).
+    ///
+    /// E.g. `&str`.
+    Elided,
+}
+
+impl PartialEq for Lifetime {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Lifetime::Static, Lifetime::Static) => true,
+            (Lifetime::Static, _) => false,
+            (_, Lifetime::Static) => false,
+            // We don't care about the name of the lifetime, only that it is not static.
+            _ => true,
+        }
+    }
+}
+
+impl Hash for Lifetime {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        match self {
+            Lifetime::Static => {
+                state.write_u8(0);
+            }
+            Lifetime::Named(_) | Lifetime::Elided => {
+                // We don't care about the name of the lifetime, only that it is not static.
+                state.write_u8(1);
+            }
+        }
+    }
+}
+
+impl From<Option<String>> for Lifetime {
+    fn from(s: Option<String>) -> Self {
+        match s {
+            Some(s) => {
+                if &s == "'static" {
+                    Lifetime::Static
+                } else {
+                    Lifetime::Named(s)
+                }
+            }
+            None => Lifetime::Elided,
+        }
+    }
+}
+
+impl Lifetime {
+    pub fn is_static(&self) -> bool {
+        match self {
+            Lifetime::Named(_) | Lifetime::Elided => false,
+            Lifetime::Static => true,
+        }
+    }
 }
 
 fn serialize_package_id<S>(package_id: &PackageId, serializer: S) -> Result<S::Ok, S::Error>
@@ -710,14 +953,11 @@ impl ResolvedType {
                                 write!(buffer, "{}", t.render_type(id2name)).unwrap();
                             }
                             GenericArgument::Lifetime(l) => match l {
-                                Lifetime::Static => {
+                                GenericLifetimeParameter::Static => {
                                     write!(buffer, "'static").unwrap();
                                 }
-                                Lifetime::Named(_) => {
-                                    // TODO: We should have a dedicated lifetime mapping here.
-                                    //  For now we hack around it since we know that all the usecases
-                                    //  we currently support will work out with lifetime elision.
-                                    write!(buffer, "'_").unwrap();
+                                GenericLifetimeParameter::Named(l) => {
+                                    write!(buffer, "'{l}").unwrap();
                                 }
                             },
                         }
@@ -730,8 +970,14 @@ impl ResolvedType {
             }
             ResolvedType::Reference(r) => {
                 write!(buffer, "&").unwrap();
-                if r.is_static {
-                    write!(buffer, "'static ").unwrap();
+                match &r.lifetime {
+                    Lifetime::Static => {
+                        write!(buffer, "'static ").unwrap();
+                    }
+                    Lifetime::Named(l) => {
+                        write!(buffer, "'{l} ").unwrap();
+                    }
+                    Lifetime::Elided => {}
                 }
                 if r.is_mutable {
                     write!(buffer, "mut ").unwrap();
@@ -812,6 +1058,16 @@ impl Debug for Lifetime {
         match self {
             Lifetime::Static => write!(f, "'static"),
             Lifetime::Named(name) => write!(f, "'{}", name),
+            Lifetime::Elided => Ok(()),
+        }
+    }
+}
+
+impl Debug for GenericLifetimeParameter {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            GenericLifetimeParameter::Named(name) => write!(f, "'{}", name),
+            GenericLifetimeParameter::Static => write!(f, "'static"),
         }
     }
 }
@@ -858,9 +1114,10 @@ impl Debug for Tuple {
 impl Debug for TypeReference {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "&")?;
-        if self.is_static {
-            write!(f, "'static ")?;
+        if self.lifetime != Lifetime::Elided {
+            write!(f, "{:?} ", self.lifetime)?;
         }
+
         if self.is_mutable {
             write!(f, "mut ")?;
         }
@@ -884,5 +1141,44 @@ impl From<PathType> for ResolvedType {
 impl From<TypeReference> for ResolvedType {
     fn from(value: TypeReference) -> Self {
         Self::Reference(value)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use ahash::{HashSet, HashSetExt};
+
+    use crate::language::{GenericLifetimeParameter, Lifetime};
+
+    #[test]
+    fn all_named_lifetimes_are_equivalent() {
+        let lifetimes = vec![
+            Lifetime::Named("a".to_string()),
+            Lifetime::Named("b".to_string()),
+            Lifetime::Elided,
+        ];
+        for first in &lifetimes {
+            for second in &lifetimes {
+                assert_eq!(first, second);
+            }
+        }
+
+        let mut set = HashSet::new();
+        set.insert(Lifetime::Named("a".into()));
+        for lifetime in &lifetimes {
+            assert!(set.contains(lifetime));
+        }
+    }
+
+    #[test]
+    fn all_named_generic_lifetimes_are_equivalent() {
+        let named1 = GenericLifetimeParameter::Named("a".to_string());
+        let named2 = GenericLifetimeParameter::Named("b".to_string());
+
+        assert_eq!(named1, named2);
+
+        let mut set = HashSet::new();
+        set.insert(named1);
+        assert!(set.contains(&named2));
     }
 }

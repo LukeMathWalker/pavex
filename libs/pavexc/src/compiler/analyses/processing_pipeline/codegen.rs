@@ -1,13 +1,15 @@
-use crate::compiler::analyses::components::ComponentDb;
-use crate::compiler::analyses::computations::ComputationDb;
-use crate::compiler::analyses::processing_pipeline::RequestHandlerPipeline;
-use crate::language::ResolvedType;
+use ahash::HashMap;
 use bimap::BiHashMap;
 use guppy::PackageId;
 use indexmap::IndexSet;
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote, ToTokens};
 use syn::ItemFn;
+
+use crate::compiler::analyses::components::ComponentDb;
+use crate::compiler::analyses::computations::ComputationDb;
+use crate::compiler::analyses::processing_pipeline::RequestHandlerPipeline;
+use crate::language::ResolvedType;
 
 impl RequestHandlerPipeline {
     /// Generates the code required to wire together this request handler pipeline.
@@ -45,8 +47,45 @@ impl RequestHandlerPipeline {
         let mut next_states = Vec::with_capacity(n_middlewares);
         for (i, stage_data) in self.middleware_id2stage_data.values().enumerate() {
             let next_state = &stage_data.next_state;
-            let fields: Vec<_> = next_state
+            let mut lifetime_generator = LifetimeGenerator::new();
+            let mut state_lifetimes = IndexSet::new();
+            let field_bindings: Vec<_> = next_state
                 .field_bindings
+                .iter()
+                .map(|(name, ty_)| {
+                    let mut ty_ = ty_.to_owned();
+
+                    let lifetime2binding: HashMap<_, _> = ty_
+                        .named_lifetime_parameters()
+                        .into_iter()
+                        .map(|lifetime| (lifetime, lifetime_generator.next()))
+                        .collect();
+                    ty_.rename_lifetime_parameters(&lifetime2binding);
+                    state_lifetimes.extend(lifetime2binding.values().cloned());
+
+                    if ty_.has_implicit_lifetime_parameters() {
+                        let implicit_lifetime_binding = lifetime_generator.next();
+                        state_lifetimes.insert(implicit_lifetime_binding.clone());
+                        ty_.set_implicit_lifetimes(implicit_lifetime_binding);
+                    }
+                    (name, ty_)
+                })
+                .collect();
+
+            let next_stage = &stages[i + 1];
+            let input_types: Vec<_> = next_stage
+                .input_parameters
+                .iter()
+                .map(|input| {
+                    let field = field_bindings.iter().find(|(_, ty_)| ty_ == input);
+                    let Some((_, ty_)) = field else {
+                        unreachable!();
+                    };
+                    let ty_ = ty_.syn_type(package_id2name);
+                    quote! { #ty_ }
+                })
+                .collect();
+            let fields = field_bindings
                 .iter()
                 .map(|(name, ty_)| {
                     let name = format_ident!("{}", name);
@@ -55,17 +94,25 @@ impl RequestHandlerPipeline {
                         #name: #ty_
                     }
                 })
-                .collect();
+                .chain(std::iter::once(quote! { next: fn(#(#input_types),*) -> T }));
 
             let struct_name = format_ident!("{}", next_state.type_.base_type.last().unwrap());
+            let state_generics: Vec<_> = state_lifetimes
+                .iter()
+                .map(|lifetime| {
+                    syn::Lifetime::new(&format!("'{lifetime}"), proc_macro2::Span::call_site())
+                        .to_token_stream()
+                })
+                .chain(std::iter::once(quote! { T }))
+                .collect();
+            let generics = quote! { <#(#state_generics),*> };
             let def = syn::parse2(quote! {
-                pub struct #struct_name {
+                pub struct #struct_name #generics
+                where T: std::future::Future<Output = pavex::response::Response> {
                     #(#fields),*
                 }
             })
             .unwrap();
-
-            let next_stage = &stages[i + 1];
             let inputs: Vec<_> = next_stage
                 .input_parameters
                 .iter()
@@ -73,25 +120,42 @@ impl RequestHandlerPipeline {
                     let field_name = next_state
                         .field_bindings
                         .iter()
-                        .find(|(_, ty_)| ty_ == &input)
-                        .unwrap()
-                        .0;
-                    format_ident!("{}", field_name)
+                        .find(|(_, ty_)| ty_ == &input);
+                    if let Some((field_name, _)) = field_name {
+                        let ident = format_ident!("{}", field_name);
+                        quote! {
+                            self.#ident
+                        }
+                    } else if let ResolvedType::Reference(r) = input {
+                        let field_name = next_state
+                            .field_bindings
+                            .iter()
+                            .find(|(_, ty_)| *ty_ == r.inner.as_ref())
+                            .unwrap()
+                            .0;
+                        let ident = format_ident!("{}", field_name);
+                        quote! {
+                                &self.#ident
+                            }
+                    } else {
+                        panic!("Could not find field name for input type `{:?}` in `Next`'s state, `{:?}`", input, next_state.field_bindings);
+                    }
                 })
                 .collect();
-            let callable_path = &next_stage.fn_.sig.ident;
             let into_future_impl = syn::parse2(quote! {
-                impl std::future::IntoFuture for #struct_name {
+                impl #generics std::future::IntoFuture for #struct_name #generics
+                where
+                    T: std::future::Future<Output = pavex::response::Response>,
+                {
                     type Output = pavex::response::Response;
-                    type IntoFuture = std::pin::Pin<Box<dyn std::future::Future<Output = Self::Output>>>;
+                    type IntoFuture = T;
 
                     fn into_future(self) -> Self::IntoFuture {
-                        Box::pin(async {
-                            #callable_path(#(self.#inputs),*).await
-                        })
+                        (self.next)(#(#inputs),*)
                     }
                 }
-            }).unwrap();
+            })
+            .unwrap();
             next_states.push(CodegenedNextState {
                 state: def,
                 into_future_impl,
@@ -103,6 +167,35 @@ impl RequestHandlerPipeline {
             next_states,
             module_name: self.module_name.clone(),
         })
+    }
+}
+
+/// A generator of unique lifetime names.
+struct LifetimeGenerator {
+    next: usize,
+}
+
+impl LifetimeGenerator {
+    const ALPHABET: [char; 26] = [
+        'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r',
+        's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+    ];
+
+    fn new() -> Self {
+        Self { next: 0 }
+    }
+
+    /// Generates a new lifetime name.
+    fn next(&mut self) -> String {
+        let next = self.next;
+        self.next += 1;
+        let round = next / Self::ALPHABET.len();
+        let letter = Self::ALPHABET[next % Self::ALPHABET.len()];
+        if round == 0 {
+            format!("{letter}")
+        } else {
+            format!("{letter}{round}")
+        }
     }
 }
 
@@ -155,7 +248,7 @@ impl CodegenedRequestHandlerPipeline {
             let mut is_shared_reference = false;
             let inner_type = match type_ {
                 ResolvedType::Reference(r) => {
-                    if !r.is_static {
+                    if !r.lifetime.is_static() {
                         is_shared_reference = true;
                         &r.inner
                     } else {

@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::collections::BTreeSet;
 use std::fmt::Formatter;
 use std::fmt::Write;
 
@@ -20,6 +21,12 @@ pub struct Callable {
     /// It is **NOT** set to `true` if the function doesn't use the `async` keyword but returns
     /// a type that implements the `Future` trait.
     pub is_async: bool,
+    /// `true` if the first input parameter to the callable is `&self` or `&mut self`.  
+    /// This is relevant to determine borrow relationships between the callable inputs and outputs
+    /// in case some lifetime parameters were elided.
+    ///
+    /// See https://doc.rust-lang.org/nomicon/lifetime-elision.html for more details.
+    pub takes_self_as_ref: bool,
     /// `None` if the callable returns the unit type (`()`).
     /// Otherwise, the type of the callable return value.
     pub output: Option<ResolvedType>,
@@ -91,6 +98,97 @@ impl Callable {
             false
         }
     }
+
+    /// Returns a new [`Callable`] where all lifetime parameters in the
+    /// output type (if present) are explicitly named.  
+    ///
+    /// This is relevant to ensure correct borrow relationships between the callable
+    /// inputs and outputs in case some lifetime parameters were elided.
+    pub(crate) fn unelide_output_lifetimes(&self) -> Self {
+        if self.invocation_style != InvocationStyle::FunctionCall {
+            // Struct literals don't have lifetime elision.
+            return self.clone();
+        }
+
+        let Some(output) = &self.output else {
+            return self.clone();
+        };
+        if !output.has_implicit_lifetime_parameters() {
+            return self.clone();
+        }
+
+        let mut elided_output_lifetime: String = "elided".to_string();
+        let mut inputs = self.inputs.clone();
+        for input in inputs.iter_mut() {
+            if input.has_implicit_lifetime_parameters() {
+                elided_output_lifetime = {
+                    let mut named_lifetime_parameters = BTreeSet::new();
+                    for input in &self.inputs {
+                        named_lifetime_parameters.extend(input.named_lifetime_parameters());
+                    }
+                    named_lifetime_parameters.extend(output.named_lifetime_parameters());
+
+                    if named_lifetime_parameters.contains("elided") {
+                        // Unlucky! Let's craft a lifetime name that for sure
+                        // doesn't belong to the set, leveraging that the set
+                        // is ordered in ascending order.
+                        let last = named_lifetime_parameters.last().unwrap();
+                        format!("{last}_")
+                    } else {
+                        "elided".to_string()
+                    }
+                };
+
+                input.set_implicit_lifetimes(elided_output_lifetime.clone());
+                break;
+            }
+
+            let named_params = input.named_lifetime_parameters();
+            if !named_params.is_empty() {
+                elided_output_lifetime = named_params.first().unwrap().to_string();
+                break;
+            }
+        }
+
+        let mut output = output.clone();
+        output.set_implicit_lifetimes(elided_output_lifetime);
+
+        Self {
+            is_async: self.is_async,
+            takes_self_as_ref: self.takes_self_as_ref,
+            output: Some(output),
+            path: self.path.clone(),
+            inputs,
+            invocation_style: self.invocation_style.clone(),
+            source_coordinates: self.source_coordinates.clone(),
+        }
+    }
+
+    /// Returns the indices of all input parameters that the output type
+    /// borrows from.
+    ///
+    /// E.g. `fn f(x: &T) -> &T` returns `[0]`.
+    pub(crate) fn inputs_that_output_borrows_from(&self) -> Vec<usize> {
+        let c = self.unelide_output_lifetimes();
+        let Some(output) = &c.output else {
+            return vec![];
+        };
+
+        let output_lifetime_parameters = output.named_lifetime_parameters();
+
+        let mut borrowed_indexes = vec![];
+        for (i, input) in c.inputs.iter().enumerate() {
+            if input
+                .named_lifetime_parameters()
+                .intersection(&output_lifetime_parameters)
+                .next()
+                .is_some()
+            {
+                borrowed_indexes.push(i);
+            }
+        }
+        borrowed_indexes
+    }
 }
 
 /// Rust supports different types of callables which rely on different invocation syntax.
@@ -106,6 +204,13 @@ pub enum InvocationStyle {
     StructLiteral {
         /// A map associating each field name to its type.
         field_names: BTreeMap<String, ResolvedType>,
+        /// Rust does not have default values for struct fields.
+        /// This is hack to allow us to inject the `next` field in the state we generate for
+        /// `Next` where the `next` field is not part of the struct definition and it must
+        /// be set to a pre-determined function pointer in order to work around the lack of
+        /// TAIT on stable.
+        /// TODO: remove when TAIT stabilizes.
+        extra_field2default_value: BTreeMap<String, String>,
     },
 }
 

@@ -12,7 +12,7 @@
                     import_path: "pavex::extract::query::QueryParams::extract",
                 ),
                 location: (
-                    line: 30,
+                    line: 32,
                     column: 8,
                     file: "conduit_core/src/blueprint.rs",
                 ),
@@ -25,7 +25,7 @@
                     import_path: "pavex::extract::query::errors::ExtractQueryParamsError::into_response",
                 ),
                 location: (
-                    line: 34,
+                    line: 36,
                     column: 6,
                     file: "conduit_core/src/blueprint.rs",
                 ),
@@ -38,7 +38,7 @@
                     import_path: "pavex::extract::route::RouteParams::extract",
                 ),
                 location: (
-                    line: 39,
+                    line: 41,
                     column: 8,
                     file: "conduit_core/src/blueprint.rs",
                 ),
@@ -51,7 +51,7 @@
                     import_path: "pavex::extract::route::errors::ExtractRouteParamsError::into_response",
                 ),
                 location: (
-                    line: 43,
+                    line: 45,
                     column: 6,
                     file: "conduit_core/src/blueprint.rs",
                 ),
@@ -64,7 +64,7 @@
                     import_path: "pavex::extract::body::JsonBody::extract",
                 ),
                 location: (
-                    line: 48,
+                    line: 50,
                     column: 8,
                     file: "conduit_core/src/blueprint.rs",
                 ),
@@ -77,7 +77,7 @@
                     import_path: "pavex::extract::body::errors::ExtractJsonBodyError::into_response",
                 ),
                 location: (
-                    line: 52,
+                    line: 54,
                     column: 6,
                     file: "conduit_core/src/blueprint.rs",
                 ),
@@ -90,7 +90,7 @@
                     import_path: "pavex::extract::body::BufferedBody::extract",
                 ),
                 location: (
-                    line: 55,
+                    line: 57,
                     column: 8,
                     file: "conduit_core/src/blueprint.rs",
                 ),
@@ -103,7 +103,7 @@
                     import_path: "pavex::extract::body::errors::ExtractBufferedBodyError::into_response",
                 ),
                 location: (
-                    line: 59,
+                    line: 61,
                     column: 6,
                     file: "conduit_core/src/blueprint.rs",
                 ),
@@ -116,7 +116,7 @@
                     import_path: "<pavex::extract::body::BodySizeLimit as std::default::Default>::default",
                 ),
                 location: (
-                    line: 62,
+                    line: 64,
                     column: 8,
                     file: "conduit_core/src/blueprint.rs",
                 ),
@@ -158,6 +158,22 @@
             error_handler: None,
         ),
     ],
+    middlewares: [
+        (
+            middleware: (
+                callable: (
+                    registered_at: "conduit_core",
+                    import_path: "crate::telemetry::logger",
+                ),
+                location: (
+                    line: 19,
+                    column: 8,
+                    file: "conduit_core/src/blueprint.rs",
+                ),
+            ),
+            error_handler: None,
+        ),
+    ],
     routes: [
         (
             path: "/api/ping",
@@ -172,7 +188,7 @@
                     import_path: "crate::routes::status::ping",
                 ),
                 location: (
-                    line: 22,
+                    line: 24,
                     column: 8,
                     file: "conduit_core/src/blueprint.rs",
                 ),
@@ -192,7 +208,7 @@
                     import_path: "crate::routes::tags::get_tags",
                 ),
                 location: (
-                    line: 23,
+                    line: 25,
                     column: 8,
                     file: "conduit_core/src/blueprint.rs",
                 ),
@@ -209,6 +225,7 @@
                     file: "conduit_core/src/routes/articles/mod.rs",
                 ),
                 constructors: [],
+                middlewares: [],
                 routes: [
                     (
                         path: "",
@@ -435,7 +452,7 @@
             ),
             path_prefix: Some("/articles"),
             nesting_location: (
-                line: 19,
+                line: 21,
                 column: 8,
                 file: "conduit_core/src/blueprint.rs",
             ),
@@ -448,6 +465,7 @@
                     file: "conduit_core/src/routes/profiles/mod.rs",
                 ),
                 constructors: [],
+                middlewares: [],
                 routes: [
                     (
                         path: "/:username",
@@ -514,7 +532,7 @@
             ),
             path_prefix: Some("/profiles"),
             nesting_location: (
-                line: 20,
+                line: 22,
                 column: 8,
                 file: "conduit_core/src/blueprint.rs",
             ),
@@ -544,6 +562,7 @@
                         error_handler: None,
                     ),
                 ],
+                middlewares: [],
                 routes: [
                     (
                         path: "/users",
@@ -650,7 +669,7 @@
             ),
             path_prefix: None,
             nesting_location: (
-                line: 21,
+                line: 23,
                 column: 8,
                 file: "conduit_core/src/blueprint.rs",
             ),

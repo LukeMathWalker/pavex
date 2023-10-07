@@ -3,7 +3,7 @@ use std::fmt::{Display, Formatter};
 use ahash::HashMap;
 use indexmap::IndexSet;
 
-use crate::language::{Callable, GenericArgument, ResolvedPath, ResolvedType, TypeReference};
+use crate::language::{Callable, GenericArgument, ResolvedPath, ResolvedType, TypeReference, Lifetime};
 
 /// A transformation that, given a reference to an error type (and, optionally, other inputs),
 /// returns an HTTP response.
@@ -42,7 +42,7 @@ impl ErrorHandler {
             };
             ResolvedType::Reference(TypeReference {
                 is_mutable: false,
-                is_static: false,
+                lifetime: Lifetime::Elided,
                 inner: Box::new(e),
             })
         };

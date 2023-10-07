@@ -1,3 +1,12 @@
+use std::collections::BTreeMap;
+
+use ahash::{HashMap, HashMapExt};
+use guppy::graph::PackageGraph;
+use guppy::PackageId;
+use indexmap::{IndexMap, IndexSet};
+
+use pavex::blueprint::constructor::{CloningStrategy, Lifecycle};
+
 use crate::compiler::analyses::call_graph::{
     request_scoped_call_graph, request_scoped_ordered_call_graph, CallGraphNode,
     InputParameterSource, OrderedCallGraph, RawCallGraph,
@@ -9,12 +18,6 @@ use crate::compiler::analyses::processing_pipeline::graph_iter::PipelineGraphIte
 use crate::compiler::app::GENERATED_APP_PACKAGE_ID;
 use crate::language::{Callable, InvocationStyle, PathType, ResolvedType};
 use crate::rustdoc::CrateCollection;
-use ahash::{HashMap, HashMapExt};
-use guppy::graph::PackageGraph;
-use guppy::PackageId;
-use indexmap::{IndexMap, IndexSet};
-use pavex::blueprint::constructor::{CloningStrategy, Lifecycle};
-use std::collections::BTreeMap;
 
 /// A request handler pipeline is the combination of a root compute node (i.e. the request handler)
 /// and an ordered sequence of wrapping middlewares ahead of it, feeding into each other.
@@ -113,13 +116,13 @@ impl RequestHandlerPipeline {
         //
         // In order to pull this off, we walk the chain in reverse order and accumulate the set of
         // request-scoped and singleton components that are expected as input.
-        let mut next_field_types: IndexSet<ComponentId> = IndexSet::new();
+        let mut next_field_types: IndexSet<ResolvedType> = IndexSet::new();
         extract_long_lived_inputs(
             &handler_call_graph.call_graph,
             component_db,
             &mut next_field_types,
         );
-        let mut middleware_id2next_field_types: HashMap<ComponentId, IndexSet<ComponentId>> =
+        let mut middleware_id2next_field_types: HashMap<ComponentId, IndexSet<ResolvedType>> =
             HashMap::new();
         for (middleware_id, middleware_call_graph) in middleware_call_graphs.iter().rev() {
             middleware_id2next_field_types.insert(*middleware_id, next_field_types.clone());
@@ -129,7 +132,9 @@ impl RequestHandlerPipeline {
             for node in middleware_call_graph.call_graph.node_weights() {
                 if let CallGraphNode::Compute { component_id, .. } = node {
                     if component_db.lifecycle(*component_id) == Some(&Lifecycle::RequestScoped) {
-                        next_field_types.remove(component_id);
+                        let component =
+                            component_db.hydrated_component(*component_id, computation_db);
+                        next_field_types.remove(component.output_type());
                     }
                 }
             }
@@ -144,9 +149,6 @@ impl RequestHandlerPipeline {
             );
         }
 
-        // TODO: borrow-checker
-        // Step X: Check that the entire pipeline satisfies the constraints imposed by the
-        // borrow-checker.
         // Determine, for each middleware, if they consume a request-scoped component
         // that is also needed by later stages of the pipeline.
 
@@ -154,15 +156,14 @@ impl RequestHandlerPipeline {
         // make the call graph for each middleware concrete—i.e. we can replace the generic
         // `Next<_>` parameter with a concrete type (that we will codegen later on).
         let mut middleware_id2stage_data = IndexMap::new();
+        let mut request_scoped_prebuilt_ids = IndexSet::new();
         for (i, (middleware_id, next_state_types)) in
             middleware_id2next_field_types.iter().enumerate()
         {
             let next_state_bindings = next_state_types
                 .iter()
                 .enumerate()
-                .map(|(i, component_id)| {
-                    let component = component_db.hydrated_component(*component_id, computation_db);
-                    let type_ = component.output_type();
+                .map(|(i, type_)| {
                     // TODO: naming can be improved here.
                     (format!("s_{i}"), type_.to_owned())
                 })
@@ -178,11 +179,21 @@ impl RequestHandlerPipeline {
             // `next_type`.
             let next_state_constructor = Callable {
                 is_async: false,
+                takes_self_as_ref: false,
                 path: next_state_type.resolved_path(),
                 output: Some(next_state_type.clone().into()),
                 inputs: next_state_bindings.values().cloned().collect(),
                 invocation_style: InvocationStyle::StructLiteral {
                     field_names: next_state_bindings.clone(),
+                    // TODO: remove when TAIT stabilises
+                    extra_field2default_value: {
+                        let next_fn_name = if i + 1 < middleware_call_graphs.len() {
+                            format!("middleware_{}", i + 1)
+                        } else {
+                            "handler".to_string()
+                        };
+                        BTreeMap::from([("next".into(), next_fn_name)])
+                    },
                 },
                 source_coordinates: None,
             };
@@ -201,7 +212,9 @@ impl RequestHandlerPipeline {
 
             // Since we now have the concrete type of the generic in `Next<_>`, we can bind
             // the generic type parameter of the middleware to that concrete type.
-            let HydratedComponent::WrappingMiddleware(mw) = component_db.hydrated_component(*middleware_id, computation_db) else {
+            let HydratedComponent::WrappingMiddleware(mw) =
+                component_db.hydrated_component(*middleware_id, computation_db)
+            else {
                 unreachable!()
             };
             let next_input = &mw.input_types()[mw.next_input_index()];
@@ -224,7 +237,9 @@ impl RequestHandlerPipeline {
                 computation_db,
             );
 
-            let HydratedComponent::WrappingMiddleware(bound_mw) = component_db.hydrated_component(bound_middleware_id, computation_db) else {
+            let HydratedComponent::WrappingMiddleware(bound_mw) =
+                component_db.hydrated_component(bound_middleware_id, computation_db)
+            else {
                 unreachable!()
             };
             // Force the constructibles database to bind a constructor for `Next<{NextState}>`.
@@ -250,6 +265,12 @@ impl RequestHandlerPipeline {
                 krate_collection,
                 diagnostics,
             )?;
+            // Add all request-scoped components initialised by this middleware to the set.
+            extract_request_scoped_compute_nodes(
+                &middleware_call_graph.call_graph,
+                component_db,
+                &mut request_scoped_prebuilt_ids,
+            );
             middleware_id2stage_data.insert(
                 *middleware_id,
                 MiddlewareData {
@@ -279,6 +300,19 @@ impl RequestHandlerPipeline {
             current_stage: Some(0),
         }
     }
+
+    /// Print a representation of the pipeline in graphviz's .DOT format, geared towards
+    /// debugging.
+    #[allow(unused)]
+    pub(crate) fn print_debug_dot(
+        &self,
+        component_db: &ComponentDb,
+        computation_db: &ComputationDb,
+    ) {
+        for graph in self.graph_iter() {
+            graph.print_debug_dot(component_db, computation_db)
+        }
+    }
 }
 
 /// Extract the set of request-scoped and singleton components that are used as inputs
@@ -288,17 +322,21 @@ impl RequestHandlerPipeline {
 fn extract_long_lived_inputs(
     call_graph: &RawCallGraph,
     component_db: &ComponentDb,
-    buffer: &mut IndexSet<ComponentId>,
+    buffer: &mut IndexSet<ResolvedType>,
 ) {
     for node in call_graph.node_weights() {
-        let CallGraphNode::InputParameter { source, .. } = node else { continue; };
-        let InputParameterSource::Component(component_id) = source else { continue; };
+        let CallGraphNode::InputParameter { type_, source } = node else {
+            continue;
+        };
+        let InputParameterSource::Component(component_id) = source else {
+            continue;
+        };
         assert_ne!(
             component_db.lifecycle(*component_id),
             Some(&Lifecycle::Transient),
             "Transient components should not appear as inputs in a call graph"
         );
-        buffer.insert(*component_id);
+        buffer.insert(type_.to_owned());
     }
 }
 
@@ -308,7 +346,9 @@ fn extract_request_scoped_compute_nodes(
     buffer: &mut IndexSet<ComponentId>,
 ) {
     for node in call_graph.node_weights() {
-        let CallGraphNode::Compute { component_id, .. } = node else { continue; };
+        let CallGraphNode::Compute { component_id, .. } = node else {
+            continue;
+        };
         if component_db.lifecycle(*component_id) == Some(&Lifecycle::RequestScoped) {
             buffer.insert(*component_id);
         }

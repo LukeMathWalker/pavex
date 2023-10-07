@@ -355,7 +355,7 @@ fn get_required_singleton_types<'a>(
             let root_component_scope_id = component_db.scope_id(root_component_id);
             for required_input in graph.call_graph.required_input_types() {
                 let required_input = if let ResolvedType::Reference(t) = &required_input {
-                    if !t.is_static {
+                    if !t.lifetime.is_static() {
                         // We can't store non-'static references in the application state, so we expect
                         // to see the referenced type in there.
                         t.inner.deref()
@@ -369,24 +369,29 @@ fn get_required_singleton_types<'a>(
                 if framework_item_db.get_id(required_input).is_some() {
                     continue;
                 }
-                let (component_id, _) = constructibles_db
-                    .get(
-                        root_component_scope_id,
-                        required_input,
-                        component_db.scope_graph(),
-                    )
-                    .unwrap();
-                let lifecycle = component_db.lifecycle(component_id).unwrap();
-                #[cfg(debug_assertions)]
-                {
-                    // No scenario where this should/could happen.
-                    assert_ne!(*lifecycle, Lifecycle::Transient);
-                }
+                // This can be `None` if the required input is a singleton that is used
+                // by a downstream stage of the processing pipeline.
+                // The singleton will be passed down using `Next` pass-along state from
+                // the very first stage in the pipeline all the way to the stage that needs it,
+                // but the singleton constructor might not be visible in the scope of the current
+                // stage of the processing pipeline.
+                if let Some((component_id, _)) = constructibles_db.get(
+                    root_component_scope_id,
+                    required_input,
+                    component_db.scope_graph(),
+                ) {
+                    let lifecycle = component_db.lifecycle(component_id).unwrap();
+                    #[cfg(debug_assertions)]
+                    {
+                        // No scenario where this should/could happen.
+                        assert_ne!(*lifecycle, Lifecycle::Transient);
+                    }
 
-                // Some inputs are request-scoped because they come from the `Next<_>` pass-along
-                // state. We don't care about those here.
-                if *lifecycle == Lifecycle::Singleton {
-                    singletons_to_be_built.insert((required_input.to_owned(), component_id));
+                    // Some inputs are request-scoped because they come from the `Next<_>` pass-along
+                    // state. We don't care about those here.
+                    if *lifecycle == Lifecycle::Singleton {
+                        singletons_to_be_built.insert((required_input.to_owned(), component_id));
+                    }
                 }
             }
         }
@@ -452,7 +457,9 @@ fn verify_singletons(
         computation_db: &ComputationDb,
         diagnostics: &mut Vec<miette::Error>,
     ) {
-        let HydratedComponent::Constructor(c) = component_db.hydrated_component(component_id, computation_db) else {
+        let HydratedComponent::Constructor(c) =
+            component_db.hydrated_component(component_id, computation_db)
+        else {
             unreachable!()
         };
         let component_id = match c.0 {
@@ -490,7 +497,9 @@ fn verify_singletons(
     let clone = process_framework_path("core::clone::Clone", package_graph, krate_collection);
     for (singleton_type, component_id) in runtime_singletons {
         for trait_ in [&send, &sync, &clone] {
-            let ResolvedType::ResolvedPath(trait_) = trait_ else { unreachable!() };
+            let ResolvedType::ResolvedPath(trait_) = trait_ else {
+                unreachable!()
+            };
             if let Err(e) = assert_trait_is_implemented(krate_collection, singleton_type, trait_) {
                 missing_trait_implementation(
                     e,

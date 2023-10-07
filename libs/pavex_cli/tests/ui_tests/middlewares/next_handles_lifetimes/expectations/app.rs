@@ -68,7 +68,7 @@ async fn route_request(
     match route_id {
         0u32 => {
             match &request_head.method {
-                &pavex::http::Method::GET => route_0::handler().await,
+                &pavex::http::Method::GET => route_0::middleware_0().await,
                 _ => {
                     let header_value = pavex::http::HeaderValue::from_static("GET");
                     pavex::response::Response::method_not_allowed()
@@ -81,11 +81,38 @@ async fn route_request(
     }
 }
 pub mod route_0 {
-    pub async fn handler() -> pavex::response::Response {
-        let v0 = app::a();
-        let v1 = app::c(&v0);
-        let v2 = app::b(v0);
-        let v3 = app::handler(v1, v2);
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
+    pub async fn middleware_0() -> pavex::response::Response {
+        let v0 = app::c();
+        let v1 = app::a();
+        let v2 = app::b(&v1, &v0);
+        let v3 = crate::route_0::Next0 {
+            s_0: &v1,
+            s_1: &v0,
+            next: handler,
+        };
+        let v4 = pavex::middleware::Next::new(v3);
+        app::mw(v4, v2)
+    }
+    pub async fn handler(v0: &app::A, v1: &app::C) -> pavex::response::Response {
+        let v2 = app::handler(v0, v1);
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
+    }
+    pub struct Next0<'a, 'b, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        s_0: &'a app::A,
+        s_1: &'b app::C,
+        next: fn(&'a app::A, &'b app::C) -> T,
+    }
+    impl<'a, 'b, T> std::future::IntoFuture for Next0<'a, 'b, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        type Output = pavex::response::Response;
+        type IntoFuture = T;
+        fn into_future(self) -> Self::IntoFuture {
+            (self.next)(self.s_0, self.s_1)
+        }
     }
 }

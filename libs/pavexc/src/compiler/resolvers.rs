@@ -10,9 +10,9 @@ use guppy::PackageId;
 use rustdoc_types::{GenericArg, GenericArgs, GenericParamDefKind, ItemEnum, Type};
 
 use crate::language::{
-    Callable, Generic, GenericArgument, InvocationStyle, Lifetime, PathType, ResolvedPath,
-    ResolvedPathGenericArgument, ResolvedPathLifetime, ResolvedPathType, ResolvedType, Slice,
-    Tuple, TypeReference, UnknownPath,
+    Callable, Generic, GenericArgument, GenericLifetimeParameter, InvocationStyle, PathType,
+    ResolvedPath, ResolvedPathGenericArgument, ResolvedPathLifetime, ResolvedPathType,
+    ResolvedType, Slice, Tuple, TypeReference, UnknownPath,
 };
 use crate::rustdoc::{CannotGetCrateData, RustdocKindExt};
 use crate::rustdoc::{CrateCollection, ResolvedItem};
@@ -112,23 +112,20 @@ pub(crate) fn resolve_type(
                             }
                             .params
                             .iter()
-                            .map(|p| p.name.trim_start_matches('\'').to_string())
-                            .collect::<Vec<_>>();
-                            for (arg, arg_def_name) in args.iter().zip(generic_arg_defs) {
+                            .map(|p| p.name.trim_start_matches('\'').to_string());
+                            for (arg, _) in args.iter().zip(generic_arg_defs) {
                                 let generic_argument = match arg {
                                     GenericArg::Lifetime(l) => {
                                         if l == "'static" {
-                                            GenericArgument::Lifetime(Lifetime::Static)
+                                            GenericArgument::Lifetime(
+                                                GenericLifetimeParameter::Static,
+                                            )
                                         } else {
                                             let name = l.trim_start_matches('\'');
                                             let lifetime = if name == "_" {
-                                                // TODO: we must make sure to choose a unique
-                                                //  name for this lifetime.
-                                                //  As in, one that is not used by any other lifetime
-                                                //  in the context of the function we are processing.
-                                                Lifetime::Named(format!("_{arg_def_name}"))
+                                                GenericLifetimeParameter::Named("_".into())
                                             } else {
-                                                Lifetime::Named(name.to_owned())
+                                                GenericLifetimeParameter::Named(name.to_owned())
                                             };
                                             GenericArgument::Lifetime(lifetime)
                                         }
@@ -202,7 +199,7 @@ pub(crate) fn resolve_type(
             )?;
             let t = TypeReference {
                 is_mutable: *mutable,
-                is_static: lifetime.as_ref().map(|l| l == "'static").unwrap_or(false),
+                lifetime: lifetime.to_owned().into(),
                 inner: Box::new(resolved_type),
             };
             Ok(t.into())
@@ -321,15 +318,28 @@ pub(crate) fn resolve_callable(
         generic_bindings.insert(generic_name.to_owned(), resolved_type);
     }
 
-    let mut parameter_paths = Vec::with_capacity(decl.inputs.len());
+    let mut resolved_parameter_types = Vec::with_capacity(decl.inputs.len());
+    let mut takes_self_as_ref = false;
     for (parameter_index, (_, parameter_type)) in decl.inputs.iter().enumerate() {
+        if parameter_index == 0 {
+            // The first parameter might be `&self` or `&mut self`.
+            // This is important to know for carrying out further analysis doing the line,
+            // e.g. undoing lifetime elision.
+            if let Type::BorrowedRef { type_, .. } = parameter_type {
+                if let Type::Generic(g) = type_.deref() {
+                    if g == "Self" {
+                        takes_self_as_ref = true;
+                    }
+                }
+            }
+        }
         match resolve_type(
             parameter_type,
             used_by_package_id,
             krate_collection,
             &generic_bindings,
         ) {
-            Ok(p) => parameter_paths.push(p),
+            Ok(p) => resolved_parameter_types.push(p),
             Err(e) => {
                 return Err(InputParameterResolutionError {
                     parameter_type: parameter_type.to_owned(),
@@ -367,9 +377,10 @@ pub(crate) fn resolve_callable(
     };
     let callable = Callable {
         is_async: header.async_,
+        takes_self_as_ref,
         output: output_type_path,
         path: callable_path.to_owned(),
-        inputs: parameter_paths,
+        inputs: resolved_parameter_types,
         invocation_style,
         source_coordinates: Some(callable_type.item.item_id),
     };
@@ -419,9 +430,11 @@ pub(crate) fn resolve_type_path(
                     GenericArgument::TypeParameter(t.resolve(krate_collection)?)
                 }
                 ResolvedPathGenericArgument::Lifetime(l) => match l {
-                    ResolvedPathLifetime::Static => GenericArgument::Lifetime(Lifetime::Static),
+                    ResolvedPathLifetime::Static => {
+                        GenericArgument::Lifetime(GenericLifetimeParameter::Static)
+                    }
                     ResolvedPathLifetime::Named(name) => {
-                        GenericArgument::Lifetime(Lifetime::Named(name.clone()))
+                        GenericArgument::Lifetime(GenericLifetimeParameter::Named(name.clone()))
                     }
                 },
             };
@@ -443,9 +456,11 @@ pub(crate) fn resolve_type_path(
                     GenericArgument::TypeParameter(t.resolve(krate_collection)?)
                 }
                 ResolvedPathGenericArgument::Lifetime(l) => match l {
-                    ResolvedPathLifetime::Static => GenericArgument::Lifetime(Lifetime::Static),
+                    ResolvedPathLifetime::Static => {
+                        GenericArgument::Lifetime(GenericLifetimeParameter::Static)
+                    }
                     ResolvedPathLifetime::Named(name) => {
-                        GenericArgument::Lifetime(Lifetime::Named(name.clone()))
+                        GenericArgument::Lifetime(GenericLifetimeParameter::Named(name.clone()))
                     }
                 },
             }
@@ -454,9 +469,11 @@ pub(crate) fn resolve_type_path(
                 GenericParamDefKind::Lifetime { .. } => {
                     let lifetime_name = generic_def.name.trim_start_matches('\'');
                     if lifetime_name == "static" {
-                        GenericArgument::Lifetime(Lifetime::Static)
+                        GenericArgument::Lifetime(GenericLifetimeParameter::Static)
                     } else {
-                        GenericArgument::Lifetime(Lifetime::Named(lifetime_name.to_owned()))
+                        GenericArgument::Lifetime(GenericLifetimeParameter::Named(
+                            lifetime_name.to_owned(),
+                        ))
                     }
                 }
                 GenericParamDefKind::Type { .. } => {

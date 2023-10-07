@@ -1,9 +1,19 @@
+use pavex::middleware::Next;
+use pavex::response::Response;
+use std::future::IntoFuture;
 use tokio::task::JoinHandle;
 
+pub async fn logger<T>(next: Next<T>) -> Response
+where
+    T: IntoFuture<Output = Response>,
+{
+    next.await
+}
+
 /// Spawn a blocking task without losing the current `tracing` span.
-/// 
+///
 /// # Why is this needed?
-/// 
+///
 /// `tracing`'s span context is thread-local, so when a blocking task is spawned
 /// the current span is lost. This function spawns a blocking task and
 /// explicitly re-attaches the current span to the workload in

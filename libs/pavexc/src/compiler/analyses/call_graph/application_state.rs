@@ -63,6 +63,7 @@ pub(crate) fn application_state_call_graph(
     };
     let application_state_constructor = Callable {
         is_async: false,
+        takes_self_as_ref: false,
         path: application_state_type.resolved_path(),
         output: Some(application_state_type.clone().into()),
         inputs: {
@@ -77,6 +78,7 @@ pub(crate) fn application_state_call_graph(
                 .iter()
                 .map(|(ident, type_)| (ident.to_string(), type_.to_owned()))
                 .collect(),
+            extra_field2default_value: Default::default(),
         },
         source_coordinates: None,
     };
@@ -101,8 +103,9 @@ pub(crate) fn application_state_call_graph(
         component_db,
         constructible_db,
         lifecycle2invocations,
-        diagnostics
-    ) else {
+        diagnostics,
+    )
+    else {
         return Err(());
     };
 
@@ -120,10 +123,7 @@ pub(crate) fn application_state_call_graph(
         // We only care about errors at this point.
         output_node_indexes.remove(&root_node_index);
         for output_node_index in output_node_indexes {
-            let CallGraphNode::Compute {
-                component_id,
-                ..
-            } = &call_graph[output_node_index] else {
+            let CallGraphNode::Compute { component_id, .. } = &call_graph[output_node_index] else {
                 unreachable!()
             };
             let component = component_db.hydrated_component(*component_id, computation_db);
@@ -184,6 +184,7 @@ pub(crate) fn application_state_call_graph(
             };
             Callable {
                 is_async: false,
+                takes_self_as_ref: false,
                 output: Some(application_state_result.clone().into()),
                 path: ResolvedPath {
                     segments: ok_wrapper_path,
@@ -206,6 +207,7 @@ pub(crate) fn application_state_call_graph(
             };
             Callable {
                 is_async: false,
+                takes_self_as_ref: false,
                 output: Some(application_state_result.into()),
                 path: ResolvedPath {
                     segments: err_wrapper_path,
@@ -232,7 +234,9 @@ pub(crate) fn application_state_call_graph(
                 let fallible = component_db.hydrated_component(fallible_id, computation_db);
                 let fallible_callable = match &fallible {
                     HydratedComponent::Constructor(c) => {
-                        let Computation::Callable(c) = &c.0 else { unreachable!() };
+                        let Computation::Callable(c) = &c.0 else {
+                            unreachable!()
+                        };
                         c
                     }
                     HydratedComponent::WrappingMiddleware(w) => &w.callable,
@@ -258,6 +262,7 @@ pub(crate) fn application_state_call_graph(
                 *n_duplicates += 1;
                 let error_variant_constructor = Callable {
                     is_async: false,
+                    takes_self_as_ref: false,
                     path: ResolvedPath {
                         segments: vec![
                             ResolvedPathSegment {
@@ -305,7 +310,7 @@ pub(crate) fn application_state_call_graph(
             component_db,
             constructible_db,
             lifecycle2invocations,
-            diagnostics
+            diagnostics,
         ) else {
             return Err(());
         };
