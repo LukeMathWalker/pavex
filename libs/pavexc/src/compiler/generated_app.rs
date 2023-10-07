@@ -89,7 +89,9 @@ impl GeneratedApp {
         pkg_directory: &Path,
     ) -> Result<(), anyhow::Error> {
         for dependency in cargo_toml.dependencies.values_mut() {
-            let Dependency::Detailed(detailed) = dependency else { continue; };
+            let Dependency::Detailed(detailed) = dependency else {
+                continue;
+            };
             if let Some(path) = &mut detailed.path {
                 let parsed_path = PathBuf::from(path.to_owned());
                 let relative_path = pathdiff::diff_paths(parsed_path, pkg_directory).unwrap();

@@ -3,7 +3,9 @@ use std::fmt::{Display, Formatter};
 use ahash::HashMap;
 use indexmap::IndexSet;
 
-use crate::language::{Callable, GenericArgument, ResolvedPath, ResolvedType, TypeReference, Lifetime};
+use crate::language::{
+    Callable, GenericArgument, Lifetime, ResolvedPath, ResolvedType, TypeReference,
+};
 
 /// A transformation that, given a reference to an error type (and, optionally, other inputs),
 /// returns an HTTP response.

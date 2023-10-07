@@ -100,7 +100,7 @@ pub(super) fn multiple_consumers(
             let Some(clone_component_id) = clone_component_id else {
                 // We want each error to mention the nodes that are *actually* competing for the
                 // same value in a way that violates the borrow checker.
-                // A potential improvement here would be to capture, in the error message, the 
+                // A potential improvement here would be to capture, in the error message, the
                 // control flow path where the competing consumers are invoked.
                 for competing_consumer_set in competing_consumer_sets {
                     emit_multiple_consumers_error(
@@ -249,8 +249,12 @@ fn emit_multiple_consumers_error(
     );
     diagnostic = diagnostic.help_with_snippet(help);
     for consumer_node_id in consuming_node_ids {
-        let CallGraphNode::Compute { component_id, .. } = call_graph[consumer_node_id] else { continue; };
-        let Some(user_component_id) = component_db.user_component_id(component_id) else { continue; };
+        let CallGraphNode::Compute { component_id, .. } = call_graph[consumer_node_id] else {
+            continue;
+        };
+        let Some(user_component_id) = component_db.user_component_id(component_id) else {
+            continue;
+        };
         let location = component_db
             .user_component_db()
             .get_location(user_component_id);

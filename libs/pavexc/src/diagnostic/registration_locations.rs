@@ -203,7 +203,9 @@ pub(crate) fn get_bp_new_span(
 ) -> Option<SourceSpan> {
     let raw_source = &source.contents;
     let node = find_method_call(location, &source.parsed)?;
-    let Call::FunctionCall(node) = node else { unreachable!() };
+    let Call::FunctionCall(node) = node else {
+        unreachable!()
+    };
     Some(convert_proc_macro_span(raw_source, node.span()))
 }
 

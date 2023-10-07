@@ -180,12 +180,9 @@ impl DependencyGraph {
                 }
                 'inner: {
                     let node = graph[node_index].clone();
-                    let DependencyGraphNode::Compute {
-                    component_id,
-                } = node else
-                {
-                    break 'inner;
-                };
+                    let DependencyGraphNode::Compute { component_id } = node else {
+                        break 'inner;
+                    };
                     if let Some(error_handler_id) = component_db.error_handler_id(component_id) {
                         nodes_to_be_visited.insert(VisitorStackElement {
                             component_id: *error_handler_id,
@@ -204,9 +201,7 @@ impl DependencyGraph {
                 }
                 'inner: {
                     let node = graph[node_index].clone();
-                    let DependencyGraphNode::Compute {
-                        component_id
-                    } = node else {
+                    let DependencyGraphNode::Compute { component_id } = node else {
                         break 'inner;
                     };
                     let Some(transformer_ids) = component_db.transformer_ids(component_id) else {

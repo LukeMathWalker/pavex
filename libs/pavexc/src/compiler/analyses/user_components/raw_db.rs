@@ -441,7 +441,9 @@ impl RawUserComponentDb {
         scope_id: ScopeId,
         fallible_component_id: UserComponentId,
     ) {
-        let Some(error_handler) = error_handler else { return; };
+        let Some(error_handler) = error_handler else {
+            return;
+        };
         let raw_callable_identifiers_id = self
             .identifiers_interner
             .get_or_intern(error_handler.callable.clone());

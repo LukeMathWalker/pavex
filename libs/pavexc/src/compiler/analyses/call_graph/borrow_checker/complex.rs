@@ -94,12 +94,14 @@ pub(super) fn complex_borrow_check(
                         let mut is_blocked = node_relationships.is_consumed_by(node_index)
                             && node_relationships.is_borrowed();
 
-                        if is_blocked && copy_checker.is_copy(
+                        if is_blocked
+                            && copy_checker.is_copy(
                                 &call_graph,
                                 *neighbour_index,
                                 component_db,
                                 computation_db,
-                            ) {
+                            )
+                        {
                             // You can't have a "used after moved" error for a Copy type.
                             is_blocked = false;
                         }
@@ -131,7 +133,8 @@ pub(super) fn complex_borrow_check(
                     }
                     StrategyOnBlock::Clone => {
                         'incoming: for incoming_blocked_id in incoming_blocked_ids {
-                            let Some(component_id) = call_graph[incoming_blocked_id].component_id() else {
+                            let Some(component_id) = call_graph[incoming_blocked_id].component_id()
+                            else {
                                 continue 'incoming;
                             };
                             let Some(clone_component_id) = get_clone_component_id(
@@ -140,7 +143,7 @@ pub(super) fn complex_borrow_check(
                                 krate_collection,
                                 component_db,
                                 computation_db,
-                                root_scope_id
+                                root_scope_id,
                             ) else {
                                 continue 'incoming;
                             };

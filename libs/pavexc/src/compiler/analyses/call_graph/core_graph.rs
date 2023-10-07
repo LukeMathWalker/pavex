@@ -15,7 +15,7 @@ use petgraph::stable_graph::NodeIndex;
 use petgraph::visit::Dfs;
 use petgraph::Direction;
 
-use crate::language::{ResolvedType, TypeReference, Lifetime};
+use crate::language::{Lifetime, ResolvedType, TypeReference};
 
 use super::dependency_graph::DependencyGraph;
 

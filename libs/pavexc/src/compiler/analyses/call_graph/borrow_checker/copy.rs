@@ -62,6 +62,8 @@ impl<'a> CopyChecker<'a> {
 /// Return the `PathType` object for the `Copy` marker trait.
 fn get_copy_trait(package_graph: &PackageGraph, krate_collection: &CrateCollection) -> PathType {
     let c = process_framework_path("core::marker::Copy", package_graph, krate_collection);
-    let ResolvedType::ResolvedPath(c) = c else { unreachable!() } ;
+    let ResolvedType::ResolvedPath(c) = c else {
+        unreachable!()
+    };
     c
 }

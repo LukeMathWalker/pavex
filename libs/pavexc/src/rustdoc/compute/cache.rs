@@ -355,7 +355,8 @@ impl ThirdPartyCrateCache {
         cargo_fingerprint: &str,
         connection: &rusqlite::Connection,
     ) -> Result<Option<crate::rustdoc::Crate>, anyhow::Error> {
-        let Some(cache_key) = ThirdPartyCrateCacheKey::build(package_metadata, cargo_fingerprint) else {
+        let Some(cache_key) = ThirdPartyCrateCacheKey::build(package_metadata, cargo_fingerprint)
+        else {
             return Ok(None);
         };
         // Retrieve from rustdoc's output from cache, if available.
@@ -439,7 +440,8 @@ impl ThirdPartyCrateCache {
         cargo_fingerprint: &str,
         connection: &rusqlite::Connection,
     ) -> Result<(), anyhow::Error> {
-        let Some(cache_key) = ThirdPartyCrateCacheKey::build(package_metadata, cargo_fingerprint) else {
+        let Some(cache_key) = ThirdPartyCrateCacheKey::build(package_metadata, cargo_fingerprint)
+        else {
             return Ok(());
         };
         let cached_data = CachedData::new(krate).context("Failed to serialize docs")?;

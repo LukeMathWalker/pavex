@@ -124,8 +124,8 @@ impl<'a> WrappingMiddleware<'a> {
 /// Returns `true` if the given type is an owned `Next<_>`.
 fn is_next(t: &ResolvedType) -> bool {
     let ResolvedType::ResolvedPath(t) = t else {
-            return false;
-        };
+        return false;
+    };
     t.base_type == ["pavex", "middleware", "Next"]
 }
 

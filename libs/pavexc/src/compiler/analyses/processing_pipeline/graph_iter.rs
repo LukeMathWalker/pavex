@@ -11,7 +11,9 @@ impl<'a> Iterator for PipelineGraphIterator<'a> {
     type Item = &'a OrderedCallGraph;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let Some(stage) = self.current_stage else { return None; };
+        let Some(stage) = self.current_stage else {
+            return None;
+        };
         let stage_data = self.pipeline.middleware_id2stage_data.get_index(stage);
         if let Some((_, stage_data)) = stage_data {
             self.current_stage = Some(stage + 1);

@@ -13,8 +13,8 @@ use crate::compiler::analyses::user_components::ScopeId;
 use crate::compiler::computation::Computation;
 use crate::compiler::utils::process_framework_path;
 use crate::language::{
-    Callable, InvocationStyle, PathType, ResolvedPath, ResolvedPathQualifiedSelf,
-    ResolvedPathSegment, ResolvedType, TypeReference, Lifetime,
+    Callable, InvocationStyle, Lifetime, PathType, ResolvedPath, ResolvedPathQualifiedSelf,
+    ResolvedPathSegment, ResolvedType, TypeReference,
 };
 use crate::rustdoc::CrateCollection;
 
@@ -34,12 +34,17 @@ pub(super) fn get_clone_component_id(
     static CLONE_PATH_TYPE: OnceCell<PathType> = OnceCell::new();
     let clone = CLONE_PATH_TYPE.get_or_init(|| {
         let clone = process_framework_path("std::clone::Clone", package_graph, krate_collection);
-        let ResolvedType::ResolvedPath(clone) = clone else { unreachable!() };
+        let ResolvedType::ResolvedPath(clone) = clone else {
+            unreachable!()
+        };
         clone
     });
 
-    let HydratedComponent::Constructor(c) = component_db.hydrated_component(*component_id, computation_db)
-        else { return None; };
+    let HydratedComponent::Constructor(c) =
+        component_db.hydrated_component(*component_id, computation_db)
+    else {
+        return None;
+    };
     let output = c.output_type().to_owned();
 
     // We only add a cloning node if the component is not marked as `NeverClone`.

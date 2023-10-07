@@ -130,9 +130,9 @@ impl ResolvedPathType {
                                 ResolvedPathLifetime::Static => {
                                     GenericArgument::Lifetime(GenericLifetimeParameter::Static)
                                 }
-                                ResolvedPathLifetime::Named(name) => {
-                                    GenericArgument::Lifetime(GenericLifetimeParameter::Named(name.clone()))
-                                }
+                                ResolvedPathLifetime::Named(name) => GenericArgument::Lifetime(
+                                    GenericLifetimeParameter::Named(name.clone()),
+                                ),
                             },
                         };
                         generic_arguments.push(generic_arg);
@@ -218,12 +218,16 @@ impl From<ResolvedType> for ResolvedPathType {
                                 ResolvedPathGenericArgument::Type(t.into())
                             }
                             GenericArgument::Lifetime(l) => match l {
-                                GenericLifetimeParameter::Static => ResolvedPathGenericArgument::Lifetime(
-                                    ResolvedPathLifetime::Static,
-                                ),
-                                GenericLifetimeParameter::Named(name) => ResolvedPathGenericArgument::Lifetime(
-                                    ResolvedPathLifetime::Named(name),
-                                ),
+                                GenericLifetimeParameter::Static => {
+                                    ResolvedPathGenericArgument::Lifetime(
+                                        ResolvedPathLifetime::Static,
+                                    )
+                                }
+                                GenericLifetimeParameter::Named(name) => {
+                                    ResolvedPathGenericArgument::Lifetime(
+                                        ResolvedPathLifetime::Named(name),
+                                    )
+                                }
                             },
                         })
                         .collect();

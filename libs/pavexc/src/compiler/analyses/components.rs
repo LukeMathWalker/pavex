@@ -33,8 +33,8 @@ use crate::diagnostic::{
     CompilerDiagnostic, LocationExt, SourceSpanExt,
 };
 use crate::language::{
-    Callable, PathType, ResolvedPath, ResolvedPathQualifiedSelf, ResolvedPathSegment, ResolvedType,
-    TypeReference, Lifetime,
+    Callable, Lifetime, PathType, ResolvedPath, ResolvedPathQualifiedSelf, ResolvedPathSegment,
+    ResolvedType, TypeReference,
 };
 use crate::rustdoc::CrateCollection;
 use crate::utils::comma_separated_list;

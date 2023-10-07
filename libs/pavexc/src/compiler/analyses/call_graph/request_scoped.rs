@@ -38,7 +38,8 @@ pub(crate) fn request_scoped_ordered_call_graph(
         component_db,
         constructible_db,
         diagnostics,
-    ) else {
+    )
+    else {
         return Err(());
     };
 
