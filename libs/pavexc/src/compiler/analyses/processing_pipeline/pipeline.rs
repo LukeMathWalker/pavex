@@ -149,9 +149,6 @@ impl RequestHandlerPipeline {
             );
         }
 
-        // TODO: borrow-checker
-        // Step X: Check that the entire pipeline satisfies the constraints imposed by the
-        // borrow-checker.
         // Determine, for each middleware, if they consume a request-scoped component
         // that is also needed by later stages of the pipeline.
 
@@ -188,6 +185,15 @@ impl RequestHandlerPipeline {
                 inputs: next_state_bindings.values().cloned().collect(),
                 invocation_style: InvocationStyle::StructLiteral {
                     field_names: next_state_bindings.clone(),
+                    // TODO: remove when TAIT stabilises
+                    extra_field2default_value: {
+                        let next_fn_name = if i + 1 < middleware_call_graphs.len() {
+                            format!("middleware_{}", i + 1)
+                        } else {
+                            "handler".to_string()
+                        };
+                        BTreeMap::from([("next".into(), next_fn_name)])
+                    },
                 },
                 source_coordinates: None,
             };

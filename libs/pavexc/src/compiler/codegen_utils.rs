@@ -6,7 +6,7 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
 
 use crate::compiler::analyses::call_graph::CallGraphEdgeMetadata;
-use crate::language::{Callable, InvocationStyle, ResolvedType, TypeReference, Lifetime};
+use crate::language::{Callable, InvocationStyle, Lifetime, ResolvedType, TypeReference};
 
 #[derive(Debug, Clone)]
 pub(crate) enum Fragment {
@@ -126,14 +126,30 @@ pub(crate) fn codegen_call(
                 #callable_path(#(#parameters),*)
             }
         }
-        InvocationStyle::StructLiteral { field_names } => {
-            let fields = field_names.iter().map(|(field_name, field_type)| {
-                let field_name = format_ident!("{}", field_name);
-                let binding = &variable_bindings[field_type];
-                quote! {
-                    #field_name: #binding
-                }
-            });
+        InvocationStyle::StructLiteral {
+            field_names,
+            extra_field2default_value,
+        } => {
+            let fields = field_names
+                .iter()
+                .map(|(field_name, field_type)| {
+                    let field_name = format_ident!("{}", field_name);
+                    let binding = &variable_bindings[field_type];
+                    quote! {
+                        #field_name: #binding
+                    }
+                })
+                .chain(
+                    extra_field2default_value
+                        .iter()
+                        .map(|(field_name, default_value)| {
+                            let field_name = format_ident!("{}", field_name);
+                            let default_value = format_ident!("{}", default_value);
+                            quote! {
+                                #field_name: #default_value
+                            }
+                        }),
+                );
             quote! {
                 #callable_path {
                     #(#fields),*

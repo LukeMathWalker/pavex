@@ -88,6 +88,7 @@ pub mod route_0 {
         let v3 = crate::route_0::Next0 {
             s_0: &v1,
             s_1: &v0,
+            next: handler,
         };
         let v4 = pavex::middleware::Next::new(v3);
         app::mw(v4, v2)
@@ -96,17 +97,22 @@ pub mod route_0 {
         let v2 = app::handler(v0, v1);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
     }
-    pub struct Next0<'a, 'b> {
+    pub struct Next0<'a, 'b, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
         s_0: &'a app::A,
         s_1: &'b app::C,
+        next: fn(&app::A, &app::C) -> T,
     }
-    impl<'a> std::future::IntoFuture for Next0<'a, 'a> {
+    impl<'a, 'b, T> std::future::IntoFuture for Next0<'a, 'b, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
         type Output = pavex::response::Response;
-        type IntoFuture = std::pin::Pin<
-            Box<dyn std::future::Future<Output = Self::Output> + 'a>,
-        >;
+        type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            Box::pin(async move { handler(self.s_0, self.s_1).await })
+            (self.next)(self.s_0, self.s_1)
         }
     }
 }

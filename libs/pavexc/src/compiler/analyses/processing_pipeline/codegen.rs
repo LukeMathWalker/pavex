@@ -77,31 +77,41 @@ impl RequestHandlerPipeline {
                 })
                 .collect();
 
+            let next_stage = &stages[i + 1];
+            let inputs_types: Vec<_> = next_stage
+                .input_parameters
+                .iter()
+                .map(|input| {
+                    let field = next_state
+                        .field_bindings
+                        .iter()
+                        .find(|(_, ty_)| ty_ == &input);
+                    let Some((_, ty_)) = field else {
+                        unreachable!();
+                    };
+                    let ty_ = ty_.syn_type(package_id2name);
+                    quote! { #ty_ }
+                })
+                .collect();
+
             let struct_name = format_ident!("{}", next_state.type_.base_type.last().unwrap());
-            let state_lifetimes: Vec<_> = state_lifetimes
+            let state_generics: Vec<_> = state_lifetimes
                 .iter()
                 .map(|lifetime| {
                     syn::Lifetime::new(&format!("'{lifetime}"), proc_macro2::Span::call_site())
+                        .to_token_stream()
                 })
+                .chain(std::iter::once(quote! { T }))
                 .collect();
-            let generics = if state_lifetimes.is_empty() {
-                quote! {}
-            } else {
-                quote! { <#(#state_lifetimes),*> }
-            };
-            let lifetime_bounds = if state_lifetimes.is_empty() {
-                quote! {}
-            } else {
-                quote! { + 'a }
-            };
+            let generics = quote! { <#(#state_generics),*> };
             let def = syn::parse2(quote! {
-                pub struct #struct_name #generics {
-                    #(#fields),*
+                pub struct #struct_name #generics
+                where T: std::future::Future<Output = pavex::response::Response> {
+                    #(#fields),*,
+                    next: fn(#(#inputs_types),*) -> T,
                 }
             })
             .unwrap();
-
-            let next_stage = &stages[i + 1];
             let inputs: Vec<_> = next_stage
                 .input_parameters
                 .iter()
@@ -134,26 +144,20 @@ impl RequestHandlerPipeline {
                 })
                 .collect();
             let callable_path = &next_stage.fn_.sig.ident;
-            let (future_impl_generics, future_generics) = if state_lifetimes.is_empty() {
-                (quote! {}, quote! {})
-            } else {
-                let implied_lifetimes = state_lifetimes
-                    .iter()
-                    .map(|_lifetime| syn::Lifetime::new("'a", proc_macro2::Span::call_site()));
-                (quote! { <'a> }, quote! { <#(#implied_lifetimes),*> })
-            };
             let into_future_impl = syn::parse2(quote! {
-                impl #future_impl_generics std::future::IntoFuture for #struct_name #future_generics {
+                impl #generics std::future::IntoFuture for #struct_name #generics
+                where
+                    T: std::future::Future<Output = pavex::response::Response>,
+                {
                     type Output = pavex::response::Response;
-                    type IntoFuture = std::pin::Pin<Box<dyn std::future::Future<Output = Self::Output> #lifetime_bounds>>;
+                    type IntoFuture = T;
 
                     fn into_future(self) -> Self::IntoFuture {
-                        Box::pin(async move {
-                            #callable_path(#(#inputs),*).await
-                        })
+                        (self.next)(#(#inputs),*)
                     }
                 }
-            }).unwrap();
+            })
+            .unwrap();
             next_states.push(CodegenedNextState {
                 state: def,
                 into_future_impl,

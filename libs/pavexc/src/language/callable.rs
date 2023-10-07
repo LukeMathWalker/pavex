@@ -204,6 +204,13 @@ pub enum InvocationStyle {
     StructLiteral {
         /// A map associating each field name to its type.
         field_names: BTreeMap<String, ResolvedType>,
+        /// Rust does not have default values for struct fields.
+        /// This is hack to allow us to inject the `next` field in the state we generate for
+        /// `Next` where the `next` field is not part of the struct definition and it must
+        /// be set to a pre-determined function pointer in order to work around the lack of
+        /// TAIT on stable.
+        /// TODO: remove when TAIT stabilizes.
+        extra_field2default_value: BTreeMap<String, String>,
     },
 }
 
