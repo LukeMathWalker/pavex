@@ -112,9 +112,8 @@ pub(crate) fn resolve_type(
                             }
                             .params
                             .iter()
-                            .map(|p| p.name.trim_start_matches('\'').to_string())
-                            .collect::<Vec<_>>();
-                            for (arg, arg_def_name) in args.iter().zip(generic_arg_defs) {
+                            .map(|p| p.name.trim_start_matches('\'').to_string());
+                            for (arg, _) in args.iter().zip(generic_arg_defs) {
                                 let generic_argument = match arg {
                                     GenericArg::Lifetime(l) => {
                                         if l == "'static" {
@@ -124,7 +123,7 @@ pub(crate) fn resolve_type(
                                         } else {
                                             let name = l.trim_start_matches('\'');
                                             let lifetime = if name == "_" {
-                                                GenericLifetimeParameter::Named(format!("_"))
+                                                GenericLifetimeParameter::Named("_".into())
                                             } else {
                                                 GenericLifetimeParameter::Named(name.to_owned())
                                             };

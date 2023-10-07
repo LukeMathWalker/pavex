@@ -126,21 +126,19 @@ impl RequestHandlerPipeline {
                         quote! {
                             self.#ident
                         }
-                    } else {
-                        if let ResolvedType::Reference(r) = input {
-                            let field_name = next_state
-                                .field_bindings
-                                .iter()
-                                .find(|(_, ty_)| *ty_ == r.inner.as_ref())
-                                .unwrap()
-                                .0;
-                            let ident = format_ident!("{}", field_name);
-                            quote! {
+                    } else if let ResolvedType::Reference(r) = input {
+                        let field_name = next_state
+                            .field_bindings
+                            .iter()
+                            .find(|(_, ty_)| *ty_ == r.inner.as_ref())
+                            .unwrap()
+                            .0;
+                        let ident = format_ident!("{}", field_name);
+                        quote! {
                                 &self.#ident
                             }
-                        } else {
-                            panic!("Could not find field name for input type `{:?}` in `Next`'s state, `{:?}`", input, next_state.field_bindings);
-                        }
+                    } else {
+                        panic!("Could not find field name for input type `{:?}` in `Next`'s state, `{:?}`", input, next_state.field_bindings);
                     }
                 })
                 .collect();

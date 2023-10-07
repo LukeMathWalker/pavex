@@ -280,35 +280,6 @@ impl ResolvedType {
         }
     }
 
-    /// Return `true` if there is at least one free lifetime parameter (i.e. non `'static`)
-    /// in this type.
-    ///
-    /// E.g. `&'a str` and `&str` would both return `true`. `&'static str` wouldn't.
-    pub fn has_free_lifetime_parameters(&self) -> bool {
-        match self {
-            ResolvedType::ResolvedPath(path) => {
-                path.generic_arguments.iter().any(|arg| match arg {
-                    GenericArgument::TypeParameter(g) => g.has_free_lifetime_parameters(),
-                    GenericArgument::Lifetime(GenericLifetimeParameter::Static) => false,
-                    GenericArgument::Lifetime(GenericLifetimeParameter::Named(_)) => true,
-                })
-            }
-            ResolvedType::Reference(r) => {
-                match &r.lifetime {
-                    Lifetime::Static => {}
-                    Lifetime::Named(_) | Lifetime::Elided => {
-                        return true;
-                    }
-                }
-                r.inner.has_free_lifetime_parameters()
-            }
-            ResolvedType::Tuple(t) => t.elements.iter().any(|t| t.has_free_lifetime_parameters()),
-            ResolvedType::ScalarPrimitive(_) => false,
-            ResolvedType::Slice(s) => s.element_type.has_free_lifetime_parameters(),
-            ResolvedType::Generic(_) => false,
-        }
-    }
-
     /// Return `true` if there is at least one elided lifetime parameter in this type.
     ///
     /// E.g. `&'_ str` and `&str` would both return `true`. `&'static str` or `&'a str` wouldn't.
