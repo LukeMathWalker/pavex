@@ -1,9 +1,10 @@
-use crate::server::builder::ServerBuilder;
+use crate::server::configuration::ServerConfiguration;
 
 pub struct Server {}
 
 impl Server {
-    pub fn builder() -> ServerBuilder {
-        ServerBuilder::new()
+    /// Initialize a new [`ServerConfiguration`] with its default configuration.
+    pub fn builder() -> ServerConfiguration {
+        ServerConfiguration::new()
     }
 }

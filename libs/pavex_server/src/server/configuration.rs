@@ -1,17 +1,18 @@
 use std::num::NonZeroUsize;
 
-pub struct ServerBuilder {
+pub struct ServerConfiguration {
     /// Number of worker threads to spawn.
     pub(crate) n_workers: NonZeroUsize,
 }
 
-impl Default for ServerBuilder {
+impl Default for ServerConfiguration {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl ServerBuilder {
+impl ServerConfiguration {
+    /// Initialize a new [`ServerConfiguration`] using its default settings.
     pub(super) fn new() -> Self {
         let n_workers = match std::thread::available_parallelism() {
             Ok(n) => n,
