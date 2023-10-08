@@ -5,3 +5,4 @@ edition = "2021"
 
 [dependencies]
 tracing = "0.1"
+tokio = { version = "1.32" }

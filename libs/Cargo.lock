@@ -1256,6 +1256,7 @@ dependencies = [
 name = "pavex_server"
 version = "0.1.0"
 dependencies = [
+ "tokio",
  "tracing",
 ]
 
