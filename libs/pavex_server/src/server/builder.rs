@@ -4,9 +4,10 @@ use crate::incoming::Incoming;
 use crate::server::configuration::ServerConfiguration;
 use crate::server::server::Server;
 
-/// A builder for [`Server`]s.  
+/// A builder for [`Server`]s.
 ///
 /// Check out [`Server::builder`] for more information.
+#[must_use = "You must convert a `ServerBuilder` into a `Server` using `.build()` in order to run it"]
 pub struct ServerBuilder {
     config: ServerConfiguration,
     incoming: Vec<Incoming>,
@@ -91,6 +92,7 @@ impl ServerBuilder {
     }
 
     /// Build the [`Server`] from this [`ServerBuilder`].
+    #[must_use = "The server doesn't start listening for incoming connections until you call `.run()` on it"]
     pub fn build(self) -> Server {
         Server::new(self.config, self.incoming)
     }
