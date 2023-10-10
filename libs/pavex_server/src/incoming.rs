@@ -11,8 +11,8 @@ pub struct Incoming {
 impl Incoming {
     // TODO: should we use a custom error type to capture which address failed to bind?
     /// Creates a new [`Incoming`] by binding to a socket address.
-    pub fn bind(addr: SocketAddr) -> std::io::Result<Self> {
-        let listener = TcpListener::bind(addr)?;
+    pub async fn bind(addr: SocketAddr) -> std::io::Result<Self> {
+        let listener = TcpListener::bind(addr).await?;
         // The address we bound to may not be the same as the one we requested.
         // This happens, for example, when binding to port 0—this will cause the OS to pick a random
         // port for us which we won't know unless we call `local_addr` on the listener.
