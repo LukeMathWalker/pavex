@@ -1,3 +1,4 @@
+use std::net::SocketAddr;
 use std::thread;
 
 use tokio::net::TcpStream;
@@ -62,10 +63,37 @@ impl Acceptor {
     ///
     /// Constraint: this method **must not panic**.
     async fn run(mut self) {
+        /// Accept a connection from the given [`Incoming`].
+        /// If accepting a certain connection fails, log the error and keep trying with the next connection.
+        async fn accept_connection(incoming: Incoming) -> (Incoming, TcpStream, SocketAddr) {
+            loop {
+                match incoming.accept().await {
+                    Ok((connection, remote_peer)) => return (incoming, connection, remote_peer),
+                    Err(e) => {
+                        tracing::error!(error.msg = %e, error.details = ?e, "Failed to accept connection");
+                        continue;
+                    }
+                }
+            }
+        }
+
         let n_workers = self.worker_handles.len();
-        let mut incoming = self.incoming.into_iter();
-        while let Some(incoming) = incoming.next() {
-            let (mut connection, remote_peer) = incoming.accept().await.unwrap();
+
+        let mut incoming_join_set = tokio::task::JoinSet::new();
+        for incoming in self.incoming.into_iter() {
+            incoming_join_set.spawn(accept_connection(incoming));
+        }
+
+        loop {
+            let Some(Ok((incoming, mut connection, remote_peer))) =
+                incoming_join_set.join_next().await
+            else {
+                // TODO: should we handle JoinError somehow?
+                break;
+            };
+            // Re-spawn the task to keep accepting connections from the same socket.
+            incoming_join_set.spawn(accept_connection(incoming));
+
             // A flag to track if the connection has been successfully sent to a worker.
             let mut has_been_handled = false;
             // We try to send the connection to a worker.
@@ -110,6 +138,7 @@ impl Acceptor {
                 );
             }
         }
+        tracing::info!("Acceptor finished");
     }
 
     fn spawn(self) -> thread::JoinHandle<()> {
