@@ -89,7 +89,7 @@ impl Acceptor {
                 incoming_join_set.join_next().await
             else {
                 // TODO: should we handle JoinError somehow?
-                break;
+                continue;
             };
             // Re-spawn the task to keep accepting connections from the same socket.
             incoming_join_set.spawn(accept_connection(incoming));
