@@ -1,5 +1,6 @@
 use crate::incoming::Incoming;
 use crate::server::configuration::ServerConfiguration;
+use crate::ServerBuilder;
 
 pub struct Server {
     config: ServerConfiguration,
@@ -11,8 +12,8 @@ impl Server {
         Self { config, incoming }
     }
 
-    /// Initialize a new [`ServerConfiguration`] with its default configuration.
-    pub fn builder() -> ServerConfiguration {
-        ServerConfiguration::new()
+    /// Configure a [`Server`] using a [`ServerBuilder`].
+    pub fn builder() -> ServerBuilder {
+        ServerBuilder::new()
     }
 }

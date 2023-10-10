@@ -1,5 +1,6 @@
 use std::num::NonZeroUsize;
 
+#[derive(Debug, Clone)]
 pub struct ServerConfiguration {
     /// Number of worker threads to spawn.
     pub(crate) n_workers: NonZeroUsize,
@@ -44,8 +45,15 @@ impl ServerConfiguration {
     /// crate to acquire the logical core count instead.
     ///
     /// [`num_cpus`]: https://docs.rs/num_cpus
-    pub fn n_workers(mut self, n: NonZeroUsize) -> Self {
-        self.n_workers = n;
+    #[track_caller]
+    pub fn set_n_workers(mut self, n: usize) -> Self {
+        assert!(n > 0, "The number of workers must be greater than 0");
+        self.n_workers = NonZeroUsize::new(n).unwrap();
         self
+    }
+
+    /// Get the number of worker threads to be spawned.
+    pub fn get_n_workers(&self) -> NonZeroUsize {
+        self.n_workers
     }
 }
