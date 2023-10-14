@@ -1,6 +1,7 @@
 use std::net::SocketAddr;
 use std::thread;
 
+use anyhow::Context;
 use tokio::net::TcpStream;
 use tokio::sync::mpsc::error::TrySendError;
 
@@ -48,7 +49,8 @@ impl Acceptor {
         for i in 0..n_workers {
             let (worker, handle) = Worker::new(i, max_queue_length);
             worker_handles.push(handle);
-            worker.spawn();
+            // TODO: should we panic here?
+            worker.spawn().expect("Failed to spawn worker thread");
         }
         Self {
             incoming,
@@ -84,12 +86,26 @@ impl Acceptor {
             incoming_join_set.spawn(accept_connection(incoming));
         }
 
-        loop {
-            let Some(Ok((incoming, mut connection, remote_peer))) =
-                incoming_join_set.join_next().await
-            else {
-                // TODO: should we handle JoinError somehow?
-                continue;
+        let error = 'conn_loop: loop {
+            let (incoming, mut connection, remote_peer) = match incoming_join_set.join_next().await
+            {
+                Some(Ok((incoming, connection, remote_peer))) => {
+                    (incoming, connection, remote_peer)
+                }
+                Some(Err(e)) => {
+                    // This only ever happens if we panicked in the task that was accepting
+                    // connections or if we somehow cancel it.
+                    // Neither of these should ever happen, but we handle the error just in case
+                    // to make sure we log the error info if we end up introducing a fatal bug.
+                    break 'conn_loop e;
+                }
+                None => {
+                    // When we succeed in accepting a connection, we always spawn a new task to
+                    // accept the next connection from the same socket.
+                    // If we fail to accept a connection, we exit the acceptor thread.
+                    // Therefore, the JoinSet should never be empty.
+                    unreachable!("The JoinSet for incoming connections cannot ever be empty")
+                }
             };
             // Re-spawn the task to keep accepting connections from the same socket.
             incoming_join_set.spawn(accept_connection(incoming));
@@ -126,7 +142,7 @@ impl Acceptor {
                     tracing::warn!(worker_id = worker_id, "Worker crashed, restarting it");
                     let (worker, worker_handle) = Worker::new(worker_id, self.max_queue_length);
                     // TODO: what if we fail to spawn the worker thread? We don't want to panic here!
-                    worker.spawn();
+                    worker.spawn().expect("Failed to spawn worker thread");
                     self.worker_handles[worker_id] = worker_handle;
                 }
             }
@@ -137,8 +153,13 @@ impl Acceptor {
                     "All workers are busy, dropping connection",
                 );
             }
-        }
-        tracing::info!("Acceptor finished");
+        };
+
+        tracing::error!(
+            error.msg = %error,
+            error.details = ?error,
+            "Failed to accept new connections. The acceptor thread will exit now."
+        );
     }
 
     fn spawn(self) -> thread::JoinHandle<()> {
@@ -190,7 +211,7 @@ impl Worker {
 
     /// Spawn a thread and run the worker there, using a single-threaded executor that can
     /// handle !Send futures.
-    fn spawn(self) -> thread::JoinHandle<()> {
+    fn spawn(self) -> Result<thread::JoinHandle<()>, anyhow::Error> {
         thread::Builder::new()
             .name(format!("pavex-worker-{}", self.id))
             .spawn(move || {
@@ -200,6 +221,6 @@ impl Worker {
                     .expect("Failed to build single-threaded Tokio runtime for worker thread")
                     .block_on(self.run());
             })
-            .expect("Failed to spawn worker thread")
+            .context("Failed to spawn worker thread")
     }
 }

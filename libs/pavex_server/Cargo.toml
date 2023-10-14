@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 tracing = "0.1"
 tokio = { version = "1.32", features = ["net", "sync", "rt"] }
+anyhow = "1"
