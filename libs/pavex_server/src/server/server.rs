@@ -1,12 +1,12 @@
 use std::net::SocketAddr;
 use std::thread;
 
-use anyhow::Context;
 use tokio::net::TcpStream;
 use tokio::sync::mpsc::error::TrySendError;
 
 use crate::incoming::Incoming;
 use crate::server::configuration::ServerConfiguration;
+use crate::server::worker::{Worker, WorkerHandle};
 use crate::ServerBuilder;
 
 pub struct Server {
@@ -119,13 +119,13 @@ impl Acceptor {
                 // Track if the worker has crashed.
                 let mut has_crashed: Option<usize> = None;
                 let worker_handle = &self.worker_handles[self.next_worker];
-                if let Err(e) = worker_handle.connection_outbox.try_send(connection) {
+                if let Err(e) = worker_handle.dispatch(connection) {
                     connection = match e {
                         TrySendError::Full(conn) => conn,
                         // A closed channel implies that the worker thread is no longer running,
                         // therefore we need to restart it.
                         TrySendError::Closed(conn) => {
-                            has_crashed = Some(worker_handle.id);
+                            has_crashed = Some(worker_handle.id());
                             conn
                         }
                     };
@@ -173,54 +173,5 @@ impl Acceptor {
                     .block_on(self.run());
             })
             .expect("Failed to spawn acceptor thread")
-    }
-}
-
-struct WorkerHandle {
-    connection_outbox: tokio::sync::mpsc::Sender<TcpStream>,
-    id: usize,
-}
-
-#[must_use]
-struct Worker {
-    connection_inbox: tokio::sync::mpsc::Receiver<TcpStream>,
-    id: usize,
-}
-
-impl Worker {
-    fn new(id: usize, max_queue_length: usize) -> (Self, WorkerHandle) {
-        let (connection_outbox, connection_inbox) = tokio::sync::mpsc::channel(max_queue_length);
-        let self_ = Self {
-            connection_inbox,
-            id,
-        };
-        let handle = WorkerHandle {
-            connection_outbox,
-            id,
-        };
-        (self_, handle)
-    }
-
-    /// Run the worker: wait for incoming connections and handle them.
-    async fn run(mut self) {
-        while let Some(_) = self.connection_inbox.recv().await {
-            println!("Worker {} received a connection", self.id);
-        }
-        tracing::info!("Worker {} finished", self.id);
-    }
-
-    /// Spawn a thread and run the worker there, using a single-threaded executor that can
-    /// handle !Send futures.
-    fn spawn(self) -> Result<thread::JoinHandle<()>, anyhow::Error> {
-        thread::Builder::new()
-            .name(format!("pavex-worker-{}", self.id))
-            .spawn(move || {
-                tokio::runtime::Builder::new_current_thread()
-                    .enable_all()
-                    .build()
-                    .expect("Failed to build single-threaded Tokio runtime for worker thread")
-                    .block_on(self.run());
-            })
-            .context("Failed to spawn worker thread")
     }
 }

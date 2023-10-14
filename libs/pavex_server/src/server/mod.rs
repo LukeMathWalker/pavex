@@ -5,3 +5,4 @@ pub use server::Server;
 mod builder;
 mod configuration;
 mod server;
+mod worker;
