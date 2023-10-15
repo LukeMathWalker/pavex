@@ -14,7 +14,7 @@ impl Default for ServerConfiguration {
 
 impl ServerConfiguration {
     /// Initialize a new [`ServerConfiguration`] using its default settings.
-    pub(super) fn new() -> Self {
+    pub fn new() -> Self {
         let n_workers = match std::thread::available_parallelism() {
             Ok(n) => n,
             Err(e) => {

@@ -52,6 +52,11 @@ impl Server {
     /// Binding an address may fail (e.g. if the address is already in use), therefore this method
     /// may return an error.  
     ///
+    /// # Related
+    ///
+    /// Check out [`Server::listen`] for an alternative binding mechanism as well as a
+    /// discussion of the pros and cons of [`Server::bind`] vs [`Server::listen`].
+    ///
     /// # Note
     ///
     /// A [`Server`] can be bound to multiple addresses: just call this method multiple times with
@@ -61,15 +66,16 @@ impl Server {
     ///
     /// ```rust
     /// use std::net::SocketAddr;
-    /// use pavex::server::ServerHandle;
+    /// use pavex::server::Server;
     ///
     /// # async fn t() -> std::io::Result<()> {
-    /// let addr1 = SocketAddr::from(([127, 0, 0, 1], 8080));
+    /// let addr = SocketAddr::from(([127, 0, 0, 1], 8080));
     ///
-    /// let server = ServerHandle::builder()
-    ///     .bind(addr1)
-    ///     .await?;
-    ///  // [...]
+    /// Server::new()
+    ///     .bind(addr)
+    ///     .await?
+    ///     # ;
+    ///     // [...]
     /// # Ok(())
     /// # }
     /// ```
@@ -78,24 +84,105 @@ impl Server {
     ///
     /// ```rust
     /// use std::net::SocketAddr;
-    /// use pavex::server::ServerHandle;
+    /// use pavex::server::Server;
     ///
     /// # async fn t() -> std::io::Result<()> {
     /// let addr1 = SocketAddr::from(([127, 0, 0, 1], 8080));
     /// let addr2 = SocketAddr::from(([127, 0, 0, 1], 4000));
     ///
-    /// let server = ServerHandle::builder()
+    /// Server::new()
     ///     .bind(addr1)
     ///     .await?
     ///     .bind(addr2)
-    ///     .await?;
-    ///  // [...]
+    ///     .await?
+    ///     # ;
+    ///     // [...]
     /// # Ok(())
     /// # }
+    /// ````
     pub async fn bind(mut self, addr: SocketAddr) -> std::io::Result<Self> {
         let incoming = IncomingStream::bind(addr).await?;
         self.incoming.push(incoming);
         Ok(self)
+    }
+
+    /// Ask the server to process incoming connections from the provided [`IncomingStream`].  
+    ///
+    /// # [`Server::listen`] vs [`Server::bind`]
+    ///
+    /// [`Server::bind`] only requires you to specify the address you want to listen at. The
+    /// socket configuration is handled by the [`Server`], with a set of reasonable default
+    /// parameters. You have no access to the [`IncomingStream`] that gets bound to the address
+    /// you specified.
+    ///
+    /// [`Server::listen`], instead, expects an [`IncomingStream`].  
+    /// You are free to configure the socket as you see please and the [`Server`] will just
+    /// poll it for incoming connections.  
+    /// It also allows you to interact with the bound [`IncomingStream`] directly
+    ///
+    /// # Example: bind to a random port
+    ///
+    /// ```rust
+    /// use std::net::SocketAddr;
+    /// use pavex::server::{IncomingStream, Server};
+    ///
+    /// # async fn t() -> std::io::Result<()> {
+    /// // `0` is a special port: it tells the OS to assign us
+    /// // a random **unused** port
+    /// let addr = SocketAddr::from(([127, 0, 0, 1], 0));
+    /// let incoming = IncomingStream::bind(addr).await?;
+    /// // We can then retrieve the actual port we were assigned
+    /// // by the OS.
+    /// let addr = incoming.local_addr()?.to_owned();
+    ///
+    /// Server::new()
+    ///     .listen(incoming);
+    ///     # ;
+    ///     // [...]
+    /// # Ok(())
+    /// # }
+    /// ````
+    ///
+    /// # Example: set a custom socket backlog
+    ///
+    /// ```rust
+    /// use std::net::SocketAddr;
+    /// use socket2::Domain;
+    /// use pavex::server::{IncomingStream, Server};
+    ///
+    /// # async fn t() -> std::io::Result<()> {
+    /// // `0` is a special port: it tells the OS to assign us
+    /// // a random **unused** port
+    /// let addr = SocketAddr::from(([127, 0, 0, 1], 0));
+    ///
+    /// let socket = socket2::Socket::new(
+    ///    Domain::for_address(addr),
+    ///    socket2::Type::STREAM,
+    ///    Some(socket2::Protocol::TCP),
+    /// )
+    /// .expect("Failed to create a socket");
+    /// socket.set_reuse_address(true)?;
+    /// socket.set_nonblocking(true)?;
+    /// socket.bind(&addr.into())?;
+    /// // The custom backlog!
+    /// socket.listen(2048_i32)?;
+    ///
+    /// let listener = std::net::TcpListener::from(socket);
+    /// Server::new()
+    ///     .listen(listener.try_into()?)
+    ///     # ;
+    ///     // [...]
+    /// # Ok(())
+    /// # }
+    /// ````
+    ///
+    /// # Note
+    ///
+    /// A [`Server`] can listen to multiple streams of incoming connections: just call this method
+    /// multiple times!
+    pub fn listen(mut self, incoming: IncomingStream) -> Self {
+        self.incoming.push(incoming);
+        self
     }
 
     /// Start listening for incoming connections.

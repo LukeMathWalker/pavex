@@ -5,7 +5,6 @@ use tokio::net::{TcpListener, TcpStream};
 
 /// A stream of incoming connections.
 pub struct IncomingStream {
-    addr: SocketAddr,
     listener: TcpListener,
 }
 
@@ -26,19 +25,17 @@ impl IncomingStream {
         socket.listen(1024_i32)?;
 
         let listener = std::net::TcpListener::from(socket);
-        // The address we bound to may not be the same as the one we requested.
-        // This happens, for example, when binding to port 0—this will cause the OS to pick a random
-        // port for us which we won't know unless we call `local_addr` on the listener.
-        let addr = listener.local_addr()?;
         Ok(Self {
-            addr,
             listener: TcpListener::from_std(listener)?,
         })
     }
 
     /// Returns the address that this [`IncomingStream`] is bound to.
-    pub fn local_addr(&self) -> &SocketAddr {
-        &self.addr
+    pub fn local_addr(&self) -> std::io::Result<SocketAddr> {
+        // The address we bound to may not be the same as the one we requested.
+        // This happens, for example, when binding to port 0—this will cause the OS to pick a random
+        // port for us which we won't know unless we call `local_addr` on the listener.
+        self.listener.local_addr()
     }
 
     /// Accepts a new incoming connection from the underlying listener.
@@ -66,5 +63,21 @@ impl IncomingStream {
     /// ```
     pub async fn accept(&self) -> std::io::Result<(TcpStream, SocketAddr)> {
         self.listener.accept().await
+    }
+}
+
+impl TryFrom<std::net::TcpListener> for IncomingStream {
+    type Error = std::io::Error;
+
+    fn try_from(v: std::net::TcpListener) -> std::io::Result<Self> {
+        Ok(Self {
+            listener: TcpListener::from_std(v)?,
+        })
+    }
+}
+
+impl From<TcpListener> for IncomingStream {
+    fn from(v: TcpListener) -> Self {
+        Self { listener: v }
     }
 }
