@@ -7,7 +7,7 @@ use std::time::Duration;
 
 use tokio::net::TcpStream;
 use tokio::sync::mpsc::error::TrySendError;
-use tokio::task::{JoinError, JoinSet};
+use tokio::task::{JoinError, JoinSet, LocalSet};
 
 use crate::server::configuration::ServerConfiguration;
 use crate::server::worker::{Worker, WorkerHandle};
@@ -311,11 +311,11 @@ where
         thread::Builder::new()
             .name("pavex-acceptor".to_string())
             .spawn(move || {
-                tokio::runtime::Builder::new_current_thread()
+                let rt = tokio::runtime::Builder::new_current_thread()
                     .enable_all()
                     .build()
-                    .expect("Failed to build single-threaded Tokio runtime for acceptor thread")
-                    .block_on(self.run());
+                    .expect("Failed to build single-threaded Tokio runtime for acceptor thread");
+                LocalSet::new().block_on(&rt, self.run());
             })
             .expect("Failed to spawn acceptor thread")
     }

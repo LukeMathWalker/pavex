@@ -1,7 +1,7 @@
 pub use configuration::ServerConfiguration;
 pub use incoming::IncomingStream;
 pub use server::Server;
-pub use server_handle::ServerHandle;
+pub use server_handle::{ServerHandle, ShutdownMode};
 
 mod configuration;
 mod incoming;

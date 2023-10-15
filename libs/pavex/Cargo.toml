@@ -49,3 +49,4 @@ socket2 = { version = "0.5.3", optional = true }
 tokio = { version = "1", features = ["macros"] }
 insta = "1.29.0"
 tracing = "0.1"
+reqwest = "0.11"
