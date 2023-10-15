@@ -1,8 +1,10 @@
+use std::future::Future;
 use std::net::SocketAddr;
 
-use crate::incoming::Incoming;
 use crate::server::configuration::ServerConfiguration;
 use crate::server::server::Server;
+
+use super::Incoming;
 
 /// A builder for [`Server`]s.
 ///
@@ -52,15 +54,14 @@ impl ServerBuilder {
     ///
     /// ```rust
     /// use std::net::SocketAddr;
-    /// use pavex_server::Server;
+    /// use pavex::server::Server;
     ///
     /// # async fn t() -> std::io::Result<()> {
     /// let addr1 = SocketAddr::from(([127, 0, 0, 1], 8080));
     ///
     /// let server = Server::builder()
     ///     .bind(addr1)
-    ///     .await?
-    ///     .build();
+    ///     .await?;
     ///  // [...]
     /// # Ok(())
     /// # }
@@ -70,7 +71,7 @@ impl ServerBuilder {
     ///
     /// ```rust
     /// use std::net::SocketAddr;
-    /// use pavex_server::Server;
+    /// use pavex::server::Server;
     ///
     /// # async fn t() -> std::io::Result<()> {
     /// let addr1 = SocketAddr::from(([127, 0, 0, 1], 8080));
@@ -80,8 +81,7 @@ impl ServerBuilder {
     ///     .bind(addr1)
     ///     .await?
     ///     .bind(addr2)
-    ///     .await?
-    ///     .build();
+    ///     .await?;
     ///  // [...]
     /// # Ok(())
     /// # }
@@ -92,8 +92,15 @@ impl ServerBuilder {
     }
 
     /// Build the [`Server`] from this [`ServerBuilder`].
-    #[must_use = "The server doesn't start listening for incoming connections until you call `.run()` on it"]
-    pub fn build(self) -> Server {
-        Server::new(self.config, self.incoming)
+    pub async fn serve<HandlerFuture, ApplicationState>(
+        self,
+        handler: fn(http::Request<hyper::body::Incoming>, ApplicationState) -> HandlerFuture,
+        application_state: ApplicationState,
+    ) -> Server
+    where
+        HandlerFuture: Future<Output = crate::response::Response> + 'static,
+        ApplicationState: Clone + Send + Sync + 'static,
+    {
+        Server::new::<HandlerFuture, _>(self.config, self.incoming, handler, application_state)
     }
 }

@@ -6,13 +6,14 @@ pub use bytes::{Bytes, BytesMut};
 /// Trait representing a streaming [`Response`](crate::response::Response) body.  
 ///
 pub use http_body::Body as RawBody;
-pub use http_body::{Empty, Full};
+pub use http_body_util::{Empty, Full};
+
+pub use boxed::boxed;
 
 /// A type-erased streaming [`Response`](crate::response::Response) body. The
 /// most common body type in Pavex.
 ///
-pub type BoxBody = http_body::combinators::BoxBody<Bytes, crate::Error>;
-pub use boxed::boxed;
+pub type BoxBody = http_body_util::combinators::BoxBody<Bytes, crate::Error>;
 
 // Most of this module is a direct copy (with, from time to time,
 // minor modifications) of the corresponding `body` module in
@@ -45,8 +46,11 @@ pub use boxed::boxed;
 // DEALINGS IN THE SOFTWARE.
 mod boxed {
     //! Body types and utilities used by Pavex.
-    use super::{BoxBody, Bytes, RawBody};
+    use http_body_util::BodyExt;
+
     use crate::Error;
+
+    use super::{BoxBody, Bytes, RawBody};
 
     /// Convert a [`RawBody`] into a [`BoxBody`].
     pub fn boxed<B>(body: B) -> BoxBody

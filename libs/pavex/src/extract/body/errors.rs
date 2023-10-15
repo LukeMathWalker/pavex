@@ -1,7 +1,8 @@
 //! Errors that can occur while extracting information from the request body.
-use crate::response::Response;
 use bytes::Bytes;
-use http_body::Full;
+use http_body_util::Full;
+
+use crate::response::Response;
 
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
@@ -84,7 +85,7 @@ pub struct UnexpectedBufferError {
 
 #[derive(Debug, thiserror::Error)]
 #[error(
-    "The `Content-Type` header is missing. This endpoint expects requests with a `Content-Type` header set to `application/json`, or another `application/*+json` MIME type"
+"The `Content-Type` header is missing. This endpoint expects requests with a `Content-Type` header set to `application/json`, or another `application/*+json` MIME type"
 )]
 #[non_exhaustive]
 /// The `Content-Type` header is missing, while we expected it to be set to `application/json`, or
@@ -102,7 +103,7 @@ pub struct JsonDeserializationError {
 
 #[derive(Debug, thiserror::Error)]
 #[error(
-    "The `Content-Type` header was set to `{actual}`. This endpoint expects requests with a `Content-Type` header set to `application/json`, or another `application/*+json` MIME type"
+"The `Content-Type` header was set to `{actual}`. This endpoint expects requests with a `Content-Type` header set to `application/json`, or another `application/*+json` MIME type"
 )]
 #[non_exhaustive]
 /// The `Content-Type` header not set to `application/json`, or another `application/*+json` MIME type.

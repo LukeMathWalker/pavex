@@ -1,8 +1,11 @@
-use super::TypedBody;
-use crate::http::HeaderValue;
-use bytes::Bytes;
-use http_body::Full;
 use std::borrow::Cow;
+
+use bytes::Bytes;
+use http_body_util::Full;
+
+use crate::http::HeaderValue;
+
+use super::TypedBody;
 
 impl TypedBody for String {
     type Body = Full<Bytes>;

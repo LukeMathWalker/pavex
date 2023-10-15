@@ -1,9 +1,12 @@
-use super::TypedBody;
-use crate::http::HeaderValue;
-use bytes::Bytes;
-use http_body::Full;
-use mime::TEXT_HTML_UTF_8;
 use std::borrow::Cow;
+
+use bytes::Bytes;
+use http_body_util::Full;
+use mime::TEXT_HTML_UTF_8;
+
+use crate::http::HeaderValue;
+
+use super::TypedBody;
 
 /// A [`Response`](crate::response::Response) body with `Content-Type` set to
 /// `text/html; charset=utf-8`.

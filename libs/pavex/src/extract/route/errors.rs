@@ -2,7 +2,7 @@
 use std::str::Utf8Error;
 
 use bytes::Bytes;
-use http_body::Full;
+use http_body_util::Full;
 
 use crate::response::Response;
 

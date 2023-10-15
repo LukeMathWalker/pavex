@@ -1,53 +1,74 @@
+use std::future::Future;
+use std::marker::PhantomData;
 use std::net::SocketAddr;
 use std::thread;
 
 use tokio::net::TcpStream;
 use tokio::sync::mpsc::error::TrySendError;
 
-use crate::incoming::Incoming;
 use crate::server::configuration::ServerConfiguration;
 use crate::server::worker::{Worker, WorkerHandle};
-use crate::ServerBuilder;
 
-pub struct Server {
-    config: ServerConfiguration,
-    incoming: Vec<Incoming>,
-}
+use super::Incoming;
+use super::ServerBuilder;
+
+pub struct Server {}
 
 impl Server {
-    pub(super) fn new(config: ServerConfiguration, incoming: Vec<Incoming>) -> Self {
-        Self { config, incoming }
+    pub(super) fn new<HandlerFuture, ApplicationState>(
+        config: ServerConfiguration,
+        incoming: Vec<Incoming>,
+        handler: fn(http::Request<hyper::body::Incoming>, ApplicationState) -> HandlerFuture,
+        application_state: ApplicationState,
+    ) -> Self
+    where
+        HandlerFuture: Future<Output = crate::response::Response> + 'static,
+        ApplicationState: Clone + Send + Sync + 'static,
+    {
+        let acceptor = Acceptor::new(config, incoming, handler, application_state);
+        let handle = acceptor.spawn();
+        Self {}
     }
 
     /// Configure a [`Server`] using a [`ServerBuilder`].
     pub fn builder() -> ServerBuilder {
         ServerBuilder::new()
     }
-
-    pub async fn run(self) {
-        let Server { config, incoming } = self;
-        let acceptor = Acceptor::new(config, incoming);
-        acceptor.spawn();
-    }
 }
 
 #[must_use]
-struct Acceptor {
+struct Acceptor<HandlerFuture, ApplicationState> {
     incoming: Vec<Incoming>,
     worker_handles: Vec<WorkerHandle>,
     config: ServerConfiguration,
     next_worker: usize,
     max_queue_length: usize,
+    handler: fn(http::Request<hyper::body::Incoming>, ApplicationState) -> HandlerFuture,
+    application_state: ApplicationState,
+    // We use a `fn() -> HandlerFuture` instead of a `HandlerFuture` because we need `Acceptor`
+    // to be `Send` and `Sync`. That wouldn't work with `PhantomData<HandlerFuture>`.
+    // In the end, we just need to stash the generic type *somewhere*.
+    handler_output_future: PhantomData<fn() -> HandlerFuture>,
 }
 
-impl Acceptor {
-    fn new(config: ServerConfiguration, incoming: Vec<Incoming>) -> Self {
+impl<HandlerFuture, ApplicationState> Acceptor<HandlerFuture, ApplicationState>
+where
+    HandlerFuture: Future<Output = crate::response::Response> + 'static,
+    ApplicationState: Clone + Send + Sync + 'static,
+{
+    fn new(
+        config: ServerConfiguration,
+        incoming: Vec<Incoming>,
+        handler: fn(http::Request<hyper::body::Incoming>, ApplicationState) -> HandlerFuture,
+        application_state: ApplicationState,
+    ) -> Self {
         // TODO: make this configurable
         let max_queue_length = 15;
         let n_workers = config.n_workers.get();
         let mut worker_handles = Vec::with_capacity(n_workers);
         for i in 0..n_workers {
-            let (worker, handle) = Worker::new(i, max_queue_length);
+            let (worker, handle) =
+                Worker::new(i, max_queue_length, handler, application_state.clone());
             worker_handles.push(handle);
             // TODO: should we panic here?
             worker.spawn().expect("Failed to spawn worker thread");
@@ -57,7 +78,10 @@ impl Acceptor {
             worker_handles,
             config,
             max_queue_length,
+            handler,
+            handler_output_future: Default::default(),
             next_worker: 0,
+            application_state,
         }
     }
 
@@ -140,7 +164,12 @@ impl Acceptor {
                 // Restart the crashed worker thread.
                 if let Some(worker_id) = has_crashed {
                     tracing::warn!(worker_id = worker_id, "Worker crashed, restarting it");
-                    let (worker, worker_handle) = Worker::new(worker_id, self.max_queue_length);
+                    let (worker, worker_handle) = Worker::new(
+                        worker_id,
+                        self.max_queue_length,
+                        self.handler,
+                        self.application_state.clone(),
+                    );
                     // TODO: what if we fail to spawn the worker thread? We don't want to panic here!
                     worker.spawn().expect("Failed to spawn worker thread");
                     self.worker_handles[worker_id] = worker_handle;

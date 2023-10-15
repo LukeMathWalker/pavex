@@ -34,7 +34,7 @@ impl Incoming {
     /// # Example
     ///
     /// ```no_run
-    /// use pavex_server::Incoming;
+    /// use pavex::server::Incoming;
     /// use std::net::SocketAddr;
     ///
     /// # async fn t() -> std::io::Result<()> {
