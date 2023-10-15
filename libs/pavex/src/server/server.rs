@@ -4,7 +4,7 @@ use std::net::SocketAddr;
 use crate::server::configuration::ServerConfiguration;
 use crate::server::server_handle::ServerHandle;
 
-use super::Incoming;
+use super::IncomingStream;
 
 /// A builder for [`ServerHandle`]s.
 ///
@@ -12,7 +12,7 @@ use super::Incoming;
 #[must_use = "You must call `serve` on a `Server` to start listening for incoming connections"]
 pub struct Server {
     config: ServerConfiguration,
-    incoming: Vec<Incoming>,
+    incoming: Vec<IncomingStream>,
 }
 
 impl Default for Server {
@@ -93,7 +93,7 @@ impl Server {
     /// # Ok(())
     /// # }
     pub async fn bind(mut self, addr: SocketAddr) -> std::io::Result<Self> {
-        let incoming = Incoming::bind(addr).await?;
+        let incoming = IncomingStream::bind(addr).await?;
         self.incoming.push(incoming);
         Ok(self)
     }

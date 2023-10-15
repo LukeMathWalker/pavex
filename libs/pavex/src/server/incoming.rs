@@ -3,14 +3,14 @@ use std::net::SocketAddr;
 use tokio::net::{TcpListener, TcpStream};
 
 /// A stream of incoming connections.
-pub struct Incoming {
+pub struct IncomingStream {
     addr: SocketAddr,
     listener: TcpListener,
 }
 
-impl Incoming {
+impl IncomingStream {
     // TODO: should we use a custom error type to capture which address failed to bind?
-    /// Creates a new [`Incoming`] by binding to a socket address.
+    /// Creates a new [`IncomingStream`] by binding to a socket address.
     pub async fn bind(addr: SocketAddr) -> std::io::Result<Self> {
         let listener = TcpListener::bind(addr).await?;
         // The address we bound to may not be the same as the one we requested.
@@ -20,7 +20,7 @@ impl Incoming {
         Ok(Self { addr, listener })
     }
 
-    /// Returns the address that this [`Incoming`] is bound to.
+    /// Returns the address that this [`IncomingStream`] is bound to.
     pub fn local_addr(&self) -> &SocketAddr {
         &self.addr
     }
@@ -34,12 +34,12 @@ impl Incoming {
     /// # Example
     ///
     /// ```no_run
-    /// use pavex::server::Incoming;
+    /// use pavex::server::IncomingStream;
     /// use std::net::SocketAddr;
     ///
     /// # async fn t() -> std::io::Result<()> {
     /// let address = SocketAddr::from(([127, 0, 0, 1], 8080));
-    /// let incoming = Incoming::bind(address).await?;
+    /// let incoming = IncomingStream::bind(address).await?;
     ///
     /// match incoming.accept().await {
     ///     Ok((_socket, addr)) => println!("new client: {:?}", addr),

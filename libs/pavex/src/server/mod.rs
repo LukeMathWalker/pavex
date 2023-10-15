@@ -1,5 +1,5 @@
 pub use configuration::ServerConfiguration;
-pub use incoming::Incoming;
+pub use incoming::IncomingStream;
 pub use server::Server;
 pub use server_handle::ServerHandle;
 

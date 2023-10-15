@@ -12,7 +12,7 @@ use tokio::task::{JoinError, JoinSet};
 use crate::server::configuration::ServerConfiguration;
 use crate::server::worker::{Worker, WorkerHandle};
 
-use super::Incoming;
+use super::IncomingStream;
 
 /// A handle to a running [`Server`](super::Server).
 ///
@@ -24,7 +24,7 @@ pub struct ServerHandle {
 impl ServerHandle {
     pub(super) fn new<HandlerFuture, ApplicationState>(
         config: ServerConfiguration,
-        incoming: Vec<Incoming>,
+        incoming: Vec<IncomingStream>,
         handler: fn(http::Request<hyper::body::Incoming>, ApplicationState) -> HandlerFuture,
         application_state: ApplicationState,
     ) -> Self
@@ -93,7 +93,7 @@ enum ServerCommand {
 #[must_use]
 struct Acceptor<HandlerFuture, ApplicationState> {
     command_inbox: tokio::sync::mpsc::Receiver<ServerCommand>,
-    incoming: Vec<Incoming>,
+    incoming: Vec<IncomingStream>,
     worker_handles: Vec<WorkerHandle>,
     config: ServerConfiguration,
     next_worker: usize,
@@ -108,7 +108,7 @@ struct Acceptor<HandlerFuture, ApplicationState> {
 
 enum AcceptorInboxMessage {
     ServerCommand(ServerCommand),
-    Connection(Option<Result<(Incoming, TcpStream, SocketAddr), JoinError>>),
+    Connection(Option<Result<(IncomingStream, TcpStream, SocketAddr), JoinError>>),
 }
 
 impl<HandlerFuture, ApplicationState> Acceptor<HandlerFuture, ApplicationState>
@@ -118,7 +118,7 @@ where
 {
     fn new(
         config: ServerConfiguration,
-        incoming: Vec<Incoming>,
+        incoming: Vec<IncomingStream>,
         handler: fn(http::Request<hyper::body::Incoming>, ApplicationState) -> HandlerFuture,
         application_state: ApplicationState,
         command_inbox: tokio::sync::mpsc::Receiver<ServerCommand>,
@@ -151,9 +151,11 @@ where
     ///
     /// Constraint: this method **must not panic**.
     async fn run(self) {
-        /// Accept a connection from the given [`Incoming`].
+        /// Accept a connection from the given [`IncomingStream`].
         /// If accepting a certain connection fails, log the error and keep trying with the next connection.
-        async fn accept_connection(incoming: Incoming) -> (Incoming, TcpStream, SocketAddr) {
+        async fn accept_connection(
+            incoming: IncomingStream,
+        ) -> (IncomingStream, TcpStream, SocketAddr) {
             loop {
                 match incoming.accept().await {
                     Ok((connection, remote_peer)) => return (incoming, connection, remote_peer),
@@ -293,7 +295,7 @@ where
     fn poll_inboxes(
         cx: &mut std::task::Context<'_>,
         server_command_inbox: &mut tokio::sync::mpsc::Receiver<ServerCommand>,
-        incoming_join_set: &mut JoinSet<(Incoming, TcpStream, SocketAddr)>,
+        incoming_join_set: &mut JoinSet<(IncomingStream, TcpStream, SocketAddr)>,
     ) -> Poll<AcceptorInboxMessage> {
         // Order matters here: we want to prioritize shutdown messages over incoming connections.
         if let Poll::Ready(Some(message)) = server_command_inbox.poll_recv(cx) {
@@ -321,7 +323,7 @@ where
     async fn shutdown(
         completion_notifier: tokio::sync::oneshot::Sender<()>,
         mode: ShutdownMode,
-        incoming_join_set: JoinSet<(Incoming, TcpStream, SocketAddr)>,
+        incoming_join_set: JoinSet<(IncomingStream, TcpStream, SocketAddr)>,
         worker_handles: Vec<WorkerHandle>,
     ) {
         // This drops the `JoinSet`, which will cause all the tasks that are still running to
