@@ -8,8 +8,8 @@ use std::time::Duration;
 pub enum ShutdownMode {
     /// Wait for each worker thread to finish handling its open connections before shutting down.
     Graceful {
-        /// How long to wait for the worker to finish handling its open connections.  
-        /// Any connection that has not been handled within the timeout will be dropped.
+        /// As much as we want to be graceful, we can't wait forever!  
+        /// Any connection that has not been handled within the specified `timeout` will be dropped.
         timeout: Duration,
     },
     /// Shut down immediately, dropping all open connections abruptly.
