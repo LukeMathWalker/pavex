@@ -1,14 +1,51 @@
-use std::future::Future;
+use std::future::{poll_fn, Future};
+use std::task::Poll;
 use std::thread;
 
 use anyhow::Context;
 use tokio::net::TcpStream;
 use tokio::sync::mpsc::error::TrySendError;
 
+use crate::server::server_handle::ShutdownMode;
+
 /// A handle to dispatch incoming connections to a worker thread.
 pub(super) struct WorkerHandle {
     connection_outbox: tokio::sync::mpsc::Sender<TcpStream>,
+    // We use an unbounded channel because we want to be able to send a shutdown command
+    // synchronously.
+    shutdown_outbox: tokio::sync::mpsc::UnboundedSender<ShutdownWorkerCommand>,
     id: usize,
+}
+
+thread_local! {
+    /// Each worker keeps track of the number of connections it is currently handling.
+    /// Since the value never crosses thread boundaries, we can use a thread-local variable.
+    static LIVE_CONNECTION_COUNTER: std::cell::RefCell<usize> = std::cell::RefCell::new(0);
+}
+
+/// A guard to track the liveness of an incoming connection.
+///
+/// It increments the connection counter when created and decrements it when dropped.
+struct ConnectionCounterGuard;
+
+impl ConnectionCounterGuard {
+    /// Create a new guard and increment the connection counter.
+    fn new() -> Self {
+        LIVE_CONNECTION_COUNTER.with(|counter| {
+            let mut counter = counter.borrow_mut();
+            *counter += 1;
+        });
+        Self
+    }
+}
+
+impl Drop for ConnectionCounterGuard {
+    fn drop(&mut self) {
+        LIVE_CONNECTION_COUNTER.with(|counter| {
+            let mut counter = counter.borrow_mut();
+            *counter -= 1;
+        });
+    }
 }
 
 impl WorkerHandle {
@@ -21,12 +58,43 @@ impl WorkerHandle {
     pub(super) fn id(&self) -> usize {
         self.id
     }
+
+    /// Shutdown the worker thread.
+    ///
+    /// # Implementation notes
+    ///
+    /// We use a sync function to ensure that the shutdown command is enqueued immediately,
+    /// even if the returned future is never polled.
+    pub(super) fn shutdown(self, mode: ShutdownMode) -> impl Future<Output = ()> {
+        let (completion_notifier, completion) = tokio::sync::oneshot::channel();
+        let sent = self
+            .shutdown_outbox
+            .send(ShutdownWorkerCommand {
+                completion_notifier,
+                mode,
+            })
+            .is_ok();
+        async move {
+            // What if sending fails?
+            // It only happens if the other end of the channel has already been dropped, which
+            // implies that the worker thread has already shut down—nothing to do!
+            if sent {
+                let _ = completion.await;
+            }
+        }
+    }
+}
+
+pub(super) struct ShutdownWorkerCommand {
+    completion_notifier: tokio::sync::oneshot::Sender<()>,
+    mode: ShutdownMode,
 }
 
 #[must_use]
 /// A worker thread that handles incoming connections.
 pub(super) struct Worker<HandlerFuture, ApplicationState> {
     connection_inbox: tokio::sync::mpsc::Receiver<TcpStream>,
+    shutdown_inbox: tokio::sync::mpsc::UnboundedReceiver<ShutdownWorkerCommand>,
     handler: fn(http::Request<hyper::body::Incoming>, ApplicationState) -> HandlerFuture,
     application_state: ApplicationState,
     id: usize,
@@ -48,40 +116,20 @@ where
         application_state: ApplicationState,
     ) -> (Self, WorkerHandle) {
         let (connection_outbox, connection_inbox) = tokio::sync::mpsc::channel(max_queue_length);
+        let (shutdown_outbox, shutdown_inbox) = tokio::sync::mpsc::unbounded_channel();
         let self_ = Self {
             connection_inbox,
+            shutdown_inbox,
             handler,
             application_state,
             id,
         };
         let handle = WorkerHandle {
             connection_outbox,
+            shutdown_outbox,
             id,
         };
         (self_, handle)
-    }
-
-    /// Run the worker: wait for incoming connections and handle them.
-    async fn run(mut self) {
-        // TODO: expose all the config options for `Http` through the top-level `ServerConfiguration`
-        // object.
-        let connection_handler = hyper_util::server::conn::auto::Builder::new(LocalExec);
-        while let Some(connection) = self.connection_inbox.recv().await {
-            let handler = hyper::service::service_fn(|request| {
-                let handler = (self.handler)(request, self.application_state.clone());
-                async move {
-                    let response = handler.await;
-                    let response = crate::hyper::Response::from(response);
-                    Ok::<_, hyper::Error>(response)
-                }
-            });
-            connection_handler
-                .serve_connection(connection, handler)
-                .await
-                .unwrap();
-            println!("Worker {} received a connection", self.id);
-        }
-        tracing::info!("Worker {} finished", self.id);
     }
 
     /// Spawn a thread and run the worker there, using a single-threaded executor that can
@@ -101,6 +149,111 @@ where
             })
             .context("Failed to spawn worker thread")
     }
+
+    /// Run the worker: wait for incoming connections and handle them.
+    async fn run(self) {
+        let Self {
+            mut connection_inbox,
+            mut shutdown_inbox,
+            handler,
+            application_state,
+            id,
+        } = self;
+        'event_loop: loop {
+            let message =
+                poll_fn(|cx| Self::poll_inboxes(cx, &mut shutdown_inbox, &mut connection_inbox))
+                    .await;
+            match message {
+                WorkerInboxMessage::Connection(connection) => {
+                    // A tiny bit of glue to adapt our handler to hyper's service interface.
+                    let application_state = application_state.clone();
+                    let handler = hyper::service::service_fn(move |request| {
+                        let handler = (handler)(request, application_state.clone());
+                        async move {
+                            let response = handler.await;
+                            let response = crate::hyper::Response::from(response);
+                            Ok::<_, hyper::Error>(response)
+                        }
+                    });
+                    let connection_counter_guard = ConnectionCounterGuard::new();
+                    tokio::task::spawn_local(async move {
+                        // Move the guard into the closure to keep the connection counter alive as
+                        // long as the connection is being handled.
+                        let _guard = connection_counter_guard;
+                        // TODO: expose all the config options for `auto::Builder` through the top-level
+                        //   `ServerConfiguration` object.
+                        let builder = hyper_util::server::conn::auto::Builder::new(LocalExec);
+                        builder.serve_connection(connection, handler).await
+                    });
+                }
+                WorkerInboxMessage::Shutdown(shutdown) => {
+                    let ShutdownWorkerCommand {
+                        completion_notifier,
+                        mode,
+                    } = shutdown;
+                    match mode {
+                        ShutdownMode::Graceful { timeout } => {
+                            // A future that returns once all connections have been closed.
+                            let connections_closed = async move {
+                                let mut ticker =
+                                    tokio::time::interval(std::time::Duration::from_millis(500));
+                                loop {
+                                    ticker.tick().await;
+                                    let ready_to_shutdown =
+                                        LIVE_CONNECTION_COUNTER.with(|counter| {
+                                            let counter = counter.borrow();
+                                            *counter == 0
+                                        });
+                                    if ready_to_shutdown {
+                                        break;
+                                    }
+                                }
+                            };
+                            // Wait for all connections to be closed or for the timeout to expire.
+                            let _ = tokio::time::timeout(timeout, connections_closed).await;
+                        }
+                        ShutdownMode::Forced => {}
+                    }
+                    let _ = completion_notifier.send(());
+                    break 'event_loop;
+                }
+            }
+        }
+        tracing::info!(worker_id = id, "Worker shut down");
+    }
+
+    /// Check if there is work to be done.
+    fn poll_inboxes(
+        cx: &mut std::task::Context<'_>,
+        shutdown_inbox: &mut tokio::sync::mpsc::UnboundedReceiver<ShutdownWorkerCommand>,
+        connection_inbox: &mut tokio::sync::mpsc::Receiver<TcpStream>,
+    ) -> Poll<WorkerInboxMessage> {
+        // Order matters here: we want to prioritize shutdown messages over incoming connections.
+        if let Poll::Ready(Some(message)) = shutdown_inbox.poll_recv(cx) {
+            return Poll::Ready(message.into());
+        }
+        if let Poll::Ready(Some(message)) = connection_inbox.poll_recv(cx) {
+            return Poll::Ready(message.into());
+        }
+        Poll::Pending
+    }
+}
+
+enum WorkerInboxMessage {
+    Connection(TcpStream),
+    Shutdown(ShutdownWorkerCommand),
+}
+
+impl From<TcpStream> for WorkerInboxMessage {
+    fn from(connection: TcpStream) -> Self {
+        Self::Connection(connection)
+    }
+}
+
+impl From<ShutdownWorkerCommand> for WorkerInboxMessage {
+    fn from(command: ShutdownWorkerCommand) -> Self {
+        Self::Shutdown(command)
+    }
 }
 
 /// HTTP2 requires `hyper` to be able to spawn tasks, therefore we need to pass to `hyper`'s
@@ -112,7 +265,7 @@ struct LocalExec;
 
 impl<F> hyper::rt::Executor<F> for LocalExec
 where
-    F: std::future::Future + 'static, // no `Send`
+    F: Future + 'static, // no `Send`
 {
     fn execute(&self, fut: F) {
         // This will spawn into the currently running `LocalSet`.
