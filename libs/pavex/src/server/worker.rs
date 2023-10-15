@@ -6,7 +6,7 @@ use anyhow::Context;
 use tokio::net::TcpStream;
 use tokio::sync::mpsc::error::TrySendError;
 
-use crate::server::server_handle::ShutdownMode;
+use crate::server::ShutdownMode;
 
 /// A handle to dispatch incoming connections to a worker thread.
 pub(super) struct WorkerHandle {

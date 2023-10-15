@@ -1,6 +1,10 @@
 use std::num::NonZeroUsize;
 
 #[derive(Debug, Clone)]
+/// All the available options for customizing the behaviour of a [`Server`](super::Server).
+///
+/// Refer to [`Server::set_config`](super::Server::set_config) for applying the configuration
+/// you assembled.
 pub struct ServerConfiguration {
     /// Number of worker threads to spawn.
     pub(crate) n_workers: NonZeroUsize,

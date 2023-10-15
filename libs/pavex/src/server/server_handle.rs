@@ -3,7 +3,6 @@ use std::marker::PhantomData;
 use std::net::SocketAddr;
 use std::task::Poll;
 use std::thread;
-use std::time::Duration;
 
 use tokio::net::TcpStream;
 use tokio::sync::mpsc::error::TrySendError;
@@ -12,7 +11,7 @@ use tokio::task::{JoinError, JoinSet, LocalSet};
 use crate::server::configuration::ServerConfiguration;
 use crate::server::worker::{Worker, WorkerHandle};
 
-use super::IncomingStream;
+use super::{IncomingStream, ShutdownMode};
 
 /// A handle to a running [`Server`](super::Server).
 ///
@@ -56,30 +55,6 @@ impl ServerHandle {
             // implies that the acceptor thread has already shut down—nothing to do!
             let _ = completion.await;
         }
-    }
-}
-
-#[derive(Debug, Clone)]
-#[non_exhaustive]
-pub enum ShutdownMode {
-    /// Wait for the worker to finish handling its open connections before shutting down.
-    Graceful {
-        /// How long to wait for the worker to finish handling its open connections.
-        timeout: Duration,
-    },
-    /// Shut down immediately, dropping all open connections abruptly.
-    Forced,
-}
-
-impl ShutdownMode {
-    /// Returns `true` if you are asking for a graceful shutdown.
-    pub fn is_graceful(&self) -> bool {
-        matches!(self, Self::Graceful { .. })
-    }
-
-    /// Returns `true` if you are asking for a forced shutdown.
-    pub fn is_forced(&self) -> bool {
-        matches!(self, Self::Forced)
     }
 }
 

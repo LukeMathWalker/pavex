@@ -4,6 +4,7 @@ use socket2::Domain;
 use tokio::net::{TcpListener, TcpStream};
 
 /// A stream of incoming connections.  
+///
 /// [`IncomingStream::bind`] is the primary entrypoint for constructing a new [`IncomingStream`].
 ///
 /// Incoming connections will be usually passed to a [`Server`](super::Server) instance to be handled.
