@@ -86,43 +86,50 @@ async fn serve() {
     reqwest::get(url).await.unwrap().error_for_status().unwrap();
 }
 
+async fn slow_handler(_req: Request<Incoming>, state: SlowHandlerState) -> Response {
+    // Signal that the connection has been established before starting to
+    // sleep.
+    state.started.send(()).await.unwrap();
+    tokio::time::sleep(state.sleep).await;
+    Response::ok().box_body()
+}
+
+#[derive(Clone)]
+struct SlowHandlerState {
+    sleep: Duration,
+    started: tokio::sync::mpsc::Sender<()>,
+}
+
+impl SlowHandlerState {
+    fn new(delay: Duration) -> (tokio::sync::mpsc::Receiver<()>, Self) {
+        let (started_tx, started_rx) = tokio::sync::mpsc::channel(1);
+        let state = SlowHandlerState {
+            sleep: delay,
+            started: started_tx,
+        };
+        (started_rx, state)
+    }
+}
+
 #[tokio::test]
 async fn graceful() {
-    async fn slow_handler(_req: Request<Incoming>, state: State) -> Response {
-        // Signal that the connection has been established before starting to
-        // sleep.
-        state.started.send(()).await.unwrap();
-        tokio::time::sleep(state.sleep).await;
-        Response::ok().box_body()
-    }
-
-    #[derive(Clone)]
-    struct State {
-        sleep: Duration,
-        started: tokio::sync::mpsc::Sender<()>,
-    }
-
     let (incoming, addr) = test_incoming().await;
     let delay = Duration::from_millis(100);
-    let (started_tx, mut started_rx) = tokio::sync::mpsc::channel(1);
-    let state = State {
-        sleep: delay,
-        started: started_tx,
-    };
+    let (mut has_started, state) = SlowHandlerState::new(delay);
 
     let server_handle = Server::new()
         .set_config(test_server_config())
         .listen(incoming)
         .serve(slow_handler, state);
 
-    let url = format!("http://localhost:{}", addr.port());
     let get_response = async move {
+        let url = format!("http://localhost:{}", addr.port());
         reqwest::get(url).await.unwrap().error_for_status().unwrap();
     };
     let get_response = tokio::task::spawn(get_response);
 
     // Wait for the connection to be established.
-    started_rx.recv().await.unwrap();
+    has_started.recv().await.unwrap();
 
     // Then start a graceful shutdown.
     let shutdown_future =
@@ -136,5 +143,77 @@ async fn graceful() {
         _ = shutdown_future => {
             panic!("The server shutdown without waiting for an ongoing connection to complete within the allocated timeout")
         }
+    }
+}
+
+#[tokio::test]
+async fn forced() {
+    let (incoming, addr) = test_incoming().await;
+    let delay = Duration::from_millis(100);
+    let (mut has_started, state) = SlowHandlerState::new(delay);
+
+    let server_handle = Server::new()
+        .set_config(test_server_config())
+        .listen(incoming)
+        .serve(slow_handler, state);
+
+    let get_response = async move {
+        let url = format!("http://localhost:{}", addr.port());
+        reqwest::get(url).await.unwrap().error_for_status().unwrap();
+    };
+    let get_response = tokio::task::spawn(get_response);
+
+    // Wait for the connection to be established.
+    has_started.recv().await.unwrap();
+
+    // Then start a forced shutdown.
+    let shutdown_future = tokio::task::spawn(server_handle.shutdown(ShutdownMode::Forced));
+
+    tokio::select! {
+        outcome = get_response => {
+            // This future might resolve first and report a broken connection, which would be fine.
+            // We don't want to see it succeed!
+            if outcome.is_ok() {
+                panic!("The server was supposed to shutdown forcefully, but it waited for the ongoing request")
+            }
+        },
+        _ = shutdown_future => {}
+    }
+}
+
+#[tokio::test]
+async fn graceful_but_too_fast() {
+    let (incoming, addr) = test_incoming().await;
+    let delay = Duration::from_millis(100);
+    let (mut has_started, state) = SlowHandlerState::new(delay);
+
+    let server_handle = Server::new()
+        .set_config(test_server_config())
+        .listen(incoming)
+        .serve(slow_handler, state);
+
+    let get_response = async move {
+        let url = format!("http://localhost:{}", addr.port());
+        reqwest::get(url).await.unwrap().error_for_status().unwrap();
+    };
+    let get_response = tokio::task::spawn(get_response);
+
+    // Wait for the connection to be established.
+    has_started.recv().await.unwrap();
+
+    // Then start a graceful shutdown with a timeout that will **not** allow the request
+    // handling to complete in time.
+    let shutdown_future =
+        tokio::task::spawn(server_handle.shutdown(ShutdownMode::Graceful { timeout: delay / 4 }));
+
+    tokio::select! {
+        outcome = get_response => {
+            // This future might resolve first and report a broken connection, which would be fine.
+            // We don't want to see it succeed!
+            if outcome.is_ok() {
+                panic!("The server was supposed to shutdown forcefully the slow request, but it waited instead")
+            }
+        },
+        _ = shutdown_future => {}
     }
 }
