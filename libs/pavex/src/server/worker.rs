@@ -165,26 +165,7 @@ where
                     .await;
             match message {
                 WorkerInboxMessage::Connection(connection) => {
-                    // A tiny bit of glue to adapt our handler to hyper's service interface.
-                    let application_state = application_state.clone();
-                    let handler = hyper::service::service_fn(move |request| {
-                        let handler = (handler)(request, application_state.clone());
-                        async move {
-                            let response = handler.await;
-                            let response = crate::hyper::Response::from(response);
-                            Ok::<_, hyper::Error>(response)
-                        }
-                    });
-                    let connection_counter_guard = ConnectionCounterGuard::new();
-                    tokio::task::spawn_local(async move {
-                        // Move the guard into the closure to keep the connection counter alive as
-                        // long as the connection is being handled.
-                        let _guard = connection_counter_guard;
-                        // TODO: expose all the config options for `auto::Builder` through the top-level
-                        //   `ServerConfiguration` object.
-                        let builder = hyper_util::server::conn::auto::Builder::new(LocalExec);
-                        builder.serve_connection(connection, handler).await
-                    });
+                    Self::handle_connection(connection, handler, application_state.clone());
                 }
                 WorkerInboxMessage::Shutdown(shutdown) => {
                     let ShutdownWorkerCommand {
@@ -193,7 +174,19 @@ where
                     } = shutdown;
                     match mode {
                         ShutdownMode::Graceful { timeout } => {
-                            // A future that returns once all connections have been closed.
+                            // Stop accepting new connections.
+                            connection_inbox.close();
+
+                            // Kick-off work for all pending connections.
+                            while let Some(connection) = connection_inbox.recv().await {
+                                Self::handle_connection(
+                                    connection,
+                                    handler,
+                                    application_state.clone(),
+                                );
+                            }
+
+                            // A future that returns once all live connections have been closed.
                             let connections_closed = async move {
                                 let mut ticker =
                                     tokio::time::interval(std::time::Duration::from_millis(500));
@@ -209,7 +202,7 @@ where
                                     }
                                 }
                             };
-                            // Wait for all connections to be closed or for the timeout to expire.
+                            // Wait for all live connections to be closed or for the timeout to expire.
                             let _ = tokio::time::timeout(timeout, connections_closed).await;
                         }
                         ShutdownMode::Forced => {}
@@ -220,6 +213,32 @@ where
             }
         }
         tracing::info!(worker_id = id, "Worker shut down");
+    }
+
+    fn handle_connection(
+        connection: TcpStream,
+        handler: fn(http::Request<hyper::body::Incoming>, ApplicationState) -> HandlerFuture,
+        application_state: ApplicationState,
+    ) {
+        // A tiny bit of glue to adapt our handler to hyper's service interface.
+        let handler = hyper::service::service_fn(move |request| {
+            let handler = (handler)(request, application_state.clone());
+            async move {
+                let response = handler.await;
+                let response = crate::hyper::Response::from(response);
+                Ok::<_, hyper::Error>(response)
+            }
+        });
+        let connection_counter_guard = ConnectionCounterGuard::new();
+        tokio::task::spawn_local(async move {
+            // Move the guard into the closure to keep the connection counter alive as
+            // long as the connection is being handled.
+            let _guard = connection_counter_guard;
+            // TODO: expose all the config options for `auto::Builder` through the top-level
+            //   `ServerConfiguration` object.
+            let builder = hyper_util::server::conn::auto::Builder::new(LocalExec);
+            builder.serve_connection(connection, handler).await
+        });
     }
 
     /// Check if there is work to be done.
