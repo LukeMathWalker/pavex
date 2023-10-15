@@ -3,14 +3,65 @@ use std::net::SocketAddr;
 use socket2::Domain;
 use tokio::net::{TcpListener, TcpStream};
 
-/// A stream of incoming connections.
+/// A stream of incoming connections.  
+/// [`IncomingStream::bind`] is the primary entrypoint for constructing a new [`IncomingStream`].
+///
+/// Incoming connections will be usually passed to a [`Server`](super::Server) instance to be handled.
+/// Check out [`Server::bind`](super::Server::bind) or
+/// [`Server::listen`](super::Server::listen) for more information.
+///
 pub struct IncomingStream {
     listener: TcpListener,
 }
 
 impl IncomingStream {
-    // TODO: should we use a custom error type to capture which address failed to bind?
-    /// Creates a new [`IncomingStream`] by binding to a socket address.
+    /// Create a new [`IncomingStream`] by binding to a socket address.  
+    /// The socket will be configured to be non-blocking and reuse the address.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use std::net::SocketAddr;
+    /// use pavex::server::{IncomingStream, Server};
+    ///
+    /// # async fn t() -> std::io::Result<()> {
+    /// let addr = SocketAddr::from(([127, 0, 0, 1], 8080));
+    /// let incoming = IncomingStream::bind(addr).await?;
+    /// # Ok(())
+    /// # }
+    /// ````
+    ///
+    /// # Custom configuration
+    ///
+    /// If you want to customize the options set on the socket, you can build your own
+    /// [`TcpListener`](std::net::TcpListener) using [`socket2::Socket`] and then convert it
+    /// into an [`IncomingStream`] via [`TryFrom::try_from`].
+    ///
+    /// ```rust
+    /// use std::net::SocketAddr;
+    /// use socket2::Domain;
+    /// use pavex::server::{IncomingStream, Server};
+    ///
+    /// # async fn t() -> std::io::Result<()> {
+    /// let addr = SocketAddr::from(([127, 0, 0, 1], 8080));
+    ///
+    /// let socket = socket2::Socket::new(
+    ///    Domain::for_address(addr),
+    ///    socket2::Type::STREAM,
+    ///    Some(socket2::Protocol::TCP),
+    /// )
+    /// .expect("Failed to create a socket");
+    /// socket.set_reuse_address(true)?;
+    /// socket.set_nonblocking(true)?;
+    /// socket.bind(&addr.into())?;
+    /// // We customize the backlog setting!
+    /// socket.listen(2048_i32)?;
+    ///
+    /// let listener = std::net::TcpListener::from(socket);
+    /// let incoming: IncomingStream = listener.try_into()?;
+    /// # Ok(())
+    /// # }
+    /// ````
     pub async fn bind(addr: SocketAddr) -> std::io::Result<Self> {
         let socket = socket2::Socket::new(
             Domain::for_address(addr),
@@ -59,7 +110,7 @@ impl IncomingStream {
     ///     Err(e) => println!("couldn't get client: {:?}", e),
     /// }
     /// # Ok(())
-    /// }
+    /// # }
     /// ```
     pub async fn accept(&self) -> std::io::Result<(TcpStream, SocketAddr)> {
         self.listener.accept().await
