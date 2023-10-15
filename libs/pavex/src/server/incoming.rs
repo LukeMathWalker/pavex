@@ -1,5 +1,6 @@
 use std::net::SocketAddr;
 
+use socket2::Domain;
 use tokio::net::{TcpListener, TcpStream};
 
 /// A stream of incoming connections.
@@ -12,12 +13,27 @@ impl IncomingStream {
     // TODO: should we use a custom error type to capture which address failed to bind?
     /// Creates a new [`IncomingStream`] by binding to a socket address.
     pub async fn bind(addr: SocketAddr) -> std::io::Result<Self> {
-        let listener = TcpListener::bind(addr).await?;
+        let socket = socket2::Socket::new(
+            Domain::for_address(addr),
+            socket2::Type::STREAM,
+            Some(socket2::Protocol::TCP),
+        )
+        .expect("Failed to create a socket");
+
+        socket.set_reuse_address(true)?;
+        socket.set_nonblocking(true)?;
+        socket.bind(&addr.into())?;
+        socket.listen(1024_i32)?;
+
+        let listener = std::net::TcpListener::from(socket);
         // The address we bound to may not be the same as the one we requested.
         // This happens, for example, when binding to port 0—this will cause the OS to pick a random
         // port for us which we won't know unless we call `local_addr` on the listener.
         let addr = listener.local_addr()?;
-        Ok(Self { addr, listener })
+        Ok(Self {
+            addr,
+            listener: TcpListener::from_std(listener)?,
+        })
     }
 
     /// Returns the address that this [`IncomingStream`] is bound to.

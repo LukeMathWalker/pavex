@@ -1224,6 +1224,7 @@ dependencies = [
  "serde_html_form",
  "serde_json",
  "serde_path_to_error",
+ "socket2",
  "thiserror",
  "tokio",
  "tracing",
