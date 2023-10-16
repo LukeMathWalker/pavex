@@ -6,7 +6,8 @@ use crate::server::server_handle::ServerHandle;
 
 use super::IncomingStream;
 
-/// An HTTP server to handle incoming connections for Pavex applications.
+/// An HTTP server to handle incoming connections for Pavex applications.  
+/// It handles both HTTP1 and HTTP2 connections.
 ///
 /// # Example
 ///
