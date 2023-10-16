@@ -42,7 +42,7 @@ ron = "0.8"
 tokio = { version = "1.32", features = ["net", "sync", "rt"] }
 hyper = { version = "1.0.0-rc.4", features = ["full"], optional = true }
 # TODO: convert to `git` dependency
-hyper-util = { path = "../../../hyper-util", features = ["auto"], optional = true }
+hyper-util = { git = "https://github.com/LukeMathWalker/hyper-util.git", branch = "send", features = ["auto"], optional = true }
 socket2 = { version = "0.5.3", optional = true }
 
 [dev-dependencies]

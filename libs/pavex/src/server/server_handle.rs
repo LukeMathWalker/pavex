@@ -103,6 +103,7 @@ struct Acceptor<HandlerFuture, ApplicationState> {
     command_inbox: tokio::sync::mpsc::Receiver<ServerCommand>,
     incoming: Vec<IncomingStream>,
     worker_handles: Vec<WorkerHandle>,
+    #[allow(dead_code)]
     config: ServerConfiguration,
     next_worker: usize,
     max_queue_length: usize,
@@ -180,7 +181,7 @@ where
             mut next_worker,
             mut worker_handles,
             incoming,
-            config,
+            config: _,
             max_queue_length,
             handler,
             application_state,

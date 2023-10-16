@@ -872,6 +872,7 @@ dependencies = [
 [[package]]
 name = "hyper-util"
 version = "0.0.0"
+source = "git+https://github.com/LukeMathWalker/hyper-util.git?branch=send#98880f36ae1109b6edb60e03591fee1a96c3c634"
 dependencies = [
  "bytes",
  "futures-channel",
