@@ -1,6 +1,7 @@
-use std::future::{poll_fn, Future};
+use std::future::{poll_fn, Future, IntoFuture};
 use std::marker::PhantomData;
 use std::net::SocketAddr;
+use std::pin::Pin;
 use std::task::Poll;
 use std::thread;
 
@@ -15,7 +16,30 @@ use super::{IncomingStream, ShutdownMode};
 
 /// A handle to a running [`Server`](super::Server).
 ///
-/// It can be used to shut down the [`Server`](super::Server) via [`ServerHandle::shutdown`].
+/// # Example: waiting for the server to shut down
+///
+/// You can just `.await` the [`ServerHandle`](ServerHandle) to wait for the server to shut down:
+///
+/// ```rust
+/// use std::net::SocketAddr;
+/// use pavex::server::Server;
+///
+/// # struct ApplicationState;
+/// # async fn router(_req: hyper::Request<hyper::body::Incoming>, _state: ApplicationState) -> pavex::response::Response { todo!() }
+/// # async fn t() -> std::io::Result<()> {
+/// # let application_state = ApplicationState;
+/// let addr = SocketAddr::from(([127, 0, 0, 1], 8080));
+///
+/// let server_handle = Server::new()
+///     .bind(addr)
+///     .await?
+///     .serve(router, application_state);
+/// // Wait until the server shuts down.
+/// server_handle.await;
+/// # Ok(())
+/// # }
+/// ```
+#[derive(Clone)]
 pub struct ServerHandle {
     command_outbox: tokio::sync::mpsc::Sender<ServerCommand>,
 }
@@ -55,6 +79,15 @@ impl ServerHandle {
             // implies that the acceptor thread has already shut down—nothing to do!
             let _ = completion.await;
         }
+    }
+}
+
+impl IntoFuture for ServerHandle {
+    type Output = ();
+    type IntoFuture = Pin<Box<dyn Future<Output = ()>>>;
+
+    fn into_future(self) -> Self::IntoFuture {
+        Box::pin(async move { self.command_outbox.closed().await })
     }
 }
 
