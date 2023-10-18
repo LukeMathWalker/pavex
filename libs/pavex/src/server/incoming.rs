@@ -10,7 +10,6 @@ use tokio::net::{TcpListener, TcpStream};
 /// Incoming connections will be usually passed to a [`Server`](super::Server) instance to be handled.
 /// Check out [`Server::bind`](super::Server::bind) or
 /// [`Server::listen`](super::Server::listen) for more information.
-///
 pub struct IncomingStream {
     listener: TcpListener,
 }
@@ -36,7 +35,9 @@ impl IncomingStream {
     ///
     /// If you want to customize the options set on the socket, you can build your own
     /// [`TcpListener`](std::net::TcpListener) using [`socket2::Socket`] and then convert it
-    /// into an [`IncomingStream`] via [`TryFrom::try_from`].
+    /// into an [`IncomingStream`] via [`TryFrom::try_from`].  
+    /// There's only one option you can't change: the socket will always be set to non-blocking
+    /// mode.
     ///
     /// ```rust
     /// use std::net::SocketAddr;
@@ -122,6 +123,12 @@ impl TryFrom<std::net::TcpListener> for IncomingStream {
     type Error = std::io::Error;
 
     fn try_from(v: std::net::TcpListener) -> std::io::Result<Self> {
+        // This is *very* important!
+        // `tokio` won't automatically set the socket to non-blocking mode for us, so we have to do
+        // it ourselves.
+        // Forgetting to set the socket to non-blocking mode will likely result in
+        // mysterious server hangs.
+        v.set_nonblocking(true)?;
         Ok(Self {
             listener: TcpListener::from_std(v)?,
         })
