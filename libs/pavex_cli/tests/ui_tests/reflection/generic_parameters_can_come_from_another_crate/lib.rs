@@ -15,21 +15,14 @@ pub struct BodyType {
     pub age: u8,
 }
 
-impl http_body::Body for BodyType {
+impl hyper::body::Body for BodyType {
     type Data = bytes::Bytes;
     type Error = pavex::Error;
 
-    fn poll_data(
+    fn poll_frame(
         self: std::pin::Pin<&mut Self>,
         cx: &mut std::task::Context<'_>,
-    ) -> std::task::Poll<Option<Result<Self::Data, Self::Error>>> {
-        todo!()
-    }
-
-    fn poll_trailers(
-        self: std::pin::Pin<&mut Self>,
-        cx: &mut std::task::Context<'_>,
-    ) -> std::task::Poll<Result<Option<pavex::http::HeaderMap>, Self::Error>> {
+    ) -> std::task::Poll<Option<Result<hyper::body::Frame<Self::Data>, Self::Error>>> {
         todo!()
     }
 }
