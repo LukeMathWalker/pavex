@@ -15,7 +15,7 @@ use super::IncomingStream;
 /// use std::net::SocketAddr;
 /// use pavex::server::Server;
 ///
-/// # struct ApplicationState;
+/// # #[derive(Clone)] struct ApplicationState;
 /// # async fn router(_req: hyper::Request<hyper::body::Incoming>, _state: ApplicationState) -> pavex::response::Response { todo!() }
 /// # async fn t() -> std::io::Result<()> {
 /// # let application_state = ApplicationState;
