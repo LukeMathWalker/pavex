@@ -10,6 +10,6 @@ generator_name = "bp"
 [dependencies]
 app_blueprint = { version = "0.1.0", path = "../app_blueprint", package = "app_blueprint" }
 http = { version = "0.2.9", package = "http" }
-hyper = { version = "0.14.26", package = "hyper" }
+hyper = { version = "1.0.0-rc.4", package = "hyper" }
 pavex = { version = "0.1.0", path = "../../../libs/pavex", package = "pavex" }
 thiserror = { version = "1.0.40", package = "thiserror" }
