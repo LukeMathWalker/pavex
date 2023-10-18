@@ -18,7 +18,7 @@ use super::{IncomingStream, ShutdownMode};
 ///
 /// # Example: waiting for the server to shut down
 ///
-/// You can just `.await` the [`ServerHandle`](ServerHandle) to wait for the server to shut down:
+/// You can just `.await` the [`ServerHandle`] to wait for the server to shut down:
 ///
 /// ```rust
 /// use std::net::SocketAddr;
@@ -84,7 +84,7 @@ impl ServerHandle {
 
 impl IntoFuture for ServerHandle {
     type Output = ();
-    type IntoFuture = Pin<Box<dyn Future<Output = ()>>>;
+    type IntoFuture = Pin<Box<dyn Future<Output = ()> + Send + Sync + 'static>>;
 
     fn into_future(self) -> Self::IntoFuture {
         Box::pin(async move { self.command_outbox.closed().await })

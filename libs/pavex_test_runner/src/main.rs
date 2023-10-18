@@ -10,6 +10,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Box::new(config.build())
     }))
     .unwrap();
+
+    if std::env::var("PAVEX_DEBUG").is_ok() {
+        init_telemetry()
+    }
+
     let test_folder = workspace_root()?.join("pavex_cli/tests/ui_tests");
     let terminal = console::Term::stdout();
     for ui_test_dir in get_ui_test_directories(&test_folder) {
@@ -116,4 +121,11 @@ fn workspace_root() -> Result<PathBuf, anyhow::Error> {
         .output()?;
     let json: LocateProject = serde_json::from_slice(&output.stdout)?;
     Ok(json.root.parent().unwrap().to_path_buf())
+}
+
+fn init_telemetry() {
+    tracing_subscriber::fmt()
+        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+        .with_writer(std::io::stderr)
+        .init();
 }

@@ -1493,6 +1493,7 @@ dependencies = [
  "similar",
  "textwrap 0.16.0",
  "toml 0.7.6",
+ "tracing-subscriber",
  "walkdir",
 ]
 

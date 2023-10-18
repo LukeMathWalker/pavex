@@ -26,3 +26,4 @@ persist_if_changed = { path = "../persist_if_changed" }
 object-pool = "0.5"
 num_cpus = "1"
 globwalk = "0.8.0"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }

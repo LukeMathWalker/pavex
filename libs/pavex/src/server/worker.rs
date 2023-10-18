@@ -160,12 +160,14 @@ where
             id,
         } = self;
         'event_loop: loop {
+            println!("Looping");
             let message =
                 poll_fn(|cx| Self::poll_inboxes(cx, &mut shutdown_inbox, &mut connection_inbox))
                     .await;
             match message {
                 WorkerInboxMessage::Connection(connection) => {
                     Self::handle_connection(connection, handler, application_state.clone());
+                    println!("Handled connection")
                 }
                 WorkerInboxMessage::Shutdown(shutdown) => {
                     let ShutdownWorkerCommand {
@@ -222,9 +224,13 @@ where
     ) {
         // A tiny bit of glue to adapt our handler to hyper's service interface.
         let handler = hyper::service::service_fn(move |request| {
-            let handler = (handler)(request, application_state.clone());
+            println!("Invoked!");
+            let state = application_state.clone();
             async move {
+                println!("Calling the handler!");
+                let handler = (handler)(request, state);
                 let response = handler.await;
+                println!("Awaited the handler!");
                 let response = crate::hyper::Response::from(response);
                 Ok::<_, hyper::Error>(response)
             }
@@ -236,8 +242,14 @@ where
             let _guard = connection_counter_guard;
             // TODO: expose all the config options for `auto::Builder` through the top-level
             //   `ServerConfiguration` object.
-            let builder = hyper_util::server::conn::auto::Builder::new(LocalExec);
-            builder.serve_connection(connection, handler).await
+            // let builder = hyper_util::server::conn::auto::Builder::new(LocalExec);
+            let connection = hyper_util::rt::TokioIo::new(connection);
+            let builder = hyper::server::conn::http1::Builder::new();
+            println!("Preparing to serve!");
+            let fut = builder.serve_connection(connection, handler);
+            println!("Ready to await!");
+            fut.await.expect("Failed to handle a connection");
+            println!("Served!");
         });
     }
 

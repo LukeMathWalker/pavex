@@ -12,35 +12,15 @@ pub struct ApplicationState {}
 pub async fn build_application_state() -> crate::ApplicationState {
     crate::ApplicationState {}
 }
-pub async fn run(
-    server_builder: pavex::hyper::server::Builder<
-        pavex::hyper::server::conn::AddrIncoming,
-    >,
+pub fn run(
+    server_builder: pavex::server::Server,
     application_state: ApplicationState,
-) -> Result<(), pavex::Error> {
+) -> Result<pavex::server::ServerHandle, pavex::Error> {
     let server_state = std::sync::Arc::new(ServerState {
         router: build_router().map_err(pavex::Error::new)?,
         application_state,
     });
-    let make_service = pavex::hyper::service::make_service_fn(move |_| {
-        let server_state = server_state.clone();
-        async move {
-            Ok::<
-                _,
-                pavex::hyper::Error,
-            >(
-                pavex::hyper::service::service_fn(move |request| {
-                    let server_state = server_state.clone();
-                    async move {
-                        let response = route_request(request, server_state).await;
-                        let response = pavex::hyper::Response::from(response);
-                        Ok::<_, pavex::hyper::Error>(response)
-                    }
-                }),
-            )
-        }
-    });
-    server_builder.serve(make_service).await.map_err(pavex::Error::new)
+    Ok(server_builder.serve(route_request, server_state))
 }
 fn build_router() -> Result<pavex::routing::Router<u32>, pavex::routing::InsertError> {
     let mut router = pavex::routing::Router::new();
@@ -50,7 +30,7 @@ fn build_router() -> Result<pavex::routing::Router<u32>, pavex::routing::InsertE
     Ok(router)
 }
 async fn route_request(
-    request: http::Request<pavex::hyper::body::Body>,
+    request: http::Request<pavex::hyper::body::Incoming>,
     server_state: std::sync::Arc<ServerState>,
 ) -> pavex::response::Response {
     #[allow(unused)]
@@ -117,7 +97,7 @@ pub mod route_0 {
                         &v2,
                     );
                     <pavex::response::Response<
-                        http_body::Full<bytes::Bytes>,
+                        http_body_util::Full<bytes::Bytes>,
                     > as pavex::response::IntoResponse>::into_response(v3)
                 };
             }
@@ -139,7 +119,7 @@ pub mod route_1 {
                         &v2,
                     );
                     <pavex::response::Response<
-                        http_body::Full<bytes::Bytes>,
+                        http_body_util::Full<bytes::Bytes>,
                     > as pavex::response::IntoResponse>::into_response(v3)
                 };
             }
@@ -161,7 +141,7 @@ pub mod route_2 {
                         &v2,
                     );
                     <pavex::response::Response<
-                        http_body::Full<bytes::Bytes>,
+                        http_body_util::Full<bytes::Bytes>,
                     > as pavex::response::IntoResponse>::into_response(v3)
                 };
             }

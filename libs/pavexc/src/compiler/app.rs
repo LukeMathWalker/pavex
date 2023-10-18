@@ -179,7 +179,7 @@ impl App {
     /// Generate the manifest and the Rust code for the analysed application.
     ///
     /// They are generated in-memory, they are not persisted to disk.
-    #[tracing::instrument(skip_all, level=tracing::Level::INFO)]
+    #[tracing::instrument(skip_all, level = tracing::Level::INFO)]
     pub fn codegen(&self) -> Result<GeneratedApp, anyhow::Error> {
         let framework_bindings = self.framework_item_db.bindings();
         let (cargo_toml, package_ids2deps) = codegen::codegen_manifest(
@@ -422,8 +422,8 @@ fn codegen_deps(package_graph: &PackageGraph) -> HashMap<String, guppy::PackageI
         .id();
     let hyper = package_graph
         .packages()
-        .find(|p| p.name() == "hyper" && p.version().major == 0 && p.version().minor == 14)
-        .expect("Expected to find `hyper@0.14` in the package graph, but it was not there.")
+        .find(|p| p.name() == "hyper" && p.version().major == 1)
+        .expect("Expected to find `hyper@1` in the package graph, but it was not there.")
         .id();
     let thiserror = package_graph
         .packages()

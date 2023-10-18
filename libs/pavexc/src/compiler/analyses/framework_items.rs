@@ -49,7 +49,7 @@ impl FrameworkItemDb {
             },
         );
         let http_request =
-            process_framework_path("pavex::hyper::Body", package_graph, krate_collection);
+            process_framework_path("pavex::hyper::body::Body", package_graph, krate_collection);
         items.insert(http_request, 1);
         id2metadata.insert(
             1,
