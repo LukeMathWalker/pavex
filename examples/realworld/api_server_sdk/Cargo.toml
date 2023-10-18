@@ -11,8 +11,8 @@ generator_name = "bp"
 bytes = { version = "1.4.0", package = "bytes" }
 conduit_core = { version = "0.1.0", path = "../conduit_core", package = "conduit_core" }
 http = { version = "0.2.9", package = "http" }
-http_body = { version = "0.4.5", package = "http-body" }
-hyper = { version = "0.14.27", package = "hyper" }
+http_body_util = { version = "0.1.0-rc.3", package = "http-body-util" }
+hyper = { version = "1.0.0-rc.4", package = "hyper" }
 jsonwebtoken = { version = "8.3.0", package = "jsonwebtoken" }
 pavex = { version = "0.1.0", path = "../../../libs/pavex", package = "pavex" }
 sqlx_core = { version = "0.7.1", package = "sqlx-core" }

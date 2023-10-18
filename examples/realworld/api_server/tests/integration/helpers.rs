@@ -1,7 +1,7 @@
 use api_server::configuration::{load_configuration, ApplicationProfile};
 use api_server_sdk::{build_application_state, run};
 use conduit_core::configuration::Config;
-use pavex::hyper::Server;
+use pavex::server::Server;
 
 pub struct TestApi {
     pub api_address: String,
@@ -19,17 +19,17 @@ impl TestApi {
         let tcp_listener = config
             .server
             .listener()
+            .await
             .expect("Failed to bind the server TCP listener");
         let address = tcp_listener
             .local_addr()
             .expect("The server TCP listener doesn't have a local socket address");
-        let server_builder =
-            Server::from_tcp(tcp_listener).expect("Failed to build a hyper Server");
+        let server_builder = Server::new().listen(tcp_listener);
 
         tokio::spawn(async move {
             run(server_builder, application_state)
+                .expect("Failed to launch API server")
                 .await
-                .expect("Failed to launch API server");
         });
 
         TestApi {
@@ -64,5 +64,4 @@ impl TestApi {
             .await
             .expect("Failed to execute request.")
     }
-
 }
