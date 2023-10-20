@@ -1,8 +1,5 @@
-use std::path::PathBuf;
-
 use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
 use pavex::f;
-use pavex::hyper::Body;
 use pavex::request::RequestHead;
 use pavex::response::Response;
 

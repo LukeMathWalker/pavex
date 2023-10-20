@@ -1,11 +1,12 @@
 use bytes::Bytes;
 use http::header::CONTENT_TYPE;
-use http_body::Empty;
+use http_body_util::Empty;
+
+use crate::http::StatusCode;
+use crate::http::{HeaderMap, Version};
 
 use super::body::raw::{boxed, BoxBody};
 use super::body::TypedBody;
-use crate::http::StatusCode;
-use crate::http::{HeaderMap, Version};
 
 /// Represents an HTTP response.
 ///

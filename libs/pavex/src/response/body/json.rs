@@ -1,8 +1,10 @@
-use super::TypedBody;
-use crate::http::HeaderValue;
 use bytes::Bytes;
-use http_body::Full;
+use http_body_util::Full;
 use mime::APPLICATION_JSON;
+
+use crate::http::HeaderValue;
+
+use super::TypedBody;
 
 /// A [`Response`](crate::response::Response) body with `Content-Type` set to
 /// `application/json`.

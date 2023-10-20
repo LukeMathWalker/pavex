@@ -1,7 +1,7 @@
 //! Errors that can happen when extracting query parameters.
 
 use bytes::Bytes;
-use http_body::Full;
+use http_body_util::Full;
 
 use crate::response::Response;
 

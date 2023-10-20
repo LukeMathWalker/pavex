@@ -1,12 +1,9 @@
-use std::path::PathBuf;
-
-use pavex::f;
 use pavex::blueprint::{
     constructor::{CloningStrategy, Lifecycle},
     router::GET,
     Blueprint,
 };
-use pavex::hyper::Body;
+use pavex::f;
 use pavex::request::RequestHead;
 use pavex::response::Response;
 

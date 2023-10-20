@@ -4,7 +4,7 @@ use api_server::{
     telemetry::{get_subscriber, init_telemetry},
 };
 use api_server_sdk::{build_application_state, run};
-use pavex::hyper::Server;
+use pavex::server::Server;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -34,14 +34,14 @@ async fn _main() -> anyhow::Result<()> {
     let tcp_listener = config
         .server
         .listener()
+        .await
         .context("Failed to bind the server TCP listener")?;
     let address = tcp_listener
         .local_addr()
         .context("The server TCP listener doesn't have a local socket address")?;
-    let server_builder =
-        Server::from_tcp(tcp_listener).context("Failed to build a hyper Server")?;
+    let server_builder = Server::new().listen(tcp_listener);
 
     tracing::info!("Starting to listen for incoming requests at {}", address);
-    run(server_builder, application_state).await?;
+    run(server_builder, application_state)?.await;
     Ok(())
 }

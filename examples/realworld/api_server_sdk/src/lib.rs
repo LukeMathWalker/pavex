@@ -42,34 +42,21 @@ pub async fn build_application_state(
             };
         }
     };
-    let v6 = crate::ApplicationState { s0: v5, s1: v3 };
+    let v6 = crate::ApplicationState {
+        s0: v5,
+        s1: v3,
+    };
     core::result::Result::Ok(v6)
 }
-pub async fn run(
-    server_builder: pavex::hyper::server::Builder<pavex::hyper::server::conn::AddrIncoming>,
+pub fn run(
+    server_builder: pavex::server::Server,
     application_state: ApplicationState,
-) -> Result<(), pavex::Error> {
+) -> Result<pavex::server::ServerHandle, pavex::Error> {
     let server_state = std::sync::Arc::new(ServerState {
         router: build_router().map_err(pavex::Error::new)?,
         application_state,
     });
-    let make_service = pavex::hyper::service::make_service_fn(move |_| {
-        let server_state = server_state.clone();
-        async move {
-            Ok::<_, pavex::hyper::Error>(pavex::hyper::service::service_fn(move |request| {
-                let server_state = server_state.clone();
-                async move {
-                    let response = route_request(request, server_state).await;
-                    let response = pavex::hyper::Response::from(response);
-                    Ok::<_, pavex::hyper::Error>(response)
-                }
-            }))
-        }
-    });
-    server_builder
-        .serve(make_service)
-        .await
-        .map_err(pavex::Error::new)
+    Ok(server_builder.serve(route_request, server_state))
 }
 fn build_router() -> Result<pavex::routing::Router<u32>, pavex::routing::InsertError> {
     let mut router = pavex::routing::Router::new();
@@ -89,7 +76,7 @@ fn build_router() -> Result<pavex::routing::Router<u32>, pavex::routing::InsertE
     Ok(router)
 }
 async fn route_request(
-    request: http::Request<pavex::hyper::body::Body>,
+    request: http::Request<pavex::hyper::body::Incoming>,
     server_state: std::sync::Arc<ServerState>,
 ) -> pavex::response::Response {
     #[allow(unused)]
@@ -101,160 +88,204 @@ async fn route_request(
             return pavex::response::Response::not_found().box_body();
         }
     };
-    let route_id = *matched_route.value;
+    let route_id = matched_route.value;
     #[allow(unused)]
-    let url_params: pavex::extract::route::RawRouteParams<'_, '_> = matched_route.params.into();
+    let url_params: pavex::extract::route::RawRouteParams<'_, '_> = matched_route
+        .params
+        .into();
     match route_id {
-        0u32 => match &request_head.method {
-            &pavex::http::Method::GET => route_0::middleware_0().await,
-            _ => {
-                let header_value = pavex::http::HeaderValue::from_static("GET");
-                pavex::response::Response::method_not_allowed()
-                    .insert_header(pavex::http::header::ALLOW, header_value)
-                    .box_body()
+        0u32 => {
+            match &request_head.method {
+                &pavex::http::Method::GET => route_0::middleware_0().await,
+                _ => {
+                    let header_value = pavex::http::HeaderValue::from_static("GET");
+                    pavex::response::Response::method_not_allowed()
+                        .insert_header(pavex::http::header::ALLOW, header_value)
+                        .box_body()
+                }
             }
-        },
-        1u32 => match &request_head.method {
-            &pavex::http::Method::GET => route_1::middleware_0(request_head).await,
-            &pavex::http::Method::POST => route_2::middleware_0(request_head, request_body).await,
-            _ => {
-                let header_value = pavex::http::HeaderValue::from_static("GET, POST");
-                pavex::response::Response::method_not_allowed()
-                    .insert_header(pavex::http::header::ALLOW, header_value)
-                    .box_body()
+        }
+        1u32 => {
+            match &request_head.method {
+                &pavex::http::Method::GET => route_1::middleware_0(&request_head).await,
+                &pavex::http::Method::POST => {
+                    route_2::middleware_0(request_body, &request_head).await
+                }
+                _ => {
+                    let header_value = pavex::http::HeaderValue::from_static(
+                        "GET, POST",
+                    );
+                    pavex::response::Response::method_not_allowed()
+                        .insert_header(pavex::http::header::ALLOW, header_value)
+                        .box_body()
+                }
             }
-        },
-        2u32 => match &request_head.method {
-            &pavex::http::Method::DELETE => route_3::middleware_0(url_params).await,
-            &pavex::http::Method::GET => route_4::middleware_0(url_params).await,
-            &pavex::http::Method::PUT => {
-                route_5::middleware_0(request_head, url_params, request_body).await
+        }
+        2u32 => {
+            match &request_head.method {
+                &pavex::http::Method::DELETE => route_3::middleware_0(url_params).await,
+                &pavex::http::Method::GET => route_4::middleware_0(url_params).await,
+                &pavex::http::Method::PUT => {
+                    route_5::middleware_0(url_params, request_body, &request_head).await
+                }
+                _ => {
+                    let header_value = pavex::http::HeaderValue::from_static(
+                        "DELETE, GET, PUT",
+                    );
+                    pavex::response::Response::method_not_allowed()
+                        .insert_header(pavex::http::header::ALLOW, header_value)
+                        .box_body()
+                }
             }
-            _ => {
-                let header_value = pavex::http::HeaderValue::from_static("DELETE, GET, PUT");
-                pavex::response::Response::method_not_allowed()
-                    .insert_header(pavex::http::header::ALLOW, header_value)
-                    .box_body()
+        }
+        3u32 => {
+            match &request_head.method {
+                &pavex::http::Method::GET => route_6::middleware_0(url_params).await,
+                &pavex::http::Method::POST => {
+                    route_7::middleware_0(url_params, request_body, &request_head).await
+                }
+                _ => {
+                    let header_value = pavex::http::HeaderValue::from_static(
+                        "GET, POST",
+                    );
+                    pavex::response::Response::method_not_allowed()
+                        .insert_header(pavex::http::header::ALLOW, header_value)
+                        .box_body()
+                }
             }
-        },
-        3u32 => match &request_head.method {
-            &pavex::http::Method::GET => route_6::middleware_0(url_params).await,
-            &pavex::http::Method::POST => {
-                route_7::middleware_0(request_head, url_params, request_body).await
+        }
+        4u32 => {
+            match &request_head.method {
+                &pavex::http::Method::DELETE => route_8::middleware_0(url_params).await,
+                _ => {
+                    let header_value = pavex::http::HeaderValue::from_static("DELETE");
+                    pavex::response::Response::method_not_allowed()
+                        .insert_header(pavex::http::header::ALLOW, header_value)
+                        .box_body()
+                }
             }
-            _ => {
-                let header_value = pavex::http::HeaderValue::from_static("GET, POST");
-                pavex::response::Response::method_not_allowed()
-                    .insert_header(pavex::http::header::ALLOW, header_value)
-                    .box_body()
+        }
+        5u32 => {
+            match &request_head.method {
+                &pavex::http::Method::DELETE => route_9::middleware_0(url_params).await,
+                &pavex::http::Method::POST => route_10::middleware_0(url_params).await,
+                _ => {
+                    let header_value = pavex::http::HeaderValue::from_static(
+                        "DELETE, POST",
+                    );
+                    pavex::response::Response::method_not_allowed()
+                        .insert_header(pavex::http::header::ALLOW, header_value)
+                        .box_body()
+                }
             }
-        },
-        4u32 => match &request_head.method {
-            &pavex::http::Method::DELETE => route_8::middleware_0(url_params).await,
-            _ => {
-                let header_value = pavex::http::HeaderValue::from_static("DELETE");
-                pavex::response::Response::method_not_allowed()
-                    .insert_header(pavex::http::header::ALLOW, header_value)
-                    .box_body()
+        }
+        6u32 => {
+            match &request_head.method {
+                &pavex::http::Method::GET => route_11::middleware_0(&request_head).await,
+                _ => {
+                    let header_value = pavex::http::HeaderValue::from_static("GET");
+                    pavex::response::Response::method_not_allowed()
+                        .insert_header(pavex::http::header::ALLOW, header_value)
+                        .box_body()
+                }
             }
-        },
-        5u32 => match &request_head.method {
-            &pavex::http::Method::DELETE => route_9::middleware_0(url_params).await,
-            &pavex::http::Method::POST => route_10::middleware_0(url_params).await,
-            _ => {
-                let header_value = pavex::http::HeaderValue::from_static("DELETE, POST");
-                pavex::response::Response::method_not_allowed()
-                    .insert_header(pavex::http::header::ALLOW, header_value)
-                    .box_body()
+        }
+        7u32 => {
+            match &request_head.method {
+                &pavex::http::Method::GET => route_12::middleware_0(url_params).await,
+                _ => {
+                    let header_value = pavex::http::HeaderValue::from_static("GET");
+                    pavex::response::Response::method_not_allowed()
+                        .insert_header(pavex::http::header::ALLOW, header_value)
+                        .box_body()
+                }
             }
-        },
-        6u32 => match &request_head.method {
-            &pavex::http::Method::GET => route_11::middleware_0(request_head).await,
-            _ => {
-                let header_value = pavex::http::HeaderValue::from_static("GET");
-                pavex::response::Response::method_not_allowed()
-                    .insert_header(pavex::http::header::ALLOW, header_value)
-                    .box_body()
+        }
+        8u32 => {
+            match &request_head.method {
+                &pavex::http::Method::DELETE => route_13::middleware_0(url_params).await,
+                &pavex::http::Method::POST => route_14::middleware_0(url_params).await,
+                _ => {
+                    let header_value = pavex::http::HeaderValue::from_static(
+                        "DELETE, POST",
+                    );
+                    pavex::response::Response::method_not_allowed()
+                        .insert_header(pavex::http::header::ALLOW, header_value)
+                        .box_body()
+                }
             }
-        },
-        7u32 => match &request_head.method {
-            &pavex::http::Method::GET => route_12::middleware_0(url_params).await,
-            _ => {
-                let header_value = pavex::http::HeaderValue::from_static("GET");
-                pavex::response::Response::method_not_allowed()
-                    .insert_header(pavex::http::header::ALLOW, header_value)
-                    .box_body()
+        }
+        9u32 => {
+            match &request_head.method {
+                &pavex::http::Method::GET => route_15::middleware_0().await,
+                _ => {
+                    let header_value = pavex::http::HeaderValue::from_static("GET");
+                    pavex::response::Response::method_not_allowed()
+                        .insert_header(pavex::http::header::ALLOW, header_value)
+                        .box_body()
+                }
             }
-        },
-        8u32 => match &request_head.method {
-            &pavex::http::Method::DELETE => route_13::middleware_0(url_params).await,
-            &pavex::http::Method::POST => route_14::middleware_0(url_params).await,
-            _ => {
-                let header_value = pavex::http::HeaderValue::from_static("DELETE, POST");
-                pavex::response::Response::method_not_allowed()
-                    .insert_header(pavex::http::header::ALLOW, header_value)
-                    .box_body()
+        }
+        10u32 => {
+            match &request_head.method {
+                &pavex::http::Method::GET => route_16::middleware_0().await,
+                &pavex::http::Method::PUT => {
+                    route_17::middleware_0(request_body, &request_head).await
+                }
+                _ => {
+                    let header_value = pavex::http::HeaderValue::from_static("GET, PUT");
+                    pavex::response::Response::method_not_allowed()
+                        .insert_header(pavex::http::header::ALLOW, header_value)
+                        .box_body()
+                }
             }
-        },
-        9u32 => match &request_head.method {
-            &pavex::http::Method::GET => route_15::middleware_0().await,
-            _ => {
-                let header_value = pavex::http::HeaderValue::from_static("GET");
-                pavex::response::Response::method_not_allowed()
-                    .insert_header(pavex::http::header::ALLOW, header_value)
-                    .box_body()
+        }
+        11u32 => {
+            match &request_head.method {
+                &pavex::http::Method::POST => {
+                    route_18::middleware_0(
+                            &server_state.application_state.s1,
+                            request_body,
+                            &server_state.application_state.s0,
+                            &request_head,
+                        )
+                        .await
+                }
+                _ => {
+                    let header_value = pavex::http::HeaderValue::from_static("POST");
+                    pavex::response::Response::method_not_allowed()
+                        .insert_header(pavex::http::header::ALLOW, header_value)
+                        .box_body()
+                }
             }
-        },
-        10u32 => match &request_head.method {
-            &pavex::http::Method::GET => route_16::middleware_0().await,
-            &pavex::http::Method::PUT => route_17::middleware_0(request_head, request_body).await,
-            _ => {
-                let header_value = pavex::http::HeaderValue::from_static("GET, PUT");
-                pavex::response::Response::method_not_allowed()
-                    .insert_header(pavex::http::header::ALLOW, header_value)
-                    .box_body()
+        }
+        12u32 => {
+            match &request_head.method {
+                &pavex::http::Method::POST => {
+                    route_19::middleware_0(
+                            &server_state.application_state.s1,
+                            request_body,
+                            &server_state.application_state.s0,
+                            &request_head,
+                        )
+                        .await
+                }
+                _ => {
+                    let header_value = pavex::http::HeaderValue::from_static("POST");
+                    pavex::response::Response::method_not_allowed()
+                        .insert_header(pavex::http::header::ALLOW, header_value)
+                        .box_body()
+                }
             }
-        },
-        11u32 => match &request_head.method {
-            &pavex::http::Method::POST => {
-                route_18::middleware_0(
-                    server_state.application_state.s1.clone(),
-                    request_body,
-                    request_head,
-                    server_state.application_state.s0.clone(),
-                )
-                .await
-            }
-            _ => {
-                let header_value = pavex::http::HeaderValue::from_static("POST");
-                pavex::response::Response::method_not_allowed()
-                    .insert_header(pavex::http::header::ALLOW, header_value)
-                    .box_body()
-            }
-        },
-        12u32 => match &request_head.method {
-            &pavex::http::Method::POST => {
-                route_19::middleware_0(
-                    server_state.application_state.s1.clone(),
-                    request_body,
-                    request_head,
-                    server_state.application_state.s0.clone(),
-                )
-                .await
-            }
-            _ => {
-                let header_value = pavex::http::HeaderValue::from_static("POST");
-                pavex::response::Response::method_not_allowed()
-                    .insert_header(pavex::http::header::ALLOW, header_value)
-                    .box_body()
-            }
-        },
+        }
         _ => pavex::response::Response::not_found().box_body(),
     }
 }
 pub mod route_0 {
     pub async fn middleware_0() -> pavex::response::Response {
-        let v0 = crate::route_0::Next0 {};
+        let v0 = crate::route_0::Next0 {
+            next: handler,
+        };
         let v1 = pavex::middleware::Next::new(v0);
         conduit_core::telemetry::logger(v1).await
     }
@@ -262,18 +293,31 @@ pub mod route_0 {
         let v0 = conduit_core::routes::status::ping();
         <http::StatusCode as pavex::response::IntoResponse>::into_response(v0)
     }
-    pub struct Next0 {}
-    impl std::future::IntoFuture for Next0 {
+    pub struct Next0<T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        next: fn() -> T,
+    }
+    impl<T> std::future::IntoFuture for Next0<T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
         type Output = pavex::response::Response;
-        type IntoFuture = std::pin::Pin<Box<dyn std::future::Future<Output = Self::Output>>>;
+        type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            Box::pin(async { handler().await })
+            (self.next)()
         }
     }
 }
 pub mod route_1 {
-    pub async fn middleware_0(v0: pavex::request::RequestHead) -> pavex::response::Response {
-        let v1 = crate::route_1::Next0 { s_0: v0 };
+    pub async fn middleware_0(
+        v0: &pavex::request::RequestHead,
+    ) -> pavex::response::Response {
+        let v1 = crate::route_1::Next0 {
+            s_0: v0,
+            next: handler,
+        };
         let v2 = pavex::middleware::Next::new(v1);
         conduit_core::telemetry::logger(v2).await
     }
@@ -283,10 +327,11 @@ pub mod route_1 {
             Ok(ok) => ok,
             Err(v2) => {
                 return {
-                    let v3 =
-                        pavex::extract::query::errors::ExtractQueryParamsError::into_response(&v2);
+                    let v3 = pavex::extract::query::errors::ExtractQueryParamsError::into_response(
+                        &v2,
+                    );
                     <pavex::response::Response<
-                        http_body::Full<bytes::Bytes>,
+                        http_body_util::Full<bytes::Bytes>,
                     > as pavex::response::IntoResponse>::into_response(v3)
                 };
             }
@@ -294,28 +339,39 @@ pub mod route_1 {
         let v3 = conduit_core::routes::articles::list_articles(v2);
         <http::StatusCode as pavex::response::IntoResponse>::into_response(v3)
     }
-    pub struct Next0 {
-        s_0: pavex::request::RequestHead,
+    pub struct Next0<'a, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        s_0: &'a pavex::request::RequestHead,
+        next: fn(&'a pavex::request::RequestHead) -> T,
     }
-    impl std::future::IntoFuture for Next0 {
+    impl<'a, T> std::future::IntoFuture for Next0<'a, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
         type Output = pavex::response::Response;
-        type IntoFuture = std::pin::Pin<Box<dyn std::future::Future<Output = Self::Output>>>;
+        type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            Box::pin(async { handler(&self.s_0).await })
+            (self.next)(self.s_0)
         }
     }
 }
 pub mod route_2 {
     pub async fn middleware_0(
-        v0: pavex::request::RequestHead,
-        v1: hyper::Body,
+        v0: hyper::body::Incoming,
+        v1: &pavex::request::RequestHead,
     ) -> pavex::response::Response {
-        let v2 = crate::route_2::Next0 { s_0: v1, s_1: v0 };
+        let v2 = crate::route_2::Next0 {
+            s_0: v0,
+            s_1: v1,
+            next: handler,
+        };
         let v3 = pavex::middleware::Next::new(v2);
         conduit_core::telemetry::logger(v3).await
     }
     pub async fn handler(
-        v0: hyper::Body,
+        v0: hyper::body::Incoming,
         v1: &pavex::request::RequestHead,
     ) -> pavex::response::Response {
         let v2 = <pavex::extract::body::BodySizeLimit as std::default::Default>::default();
@@ -324,10 +380,11 @@ pub mod route_2 {
             Ok(ok) => ok,
             Err(v4) => {
                 return {
-                    let v5 =
-                        pavex::extract::body::errors::ExtractBufferedBodyError::into_response(&v4);
+                    let v5 = pavex::extract::body::errors::ExtractBufferedBodyError::into_response(
+                        &v4,
+                    );
                     <pavex::response::Response<
-                        http_body::Full<bytes::Bytes>,
+                        http_body_util::Full<bytes::Bytes>,
                     > as pavex::response::IntoResponse>::into_response(v5)
                 };
             }
@@ -337,9 +394,11 @@ pub mod route_2 {
             Ok(ok) => ok,
             Err(v6) => {
                 return {
-                    let v7 = pavex::extract::body::errors::ExtractJsonBodyError::into_response(&v6);
+                    let v7 = pavex::extract::body::errors::ExtractJsonBodyError::into_response(
+                        &v6,
+                    );
                     <pavex::response::Response<
-                        http_body::Full<bytes::Bytes>,
+                        http_body_util::Full<bytes::Bytes>,
                     > as pavex::response::IntoResponse>::into_response(v7)
                 };
             }
@@ -347,15 +406,22 @@ pub mod route_2 {
         let v7 = conduit_core::routes::articles::publish_article(v6);
         <http::StatusCode as pavex::response::IntoResponse>::into_response(v7)
     }
-    pub struct Next0 {
-        s_0: hyper::Body,
-        s_1: pavex::request::RequestHead,
+    pub struct Next0<'a, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        s_0: hyper::body::Incoming,
+        s_1: &'a pavex::request::RequestHead,
+        next: fn(hyper::body::Incoming, &'a pavex::request::RequestHead) -> T,
     }
-    impl std::future::IntoFuture for Next0 {
+    impl<'a, T> std::future::IntoFuture for Next0<'a, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
         type Output = pavex::response::Response;
-        type IntoFuture = std::pin::Pin<Box<dyn std::future::Future<Output = Self::Output>>>;
+        type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            Box::pin(async { handler(self.s_0, &self.s_1).await })
+            (self.next)(self.s_0, self.s_1)
         }
     }
 }
@@ -363,7 +429,10 @@ pub mod route_3 {
     pub async fn middleware_0(
         v0: pavex::extract::route::RawRouteParams<'_, '_>,
     ) -> pavex::response::Response {
-        let v1 = crate::route_3::Next0 { s_0: v0 };
+        let v1 = crate::route_3::Next0 {
+            s_0: v0,
+            next: handler,
+        };
         let v2 = pavex::middleware::Next::new(v1);
         conduit_core::telemetry::logger(v2).await
     }
@@ -375,10 +444,11 @@ pub mod route_3 {
             Ok(ok) => ok,
             Err(v2) => {
                 return {
-                    let v3 =
-                        pavex::extract::route::errors::ExtractRouteParamsError::into_response(&v2);
+                    let v3 = pavex::extract::route::errors::ExtractRouteParamsError::into_response(
+                        &v2,
+                    );
                     <pavex::response::Response<
-                        http_body::Full<bytes::Bytes>,
+                        http_body_util::Full<bytes::Bytes>,
                     > as pavex::response::IntoResponse>::into_response(v3)
                 };
             }
@@ -386,14 +456,21 @@ pub mod route_3 {
         let v3 = conduit_core::routes::articles::delete_article(v2);
         <http::StatusCode as pavex::response::IntoResponse>::into_response(v3)
     }
-    pub struct Next0<'a> {
-        s_0: pavex::extract::route::RawRouteParams<'a, 'a>,
+    pub struct Next0<'b, 'a, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        s_0: pavex::extract::route::RawRouteParams<'a, 'b>,
+        next: fn(pavex::extract::route::RawRouteParams<'a, 'b>) -> T,
     }
-    impl std::future::IntoFuture for Next0<'_> {
+    impl<'b, 'a, T> std::future::IntoFuture for Next0<'b, 'a, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
         type Output = pavex::response::Response;
-        type IntoFuture = std::pin::Pin<Box<dyn std::future::Future<Output = Self::Output>>>;
+        type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            Box::pin(async { handler(self.s_0).await })
+            (self.next)(self.s_0)
         }
     }
 }
@@ -401,7 +478,10 @@ pub mod route_4 {
     pub async fn middleware_0(
         v0: pavex::extract::route::RawRouteParams<'_, '_>,
     ) -> pavex::response::Response {
-        let v1 = crate::route_4::Next0 { s_0: v0 };
+        let v1 = crate::route_4::Next0 {
+            s_0: v0,
+            next: handler,
+        };
         let v2 = pavex::middleware::Next::new(v1);
         conduit_core::telemetry::logger(v2).await
     }
@@ -413,10 +493,11 @@ pub mod route_4 {
             Ok(ok) => ok,
             Err(v2) => {
                 return {
-                    let v3 =
-                        pavex::extract::route::errors::ExtractRouteParamsError::into_response(&v2);
+                    let v3 = pavex::extract::route::errors::ExtractRouteParamsError::into_response(
+                        &v2,
+                    );
                     <pavex::response::Response<
-                        http_body::Full<bytes::Bytes>,
+                        http_body_util::Full<bytes::Bytes>,
                     > as pavex::response::IntoResponse>::into_response(v3)
                 };
             }
@@ -424,33 +505,41 @@ pub mod route_4 {
         let v3 = conduit_core::routes::articles::get_article(v2);
         <http::StatusCode as pavex::response::IntoResponse>::into_response(v3)
     }
-    pub struct Next0 {
-        s_0: pavex::extract::route::RawRouteParams<'_, '_>,
+    pub struct Next0<'b, 'a, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        s_0: pavex::extract::route::RawRouteParams<'a, 'b>,
+        next: fn(pavex::extract::route::RawRouteParams<'a, 'b>) -> T,
     }
-    impl std::future::IntoFuture for Next0 {
+    impl<'b, 'a, T> std::future::IntoFuture for Next0<'b, 'a, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
         type Output = pavex::response::Response;
-        type IntoFuture = std::pin::Pin<Box<dyn std::future::Future<Output = Self::Output>>>;
+        type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            Box::pin(async { handler(self.s_0).await })
+            (self.next)(self.s_0)
         }
     }
 }
 pub mod route_5 {
     pub async fn middleware_0(
-        v0: pavex::request::RequestHead,
-        v1: pavex::extract::route::RawRouteParams<'_, '_>,
-        v2: hyper::Body,
+        v0: pavex::extract::route::RawRouteParams<'_, '_>,
+        v1: hyper::body::Incoming,
+        v2: &pavex::request::RequestHead,
     ) -> pavex::response::Response {
         let v3 = crate::route_5::Next0 {
-            s_0: v2,
-            s_1: v1,
-            s_2: v0,
+            s_0: v1,
+            s_1: v0,
+            s_2: v2,
+            next: handler,
         };
         let v4 = pavex::middleware::Next::new(v3);
         conduit_core::telemetry::logger(v4).await
     }
     pub async fn handler(
-        v0: hyper::Body,
+        v0: hyper::body::Incoming,
         v1: pavex::extract::route::RawRouteParams<'_, '_>,
         v2: &pavex::request::RequestHead,
     ) -> pavex::response::Response {
@@ -460,10 +549,11 @@ pub mod route_5 {
             Ok(ok) => ok,
             Err(v5) => {
                 return {
-                    let v6 =
-                        pavex::extract::body::errors::ExtractBufferedBodyError::into_response(&v5);
+                    let v6 = pavex::extract::body::errors::ExtractBufferedBodyError::into_response(
+                        &v5,
+                    );
                     <pavex::response::Response<
-                        http_body::Full<bytes::Bytes>,
+                        http_body_util::Full<bytes::Bytes>,
                     > as pavex::response::IntoResponse>::into_response(v6)
                 };
             }
@@ -473,9 +563,11 @@ pub mod route_5 {
             Ok(ok) => ok,
             Err(v7) => {
                 return {
-                    let v8 = pavex::extract::body::errors::ExtractJsonBodyError::into_response(&v7);
+                    let v8 = pavex::extract::body::errors::ExtractJsonBodyError::into_response(
+                        &v7,
+                    );
                     <pavex::response::Response<
-                        http_body::Full<bytes::Bytes>,
+                        http_body_util::Full<bytes::Bytes>,
                     > as pavex::response::IntoResponse>::into_response(v8)
                 };
             }
@@ -485,10 +577,11 @@ pub mod route_5 {
             Ok(ok) => ok,
             Err(v9) => {
                 return {
-                    let v10 =
-                        pavex::extract::route::errors::ExtractRouteParamsError::into_response(&v9);
+                    let v10 = pavex::extract::route::errors::ExtractRouteParamsError::into_response(
+                        &v9,
+                    );
                     <pavex::response::Response<
-                        http_body::Full<bytes::Bytes>,
+                        http_body_util::Full<bytes::Bytes>,
                     > as pavex::response::IntoResponse>::into_response(v10)
                 };
             }
@@ -496,16 +589,27 @@ pub mod route_5 {
         let v10 = conduit_core::routes::articles::update_article(v9, v7);
         <http::StatusCode as pavex::response::IntoResponse>::into_response(v10)
     }
-    pub struct Next0 {
-        s_0: hyper::Body,
-        s_1: pavex::extract::route::RawRouteParams<'_, '_>,
-        s_2: pavex::request::RequestHead,
+    pub struct Next0<'b, 'a, 'c, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        s_0: hyper::body::Incoming,
+        s_1: pavex::extract::route::RawRouteParams<'a, 'b>,
+        s_2: &'c pavex::request::RequestHead,
+        next: fn(
+            hyper::body::Incoming,
+            pavex::extract::route::RawRouteParams<'a, 'b>,
+            &'c pavex::request::RequestHead,
+        ) -> T,
     }
-    impl std::future::IntoFuture for Next0 {
+    impl<'b, 'a, 'c, T> std::future::IntoFuture for Next0<'b, 'a, 'c, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
         type Output = pavex::response::Response;
-        type IntoFuture = std::pin::Pin<Box<dyn std::future::Future<Output = Self::Output>>>;
+        type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            Box::pin(async { handler(self.s_0, self.s_1, &self.s_2).await })
+            (self.next)(self.s_0, self.s_1, self.s_2)
         }
     }
 }
@@ -513,7 +617,10 @@ pub mod route_6 {
     pub async fn middleware_0(
         v0: pavex::extract::route::RawRouteParams<'_, '_>,
     ) -> pavex::response::Response {
-        let v1 = crate::route_6::Next0 { s_0: v0 };
+        let v1 = crate::route_6::Next0 {
+            s_0: v0,
+            next: handler,
+        };
         let v2 = pavex::middleware::Next::new(v1);
         conduit_core::telemetry::logger(v2).await
     }
@@ -525,10 +632,11 @@ pub mod route_6 {
             Ok(ok) => ok,
             Err(v2) => {
                 return {
-                    let v3 =
-                        pavex::extract::route::errors::ExtractRouteParamsError::into_response(&v2);
+                    let v3 = pavex::extract::route::errors::ExtractRouteParamsError::into_response(
+                        &v2,
+                    );
                     <pavex::response::Response<
-                        http_body::Full<bytes::Bytes>,
+                        http_body_util::Full<bytes::Bytes>,
                     > as pavex::response::IntoResponse>::into_response(v3)
                 };
             }
@@ -536,33 +644,41 @@ pub mod route_6 {
         let v3 = conduit_core::routes::articles::list_comments(v2);
         <http::StatusCode as pavex::response::IntoResponse>::into_response(v3)
     }
-    pub struct Next0 {
-        s_0: pavex::extract::route::RawRouteParams<'_, '_>,
+    pub struct Next0<'b, 'a, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        s_0: pavex::extract::route::RawRouteParams<'a, 'b>,
+        next: fn(pavex::extract::route::RawRouteParams<'a, 'b>) -> T,
     }
-    impl std::future::IntoFuture for Next0 {
+    impl<'b, 'a, T> std::future::IntoFuture for Next0<'b, 'a, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
         type Output = pavex::response::Response;
-        type IntoFuture = std::pin::Pin<Box<dyn std::future::Future<Output = Self::Output>>>;
+        type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            Box::pin(async { handler(self.s_0).await })
+            (self.next)(self.s_0)
         }
     }
 }
 pub mod route_7 {
     pub async fn middleware_0(
-        v0: pavex::request::RequestHead,
-        v1: pavex::extract::route::RawRouteParams<'_, '_>,
-        v2: hyper::Body,
+        v0: pavex::extract::route::RawRouteParams<'_, '_>,
+        v1: hyper::body::Incoming,
+        v2: &pavex::request::RequestHead,
     ) -> pavex::response::Response {
         let v3 = crate::route_7::Next0 {
-            s_0: v2,
-            s_1: v1,
-            s_2: v0,
+            s_0: v1,
+            s_1: v0,
+            s_2: v2,
+            next: handler,
         };
         let v4 = pavex::middleware::Next::new(v3);
         conduit_core::telemetry::logger(v4).await
     }
     pub async fn handler(
-        v0: hyper::Body,
+        v0: hyper::body::Incoming,
         v1: pavex::extract::route::RawRouteParams<'_, '_>,
         v2: &pavex::request::RequestHead,
     ) -> pavex::response::Response {
@@ -572,10 +688,11 @@ pub mod route_7 {
             Ok(ok) => ok,
             Err(v5) => {
                 return {
-                    let v6 =
-                        pavex::extract::body::errors::ExtractBufferedBodyError::into_response(&v5);
+                    let v6 = pavex::extract::body::errors::ExtractBufferedBodyError::into_response(
+                        &v5,
+                    );
                     <pavex::response::Response<
-                        http_body::Full<bytes::Bytes>,
+                        http_body_util::Full<bytes::Bytes>,
                     > as pavex::response::IntoResponse>::into_response(v6)
                 };
             }
@@ -585,9 +702,11 @@ pub mod route_7 {
             Ok(ok) => ok,
             Err(v7) => {
                 return {
-                    let v8 = pavex::extract::body::errors::ExtractJsonBodyError::into_response(&v7);
+                    let v8 = pavex::extract::body::errors::ExtractJsonBodyError::into_response(
+                        &v7,
+                    );
                     <pavex::response::Response<
-                        http_body::Full<bytes::Bytes>,
+                        http_body_util::Full<bytes::Bytes>,
                     > as pavex::response::IntoResponse>::into_response(v8)
                 };
             }
@@ -597,10 +716,11 @@ pub mod route_7 {
             Ok(ok) => ok,
             Err(v9) => {
                 return {
-                    let v10 =
-                        pavex::extract::route::errors::ExtractRouteParamsError::into_response(&v9);
+                    let v10 = pavex::extract::route::errors::ExtractRouteParamsError::into_response(
+                        &v9,
+                    );
                     <pavex::response::Response<
-                        http_body::Full<bytes::Bytes>,
+                        http_body_util::Full<bytes::Bytes>,
                     > as pavex::response::IntoResponse>::into_response(v10)
                 };
             }
@@ -608,16 +728,27 @@ pub mod route_7 {
         let v10 = conduit_core::routes::articles::publish_comment(v9, v7);
         <http::StatusCode as pavex::response::IntoResponse>::into_response(v10)
     }
-    pub struct Next0 {
-        s_0: hyper::Body,
-        s_1: pavex::extract::route::RawRouteParams<'_, '_>,
-        s_2: pavex::request::RequestHead,
+    pub struct Next0<'b, 'a, 'c, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        s_0: hyper::body::Incoming,
+        s_1: pavex::extract::route::RawRouteParams<'a, 'b>,
+        s_2: &'c pavex::request::RequestHead,
+        next: fn(
+            hyper::body::Incoming,
+            pavex::extract::route::RawRouteParams<'a, 'b>,
+            &'c pavex::request::RequestHead,
+        ) -> T,
     }
-    impl std::future::IntoFuture for Next0 {
+    impl<'b, 'a, 'c, T> std::future::IntoFuture for Next0<'b, 'a, 'c, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
         type Output = pavex::response::Response;
-        type IntoFuture = std::pin::Pin<Box<dyn std::future::Future<Output = Self::Output>>>;
+        type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            Box::pin(async { handler(self.s_0, self.s_1, &self.s_2).await })
+            (self.next)(self.s_0, self.s_1, self.s_2)
         }
     }
 }
@@ -625,7 +756,10 @@ pub mod route_8 {
     pub async fn middleware_0(
         v0: pavex::extract::route::RawRouteParams<'_, '_>,
     ) -> pavex::response::Response {
-        let v1 = crate::route_8::Next0 { s_0: v0 };
+        let v1 = crate::route_8::Next0 {
+            s_0: v0,
+            next: handler,
+        };
         let v2 = pavex::middleware::Next::new(v1);
         conduit_core::telemetry::logger(v2).await
     }
@@ -637,10 +771,11 @@ pub mod route_8 {
             Ok(ok) => ok,
             Err(v2) => {
                 return {
-                    let v3 =
-                        pavex::extract::route::errors::ExtractRouteParamsError::into_response(&v2);
+                    let v3 = pavex::extract::route::errors::ExtractRouteParamsError::into_response(
+                        &v2,
+                    );
                     <pavex::response::Response<
-                        http_body::Full<bytes::Bytes>,
+                        http_body_util::Full<bytes::Bytes>,
                     > as pavex::response::IntoResponse>::into_response(v3)
                 };
             }
@@ -648,14 +783,21 @@ pub mod route_8 {
         let v3 = conduit_core::routes::articles::delete_comment(v2);
         <http::StatusCode as pavex::response::IntoResponse>::into_response(v3)
     }
-    pub struct Next0 {
-        s_0: pavex::extract::route::RawRouteParams<'_, '_>,
+    pub struct Next0<'b, 'a, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        s_0: pavex::extract::route::RawRouteParams<'a, 'b>,
+        next: fn(pavex::extract::route::RawRouteParams<'a, 'b>) -> T,
     }
-    impl std::future::IntoFuture for Next0 {
+    impl<'b, 'a, T> std::future::IntoFuture for Next0<'b, 'a, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
         type Output = pavex::response::Response;
-        type IntoFuture = std::pin::Pin<Box<dyn std::future::Future<Output = Self::Output>>>;
+        type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            Box::pin(async { handler(self.s_0).await })
+            (self.next)(self.s_0)
         }
     }
 }
@@ -663,7 +805,10 @@ pub mod route_9 {
     pub async fn middleware_0(
         v0: pavex::extract::route::RawRouteParams<'_, '_>,
     ) -> pavex::response::Response {
-        let v1 = crate::route_9::Next0 { s_0: v0 };
+        let v1 = crate::route_9::Next0 {
+            s_0: v0,
+            next: handler,
+        };
         let v2 = pavex::middleware::Next::new(v1);
         conduit_core::telemetry::logger(v2).await
     }
@@ -675,10 +820,11 @@ pub mod route_9 {
             Ok(ok) => ok,
             Err(v2) => {
                 return {
-                    let v3 =
-                        pavex::extract::route::errors::ExtractRouteParamsError::into_response(&v2);
+                    let v3 = pavex::extract::route::errors::ExtractRouteParamsError::into_response(
+                        &v2,
+                    );
                     <pavex::response::Response<
-                        http_body::Full<bytes::Bytes>,
+                        http_body_util::Full<bytes::Bytes>,
                     > as pavex::response::IntoResponse>::into_response(v3)
                 };
             }
@@ -686,14 +832,21 @@ pub mod route_9 {
         let v3 = conduit_core::routes::articles::unfavorite_article(v2);
         <http::StatusCode as pavex::response::IntoResponse>::into_response(v3)
     }
-    pub struct Next0 {
-        s_0: pavex::extract::route::RawRouteParams<'_, '_>,
+    pub struct Next0<'a, 'b, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        s_0: pavex::extract::route::RawRouteParams<'a, 'b>,
+        next: fn(pavex::extract::route::RawRouteParams<'a, 'b>) -> T,
     }
-    impl std::future::IntoFuture for Next0 {
+    impl<'a, 'b, T> std::future::IntoFuture for Next0<'a, 'b, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
         type Output = pavex::response::Response;
-        type IntoFuture = std::pin::Pin<Box<dyn std::future::Future<Output = Self::Output>>>;
+        type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            Box::pin(async { handler(self.s_0).await })
+            (self.next)(self.s_0)
         }
     }
 }
@@ -701,7 +854,10 @@ pub mod route_10 {
     pub async fn middleware_0(
         v0: pavex::extract::route::RawRouteParams<'_, '_>,
     ) -> pavex::response::Response {
-        let v1 = crate::route_10::Next0 { s_0: v0 };
+        let v1 = crate::route_10::Next0 {
+            s_0: v0,
+            next: handler,
+        };
         let v2 = pavex::middleware::Next::new(v1);
         conduit_core::telemetry::logger(v2).await
     }
@@ -713,10 +869,11 @@ pub mod route_10 {
             Ok(ok) => ok,
             Err(v2) => {
                 return {
-                    let v3 =
-                        pavex::extract::route::errors::ExtractRouteParamsError::into_response(&v2);
+                    let v3 = pavex::extract::route::errors::ExtractRouteParamsError::into_response(
+                        &v2,
+                    );
                     <pavex::response::Response<
-                        http_body::Full<bytes::Bytes>,
+                        http_body_util::Full<bytes::Bytes>,
                     > as pavex::response::IntoResponse>::into_response(v3)
                 };
             }
@@ -724,20 +881,32 @@ pub mod route_10 {
         let v3 = conduit_core::routes::articles::favorite_article(v2);
         <http::StatusCode as pavex::response::IntoResponse>::into_response(v3)
     }
-    pub struct Next0 {
-        s_0: pavex::extract::route::RawRouteParams<'_, '_>,
+    pub struct Next0<'a, 'b, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        s_0: pavex::extract::route::RawRouteParams<'a, 'b>,
+        next: fn(pavex::extract::route::RawRouteParams<'a, 'b>) -> T,
     }
-    impl std::future::IntoFuture for Next0 {
+    impl<'a, 'b, T> std::future::IntoFuture for Next0<'a, 'b, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
         type Output = pavex::response::Response;
-        type IntoFuture = std::pin::Pin<Box<dyn std::future::Future<Output = Self::Output>>>;
+        type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            Box::pin(async { handler(self.s_0).await })
+            (self.next)(self.s_0)
         }
     }
 }
 pub mod route_11 {
-    pub async fn middleware_0(v0: pavex::request::RequestHead) -> pavex::response::Response {
-        let v1 = crate::route_11::Next0 { s_0: v0 };
+    pub async fn middleware_0(
+        v0: &pavex::request::RequestHead,
+    ) -> pavex::response::Response {
+        let v1 = crate::route_11::Next0 {
+            s_0: v0,
+            next: handler,
+        };
         let v2 = pavex::middleware::Next::new(v1);
         conduit_core::telemetry::logger(v2).await
     }
@@ -747,10 +916,11 @@ pub mod route_11 {
             Ok(ok) => ok,
             Err(v2) => {
                 return {
-                    let v3 =
-                        pavex::extract::query::errors::ExtractQueryParamsError::into_response(&v2);
+                    let v3 = pavex::extract::query::errors::ExtractQueryParamsError::into_response(
+                        &v2,
+                    );
                     <pavex::response::Response<
-                        http_body::Full<bytes::Bytes>,
+                        http_body_util::Full<bytes::Bytes>,
                     > as pavex::response::IntoResponse>::into_response(v3)
                 };
             }
@@ -758,14 +928,21 @@ pub mod route_11 {
         let v3 = conduit_core::routes::articles::get_feed(v2);
         <http::StatusCode as pavex::response::IntoResponse>::into_response(v3)
     }
-    pub struct Next0 {
-        s_0: pavex::request::RequestHead,
+    pub struct Next0<'a, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        s_0: &'a pavex::request::RequestHead,
+        next: fn(&'a pavex::request::RequestHead) -> T,
     }
-    impl std::future::IntoFuture for Next0 {
+    impl<'a, T> std::future::IntoFuture for Next0<'a, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
         type Output = pavex::response::Response;
-        type IntoFuture = std::pin::Pin<Box<dyn std::future::Future<Output = Self::Output>>>;
+        type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            Box::pin(async { handler(&self.s_0).await })
+            (self.next)(self.s_0)
         }
     }
 }
@@ -773,7 +950,10 @@ pub mod route_12 {
     pub async fn middleware_0(
         v0: pavex::extract::route::RawRouteParams<'_, '_>,
     ) -> pavex::response::Response {
-        let v1 = crate::route_12::Next0 { s_0: v0 };
+        let v1 = crate::route_12::Next0 {
+            s_0: v0,
+            next: handler,
+        };
         let v2 = pavex::middleware::Next::new(v1);
         conduit_core::telemetry::logger(v2).await
     }
@@ -785,10 +965,11 @@ pub mod route_12 {
             Ok(ok) => ok,
             Err(v2) => {
                 return {
-                    let v3 =
-                        pavex::extract::route::errors::ExtractRouteParamsError::into_response(&v2);
+                    let v3 = pavex::extract::route::errors::ExtractRouteParamsError::into_response(
+                        &v2,
+                    );
                     <pavex::response::Response<
-                        http_body::Full<bytes::Bytes>,
+                        http_body_util::Full<bytes::Bytes>,
                     > as pavex::response::IntoResponse>::into_response(v3)
                 };
             }
@@ -796,14 +977,21 @@ pub mod route_12 {
         let v3 = conduit_core::routes::profiles::get_profile(v2);
         <http::StatusCode as pavex::response::IntoResponse>::into_response(v3)
     }
-    pub struct Next0 {
-        s_0: pavex::extract::route::RawRouteParams<'_, '_>,
+    pub struct Next0<'a, 'b, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        s_0: pavex::extract::route::RawRouteParams<'a, 'b>,
+        next: fn(pavex::extract::route::RawRouteParams<'a, 'b>) -> T,
     }
-    impl std::future::IntoFuture for Next0 {
+    impl<'a, 'b, T> std::future::IntoFuture for Next0<'a, 'b, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
         type Output = pavex::response::Response;
-        type IntoFuture = std::pin::Pin<Box<dyn std::future::Future<Output = Self::Output>>>;
+        type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            Box::pin(async { handler(self.s_0).await })
+            (self.next)(self.s_0)
         }
     }
 }
@@ -811,7 +999,10 @@ pub mod route_13 {
     pub async fn middleware_0(
         v0: pavex::extract::route::RawRouteParams<'_, '_>,
     ) -> pavex::response::Response {
-        let v1 = crate::route_13::Next0 { s_0: v0 };
+        let v1 = crate::route_13::Next0 {
+            s_0: v0,
+            next: handler,
+        };
         let v2 = pavex::middleware::Next::new(v1);
         conduit_core::telemetry::logger(v2).await
     }
@@ -823,10 +1014,11 @@ pub mod route_13 {
             Ok(ok) => ok,
             Err(v2) => {
                 return {
-                    let v3 =
-                        pavex::extract::route::errors::ExtractRouteParamsError::into_response(&v2);
+                    let v3 = pavex::extract::route::errors::ExtractRouteParamsError::into_response(
+                        &v2,
+                    );
                     <pavex::response::Response<
-                        http_body::Full<bytes::Bytes>,
+                        http_body_util::Full<bytes::Bytes>,
                     > as pavex::response::IntoResponse>::into_response(v3)
                 };
             }
@@ -834,14 +1026,21 @@ pub mod route_13 {
         let v3 = conduit_core::routes::profiles::unfollow_profile(v2);
         <http::StatusCode as pavex::response::IntoResponse>::into_response(v3)
     }
-    pub struct Next0 {
-        s_0: pavex::extract::route::RawRouteParams<'_, '_>,
+    pub struct Next0<'b, 'a, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        s_0: pavex::extract::route::RawRouteParams<'a, 'b>,
+        next: fn(pavex::extract::route::RawRouteParams<'a, 'b>) -> T,
     }
-    impl std::future::IntoFuture for Next0 {
+    impl<'b, 'a, T> std::future::IntoFuture for Next0<'b, 'a, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
         type Output = pavex::response::Response;
-        type IntoFuture = std::pin::Pin<Box<dyn std::future::Future<Output = Self::Output>>>;
+        type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            Box::pin(async { handler(self.s_0).await })
+            (self.next)(self.s_0)
         }
     }
 }
@@ -849,7 +1048,10 @@ pub mod route_14 {
     pub async fn middleware_0(
         v0: pavex::extract::route::RawRouteParams<'_, '_>,
     ) -> pavex::response::Response {
-        let v1 = crate::route_14::Next0 { s_0: v0 };
+        let v1 = crate::route_14::Next0 {
+            s_0: v0,
+            next: handler,
+        };
         let v2 = pavex::middleware::Next::new(v1);
         conduit_core::telemetry::logger(v2).await
     }
@@ -861,10 +1063,11 @@ pub mod route_14 {
             Ok(ok) => ok,
             Err(v2) => {
                 return {
-                    let v3 =
-                        pavex::extract::route::errors::ExtractRouteParamsError::into_response(&v2);
+                    let v3 = pavex::extract::route::errors::ExtractRouteParamsError::into_response(
+                        &v2,
+                    );
                     <pavex::response::Response<
-                        http_body::Full<bytes::Bytes>,
+                        http_body_util::Full<bytes::Bytes>,
                     > as pavex::response::IntoResponse>::into_response(v3)
                 };
             }
@@ -872,20 +1075,29 @@ pub mod route_14 {
         let v3 = conduit_core::routes::profiles::follow_profile(v2);
         <http::StatusCode as pavex::response::IntoResponse>::into_response(v3)
     }
-    pub struct Next0 {
-        s_0: pavex::extract::route::RawRouteParams<'_, '_>,
+    pub struct Next0<'a, 'b, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        s_0: pavex::extract::route::RawRouteParams<'a, 'b>,
+        next: fn(pavex::extract::route::RawRouteParams<'a, 'b>) -> T,
     }
-    impl std::future::IntoFuture for Next0 {
+    impl<'a, 'b, T> std::future::IntoFuture for Next0<'a, 'b, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
         type Output = pavex::response::Response;
-        type IntoFuture = std::pin::Pin<Box<dyn std::future::Future<Output = Self::Output>>>;
+        type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            Box::pin(async { handler(self.s_0).await })
+            (self.next)(self.s_0)
         }
     }
 }
 pub mod route_15 {
     pub async fn middleware_0() -> pavex::response::Response {
-        let v0 = crate::route_15::Next0 {};
+        let v0 = crate::route_15::Next0 {
+            next: handler,
+        };
         let v1 = pavex::middleware::Next::new(v0);
         conduit_core::telemetry::logger(v1).await
     }
@@ -893,18 +1105,28 @@ pub mod route_15 {
         let v0 = conduit_core::routes::tags::get_tags();
         <http::StatusCode as pavex::response::IntoResponse>::into_response(v0)
     }
-    pub struct Next0 {}
-    impl std::future::IntoFuture for Next0 {
+    pub struct Next0<T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        next: fn() -> T,
+    }
+    impl<T> std::future::IntoFuture for Next0<T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
         type Output = pavex::response::Response;
-        type IntoFuture = std::pin::Pin<Box<dyn std::future::Future<Output = Self::Output>>>;
+        type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            Box::pin(async { handler().await })
+            (self.next)()
         }
     }
 }
 pub mod route_16 {
     pub async fn middleware_0() -> pavex::response::Response {
-        let v0 = crate::route_16::Next0 {};
+        let v0 = crate::route_16::Next0 {
+            next: handler,
+        };
         let v1 = pavex::middleware::Next::new(v0);
         conduit_core::telemetry::logger(v1).await
     }
@@ -912,26 +1134,38 @@ pub mod route_16 {
         let v0 = conduit_core::routes::users::get_user();
         <http::StatusCode as pavex::response::IntoResponse>::into_response(v0)
     }
-    pub struct Next0 {}
-    impl std::future::IntoFuture for Next0 {
+    pub struct Next0<T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        next: fn() -> T,
+    }
+    impl<T> std::future::IntoFuture for Next0<T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
         type Output = pavex::response::Response;
-        type IntoFuture = std::pin::Pin<Box<dyn std::future::Future<Output = Self::Output>>>;
+        type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            Box::pin(async { handler().await })
+            (self.next)()
         }
     }
 }
 pub mod route_17 {
     pub async fn middleware_0(
-        v0: pavex::request::RequestHead,
-        v1: hyper::Body,
+        v0: hyper::body::Incoming,
+        v1: &pavex::request::RequestHead,
     ) -> pavex::response::Response {
-        let v2 = crate::route_17::Next0 { s_0: v1, s_1: v0 };
+        let v2 = crate::route_17::Next0 {
+            s_0: v0,
+            s_1: v1,
+            next: handler,
+        };
         let v3 = pavex::middleware::Next::new(v2);
         conduit_core::telemetry::logger(v3).await
     }
     pub async fn handler(
-        v0: hyper::Body,
+        v0: hyper::body::Incoming,
         v1: &pavex::request::RequestHead,
     ) -> pavex::response::Response {
         let v2 = <pavex::extract::body::BodySizeLimit as std::default::Default>::default();
@@ -940,10 +1174,11 @@ pub mod route_17 {
             Ok(ok) => ok,
             Err(v4) => {
                 return {
-                    let v5 =
-                        pavex::extract::body::errors::ExtractBufferedBodyError::into_response(&v4);
+                    let v5 = pavex::extract::body::errors::ExtractBufferedBodyError::into_response(
+                        &v4,
+                    );
                     <pavex::response::Response<
-                        http_body::Full<bytes::Bytes>,
+                        http_body_util::Full<bytes::Bytes>,
                     > as pavex::response::IntoResponse>::into_response(v5)
                 };
             }
@@ -953,9 +1188,11 @@ pub mod route_17 {
             Ok(ok) => ok,
             Err(v6) => {
                 return {
-                    let v7 = pavex::extract::body::errors::ExtractJsonBodyError::into_response(&v6);
+                    let v7 = pavex::extract::body::errors::ExtractJsonBodyError::into_response(
+                        &v6,
+                    );
                     <pavex::response::Response<
-                        http_body::Full<bytes::Bytes>,
+                        http_body_util::Full<bytes::Bytes>,
                     > as pavex::response::IntoResponse>::into_response(v7)
                 };
             }
@@ -963,30 +1200,38 @@ pub mod route_17 {
         let v7 = conduit_core::routes::users::update_user(v6);
         <http::StatusCode as pavex::response::IntoResponse>::into_response(v7)
     }
-    pub struct Next0 {
-        s_0: hyper::Body,
-        s_1: pavex::request::RequestHead,
+    pub struct Next0<'a, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        s_0: hyper::body::Incoming,
+        s_1: &'a pavex::request::RequestHead,
+        next: fn(hyper::body::Incoming, &'a pavex::request::RequestHead) -> T,
     }
-    impl std::future::IntoFuture for Next0 {
+    impl<'a, T> std::future::IntoFuture for Next0<'a, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
         type Output = pavex::response::Response;
-        type IntoFuture = std::pin::Pin<Box<dyn std::future::Future<Output = Self::Output>>>;
+        type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            Box::pin(async { handler(self.s_0, &self.s_1).await })
+            (self.next)(self.s_0, self.s_1)
         }
     }
 }
 pub mod route_18 {
     pub async fn middleware_0(
-        v0: jsonwebtoken::EncodingKey,
-        v1: hyper::Body,
-        v2: pavex::request::RequestHead,
-        v3: sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
+        v0: &jsonwebtoken::EncodingKey,
+        v1: hyper::body::Incoming,
+        v2: &sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
+        v3: &pavex::request::RequestHead,
     ) -> pavex::response::Response {
         let v4 = crate::route_18::Next0 {
-            s_0: v3,
-            s_1: v2,
+            s_0: v2,
+            s_1: v3,
             s_2: v1,
             s_3: v0,
+            next: handler,
         };
         let v5 = pavex::middleware::Next::new(v4);
         conduit_core::telemetry::logger(v5).await
@@ -994,7 +1239,7 @@ pub mod route_18 {
     pub async fn handler(
         v0: &sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
         v1: &pavex::request::RequestHead,
-        v2: hyper::Body,
+        v2: hyper::body::Incoming,
         v3: &jsonwebtoken::EncodingKey,
     ) -> pavex::response::Response {
         let v4 = <pavex::extract::body::BodySizeLimit as std::default::Default>::default();
@@ -1003,10 +1248,11 @@ pub mod route_18 {
             Ok(ok) => ok,
             Err(v6) => {
                 return {
-                    let v7 =
-                        pavex::extract::body::errors::ExtractBufferedBodyError::into_response(&v6);
+                    let v7 = pavex::extract::body::errors::ExtractBufferedBodyError::into_response(
+                        &v6,
+                    );
                     <pavex::response::Response<
-                        http_body::Full<bytes::Bytes>,
+                        http_body_util::Full<bytes::Bytes>,
                     > as pavex::response::IntoResponse>::into_response(v7)
                 };
             }
@@ -1016,9 +1262,11 @@ pub mod route_18 {
             Ok(ok) => ok,
             Err(v8) => {
                 return {
-                    let v9 = pavex::extract::body::errors::ExtractJsonBodyError::into_response(&v8);
+                    let v9 = pavex::extract::body::errors::ExtractJsonBodyError::into_response(
+                        &v8,
+                    );
                     <pavex::response::Response<
-                        http_body::Full<bytes::Bytes>,
+                        http_body_util::Full<bytes::Bytes>,
                     > as pavex::response::IntoResponse>::into_response(v9)
                 };
             }
@@ -1028,43 +1276,58 @@ pub mod route_18 {
             Ok(ok) => ok,
             Err(v10) => {
                 return {
-                    let v11 = conduit_core::routes::users::SignupError::into_response(&v10);
+                    let v11 = conduit_core::routes::users::SignupError::into_response(
+                        &v10,
+                    );
                     <pavex::response::Response<
-                        http_body::Full<bytes::Bytes>,
+                        http_body_util::Full<bytes::Bytes>,
                     > as pavex::response::IntoResponse>::into_response(v11)
                 };
             }
         };
         <pavex::response::Response<
-            http_body::Full<bytes::Bytes>,
+            http_body_util::Full<bytes::Bytes>,
         > as pavex::response::IntoResponse>::into_response(v10)
     }
-    pub struct Next0 {
-        s_0: sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
-        s_1: pavex::request::RequestHead,
-        s_2: hyper::Body,
-        s_3: jsonwebtoken::EncodingKey,
+    pub struct Next0<'a, 'b, 'c, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        s_0: &'a sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
+        s_1: &'b pavex::request::RequestHead,
+        s_2: hyper::body::Incoming,
+        s_3: &'c jsonwebtoken::EncodingKey,
+        next: fn(
+            &'a sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
+            &'b pavex::request::RequestHead,
+            hyper::body::Incoming,
+            &'c jsonwebtoken::EncodingKey,
+        ) -> T,
     }
-    impl std::future::IntoFuture for Next0 {
+    impl<'a, 'b, 'c, T> std::future::IntoFuture for Next0<'a, 'b, 'c, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
         type Output = pavex::response::Response;
-        type IntoFuture = std::pin::Pin<Box<dyn std::future::Future<Output = Self::Output>>>;
+        type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            Box::pin(async { handler(&self.s_0, &self.s_1, self.s_2, &self.s_3).await })
+            (self.next)(self.s_0, self.s_1, self.s_2, self.s_3)
         }
     }
 }
 pub mod route_19 {
     pub async fn middleware_0(
-        v0: jsonwebtoken::EncodingKey,
-        v1: hyper::Body,
-        v2: pavex::request::RequestHead,
-        v3: sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
+        v0: &jsonwebtoken::EncodingKey,
+        v1: hyper::body::Incoming,
+        v2: &sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
+        v3: &pavex::request::RequestHead,
     ) -> pavex::response::Response {
         let v4 = crate::route_19::Next0 {
-            s_0: v3,
-            s_1: v2,
+            s_0: v2,
+            s_1: v3,
             s_2: v1,
             s_3: v0,
+            next: handler,
         };
         let v5 = pavex::middleware::Next::new(v4);
         conduit_core::telemetry::logger(v5).await
@@ -1072,7 +1335,7 @@ pub mod route_19 {
     pub async fn handler(
         v0: &sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
         v1: &pavex::request::RequestHead,
-        v2: hyper::Body,
+        v2: hyper::body::Incoming,
         v3: &jsonwebtoken::EncodingKey,
     ) -> pavex::response::Response {
         let v4 = <pavex::extract::body::BodySizeLimit as std::default::Default>::default();
@@ -1081,10 +1344,11 @@ pub mod route_19 {
             Ok(ok) => ok,
             Err(v6) => {
                 return {
-                    let v7 =
-                        pavex::extract::body::errors::ExtractBufferedBodyError::into_response(&v6);
+                    let v7 = pavex::extract::body::errors::ExtractBufferedBodyError::into_response(
+                        &v6,
+                    );
                     <pavex::response::Response<
-                        http_body::Full<bytes::Bytes>,
+                        http_body_util::Full<bytes::Bytes>,
                     > as pavex::response::IntoResponse>::into_response(v7)
                 };
             }
@@ -1094,9 +1358,11 @@ pub mod route_19 {
             Ok(ok) => ok,
             Err(v8) => {
                 return {
-                    let v9 = pavex::extract::body::errors::ExtractJsonBodyError::into_response(&v8);
+                    let v9 = pavex::extract::body::errors::ExtractJsonBodyError::into_response(
+                        &v8,
+                    );
                     <pavex::response::Response<
-                        http_body::Full<bytes::Bytes>,
+                        http_body_util::Full<bytes::Bytes>,
                     > as pavex::response::IntoResponse>::into_response(v9)
                 };
             }
@@ -1106,28 +1372,42 @@ pub mod route_19 {
             Ok(ok) => ok,
             Err(v10) => {
                 return {
-                    let v11 = conduit_core::routes::users::LoginError::into_response(&v10);
+                    let v11 = conduit_core::routes::users::LoginError::into_response(
+                        &v10,
+                    );
                     <pavex::response::Response<
-                        http_body::Full<bytes::Bytes>,
+                        http_body_util::Full<bytes::Bytes>,
                     > as pavex::response::IntoResponse>::into_response(v11)
                 };
             }
         };
         <pavex::response::Response<
-            http_body::Full<bytes::Bytes>,
+            http_body_util::Full<bytes::Bytes>,
         > as pavex::response::IntoResponse>::into_response(v10)
     }
-    pub struct Next0 {
-        s_0: sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
-        s_1: pavex::request::RequestHead,
-        s_2: hyper::Body,
-        s_3: jsonwebtoken::EncodingKey,
+    pub struct Next0<'a, 'b, 'c, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        s_0: &'a sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
+        s_1: &'b pavex::request::RequestHead,
+        s_2: hyper::body::Incoming,
+        s_3: &'c jsonwebtoken::EncodingKey,
+        next: fn(
+            &'a sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
+            &'b pavex::request::RequestHead,
+            hyper::body::Incoming,
+            &'c jsonwebtoken::EncodingKey,
+        ) -> T,
     }
-    impl std::future::IntoFuture for Next0 {
+    impl<'a, 'b, 'c, T> std::future::IntoFuture for Next0<'a, 'b, 'c, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
         type Output = pavex::response::Response;
-        type IntoFuture = std::pin::Pin<Box<dyn std::future::Future<Output = Self::Output>>>;
+        type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            Box::pin(async { handler(&self.s_0, &self.s_1, self.s_2, &self.s_3).await })
+            (self.next)(self.s_0, self.s_1, self.s_2, self.s_3)
         }
     }
 }

@@ -28,7 +28,7 @@
 // DEALINGS IN THE SOFTWARE.
 use bytes::Bytes;
 use http::StatusCode;
-use http_body::Empty;
+use http_body_util::Empty;
 
 use super::{body::raw::boxed, Response, ResponseHead};
 

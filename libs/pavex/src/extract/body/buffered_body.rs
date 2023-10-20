@@ -1,13 +1,13 @@
+use bytes::Bytes;
+use http::header::CONTENT_LENGTH;
+use http_body_util::{BodyExt, Limited};
+
 use crate::{extract::body::errors::SizeLimitExceeded, request::RequestHead};
 
 use super::{
     errors::{ExtractBufferedBodyError, UnexpectedBufferError},
     BodySizeLimit,
 };
-use bytes::Bytes;
-use http::header::CONTENT_LENGTH;
-use http_body::Limited;
-use hyper::body::to_bytes;
 
 #[derive(Debug)]
 #[non_exhaustive]
@@ -162,25 +162,31 @@ impl BufferedBody {
     /// If extraction fails, an [`ExtractBufferedBodyError`] is returned.
     pub async fn extract(
         request_head: &RequestHead,
-        body: hyper::Body,
+        body: hyper::body::Incoming,
         body_size_limit: BodySizeLimit,
     ) -> Result<Self, ExtractBufferedBodyError> {
         match body_size_limit {
             BodySizeLimit::Enabled { max_n_bytes } => {
                 Self::_extract_with_limit(request_head, body, max_n_bytes).await
             }
-            BodySizeLimit::Disabled => match to_bytes(body).await {
-                Ok(bytes) => Ok(Self { bytes }),
+            BodySizeLimit::Disabled => match body.collect().await {
+                Ok(collected) => Ok(Self {
+                    bytes: collected.to_bytes(),
+                }),
                 Err(e) => Err(UnexpectedBufferError { source: e.into() }.into()),
             },
         }
     }
 
-    async fn _extract_with_limit(
+    async fn _extract_with_limit<B>(
         request_head: &RequestHead,
-        body: hyper::Body,
+        body: B,
         max_n_bytes: usize,
-    ) -> Result<Self, ExtractBufferedBodyError> {
+    ) -> Result<Self, ExtractBufferedBodyError>
+    where
+        B: hyper::body::Body,
+        B::Error: Into<Box<dyn std::error::Error + Send + Sync>>,
+    {
         let content_length = request_head
             .headers
             .get(CONTENT_LENGTH)
@@ -208,10 +214,14 @@ impl BufferedBody {
         // is smaller than the maximum size limit, we start buffering the body while keeping
         // track of the size limit.
         let limited_body = Limited::new(body, max_n_bytes);
-        match to_bytes(limited_body).await {
-            Ok(bytes) => Ok(Self { bytes }),
+        match limited_body.collect().await {
+            Ok(collected) => Ok(Self {
+                bytes: collected.to_bytes(),
+            }),
             Err(e) => {
-                if e.downcast_ref::<http_body::LengthLimitError>().is_some() {
+                if e.downcast_ref::<http_body_util::LengthLimitError>()
+                    .is_some()
+                {
                     Err(limit_error().into())
                 } else {
                     Err(UnexpectedBufferError { source: e }.into())
@@ -229,10 +239,13 @@ impl From<BufferedBody> for Bytes {
 
 #[cfg(test)]
 mod tests {
+    use bytes::Bytes;
     use http::HeaderMap;
+    use http_body_util::Full;
+
+    use crate::request::RequestHead;
 
     use super::BufferedBody;
-    use crate::request::RequestHead;
 
     // No headers.
     fn dummy_request_head() -> RequestHead {
@@ -246,7 +259,7 @@ mod tests {
 
     #[tokio::test]
     async fn error_if_body_above_size_limit_without_content_length() {
-        let body: hyper::Body = vec![0; 1000].into();
+        let body = Full::new(Bytes::from(vec![0; 1000]));
         // Smaller than the size of the body.
         let max_n_bytes = 100;
         let err = BufferedBody::_extract_with_limit(&dummy_request_head(), body, max_n_bytes)
@@ -273,7 +286,7 @@ mod tests {
         // Smaller than the value declared in the `Content-Length` header,
         // even though it's bigger than the actual size of the body.
         let max_n_bytes = 100;
-        let body: hyper::Body = vec![0; 500].into();
+        let body = Full::new(Bytes::from(vec![0; 500]));
         request_head
             .headers
             .insert("Content-Length", "1000".parse().unwrap());

@@ -1,20 +1,31 @@
+use std::future::IntoFuture;
 use std::net::TcpListener;
 
 use application::{build_application_state, run};
 
 async fn spawn_test_server() -> u16 {
+    static TELEMETRY: std::sync::Once = std::sync::Once::new();
+    TELEMETRY.call_once(|| {
+        tracing_subscriber::fmt()
+            .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+            .with_span_events(tracing_subscriber::fmt::format::FmtSpan::FULL)
+            .init();
+    });
+
     let listener = TcpListener::bind("127.0.0.1:0").expect("Failed to listen on a random port");
     let port = listener
         .local_addr()
         .expect("Failed to get local address")
         .port();
-    let server = pavex::hyper::Server::from_tcp(listener).expect("Failed to create a hyper server");
+    let incoming_stream: pavex::server::IncomingStream =
+        listener.try_into().expect("Failed to convert listener");
+    let server = pavex::server::Server::new().listen(incoming_stream);
     let application_state = build_application_state().await;
-    tokio::task::spawn(async move {
+    tokio::task::spawn(
         run(server, application_state)
-            .await
-            .expect("Failed to launch server");
-    });
+            .expect("Failed to launch server")
+            .into_future(),
+    );
     port
 }
 

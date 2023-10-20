@@ -1,8 +1,9 @@
 use jsonwebtoken::{DecodingKey, EncodingKey};
+use pavex::server::IncomingStream;
 use secrecy::{ExposeSecret, Secret};
 use serde_aux::field_attributes::deserialize_number_from_string;
 use sqlx::postgres::{PgConnectOptions, PgSslMode};
-use std::net::{SocketAddr, TcpListener};
+use std::net::SocketAddr;
 
 #[derive(serde::Deserialize)]
 /// The top-level configuration, holding all the values required
@@ -28,9 +29,9 @@ pub struct ServerConfig {
 
 impl ServerConfig {
     /// Bind a TCP listener according to the specified parameters.
-    pub fn listener(&self) -> Result<TcpListener, std::io::Error> {
+    pub async fn listener(&self) -> Result<IncomingStream, std::io::Error> {
         let addr = SocketAddr::new(self.ip, self.port);
-        TcpListener::bind(addr)
+        IncomingStream::bind(addr).await
     }
 }
 
