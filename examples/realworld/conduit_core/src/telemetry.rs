@@ -5,6 +5,7 @@ use pavex::response::Response;
 use std::borrow::Cow;
 use std::future::IntoFuture;
 use tokio::task::JoinHandle;
+use tracing::Instrument;
 
 /// A root span is the top-level *logical* span for an incoming request.  
 ///
@@ -17,6 +18,10 @@ use tokio::task::JoinHandle;
 pub struct RootSpan(tracing::Span);
 
 impl RootSpan {
+    /// Create a new root span for the given request.
+    ///
+    /// We follow OpenTelemetry's HTTP semantic conventions as closely as
+    /// possible for field naming.
     pub fn new(request_head: &RequestHead) -> Self {
         let user_agent = request_head
             .headers
@@ -28,8 +33,8 @@ impl RootSpan {
             "HTTP request",
             http.method = %request_head.method,
             http.flavor = %http_flavor(request_head.version),
-            http.user_agent = %user_agent,
             http.status_code = tracing::field::Empty,
+            user_agent.original = %user_agent,
             // 👇 fields that we can't fill out _yet_ because we don't have access to connection info
             //   nor the pattern that actually matched the request in the router.
             //
@@ -40,6 +45,16 @@ impl RootSpan {
             // http.target = %$request.uri().path_and_query().map(|p| p.as_str()).unwrap_or(""),
         );
         Self(span)
+    }
+
+    /// Get a reference to the underlying [`tracing::Span`].
+    pub fn inner(&self) -> &tracing::Span {
+        &self.0
+    }
+
+    /// Deconstruct the root span into its underlying [`tracing::Span`].
+    pub fn into_inner(self) -> tracing::Span {
+        self.0
     }
 }
 
@@ -54,11 +69,11 @@ fn http_flavor(version: Version) -> Cow<'static, str> {
     }
 }
 
-pub async fn logger<T>(next: Next<T>) -> Response
+pub async fn logger<T>(next: Next<T>, root_span: RootSpan) -> Response
 where
     T: IntoFuture<Output = Response>,
 {
-    next.await
+    next.into_future().instrument(root_span.into_inner()).await
 }
 
 /// Spawn a blocking task without losing the current `tracing` span.

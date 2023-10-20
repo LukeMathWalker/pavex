@@ -48,15 +48,44 @@ pub async fn build_application_state(
     };
     core::result::Result::Ok(v6)
 }
+<<<<<<< HEAD
 pub fn run(
     server_builder: pavex::server::Server,
+=======
+pub async fn run(
+    server_builder: pavex::hyper::server::Builder<
+        pavex::hyper::server::conn::AddrIncoming,
+    >,
+>>>>>>> 649dd92 (Register telemetry middleware.)
     application_state: ApplicationState,
 ) -> Result<pavex::server::ServerHandle, pavex::Error> {
     let server_state = std::sync::Arc::new(ServerState {
         router: build_router().map_err(pavex::Error::new)?,
         application_state,
     });
+<<<<<<< HEAD
     Ok(server_builder.serve(route_request, server_state))
+=======
+    let make_service = pavex::hyper::service::make_service_fn(move |_| {
+        let server_state = server_state.clone();
+        async move {
+            Ok::<
+                _,
+                pavex::hyper::Error,
+            >(
+                pavex::hyper::service::service_fn(move |request| {
+                    let server_state = server_state.clone();
+                    async move {
+                        let response = route_request(request, server_state).await;
+                        let response = pavex::hyper::Response::from(response);
+                        Ok::<_, pavex::hyper::Error>(response)
+                    }
+                }),
+            )
+        }
+    });
+    server_builder.serve(make_service).await.map_err(pavex::Error::new)
+>>>>>>> 649dd92 (Register telemetry middleware.)
 }
 fn build_router() -> Result<pavex::routing::Router<u32>, pavex::routing::InsertError> {
     let mut router = pavex::routing::Router::new();
@@ -96,7 +125,11 @@ async fn route_request(
     match route_id {
         0u32 => {
             match &request_head.method {
+<<<<<<< HEAD
                 &pavex::http::Method::GET => route_0::middleware_0().await,
+=======
+                &pavex::http::Method::GET => route_0::middleware_0(&request_head).await,
+>>>>>>> 649dd92 (Register telemetry middleware.)
                 _ => {
                     let header_value = pavex::http::HeaderValue::from_static("GET");
                     pavex::response::Response::method_not_allowed()
@@ -123,8 +156,17 @@ async fn route_request(
         }
         2u32 => {
             match &request_head.method {
+<<<<<<< HEAD
                 &pavex::http::Method::DELETE => route_3::middleware_0(url_params).await,
                 &pavex::http::Method::GET => route_4::middleware_0(url_params).await,
+=======
+                &pavex::http::Method::DELETE => {
+                    route_3::middleware_0(url_params, &request_head).await
+                }
+                &pavex::http::Method::GET => {
+                    route_4::middleware_0(url_params, &request_head).await
+                }
+>>>>>>> 649dd92 (Register telemetry middleware.)
                 &pavex::http::Method::PUT => {
                     route_5::middleware_0(url_params, request_body, &request_head).await
                 }
@@ -140,7 +182,13 @@ async fn route_request(
         }
         3u32 => {
             match &request_head.method {
+<<<<<<< HEAD
                 &pavex::http::Method::GET => route_6::middleware_0(url_params).await,
+=======
+                &pavex::http::Method::GET => {
+                    route_6::middleware_0(url_params, &request_head).await
+                }
+>>>>>>> 649dd92 (Register telemetry middleware.)
                 &pavex::http::Method::POST => {
                     route_7::middleware_0(url_params, request_body, &request_head).await
                 }
@@ -156,7 +204,13 @@ async fn route_request(
         }
         4u32 => {
             match &request_head.method {
+<<<<<<< HEAD
                 &pavex::http::Method::DELETE => route_8::middleware_0(url_params).await,
+=======
+                &pavex::http::Method::DELETE => {
+                    route_8::middleware_0(url_params, &request_head).await
+                }
+>>>>>>> 649dd92 (Register telemetry middleware.)
                 _ => {
                     let header_value = pavex::http::HeaderValue::from_static("DELETE");
                     pavex::response::Response::method_not_allowed()
@@ -167,8 +221,17 @@ async fn route_request(
         }
         5u32 => {
             match &request_head.method {
+<<<<<<< HEAD
                 &pavex::http::Method::DELETE => route_9::middleware_0(url_params).await,
                 &pavex::http::Method::POST => route_10::middleware_0(url_params).await,
+=======
+                &pavex::http::Method::DELETE => {
+                    route_9::middleware_0(url_params, &request_head).await
+                }
+                &pavex::http::Method::POST => {
+                    route_10::middleware_0(url_params, &request_head).await
+                }
+>>>>>>> 649dd92 (Register telemetry middleware.)
                 _ => {
                     let header_value = pavex::http::HeaderValue::from_static(
                         "DELETE, POST",
@@ -192,7 +255,13 @@ async fn route_request(
         }
         7u32 => {
             match &request_head.method {
+<<<<<<< HEAD
                 &pavex::http::Method::GET => route_12::middleware_0(url_params).await,
+=======
+                &pavex::http::Method::GET => {
+                    route_12::middleware_0(url_params, &request_head).await
+                }
+>>>>>>> 649dd92 (Register telemetry middleware.)
                 _ => {
                     let header_value = pavex::http::HeaderValue::from_static("GET");
                     pavex::response::Response::method_not_allowed()
@@ -203,8 +272,17 @@ async fn route_request(
         }
         8u32 => {
             match &request_head.method {
+<<<<<<< HEAD
                 &pavex::http::Method::DELETE => route_13::middleware_0(url_params).await,
                 &pavex::http::Method::POST => route_14::middleware_0(url_params).await,
+=======
+                &pavex::http::Method::DELETE => {
+                    route_13::middleware_0(url_params, &request_head).await
+                }
+                &pavex::http::Method::POST => {
+                    route_14::middleware_0(url_params, &request_head).await
+                }
+>>>>>>> 649dd92 (Register telemetry middleware.)
                 _ => {
                     let header_value = pavex::http::HeaderValue::from_static(
                         "DELETE, POST",
@@ -217,7 +295,11 @@ async fn route_request(
         }
         9u32 => {
             match &request_head.method {
+<<<<<<< HEAD
                 &pavex::http::Method::GET => route_15::middleware_0().await,
+=======
+                &pavex::http::Method::GET => route_15::middleware_0(&request_head).await,
+>>>>>>> 649dd92 (Register telemetry middleware.)
                 _ => {
                     let header_value = pavex::http::HeaderValue::from_static("GET");
                     pavex::response::Response::method_not_allowed()
@@ -228,7 +310,11 @@ async fn route_request(
         }
         10u32 => {
             match &request_head.method {
+<<<<<<< HEAD
                 &pavex::http::Method::GET => route_16::middleware_0().await,
+=======
+                &pavex::http::Method::GET => route_16::middleware_0(&request_head).await,
+>>>>>>> 649dd92 (Register telemetry middleware.)
                 &pavex::http::Method::PUT => {
                     route_17::middleware_0(request_body, &request_head).await
                 }
@@ -244,9 +330,15 @@ async fn route_request(
             match &request_head.method {
                 &pavex::http::Method::POST => {
                     route_18::middleware_0(
+<<<<<<< HEAD
                             &server_state.application_state.s1,
                             request_body,
                             &server_state.application_state.s0,
+=======
+                            &server_state.application_state.s0,
+                            &server_state.application_state.s1,
+                            request_body,
+>>>>>>> 649dd92 (Register telemetry middleware.)
                             &request_head,
                         )
                         .await
@@ -263,9 +355,15 @@ async fn route_request(
             match &request_head.method {
                 &pavex::http::Method::POST => {
                     route_19::middleware_0(
+<<<<<<< HEAD
                             &server_state.application_state.s1,
                             request_body,
                             &server_state.application_state.s0,
+=======
+                            &server_state.application_state.s0,
+                            &server_state.application_state.s1,
+                            request_body,
+>>>>>>> 649dd92 (Register telemetry middleware.)
                             &request_head,
                         )
                         .await
@@ -282,12 +380,24 @@ async fn route_request(
     }
 }
 pub mod route_0 {
+<<<<<<< HEAD
     pub async fn middleware_0() -> pavex::response::Response {
         let v0 = crate::route_0::Next0 {
             next: handler,
         };
         let v1 = pavex::middleware::Next::new(v0);
         conduit_core::telemetry::logger(v1).await
+=======
+    pub async fn middleware_0(
+        v0: &pavex::request::RequestHead,
+    ) -> pavex::response::Response {
+        let v1 = conduit_core::telemetry::RootSpan::new(v0);
+        let v2 = crate::route_0::Next0 {
+            next: handler,
+        };
+        let v3 = pavex::middleware::Next::new(v2);
+        conduit_core::telemetry::logger(v3, v1).await
+>>>>>>> 649dd92 (Register telemetry middleware.)
     }
     pub async fn handler() -> pavex::response::Response {
         let v0 = conduit_core::routes::status::ping();
@@ -314,12 +424,22 @@ pub mod route_1 {
     pub async fn middleware_0(
         v0: &pavex::request::RequestHead,
     ) -> pavex::response::Response {
+<<<<<<< HEAD
         let v1 = crate::route_1::Next0 {
             s_0: v0,
             next: handler,
         };
         let v2 = pavex::middleware::Next::new(v1);
         conduit_core::telemetry::logger(v2).await
+=======
+        let v1 = conduit_core::telemetry::RootSpan::new(v0);
+        let v2 = crate::route_1::Next0 {
+            s_0: v0,
+            next: handler,
+        };
+        let v3 = pavex::middleware::Next::new(v2);
+        conduit_core::telemetry::logger(v3, v1).await
+>>>>>>> 649dd92 (Register telemetry middleware.)
     }
     pub async fn handler(v0: &pavex::request::RequestHead) -> pavex::response::Response {
         let v1 = pavex::extract::query::QueryParams::extract(v0);
@@ -359,16 +479,29 @@ pub mod route_1 {
 }
 pub mod route_2 {
     pub async fn middleware_0(
+<<<<<<< HEAD
         v0: hyper::body::Incoming,
         v1: &pavex::request::RequestHead,
     ) -> pavex::response::Response {
         let v2 = crate::route_2::Next0 {
+=======
+        v0: hyper::Body,
+        v1: &pavex::request::RequestHead,
+    ) -> pavex::response::Response {
+        let v2 = conduit_core::telemetry::RootSpan::new(v1);
+        let v3 = crate::route_2::Next0 {
+>>>>>>> 649dd92 (Register telemetry middleware.)
             s_0: v0,
             s_1: v1,
             next: handler,
         };
+<<<<<<< HEAD
         let v3 = pavex::middleware::Next::new(v2);
         conduit_core::telemetry::logger(v3).await
+=======
+        let v4 = pavex::middleware::Next::new(v3);
+        conduit_core::telemetry::logger(v4, v2).await
+>>>>>>> 649dd92 (Register telemetry middleware.)
     }
     pub async fn handler(
         v0: hyper::body::Incoming,
@@ -410,9 +543,15 @@ pub mod route_2 {
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
+<<<<<<< HEAD
         s_0: hyper::body::Incoming,
         s_1: &'a pavex::request::RequestHead,
         next: fn(hyper::body::Incoming, &'a pavex::request::RequestHead) -> T,
+=======
+        s_0: hyper::Body,
+        s_1: &'a pavex::request::RequestHead,
+        next: fn(hyper::Body, &'a pavex::request::RequestHead) -> T,
+>>>>>>> 649dd92 (Register telemetry middleware.)
     }
     impl<'a, T> std::future::IntoFuture for Next0<'a, T>
     where
@@ -428,13 +567,24 @@ pub mod route_2 {
 pub mod route_3 {
     pub async fn middleware_0(
         v0: pavex::extract::route::RawRouteParams<'_, '_>,
+        v1: &pavex::request::RequestHead,
     ) -> pavex::response::Response {
+<<<<<<< HEAD
         let v1 = crate::route_3::Next0 {
             s_0: v0,
             next: handler,
         };
         let v2 = pavex::middleware::Next::new(v1);
         conduit_core::telemetry::logger(v2).await
+=======
+        let v2 = conduit_core::telemetry::RootSpan::new(v1);
+        let v3 = crate::route_3::Next0 {
+            s_0: v0,
+            next: handler,
+        };
+        let v4 = pavex::middleware::Next::new(v3);
+        conduit_core::telemetry::logger(v4, v2).await
+>>>>>>> 649dd92 (Register telemetry middleware.)
     }
     pub async fn handler(
         v0: pavex::extract::route::RawRouteParams<'_, '_>,
@@ -477,13 +627,24 @@ pub mod route_3 {
 pub mod route_4 {
     pub async fn middleware_0(
         v0: pavex::extract::route::RawRouteParams<'_, '_>,
+        v1: &pavex::request::RequestHead,
     ) -> pavex::response::Response {
+<<<<<<< HEAD
         let v1 = crate::route_4::Next0 {
             s_0: v0,
             next: handler,
         };
         let v2 = pavex::middleware::Next::new(v1);
         conduit_core::telemetry::logger(v2).await
+=======
+        let v2 = conduit_core::telemetry::RootSpan::new(v1);
+        let v3 = crate::route_4::Next0 {
+            s_0: v0,
+            next: handler,
+        };
+        let v4 = pavex::middleware::Next::new(v3);
+        conduit_core::telemetry::logger(v4, v2).await
+>>>>>>> 649dd92 (Register telemetry middleware.)
     }
     pub async fn handler(
         v0: pavex::extract::route::RawRouteParams<'_, '_>,
@@ -526,17 +687,25 @@ pub mod route_4 {
 pub mod route_5 {
     pub async fn middleware_0(
         v0: pavex::extract::route::RawRouteParams<'_, '_>,
+<<<<<<< HEAD
         v1: hyper::body::Incoming,
         v2: &pavex::request::RequestHead,
     ) -> pavex::response::Response {
         let v3 = crate::route_5::Next0 {
+=======
+        v1: hyper::Body,
+        v2: &pavex::request::RequestHead,
+    ) -> pavex::response::Response {
+        let v3 = conduit_core::telemetry::RootSpan::new(v2);
+        let v4 = crate::route_5::Next0 {
+>>>>>>> 649dd92 (Register telemetry middleware.)
             s_0: v1,
             s_1: v0,
             s_2: v2,
             next: handler,
         };
-        let v4 = pavex::middleware::Next::new(v3);
-        conduit_core::telemetry::logger(v4).await
+        let v5 = pavex::middleware::Next::new(v4);
+        conduit_core::telemetry::logger(v5, v3).await
     }
     pub async fn handler(
         v0: hyper::body::Incoming,
@@ -589,6 +758,7 @@ pub mod route_5 {
         let v10 = conduit_core::routes::articles::update_article(v9, v7);
         <http::StatusCode as pavex::response::IntoResponse>::into_response(v10)
     }
+<<<<<<< HEAD
     pub struct Next0<'b, 'a, 'c, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
@@ -598,11 +768,26 @@ pub mod route_5 {
         s_2: &'c pavex::request::RequestHead,
         next: fn(
             hyper::body::Incoming,
+=======
+    pub struct Next0<'a, 'b, 'c, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        s_0: hyper::Body,
+        s_1: pavex::extract::route::RawRouteParams<'a, 'b>,
+        s_2: &'c pavex::request::RequestHead,
+        next: fn(
+            hyper::Body,
+>>>>>>> 649dd92 (Register telemetry middleware.)
             pavex::extract::route::RawRouteParams<'a, 'b>,
             &'c pavex::request::RequestHead,
         ) -> T,
     }
+<<<<<<< HEAD
     impl<'b, 'a, 'c, T> std::future::IntoFuture for Next0<'b, 'a, 'c, T>
+=======
+    impl<'a, 'b, 'c, T> std::future::IntoFuture for Next0<'a, 'b, 'c, T>
+>>>>>>> 649dd92 (Register telemetry middleware.)
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
@@ -616,13 +801,24 @@ pub mod route_5 {
 pub mod route_6 {
     pub async fn middleware_0(
         v0: pavex::extract::route::RawRouteParams<'_, '_>,
+        v1: &pavex::request::RequestHead,
     ) -> pavex::response::Response {
+<<<<<<< HEAD
         let v1 = crate::route_6::Next0 {
             s_0: v0,
             next: handler,
         };
         let v2 = pavex::middleware::Next::new(v1);
         conduit_core::telemetry::logger(v2).await
+=======
+        let v2 = conduit_core::telemetry::RootSpan::new(v1);
+        let v3 = crate::route_6::Next0 {
+            s_0: v0,
+            next: handler,
+        };
+        let v4 = pavex::middleware::Next::new(v3);
+        conduit_core::telemetry::logger(v4, v2).await
+>>>>>>> 649dd92 (Register telemetry middleware.)
     }
     pub async fn handler(
         v0: pavex::extract::route::RawRouteParams<'_, '_>,
@@ -665,17 +861,25 @@ pub mod route_6 {
 pub mod route_7 {
     pub async fn middleware_0(
         v0: pavex::extract::route::RawRouteParams<'_, '_>,
+<<<<<<< HEAD
         v1: hyper::body::Incoming,
         v2: &pavex::request::RequestHead,
     ) -> pavex::response::Response {
         let v3 = crate::route_7::Next0 {
+=======
+        v1: hyper::Body,
+        v2: &pavex::request::RequestHead,
+    ) -> pavex::response::Response {
+        let v3 = conduit_core::telemetry::RootSpan::new(v2);
+        let v4 = crate::route_7::Next0 {
+>>>>>>> 649dd92 (Register telemetry middleware.)
             s_0: v1,
             s_1: v0,
             s_2: v2,
             next: handler,
         };
-        let v4 = pavex::middleware::Next::new(v3);
-        conduit_core::telemetry::logger(v4).await
+        let v5 = pavex::middleware::Next::new(v4);
+        conduit_core::telemetry::logger(v5, v3).await
     }
     pub async fn handler(
         v0: hyper::body::Incoming,
@@ -728,6 +932,7 @@ pub mod route_7 {
         let v10 = conduit_core::routes::articles::publish_comment(v9, v7);
         <http::StatusCode as pavex::response::IntoResponse>::into_response(v10)
     }
+<<<<<<< HEAD
     pub struct Next0<'b, 'a, 'c, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
@@ -737,11 +942,26 @@ pub mod route_7 {
         s_2: &'c pavex::request::RequestHead,
         next: fn(
             hyper::body::Incoming,
+=======
+    pub struct Next0<'a, 'b, 'c, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        s_0: hyper::Body,
+        s_1: pavex::extract::route::RawRouteParams<'a, 'b>,
+        s_2: &'c pavex::request::RequestHead,
+        next: fn(
+            hyper::Body,
+>>>>>>> 649dd92 (Register telemetry middleware.)
             pavex::extract::route::RawRouteParams<'a, 'b>,
             &'c pavex::request::RequestHead,
         ) -> T,
     }
+<<<<<<< HEAD
     impl<'b, 'a, 'c, T> std::future::IntoFuture for Next0<'b, 'a, 'c, T>
+=======
+    impl<'a, 'b, 'c, T> std::future::IntoFuture for Next0<'a, 'b, 'c, T>
+>>>>>>> 649dd92 (Register telemetry middleware.)
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
@@ -755,13 +975,24 @@ pub mod route_7 {
 pub mod route_8 {
     pub async fn middleware_0(
         v0: pavex::extract::route::RawRouteParams<'_, '_>,
+        v1: &pavex::request::RequestHead,
     ) -> pavex::response::Response {
+<<<<<<< HEAD
         let v1 = crate::route_8::Next0 {
             s_0: v0,
             next: handler,
         };
         let v2 = pavex::middleware::Next::new(v1);
         conduit_core::telemetry::logger(v2).await
+=======
+        let v2 = conduit_core::telemetry::RootSpan::new(v1);
+        let v3 = crate::route_8::Next0 {
+            s_0: v0,
+            next: handler,
+        };
+        let v4 = pavex::middleware::Next::new(v3);
+        conduit_core::telemetry::logger(v4, v2).await
+>>>>>>> 649dd92 (Register telemetry middleware.)
     }
     pub async fn handler(
         v0: pavex::extract::route::RawRouteParams<'_, '_>,
@@ -783,14 +1014,22 @@ pub mod route_8 {
         let v3 = conduit_core::routes::articles::delete_comment(v2);
         <http::StatusCode as pavex::response::IntoResponse>::into_response(v3)
     }
+<<<<<<< HEAD
     pub struct Next0<'b, 'a, T>
+=======
+    pub struct Next0<'a, 'b, T>
+>>>>>>> 649dd92 (Register telemetry middleware.)
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
         s_0: pavex::extract::route::RawRouteParams<'a, 'b>,
         next: fn(pavex::extract::route::RawRouteParams<'a, 'b>) -> T,
     }
+<<<<<<< HEAD
     impl<'b, 'a, T> std::future::IntoFuture for Next0<'b, 'a, T>
+=======
+    impl<'a, 'b, T> std::future::IntoFuture for Next0<'a, 'b, T>
+>>>>>>> 649dd92 (Register telemetry middleware.)
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
@@ -804,13 +1043,24 @@ pub mod route_8 {
 pub mod route_9 {
     pub async fn middleware_0(
         v0: pavex::extract::route::RawRouteParams<'_, '_>,
+        v1: &pavex::request::RequestHead,
     ) -> pavex::response::Response {
+<<<<<<< HEAD
         let v1 = crate::route_9::Next0 {
             s_0: v0,
             next: handler,
         };
         let v2 = pavex::middleware::Next::new(v1);
         conduit_core::telemetry::logger(v2).await
+=======
+        let v2 = conduit_core::telemetry::RootSpan::new(v1);
+        let v3 = crate::route_9::Next0 {
+            s_0: v0,
+            next: handler,
+        };
+        let v4 = pavex::middleware::Next::new(v3);
+        conduit_core::telemetry::logger(v4, v2).await
+>>>>>>> 649dd92 (Register telemetry middleware.)
     }
     pub async fn handler(
         v0: pavex::extract::route::RawRouteParams<'_, '_>,
@@ -853,13 +1103,24 @@ pub mod route_9 {
 pub mod route_10 {
     pub async fn middleware_0(
         v0: pavex::extract::route::RawRouteParams<'_, '_>,
+        v1: &pavex::request::RequestHead,
     ) -> pavex::response::Response {
+<<<<<<< HEAD
         let v1 = crate::route_10::Next0 {
             s_0: v0,
             next: handler,
         };
         let v2 = pavex::middleware::Next::new(v1);
         conduit_core::telemetry::logger(v2).await
+=======
+        let v2 = conduit_core::telemetry::RootSpan::new(v1);
+        let v3 = crate::route_10::Next0 {
+            s_0: v0,
+            next: handler,
+        };
+        let v4 = pavex::middleware::Next::new(v3);
+        conduit_core::telemetry::logger(v4, v2).await
+>>>>>>> 649dd92 (Register telemetry middleware.)
     }
     pub async fn handler(
         v0: pavex::extract::route::RawRouteParams<'_, '_>,
@@ -903,12 +1164,22 @@ pub mod route_11 {
     pub async fn middleware_0(
         v0: &pavex::request::RequestHead,
     ) -> pavex::response::Response {
+<<<<<<< HEAD
         let v1 = crate::route_11::Next0 {
             s_0: v0,
             next: handler,
         };
         let v2 = pavex::middleware::Next::new(v1);
         conduit_core::telemetry::logger(v2).await
+=======
+        let v1 = conduit_core::telemetry::RootSpan::new(v0);
+        let v2 = crate::route_11::Next0 {
+            s_0: v0,
+            next: handler,
+        };
+        let v3 = pavex::middleware::Next::new(v2);
+        conduit_core::telemetry::logger(v3, v1).await
+>>>>>>> 649dd92 (Register telemetry middleware.)
     }
     pub async fn handler(v0: &pavex::request::RequestHead) -> pavex::response::Response {
         let v1 = pavex::extract::query::QueryParams::extract(v0);
@@ -949,13 +1220,24 @@ pub mod route_11 {
 pub mod route_12 {
     pub async fn middleware_0(
         v0: pavex::extract::route::RawRouteParams<'_, '_>,
+        v1: &pavex::request::RequestHead,
     ) -> pavex::response::Response {
+<<<<<<< HEAD
         let v1 = crate::route_12::Next0 {
             s_0: v0,
             next: handler,
         };
         let v2 = pavex::middleware::Next::new(v1);
         conduit_core::telemetry::logger(v2).await
+=======
+        let v2 = conduit_core::telemetry::RootSpan::new(v1);
+        let v3 = crate::route_12::Next0 {
+            s_0: v0,
+            next: handler,
+        };
+        let v4 = pavex::middleware::Next::new(v3);
+        conduit_core::telemetry::logger(v4, v2).await
+>>>>>>> 649dd92 (Register telemetry middleware.)
     }
     pub async fn handler(
         v0: pavex::extract::route::RawRouteParams<'_, '_>,
@@ -977,14 +1259,22 @@ pub mod route_12 {
         let v3 = conduit_core::routes::profiles::get_profile(v2);
         <http::StatusCode as pavex::response::IntoResponse>::into_response(v3)
     }
+<<<<<<< HEAD
     pub struct Next0<'a, 'b, T>
+=======
+    pub struct Next0<'b, 'a, T>
+>>>>>>> 649dd92 (Register telemetry middleware.)
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
         s_0: pavex::extract::route::RawRouteParams<'a, 'b>,
         next: fn(pavex::extract::route::RawRouteParams<'a, 'b>) -> T,
     }
+<<<<<<< HEAD
     impl<'a, 'b, T> std::future::IntoFuture for Next0<'a, 'b, T>
+=======
+    impl<'b, 'a, T> std::future::IntoFuture for Next0<'b, 'a, T>
+>>>>>>> 649dd92 (Register telemetry middleware.)
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
@@ -998,13 +1288,24 @@ pub mod route_12 {
 pub mod route_13 {
     pub async fn middleware_0(
         v0: pavex::extract::route::RawRouteParams<'_, '_>,
+        v1: &pavex::request::RequestHead,
     ) -> pavex::response::Response {
+<<<<<<< HEAD
         let v1 = crate::route_13::Next0 {
             s_0: v0,
             next: handler,
         };
         let v2 = pavex::middleware::Next::new(v1);
         conduit_core::telemetry::logger(v2).await
+=======
+        let v2 = conduit_core::telemetry::RootSpan::new(v1);
+        let v3 = crate::route_13::Next0 {
+            s_0: v0,
+            next: handler,
+        };
+        let v4 = pavex::middleware::Next::new(v3);
+        conduit_core::telemetry::logger(v4, v2).await
+>>>>>>> 649dd92 (Register telemetry middleware.)
     }
     pub async fn handler(
         v0: pavex::extract::route::RawRouteParams<'_, '_>,
@@ -1047,13 +1348,24 @@ pub mod route_13 {
 pub mod route_14 {
     pub async fn middleware_0(
         v0: pavex::extract::route::RawRouteParams<'_, '_>,
+        v1: &pavex::request::RequestHead,
     ) -> pavex::response::Response {
+<<<<<<< HEAD
         let v1 = crate::route_14::Next0 {
             s_0: v0,
             next: handler,
         };
         let v2 = pavex::middleware::Next::new(v1);
         conduit_core::telemetry::logger(v2).await
+=======
+        let v2 = conduit_core::telemetry::RootSpan::new(v1);
+        let v3 = crate::route_14::Next0 {
+            s_0: v0,
+            next: handler,
+        };
+        let v4 = pavex::middleware::Next::new(v3);
+        conduit_core::telemetry::logger(v4, v2).await
+>>>>>>> 649dd92 (Register telemetry middleware.)
     }
     pub async fn handler(
         v0: pavex::extract::route::RawRouteParams<'_, '_>,
@@ -1094,12 +1406,24 @@ pub mod route_14 {
     }
 }
 pub mod route_15 {
+<<<<<<< HEAD
     pub async fn middleware_0() -> pavex::response::Response {
         let v0 = crate::route_15::Next0 {
             next: handler,
         };
         let v1 = pavex::middleware::Next::new(v0);
         conduit_core::telemetry::logger(v1).await
+=======
+    pub async fn middleware_0(
+        v0: &pavex::request::RequestHead,
+    ) -> pavex::response::Response {
+        let v1 = conduit_core::telemetry::RootSpan::new(v0);
+        let v2 = crate::route_15::Next0 {
+            next: handler,
+        };
+        let v3 = pavex::middleware::Next::new(v2);
+        conduit_core::telemetry::logger(v3, v1).await
+>>>>>>> 649dd92 (Register telemetry middleware.)
     }
     pub async fn handler() -> pavex::response::Response {
         let v0 = conduit_core::routes::tags::get_tags();
@@ -1123,12 +1447,24 @@ pub mod route_15 {
     }
 }
 pub mod route_16 {
+<<<<<<< HEAD
     pub async fn middleware_0() -> pavex::response::Response {
         let v0 = crate::route_16::Next0 {
             next: handler,
         };
         let v1 = pavex::middleware::Next::new(v0);
         conduit_core::telemetry::logger(v1).await
+=======
+    pub async fn middleware_0(
+        v0: &pavex::request::RequestHead,
+    ) -> pavex::response::Response {
+        let v1 = conduit_core::telemetry::RootSpan::new(v0);
+        let v2 = crate::route_16::Next0 {
+            next: handler,
+        };
+        let v3 = pavex::middleware::Next::new(v2);
+        conduit_core::telemetry::logger(v3, v1).await
+>>>>>>> 649dd92 (Register telemetry middleware.)
     }
     pub async fn handler() -> pavex::response::Response {
         let v0 = conduit_core::routes::users::get_user();
@@ -1153,16 +1489,29 @@ pub mod route_16 {
 }
 pub mod route_17 {
     pub async fn middleware_0(
+<<<<<<< HEAD
         v0: hyper::body::Incoming,
         v1: &pavex::request::RequestHead,
     ) -> pavex::response::Response {
         let v2 = crate::route_17::Next0 {
+=======
+        v0: hyper::Body,
+        v1: &pavex::request::RequestHead,
+    ) -> pavex::response::Response {
+        let v2 = conduit_core::telemetry::RootSpan::new(v1);
+        let v3 = crate::route_17::Next0 {
+>>>>>>> 649dd92 (Register telemetry middleware.)
             s_0: v0,
             s_1: v1,
             next: handler,
         };
+<<<<<<< HEAD
         let v3 = pavex::middleware::Next::new(v2);
         conduit_core::telemetry::logger(v3).await
+=======
+        let v4 = pavex::middleware::Next::new(v3);
+        conduit_core::telemetry::logger(v4, v2).await
+>>>>>>> 649dd92 (Register telemetry middleware.)
     }
     pub async fn handler(
         v0: hyper::body::Incoming,
@@ -1204,9 +1553,15 @@ pub mod route_17 {
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
+<<<<<<< HEAD
         s_0: hyper::body::Incoming,
         s_1: &'a pavex::request::RequestHead,
         next: fn(hyper::body::Incoming, &'a pavex::request::RequestHead) -> T,
+=======
+        s_0: hyper::Body,
+        s_1: &'a pavex::request::RequestHead,
+        next: fn(hyper::Body, &'a pavex::request::RequestHead) -> T,
+>>>>>>> 649dd92 (Register telemetry middleware.)
     }
     impl<'a, T> std::future::IntoFuture for Next0<'a, T>
     where
@@ -1221,6 +1576,7 @@ pub mod route_17 {
 }
 pub mod route_18 {
     pub async fn middleware_0(
+<<<<<<< HEAD
         v0: &jsonwebtoken::EncodingKey,
         v1: hyper::body::Incoming,
         v2: &sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
@@ -1231,10 +1587,23 @@ pub mod route_18 {
             s_1: v3,
             s_2: v1,
             s_3: v0,
+=======
+        v0: &sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
+        v1: &jsonwebtoken::EncodingKey,
+        v2: hyper::Body,
+        v3: &pavex::request::RequestHead,
+    ) -> pavex::response::Response {
+        let v4 = conduit_core::telemetry::RootSpan::new(v3);
+        let v5 = crate::route_18::Next0 {
+            s_0: v0,
+            s_1: v3,
+            s_2: v2,
+            s_3: v1,
+>>>>>>> 649dd92 (Register telemetry middleware.)
             next: handler,
         };
-        let v5 = pavex::middleware::Next::new(v4);
-        conduit_core::telemetry::logger(v5).await
+        let v6 = pavex::middleware::Next::new(v5);
+        conduit_core::telemetry::logger(v6, v4).await
     }
     pub async fn handler(
         v0: &sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
@@ -1295,12 +1664,20 @@ pub mod route_18 {
     {
         s_0: &'a sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
         s_1: &'b pavex::request::RequestHead,
+<<<<<<< HEAD
         s_2: hyper::body::Incoming,
+=======
+        s_2: hyper::Body,
+>>>>>>> 649dd92 (Register telemetry middleware.)
         s_3: &'c jsonwebtoken::EncodingKey,
         next: fn(
             &'a sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
             &'b pavex::request::RequestHead,
+<<<<<<< HEAD
             hyper::body::Incoming,
+=======
+            hyper::Body,
+>>>>>>> 649dd92 (Register telemetry middleware.)
             &'c jsonwebtoken::EncodingKey,
         ) -> T,
     }
@@ -1317,6 +1694,7 @@ pub mod route_18 {
 }
 pub mod route_19 {
     pub async fn middleware_0(
+<<<<<<< HEAD
         v0: &jsonwebtoken::EncodingKey,
         v1: hyper::body::Incoming,
         v2: &sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
@@ -1327,10 +1705,23 @@ pub mod route_19 {
             s_1: v3,
             s_2: v1,
             s_3: v0,
+=======
+        v0: &sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
+        v1: &jsonwebtoken::EncodingKey,
+        v2: hyper::Body,
+        v3: &pavex::request::RequestHead,
+    ) -> pavex::response::Response {
+        let v4 = conduit_core::telemetry::RootSpan::new(v3);
+        let v5 = crate::route_19::Next0 {
+            s_0: v0,
+            s_1: v3,
+            s_2: v2,
+            s_3: v1,
+>>>>>>> 649dd92 (Register telemetry middleware.)
             next: handler,
         };
-        let v5 = pavex::middleware::Next::new(v4);
-        conduit_core::telemetry::logger(v5).await
+        let v6 = pavex::middleware::Next::new(v5);
+        conduit_core::telemetry::logger(v6, v4).await
     }
     pub async fn handler(
         v0: &sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
@@ -1391,12 +1782,20 @@ pub mod route_19 {
     {
         s_0: &'a sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
         s_1: &'b pavex::request::RequestHead,
+<<<<<<< HEAD
         s_2: hyper::body::Incoming,
+=======
+        s_2: hyper::Body,
+>>>>>>> 649dd92 (Register telemetry middleware.)
         s_3: &'c jsonwebtoken::EncodingKey,
         next: fn(
             &'a sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
             &'b pavex::request::RequestHead,
+<<<<<<< HEAD
             hyper::body::Incoming,
+=======
+            hyper::Body,
+>>>>>>> 649dd92 (Register telemetry middleware.)
             &'c jsonwebtoken::EncodingKey,
         ) -> T,
     }
