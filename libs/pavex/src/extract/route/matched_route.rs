@@ -20,6 +20,11 @@ use std::fmt::Formatter;
 ///
 /// Then [`MatchedRouteTemplate`] will be set to `/home/:home_id` for a `GET /home/123` request.
 ///
+/// # Framework primitive
+///
+/// `MatchedRouteTemplate` is a framework primitive—you don't need to register any constructor
+/// with `Blueprint` to use it in your application.
+///
 /// # Use cases
 ///
 /// The primary use case for [`MatchedRouteTemplate`] is telemetry—logging, metrics, etc.  
@@ -27,6 +32,7 @@ use std::fmt::Formatter;
 /// your metrics and making it easier to aggregate them.
 ///
 /// [`Blueprint`]: crate::blueprint::Blueprint
+#[doc(alias("MatchedPath"))]
 pub struct MatchedRouteTemplate(&'static str);
 
 impl MatchedRouteTemplate {

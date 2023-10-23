@@ -1,5 +1,16 @@
 //! Extract data from the URL of incoming requests.
 //!
+//! # Overview
+//!
+//! When it comes to route information, there are two important extractors to be aware of:
+//!
+//! - [`RouteParams`]: extract route parameters from the URL of incoming requests
+//! - [`MatchedRouteTemplate`]: extract the route template that matched for the incoming request
+//!
+//! Check out their documentation for more details.
+//!
+//! # Example: route parameters
+//!
 //! ```rust
 //! use pavex::f;
 //! use pavex::blueprint::{router::GET, Blueprint, constructor::Lifecycle};
