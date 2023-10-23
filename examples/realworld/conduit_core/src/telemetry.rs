@@ -15,6 +15,7 @@ use tracing::Instrument;
 /// We use the root span to attach as much information as possible about the
 /// incoming request, and to record the final outcome of the request (success or
 /// failure).  
+#[derive(Debug, Clone)]
 pub struct RootSpan(tracing::Span);
 
 impl RootSpan {
@@ -33,8 +34,8 @@ impl RootSpan {
             "HTTP request",
             http.method = %request_head.method,
             http.flavor = %http_flavor(request_head.version),
-            http.status_code = tracing::field::Empty,
             user_agent.original = %user_agent,
+            http.response.status_code = tracing::field::Empty,
             // 👇 fields that we can't fill out _yet_ because we don't have access to connection info
             //   nor the pattern that actually matched the request in the router.
             //
@@ -45,6 +46,11 @@ impl RootSpan {
             // http.target = %$request.uri().path_and_query().map(|p| p.as_str()).unwrap_or(""),
         );
         Self(span)
+    }
+
+    pub fn record_response_data(&self, response: &Response) {
+        self.0
+            .record("http.response.status_code", &response.status().as_u16());
     }
 
     /// Get a reference to the underlying [`tracing::Span`].
@@ -73,7 +79,12 @@ pub async fn logger<T>(next: Next<T>, root_span: RootSpan) -> Response
 where
     T: IntoFuture<Output = Response>,
 {
-    next.into_future().instrument(root_span.into_inner()).await
+    let response = next
+        .into_future()
+        .instrument(root_span.clone().into_inner())
+        .await;
+    root_span.record_response_data(&response);
+    response
 }
 
 /// Spawn a blocking task without losing the current `tracing` span.
