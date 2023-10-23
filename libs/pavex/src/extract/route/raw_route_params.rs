@@ -24,6 +24,8 @@ use matchit::{Params, ParamsIter};
 /// }
 /// ```
 ///
+/// # Framework primitive
+///
 /// `RawRouteParams` is a framework primitive—you don't need to register any constructor
 /// with `Blueprint` to use it in your application.
 ///

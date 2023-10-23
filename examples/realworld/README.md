@@ -36,6 +36,7 @@ For more information on how this works with other frontends/backends, head over 
   ```
 
 ### Setup steps
+
 - Launch a local Postgres instance and run SQL migrations:
 ```bash
 ./scripts/init_db.sh
@@ -69,3 +70,29 @@ APP_PROFILE=prod cargo px run --bin api
 ```
 
 All configurable parameters are listed in `api_server/src/configuration.rs`.
+
+### Auth configuration
+
+The application uses JWT for authentication, therefore it requires a secret key pair to sign and verify tokens. You can
+generate one for local development purposes by running:
+
+```bash 
+openssl genpkey -algorithm ed25519 -out private.pem
+openssl pkey -in private.pem -pubout -out public.pem
+```
+
+You then need to copy the generated keys to your configuration file, `api_server/configuration/dev.yml` for 
+local development:
+
+```yaml
+# [...]
+auth:
+  eddsa_private_key_pem: |
+    -----BEGIN PRIVATE KEY-----
+    # Paste the contents of private.pem here
+    -----END PRIVATE KEY-----
+  eddsa_public_key_pem: |
+    -----BEGIN PUBLIC KEY-----
+    # Paste the contents of public.pem here
+    -----END PUBLIC KEY-----
+```

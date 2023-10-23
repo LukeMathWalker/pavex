@@ -200,6 +200,7 @@ impl App {
             &self.codegen_deps,
             &self.component_db,
             &self.computation_db,
+            &self.framework_item_db,
         )?;
         Ok(GeneratedApp {
             lib_rs,

@@ -1,5 +1,16 @@
 //! Extract data from the URL of incoming requests.
 //!
+//! # Overview
+//!
+//! When it comes to route information, there are two important extractors to be aware of:
+//!
+//! - [`RouteParams`]: extract route parameters from the URL of incoming requests
+//! - [`MatchedRouteTemplate`]: extract the route template that matched for the incoming request
+//!
+//! Check out their documentation for more details.
+//!
+//! # Example: route parameters
+//!
 //! ```rust
 //! use pavex::f;
 //! use pavex::blueprint::{router::GET, Blueprint, constructor::Lifecycle};
@@ -32,6 +43,7 @@
 //!
 //! [`RouteParams`]: struct@RouteParams
 
+pub use matched_route::MatchedRouteTemplate;
 /// Derive (de)serialization logic for a type that is going to be used to extract route parameters.
 ///
 /// This macro derives [`StructuralDeserialize`], [`serde::Serialize`] and [`serde::Deserialize`]
@@ -74,5 +86,6 @@ pub use route_params::RouteParams;
 
 mod deserializer;
 pub mod errors;
+mod matched_route;
 mod raw_route_params;
 mod route_params;
