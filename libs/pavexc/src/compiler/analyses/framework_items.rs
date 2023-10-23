@@ -19,7 +19,7 @@ pub(crate) type FrameworkItemId = u8;
 /// These types can be used by constructors and handlers even though no constructor
 /// has been explicitly registered for them by the developer.
 pub(crate) struct FrameworkItemDb {
-    items: HashMap<ResolvedType, FrameworkItemId>,
+    items: BiHashMap<ResolvedType, FrameworkItemId>,
     id2metadata: HashMap<FrameworkItemId, FrameworkItemMetadata>,
 }
 
@@ -31,7 +31,7 @@ impl FrameworkItemDb {
     #[tracing::instrument("Build framework items database", skip_all)]
     pub fn new(package_graph: &PackageGraph, krate_collection: &CrateCollection) -> Self {
         let capacity = 2;
-        let mut items = HashMap::with_capacity(capacity);
+        let mut items = BiHashMap::with_capacity(capacity);
         let mut id2metadata = HashMap::with_capacity(capacity);
 
         let request_head = process_framework_path(
@@ -76,7 +76,26 @@ impl FrameworkItemDb {
                 binding: format_ident!("url_params"),
             },
         );
+        let matched_route_template = process_framework_path(
+            "pavex::extract::route::MatchedRouteTemplate",
+            package_graph,
+            krate_collection,
+        );
+        items.insert(matched_route_template, Self::matched_route_template_id());
+        id2metadata.insert(
+            Self::matched_route_template_id(),
+            FrameworkItemMetadata {
+                lifecycle: Lifecycle::RequestScoped,
+                cloning_strategy: CloningStrategy::CloneIfNecessary,
+                binding: format_ident!("matched_route_template"),
+            },
+        );
         Self { items, id2metadata }
+    }
+
+    /// Return the id for the `MatchedRouteTemplate` type.
+    pub(crate) fn matched_route_template_id() -> FrameworkItemId {
+        3
     }
 
     /// Return the [`Lifecycle`] associated with a framework item.
@@ -92,7 +111,12 @@ impl FrameworkItemDb {
     /// Return the [`FrameworkItemId`] for a type, if it's a framework item.
     /// `None` otherwise.
     pub(crate) fn get_id(&self, type_: &ResolvedType) -> Option<FrameworkItemId> {
-        self.items.get(type_).copied()
+        self.items.get_by_left(type_).copied()
+    }
+
+    /// Return the [`ResolvedType`] attached to a given [`FrameworkItemId`].
+    pub(crate) fn get_type(&self, id: FrameworkItemId) -> Option<&ResolvedType> {
+        self.items.get_by_right(&id)
     }
 
     /// Return a bijective map that associates each framework type with an identifier (i.e. a variable name).

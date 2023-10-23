@@ -1,3 +1,4 @@
+use pavex::extract::route::MatchedRouteTemplate;
 use pavex::http::Version;
 use pavex::middleware::Next;
 use pavex::request::RequestHead;
@@ -23,7 +24,7 @@ impl RootSpan {
     ///
     /// We follow OpenTelemetry's HTTP semantic conventions as closely as
     /// possible for field naming.
-    pub fn new(request_head: &RequestHead) -> Self {
+    pub fn new(request_head: &RequestHead, matched_route: MatchedRouteTemplate) -> Self {
         let user_agent = request_head
             .headers
             .get("User-Agent")
@@ -36,10 +37,10 @@ impl RootSpan {
             http.flavor = %http_flavor(request_head.version),
             user_agent.original = %user_agent,
             http.response.status_code = tracing::field::Empty,
+            http.route = %matched_route,
             // 👇 fields that we can't fill out _yet_ because we don't have access to connection info
             //   nor the pattern that actually matched the request in the router.
             //
-            // http.route = %http_route,
             // http.scheme = %$crate::root_span_macro::private::http_scheme(connection_info.scheme()),
             // http.host = %connection_info.host(),
             // http.client_ip = %$request.connection_info().realip_remote_addr().unwrap_or(""),
