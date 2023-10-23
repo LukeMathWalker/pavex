@@ -4,16 +4,14 @@ use crate::blueprint::{
     Blueprint,
 };
 
-/// The type returned by [`Blueprint::route`].
+/// The type returned by [`Blueprint::fallback_handler`].
 ///
-/// It allows you to further configure the behaviour of the registered route.
-pub struct Route<'a> {
+/// It allows you to further configure the behaviour of the registered handler.
+pub struct FallbackHandler<'a> {
     pub(crate) blueprint: &'a mut Blueprint,
-    /// The index of the registered route in the blueprint's `routes` vector.
-    pub(crate) route_id: usize,
 }
 
-impl<'a> Route<'a> {
+impl<'a> FallbackHandler<'a> {
     #[track_caller]
     /// Register an error handler.
     ///
@@ -26,13 +24,13 @@ impl<'a> Route<'a> {
     ///
     /// ```rust
     /// use pavex::f;
-    /// use pavex::blueprint::{Blueprint, router::GET};
+    /// use pavex::blueprint::Blueprint;
     /// use pavex::{response::Response, hyper::body::Body};
     /// # struct LogLevel;
     /// # struct RuntimeError;
     /// # struct ConfigurationError;
     ///
-    /// fn request_handler() -> Result<Response, RuntimeError> {
+    /// fn fallback() -> Result<Response, RuntimeError> {
     ///     // [...]
     ///     # todo!()
     /// }
@@ -44,7 +42,7 @@ impl<'a> Route<'a> {
     ///
     /// # fn main() {
     /// let mut bp = Blueprint::new();
-    /// bp.route(GET, "/home", f!(crate::request_handler))
+    /// bp.fallback_handler(f!(crate::fallback))
     ///     .error_handler(f!(crate::error_to_response));
     /// # }
     /// ```
@@ -63,7 +61,9 @@ impl<'a> Route<'a> {
             callable: callable_identifiers,
             location: std::panic::Location::caller().into(),
         };
-        self.blueprint.routes[self.route_id].error_handler = Some(callable);
+        if let Some(fallback) = &mut self.blueprint.fallback_request_handler {
+            fallback.error_handler = Some(callable);
+        }
         self
     }
 }

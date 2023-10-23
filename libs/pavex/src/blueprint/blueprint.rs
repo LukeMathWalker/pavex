@@ -1,3 +1,6 @@
+use crate::blueprint::internals::RegisteredFallbackHandler;
+use crate::blueprint::router::FallbackHandler;
+
 use super::constructor::{Constructor, Lifecycle};
 use super::internals::{
     NestedBlueprint, RegisteredCallable, RegisteredConstructor, RegisteredRoute,
@@ -28,6 +31,8 @@ pub struct Blueprint {
     pub middlewares: Vec<RegisteredWrappingMiddleware>,
     /// All registered routes, in the order they were registered.
     pub routes: Vec<RegisteredRoute>,
+    /// The fallback request handler, if any.
+    pub fallback_request_handler: Option<RegisteredFallbackHandler>,
     /// All blueprints nested under this one, in the order they were nested.
     pub nested_blueprints: Vec<NestedBlueprint>,
 }
@@ -39,6 +44,7 @@ impl Default for Blueprint {
             creation_location: std::panic::Location::caller().into(),
             constructors: Default::default(),
             routes: Default::default(),
+            fallback_request_handler: None,
             nested_blueprints: Default::default(),
             middlewares: Default::default(),
         }
@@ -222,6 +228,46 @@ impl Blueprint {
             blueprint: self,
             route_id,
         }
+    }
+
+    #[track_caller]
+    /// Register a fallback handler to be invoked when an incoming request does **not** match
+    /// any of the routes you registered with [`Blueprint::route`].
+    ///
+    /// If a fallback handler has already been registered, it will be overwritten.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use pavex::{f, blueprint::{Blueprint, router::GET}};
+    /// use pavex::response::Response;
+    ///
+    /// fn path_handler() -> Response {
+    ///     // [...]
+    ///     # todo!()
+    /// }
+    /// fn fallback_handler() -> Response {
+    ///     // [...]
+    ///     # todo!()
+    /// }
+    ///
+    /// # fn main() {
+    /// let mut bp = Blueprint::new();
+    /// bp.route(GET, "/path", f!(crate::path_handler));
+    /// // The fallback handler will be invoked for all the requests that don't match `/path`.
+    /// // E.g. `GET /home`, `POST /home`, `GET /home/123`, etc.
+    /// bp.fallback_handler(f!(crate::fallback_handler));
+    /// # }
+    pub fn fallback_handler(&mut self, callable: RawCallable) -> FallbackHandler {
+        let registered = RegisteredFallbackHandler {
+            request_handler: RegisteredCallable {
+                callable: RawCallableIdentifiers::from_raw_callable(callable),
+                location: std::panic::Location::caller().into(),
+            },
+            error_handler: None,
+        };
+        self.fallback_request_handler = Some(registered);
+        FallbackHandler { blueprint: self }
     }
 
     #[track_caller]
