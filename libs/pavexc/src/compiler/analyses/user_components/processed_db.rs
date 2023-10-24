@@ -141,12 +141,18 @@ impl UserComponentDb {
 
     /// Iterate over all the request handler components in the database, returning their id and the
     /// associated `UserComponent`.
+    ///
+    /// It returns both routes (i.e. handlers that are registered against a specific path and method
+    /// guard) and fallback handlers.
     pub fn request_handlers(
         &self,
     ) -> impl Iterator<Item = (UserComponentId, &UserComponent)> + DoubleEndedIterator {
-        self.component_interner
-            .iter()
-            .filter(|(_, c)| matches!(c, UserComponent::RequestHandler { .. }))
+        self.component_interner.iter().filter(|(_, c)| {
+            matches!(
+                c,
+                UserComponent::RequestHandler { .. } | UserComponent::Fallback { .. }
+            )
+        })
     }
 
     /// Iterate over all the wrapping middleware components in the database, returning their id and the

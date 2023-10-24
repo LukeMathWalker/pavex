@@ -6,8 +6,8 @@ use guppy::graph::PackageGraph;
 
 use pavex::blueprint::constructor::CloningStrategy;
 use pavex::blueprint::internals::{
-    NestedBlueprint, RegisteredCallable, RegisteredConstructor, RegisteredRoute,
-    RegisteredWrappingMiddleware,
+    NestedBlueprint, RegisteredCallable, RegisteredConstructor, RegisteredFallback,
+    RegisteredRoute, RegisteredWrappingMiddleware,
 };
 use pavex::blueprint::router::AllowedMethods;
 use pavex::blueprint::{
@@ -282,6 +282,14 @@ impl RawUserComponentDb {
             package_graph,
             diagnostics,
         );
+        if let Some(fallback) = &bp.fallback_request_handler {
+            self.process_fallback(
+                fallback,
+                current_middleware_chain,
+                current_scope_id,
+                scope_graph_builder,
+            );
+        }
         self.process_constructors(&bp.constructors, current_scope_id);
     }
 
@@ -351,6 +359,43 @@ impl RawUserComponentDb {
                 request_handler_id,
             );
         }
+    }
+
+    /// Register with [`RawUserComponentDb`] the fallback that has been
+    /// registered against the provided `Blueprint`, including its error handler
+    /// (if present).  
+    fn process_fallback(
+        &mut self,
+        fallback: &RegisteredFallback,
+        current_middleware_chain: &[UserComponentId],
+        current_scope_id: ScopeId,
+        scope_graph_builder: &mut ScopeGraphBuilder,
+    ) {
+        const ROUTE_LIFECYCLE: Lifecycle = Lifecycle::RequestScoped;
+
+        let raw_callable_identifiers_id = self
+            .identifiers_interner
+            .get_or_intern(fallback.request_handler.callable.clone());
+        let route_scope_id = scope_graph_builder.add_scope(current_scope_id, None);
+        let component = UserComponent::Fallback {
+            raw_callable_identifiers_id,
+            scope_id: route_scope_id,
+        };
+        let fallback_id = self.intern_component(
+            component,
+            ROUTE_LIFECYCLE,
+            fallback.request_handler.location.to_owned(),
+        );
+
+        self.handler_id2middleware_ids
+            .insert(fallback_id, current_middleware_chain.to_owned());
+
+        self.process_error_handler(
+            &fallback.error_handler,
+            ROUTE_LIFECYCLE,
+            current_scope_id,
+            fallback_id,
+        );
     }
 
     /// Register with [`RawUserComponentDb`] all the routes that have been

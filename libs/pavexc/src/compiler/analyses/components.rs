@@ -169,6 +169,7 @@ pub(crate) struct ComponentDb {
     handler_id2middleware_ids: HashMap<ComponentId, Vec<ComponentId>>,
     error_handler_id2error_handler: HashMap<ComponentId, ErrorHandler>,
     router: BTreeMap<RouterKey, ComponentId>,
+    fallback_handlers: BTreeMap<ScopeId, ComponentId>,
     into_response: PathType,
 }
 
@@ -208,6 +209,7 @@ impl ComponentDb {
             handler_id2middleware_ids: Default::default(),
             error_handler_id2error_handler: Default::default(),
             router: Default::default(),
+            fallback_handlers: Default::default(),
             into_response,
         };
 
@@ -471,9 +473,13 @@ impl ComponentDb {
         for user_component_id in request_handler_ids {
             let user_component = &self.user_component_db[user_component_id];
             let callable = &computation_db[user_component_id];
-            let UserComponent::RequestHandler { router_key, .. } = user_component else {
-                unreachable!()
-            };
+            // Fallback handlers don't have a router key.
+            let router_key =
+                if let UserComponent::RequestHandler { router_key, .. } = user_component {
+                    Some(router_key)
+                } else {
+                    None
+                };
             match RequestHandler::new(Cow::Borrowed(callable)) {
                 Err(e) => {
                     Self::invalid_request_handler(
@@ -491,7 +497,12 @@ impl ComponentDb {
                         .interner
                         .get_or_intern(Component::RequestHandler { user_component_id });
                     user_component_id2component_id.insert(user_component_id, handler_id);
-                    self.router.insert(router_key.to_owned(), handler_id);
+                    if let Some(router_key) = router_key {
+                        self.router.insert(router_key.to_owned(), handler_id);
+                    } else {
+                        self.fallback_handlers
+                            .insert(user_component.scope_id(), handler_id);
+                    }
                     let lifecycle = Lifecycle::RequestScoped;
                     let scope_id = self.scope_id(handler_id);
                     self.id2lifecycle.insert(handler_id, lifecycle);
@@ -890,6 +901,11 @@ impl ComponentDb {
     /// The mapping from a route to its dedicated request handler.
     pub fn router(&self) -> &BTreeMap<RouterKey, ComponentId> {
         &self.router
+    }
+
+    /// The mapping from a scope to its dedicated fallback handler.
+    pub fn fallbacks(&self) -> &BTreeMap<ScopeId, ComponentId> {
+        &self.fallback_handlers
     }
 
     /// Iterate over all the components in the database alongside their ids.

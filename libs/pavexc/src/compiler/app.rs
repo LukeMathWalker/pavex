@@ -127,6 +127,27 @@ impl App {
             &krate_collection,
             &mut diagnostics,
         );
+        let _scope_id2fallback_pipeline = {
+            let scope_id2fallback_id = component_db.fallbacks().clone();
+            let mut scope_id2fallback_pipeline =
+                IndexMap::with_capacity(scope_id2fallback_id.len());
+            for (i, (scope_id, handler_id)) in scope_id2fallback_id.into_iter().enumerate() {
+                let Ok(processing_pipeline) = RequestHandlerPipeline::new(
+                    handler_id,
+                    format!("fallback_{i}"),
+                    &mut computation_db,
+                    &mut component_db,
+                    &mut constructible_db,
+                    &package_graph,
+                    &krate_collection,
+                    &mut diagnostics,
+                ) else {
+                    continue;
+                };
+                scope_id2fallback_pipeline.insert(scope_id.to_owned(), processing_pipeline);
+            }
+            scope_id2fallback_pipeline
+        };
         exit_on_errors!(diagnostics);
 
         let runtime_singletons: IndexSet<(ResolvedType, ComponentId)> =
@@ -421,11 +442,6 @@ fn codegen_deps(package_graph: &PackageGraph) -> HashMap<String, guppy::PackageI
         .find(|p| p.name() == "http" && p.version().major == 0 && p.version().minor == 2)
         .expect("Expected to find `http@0.2` in the package graph, but it was not there.")
         .id();
-    let hyper = package_graph
-        .packages()
-        .find(|p| p.name() == "hyper" && p.version().major == 1)
-        .expect("Expected to find `hyper@1` in the package graph, but it was not there.")
-        .id();
     let thiserror = package_graph
         .packages()
         .find(|p| p.name() == "thiserror" && p.version().major == 1)
@@ -434,7 +450,6 @@ fn codegen_deps(package_graph: &PackageGraph) -> HashMap<String, guppy::PackageI
 
     name2id.insert("http".to_string(), http.clone());
     name2id.insert("pavex".to_string(), pavex.clone());
-    name2id.insert("hyper".to_string(), hyper.clone());
     name2id.insert("thiserror".to_string(), thiserror.clone());
     name2id
 }

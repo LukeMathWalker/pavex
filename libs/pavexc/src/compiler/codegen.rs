@@ -52,7 +52,6 @@ pub(crate) fn codegen_app(
     let pavex_import_name = get_codegen_dep_import_name("pavex");
     let http_import_name = get_codegen_dep_import_name("http");
     let thiserror_import_name = get_codegen_dep_import_name("thiserror");
-    let _hyper_import_name = get_codegen_dep_import_name("hyper");
 
     let application_state_def =
         define_application_state(runtime_singleton_bindings, package_id2name);
