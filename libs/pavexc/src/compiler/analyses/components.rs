@@ -623,7 +623,10 @@ impl ComponentDb {
                         fallible_callable_identifiers_id,
                         ..
                     } => Some((id, *fallible_callable_identifiers_id)),
-                    RequestHandler { .. } | Constructor { .. } | WrappingMiddleware { .. } => None,
+                    Fallback { .. }
+                    | RequestHandler { .. }
+                    | Constructor { .. }
+                    | WrappingMiddleware { .. } => None,
                 }
             })
             .collect::<Vec<_>>();

@@ -35,6 +35,10 @@ pub enum UserComponent {
         router_key: RouterKey,
         scope_id: ScopeId,
     },
+    Fallback {
+        raw_callable_identifiers_id: RawCallableIdentifierId,
+        scope_id: ScopeId,
+    },
     ErrorHandler {
         raw_callable_identifiers_id: RawCallableIdentifierId,
         fallible_callable_identifiers_id: UserComponentId,
@@ -60,6 +64,7 @@ impl UserComponent {
             UserComponent::ErrorHandler { .. } => CallableType::ErrorHandler,
             UserComponent::Constructor { .. } => CallableType::Constructor,
             UserComponent::WrappingMiddleware { .. } => CallableType::WrappingMiddleware,
+            UserComponent::Fallback { .. } => CallableType::RequestHandler,
         }
     }
 
@@ -68,6 +73,10 @@ impl UserComponent {
     pub fn raw_callable_identifiers_id(&self) -> RawCallableIdentifierId {
         match self {
             UserComponent::WrappingMiddleware {
+                raw_callable_identifiers_id,
+                ..
+            }
+            | UserComponent::Fallback {
                 raw_callable_identifiers_id,
                 ..
             }
@@ -90,6 +99,7 @@ impl UserComponent {
     pub fn scope_id(&self) -> ScopeId {
         match self {
             UserComponent::RequestHandler { scope_id, .. }
+            | UserComponent::Fallback { scope_id, .. }
             | UserComponent::ErrorHandler { scope_id, .. }
             | UserComponent::WrappingMiddleware { scope_id, .. }
             | UserComponent::Constructor { scope_id, .. } => *scope_id,
@@ -519,7 +529,7 @@ impl RawUserComponentDb {
                         id
                     );
                 }
-                UserComponent::RequestHandler { .. } => {
+                UserComponent::Fallback { .. } | UserComponent::RequestHandler { .. } => {
                     assert!(
                         self.handler_id2middleware_ids.get(&id).is_some(),
                         "The middleware chain is missing for the user-registered request handler #{:?}",
