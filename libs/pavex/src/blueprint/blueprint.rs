@@ -1,5 +1,5 @@
-use crate::blueprint::internals::RegisteredFallbackHandler;
-use crate::blueprint::router::FallbackHandler;
+use crate::blueprint::internals::RegisteredFallback;
+use crate::blueprint::router::Fallback;
 
 use super::constructor::{Constructor, Lifecycle};
 use super::internals::{
@@ -32,7 +32,7 @@ pub struct Blueprint {
     /// All registered routes, in the order they were registered.
     pub routes: Vec<RegisteredRoute>,
     /// The fallback request handler, if any.
-    pub fallback_request_handler: Option<RegisteredFallbackHandler>,
+    pub fallback_request_handler: Option<RegisteredFallback>,
     /// All blueprints nested under this one, in the order they were nested.
     pub nested_blueprints: Vec<NestedBlueprint>,
 }
@@ -256,10 +256,10 @@ impl Blueprint {
     /// bp.route(GET, "/path", f!(crate::path_handler));
     /// // The fallback handler will be invoked for all the requests that don't match `/path`.
     /// // E.g. `GET /home`, `POST /home`, `GET /home/123`, etc.
-    /// bp.fallback_handler(f!(crate::fallback_handler));
+    /// bp.fallback(f!(crate::fallback_handler));
     /// # }
-    pub fn fallback_handler(&mut self, callable: RawCallable) -> FallbackHandler {
-        let registered = RegisteredFallbackHandler {
+    pub fn fallback(&mut self, callable: RawCallable) -> Fallback {
+        let registered = RegisteredFallback {
             request_handler: RegisteredCallable {
                 callable: RawCallableIdentifiers::from_raw_callable(callable),
                 location: std::panic::Location::caller().into(),
@@ -267,7 +267,7 @@ impl Blueprint {
             error_handler: None,
         };
         self.fallback_request_handler = Some(registered);
-        FallbackHandler { blueprint: self }
+        Fallback { blueprint: self }
     }
 
     #[track_caller]

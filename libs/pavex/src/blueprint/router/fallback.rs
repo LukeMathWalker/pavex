@@ -4,14 +4,14 @@ use crate::blueprint::{
     Blueprint,
 };
 
-/// The type returned by [`Blueprint::fallback_handler`].
+/// The type returned by [`Blueprint::fallback`].
 ///
 /// It allows you to further configure the behaviour of the registered handler.
-pub struct FallbackHandler<'a> {
+pub struct Fallback<'a> {
     pub(crate) blueprint: &'a mut Blueprint,
 }
 
-impl<'a> FallbackHandler<'a> {
+impl<'a> Fallback<'a> {
     #[track_caller]
     /// Register an error handler.
     ///
@@ -42,7 +42,7 @@ impl<'a> FallbackHandler<'a> {
     ///
     /// # fn main() {
     /// let mut bp = Blueprint::new();
-    /// bp.fallback_handler(f!(crate::fallback))
+    /// bp.fallback(f!(crate::fallback))
     ///     .error_handler(f!(crate::error_to_response));
     /// # }
     /// ```
