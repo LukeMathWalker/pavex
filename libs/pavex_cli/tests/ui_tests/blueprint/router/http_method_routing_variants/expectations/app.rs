@@ -15,27 +15,27 @@ pub async fn build_application_state() -> crate::ApplicationState {
 pub fn run(
     server_builder: pavex::server::Server,
     application_state: ApplicationState,
-) -> Result<pavex::server::ServerHandle, pavex::Error> {
+) -> pavex::server::ServerHandle {
     let server_state = std::sync::Arc::new(ServerState {
-        router: build_router().map_err(pavex::Error::new)?,
+        router: build_router(),
         application_state,
     });
-    Ok(server_builder.serve(route_request, server_state))
+    server_builder.serve(route_request, server_state)
 }
-fn build_router() -> Result<pavex::routing::Router<u32>, pavex::routing::InsertError> {
+fn build_router() -> pavex::routing::Router<u32> {
     let mut router = pavex::routing::Router::new();
-    router.insert("/any", 0u32)?;
-    router.insert("/connect", 1u32)?;
-    router.insert("/delete", 2u32)?;
-    router.insert("/get", 3u32)?;
-    router.insert("/head", 4u32)?;
-    router.insert("/mixed", 5u32)?;
-    router.insert("/options", 6u32)?;
-    router.insert("/patch", 7u32)?;
-    router.insert("/post", 8u32)?;
-    router.insert("/put", 9u32)?;
-    router.insert("/trace", 10u32)?;
-    Ok(router)
+    router.insert("/any", 0u32).unwrap();
+    router.insert("/connect", 1u32).unwrap();
+    router.insert("/delete", 2u32).unwrap();
+    router.insert("/get", 3u32).unwrap();
+    router.insert("/head", 4u32).unwrap();
+    router.insert("/mixed", 5u32).unwrap();
+    router.insert("/options", 6u32).unwrap();
+    router.insert("/patch", 7u32).unwrap();
+    router.insert("/post", 8u32).unwrap();
+    router.insert("/put", 9u32).unwrap();
+    router.insert("/trace", 10u32).unwrap();
+    router
 }
 async fn route_request(
     request: http::Request<pavex::hyper::body::Incoming>,

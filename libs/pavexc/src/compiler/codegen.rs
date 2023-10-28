@@ -150,12 +150,12 @@ fn server_startup(pavex: &Ident) -> ItemFn {
         pub fn run(
             server_builder: #pavex::server::Server,
             application_state: ApplicationState
-        ) -> Result<#pavex::server::ServerHandle, pavex::Error> {
+        ) -> #pavex::server::ServerHandle {
             let server_state = std::sync::Arc::new(ServerState {
-                router: build_router().map_err(#pavex::Error::new)?,
+                router: build_router(),
                 application_state
             });
-            Ok(server_builder.serve(route_request, server_state))
+            server_builder.serve(route_request, server_state)
         }
     })
     .unwrap()
@@ -264,15 +264,19 @@ fn get_router_init(route_id2path: &BiBTreeMap<u32, String>, pavex_import_name: &
     for (route_id, path) in route_id2path {
         router_init = quote! {
             #router_init
-            router.insert(#path, #route_id)?;
+            router.insert(#path, #route_id).unwrap();
         };
     }
     syn::parse2(quote! {
-        fn build_router() -> Result<#pavex_import_name::routing::Router<u32>, #pavex_import_name::routing::InsertError> {
+        fn build_router() -> #pavex_import_name::routing::Router<u32> {
+            // Pavex has validated at compile-time that all route paths are valid
+            // and that there are no conflicts, therefore we can safely unwrap
+            // every `insert`.
             #router_init
-            Ok(router)
+            router
         }
-    }).unwrap()
+    })
+    .unwrap()
 }
 
 fn get_request_dispatcher(

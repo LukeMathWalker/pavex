@@ -15,17 +15,17 @@ pub async fn build_application_state() -> crate::ApplicationState {
 pub fn run(
     server_builder: pavex::server::Server,
     application_state: ApplicationState,
-) -> Result<pavex::server::ServerHandle, pavex::Error> {
+) -> pavex::server::ServerHandle {
     let server_state = std::sync::Arc::new(ServerState {
-        router: build_router().map_err(pavex::Error::new)?,
+        router: build_router(),
         application_state,
     });
-    Ok(server_builder.serve(route_request, server_state))
+    server_builder.serve(route_request, server_state)
 }
-fn build_router() -> Result<pavex::routing::Router<u32>, pavex::routing::InsertError> {
+fn build_router() -> pavex::routing::Router<u32> {
     let mut router = pavex::routing::Router::new();
-    router.insert("/home", 0u32)?;
-    Ok(router)
+    router.insert("/home", 0u32).unwrap();
+    router
 }
 async fn route_request(
     request: http::Request<pavex::hyper::body::Incoming>,
