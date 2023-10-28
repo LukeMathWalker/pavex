@@ -12,7 +12,17 @@ use crate::diagnostic::{
 
 /// Examine the registered paths and methods guards to make sure that we don't
 /// have any conflicts—i.e. multiple handlers registered for the same path+method combination.
-pub(super) fn validate_router(
+pub(super) fn build_router(
+    raw_user_component_db: &RawUserComponentDb,
+    package_graph: &PackageGraph,
+    diagnostics: &mut Vec<miette::Error>,
+) {
+    detect_method_conflicts(raw_user_component_db, package_graph, diagnostics);
+}
+
+/// Examine the registered paths and methods guards to make sure that we don't
+/// have any conflicts—i.e. multiple handlers registered for the same path+method combination.
+fn detect_method_conflicts(
     raw_user_component_db: &RawUserComponentDb,
     package_graph: &PackageGraph,
     diagnostics: &mut Vec<miette::Error>,

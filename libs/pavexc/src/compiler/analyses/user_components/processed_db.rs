@@ -12,7 +12,7 @@ use pavex::blueprint::{
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::user_components::raw_db::RawUserComponentDb;
 use crate::compiler::analyses::user_components::resolved_paths::ResolvedPathDb;
-use crate::compiler::analyses::user_components::router_validation::validate_router;
+use crate::compiler::analyses::user_components::router_validation::build_router;
 use crate::compiler::analyses::user_components::{ScopeGraph, UserComponent, UserComponentId};
 use crate::compiler::interner::Interner;
 use crate::compiler::resolvers::CallableResolutionError;
@@ -83,7 +83,7 @@ impl UserComponentDb {
         }
 
         let (raw_db, scope_graph) = RawUserComponentDb::build(bp, package_graph, diagnostics);
-        validate_router(&raw_db, package_graph, diagnostics);
+        build_router(&raw_db, package_graph, diagnostics);
         let resolved_path_db = ResolvedPathDb::build(&raw_db, package_graph, diagnostics);
         exit_on_errors!(diagnostics);
 
