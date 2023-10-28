@@ -641,7 +641,7 @@ impl RawUserComponentDb {
             .map(|s| s.labeled("The path missing a leading '/'".to_string()));
         let path = &route.path;
         let err =
-            anyhow!("All route paths must begin with a forward slash, `/`.\n`{path}` doesn't.",);
+            anyhow!("Route paths must either be empty or begin with a forward slash, `/`.\n`{path}` is not empty and it doesn't begin with a `/`.",);
         let diagnostic = CompilerDiagnostic::builder(source, err)
             .optional_label(label)
             .help(format!("Add a '/' at the beginning of the route path to fix this error: use `/{path}` instead of `{path}`."));

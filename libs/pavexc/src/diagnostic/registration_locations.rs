@@ -38,7 +38,7 @@ pub(crate) fn get_f_macro_invocation_span(
     match node {
         Call::MethodCall(node) => {
             let argument = match node.method.to_string().as_str() {
-                "error_handler" | "constructor" | "wrap" => node.args.first(),
+                "error_handler" | "constructor" | "wrap" | "fallback" => node.args.first(),
                 "route" => node.args.iter().nth(2),
                 s => {
                     tracing::trace!(
