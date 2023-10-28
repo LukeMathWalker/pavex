@@ -1107,6 +1107,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ed1202b2a6f884ae56f04cff409ab315c5ce26b5e58d7412e484f01fd52f52ef"
 
 [[package]]
+name = "matchit"
+version = "0.7.3"
+source = "git+https://github.com/LukeMathWalker/matchit?branch=catchall-without-prefix-slash#25823f9c807eebe1cdee5d564a5286faba93bcad"
+
+[[package]]
 name = "memchr"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1402,7 +1407,7 @@ dependencies = [
  "hyper-util",
  "indexmap 1.9.3",
  "insta",
- "matchit",
+ "matchit 0.7.2",
  "mime",
  "paste",
  "pavex_macros",
@@ -1514,7 +1519,7 @@ dependencies = [
  "indexmap 1.9.3",
  "itertools",
  "la-arena",
- "matchit",
+ "matchit 0.7.3",
  "miette",
  "num_cpus",
  "once_cell",

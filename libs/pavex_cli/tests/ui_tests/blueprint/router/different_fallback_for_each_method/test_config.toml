@@ -1,0 +1,4 @@
+description = "pavex should return an error if an ANY method guard and a specific method guard are registered for the same path"
+
+[expectations]
+codegen = "fail"

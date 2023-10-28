@@ -154,6 +154,13 @@ pub(super) struct RawUserComponentDb {
     ///
     /// Invariants: there is an entry for every single request handler.
     pub(super) handler_id2middleware_ids: HashMap<UserComponentId, Vec<UserComponentId>>,
+    /// Associate each user-registered fallback with the path prefix of the `Blueprint`
+    /// it was registered against.
+    /// If it was registered against a deeply nested `Blueprint`, it contains the **concatenated**
+    /// path prefixes of all the `Blueprint`s that it was nested under.
+    ///
+    /// Invariants: there is an entry for every single fallback.
+    pub(super) fallback_id2path_prefix: HashMap<UserComponentId, Option<String>>,
 }
 
 // The public `build` method alongside its private supporting routines.
@@ -172,6 +179,7 @@ impl RawUserComponentDb {
             id2lifecycle: HashMap::new(),
             constructor_id2cloning_strategy: HashMap::new(),
             handler_id2middleware_ids: HashMap::new(),
+            fallback_id2path_prefix: HashMap::new(),
         };
         let mut scope_graph_builder = ScopeGraph::builder(bp.creation_location.clone());
         let root_scope_id = scope_graph_builder.root_scope_id();
@@ -277,7 +285,7 @@ impl RawUserComponentDb {
             &bp.routes,
             current_middleware_chain,
             current_scope_id,
-            path_prefix,
+            path_prefix.clone(),
             scope_graph_builder,
             package_graph,
             diagnostics,
@@ -285,6 +293,7 @@ impl RawUserComponentDb {
         if let Some(fallback) = &bp.fallback_request_handler {
             self.process_fallback(
                 fallback,
+                path_prefix,
                 current_middleware_chain,
                 current_scope_id,
                 scope_graph_builder,
@@ -367,6 +376,7 @@ impl RawUserComponentDb {
     fn process_fallback(
         &mut self,
         fallback: &RegisteredFallback,
+        path_prefix: Option<&str>,
         current_middleware_chain: &[UserComponentId],
         current_scope_id: ScopeId,
         scope_graph_builder: &mut ScopeGraphBuilder,
@@ -389,6 +399,8 @@ impl RawUserComponentDb {
 
         self.handler_id2middleware_ids
             .insert(fallback_id, current_middleware_chain.to_owned());
+        self.fallback_id2path_prefix
+            .insert(fallback_id, path_prefix.map(|s| s.to_owned()));
 
         self.process_error_handler(
             &fallback.error_handler,
