@@ -5,7 +5,7 @@ use std::fmt::Write;
 /// E.g. `a, b, c and d`.
 pub(crate) fn comma_separated_list<'a, T, I>(
     mut buffer: impl Write,
-    iter: I,
+    mut iter: I,
     f: impl Fn(&'a T) -> String,
     conjunction: &str,
 ) -> Result<(), std::fmt::Error>
@@ -14,6 +14,10 @@ where
     I: Iterator<Item = &'a T> + ExactSizeIterator,
 {
     let length = iter.len();
+    if length == 1 {
+        write!(buffer, "{}", &f(iter.next().unwrap()))?;
+        return Ok(());
+    }
     for (i, item) in iter.enumerate() {
         if i == length.saturating_sub(1) {
             write!(buffer, " {conjunction} ")?;

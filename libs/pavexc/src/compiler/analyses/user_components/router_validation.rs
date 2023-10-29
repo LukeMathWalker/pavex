@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use anyhow::anyhow;
 use bimap::BiHashMap;
@@ -16,6 +16,7 @@ use crate::diagnostic::{
     AnnotatedSnippet, CompilerDiagnostic, LocationExt, OptionalSourceSpanExt, SourceSpanExt,
     ZeroBasedOrdinal,
 };
+use crate::utils::comma_separated_list;
 
 pub(crate) struct Router {
     #[allow(dead_code)]
@@ -31,10 +32,16 @@ impl Router {
     ) -> Result<Self, ()> {
         let path_router =
             Self::detect_path_conflicts(raw_user_component_db, package_graph, diagnostics)?;
-        let _fallback_router = Self::fallback_router(
+        let route_id2fallback_id = Self::fallback_router(
             path_router.clone(),
             raw_user_component_db,
             scope_graph,
+            package_graph,
+            diagnostics,
+        )?;
+        Self::check_method_not_allowed_fallbacks(
+            route_id2fallback_id,
+            raw_user_component_db,
             package_graph,
             diagnostics,
         )?;
@@ -81,9 +88,15 @@ impl Router {
         }
     }
 
-    /// Determine, for each request handler, which fallback should be used if a request matches
-    /// a registered path but doesn't match any of the user-registered method guards for that
-    /// path.
+    /// Determine, for each request handler, which fallback should be used if an incoming request
+    /// doesn't match any of the user-registered routes.
+    ///
+    /// There are two kinds of "misses":
+    /// 1. there is a registered route that matches the incoming request path, but the method doesn't match
+    ///    any of the methods registered for that route.
+    /// 2. there is no registered route that matches the incoming request path.
+    ///
+    /// This method only looks at the 2nd case and returns a mapping from request handlers to fallbacks.
     fn fallback_router(
         mut validation_router: matchit::Router<()>,
         raw_user_component_db: &RawUserComponentDb,
@@ -93,7 +106,7 @@ impl Router {
     ) -> Result<BTreeMap<UserComponentId, Option<UserComponentId>>, ()> {
         let n_diagnostics = diagnostics.len();
 
-        // For every scope, there is at most one fallback.
+        // For every scope there is at most one fallback.
         let scope_id2fallback_id = {
             let mut scope_id2fallback_id = BiHashMap::new();
             for (id, component) in raw_user_component_db.iter() {
@@ -113,41 +126,42 @@ impl Router {
         let scope_based_fallback_router = FallbackTree::new(&scope_id2fallback_id, scope_graph);
 
         let mut path_based_fallback_router = matchit::Router::new();
-        'outer: for (fallback_id, component) in raw_user_component_db.iter() {
+        for (fallback_id, component) in raw_user_component_db.iter() {
             let UserComponent::Fallback { .. } = component else {
                 continue;
             };
             let path_prefix = &raw_user_component_db.fallback_id2path_prefix[&fallback_id];
             // If there is a nested blueprint with a path prefix, we register a path-based fallback
             // for all incoming requests that match that prefix.
-            if let Some(path_prefix) = path_prefix {
-                let trailing_capture = prefix_ends_with_capture(path_prefix);
-                let fallback_path = match trailing_capture {
-                    None => {
-                        format!("{path_prefix}*catch_all")
-                    }
-                    Some(Capture::CatchAll(_)) => {
-                        continue 'outer;
-                    }
-                    Some(Capture::Parameter(param)) => {
-                        let stripped = path_prefix.strip_suffix(&param).unwrap();
-                        format!("{stripped}*catch_all")
-                    }
-                };
-                if let Err(e) = validation_router.insert(fallback_path.clone(), ()) {
-                    if let InsertError::Conflict { .. } = e {
-                        // There is already a user-registered route that serves as catch-all
-                        // therefore we don't need to actually register this fallback.
-                        // TODO: should we warn the user about this?
-                        continue;
-                    } else {
-                        unreachable!()
-                    }
+            let Some(path_prefix) = path_prefix else {
+                continue;
+            };
+            let trailing_capture = prefix_ends_with_capture(path_prefix);
+            let fallback_path = match trailing_capture {
+                None => {
+                    format!("{path_prefix}*catch_all")
                 }
-                path_based_fallback_router
-                    .insert(fallback_path, fallback_id)
-                    .unwrap();
+                Some(Capture::CatchAll(_)) => {
+                    continue;
+                }
+                Some(Capture::Parameter(param)) => {
+                    let stripped = path_prefix.strip_suffix(&param).unwrap();
+                    format!("{stripped}*catch_all")
+                }
+            };
+            if let Err(e) = validation_router.insert(fallback_path.clone(), ()) {
+                if let InsertError::Conflict { .. } = e {
+                    // There is already a user-registered route that serves as catch-all
+                    // therefore we don't need to actually register this fallback.
+                    // TODO: should we warn the user about this?
+                    continue;
+                } else {
+                    unreachable!()
+                }
             }
+            path_based_fallback_router
+                .insert(fallback_path, fallback_id)
+                .unwrap();
         }
 
         let mut handler_id2fallback_id = BTreeMap::new();
@@ -198,6 +212,98 @@ impl Router {
 
         if n_diagnostics == diagnostics.len() {
             Ok(handler_id2fallback_id)
+        } else {
+            Err(())
+        }
+    }
+
+    /// There are two kinds of routing "misses":
+    /// 1. there is a registered route that matches the incoming request path, but the method doesn't match
+    ///    any of the methods registered for that route.
+    /// 2. there is no registered route that matches the incoming request path.
+    ///
+    /// This method checks the first case: do all registered routes for a certain path
+    /// expect the same fallback when the method doesn't match?
+    fn check_method_not_allowed_fallbacks(
+        route_id2fallback_id: BTreeMap<UserComponentId, Option<UserComponentId>>,
+        raw_user_component_db: &RawUserComponentDb,
+        package_graph: &PackageGraph,
+        diagnostics: &mut Vec<miette::Error>,
+    ) -> Result<(), ()> {
+        let n_diagnostics = diagnostics.len();
+
+        let mut method_aware_router = matchit::Router::<u32>::new();
+        // Route id <> (fallback_id <> (handler_id <> method guards))
+        let mut map: BTreeMap<
+            u32,
+            BTreeMap<Option<UserComponentId>, BTreeMap<UserComponentId, BTreeSet<String>>>,
+        > = BTreeMap::default();
+        let mut next_route_id = 0;
+        for (handler_id, component) in raw_user_component_db.iter() {
+            let UserComponent::RequestHandler { router_key, .. } = component else {
+                continue;
+            };
+            let method_guard = match &router_key.method_guard {
+                None => {
+                    // `None` stands for the `ANY` guard, it matches all methods
+                    // and we have already checked that we don't have any overlap when it comes
+                    // to method routing, so we can safely ignore it since we won't have any
+                    // other entry for this path.
+                    continue;
+                }
+                Some(g) => g,
+            };
+            let route_id = match method_aware_router.at_mut(router_key.path.as_str()) {
+                Ok(match_) => *match_.value,
+                Err(_) => {
+                    let route_id = next_route_id;
+                    next_route_id += 1;
+                    method_aware_router
+                        .insert(router_key.path.clone(), route_id)
+                        .unwrap();
+                    route_id
+                }
+            };
+            let fallback_id = route_id2fallback_id[&handler_id];
+            map.entry(route_id)
+                .or_default()
+                .entry(fallback_id)
+                .or_default()
+                .insert(handler_id, method_guard.clone());
+        }
+        for fallback_id2handler_id in map.values() {
+            if fallback_id2handler_id.len() == 1 {
+                // Good: there is only one fallback for all handlers registered against this route.
+                continue;
+            }
+
+            let methods_without_handler = {
+                let mut set: BTreeSet<String> =
+                    METHODS.into_iter().map(ToOwned::to_owned).collect();
+                for handler_id2methods in fallback_id2handler_id.values() {
+                    for methods in handler_id2methods.values() {
+                        for method in methods {
+                            set.remove(method);
+                        }
+                    }
+                }
+                set
+            };
+            if methods_without_handler.is_empty() {
+                // Good: we have a handler for each method, therefore the fallbacks don't matter.
+                continue;
+            }
+            push_fallback_method_ambiguity_diagnostic(
+                methods_without_handler,
+                fallback_id2handler_id,
+                raw_user_component_db,
+                package_graph,
+                diagnostics,
+            );
+        }
+
+        if n_diagnostics == diagnostics.len() {
+            Ok(())
         } else {
             Err(())
         }
@@ -334,6 +440,10 @@ pub(super) fn build_router(
     );
 }
 
+static METHODS: [&str; 9] = [
+    "GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS", "CONNECT", "TRACE",
+];
+
 /// Examine the registered paths and methods guards to make sure that we don't
 /// have any conflicts—i.e. multiple handlers registered for the same path+method combination.
 fn detect_method_conflicts(
@@ -341,9 +451,6 @@ fn detect_method_conflicts(
     package_graph: &PackageGraph,
     diagnostics: &mut Vec<miette::Error>,
 ) {
-    let methods = [
-        "GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS", "CONNECT", "TRACE",
-    ];
     let mut path2method2component_id = IndexMap::<_, Vec<_>>::new();
     for (id, component) in raw_user_component_db.iter() {
         if let UserComponent::RequestHandler { router_key, .. } = component {
@@ -355,7 +462,7 @@ fn detect_method_conflicts(
     }
 
     for (path, routes) in path2method2component_id.into_iter() {
-        for method in methods {
+        for method in METHODS {
             let mut relevant_handler_ids = IndexSet::new();
             for (guard, id) in &routes {
                 match guard {
@@ -461,6 +568,124 @@ fn push_fallback_ambiguity_diagnostic(
             "You can fix this by registering `{route_repr}` against the nested blueprint \
             with `{path_prefix}` as prefix. All `{path_prefix}`-prefixed routes would then \
             be using `{path_fallback}` as fallback."
+        ));
+    diagnostics.push(diagnostic.build().into());
+}
+
+fn push_fallback_method_ambiguity_diagnostic(
+    methods_without_handler: BTreeSet<String>,
+    fallback_id2handler_id: &BTreeMap<
+        Option<UserComponentId>,
+        BTreeMap<UserComponentId, BTreeSet<String>>,
+    >,
+    raw_user_component_db: &RawUserComponentDb,
+    package_graph: &PackageGraph,
+    diagnostics: &mut Vec<miette::Error>,
+) {
+    use std::fmt::Write;
+
+    let request_handler_id = *fallback_id2handler_id
+        .values()
+        .next()
+        .unwrap()
+        .keys()
+        .next()
+        .unwrap();
+    let UserComponent::RequestHandler { router_key, .. } =
+        &raw_user_component_db[request_handler_id]
+    else {
+        unreachable!()
+    };
+    let route_path = router_key.path.as_str();
+    let mut err_msg = format!(
+        "Routing logic can't be ambiguous.\n\
+        You registered:\n"
+    );
+    let mut first_snippet: Option<AnnotatedSnippet> = None;
+    let mut annotated_snippets = Vec::with_capacity(fallback_id2handler_id.len());
+    for (i, (fallback_id, handler_id2methods)) in fallback_id2handler_id.iter().enumerate() {
+        let fallback_path = if let Some(fallback_id) = fallback_id {
+            let UserComponent::Fallback {
+                raw_callable_identifiers_id,
+                ..
+            } = &raw_user_component_db[*fallback_id]
+            else {
+                unreachable!()
+            };
+            let location = raw_user_component_db.get_location(*fallback_id);
+            let source = match location.source_file(package_graph) {
+                Ok(s) => s,
+                Err(e) => {
+                    diagnostics.push(e.into());
+                    return;
+                }
+            };
+            let label = diagnostic::get_f_macro_invocation_span(&source, location)
+                .labeled(format!("The {} fallback", ZeroBasedOrdinal::from(i)));
+            let snippet = AnnotatedSnippet::new_optional(source, label);
+            if first_snippet.is_none() {
+                first_snippet = Some(snippet);
+            } else {
+                annotated_snippets.push(snippet);
+            }
+            let fallback_path = raw_user_component_db.identifiers_interner
+                [*raw_callable_identifiers_id]
+                .fully_qualified_path()
+                .join("::");
+            format!("`{fallback_path}`")
+        } else {
+            "the default framework fallback".into()
+        };
+
+        let handler_methods: Vec<_> = handler_id2methods.values().flat_map(|s| s.iter()).collect();
+        write!(
+            &mut err_msg,
+            "- {fallback_path} as the fallback handler for your",
+        )
+        .unwrap();
+        if handler_methods.len() == 1 {
+            let handler_method = handler_methods[0];
+            writeln!(&mut err_msg, " `{handler_method} {route_path}` route.",).unwrap();
+        } else {
+            let handler_methods = {
+                let mut buffer = String::new();
+                comma_separated_list(
+                    &mut buffer,
+                    handler_methods.into_iter(),
+                    ToOwned::to_owned,
+                    "or",
+                )
+                .unwrap();
+                buffer
+            };
+            writeln!(&mut err_msg, " {handler_methods} `{route_path}` routes.",).unwrap();
+        }
+    }
+
+    let methods_without_handlers = {
+        let mut buffer = String::new();
+        comma_separated_list(
+            &mut buffer,
+            methods_without_handler.iter(),
+            ToOwned::to_owned,
+            "or",
+        )
+        .unwrap();
+        buffer
+    };
+    writeln!(
+        &mut err_msg,
+        "\nI don't know which fallback handler to invoke for incoming `{route_path}` requests \
+             that use a different HTTP method ({methods_without_handlers})!"
+    )
+    .unwrap();
+    let error = anyhow::anyhow!(err_msg);
+    let first_snippet = first_snippet.unwrap();
+    let diagnostic = CompilerDiagnostic::builder(first_snippet.source_code, error)
+        .labels(first_snippet.labels.into_iter())
+        .additional_annotated_snippets(annotated_snippets.into_iter())
+        .help(format!(
+            "Adjust your blueprint to have the same fallback handler for all `{route_path}` routes."
         ));
     diagnostics.push(diagnostic.build().into());
 }
