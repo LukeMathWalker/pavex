@@ -19,8 +19,18 @@ use crate::diagnostic::{
 use crate::utils::comma_separated_list;
 
 pub(crate) struct Router {
-    #[allow(dead_code)]
-    path_router: matchit::Router<()>,
+    /// For each nested blueprint with a prefix, we add a path-based fallback.
+    /// E.g. `/users*catch_all` if we have a nested blueprint with the prefix `/users` and
+    /// and associated fallback.
+    pub(crate) route_path2fallback_id: BTreeMap<String, UserComponentId>,
+    /// For each registered route, the fallback that should be used if the incoming request
+    /// matches its path but not its method guard.
+    ///
+    /// Invariant: if multiple routes share the same path, they have the same associated fallback.
+    pub(crate) route_id2fallback_id: BTreeMap<UserComponentId, Option<UserComponentId>>,
+    /// The fallback to use if no route matches the incoming request.
+    /// If set to `None`, it means that the framework default fallback should be used.
+    pub(crate) root_fallback_id: Option<UserComponentId>,
 }
 
 impl Router {
@@ -30,25 +40,98 @@ impl Router {
         package_graph: &PackageGraph,
         diagnostics: &mut Vec<miette::Error>,
     ) -> Result<Self, ()> {
-        let path_router =
+        Self::detect_method_conflicts(raw_user_component_db, package_graph, diagnostics)?;
+        let runtime_router =
             Self::detect_path_conflicts(raw_user_component_db, package_graph, diagnostics)?;
-        let route_id2fallback_id = Self::fallback_router(
-            path_router.clone(),
+        let route_id2fallback_id = Self::assign_fallbacks(
+            runtime_router.clone(),
             raw_user_component_db,
             scope_graph,
             package_graph,
             diagnostics,
         )?;
         Self::check_method_not_allowed_fallbacks(
-            route_id2fallback_id,
+            &route_id2fallback_id,
             raw_user_component_db,
             package_graph,
             diagnostics,
         )?;
 
-        Ok(Self { path_router })
+        Ok(Self {
+            route_path2fallback_id: Default::default(),
+            route_id2fallback_id,
+            root_fallback_id: None,
+        })
     }
 
+    /// Examine the registered paths and methods guards to make sure that we don't
+    /// have any conflicts—i.e. multiple handlers registered for the same path+method combination.
+    fn detect_method_conflicts(
+        raw_user_component_db: &RawUserComponentDb,
+        package_graph: &PackageGraph,
+        diagnostics: &mut Vec<miette::Error>,
+    ) -> Result<(), ()> {
+        let n_diagnostics = diagnostics.len();
+
+        let mut path2method2component_id = IndexMap::<_, Vec<_>>::new();
+        for (id, component) in raw_user_component_db.iter() {
+            if let UserComponent::RequestHandler { router_key, .. } = component {
+                path2method2component_id
+                    .entry(&router_key.path)
+                    .or_default()
+                    .push((&router_key.method_guard, id));
+            }
+        }
+
+        for (path, routes) in path2method2component_id.into_iter() {
+            for method in METHODS {
+                let mut relevant_handler_ids = IndexSet::new();
+                for (guard, id) in &routes {
+                    match guard {
+                        // `None` stands for the `ANY` guard, it matches all methods
+                        None => {
+                            relevant_handler_ids.insert(*id);
+                        }
+                        Some(method_guards) => {
+                            if method_guards.contains(method) {
+                                relevant_handler_ids.insert(*id);
+                            }
+                        }
+                    }
+                }
+                // We don't want to return an error if the _same_ callable is being registered
+                // as a request handler for the same path+method multiple times.
+                let unique_handlers = relevant_handler_ids
+                    .iter()
+                    .unique_by(|id| raw_user_component_db[**id].raw_callable_identifiers_id())
+                    .collect::<Vec<_>>();
+                if unique_handlers.len() > 1 {
+                    push_router_conflict_diagnostic(
+                        path,
+                        method,
+                        &unique_handlers,
+                        raw_user_component_db,
+                        package_graph,
+                        diagnostics,
+                    );
+                }
+            }
+        }
+
+        if n_diagnostics == diagnostics.len() {
+            Ok(())
+        } else {
+            Err(())
+        }
+    }
+
+    /// Make sure that the user-registered paths don't conflict with each other.
+    /// In other words: we won't encounter any issue when creating this router.
+    ///
+    /// How do we do that?
+    ///
+    /// By trying to create the router in the compiler itself!
+    /// If it works now, it'll work at runtime too.
     fn detect_path_conflicts(
         raw_user_component_db: &RawUserComponentDb,
         package_graph: &PackageGraph,
@@ -97,7 +180,7 @@ impl Router {
     /// 2. there is no registered route that matches the incoming request path.
     ///
     /// This method only looks at the 2nd case and returns a mapping from request handlers to fallbacks.
-    fn fallback_router(
+    fn assign_fallbacks(
         mut validation_router: matchit::Router<()>,
         raw_user_component_db: &RawUserComponentDb,
         scope_graph: &ScopeGraph,
@@ -225,7 +308,7 @@ impl Router {
     /// This method checks the first case: do all registered routes for a certain path
     /// expect the same fallback when the method doesn't match?
     fn check_method_not_allowed_fallbacks(
-        route_id2fallback_id: BTreeMap<UserComponentId, Option<UserComponentId>>,
+        route_id2fallback_id: &BTreeMap<UserComponentId, Option<UserComponentId>>,
         raw_user_component_db: &RawUserComponentDb,
         package_graph: &PackageGraph,
         diagnostics: &mut Vec<miette::Error>,
@@ -423,79 +506,9 @@ enum Capture {
     Parameter(String),
 }
 
-/// Examine the registered paths and methods guards to make sure that we don't
-/// have any conflicts—i.e. multiple handlers registered for the same path+method combination.
-pub(super) fn build_router(
-    raw_user_component_db: &RawUserComponentDb,
-    scope_graph: &ScopeGraph,
-    package_graph: &PackageGraph,
-    diagnostics: &mut Vec<miette::Error>,
-) {
-    detect_method_conflicts(raw_user_component_db, package_graph, diagnostics);
-    let _ = Router::new(
-        raw_user_component_db,
-        scope_graph,
-        package_graph,
-        diagnostics,
-    );
-}
-
 static METHODS: [&str; 9] = [
     "GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS", "CONNECT", "TRACE",
 ];
-
-/// Examine the registered paths and methods guards to make sure that we don't
-/// have any conflicts—i.e. multiple handlers registered for the same path+method combination.
-fn detect_method_conflicts(
-    raw_user_component_db: &RawUserComponentDb,
-    package_graph: &PackageGraph,
-    diagnostics: &mut Vec<miette::Error>,
-) {
-    let mut path2method2component_id = IndexMap::<_, Vec<_>>::new();
-    for (id, component) in raw_user_component_db.iter() {
-        if let UserComponent::RequestHandler { router_key, .. } = component {
-            path2method2component_id
-                .entry(&router_key.path)
-                .or_default()
-                .push((&router_key.method_guard, id));
-        }
-    }
-
-    for (path, routes) in path2method2component_id.into_iter() {
-        for method in METHODS {
-            let mut relevant_handler_ids = IndexSet::new();
-            for (guard, id) in &routes {
-                match guard {
-                    // `None` stands for the `ANY` guard, it matches all methods
-                    None => {
-                        relevant_handler_ids.insert(*id);
-                    }
-                    Some(method_guards) => {
-                        if method_guards.contains(method) {
-                            relevant_handler_ids.insert(*id);
-                        }
-                    }
-                }
-            }
-            // We don't want to return an error if the _same_ callable is being registered
-            // as a request handler for the same path+method multiple times.
-            let unique_handlers = relevant_handler_ids
-                .iter()
-                .unique_by(|id| raw_user_component_db[**id].raw_callable_identifiers_id())
-                .collect::<Vec<_>>();
-            if unique_handlers.len() > 1 {
-                push_router_conflict_diagnostic(
-                    path,
-                    method,
-                    &unique_handlers,
-                    raw_user_component_db,
-                    package_graph,
-                    diagnostics,
-                );
-            }
-        }
-    }
-}
 
 fn push_fallback_ambiguity_diagnostic(
     raw_user_component_db: &RawUserComponentDb,

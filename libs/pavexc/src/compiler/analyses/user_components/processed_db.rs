@@ -12,7 +12,7 @@ use pavex::blueprint::{
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::user_components::raw_db::RawUserComponentDb;
 use crate::compiler::analyses::user_components::resolved_paths::ResolvedPathDb;
-use crate::compiler::analyses::user_components::router_validation::build_router;
+use crate::compiler::analyses::user_components::router_validation::Router;
 use crate::compiler::analyses::user_components::{ScopeGraph, UserComponent, UserComponentId};
 use crate::compiler::interner::Interner;
 use crate::compiler::resolvers::CallableResolutionError;
@@ -56,10 +56,6 @@ pub struct UserComponentDb {
     ///
     /// Invariants: there is an entry for every single request handler.
     handler_id2middleware_ids: HashMap<UserComponentId, Vec<UserComponentId>>,
-    /// Associate each fallback handler with the path prefix that it is registered against.
-    ///
-    /// Invariants: there is an entry for every single fallback handler.
-    fallback_id2path_prefix: HashMap<UserComponentId, Option<String>>,
     scope_graph: ScopeGraph,
 }
 
@@ -87,8 +83,8 @@ impl UserComponentDb {
         }
 
         let (raw_db, scope_graph) = RawUserComponentDb::build(bp, package_graph, diagnostics);
-        build_router(&raw_db, &scope_graph, package_graph, diagnostics);
         let resolved_path_db = ResolvedPathDb::build(&raw_db, package_graph, diagnostics);
+        let _router = Router::new(&raw_db, &scope_graph, package_graph, diagnostics)?;
         exit_on_errors!(diagnostics);
 
         precompute_crate_docs(krate_collection, &resolved_path_db, diagnostics);
@@ -111,7 +107,7 @@ impl UserComponentDb {
             id2lifecycle,
             identifiers_interner,
             handler_id2middleware_ids,
-            fallback_id2path_prefix,
+            fallback_id2path_prefix: _,
         } = raw_db;
 
         Ok(Self {
@@ -121,7 +117,6 @@ impl UserComponentDb {
             constructor_id2cloning_strategy,
             id2lifecycle,
             handler_id2middleware_ids,
-            fallback_id2path_prefix,
             scope_graph,
         })
     }
