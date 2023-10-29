@@ -480,7 +480,13 @@ fn push_fallback_ambiguity_diagnostic(
         with a method that doesn't match the ones you registered a handler for.",
         router_key.path
     );
-    let diagnostic = CompilerDiagnostic::builder(route_source, error).optional_label(label);
+    let diagnostic = CompilerDiagnostic::builder(route_source, error)
+        .optional_label(label)
+        .help(format!(
+            "You can fix this by registering `{route_repr}` against the nested blueprint \
+            with `{path_prefix}` as prefix. All `{path_prefix}`-prefixed routes would then \
+            be using `{path_fallback}` as fallback."
+        ));
     diagnostics.push(diagnostic.build().into());
 }
 
