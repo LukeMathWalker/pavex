@@ -150,31 +150,6 @@ impl Router {
             }
         }
 
-        // // We now iterate over all request handlers to find the ones that are registered against
-        // // a blueprint without a path prefix and that have a scope-based fallback.
-        // // For each of those, we register a path-based fallback using their exact path: it
-        // // will be used for all incoming requests that match that path but that don't match any
-        // // of the user-registered method guards.
-        // for (_, component) in raw_user_component_db.iter() {
-        //     let UserComponent::RequestHandler {
-        //         router_key,
-        //         scope_id,
-        //         ..
-        //     } = component
-        //     else {
-        //         continue;
-        //     };
-        //     let Some(fallback_id) =
-        //         scope_based_fallback_router.find_fallback_id(*scope_id, scope_graph)
-        //     else {
-        //         continue;
-        //     };
-        //     let path_prefix = &raw_user_component_db.fallback_id2path_prefix[&fallback_id];
-        //     if path_prefix.is_none() {
-        //         let _ = path_based_fallback_router.insert(router_key.path.clone(), fallback_id);
-        //     }
-        // }
-
         let mut handler_id2fallback_id = BTreeMap::new();
         // We now iterate over all request handlers to verify that path-based and scope-based
         // fallbacks match.
