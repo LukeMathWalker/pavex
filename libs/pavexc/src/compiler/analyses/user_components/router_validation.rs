@@ -18,19 +18,17 @@ use crate::diagnostic::{
 };
 use crate::utils::comma_separated_list;
 
+#[derive(Debug)]
 pub(crate) struct Router {
-    /// For each nested blueprint with a prefix, we add a path-based fallback.
-    /// E.g. `/users*catch_all` if we have a nested blueprint with the prefix `/users` and
-    /// and associated fallback.
-    pub(crate) route_path2fallback_id: BTreeMap<String, UserComponentId>,
-    /// For each registered route, the fallback that should be used if the incoming request
-    /// matches its path but not its method guard.
-    ///
-    /// Invariant: if multiple routes share the same path, they have the same associated fallback.
-    pub(crate) route_id2fallback_id: BTreeMap<UserComponentId, Option<UserComponentId>>,
+    pub(crate) route_path2sub_router: BTreeMap<String, LeafRouter>,
     /// The fallback to use if no route matches the incoming request.
-    /// If set to `None`, it means that the framework default fallback should be used.
-    pub(crate) root_fallback_id: Option<UserComponentId>,
+    pub(crate) root_fallback_id: UserComponentId,
+}
+
+/// A router to dispatch a request to a handler based on its method, after having matched its path.
+#[derive(Debug, Default, Clone)]
+pub(crate) struct LeafRouter {
+    pub(crate) handler_id2methods: BTreeMap<UserComponentId, BTreeSet<String>>,
 }
 
 impl Router {
@@ -40,6 +38,17 @@ impl Router {
         package_graph: &PackageGraph,
         diagnostics: &mut Vec<miette::Error>,
     ) -> Result<Self, ()> {
+        let root_fallback_id = raw_user_component_db
+            .iter()
+            .find_map(|(id, component)| {
+                if let UserComponent::Fallback { scope_id, .. } = component {
+                    if scope_id == &scope_graph.root_scope_id() {
+                        return Some(id);
+                    }
+                }
+                None
+            })
+            .expect("No fallback registered for the root scope.");
         Self::detect_method_conflicts(raw_user_component_db, package_graph, diagnostics)?;
         let runtime_router =
             Self::detect_path_conflicts(raw_user_component_db, package_graph, diagnostics)?;
@@ -57,10 +66,46 @@ impl Router {
             diagnostics,
         )?;
 
+        let mut route_path2sub_router = BTreeMap::new();
+        for (id, component) in raw_user_component_db.iter() {
+            let UserComponent::RequestHandler { router_key, .. } = component else {
+                continue;
+            };
+            let sub_router: &mut LeafRouter = route_path2sub_router
+                .entry(router_key.path.clone())
+                .or_default();
+            sub_router.handler_id2methods.insert(
+                id,
+                router_key
+                    .method_guard
+                    .clone()
+                    .unwrap_or_else(|| METHODS.iter().map(|s| s.to_string()).collect()),
+            );
+        }
+        for sub_router in route_path2sub_router.values_mut() {
+            let route_id = *sub_router.handler_id2methods.keys().next().unwrap();
+            let handled_methods: BTreeSet<&str> = sub_router
+                .handler_id2methods
+                .values()
+                .flatten()
+                .map(|s| s.as_str())
+                .collect();
+            let missing_methods: BTreeSet<_> = METHODS
+                .iter()
+                .filter(|&m| !handled_methods.contains(m))
+                .map(|s| s.to_string())
+                .collect();
+            if !missing_methods.is_empty() {
+                let fallback_id = route_id2fallback_id[&route_id];
+                sub_router
+                    .handler_id2methods
+                    .insert(fallback_id, missing_methods);
+            }
+        }
+
         Ok(Self {
-            route_path2fallback_id: Default::default(),
-            route_id2fallback_id,
-            root_fallback_id: None,
+            route_path2sub_router,
+            root_fallback_id,
         })
     }
 
@@ -186,7 +231,7 @@ impl Router {
         scope_graph: &ScopeGraph,
         package_graph: &PackageGraph,
         diagnostics: &mut Vec<miette::Error>,
-    ) -> Result<BTreeMap<UserComponentId, Option<UserComponentId>>, ()> {
+    ) -> Result<BTreeMap<UserComponentId, UserComponentId>, ()> {
         let n_diagnostics = diagnostics.len();
 
         // For every scope there is at most one fallback.
@@ -276,7 +321,7 @@ impl Router {
                     handler_id2fallback_id.insert(handler_id, scope_fallback_id);
                 }
                 Some(path_fallback_id) => {
-                    if Some(path_fallback_id) != scope_fallback_id {
+                    if path_fallback_id != scope_fallback_id {
                         push_fallback_ambiguity_diagnostic(
                             raw_user_component_db,
                             scope_fallback_id,
@@ -287,7 +332,7 @@ impl Router {
                         );
                     } else {
                         // Good: they both use the same fallback.
-                        handler_id2fallback_id.insert(handler_id, Some(path_fallback_id));
+                        handler_id2fallback_id.insert(handler_id, path_fallback_id);
                     }
                 }
             }
@@ -308,7 +353,7 @@ impl Router {
     /// This method checks the first case: do all registered routes for a certain path
     /// expect the same fallback when the method doesn't match?
     fn check_method_not_allowed_fallbacks(
-        route_id2fallback_id: &BTreeMap<UserComponentId, Option<UserComponentId>>,
+        route_id2fallback_id: &BTreeMap<UserComponentId, UserComponentId>,
         raw_user_component_db: &RawUserComponentDb,
         package_graph: &PackageGraph,
         diagnostics: &mut Vec<miette::Error>,
@@ -319,7 +364,7 @@ impl Router {
         // Route id <> (fallback_id <> (handler_id <> method guards))
         let mut map: BTreeMap<
             u32,
-            BTreeMap<Option<UserComponentId>, BTreeMap<UserComponentId, BTreeSet<String>>>,
+            BTreeMap<UserComponentId, BTreeMap<UserComponentId, BTreeSet<String>>>,
         > = BTreeMap::default();
         let mut next_route_id = 0;
         for (handler_id, component) in raw_user_component_db.iter() {
@@ -423,9 +468,9 @@ impl FallbackTree {
     ) -> Self {
         let root = FallbackNode {
             scope_id: scope_graph.root_scope_id(),
-            fallback_id: scope_id2fallback_id
+            fallback_id: *scope_id2fallback_id
                 .get_by_left(&scope_graph.root_scope_id())
-                .copied(),
+                .unwrap(),
             children_ids: vec![],
         };
         let mut stack: Vec<_> = root
@@ -441,7 +486,7 @@ impl FallbackTree {
                 if let Some(fallback_id) = scope_id2fallback_id.get_by_left(&scope_id) {
                     let node = FallbackNode {
                         scope_id,
-                        fallback_id: Some(*fallback_id),
+                        fallback_id: *fallback_id,
                         children_ids: Vec::new(),
                     };
                     let node_index = nodes.len();
@@ -473,7 +518,7 @@ impl FallbackTree {
         &self,
         route_scope_id: ScopeId,
         scope_graph: &ScopeGraph,
-    ) -> Option<UserComponentId> {
+    ) -> UserComponentId {
         let mut current: &FallbackNode = self.root();
         'outer: loop {
             if current.scope_id == route_scope_id {
@@ -486,16 +531,15 @@ impl FallbackTree {
                     continue 'outer;
                 }
             }
-            return current.fallback_id;
+            break 'outer;
         }
+        self.root().fallback_id
     }
 }
 
 struct FallbackNode {
     scope_id: ScopeId,
-    // The user may or may not have replaced the framework default fallback handler,
-    // hence the `Option` here.
-    fallback_id: Option<UserComponentId>,
+    fallback_id: UserComponentId,
     children_ids: Vec<usize>,
 }
 
@@ -512,7 +556,7 @@ static METHODS: [&str; 9] = [
 
 fn push_fallback_ambiguity_diagnostic(
     raw_user_component_db: &RawUserComponentDb,
-    scope_fallback_id: Option<UserComponentId>,
+    scope_fallback_id: UserComponentId,
     path_fallback_id: UserComponentId,
     route_id: UserComponentId,
     package_graph: &PackageGraph,
@@ -532,23 +576,20 @@ fn push_fallback_ambiguity_diagnostic(
     let label = diagnostic::get_route_path_span(&route_source, &route_location)
         .labeled("The route was registered here".to_string());
     let route_repr = router_key.diagnostic_repr();
-    let scope_fallback = match scope_fallback_id {
-        None => "the default framework fallback".to_string(),
-        Some(fallback_id) => {
-            let UserComponent::Fallback {
-                raw_callable_identifiers_id,
-                ..
-            } = &raw_user_component_db[fallback_id]
-            else {
-                unreachable!()
-            };
-            format!(
-                "`{}`",
-                raw_user_component_db.identifiers_interner[*raw_callable_identifiers_id]
-                    .fully_qualified_path()
-                    .join("::")
-            )
-        }
+    let scope_fallback = {
+        let UserComponent::Fallback {
+            raw_callable_identifiers_id,
+            ..
+        } = &raw_user_component_db[scope_fallback_id]
+        else {
+            unreachable!()
+        };
+        format!(
+            "`{}`",
+            raw_user_component_db.identifiers_interner[*raw_callable_identifiers_id]
+                .fully_qualified_path()
+                .join("::")
+        )
     };
     let path_fallback = {
         let UserComponent::Fallback {
@@ -587,10 +628,7 @@ fn push_fallback_ambiguity_diagnostic(
 
 fn push_fallback_method_ambiguity_diagnostic(
     methods_without_handler: BTreeSet<String>,
-    fallback_id2handler_id: &BTreeMap<
-        Option<UserComponentId>,
-        BTreeMap<UserComponentId, BTreeSet<String>>,
-    >,
+    fallback_id2handler_id: &BTreeMap<UserComponentId, BTreeMap<UserComponentId, BTreeSet<String>>>,
     raw_user_component_db: &RawUserComponentDb,
     package_graph: &PackageGraph,
     diagnostics: &mut Vec<miette::Error>,
@@ -617,7 +655,7 @@ fn push_fallback_method_ambiguity_diagnostic(
     let mut first_snippet: Option<AnnotatedSnippet> = None;
     let mut annotated_snippets = Vec::with_capacity(fallback_id2handler_id.len());
     for (i, (fallback_id, handler_id2methods)) in fallback_id2handler_id.iter().enumerate() {
-        let fallback_path = if let Some(fallback_id) = fallback_id {
+        let fallback_path = {
             let UserComponent::Fallback {
                 raw_callable_identifiers_id,
                 ..
@@ -646,8 +684,6 @@ fn push_fallback_method_ambiguity_diagnostic(
                 .fully_qualified_path()
                 .join("::");
             format!("`{fallback_path}`")
-        } else {
-            "the default framework fallback".into()
         };
 
         let handler_methods: Vec<_> = handler_id2methods.values().flat_map(|s| s.iter()).collect();

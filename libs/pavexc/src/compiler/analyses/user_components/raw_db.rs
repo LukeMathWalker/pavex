@@ -196,6 +196,7 @@ impl RawUserComponentDb {
             None,
             &mut scope_graph_builder,
             &mut current_middleware_chain,
+            true,
             package_graph,
             diagnostics,
         );
@@ -244,6 +245,7 @@ impl RawUserComponentDb {
                 path_prefix.as_deref(),
                 &mut scope_graph_builder,
                 &mut current_middleware_chain,
+                false,
                 package_graph,
                 diagnostics,
             );
@@ -277,6 +279,7 @@ impl RawUserComponentDb {
         path_prefix: Option<&str>,
         scope_graph_builder: &mut ScopeGraphBuilder,
         current_middleware_chain: &mut Vec<UserComponentId>,
+        is_root: bool,
         package_graph: &PackageGraph,
         diagnostics: &mut Vec<miette::Error>,
     ) {
@@ -298,6 +301,33 @@ impl RawUserComponentDb {
                 current_scope_id,
                 scope_graph_builder,
             );
+        } else {
+            if is_root {
+                // We need to have a top-level fallback handler.
+                // If the user hasn't registered one against the top-level blueprint,
+                // we must provide a framework default.
+                let raw_callable_identifiers = RawCallableIdentifiers::from_raw_parts(
+                    "pavex::framework::default_fallback_handler".to_owned(),
+                    "pavex".to_owned(),
+                );
+                let registered_fallback = RegisteredFallback {
+                    request_handler: RegisteredCallable {
+                        callable: raw_callable_identifiers,
+                        // We don't have a location for the default fallback handler.
+                        // Nor do we have a way (yet) to identify this component as "framework provided".
+                        // Something to fix in the future.
+                        location: bp.creation_location.clone(),
+                    },
+                    error_handler: None,
+                };
+                self.process_fallback(
+                    &registered_fallback,
+                    path_prefix,
+                    current_middleware_chain,
+                    current_scope_id,
+                    scope_graph_builder,
+                )
+            }
         }
         self.process_constructors(&bp.constructors, current_scope_id);
     }
