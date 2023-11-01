@@ -6,6 +6,6 @@ pub use scope_graph::{ScopeGraph, ScopeId};
 mod processed_db;
 mod raw_db;
 mod resolved_paths;
+mod router;
 mod router_key;
-mod router_validation;
 mod scope_graph;
