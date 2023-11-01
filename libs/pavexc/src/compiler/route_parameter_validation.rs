@@ -49,7 +49,9 @@ pub(crate) fn verify_route_parameters(
 
     for (path, method_router) in router.route_path2sub_router.iter() {
         for handler_id in method_router.handler_ids() {
-            let pipeline = &handler_id2pipeline[handler_id];
+            let Some(pipeline) = handler_id2pipeline.get(handler_id) else {
+                continue;
+            };
 
             // If `RouteParams` is used, it will appear as a `Compute` node in *at most* one of the
             // call graphs in the processing pipeline for the handler, since it's a `RequestScoped`
