@@ -415,10 +415,6 @@ impl Router {
                 }
                 set
             };
-            if methods_without_handler.is_empty() {
-                // Good: we have a handler for each method, therefore the fallbacks don't matter.
-                continue;
-            }
             push_fallback_method_ambiguity_diagnostic(
                 methods_without_handler,
                 fallback_id2handler_id,
@@ -455,6 +451,7 @@ fn prefix_ends_with_capture(path: &str) -> Option<Capture> {
 /// register a node in the tree.
 /// A node is a child of another node if the scope it represents is a descendant of the scope of
 /// the parent node.
+#[derive(Debug)]
 struct FallbackTree {
     nodes: Vec<FallbackNode>,
 }
@@ -531,10 +528,11 @@ impl FallbackTree {
             }
             break 'outer;
         }
-        self.root().fallback_id
+        current.fallback_id
     }
 }
 
+#[derive(Debug)]
 struct FallbackNode {
     scope_id: ScopeId,
     fallback_id: UserComponentId,
@@ -709,8 +707,8 @@ fn push_fallback_method_ambiguity_diagnostic(
         }
     }
 
-    let methods_without_handlers = {
-        let mut buffer = String::new();
+    let methods_without_handlers = if !methods_without_handler.is_empty() {
+        let mut buffer = format!(" (");
         comma_separated_list(
             &mut buffer,
             methods_without_handler.iter(),
@@ -718,12 +716,15 @@ fn push_fallback_method_ambiguity_diagnostic(
             "or",
         )
         .unwrap();
+        write!(buffer, ")").unwrap();
         buffer
+    } else {
+        String::new()
     };
     writeln!(
         &mut err_msg,
         "\nI don't know which fallback handler to invoke for incoming `{route_path}` requests \
-             that use a different HTTP method ({methods_without_handlers})!"
+             that use a different HTTP method{methods_without_handlers}!"
     )
     .unwrap();
     let error = anyhow::anyhow!(err_msg);
