@@ -28,6 +28,8 @@ pub(crate) struct Router {
 /// A router to dispatch a request to a handler based on its method, after having matched its path.
 #[derive(Debug, Default, Clone)]
 pub(crate) struct LeafRouter {
+    // TODO: we could use a more memory efficient representation here (e.g. a bitset) to describe
+    //     the set of methods that a handler can handle.
     pub(crate) handler_id2methods: BTreeMap<UserComponentId, BTreeSet<String>>,
 }
 
