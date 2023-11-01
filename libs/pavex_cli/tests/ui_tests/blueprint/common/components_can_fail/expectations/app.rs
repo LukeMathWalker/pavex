@@ -56,7 +56,7 @@ async fn route_request(
     let matched_route = match server_state.router.at(&request_head.uri.path()) {
         Ok(m) => m,
         Err(_) => {
-            return pavex::response::Response::not_found().box_body();
+            return route_1::middleware_0().await;
         }
     };
     let route_id = matched_route.value;

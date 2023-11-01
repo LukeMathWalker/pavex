@@ -112,9 +112,11 @@ pub(crate) fn codegen_app(
     }
 
     let router_init = get_router_init(&route_id2path, &pavex_import_name);
+    let fallback_codegened_pipeline = &handler_id2codegened_pipeline[&router.root_fallback_id];
     let route_request = get_request_dispatcher(
         &route_id2router_entry,
         &route_id2path,
+        fallback_codegened_pipeline,
         runtime_singleton_bindings,
         request_scoped_framework_bindings,
         framework_item_db,
@@ -288,6 +290,7 @@ fn get_router_init(route_id2path: &BiBTreeMap<u32, String>, pavex_import_name: &
 fn get_request_dispatcher(
     route_id2router_entry: &BTreeMap<u32, CodegenMethodRouter>,
     route_id2path: &BiBTreeMap<u32, String>,
+    fallback_codegened_pipeline: &CodegenedRequestHandlerPipeline,
     singleton_bindings: &BiHashMap<Ident, ResolvedType>,
     request_scoped_bindings: &BiHashMap<Ident, ResolvedType>,
     framework_items_db: &FrameworkItemDb,
@@ -369,6 +372,11 @@ fn get_request_dispatcher(
         };
     }
 
+    let root_fallback_invocation = fallback_codegened_pipeline.entrypoint_invocation(
+        singleton_bindings,
+        request_scoped_bindings,
+        &server_state_ident,
+    );
     syn::parse2(quote! {
         async fn route_request(
             request: #http::Request<#pavex::hyper::body::Incoming>,
@@ -380,7 +388,7 @@ fn get_request_dispatcher(
             let matched_route = match server_state.router.at(&request_head.uri.path()) {
                 Ok(m) => m,
                 Err(_) => {
-                    return #pavex::response::Response::not_found().box_body();
+                    return #root_fallback_invocation;
                 }
             };
             let route_id = matched_route.value;
