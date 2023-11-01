@@ -19,7 +19,7 @@ impl RouterKey {
     /// a specific route in an error message.
     pub fn diagnostic_repr(&self) -> String {
         let method_guard = match &self.method_guard {
-            Some(method_set) => format!("{}", method_set.clone().iter().join("|")),
+            Some(method_set) => method_set.clone().iter().join("|").to_string(),
             None => String::from("ANY"),
         };
         format!("{} {}", method_guard, self.path)

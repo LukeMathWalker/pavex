@@ -356,7 +356,7 @@ where
             // Wait for all workers to shut down, or for the timeout to expire,
             // whichever happens first.
             let _ = tokio::time::timeout(timeout, async move {
-                while let Some(_) = shutdown_join_set.join_next().await {}
+                while shutdown_join_set.join_next().await.is_some() {}
             })
             .await;
         }

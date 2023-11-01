@@ -195,10 +195,10 @@ impl Router {
                 // multiple methods. Method conflicts are handled elsewhere.
                 // We have an issue if **different** paths conflict!
                 Conflict { with } if with == router_key.path => {}
-                Conflict { .. } | TooManyParams | UnnamedParam | InvalidCatchAll | _ => {
+                _ => {
                     errored = true;
                     push_matchit_diagnostic(
-                        &raw_user_component_db,
+                        raw_user_component_db,
                         id,
                         e,
                         package_graph,
@@ -569,7 +569,7 @@ fn push_fallback_ambiguity_diagnostic(
             return;
         }
     };
-    let label = diagnostic::get_route_path_span(&route_source, &route_location)
+    let label = diagnostic::get_route_path_span(&route_source, route_location)
         .labeled("The route was registered here".to_string());
     let route_repr = router_key.diagnostic_repr();
     let scope_fallback = {
@@ -644,10 +644,9 @@ fn push_fallback_method_ambiguity_diagnostic(
         unreachable!()
     };
     let route_path = router_key.path.as_str();
-    let mut err_msg = format!(
-        "Routing logic can't be ambiguous.\n\
+    let mut err_msg = "Routing logic can't be ambiguous.\n\
         You registered:\n"
-    );
+        .to_string();
     let mut first_snippet: Option<AnnotatedSnippet> = None;
     let mut annotated_snippets = Vec::with_capacity(fallback_id2handler_id.len());
     for (i, (fallback_id, handler_id2methods)) in fallback_id2handler_id.iter().enumerate() {
@@ -708,7 +707,7 @@ fn push_fallback_method_ambiguity_diagnostic(
     }
 
     let methods_without_handlers = if !methods_without_handler.is_empty() {
-        let mut buffer = format!(" (");
+        let mut buffer = " (".to_string();
         comma_separated_list(
             &mut buffer,
             methods_without_handler.iter(),
