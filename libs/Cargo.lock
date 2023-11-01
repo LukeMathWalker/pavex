@@ -679,7 +679,7 @@ dependencies = [
  "fixedbitset",
  "guppy-workspace-hack",
  "indexmap 1.9.3",
- "itertools",
+ "itertools 0.10.5",
  "nested",
  "once_cell",
  "pathdiff",
@@ -998,6 +998,15 @@ name = "itertools"
 version = "0.10.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b0fd2260e829bddf4cb6ea802289de2f86d6a7a690192fbe91b3f46e0f2c8473"
+dependencies = [
+ "either",
+]
+
+[[package]]
+name = "itertools"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b1c173a5686ce8bfa551b3563d0c2170bf24ca44da99c7ca4bfdab5418c3fe57"
 dependencies = [
  "either",
 ]
@@ -1407,6 +1416,7 @@ dependencies = [
  "hyper-util",
  "indexmap 1.9.3",
  "insta",
+ "itertools 0.11.0",
  "matchit 0.7.2",
  "mime",
  "paste",
@@ -1486,7 +1496,7 @@ dependencies = [
  "console",
  "fs-err",
  "globwalk",
- "itertools",
+ "itertools 0.10.5",
  "libtest-mimic",
  "miette",
  "num_cpus",
@@ -1517,7 +1527,7 @@ dependencies = [
  "fs-err",
  "guppy",
  "indexmap 1.9.3",
- "itertools",
+ "itertools 0.10.5",
  "la-arena",
  "matchit 0.7.3",
  "miette",
