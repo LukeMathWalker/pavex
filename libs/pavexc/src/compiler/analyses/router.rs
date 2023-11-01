@@ -13,11 +13,21 @@ pub(crate) struct Router {
 }
 
 /// A router to dispatch a request to a handler based on its method, after having matched its path.
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
 pub(crate) struct LeafRouter {
     // TODO: we could use a more memory efficient representation here (e.g. a bitset) to describe
     //     the set of methods that a handler can handle.
     pub(crate) handler_id2methods: BTreeMap<ComponentId, BTreeSet<String>>,
+    pub(crate) fallback_id: ComponentId,
+}
+
+impl LeafRouter {
+    /// Return the set of [`ComponentId`]s that can handle the given route, including the fallback.
+    pub(crate) fn handler_ids(&self) -> impl Iterator<Item = &ComponentId> {
+        self.handler_id2methods
+            .keys()
+            .chain(std::iter::once(&self.fallback_id))
+    }
 }
 
 impl Router {
@@ -40,7 +50,14 @@ impl Router {
                             .map(|&component_id| (component_id, methods))
                     })
                     .collect();
-                (route_path, LeafRouter { handler_id2methods })
+                let fallback_id = user_component_id2component_id[&leaf_router.fallback_id];
+                (
+                    route_path,
+                    LeafRouter {
+                        handler_id2methods,
+                        fallback_id,
+                    },
+                )
             })
             .collect();
         let root_fallback_id = user_component_id2component_id[&router.root_fallback_id];

@@ -107,12 +107,12 @@ impl App {
             let handler_ids = router
                 .route_path2sub_router
                 .values()
-                .flat_map(|leaf_router| leaf_router.handler_id2methods.keys().copied())
-                .chain(std::iter::once(router.root_fallback_id));
+                .flat_map(|leaf_router| leaf_router.handler_ids())
+                .chain(std::iter::once(&router.root_fallback_id));
             let mut handler_pipelines = IndexMap::new();
             for (i, handler_id) in handler_ids.enumerate() {
                 let Ok(processing_pipeline) = RequestHandlerPipeline::new(
-                    handler_id,
+                    *handler_id,
                     format!("route_{i}"),
                     &mut computation_db,
                     &mut component_db,
@@ -123,7 +123,7 @@ impl App {
                 ) else {
                     continue;
                 };
-                handler_pipelines.insert(handler_id, processing_pipeline);
+                handler_pipelines.insert(*handler_id, processing_pipeline);
             }
             handler_pipelines
         };
@@ -234,9 +234,16 @@ impl App {
 
         let mut handlers = IndexMap::new();
         for (path, method_router) in &self.router.route_path2sub_router {
-            for (handler_id, methods) in &method_router.handler_id2methods {
-                let method = methods.iter().join(" | ");
-                let pipeline = &self.handler_id2pipeline[handler_id];
+            for (handler_id, methods) in method_router
+                .handler_id2methods
+                .iter()
+                .map(|(k, v)| (*k, Some(v)))
+                .chain(std::iter::once((method_router.fallback_id, None)))
+            {
+                let method = methods
+                    .map(|m| m.iter().join(" | "))
+                    .unwrap_or_else(|| "*".into());
+                let pipeline = &self.handler_id2pipeline[&handler_id];
                 let mut handler_graphs = Vec::new();
                 for (i, graph) in pipeline.graph_iter().enumerate() {
                     handler_graphs.push(

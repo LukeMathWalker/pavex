@@ -29,9 +29,9 @@ use crate::rustdoc::{ALLOC_PACKAGE_ID_REPR, TOOLCHAIN_CRATES};
 use super::generated_app::GeneratedManifest;
 
 #[derive(Debug, Clone)]
-enum CodegenRouterEntry {
-    MethodSubRouter(Vec<(BTreeSet<String>, CodegenedRequestHandlerPipeline)>),
-    CatchAllHandler(CodegenedRequestHandlerPipeline),
+pub(super) struct CodegenMethodRouter {
+    pub(super) methods_and_pipelines: Vec<(BTreeSet<String>, CodegenedRequestHandlerPipeline)>,
+    pub(super) catch_all_pipeline: CodegenedRequestHandlerPipeline,
 }
 
 pub(crate) fn codegen_app(
@@ -73,24 +73,27 @@ pub(crate) fn codegen_app(
 
     let mut handler_modules = vec![];
     let path2codegen_router_entry = {
-        let mut map: IndexMap<String, CodegenRouterEntry> = IndexMap::new();
+        let mut map: IndexMap<String, CodegenMethodRouter> = IndexMap::new();
         for (path, method_router) in &router.route_path2sub_router {
+            let mut methods_and_pipelines =
+                Vec::with_capacity(method_router.handler_id2methods.len());
             for (handler_id, methods) in &method_router.handler_id2methods {
                 let pipeline = &handler_id2pipeline[handler_id];
                 let pipeline_code =
                     pipeline.codegen(package_id2name, component_db, computation_db)?;
                 handler_modules.push(pipeline_code.as_inline_module());
-
-                let sub_router = map
-                    .entry(path.clone())
-                    .or_insert_with(|| CodegenRouterEntry::MethodSubRouter(Default::default()));
-                let CodegenRouterEntry::MethodSubRouter(sub_router) = sub_router else {
-                    unreachable!(
-                        "Cannot have a catch-all handler and a method sub-router for the same path"
-                    );
-                };
-                sub_router.push((methods.clone(), pipeline_code.clone()));
+                methods_and_pipelines.push((methods.clone(), pipeline_code.clone()));
             }
+            let catch_all_pipeline = &handler_id2pipeline[&method_router.fallback_id];
+            let catch_all_pipeline_code =
+                catch_all_pipeline.codegen(package_id2name, component_db, computation_db)?;
+            map.insert(
+                path.to_owned(),
+                CodegenMethodRouter {
+                    methods_and_pipelines,
+                    catch_all_pipeline: catch_all_pipeline_code,
+                },
+            );
         }
         map
     };
@@ -277,7 +280,7 @@ fn get_router_init(route_id2path: &BiBTreeMap<u32, String>, pavex_import_name: &
 }
 
 fn get_request_dispatcher(
-    route_id2router_entry: &BTreeMap<u32, CodegenRouterEntry>,
+    route_id2router_entry: &BTreeMap<u32, CodegenMethodRouter>,
     route_id2path: &BiBTreeMap<u32, String>,
     singleton_bindings: &BiHashMap<Ident, ResolvedType>,
     request_scoped_bindings: &BiHashMap<Ident, ResolvedType>,
@@ -292,63 +295,67 @@ fn get_request_dispatcher(
         .get_type(FrameworkItemDb::matched_route_template_id())
         .unwrap();
 
-    for (route_id, router_entry) in route_id2router_entry {
-        let match_arm = match router_entry {
-            CodegenRouterEntry::MethodSubRouter(sub_router) => {
-                let mut sub_router_dispatch_table = quote! {};
-                let mut allowed_methods = BTreeSet::new();
+    for (route_id, sub_router) in route_id2router_entry {
+        let match_arm = if sub_router.methods_and_pipelines.is_empty() {
+            // We just have the catch-all handler, we can skip the `match`.
+            sub_router.catch_all_pipeline.entrypoint_invocation(
+                singleton_bindings,
+                request_scoped_bindings,
+                &server_state_ident,
+            )
+        } else {
+            let mut sub_router_dispatch_table = quote! {};
+            let mut allowed_methods = BTreeSet::new();
 
-                let needs_matched_route = sub_router.iter().any(|(_, pipeline)| {
+            let needs_matched_route = sub_router
+                .methods_and_pipelines
+                .iter()
+                .map(|(_, p)| p)
+                .chain(std::iter::once(&sub_router.catch_all_pipeline))
+                .any(|pipeline| {
                     pipeline.stages[0]
                         .input_parameters
                         .contains(matched_route_type)
                 });
 
-                for (methods, request_pipeline) in sub_router {
-                    let invocation = request_pipeline.entrypoint_invocation(
-                        singleton_bindings,
-                        request_scoped_bindings,
-                        &server_state_ident,
-                    );
-                    allowed_methods.extend(methods.clone());
-                    let methods = methods.iter().map(|m| format_ident!("{}", m));
-                    sub_router_dispatch_table = quote! {
-                        #sub_router_dispatch_table
-                        &#(#pavex::http::Method::#methods)|* => #invocation,
-                    }
-                }
-                let allow_header_value = allowed_methods.into_iter().join(", ");
-                let matched_route_template = if needs_matched_route {
-                    let path = route_id2path.get_by_left(route_id).unwrap();
-                    quote! {
-                        let matched_route_template = #pavex::extract::route::MatchedRouteTemplate::new(
-                            #path
-                        );
-                    }
-                } else {
-                    quote! {}
-                };
-                quote! {
-                    {
-                    #matched_route_template
-                    match &request_head.method {
-                        #sub_router_dispatch_table
-                        _ => {
-                            let header_value = #pavex::http::HeaderValue::from_static(#allow_header_value);
-                            #pavex::response::Response::method_not_allowed()
-                                .insert_header(#pavex::http::header::ALLOW, header_value)
-                                .box_body()
-                        }
-                    }
-                    }
-                }
-            }
-            CodegenRouterEntry::CatchAllHandler(request_pipeline) => request_pipeline
-                .entrypoint_invocation(
+            for (methods, request_pipeline) in &sub_router.methods_and_pipelines {
+                let invocation = request_pipeline.entrypoint_invocation(
                     singleton_bindings,
                     request_scoped_bindings,
                     &server_state_ident,
-                ),
+                );
+                allowed_methods.extend(methods.clone());
+                let methods = methods.iter().map(|m| format_ident!("{}", m));
+                sub_router_dispatch_table = quote! {
+                    #sub_router_dispatch_table
+                    &#(#pavex::http::Method::#methods)|* => #invocation,
+                }
+            }
+            let _allow_header_value = allowed_methods.into_iter().join(", ");
+            let matched_route_template = if needs_matched_route {
+                let path = route_id2path.get_by_left(route_id).unwrap();
+                quote! {
+                    let matched_route_template = #pavex::extract::route::MatchedRouteTemplate::new(
+                        #path
+                    );
+                }
+            } else {
+                quote! {}
+            };
+            let fallback_invocation = sub_router.catch_all_pipeline.entrypoint_invocation(
+                singleton_bindings,
+                request_scoped_bindings,
+                &server_state_ident,
+            );
+            quote! {
+                {
+                #matched_route_template
+                match &request_head.method {
+                    #sub_router_dispatch_table
+                    _ => #fallback_invocation,
+                }
+                }
+            }
         };
         route_dispatch_table = quote! {
             #route_dispatch_table

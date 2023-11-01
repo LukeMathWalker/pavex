@@ -26,11 +26,24 @@ pub(crate) struct Router {
 }
 
 /// A router to dispatch a request to a handler based on its method, after having matched its path.
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
 pub(crate) struct LeafRouter {
     // TODO: we could use a more memory efficient representation here (e.g. a bitset) to describe
     //     the set of methods that a handler can handle.
     pub(crate) handler_id2methods: BTreeMap<UserComponentId, BTreeSet<String>>,
+    /// The fallback to use if the method of the incoming request doesn't match any of the
+    /// methods registered for the route.
+    /// We always need a fallback, since you might receive requests with "non-standard" methods.
+    pub(crate) fallback_id: UserComponentId,
+}
+
+impl LeafRouter {
+    pub fn new(fallback_id: UserComponentId) -> Self {
+        Self {
+            handler_id2methods: Default::default(),
+            fallback_id,
+        }
+    }
 }
 
 impl Router {
@@ -73,35 +86,15 @@ impl Router {
             let UserComponent::RequestHandler { router_key, .. } = component else {
                 continue;
             };
-            let sub_router: &mut LeafRouter = route_path2sub_router
-                .entry(router_key.path.clone())
-                .or_default();
-            sub_router.handler_id2methods.insert(
-                id,
-                router_key
-                    .method_guard
-                    .clone()
-                    .unwrap_or_else(|| METHODS.iter().map(|s| s.to_string()).collect()),
-            );
-        }
-        for sub_router in route_path2sub_router.values_mut() {
-            let route_id = *sub_router.handler_id2methods.keys().next().unwrap();
-            let handled_methods: BTreeSet<&str> = sub_router
-                .handler_id2methods
-                .values()
-                .flatten()
-                .map(|s| s.as_str())
-                .collect();
-            let missing_methods: BTreeSet<_> = METHODS
-                .iter()
-                .filter(|&m| !handled_methods.contains(m))
-                .map(|s| s.to_string())
-                .collect();
-            if !missing_methods.is_empty() {
-                let fallback_id = route_id2fallback_id[&route_id];
-                sub_router
-                    .handler_id2methods
-                    .insert(fallback_id, missing_methods);
+            if let Some(methods) = &router_key.method_guard {
+                let sub_router: &mut LeafRouter = route_path2sub_router
+                    .entry(router_key.path.clone())
+                    .or_insert_with(|| LeafRouter::new(route_id2fallback_id[&id]));
+                sub_router.handler_id2methods.insert(id, methods.clone());
+            } else {
+                // `None` stands for the `ANY` guard, it matches all methods.
+                // Hence it's the fallback for that path.
+                route_path2sub_router.insert(router_key.path.clone(), LeafRouter::new(id));
             }
         }
 
