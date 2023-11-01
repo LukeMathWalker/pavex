@@ -18,6 +18,12 @@ digraph "GET /home/:home_id - 0" {
     2 -> 8 [ ]
 }
 
+digraph "* /home/:home_id - 0" {
+    0 [ label = "pavex::router::default_fallback() -> pavex::response::Response<http_body_util::Empty<bytes::Bytes>>"]
+    1 [ label = "<pavex::response::Response::<http_body_util::Empty::<bytes::Bytes>> as pavex::response::IntoResponse>::into_response(pavex::response::Response<http_body_util::Empty<bytes::Bytes>>) -> pavex::response::Response"]
+    0 -> 1 [ ]
+}
+
 digraph "GET /home/:home_id/room/:room_id - 0" {
     0 [ label = "app::get_room(pavex::extract::route::RouteParams<app::RoomRouteParams>) -> pavex::response::Response"]
     1 [ label = "core::prelude::rust_2015::Result<pavex::extract::route::RouteParams<app::RoomRouteParams>, pavex::extract::route::errors::ExtractRouteParamsError> -> pavex::extract::route::RouteParams<app::RoomRouteParams>"]
@@ -38,6 +44,12 @@ digraph "GET /home/:home_id/room/:room_id - 0" {
     2 -> 8 [ ]
 }
 
+digraph "* /home/:home_id/room/:room_id - 0" {
+    0 [ label = "pavex::router::default_fallback() -> pavex::response::Response<http_body_util::Empty<bytes::Bytes>>"]
+    1 [ label = "<pavex::response::Response::<http_body_util::Empty::<bytes::Bytes>> as pavex::response::IntoResponse>::into_response(pavex::response::Response<http_body_util::Empty<bytes::Bytes>>) -> pavex::response::Response"]
+    0 -> 1 [ ]
+}
+
 digraph "GET /town/*town - 0" {
     0 [ label = "app::get_town(pavex::extract::route::RouteParams<app::TownRouteParams<'_>>) -> pavex::response::Response"]
     1 [ label = "core::prelude::rust_2015::Result<pavex::extract::route::RouteParams<app::TownRouteParams<'_>>, pavex::extract::route::errors::ExtractRouteParamsError> -> pavex::extract::route::RouteParams<app::TownRouteParams<'_>>"]
@@ -56,6 +68,12 @@ digraph "GET /town/*town - 0" {
     5 -> 6 [ label = "&"]
     6 -> 7 [ ]
     2 -> 8 [ ]
+}
+
+digraph "* /town/*town - 0" {
+    0 [ label = "pavex::router::default_fallback() -> pavex::response::Response<http_body_util::Empty<bytes::Bytes>>"]
+    1 [ label = "<pavex::response::Response::<http_body_util::Empty::<bytes::Bytes>> as pavex::response::IntoResponse>::into_response(pavex::response::Response<http_body_util::Empty<bytes::Bytes>>) -> pavex::response::Response"]
+    0 -> 1 [ ]
 }
 
 digraph app_state {

@@ -51,34 +51,19 @@ async fn route_request(
         0u32 => {
             match &request_head.method {
                 &pavex::http::Method::GET => route_0::handler(url_params).await,
-                _ => {
-                    let header_value = pavex::http::HeaderValue::from_static("GET");
-                    pavex::response::Response::method_not_allowed()
-                        .insert_header(pavex::http::header::ALLOW, header_value)
-                        .box_body()
-                }
+                _ => route_3::handler().await,
             }
         }
         1u32 => {
             match &request_head.method {
                 &pavex::http::Method::GET => route_1::handler(url_params).await,
-                _ => {
-                    let header_value = pavex::http::HeaderValue::from_static("GET");
-                    pavex::response::Response::method_not_allowed()
-                        .insert_header(pavex::http::header::ALLOW, header_value)
-                        .box_body()
-                }
+                _ => route_3::handler().await,
             }
         }
         2u32 => {
             match &request_head.method {
                 &pavex::http::Method::GET => route_2::handler(url_params).await,
-                _ => {
-                    let header_value = pavex::http::HeaderValue::from_static("GET");
-                    pavex::response::Response::method_not_allowed()
-                        .insert_header(pavex::http::header::ALLOW, header_value)
-                        .box_body()
-                }
+                _ => route_3::handler().await,
             }
         }
         _ => pavex::response::Response::not_found().box_body(),
@@ -148,5 +133,13 @@ pub mod route_2 {
         };
         let v3 = app::get_town(v2);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
+    }
+}
+pub mod route_3 {
+    pub async fn handler() -> pavex::response::Response {
+        let v0 = pavex::router::default_fallback().await;
+        <pavex::response::Response<
+            http_body_util::Empty<bytes::Bytes>,
+        > as pavex::response::IntoResponse>::into_response(v0)
     }
 }

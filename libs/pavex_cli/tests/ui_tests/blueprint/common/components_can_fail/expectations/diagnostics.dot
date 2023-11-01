@@ -76,6 +76,30 @@ digraph "GET /home - 1" {
     14 -> 26 [ ]
 }
 
+digraph "* /home - 0" {
+    0 [ label = "app::fallible_wrapping_middleware(pavex::middleware::Next<crate::route_1::Next0>) -> core::prelude::rust_2015::Result<pavex::response::Response, app::MiddlewareError>"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_1::Next0) -> pavex::middleware::Next<crate::route_1::Next0>"]
+    2 [ label = "crate::route_1::Next0() -> crate::route_1::Next0"]
+    3 [ label = "core::prelude::rust_2015::Result<pavex::response::Response, app::MiddlewareError> -> pavex::response::Response"]
+    4 [ label = "core::prelude::rust_2015::Result<pavex::response::Response, app::MiddlewareError> -> app::MiddlewareError"]
+    5 [ label = "app::handle_middleware_error(&app::MiddlewareError) -> pavex::response::Response"]
+    6 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    7 [ label = "`match`"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    7 -> 4 [ ]
+    7 -> 3 [ ]
+    4 -> 5 [ label = "&"]
+    5 -> 6 [ ]
+    0 -> 7 [ ]
+}
+
+digraph "* /home - 1" {
+    0 [ label = "pavex::router::default_fallback() -> pavex::response::Response<http_body_util::Empty<bytes::Bytes>>"]
+    1 [ label = "<pavex::response::Response::<http_body_util::Empty::<bytes::Bytes>> as pavex::response::IntoResponse>::into_response(pavex::response::Response<http_body_util::Empty<bytes::Bytes>>) -> pavex::response::Response"]
+    0 -> 1 [ ]
+}
+
 digraph app_state {
     0 [ label = "crate::ApplicationState(app::HttpClient) -> crate::ApplicationState"]
     1 [ label = "core::prelude::rust_2015::Result<app::HttpClient, app::HttpClientError> -> app::HttpClient"]

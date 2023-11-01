@@ -8,16 +8,16 @@ struct ServerState {
     application_state: ApplicationState,
 }
 pub struct ApplicationState {
-    s0: u32,
-    s1: u64,
+    s0: u64,
+    s1: u32,
 }
 pub async fn build_application_state() -> crate::ApplicationState {
-    let v0 = app::parent_singleton();
-    let v1 = app::singleton_dep();
-    let v2 = app::nested_singleton(v1);
+    let v0 = app::singleton_dep();
+    let v1 = app::nested_singleton(v0);
+    let v2 = app::parent_singleton();
     crate::ApplicationState {
         s0: v2,
-        s1: v0,
+        s1: v1,
     }
 }
 pub fn run(
@@ -58,41 +58,39 @@ async fn route_request(
         0u32 => {
             match &request_head.method {
                 &pavex::http::Method::GET => {
-                    route_0::handler(server_state.application_state.s0.clone()).await
+                    route_2::handler(server_state.application_state.s1.clone()).await
                 }
-                _ => {
-                    let header_value = pavex::http::HeaderValue::from_static("GET");
-                    pavex::response::Response::method_not_allowed()
-                        .insert_header(pavex::http::header::ALLOW, header_value)
-                        .box_body()
-                }
+                _ => route_1::handler().await,
             }
         }
         1u32 => {
             match &request_head.method {
                 &pavex::http::Method::GET => {
-                    route_1::handler(server_state.application_state.s1.clone()).await
+                    route_0::handler(server_state.application_state.s0.clone()).await
                 }
-                _ => {
-                    let header_value = pavex::http::HeaderValue::from_static("GET");
-                    pavex::response::Response::method_not_allowed()
-                        .insert_header(pavex::http::header::ALLOW, header_value)
-                        .box_body()
-                }
+                _ => route_1::handler().await,
             }
         }
         _ => pavex::response::Response::not_found().box_body(),
     }
 }
 pub mod route_0 {
-    pub async fn handler(v0: u32) -> pavex::response::Response {
-        let v1 = app::nested_handler(v0);
+    pub async fn handler(v0: u64) -> pavex::response::Response {
+        let v1 = app::parent_handler(v0);
         <http::StatusCode as pavex::response::IntoResponse>::into_response(v1)
     }
 }
 pub mod route_1 {
-    pub async fn handler(v0: u64) -> pavex::response::Response {
-        let v1 = app::parent_handler(v0);
+    pub async fn handler() -> pavex::response::Response {
+        let v0 = pavex::router::default_fallback().await;
+        <pavex::response::Response<
+            http_body_util::Empty<bytes::Bytes>,
+        > as pavex::response::IntoResponse>::into_response(v0)
+    }
+}
+pub mod route_2 {
+    pub async fn handler(v0: u32) -> pavex::response::Response {
+        let v1 = app::nested_handler(v0);
         <http::StatusCode as pavex::response::IntoResponse>::into_response(v1)
     }
 }

@@ -13,6 +13,12 @@ digraph "GET /home - 0" {
     5 -> 1 [ ]
 }
 
+digraph "* /home - 0" {
+    0 [ label = "pavex::router::default_fallback() -> pavex::response::Response<http_body_util::Empty<bytes::Bytes>>"]
+    1 [ label = "<pavex::response::Response::<http_body_util::Empty::<bytes::Bytes>> as pavex::response::IntoResponse>::into_response(pavex::response::Response<http_body_util::Empty<bytes::Bytes>>) -> pavex::response::Response"]
+    0 -> 1 [ ]
+}
+
 digraph app_state {
     0 [ label = "crate::ApplicationState() -> crate::ApplicationState"]
 }

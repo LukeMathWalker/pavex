@@ -24,6 +24,26 @@ digraph "GET /home - 1" {
     4 -> 0 [ ]
 }
 
+digraph "* /home - 0" {
+    0 [ label = "app::mw(pavex::middleware::Next<crate::route_1::Next0>, app::B<'l>) -> pavex::response::Response"]
+    1 [ label = "app::b(&''a app::A, &''a app::C) -> app::B<'a>"]
+    2 [ label = "app::c() -> app::C"]
+    3 [ label = "app::a() -> app::A"]
+    4 [ label = "pavex::middleware::Next::new(crate::route_1::Next0) -> pavex::middleware::Next<crate::route_1::Next0>"]
+    5 [ label = "crate::route_1::Next0() -> crate::route_1::Next0"]
+    1 -> 0 [ ]
+    2 -> 1 [ label = "&"]
+    3 -> 1 [ label = "&"]
+    4 -> 0 [ ]
+    5 -> 4 [ ]
+}
+
+digraph "* /home - 1" {
+    0 [ label = "pavex::router::default_fallback() -> pavex::response::Response<http_body_util::Empty<bytes::Bytes>>"]
+    1 [ label = "<pavex::response::Response::<http_body_util::Empty::<bytes::Bytes>> as pavex::response::IntoResponse>::into_response(pavex::response::Response<http_body_util::Empty<bytes::Bytes>>) -> pavex::response::Response"]
+    0 -> 1 [ ]
+}
+
 digraph app_state {
     0 [ label = "crate::ApplicationState() -> crate::ApplicationState"]
 }

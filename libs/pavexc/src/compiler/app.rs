@@ -1,3 +1,4 @@
+use std::collections::BTreeSet;
 use std::fmt::Debug;
 use std::io::{BufWriter, Write};
 use std::ops::Deref;
@@ -104,13 +105,14 @@ impl App {
         );
         exit_on_errors!(diagnostics);
         let handler_id2pipeline = {
-            let handler_ids = router
+            let handler_ids: BTreeSet<_> = router
                 .route_path2sub_router
                 .values()
                 .flat_map(|leaf_router| leaf_router.handler_ids())
-                .chain(std::iter::once(&router.root_fallback_id));
+                .chain(std::iter::once(&router.root_fallback_id))
+                .collect();
             let mut handler_pipelines = IndexMap::new();
-            for (i, handler_id) in handler_ids.enumerate() {
+            for (i, handler_id) in handler_ids.into_iter().enumerate() {
                 let Ok(processing_pipeline) = RequestHandlerPipeline::new(
                     *handler_id,
                     format!("route_{i}"),

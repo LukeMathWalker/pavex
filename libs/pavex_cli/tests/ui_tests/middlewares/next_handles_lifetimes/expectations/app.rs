@@ -49,12 +49,7 @@ async fn route_request(
         0u32 => {
             match &request_head.method {
                 &pavex::http::Method::GET => route_0::middleware_0().await,
-                _ => {
-                    let header_value = pavex::http::HeaderValue::from_static("GET");
-                    pavex::response::Response::method_not_allowed()
-                        .insert_header(pavex::http::header::ALLOW, header_value)
-                        .box_body()
-                }
+                _ => route_1::middleware_0().await,
             }
         }
         _ => pavex::response::Response::not_found().box_body(),
@@ -93,6 +88,40 @@ pub mod route_0 {
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
             (self.next)(self.s_0, self.s_1)
+        }
+    }
+}
+pub mod route_1 {
+    pub async fn middleware_0() -> pavex::response::Response {
+        let v0 = app::c();
+        let v1 = app::a();
+        let v2 = app::b(&v1, &v0);
+        let v3 = crate::route_1::Next0 {
+            next: handler,
+        };
+        let v4 = pavex::middleware::Next::new(v3);
+        app::mw(v4, v2)
+    }
+    pub async fn handler() -> pavex::response::Response {
+        let v0 = pavex::router::default_fallback().await;
+        <pavex::response::Response<
+            http_body_util::Empty<bytes::Bytes>,
+        > as pavex::response::IntoResponse>::into_response(v0)
+    }
+    pub struct Next0<T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        next: fn() -> T,
+    }
+    impl<T> std::future::IntoFuture for Next0<T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        type Output = pavex::response::Response;
+        type IntoFuture = T;
+        fn into_future(self) -> Self::IntoFuture {
+            (self.next)()
         }
     }
 }

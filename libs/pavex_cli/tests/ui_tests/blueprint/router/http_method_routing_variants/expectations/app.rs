@@ -56,118 +56,67 @@ async fn route_request(
         .params
         .into();
     match route_id {
-        0u32 => route_0::handler().await,
+        0u32 => route_9::handler().await,
         1u32 => {
             match &request_head.method {
-                &pavex::http::Method::CONNECT => route_1::handler().await,
-                _ => {
-                    let header_value = pavex::http::HeaderValue::from_static("CONNECT");
-                    pavex::response::Response::method_not_allowed()
-                        .insert_header(pavex::http::header::ALLOW, header_value)
-                        .box_body()
-                }
+                &pavex::http::Method::CONNECT => route_0::handler().await,
+                _ => route_11::handler().await,
             }
         }
         2u32 => {
             match &request_head.method {
-                &pavex::http::Method::DELETE => route_2::handler().await,
-                _ => {
-                    let header_value = pavex::http::HeaderValue::from_static("DELETE");
-                    pavex::response::Response::method_not_allowed()
-                        .insert_header(pavex::http::header::ALLOW, header_value)
-                        .box_body()
-                }
+                &pavex::http::Method::DELETE => route_1::handler().await,
+                _ => route_11::handler().await,
             }
         }
         3u32 => {
             match &request_head.method {
-                &pavex::http::Method::GET => route_3::handler().await,
-                _ => {
-                    let header_value = pavex::http::HeaderValue::from_static("GET");
-                    pavex::response::Response::method_not_allowed()
-                        .insert_header(pavex::http::header::ALLOW, header_value)
-                        .box_body()
-                }
+                &pavex::http::Method::GET => route_2::handler().await,
+                _ => route_11::handler().await,
             }
         }
         4u32 => {
             match &request_head.method {
-                &pavex::http::Method::HEAD => route_4::handler().await,
-                _ => {
-                    let header_value = pavex::http::HeaderValue::from_static("HEAD");
-                    pavex::response::Response::method_not_allowed()
-                        .insert_header(pavex::http::header::ALLOW, header_value)
-                        .box_body()
-                }
+                &pavex::http::Method::HEAD => route_3::handler().await,
+                _ => route_11::handler().await,
             }
         }
         5u32 => {
             match &request_head.method {
-                &pavex::http::Method::PATCH => route_5::handler().await,
-                &pavex::http::Method::POST => route_5::handler().await,
-                _ => {
-                    let header_value = pavex::http::HeaderValue::from_static(
-                        "PATCH, POST",
-                    );
-                    pavex::response::Response::method_not_allowed()
-                        .insert_header(pavex::http::header::ALLOW, header_value)
-                        .box_body()
+                &pavex::http::Method::PATCH | &pavex::http::Method::POST => {
+                    route_10::handler().await
                 }
+                _ => route_11::handler().await,
             }
         }
         6u32 => {
             match &request_head.method {
-                &pavex::http::Method::OPTIONS => route_6::handler().await,
-                _ => {
-                    let header_value = pavex::http::HeaderValue::from_static("OPTIONS");
-                    pavex::response::Response::method_not_allowed()
-                        .insert_header(pavex::http::header::ALLOW, header_value)
-                        .box_body()
-                }
+                &pavex::http::Method::OPTIONS => route_4::handler().await,
+                _ => route_11::handler().await,
             }
         }
         7u32 => {
             match &request_head.method {
-                &pavex::http::Method::PATCH => route_7::handler().await,
-                _ => {
-                    let header_value = pavex::http::HeaderValue::from_static("PATCH");
-                    pavex::response::Response::method_not_allowed()
-                        .insert_header(pavex::http::header::ALLOW, header_value)
-                        .box_body()
-                }
+                &pavex::http::Method::PATCH => route_5::handler().await,
+                _ => route_11::handler().await,
             }
         }
         8u32 => {
             match &request_head.method {
-                &pavex::http::Method::POST => route_8::handler().await,
-                _ => {
-                    let header_value = pavex::http::HeaderValue::from_static("POST");
-                    pavex::response::Response::method_not_allowed()
-                        .insert_header(pavex::http::header::ALLOW, header_value)
-                        .box_body()
-                }
+                &pavex::http::Method::POST => route_6::handler().await,
+                _ => route_11::handler().await,
             }
         }
         9u32 => {
             match &request_head.method {
-                &pavex::http::Method::PUT => route_9::handler().await,
-                _ => {
-                    let header_value = pavex::http::HeaderValue::from_static("PUT");
-                    pavex::response::Response::method_not_allowed()
-                        .insert_header(pavex::http::header::ALLOW, header_value)
-                        .box_body()
-                }
+                &pavex::http::Method::PUT => route_7::handler().await,
+                _ => route_11::handler().await,
             }
         }
         10u32 => {
             match &request_head.method {
-                &pavex::http::Method::TRACE => route_10::handler().await,
-                _ => {
-                    let header_value = pavex::http::HeaderValue::from_static("TRACE");
-                    pavex::response::Response::method_not_allowed()
-                        .insert_header(pavex::http::header::ALLOW, header_value)
-                        .box_body()
-                }
+                &pavex::http::Method::TRACE => route_8::handler().await,
+                _ => route_11::handler().await,
             }
         }
         _ => pavex::response::Response::not_found().box_body(),
@@ -237,5 +186,13 @@ pub mod route_10 {
     pub async fn handler() -> pavex::response::Response {
         let v0 = app::handler();
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v0)
+    }
+}
+pub mod route_11 {
+    pub async fn handler() -> pavex::response::Response {
+        let v0 = pavex::router::default_fallback().await;
+        <pavex::response::Response<
+            http_body_util::Empty<bytes::Bytes>,
+        > as pavex::response::IntoResponse>::into_response(v0)
     }
 }

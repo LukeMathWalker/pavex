@@ -51,46 +51,26 @@ async fn route_request(
     match route_id {
         0u32 => {
             match &request_head.method {
-                &pavex::http::Method::GET => route_0::handler().await,
-                _ => {
-                    let header_value = pavex::http::HeaderValue::from_static("GET");
-                    pavex::response::Response::method_not_allowed()
-                        .insert_header(pavex::http::header::ALLOW, header_value)
-                        .box_body()
-                }
+                &pavex::http::Method::GET => route_3::handler().await,
+                _ => route_4::handler().await,
             }
         }
         1u32 => {
             match &request_head.method {
-                &pavex::http::Method::GET => route_1::handler().await,
-                _ => {
-                    let header_value = pavex::http::HeaderValue::from_static("GET");
-                    pavex::response::Response::method_not_allowed()
-                        .insert_header(pavex::http::header::ALLOW, header_value)
-                        .box_body()
-                }
+                &pavex::http::Method::GET => route_2::handler().await,
+                _ => route_4::handler().await,
             }
         }
         2u32 => {
             match &request_head.method {
-                &pavex::http::Method::GET => route_2::handler().await,
-                _ => {
-                    let header_value = pavex::http::HeaderValue::from_static("GET");
-                    pavex::response::Response::method_not_allowed()
-                        .insert_header(pavex::http::header::ALLOW, header_value)
-                        .box_body()
-                }
+                &pavex::http::Method::GET => route_0::handler().await,
+                _ => route_4::handler().await,
             }
         }
         3u32 => {
             match &request_head.method {
-                &pavex::http::Method::GET => route_3::handler().await,
-                _ => {
-                    let header_value = pavex::http::HeaderValue::from_static("GET");
-                    pavex::response::Response::method_not_allowed()
-                        .insert_header(pavex::http::header::ALLOW, header_value)
-                        .box_body()
-                }
+                &pavex::http::Method::GET => route_1::handler().await,
+                _ => route_4::handler().await,
             }
         }
         _ => pavex::response::Response::not_found().box_body(),
@@ -98,27 +78,35 @@ async fn route_request(
 }
 pub mod route_0 {
     pub async fn handler() -> pavex::response::Response {
+        let v0 = app::response();
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v0)
+    }
+}
+pub mod route_1 {
+    pub async fn handler() -> pavex::response::Response {
+        let v0 = app::status_code();
+        <http::StatusCode as pavex::response::IntoResponse>::into_response(v0)
+    }
+}
+pub mod route_2 {
+    pub async fn handler() -> pavex::response::Response {
+        let v0 = app::parts();
+        <http::response::Parts as pavex::response::IntoResponse>::into_response(v0)
+    }
+}
+pub mod route_3 {
+    pub async fn handler() -> pavex::response::Response {
         let v0 = app::response_head();
         <pavex::response::ResponseHead as pavex::response::IntoResponse>::into_response(
             v0,
         )
     }
 }
-pub mod route_1 {
+pub mod route_4 {
     pub async fn handler() -> pavex::response::Response {
-        let v0 = app::parts();
-        <http::response::Parts as pavex::response::IntoResponse>::into_response(v0)
-    }
-}
-pub mod route_2 {
-    pub async fn handler() -> pavex::response::Response {
-        let v0 = app::response();
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v0)
-    }
-}
-pub mod route_3 {
-    pub async fn handler() -> pavex::response::Response {
-        let v0 = app::status_code();
-        <http::StatusCode as pavex::response::IntoResponse>::into_response(v0)
+        let v0 = pavex::router::default_fallback().await;
+        <pavex::response::Response<
+            http_body_util::Empty<bytes::Bytes>,
+        > as pavex::response::IntoResponse>::into_response(v0)
     }
 }

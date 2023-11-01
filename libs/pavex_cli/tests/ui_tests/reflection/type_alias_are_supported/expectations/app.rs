@@ -62,12 +62,7 @@ async fn route_request(
                         )
                         .await
                 }
-                _ => {
-                    let header_value = pavex::http::HeaderValue::from_static("GET");
-                    pavex::response::Response::method_not_allowed()
-                        .insert_header(pavex::http::header::ALLOW, header_value)
-                        .box_body()
-                }
+                _ => route_1::handler().await,
             }
         }
         _ => pavex::response::Response::not_found().box_body(),
@@ -80,5 +75,13 @@ pub mod route_0 {
     ) -> pavex::response::Response {
         let v2 = app::handler_with_input_tuple(v0, v1);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
+    }
+}
+pub mod route_1 {
+    pub async fn handler() -> pavex::response::Response {
+        let v0 = pavex::router::default_fallback().await;
+        <pavex::response::Response<
+            http_body_util::Empty<bytes::Bytes>,
+        > as pavex::response::IntoResponse>::into_response(v0)
     }
 }

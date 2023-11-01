@@ -57,7 +57,10 @@ impl Router {
             .iter()
             .find_map(|(id, component)| {
                 if let UserComponent::Fallback { scope_id, .. } = component {
-                    if scope_id == &scope_graph.root_scope_id() {
+                    if scope_id
+                        .direct_parent_ids(scope_graph)
+                        .contains(&scope_graph.root_scope_id())
+                    {
                         return Some(id);
                     }
                 }

@@ -10,9 +10,21 @@ digraph "CONNECT /connect - 0" {
     0 -> 1 [ ]
 }
 
+digraph "* /connect - 0" {
+    0 [ label = "pavex::router::default_fallback() -> pavex::response::Response<http_body_util::Empty<bytes::Bytes>>"]
+    1 [ label = "<pavex::response::Response::<http_body_util::Empty::<bytes::Bytes>> as pavex::response::IntoResponse>::into_response(pavex::response::Response<http_body_util::Empty<bytes::Bytes>>) -> pavex::response::Response"]
+    0 -> 1 [ ]
+}
+
 digraph "DELETE /delete - 0" {
     0 [ label = "app::handler() -> pavex::response::Response"]
     1 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    0 -> 1 [ ]
+}
+
+digraph "* /delete - 0" {
+    0 [ label = "pavex::router::default_fallback() -> pavex::response::Response<http_body_util::Empty<bytes::Bytes>>"]
+    1 [ label = "<pavex::response::Response::<http_body_util::Empty::<bytes::Bytes>> as pavex::response::IntoResponse>::into_response(pavex::response::Response<http_body_util::Empty<bytes::Bytes>>) -> pavex::response::Response"]
     0 -> 1 [ ]
 }
 
@@ -22,9 +34,21 @@ digraph "GET /get - 0" {
     0 -> 1 [ ]
 }
 
+digraph "* /get - 0" {
+    0 [ label = "pavex::router::default_fallback() -> pavex::response::Response<http_body_util::Empty<bytes::Bytes>>"]
+    1 [ label = "<pavex::response::Response::<http_body_util::Empty::<bytes::Bytes>> as pavex::response::IntoResponse>::into_response(pavex::response::Response<http_body_util::Empty<bytes::Bytes>>) -> pavex::response::Response"]
+    0 -> 1 [ ]
+}
+
 digraph "HEAD /head - 0" {
     0 [ label = "app::handler() -> pavex::response::Response"]
     1 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    0 -> 1 [ ]
+}
+
+digraph "* /head - 0" {
+    0 [ label = "pavex::router::default_fallback() -> pavex::response::Response<http_body_util::Empty<bytes::Bytes>>"]
+    1 [ label = "<pavex::response::Response::<http_body_util::Empty::<bytes::Bytes>> as pavex::response::IntoResponse>::into_response(pavex::response::Response<http_body_util::Empty<bytes::Bytes>>) -> pavex::response::Response"]
     0 -> 1 [ ]
 }
 
@@ -34,9 +58,21 @@ digraph "PATCH | POST /mixed - 0" {
     0 -> 1 [ ]
 }
 
+digraph "* /mixed - 0" {
+    0 [ label = "pavex::router::default_fallback() -> pavex::response::Response<http_body_util::Empty<bytes::Bytes>>"]
+    1 [ label = "<pavex::response::Response::<http_body_util::Empty::<bytes::Bytes>> as pavex::response::IntoResponse>::into_response(pavex::response::Response<http_body_util::Empty<bytes::Bytes>>) -> pavex::response::Response"]
+    0 -> 1 [ ]
+}
+
 digraph "OPTIONS /options - 0" {
     0 [ label = "app::handler() -> pavex::response::Response"]
     1 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    0 -> 1 [ ]
+}
+
+digraph "* /options - 0" {
+    0 [ label = "pavex::router::default_fallback() -> pavex::response::Response<http_body_util::Empty<bytes::Bytes>>"]
+    1 [ label = "<pavex::response::Response::<http_body_util::Empty::<bytes::Bytes>> as pavex::response::IntoResponse>::into_response(pavex::response::Response<http_body_util::Empty<bytes::Bytes>>) -> pavex::response::Response"]
     0 -> 1 [ ]
 }
 
@@ -46,9 +82,21 @@ digraph "PATCH /patch - 0" {
     0 -> 1 [ ]
 }
 
+digraph "* /patch - 0" {
+    0 [ label = "pavex::router::default_fallback() -> pavex::response::Response<http_body_util::Empty<bytes::Bytes>>"]
+    1 [ label = "<pavex::response::Response::<http_body_util::Empty::<bytes::Bytes>> as pavex::response::IntoResponse>::into_response(pavex::response::Response<http_body_util::Empty<bytes::Bytes>>) -> pavex::response::Response"]
+    0 -> 1 [ ]
+}
+
 digraph "POST /post - 0" {
     0 [ label = "app::handler() -> pavex::response::Response"]
     1 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    0 -> 1 [ ]
+}
+
+digraph "* /post - 0" {
+    0 [ label = "pavex::router::default_fallback() -> pavex::response::Response<http_body_util::Empty<bytes::Bytes>>"]
+    1 [ label = "<pavex::response::Response::<http_body_util::Empty::<bytes::Bytes>> as pavex::response::IntoResponse>::into_response(pavex::response::Response<http_body_util::Empty<bytes::Bytes>>) -> pavex::response::Response"]
     0 -> 1 [ ]
 }
 
@@ -58,9 +106,21 @@ digraph "PUT /put - 0" {
     0 -> 1 [ ]
 }
 
+digraph "* /put - 0" {
+    0 [ label = "pavex::router::default_fallback() -> pavex::response::Response<http_body_util::Empty<bytes::Bytes>>"]
+    1 [ label = "<pavex::response::Response::<http_body_util::Empty::<bytes::Bytes>> as pavex::response::IntoResponse>::into_response(pavex::response::Response<http_body_util::Empty<bytes::Bytes>>) -> pavex::response::Response"]
+    0 -> 1 [ ]
+}
+
 digraph "TRACE /trace - 0" {
     0 [ label = "app::handler() -> pavex::response::Response"]
     1 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    0 -> 1 [ ]
+}
+
+digraph "* /trace - 0" {
+    0 [ label = "pavex::router::default_fallback() -> pavex::response::Response<http_body_util::Empty<bytes::Bytes>>"]
+    1 [ label = "<pavex::response::Response::<http_body_util::Empty::<bytes::Bytes>> as pavex::response::IntoResponse>::into_response(pavex::response::Response<http_body_util::Empty<bytes::Bytes>>) -> pavex::response::Response"]
     0 -> 1 [ ]
 }
 

@@ -71,27 +71,33 @@ pub(crate) fn codegen_app(
 
     let define_server_state = define_server_state(&application_state_def, &pavex_import_name);
 
-    let mut handler_modules = vec![];
+    let handler_id2codegened_pipeline = handler_id2pipeline
+        .iter()
+        .map(|(id, p)| {
+            p.codegen(package_id2name, component_db, computation_db)
+                .map(|p| (*id, p))
+        })
+        .collect::<Result<BTreeMap<_, _>, _>>()?;
+    let handler_modules = handler_id2codegened_pipeline
+        .values()
+        .map(|p| p.as_inline_module())
+        .collect::<Vec<_>>();
     let path2codegen_router_entry = {
         let mut map: IndexMap<String, CodegenMethodRouter> = IndexMap::new();
         for (path, method_router) in &router.route_path2sub_router {
             let mut methods_and_pipelines =
                 Vec::with_capacity(method_router.handler_id2methods.len());
             for (handler_id, methods) in &method_router.handler_id2methods {
-                let pipeline = &handler_id2pipeline[handler_id];
-                let pipeline_code =
-                    pipeline.codegen(package_id2name, component_db, computation_db)?;
-                handler_modules.push(pipeline_code.as_inline_module());
-                methods_and_pipelines.push((methods.clone(), pipeline_code.clone()));
+                let pipeline = &handler_id2codegened_pipeline[handler_id];
+                methods_and_pipelines.push((methods.clone(), pipeline.clone()));
             }
-            let catch_all_pipeline = &handler_id2pipeline[&method_router.fallback_id];
-            let catch_all_pipeline_code =
-                catch_all_pipeline.codegen(package_id2name, component_db, computation_db)?;
+            let catch_all_pipeline =
+                handler_id2codegened_pipeline[&method_router.fallback_id].clone();
             map.insert(
                 path.to_owned(),
                 CodegenMethodRouter {
                     methods_and_pipelines,
-                    catch_all_pipeline: catch_all_pipeline_code,
+                    catch_all_pipeline,
                 },
             );
         }
@@ -328,7 +334,7 @@ fn get_request_dispatcher(
                 let methods = methods.iter().map(|m| format_ident!("{}", m));
                 sub_router_dispatch_table = quote! {
                     #sub_router_dispatch_table
-                    &#(#pavex::http::Method::#methods)|* => #invocation,
+                    #(&#pavex::http::Method::#methods)|* => #invocation,
                 }
             }
             let _allow_header_value = allowed_methods.into_iter().join(", ");
