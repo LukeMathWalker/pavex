@@ -11,6 +11,7 @@ pub mod http;
 pub mod middleware;
 pub mod request;
 pub mod response;
+pub mod router;
 pub mod serialization;
 #[cfg(feature = "server")]
 pub mod server;

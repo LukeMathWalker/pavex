@@ -307,7 +307,7 @@ impl RawUserComponentDb {
                 // If the user hasn't registered one against the top-level blueprint,
                 // we must provide a framework default.
                 let raw_callable_identifiers = RawCallableIdentifiers::from_raw_parts(
-                    "pavex::framework::default_fallback_handler".to_owned(),
+                    "pavex::router::default_fallback".to_owned(),
                     "pavex".to_owned(),
                 );
                 let registered_fallback = RegisteredFallback {
