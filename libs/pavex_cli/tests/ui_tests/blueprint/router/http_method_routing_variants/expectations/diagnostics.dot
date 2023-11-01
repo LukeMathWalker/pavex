@@ -11,9 +11,11 @@ digraph "CONNECT /connect - 0" {
 }
 
 digraph "* /connect - 0" {
-    0 [ label = "pavex::router::default_fallback() -> pavex::response::Response<http_body_util::Empty<bytes::Bytes>>"]
-    1 [ label = "<pavex::response::Response::<http_body_util::Empty::<bytes::Bytes>> as pavex::response::IntoResponse>::into_response(pavex::response::Response<http_body_util::Empty<bytes::Bytes>>) -> pavex::response::Response"]
-    0 -> 1 [ ]
+    0 [ label = "pavex::router::default_fallback(&pavex::extract::route::AllowedMethods) -> pavex::response::Response"]
+    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "&pavex::extract::route::AllowedMethods"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
 }
 
 digraph "DELETE /delete - 0" {
@@ -23,9 +25,11 @@ digraph "DELETE /delete - 0" {
 }
 
 digraph "* /delete - 0" {
-    0 [ label = "pavex::router::default_fallback() -> pavex::response::Response<http_body_util::Empty<bytes::Bytes>>"]
-    1 [ label = "<pavex::response::Response::<http_body_util::Empty::<bytes::Bytes>> as pavex::response::IntoResponse>::into_response(pavex::response::Response<http_body_util::Empty<bytes::Bytes>>) -> pavex::response::Response"]
-    0 -> 1 [ ]
+    0 [ label = "pavex::router::default_fallback(&pavex::extract::route::AllowedMethods) -> pavex::response::Response"]
+    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "&pavex::extract::route::AllowedMethods"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
 }
 
 digraph "GET /get - 0" {
@@ -35,9 +39,11 @@ digraph "GET /get - 0" {
 }
 
 digraph "* /get - 0" {
-    0 [ label = "pavex::router::default_fallback() -> pavex::response::Response<http_body_util::Empty<bytes::Bytes>>"]
-    1 [ label = "<pavex::response::Response::<http_body_util::Empty::<bytes::Bytes>> as pavex::response::IntoResponse>::into_response(pavex::response::Response<http_body_util::Empty<bytes::Bytes>>) -> pavex::response::Response"]
-    0 -> 1 [ ]
+    0 [ label = "pavex::router::default_fallback(&pavex::extract::route::AllowedMethods) -> pavex::response::Response"]
+    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "&pavex::extract::route::AllowedMethods"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
 }
 
 digraph "HEAD /head - 0" {
@@ -47,9 +53,11 @@ digraph "HEAD /head - 0" {
 }
 
 digraph "* /head - 0" {
-    0 [ label = "pavex::router::default_fallback() -> pavex::response::Response<http_body_util::Empty<bytes::Bytes>>"]
-    1 [ label = "<pavex::response::Response::<http_body_util::Empty::<bytes::Bytes>> as pavex::response::IntoResponse>::into_response(pavex::response::Response<http_body_util::Empty<bytes::Bytes>>) -> pavex::response::Response"]
-    0 -> 1 [ ]
+    0 [ label = "pavex::router::default_fallback(&pavex::extract::route::AllowedMethods) -> pavex::response::Response"]
+    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "&pavex::extract::route::AllowedMethods"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
 }
 
 digraph "PATCH | POST /mixed - 0" {
@@ -59,9 +67,11 @@ digraph "PATCH | POST /mixed - 0" {
 }
 
 digraph "* /mixed - 0" {
-    0 [ label = "pavex::router::default_fallback() -> pavex::response::Response<http_body_util::Empty<bytes::Bytes>>"]
-    1 [ label = "<pavex::response::Response::<http_body_util::Empty::<bytes::Bytes>> as pavex::response::IntoResponse>::into_response(pavex::response::Response<http_body_util::Empty<bytes::Bytes>>) -> pavex::response::Response"]
-    0 -> 1 [ ]
+    0 [ label = "pavex::router::default_fallback(&pavex::extract::route::AllowedMethods) -> pavex::response::Response"]
+    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "&pavex::extract::route::AllowedMethods"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
 }
 
 digraph "OPTIONS /options - 0" {
@@ -71,9 +81,11 @@ digraph "OPTIONS /options - 0" {
 }
 
 digraph "* /options - 0" {
-    0 [ label = "pavex::router::default_fallback() -> pavex::response::Response<http_body_util::Empty<bytes::Bytes>>"]
-    1 [ label = "<pavex::response::Response::<http_body_util::Empty::<bytes::Bytes>> as pavex::response::IntoResponse>::into_response(pavex::response::Response<http_body_util::Empty<bytes::Bytes>>) -> pavex::response::Response"]
-    0 -> 1 [ ]
+    0 [ label = "pavex::router::default_fallback(&pavex::extract::route::AllowedMethods) -> pavex::response::Response"]
+    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "&pavex::extract::route::AllowedMethods"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
 }
 
 digraph "PATCH /patch - 0" {
@@ -83,9 +95,11 @@ digraph "PATCH /patch - 0" {
 }
 
 digraph "* /patch - 0" {
-    0 [ label = "pavex::router::default_fallback() -> pavex::response::Response<http_body_util::Empty<bytes::Bytes>>"]
-    1 [ label = "<pavex::response::Response::<http_body_util::Empty::<bytes::Bytes>> as pavex::response::IntoResponse>::into_response(pavex::response::Response<http_body_util::Empty<bytes::Bytes>>) -> pavex::response::Response"]
-    0 -> 1 [ ]
+    0 [ label = "pavex::router::default_fallback(&pavex::extract::route::AllowedMethods) -> pavex::response::Response"]
+    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "&pavex::extract::route::AllowedMethods"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
 }
 
 digraph "POST /post - 0" {
@@ -95,9 +109,11 @@ digraph "POST /post - 0" {
 }
 
 digraph "* /post - 0" {
-    0 [ label = "pavex::router::default_fallback() -> pavex::response::Response<http_body_util::Empty<bytes::Bytes>>"]
-    1 [ label = "<pavex::response::Response::<http_body_util::Empty::<bytes::Bytes>> as pavex::response::IntoResponse>::into_response(pavex::response::Response<http_body_util::Empty<bytes::Bytes>>) -> pavex::response::Response"]
-    0 -> 1 [ ]
+    0 [ label = "pavex::router::default_fallback(&pavex::extract::route::AllowedMethods) -> pavex::response::Response"]
+    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "&pavex::extract::route::AllowedMethods"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
 }
 
 digraph "PUT /put - 0" {
@@ -107,9 +123,11 @@ digraph "PUT /put - 0" {
 }
 
 digraph "* /put - 0" {
-    0 [ label = "pavex::router::default_fallback() -> pavex::response::Response<http_body_util::Empty<bytes::Bytes>>"]
-    1 [ label = "<pavex::response::Response::<http_body_util::Empty::<bytes::Bytes>> as pavex::response::IntoResponse>::into_response(pavex::response::Response<http_body_util::Empty<bytes::Bytes>>) -> pavex::response::Response"]
-    0 -> 1 [ ]
+    0 [ label = "pavex::router::default_fallback(&pavex::extract::route::AllowedMethods) -> pavex::response::Response"]
+    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "&pavex::extract::route::AllowedMethods"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
 }
 
 digraph "TRACE /trace - 0" {
@@ -119,9 +137,11 @@ digraph "TRACE /trace - 0" {
 }
 
 digraph "* /trace - 0" {
-    0 [ label = "pavex::router::default_fallback() -> pavex::response::Response<http_body_util::Empty<bytes::Bytes>>"]
-    1 [ label = "<pavex::response::Response::<http_body_util::Empty::<bytes::Bytes>> as pavex::response::IntoResponse>::into_response(pavex::response::Response<http_body_util::Empty<bytes::Bytes>>) -> pavex::response::Response"]
-    0 -> 1 [ ]
+    0 [ label = "pavex::router::default_fallback(&pavex::extract::route::AllowedMethods) -> pavex::response::Response"]
+    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "&pavex::extract::route::AllowedMethods"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
 }
 
 digraph app_state {

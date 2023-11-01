@@ -56,7 +56,8 @@ async fn route_request(
     let matched_route = match server_state.router.at(&request_head.uri.path()) {
         Ok(m) => m,
         Err(_) => {
-            return route_1::middleware_0().await;
+            let allowed_methods = pavex::extract::route::AllowedMethods::new(vec![]);
+            return route_1::middleware_0(&allowed_methods).await;
         }
     };
     let route_id = matched_route.value;
@@ -74,7 +75,12 @@ async fn route_request(
                         )
                         .await
                 }
-                _ => route_1::middleware_0().await,
+                _ => {
+                    let allowed_methods = pavex::extract::route::AllowedMethods::new(
+                        vec![pavex::http::Method::GET],
+                    );
+                    route_1::middleware_0(&allowed_methods).await
+                }
             }
         }
         _ => pavex::response::Response::not_found().box_body(),
@@ -177,45 +183,49 @@ pub mod route_0 {
     }
 }
 pub mod route_1 {
-    pub async fn middleware_0() -> pavex::response::Response {
-        let v0 = crate::route_1::Next0 {
+    pub async fn middleware_0(
+        v0: &pavex::extract::route::AllowedMethods,
+    ) -> pavex::response::Response {
+        let v1 = crate::route_1::Next0 {
+            s_0: v0,
             next: handler,
         };
-        let v1 = pavex::middleware::Next::new(v0);
-        let v2 = app::fallible_wrapping_middleware(v1);
-        let v3 = match v2 {
+        let v2 = pavex::middleware::Next::new(v1);
+        let v3 = app::fallible_wrapping_middleware(v2);
+        let v4 = match v3 {
             Ok(ok) => ok,
-            Err(v3) => {
+            Err(v4) => {
                 return {
-                    let v4 = app::handle_middleware_error(&v3);
+                    let v5 = app::handle_middleware_error(&v4);
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v4,
+                        v5,
                     )
                 };
             }
         };
-        v3
+        v4
     }
-    pub async fn handler() -> pavex::response::Response {
-        let v0 = pavex::router::default_fallback().await;
-        <pavex::response::Response<
-            http_body_util::Empty<bytes::Bytes>,
-        > as pavex::response::IntoResponse>::into_response(v0)
+    pub async fn handler(
+        v0: &pavex::extract::route::AllowedMethods,
+    ) -> pavex::response::Response {
+        let v1 = pavex::router::default_fallback(v0).await;
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
     }
-    pub struct Next0<T>
+    pub struct Next0<'a, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
-        next: fn() -> T,
+        s_0: &'a pavex::extract::route::AllowedMethods,
+        next: fn(&'a pavex::extract::route::AllowedMethods) -> T,
     }
-    impl<T> std::future::IntoFuture for Next0<T>
+    impl<'a, T> std::future::IntoFuture for Next0<'a, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
         type Output = pavex::response::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            (self.next)()
+            (self.next)(self.s_0)
         }
     }
 }

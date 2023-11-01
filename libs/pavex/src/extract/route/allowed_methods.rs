@@ -47,6 +47,11 @@ use crate::http::Method;
 pub struct AllowedMethods(Vec<Method>);
 
 impl AllowedMethods {
+    /// Create a new `AllowedMethods` instance.
+    pub fn new(methods: Vec<Method>) -> Self {
+        Self(methods)
+    }
+
     /// Iterate over the allowed methods, returned as a reference.
     pub fn iter(&self) -> impl Iterator<Item = &Method> {
         self.0.iter()

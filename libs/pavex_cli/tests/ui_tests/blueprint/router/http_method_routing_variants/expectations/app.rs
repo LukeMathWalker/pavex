@@ -47,7 +47,8 @@ async fn route_request(
     let matched_route = match server_state.router.at(&request_head.uri.path()) {
         Ok(m) => m,
         Err(_) => {
-            return route_11::handler().await;
+            let allowed_methods = pavex::extract::route::AllowedMethods::new(vec![]);
+            return route_11::handler(&allowed_methods).await;
         }
     };
     let route_id = matched_route.value;
@@ -60,25 +61,45 @@ async fn route_request(
         1u32 => {
             match &request_head.method {
                 &pavex::http::Method::CONNECT => route_0::handler().await,
-                _ => route_11::handler().await,
+                _ => {
+                    let allowed_methods = pavex::extract::route::AllowedMethods::new(
+                        vec![pavex::http::Method::CONNECT],
+                    );
+                    route_11::handler(&allowed_methods).await
+                }
             }
         }
         2u32 => {
             match &request_head.method {
                 &pavex::http::Method::DELETE => route_1::handler().await,
-                _ => route_11::handler().await,
+                _ => {
+                    let allowed_methods = pavex::extract::route::AllowedMethods::new(
+                        vec![pavex::http::Method::DELETE],
+                    );
+                    route_11::handler(&allowed_methods).await
+                }
             }
         }
         3u32 => {
             match &request_head.method {
                 &pavex::http::Method::GET => route_2::handler().await,
-                _ => route_11::handler().await,
+                _ => {
+                    let allowed_methods = pavex::extract::route::AllowedMethods::new(
+                        vec![pavex::http::Method::GET],
+                    );
+                    route_11::handler(&allowed_methods).await
+                }
             }
         }
         4u32 => {
             match &request_head.method {
                 &pavex::http::Method::HEAD => route_3::handler().await,
-                _ => route_11::handler().await,
+                _ => {
+                    let allowed_methods = pavex::extract::route::AllowedMethods::new(
+                        vec![pavex::http::Method::HEAD],
+                    );
+                    route_11::handler(&allowed_methods).await
+                }
             }
         }
         5u32 => {
@@ -86,37 +107,67 @@ async fn route_request(
                 &pavex::http::Method::PATCH | &pavex::http::Method::POST => {
                     route_10::handler().await
                 }
-                _ => route_11::handler().await,
+                _ => {
+                    let allowed_methods = pavex::extract::route::AllowedMethods::new(
+                        vec![pavex::http::Method::PATCH, pavex::http::Method::POST],
+                    );
+                    route_11::handler(&allowed_methods).await
+                }
             }
         }
         6u32 => {
             match &request_head.method {
                 &pavex::http::Method::OPTIONS => route_4::handler().await,
-                _ => route_11::handler().await,
+                _ => {
+                    let allowed_methods = pavex::extract::route::AllowedMethods::new(
+                        vec![pavex::http::Method::OPTIONS],
+                    );
+                    route_11::handler(&allowed_methods).await
+                }
             }
         }
         7u32 => {
             match &request_head.method {
                 &pavex::http::Method::PATCH => route_5::handler().await,
-                _ => route_11::handler().await,
+                _ => {
+                    let allowed_methods = pavex::extract::route::AllowedMethods::new(
+                        vec![pavex::http::Method::PATCH],
+                    );
+                    route_11::handler(&allowed_methods).await
+                }
             }
         }
         8u32 => {
             match &request_head.method {
                 &pavex::http::Method::POST => route_6::handler().await,
-                _ => route_11::handler().await,
+                _ => {
+                    let allowed_methods = pavex::extract::route::AllowedMethods::new(
+                        vec![pavex::http::Method::POST],
+                    );
+                    route_11::handler(&allowed_methods).await
+                }
             }
         }
         9u32 => {
             match &request_head.method {
                 &pavex::http::Method::PUT => route_7::handler().await,
-                _ => route_11::handler().await,
+                _ => {
+                    let allowed_methods = pavex::extract::route::AllowedMethods::new(
+                        vec![pavex::http::Method::PUT],
+                    );
+                    route_11::handler(&allowed_methods).await
+                }
             }
         }
         10u32 => {
             match &request_head.method {
                 &pavex::http::Method::TRACE => route_8::handler().await,
-                _ => route_11::handler().await,
+                _ => {
+                    let allowed_methods = pavex::extract::route::AllowedMethods::new(
+                        vec![pavex::http::Method::TRACE],
+                    );
+                    route_11::handler(&allowed_methods).await
+                }
             }
         }
         _ => pavex::response::Response::not_found().box_body(),
@@ -189,10 +240,10 @@ pub mod route_10 {
     }
 }
 pub mod route_11 {
-    pub async fn handler() -> pavex::response::Response {
-        let v0 = pavex::router::default_fallback().await;
-        <pavex::response::Response<
-            http_body_util::Empty<bytes::Bytes>,
-        > as pavex::response::IntoResponse>::into_response(v0)
+    pub async fn handler(
+        v0: &pavex::extract::route::AllowedMethods,
+    ) -> pavex::response::Response {
+        let v1 = pavex::router::default_fallback(v0).await;
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
     }
 }

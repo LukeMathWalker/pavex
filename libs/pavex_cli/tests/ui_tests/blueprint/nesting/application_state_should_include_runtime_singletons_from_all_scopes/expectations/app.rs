@@ -46,7 +46,8 @@ async fn route_request(
     let matched_route = match server_state.router.at(&request_head.uri.path()) {
         Ok(m) => m,
         Err(_) => {
-            return route_1::handler().await;
+            let allowed_methods = pavex::extract::route::AllowedMethods::new(vec![]);
+            return route_1::handler(&allowed_methods).await;
         }
     };
     let route_id = matched_route.value;
@@ -60,7 +61,12 @@ async fn route_request(
                 &pavex::http::Method::GET => {
                     route_2::handler(server_state.application_state.s1.clone()).await
                 }
-                _ => route_1::handler().await,
+                _ => {
+                    let allowed_methods = pavex::extract::route::AllowedMethods::new(
+                        vec![pavex::http::Method::GET],
+                    );
+                    route_1::handler(&allowed_methods).await
+                }
             }
         }
         1u32 => {
@@ -68,7 +74,12 @@ async fn route_request(
                 &pavex::http::Method::GET => {
                     route_0::handler(server_state.application_state.s0.clone()).await
                 }
-                _ => route_1::handler().await,
+                _ => {
+                    let allowed_methods = pavex::extract::route::AllowedMethods::new(
+                        vec![pavex::http::Method::GET],
+                    );
+                    route_1::handler(&allowed_methods).await
+                }
             }
         }
         _ => pavex::response::Response::not_found().box_body(),
@@ -81,11 +92,11 @@ pub mod route_0 {
     }
 }
 pub mod route_1 {
-    pub async fn handler() -> pavex::response::Response {
-        let v0 = pavex::router::default_fallback().await;
-        <pavex::response::Response<
-            http_body_util::Empty<bytes::Bytes>,
-        > as pavex::response::IntoResponse>::into_response(v0)
+    pub async fn handler(
+        v0: &pavex::extract::route::AllowedMethods,
+    ) -> pavex::response::Response {
+        let v1 = pavex::router::default_fallback(v0).await;
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
     }
 }
 pub mod route_2 {
