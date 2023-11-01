@@ -56,7 +56,6 @@ pub struct UserComponentDb {
     ///
     /// Invariants: there is an entry for every single request handler.
     handler_id2middleware_ids: HashMap<UserComponentId, Vec<UserComponentId>>,
-    router: Router,
     scope_graph: ScopeGraph,
 }
 
@@ -67,13 +66,13 @@ impl UserComponentDb {
     /// The callable associated to each component will be resolved and added to the
     /// provided [`ComputationDb`].
     #[tracing::instrument(name = "Build user component database", skip_all)]
-    pub fn build(
+    pub(crate) fn build(
         bp: &Blueprint,
         computation_db: &mut ComputationDb,
         package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
         diagnostics: &mut Vec<miette::Error>,
-    ) -> Result<Self, ()> {
+    ) -> Result<(Router, Self), ()> {
         /// Exit early if there is at least one error.
         macro_rules! exit_on_errors {
             ($var:ident) => {
@@ -111,16 +110,18 @@ impl UserComponentDb {
             fallback_id2path_prefix: _,
         } = raw_db;
 
-        Ok(Self {
-            component_interner,
-            identifiers_interner,
-            id2locations,
-            constructor_id2cloning_strategy,
-            id2lifecycle,
-            handler_id2middleware_ids,
-            scope_graph,
+        Ok((
             router,
-        })
+            Self {
+                component_interner,
+                identifiers_interner,
+                id2locations,
+                constructor_id2cloning_strategy,
+                id2lifecycle,
+                handler_id2middleware_ids,
+                scope_graph,
+            },
+        ))
     }
 
     /// Iterate over all the user components in the database, returning their id and the associated

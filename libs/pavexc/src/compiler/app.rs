@@ -21,6 +21,7 @@ use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::constructibles::ConstructibleDb;
 use crate::compiler::analyses::framework_items::FrameworkItemDb;
 use crate::compiler::analyses::processing_pipeline::RequestHandlerPipeline;
+use crate::compiler::analyses::router::Router;
 use crate::compiler::analyses::user_components::{RouterKey, UserComponentDb};
 use crate::compiler::computation::Computation;
 use crate::compiler::generated_app::GeneratedApp;
@@ -71,7 +72,7 @@ impl App {
         let package_graph = krate_collection.package_graph().to_owned();
         let mut diagnostics = vec![];
         let mut computation_db = ComputationDb::new();
-        let Ok(user_component_db) = UserComponentDb::build(
+        let Ok((router, user_component_db)) = UserComponentDb::build(
             &bp,
             &mut computation_db,
             &package_graph,
@@ -89,6 +90,7 @@ impl App {
             &krate_collection,
             &mut diagnostics,
         );
+        let router = Router::lift(router, component_db.user_component_id2component_id());
         exit_on_errors!(diagnostics);
         let mut constructible_db = ConstructibleDb::build(
             &mut component_db,
