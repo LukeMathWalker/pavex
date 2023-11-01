@@ -2,7 +2,7 @@ use std::fmt::Write;
 
 use anyhow::anyhow;
 use guppy::graph::PackageGraph;
-use indexmap::IndexSet;
+use indexmap::{IndexMap, IndexSet};
 use itertools::Itertools;
 use miette::Report;
 use petgraph::graph::NodeIndex;
@@ -10,10 +10,11 @@ use petgraph::Direction;
 use rustdoc_types::{ItemEnum, StructKind};
 
 use crate::compiler::analyses::call_graph::{CallGraphNode, RawCallGraph};
-use crate::compiler::analyses::components::{ComponentDb, HydratedComponent};
+use crate::compiler::analyses::components::{ComponentDb, ComponentId, HydratedComponent};
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::processing_pipeline::RequestHandlerPipeline;
-use crate::compiler::analyses::user_components::{RouterKey, UserComponentId};
+use crate::compiler::analyses::router::Router;
+use crate::compiler::analyses::user_components::UserComponentId;
 use crate::compiler::component::Constructor;
 use crate::compiler::computation::{Computation, MatchResultVariant};
 use crate::compiler::utils::process_framework_path;
@@ -29,16 +30,15 @@ use super::traits::assert_trait_is_implemented;
 /// If so, check that the type of the route parameter is a struct with named fields and
 /// that each named field maps to a route parameter for the corresponding handler.
 #[tracing::instrument(name = "Verify route parameters", skip_all)]
-pub(crate) fn verify_route_parameters<'a, I>(
-    handler_pipelines: I,
+pub(crate) fn verify_route_parameters(
+    router: &Router,
+    handler_id2pipeline: &IndexMap<ComponentId, RequestHandlerPipeline>,
     computation_db: &ComputationDb,
     component_db: &ComponentDb,
     package_graph: &PackageGraph,
     krate_collection: &CrateCollection,
     diagnostics: &mut Vec<miette::Error>,
-) where
-    I: Iterator<Item = (&'a RouterKey, &'a RequestHandlerPipeline)>,
-{
+) {
     let ResolvedType::ResolvedPath(structural_deserialize) = process_framework_path(
         "pavex::serialization::StructuralDeserialize",
         package_graph,
@@ -47,116 +47,126 @@ pub(crate) fn verify_route_parameters<'a, I>(
         unreachable!()
     };
 
-    for (router_key, pipeline) in handler_pipelines {
-        // If `RouteParams` is used, it will appear as a `Compute` node in *at most* one of the
-        // call graphs in the processing pipeline for the handler, since it's a `RequestScoped`
-        // component.
-        let Some((graph, ok_route_params_node_id, ty_)) = pipeline.graph_iter().find_map(|graph| {
-            let graph = &graph.call_graph;
-            graph
-                .node_indices()
-                .find_map(|node_id| {
-                    let node = &graph[node_id];
-                    let CallGraphNode::Compute { component_id, .. } = node else {
-                        return None;
-                    };
-                    let hydrated_component =
-                        component_db.hydrated_component(*component_id, computation_db);
-                    let HydratedComponent::Constructor(Constructor(Computation::MatchResult(m))) =
-                        hydrated_component
-                    else {
-                        return None;
-                    };
-                    if m.variant != MatchResultVariant::Ok {
-                        return None;
-                    }
-                    let ResolvedType::ResolvedPath(ty_) = &m.output else {
-                        return None;
-                    };
-                    if ty_.base_type == vec!["pavex", "extract", "route", "RouteParams"] {
-                        Some((node_id, ty_.clone()))
-                    } else {
-                        None
-                    }
+    for (path, method_router) in router.route_path2sub_router.iter() {
+        for (handler_id, _) in method_router.handler_id2methods.iter() {
+            let pipeline = &handler_id2pipeline[handler_id];
+
+            // If `RouteParams` is used, it will appear as a `Compute` node in *at most* one of the
+            // call graphs in the processing pipeline for the handler, since it's a `RequestScoped`
+            // component.
+            let Some((graph, ok_route_params_node_id, ty_)) =
+                pipeline.graph_iter().find_map(|graph| {
+                    let graph = &graph.call_graph;
+                    graph
+                        .node_indices()
+                        .find_map(|node_id| {
+                            let node = &graph[node_id];
+                            let CallGraphNode::Compute { component_id, .. } = node else {
+                                return None;
+                            };
+                            let hydrated_component =
+                                component_db.hydrated_component(*component_id, computation_db);
+                            let HydratedComponent::Constructor(Constructor(
+                                Computation::MatchResult(m),
+                            )) = hydrated_component
+                            else {
+                                return None;
+                            };
+                            if m.variant != MatchResultVariant::Ok {
+                                return None;
+                            }
+                            let ResolvedType::ResolvedPath(ty_) = &m.output else {
+                                return None;
+                            };
+                            if ty_.base_type == vec!["pavex", "extract", "route", "RouteParams"] {
+                                Some((node_id, ty_.clone()))
+                            } else {
+                                None
+                            }
+                        })
+                        .map(|(node_id, ty_)| (graph, node_id, ty_))
                 })
-                .map(|(node_id, ty_)| (graph, node_id, ty_))
-        }) else {
-            continue;
-        };
-
-        let GenericArgument::TypeParameter(extracted_type) = &ty_.generic_arguments[0] else {
-            unreachable!()
-        };
-
-        let Ok(struct_item) = must_be_a_plain_struct(
-            component_db,
-            package_graph,
-            krate_collection,
-            diagnostics,
-            graph,
-            ok_route_params_node_id,
-            extracted_type,
-        ) else {
-            continue;
-        };
-        let ItemEnum::Struct(struct_inner_item) = &struct_item.inner else {
-            unreachable!()
-        };
-
-        // We only want to check alignment between struct fields and the route parameters in the
-        // template if the struct implements `StructuralDeserialize`, our marker trait that stands
-        // for "this struct implements serde::Deserialize using a #[derive(serde::Deserialize)] with
-        // no customizations (e.g. renames)".
-        if assert_trait_is_implemented(krate_collection, extracted_type, &structural_deserialize)
-            .is_err()
-        {
-            continue;
-        }
-
-        let route_parameter_names = router_key
-            .path
-            .split('/')
-            .filter_map(|s| s.strip_prefix(':').or_else(|| s.strip_prefix('*')))
-            .collect::<IndexSet<_>>();
-
-        let struct_field_names = {
-            let mut struct_field_names = IndexSet::new();
-            let ResolvedType::ResolvedPath(extracted_path_type) = &extracted_type else {
-                unreachable!()
-            };
-            let StructKind::Plain {
-                fields: field_ids, ..
-            } = &struct_inner_item.kind
             else {
+                continue;
+            };
+
+            let GenericArgument::TypeParameter(extracted_type) = &ty_.generic_arguments[0] else {
                 unreachable!()
             };
-            for field_id in field_ids {
-                let field_item = krate_collection.get_type_by_global_type_id(&GlobalItemId {
-                    rustdoc_item_id: field_id.clone(),
-                    package_id: extracted_path_type.package_id.clone(),
-                });
-                struct_field_names.insert(field_item.name.clone().unwrap());
-            }
-            struct_field_names
-        };
 
-        let non_existing_route_parameters = struct_field_names
-            .into_iter()
-            .filter(|f| !route_parameter_names.contains(f.as_str()))
-            .collect::<IndexSet<_>>();
-
-        if !non_existing_route_parameters.is_empty() {
-            report_non_existing_route_parameters(
+            let Ok(struct_item) = must_be_a_plain_struct(
                 component_db,
                 package_graph,
+                krate_collection,
                 diagnostics,
-                router_key,
                 graph,
                 ok_route_params_node_id,
-                route_parameter_names,
-                non_existing_route_parameters,
                 extracted_type,
+            ) else {
+                continue;
+            };
+            let ItemEnum::Struct(struct_inner_item) = &struct_item.inner else {
+                unreachable!()
+            };
+
+            // We only want to check alignment between struct fields and the route parameters in the
+            // template if the struct implements `StructuralDeserialize`, our marker trait that stands
+            // for "this struct implements serde::Deserialize using a #[derive(serde::Deserialize)] with
+            // no customizations (e.g. renames)".
+            if assert_trait_is_implemented(
+                krate_collection,
+                extracted_type,
+                &structural_deserialize,
             )
+            .is_err()
+            {
+                continue;
+            }
+
+            let route_parameter_names = path
+                .split('/')
+                .filter_map(|s| s.strip_prefix(':').or_else(|| s.strip_prefix('*')))
+                .collect::<IndexSet<_>>();
+
+            let struct_field_names = {
+                let mut struct_field_names = IndexSet::new();
+                let ResolvedType::ResolvedPath(extracted_path_type) = &extracted_type else {
+                    unreachable!()
+                };
+                let StructKind::Plain {
+                    fields: field_ids, ..
+                } = &struct_inner_item.kind
+                else {
+                    unreachable!()
+                };
+                for field_id in field_ids {
+                    let field_item = krate_collection.get_type_by_global_type_id(&GlobalItemId {
+                        rustdoc_item_id: field_id.clone(),
+                        package_id: extracted_path_type.package_id.clone(),
+                    });
+                    struct_field_names.insert(field_item.name.clone().unwrap());
+                }
+                struct_field_names
+            };
+
+            let non_existing_route_parameters = struct_field_names
+                .into_iter()
+                .filter(|f| !route_parameter_names.contains(f.as_str()))
+                .collect::<IndexSet<_>>();
+
+            if !non_existing_route_parameters.is_empty() {
+                report_non_existing_route_parameters(
+                    component_db,
+                    package_graph,
+                    diagnostics,
+                    path,
+                    graph,
+                    ok_route_params_node_id,
+                    route_parameter_names,
+                    non_existing_route_parameters,
+                    extracted_type,
+                )
+            }
         }
     }
 }
@@ -168,7 +178,7 @@ fn report_non_existing_route_parameters(
     component_db: &ComponentDb,
     package_graph: &PackageGraph,
     diagnostics: &mut Vec<Report>,
-    router_key: &RouterKey,
+    path: &str,
     call_graph: &RawCallGraph,
     ok_route_params_node_id: NodeIndex,
     route_parameter_names: IndexSet<&str>,
@@ -199,9 +209,8 @@ fn report_non_existing_route_parameters(
         if route_parameter_names.is_empty() {
             let error = anyhow!(
                     "`{}` is trying to extract route parameters using `RouteParams<{extracted_type:?}>`.\n\
-                    But there are no route parameters in `{}`, the corresponding route template!",
+                    But there are no route parameters in `{path}`, the corresponding route template!",
                     raw_identifiers.fully_qualified_path().join("::"),
-                    router_key.path,
                 );
             let d = CompilerDiagnostic::builder(source, error)
                 .optional_label(source_span.labeled(format!(
@@ -243,10 +252,9 @@ fn report_non_existing_route_parameters(
             let error = anyhow!(
                     "`{}` is trying to extract route parameters using `RouteParams<{extracted_type:?}>`.\n\
                     Every struct field in `{extracted_type:?}` must be named after one of the route \
-                    parameters that appear in `{}`:\n{route_parameters}\n\n\
+                    parameters that appear in `{path}`:\n{route_parameters}\n\n\
                     {missing_msg}. This is going to cause a runtime error!",
                     raw_identifiers.fully_qualified_path().join("::"),
-                    router_key.path,
                 );
             let d = CompilerDiagnostic::builder(source, error)
                 .optional_label(source_span.labeled(format!(

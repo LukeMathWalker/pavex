@@ -1,5 +1,4 @@
 use std::borrow::Cow;
-use std::collections::BTreeMap;
 
 use ahash::{HashMap, HashMapExt};
 use bimap::BiHashMap;
@@ -13,7 +12,7 @@ use pavex::blueprint::constructor::{CloningStrategy, Lifecycle};
 
 use crate::compiler::analyses::computations::{ComputationDb, ComputationId};
 use crate::compiler::analyses::user_components::{
-    RouterKey, ScopeGraph, ScopeId, UserComponent, UserComponentDb, UserComponentId,
+    ScopeGraph, ScopeId, UserComponent, UserComponentDb, UserComponentId,
 };
 use crate::compiler::component::{
     Constructor, ConstructorValidationError, ErrorHandler, ErrorHandlerValidationError,
@@ -168,8 +167,6 @@ pub(crate) struct ComponentDb {
     /// Invariants: there is an entry for every single request handler.
     handler_id2middleware_ids: HashMap<ComponentId, Vec<ComponentId>>,
     error_handler_id2error_handler: HashMap<ComponentId, ErrorHandler>,
-    router: BTreeMap<RouterKey, ComponentId>,
-    fallback_handlers: BTreeMap<ScopeId, ComponentId>,
     into_response: PathType,
     /// A mapping from the low-level [`UserComponentId`]s to the high-level [`ComponentId`]s.
     ///
@@ -218,8 +215,6 @@ impl ComponentDb {
             constructor_id2cloning_strategy: Default::default(),
             handler_id2middleware_ids: Default::default(),
             error_handler_id2error_handler: Default::default(),
-            router: Default::default(),
-            fallback_handlers: Default::default(),
             into_response,
             user_component_id2component_id: Default::default(),
         };
@@ -470,15 +465,7 @@ impl ComponentDb {
             .map(|(id, _)| id)
             .collect::<Vec<_>>();
         for user_component_id in request_handler_ids {
-            let user_component = &self.user_component_db[user_component_id];
             let callable = &computation_db[user_component_id];
-            // Fallback handlers don't have a router key.
-            let router_key =
-                if let UserComponent::RequestHandler { router_key, .. } = user_component {
-                    Some(router_key)
-                } else {
-                    None
-                };
             match RequestHandler::new(Cow::Borrowed(callable)) {
                 Err(e) => {
                     Self::invalid_request_handler(
@@ -497,12 +484,6 @@ impl ComponentDb {
                         .get_or_intern(Component::RequestHandler { user_component_id });
                     self.user_component_id2component_id
                         .insert(user_component_id, handler_id);
-                    if let Some(router_key) = router_key {
-                        self.router.insert(router_key.to_owned(), handler_id);
-                    } else {
-                        self.fallback_handlers
-                            .insert(user_component.scope_id(), handler_id);
-                    }
                     let lifecycle = Lifecycle::RequestScoped;
                     let scope_id = self.scope_id(handler_id);
                     self.id2lifecycle.insert(handler_id, lifecycle);
@@ -893,16 +874,6 @@ impl ComponentDb {
     /// Retrieve the lifecycle for a component.
     pub fn lifecycle(&self, id: ComponentId) -> Option<&Lifecycle> {
         self.id2lifecycle.get(&id)
-    }
-
-    /// The mapping from a route to its dedicated request handler.
-    pub fn router(&self) -> &BTreeMap<RouterKey, ComponentId> {
-        &self.router
-    }
-
-    /// The mapping from a scope to its dedicated fallback handler.
-    pub fn fallbacks(&self) -> &BTreeMap<ScopeId, ComponentId> {
-        &self.fallback_handlers
     }
 
     /// The mapping from a low-level [`UserComponentId`] to its corresponding [`ComponentId`].

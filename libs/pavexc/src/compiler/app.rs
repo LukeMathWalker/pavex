@@ -7,6 +7,7 @@ use ahash::{HashMap, HashMapExt};
 use bimap::BiHashMap;
 use guppy::graph::PackageGraph;
 use indexmap::{IndexMap, IndexSet};
+use itertools::Itertools;
 use miette::miette;
 use proc_macro2::Ident;
 use quote::format_ident;
@@ -22,7 +23,7 @@ use crate::compiler::analyses::constructibles::ConstructibleDb;
 use crate::compiler::analyses::framework_items::FrameworkItemDb;
 use crate::compiler::analyses::processing_pipeline::RequestHandlerPipeline;
 use crate::compiler::analyses::router::Router;
-use crate::compiler::analyses::user_components::{RouterKey, UserComponentDb};
+use crate::compiler::analyses::user_components::UserComponentDb;
 use crate::compiler::computation::Computation;
 use crate::compiler::generated_app::GeneratedApp;
 use crate::compiler::resolvers::CallableResolutionError;
@@ -40,7 +41,8 @@ pub(crate) const GENERATED_APP_PACKAGE_ID: &str = "crate";
 /// the constraints and instructions from a [`Blueprint`] instance.
 pub struct App {
     package_graph: PackageGraph,
-    handler_pipelines: IndexMap<RouterKey, RequestHandlerPipeline>,
+    router: Router,
+    handler_id2pipeline: IndexMap<ComponentId, RequestHandlerPipeline>,
     application_state_call_graph: ApplicationStateCallGraph,
     framework_item_db: FrameworkItemDb,
     runtime_singleton_bindings: BiHashMap<Ident, ResolvedType>,
@@ -101,10 +103,14 @@ impl App {
             &mut diagnostics,
         );
         exit_on_errors!(diagnostics);
-        let handler_pipelines = {
-            let router = component_db.router().clone();
-            let mut handler_pipelines = IndexMap::with_capacity(router.len());
-            for (i, (router_key, handler_id)) in router.into_iter().enumerate() {
+        let handler_id2pipeline = {
+            let handler_ids = router
+                .route_path2sub_router
+                .values()
+                .flat_map(|leaf_router| leaf_router.handler_id2methods.keys().copied())
+                .chain(std::iter::once(router.root_fallback_id));
+            let mut handler_pipelines = IndexMap::new();
+            for (i, handler_id) in handler_ids.enumerate() {
                 let Ok(processing_pipeline) = RequestHandlerPipeline::new(
                     handler_id,
                     format!("route_{i}"),
@@ -117,44 +123,24 @@ impl App {
                 ) else {
                     continue;
                 };
-                handler_pipelines.insert(router_key.to_owned(), processing_pipeline);
+                handler_pipelines.insert(handler_id, processing_pipeline);
             }
             handler_pipelines
         };
         route_parameter_validation::verify_route_parameters(
-            handler_pipelines.iter(),
+            &router,
+            &handler_id2pipeline,
             &computation_db,
             &component_db,
             &package_graph,
             &krate_collection,
             &mut diagnostics,
         );
-        let _scope_id2fallback_pipeline = {
-            let scope_id2fallback_id = component_db.fallbacks().clone();
-            let mut scope_id2fallback_pipeline =
-                IndexMap::with_capacity(scope_id2fallback_id.len());
-            for (i, (scope_id, handler_id)) in scope_id2fallback_id.into_iter().enumerate() {
-                let Ok(processing_pipeline) = RequestHandlerPipeline::new(
-                    handler_id,
-                    format!("fallback_{i}"),
-                    &mut computation_db,
-                    &mut component_db,
-                    &mut constructible_db,
-                    &package_graph,
-                    &krate_collection,
-                    &mut diagnostics,
-                ) else {
-                    continue;
-                };
-                scope_id2fallback_pipeline.insert(scope_id.to_owned(), processing_pipeline);
-            }
-            scope_id2fallback_pipeline
-        };
         exit_on_errors!(diagnostics);
 
         let runtime_singletons: IndexSet<(ResolvedType, ComponentId)> =
             get_required_singleton_types(
-                handler_pipelines.iter(),
+                handler_id2pipeline.values(),
                 &framework_item_db,
                 &constructible_db,
                 &component_db,
@@ -189,7 +175,8 @@ impl App {
         exit_on_errors!(diagnostics);
         Ok(Self {
             package_graph,
-            handler_pipelines,
+            router,
+            handler_id2pipeline,
             component_db,
             computation_db,
             application_state_call_graph,
@@ -207,7 +194,7 @@ impl App {
         let framework_bindings = self.framework_item_db.bindings();
         let (cargo_toml, package_ids2deps) = codegen::codegen_manifest(
             &self.package_graph,
-            self.handler_pipelines.values(),
+            self.handler_id2pipeline.values(),
             &self.application_state_call_graph.call_graph.call_graph,
             &framework_bindings,
             &self.codegen_deps,
@@ -215,7 +202,8 @@ impl App {
             &self.computation_db,
         );
         let lib_rs = codegen::codegen_app(
-            &self.handler_pipelines,
+            &self.router,
+            &self.handler_id2pipeline,
             &self.application_state_call_graph,
             &framework_bindings,
             &package_ids2deps,
@@ -234,10 +222,9 @@ impl App {
 
     /// A representation of an `App` geared towards debugging and testing.
     pub fn diagnostic_representation(&self) -> AppDiagnostics {
-        let mut handlers = IndexMap::new();
         let (_, package_ids2deps) = codegen::codegen_manifest(
             &self.package_graph,
-            self.handler_pipelines.values(),
+            self.handler_id2pipeline.values(),
             &self.application_state_call_graph.call_graph.call_graph,
             &self.framework_item_db.bindings(),
             &self.codegen_deps,
@@ -245,30 +232,21 @@ impl App {
             &self.computation_db,
         );
 
-        for (router_key, handler_pipeline) in &self.handler_pipelines {
-            let method = router_key
-                .method_guard
-                .as_ref()
-                .map(|methods| {
-                    methods
-                        .iter()
-                        .map(|method| method.to_string())
-                        .collect::<Vec<_>>()
-                        .join(" | ")
-                })
-                .unwrap_or("*".to_string());
-            let mut handler_graphs = Vec::new();
-            for (i, graph) in handler_pipeline.graph_iter().enumerate() {
-                handler_graphs.push(
-                    graph
-                        .dot(&package_ids2deps, &self.component_db, &self.computation_db)
-                        .replace(
-                            "digraph",
-                            &format!("digraph \"{method} {} - {i}\"", router_key.path),
-                        ),
-                );
+        let mut handlers = IndexMap::new();
+        for (path, method_router) in &self.router.route_path2sub_router {
+            for (handler_id, methods) in &method_router.handler_id2methods {
+                let method = methods.iter().join(" | ");
+                let pipeline = &self.handler_id2pipeline[handler_id];
+                let mut handler_graphs = Vec::new();
+                for (i, graph) in pipeline.graph_iter().enumerate() {
+                    handler_graphs.push(
+                        graph
+                            .dot(&package_ids2deps, &self.component_db, &self.computation_db)
+                            .replace("digraph", &format!("digraph \"{method} {} - {i}\"", path)),
+                    );
+                }
+                handlers.insert((path.to_owned(), method), handler_graphs);
             }
-            handlers.insert(router_key.to_owned(), handler_graphs);
         }
         let application_state_graph = self
             .application_state_call_graph
@@ -297,7 +275,10 @@ pub(crate) enum BuildError {
 pub struct AppDiagnostics {
     /// For each handler, we have a sequence of DOT graphs representing the call graph of each
     /// middleware in their pipeline and the request handler itself.
-    pub handlers: IndexMap<RouterKey, Vec<String>>,
+    ///
+    /// The key is a tuple of `(path, methods)`, where `path` is the path of the route and `methods`
+    /// is the concatenation of all the HTTP methods that the handler can handle.
+    pub handlers: IndexMap<(String, String), Vec<String>>,
     pub application_state: String,
 }
 
@@ -307,19 +288,8 @@ impl AppDiagnostics {
     pub fn persist(&self, directory: &Path) -> Result<(), anyhow::Error> {
         let handler_directory = directory.join("handlers");
         fs_err::create_dir_all(&handler_directory)?;
-        for (router_key, handler_graphs) in &self.handlers {
-            let method = router_key
-                .method_guard
-                .as_ref()
-                .map(|methods| {
-                    methods
-                        .iter()
-                        .map(|method| method.to_string())
-                        .collect::<Vec<_>>()
-                        .join(" | ")
-                })
-                .unwrap_or("*".to_string());
-            let path = router_key.path.trim_start_matches('/');
+        for ((path, method), handler_graphs) in &self.handlers {
+            let path = path.trim_start_matches('/');
             let filepath = handler_directory.join(format!("{method} {path}.dot"));
             let mut file = fs_err::OpenOptions::new()
                 .write(true)
@@ -367,13 +337,13 @@ impl AppDiagnostics {
 /// registered by the application.
 /// These singletons will be attached to the overall application state.
 fn get_required_singleton_types<'a>(
-    handler_pipelines: impl Iterator<Item = (&'a RouterKey, &'a RequestHandlerPipeline)>,
+    handler_pipelines: impl Iterator<Item = &'a RequestHandlerPipeline>,
     framework_item_db: &FrameworkItemDb,
     constructibles_db: &ConstructibleDb,
     component_db: &ComponentDb,
 ) -> IndexSet<(ResolvedType, ComponentId)> {
     let mut singletons_to_be_built = IndexSet::new();
-    for (_, handler_pipeline) in handler_pipelines {
+    for handler_pipeline in handler_pipelines {
         for graph in handler_pipeline.graph_iter() {
             let root_component_id = graph.root_component_id();
             let root_component_scope_id = component_db.scope_id(root_component_id);

@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use ahash::HashMap;
 use bimap::{BiBTreeMap, BiHashMap};
@@ -6,6 +6,7 @@ use cargo_manifest::{Dependency, DependencyDetail, Edition};
 use guppy::graph::{ExternalSource, PackageSource};
 use guppy::PackageId;
 use indexmap::{IndexMap, IndexSet};
+use itertools::Itertools;
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote};
 use syn::{ItemEnum, ItemFn, ItemStruct};
@@ -13,13 +14,13 @@ use syn::{ItemEnum, ItemFn, ItemStruct};
 use crate::compiler::analyses::call_graph::{
     ApplicationStateCallGraph, CallGraphNode, RawCallGraph,
 };
-use crate::compiler::analyses::components::ComponentDb;
+use crate::compiler::analyses::components::{ComponentDb, ComponentId};
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::framework_items::FrameworkItemDb;
 use crate::compiler::analyses::processing_pipeline::{
     CodegenedRequestHandlerPipeline, RequestHandlerPipeline,
 };
-use crate::compiler::analyses::user_components::RouterKey;
+use crate::compiler::analyses::router::Router;
 use crate::compiler::app::GENERATED_APP_PACKAGE_ID;
 use crate::compiler::computation::Computation;
 use crate::language::{Callable, GenericArgument, ResolvedType};
@@ -29,12 +30,13 @@ use super::generated_app::GeneratedManifest;
 
 #[derive(Debug, Clone)]
 enum CodegenRouterEntry {
-    MethodSubRouter(BTreeMap<String, CodegenedRequestHandlerPipeline>),
+    MethodSubRouter(Vec<(BTreeSet<String>, CodegenedRequestHandlerPipeline)>),
     CatchAllHandler(CodegenedRequestHandlerPipeline),
 }
 
 pub(crate) fn codegen_app(
-    handler_pipelines: &IndexMap<RouterKey, RequestHandlerPipeline>,
+    router: &Router,
+    handler_id2pipeline: &IndexMap<ComponentId, RequestHandlerPipeline>,
     application_state_call_graph: &ApplicationStateCallGraph,
     request_scoped_framework_bindings: &BiHashMap<Ident, ResolvedType>,
     package_id2name: &BiHashMap<PackageId, String>,
@@ -72,27 +74,22 @@ pub(crate) fn codegen_app(
     let mut handler_modules = vec![];
     let path2codegen_router_entry = {
         let mut map: IndexMap<String, CodegenRouterEntry> = IndexMap::new();
-        for (router_key, pipeline) in handler_pipelines {
-            let pipeline_code = pipeline.codegen(package_id2name, component_db, computation_db)?;
-            handler_modules.push(pipeline_code.as_inline_module());
-            match router_key.method_guard.clone() {
-                None => {
-                    map.insert(
-                        router_key.path.clone(),
-                        CodegenRouterEntry::CatchAllHandler(pipeline_code.clone()),
+        for (path, method_router) in &router.route_path2sub_router {
+            for (handler_id, methods) in &method_router.handler_id2methods {
+                let pipeline = &handler_id2pipeline[handler_id];
+                let pipeline_code =
+                    pipeline.codegen(package_id2name, component_db, computation_db)?;
+                handler_modules.push(pipeline_code.as_inline_module());
+
+                let sub_router = map
+                    .entry(path.clone())
+                    .or_insert_with(|| CodegenRouterEntry::MethodSubRouter(Default::default()));
+                let CodegenRouterEntry::MethodSubRouter(sub_router) = sub_router else {
+                    unreachable!(
+                        "Cannot have a catch-all handler and a method sub-router for the same path"
                     );
-                }
-                Some(methods) => {
-                    let sub_router = map
-                        .entry(router_key.path.clone())
-                        .or_insert_with(|| CodegenRouterEntry::MethodSubRouter(BTreeMap::new()));
-                    let CodegenRouterEntry::MethodSubRouter(sub_router) = sub_router else {
-                        unreachable!("Cannot have a catch-all handler and a method sub-router for the same path");
-                    };
-                    for method in methods {
-                        sub_router.insert(method, pipeline_code.clone());
-                    }
-                }
+                };
+                sub_router.push((methods.clone(), pipeline_code.clone()));
             }
         }
         map
@@ -299,28 +296,28 @@ fn get_request_dispatcher(
         let match_arm = match router_entry {
             CodegenRouterEntry::MethodSubRouter(sub_router) => {
                 let mut sub_router_dispatch_table = quote! {};
-                let mut allowed_methods = vec![];
+                let mut allowed_methods = BTreeSet::new();
 
-                let needs_matched_route = sub_router.values().any(|pipeline| {
+                let needs_matched_route = sub_router.iter().any(|(_, pipeline)| {
                     pipeline.stages[0]
                         .input_parameters
                         .contains(matched_route_type)
                 });
 
-                for (method, request_pipeline) in sub_router {
+                for (methods, request_pipeline) in sub_router {
                     let invocation = request_pipeline.entrypoint_invocation(
                         singleton_bindings,
                         request_scoped_bindings,
                         &server_state_ident,
                     );
-                    allowed_methods.push(method.clone());
-                    let method = format_ident!("{}", method);
+                    allowed_methods.extend(methods.clone());
+                    let methods = methods.iter().map(|m| format_ident!("{}", m));
                     sub_router_dispatch_table = quote! {
                         #sub_router_dispatch_table
-                        &#pavex::http::Method::#method => #invocation,
+                        &#(#pavex::http::Method::#methods)|* => #invocation,
                     }
                 }
-                let allow_header_value = allowed_methods.join(", ");
+                let allow_header_value = allowed_methods.into_iter().join(", ");
                 let matched_route_template = if needs_matched_route {
                     let path = route_id2path.get_by_left(route_id).unwrap();
                     quote! {
