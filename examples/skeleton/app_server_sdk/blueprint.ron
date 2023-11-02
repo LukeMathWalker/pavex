@@ -77,5 +77,6 @@
             error_handler: None,
         ),
     ],
+    fallback_request_handler: None,
     nested_blueprints: [],
 )

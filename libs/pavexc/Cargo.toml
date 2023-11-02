@@ -47,7 +47,7 @@ semver = "1.0.17"
 persist_if_changed = { path = "../persist_if_changed" }
 
 #matchit = "0.7"
-matchit = { git = "https://github.com/LukeMathWalker/matchit", branch = "catchall-without-prefix-slash" }
+matchit = { git = "https://github.com/LukeMathWalker/matchit", branch = "repro" }
 
 # Sqlite cache
 xdg-home = "1.0.0"

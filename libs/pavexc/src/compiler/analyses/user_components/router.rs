@@ -199,6 +199,7 @@ impl Router {
                     errored = true;
                     push_matchit_diagnostic(
                         raw_user_component_db,
+                        &router_key.path,
                         id,
                         e,
                         package_graph,
@@ -739,6 +740,7 @@ fn push_fallback_method_ambiguity_diagnostic(
 
 fn push_matchit_diagnostic(
     raw_user_component_db: &RawUserComponentDb,
+    path: &str,
     raw_user_component_id: UserComponentId,
     error: matchit::InsertError,
     package_graph: &PackageGraph,
@@ -748,7 +750,7 @@ fn push_matchit_diagnostic(
     // diagnostics we emit.
     let error = match error {
         InsertError::Conflict { with } => {
-            anyhow!("This route path conflicts with the path of another route you already registered, `{}`.", with)
+            anyhow!("This route path, `{}`, conflicts with the path of another route you already registered, `{}`.", path, with)
         }
         InsertError::TooManyParams => {
             anyhow!("You can only register one route parameter per each path segment.")
