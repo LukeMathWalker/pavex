@@ -1111,12 +1111,6 @@ dependencies = [
 
 [[package]]
 name = "matchit"
-version = "0.7.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ed1202b2a6f884ae56f04cff409ab315c5ce26b5e58d7412e484f01fd52f52ef"
-
-[[package]]
-name = "matchit"
 version = "0.7.3"
 source = "git+https://github.com/LukeMathWalker/matchit?branch=repro#a8e75215471308ef62ba7104e13c0c7ecadf3bc5"
 
@@ -1417,7 +1411,7 @@ dependencies = [
  "indexmap 1.9.3",
  "insta",
  "itertools 0.11.0",
- "matchit 0.7.2",
+ "matchit",
  "mime",
  "paste",
  "pavex_macros",
@@ -1529,7 +1523,7 @@ dependencies = [
  "indexmap 1.9.3",
  "itertools 0.10.5",
  "la-arena",
- "matchit 0.7.3",
+ "matchit",
  "miette",
  "num_cpus",
  "once_cell",

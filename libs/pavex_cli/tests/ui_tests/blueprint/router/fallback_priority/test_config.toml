@@ -2,3 +2,6 @@ description = "Pavex invokes the right fallback in all scenarios"
 
 [expectations]
 codegen = "pass"
+
+[dev-dependencies]
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }

@@ -21,8 +21,8 @@
   [31m│[0m     ╰────
 
 [31m[1mERROR[0m[39m: 
-  [31m×[0m This route path conflicts with the path of another route you already
-  [31m│[0m registered, `/home/:id`.
+  [31m×[0m This route path, `/home/:home_id`, conflicts with the path of another
+  [31m│[0m route you already registered, `/home/:id`.
   [31m│[0m
   [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:16:1]
   [31m│[0m  [2m16[0m │     // Route conflict with the previous one

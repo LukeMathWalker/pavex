@@ -70,7 +70,7 @@ impl Router {
         Self::detect_method_conflicts(raw_user_component_db, package_graph, diagnostics)?;
         let runtime_router =
             Self::detect_path_conflicts(raw_user_component_db, package_graph, diagnostics)?;
-        let route_id2fallback_id = Self::assign_fallbacks(
+        let (route_id2fallback_id, path_catchall2fallback_id) = Self::assign_fallbacks(
             runtime_router.clone(),
             raw_user_component_db,
             scope_graph,
@@ -99,6 +99,11 @@ impl Router {
                 // Hence it's the fallback for that path.
                 route_path2sub_router.insert(router_key.path.clone(), LeafRouter::new(id));
             }
+        }
+        for (path, fallback_id) in path_catchall2fallback_id {
+            route_path2sub_router
+                .entry(path)
+                .or_insert_with(|| LeafRouter::new(fallback_id));
         }
 
         Ok(Self {
@@ -230,7 +235,13 @@ impl Router {
         scope_graph: &ScopeGraph,
         package_graph: &PackageGraph,
         diagnostics: &mut Vec<miette::Error>,
-    ) -> Result<BTreeMap<UserComponentId, UserComponentId>, ()> {
+    ) -> Result<
+        (
+            BTreeMap<UserComponentId, UserComponentId>,
+            BTreeMap<String, UserComponentId>,
+        ),
+        (),
+    > {
         let n_diagnostics = diagnostics.len();
 
         // For every scope there is at most one fallback.
@@ -253,6 +264,7 @@ impl Router {
         let scope_based_fallback_router = FallbackTree::new(&scope_id2fallback_id, scope_graph);
 
         let mut path_based_fallback_router = matchit::Router::new();
+        let mut path_catchall2fallback_id = BTreeMap::new();
         for (fallback_id, component) in raw_user_component_db.iter() {
             let UserComponent::Fallback { .. } = component else {
                 continue;
@@ -286,6 +298,8 @@ impl Router {
                     unreachable!()
                 }
             }
+
+            path_catchall2fallback_id.insert(fallback_path.clone(), fallback_id);
             path_based_fallback_router
                 .insert(fallback_path, fallback_id)
                 .unwrap();
@@ -321,6 +335,41 @@ impl Router {
                 }
                 Some(path_fallback_id) => {
                     if path_fallback_id != scope_fallback_id {
+                        let path_fallback_scope_id = {
+                            *raw_user_component_db[path_fallback_id]
+                                .scope_id()
+                                .direct_parent_ids(scope_graph)
+                                .iter()
+                                .next()
+                                .unwrap()
+                        };
+                        let scope_fallback_scope_id = {
+                            *raw_user_component_db[scope_fallback_id]
+                                .scope_id()
+                                .direct_parent_ids(scope_graph)
+                                .iter()
+                                .next()
+                                .unwrap()
+                        };
+                        if scope_fallback_scope_id
+                            .is_descendant_of(path_fallback_scope_id, scope_graph)
+                        {
+                            // We are looking at a situation like the following:
+                            //
+                            // bp.nest_at("/path_prefix", {
+                            //    bp.fallback(f!(...));
+                            //    bp.nest({
+                            //        bp.route(GET, "/yo", f!(...));
+                            //        bp.fallback(f!(...));
+                            //    });
+                            // });
+                            //
+                            // And this is fine, since the scope-based fallback is obviously the
+                            // desired one since it wraps closer to the route.
+                            handler_id2fallback_id.insert(handler_id, scope_fallback_id);
+                            continue;
+                        }
+
                         push_fallback_ambiguity_diagnostic(
                             raw_user_component_db,
                             scope_fallback_id,
@@ -338,7 +387,7 @@ impl Router {
         }
 
         if n_diagnostics == diagnostics.len() {
-            Ok(handler_id2fallback_id)
+            Ok((handler_id2fallback_id, path_catchall2fallback_id))
         } else {
             Err(())
         }

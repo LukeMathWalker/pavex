@@ -94,7 +94,7 @@ async fn route_request(
                 }
             }
         }
-        _ => pavex::response::Response::not_found().box_body(),
+        i => unreachable!("Unknown route id: {}", i),
     }
 }
 pub mod route_0 {

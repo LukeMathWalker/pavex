@@ -24,7 +24,8 @@ tracing = "0.1"
 http-body-util = "0.1.0-rc.3"
 
 # Route parameters
-matchit = "0.7"
+#matchit = "0.7"
+matchit = { git = "https://github.com/LukeMathWalker/matchit", branch = "repro" }
 percent-encoding = "2"
 
 # Query parameters

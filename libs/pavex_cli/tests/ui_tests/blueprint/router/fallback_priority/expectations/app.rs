@@ -24,7 +24,9 @@ pub fn run(
 }
 fn build_router() -> pavex::routing::Router<u32> {
     let mut router = pavex::routing::Router::new();
-    router.insert("/home", 0u32).unwrap();
+    router.insert("/users*catch_all", 0u32).unwrap();
+    router.insert("/users/", 1u32).unwrap();
+    router.insert("/users/id", 2u32).unwrap();
     router
 }
 async fn route_request(
@@ -38,7 +40,7 @@ async fn route_request(
         Ok(m) => m,
         Err(_) => {
             let allowed_methods = pavex::extract::route::AllowedMethods::new(vec![]);
-            return route_1::handler(&allowed_methods).await;
+            return route_0::handler(&allowed_methods).await;
         }
     };
     let route_id = matched_route.value;
@@ -47,34 +49,51 @@ async fn route_request(
         .params
         .into();
     match route_id {
-        0u32 => {
+        0u32 => route_2::handler().await,
+        1u32 => {
             match &request_head.method {
-                &pavex::http::Method::GET => route_0::handler().await,
-                _ => {
-                    let allowed_methods = pavex::extract::route::AllowedMethods::new(
-                        vec![pavex::http::Method::GET],
-                    );
-                    route_1::handler(&allowed_methods).await
-                }
+                &pavex::http::Method::GET => route_1::handler().await,
+                _ => route_2::handler().await,
+            }
+        }
+        2u32 => {
+            match &request_head.method {
+                &pavex::http::Method::GET => route_3::handler().await,
+                _ => route_4::handler().await,
             }
         }
         i => unreachable!("Unknown route id: {}", i),
     }
 }
 pub mod route_0 {
-    pub async fn handler() -> pavex::response::Response {
-        let v0 = app::a();
-        let v1 = app::c(v0);
-        let v2 = app::b(v0);
-        let v3 = app::handler(v2, v1);
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
-    }
-}
-pub mod route_1 {
     pub async fn handler(
         v0: &pavex::extract::route::AllowedMethods,
     ) -> pavex::response::Response {
         let v1 = pavex::router::default_fallback(v0).await;
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
+    }
+}
+pub mod route_1 {
+    pub async fn handler() -> pavex::response::Response {
+        let v0 = app::handler();
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v0)
+    }
+}
+pub mod route_2 {
+    pub async fn handler() -> pavex::response::Response {
+        let v0 = app::unauthorized();
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v0)
+    }
+}
+pub mod route_3 {
+    pub async fn handler() -> pavex::response::Response {
+        let v0 = app::handler();
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v0)
+    }
+}
+pub mod route_4 {
+    pub async fn handler() -> pavex::response::Response {
+        let v0 = app::forbidden();
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v0)
     }
 }

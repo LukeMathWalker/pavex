@@ -460,7 +460,7 @@ fn get_request_dispatcher(
                 .into();
             match route_id {
                 #route_dispatch_table
-                _ => #pavex::response::Response::not_found().box_body(),
+                i => unreachable!("Unknown route id: {}", i),
             }
         }
     })
