@@ -20,7 +20,7 @@ pub async fn default_fallback(allowed_methods: &AllowedMethods) -> Response {
             ",",
         );
         let allow_header =
-            http::HeaderValue::from_str(&allow_header).expect("Invalid Allow header value");
+            http::HeaderValue::from_str(&allow_header).expect("Invalid `Allow` header value");
         Response::method_not_allowed()
             .insert_header(http::header::ALLOW, allow_header)
             .box_body()
