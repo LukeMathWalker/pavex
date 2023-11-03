@@ -19,9 +19,13 @@ use super::router::{MethodGuard, Route};
 /// - route handlers, registered via [`Blueprint::route`]
 /// - constructors, registered via [`Blueprint::constructor`]
 /// - wrapping middlewares, registered via [`Blueprint::wrap`]
+/// - fallback handlers, registered via [`Blueprint::fallback`]
 ///
-/// This information is then serialized via [`Blueprint::persist`] and passed as input to
-/// Pavex's CLI to generate the application's source code.
+/// You can also choose to decompose your overall application into smaller sub-components,
+/// taking advantage of [`Blueprint::nest`] and [`Blueprint::nest_at`].
+///
+/// The information encoded in a blueprint can be serialized via [`Blueprint::persist`] and passed
+/// as input to Pavex's CLI to generate the application's server SDK.
 pub struct Blueprint {
     /// The location where the [`Blueprint`] was created.
     pub creation_location: Location,
@@ -228,142 +232,6 @@ impl Blueprint {
             blueprint: self,
             route_id,
         }
-    }
-
-    #[track_caller]
-    /// Register a fallback handler to be invoked when an incoming request does **not** match
-    /// any of the routes you registered with [`Blueprint::route`].  
-    ///
-    /// If you don't register a fallback handler, the
-    /// [default framework fallback](crate::router::default_fallback) will be used instead.
-    ///
-    /// If a fallback handler has already been registered against this `Blueprint`,
-    /// it will be overwritten.
-    ///
-    /// # Example
-    ///
-    /// ```rust
-    /// use pavex::{f, blueprint::{Blueprint, router::GET}};
-    /// use pavex::response::Response;
-    ///
-    /// fn handler() -> Response {
-    ///     // [...]
-    ///     # todo!()
-    /// }
-    /// fn fallback_handler() -> Response {
-    ///     // [...]
-    ///     # todo!()
-    /// }
-    ///
-    /// # fn main() {
-    /// let mut bp = Blueprint::new();
-    /// bp.route(GET, "/path", f!(crate::handler));
-    /// // The fallback handler will be invoked for all the requests that don't match `/path`.
-    /// // E.g. `GET /home`, `POST /home`, `GET /home/123`, etc.
-    /// bp.fallback(f!(crate::fallback_handler));
-    /// # }
-    /// ```
-    ///
-    /// # Signature
-    ///
-    /// A fallback handler is a function (or a method) that returns a [`Response`], either directly
-    /// (if infallible) or wrapped in a [`Result`] (if fallible).
-    ///
-    /// Fallback handlers can take advantage of dependency injection, like any
-    /// other component.  
-    /// You list what you want to see injected as function parameters
-    /// and Pavex will inject them for you in the generated code.
-    ///
-    /// ## Nesting
-    ///
-    /// You can register a single fallback handler for each blueprint.
-    /// If your application takes advantage of [nesting](Blueprint::nest_at), you can register
-    /// a fallback against each nested blueprint in your application as well as one for the
-    /// top-level blueprint.
-    ///
-    /// Let's explore how nesting affects the invocation of fallback handlers.
-    ///
-    /// ### Nesting without prefix
-    ///
-    /// The fallback registered against a blueprint will be invoked for all the requests that match
-    /// the path of a route that was **directly** registered against that blueprint, but don't satisfy
-    /// their method guards.
-    ///
-    /// ```rust
-    /// use pavex::{f, blueprint::{Blueprint, router::GET}};
-    /// use pavex::response::Response;
-    ///
-    /// # fn route_handler() -> Response { todo!() }
-    /// # fn home_handler() -> Response { todo!() }
-    /// fn fallback_handler() -> Response {
-    ///     // [...]
-    ///     # todo!()
-    /// }
-    ///
-    /// # fn main() {
-    /// let mut bp = Blueprint::new();
-    /// bp.route(GET, "/home", f!(crate::home_handler));
-    /// bp.nest({
-    ///     let mut bp = Blueprint::new();
-    ///     bp.route(GET, "/route", f!(crate::route_handler));
-    ///     bp.fallback(f!(crate::fallback_handler));
-    ///     bp
-    /// });
-    /// # }
-    /// ```
-    ///
-    /// In the example above, `crate::fallback_handler` will be invoked for incoming `POST /route`
-    /// requests: the path matches the path of a route registered against the nested blueprint
-    /// (`GET /route`), but the method guard doesn't (`POST` vs `GET`).  
-    /// If the incoming requests don't have `/route` as their path instead (e.g. `GET /street`
-    /// or `GET /route/123`), they will be handled by the fallback registered against the **parent**
-    /// blueprint—the top-level one in this case.  
-    /// Since no fallback has been explicitly registered against the top-level blueprint, the
-    /// [default framework fallback](crate::router::default_fallback) will be used instead.
-    ///
-    /// ### Nesting with prefix
-    ///
-    /// If the nested blueprint includes a nesting prefix (e.g. `bp.nest_at("/api", api_bp)`),
-    /// its fallback will **also** be invoked for all the requests that start with the prefix
-    /// but don't match any of the route paths registered against the nested blueprint.
-    ///
-    /// ```rust
-    /// use pavex::{f, blueprint::{Blueprint, router::GET}};
-    /// use pavex::response::Response;
-    ///
-    /// # fn route_handler() -> Response { todo!() }
-    /// # fn home_handler() -> Response { todo!() }
-    /// fn fallback_handler() -> Response {
-    ///     // [...]
-    ///     # todo!()
-    /// }
-    ///
-    /// # fn main() {
-    /// let mut bp = Blueprint::new();
-    /// bp.route(GET, "/home", f!(crate::home_handler));
-    /// bp.nest_at("/route", {
-    ///     let mut bp = Blueprint::new();
-    ///     bp.route(GET, "/", f!(crate::route_handler));
-    ///     bp.fallback(f!(crate::fallback_handler));
-    ///     bp
-    /// });
-    /// # }
-    /// ```
-    ///
-    /// In the example above, `crate::fallback_handler` will be invoked for both `POST /route`
-    /// **and** `POST /route/123` requests: the path of the latter doesn't match the path of the only
-    /// route registered against the nested blueprint (`GET /route`), but it starts with the
-    /// prefix of the nested blueprint (`/route`).
-    pub fn fallback(&mut self, callable: RawCallable) -> Fallback {
-        let registered = RegisteredFallback {
-            request_handler: RegisteredCallable {
-                callable: RawCallableIdentifiers::from_raw_callable(callable),
-                location: std::panic::Location::caller().into(),
-            },
-            error_handler: None,
-        };
-        self.fallback_request_handler = Some(registered);
-        Fallback { blueprint: self }
     }
 
     #[track_caller]
@@ -746,6 +614,144 @@ impl Blueprint {
             path_prefix: None,
             nesting_location: std::panic::Location::caller().into(),
         })
+    }
+
+    #[track_caller]
+    /// Register a fallback handler to be invoked when an incoming request does **not** match
+    /// any of the routes you registered with [`Blueprint::route`].  
+    ///
+    /// If you don't register a fallback handler, the
+    /// [default framework fallback](crate::router::default_fallback) will be used instead.
+    ///
+    /// If a fallback handler has already been registered against this `Blueprint`,
+    /// it will be overwritten.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use pavex::{f, blueprint::{Blueprint, router::GET}};
+    /// use pavex::response::Response;
+    ///
+    /// fn handler() -> Response {
+    ///     // [...]
+    ///     # todo!()
+    /// }
+    /// fn fallback_handler() -> Response {
+    ///     // [...]
+    ///     # todo!()
+    /// }
+    ///
+    /// # fn main() {
+    /// let mut bp = Blueprint::new();
+    /// bp.route(GET, "/path", f!(crate::handler));
+    /// // The fallback handler will be invoked for all the requests that don't match `/path`.
+    /// // E.g. `GET /home`, `POST /home`, `GET /home/123`, etc.
+    /// bp.fallback(f!(crate::fallback_handler));
+    /// # }
+    /// ```
+    ///
+    /// # Signature
+    ///
+    /// A fallback handler is a function (or a method) that returns a [`Response`], either directly
+    /// (if infallible) or wrapped in a [`Result`] (if fallible).
+    ///
+    /// Fallback handlers can take advantage of dependency injection, like any
+    /// other component.  
+    /// You list what you want to see injected as function parameters
+    /// and Pavex will inject them for you in the generated code.
+    ///
+    /// ## Nesting
+    ///
+    /// You can register a single fallback handler for each blueprint.
+    /// If your application takes advantage of [nesting](Blueprint::nest_at), you can register
+    /// a fallback against each nested blueprint in your application as well as one for the
+    /// top-level blueprint.
+    ///
+    /// Let's explore how nesting affects the invocation of fallback handlers.
+    ///
+    /// ### Nesting without prefix
+    ///
+    /// The fallback registered against a blueprint will be invoked for all the requests that match
+    /// the path of a route that was **directly** registered against that blueprint, but don't satisfy
+    /// their method guards.
+    ///
+    /// ```rust
+    /// use pavex::{f, blueprint::{Blueprint, router::GET}};
+    /// use pavex::response::Response;
+    ///
+    /// # fn route_handler() -> Response { todo!() }
+    /// # fn home_handler() -> Response { todo!() }
+    /// fn fallback_handler() -> Response {
+    ///     // [...]
+    ///     # todo!()
+    /// }
+    ///
+    /// # fn main() {
+    /// let mut bp = Blueprint::new();
+    /// bp.route(GET, "/home", f!(crate::home_handler));
+    /// bp.nest({
+    ///     let mut bp = Blueprint::new();
+    ///     bp.route(GET, "/route", f!(crate::route_handler));
+    ///     bp.fallback(f!(crate::fallback_handler));
+    ///     bp
+    /// });
+    /// # }
+    /// ```
+    ///
+    /// In the example above, `crate::fallback_handler` will be invoked for incoming `POST /route`
+    /// requests: the path matches the path of a route registered against the nested blueprint
+    /// (`GET /route`), but the method guard doesn't (`POST` vs `GET`).  
+    /// If the incoming requests don't have `/route` as their path instead (e.g. `GET /street`
+    /// or `GET /route/123`), they will be handled by the fallback registered against the **parent**
+    /// blueprint—the top-level one in this case.  
+    /// Since no fallback has been explicitly registered against the top-level blueprint, the
+    /// [default framework fallback](crate::router::default_fallback) will be used instead.
+    ///
+    /// ### Nesting with prefix
+    ///
+    /// If the nested blueprint includes a nesting prefix (e.g. `bp.nest_at("/api", api_bp)`),
+    /// its fallback will **also** be invoked for all the requests that start with the prefix
+    /// but don't match any of the route paths registered against the nested blueprint.
+    ///
+    /// ```rust
+    /// use pavex::{f, blueprint::{Blueprint, router::GET}};
+    /// use pavex::response::Response;
+    ///
+    /// # fn route_handler() -> Response { todo!() }
+    /// # fn home_handler() -> Response { todo!() }
+    /// fn fallback_handler() -> Response {
+    ///     // [...]
+    ///     # todo!()
+    /// }
+    ///
+    /// # fn main() {
+    /// let mut bp = Blueprint::new();
+    /// bp.route(GET, "/home", f!(crate::home_handler));
+    /// bp.nest_at("/route", {
+    ///     let mut bp = Blueprint::new();
+    ///     bp.route(GET, "/", f!(crate::route_handler));
+    ///     bp.fallback(f!(crate::fallback_handler));
+    ///     bp
+    /// });
+    /// # }
+    /// ```
+    ///
+    /// In the example above, `crate::fallback_handler` will be invoked for both `POST /route`
+    /// **and** `POST /route/123` requests: the path of the latter doesn't match the path of the only
+    /// route registered against the nested blueprint (`GET /route`), but it starts with the
+    /// prefix of the nested blueprint (`/route`).
+    ///
+    /// [`Response`]: crate::response::Response
+    pub fn fallback(&mut self, callable: RawCallable) -> Fallback {
+        let registered = RegisteredFallback {
+            request_handler: RegisteredCallable {
+                callable: RawCallableIdentifiers::from_raw_callable(callable),
+                location: std::panic::Location::caller().into(),
+            },
+            error_handler: None,
+        };
+        self.fallback_request_handler = Some(registered);
+        Fallback { blueprint: self }
     }
 }
 
