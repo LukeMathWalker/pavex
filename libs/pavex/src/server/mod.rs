@@ -37,6 +37,7 @@ pub use shutdown_mode::ShutdownMode;
 
 mod configuration;
 mod incoming;
+#[allow(clippy::module_inception)]
 mod server;
 mod server_handle;
 mod shutdown_mode;

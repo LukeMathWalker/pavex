@@ -23,7 +23,7 @@ use std::fmt::Formatter;
 /// # Framework primitive
 ///
 /// `MatchedRouteTemplate` is a framework primitive—you don't need to register any constructor
-/// with `Blueprint` to use it in your application.
+/// with [`Blueprint`] to use it in your application.
 ///
 /// # Use cases
 ///

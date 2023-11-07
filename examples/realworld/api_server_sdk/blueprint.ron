@@ -232,6 +232,7 @@
             error_handler: None,
         ),
     ],
+    fallback_request_handler: None,
     nested_blueprints: [
         (
             blueprint: (
@@ -464,6 +465,7 @@
                         error_handler: None,
                     ),
                 ],
+                fallback_request_handler: None,
                 nested_blueprints: [],
             ),
             path_prefix: Some("/articles"),
@@ -544,6 +546,7 @@
                         error_handler: None,
                     ),
                 ],
+                fallback_request_handler: None,
                 nested_blueprints: [],
             ),
             path_prefix: Some("/profiles"),
@@ -681,6 +684,7 @@
                         error_handler: None,
                     ),
                 ],
+                fallback_request_handler: None,
                 nested_blueprints: [],
             ),
             path_prefix: None,

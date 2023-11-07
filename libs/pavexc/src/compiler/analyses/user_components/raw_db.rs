@@ -6,8 +6,8 @@ use guppy::graph::PackageGraph;
 
 use pavex::blueprint::constructor::CloningStrategy;
 use pavex::blueprint::internals::{
-    NestedBlueprint, RegisteredCallable, RegisteredConstructor, RegisteredRoute,
-    RegisteredWrappingMiddleware,
+    NestedBlueprint, RegisteredCallable, RegisteredConstructor, RegisteredFallback,
+    RegisteredRoute, RegisteredWrappingMiddleware,
 };
 use pavex::blueprint::router::AllowedMethods;
 use pavex::blueprint::{
@@ -35,6 +35,10 @@ pub enum UserComponent {
         router_key: RouterKey,
         scope_id: ScopeId,
     },
+    Fallback {
+        raw_callable_identifiers_id: RawCallableIdentifierId,
+        scope_id: ScopeId,
+    },
     ErrorHandler {
         raw_callable_identifiers_id: RawCallableIdentifierId,
         fallible_callable_identifiers_id: UserComponentId,
@@ -60,6 +64,7 @@ impl UserComponent {
             UserComponent::ErrorHandler { .. } => CallableType::ErrorHandler,
             UserComponent::Constructor { .. } => CallableType::Constructor,
             UserComponent::WrappingMiddleware { .. } => CallableType::WrappingMiddleware,
+            UserComponent::Fallback { .. } => CallableType::RequestHandler,
         }
     }
 
@@ -68,6 +73,10 @@ impl UserComponent {
     pub fn raw_callable_identifiers_id(&self) -> RawCallableIdentifierId {
         match self {
             UserComponent::WrappingMiddleware {
+                raw_callable_identifiers_id,
+                ..
+            }
+            | UserComponent::Fallback {
                 raw_callable_identifiers_id,
                 ..
             }
@@ -90,6 +99,7 @@ impl UserComponent {
     pub fn scope_id(&self) -> ScopeId {
         match self {
             UserComponent::RequestHandler { scope_id, .. }
+            | UserComponent::Fallback { scope_id, .. }
             | UserComponent::ErrorHandler { scope_id, .. }
             | UserComponent::WrappingMiddleware { scope_id, .. }
             | UserComponent::Constructor { scope_id, .. } => *scope_id,
@@ -144,6 +154,13 @@ pub(super) struct RawUserComponentDb {
     ///
     /// Invariants: there is an entry for every single request handler.
     pub(super) handler_id2middleware_ids: HashMap<UserComponentId, Vec<UserComponentId>>,
+    /// Associate each user-registered fallback with the path prefix of the `Blueprint`
+    /// it was registered against.
+    /// If it was registered against a deeply nested `Blueprint`, it contains the **concatenated**
+    /// path prefixes of all the `Blueprint`s that it was nested under.
+    ///
+    /// Invariants: there is an entry for every single fallback.
+    pub(super) fallback_id2path_prefix: HashMap<UserComponentId, Option<String>>,
 }
 
 // The public `build` method alongside its private supporting routines.
@@ -162,6 +179,7 @@ impl RawUserComponentDb {
             id2lifecycle: HashMap::new(),
             constructor_id2cloning_strategy: HashMap::new(),
             handler_id2middleware_ids: HashMap::new(),
+            fallback_id2path_prefix: HashMap::new(),
         };
         let mut scope_graph_builder = ScopeGraph::builder(bp.creation_location.clone());
         let root_scope_id = scope_graph_builder.root_scope_id();
@@ -178,6 +196,7 @@ impl RawUserComponentDb {
             None,
             &mut scope_graph_builder,
             &mut current_middleware_chain,
+            true,
             package_graph,
             diagnostics,
         );
@@ -226,6 +245,7 @@ impl RawUserComponentDb {
                 path_prefix.as_deref(),
                 &mut scope_graph_builder,
                 &mut current_middleware_chain,
+                false,
                 package_graph,
                 diagnostics,
             );
@@ -259,6 +279,7 @@ impl RawUserComponentDb {
         path_prefix: Option<&str>,
         scope_graph_builder: &mut ScopeGraphBuilder,
         current_middleware_chain: &mut Vec<UserComponentId>,
+        is_root: bool,
         package_graph: &PackageGraph,
         diagnostics: &mut Vec<miette::Error>,
     ) {
@@ -272,6 +293,40 @@ impl RawUserComponentDb {
             package_graph,
             diagnostics,
         );
+        if let Some(fallback) = &bp.fallback_request_handler {
+            self.process_fallback(
+                fallback,
+                path_prefix,
+                current_middleware_chain,
+                current_scope_id,
+                scope_graph_builder,
+            );
+        } else if is_root {
+            // We need to have a top-level fallback handler.
+            // If the user hasn't registered one against the top-level blueprint,
+            // we must provide a framework default.
+            let raw_callable_identifiers = RawCallableIdentifiers::from_raw_parts(
+                "pavex::router::default_fallback".to_owned(),
+                "pavex".to_owned(),
+            );
+            let registered_fallback = RegisteredFallback {
+                request_handler: RegisteredCallable {
+                    callable: raw_callable_identifiers,
+                    // We don't have a location for the default fallback handler.
+                    // Nor do we have a way (yet) to identify this component as "framework provided".
+                    // Something to fix in the future.
+                    location: bp.creation_location.clone(),
+                },
+                error_handler: None,
+            };
+            self.process_fallback(
+                &registered_fallback,
+                path_prefix,
+                current_middleware_chain,
+                current_scope_id,
+                scope_graph_builder,
+            )
+        }
         self.process_constructors(&bp.constructors, current_scope_id);
     }
 
@@ -341,6 +396,46 @@ impl RawUserComponentDb {
                 request_handler_id,
             );
         }
+    }
+
+    /// Register with [`RawUserComponentDb`] the fallback that has been
+    /// registered against the provided `Blueprint`, including its error handler
+    /// (if present).  
+    fn process_fallback(
+        &mut self,
+        fallback: &RegisteredFallback,
+        path_prefix: Option<&str>,
+        current_middleware_chain: &[UserComponentId],
+        current_scope_id: ScopeId,
+        scope_graph_builder: &mut ScopeGraphBuilder,
+    ) {
+        const ROUTE_LIFECYCLE: Lifecycle = Lifecycle::RequestScoped;
+
+        let raw_callable_identifiers_id = self
+            .identifiers_interner
+            .get_or_intern(fallback.request_handler.callable.clone());
+        let route_scope_id = scope_graph_builder.add_scope(current_scope_id, None);
+        let component = UserComponent::Fallback {
+            raw_callable_identifiers_id,
+            scope_id: route_scope_id,
+        };
+        let fallback_id = self.intern_component(
+            component,
+            ROUTE_LIFECYCLE,
+            fallback.request_handler.location.to_owned(),
+        );
+
+        self.handler_id2middleware_ids
+            .insert(fallback_id, current_middleware_chain.to_owned());
+        self.fallback_id2path_prefix
+            .insert(fallback_id, path_prefix.map(|s| s.to_owned()));
+
+        self.process_error_handler(
+            &fallback.error_handler,
+            ROUTE_LIFECYCLE,
+            current_scope_id,
+            fallback_id,
+        );
     }
 
     /// Register with [`RawUserComponentDb`] all the routes that have been
@@ -519,7 +614,7 @@ impl RawUserComponentDb {
                         id
                     );
                 }
-                UserComponent::RequestHandler { .. } => {
+                UserComponent::Fallback { .. } | UserComponent::RequestHandler { .. } => {
                     assert!(
                         self.handler_id2middleware_ids.get(&id).is_some(),
                         "The middleware chain is missing for the user-registered request handler #{:?}",
@@ -586,7 +681,7 @@ impl RawUserComponentDb {
             .map(|s| s.labeled("The path missing a leading '/'".to_string()));
         let path = &route.path;
         let err =
-            anyhow!("All route paths must begin with a forward slash, `/`.\n`{path}` doesn't.",);
+            anyhow!("Route paths must either be empty or begin with a forward slash, `/`.\n`{path}` is not empty and it doesn't begin with a `/`.",);
         let diagnostic = CompilerDiagnostic::builder(source, err)
             .optional_label(label)
             .help(format!("Add a '/' at the beginning of the route path to fix this error: use `/{path}` instead of `{path}`."));

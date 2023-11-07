@@ -15,19 +15,19 @@ pub async fn build_application_state() -> crate::ApplicationState {
 pub fn run(
     server_builder: pavex::server::Server,
     application_state: ApplicationState,
-) -> Result<pavex::server::ServerHandle, pavex::Error> {
+) -> pavex::server::ServerHandle {
     let server_state = std::sync::Arc::new(ServerState {
-        router: build_router().map_err(pavex::Error::new)?,
+        router: build_router(),
         application_state,
     });
-    Ok(server_builder.serve(route_request, server_state))
+    server_builder.serve(route_request, server_state)
 }
-fn build_router() -> Result<pavex::routing::Router<u32>, pavex::routing::InsertError> {
+fn build_router() -> pavex::routing::Router<u32> {
     let mut router = pavex::routing::Router::new();
-    router.insert("/home/:home_id", 0u32)?;
-    router.insert("/home/:home_id/room/:room_id", 1u32)?;
-    router.insert("/town/*town", 2u32)?;
-    Ok(router)
+    router.insert("/home/:home_id", 0u32).unwrap();
+    router.insert("/home/:home_id/room/:room_id", 1u32).unwrap();
+    router.insert("/town/*town", 2u32).unwrap();
+    router
 }
 async fn route_request(
     request: http::Request<pavex::hyper::body::Incoming>,
@@ -39,7 +39,8 @@ async fn route_request(
     let matched_route = match server_state.router.at(&request_head.uri.path()) {
         Ok(m) => m,
         Err(_) => {
-            return pavex::response::Response::not_found().box_body();
+            let allowed_methods = pavex::extract::route::AllowedMethods::new(vec![]);
+            return route_3::handler(&allowed_methods).await;
         }
     };
     let route_id = matched_route.value;
@@ -52,10 +53,10 @@ async fn route_request(
             match &request_head.method {
                 &pavex::http::Method::GET => route_0::handler(url_params).await,
                 _ => {
-                    let header_value = pavex::http::HeaderValue::from_static("GET");
-                    pavex::response::Response::method_not_allowed()
-                        .insert_header(pavex::http::header::ALLOW, header_value)
-                        .box_body()
+                    let allowed_methods = pavex::extract::route::AllowedMethods::new(
+                        vec![pavex::http::Method::GET],
+                    );
+                    route_3::handler(&allowed_methods).await
                 }
             }
         }
@@ -63,10 +64,10 @@ async fn route_request(
             match &request_head.method {
                 &pavex::http::Method::GET => route_1::handler(url_params).await,
                 _ => {
-                    let header_value = pavex::http::HeaderValue::from_static("GET");
-                    pavex::response::Response::method_not_allowed()
-                        .insert_header(pavex::http::header::ALLOW, header_value)
-                        .box_body()
+                    let allowed_methods = pavex::extract::route::AllowedMethods::new(
+                        vec![pavex::http::Method::GET],
+                    );
+                    route_3::handler(&allowed_methods).await
                 }
             }
         }
@@ -74,14 +75,14 @@ async fn route_request(
             match &request_head.method {
                 &pavex::http::Method::GET => route_2::handler(url_params).await,
                 _ => {
-                    let header_value = pavex::http::HeaderValue::from_static("GET");
-                    pavex::response::Response::method_not_allowed()
-                        .insert_header(pavex::http::header::ALLOW, header_value)
-                        .box_body()
+                    let allowed_methods = pavex::extract::route::AllowedMethods::new(
+                        vec![pavex::http::Method::GET],
+                    );
+                    route_3::handler(&allowed_methods).await
                 }
             }
         }
-        _ => pavex::response::Response::not_found().box_body(),
+        i => unreachable!("Unknown route id: {}", i),
     }
 }
 pub mod route_0 {
@@ -148,5 +149,13 @@ pub mod route_2 {
         };
         let v3 = app::get_town(v2);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
+    }
+}
+pub mod route_3 {
+    pub async fn handler(
+        v0: &pavex::extract::route::AllowedMethods,
+    ) -> pavex::response::Response {
+        let v1 = pavex::router::default_fallback(v0).await;
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
     }
 }

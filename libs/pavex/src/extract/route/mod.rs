@@ -43,6 +43,7 @@
 //!
 //! [`RouteParams`]: struct@RouteParams
 
+pub use allowed_methods::AllowedMethods;
 pub use matched_route::MatchedRouteTemplate;
 /// Derive (de)serialization logic for a type that is going to be used to extract route parameters.
 ///
@@ -86,6 +87,8 @@ pub use route_params::RouteParams;
 
 mod deserializer;
 pub mod errors;
+
+mod allowed_methods;
 mod matched_route;
 mod raw_route_params;
 mod route_params;

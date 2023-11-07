@@ -90,12 +90,32 @@ impl FrameworkItemDb {
                 binding: format_ident!("matched_route_template"),
             },
         );
+
+        let allowed_methods = process_framework_path(
+            "pavex::extract::route::AllowedMethods",
+            package_graph,
+            krate_collection,
+        );
+        items.insert(allowed_methods, Self::allowed_methods_id());
+        id2metadata.insert(
+            Self::allowed_methods_id(),
+            FrameworkItemMetadata {
+                lifecycle: Lifecycle::RequestScoped,
+                cloning_strategy: CloningStrategy::CloneIfNecessary,
+                binding: format_ident!("allowed_methods"),
+            },
+        );
         Self { items, id2metadata }
     }
 
     /// Return the id for the `MatchedRouteTemplate` type.
     pub(crate) fn matched_route_template_id() -> FrameworkItemId {
         3
+    }
+
+    /// Return the id for the `MatchedRouteTemplate` type.
+    pub(crate) fn allowed_methods_id() -> FrameworkItemId {
+        4
     }
 
     /// Return the [`Lifecycle`] associated with a framework item.

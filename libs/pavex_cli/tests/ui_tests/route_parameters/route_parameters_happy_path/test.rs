@@ -21,11 +21,7 @@ async fn spawn_test_server() -> u16 {
         listener.try_into().expect("Failed to convert listener");
     let server = pavex::server::Server::new().listen(incoming_stream);
     let application_state = build_application_state().await;
-    tokio::task::spawn(
-        run(server, application_state)
-            .expect("Failed to launch server")
-            .into_future(),
-    );
+    tokio::task::spawn(run(server, application_state).into_future());
     port
 }
 

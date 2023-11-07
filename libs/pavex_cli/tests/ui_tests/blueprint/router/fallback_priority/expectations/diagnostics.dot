@@ -1,0 +1,33 @@
+digraph "* /users*catch_all - 0" {
+    0 [ label = "app::unauthorized() -> pavex::response::Response"]
+    1 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    0 -> 1 [ ]
+}
+
+digraph "GET /users/ - 0" {
+    0 [ label = "app::handler() -> pavex::response::Response"]
+    1 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    0 -> 1 [ ]
+}
+
+digraph "* /users/ - 0" {
+    0 [ label = "app::unauthorized() -> pavex::response::Response"]
+    1 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    0 -> 1 [ ]
+}
+
+digraph "GET /users/id - 0" {
+    0 [ label = "app::handler() -> pavex::response::Response"]
+    1 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    0 -> 1 [ ]
+}
+
+digraph "* /users/id - 0" {
+    0 [ label = "app::forbidden() -> pavex::response::Response"]
+    1 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    0 -> 1 [ ]
+}
+
+digraph app_state {
+    0 [ label = "crate::ApplicationState() -> crate::ApplicationState"]
+}

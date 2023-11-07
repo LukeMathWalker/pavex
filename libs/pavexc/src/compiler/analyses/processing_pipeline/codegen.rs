@@ -8,6 +8,7 @@ use syn::ItemFn;
 
 use crate::compiler::analyses::components::ComponentDb;
 use crate::compiler::analyses::computations::ComputationDb;
+use crate::compiler::analyses::framework_items::FrameworkItemDb;
 use crate::compiler::analyses::processing_pipeline::RequestHandlerPipeline;
 use crate::language::ResolvedType;
 
@@ -297,6 +298,35 @@ impl CodegenedRequestHandlerPipeline {
             handler_invocation = quote! { #handler_invocation.await };
         }
         handler_invocation
+    }
+
+    /// Returns `true` if the first stage of the pipeline (i.e. the entrypoint) needs the specified
+    /// type as input.
+    pub(crate) fn needs_input_type(&self, input_type: &ResolvedType) -> bool {
+        self.stages[0].input_parameters.iter().any(|t| {
+            if t == input_type {
+                return true;
+            }
+            if let ResolvedType::Reference(r) = t {
+                return r.inner.as_ref() == input_type;
+            }
+
+            false
+        })
+    }
+
+    pub(crate) fn needs_allowed_methods(&self, framework_item_db: &FrameworkItemDb) -> bool {
+        let allowed_methods_type = framework_item_db
+            .get_type(FrameworkItemDb::allowed_methods_id())
+            .unwrap();
+        self.needs_input_type(allowed_methods_type)
+    }
+
+    pub(crate) fn needs_matched_route(&self, framework_item_db: &FrameworkItemDb) -> bool {
+        let matched_route_type = framework_item_db
+            .get_type(FrameworkItemDb::matched_route_template_id())
+            .unwrap();
+        self.needs_input_type(matched_route_type)
     }
 }
 

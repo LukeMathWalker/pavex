@@ -15,17 +15,17 @@ pub async fn build_application_state() -> crate::ApplicationState {
 pub fn run(
     server_builder: pavex::server::Server,
     application_state: ApplicationState,
-) -> Result<pavex::server::ServerHandle, pavex::Error> {
+) -> pavex::server::ServerHandle {
     let server_state = std::sync::Arc::new(ServerState {
-        router: build_router().map_err(pavex::Error::new)?,
+        router: build_router(),
         application_state,
     });
-    Ok(server_builder.serve(route_request, server_state))
+    server_builder.serve(route_request, server_state)
 }
-fn build_router() -> Result<pavex::routing::Router<u32>, pavex::routing::InsertError> {
+fn build_router() -> pavex::routing::Router<u32> {
     let mut router = pavex::routing::Router::new();
-    router.insert("/home", 0u32)?;
-    Ok(router)
+    router.insert("/home", 0u32).unwrap();
+    router
 }
 async fn route_request(
     request: http::Request<pavex::hyper::body::Incoming>,
@@ -37,7 +37,8 @@ async fn route_request(
     let matched_route = match server_state.router.at(&request_head.uri.path()) {
         Ok(m) => m,
         Err(_) => {
-            return pavex::response::Response::not_found().box_body();
+            let allowed_methods = pavex::extract::route::AllowedMethods::new(vec![]);
+            return route_1::middleware_0(&allowed_methods).await;
         }
     };
     let route_id = matched_route.value;
@@ -50,14 +51,14 @@ async fn route_request(
             match &request_head.method {
                 &pavex::http::Method::GET => route_0::middleware_0().await,
                 _ => {
-                    let header_value = pavex::http::HeaderValue::from_static("GET");
-                    pavex::response::Response::method_not_allowed()
-                        .insert_header(pavex::http::header::ALLOW, header_value)
-                        .box_body()
+                    let allowed_methods = pavex::extract::route::AllowedMethods::new(
+                        vec![pavex::http::Method::GET],
+                    );
+                    route_1::middleware_0(&allowed_methods).await
                 }
             }
         }
-        _ => pavex::response::Response::not_found().box_body(),
+        i => unreachable!("Unknown route id: {}", i),
     }
 }
 pub mod route_0 {
@@ -93,6 +94,44 @@ pub mod route_0 {
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
             (self.next)(self.s_0, self.s_1)
+        }
+    }
+}
+pub mod route_1 {
+    pub async fn middleware_0(
+        v0: &pavex::extract::route::AllowedMethods,
+    ) -> pavex::response::Response {
+        let v1 = app::c();
+        let v2 = app::a();
+        let v3 = app::b(&v2, &v1);
+        let v4 = crate::route_1::Next0 {
+            s_0: v0,
+            next: handler,
+        };
+        let v5 = pavex::middleware::Next::new(v4);
+        app::mw(v5, v3)
+    }
+    pub async fn handler(
+        v0: &pavex::extract::route::AllowedMethods,
+    ) -> pavex::response::Response {
+        let v1 = pavex::router::default_fallback(v0).await;
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
+    }
+    pub struct Next0<'a, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        s_0: &'a pavex::extract::route::AllowedMethods,
+        next: fn(&'a pavex::extract::route::AllowedMethods) -> T,
+    }
+    impl<'a, T> std::future::IntoFuture for Next0<'a, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        type Output = pavex::response::Response;
+        type IntoFuture = T;
+        fn into_future(self) -> Self::IntoFuture {
+            (self.next)(self.s_0)
         }
     }
 }

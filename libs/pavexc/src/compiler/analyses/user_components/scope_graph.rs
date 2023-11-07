@@ -95,6 +95,18 @@ impl ScopeId {
             .map(ScopeId)
             .collect()
     }
+
+    /// Return the IDs of the scopes that are direct children of this scope, if any.
+    ///
+    /// E.g. if this scope is `Root` in the example in [`ScopeGraph`], this method will return
+    /// `Scope 1` and `Scope 2`, but it won't return `RH Scope 1`.
+    pub fn direct_children_ids(&self, scope_graph: &ScopeGraph) -> BTreeSet<ScopeId> {
+        scope_graph
+            .graph
+            .neighbors_directed(self.0, petgraph::Direction::Outgoing)
+            .map(ScopeId)
+            .collect()
+    }
 }
 
 impl ScopeGraphBuilder {

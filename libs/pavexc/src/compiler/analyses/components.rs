@@ -1,5 +1,4 @@
 use std::borrow::Cow;
-use std::collections::BTreeMap;
 
 use ahash::{HashMap, HashMapExt};
 use bimap::BiHashMap;
@@ -13,7 +12,7 @@ use pavex::blueprint::constructor::{CloningStrategy, Lifecycle};
 
 use crate::compiler::analyses::computations::{ComputationDb, ComputationId};
 use crate::compiler::analyses::user_components::{
-    RouterKey, ScopeGraph, ScopeId, UserComponent, UserComponentDb, UserComponentId,
+    ScopeGraph, ScopeId, UserComponent, UserComponentDb, UserComponentId,
 };
 use crate::compiler::component::{
     Constructor, ConstructorValidationError, ErrorHandler, ErrorHandlerValidationError,
@@ -168,8 +167,17 @@ pub(crate) struct ComponentDb {
     /// Invariants: there is an entry for every single request handler.
     handler_id2middleware_ids: HashMap<ComponentId, Vec<ComponentId>>,
     error_handler_id2error_handler: HashMap<ComponentId, ErrorHandler>,
-    router: BTreeMap<RouterKey, ComponentId>,
     into_response: PathType,
+    /// A mapping from the low-level [`UserComponentId`]s to the high-level [`ComponentId`]s.
+    ///
+    /// This is used to "lift" mappings that use [`UserComponentId`] into mappings that
+    /// use [`ComponentId`]. In particular:
+    ///
+    /// - match error handlers with the respective fallible components after they have been
+    ///   converted into components.
+    /// - match request handlers with the sequence of middlewares that wrap around them.
+    /// - convert the ids in the router.
+    user_component_id2component_id: HashMap<UserComponentId, ComponentId>,
 }
 
 /// The `build` method and its auxiliary routines.
@@ -207,25 +215,17 @@ impl ComponentDb {
             constructor_id2cloning_strategy: Default::default(),
             handler_id2middleware_ids: Default::default(),
             error_handler_id2error_handler: Default::default(),
-            router: Default::default(),
             into_response,
+            user_component_id2component_id: Default::default(),
         };
 
         {
-            // Keep a look-up map to "revert" the conversion process.
-            // It's needed to "lift" mappings that use `UserComponentId` into mappings that
-            // use `ComponentId`. In particular:
-            // - match error handlers with the respective fallible components after they have been
-            //   converted into components.
-            // - match request handlers with the sequence of middlewares that wrap around them.
-            let mut user_component_id2component_id = HashMap::new();
             // Keep track of which components are fallible in order to emit a diagnostic
             // if they were not paired with an error handler.
             let mut needs_error_handler = IndexSet::new();
 
             self_.process_constructors(
                 &mut needs_error_handler,
-                &mut user_component_id2component_id,
                 computation_db,
                 package_graph,
                 krate_collection,
@@ -234,7 +234,6 @@ impl ComponentDb {
 
             self_.process_request_handlers(
                 &mut needs_error_handler,
-                &mut user_component_id2component_id,
                 computation_db,
                 package_graph,
                 krate_collection,
@@ -243,17 +242,15 @@ impl ComponentDb {
 
             self_.process_wrapping_middlewares(
                 &mut needs_error_handler,
-                &mut user_component_id2component_id,
                 computation_db,
                 package_graph,
                 krate_collection,
                 diagnostics,
             );
 
-            self_.compute_request2middleware_chain(&user_component_id2component_id);
+            self_.compute_request2middleware_chain();
             self_.process_error_handlers(
                 &mut needs_error_handler,
-                user_component_id2component_id,
                 computation_db,
                 package_graph,
                 krate_collection,
@@ -401,7 +398,6 @@ impl ComponentDb {
     fn process_constructors(
         &mut self,
         needs_error_handler: &mut IndexSet<UserComponentId>,
-        user_component_id2component_id: &mut HashMap<UserComponentId, ComponentId>,
         computation_db: &mut ComputationDb,
         package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
@@ -431,7 +427,8 @@ impl ComponentDb {
                     let constructor_id = self.interner.get_or_intern(Component::Constructor {
                         source_id: user_component_id.into(),
                     });
-                    user_component_id2component_id.insert(user_component_id, constructor_id);
+                    self.user_component_id2component_id
+                        .insert(user_component_id, constructor_id);
                     self.constructor_id2cloning_strategy.insert(
                         constructor_id,
                         self.user_component_db
@@ -457,7 +454,6 @@ impl ComponentDb {
     fn process_request_handlers(
         &mut self,
         needs_error_handler: &mut IndexSet<UserComponentId>,
-        user_component_id2component_id: &mut HashMap<UserComponentId, ComponentId>,
         computation_db: &mut ComputationDb,
         package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
@@ -469,11 +465,7 @@ impl ComponentDb {
             .map(|(id, _)| id)
             .collect::<Vec<_>>();
         for user_component_id in request_handler_ids {
-            let user_component = &self.user_component_db[user_component_id];
             let callable = &computation_db[user_component_id];
-            let UserComponent::RequestHandler { router_key, .. } = user_component else {
-                unreachable!()
-            };
             match RequestHandler::new(Cow::Borrowed(callable)) {
                 Err(e) => {
                     Self::invalid_request_handler(
@@ -490,8 +482,8 @@ impl ComponentDb {
                     let handler_id = self
                         .interner
                         .get_or_intern(Component::RequestHandler { user_component_id });
-                    user_component_id2component_id.insert(user_component_id, handler_id);
-                    self.router.insert(router_key.to_owned(), handler_id);
+                    self.user_component_id2component_id
+                        .insert(user_component_id, handler_id);
                     let lifecycle = Lifecycle::RequestScoped;
                     let scope_id = self.scope_id(handler_id);
                     self.id2lifecycle.insert(handler_id, lifecycle);
@@ -534,7 +526,6 @@ impl ComponentDb {
     fn process_wrapping_middlewares(
         &mut self,
         needs_error_handler: &mut IndexSet<UserComponentId>,
-        user_component_id2component_id: &mut HashMap<UserComponentId, ComponentId>,
         computation_db: &mut ComputationDb,
         package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
@@ -567,7 +558,8 @@ impl ComponentDb {
                     let mw_id = self.interner.get_or_intern(Component::WrappingMiddleware {
                         source_id: user_component_id.into(),
                     });
-                    user_component_id2component_id.insert(user_component_id, mw_id);
+                    self.user_component_id2component_id
+                        .insert(user_component_id, mw_id);
                     let scope_id = self.scope_id(mw_id);
                     let lifecycle = Lifecycle::RequestScoped;
                     self.id2lifecycle.insert(mw_id, lifecycle);
@@ -607,7 +599,6 @@ impl ComponentDb {
     fn process_error_handlers(
         &mut self,
         missing_error_handlers: &mut IndexSet<UserComponentId>,
-        user_component_id2component_id: HashMap<UserComponentId, ComponentId>,
         computation_db: &ComputationDb,
         package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
@@ -623,7 +614,10 @@ impl ComponentDb {
                         fallible_callable_identifiers_id,
                         ..
                     } => Some((id, *fallible_callable_identifiers_id)),
-                    RequestHandler { .. } | Constructor { .. } | WrappingMiddleware { .. } => None,
+                    Fallback { .. }
+                    | RequestHandler { .. }
+                    | Constructor { .. }
+                    | WrappingMiddleware { .. } => None,
                 }
             })
             .collect::<Vec<_>>();
@@ -651,8 +645,9 @@ impl ComponentDb {
                         // This may be `None` if the fallible component failed to pass its own
                         // validation—e.g. the constructor callable was not deemed to be a valid
                         // constructor.
-                        if let Some(fallible_component_id) =
-                            user_component_id2component_id.get(&fallible_user_component_id)
+                        if let Some(fallible_component_id) = self
+                            .user_component_id2component_id
+                            .get(&fallible_user_component_id)
                         {
                             self.add_error_handler(
                                 e,
@@ -689,13 +684,10 @@ impl ComponentDb {
     /// Compute the middleware chain for each request handler that was successfully validated.
     /// The middleware chain only includes wrapping middlewares that were successfully validated.
     /// Invalid middlewares are ignored.
-    fn compute_request2middleware_chain(
-        &mut self,
-        user_component_id2component_id: &HashMap<UserComponentId, ComponentId>,
-    ) {
+    fn compute_request2middleware_chain(&mut self) {
         for (request_handler_id, _) in self.user_component_db.request_handlers() {
             let Some(handler_component_id) =
-                user_component_id2component_id.get(&request_handler_id)
+                self.user_component_id2component_id.get(&request_handler_id)
             else {
                 continue;
             };
@@ -705,7 +697,7 @@ impl ComponentDb {
                 .get_middleware_ids(request_handler_id)
             {
                 if let Some(middleware_component_id) =
-                    user_component_id2component_id.get(middleware_id)
+                    self.user_component_id2component_id.get(middleware_id)
                 {
                     middleware_chain.push(*middleware_component_id);
                 }
@@ -884,9 +876,9 @@ impl ComponentDb {
         self.id2lifecycle.get(&id)
     }
 
-    /// The mapping from a route to its dedicated request handler.
-    pub fn router(&self) -> &BTreeMap<RouterKey, ComponentId> {
-        &self.router
+    /// The mapping from a low-level [`UserComponentId`] to its corresponding [`ComponentId`].
+    pub fn user_component_id2component_id(&self) -> &HashMap<UserComponentId, ComponentId> {
+        &self.user_component_id2component_id
     }
 
     /// Iterate over all the components in the database alongside their ids.

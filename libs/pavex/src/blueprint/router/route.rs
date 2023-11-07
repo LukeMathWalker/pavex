@@ -8,7 +8,6 @@ use crate::blueprint::{
 ///
 /// It allows you to further configure the behaviour of the registered route.
 pub struct Route<'a> {
-    #[allow(dead_code)]
     pub(crate) blueprint: &'a mut Blueprint,
     /// The index of the registered route in the blueprint's `routes` vector.
     pub(crate) route_id: usize,

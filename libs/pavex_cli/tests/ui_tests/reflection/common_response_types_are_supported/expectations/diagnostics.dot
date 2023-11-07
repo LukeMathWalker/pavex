@@ -4,10 +4,26 @@ digraph "GET /head - 0" {
     0 -> 1 [ ]
 }
 
+digraph "* /head - 0" {
+    0 [ label = "pavex::router::default_fallback(&pavex::extract::route::AllowedMethods) -> pavex::response::Response"]
+    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "&pavex::extract::route::AllowedMethods"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
+}
+
 digraph "GET /parts - 0" {
     0 [ label = "app::parts() -> http::response::Parts"]
     1 [ label = "<http::response::Parts as pavex::response::IntoResponse>::into_response(http::response::Parts) -> pavex::response::Response"]
     0 -> 1 [ ]
+}
+
+digraph "* /parts - 0" {
+    0 [ label = "pavex::router::default_fallback(&pavex::extract::route::AllowedMethods) -> pavex::response::Response"]
+    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "&pavex::extract::route::AllowedMethods"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
 }
 
 digraph "GET /response - 0" {
@@ -16,10 +32,26 @@ digraph "GET /response - 0" {
     0 -> 1 [ ]
 }
 
+digraph "* /response - 0" {
+    0 [ label = "pavex::router::default_fallback(&pavex::extract::route::AllowedMethods) -> pavex::response::Response"]
+    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "&pavex::extract::route::AllowedMethods"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
+}
+
 digraph "GET /status_code - 0" {
     0 [ label = "app::status_code() -> http::StatusCode"]
     1 [ label = "<http::StatusCode as pavex::response::IntoResponse>::into_response(http::StatusCode) -> pavex::response::Response"]
     0 -> 1 [ ]
+}
+
+digraph "* /status_code - 0" {
+    0 [ label = "pavex::router::default_fallback(&pavex::extract::route::AllowedMethods) -> pavex::response::Response"]
+    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "&pavex::extract::route::AllowedMethods"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
 }
 
 digraph app_state {

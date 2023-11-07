@@ -42,6 +42,6 @@ async fn _main() -> anyhow::Result<()> {
     let server_builder = Server::new().listen(tcp_listener);
 
     tracing::info!("Starting to listen for incoming requests at {}", address);
-    run(server_builder, application_state)?.await;
+    run(server_builder, application_state).await;
     Ok(())
 }

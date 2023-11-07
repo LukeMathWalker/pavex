@@ -1,6 +1,6 @@
 [31m[1mERROR[0m[39m: 
-  [31m×[0m All route paths must begin with a forward slash, `/`.
-  [31m│[0m `api` doesn't.
+  [31m×[0m Route paths must either be empty or begin with a forward slash, `/`.
+  [31m│[0m `api` is not empty and it doesn't begin with a `/`.
   [31m│[0m
   [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:12:1]
   [31m│[0m  [2m12[0m │     // If the path is not empty, it *must* start with a `/`

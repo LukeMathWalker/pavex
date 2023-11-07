@@ -21,6 +21,16 @@ pub struct RegisteredRoute {
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]
+/// A request handler registered against a [`Blueprint`] via [`Blueprint::fallback`] to
+/// process requests that don't match any of the registered routes.
+pub struct RegisteredFallback {
+    /// The callable in charge of processing incoming requests.
+    pub request_handler: RegisteredCallable,
+    /// The callable in charge of processing errors returned by the request handler, if any.
+    pub error_handler: Option<RegisteredCallable>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
 /// A constructor registered against a [`Blueprint`] via [`Blueprint::constructor`].
 pub struct RegisteredConstructor {
     /// The callable in charge of constructing the desired type.

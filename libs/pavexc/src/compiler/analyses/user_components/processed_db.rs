@@ -12,7 +12,7 @@ use pavex::blueprint::{
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::user_components::raw_db::RawUserComponentDb;
 use crate::compiler::analyses::user_components::resolved_paths::ResolvedPathDb;
-use crate::compiler::analyses::user_components::router_validation::validate_router;
+use crate::compiler::analyses::user_components::router::Router;
 use crate::compiler::analyses::user_components::{ScopeGraph, UserComponent, UserComponentId};
 use crate::compiler::interner::Interner;
 use crate::compiler::resolvers::CallableResolutionError;
@@ -66,13 +66,13 @@ impl UserComponentDb {
     /// The callable associated to each component will be resolved and added to the
     /// provided [`ComputationDb`].
     #[tracing::instrument(name = "Build user component database", skip_all)]
-    pub fn build(
+    pub(crate) fn build(
         bp: &Blueprint,
         computation_db: &mut ComputationDb,
         package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
         diagnostics: &mut Vec<miette::Error>,
-    ) -> Result<Self, ()> {
+    ) -> Result<(Router, Self), ()> {
         /// Exit early if there is at least one error.
         macro_rules! exit_on_errors {
             ($var:ident) => {
@@ -83,8 +83,8 @@ impl UserComponentDb {
         }
 
         let (raw_db, scope_graph) = RawUserComponentDb::build(bp, package_graph, diagnostics);
-        validate_router(&raw_db, package_graph, diagnostics);
         let resolved_path_db = ResolvedPathDb::build(&raw_db, package_graph, diagnostics);
+        let router = Router::new(&raw_db, &scope_graph, package_graph, diagnostics)?;
         exit_on_errors!(diagnostics);
 
         precompute_crate_docs(krate_collection, &resolved_path_db, diagnostics);
@@ -107,17 +107,21 @@ impl UserComponentDb {
             id2lifecycle,
             identifiers_interner,
             handler_id2middleware_ids,
+            fallback_id2path_prefix: _,
         } = raw_db;
 
-        Ok(Self {
-            component_interner,
-            identifiers_interner,
-            id2locations,
-            constructor_id2cloning_strategy,
-            id2lifecycle,
-            handler_id2middleware_ids,
-            scope_graph,
-        })
+        Ok((
+            router,
+            Self {
+                component_interner,
+                identifiers_interner,
+                id2locations,
+                constructor_id2cloning_strategy,
+                id2lifecycle,
+                handler_id2middleware_ids,
+                scope_graph,
+            },
+        ))
     }
 
     /// Iterate over all the user components in the database, returning their id and the associated
@@ -141,12 +145,18 @@ impl UserComponentDb {
 
     /// Iterate over all the request handler components in the database, returning their id and the
     /// associated `UserComponent`.
+    ///
+    /// It returns both routes (i.e. handlers that are registered against a specific path and method
+    /// guard) and fallback handlers.
     pub fn request_handlers(
         &self,
     ) -> impl Iterator<Item = (UserComponentId, &UserComponent)> + DoubleEndedIterator {
-        self.component_interner
-            .iter()
-            .filter(|(_, c)| matches!(c, UserComponent::RequestHandler { .. }))
+        self.component_interner.iter().filter(|(_, c)| {
+            matches!(
+                c,
+                UserComponent::RequestHandler { .. } | UserComponent::Fallback { .. }
+            )
+        })
     }
 
     /// Iterate over all the wrapping middleware components in the database, returning their id and the

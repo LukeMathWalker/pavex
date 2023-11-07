@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use ahash::HashMap;
 use bimap::{BiBTreeMap, BiHashMap};
@@ -13,13 +13,13 @@ use syn::{ItemEnum, ItemFn, ItemStruct};
 use crate::compiler::analyses::call_graph::{
     ApplicationStateCallGraph, CallGraphNode, RawCallGraph,
 };
-use crate::compiler::analyses::components::ComponentDb;
+use crate::compiler::analyses::components::{ComponentDb, ComponentId};
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::framework_items::FrameworkItemDb;
 use crate::compiler::analyses::processing_pipeline::{
     CodegenedRequestHandlerPipeline, RequestHandlerPipeline,
 };
-use crate::compiler::analyses::user_components::RouterKey;
+use crate::compiler::analyses::router::Router;
 use crate::compiler::app::GENERATED_APP_PACKAGE_ID;
 use crate::compiler::computation::Computation;
 use crate::language::{Callable, GenericArgument, ResolvedType};
@@ -28,13 +28,33 @@ use crate::rustdoc::{ALLOC_PACKAGE_ID_REPR, TOOLCHAIN_CRATES};
 use super::generated_app::GeneratedManifest;
 
 #[derive(Debug, Clone)]
-enum CodegenRouterEntry {
-    MethodSubRouter(BTreeMap<String, CodegenedRequestHandlerPipeline>),
-    CatchAllHandler(CodegenedRequestHandlerPipeline),
+pub(super) struct CodegenMethodRouter {
+    pub(super) methods_and_pipelines: Vec<(BTreeSet<String>, CodegenedRequestHandlerPipeline)>,
+    pub(super) catch_all_pipeline: CodegenedRequestHandlerPipeline,
+}
+
+impl CodegenMethodRouter {
+    pub fn pipelines(&self) -> impl Iterator<Item = &CodegenedRequestHandlerPipeline> {
+        self.methods_and_pipelines
+            .iter()
+            .map(|(_, p)| p)
+            .chain(std::iter::once(&self.catch_all_pipeline))
+    }
+
+    /// Returns `true` if any of the pipelines in this router needs `MatchedRouteTemplate`
+    /// as input type.
+    pub fn needs_matched_route(&self, framework_items_db: &FrameworkItemDb) -> bool {
+        let matched_route_type = framework_items_db
+            .get_type(FrameworkItemDb::matched_route_template_id())
+            .unwrap();
+        self.pipelines()
+            .any(|pipeline| pipeline.needs_input_type(matched_route_type))
+    }
 }
 
 pub(crate) fn codegen_app(
-    handler_pipelines: &IndexMap<RouterKey, RequestHandlerPipeline>,
+    router: &Router,
+    handler_id2pipeline: &IndexMap<ComponentId, RequestHandlerPipeline>,
     application_state_call_graph: &ApplicationStateCallGraph,
     request_scoped_framework_bindings: &BiHashMap<Ident, ResolvedType>,
     package_id2name: &BiHashMap<PackageId, String>,
@@ -52,7 +72,6 @@ pub(crate) fn codegen_app(
     let pavex_import_name = get_codegen_dep_import_name("pavex");
     let http_import_name = get_codegen_dep_import_name("http");
     let thiserror_import_name = get_codegen_dep_import_name("thiserror");
-    let _hyper_import_name = get_codegen_dep_import_name("hyper");
 
     let application_state_def =
         define_application_state(runtime_singleton_bindings, package_id2name);
@@ -70,31 +89,35 @@ pub(crate) fn codegen_app(
 
     let define_server_state = define_server_state(&application_state_def, &pavex_import_name);
 
-    let mut handler_modules = vec![];
+    let handler_id2codegened_pipeline = handler_id2pipeline
+        .iter()
+        .map(|(id, p)| {
+            p.codegen(package_id2name, component_db, computation_db)
+                .map(|p| (*id, p))
+        })
+        .collect::<Result<BTreeMap<_, _>, _>>()?;
+    let handler_modules = handler_id2codegened_pipeline
+        .values()
+        .map(|p| p.as_inline_module())
+        .collect::<Vec<_>>();
     let path2codegen_router_entry = {
-        let mut map: IndexMap<String, CodegenRouterEntry> = IndexMap::new();
-        for (router_key, pipeline) in handler_pipelines {
-            let pipeline_code = pipeline.codegen(package_id2name, component_db, computation_db)?;
-            handler_modules.push(pipeline_code.as_inline_module());
-            match router_key.method_guard.clone() {
-                None => {
-                    map.insert(
-                        router_key.path.clone(),
-                        CodegenRouterEntry::CatchAllHandler(pipeline_code.clone()),
-                    );
-                }
-                Some(methods) => {
-                    let sub_router = map
-                        .entry(router_key.path.clone())
-                        .or_insert_with(|| CodegenRouterEntry::MethodSubRouter(BTreeMap::new()));
-                    let CodegenRouterEntry::MethodSubRouter(sub_router) = sub_router else {
-                        unreachable!("Cannot have a catch-all handler and a method sub-router for the same path");
-                    };
-                    for method in methods {
-                        sub_router.insert(method, pipeline_code.clone());
-                    }
-                }
+        let mut map: IndexMap<String, CodegenMethodRouter> = IndexMap::new();
+        for (path, method_router) in &router.route_path2sub_router {
+            let mut methods_and_pipelines =
+                Vec::with_capacity(method_router.handler_id2methods.len());
+            for (handler_id, methods) in &method_router.handler_id2methods {
+                let pipeline = &handler_id2codegened_pipeline[handler_id];
+                methods_and_pipelines.push((methods.clone(), pipeline.clone()));
             }
+            let catch_all_pipeline =
+                handler_id2codegened_pipeline[&method_router.fallback_id].clone();
+            map.insert(
+                path.to_owned(),
+                CodegenMethodRouter {
+                    methods_and_pipelines,
+                    catch_all_pipeline,
+                },
+            );
         }
         map
     };
@@ -107,9 +130,11 @@ pub(crate) fn codegen_app(
     }
 
     let router_init = get_router_init(&route_id2path, &pavex_import_name);
+    let fallback_codegened_pipeline = &handler_id2codegened_pipeline[&router.root_fallback_id];
     let route_request = get_request_dispatcher(
         &route_id2router_entry,
         &route_id2path,
+        fallback_codegened_pipeline,
         runtime_singleton_bindings,
         request_scoped_framework_bindings,
         framework_item_db,
@@ -151,12 +176,12 @@ fn server_startup(pavex: &Ident) -> ItemFn {
         pub fn run(
             server_builder: #pavex::server::Server,
             application_state: ApplicationState
-        ) -> Result<#pavex::server::ServerHandle, pavex::Error> {
+        ) -> #pavex::server::ServerHandle {
             let server_state = std::sync::Arc::new(ServerState {
-                router: build_router().map_err(#pavex::Error::new)?,
+                router: build_router(),
                 application_state
             });
-            Ok(server_builder.serve(route_request, server_state))
+            server_builder.serve(route_request, server_state)
         }
     })
     .unwrap()
@@ -265,20 +290,25 @@ fn get_router_init(route_id2path: &BiBTreeMap<u32, String>, pavex_import_name: &
     for (route_id, path) in route_id2path {
         router_init = quote! {
             #router_init
-            router.insert(#path, #route_id)?;
+            router.insert(#path, #route_id).unwrap();
         };
     }
     syn::parse2(quote! {
-        fn build_router() -> Result<#pavex_import_name::routing::Router<u32>, #pavex_import_name::routing::InsertError> {
+        fn build_router() -> #pavex_import_name::routing::Router<u32> {
+            // Pavex has validated at compile-time that all route paths are valid
+            // and that there are no conflicts, therefore we can safely unwrap
+            // every `insert`.
             #router_init
-            Ok(router)
+            router
         }
-    }).unwrap()
+    })
+    .unwrap()
 }
 
 fn get_request_dispatcher(
-    route_id2router_entry: &BTreeMap<u32, CodegenRouterEntry>,
+    route_id2router_entry: &BTreeMap<u32, CodegenMethodRouter>,
     route_id2path: &BiBTreeMap<u32, String>,
+    fallback_codegened_pipeline: &CodegenedRequestHandlerPipeline,
     singleton_bindings: &BiHashMap<Ident, ResolvedType>,
     request_scoped_bindings: &BiHashMap<Ident, ResolvedType>,
     framework_items_db: &FrameworkItemDb,
@@ -288,67 +318,99 @@ fn get_request_dispatcher(
     let mut route_dispatch_table = quote! {};
     let server_state_ident = format_ident!("server_state");
 
-    let matched_route_type = framework_items_db
-        .get_type(FrameworkItemDb::matched_route_template_id())
-        .unwrap();
-
-    for (route_id, router_entry) in route_id2router_entry {
-        let match_arm = match router_entry {
-            CodegenRouterEntry::MethodSubRouter(sub_router) => {
-                let mut sub_router_dispatch_table = quote! {};
-                let mut allowed_methods = vec![];
-
-                let needs_matched_route = sub_router.values().any(|pipeline| {
-                    pipeline.stages[0]
-                        .input_parameters
-                        .contains(matched_route_type)
-                });
-
-                for (method, request_pipeline) in sub_router {
-                    let invocation = request_pipeline.entrypoint_invocation(
-                        singleton_bindings,
-                        request_scoped_bindings,
-                        &server_state_ident,
-                    );
-                    allowed_methods.push(method.clone());
-                    let method = format_ident!("{}", method);
-                    sub_router_dispatch_table = quote! {
-                        #sub_router_dispatch_table
-                        &#pavex::http::Method::#method => #invocation,
-                    }
-                }
-                let allow_header_value = allowed_methods.join(", ");
-                let matched_route_template = if needs_matched_route {
-                    let path = route_id2path.get_by_left(route_id).unwrap();
-                    quote! {
-                        let matched_route_template = #pavex::extract::route::MatchedRouteTemplate::new(
-                            #path
-                        );
-                    }
-                } else {
-                    quote! {}
-                };
-                quote! {
-                    {
-                    #matched_route_template
-                    match &request_head.method {
-                        #sub_router_dispatch_table
-                        _ => {
-                            let header_value = #pavex::http::HeaderValue::from_static(#allow_header_value);
-                            #pavex::response::Response::method_not_allowed()
-                                .insert_header(#pavex::http::header::ALLOW, header_value)
-                                .box_body()
+    for (route_id, sub_router) in route_id2router_entry {
+        let match_arm = if sub_router.methods_and_pipelines.is_empty() {
+            // We just have the catch-all handler, we can skip the `match`.
+            sub_router.catch_all_pipeline.entrypoint_invocation(
+                singleton_bindings,
+                request_scoped_bindings,
+                &server_state_ident,
+            )
+        } else {
+            let mut sub_router_dispatch_table = quote! {};
+            let allowed_methods_init = {
+                let allowed_methods = sub_router
+                    .methods_and_pipelines
+                    .iter()
+                    .flat_map(|(methods, _)| methods)
+                    .map(|m| match m.as_str() {
+                        "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "HEAD" | "OPTIONS"
+                        | "CONNECT" | "TRACE" => {
+                            let i = format_ident!("{}", m);
+                            quote! {
+                                #pavex::http::Method::#i
+                            }
                         }
-                    }
-                    }
+                        s => {
+                            quote! {
+                                #pavex::http::Method::try_from(#s).unwrap()
+                            }
+                        }
+                    });
+                quote! {
+                    let allowed_methods = #pavex::extract::route::AllowedMethods::new(
+                        vec![#(#allowed_methods),*]
+                    );
                 }
-            }
-            CodegenRouterEntry::CatchAllHandler(request_pipeline) => request_pipeline
-                .entrypoint_invocation(
+            };
+
+            for (methods, request_pipeline) in &sub_router.methods_and_pipelines {
+                let invocation = request_pipeline.entrypoint_invocation(
                     singleton_bindings,
                     request_scoped_bindings,
                     &server_state_ident,
-                ),
+                );
+                let methods = methods.iter().map(|m| format_ident!("{}", m));
+                let invocation = if request_pipeline.needs_allowed_methods(framework_items_db) {
+                    quote! {
+                        {
+                            #allowed_methods_init
+                            #invocation
+                        }
+                    }
+                } else {
+                    invocation
+                };
+                sub_router_dispatch_table = quote! {
+                    #sub_router_dispatch_table
+                    #(&#pavex::http::Method::#methods)|* => #invocation,
+                }
+            }
+            let matched_route_template = if sub_router.needs_matched_route(framework_items_db) {
+                let path = route_id2path.get_by_left(route_id).unwrap();
+                quote! {
+                    let matched_route_template = #pavex::extract::route::MatchedRouteTemplate::new(
+                        #path
+                    );
+                }
+            } else {
+                quote! {}
+            };
+            let mut fallback_invocation = sub_router.catch_all_pipeline.entrypoint_invocation(
+                singleton_bindings,
+                request_scoped_bindings,
+                &server_state_ident,
+            );
+            if sub_router
+                .catch_all_pipeline
+                .needs_allowed_methods(framework_items_db)
+            {
+                fallback_invocation = quote! {
+                    {
+                        #allowed_methods_init
+                        #fallback_invocation
+                    }
+                };
+            }
+            quote! {
+                {
+                    #matched_route_template
+                    match &request_head.method {
+                        #sub_router_dispatch_table
+                        _ => #fallback_invocation,
+                    }
+                }
+            }
         };
         route_dispatch_table = quote! {
             #route_dispatch_table
@@ -356,6 +418,25 @@ fn get_request_dispatcher(
         };
     }
 
+    let root_fallback_invocation = fallback_codegened_pipeline.entrypoint_invocation(
+        singleton_bindings,
+        request_scoped_bindings,
+        &server_state_ident,
+    );
+    let unmatched_route = if fallback_codegened_pipeline.needs_matched_route(framework_items_db) {
+        quote! {
+            let matched_route_template = #pavex::extract::route::MatchedRouteTemplate::new("*");
+        }
+    } else {
+        quote! {}
+    };
+    let allowed_methods = if fallback_codegened_pipeline.needs_allowed_methods(framework_items_db) {
+        quote! {
+            let allowed_methods = #pavex::extract::route::AllowedMethods::new(vec![]);
+        }
+    } else {
+        quote! {}
+    };
     syn::parse2(quote! {
         async fn route_request(
             request: #http::Request<#pavex::hyper::body::Incoming>,
@@ -367,7 +448,9 @@ fn get_request_dispatcher(
             let matched_route = match server_state.router.at(&request_head.uri.path()) {
                 Ok(m) => m,
                 Err(_) => {
-                    return #pavex::response::Response::not_found().box_body();
+                    #allowed_methods
+                    #unmatched_route
+                    return #root_fallback_invocation;
                 }
             };
             let route_id = matched_route.value;
@@ -377,7 +460,7 @@ fn get_request_dispatcher(
                 .into();
             match route_id {
                 #route_dispatch_table
-                _ => #pavex::response::Response::not_found().box_body(),
+                i => unreachable!("Unknown route id: {}", i),
             }
         }
     })
