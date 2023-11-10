@@ -24,6 +24,8 @@ tracing = "0.1"
 owo-colors = "3"
 anyhow = "1"
 guppy = "0.15"
+cargo-generate = "0.18.4"
+path-absolutize = "3.1.1"
 
 [dev-dependencies]
 pavex_test_runner = { path = "../pavex_test_runner" }
