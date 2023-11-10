@@ -3,6 +3,8 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 use std::str::FromStr;
 
+use anyhow::Context;
+use cargo_generate::{GenerateArgs, TemplatePath};
 use clap::{Parser, Subcommand};
 use owo_colors::OwoColorize;
 use tracing_chrome::{ChromeLayerBuilder, FlushGuard};
@@ -76,6 +78,14 @@ enum Commands {
         #[clap(short, long, value_parser)]
         output: PathBuf,
     },
+    /// Scaffold a new Pavex project at <PATH>.
+    New {
+        /// The path of the new directory that will contain the project files.  
+        ///
+        /// If any of the intermediate directories in the path don't exist, they'll be created.
+        #[arg(index = 1)]
+        path: PathBuf,
+    },
 }
 
 fn init_telemetry() -> FlushGuard {
@@ -129,10 +139,11 @@ fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
             diagnostics,
             output,
         } => generate(blueprint, diagnostics, output),
+        Commands::New { path } => scaffold_project(path),
     }
 }
 
-#[tracing::instrument("Generate API server sdk")]
+#[tracing::instrument("Generate server sdk")]
 fn generate(
     blueprint: PathBuf,
     diagnostics: Option<PathBuf>,
@@ -157,4 +168,40 @@ fn generate(
     let generated_app = app.codegen()?;
     generated_app.persist(&output)?;
     Ok(ExitCode::SUCCESS)
+}
+
+fn scaffold_project(path: PathBuf) -> Result<ExitCode, Box<dyn std::error::Error>> {
+    let name = path
+        .file_name()
+        .ok_or_else(|| {
+            anyhow::anyhow!("Failed to derive a project name from the provided path")
+        })?
+        .to_str()
+        .ok_or_else(|| {
+            anyhow::anyhow!("The last segment of the provided path must be valid UTF8 to generate a valid project name")
+        })?
+        .to_string();
+
+    let generate_args = GenerateArgs {
+        template_path: TemplatePath {
+            git: Some("https://github.com/LukeMathWalker/pavex-project-template".into()),
+            ..Default::default()
+        },
+        destination: path
+            .parent()
+            .map(|p| {
+                use path_absolutize::Absolutize;
+
+                p.absolutize().map(|p| p.to_path_buf())
+            })
+            .transpose()
+            .context("Failed to convert destination path to an absolute path")?,
+        name: Some(name),
+        force_git_init: true,
+        verbose: true,
+        ..Default::default()
+    };
+    cargo_generate::generate(generate_args)
+        .context("Failed to scaffold the project from Pavex's default template")?;
+    return Ok(ExitCode::SUCCESS);
 }

@@ -1220,9 +1220,8 @@ dependencies = [
 
 [[package]]
 name = "matchit"
-version = "0.7.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ed1202b2a6f884ae56f04cff409ab315c5ce26b5e58d7412e484f01fd52f52ef"
+version = "0.7.3"
+source = "git+https://github.com/LukeMathWalker/matchit?branch=repro#a8e75215471308ef62ba7104e13c0c7ecadf3bc5"
 
 [[package]]
 name = "md-5"

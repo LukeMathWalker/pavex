@@ -69,7 +69,7 @@ You must specify the app profile that you want to use by setting the `APP_PROFIL
 APP_PROFILE=prod cargo px run --bin api
 ```
 
-All configurable parameters are listed in `api_server/src/configuration.rs`.
+All configurable parameters are listed in `conduit_core/src/configuration.rs`.
 
 ### Auth configuration
 
