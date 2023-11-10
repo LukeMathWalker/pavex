@@ -1,8 +1,10 @@
-use anyhow::Context;
-use pavex::blueprint::Blueprint;
 use std::{path::PathBuf, process::Command};
 
-/// The configuration for `pavex_cli`'s `generate` command.
+use anyhow::Context;
+
+use pavex::blueprint::Blueprint;
+
+/// The configuration for `pavex`'s `generate` command.
 ///
 /// You can use [`Client::generate`] to start building the command configuration.
 ///
@@ -26,10 +28,10 @@ impl GenerateBuilder {
 
     /// Generate the runtime library for the application.
     ///
-    /// This will invoke `pavex_cli` with the chosen configuration.
-    /// It won't return until `pavex_cli` has finished running.
+    /// This will invoke `pavex` with the chosen configuration.
+    /// It won't return until `pavex` has finished running.
     ///
-    /// If `pavex_cli` exits with a non-zero status code, this will return an error.
+    /// If `pavex` exits with a non-zero status code, this will return an error.
     pub fn execute(self) -> Result<(), anyhow::Error> {
         let mut cmd = self.command()?;
         let status = cmd
@@ -45,7 +47,7 @@ impl GenerateBuilder {
         Ok(())
     }
 
-    /// Assemble the `std::process::Command` that will be used to invoke `pavex_cli`,
+    /// Assemble the `std::process::Command` that will be used to invoke `pavex`,
     /// but do not run it.
     /// It **will** persist the blueprint to a file, though.
     ///

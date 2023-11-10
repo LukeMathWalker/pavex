@@ -4,7 +4,7 @@ use pavex::blueprint::Blueprint;
 
 use crate::commands::generate::GenerateBuilder;
 
-/// A fluent API for configuring and executing `pavex_cli`'s commands.
+/// A fluent API for configuring and executing `pavex`'s CLI commands.
 #[derive(Clone, Debug)]
 pub struct Client {
     pavex_cli_path: Option<PathBuf>,
@@ -28,10 +28,10 @@ impl Client {
         Self::default()
     }
 
-    /// Convert this `Client` into a `std::process::Command` that will run `pavex_cli`
+    /// Convert this `Client` into a `std::process::Command` that will run `pavex`
     /// with the chosen configuration.
     fn command(self) -> Command {
-        let pavex_path = self.pavex_cli_path.unwrap_or_else(|| "pavex_cli".into());
+        let pavex_path = self.pavex_cli_path.unwrap_or_else(|| "pavex".into());
         let mut cmd = Command::new(pavex_path);
 
         match self.color {
@@ -65,9 +65,9 @@ impl Client {
 
 /// Setters for optional configuration knobs on `Client`.
 impl Client {
-    /// Set the path to the `pavex_cli` executable.
+    /// Set the path to the `pavex` executable.
     ///
-    /// If this is not set, we will assume that `pavex_cli` is in the `PATH`.
+    /// If this is not set, we will assume that `pavex` is in the `PATH`.
     pub fn pavex_cli_path(mut self, path: PathBuf) -> Self {
         self.pavex_cli_path = Some(path);
         self
@@ -83,7 +83,7 @@ impl Client {
 
     /// Enable debug mode.
     ///
-    /// This will print additional debug information when running `pavex_cli` commands.
+    /// This will print additional debug information when running `pavex` commands.
     pub fn debug(mut self) -> Self {
         self.debug = true;
         self
@@ -91,7 +91,7 @@ impl Client {
 
     /// Disable debug mode.
     ///
-    /// `pavex_cli` will not print additional debug information when running commands.  
+    /// `pavex` will not print additional debug information when running commands.  
     /// This is the default behaviour.
     pub fn no_debug(mut self) -> Self {
         self.debug = false;
