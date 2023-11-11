@@ -96,9 +96,9 @@ You write straight-forward Rust, Pavex takes care of assembling together all the
 Pavex is under active development and far from being ready for hobby or production usage.  
 It has not yet been released on crates.io and you can expect breaking changes on every commit to the `main` branch.
 
-We are aiming for an alpha release by the end of summer 2023.
+We are aiming for a closed beta by the end of 2023.
 
-We publish project updates every 4 weeks:
+We regularly publish project updates:
 
 - [Vision](https://www.lpalmieri.com/posts/a-taste-of-pavex-rust-web-framework/) [December 2022]
 - [Progress report #1](https://www.lpalmieri.com/posts/pavex-progress-report-01/) [January 2023]
