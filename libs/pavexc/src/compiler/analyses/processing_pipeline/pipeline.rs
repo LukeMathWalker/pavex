@@ -122,8 +122,8 @@ impl RequestHandlerPipeline {
             component_db,
             &mut next_field_types,
         );
-        let mut middleware_id2next_field_types: HashMap<ComponentId, IndexSet<ResolvedType>> =
-            HashMap::new();
+        let mut middleware_id2next_field_types: IndexMap<ComponentId, IndexSet<ResolvedType>> =
+            IndexMap::new();
         for (middleware_id, middleware_call_graph) in middleware_call_graphs.iter().rev() {
             middleware_id2next_field_types.insert(*middleware_id, next_field_types.clone());
 
@@ -148,6 +148,7 @@ impl RequestHandlerPipeline {
                 &mut next_field_types,
             );
         }
+        middleware_id2next_field_types.reverse();
 
         // Determine, for each middleware, if they consume a request-scoped component
         // that is also needed by later stages of the pipeline.
