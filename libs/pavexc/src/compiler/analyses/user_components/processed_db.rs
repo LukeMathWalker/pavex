@@ -354,7 +354,7 @@ impl UserComponentDb {
             CallableResolutionError::UnsupportedCallableKind(ref inner_error) => {
                 let label = diagnostic::get_f_macro_invocation_span(&source, location)
                     .map(|s| s.labeled(format!("It was registered as a {callable_type} here")));
-                let message = format!("I can work with functions and static methods, but `{}` is neither.\nIt is {} and I don't know how to use it as a {}.", inner_error.import_path, inner_error.item_kind, callable_type);
+                let message = format!("I can work with functions and methods, but `{}` is neither.\nIt is {} and I don't know how to use it as a {}.", inner_error.import_path, inner_error.item_kind, callable_type);
                 let error = anyhow::anyhow!(e).context(message);
                 diagnostics.push(
                     CompilerDiagnostic::builder(source, error)
