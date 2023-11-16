@@ -1,6 +1,6 @@
 digraph "GET /home - 0" {
-    0 [ label = "app::stream_file(http_0_1_21::header::HeaderName, http_0_2_9::HeaderName) -> pavex::response::Response"]
-    1 [ label = "app::header2() -> http_0_2_9::HeaderName"]
+    0 [ label = "app::stream_file(http_0_1_21::header::HeaderName, http_0_2_11::HeaderName) -> pavex::response::Response"]
+    1 [ label = "app::header2() -> http_0_2_11::HeaderName"]
     2 [ label = "app::header1() -> http_0_1_21::header::HeaderName"]
     3 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     1 -> 0 [ ]

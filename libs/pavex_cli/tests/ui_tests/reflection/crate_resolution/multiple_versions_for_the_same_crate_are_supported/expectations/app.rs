@@ -28,7 +28,7 @@ fn build_router() -> pavex::routing::Router<u32> {
     router
 }
 async fn route_request(
-    request: http_0_2_9::Request<pavex::hyper::body::Incoming>,
+    request: http_0_2_11::Request<pavex::hyper::body::Incoming>,
     server_state: std::sync::Arc<ServerState>,
 ) -> pavex::response::Response {
     #[allow(unused)]

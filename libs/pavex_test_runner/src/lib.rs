@@ -5,14 +5,14 @@ use std::process::Output;
 use ahash::HashMap;
 use anyhow::Context;
 use console::style;
+use itertools::Itertools;
 use libtest_mimic::{Conclusion, Failed};
-use persist_if_changed::{copy_if_changed, persist_if_changed};
-use target_directory::TargetDirectoryPool;
 use toml::toml;
 use walkdir::WalkDir;
 
-use itertools::Itertools;
+use persist_if_changed::{copy_if_changed, persist_if_changed};
 pub use snapshot::print_changeset;
+use target_directory::TargetDirectoryPool;
 
 use crate::snapshot::SnapshotTest;
 
@@ -413,7 +413,7 @@ use pavex_cli_client::{{Client, client::Color}};
 fn main() -> Result<(), Box<dyn std::error::Error>> {{
     if Client::new()
         .color(Color::Always)
-        .pavex_cli_path("../../../../../libs/target/{cli_profile}/pavex_cli".into())
+        .pavex_cli_path("../../../../../libs/target/{cli_profile}/pavex".into())
         .generate(blueprint(), "generated_app".into())
         .diagnostics_path("diagnostics.dot".into())
         .execute().is_err() {{
