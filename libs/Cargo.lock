@@ -1140,8 +1140,27 @@ dependencies = [
  "futures-core",
  "futures-sink",
  "futures-util",
- "http",
+ "http 0.2.9",
  "indexmap 1.9.3",
+ "slab",
+ "tokio",
+ "tokio-util",
+ "tracing",
+]
+
+[[package]]
+name = "h2"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e1d308f63daf4181410c242d34c11f928dcb3aa105852019e043c9d1f4e4368a"
+dependencies = [
+ "bytes",
+ "fnv",
+ "futures-core",
+ "futures-sink",
+ "futures-util",
+ "http 1.0.0",
+ "indexmap 2.0.0",
  "slab",
  "tokio",
  "tokio-util",
@@ -1206,36 +1225,47 @@ dependencies = [
 ]
 
 [[package]]
+name = "http"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b32afd38673a8016f7c9ae69e5af41a58f81b1d31689040f2f1959594ce194ea"
+dependencies = [
+ "bytes",
+ "fnv",
+ "itoa",
+]
+
+[[package]]
 name = "http-body"
 version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d5f38f16d184e36f2408a55281cd658ecbd3ca05cce6d6510a176eca393e26d1"
 dependencies = [
  "bytes",
- "http",
+ "http 0.2.9",
  "pin-project-lite",
 ]
 
 [[package]]
 name = "http-body"
-version = "1.0.0-rc.2"
+version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "951dfc2e32ac02d67c90c0d65bd27009a635dc9b381a2cc7d284ab01e3a0150d"
+checksum = "1cac85db508abc24a2e48553ba12a996e87244a0395ce011e62b37158745d643"
 dependencies = [
  "bytes",
- "http",
+ "http 1.0.0",
 ]
 
 [[package]]
 name = "http-body-util"
-version = "0.1.0-rc.3"
+version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "08ef12f041acdd397010e5fb6433270c147d3b8b2d0a840cd7fff8e531dca5c8"
+checksum = "41cb79eb393015dadd30fc252023adb0b2400a0caee0fa2a077e6e21a551e840"
 dependencies = [
  "bytes",
  "futures-util",
- "http",
- "http-body 1.0.0-rc.2",
+ "http 1.0.0",
+ "http-body 1.0.0",
  "pin-project-lite",
 ]
 
@@ -1267,8 +1297,8 @@ dependencies = [
  "futures-channel",
  "futures-core",
  "futures-util",
- "h2",
- "http",
+ "h2 0.3.21",
+ "http 0.2.9",
  "http-body 0.4.5",
  "httparse",
  "httpdate",
@@ -1283,22 +1313,21 @@ dependencies = [
 
 [[package]]
 name = "hyper"
-version = "1.0.0-rc.4"
+version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d280a71f348bcc670fc55b02b63c53a04ac0bf2daff2980795aeaf53edae10e6"
+checksum = "24590385be94998c5def4cf53d34edc5381144c805126f00efb954d986f9a7b2"
 dependencies = [
  "bytes",
  "futures-channel",
  "futures-util",
- "h2",
- "http",
- "http-body 1.0.0-rc.2",
+ "h2 0.4.0",
+ "http 1.0.0",
+ "http-body 1.0.0",
  "httparse",
  "httpdate",
  "itoa",
  "pin-project-lite",
  "tokio",
- "tracing",
  "want",
 ]
 
@@ -1318,15 +1347,14 @@ dependencies = [
 [[package]]
 name = "hyper-util"
 version = "0.0.0"
-source = "git+https://github.com/LukeMathWalker/hyper-util.git?branch=send#98880f36ae1109b6edb60e03591fee1a96c3c634"
+source = "git+https://github.com/hyperium/hyper-util.git?branch=master#e91fba80ac00464caea786be743274c4b7e958a0"
 dependencies = [
  "bytes",
  "futures-channel",
  "futures-util",
- "http",
- "http-body 1.0.0-rc.2",
- "hyper 1.0.0-rc.4",
- "once_cell",
+ "http 1.0.0",
+ "http-body 1.0.0",
+ "hyper 1.0.0",
  "pin-project-lite",
  "socket2 0.5.3",
  "tokio",
@@ -1699,7 +1727,7 @@ dependencies = [
 [[package]]
 name = "matchit"
 version = "0.7.3"
-source = "git+https://github.com/LukeMathWalker/matchit?branch=repro#a8e75215471308ef62ba7104e13c0c7ecadf3bc5"
+source = "git+https://github.com/ibraheemdev/matchit?branch=master#7766d457ee20826497b5061581fa6cef682d05b7"
 
 [[package]]
 name = "memchr"
@@ -2056,10 +2084,10 @@ dependencies = [
  "bytes",
  "fs-err",
  "futures-util",
- "http",
- "http-body 1.0.0-rc.2",
+ "http 1.0.0",
+ "http-body 1.0.0",
  "http-body-util",
- "hyper 1.0.0-rc.4",
+ "hyper 1.0.0",
  "hyper-util",
  "indexmap 1.9.3",
  "insta",
@@ -2560,8 +2588,8 @@ dependencies = [
  "encoding_rs",
  "futures-core",
  "futures-util",
- "h2",
- "http",
+ "h2 0.3.21",
+ "http 0.2.9",
  "http-body 0.4.5",
  "hyper 0.14.27",
  "hyper-tls",

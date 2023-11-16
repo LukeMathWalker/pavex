@@ -481,7 +481,7 @@ async fn route_request(
                 }
             }
         }
-        _ => pavex::response::Response::not_found().box_body(),
+        i => unreachable!("Unknown route id: {}", i),
     }
 }
 pub mod route_0 {
@@ -973,14 +973,14 @@ pub mod route_8 {
         let v3 = conduit_core::routes::profiles::follow_profile(v2);
         <http::StatusCode as pavex::response::IntoResponse>::into_response(v3)
     }
-    pub struct Next0<'a, 'b, T>
+    pub struct Next0<'b, 'a, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
         s_0: pavex::extract::route::RawRouteParams<'a, 'b>,
         next: fn(pavex::extract::route::RawRouteParams<'a, 'b>) -> T,
     }
-    impl<'a, 'b, T> std::future::IntoFuture for Next0<'a, 'b, T>
+    impl<'b, 'a, T> std::future::IntoFuture for Next0<'b, 'a, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
@@ -1245,14 +1245,14 @@ pub mod route_13 {
         let v3 = conduit_core::routes::articles::get_article(v2);
         <http::StatusCode as pavex::response::IntoResponse>::into_response(v3)
     }
-    pub struct Next0<'b, 'a, T>
+    pub struct Next0<'a, 'b, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
         s_0: pavex::extract::route::RawRouteParams<'a, 'b>,
         next: fn(pavex::extract::route::RawRouteParams<'a, 'b>) -> T,
     }
-    impl<'b, 'a, T> std::future::IntoFuture for Next0<'b, 'a, T>
+    impl<'a, 'b, T> std::future::IntoFuture for Next0<'a, 'b, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
@@ -1383,7 +1383,7 @@ pub mod route_15 {
         let v10 = conduit_core::routes::articles::update_article(v9, v7);
         <http::StatusCode as pavex::response::IntoResponse>::into_response(v10)
     }
-    pub struct Next0<'a, 'b, 'c, T>
+    pub struct Next0<'b, 'a, 'c, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
@@ -1396,7 +1396,7 @@ pub mod route_15 {
             &'c pavex::request::RequestHead,
         ) -> T,
     }
-    impl<'a, 'b, 'c, T> std::future::IntoFuture for Next0<'a, 'b, 'c, T>
+    impl<'b, 'a, 'c, T> std::future::IntoFuture for Next0<'b, 'a, 'c, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
@@ -1493,14 +1493,14 @@ pub mod route_17 {
         let v3 = conduit_core::routes::articles::favorite_article(v2);
         <http::StatusCode as pavex::response::IntoResponse>::into_response(v3)
     }
-    pub struct Next0<'b, 'a, T>
+    pub struct Next0<'a, 'b, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
         s_0: pavex::extract::route::RawRouteParams<'a, 'b>,
         next: fn(pavex::extract::route::RawRouteParams<'a, 'b>) -> T,
     }
-    impl<'b, 'a, T> std::future::IntoFuture for Next0<'b, 'a, T>
+    impl<'a, 'b, T> std::future::IntoFuture for Next0<'a, 'b, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
@@ -1545,14 +1545,14 @@ pub mod route_18 {
         let v3 = conduit_core::routes::articles::list_comments(v2);
         <http::StatusCode as pavex::response::IntoResponse>::into_response(v3)
     }
-    pub struct Next0<'b, 'a, T>
+    pub struct Next0<'a, 'b, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
         s_0: pavex::extract::route::RawRouteParams<'a, 'b>,
         next: fn(pavex::extract::route::RawRouteParams<'a, 'b>) -> T,
     }
-    impl<'b, 'a, T> std::future::IntoFuture for Next0<'b, 'a, T>
+    impl<'a, 'b, T> std::future::IntoFuture for Next0<'a, 'b, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
@@ -1689,14 +1689,14 @@ pub mod route_20 {
         let v3 = conduit_core::routes::articles::delete_comment(v2);
         <http::StatusCode as pavex::response::IntoResponse>::into_response(v3)
     }
-    pub struct Next0<'b, 'a, T>
+    pub struct Next0<'a, 'b, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
         s_0: pavex::extract::route::RawRouteParams<'a, 'b>,
         next: fn(pavex::extract::route::RawRouteParams<'a, 'b>) -> T,
     }
-    impl<'b, 'a, T> std::future::IntoFuture for Next0<'b, 'a, T>
+    impl<'a, 'b, T> std::future::IntoFuture for Next0<'a, 'b, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {

@@ -46,8 +46,7 @@ toml_edit = { version = "0.19.8", features = ["serde"] }
 semver = "1.0.17"
 persist_if_changed = { path = "../persist_if_changed" }
 
-#matchit = "0.7"
-matchit = { git = "https://github.com/LukeMathWalker/matchit", branch = "repro" }
+matchit = { git = "https://github.com/ibraheemdev/matchit", branch = "master" }
 
 # Sqlite cache
 xdg-home = "1.0.0"
