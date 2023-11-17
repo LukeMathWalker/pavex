@@ -4,10 +4,11 @@ use std::path::{Path, PathBuf};
 
 use cargo_manifest::{Dependency, Edition};
 use guppy::graph::PackageGraph;
-use persist_if_changed::persist_if_changed;
 use proc_macro2::TokenStream;
 use serde::Serialize;
 use toml_edit::ser::ValueSerializer;
+
+use persist_if_changed::persist_if_changed;
 
 #[derive(Clone)]
 /// The manifest and the code for a generated application.
@@ -40,6 +41,9 @@ impl GeneratedManifest {
                         Dependency::Detailed(d) => {
                             Serialize::serialize(d, ValueSerializer::new()).unwrap()
                         }
+                        Dependency::Inherited(d) => {
+                            Serialize::serialize(d, ValueSerializer::new()).unwrap()
+                        }
                     };
                     (name.clone(), value)
                 })
@@ -54,7 +58,7 @@ impl GeneratedManifest {
 impl GeneratedApp {
     /// Save the code and the manifest for the generated application to disk.
     /// The newly created library crate is also injected as a member into the current workspace.
-    #[tracing::instrument(skip_all, level=tracing::Level::INFO)]
+    #[tracing::instrument(skip_all, level = tracing::Level::INFO)]
     pub fn persist(self, directory: &Path) -> Result<(), anyhow::Error> {
         let Self {
             lib_rs,

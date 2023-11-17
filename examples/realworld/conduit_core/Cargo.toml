@@ -14,7 +14,7 @@ cargo_px_env = "0.1"
 pavex = { path = "../../../libs/pavex" }
 
 time = { version = "0.3", features = ["serde"] }
-sqlx = { version = "0.7.0-alpha.3", features = [ "runtime-tokio", "tls-rustls", "migrate", "uuid", "macros", "time", "postgres" ] }
+sqlx = { version = "0.7", features = [ "runtime-tokio", "tls-rustls", "migrate", "uuid", "macros", "time", "postgres" ] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "1"

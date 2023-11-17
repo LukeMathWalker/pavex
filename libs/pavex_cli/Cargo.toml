@@ -23,7 +23,7 @@ tracing-chrome = { version = "0.7" }
 tracing = "0.1"
 owo-colors = "3"
 anyhow = "1"
-guppy = "0.15"
+guppy = "0.17"
 cargo-generate = "0.18.4"
 path-absolutize = "3.1.1"
 
