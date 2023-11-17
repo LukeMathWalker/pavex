@@ -3,6 +3,7 @@ use std::task::Poll;
 use std::thread;
 
 use anyhow::Context;
+use hyper_util::rt::TokioIo;
 use tokio::net::TcpStream;
 use tokio::sync::mpsc::error::TrySendError;
 
@@ -238,6 +239,7 @@ where
             // TODO: expose all the config options for `auto::Builder` through the top-level
             //   `ServerConfiguration` object.
             let builder = hyper_util::server::conn::auto::Builder::new(LocalExec);
+            let connection = TokioIo::new(connection);
             builder
                 .serve_connection(connection, handler)
                 .await

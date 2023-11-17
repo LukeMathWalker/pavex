@@ -39,9 +39,9 @@ indexmap = { version = "2", features = ["serde"] }
 fs-err = "2.7.0"
 ron = "0.8"
 
-tokio = { version = "1.32", features = ["net", "sync", "rt"] }
+tokio = { version = "1.32", features = ["net", "sync", "rt", "time"] }
 hyper = { version = "1", features = ["full"], optional = true }
-hyper-util = { git = "https://github.com/hyperium/hyper-util.git", branch = "master", features = ["auto"], optional = true }
+hyper-util = { version = "0.1", features = ["tokio", "server", "server-auto"], optional = true }
 socket2 = { version = "0.5.3", optional = true }
 
 [dev-dependencies]
