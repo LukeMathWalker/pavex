@@ -420,8 +420,8 @@ fn codegen_deps(package_graph: &PackageGraph) -> HashMap<String, guppy::PackageI
         .id();
     let http = package_graph
         .packages()
-        .find(|p| p.name() == "http" && p.version().major == 0 && p.version().minor == 2)
-        .expect("Expected to find `http@0.2` in the package graph, but it was not there.")
+        .find(|p| p.name() == "http" && p.version().major == 1)
+        .expect("Expected to find `http@1` in the package graph, but it was not there.")
         .id();
     let thiserror = package_graph
         .packages()

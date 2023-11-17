@@ -5,5 +5,5 @@ codegen = "pass"
 
 [dependencies]
 bytes = "1"
-http-body = "0.4"
-http = "0.2"
+http-body = "1"
+http = "1"

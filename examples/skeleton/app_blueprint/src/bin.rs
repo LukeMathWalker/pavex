@@ -7,7 +7,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let generated_dir = generated_pkg_manifest_path()?.parent().unwrap().into();
     let blueprint = app_blueprint();
     Client::new()
-        .pavex_cli_path("../../libs/target/release/pavex_cli".into())
+        .pavex_cli_path("../../libs/target/release/pavex".into())
         .generate(blueprint, generated_dir)
         .execute()?;
     Ok(())

@@ -11,8 +11,8 @@ server = ["dep:hyper", "dep:hyper-util", "dep:socket2"]
 
 [dependencies]
 bytes = "1"
-http = "0.2"
-http-body = "1.0.0-rc.2"
+http = "1"
+http-body = "1"
 anyhow = "1"
 futures-util = "0.3"
 mime = "0.3"
@@ -21,29 +21,27 @@ serde = { version = "1", features = ["derive"] }
 pavex_macros = { path = "../pavex_macros" }
 paste = "1"
 tracing = "0.1"
-http-body-util = "0.1.0-rc.3"
+http-body-util = "0.1"
 
 # Route parameters
-#matchit = "0.7"
-matchit = { git = "https://github.com/LukeMathWalker/matchit", branch = "repro" }
+matchit = { git = "https://github.com/ibraheemdev/matchit", branch = "master" }
 percent-encoding = "2"
 
 # Query parameters
-serde_html_form = "0.1"
+serde_html_form = "0.2"
 
 # Json body extractor
 serde_json = "1"
 serde_path_to_error = "0.1"
 
 # Blueprint builder
-indexmap = { version = "1.9.1", features = ["serde-1"] }
+indexmap = { version = "2", features = ["serde"] }
 fs-err = "2.7.0"
 ron = "0.8"
 
 tokio = { version = "1.32", features = ["net", "sync", "rt"] }
-hyper = { version = "1.0.0-rc.4", features = ["full"], optional = true }
-# TODO: convert to `git` dependency
-hyper-util = { git = "https://github.com/LukeMathWalker/hyper-util.git", branch = "send", features = ["auto"], optional = true }
+hyper = { version = "1", features = ["full"], optional = true }
+hyper-util = { git = "https://github.com/hyperium/hyper-util.git", branch = "master", features = ["auto"], optional = true }
 socket2 = { version = "0.5.3", optional = true }
 
 [dev-dependencies]
@@ -51,4 +49,4 @@ tokio = { version = "1", features = ["macros"] }
 insta = "1.29.0"
 tracing = "0.1"
 reqwest = "0.11"
-itertools = "0.11.0"
+itertools = "0.12"

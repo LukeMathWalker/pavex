@@ -11,4 +11,4 @@ miette = { version = "5", features = ["fancy"] }
 supports-hyperlinks = { version = "2" }
 supports-color = { version = "2" }
 supports-unicode = { version = "2" }
-terminal_size = { version = "0.2" }
+terminal_size = { version = "0.3" }

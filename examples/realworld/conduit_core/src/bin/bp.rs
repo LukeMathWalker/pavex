@@ -14,7 +14,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         // This customization is only needed because the example lives in the same
         // repository of Pavex itself. In a real-world scenario, you would just
         // use the binary path.
-        .pavex_cli_path("../../libs/target/release/pavex_cli".into())
+        .pavex_cli_path("../../libs/target/release/pavex".into())
         .generate(blueprint(), generated_dir)
         .execute()?;
     Ok(())

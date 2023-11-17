@@ -22,7 +22,7 @@ serde_json = { version = "1", features = ["unbounded_depth"] }
 serde_stacker = "0.1"
 anyhow = "1.0.58"
 fs-err = "2.7.0"
-indexmap = { version = "1.9.1", features = ["serde-1"] }
+indexmap = { version = "2", features = ["serde"] }
 petgraph = { version = "0.6.2", default-features = false, features = ["graphmap", "stable_graph"] }
 bimap = "0.6.2"
 prettyplease = "0.2"
@@ -30,9 +30,9 @@ quote = "1.0.20"
 proc-macro2 = { version = "1.0.40", features = ["span-locations"] }
 thiserror = "1.0.32"
 miette = { version = "5.3" }
-guppy = "0.15.0"
-itertools = "0.10.3"
-cargo-manifest = "0.7"
+guppy = "0.17"
+itertools = "0.12"
+cargo-manifest = "0.12"
 pathdiff = "0.2.1"
 elsa = "1.4.0"
 tracing = "0.1"
@@ -42,17 +42,16 @@ ahash = "0.8"
 convert_case = "0.6"
 textwrap = "0.16.0"
 once_cell = "1.17.1"
-toml_edit = { version = "0.19.8", features = ["serde"] }
+toml_edit = { version = "0.21", features = ["serde"] }
 semver = "1.0.17"
 persist_if_changed = { path = "../persist_if_changed" }
 
-#matchit = "0.7"
-matchit = { git = "https://github.com/LukeMathWalker/matchit", branch = "repro" }
+matchit = { git = "https://github.com/ibraheemdev/matchit", branch = "master" }
 
 # Sqlite cache
 xdg-home = "1.0.0"
-rusqlite = { version = "0.29.0", features = ["bundled"] }
-r2d2_sqlite = "0.22.0"
+rusqlite = { version = "0.30", features = ["bundled"] }
+r2d2_sqlite = "0.23.0"
 r2d2 = "0.8"
 bincode = "1"
 rayon = "1.7"

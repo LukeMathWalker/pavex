@@ -36,7 +36,7 @@ async fn same_path_different_method() {
         .send()
         .await
         .expect("Failed to make request");
-    assert_eq!(StatusCode::FORBIDDEN, response.status());
+    assert_eq!(StatusCode::FORBIDDEN.as_u16(), response.status().as_u16());
 }
 
 #[tokio::test]
@@ -48,7 +48,10 @@ async fn deeper_path() {
         .send()
         .await
         .expect("Failed to make request");
-    assert_eq!(StatusCode::UNAUTHORIZED, response.status());
+    assert_eq!(
+        StatusCode::UNAUTHORIZED.as_u16(),
+        response.status().as_u16()
+    );
 }
 
 #[tokio::test]
@@ -60,7 +63,10 @@ async fn matches_nesting_prefix() {
         .send()
         .await
         .expect("Failed to make request");
-    assert_eq!(StatusCode::UNAUTHORIZED, response.status());
+    assert_eq!(
+        StatusCode::UNAUTHORIZED.as_u16(),
+        response.status().as_u16()
+    );
 }
 
 #[tokio::test]
@@ -72,5 +78,5 @@ async fn does_not_match_prefix() {
         .send()
         .await
         .expect("Failed to make request");
-    assert_eq!(StatusCode::NOT_FOUND, response.status());
+    assert_eq!(StatusCode::NOT_FOUND.as_u16(), response.status().as_u16());
 }
