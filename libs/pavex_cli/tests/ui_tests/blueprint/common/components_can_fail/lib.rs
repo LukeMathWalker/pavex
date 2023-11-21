@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
 use pavex::f;
 use pavex::middleware::Next;
-use pavex::{hyper::body::Body, request::RequestHead, response::Response};
+use pavex::{request::RequestHead, response::Response};
 
 pub struct Logger;
 

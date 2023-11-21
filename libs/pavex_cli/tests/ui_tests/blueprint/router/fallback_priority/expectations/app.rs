@@ -4,7 +4,7 @@
 #[allow(unused_imports)]
 use std as alloc;
 struct ServerState {
-    router: pavex::routing::Router<u32>,
+    router: matchit::Router<u32>,
     #[allow(dead_code)]
     application_state: ApplicationState,
 }
@@ -22,19 +22,20 @@ pub fn run(
     });
     server_builder.serve(route_request, server_state)
 }
-fn build_router() -> pavex::routing::Router<u32> {
-    let mut router = pavex::routing::Router::new();
+fn build_router() -> matchit::Router<u32> {
+    let mut router = matchit::Router::new();
     router.insert("/users*catch_all", 0u32).unwrap();
     router.insert("/users/", 1u32).unwrap();
     router.insert("/users/id", 2u32).unwrap();
     router
 }
 async fn route_request(
-    request: http::Request<pavex::hyper::body::Incoming>,
+    request: http::Request<hyper::body::Incoming>,
     server_state: std::sync::Arc<ServerState>,
 ) -> pavex::response::Response {
     #[allow(unused)]
     let (request_head, request_body) = request.into_parts();
+    let request_body = pavex::extract::body::RawIncomingBody::from(request_body);
     let request_head: pavex::request::RequestHead = request_head.into();
     let matched_route = match server_state.router.at(&request_head.uri.path()) {
         Ok(m) => m,

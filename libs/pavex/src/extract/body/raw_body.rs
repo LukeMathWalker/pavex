@@ -41,3 +41,9 @@ impl Body for RawIncomingBody {
         self.project().inner.poll_frame(cx)
     }
 }
+
+impl From<Incoming> for RawIncomingBody {
+    fn from(inner: Incoming) -> Self {
+        Self { inner }
+    }
+}
