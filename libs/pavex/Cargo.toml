@@ -22,6 +22,7 @@ pavex_macros = { path = "../pavex_macros" }
 paste = "1"
 tracing = "0.1"
 http-body-util = "0.1"
+pin-project-lite = "0.2"
 
 # Route parameters
 matchit = { git = "https://github.com/ibraheemdev/matchit", branch = "master" }
