@@ -1,7 +1,6 @@
-use ahash::HashMap;
 use bimap::BiHashMap;
 use guppy::PackageId;
-use indexmap::IndexSet;
+use indexmap::{IndexMap, IndexSet};
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote, ToTokens};
 use syn::ItemFn;
@@ -56,7 +55,7 @@ impl RequestHandlerPipeline {
                 .map(|(name, ty_)| {
                     let mut ty_ = ty_.to_owned();
 
-                    let lifetime2binding: HashMap<_, _> = ty_
+                    let lifetime2binding: IndexMap<_, _> = ty_
                         .named_lifetime_parameters()
                         .into_iter()
                         .map(|lifetime| (lifetime, lifetime_generator.next()))
