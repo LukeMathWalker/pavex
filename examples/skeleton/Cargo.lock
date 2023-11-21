@@ -40,6 +40,7 @@ dependencies = [
  "app_blueprint",
  "http",
  "hyper",
+ "matchit",
  "pavex",
  "thiserror",
 ]
@@ -410,6 +411,7 @@ dependencies = [
  "paste",
  "pavex_macros",
  "percent-encoding",
+ "pin-project-lite",
  "ron",
  "serde",
  "serde_html_form",
