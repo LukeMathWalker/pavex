@@ -1,4 +1,3 @@
-//! An incoming HTTP request.
 use http::{HeaderMap, Method, Uri, Version};
 
 #[non_exhaustive]
