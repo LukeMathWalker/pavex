@@ -27,7 +27,7 @@ impl<'a> Route<'a> {
     /// ```rust
     /// use pavex::f;
     /// use pavex::blueprint::{Blueprint, router::GET};
-    /// use pavex::{response::Response, hyper::body::Body};
+    /// use pavex::response::Response;
     /// # struct LogLevel;
     /// # struct RuntimeError;
     /// # struct ConfigurationError;

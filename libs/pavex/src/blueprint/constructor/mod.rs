@@ -34,7 +34,7 @@ impl<'a> Constructor<'a> {
     /// ```rust
     /// use pavex::f;
     /// use pavex::blueprint::{Blueprint, constructor::Lifecycle};
-    /// use pavex::{response::Response, hyper::body::Body};
+    /// use pavex::response::Response;
     /// # struct LogLevel;
     /// # struct Logger;
     /// # struct ConfigurationError;

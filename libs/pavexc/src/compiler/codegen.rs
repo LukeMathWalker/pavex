@@ -71,7 +71,9 @@ pub(crate) fn codegen_app(
     };
     let pavex_import_name = get_codegen_dep_import_name("pavex");
     let http_import_name = get_codegen_dep_import_name("http");
+    let hyper_import_name = get_codegen_dep_import_name("hyper");
     let thiserror_import_name = get_codegen_dep_import_name("thiserror");
+    let matchit_import_name = get_codegen_dep_import_name("matchit");
 
     let application_state_def =
         define_application_state(runtime_singleton_bindings, package_id2name);
@@ -87,7 +89,7 @@ pub(crate) fn codegen_app(
         computation_db,
     )?;
 
-    let define_server_state = define_server_state(&application_state_def, &pavex_import_name);
+    let define_server_state = define_server_state(&application_state_def, &matchit_import_name);
 
     let handler_id2codegened_pipeline = handler_id2pipeline
         .iter()
@@ -129,7 +131,7 @@ pub(crate) fn codegen_app(
         route_id2router_entry.insert(route_id as u32, router_entry.to_owned());
     }
 
-    let router_init = get_router_init(&route_id2path, &pavex_import_name);
+    let router_init = get_router_init(&route_id2path, &matchit_import_name);
     let fallback_codegened_pipeline = &handler_id2codegened_pipeline[&router.root_fallback_id];
     let route_request = get_request_dispatcher(
         &route_id2router_entry,
@@ -140,6 +142,7 @@ pub(crate) fn codegen_app(
         framework_item_db,
         &pavex_import_name,
         &http_import_name,
+        &hyper_import_name,
     );
     let entrypoint = server_startup(&pavex_import_name);
     let alloc_rename = if package_id2name.contains_right(ALLOC_PACKAGE_ID_REPR) {
@@ -241,7 +244,7 @@ fn define_application_state_error(
 
 fn define_server_state(
     application_state_def: &ItemStruct,
-    pavex_import_name: &Ident,
+    matchit_import_name: &Ident,
 ) -> ItemStruct {
     let attribute = if application_state_def.fields.is_empty() {
         quote! {
@@ -252,7 +255,7 @@ fn define_server_state(
     };
     syn::parse2(quote! {
         struct ServerState {
-            router: #pavex_import_name::routing::Router<u32>,
+            router: #matchit_import_name::Router<u32>,
             #attribute
             application_state: ApplicationState
         }
@@ -283,9 +286,9 @@ fn get_application_state_init(
     Ok(function)
 }
 
-fn get_router_init(route_id2path: &BiBTreeMap<u32, String>, pavex_import_name: &Ident) -> ItemFn {
+fn get_router_init(route_id2path: &BiBTreeMap<u32, String>, matchit_import_name: &Ident) -> ItemFn {
     let mut router_init = quote! {
-        let mut router = #pavex_import_name::routing::Router::new();
+        let mut router = #matchit_import_name::Router::new();
     };
     for (route_id, path) in route_id2path {
         router_init = quote! {
@@ -294,7 +297,7 @@ fn get_router_init(route_id2path: &BiBTreeMap<u32, String>, pavex_import_name: &
         };
     }
     syn::parse2(quote! {
-        fn build_router() -> #pavex_import_name::routing::Router<u32> {
+        fn build_router() -> #matchit_import_name::Router<u32> {
             // Pavex has validated at compile-time that all route paths are valid
             // and that there are no conflicts, therefore we can safely unwrap
             // every `insert`.
@@ -314,6 +317,7 @@ fn get_request_dispatcher(
     framework_items_db: &FrameworkItemDb,
     pavex: &Ident,
     http: &Ident,
+    hyper: &Ident,
 ) -> ItemFn {
     let mut route_dispatch_table = quote! {};
     let server_state_ident = format_ident!("server_state");
@@ -439,11 +443,12 @@ fn get_request_dispatcher(
     };
     syn::parse2(quote! {
         async fn route_request(
-            request: #http::Request<#pavex::hyper::body::Incoming>,
+            request: #http::Request<#hyper::body::Incoming>,
             #server_state_ident: std::sync::Arc<ServerState>
         ) -> #pavex::response::Response {
             #[allow(unused)]
             let (request_head, request_body) = request.into_parts();
+            let request_body = #pavex::extract::body::RawIncomingBody::from(request_body);
             let request_head: #pavex::request::RequestHead = request_head.into();
             let matched_route = match server_state.router.at(&request_head.uri.path()) {
                 Ok(m) => m,

@@ -6,14 +6,15 @@ use serde_json::json;
 async fn signup_works() {
     let api = TestApi::spawn().await;
 
-    let response = api.post_signup(&json!({
-        "user": {
-            "username": "Ursula",
-            "email": "ursulaleguin@scifi.com",
-            "password": "earthsea",
-        }
-    }))
-    .await;
+    let response = api
+        .post_signup(&json!({
+            "user": {
+                "username": "Ursula",
+                "email": "ursulaleguin@scifi.com",
+                "password": "earthsea",
+            }
+        }))
+        .await;
 
-    assert_eq!(response.status(), StatusCode::CREATED);
+    assert_eq!(response.status().as_u16(), StatusCode::CREATED.as_u16());
 }

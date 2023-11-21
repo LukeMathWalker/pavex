@@ -227,7 +227,7 @@ where
             async move {
                 let handler = (handler)(request, state);
                 let response = handler.await;
-                let response = crate::hyper::Response::from(response);
+                let response = hyper::Response::from(response);
                 Ok::<_, hyper::Error>(response)
             }
         });

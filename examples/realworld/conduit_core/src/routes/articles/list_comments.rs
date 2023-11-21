@@ -1,4 +1,4 @@
-use pavex::{extract::route::RouteParams, hyper::StatusCode};
+use pavex::{extract::route::RouteParams, http::StatusCode};
 
 use crate::schemas::Comment;
 

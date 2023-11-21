@@ -29,7 +29,7 @@ impl<'a> WrappingMiddleware<'a> {
     ///
     /// ```rust
     /// use pavex::{f, blueprint::Blueprint, middleware::Next};
-    /// use pavex::{response::Response, hyper::body::Body};
+    /// use pavex::response::Response;
     /// use std::future::Future;
     /// # struct LogLevel;
     /// # struct Logger;

@@ -2090,6 +2090,7 @@ dependencies = [
  "paste",
  "pavex_macros",
  "percent-encoding",
+ "pin-project-lite",
  "reqwest",
  "ron",
  "serde",

@@ -49,7 +49,7 @@ impl FrameworkItemDb {
             },
         );
         let http_request = process_framework_path(
-            "pavex::hyper::body::Incoming",
+            "pavex::extract::body::RawIncomingBody",
             package_graph,
             krate_collection,
         );

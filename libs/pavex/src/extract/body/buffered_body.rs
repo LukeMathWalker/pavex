@@ -6,7 +6,7 @@ use crate::{extract::body::errors::SizeLimitExceeded, request::RequestHead};
 
 use super::{
     errors::{ExtractBufferedBodyError, UnexpectedBufferError},
-    BodySizeLimit,
+    BodySizeLimit, RawIncomingBody,
 };
 
 #[derive(Debug)]
@@ -162,7 +162,7 @@ impl BufferedBody {
     /// If extraction fails, an [`ExtractBufferedBodyError`] is returned.
     pub async fn extract(
         request_head: &RequestHead,
-        body: hyper::body::Incoming,
+        body: RawIncomingBody,
         body_size_limit: BodySizeLimit,
     ) -> Result<Self, ExtractBufferedBodyError> {
         match body_size_limit {
