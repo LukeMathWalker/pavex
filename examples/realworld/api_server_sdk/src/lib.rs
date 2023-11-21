@@ -4,7 +4,7 @@
 #[allow(unused_imports)]
 use std as alloc;
 struct ServerState {
-    router: pavex::routing::Router<u32>,
+    router: matchit::Router<u32>,
     application_state: ApplicationState,
 }
 pub struct ApplicationState {
@@ -58,8 +58,8 @@ pub fn run(
     });
     server_builder.serve(route_request, server_state)
 }
-fn build_router() -> pavex::routing::Router<u32> {
-    let mut router = pavex::routing::Router::new();
+fn build_router() -> matchit::Router<u32> {
+    let mut router = matchit::Router::new();
     router.insert("/api/ping", 0u32).unwrap();
     router.insert("/articles", 1u32).unwrap();
     router.insert("/articles/:slug", 2u32).unwrap();
@@ -76,11 +76,12 @@ fn build_router() -> pavex::routing::Router<u32> {
     router
 }
 async fn route_request(
-    request: http::Request<pavex::hyper::body::Incoming>,
+    request: http::Request<hyper::body::Incoming>,
     server_state: std::sync::Arc<ServerState>,
 ) -> pavex::response::Response {
     #[allow(unused)]
     let (request_head, request_body) = request.into_parts();
+    let request_body = pavex::extract::body::RawIncomingBody::from(request_body);
     let request_head: pavex::request::RequestHead = request_head.into();
     let matched_route = match server_state.router.at(&request_head.uri.path()) {
         Ok(m) => m,
@@ -593,7 +594,7 @@ pub mod route_3 {
         v0: pavex::extract::route::MatchedRouteTemplate,
         v1: &sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
         v2: &jsonwebtoken::EncodingKey,
-        v3: hyper::body::Incoming,
+        v3: pavex::extract::body::RawIncomingBody,
         v4: &pavex::request::RequestHead,
     ) -> pavex::response::Response {
         let v5 = conduit_core::telemetry::RootSpan::new(v4, v0);
@@ -610,7 +611,7 @@ pub mod route_3 {
     pub async fn handler(
         v0: &sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
         v1: &pavex::request::RequestHead,
-        v2: hyper::body::Incoming,
+        v2: pavex::extract::body::RawIncomingBody,
         v3: &jsonwebtoken::EncodingKey,
     ) -> pavex::response::Response {
         let v4 = <pavex::extract::body::BodySizeLimit as std::default::Default>::default();
@@ -666,12 +667,12 @@ pub mod route_3 {
     {
         s_0: &'a sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
         s_1: &'b pavex::request::RequestHead,
-        s_2: hyper::body::Incoming,
+        s_2: pavex::extract::body::RawIncomingBody,
         s_3: &'c jsonwebtoken::EncodingKey,
         next: fn(
             &'a sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
             &'b pavex::request::RequestHead,
-            hyper::body::Incoming,
+            pavex::extract::body::RawIncomingBody,
             &'c jsonwebtoken::EncodingKey,
         ) -> T,
     }
@@ -691,7 +692,7 @@ pub mod route_4 {
         v0: pavex::extract::route::MatchedRouteTemplate,
         v1: &sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
         v2: &jsonwebtoken::EncodingKey,
-        v3: hyper::body::Incoming,
+        v3: pavex::extract::body::RawIncomingBody,
         v4: &pavex::request::RequestHead,
     ) -> pavex::response::Response {
         let v5 = conduit_core::telemetry::RootSpan::new(v4, v0);
@@ -708,7 +709,7 @@ pub mod route_4 {
     pub async fn handler(
         v0: &sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
         v1: &pavex::request::RequestHead,
-        v2: hyper::body::Incoming,
+        v2: pavex::extract::body::RawIncomingBody,
         v3: &jsonwebtoken::EncodingKey,
     ) -> pavex::response::Response {
         let v4 = <pavex::extract::body::BodySizeLimit as std::default::Default>::default();
@@ -764,12 +765,12 @@ pub mod route_4 {
     {
         s_0: &'a sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
         s_1: &'b pavex::request::RequestHead,
-        s_2: hyper::body::Incoming,
+        s_2: pavex::extract::body::RawIncomingBody,
         s_3: &'c jsonwebtoken::EncodingKey,
         next: fn(
             &'a sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
             &'b pavex::request::RequestHead,
-            hyper::body::Incoming,
+            pavex::extract::body::RawIncomingBody,
             &'c jsonwebtoken::EncodingKey,
         ) -> T,
     }
@@ -820,7 +821,7 @@ pub mod route_5 {
 pub mod route_6 {
     pub async fn middleware_0(
         v0: pavex::extract::route::MatchedRouteTemplate,
-        v1: hyper::body::Incoming,
+        v1: pavex::extract::body::RawIncomingBody,
         v2: &pavex::request::RequestHead,
     ) -> pavex::response::Response {
         let v3 = conduit_core::telemetry::RootSpan::new(v2, v0);
@@ -833,7 +834,7 @@ pub mod route_6 {
         conduit_core::telemetry::logger(v5, v3).await
     }
     pub async fn handler(
-        v0: hyper::body::Incoming,
+        v0: pavex::extract::body::RawIncomingBody,
         v1: &pavex::request::RequestHead,
     ) -> pavex::response::Response {
         let v2 = <pavex::extract::body::BodySizeLimit as std::default::Default>::default();
@@ -872,9 +873,12 @@ pub mod route_6 {
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
-        s_0: hyper::body::Incoming,
+        s_0: pavex::extract::body::RawIncomingBody,
         s_1: &'a pavex::request::RequestHead,
-        next: fn(hyper::body::Incoming, &'a pavex::request::RequestHead) -> T,
+        next: fn(
+            pavex::extract::body::RawIncomingBody,
+            &'a pavex::request::RequestHead,
+        ) -> T,
     }
     impl<'a, T> std::future::IntoFuture for Next0<'a, T>
     where
@@ -1095,7 +1099,7 @@ pub mod route_10 {
 pub mod route_11 {
     pub async fn middleware_0(
         v0: pavex::extract::route::MatchedRouteTemplate,
-        v1: hyper::body::Incoming,
+        v1: pavex::extract::body::RawIncomingBody,
         v2: &pavex::request::RequestHead,
     ) -> pavex::response::Response {
         let v3 = conduit_core::telemetry::RootSpan::new(v2, v0);
@@ -1108,7 +1112,7 @@ pub mod route_11 {
         conduit_core::telemetry::logger(v5, v3).await
     }
     pub async fn handler(
-        v0: hyper::body::Incoming,
+        v0: pavex::extract::body::RawIncomingBody,
         v1: &pavex::request::RequestHead,
     ) -> pavex::response::Response {
         let v2 = <pavex::extract::body::BodySizeLimit as std::default::Default>::default();
@@ -1147,9 +1151,12 @@ pub mod route_11 {
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
-        s_0: hyper::body::Incoming,
+        s_0: pavex::extract::body::RawIncomingBody,
         s_1: &'a pavex::request::RequestHead,
-        next: fn(hyper::body::Incoming, &'a pavex::request::RequestHead) -> T,
+        next: fn(
+            pavex::extract::body::RawIncomingBody,
+            &'a pavex::request::RequestHead,
+        ) -> T,
     }
     impl<'a, T> std::future::IntoFuture for Next0<'a, T>
     where
@@ -1319,7 +1326,7 @@ pub mod route_15 {
     pub async fn middleware_0(
         v0: pavex::extract::route::MatchedRouteTemplate,
         v1: pavex::extract::route::RawRouteParams<'_, '_>,
-        v2: hyper::body::Incoming,
+        v2: pavex::extract::body::RawIncomingBody,
         v3: &pavex::request::RequestHead,
     ) -> pavex::response::Response {
         let v4 = conduit_core::telemetry::RootSpan::new(v3, v0);
@@ -1333,7 +1340,7 @@ pub mod route_15 {
         conduit_core::telemetry::logger(v6, v4).await
     }
     pub async fn handler(
-        v0: hyper::body::Incoming,
+        v0: pavex::extract::body::RawIncomingBody,
         v1: pavex::extract::route::RawRouteParams<'_, '_>,
         v2: &pavex::request::RequestHead,
     ) -> pavex::response::Response {
@@ -1387,11 +1394,11 @@ pub mod route_15 {
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
-        s_0: hyper::body::Incoming,
+        s_0: pavex::extract::body::RawIncomingBody,
         s_1: pavex::extract::route::RawRouteParams<'a, 'b>,
         s_2: &'c pavex::request::RequestHead,
         next: fn(
-            hyper::body::Incoming,
+            pavex::extract::body::RawIncomingBody,
             pavex::extract::route::RawRouteParams<'a, 'b>,
             &'c pavex::request::RequestHead,
         ) -> T,
@@ -1567,7 +1574,7 @@ pub mod route_19 {
     pub async fn middleware_0(
         v0: pavex::extract::route::MatchedRouteTemplate,
         v1: pavex::extract::route::RawRouteParams<'_, '_>,
-        v2: hyper::body::Incoming,
+        v2: pavex::extract::body::RawIncomingBody,
         v3: &pavex::request::RequestHead,
     ) -> pavex::response::Response {
         let v4 = conduit_core::telemetry::RootSpan::new(v3, v0);
@@ -1581,7 +1588,7 @@ pub mod route_19 {
         conduit_core::telemetry::logger(v6, v4).await
     }
     pub async fn handler(
-        v0: hyper::body::Incoming,
+        v0: pavex::extract::body::RawIncomingBody,
         v1: pavex::extract::route::RawRouteParams<'_, '_>,
         v2: &pavex::request::RequestHead,
     ) -> pavex::response::Response {
@@ -1635,11 +1642,11 @@ pub mod route_19 {
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
-        s_0: hyper::body::Incoming,
+        s_0: pavex::extract::body::RawIncomingBody,
         s_1: pavex::extract::route::RawRouteParams<'a, 'b>,
         s_2: &'c pavex::request::RequestHead,
         next: fn(
-            hyper::body::Incoming,
+            pavex::extract::body::RawIncomingBody,
             pavex::extract::route::RawRouteParams<'a, 'b>,
             &'c pavex::request::RequestHead,
         ) -> T,

@@ -1,6 +1,6 @@
 use pavex::{
     extract::{body::JsonBody, route::RouteParams},
-    hyper::StatusCode,
+    http::StatusCode,
 };
 
 use crate::schemas::Article;

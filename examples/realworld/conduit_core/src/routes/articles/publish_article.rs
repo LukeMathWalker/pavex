@@ -1,4 +1,4 @@
-use pavex::{extract::body::JsonBody, hyper::StatusCode};
+use pavex::{extract::body::JsonBody, http::StatusCode};
 
 use crate::schemas::Article;
 

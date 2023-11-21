@@ -1,4 +1,4 @@
-use pavex::{extract::query::QueryParams, hyper::StatusCode};
+use pavex::{extract::query::QueryParams, http::StatusCode};
 
 use crate::schemas::Article;
 
