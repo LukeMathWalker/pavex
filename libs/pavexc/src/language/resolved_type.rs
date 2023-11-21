@@ -6,7 +6,7 @@ use ahash::{HashMap, HashMapExt};
 use anyhow::Context;
 use bimap::BiHashMap;
 use guppy::PackageId;
-use indexmap::IndexSet;
+use indexmap::{IndexMap, IndexSet};
 use serde::{Deserializer, Serializer};
 
 use crate::language::resolved_type::generics_equivalence::{
@@ -354,7 +354,7 @@ impl ResolvedType {
     /// Rename named lifetime parameters in this type according to the provided mapping.
     ///
     /// You don't need to provide a mapping for lifetimes that you don't want to rename.
-    pub fn rename_lifetime_parameters(&mut self, original2renamed: &HashMap<String, String>) {
+    pub fn rename_lifetime_parameters(&mut self, original2renamed: &IndexMap<String, String>) {
         match self {
             ResolvedType::ResolvedPath(t) => {
                 for arg in t.generic_arguments.iter_mut() {
