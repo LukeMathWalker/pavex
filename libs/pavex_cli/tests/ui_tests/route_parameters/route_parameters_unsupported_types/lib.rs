@@ -1,5 +1,5 @@
 use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
-use pavex::extract::route::RouteParams;
+use pavex::request::route::RouteParams;
 use pavex::f;
 use pavex::http::StatusCode;
 
@@ -53,11 +53,11 @@ pub fn tuple_struct(params: RouteParams<TupleStruct>) -> StatusCode {
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.constructor(
-        f!(pavex::extract::route::RouteParams::extract),
+        f!(pavex::request::route::RouteParams::extract),
         Lifecycle::RequestScoped,
     )
     .error_handler(f!(
-        pavex::extract::route::errors::ExtractRouteParamsError::into_response
+        pavex::request::route::errors::ExtractRouteParamsError::into_response
     ));
     bp.route(GET, "/a/:x", f!(crate::primitive));
     bp.route(GET, "/b/:x/:y", f!(crate::tuple));

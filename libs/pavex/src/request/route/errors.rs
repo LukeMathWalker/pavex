@@ -13,7 +13,7 @@ use crate::response::Response;
 /// Pavex provides [`ExtractRouteParamsError::into_response`] as the default error handler for
 /// this failure.
 ///
-/// [`RouteParams::extract`]: crate::extract::route::RouteParams::extract
+/// [`RouteParams::extract`]: crate::request::route::RouteParams::extract
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum ExtractRouteParamsError {
@@ -47,7 +47,7 @@ pub enum ExtractRouteParamsError {
 /// decoded, is a sequence of bytes that cannot be interpreted as a well-formed UTF8 string.
 /// This error is then returned.
 ///
-/// [`RouteParams<T>`]: struct@crate::extract::route::RouteParams
+/// [`RouteParams<T>`]: struct@crate::request::route::RouteParams
 #[error(
     "`{invalid_raw_segment}` cannot be used as `{invalid_key}` \
 since it is not a well-formed UTF8 string when percent-decoded"
@@ -66,7 +66,7 @@ impl ExtractRouteParamsError {
     /// programmer error (e.g. `T` in [`RouteParams<T>`] is an unsupported type).  
     /// It returns a `400 Bad Request` for all other cases.
     ///
-    /// [`RouteParams<T>`]: struct@crate::extract::route::RouteParams
+    /// [`RouteParams<T>`]: struct@crate::request::route::RouteParams
     pub fn into_response(&self) -> Response<Full<Bytes>> {
         match self {
             ExtractRouteParamsError::InvalidUtf8InPathParameter(e) => {
@@ -94,7 +94,7 @@ impl ExtractRouteParamsError {
 ///
 /// You can use [`PathDeserializationError::kind`] to get more details about the error.
 ///
-/// [`RouteParams<T>`]: struct@crate::extract::route::RouteParams
+/// [`RouteParams<T>`]: struct@crate::request::route::RouteParams
 pub struct PathDeserializationError {
     pub(super) kind: ErrorKind,
 }
@@ -142,7 +142,7 @@ impl std::error::Error for PathDeserializationError {}
 /// more precise error messages (e.g. implementing your own custom conversion from
 /// [`PathDeserializationError`] into an HTTP response).
 ///
-/// [`RouteParams`]: struct@crate::extract::route::RouteParams
+/// [`RouteParams`]: struct@crate::request::route::RouteParams
 #[derive(Debug, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum ErrorKind {

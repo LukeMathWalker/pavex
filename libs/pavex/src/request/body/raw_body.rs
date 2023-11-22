@@ -22,7 +22,7 @@ pin_project! {
     /// You should generally prefer [`BufferedBody`] instead, which enforces a size limit on the
     /// incoming body.
     ///
-    /// [`BufferedBody`]: crate::extract::body::BufferedBody
+    /// [`BufferedBody`]: crate::request::body::BufferedBody
     #[derive(Debug)]
     pub struct RawIncomingBody {
         #[pin] inner: Incoming,

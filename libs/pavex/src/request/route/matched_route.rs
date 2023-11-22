@@ -41,7 +41,7 @@ impl MatchedRouteTemplate {
     /// # Example
     ///
     /// ```rust
-    /// use pavex::extract::route::MatchedRouteTemplate;
+    /// use pavex::request::route::MatchedRouteTemplate;
     ///
     /// let matched_route = MatchedRouteTemplate::new("/home/:home_id");
     /// ```

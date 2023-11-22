@@ -173,7 +173,7 @@ impl Blueprint {
     /// (or any other constructor that has access to the request):
     ///
     /// ```rust
-    /// use pavex::extract::route::RouteParams;
+    /// use pavex::request::route::RouteParams;
     ///
     /// #[RouteParams]
     /// struct HomeRouteParams {
@@ -215,7 +215,7 @@ impl Blueprint {
     /// on how to extract and work with route parameters.
     ///
     /// [`router`]: crate::blueprint::router
-    /// [`RouteParams`]: struct@crate::extract::route::RouteParams
+    /// [`RouteParams`]: struct@crate::request::route::RouteParams
     pub fn route(&mut self, method_guard: MethodGuard, path: &str, callable: RawCallable) -> Route {
         let registered_route = RegisteredRoute {
             path: path.to_owned(),

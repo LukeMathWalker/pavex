@@ -49,7 +49,7 @@ impl FrameworkItemDb {
             },
         );
         let http_request = process_framework_path(
-            "pavex::extract::body::RawIncomingBody",
+            "pavex::request::body::RawIncomingBody",
             package_graph,
             krate_collection,
         );
@@ -63,7 +63,7 @@ impl FrameworkItemDb {
             },
         );
         let raw_path_parameters = process_framework_path(
-            "pavex::extract::route::RawRouteParams::<'server, 'request>",
+            "pavex::request::route::RawRouteParams::<'server, 'request>",
             package_graph,
             krate_collection,
         );
@@ -77,7 +77,7 @@ impl FrameworkItemDb {
             },
         );
         let matched_route_template = process_framework_path(
-            "pavex::extract::route::MatchedRouteTemplate",
+            "pavex::request::route::MatchedRouteTemplate",
             package_graph,
             krate_collection,
         );
@@ -92,7 +92,7 @@ impl FrameworkItemDb {
         );
 
         let allowed_methods = process_framework_path(
-            "pavex::extract::route::AllowedMethods",
+            "pavex::request::route::AllowedMethods",
             package_graph,
             krate_collection,
         );

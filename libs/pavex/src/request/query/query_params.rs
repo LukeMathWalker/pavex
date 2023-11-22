@@ -15,7 +15,7 @@ use crate::request::RequestHead;
 /// # Example
 ///
 /// ```rust
-/// use pavex::extract::query::QueryParams;
+/// use pavex::request::query::QueryParams;
 /// // You must derive `serde::Deserialize` for the type you want to extract,
 /// // in this case `Home`.
 /// #[derive(serde::Deserialize)]
@@ -45,10 +45,10 @@ use crate::request::RequestHead;
 ///     let mut bp = Blueprint::new();
 ///     // Register the default constructor and error handler for `QueryParams`.
 ///     bp.constructor(
-///         f!(pavex::extract::query::QueryParams::extract),
+///         f!(pavex::request::query::QueryParams::extract),
 ///         Lifecycle::RequestScoped,
 ///     ).error_handler(
-///         f!(pavex::extract::query::errors::ExtractQueryParamsError::into_response)
+///         f!(pavex::request::query::errors::ExtractQueryParamsError::into_response)
 ///     );
 ///     // [...]
 ///     bp
@@ -70,7 +70,7 @@ use crate::request::RequestHead;
 /// specified by OpenAPI:
 ///
 /// ```rust
-/// use pavex::extract::query::QueryParams;
+/// use pavex::request::query::QueryParams;
 ///
 /// #[derive(serde::Deserialize)]
 /// pub struct Home {
@@ -91,7 +91,7 @@ use crate::request::RequestHead;
 /// You can use the `serde`'s rename attribute to support this style:
 ///
 /// ```rust
-/// use pavex::extract::query::QueryParams;
+/// use pavex::request::query::QueryParams;
 ///
 /// #[derive(serde::Deserialize)]
 /// pub struct Home {
@@ -117,7 +117,7 @@ use crate::request::RequestHead;
 /// For example, the following can't be deserialized from the wire using `QueryParams`:
 ///
 /// ```rust
-/// use pavex::extract::query::QueryParams;
+/// use pavex::request::query::QueryParams;
 ///
 /// #[derive(serde::Deserialize)]
 /// pub struct Home {
@@ -151,7 +151,7 @@ use crate::request::RequestHead;
 /// body if possible, and allocates a new `String` only if strictly necessary.
 ///
 /// ```rust
-/// use pavex::extract::query::QueryParams;
+/// use pavex::request::query::QueryParams;
 /// use std::borrow::Cow;
 ///
 /// #[derive(serde::Deserialize)]

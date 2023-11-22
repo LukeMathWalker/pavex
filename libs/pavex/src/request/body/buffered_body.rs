@@ -2,7 +2,7 @@ use bytes::Bytes;
 use http::header::CONTENT_LENGTH;
 use http_body_util::{BodyExt, Limited};
 
-use crate::{extract::body::errors::SizeLimitExceeded, request::RequestHead};
+use crate::{request::body::errors::SizeLimitExceeded, request::RequestHead};
 
 use super::{
     errors::{ExtractBufferedBodyError, UnexpectedBufferError},
@@ -28,7 +28,7 @@ use super::{
 /// # Example
 ///
 /// ```rust
-/// use pavex::extract::body::BufferedBody;
+/// use pavex::request::body::BufferedBody;
 ///
 /// // The `BufferedBody` extractor consumes the raw request body stream
 /// // and buffers its entire contents in memory.
@@ -53,10 +53,10 @@ use super::{
 ///    let mut bp = Blueprint::new();
 ///    // Register the default constructor and error handler for `BufferedBody`.
 ///    bp.constructor(
-///         f!(pavex::extract::body::BufferedBody::extract),
+///         f!(pavex::request::body::BufferedBody::extract),
 ///         Lifecycle::RequestScoped,
 ///     ).error_handler(
-///         f!(pavex::extract::body::errors::ExtractBufferedBodyError::into_response)
+///         f!(pavex::request::body::errors::ExtractBufferedBodyError::into_response)
 ///     );
 ///     // [...]
 ///     bp
@@ -78,7 +78,7 @@ use super::{
 /// ```rust
 /// use pavex::f;
 /// use pavex::blueprint::{Blueprint, constructor::Lifecycle};
-/// use pavex::extract::body::BodySizeLimit;
+/// use pavex::request::body::BodySizeLimit;
 ///
 /// pub fn body_size_limit() -> BodySizeLimit {
 ///     BodySizeLimit::Enabled {
@@ -100,7 +100,7 @@ use super::{
 /// ```rust
 /// use pavex::f;
 /// use pavex::blueprint::{Blueprint, constructor::Lifecycle};
-/// use pavex::extract::body::BodySizeLimit;
+/// use pavex::request::body::BodySizeLimit;
 ///
 /// pub fn body_size_limit() -> BodySizeLimit {
 ///    BodySizeLimit::Disabled
@@ -122,7 +122,7 @@ use super::{
 /// ```rust
 /// use pavex::f;
 /// use pavex::blueprint::{Blueprint, constructor::Lifecycle, router::{GET, POST}};
-/// use pavex::extract::body::BodySizeLimit;
+/// use pavex::request::body::BodySizeLimit;
 /// # pub fn home() -> String { todo!() }
 /// # pub fn upload() -> String { todo!() }
 ///

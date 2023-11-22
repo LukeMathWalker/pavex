@@ -1,10 +1,10 @@
 digraph "GET /home - 0" {
     0 [ label = "app::handler(app::B, app::C) -> pavex::response::Response"]
-    1 [ label = "app::c(pavex::extract::route::RawRouteParams<'_, '_>) -> app::C"]
-    2 [ label = "pavex::extract::route::RawRouteParams<'server, 'request>"]
-    3 [ label = "app::b(pavex::extract::route::RawRouteParams<'_, '_>) -> app::B"]
+    1 [ label = "app::c(pavex::request::route::RawRouteParams<'_, '_>) -> app::C"]
+    2 [ label = "pavex::request::route::RawRouteParams<'server, 'request>"]
+    3 [ label = "app::b(pavex::request::route::RawRouteParams<'_, '_>) -> app::B"]
     4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    5 [ label = "<pavex::extract::route::RawRouteParams::<server, request> as core::clone::Clone>::clone(&pavex::extract::route::RawRouteParams<'server, 'request>) -> pavex::extract::route::RawRouteParams<'server, 'request>"]
+    5 [ label = "<pavex::request::route::RawRouteParams::<server, request> as core::clone::Clone>::clone(&pavex::request::route::RawRouteParams<'server, 'request>) -> pavex::request::route::RawRouteParams<'server, 'request>"]
     1 -> 0 [ ]
     3 -> 0 [ ]
     2 -> 3 [ ]
@@ -14,9 +14,9 @@ digraph "GET /home - 0" {
 }
 
 digraph "* /home - 0" {
-    0 [ label = "pavex::router::default_fallback(&pavex::extract::route::AllowedMethods) -> pavex::response::Response"]
+    0 [ label = "pavex::router::default_fallback(&pavex::request::route::AllowedMethods) -> pavex::response::Response"]
     2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    3 [ label = "&pavex::extract::route::AllowedMethods"]
+    3 [ label = "&pavex::request::route::AllowedMethods"]
     0 -> 2 [ ]
     3 -> 0 [ ]
 }
