@@ -7,7 +7,7 @@ use matchit::{Params, ParamsIter};
 /// ```rust
 /// use pavex::f;
 /// use pavex::blueprint::{router::GET, Blueprint};
-/// use pavex::extract::route::RawRouteParams;
+/// use pavex::request::route::RawRouteParams;
 ///
 /// fn blueprint() -> Blueprint {
 ///     let mut bp = Blueprint::new();
@@ -56,7 +56,7 @@ use matchit::{Params, ParamsIter};
 /// most of the time you'll want to use [`RouteParams`] instead—it performs percent-decoding
 /// and deserialization for you.
 ///
-/// [`RouteParams`]: struct@crate::extract::route::RouteParams
+/// [`RouteParams`]: struct@crate::request::route::RouteParams
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct RawRouteParams<'server, 'request>(Params<'server, 'request>);
 

@@ -2,7 +2,6 @@ use anyhow::Context;
 use tracing::subscriber::set_global_default;
 use tracing::Subscriber;
 use tracing_bunyan_formatter::{BunyanFormattingLayer, JsonStorageLayer};
-use tracing_log::LogTracer;
 use tracing_subscriber::fmt::MakeWriter;
 use tracing_subscriber::{layer::SubscriberExt, EnvFilter, Registry};
 
@@ -15,7 +14,6 @@ use tracing_subscriber::{layer::SubscriberExt, EnvFilter, Registry};
 ///
 /// It should only be called once!
 pub fn init_telemetry(subscriber: impl Subscriber + Sync + Send) -> Result<(), anyhow::Error> {
-    LogTracer::init().context("Failed to set logger")?;
     set_panic_hook();
     set_global_default(subscriber).context("Failed to set a `tracing` global subscriber")
 }

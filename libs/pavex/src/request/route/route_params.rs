@@ -1,8 +1,8 @@
 use percent_encoding::percent_decode_str;
 use serde::Deserialize;
 
-use crate::extract::route::deserializer::PathDeserializer;
-use crate::extract::route::errors::{ExtractRouteParamsError, InvalidUtf8InPathParam};
+use crate::request::route::deserializer::PathDeserializer;
+use crate::request::route::errors::{ExtractRouteParamsError, InvalidUtf8InPathParam};
 
 use super::RawRouteParams;
 
@@ -22,16 +22,16 @@ use super::RawRouteParams;
 /// ```rust
 /// use pavex::f;
 /// use pavex::blueprint::{router::GET, Blueprint, constructor::Lifecycle};
-/// use pavex::extract::route::RouteParams;
+/// use pavex::request::route::RouteParams;
 ///
 /// fn blueprint() -> Blueprint {
 ///     let mut bp = Blueprint::new();
 ///     // Register the default constructor and error handler for `RouteParams`.
 ///     bp.constructor(
-///         f!(pavex::extract::route::RouteParams::extract),
+///         f!(pavex::request::route::RouteParams::extract),
 ///         Lifecycle::RequestScoped,
 ///     ).error_handler(
-///         f!(pavex::extract::route::errors::ExtractRouteParamsError::into_response)
+///         f!(pavex::request::route::errors::ExtractRouteParamsError::into_response)
 ///     );
 ///     // Register a route with a route parameter, `:home_id`.
 ///     bp.route(GET, "/home/:home_id", f!(crate::get_home));
@@ -59,7 +59,7 @@ use super::RawRouteParams;
 /// # Supported types
 ///
 /// `T` in `RouteParams<T>` must implement [`serde::Deserialize`]—it is automatically derived if
-/// you use the [`RouteParams`](macro@crate::extract::route::RouteParams) attribute macro, the
+/// you use the [`RouteParams`](macro@crate::request::route::RouteParams) attribute macro, the
 /// approach we recommend.  
 /// `T` must be a struct with named fields, where each field name matches one of the route parameter
 /// names used in the route's path template.
@@ -67,7 +67,7 @@ use super::RawRouteParams;
 /// ```rust
 /// use pavex::f;
 /// use pavex::blueprint::{router::GET, Blueprint};
-/// use pavex::extract::route::RouteParams;
+/// use pavex::request::route::RouteParams;
 ///
 /// fn blueprint() -> Blueprint{
 ///     let mut bp = Blueprint::new();
@@ -105,7 +105,7 @@ use super::RawRouteParams;
 /// check the route's path template to understand what each entry represents.
 ///
 ///```rust
-/// use pavex::extract::route::RouteParams;
+/// use pavex::request::route::RouteParams;
 ///
 /// // This is self-documenting ✅
 /// // No need to check the route's path template to understand what each field represents.
@@ -142,12 +142,12 @@ use super::RawRouteParams;
 /// # Additional compile-time checks
 ///
 /// Pavex is able to perform additional checks at compile-time if you use the
-/// [`RouteParams`](macro@crate::extract::route::RouteParams) macro instead
+/// [`RouteParams`](macro@crate::request::route::RouteParams) macro instead
 /// of deriving [`serde::Deserialize`] on your own.
 ///
 /// ```rust
 /// # mod home {
-/// use pavex::extract::route::RouteParams;
+/// use pavex::request::route::RouteParams;
 ///
 /// // Do this 👇
 /// #[RouteParams]
@@ -174,7 +174,7 @@ use super::RawRouteParams;
 ///   instead of `Cow<'_, str>` (see [`Avoiding allocations`](#avoiding-allocations)).
 ///
 /// Check out [`StructuralDeserialize`](crate::serialization::StructuralDeserialize) if you are curious
-/// to know more about the role played by the [`RouteParams`](macro@crate::extract::route::RouteParams)
+/// to know more about the role played by the [`RouteParams`](macro@crate::request::route::RouteParams)
 /// macro in enabling these additional compile-time checks.
 ///
 /// # Avoiding allocations
@@ -191,7 +191,7 @@ use super::RawRouteParams;
 /// URL if possible, and allocates a new `String` only if strictly necessary.
 ///
 /// ```rust
-/// use pavex::extract::route::RouteParams;
+/// use pavex::request::route::RouteParams;
 /// use std::borrow::Cow;
 ///
 /// #[RouteParams]

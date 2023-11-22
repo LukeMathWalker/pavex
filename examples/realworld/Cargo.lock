@@ -82,7 +82,6 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-bunyan-formatter",
- "tracing-log",
  "tracing-subscriber",
 ]
 
@@ -2821,6 +2820,7 @@ dependencies = [
  "thread_local",
  "tracing",
  "tracing-core",
+ "tracing-log",
 ]
 
 [[package]]

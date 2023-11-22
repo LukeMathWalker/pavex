@@ -8,7 +8,7 @@ use crate::response::Response;
 #[non_exhaustive]
 /// The error returned by [`JsonBody::extract`] when the extraction fails.
 ///
-/// [`JsonBody::extract`]: crate::extract::body::json::JsonBody::extract
+/// [`JsonBody::extract`]: crate::request::body::json::JsonBody::extract
 pub enum ExtractJsonBodyError {
     #[error(transparent)]
     /// See [`MissingJsonContentType`] for details.
@@ -37,7 +37,7 @@ impl ExtractJsonBodyError {
 #[non_exhaustive]
 /// The error returned by [`BufferedBody::extract`] when the extraction fails.
 ///
-/// [`BufferedBody::extract`]: crate::extract::body::buffered_body::BufferedBody::extract
+/// [`BufferedBody::extract`]: crate::request::body::buffered_body::BufferedBody::extract
 pub enum ExtractBufferedBodyError {
     #[error(transparent)]
     /// See [`SizeLimitExceeded`] for details.

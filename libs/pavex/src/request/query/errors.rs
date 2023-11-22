@@ -12,7 +12,7 @@ use crate::response::Response;
 /// Pavex provides [`ExtractQueryParamsError::into_response`] as the default error handler for
 /// this failure.
 ///
-/// [`QueryParams::extract`]: crate::extract::query::QueryParams::extract
+/// [`QueryParams::extract`]: crate::request::query::QueryParams::extract
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum ExtractQueryParamsError {
@@ -38,7 +38,7 @@ impl ExtractQueryParamsError {
 /// Something went wrong when trying to deserialize the percent-decoded query parameters into
 /// the target type you specified—`T` in [`QueryParams<T>`].
 ///
-/// [`QueryParams<T>`]: crate::extract::query::QueryParams
+/// [`QueryParams<T>`]: crate::request::query::QueryParams
 pub struct QueryDeserializationError {
     inner: serde_html_form::de::Error,
 }

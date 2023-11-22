@@ -14,7 +14,7 @@
 //! ```rust
 //! use pavex::f;
 //! use pavex::blueprint::{router::GET, Blueprint, constructor::Lifecycle};
-//! use pavex::extract::route::RouteParams;
+//! use pavex::request::route::RouteParams;
 //!
 //! fn blueprint() -> Blueprint{
 //!     let mut bp = Blueprint::new();
@@ -60,7 +60,7 @@ pub use matched_route::MatchedRouteTemplate;
 /// ```rust
 /// use pavex::f;
 /// use pavex::blueprint::{router::GET, Blueprint, constructor::Lifecycle};
-/// use pavex::extract::route::RouteParams;
+/// use pavex::request::route::RouteParams;
 ///
 /// fn blueprint() -> Blueprint { ///
 ///     let mut bp = Blueprint::new();

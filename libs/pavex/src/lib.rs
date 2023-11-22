@@ -3,7 +3,6 @@ pub use error::Error;
 
 pub mod blueprint;
 mod error;
-pub mod extract;
 pub mod http;
 pub mod middleware;
 pub mod request;

@@ -3,7 +3,7 @@ use anyhow::Context;
 use jsonwebtoken::EncodingKey;
 use pavex::response::body::raw::Bytes;
 use pavex::{
-    extract::body::JsonBody,
+    request::body::JsonBody,
     response::{
         body::{raw::Full, Json},
         Response,

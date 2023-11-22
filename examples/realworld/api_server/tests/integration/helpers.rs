@@ -2,6 +2,9 @@ use api_server::configuration::{load_configuration, ApplicationProfile};
 use api_server_sdk::{build_application_state, run};
 use conduit_core::configuration::Config;
 use pavex::server::Server;
+use std::sync::Once;
+use tracing::subscriber::set_global_default;
+use tracing_subscriber::EnvFilter;
 
 pub struct TestApi {
     pub api_address: String,
@@ -10,6 +13,7 @@ pub struct TestApi {
 
 impl TestApi {
     pub async fn spawn() -> Self {
+        Self::init_telemetry();
         let config = Self::get_config();
 
         let application_state = build_application_state(&config.auth, &config.database)
@@ -44,6 +48,24 @@ impl TestApi {
         config.auth.eddsa_public_key_pem = key_pair.public_key().to_pem();
         config.auth.eddsa_private_key_pem = secrecy::Secret::new(key_pair.to_pem());
         config
+    }
+
+    fn init_telemetry() {
+        // Initialize the telemetry setup at most once.
+        static INIT_TELEMETRY: Once = Once::new();
+        INIT_TELEMETRY.call_once(|| {
+            // Only enable the telemetry if the `TEST_LOG` environment variable is set.
+            if std::env::var("TEST_LOG").is_ok() {
+                let subscriber = tracing_subscriber::fmt::Subscriber::builder()
+                    .with_env_filter(
+                        EnvFilter::try_from_default_env().unwrap_or(EnvFilter::new("info")),
+                    )
+                    .finish();
+                // We don't redirect panic messages to the `tracing` subsystem because
+                // we want to see them in the test output.
+                set_global_default(subscriber).expect("Failed to set a `tracing` global subscriber")
+            }
+        });
     }
 }
 

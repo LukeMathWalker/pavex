@@ -1,6 +1,6 @@
 //! Dispatch requests to the appropriate handler.
 
-use crate::extract::route::AllowedMethods;
+use crate::request::route::AllowedMethods;
 use crate::response::Response;
 
 /// The default fallback handler for incoming requests that don't match

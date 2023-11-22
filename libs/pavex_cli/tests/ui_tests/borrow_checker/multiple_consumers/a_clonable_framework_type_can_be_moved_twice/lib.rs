@@ -6,7 +6,7 @@ use pavex::blueprint::{
     router::GET,
     Blueprint,
 };
-use pavex::extract::route::RawRouteParams;
+use pavex::request::route::RawRouteParams;
 use pavex::response::Response;
 
 // The call graph looks like this:

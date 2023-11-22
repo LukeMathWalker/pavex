@@ -25,7 +25,7 @@ use super::{
 /// # Example
 ///
 /// ```rust
-/// use pavex::extract::body::JsonBody;
+/// use pavex::request::body::JsonBody;
 ///
 /// // You must derive `serde::Deserialize` for the type you want to extract,
 /// // in this case `HomeListing`.
@@ -59,10 +59,10 @@ use super::{
 ///    let mut bp = Blueprint::new();
 ///    // Register the default constructor and error handler for `JsonBody`.
 ///    bp.constructor(
-///         f!(pavex::extract::body::JsonBody::extract),
+///         f!(pavex::request::body::JsonBody::extract),
 ///         Lifecycle::RequestScoped,
 ///     ).error_handler(
-///         f!(pavex::extract::body::errors::ExtractJsonBodyError::into_response)
+///         f!(pavex::request::body::errors::ExtractJsonBodyError::into_response)
 ///     );
 ///     // [...]
 ///     bp
@@ -87,7 +87,7 @@ use super::{
 /// body if possible, and allocates a new `String` only if strictly necessary.
 ///
 /// ```rust
-/// use pavex::extract::body::JsonBody;
+/// use pavex::request::body::JsonBody;
 /// use std::borrow::Cow;
 ///
 /// #[derive(serde::Deserialize)]
@@ -174,7 +174,7 @@ fn check_json_content_type(headers: &HeaderMap) -> Result<(), ExtractJsonBodyErr
 
 #[cfg(test)]
 mod tests {
-    use crate::extract::body::JsonBody;
+    use crate::request::body::JsonBody;
 
     #[test]
     fn missing_content_type() {
@@ -289,7 +289,7 @@ mod tests {
         });
 
         // Act
-        let buffered_body = crate::extract::body::BufferedBody {
+        let buffered_body = crate::request::body::BufferedBody {
             bytes: serde_json::to_vec(&body).unwrap().into(),
         };
         let outcome: Result<JsonBody<BodySchema>, _> =

@@ -80,7 +80,7 @@ pub(crate) fn verify_route_parameters(
                             let ResolvedType::ResolvedPath(ty_) = &m.output else {
                                 return None;
                             };
-                            if ty_.base_type == vec!["pavex", "extract", "route", "RouteParams"] {
+                            if ty_.base_type == vec!["pavex", "request", "route", "RouteParams"] {
                                 Some((node_id, ty_.clone()))
                             } else {
                                 None

@@ -7,9 +7,9 @@ digraph "GET /handler - 0" {
 }
 
 digraph "* /handler - 0" {
-    0 [ label = "pavex::router::default_fallback(&pavex::extract::route::AllowedMethods) -> pavex::response::Response"]
+    0 [ label = "pavex::router::default_fallback(&pavex::request::route::AllowedMethods) -> pavex::response::Response"]
     2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    3 [ label = "&pavex::extract::route::AllowedMethods"]
+    3 [ label = "&pavex::request::route::AllowedMethods"]
     0 -> 2 [ ]
     3 -> 0 [ ]
 }
