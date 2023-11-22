@@ -4,7 +4,7 @@ use crate::{
 use anyhow::Context;
 use jsonwebtoken::EncodingKey;
 use pavex::{
-    extract::body::JsonBody,
+    request::body::JsonBody,
     response::{
         body::{
             raw::{Bytes, Full},

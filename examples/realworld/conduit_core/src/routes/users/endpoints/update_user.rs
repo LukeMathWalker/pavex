@@ -1,4 +1,4 @@
-use pavex::{extract::body::JsonBody, http::StatusCode};
+use pavex::{http::StatusCode, request::body::JsonBody};
 use secrecy::Secret;
 
 use crate::schemas::User;

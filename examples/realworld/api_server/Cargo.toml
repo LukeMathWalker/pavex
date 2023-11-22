@@ -20,8 +20,7 @@ serde = { version = "1", features = ["derive"]}
 
 # Telemetry
 tracing = "0.1"
-tracing-subscriber = { version = "0.3", default-features = false, features = ["env-filter", "smallvec", "std", "registry"] }
-tracing-log = "0.1"
+tracing-subscriber = { version = "0.3", default-features = false, features = ["env-filter", "smallvec", "std", "registry", "tracing-log"] }
 tracing-bunyan-formatter = "0.3"
 
 [dev-dependencies]

@@ -1,6 +1,6 @@
 use pavex::{
-    extract::{body::JsonBody, route::RouteParams},
     http::StatusCode,
+    request::{body::JsonBody, route::RouteParams},
 };
 
 use crate::schemas::Comment;
