@@ -5,7 +5,7 @@ use crate::http::Method;
 /// # Example
 ///
 /// ```rust
-/// use pavex::request::route::AllowedMethods;
+/// use pavex::router::AllowedMethods;
 /// use pavex::response::Response;
 /// use pavex::http::header::{ALLOW, HeaderValue};
 /// use itertools::Itertools;

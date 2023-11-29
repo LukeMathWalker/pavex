@@ -40,7 +40,7 @@ async fn route_request(
     let matched_route = match server_state.router.at(&request_head.uri.path()) {
         Ok(m) => m,
         Err(_) => {
-            let allowed_methods = pavex::request::route::AllowedMethods::new(vec![]);
+            let allowed_methods = pavex::router::AllowedMethods::new(vec![]);
             return route_0::handler(&allowed_methods).await;
         }
     };
@@ -68,7 +68,7 @@ async fn route_request(
 }
 pub mod route_0 {
     pub async fn handler(
-        v0: &pavex::request::route::AllowedMethods,
+        v0: &pavex::router::AllowedMethods,
     ) -> pavex::response::Response {
         let v1 = pavex::router::default_fallback(v0).await;
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)

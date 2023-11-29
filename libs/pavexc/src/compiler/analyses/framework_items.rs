@@ -92,7 +92,7 @@ impl FrameworkItemDb {
         );
 
         let allowed_methods = process_framework_path(
-            "pavex::request::route::AllowedMethods",
+            "pavex::router::AllowedMethods",
             package_graph,
             krate_collection,
         );

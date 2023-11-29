@@ -1,7 +1,6 @@
-//! Dispatch requests to the appropriate handler.
-
-use crate::request::route::AllowedMethods;
 use crate::response::Response;
+
+use super::AllowedMethods;
 
 /// The default fallback handler for incoming requests that don't match
 /// any of the routes you registered.
