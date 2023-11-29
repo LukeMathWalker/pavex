@@ -1,0 +1,4 @@
+site_name: Pavex
+repo_url: "https://github.com/example/repository/"
+exclude_docs: |
+  README.md
