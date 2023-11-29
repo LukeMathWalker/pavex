@@ -4,8 +4,10 @@ repo_name: "LukeMathWalker/pavex"
 edit_uri: "edit/main/docs/"
 plugins:
   - social
+  - search
 theme:
   name: material
+  logo: assets/inverted_logo.png
   icon:
     repo: fontawesome/brands/github
     edit: material/pencil
