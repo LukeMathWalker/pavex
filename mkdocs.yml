@@ -1,0 +1,34 @@
+site_name: Pavex
+repo_url: "https://github.com/LukeMathWalker/pavex"
+repo_name: "LukeMathWalker/pavex"
+edit_uri: "edit/main/docs/"
+plugins:
+  - social
+  - search
+theme:
+  name: material
+  logo: assets/inverted_logo.png
+  icon:
+    repo: fontawesome/brands/github
+    edit: material/pencil
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - toc.follow
+    - navigation.top
+    - content.action.edit
+  palette:
+    # Palette toggle for light mode
+    - scheme: default
+      primary: black
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    # Palette toggle for dark mode
+    - scheme: slate
+      primary: black
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+exclude_docs: |
+  README.md
