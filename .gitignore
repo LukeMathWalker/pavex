@@ -10,3 +10,4 @@
 .DS_Store
 *.snap
 trace-*.json
+/.cache/
