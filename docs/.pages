@@ -1,3 +1,6 @@
 nav:
   - overview
-  - getting_started
+  - "Getting Started": getting_started
+  - guides
+  - concepts
+  - "API Reference": api_reference
