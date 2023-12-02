@@ -17,7 +17,7 @@ use pavex::blueprint::Blueprint;
 use pavexc::App;
 
 #[derive(Parser)]
-#[clap(author, version, about, long_about = None)]
+#[clap(author, version = VERSION, about, long_about = None)]
 struct Cli {
     /// Pavex will expose the full error chain when reporting diagnostics.
     ///
@@ -31,6 +31,9 @@ struct Cli {
     #[clap(subcommand)]
     command: Commands,
 }
+
+// Same structure used by `cargo --version`.
+static VERSION: &str = concat!(env!("CARGO_PKG_VERSION"), " (", env!("VERGEN_GIT_SHA"), ")");
 
 #[derive(Clone, Debug)]
 enum Color {
@@ -190,7 +193,7 @@ fn scaffold_project(path: PathBuf) -> Result<ExitCode, Box<dyn std::error::Error
             // the `pavex` CLI itself and the template that we use to scaffold the new project.
             // This is to ensure that the generated project is always compatible with the
             // version of the CLI that was used to generate it.
-            revision: Some(env!("VERGEN_GIT_DESCRIBE").into()),
+            revision: Some(env!("VERGEN_GIT_SHA").into()),
             ..Default::default()
         },
         destination: path
