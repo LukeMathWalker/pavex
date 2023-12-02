@@ -100,7 +100,7 @@ The project is currently in **closed beta**—you can sign up [here](https://pav
 
 We regularly publish project updates:
 
-- [Closed beta announcement)(https://www.lpalmieri.com/posts/pavex-is-in-closed-beta/) [November 2023]
+- [Closed beta announcement](https://www.lpalmieri.com/posts/pavex-is-in-closed-beta/) [November 2023]
 - [Progress report #6](https://www.lpalmieri.com/posts/pavex-progress-report-06/) [August 2023]
 - [Progress report #5](https://www.lpalmieri.com/posts/pavex-progress-report-05/) [June 2023]
 - [Progress report #4](https://www.lpalmieri.com/posts/pavex-progress-report-04/) [May 2023]
