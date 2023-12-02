@@ -9,11 +9,11 @@ To work with Pavex, you'll need:
     - `cargo`, the Rust package manager. It's automatically installed when installing `rustup`.
 - [`cargo-px`](https://github.com/LukeMathWalker/cargo-px), a `cargo` subcommand. You can install it by running:
   ```bash
-  cargo install --locked cargo-px
+  cargo install --locked cargo-px --version="~0.1"
   ```
   
 All these tools need to be available in your `PATH`.  
-If you're not sure whether they've been installed correctly, you can check by running:
+If you're not sure whether that's the case, you can check by running:
 ```bash
 rustup --version
 cargo --version
@@ -28,7 +28,9 @@ Pavex provides a command-line interface to scaffold new projects and work with e
 You can install it by running:
 
 ```bash
-cargo install --locked pavex-cli
+cargo install --locked \
+  --git "https://github.com/LukeMathWalker/pavex.git" \
+  --branch "main"
 ```
 
 You can check that it's been installed correctly by running:
