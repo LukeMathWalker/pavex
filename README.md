@@ -96,17 +96,18 @@ You write straight-forward Rust, Pavex takes care of assembling together all the
 Pavex is under active development and far from being ready for hobby or production usage.  
 It has not yet been released on crates.io and you can expect breaking changes on every commit to the `main` branch.
 
-We are aiming for a closed beta by the end of 2023.
+The project is currently in **closed beta**—you can sign up [here](https://pavex.dev) to get early access.
 
 We regularly publish project updates:
 
-- [Vision](https://www.lpalmieri.com/posts/a-taste-of-pavex-rust-web-framework/) [December 2022]
-- [Progress report #1](https://www.lpalmieri.com/posts/pavex-progress-report-01/) [January 2023]
-- [Progress report #2](https://www.lpalmieri.com/posts/pavex-progress-report-02/) [March 2023]
-- [Progress report #3](https://www.lpalmieri.com/posts/pavex-progress-report-03/) [April 2023]
-- [Progress report #4](https://www.lpalmieri.com/posts/pavex-progress-report-04/) [May 2023]
-- [Progress report #5](https://www.lpalmieri.com/posts/pavex-progress-report-05/) [June 2023]
+- [Closed beta announcement)(https://www.lpalmieri.com/posts/pavex-is-in-closed-beta/) [November 2023]
 - [Progress report #6](https://www.lpalmieri.com/posts/pavex-progress-report-06/) [August 2023]
+- [Progress report #5](https://www.lpalmieri.com/posts/pavex-progress-report-05/) [June 2023]
+- [Progress report #4](https://www.lpalmieri.com/posts/pavex-progress-report-04/) [May 2023]
+- [Progress report #3](https://www.lpalmieri.com/posts/pavex-progress-report-03/) [April 2023]
+- [Progress report #2](https://www.lpalmieri.com/posts/pavex-progress-report-02/) [March 2023]
+- [Progress report #1](https://www.lpalmieri.com/posts/pavex-progress-report-01/) [January 2023]
+- [Vision](https://www.lpalmieri.com/posts/a-taste-of-pavex-rust-web-framework/) [December 2022]
 
 
 ## Examples
