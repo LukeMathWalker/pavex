@@ -28,9 +28,11 @@ theme:
   features:
     - navigation.tabs
     - navigation.tabs.sticky
-    - navigation.indexes
+#    - navigation.indexes
     - navigation.footer
     - navigation.top
+    - navigation.sections
+    - toc.integrate
     - toc.follow
     - content.action.edit
     - content.code.copy

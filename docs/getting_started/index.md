@@ -1,4 +1,4 @@
-# Getting Started
+# Installation
 
 ## Prerequisites
 
@@ -15,9 +15,9 @@ To work with Pavex, you'll need:
 All these tools need to be available in your `PATH`.  
 If you're not sure whether that's the case, you can check by running:
 ```bash
-rustup --version
-cargo --version
-cargo px --version
+rustup --version && \
+  cargo --version && \
+  cargo px --version
 ```
 
 If there are no errors, you're good to go!
@@ -25,12 +25,13 @@ If there are no errors, you're good to go!
 ## Pavex
 
 Pavex provides a command-line interface to scaffold new projects and work with existing ones.  
-You can install it by running:
+To install it, execute the following command:
 
 ```bash
 cargo install --locked \
   --git "https://github.com/LukeMathWalker/pavex.git" \
-  --branch "main"
+  --branch "main" \
+  pavex_cli
 ```
 
 You can check that it's been installed correctly by running:
@@ -39,4 +40,4 @@ You can check that it's been installed correctly by running:
 pavex --version
 ```
 
-If there are no errors, you're good to go!
+If there are no errors, you're ready to [embark on your Pavex journey](learning_paths.md)!
