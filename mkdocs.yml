@@ -5,6 +5,22 @@ edit_uri: "edit/main/docs/"
 plugins:
   - social
   - search
+  - awesome-pages
+  - redirects:
+      redirect_maps:
+        'index.md': 'overview/index.md'
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - attr_list
+  - md_in_html
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
 theme:
   name: material
   logo: assets/inverted_logo.png
@@ -14,9 +30,13 @@ theme:
   features:
     - navigation.tabs
     - navigation.tabs.sticky
-    - toc.follow
+    - navigation.footer
     - navigation.top
+    - navigation.sections
+    - toc.integrate
+    - toc.follow
     - content.action.edit
+    - content.code.copy
   palette:
     # Palette toggle for light mode
     - scheme: default
@@ -32,3 +52,4 @@ theme:
         name: Switch to light mode
 exclude_docs: |
   README.md
+  Dockerfile
