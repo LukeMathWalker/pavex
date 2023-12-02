@@ -11,6 +11,9 @@ path = "src/main.rs"
 name = "ui_tests"
 harness = false
 
+[build-dependencies]
+vergen = { version = "8.0.0", features = ["build", "git", "gitcl"] }
+
 [dependencies]
 clap = { version = "4", features = ["derive", "env"] }
 pavexc = { path = "../pavexc" }
@@ -24,7 +27,11 @@ tracing = "0.1"
 owo-colors = "3"
 anyhow = "1"
 guppy = "0.17"
-cargo-generate = "0.18.4"
+
+#cargo-generate = "0.18.4"
+# Temporary fork until https://github.com/cargo-generate/cargo-generate/pull/1070 is merged and released
+cargo-generate = { git = "https://github.com/LukeMathWalker/cargo-generate", branch = "main" }
+
 path-absolutize = "3.1.1"
 
 [dev-dependencies]

@@ -1,0 +1,3 @@
+[workspace]
+members = ["{{crate_name}}", "{{crate_name}}_server_sdk", "{{crate_name}}_server"]
+resolver = "2"
