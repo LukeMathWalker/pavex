@@ -184,7 +184,13 @@ fn scaffold_project(path: PathBuf) -> Result<ExitCode, Box<dyn std::error::Error
 
     let generate_args = GenerateArgs {
         template_path: TemplatePath {
-            git: Some("https://github.com/LukeMathWalker/pavex-project-template".into()),
+            git: Some("https://github.com/LukeMathWalker/pavex".into()),
+            subfolder: Some("template".into()),
+            // We make sure to use the exact same version (i.e. commit SHA) for both
+            // the `pavex` CLI itself and the template that we use to scaffold the new project.
+            // This is to ensure that the generated project is always compatible with the
+            // version of the CLI that was used to generate it.
+            revision: Some(env!("VERGEN_GIT_DESCRIBE").into()),
             ..Default::default()
         },
         destination: path
@@ -198,7 +204,6 @@ fn scaffold_project(path: PathBuf) -> Result<ExitCode, Box<dyn std::error::Error
             .context("Failed to convert destination path to an absolute path")?,
         name: Some(name),
         force_git_init: true,
-        verbose: true,
         ..Default::default()
     };
     cargo_generate::generate(generate_args)

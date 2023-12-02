@@ -1,0 +1,28 @@
+[package]
+name = "{{crate_name}}_server"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+path = "src/bin/api.rs"
+name = "api"
+
+[dependencies]
+anyhow = "1"
+pavex = { git = "https://github.com/LukeMathWalker/pavex", branch = "main" }
+tokio = { version = "1", features = ["full"] }
+{{crate_name}}_server_sdk = { path = "../{{crate_name}}_server_sdk" }
+{{crate_name}} = { path = "../{{crate_name}}" }
+
+# Configuration
+figment = { version = "0.10", features = ["env", "yaml"] }
+serde = { version = "1", features = ["derive"]}
+
+# Telemetry
+tracing = "0.1"
+tracing-bunyan-formatter = "0.3"
+tracing-panic = "0.1"
+tracing-subscriber = { version = "0.3", default-features = false, features = ["env-filter", "registry", "smallvec", "std", "tracing-log"] }
+
+[dev-dependencies]
+reqwest = "0.11"

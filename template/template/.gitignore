@@ -1,0 +1,2 @@
+/target
+/{{crate_name}}_server/configuration/dev.yml
