@@ -27,24 +27,15 @@ Once you feel comfortable enough with the language, you can start learning about
 ## I know some Rust, but I'm new to Pavex
 
 If you're already familiar with Rust, you can start learning about Pavex right away.  
-We provide two different introductions to the framework.
+We provide two different introductions to the framework: [Quickstart](quickstart.md) and [Bootcamp](bootcamp.md).
 
-### [Quickstart](quickstart.md)
-
-!!! note "Estimated time: 10 minutes"
-
-Would you rather get your hands dirty than reading documentation upfront?  
+Would you rather get your hands dirty than reading documentation upfront?
 Follow the [Quickstart tutorial](quickstart.md)!  
-
 It covers the basics of the framework,
-but it doesn't go into much detail—just enough to get you started in a few minutes. 
+but it doesn't go into much detail—just enough to get you started in 10 minutes or so. 
 You'll then have to figure things out on your own, leveraging Pavex's error messages and consulting the 
 [documentation](../documentation/index.md) on a need-to-know basis.
 
-### [Bootcamp](bootcamp.md)
-
-!!! note "Estimated time: 2 hours"
-
-If you prefer a more guided tour, you should check out the [Bootcamp](bootcamp.md) tutorial.  
+If you prefer a more guided tour, you should check out the [Bootcamp](bootcamp.md) tutorial instead.  
 It walks you through the process of building a simple API with Pavex, explaining the core concepts of the framework 
 along the way.

@@ -15,6 +15,8 @@ markdown_extensions:
   - pymdownx.superfences
   - pymdownx.inlinehilite
   - pymdownx.snippets
+  - attr_list
+  - md_in_html
   - pymdownx.highlight:
       anchor_linenums: true
       line_spans: __span
@@ -28,7 +30,6 @@ theme:
   features:
     - navigation.tabs
     - navigation.tabs.sticky
-#    - navigation.indexes
     - navigation.footer
     - navigation.top
     - navigation.sections
