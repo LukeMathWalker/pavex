@@ -18,39 +18,39 @@ pub fn blueprint() -> Blueprint {
 fn register_common_constructors(bp: &mut Blueprint) {
     // Query parameters
     bp.constructor(
-        f!(pavex::extract::query::QueryParams::extract),
+        f!(pavex::request::query::QueryParams::extract),
         Lifecycle::RequestScoped,
     )
     .error_handler(f!(
-        pavex::extract::query::errors::ExtractQueryParamsError::into_response
+        pavex::request::query::errors::ExtractQueryParamsError::into_response
     ));
 
     // Route parameters
     bp.constructor(
-        f!(pavex::extract::route::RouteParams::extract),
+        f!(pavex::request::route::RouteParams::extract),
         Lifecycle::RequestScoped,
     )
     .error_handler(f!(
-        pavex::extract::route::errors::ExtractRouteParamsError::into_response
+        pavex::request::route::errors::ExtractRouteParamsError::into_response
     ));
 
     // Json body
     bp.constructor(
-        f!(pavex::extract::body::JsonBody::extract),
+        f!(pavex::request::body::JsonBody::extract),
         Lifecycle::RequestScoped,
     )
     .error_handler(f!(
-        pavex::extract::body::errors::ExtractJsonBodyError::into_response
+        pavex::request::body::errors::ExtractJsonBodyError::into_response
     ));
     bp.constructor(
-        f!(pavex::extract::body::BufferedBody::extract),
+        f!(pavex::request::body::BufferedBody::extract),
         Lifecycle::RequestScoped,
     )
     .error_handler(f!(
-        pavex::extract::body::errors::ExtractBufferedBodyError::into_response
+        pavex::request::body::errors::ExtractBufferedBodyError::into_response
     ));
     bp.constructor(
-        f!(<pavex::extract::body::BodySizeLimit as std::default::Default>::default),
+        f!(<pavex::request::body::BodySizeLimit as std::default::Default>::default),
         Lifecycle::RequestScoped,
     );
 }

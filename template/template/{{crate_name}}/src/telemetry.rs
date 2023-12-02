@@ -1,4 +1,4 @@
-use pavex::extract::route::MatchedRouteTemplate;
+use pavex::request::route::MatchedRouteTemplate;
 use pavex::http::Version;
 use pavex::middleware::Next;
 use pavex::request::RequestHead;
