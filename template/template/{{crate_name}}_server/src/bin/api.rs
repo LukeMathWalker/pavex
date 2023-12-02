@@ -26,6 +26,9 @@ async fn main() -> anyhow::Result<()> {
 }
 
 async fn _main() -> anyhow::Result<()> {
+    // Load environment variables from a .env file, if it exists.
+    let _ = dotenvy::dotenv();
+
     let config = load_configuration(None)?;
     let application_state = build_application_state()
         .await;
