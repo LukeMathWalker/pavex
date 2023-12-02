@@ -29,8 +29,9 @@ theme:
     - navigation.tabs
     - navigation.tabs.sticky
     - navigation.indexes
-    - toc.follow
+    - navigation.footer
     - navigation.top
+    - toc.follow
     - content.action.edit
     - content.code.copy
   palette:
