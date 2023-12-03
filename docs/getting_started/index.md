@@ -22,6 +22,26 @@ rustup --version && \
 
 If there are no errors, you're good to go!
 
+### Nightly toolchain
+
+To perform code generation, Pavex relies on an unstable Rust feature:
+[`rustdoc-json`](https://github.com/rust-lang/rust/issues/76578).  
+As a consequence, Pavex requires you to have the Rust `nightly` toolchain installed.
+
+You can add `nightly` to your toolchain by running:
+```bash
+rustup toolchain install nightly
+```
+
+Once `nightly` is installed, add the `rust-docs-json` component:
+
+```bash
+rustup component add --toolchain nightly rust-docs-json
+```
+
+While Pavex requires `nightly` to perform code generation, it will **never use nightly to compile your application**.
+All the code you'll be running (in production or otherwise) will be compiled with the stable toolchain.
+
 ## Pavex
 
 Pavex provides a command-line interface to scaffold new projects and work with existing ones.  

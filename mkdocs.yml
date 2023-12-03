@@ -37,6 +37,7 @@ theme:
     - toc.follow
     - content.action.edit
     - content.code.copy
+    - content.code.annotate
   palette:
     # Palette toggle for light mode
     - scheme: default
