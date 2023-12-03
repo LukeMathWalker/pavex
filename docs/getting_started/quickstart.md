@@ -42,14 +42,14 @@ cargo px test
 
 ## Run a Pavex project
 
-The project scaffolded by `pavex new` bundles a hierarchical configuration system: you can load
-different configuration values for different **profiles**.  
-The `APP_PROFILE` environment variable tells the application which profile to use.
-
-Let's run our application in `development` mode:
+Let's launch our application:
 
 ```bash
-APP_PROFILE=dev cargo px run --bin api
+cargo px run
 ```
 
-After the build is complete, you should see the following output:
+Once the application is running, you should start seeing JSON logs in your terminal:
+
+```json lines
+
+```
