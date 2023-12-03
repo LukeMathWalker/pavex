@@ -50,6 +50,12 @@ cargo px run
 
 Once the application is running, you should start seeing JSON logs in your terminal:
 
-```json lines
-
+```json
+{
+  "name": "blog",
+  "msg": "Starting to listen for incoming requests at 127.0.0.1:8000",
+  "level": 30,
+  "target": "api"
+  // [...]
+}
 ```
