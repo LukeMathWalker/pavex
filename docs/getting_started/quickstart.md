@@ -149,7 +149,7 @@ It's a public function that returns a `StatusCode`.
 `StatusCode` is a valid response type for a Pavex handler since it implements the `IntoResponse` trait: the framework
 knows how to convert it into a "full" `Response` object.
 
-## Dependency injection
+## Add a new route
 
 The `ping` function is fairly boring: it doesn't take any arguments, and it always returns the same response.  
 Let's spice things up with a new route: `GET /api/greet/:name`.  
@@ -187,3 +187,73 @@ pub fn blueprint() -> Blueprint {
 ```
 
 1. Dynamic route parameters are prefixed with a colon (`:`).
+
+## Extract route parameters
+
+How can you access the `name` route parameter from your new handler, `greet`?  
+
+You can use the `RouteParams` extractor:
+
+```rust title="demo/src/routes/greet.rs" hl_lines="9"
+use pavex::response::Response;
+use pavex::request::RouteParams;
+
+#[RouteParams]
+pub struct GreetParams {
+    pub name/* (1)! */: String,
+}
+
+pub fn greet(params: RouteParams<GreetParams>/* (2)! */) -> Response {
+    todo!()
+}
+```
+
+1. The name of the field must match the name of the route parameter as it appears in the path we registered with the `Blueprint`.
+2. The `RouteParams` extractor is generic over the type of the route parameters.  
+   In this case, we're using the `GreetParams` type we just defined.
+
+You can now return the expected response from the `greet` handler:
+
+```rust title="demo/src/routes/greet.rs"
+use pavex::response::Response;
+use pavex::request::RouteParams;
+
+#[RouteParams]
+pub struct GreetParams {
+    pub name: String,
+}
+
+pub fn greet(params: RouteParams<GreetParams>) -> Response {
+    let GreetParams { name } /* (1)! */ = params.0; 
+    Response::ok() // (2)!
+        .typed_body(format!("Hello, {name}!")) // (3)!
+        .box_body()
+}
+```
+
+1. This is an example of Rust's [destructuring syntax](https://doc.rust-lang.org/book/ch18-03-pattern-syntax.html#destructuring-to-break-apart-values).
+2. `Response` has a convenient constructor for each HTTP status code: `Response::ok()` starts building a `Response` with a `200 OK` status code.
+3. `typed_body` sets the body of the response and automatically infers a suitable value for the `Content-Type` header based on the response body type.
+
+Does it work? Only one way to find out!  
+Re-launch the application and issue a new request:
+
+```bash
+curl http://localhost:8000/api/greet/Ursula
+```
+
+You should see `Hello, Ursula!` in your terminal if everything went well.
+
+## Dependency injection
+
+You just added a new input parameter to your `greet` handler and, somehow, the framework was able to provide its value
+at runtime without you having to do anything.  
+How does that work?
+
+It's all thanks to **dependency injection**.  
+Pavex will automatically inject the right input parameters when invoking your handler functions as long as 
+it knows how to _construct_ them.
+
+What about `RouteParams`? How does the framework know how to construct it?
+
+## Constructor registration
