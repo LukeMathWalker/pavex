@@ -16,7 +16,9 @@ Let's use it to create a new project called `demo`:
 pavex new demo && cd demo
 ```
 
-## Build a Pavex project
+## Commands
+
+### Build a Pavex project
 
 `cargo` is not enough, on its own, to build a Pavex project:
 you need to use the [`cargo-px`](https://github.com/LukeMathWalker/cargo-px) subcommand instead (1).  
@@ -28,21 +30,24 @@ you can use it to build, test, run, etc. your project just like you would with `
     overcoming some limitations of `cargo`'s build scripts.
 
 
-Let's use it to build our project:
+Let's use it to check that your project compiles successfully:
 
 ```bash
-cargo px build
+cargo px check # (1)!
 ```
 
-If everything went well, you can try to execute the test suite:
+1. `cargo px check` is faster than `cargo px build` because it doesn't produce an executable binary. 
+   It's the quickest way to check that your project compiles while you're working on it.
+
+If everything went well, try to execute the test suite:
 
 ```bash
 cargo px test
 ```
 
-## Run a Pavex project
+### Run a Pavex project
 
-Let's launch our application:
+Now launch your application:
 
 ```bash
 cargo px run
@@ -60,11 +65,13 @@ Once the application is running, you should start seeing JSON logs in your termi
 }
 ```
 
-## Issue your first request
+Leave it running in the background and open a new terminal window.
 
-Let's issue our first request to the API.  
+### Issue your first request
+
+Let's issue your first request to a Pavex application!    
 The template project comes with a `GET /api/ping` endpoint to be used as health check.
-Let's hit it!
+Let's hit it:
 
 ```bash
 # (1)!
@@ -89,7 +96,7 @@ If all goes according to plan, you'll receive a `200 OK` response with an empty 
 You've just created a new Pavex project, built it, launched it and verified that it accepts requests correctly.  
 It's a good time to start exploring the codebase!
 
-## Blueprint: the manifest of a Pavex project
+## Blueprint
 
 The core of a Pavex project is its `Blueprint`.  
 It's the type you'll use to define your API: routes, middlewares, error handlers, etc.
@@ -108,7 +115,9 @@ pub fn blueprint() -> Blueprint {
 }
 ```
 
-## Route registration
+## Routing
+
+### Route registration
 
 All the routes exposed by your API must be registered with its `Blueprint`.  
 In the snippet below you can see the registration of the `GET /api/ping` route, the one you targeted with your `curl` request.
@@ -131,7 +140,7 @@ It specifies:
 - The path (`/api/ping`)
 - The fully qualified path to the handler function (`crate::routes::status::ping`), wrapped in a macro (`f!`)
 
-## Request handlers
+### Request handlers
 
 The `ping` function is the handler for the `GET /api/ping` route:
 
@@ -149,7 +158,7 @@ It's a public function that returns a `StatusCode`.
 `StatusCode` is a valid response type for a Pavex handler since it implements the `IntoResponse` trait: the framework
 knows how to convert it into a "full" `Response` object.
 
-## Add a new route
+### Add a new route
 
 The `ping` function is fairly boring: it doesn't take any arguments, and it always returns the same response.  
 Let's spice things up with a new route: `GET /api/greet/:name`.  
@@ -188,13 +197,13 @@ pub fn blueprint() -> Blueprint {
 
 1. Dynamic route parameters are prefixed with a colon (`:`).
 
-## Extract route parameters
+### Extract route parameters
 
 How can you access the `name` route parameter from your new handler, `greet`?  
 
 You can use the `RouteParams` extractor:
 
-```rust title="demo/src/routes/greet.rs" hl_lines="9"
+```rust title="demo/src/routes/greet.rs"
 use pavex::response::Response;
 use pavex::request::RouteParams;
 
@@ -214,9 +223,9 @@ pub fn greet(params: RouteParams<GreetParams>/* (2)! */) -> Response {
 
 You can now return the expected response from the `greet` handler:
 
-```rust title="demo/src/routes/greet.rs"
+```rust title="demo/src/routes/greet.rs" hl_lines="10 11 12 13"
 use pavex::response::Response;
-use pavex::request::RouteParams;
+use pavex::request::route::RouteParams;
 
 #[RouteParams]
 pub struct GreetParams {
@@ -226,7 +235,7 @@ pub struct GreetParams {
 pub fn greet(params: RouteParams<GreetParams>) -> Response {
     let GreetParams { name } /* (1)! */ = params.0; 
     Response::ok() // (2)!
-        .typed_body(format!("Hello, {name}!")) // (3)!
+        .set_typed_body(format!("Hello, {name}!")) // (3)!
         .box_body()
 }
 ```
@@ -236,7 +245,10 @@ pub fn greet(params: RouteParams<GreetParams>) -> Response {
 3. `typed_body` sets the body of the response and automatically infers a suitable value for the `Content-Type` header based on the response body type.
 
 Does it work? Only one way to find out!  
-Re-launch the application and issue a new request:
+Re-launch the application (1) and issue a new request:
+{ .annotate }
+
+1. Remember to use `cargo px run` instead of `cargo run`!
 
 ```bash
 curl http://localhost:8000/api/greet/Ursula
@@ -251,9 +263,94 @@ at runtime without you having to do anything.
 How does that work?
 
 It's all thanks to **dependency injection**.  
-Pavex will automatically inject the right input parameters when invoking your handler functions as long as 
+Pavex automatically injects the expected input parameters when invoking your handler functions as long as 
 it knows how to _construct_ them.
 
-What about `RouteParams`? How does the framework know how to construct it?
+### Constructor registration
 
-## Constructor registration
+What about `RouteParams`? How does the framework know how to construct it?  
+Let's go back to the `Blueprint` to find out:
+
+```rust title="demo/src/blueprint.rs" hl_lines="3"
+pub fn blueprint() -> Blueprint {
+    let mut bp = Blueprint::new();
+    register_common_constructors(&mut bp);
+
+    add_telemetry_middleware(&mut bp);
+
+    bp.route(GET, "/api/ping", f!(crate::routes::status::ping));
+    bp.route(GET, "/api/greet/:name", f!(crate::routes::greet::greet));
+    bp
+}
+```
+
+The `register_common_constructors` function takes care of registering constructors for a set of types that 
+are defined in the `pavex` crate itself and commonly used in Pavex applications.
+If you check out its definition, you'll see that it registers a constructor for `RouteParams`:
+
+```rust title="pavex/src/blueprint.rs" hl_lines="3 4 5 6"
+fn register_common_constructors(bp: &mut Blueprint) {
+    // [...]
+    bp.constructor(
+        f!(pavex::request::route::RouteParams::extract),
+        Lifecycle::RequestScoped,
+    )
+    .error_handler(f!(
+        pavex::request::route::errors::ExtractRouteParamsError::into_response
+    ));
+    // [...]
+}
+```
+
+### Missing constructors
+
+What if there wasn't a constructor for `RouteParams`? What would happen then?
+
+You can find out by (temporarily) commenting out the call to `register_common_constructors` in the `Blueprint`:
+
+```rust title="demo/src/blueprint.rs" hl_lines="3"
+pub fn blueprint() -> Blueprint {
+    let mut bp = Blueprint::new();
+    // register_common_constructors(&mut bp);
+
+    add_telemetry_middleware(&mut bp);
+
+    bp.route(GET, "/api/ping", f!(crate::routes::status::ping));
+    bp.route(GET, "/api/greet/:name", f!(crate::routes::greet::greet));
+    bp
+}
+```
+
+If you try to build the project now, you'll get an error from Pavex:
+
+```text
+ERROR:
+  × I can't invoke your request handler, `greet`, because it needs an instance of
+  │ `RouteParams<GreetParams>` as input, but I can't find a constructor for that type.
+  │
+  │     ╭─[demo/src/blueprint.rs:13:1]
+  │  13 │     bp.route(GET, "/api/ping", f!(crate::routes::status::ping));
+  │  14 │     bp.route(GET, "/api/greet/:name", f!(crate::routes::greet::greet));
+  │     ·                                       ───────────────┬───────────────
+  │     ·                                   The request handler was registered here
+  │  15 │     bp
+  │     ╰────
+  │     ╭─[demo/src/routes/greet.rs:8:1]
+  │   8 │
+  │   9 │ pub fn greet(params: RouteParams<GreetParams>) -> Response {
+  │     ·                      ────────────┬───────────
+  │     ·               I don't know how to construct an instance 
+  │     ·                      of this input parameter
+  │     ·               
+  │  10 │     let GreetParams { name } = params.0;
+  │     ╰────
+  │   help: Register a constructor for `RouteParams<GreetParams>`
+```
+
+This is your first encounter with Pavex's error messages: we strive to make them as helpful as possible.  
+If you find them confusing, report it as a bug!
+
+Uncomment the call to `register_common_constructors` to fix the error.
+
+### Add a new constructor
+
