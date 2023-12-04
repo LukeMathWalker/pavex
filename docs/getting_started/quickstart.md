@@ -199,9 +199,7 @@ pub fn blueprint() -> Blueprint {
 
 ### Extract route parameters
 
-How can you access the `name` route parameter from your new handler, `greet`?  
-
-You can use the `RouteParams` extractor:
+To access the `name` route parameter from your new handler you must use the `RouteParams` extractor:
 
 ```rust title="demo/src/routes/greet.rs"
 use pavex::response::Response;
