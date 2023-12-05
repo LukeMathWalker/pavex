@@ -1,7 +1,7 @@
 # Learning Paths
 
 Each person has a different background and different goals.  
-To accommodate this diversity, we provide multiple learning paths for Pavex, each tailored to a specific audience.
+To accommodate this diversity, this section provides multiple learning paths for Pavex, each tailored to a specific audience.
 
 ## I'm new to Rust
 
@@ -26,16 +26,5 @@ Once you feel comfortable enough with the language, you can start learning about
 
 ## I know some Rust, but I'm new to Pavex
 
-If you're already familiar with Rust, you can start learning about Pavex right away.  
-We provide two different introductions to the framework: [Quickstart](quickstart.md) and [Bootcamp](bootcamp.md).
-
-Would you rather get your hands dirty than reading documentation upfront?
-Follow the [Quickstart tutorial](quickstart.md)!  
-It covers the basics of the framework,
-but it doesn't go into much detail—just enough to get you started in 10 minutes or so. 
-You'll then have to figure things out on your own, leveraging Pavex's error messages and consulting the 
-[documentation](../documentation/index.md) on a need-to-know basis.
-
-If you prefer a more guided tour, you should check out the [Bootcamp](bootcamp.md) tutorial instead.  
-It walks you through the process of building a simple API with Pavex, explaining the core concepts of the framework 
-along the way.
+If you're already familiar with Rust, you can start learning about Pavex right away: head over to our 
+[Quickstart tutorial](quickstart.md) to learn about the core concepts of the framework.  

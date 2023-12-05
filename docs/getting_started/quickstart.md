@@ -1,6 +1,6 @@
 # Quickstart
 
-!!! note "Estimated time: 10 minutes"
+!!! note "Estimated time: 20 minutes"
 
 !!! warning "Prerequisites"
 
@@ -21,7 +21,7 @@ pavex new demo && cd demo
 ### Build a Pavex project
 
 `cargo` is not enough, on its own, to build a Pavex project:
-you need to use the [`cargo-px`](https://github.com/LukeMathWalker/cargo-px) subcommand instead (1).  
+you need to use the [`cargo-px`](https://github.com/LukeMathWalker/cargo-px) subcommand instead(1).  
 From a usage perspective, it's a **drop-in replacement for `cargo`**:
 you can use it to build, test, run, etc. your project just like you would with `cargo` itself.
 { .annotate }
@@ -74,8 +74,7 @@ The template project comes with a `GET /api/ping` endpoint to be used as health 
 Let's hit it:
 
 ```bash
-# (1)!
-curl -v http://localhost:8000/api/ping
+curl -v http://localhost:8000/api/ping # (1)!
 ```
 
 1. We are using curl here, but you can replace it with your favourite HTTP client!
@@ -231,9 +230,9 @@ pub struct GreetParams {
 }
 
 pub fn greet(params: RouteParams<GreetParams>) -> Response {
-    let GreetParams { name } /* (1)! */ = params.0; 
-    Response::ok() // (2)!
-        .set_typed_body(format!("Hello, {name}!")) // (3)!
+    let GreetParams { name }/* (1)! */= params.0; 
+    Response::ok()// (2)!
+        .set_typed_body(format!("Hello, {name}!"))// (3)!
         .box_body()
 }
 ```
@@ -243,7 +242,7 @@ pub fn greet(params: RouteParams<GreetParams>) -> Response {
 3. `typed_body` sets the body of the response and automatically infers a suitable value for the `Content-Type` header based on the response body type.
 
 Does it work? Only one way to find out!  
-Re-launch the application (1) and issue a new request:
+Re-launch the application and issue a new request: (1)
 { .annotate }
 
 1. Remember to use `cargo px run` instead of `cargo run`!
@@ -336,7 +335,12 @@ Let's find out!
 use crate::user_agent::UserAgent;
 // [...]
 
-pub fn greet(params: RouteParams<GreetParams>, _user_agent: UserAgent /* (1)! */) -> Response {
+pub fn greet(params: RouteParams<GreetParams>, user_agent: UserAgent/* (1)! */) -> Response {
+    if let UserAgent::Anonymous = user_agent {
+        return Response::unauthorized()
+            .set_typed_body("You must provide a `User-Agent` header")
+            .box_body();
+    }
     // [...]
 }
 ```
@@ -438,7 +442,7 @@ use pavex::http::header::{ToStrError, USER_AGENT};
 // [...]
 
 impl UserAgent {
-    pub fn extract(request_head: &RequestHead) -> Result<Self, ToStrError /* (1)! */> {
+    pub fn extract(request_head: &RequestHead) -> Result<Self, ToStrError/* (1)! */> {
         let Some(user_agent) = request_head.headers.get(USER_AGENT) else {
             return Ok(UserAgent::Anonymous);
         };
@@ -490,7 +494,7 @@ Define a new `invalid_user_agent` function in `demo/src/user_agent.rs`:
 
 pub fn invalid_user_agent(_e: &ToStrError) -> Response {
     Response::bad_request()
-        .set_typed_body(format!("The `User-Agent` header value must be a valid UTF-8 string"))
+        .set_typed_body("The `User-Agent` header value must be a valid UTF-8 string")
         .box_body()
 }
 ```
@@ -512,3 +516,105 @@ pub fn blueprint() -> Blueprint {
 ```
 
 The application should compile successfully now.
+
+## Testing
+
+All your testing, so far, has been manual: you've been launching the application and issuing requests to it with `curl`.
+Let's move away from that: it's time to write some automated tests!
+
+### Black-box testing
+
+The preferred way to test a Pavex application is to treat it as a black box: you should only test the application
+through its HTTP interface. This is the most realistic way to test your application: it's how your users will 
+interact with it, after all.
+
+The template project includes a reference example for the `/api/ping` endpoint:
+
+```rust title="demo_server/tests/integration/ping.rs"
+use crate::helpers::TestApi;//(1)!
+use pavex::http::StatusCode;
+
+#[tokio::test]
+async fn ping_works() {
+    let api = TestApi::spawn().await;//(2)!
+
+    let response = api.get_ping().await;//(3)!
+
+    assert_eq!(response.status().as_u16(), StatusCode::OK.as_u16());
+}
+```
+
+1. `TestApi` is a helper struct that provides a convenient interface to interact with the application.  
+   It's defined in `demo_server/tests/helpers.rs`.
+2. `TestApi::spawn` starts a new instance of the application in the background.
+3. `TestApi::get_ping` issues an actual `GET /api/ping` request to the application.
+
+### Add a new integration test
+
+Let's write a new integration test to verify the behaviour on the happy path for `GET /api/greet/:name`:
+
+```rust title="demo_server/tests/integration/main.rs hl_lines="1"
+mod greet;
+mod ping;
+mod helpers;
+```
+
+```rust title="demo_server/tests/integration/greet.rs"
+use crate::helpers::TestApi;
+use pavex::http::StatusCode;
+
+#[tokio::test]
+async fn greet_happy_path() {
+    let api = TestApi::spawn().await;
+    let name = "Ursula";
+
+    let response = api
+        .api_client
+        .get(&format!("{}/api/greet/{name}", &api.api_address))
+        .header("User-Agent", "Test runner")
+        .send()
+        .await
+        .expect("Failed to execute request.");
+
+    assert_eq!(response.status().as_u16(), StatusCode::OK.as_u16());
+    assert_eq!(response.text().await.unwrap(), "Hello, Ursula!");
+}
+```
+
+It follows the same pattern as the `ping` test: it spawns a new instance of the application, issues a request to it
+and verifies that the response is correct.  
+Let's complement it with a test for the unhappy path as well: requests with a malformed `User-Agent` header should be rejected.
+
+```rust title="demo_server/tests/integration/greet.rs"
+// [...]
+#[tokio::test]
+async fn non_utf8_user_agent_is_rejected() {
+    let api = TestApi::spawn().await;
+    let name = "Ursula";
+
+    let response = api
+        .api_client
+        .get(&format!("{}/api/greet/{name}", &api.api_address))
+        .header("User-Agent", b"hello\xfa".as_slice())
+        .send()
+        .await
+        .expect("Failed to execute request.");
+
+    assert_eq!(response.status().as_u16(), StatusCode::BAD_REQUEST.as_u16());
+    assert_eq!(
+        response.text().await.unwrap(),
+        "The `User-Agent` header value must be a valid UTF-8 string"
+    );
+}
+```
+
+`cargo px test` should report three passing tests now. As a bonus exercise, try to add a test for the case where the
+`User-Agent` header is missing.
+
+## Going further
+
+Your first (guided) tour of Pavex ends here: you've touched the key concepts of the framework and got some hands-on
+experience with a basic application.  
+From here onwards, you are free to carve out your own learning path: you can explore the rest of the documentation 
+to learn more about the framework, or you can start hacking on your own project, consulting the documentation on a
+need-to-know basis.
