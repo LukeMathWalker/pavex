@@ -39,8 +39,9 @@ Once `nightly` is installed, add the `rust-docs-json` component:
 rustup component add --toolchain nightly rust-docs-json
 ```
 
-While Pavex requires `nightly` to perform code generation, it will **never use nightly to compile your application**.
-All the code you'll be running (in production or otherwise) will be compiled with the stable toolchain.
+**Pavex will never use `nightly` to compile your application**.  
+All the code you'll be running (in production or otherwise) will be compiled with the stable toolchain. 
+Pavex relies on `nightly` to perform code generation and compile-time reflection—nothing else.
 
 ## Pavex
 

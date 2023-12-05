@@ -262,12 +262,12 @@ How does that work?
 
 It's all thanks to **dependency injection**.  
 Pavex automatically injects the expected input parameters when invoking your handler functions as long as 
-it knows how to _construct_ them.
+it knows how to construct them.
 
 ### Constructor registration
 
-What about `RouteParams`? How does the framework know how to construct it?  
-Let's go back to the `Blueprint` to find out:
+Let's zoom in on `RouteParams`: how does the framework know how to construct it?  
+You need to go back to the `Blueprint` to find out:
 
 ```rust title="demo/src/blueprint.rs" hl_lines="3"
 pub fn blueprint() -> Blueprint {
@@ -293,38 +293,62 @@ fn register_common_constructors(bp: &mut Blueprint) {
         f!(pavex::request::route::RouteParams::extract),
         Lifecycle::RequestScoped,
     )
-    .error_handler(f!(
-        pavex::request::route::errors::ExtractRouteParamsError::into_response
-    ));
     // [...]
 }
 ```
 
-### Missing constructors
+It specifies:
 
-What if there wasn't a constructor for `RouteParams`? What would happen then?
+- The fully qualified path to the constructor method, wrapped in a macro (`f!`)
+- The constructor's lifecycle (`Lifecycle::RequestScoped`): the framework will invoke this constructor at most once per request
 
-You can find out by (temporarily) commenting out the call to `register_common_constructors` in the `Blueprint`:
+### A new extractor: `UserAgent`
 
-```rust title="demo/src/blueprint.rs" hl_lines="3"
-pub fn blueprint() -> Blueprint {
-    let mut bp = Blueprint::new();
-    // register_common_constructors(&mut bp);
+There's no substitute for hands-on experience, so let's design a brand-new constructor for our demo project to
+get a better understanding of how they work.  
+We only want to greet people who include a `User-Agent` header in their request(1).
+{ .annotate }
 
-    add_telemetry_middleware(&mut bp);
+1. It's an arbitrary requirement, follow along for the sake of the example!
 
-    bp.route(GET, "/api/ping", f!(crate::routes::status::ping));
-    bp.route(GET, "/api/greet/:name", f!(crate::routes::greet::greet));
-    bp
+Let's start by defining a new `UserAgent` type:
+
+```rust title="demo/src/lib.rs"
+//! [...]
+pub mod user_agent;
+```
+
+```rust title="demo/src/user_agent.rs"
+pub enum UserAgent {
+    /// No `User-Agent` header was provided.
+    Unknown,
+    /// The value of the `User-Agent` header for the incoming request.
+    Known(String),
 }
 ```
 
+### Missing constructor
+
+What if you tried to inject `UserAgent` into your `greet` handler straight away? Would it work?  
+Let's find out!
+
+```rust title="demo/src/routes/greet.rs" hl_lines="4"
+use crate::user_agent::UserAgent;
+// [...]
+
+pub fn greet(params: RouteParams<GreetParams>, _user_agent: UserAgent /* (1)! */) -> Response {
+    // [...]
+}
+```
+
+1. New input parameter!
+   
 If you try to build the project now, you'll get an error from Pavex:
 
 ```text
 ERROR:
-  × I can't invoke your request handler, `greet`, because it needs an instance of
-  │ `RouteParams<GreetParams>` as input, but I can't find a constructor for that type.
+  × I can't invoke your request handler, `demo::routes::greet::greet`, because it needs an instance of
+  │ `demo::user_agent::UserAgent` as input, but I can't find a constructor for that type.
   │
   │     ╭─[demo/src/blueprint.rs:13:1]
   │  13 │     bp.route(GET, "/api/ping", f!(crate::routes::status::ping));
@@ -333,22 +357,158 @@ ERROR:
   │     ·                                   The request handler was registered here
   │  15 │     bp
   │     ╰────
-  │     ╭─[demo/src/routes/greet.rs:8:1]
-  │   8 │
-  │   9 │ pub fn greet(params: RouteParams<GreetParams>) -> Response {
-  │     ·                      ────────────┬───────────
-  │     ·               I don't know how to construct an instance 
-  │     ·                      of this input parameter
-  │     ·               
-  │  10 │     let GreetParams { name } = params.0;
+  │     ╭─[demo/src/routes/greet.rs:9:1]
+  │   9 │
+  │  10 │ pub fn greet(params: RouteParams<GreetParams>, _user_agent: UserAgent) -> Response {
+  │     ·                                                             ────┬────
+  │     ·                                              I don't know how to construct an instance 
+  │     ·                                                    of this input parameter
+  │  11 │     let GreetParams { name } = params.0;
   │     ╰────
-  │   help: Register a constructor for `RouteParams<GreetParams>`
+  │   help: Register a constructor for `demo::user_agent::UserAgent`
 ```
 
-This is your first encounter with Pavex's error messages: we strive to make them as helpful as possible.  
-If you find them confusing, report it as a bug!
+Pavex cannot do miracles, nor does it want to: it only knows how to construct a type if you tell it how to do so.
 
-Uncomment the call to `register_common_constructors` to fix the error.
+By the way: this is also your first encounter with Pavex's error messages!  
+We strive to make them as helpful as possible. If you find them confusing, report it as a bug!
 
 ### Add a new constructor
 
+To inject `UserAgent` into our `greet` handler, you need to define a constructor for it.  
+Constructors, just like request handlers, can take advantage of dependency injection: they can request input parameters
+that will be injected by the framework at runtime.  
+Since you need to look at headers, ask for `RequestHead` as input parameter: the incoming request data, 
+minus the body.
+
+```rust title="demo/src/user_agent.rs" hl_lines="10 11 12 13 14 15 16 17 18 19"
+use pavex::http::header::USER_AGENT;
+use pavex::request::RequestHead;
+
+pub enum UserAgent {
+    Unknown,
+    Known(String),
+}
+    
+impl UserAgent {
+    pub fn extract(request_head: &RequestHead) -> Self {
+        let Some(user_agent) = request_head.headers.get(USER_AGENT) else {
+            return Self::Anonymous;
+        };
+
+        match user_agent.to_str() {
+            Ok(s) => Self::Known(s.into()),
+            Err(_e) => todo!()
+        }
+    }
+}
+```
+
+Now register the new constructor with the `Blueprint`:
+
+```rust title="demo/src/blueprint.rs" hl_lines="5 6 7 8"
+pub fn blueprint() -> Blueprint {
+    let mut bp = Blueprint::new();
+    register_common_constructors(&mut bp);
+
+    bp.constructor(
+        f!(crate::user_agent::UserAgent::extract),
+        Lifecycle::RequestScoped,
+    );
+    // [...]
+}
+```
+
+`Lifecycle::RequestScoped` is the right choice for this type: the data in `UserAgent` is request-specific.  
+You don't want to share it across requests (`Lifecycle::Singleton`) nor do you want to recompute it multiple times for 
+the same request (`Lifecycle::Transient`).  
+
+Make sure that the project compiles successfully now.
+
+## Error handling
+
+In `UserAgent::extract` you're only handling the happy path:
+the method panics if the `User-Agent` header is not valid UTF-8.  
+Panicking for bad user input is poor behavior: you should handle the issue gracefully and return an error instead.
+
+Let's change the signature of `UserAgent::extract` to return a `Result` instead:
+
+```rust title="demo/src/user_agent.rs"
+use pavex::http::header::{ToStrError, USER_AGENT};
+// [...]
+
+impl UserAgent {
+    pub fn extract(request_head: &RequestHead) -> Result<Self, ToStrError /* (1)! */> {
+        let Some(user_agent) = request_head.headers.get(USER_AGENT) else {
+            return Ok(UserAgent::Anonymous);
+        };
+
+        user_agent.to_str().map(|s| UserAgent::Known(s.into()))
+    }
+}
+```
+
+1. `ToStrError` is the error type returned by `to_str` when the header value is not valid UTF-8. 
+
+### All errors must be handled
+
+If you try to build the project now, you'll get an error from Pavex:
+
+```text
+ERROR:
+  × You registered a constructor that returns a `Result`, but you did not register an error handler for it. 
+  | If I don't have an error handler, I don't know what to do with the error when the constructor fails!
+  │
+  │     ╭─[demo/src/blueprint.rs:11:1]
+  │  11 │     bp.constructor(
+  │  12 │         f!(crate::user_agent::UserAgent::extract),
+  │     ·         ────────────────────┬────────────────────
+  │     ·                             ╰── The fallible constructor was registered here
+  │  13 │         Lifecycle::RequestScoped,
+  │     ╰────
+  │   help: Add an error handler via `.error_handler`
+```
+
+Pavex is complaining: you can register a fallible constructor, but you must also register an error handler for it.  
+
+### Add an error handler
+
+An error handler must convert a reference to the error type into a `Response` (1).  
+It decouples the detection of an error from its representation on the wire: a constructor doesn't need to know how the
+error will be represented in the response, it just needs to signal that something went wrong.  
+You can then change the representation of an error on the wire without touching the constructor: you only need to change the
+error handler.
+{ .annotate }
+
+1. Error handlers, just like request handlers and constructors, can take advantage of dependency injection! 
+   You could, for example, change the response representation according to the `Accept` header specified in the request.
+
+Define a new `invalid_user_agent` function in `demo/src/user_agent.rs`:
+
+```rust title="demo/src/user_agent.rs"
+// [...]
+
+pub fn invalid_user_agent(_e: &ToStrError) -> Response {
+    Response::bad_request()
+        .set_typed_body(format!("The `User-Agent` header value must be a valid UTF-8 string"))
+        .box_body()
+}
+```
+
+Then register the error handler with the `Blueprint`:
+
+```rust title="demo/src/blueprint.rs" hl_lines="9"
+pub fn blueprint() -> Blueprint {
+    let mut bp = Blueprint::new();
+    register_common_constructors(&mut bp);
+
+    bp.constructor(
+        f!(crate::user_agent::UserAgent::extract),
+        Lifecycle::RequestScoped,
+    )
+    .error_handler(f!(crate::user_agent::invalid_user_agent));
+    // [...]
+}
+```
+
+The application should compile successfully now.
