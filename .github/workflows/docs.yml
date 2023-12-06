@@ -22,7 +22,7 @@ jobs:
           tags: pavex-docs
       - name: Build docs
         run: |
-          docker run --rm -it -v ${PWD}:/docs pavex-docs build
+          docker run --rm -v ${PWD}:/docs pavex-docs build
       - uses: actions/upload-artifact@v3
         with:
           name: docs
