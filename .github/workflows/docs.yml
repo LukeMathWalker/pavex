@@ -1,0 +1,29 @@
+name: Build and store docs artifact
+
+on:
+  push:
+    branches:
+      - build-docs
+
+jobs:
+  uploadDocs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build and export to Docker
+        uses: docker/build-push-action@v5
+        with:
+          context: docs/
+          load: true
+          tags: pavex-docs
+      - name: Build docs
+        run: |
+          docker run --rm -it -v ${PWD}:/docs pavex-docs build
+      - uses: actions/upload-artifact@v3
+        with:
+          name: docs
+          path: site/
