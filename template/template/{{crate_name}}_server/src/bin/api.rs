@@ -8,7 +8,7 @@ use pavex::server::Server;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let subscriber = get_subscriber("realworld".into(), "info".into(), std::io::stdout);
+    let subscriber = get_subscriber("{{crate_name}}".into(), "info".into(), std::io::stdout);
     init_telemetry(subscriber)?;
 
     // We isolate all the server setup and launch logic in a separate function
@@ -26,6 +26,9 @@ async fn main() -> anyhow::Result<()> {
 }
 
 async fn _main() -> anyhow::Result<()> {
+    // Load environment variables from a .env file, if it exists.
+    let _ = dotenvy::dotenv();
+
     let config = load_configuration(None)?;
     let application_state = build_application_state()
         .await;

@@ -7,9 +7,9 @@
 - Rust (see [here](https://www.rust-lang.org/tools/install) for instructions)
 - `cargo-px`:
   ```bash
-  cargo install cargo-px
+  cargo install --locked cargo-px --version="~0.1"
   ```
-- [Pavex's CLI](https://pavex.dev):
+- [Pavex](https://pavex.dev)
 
 ## Useful commands
 
@@ -31,7 +31,7 @@ cargo px build
 ### Run
 
 ```bash
-APP_PROFILE=dev cargo px run --bin api
+cargo px run
 ```
 
 ### Test
@@ -42,14 +42,30 @@ cargo px test
 
 ## Configuration
 
-All configuration files are in the `{{crate_name}}_server/configuration` folder.
-The settings that are shared across all environments are stored in `{{crate_name}}_server/configuration/base.yml`.
+All configurable parameters are listed in `{{crate_name}}/src/configuration.rs`.
 
-Environment-specific configuration files can be used to override or supply additional values on top the default settings (see `prod.yml`).
-You must specify the app profile that you want to use by setting the `APP_PROFILE` environment variable to either `dev`, `test` or `prod`; e.g.:
+Configuration values are loaded from two sources:
+
+- Configuration files
+- Environment variables
+
+Environment variables take precedence over configuration files.
+
+All configuration files are in the `{{crate_name}}_server/configuration` folder.
+The application can be run in three different profiles: `dev`, `test` and `prod`.  
+The settings that you want to share across all profiles should be placed in `{{crate_name}}_server/configuration/base.yml`.
+Profile-specific configuration files can be then used
+to override or supply additional values on top of the default settings (e.g. `{{crate_name}}_server/configuration/dev.yml`).
+
+You can specify the app profile that you want to use by setting the `APP_PROFILE` environment variable; e.g.:
 
 ```bash
-APP_PROFILE=prod cargo px run --bin api
+APP_PROFILE=prod cargo px run
 ```
 
-All configurable parameters are listed in `{{crate_name}}/src/configuration.rs`.
+for running the application with the `prod` profile.
+
+By default, the `dev` profile is used since `APP_PROFILE` is set to `dev` in the `.env` file at the root of the project.
+The `.env` file should not be committed to version control: it is meant to be used for local development only,
+so that each developer can specify their own environment variables for secret values (e.g. database credentials)
+that shouldn't be stored in configuration files (given their sensitive nature).

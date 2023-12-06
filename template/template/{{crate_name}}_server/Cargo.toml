@@ -15,6 +15,7 @@ tokio = { version = "1", features = ["full"] }
 {{crate_name}} = { path = "../{{crate_name}}" }
 
 # Configuration
+dotenvy = "0.15"
 figment = { version = "0.10", features = ["env", "yaml"] }
 serde = { version = "1", features = ["derive"]}
 
