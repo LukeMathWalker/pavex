@@ -3,7 +3,7 @@ name: Build and store docs artifact
 on:
   push:
     branches:
-      - build-docs
+      - main
 
 jobs:
   uploadDocs:
