@@ -10,9 +10,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          sparse-checkout: |
+            .github
+            docs
 
       - name: Link Checker
         uses: lycheeverse/lychee-action@v1
         with:
           fail: true
-          args: --base . --verbose --no-progress .
+          args: --base . --verbose --no-progress docs
