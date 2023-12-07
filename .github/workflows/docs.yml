@@ -1,15 +1,36 @@
 name: Build and store docs artifact
 
 on:
+  workflow_dispatch:
   push:
+    branches:
+      - main
+  pull_request:
     branches:
       - main
 
 jobs:
-  uploadDocs:
+  buildDocs:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1.6.0
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+      - name: Build API reference
+        run: |
+          cd libs
+          cargo doc --package pavex --no-deps
+      - name: Copy API reference files
+        run: |
+          cp -r libs/target/doc/* docs/api_reference
+      - name: Link Checker
+        uses: lycheeverse/lychee-action@v1
+        with:
+          fail: true
+          args: --base . --exclude-loopback --require-https --verbose --no-progress docs
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
