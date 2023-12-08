@@ -314,39 +314,13 @@ Since you need to look at headers, ask for [`RequestHead`][RequestHead] as input
 minus the body.
 
 ```rust title="demo/src/user_agent.rs" hl_lines="10 11 12 13 14 15 16 17 18 19"
-use pavex::http::header::USER_AGENT;
-use pavex::request::RequestHead;
-
-pub enum UserAgent {
-    Unknown,
-    Known(String),
-}
-
-impl UserAgent {
-    pub fn extract(request_head: &RequestHead) -> Self {
-        let Some(user_agent) = request_head.headers.get(USER_AGENT) else {
-            return Self::Anonymous;
-        };
-
-        match user_agent.to_str() {
-            Ok(s) => Self::Known(s.into()),
-            Err(_e) => todo!()
-        }
-    }
-}
+--8<-- "doc_examples/quickstart/06/demo/src/user_agent.rs"
 ```
 
 Now register the new constructor with the [`Blueprint`][Blueprint]:
 
 ```rust title="demo/src/blueprint.rs" hl_lines="5 6 7 8"
-pub fn blueprint() -> Blueprint {
-    let mut bp = Blueprint::new();
-    register_common_constructors(&mut bp);
-
-    bp.constructor(
-        f!(crate::user_agent::UserAgent::extract),
-        Lifecycle::RequestScoped,
-    );
+--8<-- "doc_examples/quickstart/06/demo/src/blueprint.rs:new_constructor_registration"
     // [...]
 }
 ```
@@ -368,18 +342,10 @@ Panicking for bad user input is poor behavior: you should handle the issue grace
 Let's change the signature of `UserAgent::extract` to return a `Result` instead:
 
 ```rust title="demo/src/user_agent.rs"
-use pavex::http::header::{ToStrError, USER_AGENT};
+--8<-- "doc_examples/quickstart/07/demo/src/user_agent.rs:new_import"
 // [...]
 
-impl UserAgent {
-    pub fn extract(request_head: &RequestHead) -> Result<Self, ToStrError/* (1)! */> {
-        let Some(user_agent) = request_head.headers.get(USER_AGENT) else {
-            return Ok(UserAgent::Anonymous);
-        };
-
-        user_agent.to_str().map(|s| UserAgent::Known(s.into()))
-    }
-}
+--8<-- "doc_examples/quickstart/07/demo/src/user_agent.rs:new_extract"
 ```
 
 1. `ToStrError` is the error type returned by `to_str` when the header value is not valid UTF-8.
@@ -422,26 +388,13 @@ Define a new `invalid_user_agent` function in `demo/src/user_agent.rs`:
 
 ```rust title="demo/src/user_agent.rs"
 // [...]
-
-pub fn invalid_user_agent(_e: &ToStrError) -> Response {
-    Response::bad_request()
-        .set_typed_body("The `User-Agent` header value must be a valid UTF-8 string")
-        .box_body()
-}
+--8<-- "doc_examples/quickstart/08/demo/src/user_agent.rs:new_error_handler"
 ```
 
 Then register the error handler with the [`Blueprint`][Blueprint]:
 
 ```rust title="demo/src/blueprint.rs" hl_lines="9"
-pub fn blueprint() -> Blueprint {
-    let mut bp = Blueprint::new();
-    register_common_constructors(&mut bp);
-
-    bp.constructor(
-        f!(crate::user_agent::UserAgent::extract),
-        Lifecycle::RequestScoped,
-    )
-        .error_handler(f!(crate::user_agent::invalid_user_agent));
+--8<-- "doc_examples/quickstart/08/demo/src/blueprint.rs:new_constructor_registration"
     // [...]
 }
 ```
@@ -462,18 +415,7 @@ interact with it, after all.
 The template project includes a reference example for the `/api/ping` endpoint:
 
 ```rust title="demo_server/tests/integration/ping.rs"
-use crate::helpers::TestApi;
-//(1)!
-use pavex::http::StatusCode;
-
-#[tokio::test]
-async fn ping_works() {
-    let api = TestApi::spawn().await;//(2)!
-
-    let response = api.get_ping().await;//(3)!
-
-    assert_eq!(response.status().as_u16(), StatusCode::OK.as_u16());
-}
+--8<-- "doc_examples/quickstart/09/demo_server/tests/integration/ping.rs"
 ```
 
 1. `TestApi` is a helper struct that provides a convenient interface to interact with the application.  
@@ -486,31 +428,11 @@ async fn ping_works() {
 Let's write a new integration test to verify the behaviour on the happy path for `GET /api/greet/:name`:
 
 ```rust title="demo_server/tests/integration/main.rs hl_lines="1"
-mod greet;
-mod ping;
-mod helpers;
+--8<-- "doc_examples/quickstart/09/demo_server/tests/integration/main.rs"
 ```
 
 ```rust title="demo_server/tests/integration/greet.rs"
-use crate::helpers::TestApi;
-use pavex::http::StatusCode;
-
-#[tokio::test]
-async fn greet_happy_path() {
-    let api = TestApi::spawn().await;
-    let name = "Ursula";
-
-    let response = api
-        .api_client
-        .get(&format!("{}/api/greet/{name}", &api.api_address))
-        .header("User-Agent", "Test runner")
-        .send()
-        .await
-        .expect("Failed to execute request.");
-
-    assert_eq!(response.status().as_u16(), StatusCode::OK.as_u16());
-    assert_eq!(response.text().await.unwrap(), "Hello, Ursula!");
-}
+--8<-- "doc_examples/quickstart/09/demo_server/tests/integration/greet.rs"
 ```
 
 It follows the same pattern as the `ping` test: it spawns a new instance of the application, issues a request to it
@@ -520,25 +442,7 @@ rejected.
 
 ```rust title="demo_server/tests/integration/greet.rs"
 // [...]
-#[tokio::test]
-async fn non_utf8_user_agent_is_rejected() {
-    let api = TestApi::spawn().await;
-    let name = "Ursula";
-
-    let response = api
-        .api_client
-        .get(&format!("{}/api/greet/{name}", &api.api_address))
-        .header("User-Agent", b"hello\xfa".as_slice())
-        .send()
-        .await
-        .expect("Failed to execute request.");
-
-    assert_eq!(response.status().as_u16(), StatusCode::BAD_REQUEST.as_u16());
-    assert_eq!(
-        response.text().await.unwrap(),
-        "The `User-Agent` header value must be a valid UTF-8 string"
-    );
-}
+--8<-- "doc_examples/quickstart/10/demo_server/tests/integration/greet.rs"
 ```
 
 `cargo px test` should report three passing tests now. As a bonus exercise, try to add a test for the case where the

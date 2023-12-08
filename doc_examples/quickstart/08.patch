@@ -1,0 +1,30 @@
+diff --git a/demo/src/blueprint.rs b/demo/src/blueprint.rs
+index e74936a..d9f5203 100644
+--- a/demo/src/blueprint.rs
++++ b/demo/src/blueprint.rs
+@@ -12,7 +12,8 @@ pub fn blueprint() -> Blueprint {
+     bp.constructor(
+         f!(crate::user_agent::UserAgent::extract),
+         Lifecycle::RequestScoped,
+-    );
++    )
++    .error_handler(f!(crate::user_agent::invalid_user_agent));
+     // --8<-- [end:new_constructor_registration]
+ 
+     add_telemetry_middleware(&mut bp);
+diff --git a/demo/src/user_agent.rs b/demo/src/user_agent.rs
+index bb0f278..7cad189 100644
+--- a/demo/src/user_agent.rs
++++ b/demo/src/user_agent.rs
+@@ -19,3 +19,11 @@ impl UserAgent {
+     }
+ }
+ // --8<-- [end:new_extract]
++
++// --8<-- [start:new_error_handler]
++pub fn invalid_user_agent(_e: &ToStrError) -> Response {
++    Response::bad_request()
++        .set_typed_body("The `User-Agent` header value must be a valid UTF-8 string")
++        .box_body()
++}
++// --8<-- [end:new_error_handler]
