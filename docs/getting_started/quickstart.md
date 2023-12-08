@@ -26,9 +26,8 @@ From a usage perspective, it's a **drop-in replacement for `cargo`**:
 you can use it to build, test, run, etc. your project just like you would with `cargo` itself.
 { .annotate }
 
-1.  `cargo-px` is a thin wrapper around `cargo` that adds support for more powerful code generation,
-    overcoming some limitations of `cargo`'s build scripts.
-
+1. `cargo-px` is a thin wrapper around `cargo` that adds support for more powerful code generation,
+   overcoming some limitations of `cargo`'s build scripts.
 
 Let's use it to check that your project compiles successfully:
 
@@ -36,7 +35,7 @@ Let's use it to check that your project compiles successfully:
 cargo px check # (1)!
 ```
 
-1. `cargo px check` is faster than `cargo px build` because it doesn't produce an executable binary. 
+1. `cargo px check` is faster than `cargo px build` because it doesn't produce an executable binary.
    It's the quickest way to check that your project compiles while you're working on it.
 
 If everything went well, try to execute the test suite:
@@ -97,10 +96,10 @@ It's a good time to start exploring the codebase!
 
 ## Blueprint
 
-The core of a Pavex project is its `Blueprint`.  
+The core of a Pavex project is its [`Blueprint`][Blueprint].  
 It's the type you'll use to define your API: routes, middlewares, error handlers, etc.
 
-You can find the `Blueprint` for the `demo` project in the `demo/src/blueprint.rs` file:
+You can find the [`Blueprint`][Blueprint] for the `demo` project in the `demo/src/blueprint.rs` file:
 
 ```rust title="demo/src/blueprint.rs"
 pub fn blueprint() -> Blueprint {
@@ -118,8 +117,9 @@ pub fn blueprint() -> Blueprint {
 
 ### Route registration
 
-All the routes exposed by your API must be registered with its `Blueprint`.  
-In the snippet below you can see the registration of the `GET /api/ping` route, the one you targeted with your `curl` request.
+All the routes exposed by your API must be registered with its [`Blueprint`][Blueprint].  
+In the snippet below you can see the registration of the `GET /api/ping` route, the one you targeted with your `curl`
+request.
 
 ```rust title="demo/src/blueprint.rs" hl_lines="7"
 pub fn blueprint() -> Blueprint {
@@ -153,15 +153,18 @@ pub fn ping() -> StatusCode {
 }
 ```
 
-It's a public function that returns a `StatusCode`.  
-`StatusCode` is a valid response type for a Pavex handler since it implements the `IntoResponse` trait: the framework
-knows how to convert it into a "full" `Response` object.
+It's a public function that returns a [`StatusCode`][StatusCode].  
+[`StatusCode`][StatusCode] is a valid response type for a Pavex handler since it implements
+the [`IntoResponse`][IntoResponse] trait:
+the framework
+knows how to convert it into a "full" [`Response`][Response] object.
 
 ### Add a new route
 
 The `ping` function is fairly boring: it doesn't take any arguments, and it always returns the same response.  
 Let's spice things up with a new route: `GET /api/greet/:name`.  
-It takes a dynamic **route parameter** (`name`) and we want it to return a success response with `Hello, {name}` as its body.
+It takes a dynamic **route parameter** (`name`) and we want it to return a success response with `Hello, {name}` as its
+body.
 
 Create a new module, `greet.rs`, in the `demo/src/routes` folder:
 
@@ -179,7 +182,7 @@ pub fn greet() -> Response {
 ```
 
 The body of the `greet` handler is stubbed out with `todo!()` for now, but we'll fix that soon enough.  
-Let's register the new route with the `Blueprint` in the meantime:
+Let's register the new route with the [`Blueprint`][Blueprint] in the meantime:
 
 ```rust title="demo/src/blueprint.rs" hl_lines="8"
 pub fn blueprint() -> Blueprint {
@@ -198,7 +201,7 @@ pub fn blueprint() -> Blueprint {
 
 ### Extract route parameters
 
-To access the `name` route parameter from your new handler you must use the `RouteParams` extractor:
+To access the `name` route parameter from your new handler you must use the [`RouteParams`][RouteParams] extractor:
 
 ```rust title="demo/src/routes/greet.rs"
 use pavex::response::Response;
@@ -214,8 +217,9 @@ pub fn greet(params: RouteParams<GreetParams>/* (2)! */) -> Response {
 }
 ```
 
-1. The name of the field must match the name of the route parameter as it appears in the path we registered with the `Blueprint`.
-2. The `RouteParams` extractor is generic over the type of the route parameters.  
+1. The name of the field must match the name of the route parameter as it appears in the path we registered with
+   the [`Blueprint`][Blueprint].
+2. The [`RouteParams`][RouteParams] extractor is generic over the type of the route parameters.  
    In this case, we're using the `GreetParams` type we just defined.
 
 You can now return the expected response from the `greet` handler:
@@ -230,16 +234,21 @@ pub struct GreetParams {
 }
 
 pub fn greet(params: RouteParams<GreetParams>) -> Response {
-    let GreetParams { name }/* (1)! */= params.0; 
+    let GreetParams { name }/* (1)! */ = params.0;
     Response::ok()// (2)!
         .set_typed_body(format!("Hello, {name}!"))// (3)!
         .box_body()
 }
 ```
 
-1. This is an example of Rust's [destructuring syntax](https://doc.rust-lang.org/book/ch18-03-pattern-syntax.html#destructuring-to-break-apart-values).
-2. `Response` has a convenient constructor for each HTTP status code: `Response::ok()` starts building a `Response` with a `200 OK` status code.
-3. `typed_body` sets the body of the response and automatically infers a suitable value for the `Content-Type` header based on the response body type.
+1. This is an example of
+   Rust's [destructuring syntax](https://doc.rust-lang.org/book/ch18-03-pattern-syntax.html#destructuring-to-break-apart-values).
+2. [`Response`][Response] has a convenient constructor for each HTTP status code: [`Response::ok`][Response::ok] starts
+   building a [`Response`][Response] with
+   a `200 OK` status code.
+3. [`set_typed_body`][set_typed_body] sets the body of the response and automatically infers a suitable value for
+   the `Content-Type` header
+   based on the response body type.
 
 Does it work? Only one way to find out!  
 Re-launch the application and issue a new request: (1)
@@ -260,13 +269,13 @@ at runtime without you having to do anything.
 How does that work?
 
 It's all thanks to **dependency injection**.  
-Pavex automatically injects the expected input parameters when invoking your handler functions as long as 
+Pavex automatically injects the expected input parameters when invoking your handler functions as long as
 it knows how to construct them.
 
 ### Constructor registration
 
-Let's zoom in on `RouteParams`: how does the framework know how to construct it?  
-You need to go back to the `Blueprint` to find out:
+Let's zoom in on [`RouteParams`][RouteParams]: how does the framework know how to construct it?  
+You need to go back to the [`Blueprint`][Blueprint] to find out:
 
 ```rust title="demo/src/blueprint.rs" hl_lines="3"
 pub fn blueprint() -> Blueprint {
@@ -281,9 +290,9 @@ pub fn blueprint() -> Blueprint {
 }
 ```
 
-The `register_common_constructors` function takes care of registering constructors for a set of types that 
+The `register_common_constructors` function takes care of registering constructors for a set of types that
 are defined in the `pavex` crate itself and commonly used in Pavex applications.
-If you check out its definition, you'll see that it registers a constructor for `RouteParams`:
+If you check out its definition, you'll see that it registers a constructor for [`RouteParams`][RouteParams]:
 
 ```rust title="pavex/src/blueprint.rs" hl_lines="3 4 5 6"
 fn register_common_constructors(bp: &mut Blueprint) {
@@ -299,7 +308,9 @@ fn register_common_constructors(bp: &mut Blueprint) {
 It specifies:
 
 - The fully qualified path to the constructor method, wrapped in a macro (`f!`)
-- The constructor's lifecycle (`Lifecycle::RequestScoped`): the framework will invoke this constructor at most once per request
+- The constructor's lifecycle ([`Lifecycle::RequestScoped`](Lifecycle::RequestScoped)): the framework will invoke this
+  constructor at most once per
+  request
 
 ### A new extractor: `UserAgent`
 
@@ -346,7 +357,7 @@ pub fn greet(params: RouteParams<GreetParams>, user_agent: UserAgent/* (1)! */) 
 ```
 
 1. New input parameter!
-   
+
 If you try to build the project now, you'll get an error from Pavex:
 
 ```text
@@ -382,7 +393,7 @@ We strive to make them as helpful as possible. If you find them confusing, repor
 To inject `UserAgent` into our `greet` handler, you need to define a constructor for it.  
 Constructors, just like request handlers, can take advantage of dependency injection: they can request input parameters
 that will be injected by the framework at runtime.  
-Since you need to look at headers, ask for `RequestHead` as input parameter: the incoming request data, 
+Since you need to look at headers, ask for [`RequestHead`][RequestHead] as input parameter: the incoming request data,
 minus the body.
 
 ```rust title="demo/src/user_agent.rs" hl_lines="10 11 12 13 14 15 16 17 18 19"
@@ -393,7 +404,7 @@ pub enum UserAgent {
     Unknown,
     Known(String),
 }
-    
+
 impl UserAgent {
     pub fn extract(request_head: &RequestHead) -> Self {
         let Some(user_agent) = request_head.headers.get(USER_AGENT) else {
@@ -408,7 +419,7 @@ impl UserAgent {
 }
 ```
 
-Now register the new constructor with the `Blueprint`:
+Now register the new constructor with the [`Blueprint`][Blueprint]:
 
 ```rust title="demo/src/blueprint.rs" hl_lines="5 6 7 8"
 pub fn blueprint() -> Blueprint {
@@ -423,9 +434,11 @@ pub fn blueprint() -> Blueprint {
 }
 ```
 
-`Lifecycle::RequestScoped` is the right choice for this type: the data in `UserAgent` is request-specific.  
-You don't want to share it across requests (`Lifecycle::Singleton`) nor do you want to recompute it multiple times for 
-the same request (`Lifecycle::Transient`).  
+[`Lifecycle::RequestScoped`][Lifecycle::RequestScoped] is the right choice for this type: the data in `UserAgent` is
+request-specific.  
+You don't want to share it across requests ([`Lifecycle::Singleton`][Lifecycle::Singleton]) nor do you want to recompute
+it multiple times for
+the same request ([`Lifecycle::Transient`][Lifecycle::Transient]).
 
 Make sure that the project compiles successfully now.
 
@@ -452,7 +465,7 @@ impl UserAgent {
 }
 ```
 
-1. `ToStrError` is the error type returned by `to_str` when the header value is not valid UTF-8. 
+1. `ToStrError` is the error type returned by `to_str` when the header value is not valid UTF-8.
 
 ### All errors must be handled
 
@@ -473,18 +486,19 @@ ERROR:
   │   help: Add an error handler via `.error_handler`
 ```
 
-Pavex is complaining: you can register a fallible constructor, but you must also register an error handler for it.  
+Pavex is complaining: you can register a fallible constructor, but you must also register an error handler for it.
 
 ### Add an error handler
 
-An error handler must convert a reference to the error type into a `Response` (1).  
+An error handler must convert a reference to the error type into a [`Response`][Response] (1).  
 It decouples the detection of an error from its representation on the wire: a constructor doesn't need to know how the
 error will be represented in the response, it just needs to signal that something went wrong.  
-You can then change the representation of an error on the wire without touching the constructor: you only need to change the
+You can then change the representation of an error on the wire without touching the constructor: you only need to change
+the
 error handler.
 { .annotate }
 
-1. Error handlers, just like request handlers and constructors, can take advantage of dependency injection! 
+1. Error handlers, just like request handlers and constructors, can take advantage of dependency injection!
    You could, for example, change the response representation according to the `Accept` header specified in the request.
 
 Define a new `invalid_user_agent` function in `demo/src/user_agent.rs`:
@@ -499,7 +513,7 @@ pub fn invalid_user_agent(_e: &ToStrError) -> Response {
 }
 ```
 
-Then register the error handler with the `Blueprint`:
+Then register the error handler with the [`Blueprint`][Blueprint]:
 
 ```rust title="demo/src/blueprint.rs" hl_lines="9"
 pub fn blueprint() -> Blueprint {
@@ -510,7 +524,7 @@ pub fn blueprint() -> Blueprint {
         f!(crate::user_agent::UserAgent::extract),
         Lifecycle::RequestScoped,
     )
-    .error_handler(f!(crate::user_agent::invalid_user_agent));
+        .error_handler(f!(crate::user_agent::invalid_user_agent));
     // [...]
 }
 ```
@@ -525,13 +539,14 @@ Let's move away from that: it's time to write some automated tests!
 ### Black-box testing
 
 The preferred way to test a Pavex application is to treat it as a black box: you should only test the application
-through its HTTP interface. This is the most realistic way to test your application: it's how your users will 
+through its HTTP interface. This is the most realistic way to test your application: it's how your users will
 interact with it, after all.
 
 The template project includes a reference example for the `/api/ping` endpoint:
 
 ```rust title="demo_server/tests/integration/ping.rs"
-use crate::helpers::TestApi;//(1)!
+use crate::helpers::TestApi;
+//(1)!
 use pavex::http::StatusCode;
 
 #[tokio::test]
@@ -583,7 +598,8 @@ async fn greet_happy_path() {
 
 It follows the same pattern as the `ping` test: it spawns a new instance of the application, issues a request to it
 and verifies that the response is correct.  
-Let's complement it with a test for the unhappy path as well: requests with a malformed `User-Agent` header should be rejected.
+Let's complement it with a test for the unhappy path as well: requests with a malformed `User-Agent` header should be
+rejected.
 
 ```rust title="demo_server/tests/integration/greet.rs"
 // [...]
@@ -615,6 +631,28 @@ async fn non_utf8_user_agent_is_rejected() {
 
 Your first (guided) tour of Pavex ends here: you've touched the key concepts of the framework and got some hands-on
 experience with a basic application.  
-From here onwards, you are free to carve out your own learning path: you can explore the rest of the documentation 
+From here onwards, you are free to carve out your own learning path: you can explore the rest of the documentation
 to learn more about the framework, or you can start hacking on your own project, consulting the documentation on a
 need-to-know basis.
+
+[Blueprint]: ../api_reference/pavex/blueprint/struct.Blueprint.html
+
+[StatusCode]: ../api_reference/pavex/http/struct.StatusCode.html
+
+[Response]: ../api_reference/pavex/response/struct.Response.html
+
+[IntoResponse]: ../api_reference/pavex/response/trait.IntoResponse.html
+
+[RouteParams]: ../api_reference/pavex/request/route/struct.RouteParams.html
+
+[Response::ok]: ../api_reference/pavex/response/struct.Response.html#method.ok
+
+[set_typed_body]: ../api_reference/pavex/response/struct.Response.html#method.set_typed_body
+
+[Lifecycle::Singleton]: ../api_reference/pavex/blueprint/constructor/enum.Lifecycle.html#variant.Singleton
+
+[Lifecycle::RequestScoped]: ../api_reference/pavex/blueprint/constructor/enum.Lifecycle.html#variant.RequestScoped
+
+[Lifecycle::Transient]: ../api_reference/pavex/blueprint/constructor/enum.Lifecycle.html#variant.Transient
+
+[RequestHead]: ../api_reference/pavex/request/struct.RequestHead.html
