@@ -1,4 +1,5 @@
 diff --git a/demo/src/blueprint.rs b/demo/src/blueprint.rs
+index 4a196d8..a4224a1 100644
 --- a/demo/src/blueprint.rs
 +++ b/demo/src/blueprint.rs
 @@ -4,6 +4,7 @@ use pavex::f;
@@ -17,3 +18,16 @@ diff --git a/demo/src/blueprint.rs b/demo/src/blueprint.rs
  
  /// Common constructors used by all routes.
  fn register_common_constructors(bp: &mut Blueprint) {
+@@ -26,10 +28,12 @@ fn register_common_constructors(bp: &mut Blueprint) {
+     ));
+ 
+     // Route parameters
++    // --8<-- [start:route_params_constructor]
+     bp.constructor(
+         f!(pavex::request::route::RouteParams::extract),
+         Lifecycle::RequestScoped,
+     )
++    // --8<-- [end:route_params_constructor]
+     .error_handler(f!(
+         pavex::request::route::errors::ExtractRouteParamsError::into_response
+     ));
