@@ -168,17 +168,7 @@ Let's register the new route with the [`Blueprint`][Blueprint] in the meantime:
 To access the `name` route parameter from your new handler you must use the [`RouteParams`][RouteParams] extractor:
 
 ```rust title="demo/src/routes/greet.rs"
-use pavex::response::Response;
-use pavex::request::RouteParams;
-
-#[RouteParams]
-pub struct GreetParams {
-    pub name/* (1)! */: String,
-}
-
-pub fn greet(params: RouteParams<GreetParams>/* (2)! */) -> Response {
-    todo!()
-}
+--8<-- "doc_examples/quickstart/03/demo/src/routes/greet.rs"
 ```
 
 1. The name of the field must match the name of the route parameter as it appears in the path we registered with
@@ -189,20 +179,7 @@ pub fn greet(params: RouteParams<GreetParams>/* (2)! */) -> Response {
 You can now return the expected response from the `greet` handler:
 
 ```rust title="demo/src/routes/greet.rs" hl_lines="10 11 12 13"
-use pavex::response::Response;
-use pavex::request::route::RouteParams;
-
-#[RouteParams]
-pub struct GreetParams {
-    pub name: String,
-}
-
-pub fn greet(params: RouteParams<GreetParams>) -> Response {
-    let GreetParams { name }/* (1)! */ = params.0;
-    Response::ok()// (2)!
-        .set_typed_body(format!("Hello, {name}!"))// (3)!
-        .box_body()
-}
+--8<-- "doc_examples/quickstart/04/demo/src/routes/greet.rs"
 ```
 
 1. This is an example of
@@ -242,16 +219,7 @@ Let's zoom in on [`RouteParams`][RouteParams]: how does the framework know how t
 You need to go back to the [`Blueprint`][Blueprint] to find out:
 
 ```rust title="demo/src/blueprint.rs" hl_lines="3"
-pub fn blueprint() -> Blueprint {
-    let mut bp = Blueprint::new();
-    register_common_constructors(&mut bp);
-
-    add_telemetry_middleware(&mut bp);
-
-    bp.route(GET, "/api/ping", f!(crate::routes::status::ping));
-    bp.route(GET, "/api/greet/:name", f!(crate::routes::greet::greet));
-    bp
-}
+--8<-- "doc_examples/quickstart/04/demo/src/blueprint.rs:blueprint_definition"
 ```
 
 The `register_common_constructors` function takes care of registering constructors for a set of types that
@@ -260,11 +228,8 @@ If you check out its definition, you'll see that it registers a constructor for 
 
 ```rust title="pavex/src/blueprint.rs" hl_lines="3 4 5 6"
 fn register_common_constructors(bp: &mut Blueprint) {
-    // [...]
-    bp.constructor(
-        f!(pavex::request::route::RouteParams::extract),
-        Lifecycle::RequestScoped,
-    )
+   // [...]
+--8<-- "doc_examples/quickstart/04/demo/src/blueprint.rs:route_params_constructor"
     // [...]
 }
 ```
@@ -287,18 +252,12 @@ We only want to greet people who include a `User-Agent` header in their request(
 
 Let's start by defining a new `UserAgent` type:
 
-```rust title="demo/src/lib.rs"
-//! [...]
-pub mod user_agent;
+```rust title="demo/src/lib.rs" hl_lines="7"
+--8<-- "doc_examples/quickstart/05/demo/src/lib.rs"
 ```
 
 ```rust title="demo/src/user_agent.rs"
-pub enum UserAgent {
-    /// No `User-Agent` header was provided.
-    Unknown,
-    /// The value of the `User-Agent` header for the incoming request.
-    Known(String),
-}
+--8<-- "doc_examples/quickstart/05/demo/src/user_agent.rs"
 ```
 
 ### Missing constructor
@@ -307,15 +266,9 @@ What if you tried to inject `UserAgent` into your `greet` handler straight away?
 Let's find out!
 
 ```rust title="demo/src/routes/greet.rs" hl_lines="4"
-use crate::user_agent::UserAgent;
-// [...]
-
-pub fn greet(params: RouteParams<GreetParams>, user_agent: UserAgent/* (1)! */) -> Response {
-    if let UserAgent::Anonymous = user_agent {
-        return Response::unauthorized()
-            .set_typed_body("You must provide a `User-Agent` header")
-            .box_body();
-    }
+//! [...]
+--8<-- "doc_examples/quickstart/05/demo/src/routes/greet.rs:user_agent_import"
+--8<-- "doc_examples/quickstart/05/demo/src/routes/greet.rs:user_agent"
     // [...]
 }
 ```

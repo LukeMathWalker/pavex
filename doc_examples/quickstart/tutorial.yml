@@ -1,6 +1,9 @@
 bootstrap: |
-  pavex new demo && cd demo && cargo px check
+  pavex new demo && cd demo && cargo px check && git add . && git commit -m "Initial commit"
 starter_project_folder: demo
 steps:
   - patch: "01.patch"
   - patch: "02.patch"
+  - patch: "03.patch"
+  - patch: "04.patch"
+  - patch: "05.patch"
