@@ -3,3 +3,4 @@ bootstrap: |
 starter_project_folder: demo
 steps:
   - patch: "01.patch"
+  - patch: "02.patch"

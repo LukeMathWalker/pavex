@@ -102,7 +102,7 @@ It's the type you'll use to define your API: routes, middlewares, error handlers
 You can find the [`Blueprint`][Blueprint] for the `demo` project in the `demo/src/blueprint.rs` file:
 
 ```rust title="demo/src/blueprint.rs"
---8<-- "doc_examples/quickstart/01_demo/demo/src/blueprint.rs:blueprint_definition"
+--8<-- "doc_examples/quickstart/01/demo/src/blueprint.rs:blueprint_definition"
 ```
 
 ## Routing
@@ -114,7 +114,7 @@ In the snippet below you can see the registration of the `GET /api/ping` route, 
 request.
 
 ```rust title="demo/src/blueprint.rs" hl_lines="7"
---8<-- "doc_examples/quickstart/01_demo/demo/src/blueprint.rs:blueprint_definition"
+--8<-- "doc_examples/quickstart/01/demo/src/blueprint.rs:blueprint_definition"
 ```
 
 It specifies:
@@ -128,7 +128,7 @@ It specifies:
 The `ping` function is the handler for the `GET /api/ping` route:
 
 ```rust title="demo/src/routes/status.rs"
---8<-- "doc_examples/quickstart/01_demo/demo/src/routes/status.rs"
+--8<-- "doc_examples/quickstart/01/demo/src/routes/status.rs"
 ```
 
 It's a public function that returns a [`StatusCode`][StatusCode].  
@@ -146,33 +146,19 @@ body.
 
 Create a new module, `greet.rs`, in the `demo/src/routes` folder:
 
-```rust title="demo/src/routes/lib.rs" hl_lines="2"
-pub mod status;
-pub mod greet;
+```rust title="demo/src/routes/lib.rs" hl_lines="1"
+--8<-- "doc_examples/quickstart/02/demo/src/routes/mod.rs"
 ```
 
 ```rust title="demo/src/routes/greet.rs"
-use pavex::response::Response;
-
-pub fn greet() -> Response {
-    todo!()
-}
+--8<-- "doc_examples/quickstart/02/demo/src/routes/greet.rs"
 ```
 
 The body of the `greet` handler is stubbed out with `todo!()` for now, but we'll fix that soon enough.  
 Let's register the new route with the [`Blueprint`][Blueprint] in the meantime:
 
-```rust title="demo/src/blueprint.rs" hl_lines="8"
-pub fn blueprint() -> Blueprint {
-    let mut bp = Blueprint::new();
-    register_common_constructors(&mut bp);
-
-    add_telemetry_middleware(&mut bp);
-
-    bp.route(GET, "/api/ping", f!(crate::routes::status::ping));
-    bp.route(GET, "/api/greet/:name"/* (1)! */, f!(crate::routes::greet::greet));
-    bp
-}
+```rust title="demo/src/blueprint.rs" hl_lines="8 9 10 11 12"
+--8<-- "doc_examples/quickstart/02/demo/src/blueprint.rs:blueprint_definition"
 ```
 
 1. Dynamic route parameters are prefixed with a colon (`:`).

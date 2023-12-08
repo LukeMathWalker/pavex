@@ -3,7 +3,7 @@ use run_script::types::ScriptOptions;
 
 #[derive(Debug, serde::Deserialize)]
 struct TutorialManifest {
-    boostrap: String,
+    bootstrap: String,
     starter_project_folder: String,
     steps: Vec<Step>,
 }
@@ -23,8 +23,9 @@ fn main() -> Result<(), anyhow::Error> {
     clean_up();
 
     // Boostrap the project
+    println!("Running bootstrap script");
     let (code, output, error) = run_script::run(
-        &tutorial_manifest.boostrap,
+        &tutorial_manifest.bootstrap,
         &Default::default(),
         &ScriptOptions::new(),
     )
@@ -41,11 +42,11 @@ fn main() -> Result<(), anyhow::Error> {
     let mut previous_dir = tutorial_manifest.starter_project_folder;
     for (i, step) in tutorial_manifest.steps.iter().enumerate() {
         println!("Applying patch: {}", step.patch);
-        let next_dir = format!("{:02}", i);
+        let next_dir = format!("{:02}", i + 1);
         let (code, output, error) = run_script::run(
             &format!(
                 r#"cp -r {previous_dir} {next_dir}
-cd {next_dir} && patch -p1 < ../{}"#,
+cd {next_dir} && patch -p1 < ../{} && git add . && git commit -am "First commit""#,
                 step.patch
             ),
             &Default::default(),
@@ -74,7 +75,9 @@ fn clean_up() {
         .filter(|entry| {
             let path = entry.path();
             let file_name = path.file_name().unwrap().to_str().unwrap();
-            !file_name.ends_with(".patch") && file_name != "tutorial.yml"
+            !file_name.ends_with(".patch")
+                && file_name != "tutorial.yml"
+                && file_name != ".gitignore"
         })
         .for_each(|entry| {
             fs_err::remove_dir_all(entry.path()).expect("Failed to remove a file or directory")

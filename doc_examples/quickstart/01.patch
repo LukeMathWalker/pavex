@@ -5,7 +5,7 @@ diff --git a/demo/src/blueprint.rs b/demo/src/blueprint.rs
  
  /// The main blueprint, containing all the routes, constructors and error handlers
  /// required by our API.
-+// <--8-- [start:blueprint_definition]
++// --8<-- [start:blueprint_definition]
  pub fn blueprint() -> Blueprint {
      let mut bp = Blueprint::new();
      register_common_constructors(&mut bp);
@@ -13,7 +13,7 @@ diff --git a/demo/src/blueprint.rs b/demo/src/blueprint.rs
      bp.route(GET, "/api/ping", f!(crate::routes::status::ping));
      bp
  }
-+// <--8-- [start:blueprint_definition]
++// --8<-- [end:blueprint_definition]
  
  /// Common constructors used by all routes.
  fn register_common_constructors(bp: &mut Blueprint) {
