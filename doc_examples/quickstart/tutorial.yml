@@ -1,0 +1,5 @@
+bootstrap: |
+  pavex new demo && cd demo && cargo px check
+starter_project_folder: demo
+steps:
+  - patch: "01.patch"
