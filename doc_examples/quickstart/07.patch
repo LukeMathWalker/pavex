@@ -19,8 +19,8 @@ index fb72632..bb0f278 100644
 -    pub fn extract(request_head: &RequestHead) -> Self {
 +    pub fn extract(request_head: &RequestHead) -> Result<Self, ToStrError /* (1)! */> {
          let Some(user_agent) = request_head.headers.get(USER_AGENT) else {
--            return Self::Anonymous;
-+            return Ok(UserAgent::Anonymous);
+-            return Self::Unknown;
++            return Ok(UserAgent::Unknown);
          };
  
 -        match user_agent.to_str() {

@@ -36,7 +36,7 @@ index fbcb3fc..662c93c 100644
 -        .set_typed_body(format!("Hello, {name}!")) // (3)!
 +// --8<-- [start:user_agent]
 +pub fn greet(params: RouteParams<GreetParams>, user_agent: UserAgent /* (1)! */) -> Response {
-+    if let UserAgent::Anonymous = user_agent {
++    if let UserAgent::Unknown = user_agent {
 +        return Response::unauthorized()
 +            .set_typed_body("You must provide a `User-Agent` header")
 +            .box_body();

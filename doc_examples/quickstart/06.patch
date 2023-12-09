@@ -47,7 +47,7 @@ index f16d4c1..fb72632 100644
 +impl UserAgent {
 +    pub fn extract(request_head: &RequestHead) -> Self {
 +        let Some(user_agent) = request_head.headers.get(USER_AGENT) else {
-+            return Self::Anonymous;
++            return Self::Unknown;
 +        };
 +
 +        match user_agent.to_str() {

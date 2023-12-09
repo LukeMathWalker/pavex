@@ -7,8 +7,16 @@ steps:
   - patch: "03.patch"
   - patch: "04.patch"
   - patch: "05.patch"
+    commands:
+      - command: "cargo px c -q"
+        outcome: "failure"
+        save_at: "05-error.txt"
   - patch: "06.patch"
   - patch: "07.patch"
+    commands:
+      - command: "cargo px c -q"
+        outcome: "failure"
+        save_at: "07-error.txt"
   - patch: "08.patch"
   - patch: "09.patch"
   - patch: "10.patch"

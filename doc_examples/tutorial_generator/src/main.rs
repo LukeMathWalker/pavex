@@ -1,3 +1,5 @@
+use std::io::Write;
+
 use anyhow::Context;
 use run_script::types::ScriptOptions;
 
@@ -11,6 +13,22 @@ struct TutorialManifest {
 #[derive(Debug, serde::Deserialize)]
 struct Step {
     patch: String,
+    #[serde(default)]
+    commands: Vec<StepCommand>,
+}
+
+#[derive(Debug, serde::Deserialize)]
+struct StepCommand {
+    command: String,
+    outcome: StepCommandOutcome,
+    save_at: String,
+}
+
+#[derive(Debug, serde::Deserialize, Eq, PartialEq)]
+#[serde(rename_all = "lowercase")]
+enum StepCommandOutcome {
+    Success,
+    Failure,
 }
 
 fn main() -> Result<(), anyhow::Error> {
@@ -42,7 +60,7 @@ fn main() -> Result<(), anyhow::Error> {
     let mut previous_dir = tutorial_manifest.starter_project_folder;
     for (i, step) in tutorial_manifest.steps.iter().enumerate() {
         println!("Applying patch: {}", step.patch);
-        let next_dir = format!("{:02}", i + 1);
+        let next_dir = patch_directory_name(i);
         let (code, output, error) = run_script::run(
             &format!(
                 r#"cp -r {previous_dir} {next_dir}
@@ -63,7 +81,49 @@ cd {next_dir} && patch -p1 < ../{} && git add . && git commit -am "First commit"
         previous_dir = next_dir;
     }
 
+    for (i, step) in tutorial_manifest.steps.iter().enumerate() {
+        for command in &step.commands {
+            println!(
+                "Running command for patch `{}`: {}",
+                step.patch, command.command
+            );
+            let patch_dir = patch_directory_name(i);
+            let (code, output, error) = run_script::run(
+                &format!(r#"cd {patch_dir} && {}"#, command.command),
+                &Default::default(),
+                &ScriptOptions::new(),
+            )
+            .expect("Failed to run command");
+
+            if command.outcome == StepCommandOutcome::Success && code != 0 {
+                eprintln!("Failed to run command which should have succeeded");
+                eprintln!("Exit Code: {}", code);
+                eprintln!("Output: {}", output);
+                eprintln!("Error: {}", error);
+                std::process::exit(1);
+            } else if command.outcome == StepCommandOutcome::Failure && code == 0 {
+                eprintln!("Command succeeded when it should have failed");
+                eprintln!("Exit Code: {}", code);
+                eprintln!("Output: {}", output);
+                eprintln!("Error: {}", error);
+                std::process::exit(1);
+            }
+
+            let mut file = fs_err::File::create(&command.save_at).expect("Failed to create file");
+            let contents = match command.outcome {
+                StepCommandOutcome::Success => output,
+                StepCommandOutcome::Failure => error,
+            };
+            file.write_all(contents.as_bytes())
+                .expect("Failed to write to file");
+        }
+    }
+
     Ok(())
+}
+
+fn patch_directory_name(patch_index: usize) -> String {
+    format!("{:02}", patch_index + 1)
 }
 
 /// Remove all files from the current directory, recursively, with the exception of
@@ -80,6 +140,11 @@ fn clean_up() {
                 && file_name != ".gitignore"
         })
         .for_each(|entry| {
-            fs_err::remove_dir_all(entry.path()).expect("Failed to remove a file or directory")
+            let file_type = entry.file_type().expect("Failed to get file type");
+            if file_type.is_dir() {
+                fs_err::remove_dir_all(entry.path()).expect("Failed to remove a directory")
+            } else {
+                fs_err::remove_file(entry.path()).expect("Failed to remove a file")
+            }
         });
 }
