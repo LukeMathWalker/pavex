@@ -50,7 +50,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: tutorial_generator
-          path: libs/target/debug/tutorial_generator
+          path: doc_examples/tutorial_generator/target/debug/tutorial_generator
 
   build_docs:
     runs-on: ubuntu-latest
