@@ -7,6 +7,7 @@ use anyhow::Context;
 use cargo_generate::{GenerateArgs, TemplatePath};
 use clap::{Parser, Subcommand};
 use owo_colors::OwoColorize;
+use supports_color::Stream;
 use tracing_chrome::{ChromeLayerBuilder, FlushGuard};
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::layer::SubscriberExt;
@@ -35,7 +36,7 @@ struct Cli {
 // Same structure used by `cargo --version`.
 static VERSION: &str = concat!(env!("CARGO_PKG_VERSION"), " (", env!("VERGEN_GIT_SHA"), ")");
 
-#[derive(Clone, Debug)]
+#[derive(Copy, Clone, Debug)]
 enum Color {
     Auto,
     Always,
@@ -141,7 +142,7 @@ fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
             blueprint,
             diagnostics,
             output,
-        } => generate(blueprint, diagnostics, output),
+        } => generate(blueprint, diagnostics, output, cli.color),
         Commands::New { path } => scaffold_project(path),
     }
 }
@@ -151,7 +152,9 @@ fn generate(
     blueprint: PathBuf,
     diagnostics: Option<PathBuf>,
     output: PathBuf,
+    color_profile: Color,
 ) -> Result<ExitCode, Box<dyn std::error::Error>> {
+    let color_on_stderr = use_color_on_stderr(color_profile);
     let blueprint = Blueprint::load(&blueprint)?;
     // We use the path to the generated application crate as a fingerprint for the project.
     let project_fingerprint = output.to_string_lossy().into_owned();
@@ -159,7 +162,11 @@ fn generate(
         Ok(a) => a,
         Err(errors) => {
             for e in errors {
-                eprintln!("{}: {:?}", "ERROR".bold().red(), e);
+                if color_on_stderr {
+                    eprintln!("{}: {e:?}", "ERROR".bold().red());
+                } else {
+                    eprintln!("ERROR: {e:?}");
+                };
             }
             return Ok(ExitCode::FAILURE);
         }
@@ -171,6 +178,14 @@ fn generate(
     let generated_app = app.codegen()?;
     generated_app.persist(&output)?;
     Ok(ExitCode::SUCCESS)
+}
+
+fn use_color_on_stderr(color_profile: Color) -> bool {
+    match color_profile {
+        Color::Auto => supports_color::on(Stream::Stderr).is_some(),
+        Color::Always => true,
+        Color::Never => false,
+    }
 }
 
 fn scaffold_project(path: PathBuf) -> Result<ExitCode, Box<dyn std::error::Error>> {

@@ -27,6 +27,7 @@ tracing = "0.1"
 owo-colors = "3"
 anyhow = "1"
 guppy = "0.17"
+supports-color = { version = "2" }
 
 #cargo-generate = "0.18.4"
 # Temporary fork until https://github.com/cargo-generate/cargo-generate/pull/1070 is merged and released

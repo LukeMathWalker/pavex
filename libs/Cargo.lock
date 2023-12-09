@@ -2078,6 +2078,7 @@ dependencies = [
  "pavex_miette",
  "pavex_test_runner",
  "pavexc",
+ "supports-color",
  "tracing",
  "tracing-chrome",
  "tracing-subscriber",
