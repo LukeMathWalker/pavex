@@ -278,26 +278,7 @@ Let's find out!
 If you try to build the project now, you'll get an error from Pavex:
 
 ```text
-ERROR:
-  × I can't invoke your request handler, `demo::routes::greet::greet`, because it needs an instance of
-  │ `demo::user_agent::UserAgent` as input, but I can't find a constructor for that type.
-  │
-  │     ╭─[demo/src/blueprint.rs:13:1]
-  │  13 │     bp.route(GET, "/api/ping", f!(crate::routes::status::ping));
-  │  14 │     bp.route(GET, "/api/greet/:name", f!(crate::routes::greet::greet));
-  │     ·                                       ───────────────┬───────────────
-  │     ·                                   The request handler was registered here
-  │  15 │     bp
-  │     ╰────
-  │     ╭─[demo/src/routes/greet.rs:9:1]
-  │   9 │
-  │  10 │ pub fn greet(params: RouteParams<GreetParams>, _user_agent: UserAgent) -> Response {
-  │     ·                                                             ────┬────
-  │     ·                                              I don't know how to construct an instance 
-  │     ·                                                    of this input parameter
-  │  11 │     let GreetParams { name } = params.0;
-  │     ╰────
-  │   help: Register a constructor for `demo::user_agent::UserAgent`
+--8<-- "doc_examples/quickstart/05-error.txt"
 ```
 
 Pavex cannot do miracles, nor does it want to: it only knows how to construct a type if you tell it how to do so.
@@ -355,18 +336,7 @@ Let's change the signature of `UserAgent::extract` to return a `Result` instead:
 If you try to build the project now, you'll get an error from Pavex:
 
 ```text
-ERROR:
-  × You registered a constructor that returns a `Result`, but you did not register an error handler for it. 
-  | If I don't have an error handler, I don't know what to do with the error when the constructor fails!
-  │
-  │     ╭─[demo/src/blueprint.rs:11:1]
-  │  11 │     bp.constructor(
-  │  12 │         f!(crate::user_agent::UserAgent::extract),
-  │     ·         ────────────────────┬────────────────────
-  │     ·                             ╰── The fallible constructor was registered here
-  │  13 │         Lifecycle::RequestScoped,
-  │     ╰────
-  │   help: Add an error handler via `.error_handler`
+--8<-- "doc_examples/quickstart/07-error.txt"
 ```
 
 Pavex is complaining: you can register a fallible constructor, but you must also register an error handler for it.
