@@ -26,14 +26,37 @@ jobs:
           cd libs
           cargo build --package pavex_cli --bin pavex --release
       - name: Store CLI artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: pavex_cli
           path: libs/target/release/pavex
 
+  build_tutorial_generator:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1.6.0
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "./libs -> ./libs/target"
+      - name: Build CLI
+        run: |
+          cd doc_examples/tutorial_generator
+          cargo build
+      - name: Store CLI artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: tutorial_generator
+          path: libs/target/debug/tutorial_generator
+
   build_docs:
     runs-on: ubuntu-latest
-    needs: build_pavex_cli
+    needs:
+      - build_pavex_cli
+      - build_tutorial_generator
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -56,6 +79,23 @@ jobs:
         with:
           fail: true
           args: --base . --exclude-loopback --exclude-path="docs/api_reference" --require-https --verbose --no-progress docs
+      - name: Download pavex CLI artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: pavex_cli
+          path: ~/.cargo/bin
+      - name: Download tutorial_generator CLI artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: tutorial_generator
+          path: ~/.cargo/bin
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-px@0.1
+      - name: Generate quickstart tutorial
+        run: |
+          cd doc_examples/quickstart
+          tutorial_generator
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
