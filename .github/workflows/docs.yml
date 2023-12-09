@@ -41,7 +41,7 @@ jobs:
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: "./libs -> ./libs/target"
+          workspaces: "./doc_examples/tutorial_generator -> ./doc_examples/tutorial_generator/target"
       - name: Build CLI
         run: |
           cd doc_examples/tutorial_generator
