@@ -84,11 +84,15 @@ jobs:
         with:
           name: pavex_cli
           path: ~/.cargo/bin
+      - name: Mark as executable
+        run: chmod +x ~/.cargo/bin/pavex
       - name: Download tutorial_generator CLI artifact
         uses: actions/download-artifact@v3
         with:
           name: tutorial_generator
           path: ~/.cargo/bin
+      - name: Mark as executable
+        run: chmod +x ~/.cargo/bin/tutorial_generator
       - uses: taiki-e/install-action@v2
         with:
           tool: cargo-px@0.1
