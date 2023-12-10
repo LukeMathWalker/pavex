@@ -10,14 +10,14 @@ steps:
   - patch: "05-bis.patch"
     commands:
       - command: "cargo px c -q"
-        outcome: "failure"
-        save_at: "05-error.txt"
+        expected_outcome: "failure"
+        expected_output_at: "05-error.snap"
   - patch: "06.patch"
   - patch: "07.patch"
     commands:
       - command: "cargo px c -q"
-        outcome: "failure"
-        save_at: "07-error.txt"
+        expected_outcome: "failure"
+        expected_output_at: "07-error.snap"
   - patch: "08.patch"
   - patch: "09.patch"
   - patch: "10.patch"

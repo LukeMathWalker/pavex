@@ -1,0 +1,16 @@
+ERROR: 
+  × You registered a constructor that returns a `Result`, but you did not register an error
+  │ handler for it. If I don't have an error handler, I don't know what to do with the error when
+  │ the constructor fails!
+  │
+  │     ╭─[demo/src/blueprint.rs:12:1]
+  │  12 │     bp.constructor(
+  │  13 │         f!(crate::user_agent::UserAgent::extract),
+  │     ·         ────────────────────┬────────────────────
+  │     ·                             ╰── The fallible constructor was registered here
+  │  14 │         Lifecycle::RequestScoped,
+  │     ╰────
+  │   help: Add an error handler via `.error_handler`
+
+Error: `pavex_cli` exited with a non-zero status code: 1
+error: Failed to run `bp`, the code generator for package `demo_server_sdk`
