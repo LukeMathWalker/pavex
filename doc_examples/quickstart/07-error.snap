@@ -3,12 +3,12 @@ ERROR:
   │ handler for it. If I don't have an error handler, I don't know what to do with the error when
   │ the constructor fails!
   │
-  │     ╭─[demo/src/blueprint.rs:12:1]
-  │  12 │     bp.constructor(
-  │  13 │         f!(crate::user_agent::UserAgent::extract),
+  │     ╭─[demo/src/blueprint.rs:11:1]
+  │  11 │     bp.constructor(
+  │  12 │         f!(crate::user_agent::UserAgent::extract),
   │     ·         ────────────────────┬────────────────────
   │     ·                             ╰── The fallible constructor was registered here
-  │  14 │         Lifecycle::RequestScoped,
+  │  13 │         Lifecycle::RequestScoped,
   │     ╰────
   │   help: Add an error handler via `.error_handler`
 
