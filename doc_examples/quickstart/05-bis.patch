@@ -1,8 +1,7 @@
 diff --git a/demo/src/blueprint.rs b/demo/src/blueprint.rs
-index f1434bb..88fd441 100644
 --- a/demo/src/blueprint.rs
 +++ b/demo/src/blueprint.rs
-@@ -12,11 +12,7 @@ pub fn blueprint() -> Blueprint {
+@@ -11,11 +11,7 @@ pub fn blueprint() -> Blueprint {
      add_telemetry_middleware(&mut bp);
  
      bp.route(GET, "/api/ping", f!(crate::routes::status::ping));
@@ -14,24 +13,16 @@ index f1434bb..88fd441 100644
 +    bp.route(GET, "/api/greet/:name", f!(crate::routes::greet::greet));
      bp
  }
- // --8<-- [end:blueprint_definition]
+ 
 diff --git a/demo/src/routes/greet.rs b/demo/src/routes/greet.rs
-index 220a89e..526c16f 100644
 --- a/demo/src/routes/greet.rs
 +++ b/demo/src/routes/greet.rs
-@@ -11,14 +11,12 @@ pub struct GreetParams {
+@@ -8,7 +8,7 @@ pub struct GreetParams {
      pub name: String,
  }
  
--// --8<-- [start:user_agent]
 -pub fn greet(params: RouteParams<GreetParams>, user_agent: UserAgent /* (1)! */) -> Response {
 +pub fn greet(params: RouteParams<GreetParams>, user_agent: UserAgent) -> Response {
      if let UserAgent::Unknown = user_agent {
          return Response::unauthorized()
              .set_typed_body("You must provide a `User-Agent` header")
-             .box_body();
-     }
--    // --8<-- [end:user_agent]
-     let GreetParams { name } = params.0;
-     Response::ok()
-         .set_typed_body(format!("Hello, {name}!"))

@@ -1,9 +1,10 @@
 diff --git a/demo/src/blueprint.rs b/demo/src/blueprint.rs
+index 4a196d8..0a6857d 100644
 --- a/demo/src/blueprint.rs
 +++ b/demo/src/blueprint.rs
-@@ -12,6 +12,11 @@ pub fn blueprint() -> Blueprint {
+@@ -11,6 +11,11 @@ pub fn blueprint() -> Blueprint {
      add_telemetry_middleware(&mut bp);
-
+ 
      bp.route(GET, "/api/ping", f!(crate::routes::status::ping));
 +    bp.route(
 +        GET,
@@ -12,9 +13,10 @@ diff --git a/demo/src/blueprint.rs b/demo/src/blueprint.rs
 +    );
      bp
  }
- // <--8-- [start:blueprint_definition]
+ 
 diff --git a/demo/src/routes/greet.rs b/demo/src/routes/greet.rs
 new file mode 100644
+index 0000000..38ec1e3
 --- /dev/null
 +++ b/demo/src/routes/greet.rs
 @@ -0,0 +1,5 @@
@@ -24,10 +26,9 @@ new file mode 100644
 +    todo!()
 +}
 diff --git a/demo/src/routes/mod.rs b/demo/src/routes/mod.rs
+index 822c729..d709a21 100644
 --- a/demo/src/routes/mod.rs
 +++ b/demo/src/routes/mod.rs
 @@ -1 +1,2 @@
--pub mod status;
-\ No newline at end of file
 +pub mod greet;
-+pub mod status;
+ pub mod status;

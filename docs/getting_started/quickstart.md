@@ -101,9 +101,7 @@ It's the type you'll use to define your API: routes, middlewares, error handlers
 
 You can find the [`Blueprint`][Blueprint] for the `demo` project in the `demo/src/blueprint.rs` file:
 
-```rust title="demo/src/blueprint.rs"
---8<-- "doc_examples/quickstart/01/demo/src/blueprint.rs:blueprint_definition"
-```
+--8<-- "doc_examples/quickstart/demo-blueprint_definition.snap"
 
 ## Routing
 
@@ -113,9 +111,7 @@ All the routes exposed by your API must be registered with its [`Blueprint`][Blu
 In the snippet below you can see the registration of the `GET /api/ping` route, the one you targeted with your `curl`
 request.
 
-```rust title="demo/src/blueprint.rs" hl_lines="7"
---8<-- "doc_examples/quickstart/01/demo/src/blueprint.rs:blueprint_definition"
-```
+--8<-- "doc_examples/quickstart/demo-route_registration.snap"
 
 It specifies:
 
@@ -127,9 +123,7 @@ It specifies:
 
 The `ping` function is the handler for the `GET /api/ping` route:
 
-```rust title="demo/src/routes/status.rs"
---8<-- "doc_examples/quickstart/01/demo/src/routes/status.rs"
-```
+--8<-- "doc_examples/quickstart/demo-ping_handler.snap"
 
 It's a public function that returns a [`StatusCode`][StatusCode].  
 [`StatusCode`][StatusCode] is a valid response type for a Pavex handler since it implements
