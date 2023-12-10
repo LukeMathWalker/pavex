@@ -101,7 +101,7 @@ jobs:
         run: chmod +x ~/.cargo/bin/tutorial_generator
       - uses: cargo-bins/cargo-binstall@main
       - name: Install cargo-px
-        run: cargo binstall -y cargo-px@0.1
+        run: cargo binstall -y --github-token=${{ secrets.GITHUB_TOKEN }} cargo-px@0.1
       - name: Generate quickstart tutorial
         run: |
           cd doc_examples/quickstart
