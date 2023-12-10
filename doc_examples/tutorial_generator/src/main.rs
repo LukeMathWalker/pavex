@@ -58,14 +58,14 @@ fn main() -> Result<(), anyhow::Error> {
 
     // Apply the patches
     let mut previous_dir = tutorial_manifest.starter_project_folder;
-    for (i, step) in tutorial_manifest.steps.iter().enumerate() {
+    for step in &tutorial_manifest.steps {
         println!("Applying patch: {}", step.patch);
-        let next_dir = patch_directory_name(i);
+        let next_dir = patch_directory_name(&step.patch);
         let (code, output, error) = run_script::run(
             &format!(
                 r#"cp -r {previous_dir} {next_dir}
-cd {next_dir} && patch -p1 < ../{} && git add . && git commit -am "First commit""#,
-                step.patch
+            cd {next_dir} && patch -p1 < ../{} && git add . && git commit -am "{}""#,
+                step.patch, step.patch
             ),
             &Default::default(),
             &ScriptOptions::new(),
@@ -78,16 +78,16 @@ cd {next_dir} && patch -p1 < ../{} && git add . && git commit -am "First commit"
             eprintln!("Error: {}", error);
             std::process::exit(1);
         }
-        previous_dir = next_dir;
+        previous_dir = next_dir.to_string();
     }
 
-    for (i, step) in tutorial_manifest.steps.iter().enumerate() {
+    for step in &tutorial_manifest.steps {
         for command in &step.commands {
             println!(
                 "Running command for patch `{}`: {}",
                 step.patch, command.command
             );
-            let patch_dir = patch_directory_name(i);
+            let patch_dir = patch_directory_name(&step.patch);
             let (code, output, error) = run_script::run(
                 &format!(r#"cd {patch_dir} && {}"#, command.command),
                 &Default::default(),
@@ -122,8 +122,10 @@ cd {next_dir} && patch -p1 < ../{} && git add . && git commit -am "First commit"
     Ok(())
 }
 
-fn patch_directory_name(patch_index: usize) -> String {
-    format!("{:02}", patch_index + 1)
+fn patch_directory_name(patch_file: &str) -> &str {
+    patch_file
+        .strip_suffix(".patch")
+        .expect("Patch file didn't use the .patch extension")
 }
 
 /// Remove all files from the current directory, recursively, with the exception of

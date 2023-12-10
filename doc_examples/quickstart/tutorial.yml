@@ -7,6 +7,7 @@ steps:
   - patch: "03.patch"
   - patch: "04.patch"
   - patch: "05.patch"
+  - patch: "05-bis.patch"
     commands:
       - command: "cargo px c -q"
         outcome: "failure"
