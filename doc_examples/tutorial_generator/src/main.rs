@@ -224,6 +224,7 @@ fn main() -> Result<(), anyhow::Error> {
     }
 
     // Execute all commands and either verify the output or write it to a file
+
     for step in &tutorial_manifest.steps {
         for command in &step.commands {
             println!(
@@ -273,7 +274,7 @@ fn main() -> Result<(), anyhow::Error> {
             }
         }
     }
-
+  
     if !errors.is_empty() {
         eprintln!("One or more snapshots didn't match the expected value.");
         for error in errors {
