@@ -61,6 +61,10 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+      - name: Set git identity
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "ci@pavex.dev"
       - name: Install Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1.6.0
       - name: Cache dependencies
@@ -95,9 +99,9 @@ jobs:
           path: ~/.cargo/bin
       - name: Mark as executable
         run: chmod +x ~/.cargo/bin/tutorial_generator
-      - uses: taiki-e/install-action@v2
-        with:
-          tool: cargo-px@0.1
+      - uses: cargo-bins/cargo-binstall@main
+      - name: Install cargo-px
+        run: cargo binstall cargo-px@0.1
       - name: Generate quickstart tutorial
         run: |
           cd doc_examples/quickstart
