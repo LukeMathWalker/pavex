@@ -21,6 +21,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: "./libs -> ./libs/target"
+          key: "build-pavex-cli"
       - name: Build CLI
         run: |
           cd libs
@@ -66,6 +67,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: "./libs -> ./libs/target"
+          key: "build-pavex-docs"
       - name: Build API reference
         run: |
           cd libs
