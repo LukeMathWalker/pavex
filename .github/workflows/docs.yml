@@ -65,7 +65,12 @@ jobs:
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "ci@pavex.dev"
-      - name: Install Rust
+      - name: Install Rust nightly toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: nightly
+          components: rust-docs-json
+      - name: Install Rust stable toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1.6.0
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
