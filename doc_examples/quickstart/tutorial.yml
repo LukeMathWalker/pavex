@@ -14,6 +14,18 @@ snippets:
     ranges: [ ".." ]
 steps:
   - patch: "02.patch"
+    snippets:
+      - name: "new_submodule"
+        source_path: "demo/src/routes/mod.rs"
+        ranges: [ ".." ]
+        hl_lines: [ 1 ]
+      - name: "route_def"
+        source_path: "demo/src/routes/greet.rs"
+        ranges: [ ".." ]
+      - name: "register_new_route"
+        source_path: "demo/src/blueprint.rs"
+        ranges: [ "6..19" ]
+        hl_lines: [ 8, 9, 10, 11, 12 ]
   - patch: "03.patch"
   - patch: "04.patch"
   - patch: "05.patch"

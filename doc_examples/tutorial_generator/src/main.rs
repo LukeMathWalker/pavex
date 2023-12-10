@@ -84,7 +84,7 @@ fn main() -> Result<(), anyhow::Error> {
         let next_dir = patch_directory_name(&step.patch);
         let script_outcome = run_script(&format!(
             r#"cp -r {previous_dir} {next_dir}
-            cd {next_dir} && patch -p1 < ../{} && git add . && git commit -am "{}""#,
+            cd {next_dir} && patch -p1 < ../{} && cargo fmt && git add . && git commit -am "{}""#,
             step.patch, step.patch
         ))
         .context("Failed to apply patch")?;

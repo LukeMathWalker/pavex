@@ -140,20 +140,14 @@ body.
 
 Create a new module, `greet.rs`, in the `demo/src/routes` folder:
 
-```rust title="demo/src/routes/lib.rs" hl_lines="1"
---8<-- "doc_examples/quickstart/02/demo/src/routes/mod.rs"
-```
+--8<-- "doc_examples/quickstart/02-new_submodule.snap"
 
-```rust title="demo/src/routes/greet.rs"
---8<-- "doc_examples/quickstart/02/demo/src/routes/greet.rs"
-```
+--8<-- "doc_examples/quickstart/02-route_def.snap"
 
 The body of the `greet` handler is stubbed out with `todo!()` for now, but we'll fix that soon enough.  
 Let's register the new route with the [`Blueprint`][Blueprint] in the meantime:
 
-```rust title="demo/src/blueprint.rs" hl_lines="8 9 10 11 12"
---8<-- "doc_examples/quickstart/02/demo/src/blueprint.rs:blueprint_definition"
-```
+--8<-- "doc_examples/quickstart/02-register_new_route.snap"
 
 1. Dynamic route parameters are prefixed with a colon (`:`).
 
@@ -213,7 +207,7 @@ Let's zoom in on [`RouteParams`][RouteParams]: how does the framework know how t
 You need to go back to the [`Blueprint`][Blueprint] to find out:
 
 ```rust title="demo/src/blueprint.rs" hl_lines="3"
---8<-- "doc_examples/quickstart/04/demo/src/blueprint.rs:blueprint_definition"
+--8<-- "doc_examples/quickstart/04/demo/src/blueprint.rs"
 ```
 
 The `register_common_constructors` function takes care of registering constructors for a set of types that
@@ -223,7 +217,7 @@ If you check out its definition, you'll see that it registers a constructor for 
 ```rust title="pavex/src/blueprint.rs" hl_lines="3 4 5 6"
 fn register_common_constructors(bp: &mut Blueprint) {
    // [...]
---8<-- "doc_examples/quickstart/04/demo/src/blueprint.rs:route_params_constructor"
+--8<-- "doc_examples/quickstart/04/demo/src/blueprint.rs"
     // [...]
 }
 ```
@@ -261,8 +255,8 @@ Let's find out!
 
 ```rust title="demo/src/routes/greet.rs" hl_lines="4"
 //! [...]
---8<-- "doc_examples/quickstart/05/demo/src/routes/greet.rs:user_agent_import"
---8<-- "doc_examples/quickstart/05/demo/src/routes/greet.rs:user_agent"
+--8<-- "doc_examples/quickstart/05/demo/src/routes/greet.rs"
+--8<-- "doc_examples/quickstart/05/demo/src/routes/greet.rs"
     // [...]
 }
 ```
@@ -295,7 +289,7 @@ minus the body.
 Now register the new constructor with the [`Blueprint`][Blueprint]:
 
 ```rust title="demo/src/blueprint.rs" hl_lines="5 6 7 8"
---8<-- "doc_examples/quickstart/06/demo/src/blueprint.rs:new_constructor_registration"
+--8<-- "doc_examples/quickstart/06/demo/src/blueprint.rs"
     // [...]
 }
 ```
@@ -317,10 +311,10 @@ Panicking for bad user input is poor behavior: you should handle the issue grace
 Let's change the signature of `UserAgent::extract` to return a `Result` instead:
 
 ```rust title="demo/src/user_agent.rs"
---8<-- "doc_examples/quickstart/07/demo/src/user_agent.rs:new_import"
+--8<-- "doc_examples/quickstart/07/demo/src/user_agent.rs"
 // [...]
 
---8<-- "doc_examples/quickstart/07/demo/src/user_agent.rs:new_extract"
+--8<-- "doc_examples/quickstart/07/demo/src/user_agent.rs"
 ```
 
 1. `ToStrError` is the error type returned by `to_str` when the header value is not valid UTF-8.
@@ -352,13 +346,13 @@ Define a new `invalid_user_agent` function in `demo/src/user_agent.rs`:
 
 ```rust title="demo/src/user_agent.rs"
 // [...]
---8<-- "doc_examples/quickstart/08/demo/src/user_agent.rs:new_error_handler"
+--8<-- "doc_examples/quickstart/08/demo/src/user_agent.rs"
 ```
 
 Then register the error handler with the [`Blueprint`][Blueprint]:
 
 ```rust title="demo/src/blueprint.rs" hl_lines="9"
---8<-- "doc_examples/quickstart/08/demo/src/blueprint.rs:new_constructor_registration"
+--8<-- "doc_examples/quickstart/08/demo/src/blueprint.rs"
     // [...]
 }
 ```
