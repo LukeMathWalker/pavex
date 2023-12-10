@@ -27,8 +27,36 @@ steps:
         ranges: [ "6..19" ]
         hl_lines: [ 8, 9, 10, 11, 12 ]
   - patch: "03.patch"
+    snippets:
+      - name: "route_def"
+        source_path: "demo/src/routes/greet.rs"
+        ranges: [ ".." ]
   - patch: "04.patch"
+    snippets:
+      - name: "route_def"
+        source_path: "demo/src/routes/greet.rs"
+        ranges: [ ".." ]
+      - name: "register_common_invocation"
+        source_path: "demo/src/blueprint.rs"
+        ranges: [ "6..9", "18..20" ]
+        hl_lines: [ 3 ]
+      - name: "route_params_constructor"
+        source_path: "demo/src/blueprint.rs"
+        ranges: [ "22..23", "33..37", "60..61" ]
+        hl_lines: [ 3, 4, 5, 6 ]
   - patch: "05.patch"
+    snippets:
+      - name: "new_submodule"
+        source_path: "demo/src/lib.rs"
+        ranges: [ ".." ]
+        hl_lines: [ 7 ]
+      - name: "user_agent"
+        source_path: "demo/src/user_agent.rs"
+        ranges: [ ".." ]
+      - name: "inject"
+        source_path: "demo/src/routes/greet.rs"
+        ranges: [ "3..4", "10..16", "20..21" ]
+        hl_lines: [ 3 ]
   - patch: "05-bis.patch"
   #    commands:
   #      - command: "cargo px c -q"

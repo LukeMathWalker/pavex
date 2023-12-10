@@ -147,11 +147,19 @@ fn main() -> Result<(), anyhow::Error> {
                     extracted_snippet.push('\n');
                 }
 
+                let mut n_leading_whitespaces = 0;
                 for (i, range) in ranges.iter().enumerate() {
                     if i > 0 {
-                        writeln!(&mut extracted_snippet, "\n\\\\[...]").unwrap();
+                        let indent = " ".repeat(n_leading_whitespaces);
+                        writeln!(&mut extracted_snippet, "\n{indent}\\\\ [..]").unwrap();
                     }
-                    extracted_snippet.push_str(&range.extract_lines(&source_file));
+                    let lines = range.extract_lines(&source_file);
+                    lines.lines().last().map(|last_line| {
+                        n_leading_whitespaces =
+                            last_line.chars().take_while(|c| c.is_whitespace()).count();
+                    });
+
+                    extracted_snippet.push_str(&lines);
                 }
 
                 if is_rust {

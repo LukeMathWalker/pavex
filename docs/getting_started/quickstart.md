@@ -155,9 +155,7 @@ Let's register the new route with the [`Blueprint`][Blueprint] in the meantime:
 
 To access the `name` route parameter from your new handler you must use the [`RouteParams`][RouteParams] extractor:
 
-```rust title="demo/src/routes/greet.rs"
---8<-- "doc_examples/quickstart/03/demo/src/routes/greet.rs"
-```
+--8<-- "doc_examples/quickstart/03-route_def.snap"
 
 1. The name of the field must match the name of the route parameter as it appears in the path we registered with
    the [`Blueprint`][Blueprint].
@@ -166,9 +164,7 @@ To access the `name` route parameter from your new handler you must use the [`Ro
 
 You can now return the expected response from the `greet` handler:
 
-```rust title="demo/src/routes/greet.rs" hl_lines="10 11 12 13"
---8<-- "doc_examples/quickstart/04/demo/src/routes/greet.rs"
-```
+--8<-- "doc_examples/quickstart/04-route_def.snap"
 
 1. This is an example of
    Rust's [destructuring syntax](https://doc.rust-lang.org/book/ch18-03-pattern-syntax.html#destructuring-to-break-apart-values).
@@ -206,21 +202,13 @@ it knows how to construct them.
 Let's zoom in on [`RouteParams`][RouteParams]: how does the framework know how to construct it?  
 You need to go back to the [`Blueprint`][Blueprint] to find out:
 
-```rust title="demo/src/blueprint.rs" hl_lines="3"
---8<-- "doc_examples/quickstart/04/demo/src/blueprint.rs"
-```
+--8<-- "doc_examples/quickstart/04-register_common_invocation.snap"
 
 The `register_common_constructors` function takes care of registering constructors for a set of types that
 are defined in the `pavex` crate itself and commonly used in Pavex applications.
 If you check out its definition, you'll see that it registers a constructor for [`RouteParams`][RouteParams]:
 
-```rust title="pavex/src/blueprint.rs" hl_lines="3 4 5 6"
-fn register_common_constructors(bp: &mut Blueprint) {
-   // [...]
---8<-- "doc_examples/quickstart/04/demo/src/blueprint.rs"
-    // [...]
-}
-```
+--8<-- "doc_examples/quickstart/04-route_params_constructor.snap"
 
 It specifies:
 
@@ -240,26 +228,16 @@ We only want to greet people who include a `User-Agent` header in their request(
 
 Let's start by defining a new `UserAgent` type:
 
-```rust title="demo/src/lib.rs" hl_lines="7"
---8<-- "doc_examples/quickstart/05/demo/src/lib.rs"
-```
+--8<-- "doc_examples/quickstart/05-new_submodule.snap"
 
-```rust title="demo/src/user_agent.rs"
---8<-- "doc_examples/quickstart/05/demo/src/user_agent.rs"
-```
+--8<-- "doc_examples/quickstart/05-user_agent.snap"
 
 ### Missing constructor
 
 What if you tried to inject `UserAgent` into your `greet` handler straight away? Would it work?  
 Let's find out!
 
-```rust title="demo/src/routes/greet.rs" hl_lines="4"
-//! [...]
---8<-- "doc_examples/quickstart/05/demo/src/routes/greet.rs"
---8<-- "doc_examples/quickstart/05/demo/src/routes/greet.rs"
-    // [...]
-}
-```
+--8<-- "doc_examples/quickstart/05-inject.snap"
 
 1. New input parameter!
 
