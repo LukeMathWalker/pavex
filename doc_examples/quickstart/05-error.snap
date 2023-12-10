@@ -1,0 +1,23 @@
+ERROR: 
+  × I can't invoke your request handler, `demo::routes::greet::greet`, because it needs an
+  │ instance of `demo::user_agent::UserAgent` as input, but I can't find a constructor for that
+  │ type.
+  │
+  │     ╭─[demo/src/blueprint.rs:14:1]
+  │  14 │     bp.route(GET, "/api/ping", f!(crate::routes::status::ping));
+  │  15 │     bp.route(GET, "/api/greet/:name", f!(crate::routes::greet::greet));
+  │     ·                                       ───────────────┬───────────────
+  │     ·                                                      ╰── The request handler was registered here
+  │  16 │     bp
+  │     ╰────
+  │     ╭─[demo/src/routes/greet.rs:13:1]
+  │  13 │ 
+  │  14 │ pub fn greet(params: RouteParams<GreetParams>, user_agent: UserAgent) -> Response {
+  │     ·                                                            ────┬────
+  │     ·                                                                ╰── I don't know how to construct an instance of this input parameter
+  │  15 │     if let UserAgent::Unknown = user_agent {
+  │     ╰────
+  │   help: Register a constructor for `demo::user_agent::UserAgent`
+
+Error: `pavex_cli` exited with a non-zero status code: 1
+error: Failed to run `bp`, the code generator for package `demo_server_sdk`

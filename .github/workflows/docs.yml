@@ -110,7 +110,7 @@ jobs:
       - name: Generate quickstart tutorial
         run: |
           cd doc_examples/quickstart
-          tutorial_generator
+          tutorial_generator --verify
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
