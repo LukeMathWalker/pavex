@@ -7,15 +7,14 @@ use anyhow::Context;
 use cargo_generate::{GenerateArgs, TemplatePath};
 use clap::{Parser, Subcommand};
 use owo_colors::OwoColorize;
+use pavex::blueprint::Blueprint;
+use pavexc::App;
 use supports_color::Stream;
 use tracing_chrome::{ChromeLayerBuilder, FlushGuard};
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::EnvFilter;
-
-use pavex::blueprint::Blueprint;
-use pavexc::App;
 
 #[derive(Parser)]
 #[clap(author, version = VERSION, about, long_about = None)]
@@ -120,6 +119,14 @@ fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
         } else {
             handler = handler.without_cause_chain()
         };
+        // This is an undocumented feature that allows us to force set the width of the
+        // terminal as seen by the graphical error handler.
+        // This is useful for testing/doc-generation purposes.
+        if let Ok(width) = std::env::var("PAVEX_TTY_WIDTH") {
+            if let Ok(width) = width.parse::<usize>() {
+                handler = handler.width(width);
+            }
+        }
         match cli.color {
             Color::Auto => {}
             Color::Always => {

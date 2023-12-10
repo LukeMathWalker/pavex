@@ -278,7 +278,7 @@ Let's find out!
 If you try to build the project now, you'll get an error from Pavex:
 
 ```text
---8<-- "doc_examples/quickstart/05-error.txt"
+--8<-- "doc_examples/quickstart/05-error.snap"
 ```
 
 Pavex cannot do miracles, nor does it want to: it only knows how to construct a type if you tell it how to do so.
@@ -336,7 +336,7 @@ Let's change the signature of `UserAgent::extract` to return a `Result` instead:
 If you try to build the project now, you'll get an error from Pavex:
 
 ```text
---8<-- "doc_examples/quickstart/07-error.txt"
+--8<-- "doc_examples/quickstart/07-error.snap"
 ```
 
 Pavex is complaining: you can register a fallible constructor, but you must also register an error handler for it.
