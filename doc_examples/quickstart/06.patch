@@ -1,0 +1,58 @@
+diff --git a/demo/src/blueprint.rs b/demo/src/blueprint.rs
+index f1434bb..e74936a 100644
+--- a/demo/src/blueprint.rs
++++ b/demo/src/blueprint.rs
+@@ -4,11 +4,17 @@ use pavex::f;
+ 
+ /// The main blueprint, containing all the routes, constructors and error handlers
+ /// required by our API.
+-// --8<-- [start:blueprint_definition]
++// --8<-- [start:new_constructor_registration]
+ pub fn blueprint() -> Blueprint {
+     let mut bp = Blueprint::new();
+     register_common_constructors(&mut bp);
+ 
++    bp.constructor(
++        f!(crate::user_agent::UserAgent::extract),
++        Lifecycle::RequestScoped,
++    );
++    // --8<-- [end:new_constructor_registration]
++
+     add_telemetry_middleware(&mut bp);
+ 
+     bp.route(GET, "/api/ping", f!(crate::routes::status::ping));
+@@ -19,7 +25,6 @@ pub fn blueprint() -> Blueprint {
+     );
+     bp
+ }
+-// --8<-- [end:blueprint_definition]
+ 
+ /// Common constructors used by all routes.
+ fn register_common_constructors(bp: &mut Blueprint) {
+diff --git a/demo/src/user_agent.rs b/demo/src/user_agent.rs
+index f16d4c1..fb72632 100644
+--- a/demo/src/user_agent.rs
++++ b/demo/src/user_agent.rs
+@@ -1,6 +1,20 @@
++use pavex::http::header::USER_AGENT;
++use pavex::request::RequestHead;
++
+ pub enum UserAgent {
+-    /// No `User-Agent` header was provided.
+     Unknown,
+-    /// The value of the `User-Agent` header for the incoming request.
+     Known(String),
+ }
++
++impl UserAgent {
++    pub fn extract(request_head: &RequestHead) -> Self {
++        let Some(user_agent) = request_head.headers.get(USER_AGENT) else {
++            return Self::Unknown;
++        };
++
++        match user_agent.to_str() {
++            Ok(s) => Self::Known(s.into()),
++            Err(_e) => todo!(),
++        }
++    }
++}

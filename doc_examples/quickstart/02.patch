@@ -1,0 +1,33 @@
+diff --git a/demo/src/blueprint.rs b/demo/src/blueprint.rs
+--- a/demo/src/blueprint.rs
++++ b/demo/src/blueprint.rs
+@@ -12,6 +12,11 @@ pub fn blueprint() -> Blueprint {
+     add_telemetry_middleware(&mut bp);
+
+     bp.route(GET, "/api/ping", f!(crate::routes::status::ping));
++    bp.route(
++        GET,
++        "/api/greet/:name", /* (1)! */
++        f!(crate::routes::greet::greet),
++    );
+     bp
+ }
+ // <--8-- [start:blueprint_definition]
+diff --git a/demo/src/routes/greet.rs b/demo/src/routes/greet.rs
+new file mode 100644
+--- /dev/null
++++ b/demo/src/routes/greet.rs
+@@ -0,0 +1,5 @@
++use pavex::response::Response;
++
++pub fn greet() -> Response {
++    todo!()
++}
+diff --git a/demo/src/routes/mod.rs b/demo/src/routes/mod.rs
+--- a/demo/src/routes/mod.rs
++++ b/demo/src/routes/mod.rs
+@@ -1 +1,2 @@
+-pub mod status;
+\ No newline at end of file
++pub mod greet;
++pub mod status;

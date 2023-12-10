@@ -5,12 +5,9 @@
 To work with Pavex, you'll need:
 
 - [The Rust toolchain](https://www.rust-lang.org/). In particular:
-    - `rustup`, the Rust toolchain manager. Check out the [installation instructions](https://rustup.rs/).
+    - `rustup`, the Rust toolchain manager. Check out its [installation instructions](https://rustup.rs/).
     - `cargo`, the Rust package manager. It's automatically installed when installing `rustup`.
-- [`cargo-px`](https://github.com/LukeMathWalker/cargo-px), a `cargo` subcommand. You can install it by running:
-  ```bash
-  cargo install --locked cargo-px --version="~0.1"
-  ```
+- [`cargo-px`](https://github.com/LukeMathWalker/cargo-px), a `cargo` subcommand. Check out its [installation instructions](https://lukemathwalker.github.io/cargo-px/).
   
 All these tools need to be available in your `PATH`.  
 If you're not sure whether that's the case, you can check by running:

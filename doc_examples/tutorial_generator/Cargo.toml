@@ -1,0 +1,12 @@
+[package]
+name = "tutorial_generator"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+fs-err = "2.11.0"
+anyhow = "1.0.75"
+serde_yaml = "0.9.27"
+serde_path_to_error = "0.1"
+serde = { version = "1", features = ["derive"] }
+run_script = "0.10"

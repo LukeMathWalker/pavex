@@ -1,0 +1,22 @@
+diff --git a/demo/src/routes/greet.rs b/demo/src/routes/greet.rs
+index adfbbd5..fbcb3fc 100644
+--- a/demo/src/routes/greet.rs
++++ b/demo/src/routes/greet.rs
+@@ -1,4 +1,4 @@
+-use pavex::request::RouteParams;
++use pavex::request::route::RouteParams;
+ use pavex::response::Response;
+ 
+ #[RouteParams]
+@@ -6,6 +6,9 @@ pub struct GreetParams {
+     pub name: String,
+ }
+ 
+-pub fn greet(params: RouteParams<GreetParams> /* (2)! */) -> Response {
+-    todo!()
++pub fn greet(params: RouteParams<GreetParams>) -> Response {
++    let GreetParams { name }/* (1)! */ = params.0;
++    Response::ok() // (2)!
++        .set_typed_body(format!("Hello, {name}!")) // (3)!
++        .box_body()
+ }

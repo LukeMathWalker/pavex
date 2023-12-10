@@ -102,15 +102,7 @@ It's the type you'll use to define your API: routes, middlewares, error handlers
 You can find the [`Blueprint`][Blueprint] for the `demo` project in the `demo/src/blueprint.rs` file:
 
 ```rust title="demo/src/blueprint.rs"
-pub fn blueprint() -> Blueprint {
-    let mut bp = Blueprint::new();
-    register_common_constructors(&mut bp);
-
-    add_telemetry_middleware(&mut bp);
-
-    bp.route(GET, "/api/ping", f!(crate::routes::status::ping));
-    bp
-}
+--8<-- "doc_examples/quickstart/01/demo/src/blueprint.rs:blueprint_definition"
 ```
 
 ## Routing
@@ -122,15 +114,7 @@ In the snippet below you can see the registration of the `GET /api/ping` route, 
 request.
 
 ```rust title="demo/src/blueprint.rs" hl_lines="7"
-pub fn blueprint() -> Blueprint {
-    let mut bp = Blueprint::new();
-    register_common_constructors(&mut bp);
-
-    add_telemetry_middleware(&mut bp);
-
-    bp.route(GET, "/api/ping", f!(crate::routes::status::ping));
-    bp
-}
+--8<-- "doc_examples/quickstart/01/demo/src/blueprint.rs:blueprint_definition"
 ```
 
 It specifies:
@@ -144,13 +128,7 @@ It specifies:
 The `ping` function is the handler for the `GET /api/ping` route:
 
 ```rust title="demo/src/routes/status.rs"
-use pavex::http::StatusCode;
-
-/// Respond with a `200 OK` status code to indicate that the server is alive
-/// and ready to accept new requests.
-pub fn ping() -> StatusCode {
-    StatusCode::OK
-}
+--8<-- "doc_examples/quickstart/01/demo/src/routes/status.rs"
 ```
 
 It's a public function that returns a [`StatusCode`][StatusCode].  
@@ -168,33 +146,19 @@ body.
 
 Create a new module, `greet.rs`, in the `demo/src/routes` folder:
 
-```rust title="demo/src/routes/lib.rs" hl_lines="2"
-pub mod status;
-pub mod greet;
+```rust title="demo/src/routes/lib.rs" hl_lines="1"
+--8<-- "doc_examples/quickstart/02/demo/src/routes/mod.rs"
 ```
 
 ```rust title="demo/src/routes/greet.rs"
-use pavex::response::Response;
-
-pub fn greet() -> Response {
-    todo!()
-}
+--8<-- "doc_examples/quickstart/02/demo/src/routes/greet.rs"
 ```
 
 The body of the `greet` handler is stubbed out with `todo!()` for now, but we'll fix that soon enough.  
 Let's register the new route with the [`Blueprint`][Blueprint] in the meantime:
 
-```rust title="demo/src/blueprint.rs" hl_lines="8"
-pub fn blueprint() -> Blueprint {
-    let mut bp = Blueprint::new();
-    register_common_constructors(&mut bp);
-
-    add_telemetry_middleware(&mut bp);
-
-    bp.route(GET, "/api/ping", f!(crate::routes::status::ping));
-    bp.route(GET, "/api/greet/:name"/* (1)! */, f!(crate::routes::greet::greet));
-    bp
-}
+```rust title="demo/src/blueprint.rs" hl_lines="8 9 10 11 12"
+--8<-- "doc_examples/quickstart/02/demo/src/blueprint.rs:blueprint_definition"
 ```
 
 1. Dynamic route parameters are prefixed with a colon (`:`).
@@ -204,17 +168,7 @@ pub fn blueprint() -> Blueprint {
 To access the `name` route parameter from your new handler you must use the [`RouteParams`][RouteParams] extractor:
 
 ```rust title="demo/src/routes/greet.rs"
-use pavex::response::Response;
-use pavex::request::RouteParams;
-
-#[RouteParams]
-pub struct GreetParams {
-    pub name/* (1)! */: String,
-}
-
-pub fn greet(params: RouteParams<GreetParams>/* (2)! */) -> Response {
-    todo!()
-}
+--8<-- "doc_examples/quickstart/03/demo/src/routes/greet.rs"
 ```
 
 1. The name of the field must match the name of the route parameter as it appears in the path we registered with
@@ -225,20 +179,7 @@ pub fn greet(params: RouteParams<GreetParams>/* (2)! */) -> Response {
 You can now return the expected response from the `greet` handler:
 
 ```rust title="demo/src/routes/greet.rs" hl_lines="10 11 12 13"
-use pavex::response::Response;
-use pavex::request::route::RouteParams;
-
-#[RouteParams]
-pub struct GreetParams {
-    pub name: String,
-}
-
-pub fn greet(params: RouteParams<GreetParams>) -> Response {
-    let GreetParams { name }/* (1)! */ = params.0;
-    Response::ok()// (2)!
-        .set_typed_body(format!("Hello, {name}!"))// (3)!
-        .box_body()
-}
+--8<-- "doc_examples/quickstart/04/demo/src/routes/greet.rs"
 ```
 
 1. This is an example of
@@ -278,16 +219,7 @@ Let's zoom in on [`RouteParams`][RouteParams]: how does the framework know how t
 You need to go back to the [`Blueprint`][Blueprint] to find out:
 
 ```rust title="demo/src/blueprint.rs" hl_lines="3"
-pub fn blueprint() -> Blueprint {
-    let mut bp = Blueprint::new();
-    register_common_constructors(&mut bp);
-
-    add_telemetry_middleware(&mut bp);
-
-    bp.route(GET, "/api/ping", f!(crate::routes::status::ping));
-    bp.route(GET, "/api/greet/:name", f!(crate::routes::greet::greet));
-    bp
-}
+--8<-- "doc_examples/quickstart/04/demo/src/blueprint.rs:blueprint_definition"
 ```
 
 The `register_common_constructors` function takes care of registering constructors for a set of types that
@@ -296,11 +228,8 @@ If you check out its definition, you'll see that it registers a constructor for 
 
 ```rust title="pavex/src/blueprint.rs" hl_lines="3 4 5 6"
 fn register_common_constructors(bp: &mut Blueprint) {
-    // [...]
-    bp.constructor(
-        f!(pavex::request::route::RouteParams::extract),
-        Lifecycle::RequestScoped,
-    )
+   // [...]
+--8<-- "doc_examples/quickstart/04/demo/src/blueprint.rs:route_params_constructor"
     // [...]
 }
 ```
@@ -323,18 +252,12 @@ We only want to greet people who include a `User-Agent` header in their request(
 
 Let's start by defining a new `UserAgent` type:
 
-```rust title="demo/src/lib.rs"
-//! [...]
-pub mod user_agent;
+```rust title="demo/src/lib.rs" hl_lines="7"
+--8<-- "doc_examples/quickstart/05/demo/src/lib.rs"
 ```
 
 ```rust title="demo/src/user_agent.rs"
-pub enum UserAgent {
-    /// No `User-Agent` header was provided.
-    Unknown,
-    /// The value of the `User-Agent` header for the incoming request.
-    Known(String),
-}
+--8<-- "doc_examples/quickstart/05/demo/src/user_agent.rs"
 ```
 
 ### Missing constructor
@@ -343,15 +266,9 @@ What if you tried to inject `UserAgent` into your `greet` handler straight away?
 Let's find out!
 
 ```rust title="demo/src/routes/greet.rs" hl_lines="4"
-use crate::user_agent::UserAgent;
-// [...]
-
-pub fn greet(params: RouteParams<GreetParams>, user_agent: UserAgent/* (1)! */) -> Response {
-    if let UserAgent::Anonymous = user_agent {
-        return Response::unauthorized()
-            .set_typed_body("You must provide a `User-Agent` header")
-            .box_body();
-    }
+//! [...]
+--8<-- "doc_examples/quickstart/05/demo/src/routes/greet.rs:user_agent_import"
+--8<-- "doc_examples/quickstart/05/demo/src/routes/greet.rs:user_agent"
     // [...]
 }
 ```
@@ -361,26 +278,7 @@ pub fn greet(params: RouteParams<GreetParams>, user_agent: UserAgent/* (1)! */) 
 If you try to build the project now, you'll get an error from Pavex:
 
 ```text
-ERROR:
-  × I can't invoke your request handler, `demo::routes::greet::greet`, because it needs an instance of
-  │ `demo::user_agent::UserAgent` as input, but I can't find a constructor for that type.
-  │
-  │     ╭─[demo/src/blueprint.rs:13:1]
-  │  13 │     bp.route(GET, "/api/ping", f!(crate::routes::status::ping));
-  │  14 │     bp.route(GET, "/api/greet/:name", f!(crate::routes::greet::greet));
-  │     ·                                       ───────────────┬───────────────
-  │     ·                                   The request handler was registered here
-  │  15 │     bp
-  │     ╰────
-  │     ╭─[demo/src/routes/greet.rs:9:1]
-  │   9 │
-  │  10 │ pub fn greet(params: RouteParams<GreetParams>, _user_agent: UserAgent) -> Response {
-  │     ·                                                             ────┬────
-  │     ·                                              I don't know how to construct an instance 
-  │     ·                                                    of this input parameter
-  │  11 │     let GreetParams { name } = params.0;
-  │     ╰────
-  │   help: Register a constructor for `demo::user_agent::UserAgent`
+--8<-- "doc_examples/quickstart/05-error.txt"
 ```
 
 Pavex cannot do miracles, nor does it want to: it only knows how to construct a type if you tell it how to do so.
@@ -397,39 +295,13 @@ Since you need to look at headers, ask for [`RequestHead`][RequestHead] as input
 minus the body.
 
 ```rust title="demo/src/user_agent.rs" hl_lines="10 11 12 13 14 15 16 17 18 19"
-use pavex::http::header::USER_AGENT;
-use pavex::request::RequestHead;
-
-pub enum UserAgent {
-    Unknown,
-    Known(String),
-}
-
-impl UserAgent {
-    pub fn extract(request_head: &RequestHead) -> Self {
-        let Some(user_agent) = request_head.headers.get(USER_AGENT) else {
-            return Self::Anonymous;
-        };
-
-        match user_agent.to_str() {
-            Ok(s) => Self::Known(s.into()),
-            Err(_e) => todo!()
-        }
-    }
-}
+--8<-- "doc_examples/quickstart/06/demo/src/user_agent.rs"
 ```
 
 Now register the new constructor with the [`Blueprint`][Blueprint]:
 
 ```rust title="demo/src/blueprint.rs" hl_lines="5 6 7 8"
-pub fn blueprint() -> Blueprint {
-    let mut bp = Blueprint::new();
-    register_common_constructors(&mut bp);
-
-    bp.constructor(
-        f!(crate::user_agent::UserAgent::extract),
-        Lifecycle::RequestScoped,
-    );
+--8<-- "doc_examples/quickstart/06/demo/src/blueprint.rs:new_constructor_registration"
     // [...]
 }
 ```
@@ -451,18 +323,10 @@ Panicking for bad user input is poor behavior: you should handle the issue grace
 Let's change the signature of `UserAgent::extract` to return a `Result` instead:
 
 ```rust title="demo/src/user_agent.rs"
-use pavex::http::header::{ToStrError, USER_AGENT};
+--8<-- "doc_examples/quickstart/07/demo/src/user_agent.rs:new_import"
 // [...]
 
-impl UserAgent {
-    pub fn extract(request_head: &RequestHead) -> Result<Self, ToStrError/* (1)! */> {
-        let Some(user_agent) = request_head.headers.get(USER_AGENT) else {
-            return Ok(UserAgent::Anonymous);
-        };
-
-        user_agent.to_str().map(|s| UserAgent::Known(s.into()))
-    }
-}
+--8<-- "doc_examples/quickstart/07/demo/src/user_agent.rs:new_extract"
 ```
 
 1. `ToStrError` is the error type returned by `to_str` when the header value is not valid UTF-8.
@@ -472,18 +336,7 @@ impl UserAgent {
 If you try to build the project now, you'll get an error from Pavex:
 
 ```text
-ERROR:
-  × You registered a constructor that returns a `Result`, but you did not register an error handler for it. 
-  | If I don't have an error handler, I don't know what to do with the error when the constructor fails!
-  │
-  │     ╭─[demo/src/blueprint.rs:11:1]
-  │  11 │     bp.constructor(
-  │  12 │         f!(crate::user_agent::UserAgent::extract),
-  │     ·         ────────────────────┬────────────────────
-  │     ·                             ╰── The fallible constructor was registered here
-  │  13 │         Lifecycle::RequestScoped,
-  │     ╰────
-  │   help: Add an error handler via `.error_handler`
+--8<-- "doc_examples/quickstart/07-error.txt"
 ```
 
 Pavex is complaining: you can register a fallible constructor, but you must also register an error handler for it.
@@ -505,26 +358,13 @@ Define a new `invalid_user_agent` function in `demo/src/user_agent.rs`:
 
 ```rust title="demo/src/user_agent.rs"
 // [...]
-
-pub fn invalid_user_agent(_e: &ToStrError) -> Response {
-    Response::bad_request()
-        .set_typed_body("The `User-Agent` header value must be a valid UTF-8 string")
-        .box_body()
-}
+--8<-- "doc_examples/quickstart/08/demo/src/user_agent.rs:new_error_handler"
 ```
 
 Then register the error handler with the [`Blueprint`][Blueprint]:
 
 ```rust title="demo/src/blueprint.rs" hl_lines="9"
-pub fn blueprint() -> Blueprint {
-    let mut bp = Blueprint::new();
-    register_common_constructors(&mut bp);
-
-    bp.constructor(
-        f!(crate::user_agent::UserAgent::extract),
-        Lifecycle::RequestScoped,
-    )
-        .error_handler(f!(crate::user_agent::invalid_user_agent));
+--8<-- "doc_examples/quickstart/08/demo/src/blueprint.rs:new_constructor_registration"
     // [...]
 }
 ```
@@ -545,18 +385,7 @@ interact with it, after all.
 The template project includes a reference example for the `/api/ping` endpoint:
 
 ```rust title="demo_server/tests/integration/ping.rs"
-use crate::helpers::TestApi;
-//(1)!
-use pavex::http::StatusCode;
-
-#[tokio::test]
-async fn ping_works() {
-    let api = TestApi::spawn().await;//(2)!
-
-    let response = api.get_ping().await;//(3)!
-
-    assert_eq!(response.status().as_u16(), StatusCode::OK.as_u16());
-}
+--8<-- "doc_examples/quickstart/09/demo_server/tests/integration/ping.rs"
 ```
 
 1. `TestApi` is a helper struct that provides a convenient interface to interact with the application.  
@@ -569,31 +398,11 @@ async fn ping_works() {
 Let's write a new integration test to verify the behaviour on the happy path for `GET /api/greet/:name`:
 
 ```rust title="demo_server/tests/integration/main.rs hl_lines="1"
-mod greet;
-mod ping;
-mod helpers;
+--8<-- "doc_examples/quickstart/09/demo_server/tests/integration/main.rs"
 ```
 
 ```rust title="demo_server/tests/integration/greet.rs"
-use crate::helpers::TestApi;
-use pavex::http::StatusCode;
-
-#[tokio::test]
-async fn greet_happy_path() {
-    let api = TestApi::spawn().await;
-    let name = "Ursula";
-
-    let response = api
-        .api_client
-        .get(&format!("{}/api/greet/{name}", &api.api_address))
-        .header("User-Agent", "Test runner")
-        .send()
-        .await
-        .expect("Failed to execute request.");
-
-    assert_eq!(response.status().as_u16(), StatusCode::OK.as_u16());
-    assert_eq!(response.text().await.unwrap(), "Hello, Ursula!");
-}
+--8<-- "doc_examples/quickstart/09/demo_server/tests/integration/greet.rs"
 ```
 
 It follows the same pattern as the `ping` test: it spawns a new instance of the application, issues a request to it
@@ -603,25 +412,7 @@ rejected.
 
 ```rust title="demo_server/tests/integration/greet.rs"
 // [...]
-#[tokio::test]
-async fn non_utf8_user_agent_is_rejected() {
-    let api = TestApi::spawn().await;
-    let name = "Ursula";
-
-    let response = api
-        .api_client
-        .get(&format!("{}/api/greet/{name}", &api.api_address))
-        .header("User-Agent", b"hello\xfa".as_slice())
-        .send()
-        .await
-        .expect("Failed to execute request.");
-
-    assert_eq!(response.status().as_u16(), StatusCode::BAD_REQUEST.as_u16());
-    assert_eq!(
-        response.text().await.unwrap(),
-        "The `User-Agent` header value must be a valid UTF-8 string"
-    );
-}
+--8<-- "doc_examples/quickstart/10/demo_server/tests/integration/greet.rs"
 ```
 
 `cargo px test` should report three passing tests now. As a bonus exercise, try to add a test for the case where the

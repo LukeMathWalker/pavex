@@ -7,6 +7,7 @@ use anyhow::Context;
 use cargo_generate::{GenerateArgs, TemplatePath};
 use clap::{Parser, Subcommand};
 use owo_colors::OwoColorize;
+use supports_color::Stream;
 use tracing_chrome::{ChromeLayerBuilder, FlushGuard};
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::layer::SubscriberExt;
@@ -35,7 +36,7 @@ struct Cli {
 // Same structure used by `cargo --version`.
 static VERSION: &str = concat!(env!("CARGO_PKG_VERSION"), " (", env!("VERGEN_GIT_SHA"), ")");
 
-#[derive(Clone, Debug)]
+#[derive(Copy, Clone, Debug)]
 enum Color {
     Auto,
     Always,
@@ -141,7 +142,7 @@ fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
             blueprint,
             diagnostics,
             output,
-        } => generate(blueprint, diagnostics, output),
+        } => generate(blueprint, diagnostics, output, cli.color),
         Commands::New { path } => scaffold_project(path),
     }
 }
@@ -151,7 +152,9 @@ fn generate(
     blueprint: PathBuf,
     diagnostics: Option<PathBuf>,
     output: PathBuf,
+    color_profile: Color,
 ) -> Result<ExitCode, Box<dyn std::error::Error>> {
+    let color_on_stderr = use_color_on_stderr(color_profile);
     let blueprint = Blueprint::load(&blueprint)?;
     // We use the path to the generated application crate as a fingerprint for the project.
     let project_fingerprint = output.to_string_lossy().into_owned();
@@ -159,7 +162,11 @@ fn generate(
         Ok(a) => a,
         Err(errors) => {
             for e in errors {
-                eprintln!("{}: {:?}", "ERROR".bold().red(), e);
+                if color_on_stderr {
+                    eprintln!("{}: {e:?}", "ERROR".bold().red());
+                } else {
+                    eprintln!("ERROR: {e:?}");
+                };
             }
             return Ok(ExitCode::FAILURE);
         }
@@ -173,6 +180,17 @@ fn generate(
     Ok(ExitCode::SUCCESS)
 }
 
+fn use_color_on_stderr(color_profile: Color) -> bool {
+    match color_profile {
+        Color::Auto => supports_color::on(Stream::Stderr).is_some(),
+        Color::Always => true,
+        Color::Never => false,
+    }
+}
+
+static TEMPLATE_DIR: include_dir::Dir =
+    include_dir::include_dir!("$CARGO_MANIFEST_DIR/../../template");
+
 fn scaffold_project(path: PathBuf) -> Result<ExitCode, Box<dyn std::error::Error>> {
     let name = path
         .file_name()
@@ -185,15 +203,22 @@ fn scaffold_project(path: PathBuf) -> Result<ExitCode, Box<dyn std::error::Error
         })?
         .to_string();
 
+    let target_directory =
+        std::env::temp_dir().join(format!("pavex-template-{}", env!("VERGEN_GIT_SHA")));
+    fs_err::create_dir_all(&target_directory)
+        .context("Failed to create a temporary directory for Pavex's template")?;
+    TEMPLATE_DIR
+        .extract(&target_directory)
+        .context("Failed to save Pavex's template to a temporary directory")?;
+
     let generate_args = GenerateArgs {
         template_path: TemplatePath {
-            git: Some("https://github.com/LukeMathWalker/pavex".into()),
-            subfolder: Some("template".into()),
-            // We make sure to use the exact same version (i.e. commit SHA) for both
-            // the `pavex` CLI itself and the template that we use to scaffold the new project.
-            // This is to ensure that the generated project is always compatible with the
-            // version of the CLI that was used to generate it.
-            revision: Some(env!("VERGEN_GIT_SHA").into()),
+            path: Some(
+                target_directory
+                    .to_str()
+                    .context("Failed to convert the template path to a UTF8 string")?
+                    .into(),
+            ),
             ..Default::default()
         },
         destination: path
