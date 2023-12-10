@@ -1,15 +1,16 @@
 diff --git a/demo/src/routes/greet.rs b/demo/src/routes/greet.rs
-index adfbbd5..fbcb3fc 100644
+index 0d94360..fbcb3fc 100644
 --- a/demo/src/routes/greet.rs
 +++ b/demo/src/routes/greet.rs
-@@ -1,4 +1,4 @@
+@@ -1,11 +1,14 @@
 -use pavex::request::RouteParams;
 +use pavex::request::route::RouteParams;
  use pavex::response::Response;
  
  #[RouteParams]
-@@ -6,6 +6,9 @@ pub struct GreetParams {
-     pub name: String,
+ pub struct GreetParams {
+-    pub name: String, /* (1)! */
++    pub name: String,
  }
  
 -pub fn greet(params: RouteParams<GreetParams> /* (2)! */) -> Response {

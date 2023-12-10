@@ -53,7 +53,7 @@ jobs:
           name: tutorial_generator
           path: doc_examples/tutorial_generator/target/debug/tutorial_generator
 
-  build_docs:
+  is_up_to_date:
     runs-on: ubuntu-latest
     needs:
       - build_pavex_cli
@@ -72,24 +72,6 @@ jobs:
           components: rust-docs-json
       - name: Install Rust stable toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1.6.0
-      - name: Cache dependencies
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: "./libs -> ./libs/target"
-          key: "build-pavex-docs"
-      - name: Build API reference
-        run: |
-          cd libs
-          cargo doc --package pavex --no-deps
-      - name: Copy API reference files
-        run: |
-          mkdir -p docs/api_reference
-          cp -r libs/target/doc/* docs/api_reference
-      - name: Link Checker
-        uses: lycheeverse/lychee-action@v1
-        with:
-          fail: true
-          args: --base . --exclude-loopback --exclude-path="docs/api_reference" --require-https --verbose --no-progress docs
       - name: Download pavex CLI artifact
         uses: actions/download-artifact@v3
         with:
@@ -111,6 +93,32 @@ jobs:
         run: |
           cd doc_examples/quickstart
           tutorial_generator --verify
+
+  build_docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install Rust stable toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1.6.0
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "./libs -> ./libs/target"
+          key: "build-pavex-docs"
+      - name: Build API reference
+        run: |
+          cd libs
+          cargo doc --package pavex --no-deps
+      - name: Copy API reference files
+        run: |
+          mkdir -p docs/api_reference
+          cp -r libs/target/doc/* docs/api_reference
+      - name: Link Checker
+        uses: lycheeverse/lychee-action@v1
+        with:
+          fail: true
+          args: --base . --exclude-loopback --exclude-path="docs/api_reference" --require-https --verbose --no-progress docs
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx

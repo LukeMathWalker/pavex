@@ -101,9 +101,7 @@ It's the type you'll use to define your API: routes, middlewares, error handlers
 
 You can find the [`Blueprint`][Blueprint] for the `demo` project in the `demo/src/blueprint.rs` file:
 
-```rust title="demo/src/blueprint.rs"
---8<-- "doc_examples/quickstart/01/demo/src/blueprint.rs:blueprint_definition"
-```
+--8<-- "doc_examples/quickstart/demo-blueprint_definition.snap"
 
 ## Routing
 
@@ -113,9 +111,7 @@ All the routes exposed by your API must be registered with its [`Blueprint`][Blu
 In the snippet below you can see the registration of the `GET /api/ping` route, the one you targeted with your `curl`
 request.
 
-```rust title="demo/src/blueprint.rs" hl_lines="7"
---8<-- "doc_examples/quickstart/01/demo/src/blueprint.rs:blueprint_definition"
-```
+--8<-- "doc_examples/quickstart/demo-route_registration.snap"
 
 It specifies:
 
@@ -127,9 +123,7 @@ It specifies:
 
 The `ping` function is the handler for the `GET /api/ping` route:
 
-```rust title="demo/src/routes/status.rs"
---8<-- "doc_examples/quickstart/01/demo/src/routes/status.rs"
-```
+--8<-- "doc_examples/quickstart/demo-ping_handler.snap"
 
 It's a public function that returns a [`StatusCode`][StatusCode].  
 [`StatusCode`][StatusCode] is a valid response type for a Pavex handler since it implements
@@ -146,20 +140,14 @@ body.
 
 Create a new module, `greet.rs`, in the `demo/src/routes` folder:
 
-```rust title="demo/src/routes/lib.rs" hl_lines="1"
---8<-- "doc_examples/quickstart/02/demo/src/routes/mod.rs"
-```
+--8<-- "doc_examples/quickstart/02-new_submodule.snap"
 
-```rust title="demo/src/routes/greet.rs"
---8<-- "doc_examples/quickstart/02/demo/src/routes/greet.rs"
-```
+--8<-- "doc_examples/quickstart/02-route_def.snap"
 
 The body of the `greet` handler is stubbed out with `todo!()` for now, but we'll fix that soon enough.  
 Let's register the new route with the [`Blueprint`][Blueprint] in the meantime:
 
-```rust title="demo/src/blueprint.rs" hl_lines="8 9 10 11 12"
---8<-- "doc_examples/quickstart/02/demo/src/blueprint.rs:blueprint_definition"
-```
+--8<-- "doc_examples/quickstart/02-register_new_route.snap"
 
 1. Dynamic route parameters are prefixed with a colon (`:`).
 
@@ -167,9 +155,8 @@ Let's register the new route with the [`Blueprint`][Blueprint] in the meantime:
 
 To access the `name` route parameter from your new handler you must use the [`RouteParams`][RouteParams] extractor:
 
-```rust title="demo/src/routes/greet.rs"
---8<-- "doc_examples/quickstart/03/demo/src/routes/greet.rs"
-```
+
+--8<-- "doc_examples/quickstart/03-route_def.snap"
 
 1. The name of the field must match the name of the route parameter as it appears in the path we registered with
    the [`Blueprint`][Blueprint].
@@ -178,9 +165,7 @@ To access the `name` route parameter from your new handler you must use the [`Ro
 
 You can now return the expected response from the `greet` handler:
 
-```rust title="demo/src/routes/greet.rs" hl_lines="10 11 12 13"
---8<-- "doc_examples/quickstart/04/demo/src/routes/greet.rs"
-```
+--8<-- "doc_examples/quickstart/04-route_def.snap"
 
 1. This is an example of
    Rust's [destructuring syntax](https://doc.rust-lang.org/book/ch18-03-pattern-syntax.html#destructuring-to-break-apart-values).
@@ -218,21 +203,13 @@ it knows how to construct them.
 Let's zoom in on [`RouteParams`][RouteParams]: how does the framework know how to construct it?  
 You need to go back to the [`Blueprint`][Blueprint] to find out:
 
-```rust title="demo/src/blueprint.rs" hl_lines="3"
---8<-- "doc_examples/quickstart/04/demo/src/blueprint.rs:blueprint_definition"
-```
+--8<-- "doc_examples/quickstart/04-register_common_invocation.snap"
 
 The `register_common_constructors` function takes care of registering constructors for a set of types that
 are defined in the `pavex` crate itself and commonly used in Pavex applications.
 If you check out its definition, you'll see that it registers a constructor for [`RouteParams`][RouteParams]:
 
-```rust title="pavex/src/blueprint.rs" hl_lines="3 4 5 6"
-fn register_common_constructors(bp: &mut Blueprint) {
-   // [...]
---8<-- "doc_examples/quickstart/04/demo/src/blueprint.rs:route_params_constructor"
-    // [...]
-}
-```
+--8<-- "doc_examples/quickstart/04-route_params_constructor.snap"
 
 It specifies:
 
@@ -252,26 +229,16 @@ We only want to greet people who include a `User-Agent` header in their request(
 
 Let's start by defining a new `UserAgent` type:
 
-```rust title="demo/src/lib.rs" hl_lines="7"
---8<-- "doc_examples/quickstart/05/demo/src/lib.rs"
-```
+--8<-- "doc_examples/quickstart/05-new_submodule.snap"
 
-```rust title="demo/src/user_agent.rs"
---8<-- "doc_examples/quickstart/05/demo/src/user_agent.rs"
-```
+--8<-- "doc_examples/quickstart/05-user_agent.snap"
 
 ### Missing constructor
 
 What if you tried to inject `UserAgent` into your `greet` handler straight away? Would it work?  
 Let's find out!
 
-```rust title="demo/src/routes/greet.rs" hl_lines="4"
-//! [...]
---8<-- "doc_examples/quickstart/05/demo/src/routes/greet.rs:user_agent_import"
---8<-- "doc_examples/quickstart/05/demo/src/routes/greet.rs:user_agent"
-    // [...]
-}
-```
+--8<-- "doc_examples/quickstart/05-inject.snap"
 
 1. New input parameter!
 
@@ -294,17 +261,11 @@ that will be injected by the framework at runtime.
 Since you need to look at headers, ask for [`RequestHead`][RequestHead] as input parameter: the incoming request data,
 minus the body.
 
-```rust title="demo/src/user_agent.rs" hl_lines="10 11 12 13 14 15 16 17 18 19"
---8<-- "doc_examples/quickstart/06/demo/src/user_agent.rs"
-```
+--8<-- "doc_examples/quickstart/06-extract.snap"
 
 Now register the new constructor with the [`Blueprint`][Blueprint]:
 
-```rust title="demo/src/blueprint.rs" hl_lines="5 6 7 8"
---8<-- "doc_examples/quickstart/06/demo/src/blueprint.rs:new_constructor_registration"
-    // [...]
-}
-```
+--8<-- "doc_examples/quickstart/06-register.snap"
 
 [`Lifecycle::RequestScoped`][Lifecycle::RequestScoped] is the right choice for this type: the data in `UserAgent` is
 request-specific.  
@@ -322,12 +283,7 @@ Panicking for bad user input is poor behavior: you should handle the issue grace
 
 Let's change the signature of `UserAgent::extract` to return a `Result` instead:
 
-```rust title="demo/src/user_agent.rs"
---8<-- "doc_examples/quickstart/07/demo/src/user_agent.rs:new_import"
-// [...]
-
---8<-- "doc_examples/quickstart/07/demo/src/user_agent.rs:new_extract"
-```
+--8<-- "doc_examples/quickstart/07-extract.snap"
 
 1. `ToStrError` is the error type returned by `to_str` when the header value is not valid UTF-8.
 
@@ -356,18 +312,11 @@ error handler.
 
 Define a new `invalid_user_agent` function in `demo/src/user_agent.rs`:
 
-```rust title="demo/src/user_agent.rs"
-// [...]
---8<-- "doc_examples/quickstart/08/demo/src/user_agent.rs:new_error_handler"
-```
+--8<-- "doc_examples/quickstart/08-error_handler.snap"
 
 Then register the error handler with the [`Blueprint`][Blueprint]:
 
-```rust title="demo/src/blueprint.rs" hl_lines="9"
---8<-- "doc_examples/quickstart/08/demo/src/blueprint.rs:new_constructor_registration"
-    // [...]
-}
-```
+--8<-- "doc_examples/quickstart/08-register.snap"
 
 The application should compile successfully now.
 
@@ -384,9 +333,7 @@ interact with it, after all.
 
 The template project includes a reference example for the `/api/ping` endpoint:
 
-```rust title="demo_server/tests/integration/ping.rs"
---8<-- "doc_examples/quickstart/09/demo_server/tests/integration/ping.rs"
-```
+--8<-- "doc_examples/quickstart/09-ping_test.snap"
 
 1. `TestApi` is a helper struct that provides a convenient interface to interact with the application.  
    It's defined in `demo_server/tests/helpers.rs`.
@@ -397,23 +344,16 @@ The template project includes a reference example for the `/api/ping` endpoint:
 
 Let's write a new integration test to verify the behaviour on the happy path for `GET /api/greet/:name`:
 
-```rust title="demo_server/tests/integration/main.rs hl_lines="1"
---8<-- "doc_examples/quickstart/09/demo_server/tests/integration/main.rs"
-```
+--8<-- "doc_examples/quickstart/09-new_test_module.snap"
 
-```rust title="demo_server/tests/integration/greet.rs"
---8<-- "doc_examples/quickstart/09/demo_server/tests/integration/greet.rs"
-```
+--8<-- "doc_examples/quickstart/09-greet_test.snap"
 
 It follows the same pattern as the `ping` test: it spawns a new instance of the application, issues a request to it
 and verifies that the response is correct.  
 Let's complement it with a test for the unhappy path as well: requests with a malformed `User-Agent` header should be
 rejected.
 
-```rust title="demo_server/tests/integration/greet.rs"
-// [...]
---8<-- "doc_examples/quickstart/10/demo_server/tests/integration/greet.rs"
-```
+--8<-- "doc_examples/quickstart/10-greet_test.snap"
 
 `cargo px test` should report three passing tests now. As a bonus exercise, try to add a test for the case where the
 `User-Agent` header is missing.

@@ -1,0 +1,16 @@
+```rust title="demo/src/blueprint.rs" hl_lines="9 10 11 12 13"
+\\ [...]
+pub fn blueprint() -> Blueprint {
+    let mut bp = Blueprint::new();
+    register_common_constructors(&mut bp);
+
+    add_telemetry_middleware(&mut bp);
+
+    bp.route(GET, "/api/ping", f!(crate::routes::status::ping));
+    bp.route(
+        GET,
+        "/api/greet/:name", /* (1)! */
+        f!(crate::routes::greet::greet),
+    );
+    bp
+```

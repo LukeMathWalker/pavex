@@ -1,0 +1,7 @@
+```rust title="demo/src/routes/greet.rs"
+use pavex::response::Response;
+
+pub fn greet() -> Response {
+    todo!()
+}
+```

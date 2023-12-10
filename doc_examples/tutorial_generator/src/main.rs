@@ -1,8 +1,10 @@
 use std::collections::HashMap;
 use std::io::Write;
+use std::str::FromStr;
 use std::time::Duration;
 
 use anyhow::Context;
+use camino::Utf8PathBuf;
 use console::style;
 use run_script::types::ScriptOptions;
 use similar::{Algorithm, ChangeTag, TextDiff};
@@ -11,6 +13,7 @@ use similar::{Algorithm, ChangeTag, TextDiff};
 struct TutorialManifest {
     bootstrap: String,
     starter_project_folder: String,
+    snippets: Vec<StepSnippet>,
     steps: Vec<Step>,
 }
 
@@ -18,7 +21,23 @@ struct TutorialManifest {
 struct Step {
     patch: String,
     #[serde(default)]
+    snippets: Vec<StepSnippet>,
+    #[serde(default)]
     commands: Vec<StepCommand>,
+}
+
+#[derive(Debug, serde::Deserialize)]
+struct StepSnippet {
+    name: String,
+    /// The path to the source file, relative to the root of the project
+    /// after the corresponding patch has been applied.
+    source_path: Utf8PathBuf,
+    ranges: Vec<String>,
+    #[serde(default)]
+    /// Which lines should be highlighted in the snippet.
+    /// The line numbers are relative to the start of the snippet, **not** to the
+    /// line numbers in the original source file.
+    hl_lines: Vec<usize>,
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -59,13 +78,13 @@ fn main() -> Result<(), anyhow::Error> {
     script_outcome.exit_on_failure("Failed to run the boostrap script");
 
     // Apply the patches
-    let mut previous_dir = tutorial_manifest.starter_project_folder;
+    let mut previous_dir = tutorial_manifest.starter_project_folder.clone();
     for step in &tutorial_manifest.steps {
         println!("Applying patch: {}", step.patch);
         let next_dir = patch_directory_name(&step.patch);
         let script_outcome = run_script(&format!(
             r#"cp -r {previous_dir} {next_dir}
-            cd {next_dir} && patch -p1 < ../{} && git add . && git commit -am "{}""#,
+            cd {next_dir} && patch -p1 < ../{} && cargo fmt && git add . && git commit -am "{}""#,
             step.patch, step.patch
         ))
         .context("Failed to apply patch")?;
@@ -74,6 +93,138 @@ fn main() -> Result<(), anyhow::Error> {
     }
 
     let mut errors = vec![];
+
+    // Extract the snippets
+    let (repo_dir, snippets) = (
+        tutorial_manifest.starter_project_folder.as_str(),
+        tutorial_manifest.snippets.as_slice(),
+    );
+    let iterator = std::iter::once((repo_dir, snippets)).chain(
+        tutorial_manifest
+            .steps
+            .iter()
+            .map(|step| (patch_directory_name(&step.patch), step.snippets.as_slice())),
+    );
+
+    for (repo_dir, snippets) in iterator {
+        for snippet in snippets {
+            println!("Extracting snippet: {}", snippet.name);
+            let ranges = snippet
+                .ranges
+                .iter()
+                .map(|range| range.parse::<SourceRange>())
+                .collect::<Result<Vec<_>, _>>()?;
+
+            let repo_dir = Utf8PathBuf::from_str(repo_dir).unwrap();
+            let source_filepath = repo_dir.join(&snippet.source_path);
+            let source_file = fs_err::read_to_string(&source_filepath)?;
+
+            let is_rust = source_filepath.extension() == Some("rs");
+
+            let mut extracted_snippet = String::new();
+
+            {
+                use std::fmt::Write;
+                if is_rust {
+                    write!(
+                        &mut extracted_snippet,
+                        "```rust title=\"{}\"",
+                        snippet.source_path
+                    )
+                    .unwrap();
+
+                    if !snippet.hl_lines.is_empty() {
+                        write!(&mut extracted_snippet, " hl_lines=\"").unwrap();
+                        for (idx, line) in snippet.hl_lines.iter().enumerate() {
+                            if idx > 0 {
+                                write!(&mut extracted_snippet, " ").unwrap();
+                            }
+                            write!(&mut extracted_snippet, "{}", line).unwrap();
+                        }
+                        write!(&mut extracted_snippet, "\"").unwrap();
+                    }
+
+                    extracted_snippet.push('\n');
+                }
+
+                let extracted_block = ranges
+                    .iter()
+                    .map(|range| range.extract_lines(&source_file))
+                    .collect::<Vec<_>>();
+
+                let mut previous_leading_whitespaces = 0;
+                for (i, block) in extracted_block.iter().enumerate() {
+                    let current_leading_whitespaces = block
+                        .lines()
+                        .next()
+                        .map(|l| l.chars().take_while(|c| c.is_whitespace()).count())
+                        .unwrap_or(0);
+
+                    let add_ellipsis = if i > 0 {
+                        true
+                    } else {
+                        let not_from_the_start = match &ranges[i] {
+                            SourceRange::Range(r) => r.start > 0,
+                            SourceRange::RangeInclusive(r) => *r.start() > 0,
+                            SourceRange::RangeFrom(r) => r.start > 0,
+                            SourceRange::RangeFull => false,
+                        };
+                        not_from_the_start
+                    };
+
+                    if add_ellipsis {
+                        let comment_leading_whitespaces =
+                            if current_leading_whitespaces > previous_leading_whitespaces {
+                                current_leading_whitespaces
+                            } else {
+                                previous_leading_whitespaces
+                            };
+                        let indent = " ".repeat(comment_leading_whitespaces);
+                        if i != 0 {
+                            extracted_snippet.push('\n');
+                        }
+                        writeln!(&mut extracted_snippet, "{indent}\\\\ [...]").unwrap();
+                    }
+                    extracted_snippet.push_str(&block);
+                    previous_leading_whitespaces = block
+                        .lines()
+                        .last()
+                        .map(|l| l.chars().take_while(|c| c.is_whitespace()).count())
+                        .unwrap_or(0);
+                }
+
+                if is_rust {
+                    write!(&mut extracted_snippet, "\n```").unwrap();
+                }
+            }
+
+            let snippet_filename = format!("{}-{}.snap", repo_dir, snippet.name);
+
+            let mut options = fs_err::OpenOptions::new();
+            options.write(true).create(true).truncate(true);
+            if verify {
+                let expected_snippet =
+                    fs_err::read_to_string(&snippet_filename).context("Failed to read file")?;
+                if expected_snippet != extracted_snippet {
+                    let mut err_msg = format!(
+                        "Expected snippet did not match actual snippet for {} (snippet: `{}`).\n",
+                        repo_dir, snippet.name,
+                    );
+                    print_changeset(&expected_snippet, &extracted_snippet, &mut err_msg)?;
+                    errors.push(err_msg);
+                }
+            } else {
+                let mut file = options
+                    .open(&snippet_filename)
+                    .context("Failed to open/create expectation file")?;
+                file.write_all(extracted_snippet.as_bytes())
+                    .expect("Failed to write to expectation file");
+            }
+        }
+    }
+
+    // Execute all commands and either verify the output or write it to a file
+
     for step in &tutorial_manifest.steps {
         for command in &step.commands {
             println!(
@@ -84,7 +235,8 @@ fn main() -> Result<(), anyhow::Error> {
 
             assert!(
                 command.expected_output_at.ends_with(".snap"),
-                "All expected output file must use the `.snap` file extension"
+                "All expected output file must use the `.snap` file extension. Found: {}",
+                command.expected_output_at
             );
 
             let script_outcome = run_script(&format!(r#"cd {patch_dir} && {}"#, command.command))?;
@@ -122,7 +274,7 @@ fn main() -> Result<(), anyhow::Error> {
             }
         }
     }
-
+  
     if !errors.is_empty() {
         eprintln!("One or more snapshots didn't match the expected value.");
         for error in errors {
@@ -206,7 +358,93 @@ impl ScriptOutcome {
     }
 }
 
-pub fn print_changeset(
+enum SourceRange {
+    Range(std::ops::Range<usize>),
+    RangeInclusive(std::ops::RangeInclusive<usize>),
+    RangeFrom(std::ops::RangeFrom<usize>),
+    RangeFull,
+}
+
+impl SourceRange {
+    fn extract_lines(&self, source: &str) -> String {
+        let mut lines = source.lines();
+        let iterator: Box<dyn Iterator<Item = &str>> = match self {
+            SourceRange::Range(range) => Box::new(
+                lines
+                    .by_ref()
+                    .skip(range.start)
+                    .take(range.end - range.start),
+            ),
+            SourceRange::RangeInclusive(range) => Box::new(
+                lines
+                    .by_ref()
+                    .skip(*range.start())
+                    .take(*range.end() - *range.start() + 1),
+            ),
+            SourceRange::RangeFrom(range) => Box::new(lines.by_ref().skip(range.start)),
+            SourceRange::RangeFull => Box::new(lines.by_ref()),
+        };
+        let mut buffer = String::new();
+        for (idx, line) in iterator.enumerate() {
+            if idx > 0 {
+                buffer.push('\n');
+            }
+            buffer.push_str(line);
+        }
+        buffer
+    }
+}
+
+impl FromStr for SourceRange {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s == ".." {
+            return Ok(SourceRange::RangeFull);
+        } else if s.starts_with("..") {
+            anyhow::bail!(
+                "Ranges must always specify a starting line. Invalid range: `{}`",
+                s
+            );
+        }
+        if s.contains("..=") {
+            let mut parts = s.split("..=");
+            let start: usize = parts
+                .next()
+                .unwrap()
+                .parse()
+                .context("Range start line must be a valid number")?;
+            match parts.next() {
+                Some(end) => {
+                    let end: usize = end
+                        .parse()
+                        .context("Range end line must be a valid number")?;
+                    Ok(SourceRange::RangeInclusive(start..=end))
+                }
+                None => Ok(SourceRange::RangeFrom(start..)),
+            }
+        } else {
+            let mut parts = s.split("..");
+            let start: usize = parts
+                .next()
+                .unwrap()
+                .parse()
+                .context("Range start line must be a valid number")?;
+            match parts.next() {
+                Some(s) if s.is_empty() => Ok(SourceRange::RangeFrom(start..)),
+                None => Ok(SourceRange::RangeFrom(start..)),
+                Some(end) => {
+                    let end: usize = end
+                        .parse()
+                        .context("Range end line must be a valid number")?;
+                    Ok(SourceRange::Range(start..end))
+                }
+            }
+        }
+    }
+}
+
+fn print_changeset(
     old: &str,
     new: &str,
     buffer: &mut impl std::fmt::Write,

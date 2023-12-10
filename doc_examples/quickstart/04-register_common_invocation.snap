@@ -1,0 +1,9 @@
+```rust title="demo/src/blueprint.rs" hl_lines="4"
+\\ [...]
+pub fn blueprint() -> Blueprint {
+    let mut bp = Blueprint::new();
+    register_common_constructors(&mut bp);
+    \\ [...]
+    bp
+}
+```

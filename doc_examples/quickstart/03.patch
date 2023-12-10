@@ -9,7 +9,7 @@ index 38ec1e3..adfbbd5 100644
 -pub fn greet() -> Response {
 +#[RouteParams]
 +pub struct GreetParams {
-+    pub name: String,
++    pub name: String /* (1)! */
 +}
 +
 +pub fn greet(params: RouteParams<GreetParams> /* (2)! */) -> Response {

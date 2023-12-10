@@ -1,0 +1,15 @@
+```rust title="demo_server/tests/integration/ping.rs"
+use pavex::http::StatusCode;
+
+//(1)!
+use crate::helpers::TestApi;
+
+#[tokio::test]
+async fn ping_works() {
+    let api = TestApi::spawn().await; //(2)!
+
+    let response = api.get_ping().await; //(3)!
+
+    assert_eq!(response.status().as_u16(), StatusCode::OK.as_u16());
+}
+```

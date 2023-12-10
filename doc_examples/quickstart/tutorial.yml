@@ -1,23 +1,109 @@
 bootstrap: |
-  pavex new demo && cd demo && git add . && git commit -m "Initial commit"
+  pavex new demo && cd demo && cargo fmt && git add . && git commit -m "Initial commit"
 starter_project_folder: demo
+snippets:
+  - name: "blueprint_definition"
+    source_path: "demo/src/blueprint.rs"
+    ranges: [ "6..15" ]
+  - name: "route_registration"
+    source_path: "demo/src/blueprint.rs"
+    ranges: [ "6..15" ]
+    hl_lines: [ 8 ]
+  - name: "ping_handler"
+    source_path: "demo/src/routes/status.rs"
+    ranges: [ ".." ]
 steps:
-  - patch: "01.patch"
   - patch: "02.patch"
+    snippets:
+      - name: "new_submodule"
+        source_path: "demo/src/routes/mod.rs"
+        ranges: [ ".." ]
+        hl_lines: [ 1 ]
+      - name: "route_def"
+        source_path: "demo/src/routes/greet.rs"
+        ranges: [ ".." ]
+      - name: "register_new_route"
+        source_path: "demo/src/blueprint.rs"
+        ranges: [ "6..19" ]
+        hl_lines: [ 9, 10, 11, 12, 13 ]
   - patch: "03.patch"
+    snippets:
+      - name: "route_def"
+        source_path: "demo/src/routes/greet.rs"
+        ranges: [ ".." ]
   - patch: "04.patch"
+    snippets:
+      - name: "route_def"
+        source_path: "demo/src/routes/greet.rs"
+        ranges: [ ".." ]
+      - name: "register_common_invocation"
+        source_path: "demo/src/blueprint.rs"
+        ranges: [ "6..9", "18..20" ]
+        hl_lines: [ 4 ]
+      - name: "route_params_constructor"
+        source_path: "demo/src/blueprint.rs"
+        ranges: [ "22..23", "33..37", "60..61" ]
+        hl_lines: [ 4, 5, 6, 7 ]
   - patch: "05.patch"
+    snippets:
+      - name: "new_submodule"
+        source_path: "demo/src/lib.rs"
+        ranges: [ ".." ]
+        hl_lines: [ 7 ]
+      - name: "user_agent"
+        source_path: "demo/src/user_agent.rs"
+        ranges: [ ".." ]
+      - name: "inject"
+        source_path: "demo/src/routes/greet.rs"
+        ranges: [ "3..4", "10..16", "20..21" ]
+        hl_lines: [ 4 ]
   - patch: "05-bis.patch"
     commands:
       - command: "cargo px c -q"
         expected_outcome: "failure"
         expected_output_at: "05-error.snap"
   - patch: "06.patch"
+    snippets:
+      - name: "extract"
+        source_path: "demo/src/user_agent.rs"
+        ranges: [ "0..1", "10..23" ]
+        hl_lines: [ 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 ]
+      - name: "register"
+        source_path: "demo/src/blueprint.rs"
+        ranges: [ "6..7", "10..14", "20..21" ]
+        hl_lines: [ 10, 11, 12, 13 ]
   - patch: "07.patch"
+    snippets:
+      - name: "extract"
+        source_path: "demo/src/user_agent.rs"
+        ranges: [ "0..2", "10..19" ]
     commands:
       - command: "cargo px c -q"
         expected_outcome: "failure"
         expected_output_at: "07-error.snap"
   - patch: "08.patch"
+    snippets:
+      - name: "error_handler"
+        source_path: "demo/src/user_agent.rs"
+        ranges: [ "20..25" ]
+      - name: "register"
+        source_path: "demo/src/blueprint.rs"
+        ranges: [ "6..7", "10..15", "21..22" ]
+        hl_lines: [ 8 ]
   - patch: "09.patch"
+    snippets:
+      - name: "ping_test"
+        source_path: "demo_server/tests/integration/ping.rs"
+        ranges: [ ".." ]
+      - name: "new_test_module"
+        source_path: "demo_server/tests/integration/main.rs"
+        ranges: [ ".." ]
+        hl_lines: [ 1 ]
+      - name: "greet_test"
+        source_path: "demo_server/tests/integration/greet.rs"
+        ranges: [ ".." ]
   - patch: "10.patch"
+    snippets:
+      - name: "greet_test"
+        source_path: "demo_server/tests/integration/greet.rs"
+        ranges: [ "21.." ]

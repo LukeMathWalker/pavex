@@ -12,3 +12,4 @@ serde = { version = "1", features = ["derive"] }
 run_script = "0.10"
 similar = { version = "2.3", features = ["inline"] }
 console = "0.15.1"
+camino = { version = "1", features = ["serde1"] }

@@ -1,0 +1,4 @@
+```rust title="demo/src/routes/mod.rs" hl_lines="1"
+pub mod greet;
+pub mod status;
+```
