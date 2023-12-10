@@ -1,20 +1,16 @@
 diff --git a/demo/src/user_agent.rs b/demo/src/user_agent.rs
-index fb72632..bb0f278 100644
+index c9d0771..bb1f65b 100644
 --- a/demo/src/user_agent.rs
 +++ b/demo/src/user_agent.rs
-@@ -1,4 +1,6 @@
+@@ -1,4 +1,4 @@
 -use pavex::http::header::USER_AGENT;
-+// --8<-- [start:new_import]
 +use pavex::http::header::{ToStrError, USER_AGENT};
-+// --8<-- [end:new_import]
  use pavex::request::RequestHead;
  
  pub enum UserAgent {
-@@ -6,15 +8,14 @@ pub enum UserAgent {
-     Known(String),
+@@ -9,14 +9,11 @@ pub enum UserAgent {
  }
  
-+// --8<-- [start:new_extract]
  impl UserAgent {
 -    pub fn extract(request_head: &RequestHead) -> Self {
 +    pub fn extract(request_head: &RequestHead) -> Result<Self, ToStrError /* (1)! */> {
@@ -30,4 +26,3 @@ index fb72632..bb0f278 100644
 +        user_agent.to_str().map(|s| UserAgent::Known(s.into()))
      }
  }
-+// --8<-- [end:new_extract]
