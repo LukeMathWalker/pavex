@@ -205,6 +205,8 @@ fn scaffold_project(path: PathBuf) -> Result<ExitCode, Box<dyn std::error::Error
 
     let target_directory =
         std::env::temp_dir().join(format!("pavex-template-{}", env!("VERGEN_GIT_SHA")));
+    fs_err::create_dir_all(&target_directory)
+        .context("Failed to create a temporary directory for Pavex's template")?;
     TEMPLATE_DIR
         .extract(&target_directory)
         .context("Failed to save Pavex's template to a temporary directory")?;
