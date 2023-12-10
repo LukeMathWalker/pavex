@@ -188,6 +188,9 @@ fn use_color_on_stderr(color_profile: Color) -> bool {
     }
 }
 
+static TEMPLATE_DIR: include_dir::Dir =
+    include_dir::include_dir!("$CARGO_MANIFEST_DIR/../../template");
+
 fn scaffold_project(path: PathBuf) -> Result<ExitCode, Box<dyn std::error::Error>> {
     let name = path
         .file_name()
@@ -200,15 +203,20 @@ fn scaffold_project(path: PathBuf) -> Result<ExitCode, Box<dyn std::error::Error
         })?
         .to_string();
 
+    let target_directory =
+        std::env::temp_dir().join(format!("pavex-template-{}", env!("VERGEN_GIT_SHA")));
+    TEMPLATE_DIR
+        .extract(&target_directory)
+        .context("Failed to save Pavex's template to a temporary directory")?;
+
     let generate_args = GenerateArgs {
         template_path: TemplatePath {
-            git: Some("https://github.com/LukeMathWalker/pavex".into()),
-            subfolder: Some("template".into()),
-            // We make sure to use the exact same version (i.e. commit SHA) for both
-            // the `pavex` CLI itself and the template that we use to scaffold the new project.
-            // This is to ensure that the generated project is always compatible with the
-            // version of the CLI that was used to generate it.
-            revision: Some(env!("VERGEN_GIT_SHA").into()),
+            path: Some(
+                target_directory
+                    .to_str()
+                    .context("Failed to convert the template path to a UTF8 string")?
+                    .into(),
+            ),
             ..Default::default()
         },
         destination: path
