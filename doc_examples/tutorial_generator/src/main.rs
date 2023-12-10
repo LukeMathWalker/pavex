@@ -147,19 +147,50 @@ fn main() -> Result<(), anyhow::Error> {
                     extracted_snippet.push('\n');
                 }
 
-                let mut n_leading_whitespaces = 0;
-                for (i, range) in ranges.iter().enumerate() {
-                    if i > 0 {
-                        let indent = " ".repeat(n_leading_whitespaces);
-                        writeln!(&mut extracted_snippet, "\n{indent}\\\\ [..]").unwrap();
-                    }
-                    let lines = range.extract_lines(&source_file);
-                    lines.lines().last().map(|last_line| {
-                        n_leading_whitespaces =
-                            last_line.chars().take_while(|c| c.is_whitespace()).count();
-                    });
+                let extracted_block = ranges
+                    .iter()
+                    .map(|range| range.extract_lines(&source_file))
+                    .collect::<Vec<_>>();
 
-                    extracted_snippet.push_str(&lines);
+                let mut previous_leading_whitespaces = 0;
+                for (i, block) in extracted_block.iter().enumerate() {
+                    let current_leading_whitespaces = block
+                        .lines()
+                        .next()
+                        .map(|l| l.chars().take_while(|c| c.is_whitespace()).count())
+                        .unwrap_or(0);
+
+                    let add_ellipsis = if i > 0 {
+                        true
+                    } else {
+                        let not_from_the_start = match &ranges[i] {
+                            SourceRange::Range(r) => r.start > 0,
+                            SourceRange::RangeInclusive(r) => *r.start() > 0,
+                            SourceRange::RangeFrom(r) => r.start > 0,
+                            SourceRange::RangeFull => false,
+                        };
+                        not_from_the_start
+                    };
+
+                    if add_ellipsis {
+                        let comment_leading_whitespaces =
+                            if current_leading_whitespaces > previous_leading_whitespaces {
+                                current_leading_whitespaces
+                            } else {
+                                previous_leading_whitespaces
+                            };
+                        let indent = " ".repeat(comment_leading_whitespaces);
+                        if i != 0 {
+                            extracted_snippet.push('\n');
+                        }
+                        writeln!(&mut extracted_snippet, "{indent}\\\\ [...]").unwrap();
+                    }
+                    extracted_snippet.push_str(&block);
+                    previous_leading_whitespaces = block
+                        .lines()
+                        .last()
+                        .map(|l| l.chars().take_while(|c| c.is_whitespace()).count())
+                        .unwrap_or(0);
                 }
 
                 if is_rust {
@@ -399,13 +430,14 @@ impl FromStr for SourceRange {
                 .parse()
                 .context("Range start line must be a valid number")?;
             match parts.next() {
+                Some(s) if s.is_empty() => Ok(SourceRange::RangeFrom(start..)),
+                None => Ok(SourceRange::RangeFrom(start..)),
                 Some(end) => {
                     let end: usize = end
                         .parse()
                         .context("Range end line must be a valid number")?;
                     Ok(SourceRange::Range(start..end))
                 }
-                None => Ok(SourceRange::RangeFrom(start..)),
             }
         }
     }

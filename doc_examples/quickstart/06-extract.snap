@@ -1,0 +1,16 @@
+```rust title="demo/src/user_agent.rs" hl_lines="4 5 6 7 8 9 10 11 12 13"
+use pavex::http::header::USER_AGENT;
+\\ [...]
+impl UserAgent {
+    pub fn extract(request_head: &RequestHead) -> Self {
+        let Some(user_agent) = request_head.headers.get(USER_AGENT) else {
+            return Self::Unknown;
+        };
+
+        match user_agent.to_str() {
+            Ok(s) => Self::Known(s.into()),
+            Err(_e) => todo!(),
+        }
+    }
+}
+```

@@ -1,0 +1,12 @@
+```rust title="demo/src/blueprint.rs" hl_lines="8"
+\\ [...]
+pub fn blueprint() -> Blueprint {
+    \\ [...]
+    bp.constructor(
+        f!(crate::user_agent::UserAgent::extract),
+        Lifecycle::RequestScoped,
+    )
+    .error_handler(f!(crate::user_agent::invalid_user_agent));
+    \\ [...]
+}
+```
