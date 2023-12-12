@@ -10,13 +10,13 @@
   [31m│[0m  [2m23[0m │     let mut bp = Blueprint::new();
   [31m│[0m  [2m24[0m │     bp.constructor(f!(crate::naked), Lifecycle::RequestScoped);
   [31m│[0m     · [35;1m                   ────────┬───────[0m
-  [31m│[0m     ·                            [35;1m╰── [35;1mThe constructor was registered here[0m[0m
+  [31m│[0m     ·                            [35;1m╰── The constructor was registered here[0m
   [31m│[0m  [2m25[0m │     bp.constructor(f!(crate::fallible_naked), Lifecycle::RequestScoped)
   [31m│[0m     ╰────
   [31m│[0m    ╭─[[36;1;4msrc/lib.rs[0m:1:1]
   [31m│[0m  [2m1[0m │ pub fn naked<T>() -> T {
   [31m│[0m    · [35;1m                     ┬[0m
-  [31m│[0m    ·                      [35;1m╰── [35;1mThe invalid output type[0m[0m
+  [31m│[0m    ·                      [35;1m╰── The invalid output type[0m
   [31m│[0m  [2m2[0m │     todo!()
   [31m│[0m    ╰────
   [31m│[0m [36m  help: [0mCan you return a concrete type as output?
@@ -35,13 +35,13 @@
   [31m│[0m  [2m24[0m │     bp.constructor(f!(crate::naked), Lifecycle::RequestScoped);
   [31m│[0m  [2m25[0m │     bp.constructor(f!(crate::fallible_naked), Lifecycle::RequestScoped)
   [31m│[0m     · [35;1m                   ────────────┬────────────[0m
-  [31m│[0m     ·                                [35;1m╰── [35;1mThe constructor was registered here[0m[0m
+  [31m│[0m     ·                                [35;1m╰── The constructor was registered here[0m
   [31m│[0m  [2m26[0m │         .error_handler(f!(crate::error_handler));
   [31m│[0m     ╰────
   [31m│[0m    ╭─[[36;1;4msrc/lib.rs[0m:1:1]
   [31m│[0m  [2m1[0m │ pub fn fallible_naked<T>() -> Result<T, FallibleError> {
   [31m│[0m    · [35;1m                              ────────────┬───────────[0m
-  [31m│[0m    ·                                           [35;1m╰── [35;1mThe invalid output type[0m[0m
+  [31m│[0m    ·                                           [35;1m╰── The invalid output type[0m
   [31m│[0m  [2m2[0m │     todo!()
   [31m│[0m    ╰────
   [31m│[0m [36m  help: [0mCan you return a concrete type as output?

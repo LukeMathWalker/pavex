@@ -6,7 +6,7 @@
   [31m│[0m  [2m44[0m │     let mut bp = Blueprint::new();
   [31m│[0m  [2m45[0m │     bp.constructor(f!(crate::constructor), Lifecycle::Singleton);
   [31m│[0m     · [35;1m                   ───────────┬──────────[0m
-  [31m│[0m     ·                               [35;1m╰── [35;1mThe constructor was registered here[0m[0m
+  [31m│[0m     ·                               [35;1m╰── The constructor was registered here[0m
   [31m│[0m  [2m46[0m │     bp.constructor(
   [31m│[0m     ╰────
 
@@ -19,7 +19,7 @@
   [31m│[0m  [2m46[0m │     bp.constructor(
   [31m│[0m  [2m47[0m │         f!(crate::fallible_constructor_building_unit),
   [31m│[0m     · [35;1m        ──────────────────────┬──────────────────────[0m
-  [31m│[0m     ·                               [35;1m╰── [35;1mThe constructor was registered here[0m[0m
+  [31m│[0m     ·                               [35;1m╰── The constructor was registered here[0m
   [31m│[0m  [2m48[0m │         Lifecycle::RequestScoped,
   [31m│[0m     ╰────
 
@@ -33,7 +33,7 @@
   [31m│[0m  [2m56[0m │     bp.route(GET, "/home", f!(crate::handler));
   [31m│[0m  [2m57[0m │     bp.route(GET, "/unit", f!(crate::unit_handler));
   [31m│[0m     · [35;1m                           ───────────┬───────────[0m
-  [31m│[0m     ·                                       [35;1m╰── [35;1mThe request handler was registered here[0m[0m
+  [31m│[0m     ·                    [35;1mThe request handler was registered here[0m
   [31m│[0m  [2m58[0m │     bp.route(GET, "/fallible_unit", f!(crate::fallible_unit_handler))
   [31m│[0m     ╰────
 
@@ -47,7 +47,7 @@
   [31m│[0m  [2m57[0m │     bp.route(GET, "/unit", f!(crate::unit_handler));
   [31m│[0m  [2m58[0m │     bp.route(GET, "/fallible_unit", f!(crate::fallible_unit_handler))
   [31m│[0m     · [35;1m                                    ────────────────┬───────────────[0m
-  [31m│[0m     ·                                                     [35;1m╰── [35;1mThe request handler was registered here[0m[0m
+  [31m│[0m     ·          [35;1mThe request handler was registered here ──╯[0m
   [31m│[0m  [2m59[0m │         .error_handler(f!(crate::error_handler));
   [31m│[0m     ╰────
 
@@ -61,7 +61,7 @@
   [31m│[0m  [2m52[0m │ 
   [31m│[0m  [2m53[0m │     bp.wrap(f!(crate::unit_wrapping_middleware));
   [31m│[0m     · [35;1m            ─────────────────┬─────────────────[0m
-  [31m│[0m     ·                              [35;1m╰── [35;1mThe wrapping middleware was registered here[0m[0m
+  [31m│[0m     ·                              [35;1m╰── The wrapping middleware was registered here[0m
   [31m│[0m  [2m54[0m │     bp.wrap(f!(crate::fallible_wrapping_middleware))
   [31m│[0m     ╰────
 
@@ -75,7 +75,7 @@
   [31m│[0m  [2m53[0m │     bp.wrap(f!(crate::unit_wrapping_middleware));
   [31m│[0m  [2m54[0m │     bp.wrap(f!(crate::fallible_wrapping_middleware))
   [31m│[0m     · [35;1m            ───────────────────┬───────────────────[0m
-  [31m│[0m     ·                                [35;1m╰── [35;1mThe wrapping middleware was registered here[0m[0m
+  [31m│[0m     ·                                [35;1m╰── The wrapping middleware was registered here[0m
   [31m│[0m  [2m55[0m │         .error_handler(f!(crate::error_handler));
   [31m│[0m     ╰────
 
@@ -89,7 +89,7 @@
   [31m│[0m  [2m54[0m │     bp.wrap(f!(crate::fallible_wrapping_middleware))
   [31m│[0m  [2m55[0m │         .error_handler(f!(crate::error_handler));
   [31m│[0m     · [35;1m                       ────────────┬───────────[0m
-  [31m│[0m     ·                                    [35;1m╰── [35;1mThe error handler was registered here[0m[0m
+  [31m│[0m     ·                                    [35;1m╰── The error handler was registered here[0m
   [31m│[0m  [2m56[0m │     bp.route(GET, "/home", f!(crate::handler));
   [31m│[0m     ╰────
 
@@ -103,7 +103,7 @@
   [31m│[0m  [2m58[0m │     bp.route(GET, "/fallible_unit", f!(crate::fallible_unit_handler))
   [31m│[0m  [2m59[0m │         .error_handler(f!(crate::error_handler));
   [31m│[0m     · [35;1m                       ────────────┬───────────[0m
-  [31m│[0m     ·                                    [35;1m╰── [35;1mThe error handler was registered here[0m[0m
+  [31m│[0m     ·                                    [35;1m╰── The error handler was registered here[0m
   [31m│[0m  [2m60[0m │     bp
   [31m│[0m     ╰────
 
@@ -117,6 +117,6 @@
   [31m│[0m  [2m50[0m │     bp.constructor(f!(crate::fallible_constructor), Lifecycle::RequestScoped)
   [31m│[0m  [2m51[0m │         .error_handler(f!(crate::error_handler));
   [31m│[0m     · [35;1m                       ────────────┬───────────[0m
-  [31m│[0m     ·                                    [35;1m╰── [35;1mThe error handler was registered here[0m[0m
+  [31m│[0m     ·                                    [35;1m╰── The error handler was registered here[0m
   [31m│[0m  [2m52[0m │ 
   [31m│[0m     ╰────
