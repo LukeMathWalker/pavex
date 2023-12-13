@@ -1,3 +1,4 @@
+use std::cmp::max;
 use std::fmt::{self, Write};
 
 use miette::{
@@ -201,7 +202,7 @@ impl GraphicalReportHandler {
             write!(header, "{}", link)?;
             writeln!(f, "{}", header)?;
         } else if let Some(code) = diagnostic.code() {
-            write!(header, "{}", code.style(severity_style),)?;
+            write!(header, "{}", code.style(severity_style), )?;
             if self.links == LinkStyle::Text && diagnostic.url().is_some() {
                 let url = diagnostic.url().unwrap(); // safe
                 write!(header, " ({})", url.style(self.theme.styles.link))?;
@@ -260,8 +261,8 @@ impl GraphicalReportHandler {
                     "  {}{}{} ",
                     char, self.theme.characters.hbar, self.theme.characters.rarrow
                 )
-                .style(severity_style)
-                .to_string();
+                    .style(severity_style)
+                    .to_string();
                 let rest_indent = format!(
                     "  {}   ",
                     if is_last {
@@ -270,8 +271,8 @@ impl GraphicalReportHandler {
                         self.theme.characters.vbar
                     }
                 )
-                .style(severity_style)
-                .to_string();
+                    .style(severity_style)
+                    .to_string();
                 let opts = textwrap::Options::new(width)
                     .initial_indent(&initial_indent)
                     .subsequent_indent(&rest_indent);
@@ -631,7 +632,7 @@ impl GraphicalReportHandler {
     }
 
     /// Returns an iterator over the visual width of each character in a line.
-    fn line_visual_char_width<'a>(&self, text: &'a str) -> impl Iterator<Item = usize> + 'a {
+    fn line_visual_char_width<'a>(&self, text: &'a str) -> impl Iterator<Item=usize> + 'a {
         let mut column = 0;
         let tab_width = self.tab_width;
         text.chars().map(move |c| {
@@ -724,8 +725,8 @@ impl GraphicalReportHandler {
                             chars.underline.to_string().repeat(num_right),
                             width = start.saturating_sub(highest),
                         )
-                        .style(hl.style)
-                        .to_string(),
+                            .style(hl.style)
+                            .to_string(),
                     );
                 }
                 highest = std::cmp::max(highest, end);
@@ -735,28 +736,124 @@ impl GraphicalReportHandler {
             .collect();
         writeln!(f, "{}", underlines)?;
 
+        enum LabelPosition {
+            Left,
+            Center,
+            Right,
+        }
+
+        let post_linum_width = self.termwidth.saturating_sub(linum_width + 4 /*  length of "  │" */);
+
         for hl in single_liners.iter().rev() {
-            if let Some(label) = hl.label() {
+            if let Some(label) = &hl.label {
                 self.write_no_linum(f, linum_width)?;
                 self.render_highlight_gutter(f, max_gutter, line, all_highlights)?;
                 let mut curr_offset = 1usize;
-                for (offset_hl, vbar_offset) in &vbar_offsets {
-                    while curr_offset < *vbar_offset + 1 {
-                        write!(f, " ")?;
-                        curr_offset += 1;
-                    }
-                    if *offset_hl != hl {
-                        write!(f, "{}", chars.vbar.to_string().style(offset_hl.style))?;
-                        curr_offset += 1;
+
+                let (label_index, (_, label_vbar_offset)) = vbar_offsets
+                    .iter()
+                    .enumerate()
+                    .find(|(_, (offset_hl, _))| offset_hl == &hl)
+                    .unwrap();
+
+                let max_allowed_width = max(post_linum_width, line.text.len());
+                let available_right_space = max_allowed_width
+                    .saturating_sub(label_vbar_offset + 4 /*  length of "╰── " */);
+                let available_left_space = {
+                    label_vbar_offset
+                        .saturating_sub(4 /*  length of " ──╯" */)
+                        .saturating_sub(if label_index != 0 {
+                            let previous_vbar_offset = vbar_offsets[label_index - 1].1;
+                            previous_vbar_offset + 1
+                        } else {
+                            0
+                        })
+                };
+                let available_centered_space =
+                    max_allowed_width.saturating_sub(if label_index != 0 {
+                        let previous_vbar_offset = vbar_offsets[label_index - 1].1;
+                        previous_vbar_offset
                     } else {
-                        let lines = format!(
-                            "{}{} {}",
-                            chars.lbot,
-                            chars.hbar.to_string().repeat(2),
-                            label,
-                        );
-                        writeln!(f, "{}", lines.style(hl.style))?;
-                        break;
+                        0
+                    });
+                let (available_space, position) = if label.len() <= available_right_space {
+                    (available_right_space, LabelPosition::Right)
+                } else if label.len() <= available_left_space {
+                    (available_left_space, LabelPosition::Left)
+                } else {
+                    (available_centered_space, LabelPosition::Center)
+                };
+                let sigil = match position {
+                    LabelPosition::Right => {
+                        format!("{}{} ", chars.lbot, chars.hbar.to_string().repeat(2), )
+                    }
+                    LabelPosition::Left => {
+                        format!("{}{} ", chars.hbar.to_string().repeat(2), chars.rbot)
+                    }
+                    LabelPosition::Center => "".to_string(),
+                };
+                let label_lines = textwrap::wrap(&label, available_space);
+                let n_label_lines = label_lines.len();
+                'outer: for (i, label_line) in label_lines.iter().enumerate() {
+                    'inner: for (offset_hl, vbar_offset) in &vbar_offsets {
+                        if *offset_hl != hl {
+                            while curr_offset < *vbar_offset + 1 {
+                                write!(f, " ")?;
+                                curr_offset += 1;
+                            }
+                            write!(f, "{}", chars.vbar.to_string().style(offset_hl.style))?;
+                            curr_offset += 1;
+                            continue 'inner;
+                        }
+
+                        let n_leading_whitespaces = match position {
+                            LabelPosition::Left => available_space - label_line.len() + 1,
+                            LabelPosition::Center => (available_space - label_line.len()) / 2,
+                            LabelPosition::Right => vbar_offset - curr_offset + 1,
+                        };
+                        for _ in 0..n_leading_whitespaces {
+                            write!(f, " ")?;
+                            curr_offset += 1;
+                        }
+
+                        let label_line = if i == 0 {
+                            match position {
+                                LabelPosition::Left => {
+                                    format!(
+                                        "{} {}{}",
+                                        label_line,
+                                        chars.hbar.to_string().repeat(2),
+                                        chars.rbot
+                                    )
+                                }
+                                LabelPosition::Center => label_line.clone().into_owned(),
+                                LabelPosition::Right => format!(
+                                    "{}{} {}",
+                                    chars.lbot,
+                                    chars.hbar.to_string().repeat(2),
+                                    label_line
+                                ),
+                            }
+                        } else {
+                            match position {
+                                LabelPosition::Left => {
+                                    format!("{}{}", label_line, " ".repeat(sigil.len()))
+                                }
+                                LabelPosition::Right => {
+                                    format!("{}{}", " ".repeat(sigil.len()), label_line)
+                                }
+                                LabelPosition::Center => label_line.clone().into_owned(),
+                            }
+                        };
+                        writeln!(f, "{}", label_line.style(hl.style))?;
+
+                        // Init new line
+                        if i + 1 != n_label_lines {
+                            self.write_no_linum(f, linum_width)?;
+                            self.render_highlight_gutter(f, max_gutter, line, all_highlights)?;
+                        }
+                        curr_offset = 1;
+                        continue 'outer;
                     }
                 }
             }

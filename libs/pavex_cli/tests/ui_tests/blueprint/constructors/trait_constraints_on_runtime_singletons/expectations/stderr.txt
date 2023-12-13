@@ -5,7 +5,7 @@
   [31m│[0m  [2m52[0m │     bp.constructor(f!(crate::NonSendSingleton::new), Lifecycle::Singleton);
   [31m│[0m  [2m53[0m │     bp.constructor(f!(crate::NonCloneSingleton::new), Lifecycle::Singleton);
   [31m│[0m     · [35;1m                   ────────────────┬────────────────[0m
-  [31m│[0m     ·                                    [35;1m╰── [35;1mThe constructor was registered here[0m[0m
+  [31m│[0m     ·                                    [35;1m╰── The constructor was registered here[0m
   [31m│[0m  [2m54[0m │     bp.constructor(f!(crate::NonSyncSingleton::new), Lifecycle::Singleton);
   [31m│[0m     ╰────
   [31m│[0m [36m  help: [0mAll singletons must implement the `Send`, `Sync` and `Clone` traits.
@@ -19,7 +19,7 @@
   [31m│[0m  [2m53[0m │     bp.constructor(f!(crate::NonCloneSingleton::new), Lifecycle::Singleton);
   [31m│[0m  [2m54[0m │     bp.constructor(f!(crate::NonSyncSingleton::new), Lifecycle::Singleton);
   [31m│[0m     · [35;1m                   ────────────────┬───────────────[0m
-  [31m│[0m     ·                                    [35;1m╰── [35;1mThe constructor was registered here[0m[0m
+  [31m│[0m     ·                                    [35;1m╰── The constructor was registered here[0m
   [31m│[0m  [2m55[0m │     // The handler is needed because bounds are only checked for singletons
   [31m│[0m     ╰────
   [31m│[0m [36m  help: [0mAll singletons must implement the `Send`, `Sync` and `Clone` traits.
@@ -33,7 +33,7 @@
   [31m│[0m  [2m51[0m │     let mut bp = Blueprint::new();
   [31m│[0m  [2m52[0m │     bp.constructor(f!(crate::NonSendSingleton::new), Lifecycle::Singleton);
   [31m│[0m     · [35;1m                   ────────────────┬───────────────[0m
-  [31m│[0m     ·                                    [35;1m╰── [35;1mThe constructor was registered here[0m[0m
+  [31m│[0m     ·                                    [35;1m╰── The constructor was registered here[0m
   [31m│[0m  [2m53[0m │     bp.constructor(f!(crate::NonCloneSingleton::new), Lifecycle::Singleton);
   [31m│[0m     ╰────
   [31m│[0m [36m  help: [0mAll singletons must implement the `Send`, `Sync` and `Clone` traits.
@@ -47,7 +47,7 @@
   [31m│[0m  [2m51[0m │     let mut bp = Blueprint::new();
   [31m│[0m  [2m52[0m │     bp.constructor(f!(crate::NonSendSingleton::new), Lifecycle::Singleton);
   [31m│[0m     · [35;1m                   ────────────────┬───────────────[0m
-  [31m│[0m     ·                                    [35;1m╰── [35;1mThe constructor was registered here[0m[0m
+  [31m│[0m     ·                                    [35;1m╰── The constructor was registered here[0m
   [31m│[0m  [2m53[0m │     bp.constructor(f!(crate::NonCloneSingleton::new), Lifecycle::Singleton);
   [31m│[0m     ╰────
   [31m│[0m [36m  help: [0mAll singletons must implement the `Send`, `Sync` and `Clone` traits.

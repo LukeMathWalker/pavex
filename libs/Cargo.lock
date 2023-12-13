@@ -263,7 +263,8 @@ dependencies = [
 [[package]]
 name = "cargo-generate"
 version = "0.18.5"
-source = "git+https://github.com/LukeMathWalker/cargo-generate?branch=main#3bf2c4b88732a9e5f6247997dbcc83f0feb9b9ef"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8a2885ae054e000b117515ab33e91c10eca90c2788a7baec1b97ada1f1f51e57"
 dependencies = [
  "anyhow",
  "auth-git2",
