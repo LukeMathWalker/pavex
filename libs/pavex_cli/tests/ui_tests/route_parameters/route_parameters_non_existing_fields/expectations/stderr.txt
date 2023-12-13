@@ -12,7 +12,7 @@
   [31m│[0m  [2m44[0m │     ));
   [31m│[0m  [2m45[0m │     bp.route(GET, "/a/:x", f!(crate::missing_one));
   [31m│[0m     · [35;1m                           ───────────┬──────────[0m
-  [31m│[0m     ·         [35;1mThe request handler asking for `RouteParams<app::MissingOne>`[0m
+  [31m│[0m     ·       [35;1mThe request handler asking for `RouteParams<app::MissingOne>`[0m
   [31m│[0m  [2m46[0m │     bp.route(GET, "/b/:x", f!(crate::missing_two));
   [31m│[0m     ╰────
   [31m│[0m [36m  help: [0mRemove or rename the fields that do not map to a valid route
@@ -32,7 +32,7 @@
   [31m│[0m  [2m45[0m │     bp.route(GET, "/a/:x", f!(crate::missing_one));
   [31m│[0m  [2m46[0m │     bp.route(GET, "/b/:x", f!(crate::missing_two));
   [31m│[0m     · [35;1m                           ───────────┬──────────[0m
-  [31m│[0m     ·         [35;1mThe request handler asking for `RouteParams<app::MissingTwo>`[0m
+  [31m│[0m     ·       [35;1mThe request handler asking for `RouteParams<app::MissingTwo>`[0m
   [31m│[0m  [2m47[0m │     bp.route(GET, "/c", f!(crate::no_route_params));
   [31m│[0m     ╰────
   [31m│[0m [36m  help: [0mRemove or rename the fields that do not map to a valid route
@@ -48,7 +48,7 @@
   [31m│[0m  [2m46[0m │     bp.route(GET, "/b/:x", f!(crate::missing_two));
   [31m│[0m  [2m47[0m │     bp.route(GET, "/c", f!(crate::no_route_params));
   [31m│[0m     · [35;1m                        ─────────────┬────────────[0m
-  [31m│[0m     ·        [35;1mThe request handler asking for `RouteParams<app::NoRouteParams>`[0m
+  [31m│[0m     ·      [35;1mThe request handler asking for `RouteParams<app::NoRouteParams>`[0m
   [31m│[0m  [2m48[0m │     bp
   [31m│[0m     ╰────
   [31m│[0m [36m  help: [0mStop trying to extract route parameters, or add them to the route

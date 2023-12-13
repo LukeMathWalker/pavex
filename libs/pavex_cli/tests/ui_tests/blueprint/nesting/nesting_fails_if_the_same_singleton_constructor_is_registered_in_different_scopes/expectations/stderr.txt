@@ -28,7 +28,7 @@
   [31m│[0m        [2m7[0m │ pub fn blueprint() -> Blueprint {
   [31m│[0m        [2m8[0m │     let mut bp = Blueprint::new();
   [31m│[0m          · [35;1m                 ────────┬───────[0m
-  [31m│[0m          ·                          [35;1m╰── Register your constructor against this blueprint[0m
+  [31m│[0m          ·              [35;1mRegister your constructor against this blueprint[0m
   [31m│[0m        [2m9[0m │     bp.constructor(f!(crate::singleton), Lifecycle::Singleton);
   [31m│[0m          ╰────
   [31m│[0m [36m  help: [0mIf you want different instances, consider creating separate newtypes

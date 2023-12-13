@@ -5,6 +5,6 @@
   [31m│[0m  [2m10[0m │     };
   [31m│[0m  [2m11[0m │     bp.route(POST, "/home", callable);
   [31m│[0m     · [35;1m                            ────┬───[0m
-  [31m│[0m     ·                  [35;1mThe invalid import path was registered here[0m
+  [31m│[0m     ·                [35;1mThe invalid import path was registered here[0m
   [31m│[0m  [2m12[0m │     bp
   [31m│[0m     ╰────

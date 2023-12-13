@@ -16,7 +16,7 @@
   [31m│[0m  [2m30[0m │     bp.constructor(f!(crate::a), Lifecycle::Singleton);
   [31m│[0m  [2m31[0m │     bp.constructor(f!(crate::b), Lifecycle::RequestScoped);
   [31m│[0m     · [35;1m                   ──────┬─────[0m
-  [31m│[0m     ·                          [35;1m╰── The request-scoped dependency was registered here[0m
+  [31m│[0m     ·             [35;1mThe request-scoped dependency was registered here[0m
   [31m│[0m  [2m32[0m │     bp.constructor(f!(crate::c), Lifecycle::Transient);
   [31m│[0m     ╰────
 

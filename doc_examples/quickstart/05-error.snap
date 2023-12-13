@@ -7,14 +7,14 @@ ERROR:
   │  13 │     bp.route(GET, "/api/ping", f!(crate::routes::status::ping));
   │  14 │     bp.route(GET, "/api/greet/:name", f!(crate::routes::greet::greet));
   │     ·                                       ───────────────┬───────────────
-  │     ·                                                      ╰── The request handler was registered here
+  │     ·            The request handler was registered here ──╯
   │  15 │     bp
   │     ╰────
   │     ╭─[demo/src/routes/greet.rs:10:1]
   │  10 │ 
   │  11 │ pub fn greet(params: RouteParams<GreetParams>, user_agent: UserAgent) -> Response {
   │     ·                                                            ────┬────
-  │     ·                                                                ╰── I don't know how to construct an instance of this input parameter
+  │     ·               I don't know how to construct an instance of this input parameter
   │  12 │     if let UserAgent::Unknown = user_agent {
   │     ╰────
   │   help: Register a constructor for `demo::user_agent::UserAgent`
