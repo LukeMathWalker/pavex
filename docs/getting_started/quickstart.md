@@ -140,6 +140,7 @@ body.
 
 Create a new module, `greet.rs`, in the `demo/src/routes` folder:
 
+
 --8<-- "doc_examples/quickstart/02-new_submodule.snap"
 
 --8<-- "doc_examples/quickstart/02-route_def.snap"
@@ -244,7 +245,7 @@ Let's find out!
 
 If you try to build the project now, you'll get an error from Pavex:
 
-```text
+```ansi-color
 --8<-- "doc_examples/quickstart/05-error.snap"
 ```
 
@@ -291,7 +292,7 @@ Let's change the signature of `UserAgent::extract` to return a `Result` instead:
 
 If you try to build the project now, you'll get an error from Pavex:
 
-```text
+```ansi-color
 --8<-- "doc_examples/quickstart/07-error.snap"
 ```
 

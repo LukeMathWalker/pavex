@@ -56,3 +56,5 @@ theme:
 exclude_docs: |
   README.md
   Dockerfile
+extra_css:
+  - ansi.css

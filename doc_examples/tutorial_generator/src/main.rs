@@ -274,7 +274,7 @@ fn main() -> Result<(), anyhow::Error> {
             }
         }
     }
-  
+
     if !errors.is_empty() {
         eprintln!("One or more snapshots didn't match the expected value.");
         for error in errors {
@@ -318,7 +318,10 @@ fn clean_up() {
 
 fn run_script(script: &str) -> Result<ScriptOutcome, anyhow::Error> {
     let mut options = ScriptOptions::new();
-    let env_vars = HashMap::from([("PAVEX_TTY_WIDTH".to_string(), "100".to_string())]);
+    let env_vars = HashMap::from([
+        ("PAVEX_TTY_WIDTH".to_string(), "100".to_string()),
+        ("PAVEX_COLOR".to_string(), "always".to_string()),
+    ]);
     options.env_vars = Some(env_vars);
 
     run_script::run(script, &Default::default(), &options)

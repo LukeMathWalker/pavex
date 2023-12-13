@@ -1,23 +1,23 @@
-ERROR: 
-  × I can't invoke your request handler, `demo::routes::greet::greet`, because it needs an
-  │ instance of `demo::user_agent::UserAgent` as input, but I can't find a constructor for that
-  │ type.
-  │
-  │     ╭─[demo/src/blueprint.rs:13:1]
-  │  13 │     bp.route(GET, "/api/ping", f!(crate::routes::status::ping));
-  │  14 │     bp.route(GET, "/api/greet/:name", f!(crate::routes::greet::greet));
-  │     ·                                       ───────────────┬───────────────
-  │     ·            The request handler was registered here ──╯
-  │  15 │     bp
-  │     ╰────
-  │     ╭─[demo/src/routes/greet.rs:10:1]
-  │  10 │ 
-  │  11 │ pub fn greet(params: RouteParams<GreetParams>, user_agent: UserAgent) -> Response {
-  │     ·                                                            ────┬────
-  │     ·               I don't know how to construct an instance of this input parameter
-  │  12 │     if let UserAgent::Unknown = user_agent {
-  │     ╰────
-  │   help: Register a constructor for `demo::user_agent::UserAgent`
+[31m[1mERROR[0m[39m: 
+  [31m×[0m I can't invoke your request handler, `demo::routes::greet::greet`, because it needs an
+  [31m│[0m instance of `demo::user_agent::UserAgent` as input, but I can't find a constructor for that
+  [31m│[0m type.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mdemo/src/blueprint.rs[0m:13:1]
+  [31m│[0m  [2m13[0m │     bp.route(GET, "/api/ping", f!(crate::routes::status::ping));
+  [31m│[0m  [2m14[0m │     bp.route(GET, "/api/greet/:name", f!(crate::routes::greet::greet));
+  [31m│[0m     · [35;1m                                      ───────────────┬───────────────[0m
+  [31m│[0m     ·            [35;1mThe request handler was registered here ──╯[0m
+  [31m│[0m  [2m15[0m │     bp
+  [31m│[0m     ╰────
+  [31m│[0m     ╭─[[36;1;4mdemo/src/routes/greet.rs[0m:10:1]
+  [31m│[0m  [2m10[0m │ 
+  [31m│[0m  [2m11[0m │ pub fn greet(params: RouteParams<GreetParams>, user_agent: UserAgent) -> Response {
+  [31m│[0m     · [35;1m                                                           ────┬────[0m
+  [31m│[0m     ·               [35;1mI don't know how to construct an instance of this input parameter[0m
+  [31m│[0m  [2m12[0m │     if let UserAgent::Unknown = user_agent {
+  [31m│[0m     ╰────
+  [31m│[0m [36m  help: [0mRegister a constructor for `demo::user_agent::UserAgent`
 
 Error: `pavex_cli` exited with a non-zero status code: 1
 error: Failed to run `bp`, the code generator for package `demo_server_sdk`
