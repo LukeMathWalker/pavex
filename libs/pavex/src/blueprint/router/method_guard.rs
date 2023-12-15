@@ -85,10 +85,10 @@ impl MethodGuard {
                 _ => true,
             },
             inner::MethodGuard::Some(inner::SomeMethodGuard { bitset, extensions }) => {
-                if let Some(bit) = method_to_bitset(&method) {
+                if let Some(bit) = method_to_bitset(method) {
                     *bitset & bit != 0
                 } else {
-                    extensions.contains(&method)
+                    extensions.contains(method)
                 }
             }
         }
@@ -126,16 +126,16 @@ impl MethodGuard {
                         .into_iter()
                         .filter(|method| self.allows_(method)),
                     )
-                    .map(|m| Method::from(m));
+                    .map(Method::from);
                 AllowedMethods::Some(MethodAllowList::from_iter(methods))
             }
         }
     }
 }
 
-impl Into<MethodGuard> for Method {
-    fn into(self) -> MethodGuard {
-        let method = inner::Method::from(self);
+impl From<Method> for MethodGuard {
+    fn from(val: Method) -> Self {
+        let method = inner::Method::from(val);
         let inner = if let Some(bit) = method_to_bitset(&method) {
             inner::MethodGuard::Some(inner::SomeMethodGuard {
                 bitset: bit,
@@ -345,7 +345,7 @@ mod inner {
             | &Method::DELETE
             | &Method::TRACE
             | &Method::HEAD
-            | &Method::CONNECT => Some(_method_to_bitset(&method)),
+            | &Method::CONNECT => Some(_method_to_bitset(method)),
             _ => None,
         }
     }
@@ -355,17 +355,17 @@ mod inner {
     // This is why we use this function instead of `method_to_bitset` directly in the `const`
     // declarations below.
     const fn _method_to_bitset(method: &Method) -> u16 {
-        match method {
-            &Method::GET => 0b0000_0001_0000_0000,
-            &Method::POST => 0b0000_0000_1000_0000,
-            &Method::PATCH => 0b0000_0000_0100_0000,
-            &Method::OPTIONS => 0b0000_0000_0010_0000,
-            &Method::PUT => 0b0000_0000_0001_0000,
-            &Method::DELETE => 0b0000_0000_0000_1000,
-            &Method::TRACE => 0b0000_0000_0000_0100,
-            &Method::HEAD => 0b0000_0000_0000_0010,
-            &Method::CONNECT => 0b0000_0000_0000_0001,
-            &Method::Custom(_) => panic!(),
+        match *method {
+            Method::GET => 0b0000_0001_0000_0000,
+            Method::POST => 0b0000_0000_1000_0000,
+            Method::PATCH => 0b0000_0000_0100_0000,
+            Method::OPTIONS => 0b0000_0000_0010_0000,
+            Method::PUT => 0b0000_0000_0001_0000,
+            Method::DELETE => 0b0000_0000_0000_1000,
+            Method::TRACE => 0b0000_0000_0000_0100,
+            Method::HEAD => 0b0000_0000_0000_0010,
+            Method::CONNECT => 0b0000_0000_0000_0001,
+            Method::Custom(_) => panic!(),
         }
     }
 
