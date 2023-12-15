@@ -1,10 +1,9 @@
 use std::collections::HashSet;
 use std::str::FromStr;
 
+use http::Method;
 use serde::ser::SerializeSeq;
 use serde::{Deserializer, Serializer};
-
-use http::Method;
 
 /// Match incoming requests based on their HTTP method.
 ///
@@ -42,6 +41,14 @@ impl MethodGuard {
     pub fn new(allowed_methods: impl IntoIterator<Item = Method>) -> Self {
         let allowed_methods = AllowedMethods::Multiple(allowed_methods.into_iter().collect());
         Self { allowed_methods }
+    }
+}
+
+impl Into<MethodGuard> for Method {
+    fn into(self) -> MethodGuard {
+        MethodGuard {
+            allowed_methods: AllowedMethods::Single(self),
+        }
     }
 }
 
