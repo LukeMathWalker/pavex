@@ -122,12 +122,8 @@ impl Blueprint {
     /// # fn main() {
     /// # let mut bp = Blueprint::new();
     ///
-    /// // `crate::my_handler` will be used to handle both `PATCH` and `POST` requests to `/path`
-    /// bp.route(
-    ///     MethodGuard::new([Method::PATCH, Method::POST]),
-    ///     "/path",
-    ///     f!(crate::my_handler)
-    /// );
+    /// // `crate::my_handler` will be used for both `PATCH` and `POST` requests to `/path`
+    /// bp.route(PATCH.or(POST), "/path", f!(crate::my_handler));
     /// # }
     /// ```
     ///

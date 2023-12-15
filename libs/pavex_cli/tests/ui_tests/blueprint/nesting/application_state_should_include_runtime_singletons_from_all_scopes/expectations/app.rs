@@ -47,7 +47,10 @@ async fn route_request(
     let matched_route = match server_state.router.at(&request_head.uri.path()) {
         Ok(m) => m,
         Err(_) => {
-            let allowed_methods = pavex::router::AllowedMethods::new(vec![]);
+            let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter(
+                    vec![],
+                )
+                .into();
             return route_1::handler(&allowed_methods).await;
         }
     };
@@ -63,9 +66,10 @@ async fn route_request(
                     route_2::handler(server_state.application_state.s1.clone()).await
                 }
                 _ => {
-                    let allowed_methods = pavex::router::AllowedMethods::new(
-                        vec![pavex::http::Method::GET],
-                    );
+                    let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
+                            pavex::http::Method::GET,
+                        ])
+                        .into();
                     route_1::handler(&allowed_methods).await
                 }
             }
@@ -76,9 +80,10 @@ async fn route_request(
                     route_0::handler(server_state.application_state.s0.clone()).await
                 }
                 _ => {
-                    let allowed_methods = pavex::router::AllowedMethods::new(
-                        vec![pavex::http::Method::GET],
-                    );
+                    let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
+                            pavex::http::Method::GET,
+                        ])
+                        .into();
                     route_1::handler(&allowed_methods).await
                 }
             }

@@ -40,7 +40,7 @@ async fn route_request(
     let matched_route = match server_state.router.at(&request_head.uri.path()) {
         Ok(m) => m,
         Err(_) => {
-            let allowed_methods: pavex::router::AllowedMethods = pavex::router::allowed_methods::MethodAllowList::from_iter(
+            let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter(
                     vec![],
                 )
                 .into();
