@@ -91,6 +91,11 @@ impl AllMethods {
         }
     }
 
+    /// Returns `true` if custom HTTP methods are allowed, `false` otherwise.
+    pub const fn allows_extensions(&self) -> bool {
+        self.include_extensions
+    }
+
     /// All HTTP methods are allowed, including custom ones.
     ///
     /// Use [`AllMethods::with_extensions`] if you don't want to allow custom methods.

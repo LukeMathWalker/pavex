@@ -7,11 +7,18 @@ use itertools::Itertools;
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct RouterKey {
     pub path: String,
-    /// If set to `Some(method_set)`, it will only match requests with an HTTP method that is
-    /// present in the set.
-    /// If set to `None`, it means that the handler matches all incoming requests for the given
-    /// path, regardless of the HTTP method.
-    pub method_guard: Option<BTreeSet<String>>,
+    pub method_guard: MethodGuard,
+}
+
+/// If set to `Some(method_set)`, it will only match requests with an HTTP method that is
+/// present in the set.
+/// If set to `Any`, it means that the handler matches all incoming requests for the given
+/// path, regardless of the HTTP method.
+/// Custom methods are only allowed if `with_extensions` is set to `true`.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum MethodGuard {
+    Any { with_extensions: bool },
+    Some(BTreeSet<String>),
 }
 
 impl RouterKey {
@@ -19,8 +26,14 @@ impl RouterKey {
     /// a specific route in an error message.
     pub fn diagnostic_repr(&self) -> String {
         let method_guard = match &self.method_guard {
-            Some(method_set) => method_set.clone().iter().join("|").to_string(),
-            None => String::from("ANY"),
+            MethodGuard::Any { with_extensions } => {
+                if *with_extensions {
+                    String::from("ANY_WITH_EXTENSIONS")
+                } else {
+                    String::from("ANY")
+                }
+            }
+            MethodGuard::Some(method_set) => method_set.clone().iter().join("|").to_string(),
         };
         format!("{} {}", method_guard, self.path)
     }

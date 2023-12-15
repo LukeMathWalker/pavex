@@ -21,11 +21,8 @@ pub fn blueprint() -> Blueprint {
     bp.route(PUT, "/put", f!(crate::handler));
     bp.route(TRACE, "/trace", f!(crate::handler));
     bp.route(ANY, "/any", f!(crate::handler));
-    bp.route(
-        MethodGuard::new([Method::PATCH, Method::POST]),
-        "/mixed",
-        f!(crate::handler),
-    );
+    bp.route(PATCH.or(POST), "/mixed", f!(crate::handler));
+
     let custom_method = Method::from_bytes(b"CUSTOM").unwrap();
     let custom2_method = Method::from_bytes(b"HEY").unwrap();
     bp.route(
