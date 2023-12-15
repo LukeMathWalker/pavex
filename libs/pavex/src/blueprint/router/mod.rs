@@ -7,7 +7,8 @@ pub use http::Method;
 
 pub use fallback::Fallback;
 pub use method_guard::{
-    AllowedMethods, MethodGuard, ANY, CONNECT, DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT, TRACE,
+    MethodGuard, ANY, ANY_WITH_EXTENSIONS, CONNECT, DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT,
+    TRACE,
 };
 pub use route::Route;
 
