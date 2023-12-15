@@ -27,7 +27,7 @@ jobs:
           cd libs
           cargo build --package pavex_cli --bin pavex --release
       - name: Store CLI artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: pavex_cli
           path: libs/target/release/pavex
@@ -48,7 +48,7 @@ jobs:
           cd doc_examples/tutorial_generator
           cargo build
       - name: Store CLI artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: tutorial_generator
           path: doc_examples/tutorial_generator/target/debug/tutorial_generator
@@ -132,7 +132,7 @@ jobs:
       - name: Build docs
         run: |
           docker run --rm -v ${PWD}:/docs pavex-docs build
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: docs
           path: site/
