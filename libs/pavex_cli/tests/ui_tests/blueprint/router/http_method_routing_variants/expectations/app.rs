@@ -111,7 +111,7 @@ async fn route_request(
                 _ => {
                     let allowed_methods: pavex::router::AllowedMethods = pavex::router::allowed_methods::MethodAllowList::from_iter([
                             pavex::http::Method::try_from("CUSTOM")
-                                .expect("Failed to parse custom method"),
+                                .expect("CUSTOM is not a valid (custom) HTTP method"),
                         ])
                         .into();
                     route_14::handler(&allowed_methods).await
@@ -178,10 +178,10 @@ async fn route_request(
                 _ => {
                     let allowed_methods: pavex::router::AllowedMethods = pavex::router::allowed_methods::MethodAllowList::from_iter([
                             pavex::http::Method::try_from("CUSTOM")
-                                .expect("Failed to parse custom method"),
+                                .expect("CUSTOM is not a valid (custom) HTTP method"),
                             pavex::http::Method::GET,
                             pavex::http::Method::try_from("HEY")
-                                .expect("Failed to parse custom method"),
+                                .expect("HEY is not a valid (custom) HTTP method"),
                         ])
                         .into();
                     route_14::handler(&allowed_methods).await

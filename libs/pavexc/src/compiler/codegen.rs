@@ -347,14 +347,17 @@ fn get_request_dispatcher(
                     .methods_and_pipelines
                     .iter()
                     .flat_map(|(methods, _)| methods)
-                    .map(|m| if WELL_KNOWN_METHODS.contains(m.as_str()) {
-                        let i = format_ident!("{}", m);
-                        quote! {
+                    .map(|m| {
+                        if WELL_KNOWN_METHODS.contains(m.as_str()) {
+                            let i = format_ident!("{}", m);
+                            quote! {
                                 #pavex::http::Method::#i
-                        }
-                    } else {
-                        quote! {
-                            #pavex::http::Method::try_from(#m).expect("Failed to parse custom method")
+                            }
+                        } else {
+                            let expect_msg = format!("{} is not a valid (custom) HTTP method", m);
+                            quote! {
+                                #pavex::http::Method::try_from(#m).expect(#expect_msg)
+                            }
                         }
                     });
                 quote! {
