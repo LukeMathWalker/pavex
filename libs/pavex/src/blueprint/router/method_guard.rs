@@ -3,16 +3,16 @@ use std::collections::BTreeSet;
 use http::Method;
 
 use crate::blueprint::router::method_guard::inner::method_to_bitset;
-use crate::router::allowed_methods::MethodAllowList;
-use crate::router::AllowedMethods;
+use crate::router::{AllowedMethods, MethodAllowList};
 
 /// Used by [`Blueprint::route`] to specify which HTTP methods the route should match.
 ///
-/// If you want to match **any** HTTP method, use [`ANY`].  
 /// If you want to match a single HTTP method, use the dedicated constants in this
 /// module ([`GET`], [`POST`], [`PATCH`], [`DELETE`], etc.).  
 /// If you want to match a list of HTTP methods, use either [`MethodGuard::or`] or
-/// [`MethodGuard::from_iter`].
+/// [`MethodGuard::from_iter`].  
+/// If you want to match all well-known HTTP methods, use [`ANY`].  
+/// If you want to match **any** HTTP method, including custom ones, use [`ANY_WITH_EXTENSIONS`].  
 ///
 /// [`Blueprint::route`]: crate::blueprint::Blueprint::route
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]

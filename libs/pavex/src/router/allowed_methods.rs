@@ -3,7 +3,7 @@ use smallvec::SmallVec;
 
 use crate::http::Method;
 
-/// The list of HTTP methods that are allowed for a given path.
+/// The set of HTTP methods that are allowed for a given path.
 ///
 /// # Example
 ///
@@ -44,7 +44,9 @@ use crate::http::Method;
 /// [fallback handlers]: crate::blueprint::Blueprint::fallback
 #[derive(Debug, Clone)]
 pub enum AllowedMethods {
+    /// Only a finite set of HTTP methods are allowed for a given path.
     Some(MethodAllowList),
+    /// All HTTP methods are allowed for a given path, including custom ones.
     All,
 }
 
@@ -52,7 +54,7 @@ impl AllowedMethods {
     /// The value that should be set for the `Allow` header
     /// in a `405 Method Not Allowed` response for this route path.
     ///
-    /// It returns `None` if all methods are allowed, including custom ones.  
+    /// It returns `None` if all methods are allowed.  
     /// It returns the comma-separated list of accepted HTTP methods otherwise.
     pub fn allow_header_value(&self) -> Option<HeaderValue> {
         match self {
@@ -63,6 +65,9 @@ impl AllowedMethods {
 }
 
 #[derive(Debug, Clone)]
+/// The variant of [`AllowedMethods`] that only allows a finite set of HTTP methods for a given path.
+///
+/// Check out [`AllowedMethods`] for more information.
 pub struct MethodAllowList {
     // We use 5 as our inlining limit because that's going to fit
     // all methods in the most common case
