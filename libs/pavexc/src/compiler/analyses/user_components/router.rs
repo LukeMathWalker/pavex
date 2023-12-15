@@ -91,23 +91,10 @@ impl Router {
                 continue;
             };
             match &router_key.method_guard {
-                MethodGuard::Any { with_extensions } => {
-                    if *with_extensions {
-                        // We don't need to register a fallback for this route, since it matches
-                        // all methods.
-                        route_path2sub_router.insert(router_key.path.clone(), LeafRouter::new(id));
-                    } else {
-                        // We need to register a fallback for this route, since it matches
-                        // all methods **except** custom ones.
-                        let sub_router: &mut LeafRouter = route_path2sub_router
-                            .entry(router_key.path.clone())
-                            .or_insert_with(|| LeafRouter::new(route_id2fallback_id[&id]));
-                        let well_known_methods = METHODS
-                            .iter()
-                            .map(|s| s.to_string())
-                            .collect::<BTreeSet<_>>();
-                        sub_router.handler_id2methods.insert(id, well_known_methods);
-                    }
+                MethodGuard::Any => {
+                    // We don't need to register a fallback for this route, since it matches
+                    // all methods.
+                    route_path2sub_router.insert(router_key.path.clone(), LeafRouter::new(id));
                 }
                 MethodGuard::Some(methods) => {
                     let sub_router: &mut LeafRouter = route_path2sub_router

@@ -17,7 +17,7 @@ pub struct RouterKey {
 /// Custom methods are only allowed if `with_extensions` is set to `true`.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum MethodGuard {
-    Any { with_extensions: bool },
+    Any,
     Some(BTreeSet<String>),
 }
 
@@ -26,13 +26,7 @@ impl RouterKey {
     /// a specific route in an error message.
     pub fn diagnostic_repr(&self) -> String {
         let method_guard = match &self.method_guard {
-            MethodGuard::Any { with_extensions } => {
-                if *with_extensions {
-                    String::from("ANY_WITH_EXTENSIONS")
-                } else {
-                    String::from("ANY")
-                }
-            }
+            MethodGuard::Any => String::from("*"),
             MethodGuard::Some(method_set) => method_set.clone().iter().join("|").to_string(),
         };
         format!("{} {}", method_guard, self.path)

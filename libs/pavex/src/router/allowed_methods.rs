@@ -45,7 +45,7 @@ use crate::http::Method;
 #[derive(Debug, Clone)]
 pub enum AllowedMethods {
     Some(MethodAllowList),
-    All(AllMethods),
+    All,
 }
 
 impl AllowedMethods {
@@ -57,7 +57,7 @@ impl AllowedMethods {
     pub fn allow_header_value(&self) -> Option<HeaderValue> {
         match self {
             AllowedMethods::Some(m) => m.allow_header_value(),
-            AllowedMethods::All(m) => m.allow_header_value(),
+            AllowedMethods::All => None,
         }
     }
 }
@@ -68,52 +68,6 @@ pub struct MethodAllowList {
     // all methods in the most common case
     // (i.e. `GET`/`POST`/`PUT`/`DELETE`/`PATCH` on a certain route path).
     methods: SmallVec<[Method; 5]>,
-}
-
-#[derive(Debug, Clone)]
-pub struct AllMethods {
-    include_extensions: bool,
-}
-
-impl AllMethods {
-    /// The value that should be set for the `Allow` header
-    /// in a `405 Method Not Allowed` response for this route path.
-    ///
-    /// It returns `None` if custom methods are allowed.
-    /// It returns the comma-separated list of all well-known HTTP methods otherwise.
-    pub const fn allow_header_value(&self) -> Option<HeaderValue> {
-        if self.include_extensions {
-            None
-        } else {
-            Some(HeaderValue::from_static(
-                "CONNECT,DELETE,GET,HEAD,PATCH,POST,PUT,OPTIONS,TRACE",
-            ))
-        }
-    }
-
-    /// Returns `true` if custom HTTP methods are allowed, `false` otherwise.
-    pub const fn allows_extensions(&self) -> bool {
-        self.include_extensions
-    }
-
-    /// All HTTP methods are allowed, including custom ones.
-    ///
-    /// Use [`AllMethods::with_extensions`] if you don't want to allow custom methods.
-    pub const fn with_extensions() -> Self {
-        Self {
-            include_extensions: true,
-        }
-    }
-
-    /// All well-known HTTP methods are allowed.  
-    /// Custom ones are rejected.
-    ///
-    /// Use [`AllMethods::with_extensions`] if you want to allow custom methods.
-    pub const fn without_extensions() -> Self {
-        Self {
-            include_extensions: false,
-        }
-    }
 }
 
 impl MethodAllowList {
@@ -187,11 +141,5 @@ where
 impl From<MethodAllowList> for AllowedMethods {
     fn from(methods: MethodAllowList) -> Self {
         Self::Some(methods)
-    }
-}
-
-impl From<AllMethods> for AllowedMethods {
-    fn from(methods: AllMethods) -> Self {
-        Self::All(methods)
     }
 }

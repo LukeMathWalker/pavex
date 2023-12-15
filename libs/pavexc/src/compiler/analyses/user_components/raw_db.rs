@@ -350,9 +350,7 @@ impl RawUserComponentDb {
             let route_scope_id = scope_graph_builder.add_scope(current_scope_id, None);
             let router_key = {
                 let method_guard = match &registered_route.method_guard.allowed_methods() {
-                    AllowedMethods::All(all_methods) => MethodGuard::Any {
-                        with_extensions: all_methods.allows_extensions(),
-                    },
+                    AllowedMethods::All => MethodGuard::Any,
                     AllowedMethods::Some(methods) => {
                         MethodGuard::Some(methods.iter().map(|m| m.to_string()).collect())
                     }

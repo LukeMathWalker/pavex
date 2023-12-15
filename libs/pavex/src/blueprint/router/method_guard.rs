@@ -3,7 +3,7 @@ use std::collections::BTreeSet;
 use http::Method;
 
 use crate::blueprint::router::method_guard::inner::method_to_bitset;
-use crate::router::allowed_methods::{AllMethods, MethodAllowList};
+use crate::router::allowed_methods::MethodAllowList;
 use crate::router::AllowedMethods;
 
 /// Used by [`Blueprint::route`] to specify which HTTP methods the route should match.
@@ -80,9 +80,7 @@ impl MethodGuard {
 
     fn allows_(&self, method: &inner::Method) -> bool {
         match &self.inner {
-            inner::MethodGuard::Any { with_extensions } => {
-                !matches!((method, with_extensions), (inner::Method::Custom(_), false))
-            }
+            inner::MethodGuard::Any => true,
             inner::MethodGuard::Some(inner::SomeMethodGuard { bitset, extensions }) => {
                 if let Some(bit) = method_to_bitset(method) {
                     *bitset & bit != 0
@@ -96,13 +94,7 @@ impl MethodGuard {
     /// Return the methods allowed by this [`MethodGuard`].
     pub fn allowed_methods(&self) -> AllowedMethods {
         match &self.inner {
-            inner::MethodGuard::Any { with_extensions } => {
-                AllowedMethods::All(if *with_extensions {
-                    AllMethods::with_extensions()
-                } else {
-                    AllMethods::without_extensions()
-                })
-            }
+            inner::MethodGuard::Any => AllowedMethods::All,
             inner::MethodGuard::Some(inner::SomeMethodGuard {
                 bitset: _,
                 extensions,
@@ -157,20 +149,14 @@ impl From<Method> for MethodGuard {
 ///
 /// If you want to allow custom HTTP methods in addition to well-known ones,
 /// use [`ANY_WITH_EXTENSIONS`].
-pub const ANY: MethodGuard = MethodGuard {
-    inner: inner::MethodGuard::Any {
-        with_extensions: false,
-    },
-};
+pub const ANY: MethodGuard = MethodGuard { inner: inner::ANY };
 
 /// A [`MethodGuard`] that matches all incoming requests, no matter their HTTP method,
 /// even if it's a custom one.
 ///
 /// If you only want to allow well-known HTTP methods, use [`ANY`].
 pub const ANY_WITH_EXTENSIONS: MethodGuard = MethodGuard {
-    inner: inner::MethodGuard::Any {
-        with_extensions: true,
-    },
+    inner: inner::ANY_WITH_EXTENSIONS,
 };
 
 /// A [`MethodGuard`] that matches incoming requests using the `GET` HTTP method.
@@ -218,7 +204,7 @@ mod inner {
 
     #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
     pub(super) enum MethodGuard {
-        Any { with_extensions: bool },
+        Any,
         Some(SomeMethodGuard),
     }
 
@@ -284,18 +270,7 @@ mod inner {
     impl MethodGuard {
         pub(super) fn or(self, other: MethodGuard) -> Self {
             match (self, other) {
-                (
-                    MethodGuard::Any {
-                        with_extensions: this,
-                    },
-                    MethodGuard::Any {
-                        with_extensions: other,
-                    },
-                ) => MethodGuard::Any {
-                    with_extensions: this || other,
-                },
-                (MethodGuard::Any { with_extensions }, _)
-                | (_, MethodGuard::Any { with_extensions }) => MethodGuard::Any { with_extensions },
+                (MethodGuard::Any, _) | (_, MethodGuard::Any) => MethodGuard::Any,
                 (MethodGuard::Some(this), MethodGuard::Some(other)) => {
                     MethodGuard::Some(this.or(other))
                 }
@@ -382,4 +357,6 @@ mod inner {
     pub(super) const HEAD: MethodGuard = MethodGuard::from_bits(_method_to_bitset(&Method::HEAD));
     pub(super) const CONNECT: MethodGuard =
         MethodGuard::from_bits(_method_to_bitset(&Method::CONNECT));
+    pub(super) const ANY: MethodGuard = MethodGuard::from_bits(0b0000_0001_1111_1111);
+    pub(super) const ANY_WITH_EXTENSIONS: MethodGuard = MethodGuard::Any;
 }
