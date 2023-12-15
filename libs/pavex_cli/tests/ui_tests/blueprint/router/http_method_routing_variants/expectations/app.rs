@@ -25,18 +25,19 @@ pub fn run(
 fn build_router() -> matchit::Router<u32> {
     let mut router = matchit::Router::new();
     router.insert("/any", 0u32).unwrap();
-    router.insert("/connect", 1u32).unwrap();
-    router.insert("/custom", 2u32).unwrap();
-    router.insert("/delete", 3u32).unwrap();
-    router.insert("/get", 4u32).unwrap();
-    router.insert("/head", 5u32).unwrap();
-    router.insert("/mixed", 6u32).unwrap();
-    router.insert("/mixed_with_custom", 7u32).unwrap();
-    router.insert("/options", 8u32).unwrap();
-    router.insert("/patch", 9u32).unwrap();
-    router.insert("/post", 10u32).unwrap();
-    router.insert("/put", 11u32).unwrap();
-    router.insert("/trace", 12u32).unwrap();
+    router.insert("/any_w_extensions", 1u32).unwrap();
+    router.insert("/connect", 2u32).unwrap();
+    router.insert("/custom", 3u32).unwrap();
+    router.insert("/delete", 4u32).unwrap();
+    router.insert("/get", 5u32).unwrap();
+    router.insert("/head", 6u32).unwrap();
+    router.insert("/mixed", 7u32).unwrap();
+    router.insert("/mixed_with_custom", 8u32).unwrap();
+    router.insert("/options", 9u32).unwrap();
+    router.insert("/patch", 10u32).unwrap();
+    router.insert("/post", 11u32).unwrap();
+    router.insert("/put", 12u32).unwrap();
+    router.insert("/trace", 13u32).unwrap();
     router
 }
 async fn route_request(
@@ -54,7 +55,7 @@ async fn route_request(
                     vec![],
                 )
                 .into();
-            return route_13::handler(&allowed_methods).await;
+            return route_14::handler(&allowed_methods).await;
         }
     };
     let route_id = matched_route.value;
@@ -87,11 +88,12 @@ async fn route_request(
                             pavex::http::Method::TRACE,
                         ])
                         .into();
-                    route_13::handler(&allowed_methods).await
+                    route_14::handler(&allowed_methods).await
                 }
             }
         }
-        1u32 => {
+        1u32 => route_10::handler().await,
+        2u32 => {
             match &request_head.method {
                 &pavex::http::Method::CONNECT => route_0::handler().await,
                 _ => {
@@ -99,24 +101,24 @@ async fn route_request(
                             pavex::http::Method::CONNECT,
                         ])
                         .into();
-                    route_13::handler(&allowed_methods).await
+                    route_14::handler(&allowed_methods).await
                 }
             }
         }
-        2u32 => {
+        3u32 => {
             match &request_head.method {
-                s if s.as_str() == "CUSTOM" => route_11::handler().await,
+                s if s.as_str() == "CUSTOM" => route_12::handler().await,
                 _ => {
                     let allowed_methods: pavex::router::AllowedMethods = pavex::router::allowed_methods::MethodAllowList::from_iter([
                             pavex::http::Method::try_from("CUSTOM")
                                 .expect("Failed to parse custom method"),
                         ])
                         .into();
-                    route_13::handler(&allowed_methods).await
+                    route_14::handler(&allowed_methods).await
                 }
             }
         }
-        3u32 => {
+        4u32 => {
             match &request_head.method {
                 &pavex::http::Method::DELETE => route_1::handler().await,
                 _ => {
@@ -124,11 +126,11 @@ async fn route_request(
                             pavex::http::Method::DELETE,
                         ])
                         .into();
-                    route_13::handler(&allowed_methods).await
+                    route_14::handler(&allowed_methods).await
                 }
             }
         }
-        4u32 => {
+        5u32 => {
             match &request_head.method {
                 &pavex::http::Method::GET => route_2::handler().await,
                 _ => {
@@ -136,11 +138,11 @@ async fn route_request(
                             pavex::http::Method::GET,
                         ])
                         .into();
-                    route_13::handler(&allowed_methods).await
+                    route_14::handler(&allowed_methods).await
                 }
             }
         }
-        5u32 => {
+        6u32 => {
             match &request_head.method {
                 &pavex::http::Method::HEAD => route_3::handler().await,
                 _ => {
@@ -148,14 +150,14 @@ async fn route_request(
                             pavex::http::Method::HEAD,
                         ])
                         .into();
-                    route_13::handler(&allowed_methods).await
+                    route_14::handler(&allowed_methods).await
                 }
             }
         }
-        6u32 => {
+        7u32 => {
             match &request_head.method {
                 &pavex::http::Method::PATCH | &pavex::http::Method::POST => {
-                    route_10::handler().await
+                    route_11::handler().await
                 }
                 _ => {
                     let allowed_methods: pavex::router::AllowedMethods = pavex::router::allowed_methods::MethodAllowList::from_iter([
@@ -163,15 +165,15 @@ async fn route_request(
                             pavex::http::Method::POST,
                         ])
                         .into();
-                    route_13::handler(&allowed_methods).await
+                    route_14::handler(&allowed_methods).await
                 }
             }
         }
-        7u32 => {
+        8u32 => {
             match &request_head.method {
-                &pavex::http::Method::GET => route_12::handler().await,
+                &pavex::http::Method::GET => route_13::handler().await,
                 s if s.as_str() == "CUSTOM" || s.as_str() == "HEY" => {
-                    route_12::handler().await
+                    route_13::handler().await
                 }
                 _ => {
                     let allowed_methods: pavex::router::AllowedMethods = pavex::router::allowed_methods::MethodAllowList::from_iter([
@@ -182,11 +184,11 @@ async fn route_request(
                                 .expect("Failed to parse custom method"),
                         ])
                         .into();
-                    route_13::handler(&allowed_methods).await
+                    route_14::handler(&allowed_methods).await
                 }
             }
         }
-        8u32 => {
+        9u32 => {
             match &request_head.method {
                 &pavex::http::Method::OPTIONS => route_4::handler().await,
                 _ => {
@@ -194,11 +196,11 @@ async fn route_request(
                             pavex::http::Method::OPTIONS,
                         ])
                         .into();
-                    route_13::handler(&allowed_methods).await
+                    route_14::handler(&allowed_methods).await
                 }
             }
         }
-        9u32 => {
+        10u32 => {
             match &request_head.method {
                 &pavex::http::Method::PATCH => route_5::handler().await,
                 _ => {
@@ -206,11 +208,11 @@ async fn route_request(
                             pavex::http::Method::PATCH,
                         ])
                         .into();
-                    route_13::handler(&allowed_methods).await
+                    route_14::handler(&allowed_methods).await
                 }
             }
         }
-        10u32 => {
+        11u32 => {
             match &request_head.method {
                 &pavex::http::Method::POST => route_6::handler().await,
                 _ => {
@@ -218,11 +220,11 @@ async fn route_request(
                             pavex::http::Method::POST,
                         ])
                         .into();
-                    route_13::handler(&allowed_methods).await
+                    route_14::handler(&allowed_methods).await
                 }
             }
         }
-        11u32 => {
+        12u32 => {
             match &request_head.method {
                 &pavex::http::Method::PUT => route_7::handler().await,
                 _ => {
@@ -230,11 +232,11 @@ async fn route_request(
                             pavex::http::Method::PUT,
                         ])
                         .into();
-                    route_13::handler(&allowed_methods).await
+                    route_14::handler(&allowed_methods).await
                 }
             }
         }
-        12u32 => {
+        13u32 => {
             match &request_head.method {
                 &pavex::http::Method::TRACE => route_8::handler().await,
                 _ => {
@@ -242,7 +244,7 @@ async fn route_request(
                             pavex::http::Method::TRACE,
                         ])
                         .into();
-                    route_13::handler(&allowed_methods).await
+                    route_14::handler(&allowed_methods).await
                 }
             }
         }
@@ -328,6 +330,12 @@ pub mod route_12 {
     }
 }
 pub mod route_13 {
+    pub async fn handler() -> pavex::response::Response {
+        let v0 = app::handler();
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v0)
+    }
+}
+pub mod route_14 {
     pub async fn handler(
         v0: &pavex::router::AllowedMethods,
     ) -> pavex::response::Response {
