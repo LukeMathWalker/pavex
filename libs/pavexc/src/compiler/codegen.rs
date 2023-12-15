@@ -358,9 +358,9 @@ fn get_request_dispatcher(
                         }
                     });
                 quote! {
-                    let allowed_methods = #pavex::router::AllowedMethods::from_iter(
+                    let allowed_methods: #pavex::router::AllowedMethods = #pavex::router::allowed_methods::MethodAllowList::from_iter(
                         [#(#allowed_methods),*]
-                    );
+                    ).into();
                 }
             };
 
@@ -466,7 +466,7 @@ fn get_request_dispatcher(
     };
     let allowed_methods = if fallback_codegened_pipeline.needs_allowed_methods(framework_items_db) {
         quote! {
-            let allowed_methods = #pavex::router::AllowedMethods::from_iter(vec![]);
+            let allowed_methods: #pavex::router::AllowedMethods = #pavex::router::allowed_methods::MethodAllowList::from_iter(vec![]).into();
         }
     } else {
         quote! {}

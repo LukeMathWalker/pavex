@@ -183,3 +183,15 @@ where
         }
     }
 }
+
+impl From<MethodAllowList> for AllowedMethods {
+    fn from(methods: MethodAllowList) -> Self {
+        Self::Some(methods)
+    }
+}
+
+impl From<AllMethods> for AllowedMethods {
+    fn from(methods: AllMethods) -> Self {
+        Self::All(methods)
+    }
+}

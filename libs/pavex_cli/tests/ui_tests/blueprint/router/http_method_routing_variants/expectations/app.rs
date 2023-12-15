@@ -50,7 +50,10 @@ async fn route_request(
     let matched_route = match server_state.router.at(&request_head.uri.path()) {
         Ok(m) => m,
         Err(_) => {
-            let allowed_methods = pavex::router::AllowedMethods::new(vec![]);
+            let allowed_methods: pavex::router::AllowedMethods = pavex::router::allowed_methods::MethodAllowList::from_iter(
+                    vec![],
+                )
+                .into();
             return route_13::handler(&allowed_methods).await;
         }
     };
@@ -60,14 +63,42 @@ async fn route_request(
         .params
         .into();
     match route_id {
-        0u32 => route_9::handler().await,
+        0u32 => {
+            match &request_head.method {
+                &pavex::http::Method::CONNECT
+                | &pavex::http::Method::DELETE
+                | &pavex::http::Method::GET
+                | &pavex::http::Method::HEAD
+                | &pavex::http::Method::OPTIONS
+                | &pavex::http::Method::PATCH
+                | &pavex::http::Method::POST
+                | &pavex::http::Method::PUT
+                | &pavex::http::Method::TRACE => route_9::handler().await,
+                _ => {
+                    let allowed_methods: pavex::router::AllowedMethods = pavex::router::allowed_methods::MethodAllowList::from_iter([
+                            pavex::http::Method::CONNECT,
+                            pavex::http::Method::DELETE,
+                            pavex::http::Method::GET,
+                            pavex::http::Method::HEAD,
+                            pavex::http::Method::OPTIONS,
+                            pavex::http::Method::PATCH,
+                            pavex::http::Method::POST,
+                            pavex::http::Method::PUT,
+                            pavex::http::Method::TRACE,
+                        ])
+                        .into();
+                    route_13::handler(&allowed_methods).await
+                }
+            }
+        }
         1u32 => {
             match &request_head.method {
                 &pavex::http::Method::CONNECT => route_0::handler().await,
                 _ => {
-                    let allowed_methods = pavex::router::AllowedMethods::new(
-                        vec![pavex::http::Method::CONNECT],
-                    );
+                    let allowed_methods: pavex::router::AllowedMethods = pavex::router::allowed_methods::MethodAllowList::from_iter([
+                            pavex::http::Method::CONNECT,
+                        ])
+                        .into();
                     route_13::handler(&allowed_methods).await
                 }
             }
@@ -76,12 +107,11 @@ async fn route_request(
             match &request_head.method {
                 s if s.as_str() == "CUSTOM" => route_11::handler().await,
                 _ => {
-                    let allowed_methods = pavex::router::AllowedMethods::new(
-                        vec![
+                    let allowed_methods: pavex::router::AllowedMethods = pavex::router::allowed_methods::MethodAllowList::from_iter([
                             pavex::http::Method::try_from("CUSTOM")
-                            .expect("Failed to parse custom method")
-                        ],
-                    );
+                                .expect("Failed to parse custom method"),
+                        ])
+                        .into();
                     route_13::handler(&allowed_methods).await
                 }
             }
@@ -90,9 +120,10 @@ async fn route_request(
             match &request_head.method {
                 &pavex::http::Method::DELETE => route_1::handler().await,
                 _ => {
-                    let allowed_methods = pavex::router::AllowedMethods::new(
-                        vec![pavex::http::Method::DELETE],
-                    );
+                    let allowed_methods: pavex::router::AllowedMethods = pavex::router::allowed_methods::MethodAllowList::from_iter([
+                            pavex::http::Method::DELETE,
+                        ])
+                        .into();
                     route_13::handler(&allowed_methods).await
                 }
             }
@@ -101,9 +132,10 @@ async fn route_request(
             match &request_head.method {
                 &pavex::http::Method::GET => route_2::handler().await,
                 _ => {
-                    let allowed_methods = pavex::router::AllowedMethods::new(
-                        vec![pavex::http::Method::GET],
-                    );
+                    let allowed_methods: pavex::router::AllowedMethods = pavex::router::allowed_methods::MethodAllowList::from_iter([
+                            pavex::http::Method::GET,
+                        ])
+                        .into();
                     route_13::handler(&allowed_methods).await
                 }
             }
@@ -112,9 +144,10 @@ async fn route_request(
             match &request_head.method {
                 &pavex::http::Method::HEAD => route_3::handler().await,
                 _ => {
-                    let allowed_methods = pavex::router::AllowedMethods::new(
-                        vec![pavex::http::Method::HEAD],
-                    );
+                    let allowed_methods: pavex::router::AllowedMethods = pavex::router::allowed_methods::MethodAllowList::from_iter([
+                            pavex::http::Method::HEAD,
+                        ])
+                        .into();
                     route_13::handler(&allowed_methods).await
                 }
             }
@@ -125,9 +158,11 @@ async fn route_request(
                     route_10::handler().await
                 }
                 _ => {
-                    let allowed_methods = pavex::router::AllowedMethods::new(
-                        vec![pavex::http::Method::PATCH, pavex::http::Method::POST],
-                    );
+                    let allowed_methods: pavex::router::AllowedMethods = pavex::router::allowed_methods::MethodAllowList::from_iter([
+                            pavex::http::Method::PATCH,
+                            pavex::http::Method::POST,
+                        ])
+                        .into();
                     route_13::handler(&allowed_methods).await
                 }
             }
@@ -139,15 +174,14 @@ async fn route_request(
                     route_12::handler().await
                 }
                 _ => {
-                    let allowed_methods = pavex::router::AllowedMethods::new(
-                        vec![
+                    let allowed_methods: pavex::router::AllowedMethods = pavex::router::allowed_methods::MethodAllowList::from_iter([
                             pavex::http::Method::try_from("CUSTOM")
-                            .expect("Failed to parse custom method"),
+                                .expect("Failed to parse custom method"),
                             pavex::http::Method::GET,
                             pavex::http::Method::try_from("HEY")
-                            .expect("Failed to parse custom method")
-                        ],
-                    );
+                                .expect("Failed to parse custom method"),
+                        ])
+                        .into();
                     route_13::handler(&allowed_methods).await
                 }
             }
@@ -156,9 +190,10 @@ async fn route_request(
             match &request_head.method {
                 &pavex::http::Method::OPTIONS => route_4::handler().await,
                 _ => {
-                    let allowed_methods = pavex::router::AllowedMethods::new(
-                        vec![pavex::http::Method::OPTIONS],
-                    );
+                    let allowed_methods: pavex::router::AllowedMethods = pavex::router::allowed_methods::MethodAllowList::from_iter([
+                            pavex::http::Method::OPTIONS,
+                        ])
+                        .into();
                     route_13::handler(&allowed_methods).await
                 }
             }
@@ -167,9 +202,10 @@ async fn route_request(
             match &request_head.method {
                 &pavex::http::Method::PATCH => route_5::handler().await,
                 _ => {
-                    let allowed_methods = pavex::router::AllowedMethods::new(
-                        vec![pavex::http::Method::PATCH],
-                    );
+                    let allowed_methods: pavex::router::AllowedMethods = pavex::router::allowed_methods::MethodAllowList::from_iter([
+                            pavex::http::Method::PATCH,
+                        ])
+                        .into();
                     route_13::handler(&allowed_methods).await
                 }
             }
@@ -178,9 +214,10 @@ async fn route_request(
             match &request_head.method {
                 &pavex::http::Method::POST => route_6::handler().await,
                 _ => {
-                    let allowed_methods = pavex::router::AllowedMethods::new(
-                        vec![pavex::http::Method::POST],
-                    );
+                    let allowed_methods: pavex::router::AllowedMethods = pavex::router::allowed_methods::MethodAllowList::from_iter([
+                            pavex::http::Method::POST,
+                        ])
+                        .into();
                     route_13::handler(&allowed_methods).await
                 }
             }
@@ -189,9 +226,10 @@ async fn route_request(
             match &request_head.method {
                 &pavex::http::Method::PUT => route_7::handler().await,
                 _ => {
-                    let allowed_methods = pavex::router::AllowedMethods::new(
-                        vec![pavex::http::Method::PUT],
-                    );
+                    let allowed_methods: pavex::router::AllowedMethods = pavex::router::allowed_methods::MethodAllowList::from_iter([
+                            pavex::http::Method::PUT,
+                        ])
+                        .into();
                     route_13::handler(&allowed_methods).await
                 }
             }
@@ -200,9 +238,10 @@ async fn route_request(
             match &request_head.method {
                 &pavex::http::Method::TRACE => route_8::handler().await,
                 _ => {
-                    let allowed_methods = pavex::router::AllowedMethods::new(
-                        vec![pavex::http::Method::TRACE],
-                    );
+                    let allowed_methods: pavex::router::AllowedMethods = pavex::router::allowed_methods::MethodAllowList::from_iter([
+                            pavex::http::Method::TRACE,
+                        ])
+                        .into();
                     route_13::handler(&allowed_methods).await
                 }
             }

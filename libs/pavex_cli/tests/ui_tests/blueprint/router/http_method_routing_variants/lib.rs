@@ -23,15 +23,11 @@ pub fn blueprint() -> Blueprint {
     bp.route(ANY, "/any", f!(crate::handler));
     bp.route(PATCH.or(POST), "/mixed", f!(crate::handler));
 
-    let custom_method = Method::from_bytes(b"CUSTOM").unwrap();
-    let custom2_method = Method::from_bytes(b"HEY").unwrap();
+    let custom_method: MethodGuard = Method::from_bytes(b"CUSTOM").unwrap().into();
+    let custom2_method: MethodGuard = Method::from_bytes(b"HEY").unwrap().into();
+    bp.route(custom_method.clone(), "/custom", f!(crate::handler));
     bp.route(
-        MethodGuard::new(vec![custom_method.clone()]),
-        "/custom",
-        f!(crate::handler),
-    );
-    bp.route(
-        MethodGuard::new(vec![custom_method, custom2_method, Method::GET]),
+        custom_method.or(custom2_method).or(GET),
         "/mixed_with_custom",
         f!(crate::handler),
     );
