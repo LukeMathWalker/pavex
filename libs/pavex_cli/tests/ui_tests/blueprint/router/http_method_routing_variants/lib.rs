@@ -1,8 +1,9 @@
-use pavex::f;
 use pavex::blueprint::{
     router::{MethodGuard, ANY, CONNECT, DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT, TRACE},
     Blueprint,
 };
+use pavex::f;
+use pavex::http::Method;
 
 pub fn handler() -> pavex::response::Response {
     todo!()
@@ -21,8 +22,20 @@ pub fn blueprint() -> Blueprint {
     bp.route(TRACE, "/trace", f!(crate::handler));
     bp.route(ANY, "/any", f!(crate::handler));
     bp.route(
-        MethodGuard::new([pavex::http::Method::PATCH, pavex::http::Method::POST]),
+        MethodGuard::new([Method::PATCH, Method::POST]),
         "/mixed",
+        f!(crate::handler),
+    );
+    let custom_method = Method::from_bytes(b"CUSTOM").unwrap();
+    let custom2_method = Method::from_bytes(b"HEY").unwrap();
+    bp.route(
+        MethodGuard::new(vec![custom_method.clone()]),
+        "/custom",
+        f!(crate::handler),
+    );
+    bp.route(
+        MethodGuard::new(vec![custom_method, custom2_method, Method::GET]),
+        "/mixed_with_custom",
         f!(crate::handler),
     );
     bp

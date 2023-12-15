@@ -1,11 +1,12 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use ahash::HashMap;
+use ahash::{HashMap, HashSet};
 use bimap::{BiBTreeMap, BiHashMap};
 use cargo_manifest::{Dependency, DependencyDetail, Edition};
 use guppy::graph::{ExternalSource, PackageSource};
 use guppy::PackageId;
 use indexmap::{IndexMap, IndexSet};
+use once_cell::sync::Lazy;
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote};
 use syn::{ItemEnum, ItemFn, ItemStruct};
@@ -319,6 +320,15 @@ fn get_request_dispatcher(
     http: &Ident,
     hyper: &Ident,
 ) -> ItemFn {
+    static WELL_KNOWN_METHODS: Lazy<HashSet<&'static str>> = Lazy::new(|| {
+        HashSet::from_iter(
+            [
+                "GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS", "CONNECT", "TRACE",
+            ]
+            .into_iter(),
+        )
+    });
+
     let mut route_dispatch_table = quote! {};
     let server_state_ident = format_ident!("server_state");
 
@@ -337,18 +347,14 @@ fn get_request_dispatcher(
                     .methods_and_pipelines
                     .iter()
                     .flat_map(|(methods, _)| methods)
-                    .map(|m| match m.as_str() {
-                        "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "HEAD" | "OPTIONS"
-                        | "CONNECT" | "TRACE" => {
-                            let i = format_ident!("{}", m);
-                            quote! {
+                    .map(|m| if WELL_KNOWN_METHODS.contains(m.as_str()) {
+                        let i = format_ident!("{}", m);
+                        quote! {
                                 #pavex::http::Method::#i
-                            }
                         }
-                        s => {
-                            quote! {
-                                #pavex::http::Method::try_from(#s).unwrap()
-                            }
+                    } else {
+                        quote! {
+                            #pavex::http::Method::try_from(#m).expect("Failed to parse custom method")
                         }
                     });
                 quote! {
@@ -364,7 +370,6 @@ fn get_request_dispatcher(
                     request_scoped_bindings,
                     &server_state_ident,
                 );
-                let methods = methods.iter().map(|m| format_ident!("{}", m));
                 let invocation = if request_pipeline.needs_allowed_methods(framework_items_db) {
                     quote! {
                         {
@@ -375,10 +380,35 @@ fn get_request_dispatcher(
                 } else {
                     invocation
                 };
-                sub_router_dispatch_table = quote! {
-                    #sub_router_dispatch_table
-                    #(&#pavex::http::Method::#methods)|* => #invocation,
-                }
+
+                let (well_known_methods, custom_methods) = methods
+                    .iter()
+                    .partition::<Vec<_>, _>(|m| WELL_KNOWN_METHODS.contains(m.as_str()));
+
+                if !well_known_methods.is_empty() {
+                    let well_known_methods = well_known_methods.into_iter().map(|m| {
+                        let m = format_ident!("{}", m);
+                        quote! {
+                            #pavex::http::Method::#m
+                        }
+                    });
+                    sub_router_dispatch_table = quote! {
+                        #sub_router_dispatch_table
+                        #(&#well_known_methods)|* => #invocation,
+                    };
+                };
+
+                if !custom_methods.is_empty() {
+                    let custom_methods = custom_methods.into_iter().map(|m| {
+                        quote! {
+                            s.as_str() == #m
+                        }
+                    });
+                    sub_router_dispatch_table = quote! {
+                        #sub_router_dispatch_table
+                        s if #(#custom_methods)||* => #invocation,
+                    };
+                };
             }
             let matched_route_template = if sub_router.needs_matched_route(framework_items_db) {
                 let path = route_id2path.get_by_left(route_id).unwrap();
