@@ -80,10 +80,9 @@ impl MethodGuard {
 
     fn allows_(&self, method: &inner::Method) -> bool {
         match &self.inner {
-            inner::MethodGuard::Any { with_extensions } => match (method, with_extensions) {
-                (inner::Method::Custom(_), false) => false,
-                _ => true,
-            },
+            inner::MethodGuard::Any { with_extensions } => {
+                !matches!((method, with_extensions), (inner::Method::Custom(_), false))
+            }
             inner::MethodGuard::Some(inner::SomeMethodGuard { bitset, extensions }) => {
                 if let Some(bit) = method_to_bitset(method) {
                     *bitset & bit != 0
@@ -212,6 +211,8 @@ pub const CONNECT: MethodGuard = MethodGuard {
 };
 
 mod inner {
+    #![allow(clippy::upper_case_acronyms)]
+
     use std::collections::BTreeSet;
     use std::str::FromStr;
 
