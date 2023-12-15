@@ -17,7 +17,7 @@ use crate::router::{AllowedMethods, MethodAllowList};
 /// [`Blueprint::route`]: crate::blueprint::Blueprint::route
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct MethodGuard {
-    inner: inner::MethodGuard,
+    inner: inner::MethodGuard<'static>,
 }
 
 impl MethodGuard {
@@ -74,7 +74,7 @@ impl MethodGuard {
     }
 
     /// Returns `true` if the given HTTP method is allowed by this [`MethodGuard`].
-    pub fn allows(&self, method: Method) -> bool {
+    pub fn allows(&self, method: &Method) -> bool {
         self.allows_(&inner::Method::from(method))
     }
 
@@ -199,13 +199,14 @@ pub const CONNECT: MethodGuard = MethodGuard {
 mod inner {
     #![allow(clippy::upper_case_acronyms)]
 
+    use std::borrow::Cow;
     use std::collections::BTreeSet;
     use std::str::FromStr;
 
     #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-    pub(super) enum MethodGuard {
+    pub(super) enum MethodGuard<'a> {
         Any,
-        Some(SomeMethodGuard),
+        Some(SomeMethodGuard<'a>),
     }
 
     /// In order to have a const constructor for `MethodGuard`, we need to use a collection
@@ -220,7 +221,7 @@ mod inner {
     #[derive(
         Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq, PartialOrd, Ord,
     )]
-    pub(super) enum Method {
+    pub(super) enum Method<'a> {
         GET,
         POST,
         PATCH,
@@ -230,27 +231,50 @@ mod inner {
         TRACE,
         HEAD,
         CONNECT,
-        Custom(String),
+        Custom(Cow<'a, str>),
     }
 
-    impl From<http::Method> for Method {
-        fn from(method: http::Method) -> Self {
-            match method {
-                http::Method::GET => Method::GET,
-                http::Method::POST => Method::POST,
-                http::Method::PATCH => Method::PATCH,
-                http::Method::OPTIONS => Method::OPTIONS,
-                http::Method::PUT => Method::PUT,
-                http::Method::DELETE => Method::DELETE,
-                http::Method::TRACE => Method::TRACE,
-                http::Method::HEAD => Method::HEAD,
-                http::Method::CONNECT => Method::CONNECT,
-                m => Method::Custom(m.as_str().to_string()),
+    impl<'a> Method<'a> {
+        pub(super) fn into_owned(self) -> Method<'static> {
+            match self {
+                Method::GET => Method::GET,
+                Method::POST => Method::POST,
+                Method::PATCH => Method::PATCH,
+                Method::OPTIONS => Method::OPTIONS,
+                Method::PUT => Method::PUT,
+                Method::DELETE => Method::DELETE,
+                Method::TRACE => Method::TRACE,
+                Method::HEAD => Method::HEAD,
+                Method::CONNECT => Method::CONNECT,
+                Method::Custom(c) => Method::Custom(Cow::Owned(c.into_owned())),
             }
         }
     }
 
-    impl From<Method> for http::Method {
+    impl<'a> From<&'a http::Method> for Method<'a> {
+        fn from(method: &'a http::Method) -> Method<'a> {
+            match method {
+                &http::Method::GET => Method::GET,
+                &http::Method::POST => Method::POST,
+                &http::Method::PATCH => Method::PATCH,
+                &http::Method::OPTIONS => Method::OPTIONS,
+                &http::Method::PUT => Method::PUT,
+                &http::Method::DELETE => Method::DELETE,
+                &http::Method::TRACE => Method::TRACE,
+                &http::Method::HEAD => Method::HEAD,
+                &http::Method::CONNECT => Method::CONNECT,
+                m => Method::Custom(Cow::Borrowed(m.as_str())),
+            }
+        }
+    }
+
+    impl From<http::Method> for Method<'static> {
+        fn from(value: http::Method) -> Self {
+            <&http::Method as Into<Method<'_>>>::into(&value).into_owned()
+        }
+    }
+
+    impl<'a> From<Method<'a>> for http::Method {
         fn from(value: Method) -> Self {
             match value {
                 Method::GET => http::Method::GET,
@@ -262,13 +286,13 @@ mod inner {
                 Method::TRACE => http::Method::TRACE,
                 Method::HEAD => http::Method::HEAD,
                 Method::CONNECT => http::Method::CONNECT,
-                Method::Custom(c) => http::Method::from_str(c.as_str()).unwrap(),
+                Method::Custom(c) => http::Method::from_str(c.as_ref()).unwrap(),
             }
         }
     }
 
-    impl MethodGuard {
-        pub(super) fn or(self, other: MethodGuard) -> Self {
+    impl<'a> MethodGuard<'a> {
+        pub(super) fn or(self, other: MethodGuard<'a>) -> Self {
             match (self, other) {
                 (MethodGuard::Any, _) | (_, MethodGuard::Any) => MethodGuard::Any,
                 (MethodGuard::Some(this), MethodGuard::Some(other)) => {
@@ -286,7 +310,7 @@ mod inner {
     }
 
     #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-    pub(super) struct SomeMethodGuard {
+    pub(super) struct SomeMethodGuard<'a> {
         /// A bitset to track which of the 9 well-known HTTP methods are allowed.
         ///
         /// # Why so complicated?
@@ -297,14 +321,14 @@ mod inner {
         /// a constant for each well-known HTTP method, and we can't use data structures that
         /// allocate memory at runtime (such as `BTreeSet`) in a `const` context.
         pub(super) bitset: u16,
-        pub(super) extensions: BTreeSet<Method>,
+        pub(super) extensions: BTreeSet<Method<'a>>,
     }
 
     // `Method` doesn't implement `Serialize` and `Deserialize, therefore we need to implement
     // a custom serializer and deserializer for `SomeMethodGuard`.
 
-    impl SomeMethodGuard {
-        pub(super) fn or(mut self, other: SomeMethodGuard) -> Self {
+    impl<'a> SomeMethodGuard<'a> {
+        pub(super) fn or(mut self, other: SomeMethodGuard<'a>) -> Self {
             self.bitset |= other.bitset;
             self.extensions.extend(other.extensions);
             self
