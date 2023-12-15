@@ -1,5 +1,3 @@
-use std::collections::BTreeSet;
-
 use ahash::{HashMap, HashMapExt};
 use anyhow::anyhow;
 use guppy::graph::PackageGraph;
@@ -9,12 +7,12 @@ use pavex::blueprint::internals::{
     NestedBlueprint, RegisteredCallable, RegisteredConstructor, RegisteredFallback,
     RegisteredRoute, RegisteredWrappingMiddleware,
 };
-use pavex::blueprint::router::AllowedMethods;
 use pavex::blueprint::{
     constructor::Lifecycle, reflection::Location, reflection::RawCallableIdentifiers, Blueprint,
 };
+use pavex::router::AllowedMethods;
 
-use crate::compiler::analyses::user_components::router_key::RouterKey;
+use crate::compiler::analyses::user_components::router_key::{MethodGuard, RouterKey};
 use crate::compiler::analyses::user_components::scope_graph::ScopeGraphBuilder;
 use crate::compiler::analyses::user_components::{ScopeGraph, ScopeId};
 use crate::compiler::interner::Interner;
@@ -351,15 +349,10 @@ impl RawUserComponentDb {
                 .get_or_intern(registered_route.request_handler.callable.clone());
             let route_scope_id = scope_graph_builder.add_scope(current_scope_id, None);
             let router_key = {
-                let method_guard = match &registered_route.method_guard.allowed_methods {
-                    AllowedMethods::All => None,
-                    AllowedMethods::Single(m) => {
-                        let mut set = BTreeSet::new();
-                        set.insert(m.to_string());
-                        Some(set)
-                    }
-                    AllowedMethods::Multiple(methods) => {
-                        methods.iter().map(|m| Some(m.to_string())).collect()
+                let method_guard = match &registered_route.method_guard.allowed_methods() {
+                    AllowedMethods::All => MethodGuard::Any,
+                    AllowedMethods::Some(methods) => {
+                        MethodGuard::Some(methods.iter().map(|m| m.to_string()).collect())
                     }
                 };
                 let path = match path_prefix {

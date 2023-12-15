@@ -8,6 +8,7 @@ use itertools::Itertools;
 use matchit::InsertError;
 
 use crate::compiler::analyses::user_components::raw_db::RawUserComponentDb;
+use crate::compiler::analyses::user_components::router_key::MethodGuard;
 use crate::compiler::analyses::user_components::{
     ScopeGraph, ScopeId, UserComponent, UserComponentId,
 };
@@ -89,15 +90,18 @@ impl Router {
             let UserComponent::RequestHandler { router_key, .. } = component else {
                 continue;
             };
-            if let Some(methods) = &router_key.method_guard {
-                let sub_router: &mut LeafRouter = route_path2sub_router
-                    .entry(router_key.path.clone())
-                    .or_insert_with(|| LeafRouter::new(route_id2fallback_id[&id]));
-                sub_router.handler_id2methods.insert(id, methods.clone());
-            } else {
-                // `None` stands for the `ANY` guard, it matches all methods.
-                // Hence it's the fallback for that path.
-                route_path2sub_router.insert(router_key.path.clone(), LeafRouter::new(id));
+            match &router_key.method_guard {
+                MethodGuard::Any => {
+                    // We don't need to register a fallback for this route, since it matches
+                    // all methods.
+                    route_path2sub_router.insert(router_key.path.clone(), LeafRouter::new(id));
+                }
+                MethodGuard::Some(methods) => {
+                    let sub_router: &mut LeafRouter = route_path2sub_router
+                        .entry(router_key.path.clone())
+                        .or_insert_with(|| LeafRouter::new(route_id2fallback_id[&id]));
+                    sub_router.handler_id2methods.insert(id, methods.clone());
+                }
             }
         }
         for (path, fallback_id) in path_catchall2fallback_id {
@@ -136,11 +140,11 @@ impl Router {
                 let mut relevant_handler_ids = IndexSet::new();
                 for (guard, id) in &routes {
                     match guard {
-                        // `None` stands for the `ANY` guard, it matches all methods
-                        None => {
+                        // `None` stands for the `ANY` guard, it matches all well-known methods
+                        MethodGuard::Any { .. } => {
                             relevant_handler_ids.insert(*id);
                         }
-                        Some(method_guards) => {
+                        MethodGuard::Some(method_guards) => {
                             if method_guards.contains(method) {
                                 relevant_handler_ids.insert(*id);
                             }
@@ -420,14 +424,14 @@ impl Router {
                 continue;
             };
             let method_guard = match &router_key.method_guard {
-                None => {
+                MethodGuard::Any { .. } => {
                     // `None` stands for the `ANY` guard, it matches all methods
                     // and we have already checked that we don't have any overlap when it comes
                     // to method routing, so we can safely ignore it since we won't have any
                     // other entry for this path.
                     continue;
                 }
-                Some(g) => g,
+                MethodGuard::Some(g) => g,
             };
             let route_id = match method_aware_router.at_mut(router_key.path.as_str()) {
                 Ok(match_) => *match_.value,

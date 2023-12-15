@@ -7,14 +7,15 @@ use anyhow::Context;
 use cargo_generate::{GenerateArgs, TemplatePath};
 use clap::{Parser, Subcommand};
 use owo_colors::OwoColorize;
-use pavex::blueprint::Blueprint;
-use pavexc::App;
 use supports_color::Stream;
 use tracing_chrome::{ChromeLayerBuilder, FlushGuard};
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::EnvFilter;
+
+use pavex::blueprint::Blueprint;
+use pavexc::App;
 
 #[derive(Parser)]
 #[clap(author, version = VERSION, about, long_about = None)]
@@ -218,6 +219,15 @@ fn scaffold_project(path: PathBuf) -> Result<ExitCode, Box<dyn std::error::Error
         .extract(&target_directory)
         .context("Failed to save Pavex's template to a temporary directory")?;
 
+    let pavex_package_spec = std::env::var("CARGO_GENERATE_VALUE_PAVEX_PACKAGE_SPEC")
+        .unwrap_or_else(|_| {
+            r#"https://github.com/LukeMathWalker/pavex", branch = "main""#.to_string()
+        });
+    let pavex_cli_client_package_spec =
+        std::env::var("CARGO_GENERATE_VALUE_PAVEX_CLI_CLIENT_PACKAGE_SPEC").unwrap_or_else(|_| {
+            r#"https://github.com/LukeMathWalker/pavex", branch = "main""#.to_string()
+        });
+
     let generate_args = GenerateArgs {
         template_path: TemplatePath {
             path: Some(
@@ -239,6 +249,11 @@ fn scaffold_project(path: PathBuf) -> Result<ExitCode, Box<dyn std::error::Error
             .context("Failed to convert destination path to an absolute path")?,
         name: Some(name),
         force_git_init: true,
+        silent: true,
+        define: vec![
+            format!("pavex_package_spec={pavex_package_spec}"),
+            format!("pavex_cli_client_package_spec={pavex_cli_client_package_spec}"),
+        ],
         ..Default::default()
     };
     cargo_generate::generate(generate_args)

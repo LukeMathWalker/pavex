@@ -57,7 +57,10 @@ async fn route_request(
     let matched_route = match server_state.router.at(&request_head.uri.path()) {
         Ok(m) => m,
         Err(_) => {
-            let allowed_methods = pavex::router::AllowedMethods::new(vec![]);
+            let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter(
+                    vec![],
+                )
+                .into();
             return route_1::middleware_0(&allowed_methods).await;
         }
     };
@@ -77,9 +80,10 @@ async fn route_request(
                         .await
                 }
                 _ => {
-                    let allowed_methods = pavex::router::AllowedMethods::new(
-                        vec![pavex::http::Method::GET],
-                    );
+                    let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
+                            pavex::http::Method::GET,
+                        ])
+                        .into();
                     route_1::middleware_0(&allowed_methods).await
                 }
             }

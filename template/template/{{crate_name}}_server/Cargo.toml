@@ -9,7 +9,7 @@ name = "api"
 
 [dependencies]
 anyhow = "1"
-pavex = { git = "https://github.com/LukeMathWalker/pavex", branch = "main" }
+pavex = { {{pavex_package_spec}} }
 tokio = { version = "1", features = ["full"] }
 {{crate_name}}_server_sdk = { path = "../{{crate_name}}_server_sdk" }
 {{crate_name}} = { path = "../{{crate_name}}" }

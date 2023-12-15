@@ -347,20 +347,23 @@ fn get_request_dispatcher(
                     .methods_and_pipelines
                     .iter()
                     .flat_map(|(methods, _)| methods)
-                    .map(|m| if WELL_KNOWN_METHODS.contains(m.as_str()) {
-                        let i = format_ident!("{}", m);
-                        quote! {
+                    .map(|m| {
+                        if WELL_KNOWN_METHODS.contains(m.as_str()) {
+                            let i = format_ident!("{}", m);
+                            quote! {
                                 #pavex::http::Method::#i
-                        }
-                    } else {
-                        quote! {
-                            #pavex::http::Method::try_from(#m).expect("Failed to parse custom method")
+                            }
+                        } else {
+                            let expect_msg = format!("{} is not a valid (custom) HTTP method", m);
+                            quote! {
+                                #pavex::http::Method::try_from(#m).expect(#expect_msg)
+                            }
                         }
                     });
                 quote! {
-                    let allowed_methods = #pavex::router::AllowedMethods::new(
-                        vec![#(#allowed_methods),*]
-                    );
+                    let allowed_methods: #pavex::router::AllowedMethods = #pavex::router::MethodAllowList::from_iter(
+                        [#(#allowed_methods),*]
+                    ).into();
                 }
             };
 
@@ -466,7 +469,7 @@ fn get_request_dispatcher(
     };
     let allowed_methods = if fallback_codegened_pipeline.needs_allowed_methods(framework_items_db) {
         quote! {
-            let allowed_methods = #pavex::router::AllowedMethods::new(vec![]);
+            let allowed_methods: #pavex::router::AllowedMethods = #pavex::router::MethodAllowList::from_iter(vec![]).into();
         }
     } else {
         quote! {}

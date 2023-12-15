@@ -44,6 +44,7 @@ tokio = { version = "1.32", features = ["net", "sync", "rt", "time"] }
 hyper = { version = "1", features = ["full"], optional = true }
 hyper-util = { version = "0.1", features = ["tokio", "server", "server-auto"], optional = true }
 socket2 = { version = "0.5.3", optional = true }
+smallvec = "1"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["macros"] }
