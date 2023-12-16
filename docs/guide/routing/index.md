@@ -51,8 +51,56 @@ If you truly want to match _any_ HTTP method, use [`ANY_WITH_EXTENSIONS`][ANY_WI
 
 ## Path patterns
 
+A **path pattern** is a string that determines which requests are matched by a given route based on their path.
 
+### Static paths
 
+The simplest case is a static path, a path pattern that matches a single, fixed path:
+
+```rust hl_lines="6"
+--8<-- "doc_examples/guide/routing/basics/src/blueprint.rs"
+```
+
+It will only match requests with a path that is **exactly equal** to `/greet`.
+
+### Route parameters
+
+Static paths are fairly limited. The real power of path patterns comes from their ability to match **dynamic paths**:
+    
+```rust hl_lines="6"
+--8<-- "doc_examples/guide/routing/basics/src/dynamic_path_blueprint.rs"
+```
+
+The `:name` segment is a **route parameter**.  
+It matches everything after `/greet/`, up to the next `/` or the end of the path.  
+It matches, for example, `/greet/Ursula` and `/greet/John`. It won't match `/greet/` though!
+
+You can have multiple route parameters in a single path pattern, as long as they are separated by a static segment:
+
+```rust hl_lines="8"
+--8<-- "doc_examples/guide/routing/basics/src/multi_route_parameters_blueprint.rs"
+```
+
+### Accessing route parameters
+
+Route parameters are not discarded after a request has been routed.  
+You can access their value from your request handler or from a middleware using the [`RouteParams`][RouteParams] extractor.
+
+Check out the API reference for [`RouteParams`][RouteParams] for more details.
+
+### Catch-all parameters
+
+Route parameters prefixed with a `:` only match a single path segment—they stop at the next `/` or at the end of the path.  
+You can use the `*` character to craft a **catch-all** route parameter. It matches the rest of the path, regardless of its contents:
+
+```rust hl_lines="6"
+--8<-- "doc_examples/guide/routing/basics/src/catchall_blueprint.rs"
+```
+
+`*details` matches everything after `/greet/`, even if it contains `/` characters. 
+It matches, for example, `/greet/Ursula` and `/greet/John`, but it also matches `/greet/Ursula/Smith` and `/greet/John/Doe`.
+
+To avoid ambiguity, you can have **at most one catch-all parameter per path pattern**.
 
 [Blueprint]: ../../../api_reference/pavex/blueprint/struct.Blueprint.html
 [Blueprint::route]: ../../../api_reference/pavex/blueprint/struct.Blueprint.html#method.route
@@ -61,3 +109,4 @@ If you truly want to match _any_ HTTP method, use [`ANY_WITH_EXTENSIONS`][ANY_WI
 [or]: ../../../api_reference/pavex/blueprint/router/struct.MethodGuard.html#method.or
 [ANY]: ../../../api_reference/pavex/blueprint/router/constant.ANY.html
 [ANY_WITH_EXTENSIONS]: ../../../api_reference/pavex/blueprint/router/constant.ANY_WITH_EXTENSIONS.html
+[RouteParams]: ../../../api_reference/pavex/request/route/struct.RouteParams.html
