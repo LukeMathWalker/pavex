@@ -1,7 +1,3 @@
----
-title: Welcome
----
-
 # Welcome
 
 Hey there!  

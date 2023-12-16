@@ -6,7 +6,6 @@ edit_uri: "edit/main/docs/"
 plugins:
   - social
   - search
-  - awesome-pages
   - redirects:
       redirect_maps:
         'index.md': 'overview/index.md'
@@ -34,7 +33,7 @@ theme:
     - navigation.tabs.sticky
     - navigation.footer
     - navigation.top
-    - navigation.sections
+    #    - navigation.sections
     - toc.integrate
     - toc.follow
     - content.action.edit
@@ -53,6 +52,26 @@ theme:
       toggle:
         icon: material/weather-sunny
         name: Switch to light mode
+nav:
+  - "Overview":
+      - overview/index.md
+      - overview/why_pavex.md
+  - "Getting Started":
+      - "Installation": getting_started/index.md
+      - getting_started/learning_paths.md
+      - "Quickstart":
+          - getting_started/quickstart/index.md
+          - getting_started/quickstart/blueprint.md
+          - getting_started/quickstart/routing.md
+          - getting_started/quickstart/dependency_injection.md
+          - getting_started/quickstart/error_handling.md
+          - getting_started/quickstart/testing.md
+          - getting_started/quickstart/going_further.md
+  - "Guides":
+      - guides/index.md
+  - "Concepts":
+      - concepts/index.md
+  - "API Reference": api_reference/pavex/
 exclude_docs: |
   README.md
   Dockerfile
