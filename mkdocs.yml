@@ -16,6 +16,7 @@ markdown_extensions:
   - pymdownx.inlinehilite
   - pymdownx.snippets:
       check_paths: true
+      dedent_subsections: true
   - attr_list
   - md_in_html
   - pymdownx.highlight:
@@ -33,7 +34,6 @@ theme:
     - navigation.tabs.sticky
     - navigation.footer
     - navigation.top
-    #    - navigation.sections
     - toc.integrate
     - toc.follow
     - content.action.edit
@@ -69,6 +69,8 @@ nav:
           - getting_started/quickstart/going_further.md
   - "Guide":
       - guide/index.md
+      - "Routing":
+          - guide/routing/index.md
   - "API Reference": api_reference/pavex/
 exclude_docs: |
   README.md
