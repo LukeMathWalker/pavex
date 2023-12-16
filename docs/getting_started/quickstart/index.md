@@ -1,7 +1,5 @@
 # Project setup
 
-!!! note "Estimated time: 20 minutes"
-
 !!! warning "Prerequisites"
 
     Make sure you've installed all the [required tools](../index.md) before starting

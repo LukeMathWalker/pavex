@@ -67,10 +67,8 @@ nav:
           - getting_started/quickstart/error_handling.md
           - getting_started/quickstart/testing.md
           - getting_started/quickstart/going_further.md
-  - "Guides":
-      - guides/index.md
-  - "Concepts":
-      - concepts/index.md
+  - "Guide":
+      - guide/index.md
   - "API Reference": api_reference/pavex/
 exclude_docs: |
   README.md
