@@ -1,5 +1,5 @@
 use pavex::response::Response;
 
-pub async fn greet() -> Response {
-    Response::ok().box_body()
+pub fn greet() -> Response {
+    Response::ok().set_typed_body("Hello, world!").box_body()
 }

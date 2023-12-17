@@ -71,6 +71,9 @@ nav:
       - guide/index.md
       - "Routing":
           - guide/routing/index.md
+          - guide/routing/method_guards.md
+          - guide/routing/path_patterns.md
+          - guide/routing/request_handlers.md
   - "API Reference": api_reference/pavex/
 exclude_docs: |
   README.md
