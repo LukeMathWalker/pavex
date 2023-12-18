@@ -10,5 +10,5 @@ its [`route`][Blueprint::route] method:
 [`Blueprint::route`][Blueprint::route] expects three arguments: a [**method guard**](method_guards.md), a [**path pattern**](path_patterns.md) and a [**request
 handler**](request_handlers.md).
 
-[Blueprint]: ../../../api_reference/pavex/blueprint/struct.Blueprint.html
-[Blueprint::route]: ../../../api_reference/pavex/blueprint/struct.Blueprint.html#method.route
+[Blueprint]: ../../api_reference/pavex/blueprint/struct.Blueprint.html
+[Blueprint::route]: ../../api_reference/pavex/blueprint/struct.Blueprint.html#method.route

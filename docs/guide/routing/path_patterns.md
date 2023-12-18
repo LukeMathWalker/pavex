@@ -51,4 +51,4 @@ You can use the `*` character to craft a **catch-all** route parameter. It match
 
 To avoid ambiguity, you can have **at most one catch-all parameter per path pattern**.
 
-[RouteParams]: ../../../api_reference/pavex/request/route/struct.RouteParams.html
+[RouteParams]: ../../api_reference/pavex/request/route/struct.RouteParams.html
