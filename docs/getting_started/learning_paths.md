@@ -27,4 +27,4 @@ Once you feel comfortable enough with the language, you can start learning about
 ## I know some Rust, but I'm new to Pavex
 
 If you're already familiar with Rust, you can start learning about Pavex right away: head over to our 
-[Quickstart tutorial](quickstart.md) to learn about the core concepts of the framework.  
+[Quickstart tutorial](quickstart/index.md) to learn about the core concepts of the framework.  

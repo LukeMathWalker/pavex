@@ -1,0 +1,18 @@
+[workspace]
+members = [
+    "core_concepts",
+    "method_guards/any",
+    "method_guards/multi_method",
+    "method_guards/single_method",
+    "path_patterns/static",
+    "path_patterns/catch_all_parameter",
+    "path_patterns/multi_named_parameter",
+    "path_patterns/named_parameter",
+    "request_handlers/intro",
+    "request_handlers/error_handler",
+    "request_handlers/sync_or_async",
+]
+resolver = "2"
+
+[workspace.dependencies]
+pavex = { path = "../../../../libs/pavex" }

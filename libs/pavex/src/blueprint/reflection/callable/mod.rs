@@ -16,6 +16,7 @@ mod identifiers;
 // compile if the callable is generic, because the compiler would
 // demand to know the type of each generic parameter without a default.
 #[macro_export]
+/// A macro to convert a fully-qualified path into a [`RawCallable`].
 macro_rules! f {
     ($p:expr) => {{
         #[cfg(pavex_ide_hint)]

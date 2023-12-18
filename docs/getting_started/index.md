@@ -40,7 +40,7 @@ rustup component add --toolchain nightly rust-docs-json
 All the code you'll be running (in production or otherwise) will be compiled with the stable toolchain. 
 Pavex relies on `nightly` to perform code generation and compile-time reflection—nothing else.
 
-## Pavex
+## Pavex CLI
 
 Pavex provides a command-line interface to scaffold new projects and work with existing ones.  
 To install it, execute the following command:
