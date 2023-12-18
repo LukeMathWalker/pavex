@@ -73,14 +73,14 @@ jobs:
       - name: Install Rust stable toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1.6.0
       - name: Download pavex CLI artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: pavex_cli
           path: ~/.cargo/bin
       - name: Mark as executable
         run: chmod +x ~/.cargo/bin/pavex
       - name: Download tutorial_generator CLI artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: tutorial_generator
           path: ~/.cargo/bin
