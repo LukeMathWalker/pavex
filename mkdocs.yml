@@ -74,6 +74,10 @@ nav:
           - guide/routing/method_guards.md
           - guide/routing/path_patterns.md
           - guide/routing/request_handlers.md
+      - "Request data":
+          - guide/request_data/index.md
+      - "Dependency injection":
+          - guide/dependency_injection/index.md
   - "API Reference": api_reference/pavex/
 exclude_docs: |
   README.md
