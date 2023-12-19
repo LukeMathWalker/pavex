@@ -89,6 +89,8 @@ jobs:
       - uses: cargo-bins/cargo-binstall@main
       - name: Install cargo-px
         run: cargo binstall -y --github-token=${{ secrets.GITHUB_TOKEN }} cargo-px@0.1
+      - name: Install exa
+        run: cargo binstall -y --github-token=${{ secrets.GITHUB_TOKEN }} exa@0.10
       - name: Generate quickstart tutorial
         run: |
           cd doc_examples/quickstart
@@ -109,7 +111,7 @@ jobs:
       - name: Build API reference
         run: |
           cd libs
-          cargo doc --package pavex --no-deps
+          cargo doc --package pavex --package pavex_cli_client --no-deps
       - name: Copy API reference files
         run: |
           mkdir -p docs/api_reference
