@@ -13,8 +13,12 @@ use similar::{Algorithm, ChangeTag, TextDiff};
 struct TutorialManifest {
     bootstrap: String,
     starter_project_folder: String,
+    #[serde(default)]
     snippets: Vec<StepSnippet>,
+    #[serde(default)]
     steps: Vec<Step>,
+    #[serde(default)]
+    commands: Vec<StepCommand>,
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -225,13 +229,15 @@ fn main() -> Result<(), anyhow::Error> {
 
     // Execute all commands and either verify the output or write it to a file
 
-    for step in &tutorial_manifest.steps {
-        for command in &step.commands {
-            println!(
-                "Running command for patch `{}`: {}",
-                step.patch, command.command
-            );
-            let patch_dir = patch_directory_name(&step.patch);
+    let iterator = std::iter::once((repo_dir, tutorial_manifest.commands.as_slice())).chain(
+        tutorial_manifest
+            .steps
+            .iter()
+            .map(|step| (patch_directory_name(&step.patch), step.commands.as_slice())),
+    );
+    for (repo_dir, commands) in iterator {
+        for command in commands {
+            println!("Running command for `{}`: {}", repo_dir, command.command);
 
             assert!(
                 command.expected_output_at.ends_with(".snap"),
@@ -239,7 +245,7 @@ fn main() -> Result<(), anyhow::Error> {
                 command.expected_output_at
             );
 
-            let script_outcome = run_script(&format!(r#"cd {patch_dir} && {}"#, command.command))?;
+            let script_outcome = run_script(&format!(r#"cd {repo_dir} && {}"#, command.command))?;
 
             if command.expected_outcome == StepCommandOutcome::Success {
                 script_outcome.exit_on_failure("Failed to run command which should have succeeded");
@@ -256,9 +262,8 @@ fn main() -> Result<(), anyhow::Error> {
                     .context("Failed to read file")?;
                 if expected_output != output {
                     let mut err_msg = format!(
-                        "Expected output did not match actual output for patch {} (command: `{}`).\n",
-                        step.patch,
-                        command.command,
+                        "Expected output did not match actual output for {} (command: `{}`).\n",
+                        repo_dir, command.command,
                     );
                     print_changeset(&expected_output, &output, &mut err_msg)?;
                     errors.push(err_msg);

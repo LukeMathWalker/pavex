@@ -12,6 +12,22 @@ snippets:
   - name: "ping_handler"
     source_path: "demo/src/routes/status.rs"
     ranges: [ ".." ]
+  - name: "cargo_px_in_manifest"
+    source_path: "demo_server_sdk/Cargo.toml"
+    ranges: [ "5.." ]
+  - name: "bp_binary"
+    source_path: "demo/src/bin/bp.rs"
+    ranges: [ ".." ]
+  - name: "bp_server_binary"
+    source_path: "demo_server/src/bin/api.rs"
+    ranges: [ ".." ]
+  - name: "ping_test"
+    source_path: "demo_server/tests/integration/ping.rs"
+    ranges: [ ".." ]
+commands:
+  - command: "exa --oneline -F --group-directories-first"
+    expected_outcome: "success"
+    expected_output_at: "demo-project_structure.snap"
 steps:
   - patch: "02.patch"
     snippets:
