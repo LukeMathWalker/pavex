@@ -109,7 +109,7 @@ jobs:
       - name: Build API reference
         run: |
           cd libs
-          cargo doc --package pavex --no-deps
+          cargo doc --package pavex --package pavex_cli_client --no-deps
       - name: Copy API reference files
         run: |
           mkdir -p docs/api_reference

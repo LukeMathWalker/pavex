@@ -1,4 +1,4 @@
-As you have seen in the [Quickstart](../../getting_started/quickstart/) tutorial, 
+As you have seen in the [Quickstart](../../getting_started/quickstart/index.md) tutorial, 
 `pavex new` is a quick way to scaffold a new project and start working on it. 
 If you execute 
 
@@ -75,7 +75,7 @@ Rust crate, the **server SDK** for your Pavex project.
 
 #### `cargo-px`
 
-If you went through the [Quickstart](../../../getting_started/quickstart/) tutorial, you might be
+If you went through the [Quickstart](../../getting_started/quickstart/index.md) tutorial, you might be
 wondering: I've never run `pavex generate`! How comes my project worked?
 
 That's thanks to [`cargo-px`][cargo-px]!  
@@ -178,7 +178,7 @@ The `demo` project includes an example of such a test which you can use as a ref
 
 [Blueprint]: ../../api_reference/pavex/blueprint/struct.Blueprint.html
 [Client::generate]: ../../api_reference/pavex_cli_client/client/struct.Client.html#method.generate
-[Lifecycle::Singleton]: ../../api_reference/pavex/lifecycle/enum.Lifecycle.html#variant.Singleton
+[Lifecycle::Singleton]: ../../api_reference/pavex/blueprint/constructor/enum.Lifecycle.html#variant.Singleton
 [Server]: ../../api_reference/pavex/server/struct.Server.html
 
 [routes]: ../routing/index.md
