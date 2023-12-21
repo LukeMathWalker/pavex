@@ -132,7 +132,7 @@ When Pavex examines your application [`Blueprint`][Blueprint], the following hap
 The recursion continues until Pavex finds a constructor that doesn't have any input parameters or
 a type that doesn't need to be constructed.  
 If a type needs to be constructed, but Pavex can't find a constructor for it,
-[it will report an error](../../getting_started/quickstart/dependency_injection#missing-constructor).
+[it will report an error](../../getting_started/quickstart/dependency_injection.md#missing-constructor).
 
 ## Framework primitives
 
@@ -143,7 +143,7 @@ without having to register a constructor for them.
 The framework primitives are:
 
 - [`RequestHead`][RequestHead]. The incoming request data, minus the body.
-- [`IncomingBody`][IncomingBody]. The raw body of the incoming request.
+- [`RawIncomingBody`][RawIncomingBody]. The raw body of the incoming request.
 - [`RouteParams`][RouteParams]. The route parameters extracted from the incoming request.
 - [`AllowedMethods`][AllowedMethods]. The HTTP methods allowed for the current request path.
 
@@ -197,8 +197,8 @@ you're then free to build `A` however you want in the [server crate].
 [Lifecycle::Transient]: ../../api_reference/pavex/blueprint/constructor/enum.Lifecycle.html#variant.Transient
 [RequestHead]: ../../api_reference/pavex/request/struct.RequestHead.html
 [RouteParams]: ../../api_reference/pavex/request/route/struct.RouteParams.html
-[AllowedMethods]: ../../api_reference/pavex/router/struct.AllowedMethods.html
-[IncomingBody]: ../../api_reference/pavex/request/body/struct.IncomingBody.html
+[AllowedMethods]: ../../api_reference/pavex/router/enum.AllowedMethods.html
+[RawIncomingBody]: ../../api_reference/pavex/request/body/struct.RawIncomingBody.html
 [JsonBody]: ../../api_reference/pavex/request/body/struct.JsonBody.html
 [build_application_state]: ../project_structure/index.md#applicationstate
 [server SDK crate]: ../project_structure/index.md#the-server-sdk
