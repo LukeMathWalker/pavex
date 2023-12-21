@@ -1,0 +1,23 @@
+starter_project_folder: "project"
+commands:
+  - command: "cargo px c"
+    expected_outcome: "success"
+snippets:
+  - name: "middleware_def"
+    source_path: "src/authentication.rs"
+    ranges: [ ".." ]
+  - name: "constructor_def"
+    source_path: "src/user.rs"
+    ranges: [ "9..15" ]
+    hl_lines: [ 3 ]
+  - name: "constructor_registration"
+    source_path: "src/blueprint.rs"
+    ranges: [ "0..7", "10..11" ]
+    hl_lines: [ 7 ]
+steps:
+  - patch: "01.patch"
+    snippets:
+      - name: "constructor_def"
+        source_path: "src/user.rs"
+        ranges: [ "0..1", "11..16" ]
+        hl_lines: [ 4 ]

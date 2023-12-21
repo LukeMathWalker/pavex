@@ -5,7 +5,7 @@ A **request handler** is invoked when a request matches on the associated [metho
 The request handler is in charge of building the response that will be sent back to the client.
 
 ```rust hl_lines="6"
---8<-- "doc_examples/code_samples/guide/routing/request_handlers/intro/src/routes.rs"
+--8<-- "doc_examples/guide/routing/request_handlers/intro/src/routes.rs"
 ```
 
 ## Registration
@@ -13,7 +13,7 @@ The request handler is in charge of building the response that will be sent back
 When registering a route, you must provide the **fully qualified path** to the request handler:
 
 ```rust hl_lines="6"
---8<-- "doc_examples/code_samples/guide/routing/request_handlers/intro/src/blueprint.rs"
+--8<-- "doc_examples/guide/routing/request_handlers/intro/src/blueprint.rs"
 ```
 
 The path must be wrapped in the [`f!` macro][f!].
@@ -61,7 +61,7 @@ pub async fn greet(/* ... */) -> Result<Response, GreetError> {
 If they do, you must specify an **error handler** when registering the route:
 
 ```rust hl_lines="7"
---8<-- "doc_examples/code_samples/guide/routing/request_handlers/error_handler/src/blueprint.rs"
+--8<-- "doc_examples/guide/routing/request_handlers/error_handler/src/blueprint.rs"
 ```
 
 The error handler is in charge of building a response from the error returned by the request handler. Just like
@@ -74,7 +74,7 @@ a request handler:
 In addition, it must take a reference to the error type as one of its input parameters:
 
 ```rust
---8<-- "doc_examples/code_samples/guide/routing/request_handlers/error_handler/src/error_handler.rs"
+--8<-- "doc_examples/guide/routing/request_handlers/error_handler/src/error_handler.rs"
 ```
 
 ## Sync or async?
@@ -82,13 +82,13 @@ In addition, it must take a reference to the error type as one of its input para
 Request handlers can either be synchronous or asynchronous:
 
 ```rust
---8<-- "doc_examples/code_samples/guide/routing/request_handlers/sync_or_async/src/routes.rs"
+--8<-- "doc_examples/guide/routing/request_handlers/sync_or_async/src/routes.rs"
 ```
 
 There is no difference when registering the route with the [`Blueprint`][Blueprint]:
 
 ```rust
---8<-- "doc_examples/code_samples/guide/routing/request_handlers/sync_or_async/src/blueprint.rs"
+--8<-- "doc_examples/guide/routing/request_handlers/sync_or_async/src/blueprint.rs"
 ```
 
 Be careful with synchronous handlers: they **block the thread** they're running on until they return.  

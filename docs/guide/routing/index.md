@@ -4,7 +4,7 @@ All **routes** in Pavex must be registered with the application [`Blueprint`][Bl
 its [`route`][Blueprint::route] method:
 
 ```rust hl_lines="6"
---8<-- "doc_examples/code_samples/guide/routing/core_concepts/src/blueprint.rs"
+--8<-- "doc_examples/guide/routing/core_concepts/src/blueprint.rs"
 ```
 
 [`Blueprint::route`][Blueprint::route] expects three arguments: a [**method guard**](method_guards.md), a [**path pattern**](path_patterns.md) and a [**request
