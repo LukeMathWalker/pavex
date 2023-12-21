@@ -1,4 +1,6 @@
+pub use blueprint::blueprint;
+
 pub mod authentication;
-pub mod blueprint;
+mod blueprint;
 pub mod routes;
 pub mod user;

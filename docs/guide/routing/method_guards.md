@@ -8,7 +8,7 @@ They are modelled by the [`MethodGuard`][MethodGuard] type.
 The simplest case is a guard that allows a single HTTP method:
 
 ```rust  hl_lines="6"
---8<-- "doc_examples/code_samples/guide/routing/method_guards/single_method/src/blueprint.rs"
+--8<-- "doc_examples/guide/routing/method_guards/single_method/src/blueprint.rs"
 ```
 
 1. A short-hand for a [`MethodGuard`][MethodGuard] that only allows `GET` requests.
@@ -23,7 +23,7 @@ You can build a guard that accepts multiple HTTP methods by combining single-met
 with the [`or`][or] method:
 
 ```rust hl_lines="7"
---8<-- "doc_examples/code_samples/guide/routing/method_guards/multi_method/src/blueprint.rs"
+--8<-- "doc_examples/guide/routing/method_guards/multi_method/src/blueprint.rs"
 ```
 
 ## Ignoring the method
@@ -31,7 +31,7 @@ with the [`or`][or] method:
 If you don't care about the HTTP method of the incoming request, use the [`ANY`][ANY] method guard:
 
 ```rust hl_lines="6"
---8<-- "doc_examples/code_samples/guide/routing/method_guards/any/src/blueprint.rs"
+--8<-- "doc_examples/guide/routing/method_guards/any/src/blueprint.rs"
 ```
 
 [`ANY`][ANY] matches all well-known HTTP methods: `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`, `OPTIONS`, `CONNECT` and

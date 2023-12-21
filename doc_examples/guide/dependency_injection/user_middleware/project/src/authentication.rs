@@ -1,10 +1,11 @@
 use std::future::IntoFuture;
 
+use pavex::middleware::Next;
 use pavex::response::Response;
 
 use crate::user::User;
 
-pub async fn reject_anonymous<C>(user: User, next: C) -> Response
+pub async fn reject_anonymous<C>(user: User, next: Next<C>) -> Response
 where
     C: IntoFuture<Output = Response>,
 {

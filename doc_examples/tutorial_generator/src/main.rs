@@ -56,7 +56,7 @@ struct StepSnippet {
 struct StepCommand {
     command: String,
     expected_outcome: StepCommandOutcome,
-    expected_output_at: String,
+    expected_output_at: Option<String>,
 }
 
 #[derive(Debug, serde::Deserialize, Eq, PartialEq)]
@@ -255,11 +255,13 @@ fn main() -> Result<(), anyhow::Error> {
         for command in commands {
             println!("Running command for `{}`: {}", repo_dir, command.command);
 
-            assert!(
-                command.expected_output_at.ends_with(".snap"),
-                "All expected output file must use the `.snap` file extension. Found: {}",
-                command.expected_output_at
-            );
+            if let Some(expected_output_at) = &command.expected_output_at {
+                assert!(
+                    expected_output_at.ends_with(".snap"),
+                    "All expected output file must use the `.snap` file extension. Found: {}",
+                    expected_output_at
+                );
+            }
 
             let script_outcome = run_script(&format!(r#"cd {repo_dir} && {}"#, command.command))?;
 
@@ -273,25 +275,28 @@ fn main() -> Result<(), anyhow::Error> {
                 StepCommandOutcome::Success => script_outcome.output,
                 StepCommandOutcome::Failure => script_outcome.error,
             };
-            if verify {
-                let expected_output = fs_err::read_to_string(&command.expected_output_at)
-                    .context("Failed to read file")?;
-                if expected_output != output {
-                    let mut err_msg = format!(
-                        "Expected output did not match actual output for {} (command: `{}`).\n",
-                        repo_dir, command.command,
-                    );
-                    print_changeset(&expected_output, &output, &mut err_msg)?;
-                    errors.push(err_msg);
+
+            if let Some(expected_output_at) = &command.expected_output_at {
+                if verify {
+                    let expected_output = fs_err::read_to_string(expected_output_at)
+                        .context("Failed to read file")?;
+                    if expected_output != output {
+                        let mut err_msg = format!(
+                            "Expected output did not match actual output for {} (command: `{}`).\n",
+                            repo_dir, command.command,
+                        );
+                        print_changeset(&expected_output, &output, &mut err_msg)?;
+                        errors.push(err_msg);
+                    }
+                } else {
+                    let mut options = fs_err::OpenOptions::new();
+                    options.write(true).create(true).truncate(true);
+                    let mut file = options
+                        .open(expected_output_at)
+                        .context("Failed to open/create expectation file")?;
+                    file.write_all(output.as_bytes())
+                        .expect("Failed to write to expectation file");
                 }
-            } else {
-                let mut options = fs_err::OpenOptions::new();
-                options.write(true).create(true).truncate(true);
-                let mut file = options
-                    .open(&command.expected_output_at)
-                    .context("Failed to open/create expectation file")?;
-                file.write_all(output.as_bytes())
-                    .expect("Failed to write to expectation file");
             }
         }
     }

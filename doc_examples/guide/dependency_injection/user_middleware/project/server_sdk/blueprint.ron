@@ -1,0 +1,66 @@
+(
+    creation_location: (
+        line: 6,
+        column: 18,
+        file: "src/blueprint.rs",
+    ),
+    constructors: [
+        (
+            constructor: (
+                callable: (
+                    registered_at: "user_middleware",
+                    import_path: "crate::user::User::extract",
+                ),
+                location: (
+                    line: 7,
+                    column: 8,
+                    file: "src/blueprint.rs",
+                ),
+            ),
+            lifecycle: RequestScoped,
+            cloning_strategy: None,
+            error_handler: None,
+        ),
+    ],
+    middlewares: [
+        (
+            middleware: (
+                callable: (
+                    registered_at: "user_middleware",
+                    import_path: "crate::authentication::reject_anonymous",
+                ),
+                location: (
+                    line: 8,
+                    column: 8,
+                    file: "src/blueprint.rs",
+                ),
+            ),
+            error_handler: None,
+        ),
+    ],
+    routes: [
+        (
+            path: "/greet",
+            method_guard: (
+                inner: Some((
+                    bitset: 256,
+                    extensions: [],
+                )),
+            ),
+            request_handler: (
+                callable: (
+                    registered_at: "user_middleware",
+                    import_path: "crate::routes::greet",
+                ),
+                location: (
+                    line: 9,
+                    column: 8,
+                    file: "src/blueprint.rs",
+                ),
+            ),
+            error_handler: None,
+        ),
+    ],
+    fallback_request_handler: None,
+    nested_blueprints: [],
+)
