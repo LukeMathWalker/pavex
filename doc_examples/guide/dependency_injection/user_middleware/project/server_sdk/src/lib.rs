@@ -73,7 +73,7 @@ pub mod route_0 {
         };
         let v1 = pavex::middleware::Next::new(v0);
         let v2 = user_middleware::user::User::extract();
-        user_middleware::authentication::reject_anonymous(v2, v1).await
+        user_middleware::authentication::reject_anonymous(&v2, v1).await
     }
     pub async fn handler() -> pavex::response::Response {
         let v0 = user_middleware::routes::greet();
@@ -106,7 +106,7 @@ pub mod route_1 {
         };
         let v2 = pavex::middleware::Next::new(v1);
         let v3 = user_middleware::user::User::extract();
-        user_middleware::authentication::reject_anonymous(v3, v2).await
+        user_middleware::authentication::reject_anonymous(&v3, v2).await
     }
     pub async fn handler(
         v0: &pavex::router::AllowedMethods,

@@ -3,10 +3,10 @@
 When working on a Pavex application, you don't have to worry about **wiring**.  
 All the components in your application (request handlers, middlewares, error handlers, etc.) declare,
 as input parameters, the data they need to do their job.
-We refer to those input parameters are their **dependencies**.  
+We refer to those input parameters as their **dependencies**.  
 Pavex takes care of **constructing** those dependencies and **injecting** them where they're needed.
 
-We refer to this system as Pavex's **dependency injection** framework.
+We refer to this system as Pavex's **dependency injection framework**.
 
 ## What is the purpose of dependency injection?
 
@@ -16,6 +16,8 @@ The desired behavior:
 
 - If you're logged in, the middleware lets the request through.  
 - If you're not, a `401 Unauthorized` response is returned.
+
+--8<-- "doc_examples/guide/dependency_injection/user_middleware/project-middleware_def.snap"
 
 The middleware logic doesn't care about _how_ authentication is performed. It only cares about
 the result: are you authenticated or not?
@@ -44,7 +46,7 @@ A constructor must satisfy a few requirements:
 - It must be a function, a method or a trait method.  
 - It must be public (1), importable from outside the crate it is defined in. 
 - It must return, as output, the type you want to make injectable.  
-  **Constructors can be fallible**: a constructor for a type `T` can return `Result<T, E>`, 
+  Constructors can be fallible: a constructor for a type `T` can return `Result<T, E>`, 
   where `E` is an error type.
 
 </div>
@@ -52,14 +54,9 @@ A constructor must satisfy a few requirements:
 1. Constructors must be invoked in the generated code.
    The generated code lives in a separate crate, the [server SDK crate], hence the requirement.
 
-
 Going back to our `User` example, this would be a valid signature for a constructor:
 
-```rust
-async fn user_constructor() -> User {
-    // [...]
-}
-```
+--8<-- "doc_examples/guide/dependency_injection/user_middleware/project-constructor_def.snap"
 
 !!! warning
 
@@ -73,6 +70,7 @@ async fn user_constructor() -> User {
 Once you have defined a constructor, you need to register it with the application [`Blueprint`][Blueprint]
 using its [`constructor`][Blueprint::constructor] method:
 
+--8<-- "doc_examples/guide/dependency_injection/user_middleware/project-constructor_registration.snap"
 
 [`constructor`][Blueprint::constructor] takes two arguments:
 
@@ -83,11 +81,12 @@ using its [`constructor`][Blueprint::constructor] method:
 
 Pavex supports three different lifecycles for constructors:
 
-- [`Lifecycle::Singleton`][Lifecycle::Singleton]: the constructor is invoked at most once, when the application starts.  
+- [`Singleton`][Lifecycle::Singleton].
+  The constructor is invoked **at most once**, before the application starts.  
   The same instance is injected every time the type is needed.
-- [`Lifecycle::RequestScoped`][Lifecycle::RequestScoped]: the constructor is invoked at most once per request.  
+- [`RequestScoped`][Lifecycle::RequestScoped]. The constructor is invoked **at most once per request**.  
   The same instance is injected every time the type is needed when handling the same request.
-- [`Lifecycle::Transient`][Lifecycle::Transient]: the constructor is invoked every time the type is needed.  
+- [`Transient`][Lifecycle::Transient]. The constructor is invoked **every time the type is needed**.  
   The injected instance is always newly created.
 
 Let's look at a few common scenarios to build some intuition around lifecycles:

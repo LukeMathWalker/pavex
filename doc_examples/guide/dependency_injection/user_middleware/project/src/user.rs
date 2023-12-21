@@ -9,6 +9,6 @@ pub struct AuthenticatedUser {
 
 impl User {
     pub fn extract() -> Self {
-        todo!()
+        todo!() // Business logic goes here
     }
 }

@@ -15,4 +15,4 @@ members = [
 resolver = "2"
 
 [workspace.dependencies]
-pavex = { path = "../../../../libs/pavex" }
+pavex = { path = "../../../libs/pavex" }
