@@ -111,21 +111,15 @@ Let's say you want to build a `User` instance based on the value of the `Authori
 of the incoming request.  
 You could define a constructor like this:
 
-```rust
-use pavex::request::RequestHead;
-
-async fn user_constructor(request_head: &RequestHead) -> User {
-    // [...]
-}
-```
+--8<-- "doc_examples/guide/dependency_injection/user_middleware/01-constructor_def.snap"
 
 [`RequestHead`][RequestHead] represents the incoming request data, minus the body.  
 When Pavex examines your application [`Blueprint`][Blueprint], the following happens:
 
 - The `reject_anonymous` middleware must be invoked. Does `reject_anonymous` have any input parameters?
     - Yes, it needs a `User` instance. Do we have a constructor for `User`?
-        - Yes, we do: `user_constructor`. Does `user_constructor` have any input parameters?
-            - Yes, it needs a `RequestHead` instance. Do we have a constructor for `RequestHead`?
+        - Yes, we do: `User::extract`. Does `User::extract` have any input parameters?
+            - Yes, it needs a reference to a `RequestHead`. Do we have a constructor for `RequestHead`?
                 - Etc.
 
 The recursion continues until Pavex finds a constructor that doesn't have any input parameters or
