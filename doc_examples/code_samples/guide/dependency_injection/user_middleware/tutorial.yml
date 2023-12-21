@@ -1,0 +1,5 @@
+starter_project_folder: "project"
+snippets:
+  - name: "middleware_def"
+    source_path: "src/authentication.rs"
+    ranges: [ ".." ]

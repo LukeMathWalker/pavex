@@ -11,14 +11,22 @@ use similar::{Algorithm, ChangeTag, TextDiff};
 
 #[derive(Debug, serde::Deserialize)]
 struct TutorialManifest {
-    bootstrap: String,
+    /// The command that should be invoked to bootstrap the project.
+    /// It can be skipped if the project in `starter_project_folder` is ready
+    /// to be used as is.
+    bootstrap: Option<String>,
+    /// The path to the folder containing the starter project.
+    ///
+    /// The folder may not exist, as long as it's created by the bootstrap script.
     starter_project_folder: String,
     #[serde(default)]
+    /// The snippets that should be extracted from the starter project.
     snippets: Vec<StepSnippet>,
     #[serde(default)]
-    steps: Vec<Step>,
-    #[serde(default)]
+    /// The commands that should be executed against the starter project.
     commands: Vec<StepCommand>,
+    #[serde(default)]
+    steps: Vec<Step>,
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -73,13 +81,21 @@ fn main() -> Result<(), anyhow::Error> {
     let tutorial_manifest: TutorialManifest = serde_path_to_error::deserialize(deserializer)
         .context("Failed to parse the tutorial manifest file")?;
 
-    clean_up();
+    let ignored_dir = if tutorial_manifest.bootstrap.is_none() {
+        Some(tutorial_manifest.starter_project_folder.as_str())
+    } else {
+        None
+    };
+    clean_up(ignored_dir);
 
     // Boostrap the project
-    println!("Running bootstrap script");
-    let script_outcome =
-        run_script(&tutorial_manifest.bootstrap).context("Failed to run the boostrap script")?;
-    script_outcome.exit_on_failure("Failed to run the boostrap script");
+    if let Some(bootstrap) = tutorial_manifest.bootstrap.as_ref() {
+        println!("Running bootstrap script");
+        let script_outcome = run_script(bootstrap).context("Failed to run the boostrap script")?;
+        script_outcome.exit_on_failure("Failed to run the boostrap script");
+    } else {
+        println!("No bootstrap script has been specified");
+    }
 
     // Apply the patches
     let mut previous_dir = tutorial_manifest.starter_project_folder.clone();
@@ -298,18 +314,21 @@ fn patch_directory_name(patch_file: &str) -> &str {
 }
 
 /// Remove all files from the current directory, recursively, with the exception of
-/// top-level *.patch files and the tutorial manifest file.
-fn clean_up() {
+/// top-level *.patch files, the tutorial manifest file and an optional directory.
+fn clean_up(ignored_dir_name: Option<&str>) {
     fs_err::read_dir(std::env::current_dir().expect("Failed to get the current directory"))
         .expect("Failed to read the current directory")
         .filter_map(|entry| entry.ok())
         .filter(|entry| {
             let path = entry.path();
             let file_name = path.file_name().unwrap().to_str().unwrap();
-            !file_name.ends_with(".patch")
-                && !file_name.ends_with(".snap")
-                && file_name != "tutorial.yml"
-                && file_name != ".gitignore"
+            !(file_name.ends_with(".patch")
+                || file_name.ends_with(".snap")
+                || file_name == "tutorial.yml"
+                || file_name == ".gitignore"
+                || ignored_dir_name
+                    .map(|dir| file_name == dir)
+                    .unwrap_or(false))
         })
         .for_each(|entry| {
             let file_type = entry.file_type().expect("Failed to get file type");
