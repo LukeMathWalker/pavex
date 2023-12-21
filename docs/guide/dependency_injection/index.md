@@ -42,7 +42,7 @@ It's a must-read if you're going to use Pavex for more than a toy project.
 
 "[Cookbook](cookbook.md)" contains a collection of reference examples for common use cases: how to 
 inject a function as a constructor, how to inject a non-static method, how to inject a trait object, generics, etc.  
-Use it a reference in your day-to-day Pavex development if you're not sure on the syntax for a particular use case.
+Use it a reference in your day-to-day Pavex development if you're not sure of the syntax for a particular use case.
 
-Pavex's dependency injection framework is a powerful tool, but it's has its sharp edges.
+Pavex's dependency injection framework is a powerful tool, but it has its sharp edges.
 "[Limitations](limitations.md)" covers the issues you're most likely to encounter and how to work around them.

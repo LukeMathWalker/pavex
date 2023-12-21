@@ -92,6 +92,15 @@ a type that doesn't need to be constructed.
 If a type needs to be constructed, but Pavex can't find a constructor for it,
 [it will report an error](../../getting_started/quickstart/dependency_injection.md#missing-constructor).
 
+### No mutations
+
+Constructors are not allowed to take mutable references (i.e. `&mut T`) as inputs.
+
+The order in which constructors are called would suddenly matter if they were allowed to mutate
+their dependencies.
+This would in turn require a way to specify that order, therefore increasing the overall complexity of the
+framework.
+
 ## Framework primitives
 
 You don't have to register a constructor for every type you want to inject.  
@@ -145,6 +154,8 @@ If [`Singleton`][Lifecycle::Singleton] type `A` is needed to build [`Singleton`]
 you don't _have to_ register a constructor for `A`.  
 Pavex will change the signature of [`build_application_state`][build_application_state] to require `A` as input parameter:
 you're then free to build `A` however you want in the [server crate].
+
+
 
 
 [Blueprint]: ../../api_reference/pavex/blueprint/struct.Blueprint.html
