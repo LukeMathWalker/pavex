@@ -83,6 +83,7 @@ nav:
           - guide/request_data/index.md
       - "Dependency injection":
           - guide/dependency_injection/index.md
+          - guide/dependency_injection/core_concepts.md
   - "API Reference": api_reference/pavex/
 exclude_docs: |
   README.md
