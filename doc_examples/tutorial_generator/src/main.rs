@@ -1,11 +1,13 @@
 use std::collections::HashMap;
 use std::io::Write;
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::time::Duration;
 
 use anyhow::Context;
 use camino::Utf8PathBuf;
 use console::style;
+use globwalk::GlobWalkerBuilder;
 use run_script::types::ScriptOptions;
 use similar::{Algorithm, ChangeTag, TextDiff};
 
@@ -75,8 +77,25 @@ fn main() -> Result<(), anyhow::Error> {
         args.next().as_deref() == Some("--verify")
     };
 
-    let tutorial_manifest = fs_err::read_to_string("tutorial.yml")
+    let tutorial_manifests: Vec<_> = GlobWalkerBuilder::from_patterns(".", &["**/tutorial.yml"])
+        .build()
+        .unwrap()
+        .filter_map(|entry| entry.ok())
+        .map(|e| e.into_path())
+        .collect();
+
+    for tutorial_manifest_path in tutorial_manifests {
+        println!("Generating tutorial from {:?}", tutorial_manifest_path);
+        generate_tutorial(&tutorial_manifest_path, verify)?;
+    }
+
+    Ok(())
+}
+
+fn generate_tutorial(tutorial_manifest_path: &Path, verify: bool) -> Result<(), anyhow::Error> {
+    let tutorial_manifest = fs_err::read_to_string(tutorial_manifest_path)
         .context("Failed to open the tutorial manifest file. Are you in the right directory?")?;
+    let tutorial_dir = tutorial_manifest_path.parent().unwrap();
     let deserializer = serde_yaml::Deserializer::from_str(&tutorial_manifest);
     let tutorial_manifest: TutorialManifest = serde_path_to_error::deserialize(deserializer)
         .context("Failed to parse the tutorial manifest file")?;
@@ -86,30 +105,38 @@ fn main() -> Result<(), anyhow::Error> {
     } else {
         None
     };
-    clean_up(ignored_dir);
+    clean_up(tutorial_dir, ignored_dir);
 
     // Boostrap the project
     if let Some(bootstrap) = tutorial_manifest.bootstrap.as_ref() {
         println!("Running bootstrap script");
-        let script_outcome = run_script(bootstrap).context("Failed to run the boostrap script")?;
+        let script_outcome = run_script(bootstrap, tutorial_dir.to_path_buf())
+            .context("Failed to run the boostrap script")?;
         script_outcome.exit_on_failure("Failed to run the boostrap script");
     } else {
         println!("No bootstrap script has been specified");
     }
 
     // Apply the patches
-    let mut previous_dir = tutorial_manifest.starter_project_folder.clone();
+    let mut previous_dir =
+        Utf8PathBuf::from_path_buf(tutorial_dir.join(&tutorial_manifest.starter_project_folder))
+            .unwrap();
     for step in &tutorial_manifest.steps {
         println!("Applying patch: {}", step.patch);
-        let next_dir = patch_directory_name(&step.patch);
-        let script_outcome = run_script(&format!(
-            r#"cp -r {previous_dir} {next_dir}
+        let next_dir =
+            Utf8PathBuf::from_path_buf(tutorial_dir.join(patch_directory_name(&step.patch)))
+                .unwrap();
+        let script_outcome = run_script(
+            &format!(
+                r#"cp -r {previous_dir} {next_dir}
             cd {next_dir} && patch -p1 < ../{} && cargo fmt && git add . && git commit -am "{}""#,
-            step.patch, step.patch
-        ))
+                step.patch, step.patch
+            ),
+            std::env::current_dir().unwrap(),
+        )
         .context("Failed to apply patch")?;
         script_outcome.exit_on_failure("Failed to apply patch");
-        previous_dir = next_dir.to_string();
+        previous_dir = next_dir;
     }
 
     let mut errors = vec![];
@@ -127,6 +154,7 @@ fn main() -> Result<(), anyhow::Error> {
     );
 
     for (repo_dir, snippets) in iterator {
+        let repo_dir = Utf8PathBuf::from_path_buf(tutorial_dir.join(repo_dir)).unwrap();
         for snippet in snippets {
             println!("Extracting snippet: {}", snippet.name);
             let ranges = snippet
@@ -135,11 +163,11 @@ fn main() -> Result<(), anyhow::Error> {
                 .map(|range| range.parse::<SourceRange>())
                 .collect::<Result<Vec<_>, _>>()?;
 
-            let repo_dir = Utf8PathBuf::from_str(repo_dir).unwrap();
             let source_filepath = repo_dir.join(&snippet.source_path);
             let source_file = fs_err::read_to_string(&source_filepath)?;
 
             let is_rust = source_filepath.extension() == Some("rs");
+            let is_toml = source_filepath.extension() == Some("toml");
 
             let mut extracted_snippet = String::new();
 
@@ -203,7 +231,11 @@ fn main() -> Result<(), anyhow::Error> {
                         if i != 0 {
                             extracted_snippet.push('\n');
                         }
-                        writeln!(&mut extracted_snippet, "{indent}\\\\ [...]").unwrap();
+                        if is_rust {
+                            writeln!(&mut extracted_snippet, "{indent}\\\\ [...]").unwrap();
+                        } else if is_toml {
+                            writeln!(&mut extracted_snippet, "{indent}# [...]").unwrap();
+                        }
                     }
                     extracted_snippet.push_str(&block);
                     previous_leading_whitespaces = block
@@ -218,13 +250,13 @@ fn main() -> Result<(), anyhow::Error> {
                 }
             }
 
-            let snippet_filename = format!("{}-{}.snap", repo_dir, snippet.name);
+            let snippet_path = format!("{}-{}.snap", repo_dir, snippet.name);
 
             let mut options = fs_err::OpenOptions::new();
             options.write(true).create(true).truncate(true);
             if verify {
                 let expected_snippet =
-                    fs_err::read_to_string(&snippet_filename).context("Failed to read file")?;
+                    fs_err::read_to_string(&snippet_path).context("Failed to read file")?;
                 if expected_snippet != extracted_snippet {
                     let mut err_msg = format!(
                         "Expected snippet did not match actual snippet for {} (snippet: `{}`).\n",
@@ -235,7 +267,7 @@ fn main() -> Result<(), anyhow::Error> {
                 }
             } else {
                 let mut file = options
-                    .open(&snippet_filename)
+                    .open(&snippet_path)
                     .context("Failed to open/create expectation file")?;
                 file.write_all(extracted_snippet.as_bytes())
                     .expect("Failed to write to expectation file");
@@ -252,6 +284,7 @@ fn main() -> Result<(), anyhow::Error> {
             .map(|step| (patch_directory_name(&step.patch), step.commands.as_slice())),
     );
     for (repo_dir, commands) in iterator {
+        let repo_dir = Utf8PathBuf::from_path_buf(tutorial_dir.join(repo_dir)).unwrap();
         for command in commands {
             println!("Running command for `{}`: {}", repo_dir, command.command);
 
@@ -263,7 +296,10 @@ fn main() -> Result<(), anyhow::Error> {
                 );
             }
 
-            let script_outcome = run_script(&format!(r#"cd {repo_dir} && {}"#, command.command))?;
+            let script_outcome = run_script(
+                &format!(r#"cd {repo_dir} && {}"#, command.command),
+                std::env::current_dir().unwrap(),
+            )?;
 
             if command.expected_outcome == StepCommandOutcome::Success {
                 script_outcome.exit_on_failure("Failed to run command which should have succeeded");
@@ -277,6 +313,7 @@ fn main() -> Result<(), anyhow::Error> {
             };
 
             if let Some(expected_output_at) = &command.expected_output_at {
+                let expected_output_at = tutorial_dir.join(expected_output_at);
                 if verify {
                     let expected_output = fs_err::read_to_string(expected_output_at)
                         .context("Failed to read file")?;
@@ -308,7 +345,6 @@ fn main() -> Result<(), anyhow::Error> {
         }
         std::process::exit(1);
     }
-
     Ok(())
 }
 
@@ -320,8 +356,8 @@ fn patch_directory_name(patch_file: &str) -> &str {
 
 /// Remove all files from the current directory, recursively, with the exception of
 /// top-level *.patch files, the tutorial manifest file and an optional directory.
-fn clean_up(ignored_dir_name: Option<&str>) {
-    fs_err::read_dir(std::env::current_dir().expect("Failed to get the current directory"))
+fn clean_up(tutorial_dir: &Path, ignored_dir_name: Option<&str>) {
+    fs_err::read_dir(tutorial_dir)
         .expect("Failed to read the current directory")
         .filter_map(|entry| entry.ok())
         .filter(|entry| {
@@ -345,7 +381,7 @@ fn clean_up(ignored_dir_name: Option<&str>) {
         });
 }
 
-fn run_script(script: &str) -> Result<ScriptOutcome, anyhow::Error> {
+fn run_script(script: &str, working_directory: PathBuf) -> Result<ScriptOutcome, anyhow::Error> {
     let mut options = ScriptOptions::new();
     let env_vars = HashMap::from([
         ("PAVEX_TTY_WIDTH".to_string(), "100".to_string()),
@@ -360,6 +396,7 @@ fn run_script(script: &str) -> Result<ScriptOutcome, anyhow::Error> {
         ),
     ]);
     options.env_vars = Some(env_vars);
+    options.working_directory = Some(working_directory);
 
     run_script::run(script, &Default::default(), &options)
         .map(|(code, output, error)| ScriptOutcome {

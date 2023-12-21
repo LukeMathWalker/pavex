@@ -91,9 +91,9 @@ jobs:
         run: cargo binstall -y --github-token=${{ secrets.GITHUB_TOKEN }} cargo-px@0.1
       - name: Install exa
         run: cargo binstall -y --github-token=${{ secrets.GITHUB_TOKEN }} exa@0.10
-      - name: Generate quickstart tutorial
+      - name: Verify tutorials
         run: |
-          cd doc_examples/quickstart
+          cd doc_examples
           tutorial_generator --verify
 
   build_docs:
