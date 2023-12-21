@@ -1,7 +1,6 @@
 # Overview
 
-When working on a Pavex application, you don't have to worry about **wiring together** the different parts
-of your application.  
+When working on a Pavex application, you don't have to worry about **wiring**.  
 All the components in your application (request handlers, middlewares, error handlers, etc.) declare,
 as input parameters, the data they need to do their job.
 We refer to those input parameters are their **dependencies**.  
