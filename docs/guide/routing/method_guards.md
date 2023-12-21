@@ -11,6 +11,8 @@ The simplest case is a guard that allows a single HTTP method:
 --8<-- "doc_examples/code_samples/guide/routing/method_guards/single_method/src/blueprint.rs"
 ```
 
+1. A short-hand for a [`MethodGuard`][MethodGuard] that only allows `GET` requests.
+
 This is by far the most common case and Pavex provides short-hands for it: in the
 [`pavex::blueprint::router`][pavex::blueprint::router#constants] module there is
 a pre-built guard for each well-known HTTP method (e.g. `GET` in the example above).
