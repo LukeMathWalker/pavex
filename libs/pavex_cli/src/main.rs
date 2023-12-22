@@ -220,11 +220,11 @@ fn scaffold_project(path: PathBuf) -> Result<ExitCode, Box<dyn std::error::Error
 
     let pavex_package_spec = std::env::var("CARGO_GENERATE_VALUE_PAVEX_PACKAGE_SPEC")
         .unwrap_or_else(|_| {
-            r#""https://github.com/LukeMathWalker/pavex", branch = "main""#.to_string()
+            r#"git = "https://github.com/LukeMathWalker/pavex", branch = "main""#.to_string()
         });
     let pavex_cli_client_package_spec =
         std::env::var("CARGO_GENERATE_VALUE_PAVEX_CLI_CLIENT_PACKAGE_SPEC").unwrap_or_else(|_| {
-            r#""https://github.com/LukeMathWalker/pavex", branch = "main""#.to_string()
+            r#"git = "https://github.com/LukeMathWalker/pavex", branch = "main""#.to_string()
         });
 
     let generate_args = GenerateArgs {
