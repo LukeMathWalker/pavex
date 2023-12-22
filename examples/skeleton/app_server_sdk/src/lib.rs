@@ -35,14 +35,17 @@ async fn route_request(
     request: http::Request<hyper::body::Incoming>,
     server_state: std::sync::Arc<ServerState>,
 ) -> pavex::response::Response {
-    #[allow(unused)]
     let (request_head, request_body) = request.into_parts();
+    #[allow(unused)]
     let request_body = pavex::request::body::RawIncomingBody::from(request_body);
     let request_head: pavex::request::RequestHead = request_head.into();
     let matched_route = match server_state.router.at(&request_head.uri.path()) {
         Ok(m) => m,
         Err(_) => {
-            let allowed_methods = pavex::request::route::AllowedMethods::new(vec![]);
+            let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter(
+                    vec![],
+                )
+                .into();
             return route_1::handler(&allowed_methods).await;
         }
     };
@@ -62,9 +65,10 @@ async fn route_request(
                         .await
                 }
                 _ => {
-                    let allowed_methods = pavex::request::route::AllowedMethods::new(
-                        vec![pavex::http::Method::GET],
-                    );
+                    let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
+                            pavex::http::Method::GET,
+                        ])
+                        .into();
                     route_1::handler(&allowed_methods).await
                 }
             }
@@ -87,7 +91,7 @@ pub mod route_0 {
 }
 pub mod route_1 {
     pub async fn handler(
-        v0: &pavex::request::route::AllowedMethods,
+        v0: &pavex::router::AllowedMethods,
     ) -> pavex::response::Response {
         let v1 = pavex::router::default_fallback(v0).await;
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
