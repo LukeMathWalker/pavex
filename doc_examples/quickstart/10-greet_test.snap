@@ -1,5 +1,5 @@
 ```rust title="demo_server/tests/integration/greet.rs"
-\\ [...]
+// [...]
 #[tokio::test]
 async fn non_utf8_user_agent_is_rejected() {
     let api = TestApi::spawn().await;

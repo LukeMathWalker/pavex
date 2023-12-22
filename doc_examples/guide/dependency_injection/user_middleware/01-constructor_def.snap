@@ -1,6 +1,6 @@
 ```rust title="src/user.rs" hl_lines="4"
 use pavex::request::RequestHead;
-\\ [...]
+// [...]
 impl User {
     pub fn extract(request_head: &RequestHead) -> Self {
         todo!() // Business logic goes here

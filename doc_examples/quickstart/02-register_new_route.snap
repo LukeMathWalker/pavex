@@ -1,5 +1,5 @@
 ```rust title="demo/src/blueprint.rs" hl_lines="9 10 11 12 13"
-\\ [...]
+// [...]
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     register_common_constructors(&mut bp);

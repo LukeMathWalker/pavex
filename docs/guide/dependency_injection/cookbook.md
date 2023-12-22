@@ -10,6 +10,10 @@ Use it a reference in your day-to-day Pavex development if you're not sure of th
 Free functions are the simplest case.
 You register them as constructors by passing their fully qualified path to the [`f!` macro][f!].
 
+--8<-- "doc_examples/guide/dependency_injection/cookbook/project-function_registration.snap"
+
+--8<-- "doc_examples/guide/dependency_injection/cookbook/project-function_def.snap"
+
 ## Static methods
 
 Static methods (1) behave exactly like free functions:
@@ -18,14 +22,26 @@ you can register them as constructors by passing their fully qualified path to t
 
 1. A static method is a method that doesn't take `self` (or one of its variants) as an input parameter.
 
+--8<-- "doc_examples/guide/dependency_injection/cookbook/project-static_method_registration.snap"
+
+--8<-- "doc_examples/guide/dependency_injection/cookbook/project-static_method_def.snap"
+
 ## Non-static methods
 
 On the surface, non-static methods are registered in the same way as static methods: 
 by passing their fully qualified path to the [`f!` macro][f!].
 
+--8<-- "doc_examples/guide/dependency_injection/cookbook/project-non_static_method_registration.snap"
+
+--8<-- "doc_examples/guide/dependency_injection/cookbook/project-non_static_method_def.snap"
+
 However, there's a catch: `self` counts as a dependency!  
 When registering a non-static method, you need to make sure to also register a constructor
 for the type of `self`.
+
+--8<-- "doc_examples/guide/dependency_injection/cookbook/project-non_static_method_self_constructor_registration.snap"
+
+--8<-- "doc_examples/guide/dependency_injection/cookbook/project-non_static_method_self_constructor_def.snap"
 
 ## Trait methods
 

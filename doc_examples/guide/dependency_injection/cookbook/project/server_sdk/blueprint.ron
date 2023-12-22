@@ -1,0 +1,162 @@
+(
+    creation_location: (
+        line: 5,
+        column: 18,
+        file: "src/blueprint.rs",
+    ),
+    constructors: [],
+    middlewares: [],
+    routes: [
+        (
+            path: "/greet",
+            method_guard: (
+                inner: Some((
+                    bitset: 256,
+                    extensions: [],
+                )),
+            ),
+            request_handler: (
+                callable: (
+                    registered_at: "cookbook",
+                    import_path: "crate::routes::greet",
+                ),
+                location: (
+                    line: 9,
+                    column: 8,
+                    file: "src/blueprint.rs",
+                ),
+            ),
+            error_handler: None,
+        ),
+    ],
+    fallback_request_handler: None,
+    nested_blueprints: [
+        (
+            blueprint: (
+                creation_location: (
+                    line: 6,
+                    column: 18,
+                    file: "src/functions/blueprint.rs",
+                ),
+                constructors: [
+                    (
+                        constructor: (
+                            callable: (
+                                registered_at: "cookbook",
+                                import_path: "crate::functions::extract",
+                            ),
+                            location: (
+                                line: 7,
+                                column: 8,
+                                file: "src/functions/blueprint.rs",
+                            ),
+                        ),
+                        lifecycle: RequestScoped,
+                        cloning_strategy: None,
+                        error_handler: None,
+                    ),
+                ],
+                middlewares: [],
+                routes: [],
+                fallback_request_handler: None,
+                nested_blueprints: [],
+            ),
+            path_prefix: None,
+            nesting_location: (
+                line: 6,
+                column: 8,
+                file: "src/blueprint.rs",
+            ),
+        ),
+        (
+            blueprint: (
+                creation_location: (
+                    line: 6,
+                    column: 18,
+                    file: "src/static_methods/blueprint.rs",
+                ),
+                constructors: [
+                    (
+                        constructor: (
+                            callable: (
+                                registered_at: "cookbook",
+                                import_path: "crate::User::extract",
+                            ),
+                            location: (
+                                line: 7,
+                                column: 8,
+                                file: "src/static_methods/blueprint.rs",
+                            ),
+                        ),
+                        lifecycle: RequestScoped,
+                        cloning_strategy: None,
+                        error_handler: None,
+                    ),
+                ],
+                middlewares: [],
+                routes: [],
+                fallback_request_handler: None,
+                nested_blueprints: [],
+            ),
+            path_prefix: None,
+            nesting_location: (
+                line: 7,
+                column: 8,
+                file: "src/blueprint.rs",
+            ),
+        ),
+        (
+            blueprint: (
+                creation_location: (
+                    line: 6,
+                    column: 18,
+                    file: "src/non_static_methods/blueprint.rs",
+                ),
+                constructors: [
+                    (
+                        constructor: (
+                            callable: (
+                                registered_at: "cookbook",
+                                import_path: "crate::non_static_methods::UserStore::retrieve",
+                            ),
+                            location: (
+                                line: 7,
+                                column: 8,
+                                file: "src/non_static_methods/blueprint.rs",
+                            ),
+                        ),
+                        lifecycle: RequestScoped,
+                        cloning_strategy: None,
+                        error_handler: None,
+                    ),
+                    (
+                        constructor: (
+                            callable: (
+                                registered_at: "cookbook",
+                                import_path: "crate::non_static_methods::UserStore::new",
+                            ),
+                            location: (
+                                line: 11,
+                                column: 8,
+                                file: "src/non_static_methods/blueprint.rs",
+                            ),
+                        ),
+                        lifecycle: Singleton,
+                        cloning_strategy: None,
+                        error_handler: None,
+                    ),
+                ],
+                middlewares: [],
+                routes: [],
+                fallback_request_handler: None,
+                nested_blueprints: [],
+            ),
+            path_prefix: None,
+            nesting_location: (
+                line: 8,
+                column: 8,
+                file: "src/blueprint.rs",
+            ),
+        ),
+    ],
+)
