@@ -21,7 +21,7 @@
                     import_path: "crate::routes::greet",
                 ),
                 location: (
-                    line: 10,
+                    line: 11,
                     column: 8,
                     file: "src/blueprint.rs",
                 ),
@@ -207,6 +207,85 @@
             path_prefix: None,
             nesting_location: (
                 line: 9,
+                column: 8,
+                file: "src/blueprint.rs",
+            ),
+        ),
+        (
+            blueprint: (
+                creation_location: (
+                    line: 6,
+                    column: 18,
+                    file: "src/output/blueprint.rs",
+                ),
+                constructors: [
+                    (
+                        constructor: (
+                            callable: (
+                                registered_at: "cookbook",
+                                import_path: "crate::output::parse",
+                            ),
+                            location: (
+                                line: 7,
+                                column: 8,
+                                file: "src/output/blueprint.rs",
+                            ),
+                        ),
+                        lifecycle: RequestScoped,
+                        cloning_strategy: None,
+                        error_handler: None,
+                    ),
+                    (
+                        constructor: (
+                            callable: (
+                                registered_at: "cookbook",
+                                import_path: "pavex::request::body::BufferedBody::extract",
+                            ),
+                            location: (
+                                line: 8,
+                                column: 8,
+                                file: "src/output/blueprint.rs",
+                            ),
+                        ),
+                        lifecycle: RequestScoped,
+                        cloning_strategy: None,
+                        error_handler: Some((
+                            callable: (
+                                registered_at: "cookbook",
+                                import_path: "pavex::request::body::errors::ExtractBufferedBodyError::into_response",
+                            ),
+                            location: (
+                                line: 12,
+                                column: 6,
+                                file: "src/output/blueprint.rs",
+                            ),
+                        )),
+                    ),
+                    (
+                        constructor: (
+                            callable: (
+                                registered_at: "cookbook",
+                                import_path: "<pavex::request::body::BodySizeLimit as std::default::Default>::default",
+                            ),
+                            location: (
+                                line: 15,
+                                column: 8,
+                                file: "src/output/blueprint.rs",
+                            ),
+                        ),
+                        lifecycle: RequestScoped,
+                        cloning_strategy: None,
+                        error_handler: None,
+                    ),
+                ],
+                middlewares: [],
+                routes: [],
+                fallback_request_handler: None,
+                nested_blueprints: [],
+            ),
+            path_prefix: None,
+            nesting_location: (
+                line: 10,
                 column: 8,
                 file: "src/blueprint.rs",
             ),

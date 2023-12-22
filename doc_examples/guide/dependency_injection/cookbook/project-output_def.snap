@@ -1,0 +1,7 @@
+```rust title="src/output/constructor.rs"
+use pavex::request::body::errors::ExtractJsonBodyError;
+use pavex::request::body::BufferedBody;
+
+    // [...]
+    todo!()
+```

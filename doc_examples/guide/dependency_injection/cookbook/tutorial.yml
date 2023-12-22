@@ -38,3 +38,13 @@ snippets:
     source_path: "src/trait_methods/blueprint.rs"
     ranges: [ "0..10", "12..13" ]
     hl_lines: [ 8 ]
+  - name: "output_def"
+    source_path: "src/output/constructor.rs"
+    ranges: [ "0..3", "4..5" ]
+  - name: "fallible_output_def"
+    source_path: "src/output/constructor.rs"
+    ranges: [ "7..8", "9..10" ]
+  - name: "output_registration"
+    source_path: "src/output/blueprint.rs"
+    ranges: [ "0..7", "19..20" ]
+    hl_lines: [ 7 ]

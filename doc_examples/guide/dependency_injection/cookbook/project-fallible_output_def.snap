@@ -1,0 +1,6 @@
+```rust title="src/output/constructor.rs"
+// [...]
+pub fn fallible_parse<T>(body: BufferedBody) -> Result<Json<T>, ExtractJsonBodyError> {
+// [...]
+}
+```

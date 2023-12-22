@@ -64,11 +64,18 @@ for function calls[^ufcs].
 
 A generic parameter is **output-driven** if it appears in the output type of a constructor.  
 
-If the constructor is fallible, the generic parameter must appear in type of the `Ok` variant.
+--8<-- "doc_examples/guide/dependency_injection/cookbook/project-output_def.snap"
+
+If the constructor is fallible, the generic parameter must appear in type of the `Ok` variant to
+qualify as output-driven.
+
+--8<-- "doc_examples/guide/dependency_injection/cookbook/project-fallible_output_def.snap"
 
 If all generic parameters are output-driven, you can register the constructor
 as if it wasn't generic. Pavex will automatically infer the generic parameters
 based on the scenarios where the constructor is used.
+
+--8<-- "doc_examples/guide/dependency_injection/cookbook/project-output_registration.snap"
 
 ### Input-driven generics
 
