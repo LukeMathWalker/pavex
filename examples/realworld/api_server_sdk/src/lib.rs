@@ -86,7 +86,10 @@ async fn route_request(
     let matched_route = match server_state.router.at(&request_head.uri.path()) {
         Ok(m) => m,
         Err(_) => {
-            let allowed_methods = pavex::router::AllowedMethods::new(vec![]);
+            let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter(
+                    vec![],
+                )
+                .into();
             let matched_route_template = pavex::request::route::MatchedRouteTemplate::new(
                 "*",
             );
@@ -113,9 +116,10 @@ async fn route_request(
                     route_0::middleware_0(matched_route_template, &request_head).await
                 }
                 _ => {
-                    let allowed_methods = pavex::router::AllowedMethods::new(
-                        vec![pavex::http::Method::GET],
-                    );
+                    let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
+                            pavex::http::Method::GET,
+                        ])
+                        .into();
                     route_2::middleware_0(
                             matched_route_template,
                             &allowed_methods,
@@ -142,9 +146,11 @@ async fn route_request(
                         .await
                 }
                 _ => {
-                    let allowed_methods = pavex::router::AllowedMethods::new(
-                        vec![pavex::http::Method::GET, pavex::http::Method::POST],
-                    );
+                    let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
+                            pavex::http::Method::GET,
+                            pavex::http::Method::POST,
+                        ])
+                        .into();
                     route_2::middleware_0(
                             matched_route_template,
                             &allowed_methods,
@@ -185,12 +191,12 @@ async fn route_request(
                         .await
                 }
                 _ => {
-                    let allowed_methods = pavex::router::AllowedMethods::new(
-                        vec![
-                            pavex::http::Method::GET, pavex::http::Method::DELETE,
-                            pavex::http::Method::PUT
-                        ],
-                    );
+                    let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
+                            pavex::http::Method::GET,
+                            pavex::http::Method::DELETE,
+                            pavex::http::Method::PUT,
+                        ])
+                        .into();
                     route_2::middleware_0(
                             matched_route_template,
                             &allowed_methods,
@@ -223,9 +229,11 @@ async fn route_request(
                         .await
                 }
                 _ => {
-                    let allowed_methods = pavex::router::AllowedMethods::new(
-                        vec![pavex::http::Method::GET, pavex::http::Method::POST],
-                    );
+                    let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
+                            pavex::http::Method::GET,
+                            pavex::http::Method::POST,
+                        ])
+                        .into();
                     route_2::middleware_0(
                             matched_route_template,
                             &allowed_methods,
@@ -249,9 +257,10 @@ async fn route_request(
                         .await
                 }
                 _ => {
-                    let allowed_methods = pavex::router::AllowedMethods::new(
-                        vec![pavex::http::Method::DELETE],
-                    );
+                    let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
+                            pavex::http::Method::DELETE,
+                        ])
+                        .into();
                     route_2::middleware_0(
                             matched_route_template,
                             &allowed_methods,
@@ -283,9 +292,11 @@ async fn route_request(
                         .await
                 }
                 _ => {
-                    let allowed_methods = pavex::router::AllowedMethods::new(
-                        vec![pavex::http::Method::DELETE, pavex::http::Method::POST],
-                    );
+                    let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
+                            pavex::http::Method::DELETE,
+                            pavex::http::Method::POST,
+                        ])
+                        .into();
                     route_2::middleware_0(
                             matched_route_template,
                             &allowed_methods,
@@ -304,9 +315,10 @@ async fn route_request(
                     route_12::middleware_0(matched_route_template, &request_head).await
                 }
                 _ => {
-                    let allowed_methods = pavex::router::AllowedMethods::new(
-                        vec![pavex::http::Method::GET],
-                    );
+                    let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
+                            pavex::http::Method::GET,
+                        ])
+                        .into();
                     route_2::middleware_0(
                             matched_route_template,
                             &allowed_methods,
@@ -330,9 +342,10 @@ async fn route_request(
                         .await
                 }
                 _ => {
-                    let allowed_methods = pavex::router::AllowedMethods::new(
-                        vec![pavex::http::Method::GET],
-                    );
+                    let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
+                            pavex::http::Method::GET,
+                        ])
+                        .into();
                     route_2::middleware_0(
                             matched_route_template,
                             &allowed_methods,
@@ -364,9 +377,11 @@ async fn route_request(
                         .await
                 }
                 _ => {
-                    let allowed_methods = pavex::router::AllowedMethods::new(
-                        vec![pavex::http::Method::POST, pavex::http::Method::DELETE],
-                    );
+                    let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
+                            pavex::http::Method::POST,
+                            pavex::http::Method::DELETE,
+                        ])
+                        .into();
                     route_2::middleware_0(
                             matched_route_template,
                             &allowed_methods,
@@ -385,9 +400,10 @@ async fn route_request(
                     route_1::middleware_0(matched_route_template, &request_head).await
                 }
                 _ => {
-                    let allowed_methods = pavex::router::AllowedMethods::new(
-                        vec![pavex::http::Method::GET],
-                    );
+                    let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
+                            pavex::http::Method::GET,
+                        ])
+                        .into();
                     route_2::middleware_0(
                             matched_route_template,
                             &allowed_methods,
@@ -414,9 +430,11 @@ async fn route_request(
                         .await
                 }
                 _ => {
-                    let allowed_methods = pavex::router::AllowedMethods::new(
-                        vec![pavex::http::Method::GET, pavex::http::Method::PUT],
-                    );
+                    let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
+                            pavex::http::Method::GET,
+                            pavex::http::Method::PUT,
+                        ])
+                        .into();
                     route_2::middleware_0(
                             matched_route_template,
                             &allowed_methods,
@@ -442,9 +460,10 @@ async fn route_request(
                         .await
                 }
                 _ => {
-                    let allowed_methods = pavex::router::AllowedMethods::new(
-                        vec![pavex::http::Method::POST],
-                    );
+                    let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
+                            pavex::http::Method::POST,
+                        ])
+                        .into();
                     route_2::middleware_0(
                             matched_route_template,
                             &allowed_methods,
@@ -470,9 +489,10 @@ async fn route_request(
                         .await
                 }
                 _ => {
-                    let allowed_methods = pavex::router::AllowedMethods::new(
-                        vec![pavex::http::Method::POST],
-                    );
+                    let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
+                            pavex::http::Method::POST,
+                        ])
+                        .into();
                     route_2::middleware_0(
                             matched_route_template,
                             &allowed_methods,
