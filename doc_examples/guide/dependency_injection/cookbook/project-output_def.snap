@@ -2,6 +2,7 @@
 use pavex::request::body::errors::ExtractJsonBodyError;
 use pavex::request::body::BufferedBody;
 
-    // [...]
-    todo!()
+pub fn parse<T>(body: BufferedBody) -> JsonBody<T> {
+// [...]
+}
 ```
