@@ -9,4 +9,3 @@ generator_name = "bp"
 
 [lints]
 clippy = { all = "allow" }
-rust = { unused_variables = "allow" }
