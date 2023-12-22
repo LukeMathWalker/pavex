@@ -194,9 +194,10 @@
         (
             path: "/api/ping",
             method_guard: (
-                allowed_methods: [
-                    "GET",
-                ],
+                inner: Some((
+                    bitset: 256,
+                    extensions: [],
+                )),
             ),
             request_handler: (
                 callable: (
@@ -214,9 +215,10 @@
         (
             path: "/tags",
             method_guard: (
-                allowed_methods: [
-                    "GET",
-                ],
+                inner: Some((
+                    bitset: 256,
+                    extensions: [],
+                )),
             ),
             request_handler: (
                 callable: (
@@ -247,9 +249,10 @@
                     (
                         path: "",
                         method_guard: (
-                            allowed_methods: [
-                                "GET",
-                            ],
+                            inner: Some((
+                                bitset: 256,
+                                extensions: [],
+                            )),
                         ),
                         request_handler: (
                             callable: (
@@ -267,9 +270,10 @@
                     (
                         path: "",
                         method_guard: (
-                            allowed_methods: [
-                                "POST",
-                            ],
+                            inner: Some((
+                                bitset: 128,
+                                extensions: [],
+                            )),
                         ),
                         request_handler: (
                             callable: (
@@ -287,9 +291,10 @@
                     (
                         path: "/feed",
                         method_guard: (
-                            allowed_methods: [
-                                "GET",
-                            ],
+                            inner: Some((
+                                bitset: 256,
+                                extensions: [],
+                            )),
                         ),
                         request_handler: (
                             callable: (
@@ -307,9 +312,10 @@
                     (
                         path: "/:slug",
                         method_guard: (
-                            allowed_methods: [
-                                "GET",
-                            ],
+                            inner: Some((
+                                bitset: 256,
+                                extensions: [],
+                            )),
                         ),
                         request_handler: (
                             callable: (
@@ -327,9 +333,10 @@
                     (
                         path: "/:slug",
                         method_guard: (
-                            allowed_methods: [
-                                "DELETE",
-                            ],
+                            inner: Some((
+                                bitset: 8,
+                                extensions: [],
+                            )),
                         ),
                         request_handler: (
                             callable: (
@@ -347,9 +354,10 @@
                     (
                         path: "/:slug",
                         method_guard: (
-                            allowed_methods: [
-                                "PUT",
-                            ],
+                            inner: Some((
+                                bitset: 16,
+                                extensions: [],
+                            )),
                         ),
                         request_handler: (
                             callable: (
@@ -367,9 +375,10 @@
                     (
                         path: "/:slug/favorite",
                         method_guard: (
-                            allowed_methods: [
-                                "DELETE",
-                            ],
+                            inner: Some((
+                                bitset: 8,
+                                extensions: [],
+                            )),
                         ),
                         request_handler: (
                             callable: (
@@ -387,9 +396,10 @@
                     (
                         path: "/:slug/favorite",
                         method_guard: (
-                            allowed_methods: [
-                                "POST",
-                            ],
+                            inner: Some((
+                                bitset: 128,
+                                extensions: [],
+                            )),
                         ),
                         request_handler: (
                             callable: (
@@ -407,9 +417,10 @@
                     (
                         path: "/:slug/comments",
                         method_guard: (
-                            allowed_methods: [
-                                "GET",
-                            ],
+                            inner: Some((
+                                bitset: 256,
+                                extensions: [],
+                            )),
                         ),
                         request_handler: (
                             callable: (
@@ -427,9 +438,10 @@
                     (
                         path: "/:slug/comments",
                         method_guard: (
-                            allowed_methods: [
-                                "POST",
-                            ],
+                            inner: Some((
+                                bitset: 128,
+                                extensions: [],
+                            )),
                         ),
                         request_handler: (
                             callable: (
@@ -447,9 +459,10 @@
                     (
                         path: "/:slug/comments/:comment_id",
                         method_guard: (
-                            allowed_methods: [
-                                "DELETE",
-                            ],
+                            inner: Some((
+                                bitset: 8,
+                                extensions: [],
+                            )),
                         ),
                         request_handler: (
                             callable: (
@@ -488,9 +501,10 @@
                     (
                         path: "/:username",
                         method_guard: (
-                            allowed_methods: [
-                                "GET",
-                            ],
+                            inner: Some((
+                                bitset: 256,
+                                extensions: [],
+                            )),
                         ),
                         request_handler: (
                             callable: (
@@ -508,9 +522,10 @@
                     (
                         path: "/:username/follow",
                         method_guard: (
-                            allowed_methods: [
-                                "POST",
-                            ],
+                            inner: Some((
+                                bitset: 128,
+                                extensions: [],
+                            )),
                         ),
                         request_handler: (
                             callable: (
@@ -528,9 +543,10 @@
                     (
                         path: "/:username/follow",
                         method_guard: (
-                            allowed_methods: [
-                                "DELETE",
-                            ],
+                            inner: Some((
+                                bitset: 8,
+                                extensions: [],
+                            )),
                         ),
                         request_handler: (
                             callable: (
@@ -586,9 +602,10 @@
                     (
                         path: "/users",
                         method_guard: (
-                            allowed_methods: [
-                                "POST",
-                            ],
+                            inner: Some((
+                                bitset: 128,
+                                extensions: [],
+                            )),
                         ),
                         request_handler: (
                             callable: (
@@ -616,9 +633,10 @@
                     (
                         path: "/users/login",
                         method_guard: (
-                            allowed_methods: [
-                                "POST",
-                            ],
+                            inner: Some((
+                                bitset: 128,
+                                extensions: [],
+                            )),
                         ),
                         request_handler: (
                             callable: (
@@ -646,9 +664,10 @@
                     (
                         path: "/user",
                         method_guard: (
-                            allowed_methods: [
-                                "GET",
-                            ],
+                            inner: Some((
+                                bitset: 256,
+                                extensions: [],
+                            )),
                         ),
                         request_handler: (
                             callable: (
@@ -666,9 +685,10 @@
                     (
                         path: "/user",
                         method_guard: (
-                            allowed_methods: [
-                                "PUT",
-                            ],
+                            inner: Some((
+                                bitset: 16,
+                                extensions: [],
+                            )),
                         ),
                         request_handler: (
                             callable: (

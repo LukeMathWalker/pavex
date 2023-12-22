@@ -1544,6 +1544,7 @@ dependencies = [
  "serde_html_form",
  "serde_json",
  "serde_path_to_error",
+ "smallvec",
  "socket2 0.5.3",
  "thiserror",
  "tokio",

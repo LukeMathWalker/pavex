@@ -479,8 +479,8 @@ fn get_request_dispatcher(
             request: #http::Request<#hyper::body::Incoming>,
             #server_state_ident: std::sync::Arc<ServerState>
         ) -> #pavex::response::Response {
-            #[allow(unused)]
             let (request_head, request_body) = request.into_parts();
+            #[allow(unused)]
             let request_body = #pavex::request::body::RawIncomingBody::from(request_body);
             let request_head: #pavex::request::RequestHead = request_head.into();
             let matched_route = match server_state.router.at(&request_head.uri.path()) {

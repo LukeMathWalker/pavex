@@ -59,9 +59,10 @@
         (
             path: "/home",
             method_guard: (
-                allowed_methods: [
-                    "GET",
-                ],
+                inner: Some((
+                    bitset: 256,
+                    extensions: [],
+                )),
             ),
             request_handler: (
                 callable: (
