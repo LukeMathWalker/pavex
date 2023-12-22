@@ -14,7 +14,7 @@ snippets:
     ranges: [ ".." ]
   - name: "cargo_px_in_manifest"
     source_path: "demo_server_sdk/Cargo.toml"
-    ranges: [ "5.." ]
+    ranges: [ "5..9" ]
   - name: "bp_binary"
     source_path: "demo/src/bin/bp.rs"
     ranges: [ ".." ]
