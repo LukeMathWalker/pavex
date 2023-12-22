@@ -1,0 +1,57 @@
+starter_project_folder: "project"
+commands:
+  - command: "cargo px c"
+    expected_outcome: "success"
+snippets:
+  - name: "function_def"
+    source_path: "src/functions/constructor.rs"
+    ranges: [ "0..4", "5..6" ]
+  - name: "function_registration"
+    source_path: "src/functions/blueprint.rs"
+    ranges: [ "0..7", "8..9" ]
+    hl_lines: [ 7 ]
+  - name: "static_method_def"
+    source_path: "src/static_methods/constructor.rs"
+    ranges: [ "0..5", "6..8" ]
+  - name: "static_method_registration"
+    source_path: "src/static_methods/blueprint.rs"
+    ranges: [ "0..7", "8..9" ]
+    hl_lines: [ 7 ]
+  - name: "non_static_method_def"
+    source_path: "src/non_static_methods/constructor.rs"
+    ranges: [ "0..7", "12..14", "15..17" ]
+  - name: "non_static_method_registration"
+    source_path: "src/non_static_methods/blueprint.rs"
+    ranges: [ "0..10", "15..16" ]
+    hl_lines: [ 8 ]
+  - name: "non_static_method_self_constructor_def"
+    source_path: "src/non_static_methods/constructor.rs"
+    ranges: [ "6..9", "10..11", "16..17" ]
+  - name: "non_static_method_self_constructor_registration"
+    source_path: "src/non_static_methods/blueprint.rs"
+    ranges: [ "0..6", "10..14", "15..16" ]
+    hl_lines: [ 9 ]
+  - name: "trait_method_def"
+    source_path: "src/trait_methods/constructor.rs"
+    ranges: [ "0..6", "7..9" ]
+  - name: "trait_method_registration"
+    source_path: "src/trait_methods/blueprint.rs"
+    ranges: [ "0..10", "12..13" ]
+    hl_lines: [ 8 ]
+  - name: "output_def"
+    source_path: "src/output/constructor.rs"
+    ranges: [ "0..4", "5..6" ]
+  - name: "fallible_output_def"
+    source_path: "src/output/constructor.rs"
+    ranges: [ "7..8", "9..10" ]
+  - name: "output_registration"
+    source_path: "src/output/blueprint.rs"
+    ranges: [ "0..7", "19..20" ]
+    hl_lines: [ 7 ]
+  - name: "input_def"
+    source_path: "src/input/constructor.rs"
+    ranges: [ "0..3", "4..5" ]
+  - name: "input_registration"
+    source_path: "src/input/blueprint.rs"
+    ranges: [ "0..10", "12..13" ]
+    hl_lines: [ 8 ]

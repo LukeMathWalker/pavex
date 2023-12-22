@@ -1,0 +1,10 @@
+```rust title="src/non_static_methods/constructor.rs"
+// [...]
+impl UserStore {
+    pub fn new() -> Self {
+        // The constructor logic goes here
+        // [...]
+    }
+    // [...]
+}
+```

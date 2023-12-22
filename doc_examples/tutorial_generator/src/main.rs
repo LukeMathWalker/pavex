@@ -232,7 +232,7 @@ fn generate_tutorial(tutorial_manifest_path: &Path, verify: bool) -> Result<(), 
                             extracted_snippet.push('\n');
                         }
                         if is_rust {
-                            writeln!(&mut extracted_snippet, "{indent}\\\\ [...]").unwrap();
+                            writeln!(&mut extracted_snippet, "{indent}// [...]").unwrap();
                         } else if is_toml {
                             writeln!(&mut extracted_snippet, "{indent}# [...]").unwrap();
                         }
