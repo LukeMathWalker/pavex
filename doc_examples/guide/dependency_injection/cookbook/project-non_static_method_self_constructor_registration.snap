@@ -1,0 +1,15 @@
+```rust title="src/non_static_methods/blueprint.rs" hl_lines="9"
+use pavex::blueprint::constructor::Lifecycle;
+use pavex::blueprint::Blueprint;
+use pavex::f;
+
+pub fn blueprint() -> Blueprint {
+    let mut bp = Blueprint::new();
+    // [...]
+    bp.constructor(
+        f!(crate::non_static_methods::UserStore::new),
+        Lifecycle::Singleton,
+    );
+    // [...]
+}
+```

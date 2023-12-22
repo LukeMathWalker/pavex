@@ -23,6 +23,7 @@ markdown_extensions:
       dedent_subsections: true
   - attr_list
   - md_in_html
+  - footnotes
   - pymdownx.highlight:
       anchor_linenums: true
       line_spans: __span
@@ -83,6 +84,9 @@ nav:
           - guide/request_data/index.md
       - "Dependency injection":
           - guide/dependency_injection/index.md
+          - guide/dependency_injection/core_concepts.md
+          - guide/dependency_injection/cookbook.md
+          - guide/dependency_injection/limitations.md
   - "API Reference": api_reference/pavex/
 exclude_docs: |
   README.md

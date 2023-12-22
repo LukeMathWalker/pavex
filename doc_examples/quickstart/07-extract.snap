@@ -1,7 +1,7 @@
 ```rust title="demo/src/user_agent.rs"
 use pavex::http::header::{ToStrError, USER_AGENT};
 use pavex::request::RequestHead;
-\\ [...]
+// [...]
 impl UserAgent {
     pub fn extract(request_head: &RequestHead) -> Result<Self, ToStrError /* (1)! */> {
         let Some(user_agent) = request_head.headers.get(USER_AGENT) else {
