@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 pub use blueprint::blueprint;
 
 mod blueprint;
