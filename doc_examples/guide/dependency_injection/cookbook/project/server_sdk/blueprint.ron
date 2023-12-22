@@ -21,7 +21,7 @@
                     import_path: "crate::routes::greet",
                 ),
                 location: (
-                    line: 11,
+                    line: 12,
                     column: 8,
                     file: "src/blueprint.rs",
                 ),
@@ -286,6 +286,59 @@
             path_prefix: None,
             nesting_location: (
                 line: 10,
+                column: 8,
+                file: "src/blueprint.rs",
+            ),
+        ),
+        (
+            blueprint: (
+                creation_location: (
+                    line: 6,
+                    column: 18,
+                    file: "src/input/blueprint.rs",
+                ),
+                constructors: [
+                    (
+                        constructor: (
+                            callable: (
+                                registered_at: "cookbook",
+                                import_path: "crate::input::length::<crate::input::GreetBody>",
+                            ),
+                            location: (
+                                line: 7,
+                                column: 8,
+                                file: "src/input/blueprint.rs",
+                            ),
+                        ),
+                        lifecycle: RequestScoped,
+                        cloning_strategy: None,
+                        error_handler: None,
+                    ),
+                    (
+                        constructor: (
+                            callable: (
+                                registered_at: "cookbook",
+                                import_path: "crate::input::json",
+                            ),
+                            location: (
+                                line: 11,
+                                column: 8,
+                                file: "src/input/blueprint.rs",
+                            ),
+                        ),
+                        lifecycle: RequestScoped,
+                        cloning_strategy: None,
+                        error_handler: None,
+                    ),
+                ],
+                middlewares: [],
+                routes: [],
+                fallback_request_handler: None,
+                nested_blueprints: [],
+            ),
+            path_prefix: None,
+            nesting_location: (
+                line: 11,
                 column: 8,
                 file: "src/blueprint.rs",
             ),

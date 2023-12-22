@@ -8,6 +8,7 @@ pub fn blueprint() -> Blueprint {
     bp.nest(crate::non_static_methods::blueprint());
     bp.nest(crate::trait_methods::blueprint());
     bp.nest(crate::output::blueprint());
+    bp.nest(crate::input::blueprint());
     bp.route(GET, "/greet", f!(crate::routes::greet));
     bp
 }

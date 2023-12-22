@@ -48,3 +48,10 @@ snippets:
     source_path: "src/output/blueprint.rs"
     ranges: [ "0..7", "19..20" ]
     hl_lines: [ 7 ]
+  - name: "input_def"
+    source_path: "src/input/constructor.rs"
+    ranges: [ "0..3", "4..5" ]
+  - name: "input_registration"
+    source_path: "src/input/blueprint.rs"
+    ranges: [ "0..10", "12..13" ]
+    hl_lines: [ 8 ]

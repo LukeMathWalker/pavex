@@ -1,11 +1,11 @@
 pub use blueprint::blueprint;
 
 mod blueprint;
-pub mod routes;
-
 pub mod functions;
+pub mod input;
 pub mod non_static_methods;
 pub mod output;
+pub mod routes;
 pub mod static_methods;
 pub mod trait_methods;
 

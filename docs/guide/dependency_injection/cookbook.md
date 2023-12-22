@@ -82,14 +82,18 @@ based on the scenarios where the constructor is used.
 A generic parameter is **input-driven** if it isn't output-driven, i.e. it doesn't appear in the output type of a 
 constructor.  
 
+--8<-- "doc_examples/guide/dependency_injection/cookbook/project-input_def.snap"
+
 If all generic parameters are input-driven, you need to explicitly specify
 the concrete type for each generic parameter when registering the constructor.
+
+--8<-- "doc_examples/guide/dependency_injection/cookbook/project-input_registration.snap"
 
 ### Mixed generics
 
 If a constructor has both input-driven and output-driven generic parameters,
-you need to explicitly specify the concrete type for each generic parameter
-when registering the constructor, even if it's output-driven.
+you need to explicitly specify the concrete type for all generic parameters
+when registering the constructor.
 
 
 [f!]: ../../api_reference/pavex/macro.f!.html
