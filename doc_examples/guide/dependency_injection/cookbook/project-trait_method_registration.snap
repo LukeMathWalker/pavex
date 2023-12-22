@@ -1,4 +1,4 @@
-```rust title="src/non_static_methods/blueprint.rs" hl_lines="8"
+```rust title="src/trait_methods/blueprint.rs" hl_lines="8"
 use pavex::blueprint::constructor::Lifecycle;
 use pavex::blueprint::Blueprint;
 use pavex::f;
@@ -6,7 +6,7 @@ use pavex::f;
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.constructor(
-        f!(crate::non_static_methods::UserStore::retrieve),
+        f!(<crate::User as crate::trait_methods::WithId>::id),
         Lifecycle::RequestScoped,
     );
     // [...]

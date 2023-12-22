@@ -1,4 +1,4 @@
-```rust title="src/static_methods/blueprint.rs"
+```rust title="src/static_methods/blueprint.rs" hl_lines="7"
 use pavex::blueprint::constructor::Lifecycle;
 use pavex::blueprint::Blueprint;
 use pavex::f;

@@ -53,6 +53,11 @@ for function calls[^ufcs].
    A trait method is part of trait definition (e.g. `Iterator::next`) and it's available
    on a type if that type implements the trait.
 
+--8<-- "doc_examples/guide/dependency_injection/cookbook/project-trait_method_registration.snap"
+
+--8<-- "doc_examples/guide/dependency_injection/cookbook/project-trait_method_def.snap"
+
+
 ## Generics
 
 ### Output-driven generics
