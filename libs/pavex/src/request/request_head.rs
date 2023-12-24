@@ -6,6 +6,13 @@ use http::{HeaderMap, Method, Uri, Version};
 ///
 /// It includes the [method](Method), the [URI](Uri),
 /// the [HTTP version](Version), and the [headers](HeaderMap).
+///
+/// # Framework primitive
+///
+/// `RequestHead` is a framework primitive—you don't need to register any constructor
+/// with [`Blueprint`] to use it in your application.
+///
+/// [`Blueprint`]: crate::blueprint::Blueprint
 pub struct RequestHead {
     pub method: Method,
     pub uri: Uri,

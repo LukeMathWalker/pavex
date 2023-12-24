@@ -49,10 +49,10 @@ use super::{body::raw::boxed, Response, ResponseHead};
 // `IntoResponse` for `E`? Do I need to specify an error handler in the blueprint?
 // What if I do both, what gets invoked?
 //
-// ## Other minor divergences
+// ## Other divergences
 //
 // We are more conservative in the range of types that we implement `IntoResponse` for.
-// In particular, no tuples and no `()`.
+// In particular, no tuples, no `()`, no types for which we'd have to infer a status code.
 pub trait IntoResponse {
     /// Convert `self` into an HTTP response.
     fn into_response(self) -> Response;

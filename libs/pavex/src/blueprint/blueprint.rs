@@ -13,6 +13,13 @@ use super::router::{MethodGuard, Route};
 #[derive(serde::Serialize, serde::Deserialize)]
 /// The starting point for building an application with Pavex.
 ///
+/// # Guide
+///
+/// Check out the ["Project structure"](https://pavex.dev/docs/guide/project_structure) section of
+/// Pavex's guide for more details on the role of [`Blueprint`] in Pavex applications.
+///
+/// # Overview
+///
 /// A blueprint defines the runtime behaviour of your application.  
 /// It keeps track of:
 ///
@@ -67,11 +74,12 @@ impl Blueprint {
     ///
     /// If a request handler has already been registered for the same route, it will be overwritten.
     ///
-    /// # Routing: an introduction
+    /// # Guide
     ///
-    /// ## Simple routes
+    /// Check out the ["Routing"](https://pavex.dev/docs/guide/routing) section of Pavex's guide
+    /// for a thorough introduction to routing in Pavex applications.
     ///
-    /// The simplest route is a combination of a single HTTP method, a path and a request handler:
+    /// # Example
     ///
     /// ```rust
     /// use pavex::{f, blueprint::{Blueprint, router::GET}};
@@ -87,128 +95,6 @@ impl Blueprint {
     /// bp.route(GET, "/path", f!(crate::my_handler));
     /// # }
     /// ```
-    ///
-    /// You can use the constants exported in the [`router`] module to specify one of the well-known
-    /// HTTP methods:
-    ///
-    /// ```rust
-    /// use pavex::f;
-    /// use pavex::blueprint::{Blueprint, router::{GET, POST, PUT, DELETE, PATCH}};
-    /// # use pavex::{request::RequestHead, response::Response};
-    /// # fn my_handler(request: &RequestHead) -> Response { todo!() }
-    /// # fn main() {
-    /// # let mut bp = Blueprint::new();
-    ///
-    /// bp.route(GET, "/path", f!(crate::my_handler));
-    /// bp.route(POST, "/path", f!(crate::my_handler));
-    /// bp.route(PUT, "/path", f!(crate::my_handler));
-    /// bp.route(DELETE, "/path", f!(crate::my_handler));
-    /// bp.route(PATCH, "/path", f!(crate::my_handler));
-    /// // ...and a few more!
-    /// # }
-    /// ```
-    ///
-    /// ## Matching multiple HTTP methods
-    ///
-    /// It can also be useful to register a request handler that handles multiple HTTP methods
-    /// for the same path:
-    ///
-    /// ```rust
-    /// use pavex::blueprint::{Blueprint, router::{MethodGuard, POST, PATCH}};
-    /// use pavex::f;
-    /// use pavex::http::Method;
-    /// # use pavex::{request::RequestHead, response::Response};
-    /// # fn my_handler(request: &RequestHead) -> Response { todo!() }
-    /// # fn main() {
-    /// # let mut bp = Blueprint::new();
-    ///
-    /// // `crate::my_handler` will be used for both `PATCH` and `POST` requests to `/path`
-    /// bp.route(PATCH.or(POST), "/path", f!(crate::my_handler));
-    /// # }
-    /// ```
-    ///
-    /// Last but not least, you can register a route that matches a request **regardless** of
-    /// the HTTP method being used:
-    ///
-    /// ```rust
-    /// use pavex::f;
-    /// use pavex::blueprint::{Blueprint, router::ANY};
-    /// # use pavex::{request::RequestHead, response::Response};
-    /// # fn my_handler(request: RequestHead) -> Response { todo!() }
-    /// # fn main() {
-    /// # let mut bp = Blueprint::new();
-    ///
-    /// // This will match **all** incoming requests to `/path`, regardless of their HTTP method.
-    /// // `GET`, `POST`, `PUT`... anything goes!
-    /// bp.route(ANY, "/path", f!(crate::my_handler));
-    /// # }
-    /// ```
-    ///
-    /// ## Route parameters
-    ///
-    /// Your route paths can include **route parameters**—a way to bind the
-    /// value of a path segment from an incoming request and make it available to your request
-    /// handler.
-    ///
-    /// Let's look at an example—a route with a single route parameter, `home_id`:
-    ///
-    /// ```rust
-    /// use pavex::{f, blueprint::{Blueprint, router::GET}};
-    /// # use pavex::{request::RequestHead, response::Response};
-    /// # fn get_home(request: RequestHead) -> Response { todo!() }
-    /// # fn main() {
-    /// # let mut bp = Blueprint::new();
-    ///
-    /// // This route will match `GET` requests to `/home/123` and `/home/456`, but not `/home`.
-    /// bp.route(GET, "/home/:home_id", f!(crate::get_home));
-    /// # }
-    /// ```
-    ///
-    /// Route parameters are path segments prefixed with a colon (`:`)—`:home_id` in the example.  
-    /// The value of the route parameter `home_id` can then be retrieved from the request handler
-    /// (or any other constructor that has access to the request):
-    ///
-    /// ```rust
-    /// use pavex::request::route::RouteParams;
-    ///
-    /// #[RouteParams]
-    /// struct HomeRouteParams {
-    ///     // The name of the field must match the name of the route parameter
-    ///     // used in the template we passed to `bp.route`.
-    ///     home_id: u32,
-    /// }
-    ///
-    /// // The `RouteParams` extractor will deserialize the route parameters into the
-    /// // type you specified—`HomeRouteParams` in this case.
-    /// fn get_home(params: &RouteParams<HomeRouteParams>) -> String {
-    ///     format!("Fetching the home with id {}", params.0.home_id)
-    /// }
-    /// ```
-    ///
-    /// Pavex supports **catch-all** parameters as well: they start with `*` and match
-    /// everything after the `/`.
-    ///
-    /// ```rust
-    /// use pavex::{f, blueprint::{Blueprint, router::GET}};
-    /// # use pavex::{request::RequestHead, response::Response};
-    /// # fn get_town(request: RequestHead) -> Response { todo!() }
-    /// # fn main() {
-    /// # let mut bp = Blueprint::new();
-    ///
-    /// // This route will match, for example, `GET` requests to:
-    /// // - `/town/123`, with `town_info=123`
-    /// // - `/town/456/street/123`, with `town_info=456/street/123`
-    /// //
-    /// // It won't match a GET request to `/town/`, `town_info` cannot be empty.
-    /// bp.route(GET, "/town/*town_info", f!(crate::get_town));
-    /// # }
-    /// ```
-    ///
-    /// There can be at most one catch-all parameter in a route, and
-    /// it **must** be at the end of the route template
-    ///
-    /// Check out [`RouteParams`] in `pavex` for more information
-    /// on how to extract and work with route parameters.
     ///
     /// [`router`]: crate::blueprint::router
     /// [`RouteParams`]: struct@crate::request::route::RouteParams
@@ -233,6 +119,16 @@ impl Blueprint {
     #[track_caller]
     /// Register a constructor.
     ///
+    /// If a constructor for the same type has already been registered, it will be overwritten.
+    ///
+    /// # Guide
+    ///
+    /// Check out the ["Dependency injection"](https://pavex.dev/docs/guide/dependency_injection)
+    /// section of Pavex's guide for a thorough introduction to dependency injection
+    /// in Pavex applications.
+    ///
+    /// # Example
+    ///
     /// ```rust
     /// use pavex::f;
     /// use pavex::blueprint::{Blueprint, constructor::Lifecycle};
@@ -249,8 +145,6 @@ impl Blueprint {
     /// bp.constructor(f!(crate::logger), Lifecycle::Transient);
     /// # }
     /// ```
-    ///
-    /// If a constructor for the same type has already been registered, it will be overwritten.
     pub fn constructor(&mut self, callable: RawCallable, lifecycle: Lifecycle) -> Constructor {
         let registered_constructor = RegisteredConstructor {
             constructor: RegisteredCallable {

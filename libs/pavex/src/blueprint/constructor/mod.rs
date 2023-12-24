@@ -1,8 +1,10 @@
 //! Register constructors for the types that can be injected into your request and error handlers.  
 //!
-//! Check out [`Blueprint::constructor`] for a brief introduction to dependency injection in Pavex.
+//! # Guide
 //!
-//! [`Blueprint::constructor`]: Blueprint::constructor
+//! Check out the ["Dependency injection"](https://pavex.dev/docs/guide/dependency_injection)
+//! section of Pavex's guide for a thorough introduction to dependency injection
+//! in Pavex applications.
 pub use lifecycle::Lifecycle;
 
 use crate::blueprint::internals::RegisteredCallable;
@@ -74,6 +76,13 @@ impl<'a> Constructor<'a> {
         self
     }
 
+    /// Set the cloning strategy for the output type returned by this constructor.
+    ///
+    /// By default,
+    /// Pavex will **never** try to clone the output type returned by a constructor.  
+    /// If the output type implements [`Clone`], you change the default by setting the cloning strategy
+    /// to [`CloningStrategy::CloneIfNecessary`]: Pavex will clone the output type if
+    /// it's necessary to generate code that satisfies Rust's borrow checker.
     pub fn cloning(self, strategy: CloningStrategy) -> Self {
         self.blueprint.constructors[self.constructor_id].cloning_strategy = Some(strategy);
         self
