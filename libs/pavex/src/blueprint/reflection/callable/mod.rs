@@ -20,8 +20,8 @@ mod identifiers;
 ///
 /// # Guide
 ///
-/// In the ["Cookbook"](https://pavex.dev/docs/guide/dependency_injection/cookbook)
-/// section of Pavex's guide on [dependency injection](https://pavex.dev/docs/guide/dependency_injection)
+/// In the ["Cookbook"](https://pavex.dev/docs/guide/dependency_injection/cookbook/)
+/// section of Pavex's guide on [dependency injection](https://pavex.dev/docs/guide/dependency_injection/)
 /// you can find a collection of reference examples on how to use `f!` macro to register different kinds of
 /// callables (functions, methods, trait methods, etc.) with a [`Blueprint`].
 ///
