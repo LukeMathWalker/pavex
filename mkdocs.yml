@@ -84,7 +84,10 @@ nav:
           - guide/request_data/index.md
       - "Dependency injection":
           - guide/dependency_injection/index.md
-          - guide/dependency_injection/core_concepts.md
+          - "Core concepts":
+              - guide/dependency_injection/core_concepts/constructors.md
+              - guide/dependency_injection/core_concepts/application_state.md
+              - guide/dependency_injection/core_concepts/framework_primitives.md
           - guide/dependency_injection/cookbook.md
           - guide/dependency_injection/limitations.md
   - "API Reference": api_reference/pavex/
