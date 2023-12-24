@@ -142,4 +142,4 @@ jobs:
         uses: lycheeverse/lychee-action@v1
         with:
           fail: true
-          args: --base site --exclude-loopback --exclude-path="site/api_reference/pavex/http" --exclude="https://doc.rust-lang.org/*" --exclude="https://docs.rs/**/*" --exclude-path="site/api_reference/static.files/*" --exclude="https://fonts.gstatic.com" --require-https --verbose --no-progress site
+          args: --base site --exclude-loopback --exclude-path="site/api_reference/pavex/http" --exclude="https://doc.rust-lang.org/*" --exclude="https://docs.rs/**/*" --exclude-path="site/api_reference/static.files" --exclude="https://fonts.gstatic.com" --require-https --verbose --no-progress site
