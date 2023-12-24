@@ -17,6 +17,15 @@ mod identifiers;
 // demand to know the type of each generic parameter without a default.
 #[macro_export]
 /// A macro to convert a fully-qualified path into a [`RawCallable`].
+///
+/// # Guide
+///
+/// In the ["Cookbook"](https://pavex.dev/docs/guide/dependency_injection/cookbook/)
+/// section of Pavex's guide on [dependency injection](https://pavex.dev/docs/guide/dependency_injection/)
+/// you can find a collection of reference examples on how to use `f!` macro to register different kinds of
+/// callables (functions, methods, trait methods, etc.) with a [`Blueprint`].
+///
+/// [`Blueprint`]: crate::blueprint::Blueprint
 macro_rules! f {
     ($p:expr) => {{
         #[cfg(pavex_ide_hint)]

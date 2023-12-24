@@ -1,8 +1,9 @@
 //! Specify the routes exposed by your application.  
 //!
-//! Check out [`Blueprint::route`] for a brief introduction to request routing in Pavex.
+//! # Guide
 //!
-//! [`Blueprint::route`]: crate::blueprint::Blueprint::route
+//! Check out the ["Routing"](https://pavex.dev/docs/guide/routing) section of Pavex's guide
+//! for a thorough introduction to routing in Pavex applications.
 pub use fallback::Fallback;
 pub use method_guard::{
     MethodGuard, ANY, ANY_WITH_EXTENSIONS, CONNECT, DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT,
