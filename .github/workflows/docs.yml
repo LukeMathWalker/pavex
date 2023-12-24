@@ -132,8 +132,8 @@ jobs:
       - name: Fix base
         run: |
           # Convert all "absolute" guide links in the reference to relative links so that we can scan for dead links
-          find . -type f -exec sed -i "s#https://pavex.dev/docs/#file:///${PWD}/site/#g" {} +
-          find . -type f -exec sed -i "s#https://pavex.dev/#file:///${PWD}/site/#g" {} +
+          sudo find . -type f -exec sed -i "s#https://pavex.dev/docs/#file:///${PWD}/site/#g" {} +
+          sudo find . -type f -exec sed -i "s#https://pavex.dev/#file:///${PWD}/site/#g" {} +
       - name: Link Checker
         uses: lycheeverse/lychee-action@v1
         with:
