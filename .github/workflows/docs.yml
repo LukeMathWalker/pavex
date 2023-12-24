@@ -116,11 +116,13 @@ jobs:
         run: |
           mkdir -p docs/api_reference
           cp -r libs/target/doc/* docs/api_reference
+          # Convert all "absolute" guide links in the reference to relative links so that we can scan for dead links
+          find . -type f -exec sed -i 's#https://pavex.dev/docs/#../../#g' {} +
       - name: Link Checker
         uses: lycheeverse/lychee-action@v1
         with:
           fail: true
-          args: --base . --exclude-loopback --exclude-path="docs/api_reference" --require-https --verbose --no-progress docs
+          args: --base . --exclude-loopback --exclude-path="docs/api_reference/pavex/http" --exclude "https://doc.rust-lang.org/*" --exclude "https://docs.rs/**/*" --require-https --verbose --no-progress docs
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
