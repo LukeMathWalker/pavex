@@ -10,91 +10,91 @@ on:
       - main
 
 jobs:
-#  build_pavex_cli:
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: Checkout repository
-#        uses: actions/checkout@v4
-#      - name: Install Rust
-#        uses: actions-rust-lang/setup-rust-toolchain@v1.6.0
-#      - name: Cache dependencies
-#        uses: Swatinem/rust-cache@v2
-#        with:
-#          workspaces: "./libs -> ./libs/target"
-#          key: "build-pavex-cli"
-#      - name: Build CLI
-#        run: |
-#          cd libs
-#          cargo build --package pavex_cli --bin pavex --release
-#      - name: Store CLI artifact
-#        uses: actions/upload-artifact@v4
-#        with:
-#          name: pavex_cli
-#          path: libs/target/release/pavex
-#
-#  build_tutorial_generator:
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: Checkout repository
-#        uses: actions/checkout@v4
-#      - name: Install Rust
-#        uses: actions-rust-lang/setup-rust-toolchain@v1.6.0
-#      - name: Cache dependencies
-#        uses: Swatinem/rust-cache@v2
-#        with:
-#          workspaces: "./doc_examples/tutorial_generator -> ./doc_examples/tutorial_generator/target"
-#      - name: Build CLI
-#        run: |
-#          cd doc_examples/tutorial_generator
-#          cargo build
-#      - name: Store CLI artifact
-#        uses: actions/upload-artifact@v4
-#        with:
-#          name: tutorial_generator
-#          path: doc_examples/tutorial_generator/target/debug/tutorial_generator
-#
-#  is_up_to_date:
-#    runs-on: ubuntu-latest
-#    needs:
-#      - build_pavex_cli
-#      - build_tutorial_generator
-#    steps:
-#      - name: Checkout repository
-#        uses: actions/checkout@v4
-#      - name: Set git identity
-#        run: |
-#          git config --global user.name "GitHub Actions"
-#          git config --global user.email "ci@pavex.dev"
-#      - name: Install Rust nightly toolchain
-#        uses: actions-rust-lang/setup-rust-toolchain@v1
-#        with:
-#          toolchain: nightly
-#          components: rust-docs-json
-#      - name: Install Rust stable toolchain
-#        uses: actions-rust-lang/setup-rust-toolchain@v1.6.0
-#      - name: Download pavex CLI artifact
-#        uses: actions/download-artifact@v4
-#        with:
-#          name: pavex_cli
-#          path: ~/.cargo/bin
-#      - name: Mark as executable
-#        run: chmod +x ~/.cargo/bin/pavex
-#      - name: Download tutorial_generator CLI artifact
-#        uses: actions/download-artifact@v4
-#        with:
-#          name: tutorial_generator
-#          path: ~/.cargo/bin
-#      - name: Mark as executable
-#        run: chmod +x ~/.cargo/bin/tutorial_generator
-#      - uses: cargo-bins/cargo-binstall@main
-#      - name: Install cargo-px
-#        run: cargo binstall -y --github-token=${{ secrets.GITHUB_TOKEN }} cargo-px@0.1
-#      - name: Install exa
-#        run: cargo binstall -y --github-token=${{ secrets.GITHUB_TOKEN }} exa@0.10
-#      - name: Verify tutorials
-#        run: |
-#          cd doc_examples
-#          tutorial_generator --verify
+  build_pavex_cli:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1.6.0
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "./libs -> ./libs/target"
+          key: "build-pavex-cli"
+      - name: Build CLI
+        run: |
+          cd libs
+          cargo build --package pavex_cli --bin pavex --release
+      - name: Store CLI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pavex_cli
+          path: libs/target/release/pavex
+
+  build_tutorial_generator:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1.6.0
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "./doc_examples/tutorial_generator -> ./doc_examples/tutorial_generator/target"
+      - name: Build CLI
+        run: |
+          cd doc_examples/tutorial_generator
+          cargo build
+      - name: Store CLI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tutorial_generator
+          path: doc_examples/tutorial_generator/target/debug/tutorial_generator
+
+  is_up_to_date:
+    runs-on: ubuntu-latest
+    needs:
+      - build_pavex_cli
+      - build_tutorial_generator
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set git identity
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "ci@pavex.dev"
+      - name: Install Rust nightly toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: nightly
+          components: rust-docs-json
+      - name: Install Rust stable toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1.6.0
+      - name: Download pavex CLI artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: pavex_cli
+          path: ~/.cargo/bin
+      - name: Mark as executable
+        run: chmod +x ~/.cargo/bin/pavex
+      - name: Download tutorial_generator CLI artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: tutorial_generator
+          path: ~/.cargo/bin
+      - name: Mark as executable
+        run: chmod +x ~/.cargo/bin/tutorial_generator
+      - uses: cargo-bins/cargo-binstall@main
+      - name: Install cargo-px
+        run: cargo binstall -y --github-token=${{ secrets.GITHUB_TOKEN }} cargo-px@0.1
+      - name: Install exa
+        run: cargo binstall -y --github-token=${{ secrets.GITHUB_TOKEN }} exa@0.10
+      - name: Verify tutorials
+        run: |
+          cd doc_examples
+          tutorial_generator --verify
 
   build_docs:
     runs-on: ubuntu-latest
@@ -142,4 +142,15 @@ jobs:
         uses: lycheeverse/lychee-action@v1
         with:
           fail: true
-          args: --base site --exclude-loopback --exclude-path="site/api_reference/pavex/http" --exclude="https://doc.rust-lang.org/*" --exclude="https://docs.rs/**/*" --exclude-path="site/api_reference/static.files" --exclude="https://fonts.gstatic.com" --require-https --verbose --no-progress site
+          args: |
+            --base site 
+            --exclude-loopback 
+            --exclude-path="site/api_reference/pavex/http" 
+            --exclude="https://doc.rust-lang.org/*" 
+            --exclude="https://docs.rs/**/*" 
+            --exclude-path="site/api_reference/static.files" 
+            --exclude="https://fonts.gstatic.com" 
+            --require-https 
+            --verbose 
+            --no-progress 
+            site
