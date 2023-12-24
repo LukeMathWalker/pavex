@@ -16,7 +16,13 @@ When registering a route, you must provide the **fully qualified path** to the r
 --8<-- "doc_examples/guide/routing/request_handlers/intro/src/blueprint.rs"
 ```
 
-The path must be wrapped in the [`f!` macro][f!].
+The path must be wrapped in the [`f!` macro][f!].  
+
+!!! note "Registration syntax"
+
+    You can use free functions, static methods, non-static methods, and trait methods as request handlers.
+    Check out the [dependency injection cookbook](../dependency_injection/cookbook.md) for more details on
+    the syntax for each case.
 
 ## `IntoResponse`
 
