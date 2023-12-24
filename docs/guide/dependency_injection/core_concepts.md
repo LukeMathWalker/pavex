@@ -39,7 +39,7 @@ using its [`constructor`][Blueprint::constructor] method:
 
 [`constructor`][Blueprint::constructor] takes two arguments:
 
-- The fully qualified path to the constructor, wrapped in a macro ([`f!`][f])
+- The [fully qualified path](cookbook.md) to the constructor, wrapped in a macro ([`f!`][f])
 - The **constructor's lifecycle**.
 
 ### Lifecycles
@@ -59,7 +59,7 @@ Let's look at a few common scenarios to build some intuition around lifecycles:
 | Scenario                 | Lifecycle                                 | Why?                                                                                                                                                                                                                                                                                                                                                                                     |
 |--------------------------|-------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Database connection pool | [Singleton][Lifecycle::Singleton]         | The entire application should use the same pool. <br/>Each request will fetch a connection from the pool when needed.                                                                                                                                                                                                                                                                    |
-| HTTP client              | [Singleton][Lifecycle::Singleton]         | Most HTTP clients keep, under the hood, an HTTP connection pool. <br/>You want to reuse those connections across requests to minimise latency and the number of open file descriptors.                                                                                                                                                                                                   |
+| HTTP client              | [Singleton][Lifecycle::Singleton]         | Most HTTP clients keep, under the hood, a connection pool. <br/>You want to reuse those connections across requests to minimise latency and the number of open file descriptors.                                                                                                                                                                                                   |
 | Route parameters         | [RequestScoped][Lifecycle::RequestScoped] | Route parameters are extracted from the incoming request. <br/> They must not be shared across requests, therefore they can't be a [`Singleton`][Lifecycle::Singleton].<br/> They could be [`Transient`][Lifecycle::Transient], but re-parsing the parameters before every use would be expensive.<br/>[`RequestScoped`][Lifecycle::RequestScoped] is the optimal choice.                |
 | Database connection | [Transient][Lifecycle::Transient]         | The connection is retrieved from a shared pool.<br/>It could be [`RequestScoped`][Lifecycle::RequestScoped], but you might end up keeping the connection booked (i.e. outside of the pool) for longer than it's strictly necessary.<br/>[`Transient`][Lifecycle::Transient] is the optimal choice: you only remove the connection from the pool when it's needed, put it back when idle. |                                                                                                                                                                                                                                                                                                                          |
 
@@ -114,7 +114,7 @@ The framework primitives are:
 - [`RouteParams`][RouteParams]. The route parameters extracted from the incoming request.
 - [`AllowedMethods`][AllowedMethods]. The HTTP methods allowed for the current request path.
 
-They represent raw data from the incoming request ([`RequestHead`][RequestHead], [`IncomingBody`][IncomingBody])
+They represent raw data from the incoming request ([`RequestHead`][RequestHead], [`RawIncomingBody`][RawIncomingBody])
 or information coming from the routing system ([`AllowedMethods`][AllowedMethods], [`RouteParams`][RouteParams]).
 
 ### Convenient, but inflexible

@@ -23,7 +23,7 @@ If you check out its definition, you'll see that it registers a constructor for 
 
 It specifies:
 
-- The fully qualified path to the constructor method, wrapped in a macro (`f!`)
+- The [fully qualified path](../../guide/dependency_injection/cookbook.md) to the constructor method, wrapped in a macro (`f!`)
 - The constructor's lifecycle ([`Lifecycle::RequestScoped`](Lifecycle::RequestScoped)): the framework will invoke this
   constructor at most once per
   request

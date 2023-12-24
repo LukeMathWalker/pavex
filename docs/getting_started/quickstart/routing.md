@@ -12,7 +12,7 @@ It specifies:
 
 - The HTTP method (`GET`)
 - The path (`/api/ping`)
-- The fully qualified path to the handler function (`crate::routes::status::ping`), wrapped in a macro (`f!`)
+- The [fully qualified path](../../guide/dependency_injection/cookbook.md) to the handler function (`crate::routes::status::ping`), wrapped in a macro (`f!`)
 
 ## Request handlers
 
