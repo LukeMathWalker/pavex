@@ -135,7 +135,7 @@ jobs:
         uses: lycheeverse/lychee-action@v1
         with:
           fail: true
-          args: --base . --exclude-loopback --exclude-path="docs/api_reference/pavex/http" --exclude="https://doc.rust-lang.org/*" --exclude="https://docs.rs/**/*" --exclude-path="docs/api_reference/static.files/*" --require-https --verbose --no-progress docs
+          args: --base . --exclude-loopback --exclude-path="docs/api_reference/pavex/http" --exclude="https://doc.rust-lang.org/*" --exclude="https://docs.rs/**/*" --exclude-path="docs/api_reference/static.files/*" --require-https --verbose --no-progress site
       - uses: actions/upload-artifact@v4
         with:
           name: docs
