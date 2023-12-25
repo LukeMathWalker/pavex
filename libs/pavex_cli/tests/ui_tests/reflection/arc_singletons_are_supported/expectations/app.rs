@@ -4,12 +4,14 @@
 extern crate alloc;
 struct ServerState {
     router: matchit::Router<u32>,
-    #[allow(dead_code)]
     application_state: ApplicationState,
 }
-pub struct ApplicationState {}
+pub struct ApplicationState {
+    s0: alloc::sync::Arc<app::Custom>,
+}
 pub async fn build_application_state() -> crate::ApplicationState {
-    crate::ApplicationState {}
+    let v0 = app::constructor();
+    crate::ApplicationState { s0: v0 }
 }
 pub fn run(
     server_builder: pavex::server::Server,
@@ -23,7 +25,7 @@ pub fn run(
 }
 fn build_router() -> matchit::Router<u32> {
     let mut router = matchit::Router::new();
-    router.insert("/home", 0u32).unwrap();
+    router.insert("/", 0u32).unwrap();
     router
 }
 async fn route_request(
@@ -52,7 +54,9 @@ async fn route_request(
     match route_id {
         0u32 => {
             match &request_head.method {
-                &pavex::http::Method::GET => route_0::handler().await,
+                &pavex::http::Method::GET => {
+                    route_0::handler(server_state.application_state.s0.clone()).await
+                }
                 _ => {
                     let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
                             pavex::http::Method::GET,
@@ -66,9 +70,11 @@ async fn route_request(
     }
 }
 pub mod route_0 {
-    pub async fn handler() -> pavex::response::Response {
-        let v0 = app::Streamer::stream_file();
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v0)
+    pub async fn handler(
+        v0: alloc::sync::Arc<app::Custom>,
+    ) -> pavex::response::Response {
+        let v1 = app::handler(v0);
+        <http::StatusCode as pavex::response::IntoResponse>::into_response(v1)
     }
 }
 pub mod route_1 {
