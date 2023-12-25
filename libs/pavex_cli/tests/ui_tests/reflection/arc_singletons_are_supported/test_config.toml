@@ -1,0 +1,6 @@
+description = "pavex is able to handle the most common singleton setup (i.e. a type wrapped in an Arc)"
+
+[expectations]
+codegen = "pass"
+
+[dependencies]
