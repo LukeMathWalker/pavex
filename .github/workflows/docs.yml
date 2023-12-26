@@ -20,7 +20,7 @@ jobs:
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: "./libs -> ./libs/target"
+          workspaces: "./libs -> ./target"
           key: "build-pavex-cli"
       - name: Build CLI
         run: |
@@ -42,7 +42,7 @@ jobs:
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: "./doc_examples/tutorial_generator -> ./doc_examples/tutorial_generator/target"
+          workspaces: "./doc_examples/tutorial_generator -> ./target"
       - name: Build CLI
         run: |
           cd doc_examples/tutorial_generator
@@ -106,7 +106,7 @@ jobs:
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: "./libs -> ./libs/target"
+          workspaces: "./libs -> ./target"
           key: "build-pavex-docs"
       - name: Build API reference
         run: |
