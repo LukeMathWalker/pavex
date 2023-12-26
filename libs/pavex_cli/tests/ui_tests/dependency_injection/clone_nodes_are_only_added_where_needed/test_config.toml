@@ -1,0 +1,11 @@
+description = """
+Clone nodes are only added where they are needed.
+In particular, the fact that a node must be cloned in the call graph for a handler
+doesn't force the insertion of a clone node in the call graph for the application state.
+Regression test for https://github.com/LukeMathWalker/pavex/issues/134
+"""
+
+[expectations]
+codegen = "pass"
+
+
