@@ -1,20 +1,21 @@
-use crate::compiler::analyses::components::{
-    ComponentDb, ComponentId, ConsumptionMode, HydratedComponent,
-};
-use crate::compiler::analyses::computations::ComputationDb;
-use crate::compiler::analyses::constructibles::ConstructibleDb;
-use crate::compiler::analyses::user_components::ScopeId;
-use crate::compiler::computation::{Computation, MatchResultVariant};
 use ahash::{HashMap, HashMapExt, HashSet, HashSetExt};
 use bimap::BiHashMap;
 use guppy::PackageId;
 use indexmap::IndexSet;
-use pavex::blueprint::constructor::Lifecycle;
 use petgraph::prelude::{StableDiGraph, StableGraph};
 use petgraph::stable_graph::NodeIndex;
 use petgraph::visit::Dfs;
 use petgraph::Direction;
 
+use pavex::blueprint::constructor::Lifecycle;
+
+use crate::compiler::analyses::components::{
+    ComponentDb, ComponentId, ConsumptionMode, HydratedComponent, InsertTransformer,
+};
+use crate::compiler::analyses::computations::ComputationDb;
+use crate::compiler::analyses::constructibles::ConstructibleDb;
+use crate::compiler::analyses::user_components::ScopeId;
+use crate::compiler::computation::{Computation, MatchResultVariant};
 use crate::language::{Lifetime, ResolvedType, TypeReference};
 
 use super::dependency_graph::DependencyGraph;
@@ -288,6 +289,10 @@ where
                     break 'inner;
                 };
                 for transformer_id in transformer_ids {
+                    let when_to_insert = component_db.when_to_insert(*transformer_id);
+                    if when_to_insert == InsertTransformer::Lazily {
+                        continue;
+                    }
                     // Not all transformers might be relevant to this `CallGraph`, we need to take their scope into account.
                     let transformer_scope_id = component_db.scope_id(*transformer_id);
                     if root_scope_id

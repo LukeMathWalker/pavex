@@ -13,10 +13,10 @@ use pavex::blueprint::constructor::{CloningStrategy, Lifecycle};
 
 use crate::compiler::analyses::call_graph::{
     core_graph::build_call_graph, CallGraph, CallGraphNode, NumberOfAllowedInvocations,
-    OrderedCallGraph,
+    OrderedCallGraph, RawCallGraphExt,
 };
 use crate::compiler::analyses::components::{
-    ComponentDb, ComponentId, ConsumptionMode, HydratedComponent,
+    ComponentDb, ComponentId, ConsumptionMode, HydratedComponent, InsertTransformer,
 };
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::constructibles::ConstructibleDb;
@@ -122,6 +122,7 @@ pub(crate) fn application_state_call_graph(
             .collect::<BTreeSet<_>>();
         // We only care about errors at this point.
         output_node_indexes.remove(&root_node_index);
+        call_graph.print_debug_dot(component_db, computation_db);
         for output_node_index in output_node_indexes {
             let CallGraphNode::Compute { component_id, .. } = &call_graph[output_node_index] else {
                 unreachable!()
@@ -223,6 +224,7 @@ pub(crate) fn application_state_call_graph(
             computation_db.get_or_intern(ok_wrapper),
             application_state_id,
             application_state_scope_id,
+            InsertTransformer::Eagerly,
             ConsumptionMode::Move,
         );
 
@@ -290,6 +292,7 @@ pub(crate) fn application_state_call_graph(
                     computation_db.get_or_intern(error_variant_constructor.clone()),
                     *err_match_id,
                     application_state_scope_id,
+                    InsertTransformer::Eagerly,
                     ConsumptionMode::Move,
                 );
                 // We need to do an Err(..) wrap around the error variant returned by the transformer.
@@ -297,6 +300,7 @@ pub(crate) fn application_state_call_graph(
                     computation_db.get_or_intern(err_wrapper.clone()),
                     transformer_id,
                     application_state_scope_id,
+                    InsertTransformer::Eagerly,
                     ConsumptionMode::Move,
                 );
             }
