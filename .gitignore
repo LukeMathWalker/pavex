@@ -2,6 +2,7 @@
 /libs/target
 /libs/vendor
 /libs/.cargo
+/doc_examples/tutorial_envs/
 /doc_examples/**/target
 /examples/**/vendor
 /examples/**/target
