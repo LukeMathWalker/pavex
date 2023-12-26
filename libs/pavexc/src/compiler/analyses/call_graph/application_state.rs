@@ -13,7 +13,7 @@ use pavex::blueprint::constructor::{CloningStrategy, Lifecycle};
 
 use crate::compiler::analyses::call_graph::{
     core_graph::build_call_graph, CallGraph, CallGraphNode, NumberOfAllowedInvocations,
-    OrderedCallGraph, RawCallGraphExt,
+    OrderedCallGraph,
 };
 use crate::compiler::analyses::components::{
     ComponentDb, ComponentId, ConsumptionMode, HydratedComponent, InsertTransformer,
@@ -122,7 +122,6 @@ pub(crate) fn application_state_call_graph(
             .collect::<BTreeSet<_>>();
         // We only care about errors at this point.
         output_node_indexes.remove(&root_node_index);
-        call_graph.print_debug_dot(component_db, computation_db);
         for output_node_index in output_node_indexes {
             let CallGraphNode::Compute { component_id, .. } = &call_graph[output_node_index] else {
                 unreachable!()
