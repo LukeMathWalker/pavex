@@ -50,6 +50,18 @@ pub(crate) enum ConsumptionMode {
     SharedBorrow,
 }
 
+/// When should the transformer node be inserted in the graph?
+#[derive(Debug, Clone, Copy, Hash, Ord, PartialOrd, Eq, PartialEq)]
+pub(crate) enum InsertTransformer {
+    /// Always insert the transformer node if the transformed component appears in the graph.
+    Eagerly,
+    /// Don't automatically insert the transformer node. Instead, the compiler
+    /// will manually insert it when it is needed.
+    ///
+    /// This is primarily used for cloning nodes.
+    Lazily,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) enum Component {
     RequestHandler {
@@ -166,6 +178,10 @@ pub(crate) struct ComponentDb {
     ///
     /// Invariants: there is an entry for every single request handler.
     handler_id2middleware_ids: HashMap<ComponentId, Vec<ComponentId>>,
+    /// Associate each transformer with direction on when to apply it.
+    ///
+    /// Invariants: there is an entry for every single transformer.
+    transformer_id2when_to_insert: HashMap<ComponentId, InsertTransformer>,
     error_handler_id2error_handler: HashMap<ComponentId, ErrorHandler>,
     into_response: PathType,
     /// A mapping from the low-level [`UserComponentId`]s to the high-level [`ComponentId`]s.
@@ -214,6 +230,7 @@ impl ComponentDb {
             id2lifecycle: Default::default(),
             constructor_id2cloning_strategy: Default::default(),
             handler_id2middleware_ids: Default::default(),
+            transformer_id2when_to_insert: Default::default(),
             error_handler_id2error_handler: Default::default(),
             into_response,
             user_component_id2component_id: Default::default(),
@@ -342,6 +359,7 @@ impl ComponentDb {
                         callable_id,
                         component_id,
                         self_.scope_id(component_id),
+                        InsertTransformer::Eagerly,
                         ConsumptionMode::Move,
                     );
                 }
@@ -503,6 +521,7 @@ impl ComponentDb {
                             ok.into(),
                             handler_id,
                             scope_id,
+                            InsertTransformer::Eagerly,
                             ConsumptionMode::Move,
                             computation_db,
                         );
@@ -510,6 +529,7 @@ impl ComponentDb {
                             err.into(),
                             handler_id,
                             scope_id,
+                            InsertTransformer::Eagerly,
                             ConsumptionMode::Move,
                             computation_db,
                         );
@@ -577,6 +597,7 @@ impl ComponentDb {
                             ok.into(),
                             mw_id,
                             scope_id,
+                            InsertTransformer::Eagerly,
                             ConsumptionMode::Move,
                             computation_db,
                         );
@@ -584,6 +605,7 @@ impl ComponentDb {
                             err.into(),
                             mw_id,
                             scope_id,
+                            InsertTransformer::Eagerly,
                             ConsumptionMode::Move,
                             computation_db,
                         );
@@ -786,6 +808,7 @@ impl ComponentDb {
                 err.into(),
                 constructor_id,
                 scope_id,
+                InsertTransformer::Eagerly,
                 ConsumptionMode::Move,
                 computation_db,
             );
@@ -801,11 +824,18 @@ impl ComponentDb {
         computation: Computation<'static>,
         transformed_id: ComponentId,
         scope_id: ScopeId,
+        when_to_insert: InsertTransformer,
         consumption_mode: ConsumptionMode,
         computation_db: &mut ComputationDb,
     ) -> ComponentId {
         let computation_id = computation_db.get_or_intern(computation);
-        self.get_or_intern_transformer(computation_id, transformed_id, scope_id, consumption_mode)
+        self.get_or_intern_transformer(
+            computation_id,
+            transformed_id,
+            scope_id,
+            when_to_insert,
+            consumption_mode,
+        )
     }
 
     pub fn get_or_intern_constructor(
@@ -851,6 +881,7 @@ impl ComponentDb {
         callable_id: ComputationId,
         transformed_component_id: ComponentId,
         scope_id: ScopeId,
+        when_to_insert: InsertTransformer,
         consumption_mode: ConsumptionMode,
     ) -> ComponentId {
         let transformer = Component::Transformer {
@@ -860,6 +891,8 @@ impl ComponentDb {
             scope_id,
         };
         let transformer_id = self.interner.get_or_intern(transformer);
+        self.transformer_id2when_to_insert
+            .insert(transformer_id, when_to_insert);
         self.id2transformer_ids
             .entry(transformed_component_id)
             .or_default()
@@ -894,6 +927,12 @@ impl ComponentDb {
     /// Otherwise, return `None`.
     pub fn error_handler_id(&self, err_match_id: ComponentId) -> Option<&ComponentId> {
         self.match_err_id2error_handler_id.get(&err_match_id)
+    }
+
+    /// If the component is a transformer, return the expected insertion behaviour.
+    /// Panic otherwise.
+    pub fn when_to_insert(&self, transformer_id: ComponentId) -> InsertTransformer {
+        self.transformer_id2when_to_insert[&transformer_id]
     }
 
     /// If the component is a request handler, return the ids of the middlewares that wrap around
@@ -1199,6 +1238,7 @@ impl ComponentDb {
                         ok.into(),
                         bound_component_id,
                         scope_id,
+                        InsertTransformer::Eagerly,
                         ConsumptionMode::Move,
                         computation_db,
                     );
@@ -1206,6 +1246,7 @@ impl ComponentDb {
                         err.into(),
                         bound_component_id,
                         scope_id,
+                        InsertTransformer::Eagerly,
                         ConsumptionMode::Move,
                         computation_db,
                     );
@@ -1303,6 +1344,7 @@ impl ComponentDb {
                         bound_transformer,
                         bound_error_component_id,
                         scope_id,
+                        InsertTransformer::Eagerly,
                         ConsumptionMode::SharedBorrow,
                         computation_db,
                     );

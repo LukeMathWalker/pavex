@@ -6,7 +6,7 @@ use once_cell::sync::OnceCell;
 use pavex::blueprint::constructor::CloningStrategy;
 
 use crate::compiler::analyses::components::{
-    ComponentDb, ComponentId, ConsumptionMode, HydratedComponent,
+    ComponentDb, ComponentId, ConsumptionMode, HydratedComponent, InsertTransformer,
 };
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::user_components::ScopeId;
@@ -91,6 +91,7 @@ pub(super) fn get_clone_component_id(
         clone_computation_id,
         *component_id,
         scope_id,
+        InsertTransformer::Lazily,
         ConsumptionMode::SharedBorrow,
     );
     Some(clone_component_id)

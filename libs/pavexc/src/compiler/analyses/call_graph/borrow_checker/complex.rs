@@ -296,9 +296,9 @@ fn emit_borrow_checking_error(
 
             if let Some(user_component_id) = component_db.user_component_id(component_id) {
                 let help_msg = format!(
-                        "Allow me to clone `{type_:?}` in order to satisfy the borrow checker.\n\
+                    "Allow me to clone `{type_:?}` in order to satisfy the borrow checker.\n\
                         You can do so by invoking `.cloning(CloningStrategy::CloneIfNecessary)` on the type returned by `.constructor`.",
-                    );
+                );
                 let location = component_db
                     .user_component_db()
                     .get_location(user_component_id);
@@ -334,10 +334,10 @@ fn emit_borrow_checking_error(
                 .computation()
             {
                 let help_msg = format!(
-                        "Considering changing the signature of `{}`.\n\
+                    "Considering changing the signature of `{}`.\n\
                         It takes `{type_:?}` by value. Would a shared reference, `&{type_:?}`, be enough?",
-                        callable.path
-                    );
+                    callable.path
+                );
                 let help = HelpWithSnippet::new(
                     help_msg,
                     AnnotatedSnippet::new_with_labels(NamedSource::new("", ""), vec![]),
