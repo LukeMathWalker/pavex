@@ -1,4 +1,4 @@
-```rust title="src/route_params/routes.rs"
+```rust title="src/route_params/routes.rs" hl_lines="9"
 use pavex::http::StatusCode;
 use pavex::request::route::RouteParams;
 

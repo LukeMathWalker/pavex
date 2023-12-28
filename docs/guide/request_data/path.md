@@ -39,7 +39,7 @@ To extract `123` from the path, you register `/users/:id` as the path pattern fo
 
 1. The path pattern for the route.
 
-You can then access the `id` value for an incoming request by injecting [`RouteParams`][RouteParams] in your handler:
+You can then access the `id` value for an incoming request by injecting [`RouteParams<T>`][RouteParams] in your handler:
 
 --8<-- "doc_examples/guide/request_data/path/project-route_params_extraction.snap"
 
@@ -47,16 +47,20 @@ There's a lot going on here, so let's break it down!
 
 ### Fields names
 
-Every time you want to extract route parameters from a path, you must define a struct. 
+[`RouteParams<T>`][RouteParams] is a generic wrapper around a struct[^why-struct] that contains the route parameters for a given path.  
 All struct fields must be named after the route parameters declared in the path pattern[^wrong-name].
 
 In our example, the path pattern is `/users/:id`.
-We define a new struct, `GetUserParams`, with a single field named `id`.
+We defined a new struct for its route parameters, `GetUserParams`, with a single field named `id`.
+
+--8<-- "doc_examples/guide/request_data/path/project-route_params_struct.snap"
 
 ### Deserialization
 
 The newly defined struct must be **deserializable**—i.e. it must implement the [`serde::Deserialize`][serde::Deserialize] trait.  
 The [`#[RouteParams]`][RouteParamsMacro] attribute macro will automatically derive [`serde::Deserialize`][serde::Deserialize] for you. Alternatively, you can derive or implement [`serde::Deserialize`][serde::Deserialize] directly.  
+
+--8<-- "doc_examples/guide/request_data/path/project-route_params_struct_with_attr.snap"
 
 If you rely on [`#[RouteParams]`][RouteParamsMacro], Pavex can perform more advanced checks at compile time[^structural-deserialize] (e.g. detect unsupported types).
 
@@ -67,9 +71,10 @@ From an application perspective, you might want to enforce stricter constraints.
 
 In our example, we expect `id` parameter to be a number.  
 We could set the field type for `id` to `String` and then parse it into a number in the handler; however, that's going
-to get tedious if we need to do it every single time we want to work with a numeric route parameter.
-
+to get tedious if we need to do it every single time we want to work with a numeric route parameter.  
 We can skip all that boilerplate by setting the field type to `u64` directly, and let Pavex do the parsing for us:
+
+--8<-- "doc_examples/guide/request_data/path/project-route_params_typed_field.snap"
 
 Everything works as expected because `u64` implements the [`serde::Deserialize`][serde::Deserialize] trait.
 
@@ -86,6 +91,10 @@ Pavex will do its best to catch unsupported types at compile time, but it's not 
     the HTTP APIs you're likely to build with Pavex.  
     Nonetheless, you can work with all kinds of request targets in Pavex by accessing [`RequestHead::uri`][RequestHead::uri]
     directly.
+
+[^why-struct]: Pavex made a deliberate choice of _not_ supporting tuples or other sequence-like types for extracting route parameters. 
+    Check out [the API reference](../../api_reference/pavex/request/route/struct.RouteParams.html#unsupported-types)
+    to learn more about the rationale behind this decision.
 
 [^wrong-name]: If a field name doesn't match a route parameter name, Pavex will detect it at compile time and return
     an error.
