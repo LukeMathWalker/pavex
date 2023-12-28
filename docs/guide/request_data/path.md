@@ -86,6 +86,34 @@ As a result, Pavex doesn't support them.
 
 Pavex will do its best to catch unsupported types at compile time, but it's not always possible. 
 
+### Avoiding allocations
+
+If you want to squeeze out the last bit of performance from your application,
+you can try to avoid memory allocations when extracting string-like route parameters.  
+Pavex supports this use case—**you can borrow from the request's path**.
+
+#### Percent-encoding
+
+It is not always possible to avoid allocations when handling route parameters.  
+Route parameters must comply with the restriction of the URI specification:
+you can only use [a limited set of characters](https://datatracker.ietf.org/doc/html/rfc3986#section-2).  
+If you want to use a character not allowed in a URI, you must [percent-encode it](https://developer.mozilla.org/en-US/docs/Glossary/Percent-encoding).  
+For example, if you want to use a space in a route parameter, you must encode it as `%20`.
+A string like `John Doe` becomes `John%20Doe` when percent-encoded.
+
+[`RouteParams<T>`][RouteParams] automatically decodes percent-encoded strings for you. But that comes at a cost: 
+Pavex _must_ allocate a new `String` if the route parameter is percent-encoded.
+
+#### Cow
+
+We recommend using [`Cow<'_, str>`][Cow] as your field type for string-like parameters.
+It borrows from the request's path if possible, it allocates a new `String` if it can't be avoided.
+
+[`Cow<'_, str>`][Cow] strikes a balance between performance and robustness: you don't have to worry about a runtime error if the route parameter
+is percent-encoded, but you tried to use `&str` as its field type.
+
+
+
 [^rfc]: [RFC 7230](https://datatracker.ietf.org/doc/html/rfc7230#section-5.3) allows for two other formats of request target,
     authority form (e.g. `example.com:443`) and asterisk form (e.g. `*`), but they're rarely relevant for 
     the HTTP APIs you're likely to build with Pavex.  
@@ -109,3 +137,4 @@ Pavex will do its best to catch unsupported types at compile time, but it's not 
 [RouteParamsMacro]: ../../api_reference/pavex/request/route/attr.RouteParams.html
 [serde::Deserialize]: https://docs.rs/serde/latest/serde/trait.Deserialize.html
 [StructuralDeserialize]: ../../api_reference/pavex/serialization/trait.StructuralDeserialize.html
+[Cow]: https://doc.rust-lang.org/std/borrow/enum.Cow.html
