@@ -13,7 +13,7 @@ Let's take `https://example.com/foo/bar?baz=qux` as an example:
 - The **scheme** is `https`.
 - The **authority** is `example.com`.
 - The [**path**](path/index.md) is `/foo/bar`.
-- The **query** is `baz=qux`.
+- The [**query**](query/index.md) is `baz=qux`.
 
 If the request target is in origin form, the authority and the scheme are omitted: you're left with just the path and the query,
 e.g. `/foo/bar?baz=qux`.
