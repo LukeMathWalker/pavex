@@ -16,17 +16,41 @@ invokes your code.
 [`RequestHead`][RequestHead] is a [framework primitive](../dependency_injection/core_concepts/framework_primitives.md), 
 you don't have to register a constructor to inject it.  
 
+TODO: add code snippet
+
 [`RequestHead`][RequestHead] is a dependency for a wide range of extractors.  
-We recommend injecting a shared reference as input (i.e. `&RequestHead`) in your handlers and middlewares 
+We recommend injecting a shared reference as input (i.e. `&RequestHead`)
 rather than consuming [`RequestHead`][RequestHead] by value.
 
+## `RawIncomingBody`
+
+[`RawIncomingBody`][RawIncomingBody] gives you access to the raw body of the incoming HTTP request.  
+
+It sits at the **lowest level of abstraction** when it comes to body processing.
+You're looking at the stream of bytes coming from the network.
+There are **no safeguards nor conveniences**.
+
+In most situations, you're better off avoiding [`RawIncomingBody`][RawIncomingBody] entirely: prefer working with [the
+higher-level body abstractions](body.md) provided by Pavex.
+
+### Injection
+
+[`RawIncomingBody`][RawIncomingBody] is a [framework primitive](../dependency_injection/core_concepts/framework_primitives.md),
+you don't have to register a constructor to inject it.
+
+TODO: add code snippet
+
+Most abstractions built on top of [`RawIncomingBody`][RawIncomingBody] consume it by value.  
+You can't really share an instance of [`RawIncomingBody`][RawIncomingBody]: you need exclusive access to pull
+data from the stream of bytes.
+Pavex will return a borrow-checking error if you try to consume the same [`RawIncomingBody`][RawIncomingBody] from different components.
 
 ## No `Request` type
 
 There is no over-arching `Request` type in Pavex.  
 The access patterns for the data in the request head (headers, method, path) 
 and the body are different. The request head is primarily accessed through a shared reference
-(i.e. `&RequestHead`) while the body is taken by value (i.e. `RawIncomingBody`).  
+(i.e. `&RequestHead`) while the body is consumed by value (i.e. `RawIncomingBody`).  
 By keeping them separate, we reduce the occurrence of annoying borrow-checking errors
 in your day-to-day Pavex work.  
 
