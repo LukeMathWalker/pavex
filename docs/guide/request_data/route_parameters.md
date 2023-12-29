@@ -7,6 +7,8 @@ Those dynamic path segments are called **route parameters**.
 In Pavex, you must declare the route parameters for a given path in the route definition—see [Route parameters](../routing/path_patterns.md#route-parameters)
 for more details.
 
+## Overview
+
 Let's keep using `https://example.com/users/123` as an example.  
 To extract `123` from the path, you register `/users/:id` as the path pattern for that route.
 
@@ -20,7 +22,7 @@ You can then access the `id` value for an incoming request by injecting [`RouteP
 
 There's a lot going on here, so let's break it down!
 
-## Fields names
+### Fields names
 
 [`RouteParams<T>`][RouteParams] is a generic wrapper around a struct[^why-struct] that models the route parameters for a given path.  
 All struct fields must be named after the route parameters declared in the path pattern[^wrong-name].
@@ -30,7 +32,7 @@ Our extraction type, `GetUserParams`, must have a matching field named `id`.
 
 --8<-- "doc_examples/guide/request_data/route_params/project-route_params_struct.snap"
 
-## Deserialization
+### Deserialization
 
 The newly defined struct must be **deserializable**—i.e. it must implement the [`serde::Deserialize`][serde::Deserialize] trait.  
 The [`#[RouteParams]`][RouteParamsMacro] attribute macro will automatically derive [`serde::Deserialize`][serde::Deserialize] for you. Alternatively, you can derive or implement [`serde::Deserialize`][serde::Deserialize] directly.
@@ -39,7 +41,7 @@ The [`#[RouteParams]`][RouteParamsMacro] attribute macro will automatically deri
 
 If you rely on [`#[RouteParams]`][RouteParamsMacro], Pavex can perform more advanced checks at compile time[^structural-deserialize] (e.g. detect unsupported types).
 
-## Parsing
+### Parsing
 
 From a protocol perspective, all route parameters are strings.  
 From an application perspective, you might want to enforce stricter constraints.
@@ -53,7 +55,7 @@ We can skip all that boilerplate by setting the field type to `u64` directly, an
 
 Everything works as expected because `u64` implements the [`serde::Deserialize`][serde::Deserialize] trait.
 
-## Unsupported types
+### Unsupported types
 
 Route parameters are best used to encode **values**, such as numbers, strings, or dates.  
 There is no standard way to encode more complex types such as collections (e.g. `Vec<T>`, tuples) in a route parameter.
@@ -64,7 +66,7 @@ Pavex will do its best to catch unsupported types at compile time, but it's not 
 ## Avoiding allocations
 
 If you want to squeeze out the last bit of performance from your application,
-you can try to avoid memory allocations when extracting string-like route parameters.  
+you can try to avoid heap memory allocations when extracting string-like route parameters.  
 Pavex supports this use case—**you can borrow from the request's path**.
 
 ### Percent-encoding
@@ -103,7 +105,13 @@ you don't have to register a constructor to inject it.
 
 --8<-- "doc_examples/guide/request_data/route_params/project-raw_route_params.snap"
 
+### Allocations
 
+[`RawRouteParams`][RawRouteParams] tries to avoid heap memory allocations.  
+Parameter names are borrowed from the server routing machinery.  
+Parameter values are borrowed from the [raw path](path.md) of the incoming request. 
+
+You might have to allocate when you decode [percent-encoded parameters](#percent-encoding).
 
 [^why-struct]: Pavex made a deliberate choice of _not_ supporting tuples or other sequence-like types for extracting route parameters.
 Check out [the API reference](../../api_reference/pavex/request/route/struct.RouteParams.html#unsupported-types)
