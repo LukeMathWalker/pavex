@@ -1,0 +1,9 @@
+```rust title="src/body/routes.rs"
+use pavex::http::StatusCode;
+use pavex::request::body::RawIncomingBody;
+
+pub fn handler(body: RawIncomingBody) -> StatusCode {
+    // Your processing logic goes here
+    // [...]
+}
+```

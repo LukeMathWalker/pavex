@@ -16,7 +16,7 @@ invokes your code.
 [`RequestHead`][RequestHead] is a [framework primitive](../dependency_injection/core_concepts/framework_primitives.md), 
 you don't have to register a constructor to inject it.  
 
-TODO: add code snippet
+--8<-- "doc_examples/guide/request_data/wire_data/project-head.snap"
 
 [`RequestHead`][RequestHead] is a dependency for a wide range of extractors.  
 We recommend injecting a shared reference as input (i.e. `&RequestHead`)
@@ -33,12 +33,14 @@ There are **no safeguards nor conveniences**.
 In most situations, you're better off avoiding [`RawIncomingBody`][RawIncomingBody] entirely: prefer working with [the
 higher-level body abstractions](body.md) provided by Pavex.
 
+
+
 ### Injection
 
 [`RawIncomingBody`][RawIncomingBody] is a [framework primitive](../dependency_injection/core_concepts/framework_primitives.md),
 you don't have to register a constructor to inject it.
 
-TODO: add code snippet
+--8<-- "doc_examples/guide/request_data/wire_data/project-body.snap"
 
 Most abstractions built on top of [`RawIncomingBody`][RawIncomingBody] consume it by value.  
 You can't really share an instance of [`RawIncomingBody`][RawIncomingBody]: you need exclusive access to pull
