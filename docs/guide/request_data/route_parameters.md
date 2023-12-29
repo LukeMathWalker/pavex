@@ -10,13 +10,13 @@ for more details.
 Let's keep using `https://example.com/users/123` as an example.  
 To extract `123` from the path, you register `/users/:id` as the path pattern for that route.
 
---8<-- "doc_examples/guide/request_data/path/project-route_params_registration.snap"
+--8<-- "doc_examples/guide/request_data/route_params/project-route_params_registration.snap"
 
 1. The path pattern for the route.
 
 You can then access the `id` value for an incoming request by injecting [`RouteParams<T>`][RouteParams] in your handler:
 
---8<-- "doc_examples/guide/request_data/path/project-route_params_extraction.snap"
+--8<-- "doc_examples/guide/request_data/route_params/project-route_params_extraction.snap"
 
 There's a lot going on here, so let's break it down!
 
@@ -28,14 +28,14 @@ All struct fields must be named after the route parameters declared in the path 
 In our example, the path pattern is `/users/:id`.
 Our extraction type, `GetUserParams`, must have a matching field named `id`.
 
---8<-- "doc_examples/guide/request_data/path/project-route_params_struct.snap"
+--8<-- "doc_examples/guide/request_data/route_params/project-route_params_struct.snap"
 
 ## Deserialization
 
 The newly defined struct must be **deserializable**—i.e. it must implement the [`serde::Deserialize`][serde::Deserialize] trait.  
 The [`#[RouteParams]`][RouteParamsMacro] attribute macro will automatically derive [`serde::Deserialize`][serde::Deserialize] for you. Alternatively, you can derive or implement [`serde::Deserialize`][serde::Deserialize] directly.
 
---8<-- "doc_examples/guide/request_data/path/project-route_params_struct_with_attr.snap"
+--8<-- "doc_examples/guide/request_data/route_params/project-route_params_struct_with_attr.snap"
 
 If you rely on [`#[RouteParams]`][RouteParamsMacro], Pavex can perform more advanced checks at compile time[^structural-deserialize] (e.g. detect unsupported types).
 
@@ -49,7 +49,7 @@ We could set the field type for `id` to `String` and then parse it into a number
 to get tedious if we need to do it every single time we want to work with a numeric route parameter.  
 We can skip all that boilerplate by setting the field type to `u64` directly, and let Pavex do the parsing for us:
 
---8<-- "doc_examples/guide/request_data/path/project-route_params_typed_field.snap"
+--8<-- "doc_examples/guide/request_data/route_params/project-route_params_typed_field.snap"
 
 Everything works as expected because `u64` implements the [`serde::Deserialize`][serde::Deserialize] trait.
 
@@ -87,6 +87,23 @@ It borrows from the request's path if possible, it allocates a new `String` if i
 [`Cow<'_, str>`][Cow] strikes a balance between performance and robustness: you don't have to worry about a runtime error if the route parameter
 is percent-encoded, but you tried to use `&str` as its field type.
 
+## `RawRouteParams`
+
+[`RouteParams<T>`][RouteParams] is a high-level interface: it bundles together compile-time checks,
+extraction and parsing.  
+If you want to opt out of all those utilities, reach for [`RawRouteParams`][RawRouteParams].  
+It is a lower-level interface[^relationship]: it gives you access to the dynamic
+path segments as they appear right after extraction.
+It doesn't perform percent-decoding not deserialization.
+
+### Injection
+
+[`RawRouteParams`][RawRouteParams] is a [framework primitive](../dependency_injection/core_concepts/framework_primitives.md),
+you don't have to register a constructor to inject it.
+
+--8<-- "doc_examples/guide/request_data/route_params/project-raw_route_params.snap"
+
+
 
 [^why-struct]: Pavex made a deliberate choice of _not_ supporting tuples or other sequence-like types for extracting route parameters.
 Check out [the API reference](../../api_reference/pavex/request/route/struct.RouteParams.html#unsupported-types)
@@ -99,6 +116,8 @@ No more runtime errors because you misspelled a field name!
 [^structural-deserialize]: Check the documentation for [`StructuralDeserialize`][StructuralDeserialize] if you want
 to know more about the underlying mechanism.
 
+[^relationship]: [`RouteParams<T>`][RouteParams] is built on top of [`RawRouteParams`][RawRouteParams].
+
 [RequestHead]: ../../api_reference/pavex/request/struct.RequestHead.html
 [RequestHead::uri]: ../../api_reference/pavex/request/struct.RequestHead.html#structfield.uri
 [RouteParams]: ../../api_reference/pavex/request/route/struct.RouteParams.html
@@ -106,3 +125,4 @@ to know more about the underlying mechanism.
 [serde::Deserialize]: https://docs.rs/serde/latest/serde/trait.Deserialize.html
 [StructuralDeserialize]: ../../api_reference/pavex/serialization/trait.StructuralDeserialize.html
 [Cow]: https://doc.rust-lang.org/std/borrow/enum.Cow.html
+[RawRouteParams]: ../../api_reference/pavex/request/route/struct.RawRouteParams.html

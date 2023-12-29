@@ -6,22 +6,3 @@ snippets:
   - name: "raw_path"
     source_path: "src/path/routes.rs"
     ranges: [ ".." ]
-  - name: "route_params_registration"
-    source_path: "src/route_params/blueprint.rs"
-    ranges: [ ".." ]
-    hl_lines: [ 9 ]
-  - name: "route_params_extraction"
-    source_path: "src/route_params/routes.rs"
-    ranges: [ ".." ]
-    hl_lines: [ 9 ]
-  - name: "route_params_struct"
-    source_path: "src/route_params/routes.rs"
-    ranges: [ "4..7" ]
-  - name: "route_params_struct_with_attr"
-    source_path: "src/route_params/routes.rs"
-    ranges: [ "3..7" ]
-    hl_lines: [ 2 ]
-  - name: "route_params_typed_field"
-    source_path: "src/route_params/routes.rs"
-    ranges: [ "3..7" ]
-    hl_lines: [ 4 ]
