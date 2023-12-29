@@ -1,24 +1,25 @@
 # Overview
 
-Pavex provides a comprehensive toolkit for extracting structured data out of the incoming request.  
-We refer to these types as **extractors**.
+The representation of an incoming request on the wire is often different from 
+the representation that your domain logic expects as input. 
+The raw request data has to go through **parsing** and **validation** before it's ready
+to be processed.
 
-**Extractors take away the burden of writing boilerplate code** for common tasks such as 
-parsing query parameters, parsing path parameters, enforcing body size limits, etc.  
-You'll feel **more productive** working on a Pavex application
-if you know what first-party extractors are available and when they should be used.
+Pavex can help.  
+By the end of this guide, you'll have a solid understanding of the toolkit that Pavex provides 
+to extract structured data out of the incoming request.  
+We'll start by looking at the types for the [raw incoming request](wire_data.md).
+We'll then cover **extractors**, the mechanism used by Pavex to **take away the burden of writing 
+boilerplate code** for common tasks such as parsing query parameters, parsing path parameters, 
+enforcing body size limits, etc.  
 
-## Guide structure
+[//]: # (## There is no magic)
 
-The guide is organised by **data source**: path, query, headers, body.  
-Each section contains a list of extractors for that data source, with a brief description of their purpose and usage.
+[//]: # ()
+[//]: # (There is nothing special about Pavex's first-party extractors.)
 
-You can either read the guide from start to finish,
-or jump to the section you're interested in on a need-to-know basis.  
+[//]: # (You could write your own versions of them, if you wanted to,)
 
-## There is no magic
+[//]: # (building on top of Pavex's [framework primitives]&#40;../dependency_injection/core_concepts/framework_primitives.md&#41;.  )
 
-There is nothing special about Pavex's first-party extractors.
-You could write your own versions of them, if you wanted to,
-building on top of Pavex's [framework primitives](../dependency_injection/core_concepts/framework_primitives.md).  
-Check out the ["Dependency injection"](../dependency_injection/index.md) guide for more information.
+[//]: # (Check out the ["Dependency injection"]&#40;../dependency_injection/index.md&#41; guide for more information.)

@@ -82,6 +82,7 @@ nav:
           - guide/routing/request_handlers.md
       - "Request data":
           - guide/request_data/index.md
+          - guide/request_data/wire_data.md
           - guide/request_data/path.md
       - "Dependency injection":
           - guide/dependency_injection/index.md

@@ -113,7 +113,6 @@ It borrows from the request's path if possible, it allocates a new `String` if i
 is percent-encoded, but you tried to use `&str` as its field type.
 
 
-
 [^rfc]: [RFC 7230](https://datatracker.ietf.org/doc/html/rfc7230#section-5.3) allows for two other formats of request target,
     authority form (e.g. `example.com:443`) and asterisk form (e.g. `*`), but they're rarely relevant for 
     the HTTP APIs you're likely to build with Pavex.  
