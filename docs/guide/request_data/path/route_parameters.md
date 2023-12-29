@@ -1,10 +1,10 @@
 # Route parameters
 
-In REST APIs, the [path](path.md) is often used to identify a resource.  
+In REST APIs, the [path](index.md) is often used to identify a resource.  
 For example, in `https://example.com/users/123`, the path is `/users/123` and the resource is the user with ID `123`.
 
 Those dynamic path segments are called **route parameters**.  
-In Pavex, you must declare the route parameters for a given path in the route definition—see [Route parameters](../routing/path_patterns.md#route-parameters)
+In Pavex, you must declare the route parameters for a given path in the route definition—see [Route parameters](../../routing/path_patterns.md#route-parameters)
 for more details.
 
 ## Overview
@@ -100,7 +100,7 @@ It doesn't perform percent-decoding not deserialization.
 
 ### Injection
 
-[`RawRouteParams`][RawRouteParams] is a [framework primitive](../dependency_injection/core_concepts/framework_primitives.md),
+[`RawRouteParams`][RawRouteParams] is a [framework primitive](../../dependency_injection/core_concepts/framework_primitives.md),
 you don't have to register a constructor to inject it.
 
 --8<-- "doc_examples/guide/request_data/route_params/project-raw_route_params.snap"
@@ -109,12 +109,12 @@ you don't have to register a constructor to inject it.
 
 [`RawRouteParams`][RawRouteParams] tries to avoid heap memory allocations.  
 Parameter names are borrowed from the server routing machinery.  
-Parameter values are borrowed from the [raw path](path.md) of the incoming request. 
+Parameter values are borrowed from the [raw path](index.md) of the incoming request. 
 
 You might have to allocate when you decode [percent-encoded parameters](#percent-encoding).
 
 [^why-struct]: Pavex made a deliberate choice of _not_ supporting tuples or other sequence-like types for extracting route parameters.
-Check out [the API reference](../../api_reference/pavex/request/route/struct.RouteParams.html#unsupported-types)
+Check out [the API reference](../../../api_reference/pavex/request/route/struct.RouteParams.html#unsupported-types)
 to learn more about the rationale behind this decision.
 
 [^wrong-name]: If a field name doesn't match a route parameter name, Pavex will detect it at compile time and return
@@ -126,11 +126,11 @@ to know more about the underlying mechanism.
 
 [^relationship]: [`RouteParams<T>`][RouteParams] is built on top of [`RawRouteParams`][RawRouteParams].
 
-[RequestHead]: ../../api_reference/pavex/request/struct.RequestHead.html
-[RequestHead::uri]: ../../api_reference/pavex/request/struct.RequestHead.html#structfield.uri
-[RouteParams]: ../../api_reference/pavex/request/route/struct.RouteParams.html
-[RouteParamsMacro]: ../../api_reference/pavex/request/route/attr.RouteParams.html
+[RequestHead]: ../../../api_reference/pavex/request/struct.RequestHead.html
+[RequestHead::uri]: ../../../api_reference/pavex/request/struct.RequestHead.html#structfield.uri
+[RouteParams]: ../../../api_reference/pavex/request/route/struct.RouteParams.html
+[RouteParamsMacro]: ../../../api_reference/pavex/request/route/attr.RouteParams.html
 [serde::Deserialize]: https://docs.rs/serde/latest/serde/trait.Deserialize.html
-[StructuralDeserialize]: ../../api_reference/pavex/serialization/trait.StructuralDeserialize.html
+[StructuralDeserialize]: ../../../api_reference/pavex/serialization/trait.StructuralDeserialize.html
 [Cow]: https://doc.rust-lang.org/std/borrow/enum.Cow.html
-[RawRouteParams]: ../../api_reference/pavex/request/route/struct.RawRouteParams.html
+[RawRouteParams]: ../../../api_reference/pavex/request/route/struct.RawRouteParams.html

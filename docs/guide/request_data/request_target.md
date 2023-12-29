@@ -12,7 +12,7 @@ Let's take `https://example.com/foo/bar?baz=qux` as an example:
 
 - The **scheme** is `https`.
 - The **authority** is `example.com`.
-- The **path** is `/foo/bar`.
+- The [**path**](path/index.md) is `/foo/bar`.
 - The **query** is `baz=qux`.
 
 If the request target is in origin form, the authority and the scheme are omitted: you're left with just the path and the query,
@@ -28,7 +28,7 @@ Inject [`RequestHead`][RequestHead] to access the request target via its [`uri`]
 
 The raw target and its components are primarily useful for logging purposes.  
 Rely on higher-level abstractions
-to perform more advanced processing—e.g. parsing query parameters or [route parameters](route_parameters.md).
+to perform more advanced processing—e.g. parsing query parameters or [route parameters](path/route_parameters.md).
 
 [^rfc]: [RFC 7230](https://datatracker.ietf.org/doc/html/rfc7230#section-5.3) allows two other formats of request target,
 authority form (e.g. `example.com:443`) and asterisk form (e.g. `*`).  

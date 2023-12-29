@@ -50,7 +50,7 @@ you can have **at most one catch-all parameter per path pattern** and it must be
 Route parameters are not discarded after a request has been routed.
 You can access their values from your request handler or from middlewares.
 
-Check out the ["Route parameters"](../request_data/path.md#route-parameters) guide for more details.
+Check out the ["Route parameters"](../request_data/path/route_parameters.md) guide for more details.
 
 
 [RouteParams]: ../../api_reference/pavex/request/route/struct.RouteParams.html
