@@ -1,0 +1,20 @@
+starter_project_folder: "project"
+commands:
+  - command: "cargo px c"
+    expected_outcome: "success"
+snippets:
+  - name: "extraction"
+    source_path: "src/query_params/routes.rs"
+    ranges: [ "0..12", "13..14" ]
+    hl_lines: [ 9 ]
+  - name: "struct"
+    source_path: "src/query_params/routes.rs"
+    ranges: [ "4..7" ]
+  - name: "struct_with_attr"
+    source_path: "src/query_params/routes.rs"
+    ranges: [ "3..7" ]
+    hl_lines: [ 2 ]
+  - name: "typed_field"
+    source_path: "src/query_params/routes.rs"
+    ranges: [ "3..7" ]
+    hl_lines: [ 4 ]

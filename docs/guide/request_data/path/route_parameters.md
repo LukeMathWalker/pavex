@@ -20,7 +20,7 @@ You can then access the `id` value for an incoming request by injecting [`RouteP
 
 --8<-- "doc_examples/guide/request_data/route_params/project-route_params_extraction.snap"
 
-There's a lot going on here, so let's break it down!
+There are a few moving parts here. Let's break them down!
 
 ### Fields names
 
@@ -55,7 +55,7 @@ We can skip all that boilerplate by setting the field type to `u64` directly, an
 
 Everything works as expected because `u64` implements the [`serde::Deserialize`][serde::Deserialize] trait.
 
-### Unsupported types
+### Unsupported field types
 
 Route parameters are best used to encode **values**, such as numbers, strings, or dates.  
 There is no standard way to encode more complex types such as collections (e.g. `Vec<T>`, tuples) in a route parameter.
