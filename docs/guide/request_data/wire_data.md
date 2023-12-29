@@ -33,8 +33,6 @@ There are **no safeguards nor conveniences**.
 In most situations, you're better off avoiding [`RawIncomingBody`][RawIncomingBody] entirely: prefer working with [the
 higher-level body abstractions](body.md) provided by Pavex.
 
-
-
 ### Injection
 
 [`RawIncomingBody`][RawIncomingBody] is a [framework primitive](../dependency_injection/core_concepts/framework_primitives.md),
