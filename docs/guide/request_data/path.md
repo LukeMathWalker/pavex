@@ -113,12 +113,6 @@ It borrows from the request's path if possible, it allocates a new `String` if i
 is percent-encoded, but you tried to use `&str` as its field type.
 
 
-[^rfc]: [RFC 7230](https://datatracker.ietf.org/doc/html/rfc7230#section-5.3) allows for two other formats of request target,
-    authority form (e.g. `example.com:443`) and asterisk form (e.g. `*`), but they're rarely relevant for 
-    the HTTP APIs you're likely to build with Pavex.  
-    Nonetheless, you can work with all kinds of request targets in Pavex by accessing [`RequestHead::uri`][RequestHead::uri]
-    directly.
-
 [^why-struct]: Pavex made a deliberate choice of _not_ supporting tuples or other sequence-like types for extracting route parameters. 
     Check out [the API reference](../../api_reference/pavex/request/route/struct.RouteParams.html#unsupported-types)
     to learn more about the rationale behind this decision.
