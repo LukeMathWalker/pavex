@@ -31,7 +31,7 @@ You're looking at the stream of bytes coming from the network.
 There are **no safeguards nor conveniences**.
 
 In most situations, you're better off avoiding [`RawIncomingBody`][RawIncomingBody] entirely: prefer working with [the
-higher-level body abstractions](body.md) provided by Pavex.
+higher-level body abstractions](body/index.md) provided by Pavex.
 
 ### Injection
 

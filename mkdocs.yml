@@ -90,6 +90,8 @@ nav:
           - "Query":
               - guide/request_data/query/index.md
               - guide/request_data/query/query_parameters.md
+          - "Body":
+              - guide/request_data/body/index.md
       - "Dependency injection":
           - guide/dependency_injection/index.md
           - "Core concepts":
