@@ -3,7 +3,7 @@
 The **query** is a component of the [request target](../request_target.md).  
 E.g. `baz=quex` is the query component in `https://example.com/foo/bar?baz=qux` or `/foo/bar?baz=qux`.
 
-The query is primarily used to **encode data** in read-only requests and redirects.
+The query is primarily used to **encode data** in `GET` requests and redirects.
 Check out ["Query parameters"](query_parameters.md) for more details on how to extract structured data
 out of the raw query.
 
