@@ -92,7 +92,9 @@ nav:
               - guide/request_data/query/query_parameters.md
           - "Body":
               - guide/request_data/body/index.md
-              - guide/request_data/body/deserializers.md
+              - "Deserializers":
+                  - guide/request_data/body/deserializers/index.md
+                  - guide/request_data/body/deserializers/json.md
               - guide/request_data/body/byte_wrappers.md
       - "Dependency injection":
           - guide/dependency_injection/index.md
