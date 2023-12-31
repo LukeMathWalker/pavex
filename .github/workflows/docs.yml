@@ -94,7 +94,7 @@ jobs:
       - name: Verify tutorials
         run: |
           cd doc_examples
-          tutorial_generator --verify
+          RUST_BACKTRACE=0 tutorial_generator --verify
 
   build_docs:
     runs-on: ubuntu-latest
@@ -146,7 +146,7 @@ jobs:
             --base site 
             --exclude-loopback 
             --exclude-path="site/api_reference/pavex/http" 
-            --exclude-path="site/api_reference/index.html" 
+            --exclude-path="site/api_reference/help.html" 
             --exclude-path="site/api_reference/settings.html" 
             --exclude="https://doc.rust-lang.org/*" 
             --exclude="https://docs.rs/**/*" 
