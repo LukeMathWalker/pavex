@@ -1,0 +1,8 @@
+starter_project_folder: "project"
+commands:
+  - command: "cargo px c"
+    expected_outcome: "success"
+snippets:
+  - name: "target"
+    source_path: "src/uri/routes.rs"
+    ranges: [ "0..5", "6..7" ]

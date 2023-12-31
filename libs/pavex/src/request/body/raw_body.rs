@@ -12,7 +12,7 @@ pin_project! {
     ///
     /// # Framework primitive
     ///
-    /// `RawRouteParams` is a framework primitive—you don't need to register any constructor
+    /// `RawIncomingBody` is a framework primitive—you don't need to register any constructor
     /// with `Blueprint` to use it in your application.
     ///
     /// # ⚠️ Warning

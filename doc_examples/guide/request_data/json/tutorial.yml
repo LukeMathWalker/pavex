@@ -1,0 +1,13 @@
+starter_project_folder: "project"
+commands:
+  - command: "cargo px c"
+    expected_outcome: "success"
+snippets:
+  - name: "extraction"
+    source_path: "src/json/routes.rs"
+    ranges: [ "0..10", "11..12" ]
+    hl_lines: [ 10 ]
+  - name: "struct_with_attr"
+    source_path: "src/json/routes.rs"
+    ranges: [ "3..8" ]
+    hl_lines: [ 2 ]

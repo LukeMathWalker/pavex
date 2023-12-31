@@ -30,13 +30,6 @@ You can have multiple route parameters in a single path pattern, as long as they
 --8<-- "doc_examples/guide/routing/path_patterns/multi_named_parameter/src/blueprint.rs"
 ```
 
-## Accessing route parameters
-
-Route parameters are not discarded after a request has been routed.  
-You can access their value from your request handler or from a middleware using the [`RouteParams`][RouteParams] extractor.
-
-Check out the API reference for [`RouteParams`][RouteParams] for more details.
-
 ## Catch-all parameters
 
 Route parameters prefixed with a `:` only match a single path segment—they stop at the next `/` or at the end of the path.  
@@ -49,6 +42,15 @@ You can use the `*` character to craft a **catch-all** route parameter. It match
 `*details` matches everything after `/greet/`, even if it contains `/` characters.
 `/greet/*details` matches, for example, `/greet/Ursula` and `/greet/John`, but it also matches `/greet/Ursula/Smith` and `/greet/John/Doe`.
 
-To avoid ambiguity, you can have **at most one catch-all parameter per path pattern**.
+To avoid ambiguity,
+you can have **at most one catch-all parameter per path pattern** and it must be **at the end of the path pattern**.
+
+## Accessing route parameters
+
+Route parameters are not discarded after a request has been routed.
+You can access their values from your request handler or from middlewares.
+
+Check out the ["Route parameters"](../request_data/path/route_parameters.md) guide for more details.
+
 
 [RouteParams]: ../../api_reference/pavex/request/route/struct.RouteParams.html

@@ -6,6 +6,11 @@ It covers the registration syntax for common use cases (free functions, methods)
 
 Use it a reference in your day-to-day Pavex development if you're not sure of the syntax for a particular use case.
 
+!!! note "More than constructors"
+
+    All the examples register constructors, but the very same `f!` invocations can be used to register 
+    request handlers, error handlers and middlewares.
+
 ## Free functions
 
 Free functions are the simplest case.

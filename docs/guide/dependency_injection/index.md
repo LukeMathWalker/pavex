@@ -37,7 +37,7 @@ body parsing, logging, authorization, etc.
 
 ## Guide structure
 
-"[Core concepts](core_concepts.md)" explains the key mechanics of Pavex's dependency injection framework.
+"[Core concepts](core_concepts/constructors.md)" explains the key mechanics of Pavex's dependency injection framework.
 It's a must-read if you're going to use Pavex for more than a toy project.
 
 "[Cookbook](cookbook.md)" contains a collection of reference examples for common use cases: how to 

@@ -28,15 +28,18 @@ use super::{
 /// # Example
 ///
 /// ```rust
+/// use pavex::http::StatusCode;
 /// use pavex::request::body::BufferedBody;
 ///
 /// // The `BufferedBody` extractor consumes the raw request body stream
 /// // and buffers its entire contents in memory.
-/// pub fn handler(body: &BufferedBody) -> String {
+/// pub fn handler(body: &BufferedBody) -> StatusCode {
 ///     format!(
 ///         "The incoming request contains {} bytes",
 ///         body.bytes.len(),
-///     )
+///     );
+///     // [...]
+/// #    StatusCode::OK
 /// }
 /// ```
 ///
@@ -239,13 +242,9 @@ impl From<BufferedBody> for Bytes {
 
 #[cfg(test)]
 mod tests {
-    use bytes::Bytes;
     use http::HeaderMap;
-    use http_body_util::Full;
 
     use crate::request::RequestHead;
-
-    use super::BufferedBody;
 
     // No headers.
     fn dummy_request_head() -> RequestHead {

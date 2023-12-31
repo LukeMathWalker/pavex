@@ -1,0 +1,7 @@
+```rust title="src/query_params/routes.rs" hl_lines="4"
+// [...]
+#[derive(serde::Deserialize)]
+pub struct SearchParams {
+    pub sorted: bool,
+}
+```
