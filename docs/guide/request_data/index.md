@@ -12,14 +12,3 @@ We'll start by looking at the types for the [raw incoming request](wire_data.md)
 We'll then cover **extractors**, the mechanism used by Pavex to **take away the burden of writing 
 boilerplate code** for common tasks such as parsing query parameters, parsing path parameters, 
 enforcing body size limits, etc.  
-
-[//]: # (## There is no magic)
-
-[//]: # ()
-[//]: # (There is nothing special about Pavex's first-party extractors.)
-
-[//]: # (You could write your own versions of them, if you wanted to,)
-
-[//]: # (building on top of Pavex's [framework primitives]&#40;../dependency_injection/core_concepts/framework_primitives.md&#41;.  )
-
-[//]: # (Check out the ["Dependency injection"]&#40;../dependency_injection/index.md&#41; guide for more information.)

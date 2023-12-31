@@ -6,7 +6,7 @@ and [`RawIncomingBody`][RawIncomingBody].
 ## `RequestHead`
 
 [`RequestHead`][RequestHead] encapsulates the data transmitted at the beginning of an HTTP request: [method][RequestHead::method],
-[HTTP version][RequestHead::version], [request target][RequestHead::uri] (modeled as a URI)
+[HTTP version][RequestHead::version], [request target](request_target.md)
 and [headers][RequestHead::headers].  
 All the data in the [`RequestHead`][RequestHead] has been read from the wire by the time Pavex
 invokes your code.

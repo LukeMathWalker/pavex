@@ -146,6 +146,8 @@ jobs:
             --base site 
             --exclude-loopback 
             --exclude-path="site/api_reference/pavex/http" 
+            --exclude-path="site/api_reference/index.html" 
+            --exclude-path="site/api_reference/settings.html" 
             --exclude="https://doc.rust-lang.org/*" 
             --exclude="https://docs.rs/**/*" 
             --exclude-path="site/api_reference/static.files" 

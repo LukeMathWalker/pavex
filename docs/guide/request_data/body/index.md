@@ -9,7 +9,7 @@ It must be parsed and validated before it can be used.
 Pavex provides tools at **different levels of abstraction** for working with the body of an HTTP request.
 Going from the highest to the lowest level of abstraction, we have:
 
-- [Deserializers](deserializers.md). 
+- [Deserializers](deserializers/index.md). 
   They transform the body into a Rust type, taking care of parsing, basic validation and security safeguards.
 - [Byte wrappers](byte_wrappers.md).
   A safe interface over the underlying stream of bytes. 
