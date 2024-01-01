@@ -81,7 +81,7 @@ pub use matched_route::MatchedRouteTemplate;
 ///
 /// [`StructuralDeserialize`]: crate::serialization::StructuralDeserialize
 pub use pavex_macros::RouteParams;
-pub use raw_route_params::{RawRouteParams, RawRouteParamsIter};
+pub use raw_route_params::{EncodedParamValue, RawRouteParams, RawRouteParamsIter};
 pub use route_params::RouteParams;
 
 mod deserializer;

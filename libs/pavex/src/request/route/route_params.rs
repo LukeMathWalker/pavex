@@ -1,8 +1,7 @@
-use percent_encoding::percent_decode_str;
 use serde::Deserialize;
 
 use crate::request::route::deserializer::PathDeserializer;
-use crate::request::route::errors::{ExtractRouteParamsError, InvalidUtf8InPathParam};
+use crate::request::route::errors::{DecodeError, ExtractRouteParamsError, InvalidUtf8InPathParam};
 
 use super::RawRouteParams;
 
@@ -239,11 +238,15 @@ impl<T> RouteParams<T> {
     {
         let mut decoded_params = Vec::with_capacity(params.len());
         for (id, value) in params.iter() {
-            let decoded_value = percent_decode_str(value).decode_utf8().map_err(|e| {
+            let decoded_value = value.decode().map_err(|e| {
+                let DecodeError {
+                    invalid_raw_segment,
+                    source,
+                } = e;
                 ExtractRouteParamsError::InvalidUtf8InPathParameter(InvalidUtf8InPathParam {
                     invalid_key: id.into(),
-                    invalid_raw_segment: value.into(),
-                    source: e,
+                    invalid_raw_segment,
+                    source,
                 })
             })?;
             decoded_params.push((id, decoded_value));

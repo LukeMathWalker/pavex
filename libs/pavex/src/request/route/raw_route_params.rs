@@ -1,4 +1,9 @@
+use std::borrow::Cow;
+
 use matchit::{Params, ParamsIter};
+use percent_encoding::percent_decode_str;
+
+use crate::request::route::errors::DecodeError;
 
 /// Extract (raw) route parameters from the URL of an incoming request.
 ///
@@ -94,9 +99,40 @@ pub struct RawRouteParamsIter<'extractor, 'server, 'request>(
 );
 
 impl<'extractor, 'server, 'request> Iterator for RawRouteParamsIter<'extractor, 'server, 'request> {
-    type Item = (&'server str, &'request str);
+    type Item = (&'server str, EncodedParamValue<'request>);
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.0.next()
+        self.0
+            .next()
+            .map(|(key, value)| (key, EncodedParamValue::new(value)))
+    }
+}
+
+/// A wrapper around a percent-encoded route parameter, obtained via [`RawRouteParams`].
+///
+/// Use [`decode`](Self::decode) to extract the percent-encoded value.
+#[derive(Debug, Clone, Hash, Ord, PartialOrd, Eq, PartialEq)]
+pub struct EncodedParamValue<'request>(&'request str);
+
+impl<'request> EncodedParamValue<'request> {
+    fn new(s: &'request str) -> Self {
+        Self(s)
+    }
+
+    /// Percent-decode a raw route parameter.
+    ///
+    /// If decoding fails, a [`DecodeError`] is returned.
+    pub fn decode(&self) -> Result<Cow<'request, str>, DecodeError> {
+        percent_decode_str(self.0)
+            .decode_utf8()
+            .map_err(|e| DecodeError {
+                invalid_raw_segment: self.0.to_owned(),
+                source: e,
+            })
+    }
+
+    /// Get a reference to the underlying percent-encoded string.
+    pub fn as_str(&self) -> &'request str {
+        self.0
     }
 }

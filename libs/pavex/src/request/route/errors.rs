@@ -59,6 +59,29 @@ pub struct InvalidUtf8InPathParam {
     pub(super) source: Utf8Error,
 }
 
+/// The error returned by [`EncodedParamValue::decode`] when the percent-decoded route parameter
+/// is not a valid UTF8 string.
+///
+/// Route parameters must be percent-encoded whenever they contain characters that are not
+/// URL safe—e.g. whitespaces.
+/// This error is returned whenever the percent-decoding step fails—i.e. the decoded data is not a
+/// valid UTF8 string.
+///
+/// # Example
+///
+/// You might try to percent-decode `dirty%DE~%C7%1FY`.
+/// When decoded, it is a sequence of bytes that cannot be interpreted as a well-formed UTF8 string.
+/// This error is then returned.
+///
+/// [`EncodedParamValue::decode`]: super::EncodedParamValue::decode
+#[derive(Debug, thiserror::Error)]
+#[error("`{invalid_raw_segment}` is not a well-formed UTF8 string when percent-decoded")]
+pub struct DecodeError {
+    pub(super) invalid_raw_segment: String,
+    #[source]
+    pub(super) source: Utf8Error,
+}
+
 impl ExtractRouteParamsError {
     /// Convert an [`ExtractRouteParamsError`] into an HTTP response.
     ///
