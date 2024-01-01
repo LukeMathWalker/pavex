@@ -35,6 +35,35 @@ impl ExtractJsonBodyError {
 
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
+/// The error returned by [`FormBody::extract`] when the extraction fails.
+///
+/// [`FormBody::extract`]: crate::request::body::form::FormBody::extract
+pub enum ExtractFormBodyError {
+    #[error(transparent)]
+    /// See [`MissingFormContentType`] for details.
+    MissingContentType(#[from] MissingFormContentType),
+    #[error(transparent)]
+    /// See [`FormContentTypeMismatch`] for details.
+    ContentTypeMismatch(#[from] FormContentTypeMismatch),
+    #[error(transparent)]
+    /// See [`FormDeserializationError`] for details.
+    DeserializationError(#[from] FormDeserializationError),
+}
+
+impl ExtractFormBodyError {
+    /// Convert an [`ExtractFormBodyError`] into an HTTP response.
+    pub fn into_response(&self) -> Response<Full<Bytes>> {
+        match self {
+            ExtractFormBodyError::MissingContentType(_)
+            | ExtractFormBodyError::ContentTypeMismatch(_) => Response::unsupported_media_type(),
+            ExtractFormBodyError::DeserializationError(_) => Response::bad_request(),
+        }
+        .set_typed_body(format!("{}", self))
+    }
+}
+
+#[derive(Debug, thiserror::Error)]
+#[non_exhaustive]
 /// The error returned by [`BufferedBody::extract`] when the extraction fails.
 ///
 /// [`BufferedBody::extract`]: crate::request::body::buffered_body::BufferedBody::extract
@@ -66,9 +95,9 @@ pub struct SizeLimitExceeded {
     /// The maximum size limit enforced by this server.
     pub max_n_bytes: usize,
     /// The value of the `Content-Length` header for the request that breached the body
-    /// size limit.  
+    /// size limit.
     ///
-    /// It's set to `None` if the `Content-Length` header was missing or invalid.  
+    /// It's set to `None` if the `Content-Length` header was missing or invalid.
     /// If it's set to `Some(n)` and `n` is smaller than `max_n_bytes`, then the request
     /// lied about the size of its body in the `Content-Length` header.
     pub content_length: Option<usize>,
@@ -108,6 +137,34 @@ pub struct JsonDeserializationError {
 #[non_exhaustive]
 /// The `Content-Type` header not set to `application/json`, or another `application/*+json` MIME type.
 pub struct JsonContentTypeMismatch {
+    /// The actual value of the `Content-Type` header for this request.
+    pub actual: String,
+}
+
+#[derive(Debug, thiserror::Error)]
+#[error(
+"The `Content-Type` header is missing. This endpoint expects requests with a `Content-Type` header set to `application/x-www-form-urlencoded`"
+)]
+#[non_exhaustive]
+/// The `Content-Type` header is missing, while we expected it to be set to `application/x-www-form-urlencoded`.
+pub struct MissingFormContentType;
+
+#[derive(Debug, thiserror::Error)]
+#[error("Failed to deserialize the body as a form.\n{source}")]
+#[non_exhaustive]
+/// Something went wrong when deserializing the request body into the specified type.
+pub struct FormDeserializationError {
+    #[source]
+    pub(super) source: serde_path_to_error::Error<serde_html_form::de::Error>,
+}
+
+#[derive(Debug, thiserror::Error)]
+#[error(
+"The `Content-Type` header was set to `{actual}`. This endpoint expects requests with a `Content-Type` header set to `application/x-www-form-urlencoded`"
+)]
+#[non_exhaustive]
+/// The `Content-Type` header not set to `application/x-www-form-urlencoded`.
+pub struct FormContentTypeMismatch {
     /// The actual value of the `Content-Type` header for this request.
     pub actual: String,
 }

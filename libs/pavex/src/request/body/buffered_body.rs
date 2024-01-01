@@ -14,7 +14,7 @@ use super::{
 /// Buffer the entire body of an incoming request in memory.
 ///
 /// `BufferedBody` is the ideal building block for _other_ extractors that need to
-/// have the entire body available in memory to do their job (e.g. [`JsonBody`](super::JsonBody)).  
+/// have the entire body available in memory to do their job (e.g. [`JsonBody`](super::JsonBody)).
 ///
 /// It can also be useful if you need to access the raw bytes of the body ahead of deserialization
 /// (e.g. to compute its hash as a step of a signature verification process).
@@ -71,7 +71,7 @@ use super::{
 /// # Body size limit
 ///
 /// To prevent denial-of-service attacks, Pavex enforces an upper limit on the body size when
-/// trying to buffer it in memory. The default limit is 2 MBs.  
+/// trying to buffer it in memory. The default limit is 2 MBs.
 ///
 /// [`BufferedBody::extract`] will return the [`SizeLimitExceeded`](ExtractBufferedBodyError::SizeLimitExceeded) error variant if the limit is exceeded.
 ///
@@ -98,7 +98,7 @@ use super::{
 /// }
 /// ```
 ///
-/// You can also disable the limit entirely:  
+/// You can also disable the limit entirely:
 ///
 /// ```rust
 /// use pavex::f;
@@ -119,7 +119,7 @@ use super::{
 /// ```
 ///
 /// There might be situations where you want granular control instead of having
-/// a single global limit for all incoming requests.  
+/// a single global limit for all incoming requests.
 /// You can leverage nesting for this purpose:
 ///
 /// ```rust
@@ -242,9 +242,11 @@ impl From<BufferedBody> for Bytes {
 
 #[cfg(test)]
 mod tests {
+    use bytes::Bytes;
     use http::HeaderMap;
+    use http_body_util::Full;
 
-    use crate::request::RequestHead;
+    use crate::request::{body::BufferedBody, RequestHead};
 
     // No headers.
     fn dummy_request_head() -> RequestHead {
