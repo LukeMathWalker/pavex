@@ -185,7 +185,6 @@ where
             // We need to recursively build the input types for all our compute components;
             if let CallGraphNode::Compute { component_id, .. } = call_graph[current_index].clone() {
                 let component = component_db.hydrated_component(component_id, computation_db);
-                let component_scope = component_db.scope_id(component_id);
                 let input_types = match component {
                     HydratedComponent::Constructor(constructor) => {
                         constructor.input_types().to_vec()
@@ -215,11 +214,9 @@ where
                     }
                 };
                 for input_type in input_types {
-                    if let Some((constructor_id, consumption_mode)) = constructible_db.get(
-                        component_scope,
-                        &input_type,
-                        component_db.scope_graph(),
-                    ) {
+                    if let Some((constructor_id, consumption_mode)) =
+                        constructible_db.get(root_scope_id, &input_type, component_db.scope_graph())
+                    {
                         nodes_to_be_visited.insert(VisitorStackElement {
                             component_id: constructor_id,
                             neighbour: Some(VisitorNeighbour::Child(
