@@ -1,6 +1,6 @@
 digraph "GET /home - 0" {
-    0 [ label = "app::handler() -> pavex::response::Response<app::BodyType>"]
-    1 [ label = "<pavex::response::Response::<app::BodyType> as pavex::response::IntoResponse>::into_response(pavex::response::Response<app::BodyType>) -> pavex::response::Response"]
+    0 [ label = "app::handler() -> dep::Custom<app::BodyType>"]
+    1 [ label = "<dep::Custom::<app::BodyType> as pavex::response::IntoResponse>::into_response(dep::Custom<app::BodyType>) -> pavex::response::Response"]
     0 -> 1 [ ]
 }
 

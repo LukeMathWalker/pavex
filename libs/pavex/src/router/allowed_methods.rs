@@ -21,9 +21,8 @@ use crate::http::Method;
 ///     if let Some(header_value) = allowed_methods.allow_header_value() {
 ///         Response::method_not_allowed()
 ///             .insert_header(ALLOW, header_value)
-///             .box_body()
 ///     } else {
-///         Response::not_found().box_body()
+///         Response::not_found()
 ///     }
 /// }
 ///

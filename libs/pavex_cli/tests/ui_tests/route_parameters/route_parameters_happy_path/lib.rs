@@ -10,9 +10,7 @@ pub struct HomeRouteParams {
 pub fn get_home(
     RouteParams(HomeRouteParams { home_id }): RouteParams<HomeRouteParams>,
 ) -> Response {
-    Response::ok()
-        .set_typed_body(format!("{}", home_id))
-        .box_body()
+    Response::ok().set_typed_body(format!("{}", home_id))
 }
 
 #[RouteParams]
@@ -23,9 +21,7 @@ pub struct RoomRouteParams {
 }
 
 pub fn get_room(params: RouteParams<RoomRouteParams>) -> Response {
-    Response::ok()
-        .set_typed_body(format!("{}", params.0.home_id))
-        .box_body()
+    Response::ok().set_typed_body(format!("{}", params.0.home_id))
 }
 
 #[RouteParams]
@@ -34,9 +30,7 @@ pub struct TownRouteParams<'a> {
 }
 
 pub fn get_town(params: RouteParams<TownRouteParams<'_>>) -> Response {
-    Response::ok()
-        .set_typed_body(format!("{}", params.0.town))
-        .box_body()
+    Response::ok().set_typed_body(format!("{}", params.0.town))
 }
 
 pub fn blueprint() -> Blueprint {

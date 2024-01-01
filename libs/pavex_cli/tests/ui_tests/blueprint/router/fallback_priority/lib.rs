@@ -10,11 +10,11 @@ pub fn handler() -> pavex::response::Response {
 }
 
 pub fn unauthorized() -> pavex::response::Response {
-    Response::unauthorized().box_body()
+    Response::unauthorized()
 }
 
 pub fn forbidden() -> pavex::response::Response {
-    Response::forbidden().box_body()
+    Response::forbidden()
 }
 
 pub fn blueprint() -> Blueprint {

@@ -5,8 +5,9 @@ use http_body_util::Empty;
 use crate::http::StatusCode;
 use crate::http::{HeaderMap, Version};
 
-use super::body::raw::{boxed, BoxBody};
+use super::body::raw::RawBody;
 use super::body::TypedBody;
+use super::ResponseBody;
 
 /// Represents an HTTP response.
 ///
@@ -39,8 +40,8 @@ use super::body::TypedBody;
 ///
 /// There are other methods available on [`Response`] that you might find useful, but the
 /// ones listed above are the most commonly used and should be enough to get you started.
-pub struct Response<Body = BoxBody> {
-    inner: http::Response<Body>,
+pub struct Response {
+    inner: http::Response<ResponseBody>,
 }
 
 #[non_exhaustive]
@@ -54,7 +55,7 @@ pub struct ResponseHead {
     headers: HeaderMap,
 }
 
-impl Response<Empty<Bytes>> {
+impl Response {
     /// Build a new [`Response`] with the given status code.  
     /// The HTTP version is set to HTTP 1.1, there are no headers and
     /// the body is empty.
@@ -83,12 +84,12 @@ impl Response<Empty<Bytes>> {
     /// Check out [`Response`]'s API documentation for a complete list of all
     /// the supported shorthands.
     pub fn new(status_code: StatusCode) -> Self {
-        let inner = http::Response::new(Empty::new());
+        let inner = http::Response::new(ResponseBody::new(Empty::new()));
         Self { inner }.set_status(status_code)
     }
 }
 
-impl<Body> Response<Body> {
+impl Response {
     /// Change the status code of the [`Response`].
     ///
     /// # Example
@@ -125,7 +126,7 @@ impl<Body> Response<Body> {
     /// response = response.set_version(Version::HTTP_2);
     /// assert_eq!(response.version(), Version::HTTP_2);
     /// ```
-    pub fn set_version(mut self, version: crate::http::Version) -> Self {
+    pub fn set_version(mut self, version: Version) -> Self {
         *self.inner.version_mut() = version;
         self
     }
@@ -260,13 +261,15 @@ impl<Body> Response<Body> {
     ///
     /// If you don't want Pavex to automatically set the `Content-Type` header,
     /// you might want to use [`Response::set_raw_body`] instead.
-    pub fn set_typed_body<NewBody>(self, body: NewBody) -> Response<<NewBody as TypedBody>::Body>
+    pub fn set_typed_body<NewBody>(self, body: NewBody) -> Response
     where
         NewBody: TypedBody,
+        <<NewBody as TypedBody>::Body as RawBody>::Error:
+            Into<Box<dyn std::error::Error + Send + Sync>>,
     {
         let (mut head, _) = self.inner.into_parts();
         head.headers.insert(CONTENT_TYPE, body.content_type());
-        http::Response::from_parts(head, body.body()).into()
+        http::Response::from_parts(head, ResponseBody::new(body.body())).into()
     }
 
     /// Set the body of the [`Response`] to the given value, without setting
@@ -290,51 +293,17 @@ impl<Body> Response<Body> {
     /// // when using `set_raw_body`.
     /// assert_eq!(response.headers().get(CONTENT_TYPE), None);
     /// ```
-    pub fn set_raw_body<NewBody>(self, body: NewBody) -> Response<NewBody>
+    pub fn set_raw_body<NewBody>(self, body: NewBody) -> Response
     where
-        NewBody: http_body::Body<Data = Bytes> + Send + Sync + 'static,
+        NewBody: RawBody<Data = Bytes> + Send + 'static,
+        <NewBody as RawBody>::Error: Into<Box<dyn std::error::Error + Send + Sync>>,
     {
         let (head, _) = self.inner.into_parts();
-        http::Response::from_parts(head, body).into()
-    }
-
-    /// Box the current [`Response`] body.
-    ///
-    /// This can be useful when:
-    ///
-    /// - you need to return a [`Response`] with a body that implements [`http_body::Body`]
-    ///   but you don't know the exact type of the body at compile time.
-    ///
-    /// - you need to return the same type of body from different branches of an `if` or `match`
-    ///   statement.
-    ///
-    /// # Example
-    ///
-    /// ```rust
-    /// use pavex::response::Response;
-    ///
-    /// # let user_exists = true;
-    /// // The call to `.box_body` is necessary here because the two branches
-    /// // of the `if` statement return different types of body: one returns
-    /// // `Full<Bytes>` and the other returns `Empty<Bytes>`.
-    /// // The compiler would reject this code without the call to `.box_body`.
-    /// let response = if user_exists {
-    ///    Response::ok().set_typed_body("Hey there!").box_body()
-    /// } else {
-    ///    Response::not_found().box_body()
-    /// };
-    /// ```
-    pub fn box_body(self) -> Response<BoxBody>
-    where
-        Body: http_body::Body<Data = Bytes> + Send + Sync + 'static,
-        Body::Error: Into<Box<dyn std::error::Error + Send + Sync>> + 'static,
-    {
-        let (head, body) = self.inner.into_parts();
-        http::Response::from_parts(head, boxed(body)).into()
+        http::Response::from_parts(head, ResponseBody::new(body)).into()
     }
 
     /// Get a mutable reference to the [`Response`] body.
-    pub fn body_mut(&mut self) -> &mut Body {
+    pub fn body_mut(&mut self) -> &mut ResponseBody {
         self.inner.body_mut()
     }
 
@@ -368,7 +337,7 @@ impl<Body> Response<Body> {
     }
 }
 
-impl<Body> Response<Body> {
+impl Response {
     /// Get a reference to the [`Response`] status code.
     ///
     /// # Example
@@ -453,12 +422,12 @@ impl<Body> Response<Body> {
     /// - [`Response::set_typed_body`]
     /// - [`Response::set_raw_body`]
     /// - [`Response::body_mut`]
-    pub fn body(&self) -> &Body {
+    pub fn body(&self) -> &ResponseBody {
         self.inner.body()
     }
 }
 
-impl<Body> Response<Body> {
+impl Response {
     /// Break down the [`Response`] into its two components: the [`ResponseHead`]
     /// and the body.
     ///
@@ -468,7 +437,7 @@ impl<Body> Response<Body> {
     ///
     /// You can use [`Response::from_parts`] to reconstruct a [`Response`] from
     /// a [`ResponseHead`] and a body.
-    pub fn into_parts(self) -> (ResponseHead, Body) {
+    pub fn into_parts(self) -> (ResponseHead, ResponseBody) {
         let (head, body) = self.inner.into_parts();
         (head.into(), body)
     }
@@ -480,21 +449,27 @@ impl<Body> Response<Body> {
     ///
     /// You can use [`Response::into_parts`] to decompose a [`Response`] from
     /// a [`ResponseHead`] and a body.
-    pub fn from_parts(head: ResponseHead, body: Body) -> Self {
+    pub fn from_parts(head: ResponseHead, body: ResponseBody) -> Self {
         Self {
             inner: http::Response::from_parts(head.into(), body),
         }
     }
 }
 
-impl<Body> From<http::Response<Body>> for Response<Body> {
+impl<Body> From<http::Response<Body>> for Response
+where
+    Body: Send + RawBody<Data = Bytes> + 'static,
+    <Body as RawBody>::Error: Into<Box<dyn std::error::Error + Send + Sync>>,
+{
     fn from(inner: http::Response<Body>) -> Self {
+        let (head, body) = inner.into_parts();
+        let inner = http::Response::from_parts(head, ResponseBody::new(body));
         Self { inner }
     }
 }
 
-impl<Body> From<Response<Body>> for http::Response<Body> {
-    fn from(res: Response<Body>) -> Self {
+impl From<Response> for http::Response<ResponseBody> {
+    fn from(res: Response) -> Self {
         res.inner
     }
 }
@@ -538,7 +513,7 @@ macro_rules! shorthand {
     ($name:ident) => {
         paste::paste! {
             #[doc = "Start building a new [`Response`] with [`" $name "`](`StatusCode::" $name "`) as status code."]
-            pub fn [<$name:lower>]() -> Response<Empty<Bytes>> {
+            pub fn [<$name:lower>]() -> Response {
                 Response::new(StatusCode::[<$name>])
             }
         }
@@ -546,10 +521,10 @@ macro_rules! shorthand {
 }
 
 /// Shorthand for building a new [`Response`] using a well-known status code.
-impl Response<Empty<Bytes>> {
+impl Response {
     /// Start building a new [`Response`] with [`CONTINUE`](StatusCode::CONTINUE) as status code.
     // This is special-cased because `continue` is a keyword in Rust.
-    pub fn continue_() -> Response<Empty<Bytes>> {
+    pub fn continue_() -> Response {
         Response::new(StatusCode::CONTINUE)
     }
 

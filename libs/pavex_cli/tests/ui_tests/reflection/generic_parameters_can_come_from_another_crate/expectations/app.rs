@@ -68,9 +68,7 @@ async fn route_request(
 pub mod route_0 {
     pub async fn handler() -> pavex::response::Response {
         let v0 = app::handler();
-        <pavex::response::Response<
-            app::BodyType,
-        > as pavex::response::IntoResponse>::into_response(v0)
+        <dep::Custom<app::BodyType> as pavex::response::IntoResponse>::into_response(v0)
     }
 }
 pub mod route_1 {

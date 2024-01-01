@@ -3,6 +3,11 @@
 //! Check out [`Response::set_typed_body`] for more details.
 //!
 //! [`Response::set_typed_body`]: crate::response::Response::set_typed_body
+pub use html::Html;
+pub use json::Json;
+pub use typed_body::TypedBody;
+
+pub(super) mod body_;
 mod bytes;
 mod html;
 mod json;
@@ -11,14 +16,11 @@ pub mod raw;
 
 pub mod errors;
 
-pub use html::Html;
-pub use json::Json;
-pub use typed_body::TypedBody;
-
 mod typed_body {
+    use crate::http::HeaderValue;
+
     use super::raw::Bytes;
     use super::raw::RawBody;
-    use crate::http::HeaderValue;
 
     /// A trait that ties together a [`Response`] body with
     /// its expected `Content-Type` header.
@@ -80,7 +82,7 @@ mod typed_body {
     /// [`Response`]: crate::response::Response
     // TODO: expand guide for streaming bodies.
     pub trait TypedBody {
-        type Body: RawBody<Data = Bytes> + Send + Sync + 'static;
+        type Body: RawBody<Data = Bytes> + Send + 'static;
 
         /// The header value that should be used as `Content-Type` when
         /// returning this [`Response`](crate::response::Response).

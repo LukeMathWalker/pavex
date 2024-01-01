@@ -1,8 +1,5 @@
 //! Errors that can happen when extracting query parameters.
 
-use bytes::Bytes;
-use http_body_util::Full;
-
 use crate::response::Response;
 
 /// The error returned by [`QueryParams::extract`] when the extraction fails.
@@ -25,7 +22,7 @@ impl ExtractQueryParamsError {
     /// Convert an [`ExtractQueryParamsError`] into an HTTP response.
     ///
     /// It returns a `400 Bad Request` to the caller.
-    pub fn into_response(&self) -> Response<Full<Bytes>> {
+    pub fn into_response(&self) -> Response {
         match self {
             Self::QueryDeserializationError(e) => Response::bad_request()
                 .set_typed_body(format!("Invalid query parameters.\n{:?}", e)),

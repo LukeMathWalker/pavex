@@ -1,9 +1,6 @@
 //! Errors that can happen when extracting route parameters.
 use std::str::Utf8Error;
 
-use bytes::Bytes;
-use http_body_util::Full;
-
 use crate::response::Response;
 
 /// The error returned by [`RouteParams::extract`] when the extraction fails.
@@ -90,7 +87,7 @@ impl ExtractRouteParamsError {
     /// It returns a `400 Bad Request` for all other cases.
     ///
     /// [`RouteParams<T>`]: struct@crate::request::route::RouteParams
-    pub fn into_response(&self) -> Response<Full<Bytes>> {
+    pub fn into_response(&self) -> Response {
         match self {
             ExtractRouteParamsError::InvalidUtf8InPathParameter(e) => {
                 Response::bad_request().set_typed_body(format!("Invalid URL.\n{}", e))

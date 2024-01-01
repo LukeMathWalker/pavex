@@ -9,7 +9,7 @@ use pavex::server::{IncomingStream, Server, ServerConfiguration, ShutdownMode};
 
 // A dummy handler for our server tests.
 async fn test_handler(_request: Request<Incoming>, _state: ()) -> Response {
-    Response::ok().box_body()
+    Response::ok()
 }
 
 fn test_server_config() -> ServerConfiguration {
@@ -91,7 +91,7 @@ async fn slow_handler(_req: Request<Incoming>, state: SlowHandlerState) -> Respo
     // sleep.
     state.started.send(()).await.unwrap();
     tokio::time::sleep(state.sleep).await;
-    Response::ok().box_body()
+    Response::ok()
 }
 
 #[derive(Clone)]

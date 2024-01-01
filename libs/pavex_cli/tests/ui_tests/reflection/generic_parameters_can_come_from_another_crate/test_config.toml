@@ -9,3 +9,6 @@ codegen = "pass"
 [dependencies]
 hyper = "1.0.0-rc.4"
 bytes = "1"
+
+[ephemeral_dependencies]
+dep_1 = { path = "dep_1.rs", package = "dep", version = "1.0.0" }

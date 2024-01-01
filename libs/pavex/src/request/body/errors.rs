@@ -1,7 +1,4 @@
 //! Errors that can occur while extracting information from the request body.
-use bytes::Bytes;
-use http_body_util::Full;
-
 use crate::response::Response;
 
 #[derive(Debug, thiserror::Error)]
@@ -23,7 +20,7 @@ pub enum ExtractJsonBodyError {
 
 impl ExtractJsonBodyError {
     /// Convert an [`ExtractJsonBodyError`] into an HTTP response.
-    pub fn into_response(&self) -> Response<Full<Bytes>> {
+    pub fn into_response(&self) -> Response {
         match self {
             ExtractJsonBodyError::MissingContentType(_)
             | ExtractJsonBodyError::ContentTypeMismatch(_) => Response::unsupported_media_type(),
@@ -49,7 +46,7 @@ pub enum ExtractBufferedBodyError {
 
 impl ExtractBufferedBodyError {
     /// Convert an [`ExtractBufferedBodyError`] into an HTTP response.
-    pub fn into_response(&self) -> Response<Full<Bytes>> {
+    pub fn into_response(&self) -> Response {
         match self {
             ExtractBufferedBodyError::SizeLimitExceeded(_) => Response::payload_too_large(),
             ExtractBufferedBodyError::UnexpectedBufferError(_) => Response::internal_server_error(),

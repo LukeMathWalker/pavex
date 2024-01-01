@@ -1,3 +1,7 @@
+use bytes::Bytes;
+use http::StatusCode;
+use http_body_util::Empty;
+
 // Most of this module is an adaptation of the corresponding
 // module in `axum-core`
 //
@@ -26,11 +30,9 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
 // IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
-use bytes::Bytes;
-use http::StatusCode;
-use http_body_util::Empty;
+use crate::response::ResponseBody;
 
-use super::{body::raw::boxed, Response, ResponseHead};
+use super::{Response, ResponseHead};
 
 /// Convert a type into a [`Response`].
 ///
@@ -64,35 +66,31 @@ where
     B::Error: Into<Box<dyn std::error::Error + Send + Sync>> + 'static,
 {
     fn into_response(self) -> Response {
-        let r: Response<B> = self.into();
+        let r: Response = self.into();
         r.into_response()
     }
 }
 
-impl<B> IntoResponse for Response<B>
-where
-    B: http_body::Body<Data = Bytes> + Send + Sync + 'static,
-    B::Error: Into<Box<dyn std::error::Error + Send + Sync>> + 'static,
-{
+impl IntoResponse for Response {
     fn into_response(self) -> Response {
-        self.box_body()
+        self
     }
 }
 
 impl IntoResponse for StatusCode {
     fn into_response(self) -> Response {
-        Response::new(self).box_body()
+        Response::new(self)
     }
 }
 
 impl IntoResponse for http::response::Parts {
     fn into_response(self) -> Response {
-        http::Response::from_parts(self, boxed(Empty::new())).into()
+        http::Response::from_parts(self, ResponseBody::new(Empty::new())).into()
     }
 }
 
 impl IntoResponse for ResponseHead {
     fn into_response(self) -> Response {
-        Response::from_parts(self, Empty::new()).box_body()
+        Response::from_parts(self, ResponseBody::default())
     }
 }
