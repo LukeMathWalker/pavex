@@ -244,6 +244,7 @@ impl From<BufferedBody> for Bytes {
 mod tests {
     use http::HeaderMap;
 
+    use super::{BufferedBody, Bytes};
     use crate::request::RequestHead;
 
     // No headers.
@@ -258,7 +259,7 @@ mod tests {
 
     #[tokio::test]
     async fn error_if_body_above_size_limit_without_content_length() {
-        let body = Full::new(Bytes::from(vec![0; 1000]));
+        let body = crate::response::body::raw::Full::new(Bytes::from(vec![0; 1000]));
         // Smaller than the size of the body.
         let max_n_bytes = 100;
         let err = BufferedBody::_extract_with_limit(&dummy_request_head(), body, max_n_bytes)
@@ -285,7 +286,7 @@ mod tests {
         // Smaller than the value declared in the `Content-Length` header,
         // even though it's bigger than the actual size of the body.
         let max_n_bytes = 100;
-        let body = Full::new(Bytes::from(vec![0; 500]));
+        let body = crate::response::body::raw::Full::new(Bytes::from(vec![0; 500]));
         request_head
             .headers
             .insert("Content-Length", "1000".parse().unwrap());
