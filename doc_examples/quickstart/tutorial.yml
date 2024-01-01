@@ -4,10 +4,10 @@ starter_project_folder: demo
 snippets:
   - name: "blueprint_definition"
     source_path: "demo/src/blueprint.rs"
-    ranges: [ "6..15" ]
+    ranges: [ "8..17" ]
   - name: "route_registration"
     source_path: "demo/src/blueprint.rs"
-    ranges: [ "6..15" ]
+    ranges: [ "8..17" ]
     hl_lines: [ 8 ]
   - name: "ping_handler"
     source_path: "demo/src/routes/status.rs"
@@ -40,7 +40,7 @@ steps:
         ranges: [ ".." ]
       - name: "register_new_route"
         source_path: "demo/src/blueprint.rs"
-        ranges: [ "6..19" ]
+        ranges: [ "8..21" ]
         hl_lines: [ 9, 10, 11, 12, 13 ]
   - patch: "03.patch"
     snippets:
@@ -54,11 +54,11 @@ steps:
         ranges: [ ".." ]
       - name: "register_common_invocation"
         source_path: "demo/src/blueprint.rs"
-        ranges: [ "6..9", "18..20" ]
+        ranges: [ "8..11", "20..22" ]
         hl_lines: [ 4 ]
       - name: "route_params_constructor"
         source_path: "demo/src/blueprint.rs"
-        ranges: [ "22..23", "33..37", "60..61" ]
+        ranges: [ "24..26", "30..31" ]
         hl_lines: [ 4, 5, 6, 7 ]
   - patch: "05.patch"
     snippets:

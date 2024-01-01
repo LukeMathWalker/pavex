@@ -18,8 +18,8 @@ pub fn blueprint() -> Blueprint {
 
 /// Common constructors used by all routes.
 fn register_common_constructors(bp: &mut Blueprint) {
-    QueryParams::register(bp);
     RouteParams::register(bp);
+    QueryParams::register(bp);
     JsonBody::register(bp);
     BufferedBody::register(bp);
     BodySizeLimit::register(bp);

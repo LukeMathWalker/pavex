@@ -1,11 +1,7 @@
 ```rust title="demo/src/blueprint.rs" hl_lines="4 5 6 7"
 // [...]
 fn register_common_constructors(bp: &mut Blueprint) {
-    // [...]
-    bp.constructor(
-        f!(pavex::request::route::RouteParams::extract),
-        Lifecycle::RequestScoped,
-    )
+    QueryParams::register(bp);
     // [...]
 }
 ```
