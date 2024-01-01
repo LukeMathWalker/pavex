@@ -1,5 +1,9 @@
-use super::errors::{ExtractQueryParamsError, QueryDeserializationError};
+use crate::blueprint::constructor::{Constructor, Lifecycle};
+use crate::blueprint::Blueprint;
+use crate::f;
 use crate::request::RequestHead;
+
+use super::errors::{ExtractQueryParamsError, QueryDeserializationError};
 
 /// Extract (typed) route parameters from the query parameters of an incoming request.
 ///
@@ -40,16 +44,11 @@ use crate::request::RequestHead;
 /// ```rust
 /// use pavex::f;
 /// use pavex::blueprint::{Blueprint, constructor::Lifecycle};
+/// use pavex::request::query::QueryParams;
 ///
 /// fn blueprint() -> Blueprint {
 ///     let mut bp = Blueprint::new();
-///     // Register the default constructor and error handler for `QueryParams`.
-///     bp.constructor(
-///         f!(pavex::request::query::QueryParams::extract),
-///         Lifecycle::RequestScoped,
-///     ).error_handler(
-///         f!(pavex::request::query::errors::ExtractQueryParamsError::into_response)
-///     );
+///     QueryParams::register(&mut bp);
 ///     // [...]
 ///     bp
 /// }
@@ -183,6 +182,21 @@ impl<T> QueryParams<T> {
     {
         let query = request_head.uri.query().unwrap_or_default();
         parse(query).map(QueryParams)
+    }
+}
+
+impl QueryParams<()> {
+    /// Register the [default constructor](QueryParams::extract)
+    /// and [error handler](ExtractQueryParamsError::into_response)
+    /// for [`QueryParams`] with a [`Blueprint`].
+    pub fn register(bp: &mut Blueprint) -> Constructor {
+        bp.constructor(
+            f!(pavex::request::query::QueryParams::extract),
+            Lifecycle::RequestScoped,
+        )
+        .error_handler(f!(
+            pavex::request::query::errors::ExtractQueryParamsError::into_response
+        ))
     }
 }
 

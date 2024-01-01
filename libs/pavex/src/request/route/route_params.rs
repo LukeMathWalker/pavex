@@ -1,5 +1,8 @@
 use serde::Deserialize;
 
+use crate::blueprint::constructor::{Constructor, Lifecycle};
+use crate::blueprint::Blueprint;
+use crate::f;
 use crate::request::route::deserializer::PathDeserializer;
 use crate::request::route::errors::{DecodeError, ExtractRouteParamsError, InvalidUtf8InPathParam};
 
@@ -26,12 +29,7 @@ use super::RawRouteParams;
 /// fn blueprint() -> Blueprint {
 ///     let mut bp = Blueprint::new();
 ///     // Register the default constructor and error handler for `RouteParams`.
-///     bp.constructor(
-///         f!(pavex::request::route::RouteParams::extract),
-///         Lifecycle::RequestScoped,
-///     ).error_handler(
-///         f!(pavex::request::route::errors::ExtractRouteParamsError::into_response)
-///     );
+///     RouteParams::register(&mut bp);
 ///     // Register a route with a route parameter, `:home_id`.
 ///     bp.route(GET, "/home/:home_id", f!(crate::get_home));
 ///     bp
@@ -255,5 +253,20 @@ impl<T> RouteParams<T> {
         T::deserialize(deserializer)
             .map_err(ExtractRouteParamsError::PathDeserializationError)
             .map(RouteParams)
+    }
+}
+
+impl RouteParams<()> {
+    /// Register the [default constructor](RouteParams::extract)
+    /// and [error handler](ExtractRouteParamsError::into_response)
+    /// for [`RouteParams`] with a [`Blueprint`].
+    pub fn register(bp: &mut Blueprint) -> Constructor {
+        bp.constructor(
+            f!(pavex::request::route::RouteParams::extract),
+            Lifecycle::RequestScoped,
+        )
+        .error_handler(f!(
+            pavex::request::route::errors::ExtractRouteParamsError::into_response
+        ))
     }
 }

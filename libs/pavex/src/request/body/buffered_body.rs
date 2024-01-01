@@ -2,7 +2,9 @@ use bytes::Bytes;
 use http::header::CONTENT_LENGTH;
 use http_body_util::{BodyExt, Limited};
 
-use crate::{request::body::errors::SizeLimitExceeded, request::RequestHead};
+use crate::blueprint::constructor::{Constructor, Lifecycle};
+use crate::blueprint::Blueprint;
+use crate::{f, request::body::errors::SizeLimitExceeded, request::RequestHead};
 
 use super::{
     errors::{ExtractBufferedBodyError, UnexpectedBufferError},
@@ -45,22 +47,17 @@ use super::{
 ///
 /// # Installation
 ///
-/// You need the register the default constructor and error handler for
+/// Register the default constructor and error handler for
 /// `BufferedBody` in your `Blueprint`:
 ///
 /// ```rust
 /// use pavex::f;
 /// use pavex::blueprint::{Blueprint, constructor::Lifecycle};
+/// use pavex::request::body::BufferedBody;
 ///
 /// fn blueprint() -> Blueprint {
-///    let mut bp = Blueprint::new();
-///    // Register the default constructor and error handler for `BufferedBody`.
-///    bp.constructor(
-///         f!(pavex::request::body::BufferedBody::extract),
-///         Lifecycle::RequestScoped,
-///     ).error_handler(
-///         f!(pavex::request::body::errors::ExtractBufferedBodyError::into_response)
-///     );
+///     let mut bp = Blueprint::new();
+///     BufferedBody::register(&mut bp);
 ///     // [...]
 ///     bp
 /// }
@@ -179,6 +176,19 @@ impl BufferedBody {
                 Err(e) => Err(UnexpectedBufferError { source: e.into() }.into()),
             },
         }
+    }
+
+    /// Register the [default constructor](BufferedBody::extract)
+    /// and [error handler](ExtractBufferedBodyError::into_response)
+    /// for [`BufferedBody`] with a [`Blueprint`].
+    pub fn register(bp: &mut Blueprint) -> Constructor {
+        bp.constructor(
+            f!(pavex::request::body::BufferedBody::extract),
+            Lifecycle::RequestScoped,
+        )
+        .error_handler(f!(
+            pavex::request::body::errors::ExtractBufferedBodyError::into_response
+        ))
     }
 
     async fn _extract_with_limit<B>(

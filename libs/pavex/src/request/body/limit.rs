@@ -1,3 +1,7 @@
+use crate::blueprint::constructor::{Constructor, Lifecycle};
+use crate::blueprint::Blueprint;
+use crate::f;
+
 #[derive(Debug, Clone, Copy)]
 /// An upper limit on the size of incoming request bodies.  
 ///
@@ -10,6 +14,16 @@ pub enum BodySizeLimit {
     },
     /// There is no limit on the size of incoming request bodies.
     Disabled,
+}
+
+impl BodySizeLimit {
+    /// Register the [default constructor](BodySizeLimit::default) for [`BodySizeLimit`] with a [`Blueprint`].
+    pub fn register(bp: &mut Blueprint) -> Constructor {
+        bp.constructor(
+            f!(<pavex::request::body::BodySizeLimit as std::default::Default>::default),
+            Lifecycle::RequestScoped,
+        )
+    }
 }
 
 impl Default for BodySizeLimit {
