@@ -1,7 +1,20 @@
 # Contributing
 
-This project is not open to unsolicited code contributions (for the time being).  
-You are more than free to play around with the code though! The instructions below should be enough to get you started. I suggest looking at [`ARCHITECTURE.md`](ARCHITECTURE.md) as well to get a sense of the overall project structure.
+It's early days and the focus, right now, is on user documentation.  
+Nonetheless, the instructions below should be enough to get you going if you choose to submit a pull request!  
+I suggest looking at [`ARCHITECTURE.md`](ARCHITECTURE.md) as well to get a sense of the overall project structure.
+
+## CONTRIBUTORS.md
+
+If you choose to contribute to Pavex,
+you must add yourself to the [CONTRIBUTORS.md](CONTRIBUTORS.md) file.
+It is a lightweight alternative to a full-blown [contributor license agreement](https://www.djangoproject.com/foundation/cla/faq/).
+
+## Unsolicited contributions
+
+Typo in documentation? Open a PR straight-away!  
+Small bug fix with a regression test? Open a PR straight-away!  
+Anything beyond 20 lines of code? **Open an issue first**.
 
 # Prerequisites
 
