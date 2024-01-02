@@ -1,0 +1,26 @@
+name: "Check CONTRIBUTORS.md"
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  check-contributors:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Check PR author in CONTRIBUTORS.md
+        run: |
+          pr_author=$(jq -r .pull_request.user.login "$GITHUB_EVENT_PATH")
+          pattern="(@$pr_author)"
+          contributors=$(grep -Eo "$pattern" CONTRIBUTORS.md || true)
+          
+          if [ -z "$contributors" ]; then
+            echo "PR author ($pr_author) not found in CONTRIBUTORS.md"
+            exit 1
+          else
+            echo "PR author ($pr_author) found in CONTRIBUTORS.md"
+          fi
