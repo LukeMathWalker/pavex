@@ -1,5 +1,5 @@
 ```rust title="demo/src/routes/greet.rs"
-use pavex::request::RouteParams;
+use pavex::request::route::RouteParams;
 use pavex::response::Response;
 
 #[RouteParams]
