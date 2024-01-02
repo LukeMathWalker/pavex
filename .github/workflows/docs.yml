@@ -70,8 +70,11 @@ jobs:
         with:
           toolchain: nightly
           components: rust-docs-json
+          rustflags: ""
       - name: Install Rust stable toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1.6.0
+        with:
+          rustflags: ""
       - name: Download pavex CLI artifact
         uses: actions/download-artifact@v4
         with:
