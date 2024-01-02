@@ -7,4 +7,4 @@ We contributors to Pavex:
 * Add our names and GitHub handles to this CONTRIBUTORS.md file to create a permanent record that users, distributors, and other contributors can all rely on
 
 -----------
-* Luca Palmieri (@LukeMathWalker)
+* Luca Palmieri 
