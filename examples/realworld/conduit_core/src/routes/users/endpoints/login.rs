@@ -1,14 +1,8 @@
 use crate::{jwt_auth, routes::users::password, schemas::User};
 use anyhow::Context;
 use jsonwebtoken::EncodingKey;
-use pavex::response::body::raw::Bytes;
-use pavex::{
-    request::body::JsonBody,
-    response::{
-        body::{raw::Full, Json},
-        Response,
-    },
-};
+use pavex::response::body::Json;
+use pavex::{request::body::JsonBody, response::Response};
 use secrecy::Secret;
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -18,7 +12,7 @@ pub async fn login(
     body: JsonBody<LoginBody>,
     db_pool: &PgPool,
     jwt_key: &EncodingKey,
-) -> Result<Response<Full<Bytes>>, LoginError> {
+) -> Result<Response, LoginError> {
     let UserCredentials { email, password } = body.0.user;
     let user_id = password::validate_credentials(&email, password, db_pool)
         .await
@@ -76,7 +70,7 @@ pub enum LoginError {
 }
 
 impl LoginError {
-    pub fn into_response(&self) -> Response<Full<Bytes>> {
+    pub fn into_response(&self) -> Response {
         match self {
             LoginError::InvalidCredentials(_) => Response::unauthorized(),
             LoginError::UnexpectedError(_) => Response::internal_server_error(),

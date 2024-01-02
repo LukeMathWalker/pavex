@@ -3,12 +3,12 @@
   [31m│[0m handler for it. If I don't have an error handler, I don't know what to do with the error when
   [31m│[0m the constructor fails!
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mdemo/src/blueprint.rs[0m:11:1]
-  [31m│[0m  [2m11[0m │     bp.constructor(
-  [31m│[0m  [2m12[0m │         f!(crate::user_agent::UserAgent::extract),
+  [31m│[0m     ╭─[[36;1;4mdemo/src/blueprint.rs[0m:13:1]
+  [31m│[0m  [2m13[0m │     bp.constructor(
+  [31m│[0m  [2m14[0m │         f!(crate::user_agent::UserAgent::extract),
   [31m│[0m     · [35;1m        ────────────────────┬────────────────────[0m
   [31m│[0m     ·                             [35;1m╰── The fallible constructor was registered here[0m
-  [31m│[0m  [2m13[0m │         Lifecycle::RequestScoped,
+  [31m│[0m  [2m15[0m │         Lifecycle::RequestScoped,
   [31m│[0m     ╰────
   [31m│[0m [36m  help: [0mAdd an error handler via `.error_handler`
 

@@ -13,10 +13,17 @@ index e3623cd..c431f69 100644
      add_telemetry_middleware(&mut bp);
  
 diff --git a/demo/src/user_agent.rs b/demo/src/user_agent.rs
-index bb1f65b..b1c935c 100644
+index bb1f65b..78360bd 100644
 --- a/demo/src/user_agent.rs
 +++ b/demo/src/user_agent.rs
-@@ -17,3 +17,9 @@ impl UserAgent {
+@@ -1,5 +1,6 @@
+ use pavex::http::header::{ToStrError, USER_AGENT};
+ use pavex::request::RequestHead;
++use pavex::response::Response;
+
+ pub enum UserAgent {
+     /// No `User-Agent` header was provided.
+@@ -17,3 +18,8 @@ impl UserAgent {
          user_agent.to_str().map(|s| UserAgent::Known(s.into()))
      }
  }
@@ -24,5 +31,4 @@ index bb1f65b..b1c935c 100644
 +pub fn invalid_user_agent(_e: &ToStrError) -> Response {
 +    Response::bad_request()
 +        .set_typed_body("The `User-Agent` header value must be a valid UTF-8 string")
-+        .box_body()
 +}

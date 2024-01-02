@@ -1,6 +1,9 @@
 use http::HeaderMap;
 use serde::Deserialize;
 
+use crate::blueprint::constructor::{Constructor, Lifecycle};
+use crate::blueprint::Blueprint;
+use crate::f;
 use crate::request::RequestHead;
 
 use super::{
@@ -54,16 +57,11 @@ use super::{
 /// ```rust
 /// use pavex::f;
 /// use pavex::blueprint::{Blueprint, constructor::Lifecycle};
+/// use pavex::request::body::JsonBody;
 ///
 /// fn blueprint() -> Blueprint {
-///    let mut bp = Blueprint::new();
-///    // Register the default constructor and error handler for `JsonBody`.
-///    bp.constructor(
-///         f!(pavex::request::body::JsonBody::extract),
-///         Lifecycle::RequestScoped,
-///     ).error_handler(
-///         f!(pavex::request::body::errors::ExtractJsonBodyError::into_response)
-///     );
+///     let mut bp = Blueprint::new();
+///     JsonBody::register(&mut bp);
 ///     // [...]
 ///     bp
 /// }
@@ -139,6 +137,21 @@ impl<T> JsonBody<T> {
         let body = serde_path_to_error::deserialize(&mut deserializer)
             .map_err(|e| JsonDeserializationError { source: e })?;
         Ok(JsonBody(body))
+    }
+}
+
+impl JsonBody<()> {
+    /// Register the [default constructor](JsonBody::extract)
+    /// and [error handler](ExtractJsonBodyError::into_response)
+    /// for [`JsonBody`] with a [`Blueprint`].
+    pub fn register(bp: &mut Blueprint) -> Constructor {
+        bp.constructor(
+            f!(pavex::request::body::JsonBody::extract),
+            Lifecycle::RequestScoped,
+        )
+        .error_handler(f!(
+            pavex::request::body::errors::ExtractJsonBodyError::into_response
+        ))
     }
 }
 

@@ -5,13 +5,7 @@ use anyhow::Context;
 use jsonwebtoken::EncodingKey;
 use pavex::{
     request::body::JsonBody,
-    response::{
-        body::{
-            raw::{Bytes, Full},
-            Json,
-        },
-        Response,
-    },
+    response::{body::Json, Response},
 };
 use secrecy::{ExposeSecret, Secret};
 use sqlx::PgPool;
@@ -21,7 +15,7 @@ pub async fn signup(
     body: JsonBody<Signup>,
     db_pool: &PgPool,
     jwt_key: &EncodingKey,
-) -> Result<Response<Full<Bytes>>, SignupError> {
+) -> Result<Response, SignupError> {
     let UserDetails {
         username,
         email,
@@ -73,7 +67,7 @@ pub enum SignupError {
 }
 
 impl SignupError {
-    pub fn into_response(&self) -> Response<Full<Bytes>> {
+    pub fn into_response(&self) -> Response {
         match self {
             SignupError::UnexpectedError(_) => Response::internal_server_error(),
         }

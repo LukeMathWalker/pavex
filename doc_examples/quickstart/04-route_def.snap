@@ -11,6 +11,5 @@ pub fn greet(params: RouteParams<GreetParams>) -> Response {
     let GreetParams { name }/* (1)! */ = params.0;
     Response::ok() // (2)!
         .set_typed_body(format!("Hello, {name}!")) // (3)!
-        .box_body()
 }
 ```

@@ -3,7 +3,7 @@ index 38ec1e3..adfbbd5 100644
 --- a/demo/src/routes/greet.rs
 +++ b/demo/src/routes/greet.rs
 @@ -1,5 +1,11 @@
-+use pavex::request::RouteParams;
++use pavex::request::route::RouteParams;
  use pavex::response::Response;
  
 -pub fn greet() -> Response {

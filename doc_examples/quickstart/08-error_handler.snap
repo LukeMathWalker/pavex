@@ -3,6 +3,5 @@
 pub fn invalid_user_agent(_e: &ToStrError) -> Response {
     Response::bad_request()
         .set_typed_body("The `User-Agent` header value must be a valid UTF-8 string")
-        .box_body()
 }
 ```

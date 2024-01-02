@@ -1,5 +1,7 @@
 use pavex::blueprint::constructor::CloningStrategy;
 use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
+use pavex::request::{query::QueryParams, route::RouteParams};
+use pavex::request::body::{BodySizeLimit, BufferedBody, JsonBody};
 use pavex::f;
 
 /// The main blueprint, containing all the routes, constructors and error handlers
@@ -16,43 +18,11 @@ pub fn blueprint() -> Blueprint {
 
 /// Common constructors used by all routes.
 fn register_common_constructors(bp: &mut Blueprint) {
-    // Query parameters
-    bp.constructor(
-        f!(pavex::request::query::QueryParams::extract),
-        Lifecycle::RequestScoped,
-    )
-    .error_handler(f!(
-        pavex::request::query::errors::ExtractQueryParamsError::into_response
-    ));
-
-    // Route parameters
-    bp.constructor(
-        f!(pavex::request::route::RouteParams::extract),
-        Lifecycle::RequestScoped,
-    )
-    .error_handler(f!(
-        pavex::request::route::errors::ExtractRouteParamsError::into_response
-    ));
-
-    // Json body
-    bp.constructor(
-        f!(pavex::request::body::JsonBody::extract),
-        Lifecycle::RequestScoped,
-    )
-    .error_handler(f!(
-        pavex::request::body::errors::ExtractJsonBodyError::into_response
-    ));
-    bp.constructor(
-        f!(pavex::request::body::BufferedBody::extract),
-        Lifecycle::RequestScoped,
-    )
-    .error_handler(f!(
-        pavex::request::body::errors::ExtractBufferedBodyError::into_response
-    ));
-    bp.constructor(
-        f!(<pavex::request::body::BodySizeLimit as std::default::Default>::default),
-        Lifecycle::RequestScoped,
-    );
+    RouteParams::register(bp);
+    QueryParams::register(bp);
+    JsonBody::register(bp);
+    BufferedBody::register(bp);
+    BodySizeLimit::register(bp);
 }
 
 /// Add the telemetry middleware, as well as the constructors of its dependencies.

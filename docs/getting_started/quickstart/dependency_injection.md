@@ -21,6 +21,26 @@ If you check out its definition, you'll see that it registers a constructor for 
 
 --8<-- "doc_examples/quickstart/04-route_params_constructor.snap"
 
+Inside [`RouteParams::register`][RouteParams::register] you'll find:
+
+```rust
+use crate::blueprint::constructor::{Constructor, Lifecycle};
+use crate::blueprint::Blueprint;
+use crate::f;
+
+impl RouteParams<()> {
+    pub fn register(bp: &mut Blueprint) -> Constructor {
+        bp.constructor(
+            f!(pavex::request::route::RouteParams::extract),
+            Lifecycle::RequestScoped,
+        )
+        .error_handler(f!(
+            pavex::request::route::errors::ExtractRouteParamsError::into_response
+        ))
+    }
+}
+```
+
 It specifies:
 
 - The [fully qualified path](../../guide/dependency_injection/cookbook.md) to the constructor method, wrapped in a macro (`f!`)
@@ -88,6 +108,7 @@ Make sure that the project compiles successfully now.
 [Blueprint]: ../../api_reference/pavex/blueprint/struct.Blueprint.html
 
 [RouteParams]: ../../api_reference/pavex/request/route/struct.RouteParams.html
+[RouteParams::register]: ../../api_reference/pavex/request/route/struct.RouteParams.html#method.register
 
 [Lifecycle::Singleton]: ../../api_reference/pavex/blueprint/constructor/enum.Lifecycle.html#variant.Singleton
 
