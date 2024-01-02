@@ -1,5 +1,6 @@
 site_name: Pavex
 site_url: "https://pavex.dev/"
+site_description: "The documentation for Pavex, a framework for building robust APIs in Rust."
 repo_url: "https://github.com/LukeMathWalker/pavex"
 repo_name: "LukeMathWalker/pavex"
 edit_uri: "edit/main/docs/"
