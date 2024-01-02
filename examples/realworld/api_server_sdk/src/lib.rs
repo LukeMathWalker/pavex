@@ -642,9 +642,9 @@ pub mod route_3 {
                     let v7 = pavex::request::body::errors::ExtractBufferedBodyError::into_response(
                         &v6,
                     );
-                    <pavex::response::Response<
-                        http_body_util::Full<bytes::Bytes>,
-                    > as pavex::response::IntoResponse>::into_response(v7)
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v7,
+                    )
                 };
             }
         };
@@ -656,9 +656,9 @@ pub mod route_3 {
                     let v9 = pavex::request::body::errors::ExtractJsonBodyError::into_response(
                         &v8,
                     );
-                    <pavex::response::Response<
-                        http_body_util::Full<bytes::Bytes>,
-                    > as pavex::response::IntoResponse>::into_response(v9)
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v9,
+                    )
                 };
             }
         };
@@ -670,15 +670,13 @@ pub mod route_3 {
                     let v11 = conduit_core::routes::users::SignupError::into_response(
                         &v10,
                     );
-                    <pavex::response::Response<
-                        http_body_util::Full<bytes::Bytes>,
-                    > as pavex::response::IntoResponse>::into_response(v11)
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v11,
+                    )
                 };
             }
         };
-        <pavex::response::Response<
-            http_body_util::Full<bytes::Bytes>,
-        > as pavex::response::IntoResponse>::into_response(v10)
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v10)
     }
     pub struct Next0<'a, 'b, 'c, T>
     where
@@ -740,9 +738,9 @@ pub mod route_4 {
                     let v7 = pavex::request::body::errors::ExtractBufferedBodyError::into_response(
                         &v6,
                     );
-                    <pavex::response::Response<
-                        http_body_util::Full<bytes::Bytes>,
-                    > as pavex::response::IntoResponse>::into_response(v7)
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v7,
+                    )
                 };
             }
         };
@@ -754,9 +752,9 @@ pub mod route_4 {
                     let v9 = pavex::request::body::errors::ExtractJsonBodyError::into_response(
                         &v8,
                     );
-                    <pavex::response::Response<
-                        http_body_util::Full<bytes::Bytes>,
-                    > as pavex::response::IntoResponse>::into_response(v9)
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v9,
+                    )
                 };
             }
         };
@@ -768,15 +766,13 @@ pub mod route_4 {
                     let v11 = conduit_core::routes::users::LoginError::into_response(
                         &v10,
                     );
-                    <pavex::response::Response<
-                        http_body_util::Full<bytes::Bytes>,
-                    > as pavex::response::IntoResponse>::into_response(v11)
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v11,
+                    )
                 };
             }
         };
-        <pavex::response::Response<
-            http_body_util::Full<bytes::Bytes>,
-        > as pavex::response::IntoResponse>::into_response(v10)
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v10)
     }
     pub struct Next0<'a, 'b, 'c, T>
     where
@@ -865,9 +861,9 @@ pub mod route_6 {
                     let v5 = pavex::request::body::errors::ExtractBufferedBodyError::into_response(
                         &v4,
                     );
-                    <pavex::response::Response<
-                        http_body_util::Full<bytes::Bytes>,
-                    > as pavex::response::IntoResponse>::into_response(v5)
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v5,
+                    )
                 };
             }
         };
@@ -879,9 +875,9 @@ pub mod route_6 {
                     let v7 = pavex::request::body::errors::ExtractJsonBodyError::into_response(
                         &v6,
                     );
-                    <pavex::response::Response<
-                        http_body_util::Full<bytes::Bytes>,
-                    > as pavex::response::IntoResponse>::into_response(v7)
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v7,
+                    )
                 };
             }
         };
@@ -935,9 +931,9 @@ pub mod route_7 {
                     let v3 = pavex::request::route::errors::ExtractRouteParamsError::into_response(
                         &v2,
                     );
-                    <pavex::response::Response<
-                        http_body_util::Full<bytes::Bytes>,
-                    > as pavex::response::IntoResponse>::into_response(v3)
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v3,
+                    )
                 };
             }
         };
@@ -987,9 +983,9 @@ pub mod route_8 {
                     let v3 = pavex::request::route::errors::ExtractRouteParamsError::into_response(
                         &v2,
                     );
-                    <pavex::response::Response<
-                        http_body_util::Full<bytes::Bytes>,
-                    > as pavex::response::IntoResponse>::into_response(v3)
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v3,
+                    )
                 };
             }
         };
@@ -1039,9 +1035,9 @@ pub mod route_9 {
                     let v3 = pavex::request::route::errors::ExtractRouteParamsError::into_response(
                         &v2,
                     );
-                    <pavex::response::Response<
-                        http_body_util::Full<bytes::Bytes>,
-                    > as pavex::response::IntoResponse>::into_response(v3)
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v3,
+                    )
                 };
             }
         };
@@ -1088,9 +1084,9 @@ pub mod route_10 {
                     let v3 = pavex::request::query::errors::ExtractQueryParamsError::into_response(
                         &v2,
                     );
-                    <pavex::response::Response<
-                        http_body_util::Full<bytes::Bytes>,
-                    > as pavex::response::IntoResponse>::into_response(v3)
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v3,
+                    )
                 };
             }
         };
@@ -1143,9 +1139,9 @@ pub mod route_11 {
                     let v5 = pavex::request::body::errors::ExtractBufferedBodyError::into_response(
                         &v4,
                     );
-                    <pavex::response::Response<
-                        http_body_util::Full<bytes::Bytes>,
-                    > as pavex::response::IntoResponse>::into_response(v5)
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v5,
+                    )
                 };
             }
         };
@@ -1157,9 +1153,9 @@ pub mod route_11 {
                     let v7 = pavex::request::body::errors::ExtractJsonBodyError::into_response(
                         &v6,
                     );
-                    <pavex::response::Response<
-                        http_body_util::Full<bytes::Bytes>,
-                    > as pavex::response::IntoResponse>::into_response(v7)
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v7,
+                    )
                 };
             }
         };
@@ -1210,9 +1206,9 @@ pub mod route_12 {
                     let v3 = pavex::request::query::errors::ExtractQueryParamsError::into_response(
                         &v2,
                     );
-                    <pavex::response::Response<
-                        http_body_util::Full<bytes::Bytes>,
-                    > as pavex::response::IntoResponse>::into_response(v3)
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v3,
+                    )
                 };
             }
         };
@@ -1262,9 +1258,9 @@ pub mod route_13 {
                     let v3 = pavex::request::route::errors::ExtractRouteParamsError::into_response(
                         &v2,
                     );
-                    <pavex::response::Response<
-                        http_body_util::Full<bytes::Bytes>,
-                    > as pavex::response::IntoResponse>::into_response(v3)
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v3,
+                    )
                 };
             }
         };
@@ -1314,9 +1310,9 @@ pub mod route_14 {
                     let v3 = pavex::request::route::errors::ExtractRouteParamsError::into_response(
                         &v2,
                     );
-                    <pavex::response::Response<
-                        http_body_util::Full<bytes::Bytes>,
-                    > as pavex::response::IntoResponse>::into_response(v3)
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v3,
+                    )
                 };
             }
         };
@@ -1372,9 +1368,9 @@ pub mod route_15 {
                     let v6 = pavex::request::body::errors::ExtractBufferedBodyError::into_response(
                         &v5,
                     );
-                    <pavex::response::Response<
-                        http_body_util::Full<bytes::Bytes>,
-                    > as pavex::response::IntoResponse>::into_response(v6)
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v6,
+                    )
                 };
             }
         };
@@ -1386,9 +1382,9 @@ pub mod route_15 {
                     let v8 = pavex::request::body::errors::ExtractJsonBodyError::into_response(
                         &v7,
                     );
-                    <pavex::response::Response<
-                        http_body_util::Full<bytes::Bytes>,
-                    > as pavex::response::IntoResponse>::into_response(v8)
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v8,
+                    )
                 };
             }
         };
@@ -1400,9 +1396,9 @@ pub mod route_15 {
                     let v10 = pavex::request::route::errors::ExtractRouteParamsError::into_response(
                         &v9,
                     );
-                    <pavex::response::Response<
-                        http_body_util::Full<bytes::Bytes>,
-                    > as pavex::response::IntoResponse>::into_response(v10)
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v10,
+                    )
                 };
             }
         };
@@ -1458,9 +1454,9 @@ pub mod route_16 {
                     let v3 = pavex::request::route::errors::ExtractRouteParamsError::into_response(
                         &v2,
                     );
-                    <pavex::response::Response<
-                        http_body_util::Full<bytes::Bytes>,
-                    > as pavex::response::IntoResponse>::into_response(v3)
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v3,
+                    )
                 };
             }
         };
@@ -1510,9 +1506,9 @@ pub mod route_17 {
                     let v3 = pavex::request::route::errors::ExtractRouteParamsError::into_response(
                         &v2,
                     );
-                    <pavex::response::Response<
-                        http_body_util::Full<bytes::Bytes>,
-                    > as pavex::response::IntoResponse>::into_response(v3)
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v3,
+                    )
                 };
             }
         };
@@ -1562,9 +1558,9 @@ pub mod route_18 {
                     let v3 = pavex::request::route::errors::ExtractRouteParamsError::into_response(
                         &v2,
                     );
-                    <pavex::response::Response<
-                        http_body_util::Full<bytes::Bytes>,
-                    > as pavex::response::IntoResponse>::into_response(v3)
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v3,
+                    )
                 };
             }
         };
@@ -1620,9 +1616,9 @@ pub mod route_19 {
                     let v6 = pavex::request::body::errors::ExtractBufferedBodyError::into_response(
                         &v5,
                     );
-                    <pavex::response::Response<
-                        http_body_util::Full<bytes::Bytes>,
-                    > as pavex::response::IntoResponse>::into_response(v6)
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v6,
+                    )
                 };
             }
         };
@@ -1634,9 +1630,9 @@ pub mod route_19 {
                     let v8 = pavex::request::body::errors::ExtractJsonBodyError::into_response(
                         &v7,
                     );
-                    <pavex::response::Response<
-                        http_body_util::Full<bytes::Bytes>,
-                    > as pavex::response::IntoResponse>::into_response(v8)
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v8,
+                    )
                 };
             }
         };
@@ -1648,9 +1644,9 @@ pub mod route_19 {
                     let v10 = pavex::request::route::errors::ExtractRouteParamsError::into_response(
                         &v9,
                     );
-                    <pavex::response::Response<
-                        http_body_util::Full<bytes::Bytes>,
-                    > as pavex::response::IntoResponse>::into_response(v10)
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v10,
+                    )
                 };
             }
         };
@@ -1706,9 +1702,9 @@ pub mod route_20 {
                     let v3 = pavex::request::route::errors::ExtractRouteParamsError::into_response(
                         &v2,
                     );
-                    <pavex::response::Response<
-                        http_body_util::Full<bytes::Bytes>,
-                    > as pavex::response::IntoResponse>::into_response(v3)
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v3,
+                    )
                 };
             }
         };

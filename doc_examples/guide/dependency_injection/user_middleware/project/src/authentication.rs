@@ -10,7 +10,7 @@ pub async fn reject_anonymous<C>(user: &User, next: Next<C>) -> Response
         C: IntoFuture<Output=Response>,
 {
     if let User::Anonymous = user {
-        return Response::unauthorized().box_body();
+        return Response::unauthorized();
     }
     next.into_future().await
 }
