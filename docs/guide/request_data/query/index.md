@@ -9,11 +9,11 @@ out of the raw query.
 
 ## Injection
 
-Inject [`RequestHead`][RequestHead] to access the raw query via its [`uri`][RequestHead::uri] field:
+Inject [`RequestHead`][RequestHead] to access the raw query via its [`uri`][RequestHead::target] field:
 
 --8<-- "doc_examples/guide/request_data/query/project-raw_query.snap"
 
 1. The query string is an optional component of the request target. It may not be there!
 
 [RequestHead]: ../../../api_reference/pavex/request/struct.RequestHead.html
-[RequestHead::uri]: ../../../api_reference/pavex/request/struct.RequestHead.html#structfield.uri
+[RequestHead::target]: ../../../api_reference/pavex/request/struct.RequestHead.html#structfield.target

@@ -20,7 +20,7 @@ e.g. `/foo/bar?baz=qux`.
 
 ## Injection
 
-Inject [`RequestHead`][RequestHead] to access the request target via its [`uri`][RequestHead::uri] field:
+Inject [`RequestHead`][RequestHead] to access the request target via its [`target`][RequestHead::target] field:
 
 --8<-- "doc_examples/guide/request_data/request_target/project-target.snap"
 
@@ -33,8 +33,8 @@ to perform more advanced processing—e.g. parsing query parameters or [route pa
 [^rfc]: [RFC 7230](https://datatracker.ietf.org/doc/html/rfc7230#section-5.3) allows two other formats of request target,
 authority form (e.g. `example.com:443`) and asterisk form (e.g. `*`).  
 For both alternative formats there is a canonical conversion into a URI (_effective request URI_). 
-Pavex takes care of the conversion automatically; you can access [`RequestHead::uri`][RequestHead::uri] 
+Pavex takes care of the conversion automatically; you can access [`RequestHead::target`][RequestHead::target] 
 without having to worry about it.
 
 [RequestHead]: ../../api_reference/pavex/request/struct.RequestHead.html
-[RequestHead::uri]: ../../api_reference/pavex/request/struct.RequestHead.html#structfield.uri
+[RequestHead::target]: ../../api_reference/pavex/request/struct.RequestHead.html#structfield.target

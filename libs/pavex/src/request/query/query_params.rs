@@ -180,7 +180,7 @@ impl<T> QueryParams<T> {
     where
         T: serde::Deserialize<'request>,
     {
-        let query = request_head.uri.query().unwrap_or_default();
+        let query = request_head.target.query().unwrap_or_default();
         parse(query).map(QueryParams)
     }
 }
