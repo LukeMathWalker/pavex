@@ -1,7 +1,7 @@
 # Welcome
 
 Hey there!  
-This is the documentation for **Pavex**, a framework for building APIs in **Rust**.
+This is the documentation for **Pavex**, a framework for building robust APIs in **Rust**.
 
 ## Getting Started
 
