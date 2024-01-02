@@ -127,7 +127,7 @@ to know more about the underlying mechanism.
 [^relationship]: [`RouteParams<T>`][RouteParams] is built on top of [`RawRouteParams`][RawRouteParams].
 
 [RequestHead]: ../../../api_reference/pavex/request/struct.RequestHead.html
-[RequestHead::uri]: ../../../api_reference/pavex/request/struct.RequestHead.html#structfield.uri
+[RequestHead::target]: ../../../api_reference/pavex/request/struct.RequestHead.html#structfield.target
 [RouteParams]: ../../../api_reference/pavex/request/route/struct.RouteParams.html
 [RouteParamsMacro]: ../../../api_reference/pavex/request/route/attr.RouteParams.html
 [serde::Deserialize]: https://docs.rs/serde/latest/serde/trait.Deserialize.html

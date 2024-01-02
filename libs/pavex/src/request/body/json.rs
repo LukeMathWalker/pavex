@@ -293,7 +293,7 @@ mod tests {
         let request_head = crate::request::RequestHead {
             headers,
             method: http::Method::GET,
-            uri: "/".parse().unwrap(),
+            target: "/".parse().unwrap(),
             version: http::Version::HTTP_11,
         };
         let body = serde_json::json!({

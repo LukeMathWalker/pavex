@@ -51,7 +51,7 @@ impl RootSpan {
             user_agent.original = %user_agent,
             http.response.status_code = tracing::field::Empty,
             http.route = %matched_route,
-            http.target = %request_head.uri.path_and_query().map(|p| p.as_str()).unwrap_or(""),
+            http.target = %request_head.target.path_and_query().map(|p| p.as_str()).unwrap_or(""),
         );
         Self(span)
     }
