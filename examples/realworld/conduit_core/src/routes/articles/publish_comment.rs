@@ -1,12 +1,12 @@
 use pavex::{
     http::StatusCode,
-    request::{body::JsonBody, route::RouteParams},
+    request::{body::JsonBody, path::PathParams},
 };
 
 use crate::schemas::Comment;
 
 #[derive(Debug)]
-#[RouteParams]
+#[PathParams]
 pub struct PublishCommentRoute {
     pub slug: String,
 }
@@ -30,7 +30,7 @@ pub struct PublishCommentResponse {
 }
 
 pub fn publish_comment(
-    _route: RouteParams<PublishCommentRoute>,
+    _route: PathParams<PublishCommentRoute>,
     _body: JsonBody<PublishCommentBody>,
 ) -> StatusCode {
     StatusCode::OK

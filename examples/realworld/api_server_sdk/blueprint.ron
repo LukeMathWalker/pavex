@@ -35,7 +35,7 @@
             constructor: (
                 callable: (
                     registered_at: "conduit_core",
-                    import_path: "pavex::request::route::RouteParams::extract",
+                    import_path: "pavex::request::path::PathParams::extract",
                 ),
                 location: (
                     line: 42,
@@ -48,7 +48,7 @@
             error_handler: Some((
                 callable: (
                     registered_at: "conduit_core",
-                    import_path: "pavex::request::route::errors::ExtractRouteParamsError::into_response",
+                    import_path: "pavex::request::path::errors::ExtractPathParamsError::into_response",
                 ),
                 location: (
                     line: 46,

@@ -1,9 +1,9 @@
-use pavex::{http::StatusCode, request::route::RouteParams};
+use pavex::{http::StatusCode, request::path::PathParams};
 
 use crate::schemas::Article;
 
 #[derive(Debug)]
-#[RouteParams]
+#[PathParams]
 pub struct FavoriteArticle {
     pub slug: String,
 }
@@ -14,6 +14,6 @@ pub struct FavoriteArticleResponse {
     pub article: Article,
 }
 
-pub fn favorite_article(_params: RouteParams<FavoriteArticle>) -> StatusCode {
+pub fn favorite_article(_params: PathParams<FavoriteArticle>) -> StatusCode {
     StatusCode::OK
 }

@@ -1,9 +1,9 @@
-use pavex::{http::StatusCode, request::route::RouteParams};
+use pavex::{http::StatusCode, request::path::PathParams};
 
 use crate::schemas::Comment;
 
 #[derive(Debug)]
-#[RouteParams]
+#[PathParams]
 pub struct ListComments {
     pub slug: String,
 }
@@ -14,6 +14,6 @@ pub struct ListCommentsResponse {
     pub comments: Vec<Comment>,
 }
 
-pub fn list_comments(_route: RouteParams<ListComments>) -> StatusCode {
+pub fn list_comments(_route: PathParams<ListComments>) -> StatusCode {
     StatusCode::OK
 }

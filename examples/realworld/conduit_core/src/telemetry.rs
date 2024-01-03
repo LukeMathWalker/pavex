@@ -1,6 +1,6 @@
 use pavex::http::Version;
 use pavex::middleware::Next;
-use pavex::request::route::MatchedRouteTemplate;
+use pavex::request::path::MatchedPathPattern;
 use pavex::request::RequestHead;
 use pavex::response::Response;
 use std::borrow::Cow;
@@ -24,7 +24,7 @@ impl RootSpan {
     ///
     /// We follow OpenTelemetry's HTTP semantic conventions as closely as
     /// possible for field naming.
-    pub fn new(request_head: &RequestHead, matched_route: MatchedRouteTemplate) -> Self {
+    pub fn new(request_head: &RequestHead, matched_route: MatchedPathPattern) -> Self {
         let user_agent = request_head
             .headers
             .get("User-Agent")

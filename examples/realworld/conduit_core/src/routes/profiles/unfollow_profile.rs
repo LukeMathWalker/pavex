@@ -1,8 +1,8 @@
-use pavex::{http::StatusCode, request::route::RouteParams};
+use pavex::{http::StatusCode, request::path::PathParams};
 
 use crate::schemas::Profile;
 
-#[RouteParams]
+#[PathParams]
 #[derive(Debug)]
 pub struct UnfollowProfile {
     pub username: String,
@@ -14,6 +14,6 @@ pub struct UnfollowProfileResponse {
     pub profile: Profile,
 }
 
-pub fn unfollow_profile(_params: RouteParams<UnfollowProfile>) -> StatusCode {
+pub fn unfollow_profile(_params: PathParams<UnfollowProfile>) -> StatusCode {
     StatusCode::OK
 }

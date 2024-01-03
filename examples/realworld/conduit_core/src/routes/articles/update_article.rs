@@ -1,6 +1,6 @@
 use pavex::{
     http::StatusCode,
-    request::{body::JsonBody, route::RouteParams},
+    request::{body::JsonBody, path::PathParams},
 };
 
 use crate::schemas::Article;
@@ -14,7 +14,7 @@ pub struct UpdateArticleBody {
 }
 
 #[derive(Debug)]
-#[RouteParams]
+#[PathParams]
 pub struct UpdateArticleRoute {
     pub slug: String,
 }
@@ -26,7 +26,7 @@ pub struct UpdateArticleResponse {
 }
 
 pub fn update_article(
-    _params: RouteParams<UpdateArticleRoute>,
+    _params: PathParams<UpdateArticleRoute>,
     _body: JsonBody<UpdateArticleBody>,
 ) -> StatusCode {
     StatusCode::OK
