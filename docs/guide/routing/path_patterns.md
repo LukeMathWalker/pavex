@@ -53,4 +53,4 @@ You can access their values from your request handler or from middlewares.
 Check out the ["Path parameters"](../request_data/path/path_parameters.md) guide for more details.
 
 
-[PathParams]: ../../api_reference/pavex/request/route/struct.PathParams.html
+[PathParams]: ../../api_reference/pavex/request/path/struct.PathParams.html

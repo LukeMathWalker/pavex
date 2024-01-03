@@ -114,7 +114,7 @@ Parameter values are borrowed from the [raw path](index.md) of the incoming requ
 You might have to allocate when you decode [percent-encoded parameters](#percent-encoding).
 
 [^why-struct]: Pavex made a deliberate choice of _not_ supporting tuples or other sequence-like types for extracting path parameters.
-Check out [the API reference](../../../api_reference/pavex/request/route/struct.PathParams.html#unsupported-types)
+Check out [the API reference](../../../api_reference/pavex/request/path/struct.PathParams.html#unsupported-types)
 to learn more about the rationale behind this decision.
 
 [^wrong-name]: If a field name doesn't match a route parameter name, Pavex will detect it at compile time and return
@@ -128,9 +128,9 @@ to know more about the underlying mechanism.
 
 [RequestHead]: ../../../api_reference/pavex/request/struct.RequestHead.html
 [RequestHead::target]: ../../../api_reference/pavex/request/struct.RequestHead.html#structfield.target
-[PathParams]: ../../../api_reference/pavex/request/route/struct.PathParams.html
-[PathParamsMacro]: ../../../api_reference/pavex/request/route/attr.PathParams.html
+[PathParams]: ../../../api_reference/pavex/request/path/struct.PathParams.html
+[PathParamsMacro]: ../../../api_reference/pavex/request/path/attr.PathParams.html
 [serde::Deserialize]: https://docs.rs/serde/latest/serde/trait.Deserialize.html
 [StructuralDeserialize]: ../../../api_reference/pavex/serialization/trait.StructuralDeserialize.html
 [Cow]: https://doc.rust-lang.org/std/borrow/enum.Cow.html
-[RawPathParams]: ../../../api_reference/pavex/request/route/struct.RawPathParams.html
+[RawPathParams]: ../../../api_reference/pavex/request/path/struct.RawPathParams.html

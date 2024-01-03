@@ -26,7 +26,7 @@ You lose this flexibility with framework primitives: you can't customize how the
 That's why we try to keep their number to a minimum.
 
 [RequestHead]: ../../../api_reference/pavex/request/struct.RequestHead.html
-[PathParams]: ../../../api_reference/pavex/request/route/struct.PathParams.html
+[PathParams]: ../../../api_reference/pavex/request/path/struct.PathParams.html
 [AllowedMethods]: ../../../api_reference/pavex/router/enum.AllowedMethods.html
 [RawIncomingBody]: ../../../api_reference/pavex/request/body/struct.RawIncomingBody.html
 [JsonBody]: ../../../api_reference/pavex/request/body/struct.JsonBody.html

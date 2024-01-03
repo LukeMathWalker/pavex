@@ -107,8 +107,8 @@ Make sure that the project compiles successfully now.
 
 [Blueprint]: ../../api_reference/pavex/blueprint/struct.Blueprint.html
 
-[PathParams]: ../../api_reference/pavex/request/route/struct.PathParams.html
-[PathParams::register]: ../../api_reference/pavex/request/route/struct.PathParams.html#method.register
+[PathParams]: ../../api_reference/pavex/request/path/struct.PathParams.html
+[PathParams::register]: ../../api_reference/pavex/request/path/struct.PathParams.html#method.register
 
 [Lifecycle::Singleton]: ../../api_reference/pavex/blueprint/constructor/enum.Lifecycle.html#variant.Singleton
 

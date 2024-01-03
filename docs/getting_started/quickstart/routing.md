@@ -92,7 +92,7 @@ You should see `Hello, Ursula!` in your terminal if everything went well.
 
 [IntoResponse]: ../../api_reference/pavex/response/trait.IntoResponse.html
 
-[PathParams]: ../../api_reference/pavex/request/route/struct.PathParams.html
+[PathParams]: ../../api_reference/pavex/request/path/struct.PathParams.html
 
 [Response::ok]: ../../api_reference/pavex/response/struct.Response.html#method.ok
 
