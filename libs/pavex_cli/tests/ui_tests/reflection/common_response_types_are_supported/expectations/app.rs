@@ -37,7 +37,7 @@ async fn route_request(
     #[allow(unused)]
     let request_body = pavex::request::body::RawIncomingBody::from(request_body);
     let request_head: pavex::request::RequestHead = request_head.into();
-    let matched_route = match server_state.router.at(&request_head.uri.path()) {
+    let matched_route = match server_state.router.at(&request_head.target.path()) {
         Ok(m) => m,
         Err(_) => {
             let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter(
@@ -49,7 +49,7 @@ async fn route_request(
     };
     let route_id = matched_route.value;
     #[allow(unused)]
-    let url_params: pavex::request::route::RawRouteParams<'_, '_> = matched_route
+    let url_params: pavex::request::path::RawPathParams<'_, '_> = matched_route
         .params
         .into();
     match route_id {

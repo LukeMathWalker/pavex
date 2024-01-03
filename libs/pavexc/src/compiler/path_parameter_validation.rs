@@ -1,5 +1,3 @@
-use std::fmt::Write;
-
 use anyhow::anyhow;
 use guppy::graph::PackageGraph;
 use indexmap::{IndexMap, IndexSet};
@@ -26,11 +24,11 @@ use crate::utils::comma_separated_list;
 
 use super::traits::assert_trait_is_implemented;
 
-/// For each handler, check if route parameters are extracted from the URL of the incoming request.
-/// If so, check that the type of the route parameter is a struct with named fields and
-/// that each named field maps to a route parameter for the corresponding handler.
-#[tracing::instrument(name = "Verify route parameters", skip_all)]
-pub(crate) fn verify_route_parameters(
+/// For each handler, check if path parameters are extracted from the URL of the incoming request.
+/// If so, check that the type of the path parameter is a struct with named fields and
+/// that each named field maps to a path parameter for the corresponding handler.
+#[tracing::instrument(name = "Verify path parameters", skip_all)]
+pub(crate) fn verify_path_parameters(
     router: &Router,
     handler_id2pipeline: &IndexMap<ComponentId, RequestHandlerPipeline>,
     computation_db: &ComputationDb,
@@ -53,10 +51,10 @@ pub(crate) fn verify_route_parameters(
                 continue;
             };
 
-            // If `RouteParams` is used, it will appear as a `Compute` node in *at most* one of the
+            // If `PathParams` is used, it will appear as a `Compute` node in *at most* one of the
             // call graphs in the processing pipeline for the handler, since it's a `RequestScoped`
             // component.
-            let Some((graph, ok_route_params_node_id, ty_)) =
+            let Some((graph, ok_path_params_node_id, ty_)) =
                 pipeline.graph_iter().find_map(|graph| {
                     let graph = &graph.call_graph;
                     graph
@@ -80,7 +78,7 @@ pub(crate) fn verify_route_parameters(
                             let ResolvedType::ResolvedPath(ty_) = &m.output else {
                                 return None;
                             };
-                            if ty_.base_type == vec!["pavex", "request", "route", "RouteParams"] {
+                            if ty_.base_type == vec!["pavex", "request", "path", "PathParams"] {
                                 Some((node_id, ty_.clone()))
                             } else {
                                 None
@@ -102,7 +100,7 @@ pub(crate) fn verify_route_parameters(
                 krate_collection,
                 diagnostics,
                 graph,
-                ok_route_params_node_id,
+                ok_path_params_node_id,
                 extracted_type,
             ) else {
                 continue;
@@ -111,7 +109,7 @@ pub(crate) fn verify_route_parameters(
                 unreachable!()
             };
 
-            // We only want to check alignment between struct fields and the route parameters in the
+            // We only want to check alignment between struct fields and the path parameters in the
             // template if the struct implements `StructuralDeserialize`, our marker trait that stands
             // for "this struct implements serde::Deserialize using a #[derive(serde::Deserialize)] with
             // no customizations (e.g. renames)".
@@ -125,7 +123,7 @@ pub(crate) fn verify_route_parameters(
                 continue;
             }
 
-            let route_parameter_names = path
+            let path_parameter_names = path
                 .split('/')
                 .filter_map(|s| s.strip_prefix(':').or_else(|| s.strip_prefix('*')))
                 .collect::<IndexSet<_>>();
@@ -151,21 +149,21 @@ pub(crate) fn verify_route_parameters(
                 struct_field_names
             };
 
-            let non_existing_route_parameters = struct_field_names
+            let non_existing_path_parameters = struct_field_names
                 .into_iter()
-                .filter(|f| !route_parameter_names.contains(f.as_str()))
+                .filter(|f| !path_parameter_names.contains(f.as_str()))
                 .collect::<IndexSet<_>>();
 
-            if !non_existing_route_parameters.is_empty() {
-                report_non_existing_route_parameters(
+            if !non_existing_path_parameters.is_empty() {
+                report_non_existing_path_parameters(
                     component_db,
                     package_graph,
                     diagnostics,
                     path,
                     graph,
-                    ok_route_params_node_id,
-                    route_parameter_names,
-                    non_existing_route_parameters,
+                    ok_path_params_node_id,
+                    path_parameter_names,
+                    non_existing_path_parameters,
                     extracted_type,
                 )
             }
@@ -173,25 +171,24 @@ pub(crate) fn verify_route_parameters(
     }
 }
 
-/// Report an error on each compute node that consumes the `RouteParams` extractor
-/// while trying to extract one or more route parameters that are not present in
-/// the respective route template.
-fn report_non_existing_route_parameters(
+/// Report an error on each compute node that consumes the `PathParams` extractor
+/// while trying to extract one or more path parameters that are not present in
+/// the respective path pattern.
+fn report_non_existing_path_parameters(
     component_db: &ComponentDb,
     package_graph: &PackageGraph,
     diagnostics: &mut Vec<Report>,
     path: &str,
     call_graph: &RawCallGraph,
-    ok_route_params_node_id: NodeIndex,
-    route_parameter_names: IndexSet<&str>,
-    non_existing_route_parameters: IndexSet<String>,
+    ok_path_params_node_id: NodeIndex,
+    path_parameter_names: IndexSet<&str>,
+    non_existing_path_parameters: IndexSet<String>,
     extracted_type: &ResolvedType,
 ) {
-    assert!(!non_existing_route_parameters.is_empty());
-    // Find the compute nodes that consume the `RouteParams` extractor and report
+    assert!(!non_existing_path_parameters.is_empty());
+    // Find the compute nodes that consume the `PathParams` extractor and report
     // an error on each of them.
-    let consuming_ids =
-        route_params_consumer_ids(component_db, call_graph, ok_route_params_node_id);
+    let consuming_ids = path_params_consumer_ids(component_db, call_graph, ok_path_params_node_id);
     for user_component_id in consuming_ids {
         let raw_identifiers = component_db
             .user_component_db()
@@ -208,34 +205,36 @@ fn report_non_existing_route_parameters(
             }
         };
         let source_span = diagnostic::get_f_macro_invocation_span(&source, location);
-        if route_parameter_names.is_empty() {
+        if path_parameter_names.is_empty() {
             let error = anyhow!(
-                    "`{}` is trying to extract route parameters using `RouteParams<{extracted_type:?}>`.\n\
-                    But there are no route parameters in `{path}`, the corresponding route template!",
+                    "`{}` is trying to extract path parameters using `PathParams<{extracted_type:?}>`.\n\
+                    But there are no path parameters in `{path}`, the corresponding path pattern!",
                     raw_identifiers.fully_qualified_path().join("::"),
                 );
             let d = CompilerDiagnostic::builder(source, error)
                 .optional_label(source_span.labeled(format!(
-                    "The {callable_type} asking for `RouteParams<{extracted_type:?}>`"
+                    "The {callable_type} asking for `PathParams<{extracted_type:?}>`"
                 )))
                 .help(
-                    "Stop trying to extract route parameters, or add them to the route template!"
+                    "Stop trying to extract path parameters, or add them to the path pattern!"
                         .into(),
                 )
                 .build();
             diagnostics.push(d.into());
         } else {
-            let missing_msg = if non_existing_route_parameters.len() == 1 {
-                let name = non_existing_route_parameters.first().unwrap();
+            let missing_msg = if non_existing_path_parameters.len() == 1 {
+                let name = non_existing_path_parameters.first().unwrap();
                 format!(
-                    "There is no route parameter named `{name}`, but there is a struct field named `{name}` \
+                    "There is no path parameter named `{name}`, but there is a struct field named `{name}` \
                     in `{extracted_type:?}`"
                 )
             } else {
-                let mut msg = "There are no route parameters named ".to_string();
+                use std::fmt::Write;
+
+                let mut msg = "There are no path parameters named ".to_string();
                 comma_separated_list(
                     &mut msg,
-                    non_existing_route_parameters.iter(),
+                    non_existing_path_parameters.iter(),
                     |p| format!("`{p}`"),
                     "or",
                 )
@@ -247,24 +246,23 @@ fn report_non_existing_route_parameters(
                 .unwrap();
                 msg
             };
-            let route_parameters = route_parameter_names
+            let path_parameters = path_parameter_names
                 .iter()
                 .map(|p| format!("- `{}`", p))
                 .join("\n");
             let error = anyhow!(
-                    "`{}` is trying to extract route parameters using `RouteParams<{extracted_type:?}>`.\n\
+                    "`{}` is trying to extract path parameters using `PathParams<{extracted_type:?}>`.\n\
                     Every struct field in `{extracted_type:?}` must be named after one of the route \
-                    parameters that appear in `{path}`:\n{route_parameters}\n\n\
+                    parameters that appear in `{path}`:\n{path_parameters}\n\n\
                     {missing_msg}. This is going to cause a runtime error!",
                     raw_identifiers.fully_qualified_path().join("::"),
                 );
             let d = CompilerDiagnostic::builder(source, error)
                 .optional_label(source_span.labeled(format!(
-                    "The {callable_type} asking for `RouteParams<{extracted_type:?}>`"
+                    "The {callable_type} asking for `PathParams<{extracted_type:?}>`"
                 )))
                 .help(
-                    "Remove or rename the fields that do not map to a valid route parameter."
-                        .into(),
+                    "Remove or rename the fields that do not map to a valid path parameter.".into(),
                 )
                 .build();
             diagnostics.push(d.into());
@@ -272,17 +270,17 @@ fn report_non_existing_route_parameters(
     }
 }
 
-/// Checks that the type of the route parameter is a struct with named fields.
+/// Checks that the type of the path parameter is a struct with named fields.
 /// If it is, returns the rustdoc item for the type.  
 /// If it isn't, reports an error diagnostic on each compute node that consumes the
-/// `RouteParams` extractor.
+/// `PathParams` extractor.
 fn must_be_a_plain_struct(
     component_db: &ComponentDb,
     package_graph: &PackageGraph,
     krate_collection: &CrateCollection,
     diagnostics: &mut Vec<Report>,
     call_graph: &RawCallGraph,
-    ok_route_params_node_id: NodeIndex,
+    ok_path_params_node_id: NodeIndex,
     extracted_type: &ResolvedType,
 ) -> Result<rustdoc_types::Item, ()> {
     let error_suffix = match extracted_type {
@@ -316,10 +314,9 @@ fn must_be_a_plain_struct(
         }
     };
 
-    // Find the compute nodes that consume the `RouteParams` extractor and report
+    // Find the compute nodes that consume the `PathParams` extractor and report
     // an error on each of them.
-    let consuming_ids =
-        route_params_consumer_ids(component_db, call_graph, ok_route_params_node_id);
+    let consuming_ids = path_params_consumer_ids(component_db, call_graph, ok_path_params_node_id);
 
     for user_component_id in consuming_ids {
         let raw_identifiers = component_db
@@ -338,21 +335,21 @@ fn must_be_a_plain_struct(
         };
         let source_span = diagnostic::get_f_macro_invocation_span(&source, location);
         let error = anyhow!(
-            "Route parameters must be extracted using a plain struct with named fields, \
-            where the name of each field matches one of the route parameters specified \
+            "Path parameters must be extracted using a plain struct with named fields, \
+            where the name of each field matches one of the path parameters specified \
             in the route for the respective request handler.\n\
-            `{}` is trying to extract `RouteParams<{extracted_type:?}>`, but \
+            `{}` is trying to extract `PathParams<{extracted_type:?}>`, but \
             {error_suffix}, not a plain struct type. I don't support this: the extraction would \
             fail at runtime, when trying to process an incoming request.",
             raw_identifiers.fully_qualified_path().join("::")
         );
         let d = CompilerDiagnostic::builder(source, error)
             .optional_label(source_span.labeled(format!(
-                "The {callable_type} asking for `RouteParams<{extracted_type:?}>`"
+                "The {callable_type} asking for `PathParams<{extracted_type:?}>`"
             )))
             .help(
-                "Use a plain struct with named fields to extract route parameters.\n\
-                Check out `RouteParams`' documentation for all the details!"
+                "Use a plain struct with named fields to extract path parameters.\n\
+                Check out `PathParams`' documentation for all the details!"
                     .into(),
             )
             .build();
@@ -361,16 +358,16 @@ fn must_be_a_plain_struct(
     Err(())
 }
 
-/// Return the set of user component ids that consume a certain instance of the `RouteParams` extractor
+/// Return the set of user component ids that consume a certain instance of the `PathParams` extractor
 /// as input parameter.
-fn route_params_consumer_ids(
+fn path_params_consumer_ids(
     component_db: &ComponentDb,
     call_graph: &RawCallGraph,
-    ok_route_params_node_id: NodeIndex,
+    ok_path_params_node_id: NodeIndex,
 ) -> IndexSet<UserComponentId> {
     let mut consumer_ids = IndexSet::new();
     let mut descendant_ids = call_graph
-        .neighbors_directed(ok_route_params_node_id, Direction::Outgoing)
+        .neighbors_directed(ok_path_params_node_id, Direction::Outgoing)
         .collect::<IndexSet<_>>();
     while let Some(descendant_id) = descendant_ids.pop() {
         let descendant_node = &call_graph[descendant_id];

@@ -2,6 +2,6 @@
 pub use request_head::RequestHead;
 
 pub mod body;
+pub mod path;
 pub mod query;
 mod request_head;
-pub mod route;

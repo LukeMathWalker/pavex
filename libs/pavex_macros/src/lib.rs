@@ -6,7 +6,7 @@ use syn::{parse_macro_input, Attribute, Data, DeriveInput, Error, GenericParam, 
 
 #[allow(non_snake_case)]
 #[proc_macro_attribute]
-pub fn RouteParams(_metadata: TokenStream, input: TokenStream) -> TokenStream {
+pub fn PathParams(_metadata: TokenStream, input: TokenStream) -> TokenStream {
     let mut ast = parse_macro_input!(input as DeriveInput);
     if let Err(mut e) = reject_serde_attributes(&ast) {
         // We emit both the error AND the original struct.
@@ -86,12 +86,12 @@ fn reject_serde_attributes(ast: &DeriveInput) -> Result<(), TokenStream> {
 /// because we rely on `serde`'s default behaviour to determine, at code-generartion time,
 /// if the route params can be deserialized from the URL of the incoming request.
 fn reject_serde_attribute(attr: &Attribute) -> Result<(), TokenStream> {
-    let err_msg = "`RouteParams` does not support `serde` attributes on the top-level struct or any of its fields.\n\n\
-      `RouteParams` takes care of deriving `serde::Serialize` and `serde::Deserialize` for your struct, using the default \
+    let err_msg = "`PathParams` does not support `serde` attributes on the top-level struct or any of its fields.\n\n\
+      `PathParams` takes care of deriving `serde::Serialize` and `serde::Deserialize` for your struct, using the default \
        configuration. This allow Pavex to determine, at code-generation time, if the route params can \
        be successfully extracted from the URL of incoming requests for the relevant routes (e.g. do you \
        have a named field that doesn't map to any of the registered route parameters?).\n\n\
-       If the default `serde` configuration won't work for your case, you should not derive `RouteParams` and \
+       If the default `serde` configuration won't work for your case, you should not derive `PathParams` and \
        opt instead for implementing `serde::Serialize` and `serde::Deserialize` directly for your struct (either \
        manually or using a derive with custom attributes).\nKeep in mind that by going down this route \
        you give up compile-time checking of the route parameters!";

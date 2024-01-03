@@ -14,7 +14,7 @@ need-to-know basis.
 
 [IntoResponse]: ../../api_reference/pavex/response/trait.IntoResponse.html
 
-[RouteParams]: ../../api_reference/pavex/request/route/struct.RouteParams.html
+[PathParams]: ../../api_reference/pavex/request/route/struct.PathParams.html
 
 [Response::ok]: ../../api_reference/pavex/response/struct.Response.html#method.ok
 

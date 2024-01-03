@@ -1,63 +1,63 @@
 use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
-use pavex::request::route::RouteParams;
 use pavex::f;
 use pavex::http::StatusCode;
+use pavex::request::path::PathParams;
 
-pub fn tuple(params: RouteParams<(u32, u32)>) -> StatusCode {
+pub fn tuple(params: PathParams<(u32, u32)>) -> StatusCode {
     todo!()
 }
 
-pub fn primitive(params: RouteParams<u32>) -> StatusCode {
+pub fn primitive(params: PathParams<u32>) -> StatusCode {
     todo!()
 }
 
-pub fn slice_ref(params: RouteParams<&[u32]>) -> StatusCode {
+pub fn slice_ref(params: PathParams<&[u32]>) -> StatusCode {
     todo!()
 }
 
-#[RouteParams]
+#[PathParams]
 pub struct MyStruct {
     x: u32,
     y: u32,
 }
 
-pub fn reference<T>(params: RouteParams<&T>) -> StatusCode {
+pub fn reference<T>(params: PathParams<&T>) -> StatusCode {
     todo!()
 }
 
-#[RouteParams]
+#[PathParams]
 pub enum MyEnum {
     A(u32),
     B,
     C { x: u32, y: u32 },
 }
 
-pub fn enum_(params: RouteParams<MyEnum>) -> StatusCode {
+pub fn enum_(params: PathParams<MyEnum>) -> StatusCode {
     todo!()
 }
 
-#[RouteParams]
+#[PathParams]
 pub struct UnitStruct;
 
-pub fn unit_struct(params: RouteParams<UnitStruct>) -> StatusCode {
+pub fn unit_struct(params: PathParams<UnitStruct>) -> StatusCode {
     todo!()
 }
 
-#[RouteParams]
+#[PathParams]
 pub struct TupleStruct(u32, u32);
 
-pub fn tuple_struct(params: RouteParams<TupleStruct>) -> StatusCode {
+pub fn tuple_struct(params: PathParams<TupleStruct>) -> StatusCode {
     todo!()
 }
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.constructor(
-        f!(pavex::request::route::RouteParams::extract),
+        f!(pavex::request::path::PathParams::extract),
         Lifecycle::RequestScoped,
     )
     .error_handler(f!(
-        pavex::request::route::errors::ExtractRouteParamsError::into_response
+        pavex::request::path::errors::ExtractPathParamsError::into_response
     ));
     bp.route(GET, "/a/:x", f!(crate::primitive));
     bp.route(GET, "/b/:x/:y", f!(crate::tuple));

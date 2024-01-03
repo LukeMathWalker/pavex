@@ -36,7 +36,7 @@ use serde::{
     forward_to_deserialize_any, Deserializer,
 };
 
-use crate::request::route::errors::{ErrorKind, PathDeserializationError};
+use crate::request::path::errors::{ErrorKind, PathDeserializationError};
 
 macro_rules! unsupported_type {
     ($trait_fn:ident) => {
@@ -734,7 +734,7 @@ mod tests {
             vec![("a", "c"), ("a", "B")],
             Vec<MyEnum>,
             ErrorKind::UnsupportedType {
-                name: "alloc::vec::Vec<pavex::request::route::deserializer::tests::MyEnum>"
+                name: "alloc::vec::Vec<pavex::request::path::deserializer::tests::MyEnum>"
             }
         );
 
@@ -745,7 +745,7 @@ mod tests {
             TupleStruct,
             ErrorKind::UnsupportedType {
                 name:
-                    "pavex::request::route::deserializer::tests::test_unsupported_seq::TupleStruct"
+                    "pavex::request::path::deserializer::tests::test_unsupported_seq::TupleStruct"
             }
         );
 

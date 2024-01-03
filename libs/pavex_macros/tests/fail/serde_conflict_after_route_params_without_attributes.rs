@@ -1,4 +1,4 @@
-#[pavex_macros::RouteParams]
+#[pavex_macros::PathParams]
 #[derive(serde::Deserialize)]
 struct MyStruct {
     field1: i32,

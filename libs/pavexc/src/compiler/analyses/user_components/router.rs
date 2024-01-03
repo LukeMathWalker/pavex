@@ -806,10 +806,10 @@ fn push_matchit_diagnostic(
             anyhow!("This route path, `{}`, conflicts with the path of another route you already registered, `{}`.", path, with)
         }
         InsertError::TooManyParams => {
-            anyhow!("You can only register one route parameter per each path segment.")
+            anyhow!("You can only register one path parameter per each path segment.")
         }
         InsertError::UnnamedParam => {
-            anyhow!("All route parameters must be named. You can't use anonymous parameters like `:` or `*`.")
+            anyhow!("All path parameters must be named. You can't use anonymous parameters like `:` or `*`.")
         }
         InsertError::InvalidCatchAll => {
             anyhow!("You can only use catch-all parameters at the end of a route path.")

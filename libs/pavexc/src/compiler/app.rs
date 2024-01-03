@@ -30,7 +30,7 @@ use crate::compiler::generated_app::GeneratedApp;
 use crate::compiler::resolvers::CallableResolutionError;
 use crate::compiler::traits::{assert_trait_is_implemented, MissingTraitImplementationError};
 use crate::compiler::utils::process_framework_path;
-use crate::compiler::{codegen, route_parameter_validation};
+use crate::compiler::{codegen, path_parameter_validation};
 use crate::diagnostic;
 use crate::diagnostic::{CompilerDiagnostic, LocationExt, SourceSpanExt};
 use crate::language::ResolvedType;
@@ -129,7 +129,7 @@ impl App {
             }
             handler_pipelines
         };
-        route_parameter_validation::verify_route_parameters(
+        path_parameter_validation::verify_path_parameters(
             &router,
             &handler_id2pipeline,
             &computation_db,

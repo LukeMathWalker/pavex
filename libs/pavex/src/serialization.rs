@@ -2,7 +2,7 @@
 
 /// A marker trait for types that perform deserialization using the strategy provided "out-of-the-box" by `serde`.
 ///
-/// All types that derive `RouteParams` automatically implement this trait.  
+/// All types that derive `PathParams` automatically implement this trait.  
 /// It is **discouraged** to manually implement this trait for one of your types—and you should
 /// have no need to do so.
 ///

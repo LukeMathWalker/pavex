@@ -10,32 +10,32 @@ it knows how to construct them.
 
 ## Constructor registration
 
-Let's zoom in on [`RouteParams`][RouteParams]: how does the framework know how to construct it?  
+Let's zoom in on [`PathParams`][PathParams]: how does the framework know how to construct it?  
 You need to go back to the [`Blueprint`][Blueprint] to find out:
 
 --8<-- "doc_examples/quickstart/04-register_common_invocation.snap"
 
 The `register_common_constructors` function takes care of registering constructors for a set of types that
 are defined in the `pavex` crate itself and commonly used in Pavex applications.
-If you check out its definition, you'll see that it registers a constructor for [`RouteParams`][RouteParams]:
+If you check out its definition, you'll see that it registers a constructor for [`PathParams`][PathParams]:
 
 --8<-- "doc_examples/quickstart/04-route_params_constructor.snap"
 
-Inside [`RouteParams::register`][RouteParams::register] you'll find:
+Inside [`PathParams::register`][PathParams::register] you'll find:
 
 ```rust
 use crate::blueprint::constructor::{Constructor, Lifecycle};
 use crate::blueprint::Blueprint;
 use crate::f;
 
-impl RouteParams<()> {
+impl PathParams<()> {
     pub fn register(bp: &mut Blueprint) -> Constructor {
         bp.constructor(
-            f!(pavex::request::route::RouteParams::extract),
+            f!(pavex::request::path::PathParams::extract),
             Lifecycle::RequestScoped,
         )
         .error_handler(f!(
-            pavex::request::route::errors::ExtractRouteParamsError::into_response
+            pavex::request::path::errors::ExtractPathParamsError::into_response
         ))
     }
 }
@@ -107,8 +107,8 @@ Make sure that the project compiles successfully now.
 
 [Blueprint]: ../../api_reference/pavex/blueprint/struct.Blueprint.html
 
-[RouteParams]: ../../api_reference/pavex/request/route/struct.RouteParams.html
-[RouteParams::register]: ../../api_reference/pavex/request/route/struct.RouteParams.html#method.register
+[PathParams]: ../../api_reference/pavex/request/route/struct.PathParams.html
+[PathParams::register]: ../../api_reference/pavex/request/route/struct.PathParams.html#method.register
 
 [Lifecycle::Singleton]: ../../api_reference/pavex/blueprint/constructor/enum.Lifecycle.html#variant.Singleton
 
