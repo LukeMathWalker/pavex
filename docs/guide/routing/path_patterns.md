@@ -12,7 +12,7 @@ The simplest case is a static path, a path pattern that matches a single, fixed 
 
 It will only match requests with a path that is **exactly equal** to `/greet`.
 
-## Route parameters
+## Path parameters
 
 Static paths are fairly limited. The real power of path patterns comes from their ability to match **dynamic paths**:
 
@@ -24,7 +24,7 @@ The `:name` segment is a **route parameter**.
 It matches everything after `/greet/`, up to the next `/` or the end of the path.  
 It matches, for example, `/greet/Ursula` and `/greet/John`. It won't match `/greet/` though!
 
-You can have multiple route parameters in a single path pattern, as long as they are separated by a static segment:
+You can have multiple path parameters in a single path pattern, as long as they are separated by a static segment:
 
 ```rust hl_lines="8"
 --8<-- "doc_examples/guide/routing/path_patterns/multi_named_parameter/src/blueprint.rs"
@@ -32,7 +32,7 @@ You can have multiple route parameters in a single path pattern, as long as they
 
 ## Catch-all parameters
 
-Route parameters prefixed with a `:` only match a single path segment—they stop at the next `/` or at the end of the path.  
+Path parameters prefixed with a `:` only match a single path segment—they stop at the next `/` or at the end of the path.  
 You can use the `*` character to craft a **catch-all** route parameter. It matches the rest of the path, regardless of its contents:
 
 ```rust hl_lines="6"
@@ -45,12 +45,12 @@ You can use the `*` character to craft a **catch-all** route parameter. It match
 To avoid ambiguity,
 you can have **at most one catch-all parameter per path pattern** and it must be **at the end of the path pattern**.
 
-## Accessing route parameters
+## Accessing path parameters
 
-Route parameters are not discarded after a request has been routed.
+Path parameters are not discarded after a request has been routed.
 You can access their values from your request handler or from middlewares.
 
-Check out the ["Route parameters"](../request_data/path/route_parameters.md) guide for more details.
+Check out the ["Path parameters"](../request_data/path/path_parameters.md) guide for more details.
 
 
-[RouteParams]: ../../api_reference/pavex/request/route/struct.RouteParams.html
+[PathParams]: ../../api_reference/pavex/request/path/struct.PathParams.html

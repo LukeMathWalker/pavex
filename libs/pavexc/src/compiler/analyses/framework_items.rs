@@ -14,7 +14,7 @@ use crate::{
 pub(crate) type FrameworkItemId = u8;
 
 /// The set of types that are built into the framework—e.g. the incoming request,
-/// raw route parameters.
+/// raw path parameters.
 ///
 /// These types can be used by constructors and handlers even though no constructor
 /// has been explicitly registered for them by the developer.
@@ -63,7 +63,7 @@ impl FrameworkItemDb {
             },
         );
         let raw_path_parameters = process_framework_path(
-            "pavex::request::route::RawRouteParams::<'server, 'request>",
+            "pavex::request::path::RawPathParams::<'server, 'request>",
             package_graph,
             krate_collection,
         );
@@ -77,7 +77,7 @@ impl FrameworkItemDb {
             },
         );
         let matched_route_template = process_framework_path(
-            "pavex::request::route::MatchedRouteTemplate",
+            "pavex::request::path::MatchedPathPattern",
             package_graph,
             krate_collection,
         );
@@ -108,12 +108,12 @@ impl FrameworkItemDb {
         Self { items, id2metadata }
     }
 
-    /// Return the id for the `MatchedRouteTemplate` type.
+    /// Return the id for the `MatchedPathPattern` type.
     pub(crate) fn matched_route_template_id() -> FrameworkItemId {
         3
     }
 
-    /// Return the id for the `MatchedRouteTemplate` type.
+    /// Return the id for the `MatchedPathPattern` type.
     pub(crate) fn allowed_methods_id() -> FrameworkItemId {
         4
     }

@@ -36,7 +36,7 @@ async fn route_request(
     #[allow(unused)]
     let request_body = pavex::request::body::RawIncomingBody::from(request_body);
     let request_head: pavex::request::RequestHead = request_head.into();
-    let matched_route = match server_state.router.at(&request_head.uri.path()) {
+    let matched_route = match server_state.router.at(&request_head.target.path()) {
         Ok(m) => m,
         Err(_) => {
             let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter(
@@ -48,7 +48,7 @@ async fn route_request(
     };
     let route_id = matched_route.value;
     #[allow(unused)]
-    let url_params: pavex::request::route::RawRouteParams<'_, '_> = matched_route
+    let url_params: pavex::request::path::RawPathParams<'_, '_> = matched_route
         .params
         .into();
     match route_id {
@@ -93,14 +93,14 @@ async fn route_request(
 }
 pub mod route_0 {
     pub async fn handler(
-        v0: pavex::request::route::RawRouteParams<'_, '_>,
+        v0: pavex::request::path::RawPathParams<'_, '_>,
     ) -> pavex::response::Response {
-        let v1 = pavex::request::route::RouteParams::extract(v0);
+        let v1 = pavex::request::path::PathParams::extract(v0);
         let v2 = match v1 {
             Ok(ok) => ok,
             Err(v2) => {
                 return {
-                    let v3 = pavex::request::route::errors::ExtractRouteParamsError::into_response(
+                    let v3 = pavex::request::path::errors::ExtractPathParamsError::into_response(
                         &v2,
                     );
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
@@ -115,14 +115,14 @@ pub mod route_0 {
 }
 pub mod route_1 {
     pub async fn handler(
-        v0: pavex::request::route::RawRouteParams<'_, '_>,
+        v0: pavex::request::path::RawPathParams<'_, '_>,
     ) -> pavex::response::Response {
-        let v1 = pavex::request::route::RouteParams::extract(v0);
+        let v1 = pavex::request::path::PathParams::extract(v0);
         let v2 = match v1 {
             Ok(ok) => ok,
             Err(v2) => {
                 return {
-                    let v3 = pavex::request::route::errors::ExtractRouteParamsError::into_response(
+                    let v3 = pavex::request::path::errors::ExtractPathParamsError::into_response(
                         &v2,
                     );
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
@@ -137,14 +137,14 @@ pub mod route_1 {
 }
 pub mod route_2 {
     pub async fn handler(
-        v0: pavex::request::route::RawRouteParams<'_, '_>,
+        v0: pavex::request::path::RawPathParams<'_, '_>,
     ) -> pavex::response::Response {
-        let v1 = pavex::request::route::RouteParams::extract(v0);
+        let v1 = pavex::request::path::PathParams::extract(v0);
         let v2 = match v1 {
             Ok(ok) => ok,
             Err(v2) => {
                 return {
-                    let v3 = pavex::request::route::errors::ExtractRouteParamsError::into_response(
+                    let v3 = pavex::request::path::errors::ExtractPathParamsError::into_response(
                         &v2,
                     );
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(

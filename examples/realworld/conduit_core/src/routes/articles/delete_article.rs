@@ -1,11 +1,11 @@
-use pavex::{http::StatusCode, request::route::RouteParams};
+use pavex::{http::StatusCode, request::path::PathParams};
 
 #[derive(Debug)]
-#[RouteParams]
+#[PathParams]
 pub struct DeleteArticle {
     pub slug: String,
 }
 
-pub fn delete_article(_params: RouteParams<DeleteArticle>) -> StatusCode {
+pub fn delete_article(_params: PathParams<DeleteArticle>) -> StatusCode {
     StatusCode::OK
 }

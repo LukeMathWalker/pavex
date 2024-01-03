@@ -28,7 +28,7 @@ Inject [`RequestHead`][RequestHead] to access the request target via its [`targe
 
 The raw target and its components are primarily useful for logging purposes.  
 Rely on higher-level abstractions
-to perform more advanced processing—e.g. parsing query parameters or [route parameters](path/route_parameters.md).
+to perform more advanced processing—e.g. parsing query parameters or [path parameters](path/path_parameters.md).
 
 [^rfc]: [RFC 7230](https://datatracker.ietf.org/doc/html/rfc7230#section-5.3) allows two other formats of request target,
 authority form (e.g. `example.com:443`) and asterisk form (e.g. `*`).  

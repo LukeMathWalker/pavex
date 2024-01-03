@@ -1,39 +1,39 @@
-#[pavex_macros::RouteParams]
+#[pavex_macros::PathParams]
 struct SimpleStruct {
     field1: i32,
     field2: String,
 }
 
-#[pavex_macros::RouteParams]
+#[pavex_macros::PathParams]
 struct NestedStruct {
     field1: SimpleStruct,
 }
 
-#[pavex_macros::RouteParams]
+#[pavex_macros::PathParams]
 struct StructWithOneGeneric<T> {
     field1: T,
     field2: String,
 }
 
-#[pavex_macros::RouteParams]
+#[pavex_macros::PathParams]
 struct StructWithOneInlineBoundGeneric<T: std::fmt::Display> {
     field1: T,
     field2: String,
 }
 
-#[pavex_macros::RouteParams]
+#[pavex_macros::PathParams]
 struct StructWithTwoGenerics<T, S> {
     field1: T,
     field2: S,
 }
 
-#[pavex_macros::RouteParams]
+#[pavex_macros::PathParams]
 struct StructWithOneGenericAndALifetime<'a, S> {
     field1: &'a str,
     field2: S,
 }
 
-#[pavex_macros::RouteParams]
+#[pavex_macros::PathParams]
 struct StructWithTwoLifetimes<'a, 'b: 'a> {
     field1: &'a str,
     field2: &'b str,

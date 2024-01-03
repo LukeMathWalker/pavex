@@ -62,7 +62,7 @@ async fn route_request(
     };
     let route_id = matched_route.value;
     #[allow(unused)]
-    let url_params: pavex::request::route::RawRouteParams<'_, '_> = matched_route.params.into();
+    let url_params: pavex::request::path::RawPathParams<'_, '_> = matched_route.params.into();
     match route_id {
         0u32 => match &request_head.method {
             &pavex::http::Method::GET => route_0::handler().await,

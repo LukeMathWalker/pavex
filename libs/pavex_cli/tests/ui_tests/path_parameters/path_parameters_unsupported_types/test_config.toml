@@ -1,4 +1,4 @@
-description = "Pavex can only extract route parameters using a struct with named fields"
+description = "Pavex can only extract path parameters using a struct with named fields"
 
 [expectations]
 codegen = "fail"

@@ -45,18 +45,18 @@ Let's register the new route with the [`Blueprint`][Blueprint] in the meantime:
 
 --8<-- "doc_examples/quickstart/02-register_new_route.snap"
 
-1. Dynamic route parameters are prefixed with a colon (`:`).
+1. Dynamic path parameters are prefixed with a colon (`:`).
 
-## Extract route parameters
+## Extract path parameters
 
-To access the `name` route parameter from your new handler you must use the [`RouteParams`][RouteParams] extractor:
+To access the `name` route parameter from your new handler you must use the [`PathParams`][PathParams] extractor:
 
 
 --8<-- "doc_examples/quickstart/03-route_def.snap"
 
 1. The name of the field must match the name of the route parameter as it appears in the path we registered with
    the [`Blueprint`][Blueprint].
-2. The [`RouteParams`][RouteParams] extractor is generic over the type of the route parameters.  
+2. The [`PathParams`][PathParams] extractor is generic over the type of the path parameters.  
    In this case, we're using the `GreetParams` type we just defined.
 
 You can now return the expected response from the `greet` handler:
@@ -92,7 +92,7 @@ You should see `Hello, Ursula!` in your terminal if everything went well.
 
 [IntoResponse]: ../../api_reference/pavex/response/trait.IntoResponse.html
 
-[RouteParams]: ../../api_reference/pavex/request/route/struct.RouteParams.html
+[PathParams]: ../../api_reference/pavex/request/path/struct.PathParams.html
 
 [Response::ok]: ../../api_reference/pavex/response/struct.Response.html#method.ok
 

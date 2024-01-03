@@ -1,5 +1,5 @@
 #[derive(serde::Deserialize)]
-#[pavex_macros::RouteParams]
+#[pavex_macros::PathParams]
 #[serde(rename_all = "camelCase")]
 struct MyStruct {
     #[serde(rename = "field1")]

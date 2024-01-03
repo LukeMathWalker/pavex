@@ -1,6 +1,6 @@
 use pavex::blueprint::constructor::CloningStrategy;
 use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
-use pavex::request::{query::QueryParams, route::RouteParams};
+use pavex::request::{query::QueryParams, path::PathParams};
 use pavex::request::body::{BodySizeLimit, BufferedBody, JsonBody};
 use pavex::f;
 
@@ -18,7 +18,7 @@ pub fn blueprint() -> Blueprint {
 
 /// Common constructors used by all routes.
 fn register_common_constructors(bp: &mut Blueprint) {
-    RouteParams::register(bp);
+    PathParams::register(bp);
     QueryParams::register(bp);
     JsonBody::register(bp);
     BufferedBody::register(bp);

@@ -3,10 +3,10 @@ use serde::Deserialize;
 use crate::blueprint::constructor::{Constructor, Lifecycle};
 use crate::blueprint::Blueprint;
 use crate::f;
-use crate::request::route::deserializer::PathDeserializer;
-use crate::request::route::errors::{DecodeError, ExtractRouteParamsError, InvalidUtf8InPathParam};
+use crate::request::path::deserializer::PathDeserializer;
+use crate::request::path::errors::{DecodeError, ExtractPathParamsError, InvalidUtf8InPathParam};
 
-use super::RawRouteParams;
+use super::RawPathParams;
 
 /// Extract (typed) route parameters from the URL of an incoming request.
 ///
@@ -24,28 +24,28 @@ use super::RawRouteParams;
 /// ```rust
 /// use pavex::f;
 /// use pavex::blueprint::{router::GET, Blueprint, constructor::Lifecycle};
-/// use pavex::request::route::RouteParams;
+/// use pavex::request::path::PathParams;
 ///
 /// fn blueprint() -> Blueprint {
 ///     let mut bp = Blueprint::new();
-///     // Register the default constructor and error handler for `RouteParams`.
-///     RouteParams::register(&mut bp);
+///     // Register the default constructor and error handler for `PathParams`.
+///     PathParams::register(&mut bp);
 ///     // Register a route with a route parameter, `:home_id`.
 ///     bp.route(GET, "/home/:home_id", f!(crate::get_home));
 ///     bp
 /// }
 ///
-/// // The RouteParams attribute macro derives the necessary (de)serialization traits.
-/// #[RouteParams]
+/// // The PathParams attribute macro derives the necessary (de)serialization traits.
+/// #[PathParams]
 /// pub struct Home {
 ///     // The name of the field must match the name of the route parameter
 ///     // used in `bp.route`.
 ///     home_id: u32
 /// }
 ///
-/// // The `RouteParams` extractor deserializes the extracted route parameters into
-/// // the type you specified—`HomeRouteParams` in this case.
-/// pub fn get_home(params: &RouteParams<Home>) -> String {
+/// // The `PathParams` extractor deserializes the extracted route parameters into
+/// // the type you specified—`HomePathParams` in this case.
+/// pub fn get_home(params: &PathParams<Home>) -> String {
 ///    format!("The identifier for this home is: {}", params.0.home_id)
 /// }
 /// ```
@@ -55,8 +55,8 @@ use super::RawRouteParams;
 ///
 /// # Supported types
 ///
-/// `T` in `RouteParams<T>` must implement [`serde::Deserialize`]—it is automatically derived if
-/// you use the [`RouteParams`](macro@crate::request::route::RouteParams) attribute macro, the
+/// `T` in `PathParams<T>` must implement [`serde::Deserialize`]—it is automatically derived if
+/// you use the [`PathParams`](macro@crate::request::path::PathParams) attribute macro, the
 /// approach we recommend.  
 /// `T` must be a struct with named fields, where each field name matches one of the route parameter
 /// names used in the route's path template.
@@ -64,7 +64,7 @@ use super::RawRouteParams;
 /// ```rust
 /// use pavex::f;
 /// use pavex::blueprint::{router::GET, Blueprint};
-/// use pavex::request::route::RouteParams;
+/// use pavex::request::path::PathParams;
 ///
 /// fn blueprint() -> Blueprint{
 ///     let mut bp = Blueprint::new();
@@ -74,7 +74,7 @@ use super::RawRouteParams;
 ///     bp
 /// }
 ///
-/// #[RouteParams]
+/// #[PathParams]
 /// pub struct Room {
 ///     // The name of the extracted fields must match the names of the route parameters
 ///     // used in the template we passed to `bp.route`.
@@ -84,9 +84,9 @@ use super::RawRouteParams;
 ///     // extracting the `room_id` here.
 /// }
 ///
-/// // The `RouteParams` extractor will deserialize the route parameters into the
+/// // The `PathParams` extractor will deserialize the route parameters into the
 /// // type you specified—`Room` in this case.
-/// pub fn get_room(params: &RouteParams<Room>) -> String {
+/// pub fn get_room(params: &PathParams<Room>) -> String {
 ///     let params = &params.0;
 ///     format!("The home with id {} is in street {}", params.home_id, params.street_id)
 /// }
@@ -102,18 +102,18 @@ use super::RawRouteParams;
 /// check the route's path template to understand what each entry represents.
 ///
 ///```rust
-/// use pavex::request::route::RouteParams;
+/// use pavex::request::path::PathParams;
 ///
 /// // This is self-documenting ✅
 /// // No need to check the route's path template to understand what each field represents.
-/// #[RouteParams]
+/// #[PathParams]
 /// pub struct Room {
 ///     home_id: u32,
 ///     room_id: u32,
 ///     street_id: u32,
 /// }
 ///
-/// pub fn get_room(params: &RouteParams<Room>) -> String {
+/// pub fn get_room(params: &PathParams<Room>) -> String {
 ///     // [...]
 /// # unimplemented!()
 /// }
@@ -121,13 +121,13 @@ use super::RawRouteParams;
 /// // This isn't self-documenting ❌
 /// // What does the second u32 represent? The room id? The street id?
 /// // Impossible to tell without checking the route's path template.
-/// pub fn get_room_tuple(params: &RouteParams<(u32, u32, u32)>) -> String {
+/// pub fn get_room_tuple(params: &PathParams<(u32, u32, u32)>) -> String {
 ///     // [...]
 /// # unimplemented!()
 /// }
 /// ```
 ///
-/// For this reason, Pavex does not support the following types as `T` in `RouteParams<T>`:
+/// For this reason, Pavex does not support the following types as `T` in `PathParams<T>`:
 ///
 /// - tuples, e.g. `(u32, String)`;
 /// - tuple structs, e.g. `struct HomeId(u32, String)`;
@@ -139,15 +139,15 @@ use super::RawRouteParams;
 /// # Additional compile-time checks
 ///
 /// Pavex is able to perform additional checks at compile-time if you use the
-/// [`RouteParams`](macro@crate::request::route::RouteParams) macro instead
+/// [`PathParams`](macro@crate::request::path::PathParams) macro instead
 /// of deriving [`serde::Deserialize`] on your own.
 ///
 /// ```rust
 /// # mod home {
-/// use pavex::request::route::RouteParams;
+/// use pavex::request::path::PathParams;
 ///
 /// // Do this 👇
-/// #[RouteParams]
+/// #[PathParams]
 /// pub struct Home {
 ///     home_id: u32
 /// }
@@ -171,7 +171,7 @@ use super::RawRouteParams;
 ///   instead of `Cow<'_, str>` (see [`Avoiding allocations`](#avoiding-allocations)).
 ///
 /// Check out [`StructuralDeserialize`](crate::serialization::StructuralDeserialize) if you are curious
-/// to know more about the role played by the [`RouteParams`](macro@crate::request::route::RouteParams)
+/// to know more about the role played by the [`PathParams`](macro@crate::request::path::PathParams)
 /// macro in enabling these additional compile-time checks.
 ///
 /// # Avoiding allocations
@@ -188,15 +188,15 @@ use super::RawRouteParams;
 /// URL if possible, and allocates a new `String` only if strictly necessary.
 ///
 /// ```rust
-/// use pavex::request::route::RouteParams;
+/// use pavex::request::path::PathParams;
 /// use std::borrow::Cow;
 ///
-/// #[RouteParams]
+/// #[PathParams]
 /// pub struct Payee<'a> {
 ///     name: Cow<'a, str>,
 /// }
 ///
-/// pub fn get_payee(params: &RouteParams<Payee<'_>>) -> String {
+/// pub fn get_payee(params: &PathParams<Payee<'_>>) -> String {
 ///    format!("The payee's name is {}", params.0.name)
 /// }
 /// ```
@@ -211,23 +211,23 @@ use super::RawRouteParams;
 /// are extracted from the URL, before any kind of percent-decoding or deserialization has taken
 /// place.
 ///
-/// You can do so by using the [`RawRouteParams`] extractor instead of [`RouteParams`]. Check out
-/// [`RawRouteParams`]' documentation for more information.
+/// You can do so by using the [`RawPathParams`] extractor instead of [`PathParams`]. Check out
+/// [`RawPathParams`]' documentation for more information.
 #[doc(alias = "Path")]
-#[doc(alias = "PathParams")]
+#[doc(alias = "RouteParams")]
 #[doc(alias = "UrlParams")]
-pub struct RouteParams<T>(
+pub struct PathParams<T>(
     /// The extracted route parameters, deserialized into `T`, the type you specified.
     pub T,
 );
 
-impl<T> RouteParams<T> {
-    /// The default constructor for [`RouteParams`].
+impl<T> PathParams<T> {
+    /// The default constructor for [`PathParams`].
     ///
-    /// If the extraction fails, an [`ExtractRouteParamsError`] is returned.
+    /// If the extraction fails, an [`ExtractPathParamsError`] is returned.
     pub fn extract<'server, 'request>(
-        params: RawRouteParams<'server, 'request>,
-    ) -> Result<Self, ExtractRouteParamsError>
+        params: RawPathParams<'server, 'request>,
+    ) -> Result<Self, ExtractPathParamsError>
     where
         T: Deserialize<'request>,
         // The parameter ids live as long as the server, while the values are tied to the lifecycle
@@ -241,7 +241,7 @@ impl<T> RouteParams<T> {
                     invalid_raw_segment,
                     source,
                 } = e;
-                ExtractRouteParamsError::InvalidUtf8InPathParameter(InvalidUtf8InPathParam {
+                ExtractPathParamsError::InvalidUtf8InPathParameter(InvalidUtf8InPathParam {
                     invalid_key: id.into(),
                     invalid_raw_segment,
                     source,
@@ -251,22 +251,22 @@ impl<T> RouteParams<T> {
         }
         let deserializer = PathDeserializer::new(&decoded_params);
         T::deserialize(deserializer)
-            .map_err(ExtractRouteParamsError::PathDeserializationError)
-            .map(RouteParams)
+            .map_err(ExtractPathParamsError::PathDeserializationError)
+            .map(PathParams)
     }
 }
 
-impl RouteParams<()> {
-    /// Register the [default constructor](RouteParams::extract)
-    /// and [error handler](ExtractRouteParamsError::into_response)
-    /// for [`RouteParams`] with a [`Blueprint`].
+impl PathParams<()> {
+    /// Register the [default constructor](PathParams::extract)
+    /// and [error handler](ExtractPathParamsError::into_response)
+    /// for [`PathParams`] with a [`Blueprint`].
     pub fn register(bp: &mut Blueprint) -> Constructor {
         bp.constructor(
-            f!(pavex::request::route::RouteParams::extract),
+            f!(pavex::request::path::PathParams::extract),
             Lifecycle::RequestScoped,
         )
         .error_handler(f!(
-            pavex::request::route::errors::ExtractRouteParamsError::into_response
+            pavex::request::path::errors::ExtractPathParamsError::into_response
         ))
     }
 }

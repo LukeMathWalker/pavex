@@ -1,23 +1,23 @@
 use std::path::PathBuf;
 
-use pavex::f;
 use pavex::blueprint::{
     constructor::{CloningStrategy, Lifecycle},
     router::GET,
     Blueprint,
 };
-use pavex::request::route::RawRouteParams;
+use pavex::f;
+use pavex::request::path::RawPathParams;
 use pavex::response::Response;
 
 // The call graph looks like this:
 //
-// RawRouteParams
+// RawPathParams
 //  / \
 // B   C
 //  \ /
 // handler
 //
-// `RawRouteParams` is a framework-provided type that can be cloned if necessary.
+// `RawPathParams` is a framework-provided type that can be cloned if necessary.
 // It is moved twice here.
 // Pavex should detect this and insert a `Clone` invocation.
 
@@ -25,11 +25,11 @@ pub struct B;
 
 pub struct C;
 
-pub fn b(_p: RawRouteParams) -> B {
+pub fn b(_p: RawPathParams) -> B {
     todo!()
 }
 
-pub fn c(_p: RawRouteParams) -> C {
+pub fn c(_p: RawPathParams) -> C {
     todo!()
 }
 

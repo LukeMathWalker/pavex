@@ -97,7 +97,7 @@ impl Blueprint {
     /// ```
     ///
     /// [`router`]: crate::blueprint::router
-    /// [`RouteParams`]: struct@crate::request::route::RouteParams
+    /// [`PathParams`]: struct@crate::request::path::PathParams
     pub fn route(&mut self, method_guard: MethodGuard, path: &str, callable: RawCallable) -> Route {
         let registered_route = RegisteredRoute {
             path: path.to_owned(),

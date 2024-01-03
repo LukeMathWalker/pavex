@@ -1,5 +1,5 @@
 [31m[1mERROR[0m[39m: 
-  [31m×[0m You can only register one route parameter per each path segment.
+  [31m×[0m You can only register one path parameter per each path segment.
   [31m│[0m
   [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:12:1]
   [31m│[0m  [2m12[0m │     let mut bp = Blueprint::new();
@@ -33,8 +33,8 @@
   [31m│[0m     ╰────
 
 [31m[1mERROR[0m[39m: 
-  [31m×[0m All route parameters must be named. You can't use anonymous parameters
-  [31m│[0m like `:` or `*`.
+  [31m×[0m All path parameters must be named. You can't use anonymous parameters like
+  [31m│[0m `:` or `*`.
   [31m│[0m
   [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:18:1]
   [31m│[0m  [2m18[0m │     // Unnamed parameter

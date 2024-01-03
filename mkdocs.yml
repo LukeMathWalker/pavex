@@ -88,7 +88,7 @@ nav:
           - guide/request_data/request_target.md
           - "Path":
               - guide/request_data/path/index.md
-              - guide/request_data/path/route_parameters.md
+              - guide/request_data/path/path_parameters.md
           - "Query":
               - guide/request_data/query/index.md
               - guide/request_data/query/query_parameters.md

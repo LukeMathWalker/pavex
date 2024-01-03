@@ -1,12 +1,12 @@
 use pavex::http::StatusCode;
-use pavex::request::route::RouteParams;
+use pavex::request::path::PathParams;
 
-#[RouteParams]
+#[PathParams]
 pub struct GetUserParams {
     pub id: u64,
 }
 
-pub fn handler(params: &RouteParams<GetUserParams>) -> StatusCode {
+pub fn handler(params: &PathParams<GetUserParams>) -> StatusCode {
     println!("The user id is {}", params.0.id);
     StatusCode::OK
 }

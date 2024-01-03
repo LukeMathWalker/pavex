@@ -1,4 +1,4 @@
-description = "Pavex can extract route parameters"
+description = "Pavex can extract path parameters"
 
 [expectations]
 codegen = "pass"

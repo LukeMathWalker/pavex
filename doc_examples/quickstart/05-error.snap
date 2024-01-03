@@ -12,8 +12,8 @@
   [31m│[0m     ╰────
   [31m│[0m     ╭─[[36;1;4mdemo/src/routes/greet.rs[0m:10:1]
   [31m│[0m  [2m10[0m │ 
-  [31m│[0m  [2m11[0m │ pub fn greet(params: RouteParams<GreetParams>, user_agent: UserAgent) -> Response {
-  [31m│[0m     · [35;1m                                                           ────┬────[0m
+  [31m│[0m  [2m11[0m │ pub fn greet(params: PathParams<GreetParams>, user_agent: UserAgent) -> Response {
+  [31m│[0m     · [35;1m                                                          ────┬────[0m
   [31m│[0m     ·               [35;1mI don't know how to construct an instance of this input parameter[0m
   [31m│[0m  [2m12[0m │     if let UserAgent::Unknown = user_agent {
   [31m│[0m     ╰────

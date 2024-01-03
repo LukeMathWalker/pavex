@@ -10,7 +10,7 @@ mod component;
 mod computation;
 mod generated_app;
 mod interner;
+mod path_parameter_validation;
 mod resolvers;
-mod route_parameter_validation;
 mod traits;
 mod utils;

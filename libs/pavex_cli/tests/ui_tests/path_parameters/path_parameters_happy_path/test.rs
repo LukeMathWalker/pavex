@@ -26,7 +26,7 @@ async fn spawn_test_server() -> u16 {
 }
 
 #[tokio::test]
-async fn route_parameter_extraction_works() {
+async fn path_parameter_extraction_works() {
     let port = spawn_test_server().await;
     let response = reqwest::get(&format!("http://localhost:{}/home/123", port))
         .await
@@ -74,7 +74,7 @@ async fn catch_all_match_cannot_be_empty() {
 }
 
 #[tokio::test]
-async fn route_parameter_has_the_wrong_type() {
+async fn path_parameter_has_the_wrong_type() {
     let port = spawn_test_server().await;
     let response = reqwest::get(&format!("http://localhost:{}/home/abc", port))
         .await
@@ -88,7 +88,7 @@ async fn route_parameter_has_the_wrong_type() {
 }
 
 #[tokio::test]
-async fn route_parameter_is_invalid_ut8() {
+async fn path_parameter_is_invalid_ut8() {
     let port = spawn_test_server().await;
     let response = reqwest::get(&format!("http://localhost:{}/home/%DE~%C7%1FY", port))
         .await
@@ -102,7 +102,7 @@ async fn route_parameter_is_invalid_ut8() {
 }
 
 #[tokio::test]
-async fn route_parameter_is_invalid_type() {
+async fn path_parameter_is_invalid_type() {
     let port = spawn_test_server().await;
     let response = reqwest::get(&format!("http://localhost:{}/home/123/room/123", port))
         .await
@@ -117,7 +117,7 @@ async fn route_parameter_is_invalid_type() {
 }
 
 #[tokio::test]
-async fn route_parameters_cannot_be_empty() {
+async fn path_parameters_cannot_be_empty() {
     let port = spawn_test_server().await;
     // This does not match `/home/:home_id` because the `home_id` parameter is empty.
     // There are no handlers registered for `/home` so this should return a 404.

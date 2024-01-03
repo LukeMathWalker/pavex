@@ -4,8 +4,8 @@
 //!
 //! When it comes to route information, there are two important extractors to be aware of:
 //!
-//! - [`RouteParams`]: extract route parameters from the URL of incoming requests
-//! - [`MatchedRouteTemplate`]: extract the route template that matched for the incoming request
+//! - [`PathParams`]: extract route parameters from the URL of incoming requests
+//! - [`MatchedPathPattern`]: extract the route template that matched for the incoming request
 //!
 //! Check out their documentation for more details.
 //!
@@ -14,7 +14,7 @@
 //! ```rust
 //! use pavex::f;
 //! use pavex::blueprint::{router::GET, Blueprint, constructor::Lifecycle};
-//! use pavex::request::route::RouteParams;
+//! use pavex::request::path::PathParams;
 //!
 //! fn blueprint() -> Blueprint{
 //!     let mut bp = Blueprint::new();
@@ -24,32 +24,33 @@
 //!     bp
 //! }
 //!
-//! // The RouteParams attribute macro derives the necessary (de)serialization traits.
-//! #[RouteParams]
+//! // The PathParams attribute macro derives the necessary (de)serialization traits.
+//! #[PathParams]
 //! struct Home {
 //!     // The name of the field must match the name of the route parameter
 //!     // used in `bp.route`.
 //!     home_id: u32
 //! }
 //!
-//! // The `RouteParams` extractor deserializes the extracted route parameters into
+//! // The `PathParams` extractor deserializes the extracted route parameters into
 //! // the type you specified—`Home` in this case.
-//! fn get_home(params: &RouteParams<Home>) -> String {
+//! fn get_home(params: &PathParams<Home>) -> String {
 //!    format!("The identifier for this home is: {}", params.0.home_id)
 //! }
 //! ```
 //!
-//! Check out [`RouteParams`]' documentation for more details.
+//! Check out [`PathParams`]' documentation for more details.
 //!
-//! [`RouteParams`]: struct@RouteParams
+//! [`PathParams`]: struct@PathParams
 
-pub use matched_route::MatchedRouteTemplate;
+pub use matched_path::MatchedPathPattern;
+pub use path_params::PathParams;
 /// Derive (de)serialization logic for a type that is going to be used to extract route parameters.
 ///
 /// This macro derives [`StructuralDeserialize`], [`serde::Serialize`] and [`serde::Deserialize`]
 /// for the type that it is applied to.
 ///
-/// Check out [`RouteParams`](struct@RouteParams) for more details on how to work with
+/// Check out [`PathParams`](struct@PathParams) for more details on how to work with
 /// route parameters in Pavex.  
 /// Check out [`StructuralDeserialize`] if you are curious about the rationale behind this
 /// macro.
@@ -59,7 +60,7 @@ pub use matched_route::MatchedRouteTemplate;
 /// ```rust
 /// use pavex::f;
 /// use pavex::blueprint::{router::GET, Blueprint, constructor::Lifecycle};
-/// use pavex::request::route::RouteParams;
+/// use pavex::request::path::PathParams;
 ///
 /// fn blueprint() -> Blueprint { ///
 ///     let mut bp = Blueprint::new();
@@ -69,24 +70,23 @@ pub use matched_route::MatchedRouteTemplate;
 ///     # bp
 /// }
 ///
-/// #[RouteParams]
+/// #[PathParams]
 /// struct Home {
 ///     home_id: u32
 /// }
 ///
-/// fn get_home(params: &RouteParams<Home>) -> String {
+/// fn get_home(params: &PathParams<Home>) -> String {
 ///     format!("The identifier for this home is: {}", params.0.home_id)
 /// }
 /// ```
 ///
 /// [`StructuralDeserialize`]: crate::serialization::StructuralDeserialize
-pub use pavex_macros::RouteParams;
-pub use raw_route_params::{EncodedParamValue, RawRouteParams, RawRouteParamsIter};
-pub use route_params::RouteParams;
+pub use pavex_macros::PathParams;
+pub use raw_path_params::{EncodedParamValue, RawPathParams, RawPathParamsIter};
 
 mod deserializer;
 pub mod errors;
 
-mod matched_route;
-mod raw_route_params;
-mod route_params;
+mod matched_path;
+mod path_params;
+mod raw_path_params;

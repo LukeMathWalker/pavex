@@ -42,7 +42,7 @@ impl CodegenMethodRouter {
             .chain(std::iter::once(&self.catch_all_pipeline))
     }
 
-    /// Returns `true` if any of the pipelines in this router needs `MatchedRouteTemplate`
+    /// Returns `true` if any of the pipelines in this router needs `MatchedPathPattern`
     /// as input type.
     pub fn needs_matched_route(&self, framework_items_db: &FrameworkItemDb) -> bool {
         let matched_route_type = framework_items_db
@@ -417,7 +417,7 @@ fn get_request_dispatcher(
             let matched_route_template = if sub_router.needs_matched_route(framework_items_db) {
                 let path = route_id2path.get_by_left(route_id).unwrap();
                 quote! {
-                    let matched_route_template = #pavex::request::route::MatchedRouteTemplate::new(
+                    let matched_route_template = #pavex::request::path::MatchedPathPattern::new(
                         #path
                     );
                 }
@@ -463,7 +463,7 @@ fn get_request_dispatcher(
     );
     let unmatched_route = if fallback_codegened_pipeline.needs_matched_route(framework_items_db) {
         quote! {
-            let matched_route_template = #pavex::request::route::MatchedRouteTemplate::new("*");
+            let matched_route_template = #pavex::request::path::MatchedPathPattern::new("*");
         }
     } else {
         quote! {}
@@ -494,7 +494,7 @@ fn get_request_dispatcher(
             };
             let route_id = matched_route.value;
             #[allow(unused)]
-            let url_params: #pavex::request::route::RawRouteParams<'_, '_> = matched_route
+            let url_params: #pavex::request::path::RawPathParams<'_, '_> = matched_route
                 .params
                 .into();
             match route_id {

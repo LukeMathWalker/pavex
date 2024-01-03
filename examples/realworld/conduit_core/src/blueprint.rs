@@ -40,11 +40,11 @@ fn register_common_constructors(bp: &mut Blueprint) {
 
     // Route parameters
     bp.constructor(
-        f!(pavex::request::route::RouteParams::extract),
+        f!(pavex::request::path::PathParams::extract),
         Lifecycle::RequestScoped,
     )
     .error_handler(f!(
-        pavex::request::route::errors::ExtractRouteParamsError::into_response
+        pavex::request::path::errors::ExtractPathParamsError::into_response
     ));
 
     // Json body

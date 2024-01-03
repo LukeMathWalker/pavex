@@ -1,7 +1,7 @@
 use pavex::http::StatusCode;
-use pavex::request::route::RawRouteParams;
+use pavex::request::path::RawPathParams;
 
-pub fn handler(params: &RawRouteParams) -> StatusCode {
+pub fn handler(params: &RawPathParams) -> StatusCode {
     for (name, value) in params.iter() {
         println!("`{name}` was set to `{}`", value.as_str());
     }

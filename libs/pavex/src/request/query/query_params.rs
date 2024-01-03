@@ -27,8 +27,8 @@ use super::errors::{ExtractQueryParamsError, QueryDeserializationError};
 ///     home_id: u32
 /// }
 ///
-/// // The `RouteParams` extractor deserializes the extracted route parameters into
-/// // the type you specified—`HomeRouteParams` in this case.
+/// // The `PathParams` extractor deserializes the extracted route parameters into
+/// // the type you specified—`HomePathParams` in this case.
 /// pub fn get_home(params: &QueryParams<Home>) -> String {
 ///    format!("The identifier for this home is: {}", params.0.home_id)
 /// }
@@ -103,7 +103,7 @@ use super::errors::{ExtractQueryParamsError, QueryDeserializationError};
 ///
 /// # Unsupported types
 ///
-/// Pavex does not support the following types as `T` in `RouteParams<T>`:
+/// Pavex does not support the following types as `T` in `PathParams<T>`:
 ///
 /// - tuples, e.g. `(u32, String)`;
 /// - tuple structs, e.g. `struct HomeId(u32, String)`;
