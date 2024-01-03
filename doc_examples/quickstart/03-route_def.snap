@@ -1,13 +1,13 @@
 ```rust title="demo/src/routes/greet.rs"
-use pavex::request::route::RouteParams;
+use pavex::request::path::PathParams;
 use pavex::response::Response;
 
-#[RouteParams]
+#[PathParams]
 pub struct GreetParams {
     pub name: String, /* (1)! */
 }
 
-pub fn greet(params: RouteParams<GreetParams> /* (2)! */) -> Response {
+pub fn greet(params: PathParams<GreetParams> /* (2)! */) -> Response {
     todo!()
 }
 ```
