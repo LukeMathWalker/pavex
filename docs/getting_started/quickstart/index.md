@@ -1,9 +1,9 @@
 # Project setup
 
-!!! warning "Prerequisites"
+## Prerequisites
 
-    Make sure you've installed all the [required tools](../index.md) before starting
-    this tutorial.
+ Make sure you've installed all the [required tools](../index.md) before starting
+ this tutorial.
 
 ## Create a new Pavex project
 
