@@ -1,8 +1,8 @@
-error: `RouteParams` does not support `serde` attributes on the top-level struct or any of its fields.
+error: `PathParams` does not support `serde` attributes on the top-level struct or any of its fields.
 
-       `RouteParams` takes care of deriving `serde::Serialize` and `serde::Deserialize` for your struct, using the default configuration. This allow Pavex to determine, at code-generation time, if the route params can be successfully extracted from the URL of incoming requests for the relevant routes (e.g. do you have a named field that doesn't map to any of the registered route parameters?).
+       `PathParams` takes care of deriving `serde::Serialize` and `serde::Deserialize` for your struct, using the default configuration. This allow Pavex to determine, at code-generation time, if the route params can be successfully extracted from the URL of incoming requests for the relevant routes (e.g. do you have a named field that doesn't map to any of the registered route parameters?).
 
-       If the default `serde` configuration won't work for your case, you should not derive `RouteParams` and opt instead for implementing `serde::Serialize` and `serde::Deserialize` directly for your struct (either manually or using a derive with custom attributes).
+       If the default `serde` configuration won't work for your case, you should not derive `PathParams` and opt instead for implementing `serde::Serialize` and `serde::Deserialize` directly for your struct (either manually or using a derive with custom attributes).
        Keep in mind that by going down this route you give up compile-time checking of the route parameters!
  --> tests/fail/serde_conflict.rs:3:1
   |

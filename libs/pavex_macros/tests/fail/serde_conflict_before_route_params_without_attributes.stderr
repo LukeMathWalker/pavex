@@ -3,7 +3,7 @@ error[E0119]: conflicting implementations of trait `Deserialize<'_>` for type `M
   |
 1 | #[derive(serde::Deserialize)]
   |          ------------------ first implementation here
-2 | #[pavex_macros::RouteParams]
-  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `MyStruct`
+2 | #[pavex_macros::PathParams]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `MyStruct`
   |
   = note: this error originates in the derive macro `serde::Deserialize` (in Nightly builds, run with -Z macro-backtrace for more info)
