@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 anyhow = "1"
 pavex = { path = "../pavex" }
+thiserror = "1.0.56"

@@ -6,7 +6,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let manifest_dir = PathBuf::from_str(env!("CARGO_MANIFEST_DIR")).unwrap();
     let test_data_folder = manifest_dir.join("tests").join("ui_tests");
     let test_runtime_folder = manifest_dir.parent().unwrap().join("ui_test_envs");
-    run_tests(get_cli_path()?, test_data_folder, test_runtime_folder)?.exit();
+    let cli_path = get_cli_path()?;
+    run_tests(cli_path, test_data_folder, test_runtime_folder)?.exit();
 }
 
 fn get_cli_path() -> Result<PathBuf, Box<dyn std::error::Error>> {

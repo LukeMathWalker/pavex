@@ -409,15 +409,22 @@ impl TestData {
         let main_rs = format!(
             r#"use app::blueprint;
 use pavex_cli_client::{{Client, client::Color}};
+use pavex_cli_client::commands::generate::GenerateError;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {{
-    if Client::new()
+    let outcome = Client::new()
         .color(Color::Always)
         .pavex_cli_path("{}".into())
         .generate(blueprint(), "generated_app".into())
         .diagnostics_path("diagnostics.dot".into())
-        .execute().is_err() {{
-        std::process::exit(1);
+        .execute();
+    match outcome {{
+        Ok(_) => {{}},
+        Err(GenerateError::NonZeroExitCode(_)) => {{ std::process::exit(1); }}
+        Err(e) => {{
+            eprintln!("Failed to invoke `pavex generate`.\n{{:?}}", e);
+            std::process::exit(1);
+        }}
     }}
     Ok(())
 }}
