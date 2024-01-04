@@ -67,6 +67,9 @@ jobs:
         with:
           workspaces: "./libs -> ./target"
           key: "tests"
+      - uses: cargo-bins/cargo-binstall@main
+      - name: Install sccache
+        run: cargo binstall -y --github-token=${{ secrets.GITHUB_TOKEN }} sccache@0.7.4
       - name: Download pavex CLI artifact
         uses: actions/download-artifact@v4
         with:
