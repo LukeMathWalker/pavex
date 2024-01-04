@@ -55,6 +55,8 @@ jobs:
 
   tests:
     runs-on: ubuntu-latest
+    needs:
+      - build_pavex_cli
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
