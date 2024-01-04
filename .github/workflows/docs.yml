@@ -53,6 +53,30 @@ jobs:
           name: tutorial_generator
           path: doc_examples/tutorial_generator/target/debug/tutorial_generator
 
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1.6.0
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "./libs -> ./target"
+          key: "tests"
+      - name: Download pavex CLI artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: pavex_cli
+          path: ~/.cargo/bin
+      - name: Run tests
+        run: |
+          cd libs
+          cargo test --no-run
+          cargo test --workspace --exclude="pavex_cli"
+          PAVEX_TEST_CLI_PATH="pavex" cargo test --package pavex_cli
+
   is_up_to_date:
     runs-on: ubuntu-latest
     needs:
