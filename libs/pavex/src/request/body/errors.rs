@@ -1,5 +1,6 @@
 //! Errors that can occur while extracting information from the request body.
 use crate::response::Response;
+use ubyte::ByteUnit;
 
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
@@ -61,7 +62,7 @@ impl ExtractBufferedBodyError {
 /// The request body is larger than the maximum size limit enforced by this server.
 pub struct SizeLimitExceeded {
     /// The maximum size limit enforced by this server.
-    pub max_n_bytes: usize,
+    pub max_size: ByteUnit,
     /// The value of the `Content-Length` header for the request that breached the body
     /// size limit.  
     ///

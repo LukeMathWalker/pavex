@@ -1,8 +1,8 @@
 error[E0119]: conflicting implementations of trait `Deserialize<'_>` for type `MyStruct`
  --> tests/fail/serde_conflict_after_route_params_without_attributes.rs:1:1
   |
-1 | #[pavex_macros::RouteParams]
-  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `MyStruct`
+1 | #[pavex_macros::PathParams]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `MyStruct`
 2 | #[derive(serde::Deserialize)]
   |          ------------------ first implementation here
   |

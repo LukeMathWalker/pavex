@@ -9,7 +9,7 @@ snippets:
     hl_lines: [ 4 ]
   - name: "custom_limit"
     source_path: "src/custom_limit/blueprint.rs"
-    ranges: [ "0..13", "19..20" ]
+    ranges: [ "0..14", "20..21" ]
   - name: "no_limit"
     source_path: "src/no_limit/blueprint.rs"
     ranges: [ "0..11", "17..18" ]

@@ -2,6 +2,7 @@
 use pavex::blueprint::{constructor::Lifecycle, router::POST, Blueprint};
 use pavex::f;
 use pavex::request::body::BodySizeLimit;
+use pavex::unit::ToByteUnit;
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
@@ -21,7 +22,7 @@ fn upload_bp() -> Blueprint {
 
 pub fn upload_size_limit() -> BodySizeLimit {
     BodySizeLimit::Enabled {
-        max_n_bytes: 1_073_741_824, // 1GB
+        max_size: 1.gigabytes(),
     }
 }
 ```

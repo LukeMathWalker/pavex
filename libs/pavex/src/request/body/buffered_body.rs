@@ -1,6 +1,7 @@
 use bytes::Bytes;
 use http::header::CONTENT_LENGTH;
 use http_body_util::{BodyExt, Limited};
+use ubyte::ByteUnit;
 
 use crate::blueprint::constructor::{Constructor, Lifecycle};
 use crate::blueprint::Blueprint;
@@ -79,10 +80,11 @@ use super::{
 /// use pavex::f;
 /// use pavex::blueprint::{Blueprint, constructor::Lifecycle};
 /// use pavex::request::body::BodySizeLimit;
+/// use pavex::unit::ToByteUnit;
 ///
 /// pub fn body_size_limit() -> BodySizeLimit {
 ///     BodySizeLimit::Enabled {
-///         max_n_bytes: 10_485_760 // 10 MBs
+///         max_size: 10.megabytes()
 ///     }
 /// }
 ///
@@ -123,6 +125,7 @@ use super::{
 /// use pavex::f;
 /// use pavex::blueprint::{Blueprint, constructor::Lifecycle, router::{GET, POST}};
 /// use pavex::request::body::BodySizeLimit;
+/// use pavex::unit::ToByteUnit;
 /// # pub fn home() -> String { todo!() }
 /// # pub fn upload() -> String { todo!() }
 ///
@@ -145,7 +148,7 @@ use super::{
 ///
 /// pub fn upload_size_limit() -> BodySizeLimit {
 ///     BodySizeLimit::Enabled {
-///         max_n_bytes: 1_073_741_824 // 1GB
+///         max_size: 1.gigabytes()
 ///     }
 /// }
 /// ```
@@ -166,8 +169,8 @@ impl BufferedBody {
         body_size_limit: BodySizeLimit,
     ) -> Result<Self, ExtractBufferedBodyError> {
         match body_size_limit {
-            BodySizeLimit::Enabled { max_n_bytes } => {
-                Self::_extract_with_limit(request_head, body, max_n_bytes).await
+            BodySizeLimit::Enabled { max_size } => {
+                Self::_extract_with_limit(request_head, body, max_size).await
             }
             BodySizeLimit::Disabled => match body.collect().await {
                 Ok(collected) => Ok(Self {
@@ -194,7 +197,7 @@ impl BufferedBody {
     async fn _extract_with_limit<B>(
         request_head: &RequestHead,
         body: B,
-        max_n_bytes: usize,
+        max_size: ByteUnit,
     ) -> Result<Self, ExtractBufferedBodyError>
     where
         B: hyper::body::Body,
@@ -207,7 +210,7 @@ impl BufferedBody {
 
         // Little shortcut to create a `SizeLimitExceeded` error.
         let limit_error = || SizeLimitExceeded {
-            max_n_bytes,
+            max_size,
             content_length,
         };
 
@@ -218,11 +221,14 @@ impl BufferedBody {
         // body reading process entirely rather than reading the body incrementally
         // until the limit is reached.
         if let Some(len) = content_length {
-            if len > max_n_bytes {
+            if len > max_size {
                 return Err(limit_error().into());
             }
         }
 
+        // We saturate to `usize::MAX` if we happen to be on a platform where
+        // `usize` is smaller than `u64` (e.g. 32-bit platforms).
+        let max_n_bytes = max_size.as_u64().try_into().unwrap_or(usize::MAX);
         // If the `Content-Length` header is missing, or if the expected size of the body
         // is smaller than the maximum size limit, we start buffering the body while keeping
         // track of the size limit.
@@ -253,6 +259,7 @@ impl From<BufferedBody> for Bytes {
 #[cfg(test)]
 mod tests {
     use http::HeaderMap;
+    use ubyte::ToByteUnit;
 
     use crate::request::RequestHead;
 
@@ -270,9 +277,13 @@ mod tests {
 
     #[tokio::test]
     async fn error_if_body_above_size_limit_without_content_length() {
-        let body = crate::response::body::raw::Full::new(Bytes::from(vec![0; 1000]));
+        let raw_body = vec![0; 1000];
+
         // Smaller than the size of the body.
-        let max_n_bytes = 100;
+        let max_n_bytes = 100.bytes();
+        assert!(raw_body.len() > max_n_bytes.as_u64() as usize);
+
+        let body = crate::response::body::raw::Full::new(Bytes::from(raw_body));
         let err = BufferedBody::_extract_with_limit(&dummy_request_head(), body, max_n_bytes)
             .await
             .unwrap_err();
@@ -280,7 +291,9 @@ mod tests {
         insta::assert_debug_snapshot!(err, @r###"
         SizeLimitExceeded(
             SizeLimitExceeded {
-                max_n_bytes: 100,
+                max_size: ByteUnit(
+                    100,
+                ),
                 content_length: None,
             },
         )
@@ -296,21 +309,23 @@ mod tests {
 
         // Smaller than the value declared in the `Content-Length` header,
         // even though it's bigger than the actual size of the body.
-        let max_n_bytes = 100;
+        let max_size = 100.bytes();
         let body = crate::response::body::raw::Full::new(Bytes::from(vec![0; 500]));
         request_head
             .headers
             .insert("Content-Length", "1000".parse().unwrap());
 
         // Act
-        let err = BufferedBody::_extract_with_limit(&request_head, body, max_n_bytes)
+        let err = BufferedBody::_extract_with_limit(&request_head, body, max_size)
             .await
             .unwrap_err();
         insta::assert_display_snapshot!(err, @"The request body is larger than the maximum size limit enforced by this server.");
         insta::assert_debug_snapshot!(err, @r###"
         SizeLimitExceeded(
             SizeLimitExceeded {
-                max_n_bytes: 100,
+                max_size: ByteUnit(
+                    100,
+                ),
                 content_length: Some(
                     1000,
                 ),

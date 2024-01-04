@@ -1,6 +1,8 @@
 use crate::blueprint::constructor::{Constructor, Lifecycle};
 use crate::blueprint::Blueprint;
 use crate::f;
+use crate::unit::ByteUnit;
+use ubyte::ToByteUnit;
 
 #[derive(Debug, Clone, Copy)]
 /// An upper limit on the size of incoming request bodies.  
@@ -10,7 +12,7 @@ pub enum BodySizeLimit {
     /// There is an active limit on the size of incoming request bodies.
     Enabled {
         /// The maximum size of incoming request bodies, in bytes.
-        max_n_bytes: usize,
+        max_size: ByteUnit,
     },
     /// There is no limit on the size of incoming request bodies.
     Disabled,
@@ -29,7 +31,7 @@ impl BodySizeLimit {
 impl Default for BodySizeLimit {
     fn default() -> Self {
         Self::Enabled {
-            max_n_bytes: 2_097_152, // 2 MBs
+            max_size: 2.megabytes(),
         }
     }
 }
