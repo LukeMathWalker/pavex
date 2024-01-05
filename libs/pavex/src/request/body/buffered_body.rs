@@ -16,17 +16,21 @@ use super::{
 #[non_exhaustive]
 /// Buffer the entire body of an incoming request in memory.
 ///
+/// # Guide
+///
 /// `BufferedBody` is the ideal building block for _other_ extractors that need to
 /// have the entire body available in memory to do their job (e.g. [`JsonBody`](super::JsonBody)).  
-///
 /// It can also be useful if you need to access the raw bytes of the body ahead of deserialization
-/// (e.g. to compute its hash as a step of a signature verification process).
+/// (e.g. to compute its hash as a step of a signature verification process).  
 ///
-/// # Sections
+/// Check out the ["Low-level access"](https://pavex.dev/docs/guide/request_data/body/byte_wrappers/)
+/// section of Pavex's guide for a thorough introduction to `BufferedBody`.
 ///
-/// - [Example](#example)
-/// - [Installation](#installtion)
-/// - [Body size limit](#body-size-limit)
+/// # Security
+///
+/// `BufferedBody` includes a size limit to prevent denial-of-service attacks.
+/// Check out [the guide](https://pavex.dev/docs/guide/request_data/body/byte_wrappers/)
+/// for examples on how to configure it.
 ///
 /// # Example
 ///
@@ -45,115 +49,6 @@ use super::{
 /// #    StatusCode::OK
 /// }
 /// ```
-///
-/// # Installation
-///
-/// Register the default constructor and error handler for
-/// `BufferedBody` in your `Blueprint`:
-///
-/// ```rust
-/// use pavex::f;
-/// use pavex::blueprint::{Blueprint, constructor::Lifecycle};
-/// use pavex::request::body::BufferedBody;
-///
-/// fn blueprint() -> Blueprint {
-///     let mut bp = Blueprint::new();
-///     BufferedBody::register(&mut bp);
-///     // [...]
-///     bp
-/// }
-/// ```
-///
-/// You can then use the `BufferedBody` extractor as input to your route handlers and constructors.
-///
-/// # Body size limit
-///
-/// To prevent denial-of-service attacks, Pavex enforces an upper limit on the body size when
-/// trying to buffer it in memory. The default limit is 2 MBs.  
-///
-/// [`BufferedBody::extract`] will return the [`SizeLimitExceeded`](ExtractBufferedBodyError::SizeLimitExceeded) error variant if the limit is exceeded.
-///
-/// You can customize the limit by registering a constructor for [`BodySizeLimit`] in
-/// your `Blueprint`:
-///
-/// ```rust
-/// use pavex::f;
-/// use pavex::blueprint::{Blueprint, constructor::Lifecycle};
-/// use pavex::request::body::BodySizeLimit;
-/// use pavex::unit::ToByteUnit;
-///
-/// pub fn body_size_limit() -> BodySizeLimit {
-///     BodySizeLimit::Enabled {
-///         max_size: 10.megabytes()
-///     }
-/// }
-///
-/// fn blueprint() -> Blueprint {
-///     let mut bp = Blueprint::new();
-///     // Register a custom constructor for `BodySizeLimit`.
-///     bp.constructor(f!(crate::body_size_limit), Lifecycle::Singleton);
-///     // [...]
-///     bp
-/// }
-/// ```
-///
-/// You can also disable the limit entirely:  
-///
-/// ```rust
-/// use pavex::f;
-/// use pavex::blueprint::{Blueprint, constructor::Lifecycle};
-/// use pavex::request::body::BodySizeLimit;
-///
-/// pub fn body_size_limit() -> BodySizeLimit {
-///    BodySizeLimit::Disabled
-/// }
-///
-/// fn blueprint() -> Blueprint {
-///     let mut bp = Blueprint::new();
-///     // Register a custom constructor for `BodySizeLimit`.
-///     bp.constructor(f!(crate::body_size_limit), Lifecycle::Singleton);
-///     // [...]
-///     bp
-/// }
-/// ```
-///
-/// There might be situations where you want granular control instead of having
-/// a single global limit for all incoming requests.  
-/// You can leverage nesting for this purpose:
-///
-/// ```rust
-/// use pavex::f;
-/// use pavex::blueprint::{Blueprint, constructor::Lifecycle, router::{GET, POST}};
-/// use pavex::request::body::BodySizeLimit;
-/// use pavex::unit::ToByteUnit;
-/// # pub fn home() -> String { todo!() }
-/// # pub fn upload() -> String { todo!() }
-///
-/// fn blueprint() -> Blueprint {
-///     let mut bp = Blueprint::new();
-///     bp.route(GET, "/", f!(crate::home));
-///     bp.nest(upload_bp());
-///     // [...]
-///     bp
-/// }
-///
-/// fn upload_bp() -> Blueprint {
-///     let mut bp = Blueprint::new();
-///     // This limit will only apply to the routes registered
-///     // in this nested blueprint.
-///     bp.constructor(f!(crate::body_size_limit), Lifecycle::Singleton);
-///     bp.route(POST, "/upload", f!(crate::upload));
-///     bp
-/// }
-///
-/// pub fn upload_size_limit() -> BodySizeLimit {
-///     BodySizeLimit::Enabled {
-///         max_size: 1.gigabytes()
-///     }
-/// }
-/// ```
-///
-/// Check out `Blueprint::nest` and `Blueprint::nest_at` for more details on nesting.
 pub struct BufferedBody {
     /// The buffer of bytes that represents the body of the incoming request.
     pub bytes: Bytes,
