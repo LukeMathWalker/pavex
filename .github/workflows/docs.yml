@@ -75,6 +75,8 @@ jobs:
         with:
           name: pavex_cli
           path: ~/.cargo/bin
+      - name: Mark as executable
+        run: chmod +x ~/.cargo/bin/pavex
       - name: Run tests
         run: |
           cd libs
