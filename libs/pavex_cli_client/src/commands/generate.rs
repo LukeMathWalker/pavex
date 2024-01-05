@@ -1,7 +1,5 @@
 use std::{path::PathBuf, process::Command};
 
-use anyhow::Context;
-
 use pavex::blueprint::Blueprint;
 
 /// The configuration for `pavex`'s `generate` command.
@@ -32,16 +30,19 @@ impl GenerateBuilder {
     /// It won't return until `pavex` has finished running.
     ///
     /// If `pavex` exits with a non-zero status code, this will return an error.
-    pub fn execute(self) -> Result<(), anyhow::Error> {
-        let mut cmd = self.command()?;
+    pub fn execute(self) -> Result<(), GenerateError> {
+        let mut cmd = self
+            .command()
+            .map_err(GenerateError::BlueprintPersistenceError)?;
         let status = cmd
             .status()
-            .context("Failed to invoke `pavex_cli [...] generate [...]`")?;
+            .map_err(InvocationError)
+            .map_err(GenerateError::InvocationError)?;
         if !status.success() {
             if let Some(code) = status.code() {
-                anyhow::bail!("`pavex_cli` exited with a non-zero status code: {}", code);
+                return Err(GenerateError::NonZeroExitCode(NonZeroExitCode { code }));
             } else {
-                anyhow::bail!("`pavex_cli` was terminated by a signal");
+                return Err(GenerateError::SignalTermination(SignalTermination {}));
             }
         }
         Ok(())
@@ -53,10 +54,12 @@ impl GenerateBuilder {
     ///
     /// This method can be useful if you need to customize the command before running it.  
     /// If that's not your usecase, consider using [`GenerateBuilder::execute`] instead.
-    pub fn command(mut self) -> Result<std::process::Command, anyhow::Error> {
+    pub fn command(mut self) -> Result<std::process::Command, BlueprintPersistenceError> {
         // TODO: Pass the blueprint via `stdin` instead of writing it to a file.
         let bp_path = self.output_directory.join("blueprint.ron");
-        self.blueprint.persist(&bp_path)?;
+        self.blueprint
+            .persist(&bp_path)
+            .map_err(|source| BlueprintPersistenceError { source })?;
 
         self.cmd
             .arg("generate")
@@ -83,4 +86,40 @@ impl GenerateBuilder {
         self.diagnostics_path = Some(path);
         self
     }
+}
+
+#[derive(Debug, thiserror::Error)]
+#[non_exhaustive]
+pub enum GenerateError {
+    #[error(transparent)]
+    InvocationError(InvocationError),
+    #[error(transparent)]
+    SignalTermination(SignalTermination),
+    #[error(transparent)]
+    NonZeroExitCode(NonZeroExitCode),
+    #[error(transparent)]
+    BlueprintPersistenceError(BlueprintPersistenceError),
+}
+
+#[derive(Debug, thiserror::Error)]
+#[error("Failed to invoke `pavex_cli [...] generate [...]`")]
+pub struct InvocationError(#[source] std::io::Error);
+
+#[derive(Debug, thiserror::Error)]
+#[non_exhaustive]
+#[error("The invocation of `pavex_cli` was terminated by a signal")]
+pub struct SignalTermination {}
+
+#[derive(Debug, thiserror::Error)]
+#[non_exhaustive]
+#[error("The invocation of `pavex_cli` exited with a non-zero status code: {code}")]
+pub struct NonZeroExitCode {
+    pub code: i32,
+}
+
+#[derive(Debug, thiserror::Error)]
+#[error("Failed to persist the blueprint to a file")]
+pub struct BlueprintPersistenceError {
+    #[source]
+    source: anyhow::Error,
 }

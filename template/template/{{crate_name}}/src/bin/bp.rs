@@ -10,8 +10,11 @@ use std::error::Error;
 /// the application.
 fn main() -> Result<(), Box<dyn Error>> {
     let generated_dir = generated_pkg_manifest_path()?.parent().unwrap().into();
-    Client::new()
+    if let Err(e) = Client::new()
         .generate(blueprint(), generated_dir)
-        .execute()?;
+        .execute() {
+        eprintln!("{e}");
+        std::process::exit(1);
+    }
     Ok(())
 }

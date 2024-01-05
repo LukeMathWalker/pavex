@@ -57,12 +57,12 @@ pub fn get_test_name(ui_tests_folder: &Path, ui_test_folder: &Path) -> String {
 /// Our custom test runner is built on top of `libtest_mimic`, which gives us
 /// [compatibility out-of-the-box](https://nexte.st/book/custom-test-harnesses.html) with `cargo-nextest`.
 pub fn run_tests(
+    cli_path: PathBuf,
     definition_directory: PathBuf,
     runtime_directory: PathBuf,
 ) -> Result<Conclusion, anyhow::Error> {
     let arguments = libtest_mimic::Arguments::from_args();
 
-    let cli_profile = std::env::var("PAVEX_TEST_CLI_PROFILE").unwrap_or("debug".to_string());
     let target_directory_pool = TargetDirectoryPool::new(None, &runtime_directory);
 
     let mut tests = Vec::new();
@@ -77,10 +77,10 @@ pub fn run_tests(
             .load_configuration()
             .expect("Failed to load test configuration");
         let is_ignored = test_configuration.ignore;
-        let profile = cli_profile.clone();
+        let cli = cli_path.clone();
         let pool = target_directory_pool.clone();
         let test = libtest_mimic::Trial::test(name.clone(), move || {
-            run_test(test_data, test_configuration, profile, pool)
+            run_test(test_data, test_configuration, cli, pool)
         })
         .with_ignored_flag(is_ignored);
         tests.push(test);
@@ -211,7 +211,7 @@ impl TestData {
     fn seed_test_filesystem(
         &self,
         test_config: &TestConfig,
-        cli_profile: &str,
+        cli: &Path,
         target_dir: &Path,
     ) -> Result<ShouldRunTests, anyhow::Error> {
         Self::remove_target_junk(target_dir).context("Failed to clean up target directory")?;
@@ -384,12 +384,9 @@ impl TestData {
             toml::to_string(&cargo_toml)?.as_bytes(),
         )?;
 
-        // - Use sccache to avoid rebuilding the same dependencies
-        // over and over again.
         // - Use the new sparse registry to speed up registry operations.
         let mut cargo_config = toml! {
             [build]
-            rustc-wrapper = "sccache"
             incremental = false
 
             [registries.crates-io]
@@ -409,19 +406,27 @@ impl TestData {
         let main_rs = format!(
             r#"use app::blueprint;
 use pavex_cli_client::{{Client, client::Color}};
+use pavex_cli_client::commands::generate::GenerateError;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {{
-    if Client::new()
+    let outcome = Client::new()
         .color(Color::Always)
-        .pavex_cli_path("../../../../../libs/target/{cli_profile}/pavex".into())
+        .pavex_cli_path("{}".into())
         .generate(blueprint(), "generated_app".into())
         .diagnostics_path("diagnostics.dot".into())
-        .execute().is_err() {{
-        std::process::exit(1);
+        .execute();
+    match outcome {{
+        Ok(_) => {{}},
+        Err(GenerateError::NonZeroExitCode(_)) => {{ std::process::exit(1); }}
+        Err(e) => {{
+            eprintln!("Failed to invoke `pavex generate`.\n{{:?}}", e);
+            std::process::exit(1);
+        }}
     }}
     Ok(())
 }}
-"#
+"#,
+            cli.to_str().unwrap()
         );
         persist_if_changed(&source_directory.join("main.rs"), main_rs.as_bytes())?;
         Ok(if has_tests {
@@ -467,10 +472,10 @@ enum ShouldRunTests {
 fn run_test(
     test: TestData,
     config: TestConfig,
-    cli_profile: String,
+    cli: PathBuf,
     target_dir_pool: TargetDirectoryPool,
 ) -> Result<(), Failed> {
-    match _run_test(&config, &test, &cli_profile, &target_dir_pool) {
+    match _run_test(&config, &test, &cli, &target_dir_pool) {
         Ok(TestOutcome {
             outcome: Err(mut msg),
             codegen_output,
@@ -514,12 +519,12 @@ fn run_test(
 fn _run_test(
     test_config: &TestConfig,
     test: &TestData,
-    cli_profile: &str,
+    cli: &Path,
     target_dir_pool: &TargetDirectoryPool,
 ) -> Result<TestOutcome, anyhow::Error> {
     let target_dir = target_dir_pool.pull();
     let should_run_tests = test
-        .seed_test_filesystem(test_config, cli_profile, &target_dir)
+        .seed_test_filesystem(test_config, cli, &target_dir)
         .context("Failed to seed the filesystem for the test runtime folder")?;
 
     let output = std::process::Command::new("cargo")
