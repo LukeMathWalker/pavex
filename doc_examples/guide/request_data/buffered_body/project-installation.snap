@@ -1,3 +1,4 @@
+```rust title="src/blueprint.rs" hl_lines="6 7"
 use pavex::blueprint::Blueprint;
 use pavex::request::body::{BodySizeLimit, BufferedBody};
 
@@ -5,7 +6,6 @@ pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     BufferedBody::register(&mut bp);
     BodySizeLimit::register(&mut bp); // (1)!
-
-    bp.nest(crate::buffered_body::blueprint());
-    bp
+    // [...]
 }
+```

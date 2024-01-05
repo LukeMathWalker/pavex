@@ -6,6 +6,17 @@
 buffers the entire body of the incoming request in memory.  
 At the same time, it takes care of enforcing [sane limits](#body-size-limit) to prevent resource exhaustion attacks.
 
+## Installation
+
+To use [`BufferedBody`][BufferedBody] in your project, you need to register a constructor for it in 
+your [`Blueprint`][Blueprint].  
+You can use [`BufferedBody::register`][BufferedBody::register] to register the default constructor 
+and error handler:
+
+--8<-- "doc_examples/guide/request_data/buffered_body/project-installation.snap"
+
+1. You also need to register a constructor for [`BodySizeLimit`][BodySizeLimit]!
+
 ## Use cases
 
 [`BufferedBody`][BufferedBody] is the ideal building block for other extractors that need to have the entire body 
@@ -46,6 +57,7 @@ You can leverage nesting to define more granular limits.
 
 
 [BufferedBody]: ../../../../api_reference/pavex/request/body/struct.BufferedBody.html
+[BufferedBody::register]: ../../../../api_reference/pavex/request/body/struct.BufferedBody.html#method.register
 [JsonBody]: ../../../../api_reference/pavex/request/body/struct.JsonBody.html
 [BufferedBody::extract]: ../../../../api_reference/pavex/request/body/struct.BufferedBody.html#method.extract
 [SizeLimitExceeded]: ../../../../api_reference/pavex/request/body/errors/enum.ExtractBufferedBodyError.html#variant.SizeLimitExceeded
