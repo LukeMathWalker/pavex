@@ -8,8 +8,7 @@ At the same time, it takes care of enforcing [sane limits](#body-size-limit) to 
 
 ## Installation
 
-To use [`BufferedBody`][BufferedBody] in your project, you need to register a constructor for it in 
-your [`Blueprint`][Blueprint].  
+To use [`BufferedBody`][BufferedBody] in your project, you need to register a constructor for it.
 You can use [`BufferedBody::register`][BufferedBody::register] to register the default constructor 
 and error handler:
 

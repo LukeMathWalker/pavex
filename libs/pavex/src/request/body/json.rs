@@ -18,12 +18,10 @@ use super::{
 #[derive(Debug)]
 /// Parse the body of an incoming request as JSON.
 ///
-/// # Sections
+/// # Guide
 ///
-/// - [Example](#example)
-/// - [Installation](#installtion)
-/// - [Avoiding allocations](#avoiding-allocations)
-/// - [Body size limit](#body-size-limit)
+/// Check out the [relevant section](http://localhost:8001/guide/request_data/body/deserializers/json/)
+/// of Pavex's guide for a thorough introduction to `JsonBody`.
 ///
 /// # Example
 ///
@@ -48,67 +46,6 @@ use super::{
 ///     )
 /// }
 /// ```
-///
-/// # Installation
-///
-/// First of all, you need the register the default constructor and error handler for
-/// `JsonBody` in your `Blueprint`:
-///
-/// ```rust
-/// use pavex::f;
-/// use pavex::blueprint::{Blueprint, constructor::Lifecycle};
-/// use pavex::request::body::JsonBody;
-///
-/// fn blueprint() -> Blueprint {
-///     let mut bp = Blueprint::new();
-///     JsonBody::register(&mut bp);
-///     // [...]
-///     bp
-/// }
-/// ```
-///
-/// You can then use the `JsonBody` extractor as input to your route handlers and constructors.
-///
-/// # Avoiding allocations
-///
-/// If you want to minimize memory usage, you can try to avoid unnecessary memory allocations when
-/// deserializing string-like fields from the body of the incoming request.    
-/// Pavex supports this use case—you can borrow from the request body instead of having to
-/// allocate a brand new string.
-///
-/// It is not always possible to avoid allocations, though.  
-/// In particular, Pavex *must* allocate a new `String` if the JSON string you are trying to
-/// deserialize contains escape sequences, such as `\n` or `\"`.
-/// Using a `&str` in this case would result in a runtime error when attempting the deserialization.
-///
-/// Given the above, we recommend using `Cow<'_, str>` as field type: it borrows from the request
-/// body if possible, and allocates a new `String` only if strictly necessary.
-///
-/// ```rust
-/// use pavex::request::body::JsonBody;
-/// use std::borrow::Cow;
-///
-/// #[derive(serde::Deserialize)]
-/// pub struct Payee<'a> {
-///     name: Cow<'a, str>,
-/// }
-///
-/// pub fn get_payee(body: &JsonBody<Payee<'_>>) -> String {
-///    format!("The payee's name is {}", body.0.name)
-/// }
-/// ```
-///
-/// # Body size limit
-///
-/// The `JsonBody` extractor buffers the entire body in memory before
-/// attempting to deserialize it.  
-///
-/// To prevent denial-of-service attacks, Pavex enforces an upper limit on the body size.    
-/// The limit is enforced by the [`BufferedBody`] extractor,
-/// which is injected as one of the inputs of [`JsonBody::extract`]. Check out [`BufferedBody`]'s
-/// documentation for more details on the size limit (and how to configure it).
-///
-/// [`BufferedBody`]: super::buffered_body::BufferedBody
 pub struct JsonBody<T>(pub T);
 
 impl<T> JsonBody<T> {
