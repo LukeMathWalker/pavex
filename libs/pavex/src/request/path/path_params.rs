@@ -52,7 +52,7 @@ use super::RawPathParams;
 #[doc(alias = "RouteParams")]
 #[doc(alias = "UrlParams")]
 pub struct PathParams<T>(
-    /// The extracted route parameters, deserialized into `T`, the type you specified.
+    /// The extracted path parameters, deserialized into `T`, the type you specified.
     pub T,
 );
 

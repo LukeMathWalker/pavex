@@ -64,7 +64,7 @@ impl<'k, 'v> From<Params<'k, 'v>> for RawPathParams<'k, 'v> {
     }
 }
 
-/// An iterator over the route parameters extracted via [`RawPathParams`].
+/// An iterator over the path parameters extracted via [`RawPathParams`].
 pub struct RawPathParamsIter<'extractor, 'server, 'request>(
     ParamsIter<'extractor, 'server, 'request>,
 );

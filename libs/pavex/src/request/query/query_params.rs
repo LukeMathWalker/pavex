@@ -5,7 +5,7 @@ use crate::request::RequestHead;
 
 use super::errors::{ExtractQueryParamsError, QueryDeserializationError};
 
-/// Extract (typed) route parameters from the query parameters of an incoming request.
+/// Extract (typed) query parameters from the query of an incoming request.
 ///
 /// # Sections
 ///
@@ -27,8 +27,8 @@ use super::errors::{ExtractQueryParamsError, QueryDeserializationError};
 ///     home_id: u32
 /// }
 ///
-/// // The `PathParams` extractor deserializes the extracted route parameters into
-/// // the type you specified—`HomePathParams` in this case.
+/// // The `QueryParams` extractor deserializes the extracted query parameters into
+/// // the type you specified—`Home` in this case.
 /// pub fn get_home(params: &QueryParams<Home>) -> String {
 ///    format!("The identifier for this home is: {}", params.0.home_id)
 /// }
