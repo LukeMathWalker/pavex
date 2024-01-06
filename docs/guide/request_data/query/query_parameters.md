@@ -4,8 +4,7 @@ In REST APIs, the [query](index.md) is often used to encode data.
 For example, in `/search?sorted=true`,
 the query is `sorted=true` and it's used to encode a `sorted` variable set to `true`.
 
-Those variables are called **query parameters**.  
-You can extract them using [`QueryParams<T>`][QueryParams].
+Those variables are called **query parameters**. You can extract them using [`QueryParams<T>`][QueryParams].
 
 ## Registration
 
@@ -14,7 +13,6 @@ You can use [`QueryParams::register`][QueryParams::register] to register its def
 and error handler:
 
 --8<-- "doc_examples/guide/request_data/query_params/project-installation.snap"
-
 
 ## Overview
 
