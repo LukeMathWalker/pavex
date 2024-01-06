@@ -3,9 +3,20 @@
 [`JsonBody<T>`][JsonBody] buffers the body in memory and deserializes it as JSON, 
 according to the type `T` you specify.  
 
+## Registration
+
+To use [`JsonBody<T>`][JsonBody] in your application you need to register a constructor for it.  
+You can use [`JsonBody::register`][JsonBody::register] to register the default constructor
+and error handler:
+
+--8<-- "doc_examples/guide/request_data/json/project-installation.snap"
+
+1. You also need to register a constructor for [`BufferedBody`][BufferedBody]!  
+   Check out the [BufferedBody guide](../byte_wrappers.md) for more details.
+
 ## Extraction 
 
-You inject [`JsonBody<T>`][JsonBody] in your handler to access the parsed body:
+Inject [`JsonBody<T>`][JsonBody] as an input in your components to access the parsed body:
 
 --8<-- "doc_examples/guide/request_data/json/project-extraction.snap"
 
@@ -38,6 +49,8 @@ It borrows from the request's body if possible, it allocates a new `String` if i
 [`Cow<'_, str>`][Cow] strikes a balance between performance and robustness: you don't have to worry about a runtime error 
 if the field contains escape sequences, but you tried to use `&str` as its field type.
 
+[BufferedBody]: ../../../../api_reference/pavex/request/body/struct.BufferedBody.html
 [JsonBody]: ../../../../api_reference/pavex/request/body/struct.JsonBody.html
+[JsonBody::register]: ../../../../api_reference/pavex/request/body/struct.JsonBody.html#method.register
 [serde::Deserialize]: https://docs.rs/serde/latest/serde/trait.Deserialize.html
 [Cow]: https://doc.rust-lang.org/std/borrow/enum.Cow.html

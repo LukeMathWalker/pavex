@@ -6,6 +6,15 @@ For example, in `https://example.com/users/123`, the path is `/users/123` and th
 Those dynamic path segments are called **path parameters**.  
 In Pavex, you must declare the path parameters for a given path in the route definition—see [Path parameters](../../routing/path_patterns.md#route-parameters)
 for more details.
+You then use [`PathParams<T>`][PathParams] to extract the parameters from the incoming request.
+
+## Registration
+
+To use [`PathParams<T>`][PathParams] in your application you need to register a constructor for it.  
+You can use [`PathParams::register`][PathParams::register] to register its default constructor
+and error handler:
+
+--8<-- "doc_examples/guide/request_data/route_params/project-route_params_installation.snap"
 
 ## Overview
 
@@ -48,7 +57,7 @@ From an application perspective, you might want to enforce stricter constraints.
 
 In our example, we expect `id` parameter to be a number.  
 We could set the field type for `id` to `String` and then parse it into a number in the handler; however, that's going
-to get tedious if we need to do it every single time we want to work with a numeric route parameter.  
+to get tedious if we need to do it every single time we want to work with a numeric path parameter.  
 We can skip all that boilerplate by setting the field type to `u64` directly, and let Pavex do the parsing for us:
 
 --8<-- "doc_examples/guide/request_data/route_params/project-route_params_typed_field.snap"
@@ -58,7 +67,7 @@ Everything works as expected because `u64` implements the [`serde::Deserialize`]
 ### Unsupported field types
 
 Path parameters are best used to encode **values**, such as numbers, strings, or dates.  
-There is no standard way to encode more complex types such as collections (e.g. `Vec<T>`, tuples) in a route parameter.
+There is no standard way to encode more complex types such as collections (e.g. `Vec<T>`, tuples) in a path parameter.
 As a result, Pavex doesn't support them.
 
 Pavex will do its best to catch unsupported types at compile time, but it's not always possible.
@@ -75,62 +84,79 @@ It is not always possible to avoid allocations when handling path parameters.
 Path parameters must comply with the restriction of the URI specification:
 you can only use [a limited set of characters](https://datatracker.ietf.org/doc/html/rfc3986#section-2).  
 If you want to use a character not allowed in a URI, you must [percent-encode it](https://developer.mozilla.org/en-US/docs/Glossary/Percent-encoding).  
-For example, if you want to use a space in a route parameter, you must encode it as `%20`.
+For example, if you want to use a space in a path parameter, you must encode it as `%20`.
 A string like `John Doe` becomes `John%20Doe` when percent-encoded.
 
 [`PathParams<T>`][PathParams] automatically decodes percent-encoded strings for you. But that comes at a cost:
-Pavex _must_ allocate a new `String` if the route parameter is percent-encoded.
+Pavex _must_ allocate a new `String` if the path parameter is percent-encoded.
 
 ### Cow
 
 We recommend using [`Cow<'_, str>`][Cow] as your field type for string-like parameters.
 It borrows from the request's path if possible, it allocates a new `String` if it can't be avoided.
 
-[`Cow<'_, str>`][Cow] strikes a balance between performance and robustness: you don't have to worry about a runtime error if the route parameter
+[`Cow<'_, str>`][Cow] strikes a balance between performance and robustness:
+you don't have to worry about a runtime error if the path parameter
 is percent-encoded, but you tried to use `&str` as its field type.
 
-## `RawPathParams`
+## Design considerations
 
-[`PathParams<T>`][PathParams] is a high-level interface: it bundles together compile-time checks,
-extraction and parsing.  
-If you want to opt out of all those utilities, reach for [`RawPathParams`][RawPathParams].  
-It is a lower-level interface[^relationship]: it gives you access to the dynamic
-path segments as they appear right after extraction.
-It doesn't perform percent-decoding not deserialization.
+Pavex wants to enable local reasoning. It should be easy to understand what
+each extracted path parameter represents.  
+Structs with named fields are ideal in this regard: by looking at the field name you can
+immediately understand _which_ path parameter is being extracted.  
+The same is not true for other types, e.g. `(String, u64, u32)`, where you have to go and
+check the route's path pattern to understand what each entry represents.
 
-### Injection
+```rust
+use pavex::request::path::PathParams;
 
-[`RawPathParams`][RawPathParams] is a [framework primitive](../../dependency_injection/core_concepts/framework_primitives.md),
-you don't have to register a constructor to inject it.
+// This is self-documenting ✅
+// No need to check the route's path pattern to understand what each field represents.
+#[PathParams]
+pub struct Room {
+    home_id: u32,
+    room_id: u32,
+    street_id: u32,
+}
 
---8<-- "doc_examples/guide/request_data/route_params/project-raw_route_params.snap"
+pub fn get_room(params: &PathParams<Room>) -> String {
+    // [...]
+}
 
-### Allocations
+// This isn't self-documenting ❌
+// What does the second u32 represent? The room id? The street id?
+// Impossible to tell without checking the route's path template.
+pub fn get_room_tuple(params: &PathParams<(u32, u32, u32)>) -> String {
+    // [...]
+}
+```
 
-[`RawPathParams`][RawPathParams] tries to avoid heap memory allocations.  
-Parameter names are borrowed from the server routing machinery.  
-Parameter values are borrowed from the [raw path](index.md) of the incoming request. 
+For this reason, Pavex does not support the following types as `T` in [`PathParams<T>`][PathParams]:
 
-You might have to allocate when you decode [percent-encoded parameters](#percent-encoding).
+- tuples, e.g. `(u32, String)`
+- tuple structs, e.g. `struct HomeId(u32, String)`
+- unit structs, e.g. `struct HomeId`
+- newtypes, e.g. `struct HomeId(MyParamsStruct)`
+- sequence-like or map-like types, e.g. `Vec<String>` or `HashMap<String, String>`
+- enums
 
 [^why-struct]: Pavex made a deliberate choice of _not_ supporting tuples or other sequence-like types for extracting path parameters.
 Check out [the API reference](../../../api_reference/pavex/request/path/struct.PathParams.html#unsupported-types)
 to learn more about the rationale behind this decision.
 
-[^wrong-name]: If a field name doesn't match a route parameter name, Pavex will detect it at compile time and return
+[^wrong-name]: If a field name doesn't match a path parameter name, Pavex will detect it at compile time and return
 an error.
 No more runtime errors because you misspelled a field name!
 
 [^structural-deserialize]: Check the documentation for [`StructuralDeserialize`][StructuralDeserialize] if you want
 to know more about the underlying mechanism.
 
-[^relationship]: [`PathParams<T>`][PathParams] is built on top of [`RawPathParams`][RawPathParams].
-
 [RequestHead]: ../../../api_reference/pavex/request/struct.RequestHead.html
 [RequestHead::target]: ../../../api_reference/pavex/request/struct.RequestHead.html#structfield.target
 [PathParams]: ../../../api_reference/pavex/request/path/struct.PathParams.html
+[PathParams::register]: ../../../api_reference/pavex/request/path/struct.PathParams.html#method.register
 [PathParamsMacro]: ../../../api_reference/pavex/request/path/attr.PathParams.html
 [serde::Deserialize]: https://docs.rs/serde/latest/serde/trait.Deserialize.html
 [StructuralDeserialize]: ../../../api_reference/pavex/serialization/trait.StructuralDeserialize.html
 [Cow]: https://doc.rust-lang.org/std/borrow/enum.Cow.html
-[RawPathParams]: ../../../api_reference/pavex/request/path/struct.RawPathParams.html

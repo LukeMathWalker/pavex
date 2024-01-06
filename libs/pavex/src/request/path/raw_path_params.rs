@@ -5,7 +5,12 @@ use percent_encoding::percent_decode_str;
 
 use crate::request::path::errors::DecodeError;
 
-/// Extract (raw) route parameters from the URL of an incoming request.
+/// Extract (raw) path parameters from the URL of an incoming request.
+///
+/// # Guide
+///
+/// Check out [the guide](https://pavex.dev/docs/guide/request_data/path/raw_path_parameters/)
+/// for more information on how to use this extractor.
 ///
 /// # Example
 ///
@@ -17,7 +22,7 @@ use crate::request::path::errors::DecodeError;
 /// fn blueprint() -> Blueprint {
 ///     let mut bp = Blueprint::new();
 ///     // [...]
-///     // Register a route with a few route parameters.
+///     // Register a route with a few path parameters.
 ///     bp.route(GET, "/address/:address_id/home/:home_id", f!(crate::get_home));
 ///     bp
 /// }
@@ -28,50 +33,16 @@ use crate::request::path::errors::DecodeError;
 ///     format!("The home with id {} is in street {}", home_id, street_id)
 /// }
 /// ```
-///
-/// # Framework primitive
-///
-/// `RawPathParams` is a framework primitive—you don't need to register any constructor
-/// with `Blueprint` to use it in your application.
-///
-/// # What does "raw" mean?
-///
-/// Route parameters are URL segments, therefore they must comply with the restrictions that apply
-/// to the URL itself. In particular, they can only use ASCII characters.  
-/// In order to support non-ASCII characters, route parameters are
-/// [percent-encoded](https://www.w3schools.com/tags/ref_urlencode.ASP).  
-/// If you want to send "123 456" as a route parameter, you have to percent-encode it: it becomes
-/// "123%20456" since "%20" is the percent-encoding for a space character.
-///
-/// `RawPathParams` gives you access to the **raw** route parameters, i.e. the route parameters
-/// as they are extracted from the URL, before any kind of processing has taken
-/// place.
-///
-/// In particular, `RawPathParams` does **not** perform any percent-decoding.  
-/// If you send a request to `/address/123%20456/home/789`, the `RawPathParams` for
-/// `/address/:address_id/home/:home_id` will contain the following key-value pairs:
-///
-/// - `address_id`: `123%20456`
-/// - `home_id`: `789`
-///
-/// `address_id` is not `123 456` because `RawPathParams` does not perform percent-decoding!
-/// Therefore `%20` is not interpreted as a space character.
-///
-/// There are situations where you might want to work with the raw route parameters, but
-/// most of the time you'll want to use [`PathParams`] instead—it performs percent-decoding
-/// and deserialization for you.
-///
-/// [`PathParams`]: struct@crate::request::path::PathParams
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct RawPathParams<'server, 'request>(Params<'server, 'request>);
 
 impl<'server, 'request> RawPathParams<'server, 'request> {
-    /// Returns the number of extracted route parameters.
+    /// Returns the number of extracted path parameters.
     pub fn len(&self) -> usize {
         self.0.len()
     }
 
-    /// Returns the value of the first route parameter registered under the given key.
+    /// Returns the value of the first path parameter registered under the given key.
     pub fn get(&self, key: impl AsRef<str>) -> Option<&'request str> {
         self.0.get(key)
     }
@@ -81,7 +52,7 @@ impl<'server, 'request> RawPathParams<'server, 'request> {
         RawPathParamsIter(self.0.iter())
     }
 
-    /// Returns `true` if no route parameters have been extracted from the request URL.
+    /// Returns `true` if no path parameters have been extracted from the request's path.
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
@@ -93,7 +64,7 @@ impl<'k, 'v> From<Params<'k, 'v>> for RawPathParams<'k, 'v> {
     }
 }
 
-/// An iterator over the route parameters extracted via [`RawPathParams`].
+/// An iterator over the path parameters extracted via [`RawPathParams`].
 pub struct RawPathParamsIter<'extractor, 'server, 'request>(
     ParamsIter<'extractor, 'server, 'request>,
 );
@@ -108,7 +79,7 @@ impl<'extractor, 'server, 'request> Iterator for RawPathParamsIter<'extractor, '
     }
 }
 
-/// A wrapper around a percent-encoded route parameter, obtained via [`RawPathParams`].
+/// A wrapper around a percent-encoded path parameter, obtained via [`RawPathParams`].
 ///
 /// Use [`decode`](Self::decode) to extract the percent-encoded value.
 #[derive(Debug, Clone, Hash, Ord, PartialOrd, Eq, PartialEq)]
@@ -119,7 +90,7 @@ impl<'request> EncodedParamValue<'request> {
         Self(s)
     }
 
-    /// Percent-decode a raw route parameter.
+    /// Percent-decode a raw path parameter.
     ///
     /// If decoding fails, a [`DecodeError`] is returned.
     pub fn decode(&self) -> Result<Cow<'request, str>, DecodeError> {

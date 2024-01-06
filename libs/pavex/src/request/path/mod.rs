@@ -4,12 +4,12 @@
 //!
 //! When it comes to route information, there are two important extractors to be aware of:
 //!
-//! - [`PathParams`]: extract route parameters from the URL of incoming requests
+//! - [`PathParams`]: extract path parameters from the URL of incoming requests
 //! - [`MatchedPathPattern`]: extract the route template that matched for the incoming request
 //!
 //! Check out their documentation for more details.
 //!
-//! # Example: route parameters
+//! # Example: path parameters
 //!
 //! ```rust
 //! use pavex::f;
@@ -19,7 +19,7 @@
 //! fn blueprint() -> Blueprint{
 //!     let mut bp = Blueprint::new();
 //!     // [...]
-//!     // Register a route with a route parameter, `:home_id`.
+//!     // Register a route with a path parameter, `:home_id`.
 //!     bp.route(GET, "/home/:home_id", f!(crate::get_home));
 //!     bp
 //! }
@@ -27,12 +27,12 @@
 //! // The PathParams attribute macro derives the necessary (de)serialization traits.
 //! #[PathParams]
 //! struct Home {
-//!     // The name of the field must match the name of the route parameter
+//!     // The name of the field must match the name of the path parameter
 //!     // used in `bp.route`.
 //!     home_id: u32
 //! }
 //!
-//! // The `PathParams` extractor deserializes the extracted route parameters into
+//! // The `PathParams` extractor deserializes the extracted path parameters into
 //! // the type you specified—`Home` in this case.
 //! fn get_home(params: &PathParams<Home>) -> String {
 //!    format!("The identifier for this home is: {}", params.0.home_id)
@@ -45,13 +45,13 @@
 
 pub use matched_path::MatchedPathPattern;
 pub use path_params::PathParams;
-/// Derive (de)serialization logic for a type that is going to be used to extract route parameters.
+/// Derive (de)serialization logic for a type that is going to be used to extract path parameters.
 ///
 /// This macro derives [`StructuralDeserialize`], [`serde::Serialize`] and [`serde::Deserialize`]
 /// for the type that it is applied to.
 ///
 /// Check out [`PathParams`](struct@PathParams) for more details on how to work with
-/// route parameters in Pavex.  
+/// path parameters in Pavex.  
 /// Check out [`StructuralDeserialize`] if you are curious about the rationale behind this
 /// macro.
 ///
@@ -65,7 +65,7 @@ pub use path_params::PathParams;
 /// fn blueprint() -> Blueprint { ///
 ///     let mut bp = Blueprint::new();
 ///     // [...]
-///     // Register a route with a route parameter, `:home_id`.
+///     // Register a route with a path parameter, `:home_id`.
 ///     bp.route(GET, "/home/:home_id", f!(crate::get_home));
 ///     # bp
 /// }

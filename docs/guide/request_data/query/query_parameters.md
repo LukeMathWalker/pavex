@@ -4,7 +4,15 @@ In REST APIs, the [query](index.md) is often used to encode data.
 For example, in `/search?sorted=true`,
 the query is `sorted=true` and it's used to encode a `sorted` variable set to `true`.
 
-Those variables are called **query parameters**.  
+Those variables are called **query parameters**. You can extract them using [`QueryParams<T>`][QueryParams].
+
+## Registration
+
+To use [`QueryParams<T>`][QueryParams] in your application you need to register a constructor for it.  
+You can use [`QueryParams::register`][QueryParams::register] to register its default constructor
+and error handler:
+
+--8<-- "doc_examples/guide/request_data/query_params/project-installation.snap"
 
 ## Overview
 
@@ -134,5 +142,6 @@ It borrows from the request's path if possible, it allocates a new `String` if i
 is percent-encoded, but you tried to use `&str` as its field type.
 
 [QueryParams]: ../../../api_reference/pavex/request/query/struct.QueryParams.html
+[QueryParams::register]: ../../../api_reference/pavex/request/query/struct.QueryParams.html#method.register
 [serde::Deserialize]: https://docs.rs/serde/latest/serde/trait.Deserialize.html
 [Cow]: https://doc.rust-lang.org/std/borrow/enum.Cow.html

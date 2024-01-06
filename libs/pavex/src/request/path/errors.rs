@@ -1,4 +1,4 @@
-//! Errors that can happen when extracting route parameters.
+//! Errors that can happen when extracting path parameters.
 use std::str::Utf8Error;
 
 use crate::response::Response;
@@ -24,7 +24,7 @@ pub enum ExtractPathParamsError {
 
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
-/// One of the percent-decoded route parameters is not a valid UTF8 string.
+/// One of the percent-decoded path parameters is not a valid UTF8 string.
 ///
 /// URL parameters must be percent-encoded whenever they contain characters that are not
 /// URL safe—e.g. whitespaces.
@@ -56,10 +56,10 @@ pub struct InvalidUtf8InPathParam {
     pub(super) source: Utf8Error,
 }
 
-/// The error returned by [`EncodedParamValue::decode`] when the percent-decoded route parameter
+/// The error returned by [`EncodedParamValue::decode`] when the percent-decoded path parameter
 /// is not a valid UTF8 string.
 ///
-/// Route parameters must be percent-encoded whenever they contain characters that are not
+/// Path parameters must be percent-encoded whenever they contain characters that are not
 /// URL safe—e.g. whitespaces.
 /// This error is returned whenever the percent-decoding step fails—i.e. the decoded data is not a
 /// valid UTF8 string.

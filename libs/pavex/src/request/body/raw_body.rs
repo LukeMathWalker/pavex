@@ -6,24 +6,17 @@ use hyper::body::Incoming;
 use pin_project_lite::pin_project;
 
 pin_project! {
-    /// The raw body of an incoming HTTP request.
-    ///
-    /// It represents the stream of [`Bytes`](bytes::Bytes) received from the network.
-    ///
-    /// # Framework primitive
-    ///
-    /// `RawIncomingBody` is a framework primitive—you don't need to register any constructor
-    /// with `Blueprint` to use it in your application.
-    ///
-    /// # ⚠️ Warning
-    ///
-    /// You need to careful when working with `RawIncomingBody`: it doesn't provide any safeguards
-    /// against malicious clients.
-    /// You should generally prefer [`BufferedBody`] instead, which enforces a size limit on the
-    /// incoming body.
-    ///
-    /// [`BufferedBody`]: crate::request::body::BufferedBody
     #[derive(Debug)]
+
+    /// The raw body of the incoming HTTP request.
+    ///
+    /// # Guide
+    ///
+    /// You're looking at the stream of bytes coming from the network.
+    /// There are **no safeguards nor conveniences**.
+    ///
+    /// Check out [the guide](https://pavex.dev/docs/guide/request_data/wire_data/)
+    /// for a thorough introduction to `RawIncomingBody` and guidance on when to use it.
     pub struct RawIncomingBody {
         #[pin] inner: Incoming,
     }

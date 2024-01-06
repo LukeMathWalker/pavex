@@ -1,0 +1,10 @@
+```rust title="src/blueprint.rs" hl_lines="6"
+use pavex::blueprint::Blueprint;
+use pavex::request::path::PathParams;
+
+pub fn blueprint() -> Blueprint {
+    let mut bp = Blueprint::new();
+    PathParams::register(&mut bp);
+    // [...]
+}
+```

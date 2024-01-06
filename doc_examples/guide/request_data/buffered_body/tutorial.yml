@@ -3,6 +3,10 @@ commands:
   - command: "cargo px c"
     expected_outcome: "success"
 snippets:
+  - name: "installation"
+    source_path: "src/blueprint.rs"
+    ranges: [ "0..7", "10..12" ]
+    hl_lines: [ 6, 7 ]
   - name: "extraction"
     source_path: "src/buffered_body/routes.rs"
     ranges: [ "0..5", "6..7" ]
