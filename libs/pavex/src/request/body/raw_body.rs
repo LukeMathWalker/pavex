@@ -24,6 +24,16 @@ pin_project! {
     ///
     /// [`BufferedBody`]: crate::request::body::BufferedBody
     #[derive(Debug)]
+
+    /// The raw body of the incoming HTTP request.
+    ///
+    /// # Guide
+    ///
+    /// You're looking at the stream of bytes coming from the network.
+    /// There are **no safeguards nor conveniences**.
+    ///
+    /// Check out the [relevant section of the guide](https://pavex.dev/docs/guide/request_data/wire_data/)
+    /// for a thorough introduction to `RawIncomingBody` and guidance on when to use it.
     pub struct RawIncomingBody {
         #[pin] inner: Incoming,
     }
