@@ -5,7 +5,7 @@ according to the type `T` you specify.
 
 ## Installation
 
-To use [`JsonBody<T>`][JsonBody] in your body you need to register a constructor for it.  
+To use [`JsonBody<T>`][JsonBody] in your application you need to register a constructor for it.  
 You can use [`JsonBody::register`][JsonBody::register] to register the default constructor
 and error handler:
 
@@ -16,7 +16,7 @@ and error handler:
 
 ## Extraction 
 
-You inject [`JsonBody<T>`][JsonBody] in your handler to access the parsed body:
+Inject [`JsonBody<T>`][JsonBody] as an input in your components to access the parsed body:
 
 --8<-- "doc_examples/guide/request_data/json/project-extraction.snap"
 
