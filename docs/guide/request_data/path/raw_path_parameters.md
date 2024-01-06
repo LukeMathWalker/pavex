@@ -46,7 +46,7 @@ and deserialization for you.
 Parameter names are borrowed from the server routing machinery.  
 Parameter values are borrowed from the [raw path](index.md) of the incoming request.
 
-You might have to allocate when [you perform percent-decoding][EncodedParamValue].
+You might have to allocate when [you perform percent-decoding][EncodedParamValue::decode].
 
 
 [^relationship]: [`PathParams<T>`][PathParams] is built on top of [`RawPathParams`][RawPathParams].

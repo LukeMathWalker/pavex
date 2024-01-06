@@ -29,7 +29,7 @@ use super::{
 /// # Security
 ///
 /// `BufferedBody` includes a size limit to prevent denial-of-service attacks.
-/// Check out [the guide](https://pavex.dev/docs/guide/request_data/body/byte_wrappers/)
+/// Check out [the guide](https://pavex.dev/docs/guide/request_data/body/byte_wrappers/#body-size-limit)
 /// for examples on how to configure it.
 ///
 /// # Example
