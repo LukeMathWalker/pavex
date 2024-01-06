@@ -4,19 +4,21 @@ use http::{HeaderMap, Method, Uri, Version};
 #[derive(Debug)]
 /// All the information that is transmitted as part of an HTTP request ahead of the body.
 ///
-/// It includes the [method](Method), the [URI](Uri),
+/// It includes the [method](Method), the [target](Uri),
 /// the [HTTP version](Version), and the [headers](HeaderMap).
 ///
-/// # Framework primitive
+/// # Guide
 ///
-/// `RequestHead` is a framework primitive—you don't need to register any constructor
-/// with [`Blueprint`] to use it in your application.
-///
-/// [`Blueprint`]: crate::blueprint::Blueprint
+/// Check out [the guide](https://pavex.dev/docs/guide/request_data/wire_data/)
+/// for a thorough introduction to `RequestHead`.
 pub struct RequestHead {
+    /// The HTTP method of the request.
     pub method: Method,
+    /// The [target](https://datatracker.ietf.org/doc/html/rfc7230#section-5.3) of the request.
     pub target: Uri,
+    /// The HTTP version used by the request.
     pub version: Version,
+    /// The headers attached to the request.
     pub headers: HeaderMap,
 }
 

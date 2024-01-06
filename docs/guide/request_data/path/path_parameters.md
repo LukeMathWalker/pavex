@@ -89,30 +89,6 @@ It borrows from the request's path if possible, it allocates a new `String` if i
 [`Cow<'_, str>`][Cow] strikes a balance between performance and robustness: you don't have to worry about a runtime error if the route parameter
 is percent-encoded, but you tried to use `&str` as its field type.
 
-## `RawPathParams`
-
-[`PathParams<T>`][PathParams] is a high-level interface: it bundles together compile-time checks,
-extraction and parsing.  
-If you want to opt out of all those utilities, reach for [`RawPathParams`][RawPathParams].  
-It is a lower-level interface[^relationship]: it gives you access to the dynamic
-path segments as they appear right after extraction.
-It doesn't perform percent-decoding not deserialization.
-
-### Injection
-
-[`RawPathParams`][RawPathParams] is a [framework primitive](../../dependency_injection/core_concepts/framework_primitives.md),
-you don't have to register a constructor to inject it.
-
---8<-- "doc_examples/guide/request_data/route_params/project-raw_route_params.snap"
-
-### Allocations
-
-[`RawPathParams`][RawPathParams] tries to avoid heap memory allocations.  
-Parameter names are borrowed from the server routing machinery.  
-Parameter values are borrowed from the [raw path](index.md) of the incoming request. 
-
-You might have to allocate when you decode [percent-encoded parameters](#percent-encoding).
-
 [^why-struct]: Pavex made a deliberate choice of _not_ supporting tuples or other sequence-like types for extracting path parameters.
 Check out [the API reference](../../../api_reference/pavex/request/path/struct.PathParams.html#unsupported-types)
 to learn more about the rationale behind this decision.
@@ -133,4 +109,3 @@ to know more about the underlying mechanism.
 [serde::Deserialize]: https://docs.rs/serde/latest/serde/trait.Deserialize.html
 [StructuralDeserialize]: ../../../api_reference/pavex/serialization/trait.StructuralDeserialize.html
 [Cow]: https://doc.rust-lang.org/std/borrow/enum.Cow.html
-[RawPathParams]: ../../../api_reference/pavex/request/path/struct.RawPathParams.html
