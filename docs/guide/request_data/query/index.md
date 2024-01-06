@@ -9,7 +9,7 @@ out of the raw query.
 
 ## Injection
 
-Inject [`RequestHead`][RequestHead] to access the raw query via its [`uri`][RequestHead::target] field:
+Inject [`RequestHead`][RequestHead] to access the raw query via its [`target`][RequestHead::target] field:
 
 --8<-- "doc_examples/guide/request_data/query/project-raw_query.snap"
 
