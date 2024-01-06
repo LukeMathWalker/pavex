@@ -3,6 +3,10 @@ commands:
   - command: "cargo px c"
     expected_outcome: "success"
 snippets:
+  - name: "route_params_installation"
+    source_path: "src/blueprint.rs"
+    ranges: [ "0..6", "8..9" ]
+    hl_lines: [ 6 ]
   - name: "route_params_registration"
     source_path: "src/route_params/blueprint.rs"
     ranges: [ ".." ]

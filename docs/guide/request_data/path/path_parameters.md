@@ -6,6 +6,15 @@ For example, in `https://example.com/users/123`, the path is `/users/123` and th
 Those dynamic path segments are called **path parameters**.  
 In Pavex, you must declare the path parameters for a given path in the route definition—see [Path parameters](../../routing/path_patterns.md#route-parameters)
 for more details.
+You then use [`PathParams<T>`][PathParams] to extract the parameters from the incoming request.
+
+## Registration
+
+To use [`PathParams<T>`][PathParams] in your application you need to register a constructor for it.  
+You can use [`PathParams::register`][PathParams::register] to register its default constructor
+and error handler:
+
+--8<-- "doc_examples/guide/request_data/route_params/project-route_params_installation.snap"
 
 ## Overview
 
@@ -146,6 +155,7 @@ to know more about the underlying mechanism.
 [RequestHead]: ../../../api_reference/pavex/request/struct.RequestHead.html
 [RequestHead::target]: ../../../api_reference/pavex/request/struct.RequestHead.html#structfield.target
 [PathParams]: ../../../api_reference/pavex/request/path/struct.PathParams.html
+[PathParams::register]: ../../../api_reference/pavex/request/path/struct.PathParams.html#method.register
 [PathParamsMacro]: ../../../api_reference/pavex/request/path/attr.PathParams.html
 [serde::Deserialize]: https://docs.rs/serde/latest/serde/trait.Deserialize.html
 [StructuralDeserialize]: ../../../api_reference/pavex/serialization/trait.StructuralDeserialize.html

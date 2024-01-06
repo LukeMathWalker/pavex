@@ -3,7 +3,7 @@
 [`JsonBody<T>`][JsonBody] buffers the body in memory and deserializes it as JSON, 
 according to the type `T` you specify.  
 
-## Installation
+## Registration
 
 To use [`JsonBody<T>`][JsonBody] in your application you need to register a constructor for it.  
 You can use [`JsonBody::register`][JsonBody::register] to register the default constructor

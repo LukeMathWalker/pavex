@@ -6,10 +6,10 @@
 buffers the entire body of the incoming request in memory.  
 At the same time, it takes care of enforcing [sane limits](#body-size-limit) to prevent resource exhaustion attacks.
 
-## Installation
+## Registration
 
 To use [`BufferedBody`][BufferedBody] in your project, you need to register a constructor for it.
-You can use [`BufferedBody::register`][BufferedBody::register] to register the default constructor 
+You can use [`BufferedBody::register`][BufferedBody::register] to register its default constructor 
 and error handler:
 
 --8<-- "doc_examples/guide/request_data/buffered_body/project-installation.snap"
