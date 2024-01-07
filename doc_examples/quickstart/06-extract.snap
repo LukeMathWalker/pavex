@@ -1,5 +1,6 @@
-```rust title="demo/src/user_agent.rs" hl_lines="4 5 6 7 8 9 10 11 12 13"
+```rust title="demo/src/user_agent.rs" hl_lines="5 6 7 8 9 10 11 12 13 14"
 use pavex::http::header::USER_AGENT;
+use pavex::request::RequestHead;
 // [...]
 impl UserAgent {
     pub fn extract(request_head: &RequestHead) -> Self {
