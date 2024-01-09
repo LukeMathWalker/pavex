@@ -8,11 +8,11 @@ The framework primitives are:
 
 - [`RequestHead`][RequestHead]. The incoming request data, minus the body.
 - [`RawIncomingBody`][RawIncomingBody]. The raw body of the incoming request.
-- [`PathParams`][PathParams]. The path parameters extracted from the incoming request.
+- [`RawPathParams`][RawPathParams]. The raw path parameters extracted from the incoming request.
 - [`AllowedMethods`][AllowedMethods]. The HTTP methods allowed for the current request path.
 
 They represent raw data from the incoming request ([`RequestHead`][RequestHead], [`RawIncomingBody`][RawIncomingBody])
-or information coming from the routing system ([`AllowedMethods`][AllowedMethods], [`PathParams`][PathParams]).
+or information coming from the routing system ([`AllowedMethods`][AllowedMethods], [`RawPathParams`][RawPathParams]).
 
 ## Convenient, but inflexible
 
@@ -26,7 +26,7 @@ You lose this flexibility with framework primitives: you can't customize how the
 That's why we try to keep their number to a minimum.
 
 [RequestHead]: ../../../api_reference/pavex/request/struct.RequestHead.html
-[PathParams]: ../../../api_reference/pavex/request/path/struct.PathParams.html
+[RawPathParams]: ../../../api_reference/pavex/request/path/struct.RawPathParams.html
 [AllowedMethods]: ../../../api_reference/pavex/router/enum.AllowedMethods.html
 [RawIncomingBody]: ../../../api_reference/pavex/request/body/struct.RawIncomingBody.html
 [JsonBody]: ../../../api_reference/pavex/request/body/struct.JsonBody.html
