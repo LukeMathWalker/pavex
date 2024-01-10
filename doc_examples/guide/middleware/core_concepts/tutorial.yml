@@ -1,0 +1,16 @@
+starter_project_folder: "project"
+commands:
+  - command: "cargo px c"
+    expected_outcome: "success"
+snippets:
+  - name: "basic"
+    source_path: "src/core/mw.rs"
+    ranges: [ ".." ]
+  - name: "registration"
+    source_path: "src/core/blueprint.rs"
+    ranges: [ ".." ]
+    hl_lines: [ 7 ]
+  - name: "into_future"
+    source_path: "src/logging/mw.rs"
+    ranges: [ ".." ]
+    hl_lines: [ 11 ]
