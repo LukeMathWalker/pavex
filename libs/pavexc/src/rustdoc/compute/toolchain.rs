@@ -1,5 +1,6 @@
 use anyhow::Context;
-use std::path::{Path, PathBuf};
+use once_cell::sync::OnceCell;
+use std::path::PathBuf;
 
 #[tracing::instrument(
     skip_all,
@@ -29,31 +30,43 @@ fn get_json_docs_root_folder_via_rustup() -> Result<PathBuf, anyhow::Error> {
 /// `<toolchain root folder>/bin/cargo`. Therefore we compute `<toolchain root folder>` by chopping
 /// off the final two components of the path returned by `rustup`.
 fn get_nightly_toolchain_root_folder_via_rustup() -> Result<PathBuf, anyhow::Error> {
-    let mut cmd = std::process::Command::new("rustup");
-    cmd.arg("which")
-        .arg("--toolchain")
-        .arg("nightly")
-        .arg("cargo");
-
-    let output = cmd.output().with_context(|| {
-        format!("Failed to run a `rustup` command. Is `rustup` installed?\n{cmd:?}")
-    })?;
-
-    if !output.status.success() {
-        anyhow::bail!(
-            "An invocation of `rustup` exited with non-zero status code.\n{:?}",
-            cmd
-        );
-    }
-    let path = std::str::from_utf8(&output.stdout)
-        .with_context(|| {
-            format!("An invocation of `rustup` returned non-UTF8 data as output.\n{cmd:?}")
-        })?
-        .trim();
-    let path = Path::new(path);
+    let cargo_path = get_nightly_cargo_via_rustup()?;
     debug_assert!(
-        path.ends_with("bin/cargo"),
-        "The path to the `cargo` binary for nightly doesn't have the expected structure: {path:?}"
+        cargo_path.ends_with("bin/cargo"),
+        "The path to the `cargo` binary for nightly doesn't have the expected structure: {cargo_path:?}"
     );
-    Ok(path.parent().unwrap().parent().unwrap().to_path_buf())
+    Ok(cargo_path.parent().unwrap().parent().unwrap().to_path_buf())
+}
+
+static NIGHTLY_CARGO: OnceCell<PathBuf> = OnceCell::new();
+
+pub(super) fn get_nightly_cargo_via_rustup() -> Result<PathBuf, anyhow::Error> {
+    fn compute_nightly_cargo_via_rustup() -> Result<PathBuf, anyhow::Error> {
+        let mut cmd = std::process::Command::new("rustup");
+        cmd.arg("which")
+            .arg("--toolchain")
+            .arg("nightly")
+            .arg("cargo");
+
+        let output = cmd.output().with_context(|| {
+            format!("Failed to run a `rustup` command. Is `rustup` installed?\n{cmd:?}")
+        })?;
+
+        if !output.status.success() {
+            anyhow::bail!(
+                "An invocation of `rustup` exited with non-zero status code.\n{:?}",
+                cmd
+            );
+        }
+        let path = std::str::from_utf8(&output.stdout)
+            .with_context(|| {
+                format!("An invocation of `rustup` returned non-UTF8 data as output.\n{cmd:?}")
+            })?
+            .trim();
+        Ok(PathBuf::from(path))
+    }
+
+    NIGHTLY_CARGO
+        .get_or_try_init(|| compute_nightly_cargo_via_rustup())
+        .map(ToOwned::to_owned)
 }

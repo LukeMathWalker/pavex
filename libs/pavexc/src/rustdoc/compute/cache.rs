@@ -680,22 +680,26 @@ impl<'a> ThirdPartyCrateCacheKey<'a> {
     }
 }
 
-/// Return the output of `cargo +nightly --verbose --version`,
-/// which can be used to fingerprint the `cargo` toolchain used by Pavex.
+/// Return the output of `cargo --verbose --version` for the nightly toolchain,
+/// which can be used to fingerprint the toolchain used by Pavex.
 pub fn cargo_fingerprint() -> Result<String, anyhow::Error> {
     let err_msg = || {
-        "Failed to run `cargo +nightly --verbose --version`.\n
+        "Failed to run `cargo --verbose --version` on `nightly`.\n
         Is the `nightly` toolchain installed?\n
         If not, invoke `rustup toolchain install nightly` to fix it."
     };
-    let mut cmd = std::process::Command::new("cargo");
-    cmd.arg("+nightly").arg("--verbose").arg("--version");
+    let mut cmd = std::process::Command::new("rustup");
+    cmd.arg("run")
+        .arg("nightly")
+        .arg("cargo")
+        .arg("--verbose")
+        .arg("--version");
     let output = cmd.output().with_context(err_msg)?;
     if !output.status.success() {
         anyhow::bail!(err_msg());
     }
     let output = String::from_utf8(output.stdout).with_context(|| {
-        "An invocation of `cargo +nightly --verbose --version` returned non-UTF8 data as output."
+        "An invocation of `cargo --verbose --version` for the nightly toolchain returned non-UTF8 data as output."
     })?;
     Ok(output)
 }
