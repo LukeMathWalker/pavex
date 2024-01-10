@@ -688,9 +688,12 @@ pub fn cargo_fingerprint() -> Result<String, anyhow::Error> {
         Is the `nightly` toolchain installed?\n
         If not, invoke `rustup toolchain install nightly` to fix it."
     };
-    let nightly_cargo_path = toolchain::get_nightly_cargo_via_rustup()?;
-    let mut cmd = std::process::Command::new(nightly_cargo_path);
-    cmd.arg("--verbose").arg("--version");
+    let mut cmd = std::process::Command::new("rustup");
+    cmd.arg("run")
+        .arg("nightly")
+        .arg("cargo")
+        .arg("--verbose")
+        .arg("--version");
     let output = cmd.output().with_context(err_msg)?;
     if !output.status.success() {
         anyhow::bail!(err_msg());
