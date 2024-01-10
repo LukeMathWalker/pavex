@@ -40,7 +40,7 @@ fn get_nightly_toolchain_root_folder_via_rustup() -> Result<PathBuf, anyhow::Err
 
 static NIGHTLY_CARGO: OnceCell<PathBuf> = OnceCell::new();
 
-fn get_nightly_cargo_via_rustup() -> Result<PathBuf, anyhow::Error> {
+pub(super) fn get_nightly_cargo_via_rustup() -> Result<PathBuf, anyhow::Error> {
     fn compute_nightly_cargo_via_rustup() -> Result<PathBuf, anyhow::Error> {
         let mut cmd = std::process::Command::new("rustup");
         cmd.arg("which")

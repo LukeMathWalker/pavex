@@ -193,12 +193,9 @@ where
 {
     // TODO: check that we have the nightly toolchain available beforehand in order to return
     // a good error.
-    let mut cmd = std::process::Command::new("cargo");
-    cmd.arg("+nightly")
-        .arg("doc")
-        .arg("--no-deps")
-        .arg("-q")
-        .arg("--lib");
+    let nightly_cargo_path = toolchain::get_nightly_cargo_via_rustup()?;
+    let mut cmd = std::process::Command::new(nightly_cargo_path);
+    cmd.arg("doc").arg("--no-deps").arg("-q").arg("--lib");
     let package_id_specs: Vec<_> = package_id_specs.map(|p| p.to_string()).collect();
     for package_id_spec in &package_id_specs {
         cmd.arg("-p").arg(package_id_spec);
