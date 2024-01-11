@@ -4,8 +4,8 @@
         column: 18,
         file: "conduit_core/src/blueprint.rs",
     ),
-    constructors: [
-        (
+    components: [
+        Constructor((
             constructor: (
                 callable: (
                     registered_at: "conduit_core",
@@ -30,8 +30,8 @@
                     file: "conduit_core/src/blueprint.rs",
                 ),
             )),
-        ),
-        (
+        )),
+        Constructor((
             constructor: (
                 callable: (
                     registered_at: "conduit_core",
@@ -56,8 +56,8 @@
                     file: "conduit_core/src/blueprint.rs",
                 ),
             )),
-        ),
-        (
+        )),
+        Constructor((
             constructor: (
                 callable: (
                     registered_at: "conduit_core",
@@ -82,8 +82,8 @@
                     file: "conduit_core/src/blueprint.rs",
                 ),
             )),
-        ),
-        (
+        )),
+        Constructor((
             constructor: (
                 callable: (
                     registered_at: "conduit_core",
@@ -108,8 +108,8 @@
                     file: "conduit_core/src/blueprint.rs",
                 ),
             )),
-        ),
-        (
+        )),
+        Constructor((
             constructor: (
                 callable: (
                     registered_at: "conduit_core",
@@ -124,8 +124,8 @@
             lifecycle: RequestScoped,
             cloning_strategy: None,
             error_handler: None,
-        ),
-        (
+        )),
+        Constructor((
             constructor: (
                 callable: (
                     registered_at: "conduit_core",
@@ -140,8 +140,8 @@
             lifecycle: Singleton,
             cloning_strategy: None,
             error_handler: None,
-        ),
-        (
+        )),
+        Constructor((
             constructor: (
                 callable: (
                     registered_at: "conduit_core",
@@ -156,8 +156,8 @@
             lifecycle: Singleton,
             cloning_strategy: None,
             error_handler: None,
-        ),
-        (
+        )),
+        Constructor((
             constructor: (
                 callable: (
                     registered_at: "conduit_core",
@@ -172,10 +172,8 @@
             lifecycle: RequestScoped,
             cloning_strategy: Some(CloneIfNecessary),
             error_handler: None,
-        ),
-    ],
-    middlewares: [
-        (
+        )),
+        WrappingMiddleware((
             middleware: (
                 callable: (
                     registered_at: "conduit_core",
@@ -188,72 +186,20 @@
                 ),
             ),
             error_handler: None,
-        ),
-    ],
-    routes: [
-        (
-            path: "/api/ping",
-            method_guard: (
-                inner: Some((
-                    bitset: 256,
-                    extensions: [],
-                )),
-            ),
-            request_handler: (
-                callable: (
-                    registered_at: "conduit_core",
-                    import_path: "crate::routes::status::ping",
-                ),
-                location: (
-                    line: 25,
-                    column: 8,
-                    file: "conduit_core/src/blueprint.rs",
-                ),
-            ),
-            error_handler: None,
-        ),
-        (
-            path: "/tags",
-            method_guard: (
-                inner: Some((
-                    bitset: 256,
-                    extensions: [],
-                )),
-            ),
-            request_handler: (
-                callable: (
-                    registered_at: "conduit_core",
-                    import_path: "crate::routes::tags::get_tags",
-                ),
-                location: (
-                    line: 26,
-                    column: 8,
-                    file: "conduit_core/src/blueprint.rs",
-                ),
-            ),
-            error_handler: None,
-        ),
-    ],
-    fallback_request_handler: None,
-    nested_blueprints: [
-        (
+        )),
+        NestedBlueprint((
             blueprint: (
                 creation_location: (
                     line: 6,
                     column: 18,
                     file: "conduit_core/src/routes/articles/mod.rs",
                 ),
-                constructors: [],
-                middlewares: [],
-                routes: [
-                    (
+                components: [
+                    Route((
                         path: "",
-                        method_guard: (
-                            inner: Some((
-                                bitset: 256,
-                                extensions: [],
-                            )),
-                        ),
+                        method_guard: Some([
+                            "GET",
+                        ]),
                         request_handler: (
                             callable: (
                                 registered_at: "conduit_core",
@@ -266,15 +212,12 @@
                             ),
                         ),
                         error_handler: None,
-                    ),
-                    (
+                    )),
+                    Route((
                         path: "",
-                        method_guard: (
-                            inner: Some((
-                                bitset: 128,
-                                extensions: [],
-                            )),
-                        ),
+                        method_guard: Some([
+                            "POST",
+                        ]),
                         request_handler: (
                             callable: (
                                 registered_at: "conduit_core",
@@ -287,15 +230,12 @@
                             ),
                         ),
                         error_handler: None,
-                    ),
-                    (
+                    )),
+                    Route((
                         path: "/feed",
-                        method_guard: (
-                            inner: Some((
-                                bitset: 256,
-                                extensions: [],
-                            )),
-                        ),
+                        method_guard: Some([
+                            "GET",
+                        ]),
                         request_handler: (
                             callable: (
                                 registered_at: "conduit_core",
@@ -308,15 +248,12 @@
                             ),
                         ),
                         error_handler: None,
-                    ),
-                    (
+                    )),
+                    Route((
                         path: "/:slug",
-                        method_guard: (
-                            inner: Some((
-                                bitset: 256,
-                                extensions: [],
-                            )),
-                        ),
+                        method_guard: Some([
+                            "GET",
+                        ]),
                         request_handler: (
                             callable: (
                                 registered_at: "conduit_core",
@@ -329,15 +266,12 @@
                             ),
                         ),
                         error_handler: None,
-                    ),
-                    (
+                    )),
+                    Route((
                         path: "/:slug",
-                        method_guard: (
-                            inner: Some((
-                                bitset: 8,
-                                extensions: [],
-                            )),
-                        ),
+                        method_guard: Some([
+                            "DELETE",
+                        ]),
                         request_handler: (
                             callable: (
                                 registered_at: "conduit_core",
@@ -350,15 +284,12 @@
                             ),
                         ),
                         error_handler: None,
-                    ),
-                    (
+                    )),
+                    Route((
                         path: "/:slug",
-                        method_guard: (
-                            inner: Some((
-                                bitset: 16,
-                                extensions: [],
-                            )),
-                        ),
+                        method_guard: Some([
+                            "PUT",
+                        ]),
                         request_handler: (
                             callable: (
                                 registered_at: "conduit_core",
@@ -371,15 +302,12 @@
                             ),
                         ),
                         error_handler: None,
-                    ),
-                    (
+                    )),
+                    Route((
                         path: "/:slug/favorite",
-                        method_guard: (
-                            inner: Some((
-                                bitset: 8,
-                                extensions: [],
-                            )),
-                        ),
+                        method_guard: Some([
+                            "DELETE",
+                        ]),
                         request_handler: (
                             callable: (
                                 registered_at: "conduit_core",
@@ -392,15 +320,12 @@
                             ),
                         ),
                         error_handler: None,
-                    ),
-                    (
+                    )),
+                    Route((
                         path: "/:slug/favorite",
-                        method_guard: (
-                            inner: Some((
-                                bitset: 128,
-                                extensions: [],
-                            )),
-                        ),
+                        method_guard: Some([
+                            "POST",
+                        ]),
                         request_handler: (
                             callable: (
                                 registered_at: "conduit_core",
@@ -413,15 +338,12 @@
                             ),
                         ),
                         error_handler: None,
-                    ),
-                    (
+                    )),
+                    Route((
                         path: "/:slug/comments",
-                        method_guard: (
-                            inner: Some((
-                                bitset: 256,
-                                extensions: [],
-                            )),
-                        ),
+                        method_guard: Some([
+                            "GET",
+                        ]),
                         request_handler: (
                             callable: (
                                 registered_at: "conduit_core",
@@ -434,15 +356,12 @@
                             ),
                         ),
                         error_handler: None,
-                    ),
-                    (
+                    )),
+                    Route((
                         path: "/:slug/comments",
-                        method_guard: (
-                            inner: Some((
-                                bitset: 128,
-                                extensions: [],
-                            )),
-                        ),
+                        method_guard: Some([
+                            "POST",
+                        ]),
                         request_handler: (
                             callable: (
                                 registered_at: "conduit_core",
@@ -455,15 +374,12 @@
                             ),
                         ),
                         error_handler: None,
-                    ),
-                    (
+                    )),
+                    Route((
                         path: "/:slug/comments/:comment_id",
-                        method_guard: (
-                            inner: Some((
-                                bitset: 8,
-                                extensions: [],
-                            )),
-                        ),
+                        method_guard: Some([
+                            "DELETE",
+                        ]),
                         request_handler: (
                             callable: (
                                 registered_at: "conduit_core",
@@ -476,10 +392,8 @@
                             ),
                         ),
                         error_handler: None,
-                    ),
+                    )),
                 ],
-                fallback_request_handler: None,
-                nested_blueprints: [],
             ),
             path_prefix: Some("/articles"),
             nesting_location: (
@@ -487,25 +401,20 @@
                 column: 8,
                 file: "conduit_core/src/blueprint.rs",
             ),
-        ),
-        (
+        )),
+        NestedBlueprint((
             blueprint: (
                 creation_location: (
                     line: 6,
                     column: 18,
                     file: "conduit_core/src/routes/profiles/mod.rs",
                 ),
-                constructors: [],
-                middlewares: [],
-                routes: [
-                    (
+                components: [
+                    Route((
                         path: "/:username",
-                        method_guard: (
-                            inner: Some((
-                                bitset: 256,
-                                extensions: [],
-                            )),
-                        ),
+                        method_guard: Some([
+                            "GET",
+                        ]),
                         request_handler: (
                             callable: (
                                 registered_at: "conduit_core",
@@ -518,15 +427,12 @@
                             ),
                         ),
                         error_handler: None,
-                    ),
-                    (
+                    )),
+                    Route((
                         path: "/:username/follow",
-                        method_guard: (
-                            inner: Some((
-                                bitset: 128,
-                                extensions: [],
-                            )),
-                        ),
+                        method_guard: Some([
+                            "POST",
+                        ]),
                         request_handler: (
                             callable: (
                                 registered_at: "conduit_core",
@@ -539,15 +445,12 @@
                             ),
                         ),
                         error_handler: None,
-                    ),
-                    (
+                    )),
+                    Route((
                         path: "/:username/follow",
-                        method_guard: (
-                            inner: Some((
-                                bitset: 8,
-                                extensions: [],
-                            )),
-                        ),
+                        method_guard: Some([
+                            "DELETE",
+                        ]),
                         request_handler: (
                             callable: (
                                 registered_at: "conduit_core",
@@ -560,10 +463,8 @@
                             ),
                         ),
                         error_handler: None,
-                    ),
+                    )),
                 ],
-                fallback_request_handler: None,
-                nested_blueprints: [],
             ),
             path_prefix: Some("/profiles"),
             nesting_location: (
@@ -571,16 +472,16 @@
                 column: 8,
                 file: "conduit_core/src/blueprint.rs",
             ),
-        ),
-        (
+        )),
+        NestedBlueprint((
             blueprint: (
                 creation_location: (
                     line: 7,
                     column: 18,
                     file: "conduit_core/src/routes/users/mod.rs",
                 ),
-                constructors: [
-                    (
+                components: [
+                    Constructor((
                         constructor: (
                             callable: (
                                 registered_at: "conduit_core",
@@ -595,18 +496,12 @@
                         lifecycle: Singleton,
                         cloning_strategy: None,
                         error_handler: None,
-                    ),
-                ],
-                middlewares: [],
-                routes: [
-                    (
+                    )),
+                    Route((
                         path: "/users",
-                        method_guard: (
-                            inner: Some((
-                                bitset: 128,
-                                extensions: [],
-                            )),
-                        ),
+                        method_guard: Some([
+                            "POST",
+                        ]),
                         request_handler: (
                             callable: (
                                 registered_at: "conduit_core",
@@ -629,15 +524,12 @@
                                 file: "conduit_core/src/routes/users/mod.rs",
                             ),
                         )),
-                    ),
-                    (
+                    )),
+                    Route((
                         path: "/users/login",
-                        method_guard: (
-                            inner: Some((
-                                bitset: 128,
-                                extensions: [],
-                            )),
-                        ),
+                        method_guard: Some([
+                            "POST",
+                        ]),
                         request_handler: (
                             callable: (
                                 registered_at: "conduit_core",
@@ -660,15 +552,12 @@
                                 file: "conduit_core/src/routes/users/mod.rs",
                             ),
                         )),
-                    ),
-                    (
+                    )),
+                    Route((
                         path: "/user",
-                        method_guard: (
-                            inner: Some((
-                                bitset: 256,
-                                extensions: [],
-                            )),
-                        ),
+                        method_guard: Some([
+                            "GET",
+                        ]),
                         request_handler: (
                             callable: (
                                 registered_at: "conduit_core",
@@ -681,15 +570,12 @@
                             ),
                         ),
                         error_handler: None,
-                    ),
-                    (
+                    )),
+                    Route((
                         path: "/user",
-                        method_guard: (
-                            inner: Some((
-                                bitset: 16,
-                                extensions: [],
-                            )),
-                        ),
+                        method_guard: Some([
+                            "PUT",
+                        ]),
                         request_handler: (
                             callable: (
                                 registered_at: "conduit_core",
@@ -702,10 +588,8 @@
                             ),
                         ),
                         error_handler: None,
-                    ),
+                    )),
                 ],
-                fallback_request_handler: None,
-                nested_blueprints: [],
             ),
             path_prefix: None,
             nesting_location: (
@@ -713,6 +597,42 @@
                 column: 8,
                 file: "conduit_core/src/blueprint.rs",
             ),
-        ),
+        )),
+        Route((
+            path: "/api/ping",
+            method_guard: Some([
+                "GET",
+            ]),
+            request_handler: (
+                callable: (
+                    registered_at: "conduit_core",
+                    import_path: "crate::routes::status::ping",
+                ),
+                location: (
+                    line: 25,
+                    column: 8,
+                    file: "conduit_core/src/blueprint.rs",
+                ),
+            ),
+            error_handler: None,
+        )),
+        Route((
+            path: "/tags",
+            method_guard: Some([
+                "GET",
+            ]),
+            request_handler: (
+                callable: (
+                    registered_at: "conduit_core",
+                    import_path: "crate::routes::tags::get_tags",
+                ),
+                location: (
+                    line: 26,
+                    column: 8,
+                    file: "conduit_core/src/blueprint.rs",
+                ),
+            ),
+            error_handler: None,
+        )),
     ],
 )
