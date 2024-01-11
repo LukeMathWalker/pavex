@@ -4,10 +4,7 @@ use indexmap::IndexSet;
 use miette::{miette, NamedSource};
 use syn::spanned::Spanned;
 
-use pavex::blueprint::constructor::CloningStrategy;
-use pavex::blueprint::{
-    constructor::Lifecycle, reflection::Location, reflection::RawCallableIdentifiers, Blueprint,
-};
+use pavex_bp_schema::{Blueprint, CloningStrategy, Lifecycle, Location, RawCallableIdentifiers};
 
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::user_components::raw_db::RawUserComponentDb;

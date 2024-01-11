@@ -1,6 +1,6 @@
 use guppy::graph::PackageGraph;
 
-use pavex::blueprint::reflection::RawCallableIdentifiers;
+use pavex_bp_schema::RawCallableIdentifiers;
 
 use crate::compiler::resolvers::{resolve_callable, resolve_type_path};
 use crate::language::{Callable, GenericArgument, ResolvedPath, ResolvedType};

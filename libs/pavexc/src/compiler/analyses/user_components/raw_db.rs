@@ -2,14 +2,13 @@ use ahash::{HashMap, HashMapExt};
 use anyhow::anyhow;
 use guppy::graph::PackageGraph;
 
-use pavex::router::AllowedMethods;
 use pavex_bp_schema::{
     Blueprint, CloningStrategy, Lifecycle, Location, NestedBlueprint, RawCallableIdentifiers,
     RegisteredCallable, RegisteredConstructor, RegisteredFallback, RegisteredRoute,
     RegisteredWrappingMiddleware,
 };
 
-use crate::compiler::analyses::user_components::router_key::{MethodGuard, RouterKey};
+use crate::compiler::analyses::user_components::router_key::RouterKey;
 use crate::compiler::analyses::user_components::scope_graph::ScopeGraphBuilder;
 use crate::compiler::analyses::user_components::{ScopeGraph, ScopeId};
 use crate::compiler::interner::Interner;
@@ -346,17 +345,14 @@ impl RawUserComponentDb {
                 .get_or_intern(registered_route.request_handler.callable.clone());
             let route_scope_id = scope_graph_builder.add_scope(current_scope_id, None);
             let router_key = {
-                let method_guard = match &registered_route.method_guard.allowed_methods() {
-                    AllowedMethods::All => MethodGuard::Any,
-                    AllowedMethods::Some(methods) => {
-                        MethodGuard::Some(methods.iter().map(|m| m.to_string()).collect())
-                    }
-                };
                 let path = match path_prefix {
                     Some(prefix) => format!("{}{}", prefix, registered_route.path),
                     None => registered_route.path.to_owned(),
                 };
-                RouterKey { path, method_guard }
+                RouterKey {
+                    path,
+                    method_guard: registered_route.method_guard.clone(),
+                }
             };
             let component = UserComponent::RequestHandler {
                 raw_callable_identifiers_id,

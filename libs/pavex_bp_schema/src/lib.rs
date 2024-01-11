@@ -1,5 +1,7 @@
 pub use pavex_reflection::{Location, RawCallableIdentifiers};
 use std::collections::BTreeSet;
+use std::fmt;
+use std::fmt::Formatter;
 
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct Blueprint {
@@ -93,6 +95,16 @@ pub enum Lifecycle {
     Transient,
 }
 
+impl fmt::Display for Lifecycle {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Lifecycle::Singleton => write!(f, "singleton"),
+            Lifecycle::RequestScoped => write!(f, "request-scoped"),
+            Lifecycle::Transient => write!(f, "transient"),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[non_exhaustive]
 pub enum CloningStrategy {
@@ -103,7 +115,9 @@ pub enum CloningStrategy {
     CloneIfNecessary,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(
+    Debug, Clone, Hash, PartialEq, Eq, Ord, PartialOrd, serde::Serialize, serde::Deserialize,
+)]
 pub enum MethodGuard {
     Any,
     Some(BTreeSet<String>),
