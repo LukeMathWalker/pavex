@@ -51,7 +51,7 @@ async fn top_level_mw_execute_in_order() {
 }
 
 #[tokio::test]
-async fn mw_register_after_handler_still_executes_before_handler() {
+async fn mw_registered_after_handler_does_not_wrap_handler() {
     let state = SpyState::new();
     let port = spawn_test_server(state.clone()).await;
 
@@ -62,20 +62,11 @@ async fn mw_register_after_handler_still_executes_before_handler() {
         .expect("Failed to get successful response");
 
     let state = state.get().await;
-    assert_eq!(
-        state,
-        vec![
-            "first - start",
-            "second - start",
-            "handler",
-            "second - end",
-            "first - end"
-        ]
-    );
+    assert_eq!(state, vec!["first - start", "handler", "first - end"]);
 }
 
 #[tokio::test]
-async fn nested_mw_always_run_after_nester_mw() {
+async fn order_is_preserved_with_nesting() {
     let state = SpyState::new();
     let port = spawn_test_server(state.clone()).await;
 

@@ -167,18 +167,10 @@ pub mod route_2 {
     pub async fn middleware_0(v0: &app::Spy) -> pavex::response::Response {
         let v1 = crate::route_2::Next0 {
             s_0: v0,
-            next: middleware_1,
-        };
-        let v2 = pavex::middleware::Next::new(v1);
-        app::first(v0, v2).await
-    }
-    pub async fn middleware_1(v0: &app::Spy) -> pavex::response::Response {
-        let v1 = crate::route_2::Next1 {
-            s_0: v0,
             next: handler,
         };
         let v2 = pavex::middleware::Next::new(v1);
-        app::second(v0, v2).await
+        app::first(v0, v2).await
     }
     pub async fn handler(v0: &app::Spy) -> pavex::response::Response {
         let v1 = app::handler(v0).await;
@@ -192,23 +184,6 @@ pub mod route_2 {
         next: fn(&'a app::Spy) -> T,
     }
     impl<'a, T> std::future::IntoFuture for Next0<'a, T>
-    where
-        T: std::future::Future<Output = pavex::response::Response>,
-    {
-        type Output = pavex::response::Response;
-        type IntoFuture = T;
-        fn into_future(self) -> Self::IntoFuture {
-            (self.next)(self.s_0)
-        }
-    }
-    pub struct Next1<'a, T>
-    where
-        T: std::future::Future<Output = pavex::response::Response>,
-    {
-        s_0: &'a app::Spy,
-        next: fn(&'a app::Spy) -> T,
-    }
-    impl<'a, T> std::future::IntoFuture for Next1<'a, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {

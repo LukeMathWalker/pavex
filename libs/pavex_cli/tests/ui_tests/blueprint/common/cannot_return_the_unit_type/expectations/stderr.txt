@@ -85,6 +85,20 @@
   [31m│[0m This error handler doesn't: it returns the unit type, `()`. I can't
   [31m│[0m convert `()` into an HTTP response!
   [31m│[0m
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:50:1]
+  [31m│[0m  [2m50[0m │     bp.constructor(f!(crate::fallible_constructor), Lifecycle::RequestScoped)
+  [31m│[0m  [2m51[0m │         .error_handler(f!(crate::error_handler));
+  [31m│[0m     · [35;1m                       ────────────┬───────────[0m
+  [31m│[0m     ·                   [35;1mThe error handler was registered here[0m
+  [31m│[0m  [2m52[0m │ 
+  [31m│[0m     ╰────
+
+[31m[1mERROR[0m[39m: 
+  [31m×[0m All error handlers must return a type that implements
+  [31m│[0m `pavex::response::IntoResponse`.
+  [31m│[0m This error handler doesn't: it returns the unit type, `()`. I can't
+  [31m│[0m convert `()` into an HTTP response!
+  [31m│[0m
   [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:54:1]
   [31m│[0m  [2m54[0m │     bp.wrap(f!(crate::fallible_wrapping_middleware))
   [31m│[0m  [2m55[0m │         .error_handler(f!(crate::error_handler));
@@ -105,18 +119,4 @@
   [31m│[0m     · [35;1m                       ────────────┬───────────[0m
   [31m│[0m     ·                   [35;1mThe error handler was registered here[0m
   [31m│[0m  [2m60[0m │     bp
-  [31m│[0m     ╰────
-
-[31m[1mERROR[0m[39m: 
-  [31m×[0m All error handlers must return a type that implements
-  [31m│[0m `pavex::response::IntoResponse`.
-  [31m│[0m This error handler doesn't: it returns the unit type, `()`. I can't
-  [31m│[0m convert `()` into an HTTP response!
-  [31m│[0m
-  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:50:1]
-  [31m│[0m  [2m50[0m │     bp.constructor(f!(crate::fallible_constructor), Lifecycle::RequestScoped)
-  [31m│[0m  [2m51[0m │         .error_handler(f!(crate::error_handler));
-  [31m│[0m     · [35;1m                       ────────────┬───────────[0m
-  [31m│[0m     ·                   [35;1mThe error handler was registered here[0m
-  [31m│[0m  [2m52[0m │ 
   [31m│[0m     ╰────

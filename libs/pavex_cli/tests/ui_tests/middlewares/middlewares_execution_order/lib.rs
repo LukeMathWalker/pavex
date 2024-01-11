@@ -72,13 +72,14 @@ pub fn after_handler() -> Blueprint {
 
 pub fn nested() -> Blueprint {
     let mut bp = Blueprint::new();
+    bp.wrap(f!(crate::first));
     bp.nest({
         let mut bp = Blueprint::new();
-        bp.route(GET, "/nested", f!(crate::handler));
         bp.wrap(f!(crate::second));
+        bp.route(GET, "/nested", f!(crate::handler));
         bp
     });
-    bp.wrap(f!(crate::first));
+    bp.wrap(f!(crate::third));
     bp
 }
 
@@ -101,3 +102,4 @@ macro_rules! spy_mw {
 
 spy_mw!(first);
 spy_mw!(second);
+spy_mw!(third);
