@@ -1,6 +1,8 @@
 use crate::blueprint::conversions::raw_callable2registered_callable;
 use crate::blueprint::reflection::RawCallable;
-use pavex_bp_schema::Blueprint as BlueprintSchema;
+use pavex_bp_schema::{
+    Blueprint as BlueprintSchema, RegisteredComponent, RegisteredWrappingMiddleware,
+};
 
 /// The type returned by [`Blueprint::wrap`].
 ///
@@ -10,11 +12,8 @@ use pavex_bp_schema::Blueprint as BlueprintSchema;
 /// [`Blueprint::wrap`]: crate::blueprint::Blueprint::wrap
 pub struct WrappingMiddleware<'a> {
     pub(crate) blueprint: &'a mut BlueprintSchema,
-    /// The index of the registered wrapping middleware in the
-    /// [`Blueprint`]'s `middlewares` vector.
-    ///
-    /// [`Blueprint`]: crate::blueprint::Blueprint
-    pub(crate) middleware_id: usize,
+    /// The index of the registered middleware in the blueprint's `components` vector.
+    pub(crate) component_id: usize,
 }
 
 impl<'a> WrappingMiddleware<'a> {
@@ -64,9 +63,17 @@ impl<'a> WrappingMiddleware<'a> {
     /// Pavex will fail to generate the runtime code for your application if you register
     /// an error handler for an infallible middleware (i.e. a middleware that doesn't return
     /// a `Result`).
-    pub fn error_handler(self, error_handler: RawCallable) -> Self {
+    pub fn error_handler(mut self, error_handler: RawCallable) -> Self {
         let callable = raw_callable2registered_callable(error_handler);
-        self.blueprint.middlewares[self.middleware_id].error_handler = Some(callable);
+        self.wrapping_middleware().error_handler = Some(callable);
         self
+    }
+
+    fn wrapping_middleware(&mut self) -> &mut RegisteredWrappingMiddleware {
+        let component = &mut self.blueprint.components[self.component_id];
+        let RegisteredComponent::WrappingMiddleware(c) = component else {
+            unreachable!("The component should be a wrapping middleware")
+        };
+        c
     }
 }

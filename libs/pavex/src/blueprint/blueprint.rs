@@ -44,11 +44,7 @@ impl Default for Blueprint {
         Self {
             schema: BlueprintSchema {
                 creation_location: Location::caller(),
-                constructors: Default::default(),
-                routes: Default::default(),
-                fallback_request_handler: None,
-                nested_blueprints: Default::default(),
-                middlewares: Default::default(),
+                components: Vec::new(),
             },
         }
     }
@@ -103,11 +99,10 @@ impl Blueprint {
             request_handler: raw_callable2registered_callable(callable),
             error_handler: None,
         };
-        let route_id = self.schema.routes.len();
-        self.schema.routes.push(registered_route);
+        let component_id = self.push_component(registered_route);
         Route {
             blueprint: &mut self.schema,
-            route_id,
+            component_id,
         }
     }
 
@@ -151,10 +146,9 @@ impl Blueprint {
             cloning_strategy: None,
             error_handler: None,
         };
-        let constructor_id = self.schema.constructors.len();
-        self.schema.constructors.push(registered_constructor);
+        let component_id = self.push_component(registered_constructor);
         Constructor {
-            constructor_id,
+            component_id,
             blueprint: &mut self.schema,
         }
     }
@@ -316,11 +310,10 @@ impl Blueprint {
             middleware: raw_callable2registered_callable(callable),
             error_handler: None,
         };
-        let middleware_id = self.schema.middlewares.len();
-        self.schema.middlewares.push(registered);
+        let component_id = self.push_component(registered);
         WrappingMiddleware {
             blueprint: &mut self.schema,
-            middleware_id,
+            component_id,
         }
     }
 
@@ -480,11 +473,11 @@ impl Blueprint {
     /// If multiple nested blueprints need access to the singleton, the constructor must be
     /// registered against a common parent blueprint—the root blueprint, if necessary.
     pub fn nest_at(&mut self, prefix: &str, blueprint: Blueprint) {
-        self.schema.nested_blueprints.push(NestedBlueprint {
+        self.push_component(NestedBlueprint {
             blueprint: blueprint.schema,
             path_prefix: Some(prefix.into()),
             nesting_location: Location::caller(),
-        })
+        });
     }
 
     #[track_caller]
@@ -492,11 +485,11 @@ impl Blueprint {
     ///
     /// Check out [`Blueprint::nest_at`] for more details.
     pub fn nest(&mut self, blueprint: Blueprint) {
-        self.schema.nested_blueprints.push(NestedBlueprint {
+        self.push_component(NestedBlueprint {
             blueprint: blueprint.schema,
             path_prefix: None,
             nesting_location: Location::caller(),
-        })
+        });
     }
 
     #[track_caller]
@@ -630,10 +623,21 @@ impl Blueprint {
             request_handler: raw_callable2registered_callable(callable),
             error_handler: None,
         };
-        self.schema.fallback_request_handler = Some(registered);
+        let component_id = self.push_component(registered);
         Fallback {
             blueprint: &mut self.schema,
+            component_id,
         }
+    }
+
+    /// Register a component and return its id (i.e. its index in the `components` vector).
+    fn push_component(
+        &mut self,
+        component: impl Into<pavex_bp_schema::RegisteredComponent>,
+    ) -> usize {
+        let id = self.schema.components.len();
+        self.schema.components.push(component.into());
+        id
     }
 }
 

@@ -1,3 +1,4 @@
+//! The schema used by Pavex to serialize and deserialize blueprints.
 pub use pavex_reflection::{Location, RawCallableIdentifiers};
 use std::collections::BTreeSet;
 use std::fmt;
@@ -7,16 +8,47 @@ use std::fmt::Formatter;
 pub struct Blueprint {
     /// The location where the `Blueprint` was created.
     pub creation_location: Location,
-    /// All registered constructors, in the order they were registered.
-    pub constructors: Vec<RegisteredConstructor>,
-    /// All registered middlewares, in the order they were registered.
-    pub middlewares: Vec<RegisteredWrappingMiddleware>,
-    /// All registered routes, in the order they were registered.
-    pub routes: Vec<RegisteredRoute>,
-    /// The fallback request handler, if any.
-    pub fallback_request_handler: Option<RegisteredFallback>,
-    /// All blueprints nested under this one, in the order they were nested.
-    pub nested_blueprints: Vec<NestedBlueprint>,
+    /// All registered components, in the order they were registered.
+    pub components: Vec<RegisteredComponent>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+pub enum RegisteredComponent {
+    Constructor(RegisteredConstructor),
+    WrappingMiddleware(RegisteredWrappingMiddleware),
+    Route(RegisteredRoute),
+    FallbackRequestHandler(RegisteredFallback),
+    NestedBlueprint(NestedBlueprint),
+}
+
+impl From<RegisteredConstructor> for RegisteredComponent {
+    fn from(c: RegisteredConstructor) -> Self {
+        Self::Constructor(c)
+    }
+}
+
+impl From<RegisteredWrappingMiddleware> for RegisteredComponent {
+    fn from(m: RegisteredWrappingMiddleware) -> Self {
+        Self::WrappingMiddleware(m)
+    }
+}
+
+impl From<RegisteredRoute> for RegisteredComponent {
+    fn from(r: RegisteredRoute) -> Self {
+        Self::Route(r)
+    }
+}
+
+impl From<RegisteredFallback> for RegisteredComponent {
+    fn from(f: RegisteredFallback) -> Self {
+        Self::FallbackRequestHandler(f)
+    }
+}
+
+impl From<NestedBlueprint> for RegisteredComponent {
+    fn from(b: NestedBlueprint) -> Self {
+        Self::NestedBlueprint(b)
+    }
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]

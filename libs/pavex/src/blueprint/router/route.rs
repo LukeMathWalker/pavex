@@ -1,6 +1,6 @@
 use crate::blueprint::conversions::raw_callable2registered_callable;
 use crate::blueprint::reflection::RawCallable;
-use pavex_bp_schema::Blueprint as BlueprintSchema;
+use pavex_bp_schema::{Blueprint as BlueprintSchema, RegisteredComponent, RegisteredRoute};
 
 /// The type returned by [`Blueprint::route`].
 ///
@@ -9,8 +9,8 @@ use pavex_bp_schema::Blueprint as BlueprintSchema;
 /// [`Blueprint::route`]: crate::blueprint::Blueprint::route
 pub struct Route<'a> {
     pub(crate) blueprint: &'a mut BlueprintSchema,
-    /// The index of the registered route in the blueprint's `routes` vector.
-    pub(crate) route_id: usize,
+    /// The index of the registered route in the blueprint's `components` vector.
+    pub(crate) component_id: usize,
 }
 
 impl<'a> Route<'a> {
@@ -57,9 +57,17 @@ impl<'a> Route<'a> {
     /// Pavex will fail to generate the runtime code for your application if you register
     /// an error handler for an infallible request handler (i.e. a request handler that doesn't
     /// return a `Result`).
-    pub fn error_handler(self, error_handler: RawCallable) -> Self {
+    pub fn error_handler(mut self, error_handler: RawCallable) -> Self {
         let callable = raw_callable2registered_callable(error_handler);
-        self.blueprint.routes[self.route_id].error_handler = Some(callable);
+        self.route().error_handler = Some(callable);
         self
+    }
+
+    fn route(&mut self) -> &mut RegisteredRoute {
+        let component = &mut self.blueprint.components[self.component_id];
+        let RegisteredComponent::Route(c) = component else {
+            unreachable!("The component should be a route")
+        };
+        c
     }
 }
