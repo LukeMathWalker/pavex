@@ -12,6 +12,8 @@ pub struct WrappingMiddleware<'a> {
     pub(crate) blueprint: &'a mut BlueprintSchema,
     /// The index of the registered wrapping middleware in the
     /// [`Blueprint`]'s `middlewares` vector.
+    ///
+    /// [`Blueprint`]: crate::blueprint::Blueprint
     pub(crate) middleware_id: usize,
 }
 
