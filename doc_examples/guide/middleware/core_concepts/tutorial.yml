@@ -23,3 +23,15 @@ snippets:
   - name: "registration_with_error_handler"
     source_path: "src/fallible/blueprint.rs"
     ranges: [ "0..8", "9..11" ]
+  - name: "signalers"
+    source_path: "src/mw.rs"
+    ranges: [ ".." ]
+  - name: "vanilla_order"
+    source_path: "src/order1.rs"
+    ranges: [ ".." ]
+  - name: "mw_after_handler"
+    source_path: "src/order2.rs"
+    ranges: [ ".." ]
+  - name: "mw_after_nested"
+    source_path: "src/order3.rs"
+    ranges: [ ".." ]

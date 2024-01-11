@@ -17,7 +17,9 @@ You register a middleware against a blueprint via the [`wrap`](crate::blueprint:
 
 --8<-- "doc_examples/guide/middleware/core_concepts/project-registration.snap"
 
-When registering a middleware, you must provide its **fully qualified path**, wrapped in the [`f!` macro][f].
+When registering a middleware, you must provide its **fully qualified path**, wrapped in the [`f!` macro][f].  
+A middleware applies to all request handlers registered against the same [`Blueprint`][Blueprint].
+See the [execution order](#execution-order) section for more details.
 
 !!! note "Registration syntax"
 
@@ -85,14 +87,71 @@ In addition, it must take a reference to the error type as one of its input para
 
 ## Execution order
 
-Middlewares are executed in the order they are registered.  
+Middlewares are executed in the order they are registered. 
 
+### Example
 
+Let's consider the following request handler and middlewares:
+
+--8<-- "doc_examples/guide/middleware/core_concepts/project-signalers.snap"
+
+Each middleware prints a message before and after invoking the rest of the request processing pipeline.  
+The request handler prints a message when it is invoked, before returning a response.
+
+If you register them as follows
+
+--8<-- "doc_examples/guide/middleware/core_concepts/project-vanilla_order.snap"
+
+you'll see this output when you make a request:
+
+```
+First - start
+Second - start
+Handler
+Second - end
+First - end
+```
+
+### Edge cases
+
+Middlewares apply to all request handlers registered against the same [`Blueprint`][Blueprint], 
+**even if they are registered after the middleware**.
+
+--8<-- "doc_examples/guide/middleware/core_concepts/project-mw_after_handler.snap"
+
+You'll see this output when you make a request:
+
+```
+First - start
+Second - start
+Handler
+Second - end
+First - end
+```
+
+The same logic applies to nested [`Blueprint`s][Blueprint].  
+Middlewares registered against the parent blueprint apply 
+to all request handlers registered against one of its nested [`Blueprint`s][Blueprint],
+even if the nested [`Blueprint`][Blueprint] was registered before the middleware.  
+They also execute before all middlewares and request handlers registered against nested [`Blueprint`s][Blueprint]. 
+
+--8<-- "doc_examples/guide/middleware/core_concepts/project-mw_after_nested.snap"
+
+You'll see this output when you make a request:
+
+```
+First - start
+Second - start
+Handler
+Second - end
+First - end
+```
 
 
 [f]: ../../api_reference/pavex/macro.f.html
 [IntoResponse]: ../../api_reference/pavex/response/trait.IntoResponse.html
 [Response]: ../../api_reference/pavex/response/struct.Response.html
+[Blueprint]: ../../api_reference/pavex/blueprint/struct.Blueprint.html
 [Next]: ../../api_reference/pavex/middleware/struct.Next.html
 [instrument]: https://docs.rs/tracing/0.1.40/tracing/trait.Instrument.html#method.instrument
 [timeout]: https://docs.rs/tokio/1.35.1/tokio/time/fn.timeout.html

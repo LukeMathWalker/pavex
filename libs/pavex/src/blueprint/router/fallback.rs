@@ -1,14 +1,14 @@
-use crate::blueprint::internals::RegisteredCallable;
-use crate::blueprint::{
-    reflection::{RawCallable, RawCallableIdentifiers},
-    Blueprint,
-};
+use crate::blueprint::conversions::raw_callable2registered_callable;
+use crate::blueprint::reflection::RawCallable;
+use pavex_bp_schema::Blueprint as BlueprintSchema;
 
 /// The type returned by [`Blueprint::fallback`].
 ///
 /// It allows you to further configure the behaviour of the registered handler.
+///
+/// [`Blueprint::fallback`]: crate::blueprint::Blueprint::fallback
 pub struct Fallback<'a> {
-    pub(crate) blueprint: &'a mut Blueprint,
+    pub(crate) blueprint: &'a mut BlueprintSchema,
 }
 
 impl<'a> Fallback<'a> {
@@ -56,11 +56,7 @@ impl<'a> Fallback<'a> {
     /// an error handler for an infallible request handler (i.e. a request handler that doesn't
     /// return a `Result`).
     pub fn error_handler(self, error_handler: RawCallable) -> Self {
-        let callable_identifiers = RawCallableIdentifiers::from_raw_callable(error_handler);
-        let callable = RegisteredCallable {
-            callable: callable_identifiers,
-            location: std::panic::Location::caller().into(),
-        };
+        let callable = raw_callable2registered_callable(error_handler);
         if let Some(fallback) = &mut self.blueprint.fallback_request_handler {
             fallback.error_handler = Some(callable);
         }

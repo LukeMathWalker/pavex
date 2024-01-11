@@ -1,16 +1,15 @@
-use crate::blueprint::{
-    internals::RegisteredCallable,
-    reflection::{RawCallable, RawCallableIdentifiers},
-    Blueprint,
-};
+use crate::blueprint::conversions::raw_callable2registered_callable;
+use crate::blueprint::reflection::RawCallable;
+use pavex_bp_schema::Blueprint as BlueprintSchema;
 
 /// The type returned by [`Blueprint::wrap`].
 ///
 /// It allows you to further configure the behaviour of the registered wrapping
 /// middleware.
+///
+/// [`Blueprint::wrap`]: crate::blueprint::Blueprint::wrap
 pub struct WrappingMiddleware<'a> {
-    #[allow(dead_code)]
-    pub(crate) blueprint: &'a mut Blueprint,
+    pub(crate) blueprint: &'a mut BlueprintSchema,
     /// The index of the registered wrapping middleware in the
     /// [`Blueprint`]'s `middlewares` vector.
     pub(crate) middleware_id: usize,
@@ -64,11 +63,7 @@ impl<'a> WrappingMiddleware<'a> {
     /// an error handler for an infallible middleware (i.e. a middleware that doesn't return
     /// a `Result`).
     pub fn error_handler(self, error_handler: RawCallable) -> Self {
-        let callable_identifiers = RawCallableIdentifiers::from_raw_callable(error_handler);
-        let callable = RegisteredCallable {
-            callable: callable_identifiers,
-            location: std::panic::Location::caller().into(),
-        };
+        let callable = raw_callable2registered_callable(error_handler);
         self.blueprint.middlewares[self.middleware_id].error_handler = Some(callable);
         self
     }

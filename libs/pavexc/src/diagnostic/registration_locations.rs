@@ -5,7 +5,7 @@ use syn::spanned::Spanned;
 use syn::visit::Visit;
 use syn::{ExprCall, ExprMethodCall, Stmt};
 
-use pavex::blueprint::reflection::Location;
+use pavex_bp_schema::Location;
 
 use crate::diagnostic::{convert_proc_macro_span, ParsedSourceFile, ProcMacroSpanExt};
 

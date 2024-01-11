@@ -1,0 +1,28 @@
+use pavex::middleware::Next;
+use pavex::response::Response;
+use std::future::IntoFuture;
+
+pub async fn first<C>(next: Next<C>) -> Response
+where
+    C: IntoFuture<Output = Response>,
+{
+    println!("First - start");
+    let r = next.await;
+    println!("First - end");
+    r
+}
+
+pub async fn second<C>(next: Next<C>) -> Response
+where
+    C: IntoFuture<Output = Response>,
+{
+    println!("Second - start");
+    let r = next.await;
+    println!("Second - end");
+    r
+}
+
+pub async fn handler() -> Response {
+    println!("Handler");
+    Response::ok()
+}

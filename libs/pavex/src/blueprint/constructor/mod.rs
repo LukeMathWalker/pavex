@@ -6,18 +6,20 @@
 //! section of Pavex's guide for a thorough introduction to dependency injection
 //! in Pavex applications.
 pub use lifecycle::Lifecycle;
+use pavex_bp_schema::Blueprint as BlueprintSchema;
 
-use crate::blueprint::internals::RegisteredCallable;
-use crate::blueprint::reflection::{RawCallable, RawCallableIdentifiers};
-use crate::blueprint::Blueprint;
+use crate::blueprint::conversions::raw_callable2registered_callable;
+use crate::blueprint::reflection::RawCallable;
 
 mod lifecycle;
 
 /// The type returned by [`Blueprint::constructor`].
 ///
 /// It allows you to further configure the behaviour of the registered constructor.
+///
+/// [`Blueprint::constructor`]: crate::blueprint::Blueprint::constructor
 pub struct Constructor<'a> {
-    pub(crate) blueprint: &'a mut Blueprint,
+    pub(crate) blueprint: &'a mut BlueprintSchema,
     /// The index of the registered constructor in the blueprint's `constructors` vector.
     pub(crate) constructor_id: usize,
 }
@@ -67,11 +69,7 @@ impl<'a> Constructor<'a> {
     /// an error handler for an infallible constructor (i.e. a constructor that doesn't return
     /// a `Result`).
     pub fn error_handler(self, error_handler: RawCallable) -> Self {
-        let callable_identifiers = RawCallableIdentifiers::from_raw_callable(error_handler);
-        let callable = RegisteredCallable {
-            callable: callable_identifiers,
-            location: std::panic::Location::caller().into(),
-        };
+        let callable = raw_callable2registered_callable(error_handler);
         self.blueprint.constructors[self.constructor_id].error_handler = Some(callable);
         self
     }
@@ -84,6 +82,10 @@ impl<'a> Constructor<'a> {
     /// to [`CloningStrategy::CloneIfNecessary`]: Pavex will clone the output type if
     /// it's necessary to generate code that satisfies Rust's borrow checker.
     pub fn cloning(self, strategy: CloningStrategy) -> Self {
+        let strategy = match strategy {
+            CloningStrategy::NeverClone => pavex_bp_schema::CloningStrategy::NeverClone,
+            CloningStrategy::CloneIfNecessary => pavex_bp_schema::CloningStrategy::CloneIfNecessary,
+        };
         self.blueprint.constructors[self.constructor_id].cloning_strategy = Some(strategy);
         self
     }

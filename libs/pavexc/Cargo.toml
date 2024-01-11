@@ -15,8 +15,9 @@ debug_assertions = []
 
 [dependencies]
 pavex = { path = "../pavex" }
+pavex_bp_schema = { path = "../pavex_bp_schema" }
 syn = { version = "2", features = ["full", "extra-traits", "visit"] }
-rustdoc-types = "0.23.0"
+rustdoc-types = "0.24.0"
 serde = { version = "1.0.139", features = ["derive"] }
 serde_json = { version = "1", features = ["unbounded_depth"] }
 serde_stacker = "0.1"
@@ -32,7 +33,7 @@ thiserror = "1.0.32"
 miette = { version = "5.3" }
 guppy = "0.17"
 itertools = "0.12"
-cargo-manifest = "0.12"
+cargo-manifest = "0.13.0"
 pathdiff = "0.2.1"
 elsa = "1.4.0"
 tracing = "0.1"

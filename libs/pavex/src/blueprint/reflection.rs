@@ -1,6 +1,21 @@
-pub use identifiers::{RawCallable, RawCallableIdentifiers};
+//! Callable metadata used by Pavex's CLI to analyze your request
+//! handlers, constructors and error handlers (e.g. their input parameters, their return type,
+//! where they are defined, etc.).
+//!
+//! This module is not meant to be used directly by users of the framework. It is only meant to be
+//! used by Pavex's CLI.
 
-mod identifiers;
+#[derive(Debug, Hash, Eq, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
+/// An implementation detail of the builder.
+/// You must use the [`f!`] macro wherever a `RawCallable` is needed.
+///
+/// [`f!`]: crate::f
+pub struct RawCallable {
+    #[doc(hidden)]
+    pub import_path: &'static str,
+    #[doc(hidden)]
+    pub registered_at: &'static str,
+}
 
 // The `pavex_ide_hint`-let binding is a hack to "nudge"
 // rust-analyzer into parsing the macro input

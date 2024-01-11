@@ -24,6 +24,8 @@ tracing = "0.1"
 http-body-util = "0.1"
 pin-project-lite = "0.2"
 ubyte = { version = "0.10.4", features = ["serde"] }
+pavex_bp_schema = { path = "../pavex_bp_schema" }
+pavex_reflection = { path = "../pavex_reflection" }
 
 # Route parameters
 matchit = { git = "https://github.com/ibraheemdev/matchit", branch = "master" }

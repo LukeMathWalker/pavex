@@ -2,15 +2,12 @@ use ahash::{HashMap, HashMapExt};
 use anyhow::anyhow;
 use guppy::graph::PackageGraph;
 
-use pavex::blueprint::constructor::CloningStrategy;
-use pavex::blueprint::internals::{
-    NestedBlueprint, RegisteredCallable, RegisteredConstructor, RegisteredFallback,
-    RegisteredRoute, RegisteredWrappingMiddleware,
-};
-use pavex::blueprint::{
-    constructor::Lifecycle, reflection::Location, reflection::RawCallableIdentifiers, Blueprint,
-};
 use pavex::router::AllowedMethods;
+use pavex_bp_schema::{
+    Blueprint, CloningStrategy, Lifecycle, Location, NestedBlueprint, RawCallableIdentifiers,
+    RegisteredCallable, RegisteredConstructor, RegisteredFallback, RegisteredRoute,
+    RegisteredWrappingMiddleware,
+};
 
 use crate::compiler::analyses::user_components::router_key::{MethodGuard, RouterKey};
 use crate::compiler::analyses::user_components::scope_graph::ScopeGraphBuilder;

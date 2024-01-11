@@ -7,7 +7,7 @@ pub use blueprint::Blueprint;
 #[allow(clippy::module_inception)]
 mod blueprint;
 pub mod constructor;
-pub mod internals;
+mod conversions;
 pub mod middleware;
 pub mod reflection;
 pub mod router;
