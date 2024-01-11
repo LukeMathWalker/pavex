@@ -48,9 +48,37 @@ pub async fn handler(spy: &Spy) -> Response {
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.constructor(f!(crate::Spy::new), Lifecycle::Singleton);
+    bp.nest(top_level());
+    bp.nest(after_handler());
+    bp.nest(nested());
+    bp
+}
+
+pub fn top_level() -> Blueprint {
+    let mut bp = Blueprint::new();
     bp.wrap(f!(crate::first));
     bp.wrap(f!(crate::second));
-    bp.route(GET, "/", f!(crate::handler));
+    bp.route(GET, "/top_level", f!(crate::handler));
+    bp
+}
+
+pub fn after_handler() -> Blueprint {
+    let mut bp = Blueprint::new();
+    bp.wrap(f!(crate::first));
+    bp.route(GET, "/after_handler", f!(crate::handler));
+    bp.wrap(f!(crate::second));
+    bp
+}
+
+pub fn nested() -> Blueprint {
+    let mut bp = Blueprint::new();
+    bp.nest({
+        let mut bp = Blueprint::new();
+        bp.route(GET, "/nested", f!(crate::handler));
+        bp.wrap(f!(crate::second));
+        bp
+    });
+    bp.wrap(f!(crate::first));
     bp
 }
 
