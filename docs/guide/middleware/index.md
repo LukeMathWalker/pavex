@@ -83,6 +83,12 @@ In addition, it must take a reference to the error type as one of its input para
 
 --8<-- "doc_examples/guide/middleware/core_concepts/project-error_handler.snap"
 
+## Execution order
+
+Middlewares are executed in the order they are registered.  
+
+
+
 
 [f]: ../../api_reference/pavex/macro.f.html
 [IntoResponse]: ../../api_reference/pavex/response/trait.IntoResponse.html

@@ -295,6 +295,7 @@ impl TestData {
 
                 [dependencies]
                 application = { path = "../generated_app" }
+                app = { path = ".." }
 
                 [dev-dependencies]
                 tokio = { version = "1", features = ["full"] }
