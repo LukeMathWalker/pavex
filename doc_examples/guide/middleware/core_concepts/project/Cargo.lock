@@ -351,6 +351,7 @@ dependencies = [
  "pavex",
  "pavex_cli_client",
  "serde",
+ "tokio",
  "tracing",
 ]
 

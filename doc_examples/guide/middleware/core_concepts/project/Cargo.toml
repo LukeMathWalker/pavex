@@ -9,6 +9,7 @@ pavex_cli_client = { path = "../../../../../libs/pavex_cli_client" }
 serde = { version = "1", features = ["derive"] }
 cargo_px_env = "0.1"
 tracing = "0.1.40"
+tokio = { version = "1.35.1", features = ["time"] }
 
 [workspace]
 members = [".", "server_sdk"]

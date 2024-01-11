@@ -30,12 +30,12 @@ When registering a middleware, you must provide its **fully qualified path**, wr
 
 Middlewares, like request handlers, must return a type that can be converted into a [`Response`][Response] via the
 [`IntoResponse`][IntoResponse] trait.  
-If you want to return a custom type from your request handler, you must implement [`IntoResponse`][IntoResponse] for it.
+If you want to return a custom type from your middleware, you must implement [`IntoResponse`][IntoResponse] for it.
 
 ## `Next`
 
 Middlewares **wrap** around the rest of the request processing pipeline.
-They are invoked before the request handler and _all the other middlewares_ that were registered after itself. 
+They are invoked before the request handler and _all the other middlewares_ that were registered later. 
 The remaining request processing pipeline is represented by the [`Next`][Next] type.  
 
 All middlewares must take an instance of [`Next`][Next] as input.  
@@ -66,15 +66,11 @@ using Pavex's first-party extractors.
 
 Your middlewares can be fallible, i.e. they can return a [`Result`][Result].
 
-```rust
-pub async fn timeout(/* ... */) -> Result<Response, Elapsed> {
-    // ...
-}
-```
+--8<-- "doc_examples/guide/middleware/core_concepts/project-fallible.snap"
 
 If they do, you must specify an **error handler** when registering them:
 
---8<-- "doc_examples/guide/routing/request_handlers/error_handler/src/blueprint.rs"
+--8<-- "doc_examples/guide/middleware/core_concepts/project-registration_with_error_handler.snap"
 
 The error handler is in charge of building a response from the error returned by the middleware. Just like
 a middleware:
@@ -85,7 +81,7 @@ a middleware:
 
 In addition, it must take a reference to the error type as one of its input parameters:
 
---8<-- "doc_examples/guide/routing/request_handlers/error_handler/src/error_handler.rs"
+--8<-- "doc_examples/guide/middleware/core_concepts/project-error_handler.snap"
 
 
 [f]: ../../api_reference/pavex/macro.f.html

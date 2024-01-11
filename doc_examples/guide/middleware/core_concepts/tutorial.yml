@@ -14,3 +14,12 @@ snippets:
     source_path: "src/logging/mw.rs"
     ranges: [ ".." ]
     hl_lines: [ 11 ]
+  - name: "fallible"
+    source_path: "src/fallible/mw.rs"
+    ranges: [ ".." ]
+  - name: "error_handler"
+    source_path: "src/fallible/errors.rs"
+    ranges: [ ".." ]
+  - name: "registration_with_error_handler"
+    source_path: "src/fallible/blueprint.rs"
+    ranges: [ "0..8", "9..11" ]

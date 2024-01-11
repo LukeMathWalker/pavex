@@ -5,4 +5,5 @@ pub use blueprint::blueprint;
 
 mod blueprint;
 pub mod core;
+pub mod fallible;
 pub mod logging;
