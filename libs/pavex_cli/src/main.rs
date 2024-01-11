@@ -7,14 +7,13 @@ use anyhow::Context;
 use cargo_generate::{GenerateArgs, TemplatePath};
 use clap::{Parser, Subcommand};
 use owo_colors::OwoColorize;
-use pavex::blueprint::Blueprint;
 use pavexc::App;
 use supports_color::Stream;
 use tracing_chrome::{ChromeLayerBuilder, FlushGuard};
-use tracing_subscriber::EnvFilter;
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
+use tracing_subscriber::EnvFilter;
 
 #[derive(Parser)]
 #[clap(author, version = VERSION, about, long_about = None)]
@@ -138,7 +137,7 @@ fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
         }
         Box::new(handler.build())
     }))
-        .unwrap();
+    .unwrap();
     let _guard = if cli.debug {
         Some(init_telemetry())
     } else {
@@ -162,7 +161,11 @@ fn generate(
     color_profile: Color,
 ) -> Result<ExitCode, Box<dyn std::error::Error>> {
     let color_on_stderr = use_color_on_stderr(color_profile);
-    let blueprint = Blueprint::load(&blueprint)?;
+
+    let blueprint = {
+        let file = fs_err::OpenOptions::new().read(true).open(blueprint)?;
+        ron::de::from_reader(&file)?
+    };
     // We use the path to the generated application crate as a fingerprint for the project.
     let project_fingerprint = output.to_string_lossy().into_owned();
     let app = match App::build(blueprint, project_fingerprint) {

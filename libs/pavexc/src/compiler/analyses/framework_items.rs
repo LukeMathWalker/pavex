@@ -4,7 +4,7 @@ use guppy::graph::PackageGraph;
 use proc_macro2::Ident;
 use quote::format_ident;
 
-use pavex::blueprint::constructor::{CloningStrategy, Lifecycle};
+use pavex_bp_schema::{CloningStrategy, Lifecycle};
 
 use crate::{
     compiler::utils::process_framework_path, language::ResolvedType, rustdoc::CrateCollection,

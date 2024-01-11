@@ -2,17 +2,13 @@ use ahash::{HashMap, HashMapExt};
 use anyhow::anyhow;
 use guppy::graph::PackageGraph;
 
-use pavex::blueprint::constructor::CloningStrategy;
-use pavex::blueprint::internals::{
-    NestedBlueprint, RegisteredCallable, RegisteredConstructor, RegisteredFallback,
+use pavex_bp_schema::{
+    Blueprint, CloningStrategy, Lifecycle, Location, NestedBlueprint, RawCallableIdentifiers,
+    RegisteredCallable, RegisteredComponent, RegisteredConstructor, RegisteredFallback,
     RegisteredRoute, RegisteredWrappingMiddleware,
 };
-use pavex::blueprint::{
-    constructor::Lifecycle, reflection::Location, reflection::RawCallableIdentifiers, Blueprint,
-};
-use pavex::router::AllowedMethods;
 
-use crate::compiler::analyses::user_components::router_key::{MethodGuard, RouterKey};
+use crate::compiler::analyses::user_components::router_key::RouterKey;
 use crate::compiler::analyses::user_components::scope_graph::ScopeGraphBuilder;
 use crate::compiler::analyses::user_components::{ScopeGraph, ScopeId};
 use crate::compiler::interner::Interner;
@@ -161,6 +157,15 @@ pub(super) struct RawUserComponentDb {
     pub(super) fallback_id2path_prefix: HashMap<UserComponentId, Option<String>>,
 }
 
+/// Used in [`RawUserComponentDb::build`] to keep track of the nested blueprints that we still
+/// need to process.
+struct QueueItem<'a> {
+    parent_scope_id: ScopeId,
+    parent_path_prefix: Option<String>,
+    nested_bp: &'a NestedBlueprint,
+    current_middleware_chain: Vec<UserComponentId>,
+}
+
 // The public `build` method alongside its private supporting routines.
 impl RawUserComponentDb {
     /// Process a `Blueprint` and return a `UserComponentDb` that contains all the user components
@@ -187,6 +192,8 @@ impl RawUserComponentDb {
         // By default, the middleware chain is empty.
         let mut current_middleware_chain = Vec::new();
 
+        let mut processing_queue = Vec::new();
+
         Self::process_blueprint(
             &mut self_,
             bp,
@@ -195,26 +202,10 @@ impl RawUserComponentDb {
             &mut scope_graph_builder,
             &mut current_middleware_chain,
             true,
+            &mut processing_queue,
             package_graph,
             diagnostics,
         );
-
-        struct QueueItem<'a> {
-            parent_scope_id: ScopeId,
-            parent_path_prefix: Option<String>,
-            nested_bp: &'a NestedBlueprint,
-            current_middleware_chain: Vec<UserComponentId>,
-        }
-        let mut processing_queue: Vec<_> = bp
-            .nested_blueprints
-            .iter()
-            .map(|nested_bp| QueueItem {
-                parent_scope_id: root_scope_id,
-                nested_bp,
-                parent_path_prefix: None,
-                current_middleware_chain: current_middleware_chain.clone(),
-            })
-            .collect();
 
         while let Some(item) = processing_queue.pop() {
             let QueueItem {
@@ -244,17 +235,10 @@ impl RawUserComponentDb {
                 &mut scope_graph_builder,
                 &mut current_middleware_chain,
                 false,
+                &mut processing_queue,
                 package_graph,
                 diagnostics,
             );
-            for nested_bp in &nested_bp.blueprint.nested_blueprints {
-                processing_queue.push(QueueItem {
-                    parent_scope_id: nested_scope_id,
-                    nested_bp,
-                    parent_path_prefix: path_prefix.clone(),
-                    current_middleware_chain: current_middleware_chain.clone(),
-                });
-            }
         }
 
         #[cfg(debug_assertions)]
@@ -265,33 +249,55 @@ impl RawUserComponentDb {
     }
 
     /// Register with [`RawUserComponentDb`] all the user components that have been
-    /// registered against the provided `Blueprint`.  
+    /// registered against the provided `Blueprint`.
     /// All components are associated with or nested under the provided `current_scope_id`.
     ///
     /// If `path_prefix` is `Some`, then it is prepended to the path of each route
     /// in `Blueprint`.
-    fn process_blueprint(
+    fn process_blueprint<'a>(
         &mut self,
-        bp: &Blueprint,
+        bp: &'a Blueprint,
         current_scope_id: ScopeId,
         path_prefix: Option<&str>,
         scope_graph_builder: &mut ScopeGraphBuilder,
-        current_middleware_chain: &mut Vec<UserComponentId>,
+        mut current_middleware_chain: &mut Vec<UserComponentId>,
         is_root: bool,
+        bp_queue: &mut Vec<QueueItem<'a>>,
         package_graph: &PackageGraph,
         diagnostics: &mut Vec<miette::Error>,
     ) {
-        self.process_middlewares(&bp.middlewares, current_scope_id, current_middleware_chain);
-        self.process_routes(
-            &bp.routes,
-            current_middleware_chain,
-            current_scope_id,
-            path_prefix,
-            scope_graph_builder,
-            package_graph,
-            diagnostics,
-        );
-        if let Some(fallback) = &bp.fallback_request_handler {
+        let mut fallback: Option<&RegisteredFallback> = None;
+        for component in &bp.components {
+            match component {
+                RegisteredComponent::Constructor(c) => {
+                    self.process_constructor(&c, current_scope_id);
+                }
+                RegisteredComponent::WrappingMiddleware(w) => {
+                    self.process_middleware(&w, current_scope_id, &mut current_middleware_chain);
+                }
+                RegisteredComponent::Route(r) => self.process_route(
+                    &r,
+                    &current_middleware_chain,
+                    current_scope_id,
+                    path_prefix,
+                    scope_graph_builder,
+                    package_graph,
+                    diagnostics,
+                ),
+                RegisteredComponent::FallbackRequestHandler(f) => {
+                    fallback = Some(f);
+                }
+                RegisteredComponent::NestedBlueprint(b) => {
+                    bp_queue.push(QueueItem {
+                        parent_scope_id: current_scope_id,
+                        nested_bp: &b,
+                        parent_path_prefix: path_prefix.map(|s| s.to_owned()),
+                        current_middleware_chain: current_middleware_chain.clone(),
+                    });
+                }
+            }
+        }
+        if let Some(fallback) = &fallback {
             self.process_fallback(
                 fallback,
                 path_prefix,
@@ -325,15 +331,14 @@ impl RawUserComponentDb {
                 scope_graph_builder,
             )
         }
-        self.process_constructors(&bp.constructors, current_scope_id);
     }
 
-    /// Register with [`RawUserComponentDb`] all the routes that have been
-    /// registered against the provided `Blueprint`, including their error handlers
-    /// (if present).  
-    fn process_routes(
+    /// Register with [`RawUserComponentDb`] a route that has been
+    /// registered against the provided `Blueprint`, including its error handler
+    /// (if present).
+    fn process_route(
         &mut self,
-        routes: &[RegisteredRoute],
+        registered_route: &RegisteredRoute,
         current_middleware_chain: &[UserComponentId],
         current_scope_id: ScopeId,
         path_prefix: Option<&str>,
@@ -343,52 +348,47 @@ impl RawUserComponentDb {
     ) {
         const ROUTE_LIFECYCLE: Lifecycle = Lifecycle::RequestScoped;
 
-        for registered_route in routes {
-            let raw_callable_identifiers_id = self
-                .identifiers_interner
-                .get_or_intern(registered_route.request_handler.callable.clone());
-            let route_scope_id = scope_graph_builder.add_scope(current_scope_id, None);
-            let router_key = {
-                let method_guard = match &registered_route.method_guard.allowed_methods() {
-                    AllowedMethods::All => MethodGuard::Any,
-                    AllowedMethods::Some(methods) => {
-                        MethodGuard::Some(methods.iter().map(|m| m.to_string()).collect())
-                    }
-                };
-                let path = match path_prefix {
-                    Some(prefix) => format!("{}{}", prefix, registered_route.path),
-                    None => registered_route.path.to_owned(),
-                };
-                RouterKey { path, method_guard }
+        let raw_callable_identifiers_id = self
+            .identifiers_interner
+            .get_or_intern(registered_route.request_handler.callable.clone());
+        let route_scope_id = scope_graph_builder.add_scope(current_scope_id, None);
+        let router_key = {
+            let path = match path_prefix {
+                Some(prefix) => format!("{}{}", prefix, registered_route.path),
+                None => registered_route.path.to_owned(),
             };
-            let component = UserComponent::RequestHandler {
-                raw_callable_identifiers_id,
-                router_key,
-                scope_id: route_scope_id,
-            };
-            let request_handler_id = self.intern_component(
-                component,
-                ROUTE_LIFECYCLE,
-                registered_route.request_handler.location.to_owned(),
-            );
+            RouterKey {
+                path,
+                method_guard: registered_route.method_guard.clone(),
+            }
+        };
+        let component = UserComponent::RequestHandler {
+            raw_callable_identifiers_id,
+            router_key,
+            scope_id: route_scope_id,
+        };
+        let request_handler_id = self.intern_component(
+            component,
+            ROUTE_LIFECYCLE,
+            registered_route.request_handler.location.to_owned(),
+        );
 
-            self.handler_id2middleware_ids
-                .insert(request_handler_id, current_middleware_chain.to_owned());
+        self.handler_id2middleware_ids
+            .insert(request_handler_id, current_middleware_chain.to_owned());
 
-            self.validate_route(
-                request_handler_id,
-                registered_route,
-                package_graph,
-                diagnostics,
-            );
+        self.validate_route(
+            request_handler_id,
+            registered_route,
+            package_graph,
+            diagnostics,
+        );
 
-            self.process_error_handler(
-                &registered_route.error_handler,
-                ROUTE_LIFECYCLE,
-                current_scope_id,
-                request_handler_id,
-            );
-        }
+        self.process_error_handler(
+            &registered_route.error_handler,
+            ROUTE_LIFECYCLE,
+            current_scope_id,
+            request_handler_id,
+        );
     }
 
     /// Register with [`RawUserComponentDb`] the fallback that has been
@@ -431,78 +431,74 @@ impl RawUserComponentDb {
         );
     }
 
-    /// Register with [`RawUserComponentDb`] all the routes that have been
-    /// registered against the provided `Blueprint`, including their error handlers
-    /// (if present).  
-    fn process_middlewares(
+    /// Register with [`RawUserComponentDb`] a middleware that has been
+    /// registered against the provided `Blueprint`, including its error handler
+    /// (if present).
+    fn process_middleware(
         &mut self,
-        middlewares: &[RegisteredWrappingMiddleware],
+        middleware: &RegisteredWrappingMiddleware,
         current_scope_id: ScopeId,
         current_middleware_chain: &mut Vec<UserComponentId>,
     ) {
         const MIDDLEWARE_LIFECYCLE: Lifecycle = Lifecycle::RequestScoped;
 
-        for middleware in middlewares {
-            let raw_callable_identifiers_id = self
-                .identifiers_interner
-                .get_or_intern(middleware.middleware.callable.clone());
-            let component = UserComponent::WrappingMiddleware {
-                raw_callable_identifiers_id,
-                scope_id: current_scope_id,
-            };
-            let component_id = self.intern_component(
-                component,
-                MIDDLEWARE_LIFECYCLE,
-                middleware.middleware.location.clone(),
-            );
-            current_middleware_chain.push(component_id);
+        let raw_callable_identifiers_id = self
+            .identifiers_interner
+            .get_or_intern(middleware.middleware.callable.clone());
+        let component = UserComponent::WrappingMiddleware {
+            raw_callable_identifiers_id,
+            scope_id: current_scope_id,
+        };
+        let component_id = self.intern_component(
+            component,
+            MIDDLEWARE_LIFECYCLE,
+            middleware.middleware.location.clone(),
+        );
+        current_middleware_chain.push(component_id);
 
-            self.process_error_handler(
-                &middleware.error_handler,
-                MIDDLEWARE_LIFECYCLE,
-                current_scope_id,
-                component_id,
-            );
-        }
+        self.process_error_handler(
+            &middleware.error_handler,
+            MIDDLEWARE_LIFECYCLE,
+            current_scope_id,
+            component_id,
+        );
     }
 
-    /// Register with [`RawUserComponentDb`] all the constructors that have been
-    /// registered against the provided `Blueprint`, including their error handlers
-    /// (if present).  
-    /// All components are associated with or nested under the provided `current_scope_id`.
-    fn process_constructors(
+    /// Register with [`RawUserComponentDb`] a constructors that has been
+    /// registered against the provided `Blueprint`, including its error handler
+    /// (if present).
+    /// It is associated with or nested under the provided `current_scope_id`.
+    fn process_constructor(
         &mut self,
-        constructors: &[RegisteredConstructor],
+        constructor: &RegisteredConstructor,
         current_scope_id: ScopeId,
     ) {
-        for constructor in constructors {
-            let raw_callable_identifiers_id = self
-                .identifiers_interner
-                .get_or_intern(constructor.constructor.callable.clone());
-            let component = UserComponent::Constructor {
-                raw_callable_identifiers_id,
-                scope_id: current_scope_id,
-            };
-            let lifecycle = constructor.lifecycle;
-            let constructor_id = self.intern_component(
-                component,
-                lifecycle,
-                constructor.constructor.location.clone(),
-            );
-            self.constructor_id2cloning_strategy.insert(
-                constructor_id,
-                constructor
-                    .cloning_strategy
-                    .unwrap_or(CloningStrategy::NeverClone),
-            );
+        let raw_callable_identifiers_id = self
+            .identifiers_interner
+            .get_or_intern(constructor.constructor.callable.clone());
+        let component = UserComponent::Constructor {
+            raw_callable_identifiers_id,
+            scope_id: current_scope_id,
+        };
+        let lifecycle = constructor.lifecycle;
+        let constructor_id = self.intern_component(
+            component,
+            lifecycle,
+            constructor.constructor.location.clone(),
+        );
+        self.constructor_id2cloning_strategy.insert(
+            constructor_id,
+            constructor
+                .cloning_strategy
+                .unwrap_or(CloningStrategy::NeverClone),
+        );
 
-            self.process_error_handler(
-                &constructor.error_handler,
-                lifecycle,
-                current_scope_id,
-                constructor_id,
-            );
-        }
+        self.process_error_handler(
+            &constructor.error_handler,
+            lifecycle,
+            current_scope_id,
+            constructor_id,
+        );
     }
 
     /// A helper function to intern a component without forgetting to do the necessary

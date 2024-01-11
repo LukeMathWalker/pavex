@@ -2,7 +2,7 @@ use std::fmt::{Display, Formatter};
 
 use syn::{ExprPath, GenericArgument, PathArguments, Type};
 
-use pavex::blueprint::reflection::RawCallableIdentifiers;
+use pavex_bp_schema::RawCallableIdentifiers;
 
 use super::Lifetime;
 

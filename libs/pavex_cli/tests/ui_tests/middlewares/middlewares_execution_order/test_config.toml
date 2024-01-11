@@ -1,0 +1,10 @@
+description = "Pavex can extract path parameters"
+
+[expectations]
+codegen = "pass"
+
+[dependencies]
+tokio = "1"
+
+[dev-dependencies]
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }

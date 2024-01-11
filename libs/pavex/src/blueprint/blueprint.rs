@@ -1,16 +1,17 @@
-use crate::blueprint::internals::RegisteredFallback;
+use crate::blueprint::conversions::raw_callable2registered_callable;
 use crate::blueprint::router::Fallback;
+use crate::router::AllowedMethods;
+use pavex_bp_schema::{
+    Blueprint as BlueprintSchema, NestedBlueprint, RegisteredConstructor, RegisteredFallback,
+    RegisteredRoute, RegisteredWrappingMiddleware,
+};
+use pavex_reflection::Location;
 
 use super::constructor::{Constructor, Lifecycle};
-use super::internals::{
-    NestedBlueprint, RegisteredCallable, RegisteredConstructor, RegisteredRoute,
-    RegisteredWrappingMiddleware,
-};
 use super::middleware::WrappingMiddleware;
-use super::reflection::{Location, RawCallable, RawCallableIdentifiers};
+use super::reflection::RawCallable;
 use super::router::{MethodGuard, Route};
 
-#[derive(serde::Serialize, serde::Deserialize)]
 /// The starting point for building an application with Pavex.
 ///
 /// # Guide
@@ -34,30 +35,17 @@ use super::router::{MethodGuard, Route};
 /// The information encoded in a blueprint can be serialized via [`Blueprint::persist`] and passed
 /// as input to Pavex's CLI to generate the application's server SDK.
 pub struct Blueprint {
-    /// The location where the [`Blueprint`] was created.
-    pub creation_location: Location,
-    /// All registered constructors, in the order they were registered.
-    pub constructors: Vec<RegisteredConstructor>,
-    /// All registered middlewares, in the order they were registered.
-    pub middlewares: Vec<RegisteredWrappingMiddleware>,
-    /// All registered routes, in the order they were registered.
-    pub routes: Vec<RegisteredRoute>,
-    /// The fallback request handler, if any.
-    pub fallback_request_handler: Option<RegisteredFallback>,
-    /// All blueprints nested under this one, in the order they were nested.
-    pub nested_blueprints: Vec<NestedBlueprint>,
+    schema: BlueprintSchema,
 }
 
 impl Default for Blueprint {
     #[track_caller]
     fn default() -> Self {
         Self {
-            creation_location: std::panic::Location::caller().into(),
-            constructors: Default::default(),
-            routes: Default::default(),
-            fallback_request_handler: None,
-            nested_blueprints: Default::default(),
-            middlewares: Default::default(),
+            schema: BlueprintSchema {
+                creation_location: Location::caller(),
+                components: Vec::new(),
+            },
         }
     }
 }
@@ -99,20 +87,22 @@ impl Blueprint {
     /// [`router`]: crate::blueprint::router
     /// [`PathParams`]: struct@crate::request::path::PathParams
     pub fn route(&mut self, method_guard: MethodGuard, path: &str, callable: RawCallable) -> Route {
+        let method_guard = match method_guard.allowed_methods() {
+            AllowedMethods::Some(m) => pavex_bp_schema::MethodGuard::Some(
+                m.into_iter().map(|m| m.as_str().to_owned()).collect(),
+            ),
+            AllowedMethods::All => pavex_bp_schema::MethodGuard::Any,
+        };
         let registered_route = RegisteredRoute {
             path: path.to_owned(),
             method_guard,
-            request_handler: RegisteredCallable {
-                callable: RawCallableIdentifiers::from_raw_callable(callable),
-                location: std::panic::Location::caller().into(),
-            },
+            request_handler: raw_callable2registered_callable(callable),
             error_handler: None,
         };
-        let route_id = self.routes.len();
-        self.routes.push(registered_route);
+        let component_id = self.push_component(registered_route);
         Route {
-            blueprint: self,
-            route_id,
+            blueprint: &mut self.schema,
+            component_id,
         }
     }
 
@@ -147,19 +137,19 @@ impl Blueprint {
     /// ```
     pub fn constructor(&mut self, callable: RawCallable, lifecycle: Lifecycle) -> Constructor {
         let registered_constructor = RegisteredConstructor {
-            constructor: RegisteredCallable {
-                callable: RawCallableIdentifiers::from_raw_callable(callable),
-                location: std::panic::Location::caller().into(),
+            constructor: raw_callable2registered_callable(callable),
+            lifecycle: match lifecycle {
+                Lifecycle::Singleton => pavex_bp_schema::Lifecycle::Singleton,
+                Lifecycle::RequestScoped => pavex_bp_schema::Lifecycle::RequestScoped,
+                Lifecycle::Transient => pavex_bp_schema::Lifecycle::Transient,
             },
-            lifecycle,
             cloning_strategy: None,
             error_handler: None,
         };
-        let constructor_id = self.constructors.len();
-        self.constructors.push(registered_constructor);
+        let component_id = self.push_component(registered_constructor);
         Constructor {
-            constructor_id,
-            blueprint: self,
+            component_id,
+            blueprint: &mut self.schema,
         }
     }
 
@@ -317,17 +307,13 @@ impl Blueprint {
     #[doc(alias = "middleware")]
     pub fn wrap(&mut self, callable: RawCallable) -> WrappingMiddleware {
         let registered = RegisteredWrappingMiddleware {
-            middleware: RegisteredCallable {
-                callable: RawCallableIdentifiers::from_raw_callable(callable),
-                location: std::panic::Location::caller().into(),
-            },
+            middleware: raw_callable2registered_callable(callable),
             error_handler: None,
         };
-        let middleware_id = self.middlewares.len();
-        self.middlewares.push(registered);
+        let component_id = self.push_component(registered);
         WrappingMiddleware {
-            blueprint: self,
-            middleware_id,
+            blueprint: &mut self.schema,
+            component_id,
         }
     }
 
@@ -487,11 +473,11 @@ impl Blueprint {
     /// If multiple nested blueprints need access to the singleton, the constructor must be
     /// registered against a common parent blueprint—the root blueprint, if necessary.
     pub fn nest_at(&mut self, prefix: &str, blueprint: Blueprint) {
-        self.nested_blueprints.push(NestedBlueprint {
-            blueprint,
+        self.push_component(NestedBlueprint {
+            blueprint: blueprint.schema,
             path_prefix: Some(prefix.into()),
-            nesting_location: std::panic::Location::caller().into(),
-        })
+            nesting_location: Location::caller(),
+        });
     }
 
     #[track_caller]
@@ -499,11 +485,11 @@ impl Blueprint {
     ///
     /// Check out [`Blueprint::nest_at`] for more details.
     pub fn nest(&mut self, blueprint: Blueprint) {
-        self.nested_blueprints.push(NestedBlueprint {
-            blueprint,
+        self.push_component(NestedBlueprint {
+            blueprint: blueprint.schema,
             path_prefix: None,
-            nesting_location: std::panic::Location::caller().into(),
-        })
+            nesting_location: Location::caller(),
+        });
     }
 
     #[track_caller]
@@ -634,14 +620,24 @@ impl Blueprint {
     /// [`Response`]: crate::response::Response
     pub fn fallback(&mut self, callable: RawCallable) -> Fallback {
         let registered = RegisteredFallback {
-            request_handler: RegisteredCallable {
-                callable: RawCallableIdentifiers::from_raw_callable(callable),
-                location: std::panic::Location::caller().into(),
-            },
+            request_handler: raw_callable2registered_callable(callable),
             error_handler: None,
         };
-        self.fallback_request_handler = Some(registered);
-        Fallback { blueprint: self }
+        let component_id = self.push_component(registered);
+        Fallback {
+            blueprint: &mut self.schema,
+            component_id,
+        }
+    }
+
+    /// Register a component and return its id (i.e. its index in the `components` vector).
+    fn push_component(
+        &mut self,
+        component: impl Into<pavex_bp_schema::RegisteredComponent>,
+    ) -> usize {
+        let id = self.schema.components.len();
+        self.schema.components.push(component.into());
+        id
     }
 }
 
@@ -656,14 +652,14 @@ impl Blueprint {
             .truncate(true)
             .open(filepath)?;
         let config = ron::ser::PrettyConfig::new();
-        ron::ser::to_writer_pretty(&mut file, &self, config)?;
+        ron::ser::to_writer_pretty(&mut file, &self.schema, config)?;
         Ok(())
     }
 
     /// Read a RON-encoded [`Blueprint`] from a file.
     pub fn load(filepath: &std::path::Path) -> Result<Self, anyhow::Error> {
         let file = fs_err::OpenOptions::new().read(true).open(filepath)?;
-        let value = ron::de::from_reader(&file)?;
-        Ok(value)
+        let value: BlueprintSchema = ron::de::from_reader(&file)?;
+        Ok(Self { schema: value })
     }
 }

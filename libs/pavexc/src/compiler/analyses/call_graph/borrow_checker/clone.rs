@@ -3,7 +3,7 @@ use std::borrow::Cow;
 use guppy::graph::PackageGraph;
 use once_cell::sync::OnceCell;
 
-use pavex::blueprint::constructor::CloningStrategy;
+use pavex_bp_schema::CloningStrategy;
 
 use crate::compiler::analyses::components::{
     ComponentDb, ComponentId, ConsumptionMode, HydratedComponent, InsertTransformer,

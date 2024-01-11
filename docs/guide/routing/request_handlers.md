@@ -46,7 +46,7 @@ work in Pavex? How do you **extract** data from the request?
 
 You must take advantage of **dependency injection**.
 
-You must specificy the dependencies of your request handler as **input parameters** in its function signature.  
+You must specify the dependencies of your request handler as **input parameters** in its function signature.  
 Those inputs are going to be built and injected by the framework, according to the **constructors** you have registered.
 
 Check out the [dependency injection guide](../dependency_injection/index.md) for more details

@@ -8,7 +8,7 @@ use miette::NamedSource;
 use rustdoc_types::ItemEnum;
 use syn::spanned::Spanned;
 
-use pavex::blueprint::constructor::{CloningStrategy, Lifecycle};
+use pavex_bp_schema::{CloningStrategy, Lifecycle};
 
 use crate::compiler::analyses::computations::{ComputationDb, ComputationId};
 use crate::compiler::analyses::user_components::{

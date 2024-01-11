@@ -1,0 +1,6 @@
+use pavex::response::Response;
+use tokio::time::error::Elapsed;
+
+pub fn timeout_error_handler(_e: &Elapsed) -> Response {
+    Response::internal_server_error()
+}

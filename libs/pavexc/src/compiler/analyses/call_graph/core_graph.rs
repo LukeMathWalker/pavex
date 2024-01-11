@@ -7,7 +7,7 @@ use petgraph::stable_graph::NodeIndex;
 use petgraph::visit::Dfs;
 use petgraph::Direction;
 
-use pavex::blueprint::constructor::Lifecycle;
+use pavex_bp_schema::Lifecycle;
 
 use crate::compiler::analyses::components::{
     ComponentDb, ComponentId, ConsumptionMode, HydratedComponent, InsertTransformer,

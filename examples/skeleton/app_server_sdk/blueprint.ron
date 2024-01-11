@@ -4,8 +4,8 @@
         column: 18,
         file: "app_blueprint/src/lib.rs",
     ),
-    constructors: [
-        (
+    components: [
+        Constructor((
             constructor: (
                 callable: (
                     registered_at: "app_blueprint",
@@ -20,8 +20,8 @@
             lifecycle: Singleton,
             cloning_strategy: None,
             error_handler: None,
-        ),
-        (
+        )),
+        Constructor((
             constructor: (
                 callable: (
                     registered_at: "app_blueprint",
@@ -36,8 +36,8 @@
             lifecycle: RequestScoped,
             cloning_strategy: None,
             error_handler: None,
-        ),
-        (
+        )),
+        Constructor((
             constructor: (
                 callable: (
                     registered_at: "app_blueprint",
@@ -52,18 +52,12 @@
             lifecycle: Transient,
             cloning_strategy: None,
             error_handler: None,
-        ),
-    ],
-    middlewares: [],
-    routes: [
-        (
+        )),
+        Route((
             path: "/home",
-            method_guard: (
-                inner: Some((
-                    bitset: 256,
-                    extensions: [],
-                )),
-            ),
+            method_guard: Some([
+                "GET",
+            ]),
             request_handler: (
                 callable: (
                     registered_at: "app_blueprint",
@@ -76,8 +70,6 @@
                 ),
             ),
             error_handler: None,
-        ),
+        )),
     ],
-    fallback_request_handler: None,
-    nested_blueprints: [],
 )

@@ -1,4 +1,4 @@
-use pavex::blueprint::reflection::Location;
+use pavex_bp_schema::Location;
 
 pub trait ProcMacroSpanExt {
     /// Returns `true` if a `proc_macro::Span` contains a `Location`.

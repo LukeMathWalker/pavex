@@ -105,3 +105,4 @@ framework.
 [Lifecycle::Singleton]: ../../../api_reference/pavex/blueprint/constructor/enum.Lifecycle.html#variant.Singleton
 [Lifecycle::RequestScoped]: ../../../api_reference/pavex/blueprint/constructor/enum.Lifecycle.html#variant.RequestScoped
 [Lifecycle::Transient]: ../../../api_reference/pavex/blueprint/constructor/enum.Lifecycle.html#variant.Transient
+[RequestHead]: ../../../api_reference/pavex/request/struct.RequestHead.html

@@ -1,7 +1,7 @@
 use guppy::graph::PackageGraph;
 use indexmap::IndexSet;
 
-use pavex::blueprint::constructor::Lifecycle;
+use pavex_bp_schema::Lifecycle;
 
 use crate::compiler::analyses::call_graph::borrow_checker::OrderedCallGraph;
 use crate::compiler::analyses::call_graph::{

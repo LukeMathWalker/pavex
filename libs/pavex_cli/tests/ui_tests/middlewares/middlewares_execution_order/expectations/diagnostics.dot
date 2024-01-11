@@ -1,0 +1,110 @@
+digraph "GET /after_handler - 0" {
+    0 [ label = "app::first(&app::Spy, pavex::middleware::Next<crate::route_2::Next0>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_2::Next0) -> pavex::middleware::Next<crate::route_2::Next0>"]
+    2 [ label = "crate::route_2::Next0(&app::Spy) -> crate::route_2::Next0"]
+    4 [ label = "&app::Spy"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    4 -> 0 [ ]
+    4 -> 2 [ ]
+}
+
+digraph "GET /after_handler - 1" {
+    0 [ label = "app::handler(&app::Spy) -> pavex::response::Response"]
+    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "&app::Spy"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
+}
+
+digraph "* /after_handler - 0" {
+    0 [ label = "pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
+    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "&pavex::router::AllowedMethods"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
+}
+
+digraph "GET /nested - 0" {
+    0 [ label = "app::first(&app::Spy, pavex::middleware::Next<crate::route_1::Next0>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_1::Next0) -> pavex::middleware::Next<crate::route_1::Next0>"]
+    2 [ label = "crate::route_1::Next0(&app::Spy) -> crate::route_1::Next0"]
+    4 [ label = "&app::Spy"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    4 -> 0 [ ]
+    4 -> 2 [ ]
+}
+
+digraph "GET /nested - 1" {
+    0 [ label = "app::second(&app::Spy, pavex::middleware::Next<crate::route_1::Next1>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_1::Next1) -> pavex::middleware::Next<crate::route_1::Next1>"]
+    2 [ label = "crate::route_1::Next1(&app::Spy) -> crate::route_1::Next1"]
+    4 [ label = "&app::Spy"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    4 -> 0 [ ]
+    4 -> 2 [ ]
+}
+
+digraph "GET /nested - 2" {
+    0 [ label = "app::handler(&app::Spy) -> pavex::response::Response"]
+    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "&app::Spy"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
+}
+
+digraph "* /nested - 0" {
+    0 [ label = "pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
+    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "&pavex::router::AllowedMethods"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
+}
+
+digraph "GET /top_level - 0" {
+    0 [ label = "app::first(&app::Spy, pavex::middleware::Next<crate::route_3::Next0>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_3::Next0) -> pavex::middleware::Next<crate::route_3::Next0>"]
+    2 [ label = "crate::route_3::Next0(&app::Spy) -> crate::route_3::Next0"]
+    4 [ label = "&app::Spy"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    4 -> 0 [ ]
+    4 -> 2 [ ]
+}
+
+digraph "GET /top_level - 1" {
+    0 [ label = "app::second(&app::Spy, pavex::middleware::Next<crate::route_3::Next1>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_3::Next1) -> pavex::middleware::Next<crate::route_3::Next1>"]
+    2 [ label = "crate::route_3::Next1(&app::Spy) -> crate::route_3::Next1"]
+    4 [ label = "&app::Spy"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    4 -> 0 [ ]
+    4 -> 2 [ ]
+}
+
+digraph "GET /top_level - 2" {
+    0 [ label = "app::handler(&app::Spy) -> pavex::response::Response"]
+    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "&app::Spy"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
+}
+
+digraph "* /top_level - 0" {
+    0 [ label = "pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
+    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "&pavex::router::AllowedMethods"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
+}
+
+digraph app_state {
+    0 [ label = "crate::ApplicationState(app::Spy) -> crate::ApplicationState"]
+    1 [ label = "app::Spy::new(app::SpyState) -> app::Spy"]
+    2 [ label = "app::SpyState"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+}

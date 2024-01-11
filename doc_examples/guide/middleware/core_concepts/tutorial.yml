@@ -1,0 +1,39 @@
+starter_project_folder: "project"
+commands:
+  - command: "cargo px c"
+    expected_outcome: "success"
+snippets:
+  - name: "basic"
+    source_path: "src/core/mw.rs"
+    ranges: [ ".." ]
+  - name: "registration"
+    source_path: "src/core/blueprint.rs"
+    ranges: [ ".." ]
+    hl_lines: [ 7 ]
+  - name: "into_future"
+    source_path: "src/logging/mw.rs"
+    ranges: [ ".." ]
+    hl_lines: [ 11 ]
+  - name: "fallible"
+    source_path: "src/fallible/mw.rs"
+    ranges: [ ".." ]
+  - name: "error_handler"
+    source_path: "src/fallible/errors.rs"
+    ranges: [ ".." ]
+  - name: "registration_with_error_handler"
+    source_path: "src/fallible/blueprint.rs"
+    ranges: [ "0..8", "9..11" ]
+  - name: "signalers"
+    source_path: "src/mw.rs"
+    ranges: [ ".." ]
+  - name: "vanilla_order"
+    source_path: "src/order1.rs"
+    ranges: [ ".." ]
+  - name: "mw_after_handler"
+    source_path: "src/order2.rs"
+    ranges: [ ".." ]
+    hl_lines: [ 7, 8, 9 ]
+  - name: "mw_after_nested"
+    source_path: "src/order3.rs"
+    ranges: [ ".." ]
+    hl_lines: [ 7, 8, 9 ]

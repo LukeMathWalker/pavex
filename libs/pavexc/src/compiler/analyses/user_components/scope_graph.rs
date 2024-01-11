@@ -5,7 +5,7 @@ use petgraph::algo::has_path_connecting;
 use petgraph::graphmap::DiGraphMap;
 use petgraph::visit::{IntoNodeIdentifiers, Reversed};
 
-use pavex::blueprint::reflection::Location;
+use pavex_bp_schema::Location;
 
 /// Assign a unique ID to each *scope*.
 ///

@@ -6,9 +6,9 @@ use guppy::graph::PackageGraph;
 use indexmap::{IndexMap, IndexSet};
 use itertools::Itertools;
 use matchit::InsertError;
+use pavex_bp_schema::MethodGuard;
 
 use crate::compiler::analyses::user_components::raw_db::RawUserComponentDb;
-use crate::compiler::analyses::user_components::router_key::MethodGuard;
 use crate::compiler::analyses::user_components::{
     ScopeGraph, ScopeId, UserComponent, UserComponentId,
 };

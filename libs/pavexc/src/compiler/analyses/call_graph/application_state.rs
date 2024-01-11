@@ -9,7 +9,7 @@ use indexmap::{IndexMap, IndexSet};
 use petgraph::Direction;
 use proc_macro2::Ident;
 
-use pavex::blueprint::constructor::{CloningStrategy, Lifecycle};
+use pavex_bp_schema::{CloningStrategy, Lifecycle};
 
 use crate::compiler::analyses::call_graph::{
     core_graph::build_call_graph, CallGraph, CallGraphNode, NumberOfAllowedInvocations,

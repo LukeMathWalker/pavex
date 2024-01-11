@@ -5,7 +5,7 @@ repo_url: "https://github.com/LukeMathWalker/pavex"
 repo_name: "LukeMathWalker/pavex"
 edit_uri: "edit/main/docs/"
 plugins:
-  #  - social
+  - social
   - search
   - redirects:
       redirect_maps:
@@ -107,6 +107,7 @@ nav:
               - guide/dependency_injection/core_concepts/framework_primitives.md
           - guide/dependency_injection/cookbook.md
           - guide/dependency_injection/limitations.md
+      - "Middleware": guide/middleware/index.md
   - "API Reference": api_reference/pavex/
 exclude_docs: |
   README.md

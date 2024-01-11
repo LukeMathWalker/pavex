@@ -5,7 +5,7 @@ use guppy::graph::PackageGraph;
 use guppy::PackageId;
 use indexmap::{IndexMap, IndexSet};
 
-use pavex::blueprint::constructor::{CloningStrategy, Lifecycle};
+use pavex_bp_schema::{CloningStrategy, Lifecycle};
 
 use crate::compiler::analyses::call_graph::{
     request_scoped_call_graph, request_scoped_ordered_call_graph, CallGraphNode,

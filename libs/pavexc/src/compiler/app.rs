@@ -13,7 +13,7 @@ use miette::miette;
 use proc_macro2::Ident;
 use quote::format_ident;
 
-use pavex::blueprint::{constructor::Lifecycle, Blueprint};
+use pavex_bp_schema::{Blueprint, Lifecycle};
 
 use crate::compiler::analyses::call_graph::{
     application_state_call_graph, ApplicationStateCallGraph, RawCallGraphExt,

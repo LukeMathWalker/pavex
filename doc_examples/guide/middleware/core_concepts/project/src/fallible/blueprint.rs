@@ -1,0 +1,11 @@
+use pavex::blueprint::router::GET;
+use pavex::blueprint::Blueprint;
+use pavex::f;
+
+pub fn blueprint() -> Blueprint {
+    let mut bp = Blueprint::new();
+    bp.wrap(f!(crate::fallible::timeout))
+        .error_handler(f!(crate::fallible::timeout_error_handler));
+    bp.route(GET, "/fallible", f!(crate::fallible::handler));
+    bp
+}
