@@ -193,8 +193,10 @@ where
 {
     // TODO: check that we have the nightly toolchain available beforehand in order to return
     // a good error.
-    let mut cmd = std::process::Command::new("cargo");
-    cmd.arg("+nightly")
+    let mut cmd = std::process::Command::new("rustup");
+    cmd.arg("run")
+        .arg("nightly")
+        .arg("cargo")
         .arg("doc")
         .arg("--no-deps")
         .arg("-q")
