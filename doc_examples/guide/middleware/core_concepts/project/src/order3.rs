@@ -4,14 +4,14 @@ use pavex::f;
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
+    bp.wrap(f!(crate::first)); // (1)!
     bp.nest(nested());
-    bp.wrap(f!(crate::first));
+    bp.wrap(f!(crate::second)); // (2)!
     bp
 }
 
 pub fn nested() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.wrap(f!(crate::second));
     bp.route(GET, "/", f!(crate::handler));
     bp
 }

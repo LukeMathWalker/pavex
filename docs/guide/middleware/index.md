@@ -114,39 +114,35 @@ First - end
 
 ### Edge cases
 
-Middlewares apply to all request handlers registered against the same [`Blueprint`][Blueprint], 
-**even if they are registered after the middleware**.
+Middlewares apply to all routes that were **registered after** them.
 
 --8<-- "doc_examples/guide/middleware/core_concepts/project-mw_after_handler.snap"
 
+1. The route has been registered **before** the `second` middleware, so it is not affected by it.
+
 You'll see this output when you make a request:
 
 ```
 First - start
-Second - start
 Handler
-Second - end
 First - end
 ```
 
-The same logic applies to nested [`Blueprint`s][Blueprint].  
-Middlewares registered against the parent blueprint apply 
-to all request handlers registered against one of its nested [`Blueprint`s][Blueprint],
-even if the nested [`Blueprint`][Blueprint] was registered before the middleware.  
-They also execute before all middlewares and request handlers registered against nested [`Blueprint`s][Blueprint]. 
+The same principle applies to nested [`Blueprint`s][Blueprint]. 
+Middlewares apply to all routes in nested [`Blueprint`s][Blueprint] that were **nested after** the middleware.
 
 --8<-- "doc_examples/guide/middleware/core_concepts/project-mw_after_nested.snap"
 
+1. The nested [`Blueprint`] has been nested **after** the registration of the `first` middleware, so it will apply to its routes.
+2. The nested [`Blueprint`] has been nested **before** the registration of the `second` middleware, so it won't apply to its routes.
+
 You'll see this output when you make a request:
 
 ```
 First - start
-Second - start
 Handler
-Second - end
 First - end
 ```
-
 
 [f]: ../../api_reference/pavex/macro.f.html
 [IntoResponse]: ../../api_reference/pavex/response/trait.IntoResponse.html
