@@ -25,6 +25,8 @@ markdown_extensions:
   - attr_list
   - md_in_html
   - footnotes
+  - pymdownx.tabbed:
+      alternate_style: true
   - pymdownx.highlight:
       anchor_linenums: true
       line_spans: __span
