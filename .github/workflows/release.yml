@@ -103,7 +103,7 @@ jobs:
     runs-on: ${{ matrix.runner }}
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      BUILD_MANIFEST_NAME: libs/target/distrib/${{ join(matrix.targets, '-') }}-dist-manifest.json
+      BUILD_MANIFEST_NAME: target/distrib/${{ join(matrix.targets, '-') }}-dist-manifest.json
     steps:
       - uses: actions/checkout@v4
         with:
@@ -145,8 +145,8 @@ jobs:
         with:
           name: artifacts
           path: |
-            ${{ steps.cargo-dist.outputs.paths }}
-            ${{ env.BUILD_MANIFEST_NAME }}
+            libs/${{ steps.cargo-dist.outputs.paths }}
+            libs/${{ env.BUILD_MANIFEST_NAME }}
 
   # Build and package all the platform-agnostic(ish) things
   build-global-artifacts:
@@ -156,7 +156,7 @@ jobs:
     runs-on: "ubuntu-20.04"
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      BUILD_MANIFEST_NAME: libs/target/distrib/dist-manifest.json
+      BUILD_MANIFEST_NAME: target/distrib/dist-manifest.json
     steps:
       - uses: actions/checkout@v4
         with:
@@ -186,8 +186,8 @@ jobs:
         with:
           name: artifacts
           path: |
-            ${{ steps.cargo-dist.outputs.paths }}
-            ${{ env.BUILD_MANIFEST_NAME }}
+            libs/${{ steps.cargo-dist.outputs.paths }}
+            libs/${{ env.BUILD_MANIFEST_NAME }}
   # Determines if we should publish/announce
   host:
     needs:
