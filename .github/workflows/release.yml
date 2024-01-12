@@ -145,7 +145,7 @@ jobs:
         with:
           name: artifacts
           path: |
-            libs/${{ steps.cargo-dist.outputs.paths }}
+            ${{ steps.cargo-dist.outputs.paths }}
             libs/${{ env.BUILD_MANIFEST_NAME }}
 
   # Build and package all the platform-agnostic(ish) things
@@ -186,7 +186,7 @@ jobs:
         with:
           name: artifacts
           path: |
-            libs/${{ steps.cargo-dist.outputs.paths }}
+            ${{ steps.cargo-dist.outputs.paths }}
             libs/${{ env.BUILD_MANIFEST_NAME }}
   # Determines if we should publish/announce
   host:
