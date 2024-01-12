@@ -45,12 +45,17 @@ Pavex relies on `nightly` to perform code generation and compile-time reflection
 Pavex provides a command-line interface to scaffold new projects and work with existing ones.  
 To install it, execute the following command:
 
-```bash
-cargo install --locked \
-  --git "https://github.com/LukeMathWalker/pavex.git" \
-  --branch "main" \
-  pavex_cli
-```
+=== "shell"
+
+    ```bash
+    curl --proto '=https' --tlsv1.2 -LsSf https://pavex.dev/releases/download/latest/pavex_cli-installer.sh | sh
+    ```
+
+=== "powershell"
+
+    ```powershell
+    irm https://pavex.dev/releases/download/latest/pavex_cli-installer.ps1 | iex
+    ```
 
 You can check that it's been installed correctly by running:
 
