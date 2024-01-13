@@ -47,7 +47,7 @@ pub(super) fn pavexc_cli_path(
                             version: version.to_owned(),
                         }));
                     }
-                    Ok(Ok(bin_cache_dir.join(format!("{version}"))))
+                    Ok(Ok(bin_cache_dir.join(format!("{version}")).join("pavexc")))
                 }
                 ExternalSource::Git {
                     repository,
@@ -55,8 +55,15 @@ pub(super) fn pavexc_cli_path(
                     ..
                 } => {
                     let repository_hash = sha2::Sha256::digest(repository.as_bytes());
+                    // Take the first 7 hex digits of the hash
+                    let repository_hash = format!("{:x}", repository_hash)
+                        .chars()
+                        .take(7)
+                        .collect::<String>();
+                    // Take the first 7 hex digits of the hash, i.e. git's short commit SHA
+                    let resolved = resolved.chars().take(7).collect::<String>();
                     Ok(Ok(bin_cache_dir.join(format!(
-                        "git/{repository_hash:x}/{version}/{resolved}"
+                        "git/{repository_hash}/{version}/{resolved}/pavexc"
                     ))))
                 }
                 _ => {

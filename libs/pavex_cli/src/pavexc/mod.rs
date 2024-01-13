@@ -1,3 +1,4 @@
+use anyhow::Context;
 use guppy::graph::PackageGraph;
 use std::path::PathBuf;
 
@@ -17,6 +18,11 @@ pub fn get_or_install_pavexc_cli(package_graph: &PackageGraph) -> Result<PathBuf
     if pavexc_cli_path.exists() {
         Ok(pavexc_cli_path)
     } else {
+        if let Some(parent_dir) = pavexc_cli_path.parent() {
+            fs_err::create_dir_all(parent_dir)
+                .context("Failed to create binary cache directory")?;
+        }
+
         install::install_pavexc_cli(&pavexc_cli_path, version, &package_source)?;
         #[cfg(unix)]
         executable::make_executable(&pavexc_cli_path)?;

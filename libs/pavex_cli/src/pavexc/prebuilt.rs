@@ -9,10 +9,6 @@ pub(super) fn download_prebuilt_pavexc_cli(
     expected_pavexc_cli_path: &Path,
     version: &Version,
 ) -> Result<(), DownloadPrebuiltError> {
-    if let Some(parent_dir) = expected_pavexc_cli_path.parent() {
-        std::fs::create_dir_all(parent_dir).context("Failed to create binary cache directory")?;
-    }
-
     let host_triple = get_host_triple()?;
     let url_prefix =
         format!("https://github.com/LukeMathWalker/pavex/releases/download/{version}/pavex_cli-{host_triple}");
