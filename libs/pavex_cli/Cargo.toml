@@ -17,21 +17,16 @@ vergen = { workspace = true }
 [dependencies]
 pavexc_cli_client = { path = "../pavexc_cli_client" }
 clap = { version = "4", features = ["derive", "env"] }
-pavexc = { path = "../pavexc" }
 pavex_miette = { path = "../pavex_miette" }
 miette = { version = "5.3.0" }
 fs-err = "2.7.0"
 tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter"] }
 tracing-chrome = { version = "0.7" }
 tracing = "0.1"
-owo-colors = "4.0.0"
 anyhow = "1"
+thiserror = "1.0.56"
 guppy = "0.17"
 supports-color = { version = "2" }
-include_dir = "0.7.3"
-cargo-generate = { version = "0.19.0", features = ["vendored-libgit2", "vendored-openssl"] }
-path-absolutize = "3.1.1"
-ron = "0.8"
 
 [dev-dependencies]
 pavex_test_runner = { path = "../pavex_test_runner" }
