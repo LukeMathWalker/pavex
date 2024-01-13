@@ -55,7 +55,7 @@ pub(super) fn install_pavexc_cli(
                             version: version.to_string(),
                         },
                         "pavexc",
-                        "pavex_cli",
+                        "pavexc_cli",
                         pavexc_cli_path,
                     )?;
                 }
@@ -91,7 +91,7 @@ pub(super) fn install_pavexc_cli(
                             rev: GitSourceRevision::Rev(resolved.into()),
                         },
                         "pavexc",
-                        "pavex_cli",
+                        "pavexc_cli",
                         pavexc_cli_path,
                     )?;
                 }
