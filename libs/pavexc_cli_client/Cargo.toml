@@ -1,0 +1,9 @@
+[package]
+name = "pavexc_cli_client"
+version = "0.1.2"
+edition = "2021"
+
+[dependencies]
+anyhow = "1"
+pavex = { path = "../pavex" }
+thiserror = "1.0.56"

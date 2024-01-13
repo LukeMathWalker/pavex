@@ -1,21 +1,9 @@
 [package]
-name = "pavex_cli"
-version = "0.1.2"
+name = "pavexc_cli"
+version = "0.1.0"
 edition = "2021"
 
-[[bin]]
-name = "pavex"
-path = "src/main.rs"
-
-[[test]]
-name = "ui_tests"
-harness = false
-
-[build-dependencies]
-vergen = { workspace = true }
-
 [dependencies]
-pavexc_cli_client = { path = "../pavexc_cli_client" }
 clap = { version = "4", features = ["derive", "env"] }
 pavexc = { path = "../pavexc" }
 pavex_miette = { path = "../pavex_miette" }
@@ -33,7 +21,5 @@ cargo-generate = { version = "0.19.0", features = ["vendored-libgit2", "vendored
 path-absolutize = "3.1.1"
 ron = "0.8"
 
-[dev-dependencies]
-pavex_test_runner = { path = "../pavex_test_runner" }
-# Enable more expensive debug assertions when building for testing purposes
-pavexc = { path = "../pavexc", features = ["debug_assertions"] }
+[build-dependencies]
+vergen = { workspace = true }

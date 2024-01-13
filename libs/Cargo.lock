@@ -286,6 +286,7 @@ dependencies = [
  "liquid-lib",
  "log",
  "names",
+ "openssl",
  "paste",
  "path-absolutize",
  "regex",
@@ -1919,6 +1920,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ff011a302c396a5197692431fc1948019154afc178baf7d8e37367442a4601cf"
 
 [[package]]
+name = "openssl-src"
+version = "300.2.1+3.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3fe476c29791a5ca0d1273c697e96085bbabbbea2ef7afd5617e78a4b40332d3"
+dependencies = [
+ "cc",
+]
+
+[[package]]
 name = "openssl-sys"
 version = "0.9.98"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1926,6 +1936,7 @@ checksum = "c1665caf8ab2dc9aef43d1c0023bd904633a6a05cb30b0ad59bec2ae986e57a7"
 dependencies = [
  "cc",
  "libc",
+ "openssl-src",
  "pkg-config",
  "vcpkg",
 ]
@@ -2037,7 +2048,7 @@ dependencies = [
 
 [[package]]
 name = "pavex"
-version = "0.1.0"
+version = "0.1.2"
 dependencies = [
  "anyhow",
  "bytes",
@@ -2075,7 +2086,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_bp_schema"
-version = "0.1.0"
+version = "0.1.2"
 dependencies = [
  "pavex_reflection",
  "serde",
@@ -2083,7 +2094,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_cli"
-version = "0.1.0"
+version = "0.1.2"
 dependencies = [
  "anyhow",
  "cargo-generate",
@@ -2097,6 +2108,7 @@ dependencies = [
  "pavex_miette",
  "pavex_test_runner",
  "pavexc",
+ "pavexc_cli_client",
  "ron",
  "supports-color",
  "tracing",
@@ -2107,7 +2119,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_cli_client"
-version = "0.1.0"
+version = "0.1.2"
 dependencies = [
  "anyhow",
  "pavex",
@@ -2116,7 +2128,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_macros"
-version = "0.1.0"
+version = "0.1.2"
 dependencies = [
  "pavex",
  "proc-macro2",
@@ -2128,7 +2140,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_miette"
-version = "0.1.0"
+version = "0.1.2"
 dependencies = [
  "miette",
  "owo-colors 3.5.0",
@@ -2142,14 +2154,14 @@ dependencies = [
 
 [[package]]
 name = "pavex_reflection"
-version = "0.1.0"
+version = "0.1.2"
 dependencies = [
  "serde",
 ]
 
 [[package]]
 name = "pavex_test_runner"
-version = "0.1.0"
+version = "0.1.2"
 dependencies = [
  "ahash",
  "anyhow",
@@ -2174,7 +2186,7 @@ dependencies = [
 
 [[package]]
 name = "pavexc"
-version = "0.1.0"
+version = "0.1.2"
 dependencies = [
  "ahash",
  "anyhow",
@@ -2220,6 +2232,38 @@ dependencies = [
 ]
 
 [[package]]
+name = "pavexc_cli"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "cargo-generate",
+ "clap",
+ "fs-err",
+ "guppy",
+ "include_dir",
+ "miette",
+ "owo-colors 4.0.0",
+ "path-absolutize",
+ "pavex_miette",
+ "pavexc",
+ "ron",
+ "supports-color",
+ "tracing",
+ "tracing-chrome",
+ "tracing-subscriber",
+ "vergen",
+]
+
+[[package]]
+name = "pavexc_cli_client"
+version = "0.1.2"
+dependencies = [
+ "anyhow",
+ "pavex",
+ "thiserror",
+]
+
+[[package]]
 name = "percent-encoding"
 version = "2.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2227,7 +2271,7 @@ checksum = "e3148f5046208a5d56bcfc03053e3ca6334e51da8dfb19b6cdc8b306fae3283e"
 
 [[package]]
 name = "persist_if_changed"
-version = "0.1.0"
+version = "0.1.2"
 dependencies = [
  "anyhow",
  "fs-err",

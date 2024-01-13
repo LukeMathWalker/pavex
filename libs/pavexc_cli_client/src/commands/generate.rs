@@ -3,7 +3,7 @@ use std::{path::PathBuf, process::Command};
 use crate::commands::errors::{InvocationError, NonZeroExitCode, SignalTermination};
 use pavex::blueprint::Blueprint;
 
-/// The configuration for `pavex`'s `generate` command.
+/// The configuration for `pavexc`'s `generate` command.
 ///
 /// You can use [`Client::generate`] to start building the command configuration.
 ///
@@ -11,15 +11,24 @@ use pavex::blueprint::Blueprint;
 pub struct GenerateBuilder {
     cmd: Command,
     diagnostics_path: Option<PathBuf>,
-    blueprint: Blueprint,
+    blueprint: BlueprintArgument,
     output_directory: PathBuf,
 }
 
+pub enum BlueprintArgument {
+    Path(PathBuf),
+    InMemory(Blueprint),
+}
+
 /// The representation of this command used in error messages.
-static GENERATE_DEBUG_COMMAND: &str = "pavex [...] generate [...]";
+static GENERATE_DEBUG_COMMAND: &str = "pavexc [...] generate [...]";
 
 impl GenerateBuilder {
-    pub(crate) fn new(cmd: Command, blueprint: Blueprint, output_directory: PathBuf) -> Self {
+    pub(crate) fn new(
+        cmd: Command,
+        blueprint: BlueprintArgument,
+        output_directory: PathBuf,
+    ) -> Self {
         Self {
             diagnostics_path: None,
             blueprint,
@@ -30,10 +39,10 @@ impl GenerateBuilder {
 
     /// Generate the runtime library for the application.
     ///
-    /// This will invoke `pavex` with the chosen configuration.
-    /// It won't return until `pavex` has finished running.
+    /// This will invoke `pavexc` with the chosen configuration.
+    /// It won't return until `pavexc` has finished running.
     ///
-    /// If `pavex` exits with a non-zero status code, this will return an error.
+    /// If `pavexc` exits with a non-zero status code, this will return an error.
     pub fn execute(self) -> Result<(), GenerateError> {
         let mut cmd = self
             .command()
@@ -60,18 +69,23 @@ impl GenerateBuilder {
         Ok(())
     }
 
-    /// Assemble the `std::process::Command` that will be used to invoke `pavex`,
+    /// Assemble the `std::process::Command` that will be used to invoke `pavexc`,
     /// but do not run it.
     /// It **will** persist the blueprint to a file, though.
     ///
     /// This method can be useful if you need to customize the command before running it.  
     /// If that's not your usecase, consider using [`GenerateBuilder::execute`] instead.
     pub fn command(mut self) -> Result<std::process::Command, BlueprintPersistenceError> {
-        // TODO: Pass the blueprint via `stdin` instead of writing it to a file.
-        let bp_path = self.output_directory.join("blueprint.ron");
-        self.blueprint
-            .persist(&bp_path)
-            .map_err(|source| BlueprintPersistenceError { source })?;
+        let bp_path = match self.blueprint {
+            BlueprintArgument::Path(p) => p,
+            BlueprintArgument::InMemory(ref bp) => {
+                // TODO: Pass the blueprint via `stdin` instead of writing it to a file.
+                let bp_path = self.output_directory.join("blueprint.ron");
+                bp.persist(&bp_path)
+                    .map_err(|source| BlueprintPersistenceError { source })?;
+                bp_path
+            }
+        };
 
         self.cmd
             .arg("generate")
