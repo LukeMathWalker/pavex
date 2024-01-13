@@ -1,8 +1,9 @@
+use anyhow::Context;
 use std::path::Path;
 use std::process::Stdio;
 
 pub enum Source {
-    CratesIo { name: String, version: String },
+    CratesIo { version: String },
     Git { url: String, rev: GitSourceRevision },
 }
 
@@ -14,16 +15,20 @@ pub enum GitSourceRevision {
 pub fn cargo_install(
     source: Source,
     binary_name: &str,
+    package_name: &str,
     destination: &Path,
 ) -> Result<(), anyhow::Error> {
     let temp_dir = tempfile::tempdir()?;
     let mut cmd = std::process::Command::new("cargo");
-    cmd.arg("install").arg("--root").arg(temp_dir.path());
+    cmd.arg("install")
+        .arg("--root")
+        .arg(temp_dir.path())
+        .arg("--bin")
+        .arg(binary_name);
     match source {
-        Source::CratesIo { name, version } => {
+        Source::CratesIo { version } => {
             cmd.arg("--version");
             cmd.arg(&version);
-            cmd.arg(&name);
         }
         Source::Git { url, rev } => {
             cmd.arg("--git");
@@ -36,12 +41,15 @@ pub fn cargo_install(
             }
         }
     }
+    cmd.arg(&package_name);
+    let cmd_debug = format!("{:?}", &cmd);
     let output = cmd
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit())
-        .output()?;
+        .output()
+        .with_context(|| format!("`{cmd_debug}` failed"))?;
     if !output.status.success() {
-        anyhow::bail!("`cargo install` failed");
+        anyhow::bail!("`{cmd_debug}` failed");
     }
     fs_err::copy(temp_dir.path().join("bin").join(binary_name), destination)?;
     Ok(())

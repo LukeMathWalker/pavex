@@ -52,10 +52,10 @@ pub(super) fn install_pavexc_cli(
                     }
                     cargo_install(
                         Source::CratesIo {
-                            name: "pavexc_cli".to_owned(),
                             version: version.to_string(),
                         },
                         "pavexc",
+                        "pavex_cli",
                         pavexc_cli_path,
                     )?;
                 }
@@ -91,6 +91,7 @@ pub(super) fn install_pavexc_cli(
                             rev: GitSourceRevision::Rev(resolved.into()),
                         },
                         "pavexc",
+                        "pavex_cli",
                         pavexc_cli_path,
                     )?;
                 }
