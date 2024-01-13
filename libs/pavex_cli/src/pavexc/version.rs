@@ -1,5 +1,4 @@
 //! Utilities to determine which version of `pavexc` should be used.
-
 use anyhow::anyhow;
 use guppy::graph::{PackageGraph, PackageSource};
 use guppy::Version;
@@ -9,7 +8,7 @@ use guppy::Version;
 ///
 /// It returns an error if the current workspace doesn't have `pavex`
 /// in its dependency tree or if it has more than one version of `pavex`.
-pub fn pavex_version(
+pub(super) fn pavex_version(
     package_graph: &PackageGraph,
 ) -> Result<(&Version, PackageSource), PavexVersionError> {
     let pavex_packages: Vec<_> = package_graph

@@ -27,6 +27,14 @@ anyhow = "1"
 thiserror = "1.0.56"
 guppy = "0.17"
 supports-color = { version = "2" }
+xdg-home = "1.0.0"
+sha2 = "0.10.8"
+zip = "0.6.6"
+xz2 = "0.1.7"
+tar = "0.4.40"
+bytes = "1.5.0"
+tempfile = "3"
+ureq = "2.9.1"
 
 [dev-dependencies]
 pavex_test_runner = { path = "../pavex_test_runner" }
