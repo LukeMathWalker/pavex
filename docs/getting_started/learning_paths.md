@@ -16,7 +16,7 @@ You can always come back to it later to learn more advanced topics on a need-to-
 
 ### Exercises
 
-If books aren't your thing (or if you want to augment the theory with some pratice), you should check out the 
+If books aren't your thing (or if you want to augment the theory with some practice), you should check out the 
 [Rustlings](https://github.com/rust-lang/rustlings) project:
 it's a collection of small exercises to get the language going under your fingers.
 Each exercise is self-contained, can be completed in a few minutes and comes with tests to check your solution.  
