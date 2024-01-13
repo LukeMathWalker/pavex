@@ -4,12 +4,9 @@ use std::process::Stdio;
 pub enum Source {
     CratesIo { name: String, version: String },
     Git { url: String, rev: GitSourceRevision },
-    Local { path: String },
 }
 
 pub enum GitSourceRevision {
-    Branch(String),
-    Tag(String),
     Rev(String),
 }
 
@@ -32,23 +29,11 @@ pub fn cargo_install(
             cmd.arg("--git");
             cmd.arg(&url);
             match rev {
-                GitSourceRevision::Branch(branch) => {
-                    cmd.arg("--branch");
-                    cmd.arg(&branch);
-                }
-                GitSourceRevision::Tag(tag) => {
-                    cmd.arg("--tag");
-                    cmd.arg(&tag);
-                }
                 GitSourceRevision::Rev(rev) => {
                     cmd.arg("--rev");
                     cmd.arg(&rev);
                 }
             }
-        }
-        Source::Local { path } => {
-            cmd.arg("--path");
-            cmd.arg(&path);
         }
     }
     let output = cmd

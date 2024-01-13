@@ -1,9 +1,12 @@
+use anyhow::Context;
 use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
 use std::process::ExitCode;
 use std::str::FromStr;
 
 use clap::{Parser, Subcommand};
+use pavex_cli::package_graph::compute_package_graph;
+use pavex_cli::pavexc::get_or_install_pavexc_cli;
 use pavexc_cli_client::commands::generate::BlueprintArgument;
 use pavexc_cli_client::Client;
 use tracing_chrome::{ChromeLayerBuilder, FlushGuard};
@@ -165,11 +168,21 @@ fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
 
 #[tracing::instrument("Generate server sdk")]
 fn generate(
-    client: Client,
+    mut client: Client,
     blueprint: PathBuf,
     diagnostics: Option<PathBuf>,
     output: PathBuf,
 ) -> Result<ExitCode, Box<dyn std::error::Error>> {
+    // Match the version of the `pavexc` binary with the version of the `pavex` library
+    // crate used in the current workspace.
+    {
+        let package_graph = compute_package_graph()
+            .context("Failed to compute package graph for the current workspace")?;
+        let pavexc_cli_path = get_or_install_pavexc_cli(&package_graph)
+            .context("Failed to get or install the `pavexc` binary")?;
+        client = client.pavexc_cli_path(pavexc_cli_path);
+    }
+
     let blueprint = BlueprintArgument::Path(blueprint);
     let mut cmd = client.generate(blueprint, output);
     if let Some(diagnostics) = diagnostics {

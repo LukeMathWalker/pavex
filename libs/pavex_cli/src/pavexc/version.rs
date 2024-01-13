@@ -1,5 +1,4 @@
 //! Utilities to determine which version of `pavexc` should be used.
-use anyhow::anyhow;
 use guppy::graph::{PackageGraph, PackageSource};
 use guppy::Version;
 
@@ -22,7 +21,7 @@ pub(super) fn pavex_version(
             MultiplePavexVersionsError {
                 versions: pavex_packages
                     .iter()
-                    .map(|p| (p.version().to_owned(), p.source()))
+                    .map(|p| (p.version().to_owned(), p.source().to_string()))
                     .collect(),
             },
         ))
@@ -33,26 +32,15 @@ pub(super) fn pavex_version(
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum PavexVersionError<'a> {
+pub enum PavexVersionError {
     #[error("`pavex` is not in the dependency tree of the current workspace. Are you sure this is a Pavex project?")]
     NoPavexInDependencyTree,
     #[error(transparent)]
-    MultiplePavexVersions(MultiplePavexVersionsError<'a>),
+    MultiplePavexVersions(MultiplePavexVersionsError),
 }
 
 #[derive(Debug, thiserror::Error)]
 #[error("There are multiple versions of `pavex` in the dependency tree of the current workspace: {versions:?}\nIt has to be a single version.")]
-pub struct MultiplePavexVersionsError<'a> {
-    versions: Vec<(Version, PackageSource<'a>)>,
-}
-
-#[tracing::instrument]
-fn compute_package_graph() -> Result<PackageGraph, anyhow::Error> {
-    // `cargo metadata` seems to be the only reliable way of retrieving the path to
-    // the root manifest of the current workspace for a Rust project.
-    guppy::MetadataCommand::new()
-        .exec()
-        .map_err(|e| anyhow!(e))?
-        .build_graph()
-        .map_err(|e| anyhow!(e))
+pub struct MultiplePavexVersionsError {
+    versions: Vec<(Version, String)>,
 }

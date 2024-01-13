@@ -1,2 +1,3 @@
 mod cargo_install;
-mod pavexc;
+pub mod package_graph;
+pub mod pavexc;
