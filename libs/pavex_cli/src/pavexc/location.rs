@@ -1,12 +1,13 @@
+use crate::locator::ToolchainsLocator;
 use crate::pavexc::install::UnsupportedSourceError;
-use guppy::graph::{ExternalSource, PackageGraph, PackageSource};
+use guppy::graph::{ExternalSource, GitReq, PackageGraph, PackageSource};
 use guppy::Version;
-use sha2::Digest;
 use std::path::PathBuf;
 
 /// Given the version and source for the `pavex` library crate, determine the path to the
 /// `pavexc` binary that should be used.
-pub(super) fn pavexc_cli_path(
+pub(super) fn path_from_graph(
+    toolchains_locator: &ToolchainsLocator,
     package_graph: &PackageGraph,
     version: &Version,
     package_source: &PackageSource,
@@ -32,10 +33,6 @@ pub(super) fn pavexc_cli_path(
                     version: version.to_owned(),
                 }));
             };
-            let bin_cache_dir = xdg_home::home_dir()
-                .ok_or_else(|| anyhow::anyhow!("Failed to get the path to your home directory"))?
-                .join(".pavex")
-                .join("pavexc");
             match parsed {
                 ExternalSource::Registry(c) => {
                     if !package_source.is_crates_io() {
@@ -47,24 +44,32 @@ pub(super) fn pavexc_cli_path(
                             version: version.to_owned(),
                         }));
                     }
-                    Ok(Ok(bin_cache_dir.join(format!("{version}")).join("pavexc")))
+                    Ok(Ok(toolchains_locator
+                        .registry()
+                        .toolchain_dir(c, version)
+                        .pavexc()))
                 }
                 ExternalSource::Git {
                     repository,
                     resolved,
-                    ..
+                    req,
                 } => {
-                    let repository_hash = sha2::Sha256::digest(repository.as_bytes());
-                    // Take the first 7 hex digits of the hash
-                    let repository_hash = format!("{:x}", repository_hash)
-                        .chars()
-                        .take(7)
-                        .collect::<String>();
-                    // Take the first 7 hex digits of the hash, i.e. git's short commit SHA
-                    let resolved = resolved.chars().take(7).collect::<String>();
-                    Ok(Ok(bin_cache_dir.join(format!(
-                        "git/{repository_hash}/{version}/{resolved}/pavexc"
-                    ))))
+                    if repository == "https://github.com/LukeMathWalker/pavex" {
+                        if let GitReq::Tag(tag) = req {
+                            if let Ok(tag) = tag.parse::<Version>() {
+                                if tag == *version {
+                                    return Ok(Ok(toolchains_locator
+                                        .registry()
+                                        .toolchain_dir(ExternalSource::CRATES_IO_URL, version)
+                                        .pavexc()));
+                                }
+                            }
+                        }
+                    }
+                    Ok(Ok(toolchains_locator
+                        .git()
+                        .toolchain_dir(repository, resolved)
+                        .pavexc()))
                 }
                 _ => {
                     return Ok(Err(UnsupportedSourceError {

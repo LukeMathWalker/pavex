@@ -7,7 +7,7 @@ use guppy::Version;
 ///
 /// It returns an error if the current workspace doesn't have `pavex`
 /// in its dependency tree or if it has more than one version of `pavex`.
-pub(super) fn pavex_version(
+pub(super) fn pavex_lib_version(
     package_graph: &PackageGraph,
 ) -> Result<(&Version, PackageSource), PavexVersionError> {
     let pavex_packages: Vec<_> = package_graph

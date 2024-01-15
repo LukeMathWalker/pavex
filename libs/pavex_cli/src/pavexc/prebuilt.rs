@@ -5,7 +5,7 @@ use std::path::Path;
 
 /// Given the version and source for the `pavex` library crate, try to download
 /// a prebuilt `pavexc` binary (if it exists).
-pub(super) fn download_prebuilt_pavexc_cli(
+pub(super) fn download_prebuilt(
     expected_pavexc_cli_path: &Path,
     version: &Version,
 ) -> Result<(), DownloadPrebuiltError> {

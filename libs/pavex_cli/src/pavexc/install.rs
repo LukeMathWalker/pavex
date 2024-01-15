@@ -1,12 +1,12 @@
 use crate::cargo_install::{cargo_install, GitSourceRevision, Source};
-use crate::pavexc::prebuilt::download_prebuilt_pavexc_cli;
+use crate::pavexc::prebuilt::download_prebuilt;
 use guppy::graph::{ExternalSource, GitReq, PackageSource};
 use guppy::Version;
 use std::path::{Path, PathBuf};
 
 /// Given the version and source for the `pavex` library crate, install the corresponding
 /// `pavexc` binary crate at the specified path.
-pub(super) fn install_pavexc_cli(
+pub(super) fn install(
     pavexc_cli_path: &Path,
     version: &Version,
     package_source: &PackageSource,
@@ -67,7 +67,7 @@ pub(super) fn install_pavexc_cli(
                     if repository == "https://github.com/LukeMathWalker/pavex" {
                         if let GitReq::Tag(tag) = req {
                             if tag == version.to_string() {
-                                match download_prebuilt_pavexc_cli(pavexc_cli_path, version) {
+                                match download_prebuilt(pavexc_cli_path, version) {
                                     Ok(_) => {
                                         return Ok(());
                                     }

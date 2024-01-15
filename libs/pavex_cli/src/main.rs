@@ -5,8 +5,9 @@ use std::process::ExitCode;
 use std::str::FromStr;
 
 use clap::{Parser, Subcommand};
+use pavex_cli::locator::PavexLocator;
 use pavex_cli::package_graph::compute_package_graph;
-use pavex_cli::pavexc::get_or_install_pavexc_cli;
+use pavex_cli::pavexc::get_or_install_from_graph;
 use pavexc_cli_client::commands::generate::BlueprintArgument;
 use pavexc_cli_client::Client;
 use tracing_chrome::{ChromeLayerBuilder, FlushGuard};
@@ -156,19 +157,24 @@ fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
         client = client.no_debug();
     }
 
+    let system_home_dir =
+        xdg_home::home_dir().context("Failed to get the system home directory")?;
+    let locator = PavexLocator::new(&system_home_dir);
+
     match cli.command {
         Commands::Generate {
             blueprint,
             diagnostics,
             output,
-        } => generate(client, blueprint, diagnostics, output),
-        Commands::New { path } => scaffold_project(client, path),
+        } => generate(client, &locator, blueprint, diagnostics, output),
+        Commands::New { path } => scaffold_project(client, &locator, path),
     }
 }
 
-#[tracing::instrument("Generate server sdk")]
+#[tracing::instrument("Generate server sdk", skip(client, locator))]
 fn generate(
     mut client: Client,
+    locator: &PavexLocator,
     blueprint: PathBuf,
     diagnostics: Option<PathBuf>,
     output: PathBuf,
@@ -178,7 +184,7 @@ fn generate(
     {
         let package_graph = compute_package_graph()
             .context("Failed to compute package graph for the current workspace")?;
-        let pavexc_cli_path = get_or_install_pavexc_cli(&package_graph)
+        let pavexc_cli_path = get_or_install_from_graph(locator, &package_graph)
             .context("Failed to get or install the `pavexc` binary")?;
         client = client.pavexc_cli_path(pavexc_cli_path);
     }
@@ -192,8 +198,12 @@ fn generate(
     Ok(ExitCode::SUCCESS)
 }
 
-#[tracing::instrument("Scaffold new project")]
-fn scaffold_project(client: Client, path: PathBuf) -> Result<ExitCode, Box<dyn std::error::Error>> {
+#[tracing::instrument("Scaffold new project", skip(client, locator))]
+fn scaffold_project(
+    client: Client,
+    locator: &PavexLocator,
+    path: PathBuf,
+) -> Result<ExitCode, Box<dyn std::error::Error>> {
     client.new_command(path).execute()?;
     Ok(ExitCode::SUCCESS)
 }
