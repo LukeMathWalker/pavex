@@ -55,23 +55,57 @@ fn extract_binary(
     bytes: Vec<u8>,
     destination: &Path,
 ) -> Result<(), anyhow::Error> {
+    let expected_filename = destination
+        .file_name()
+        .expect("pavexc's destination has no filename")
+        .to_str()
+        .expect("pavexc's destination filename is not valid UTF-8");
     if source_url.ends_with(".zip") {
         let mut archive = zip::ZipArchive::new(std::io::Cursor::new(bytes))?;
         for i in 0..archive.len() {
             let mut file = archive.by_index(i)?;
-            if !file.name().starts_with("pavexc") {
-                continue;
+            if file.name() == expected_filename {
+                let mut outfile = std::fs::File::create(&destination)?;
+                std::io::copy(&mut file, &mut outfile)?;
+                return Ok(());
             }
-            let mut outfile = std::fs::File::create(&destination)?;
-            std::io::copy(&mut file, &mut outfile)?;
         }
     } else if source_url.ends_with(".tar.xz") {
         let mut archive = tar::Archive::new(xz2::read::XzDecoder::new(bytes.as_slice()));
-        archive.unpack(destination)?;
+        let tempdir = tempfile::tempdir()?;
+        archive.unpack(tempdir.path())?;
+        let mut visit_queue = vec![tempdir.path().to_owned()];
+        while let Some(directory) = visit_queue.pop() {
+            for entry in std::fs::read_dir(directory)? {
+                let Ok(entry) = entry else {
+                    continue;
+                };
+                let Ok(ty_) = entry.file_type() else {
+                    continue;
+                };
+                if ty_.is_dir() {
+                    visit_queue.push(entry.path());
+                    continue;
+                }
+                let path = entry.path();
+                let Some(filename) = path.file_name() else {
+                    continue;
+                };
+                let Some(filename) = filename.to_str() else {
+                    continue;
+                };
+                if filename == expected_filename {
+                    std::fs::copy(entry.path(), destination)?;
+                    return Ok(());
+                }
+            }
+        }
     } else {
         unimplemented!()
     }
-    Ok(())
+    Err(anyhow::anyhow!(
+        "Failed to find the `pavexc` binary in the downloaded archive"
+    ))
 }
 
 /// Returns the host triple for the current machine.

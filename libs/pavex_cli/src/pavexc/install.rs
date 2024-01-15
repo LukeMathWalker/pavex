@@ -1,5 +1,6 @@
 use crate::cargo_install::{cargo_install, GitSourceRevision, Source};
 use crate::pavexc::prebuilt::download_prebuilt;
+use cargo_like_utils::shell::Shell;
 use guppy::graph::{ExternalSource, GitReq, PackageSource};
 use guppy::Version;
 use std::path::{Path, PathBuf};
@@ -7,6 +8,7 @@ use std::path::{Path, PathBuf};
 /// Given the version and source for the `pavex` library crate, install the corresponding
 /// `pavexc` binary crate at the specified path.
 pub(super) fn install(
+    shell: &mut Shell,
     pavexc_cli_path: &Path,
     version: &Version,
     package_source: &PackageSource,
@@ -34,7 +36,7 @@ pub(super) fn install(
         PackageSource::External(_) => {
             let parsed = package_source.parse_external();
             let Some(parsed) = parsed else {
-                return Err(InstallError::UnsupportedSource(UnsupportedSourceError {
+                return Err(InstallError::InvalidSource(InvalidSourceError {
                     package_source: package_source.to_string(),
                     version: version.to_owned(),
                 }));
@@ -50,6 +52,23 @@ pub(super) fn install(
                             version: version.to_owned(),
                         }));
                     }
+
+                    match download_prebuilt(pavexc_cli_path, version) {
+                        Ok(_) => {
+                            return Ok(());
+                        }
+                        Err(e) => {
+                            let _ = shell.warn(
+                                "Failed to download prebuilt `pavexc` binary. I'll try to build it from source instead.",
+                            );
+                            tracing::warn!(
+                                error.msg = %e,
+                                error.cause = ?e,
+                                "Failed to download prebuilt `pavexc` binary. I'll try to build it from source instead.",
+                            );
+                        }
+                    }
+
                     cargo_install(
                         Source::CratesIo {
                             version: version.to_string(),
@@ -72,9 +91,9 @@ pub(super) fn install(
                                         return Ok(());
                                     }
                                     Err(e) => {
-                                        // TODO:
-                                        //  we want a user-facing warning here,
-                                        //  not via the `tracing` instrumentation
+                                        let _ = shell.warn(
+                                            "Failed to download prebuilt `pavexc` binary. I'll try to build it from source instead.",
+                                        );
                                         tracing::warn!(
                                             error.msg = %e,
                                             error.cause = ?e,
@@ -110,6 +129,8 @@ pub(super) fn install(
 #[derive(Debug, thiserror::Error)]
 pub enum InstallError {
     #[error(transparent)]
+    InvalidSource(InvalidSourceError),
+    #[error(transparent)]
     UnsupportedSource(UnsupportedSourceError),
     #[error(transparent)]
     NoLocalBinary(NoLocalBinaryError),
@@ -122,6 +143,13 @@ pub enum InstallError {
 #[derive(Debug, thiserror::Error)]
 #[error("`pavex` can't automatically install `pavexc@{version}` from {package_source}")]
 pub struct UnsupportedSourceError {
+    pub(crate) package_source: String,
+    pub(crate) version: Version,
+}
+
+#[derive(Debug, thiserror::Error)]
+#[error("`pavex` doesn't recognise `{package_source}` as a valid source to install `pavexc@{version}` from")]
+pub struct InvalidSourceError {
     pub(crate) package_source: String,
     pub(crate) version: Version,
 }

@@ -1,5 +1,7 @@
 use crate::locator::PavexLocator;
 use anyhow::Context;
+use cargo_like_utils::shell::Shell;
+use fs_err::PathExt;
 use guppy::graph::{ExternalSource, PackageGraph, PackageSource};
 use semver::Version;
 use std::path::{Path, PathBuf};
@@ -9,12 +11,15 @@ mod location;
 mod prebuilt;
 mod version;
 
+static PAVEX_GITHUB_URL: &str = "https://github.com/LukeMathWalker/pavex";
+
 /// Get the path to the `pavexc` binary that matches
 /// the version of the `pavex` library crate used in the current workspace.
 ///
 /// If necessary, it'll install the binary first, either by downloading
 /// a pre-built binary or by building it from source.
 pub fn get_or_install_from_graph(
+    shell: &mut Shell,
     locator: &PavexLocator,
     package_graph: &PackageGraph,
 ) -> Result<PathBuf, anyhow::Error> {
@@ -25,42 +30,51 @@ pub fn get_or_install_from_graph(
         version,
         &package_source,
     )??;
-    _install(&pavexc_cli_path, version, &package_source)?;
+    _install(shell, &pavexc_cli_path, version, &package_source)?;
     Ok(pavexc_cli_path)
 }
 
-/// Install a given version of the Pavex CLI from crates.io.
+/// Install a given version of the Pavex CLI from GitHub.
 pub fn get_or_install_from_version(
+    shell: &mut Shell,
     locator: &PavexLocator,
     version: &Version,
 ) -> Result<PathBuf, anyhow::Error> {
+    let revision_sha = "b32592e21e753529ae7abd14c1829fa99bca150b";
     let pavexc_path = locator
         .toolchains()
-        .registry()
-        .toolchain_dir(ExternalSource::CRATES_IO_URL, version)
+        .git()
+        .toolchain_dir(PAVEX_GITHUB_URL, revision_sha)
         .pavexc();
     _install(
+        shell,
         &pavexc_path,
         version,
-        &PackageSource::External(ExternalSource::CRATES_IO_URL),
+        &PackageSource::External(&format!("git+{PAVEX_GITHUB_URL}#{revision_sha}",)),
     )?;
     Ok(pavexc_path)
 }
 
 fn _install(
+    shell: &mut Shell,
     pavexc_cli_path: &Path,
     version: &Version,
     package_source: &PackageSource,
 ) -> Result<(), anyhow::Error> {
-    if pavexc_cli_path.exists() {
-        return Ok(());
+    if let Ok(true) = pavexc_cli_path.try_exists() {
+        let metadata = pavexc_cli_path
+            .fs_err_metadata()
+            .context("Failed to get file metadata for the `pavexc` binary")?;
+        if metadata.is_file() {
+            return Ok(());
+        }
     }
 
     if let Some(parent_dir) = pavexc_cli_path.parent() {
         fs_err::create_dir_all(parent_dir).context("Failed to create binary cache directory")?;
     }
 
-    install::install(&pavexc_cli_path, version, &package_source)?;
+    install::install(shell, &pavexc_cli_path, version, &package_source)?;
     #[cfg(unix)]
     executable::make_executable(&pavexc_cli_path)?;
     Ok(())

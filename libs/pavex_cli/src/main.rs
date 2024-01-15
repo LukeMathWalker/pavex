@@ -169,13 +169,14 @@ fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
             blueprint,
             diagnostics,
             output,
-        } => generate(client, &locator, blueprint, diagnostics, output),
+        } => generate(&mut shell, client, &locator, blueprint, diagnostics, output),
         Commands::New { path } => scaffold_project(client, &locator, &mut shell, path),
     }
 }
 
 #[tracing::instrument("Generate server sdk", skip(client, locator))]
 fn generate(
+    shell: &mut Shell,
     mut client: Client,
     locator: &PavexLocator,
     blueprint: PathBuf,
@@ -187,7 +188,7 @@ fn generate(
     {
         let package_graph = compute_package_graph()
             .context("Failed to compute package graph for the current workspace")?;
-        let pavexc_cli_path = get_or_install_from_graph(locator, &package_graph)
+        let pavexc_cli_path = get_or_install_from_graph(shell, locator, &package_graph)
             .context("Failed to get or install the `pavexc` binary")?;
         client = client.pavexc_cli_path(pavexc_cli_path);
     }
@@ -212,7 +213,7 @@ fn scaffold_project(
         let version = State::new(locator)
             .get_current_toolchain(shell)
             .context("Failed to get the current toolchain")?;
-        let pavexc_cli_path = get_or_install_from_version(locator, &version)
+        let pavexc_cli_path = get_or_install_from_version(shell, locator, &version)
             .context("Failed to get or install the `pavexc` binary")?;
         client = client.pavexc_cli_path(pavexc_cli_path);
     }

@@ -1,6 +1,6 @@
 use crate::locator::ToolchainsLocator;
 use crate::pavexc::install::UnsupportedSourceError;
-use guppy::graph::{ExternalSource, GitReq, PackageGraph, PackageSource};
+use guppy::graph::{ExternalSource, PackageGraph, PackageSource};
 use guppy::Version;
 use std::path::PathBuf;
 
@@ -52,25 +52,11 @@ pub(super) fn path_from_graph(
                 ExternalSource::Git {
                     repository,
                     resolved,
-                    req,
-                } => {
-                    if repository == "https://github.com/LukeMathWalker/pavex" {
-                        if let GitReq::Tag(tag) = req {
-                            if let Ok(tag) = tag.parse::<Version>() {
-                                if tag == *version {
-                                    return Ok(Ok(toolchains_locator
-                                        .registry()
-                                        .toolchain_dir(ExternalSource::CRATES_IO_URL, version)
-                                        .pavexc()));
-                                }
-                            }
-                        }
-                    }
-                    Ok(Ok(toolchains_locator
-                        .git()
-                        .toolchain_dir(repository, resolved)
-                        .pavexc()))
-                }
+                    ..
+                } => Ok(Ok(toolchains_locator
+                    .git()
+                    .toolchain_dir(repository, resolved)
+                    .pavexc())),
                 _ => {
                     return Ok(Err(UnsupportedSourceError {
                         package_source: package_source.to_string(),

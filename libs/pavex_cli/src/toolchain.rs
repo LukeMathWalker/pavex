@@ -16,6 +16,6 @@ pub fn get_default_pavexc(
     shell: &mut Shell,
 ) -> Result<PathBuf, anyhow::Error> {
     let version = state.get_current_toolchain(shell)?;
-    let pavexc_cli_path = get_or_install_from_version(locator, &version)?;
+    let pavexc_cli_path = get_or_install_from_version(shell, locator, &version)?;
     Ok(pavexc_cli_path)
 }
