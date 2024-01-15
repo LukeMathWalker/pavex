@@ -1,6 +1,7 @@
 use std::future::Future;
 use std::net::SocketAddr;
 
+use crate::connection::ConnectionInfo;
 use crate::server::configuration::ServerConfiguration;
 use crate::server::server_handle::ServerHandle;
 
@@ -250,7 +251,11 @@ impl Server {
     /// i.e. if you did not call [`Server::bind`] or [`Server::listen`] before calling `serve`.
     pub fn serve<HandlerFuture, ApplicationState>(
         self,
-        handler: fn(http::Request<hyper::body::Incoming>, ApplicationState) -> HandlerFuture,
+        handler: fn(
+            http::Request<hyper::body::Incoming>,
+            ConnectionInfo,
+            ApplicationState,
+        ) -> HandlerFuture,
         application_state: ApplicationState,
     ) -> ServerHandle
     where

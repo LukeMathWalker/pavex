@@ -9,6 +9,7 @@ use tokio::net::TcpStream;
 use tokio::sync::mpsc::error::TrySendError;
 use tokio::task::{JoinError, JoinSet, LocalSet};
 
+use crate::connection::ConnectionInfo;
 use crate::server::configuration::ServerConfiguration;
 use crate::server::worker::{Worker, WorkerHandle};
 
@@ -48,7 +49,11 @@ impl ServerHandle {
     pub(super) fn new<HandlerFuture, ApplicationState>(
         config: ServerConfiguration,
         incoming: Vec<IncomingStream>,
-        handler: fn(http::Request<hyper::body::Incoming>, ApplicationState) -> HandlerFuture,
+        handler: fn(
+            http::Request<hyper::body::Incoming>,
+            ConnectionInfo,
+            ApplicationState,
+        ) -> HandlerFuture,
         application_state: ApplicationState,
     ) -> Self
     where
@@ -107,7 +112,8 @@ struct Acceptor<HandlerFuture, ApplicationState> {
     config: ServerConfiguration,
     next_worker: usize,
     max_queue_length: usize,
-    handler: fn(http::Request<hyper::body::Incoming>, ApplicationState) -> HandlerFuture,
+    handler:
+        fn(http::Request<hyper::body::Incoming>, ConnectionInfo, ApplicationState) -> HandlerFuture,
     application_state: ApplicationState,
     // We use a `fn() -> HandlerFuture` instead of a `HandlerFuture` because we need `Acceptor`
     // to be `Send` and `Sync`. That wouldn't work with `PhantomData<HandlerFuture>`.
@@ -128,7 +134,11 @@ where
     fn new(
         config: ServerConfiguration,
         incoming: Vec<IncomingStream>,
-        handler: fn(http::Request<hyper::body::Incoming>, ApplicationState) -> HandlerFuture,
+        handler: fn(
+            http::Request<hyper::body::Incoming>,
+            ConnectionInfo,
+            ApplicationState,
+        ) -> HandlerFuture,
         application_state: ApplicationState,
         command_inbox: tokio::sync::mpsc::Receiver<ServerCommand>,
     ) -> Self {

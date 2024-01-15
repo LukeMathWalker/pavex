@@ -7,6 +7,7 @@ use hyper_util::rt::TokioIo;
 use tokio::net::TcpStream;
 use tokio::sync::mpsc::error::TrySendError;
 
+use crate::connection::ConnectionInfo;
 use crate::server::ShutdownMode;
 
 /// A handle to dispatch incoming connections to a worker thread.
@@ -96,7 +97,8 @@ pub(super) struct ShutdownWorkerCommand {
 pub(super) struct Worker<HandlerFuture, ApplicationState> {
     connection_inbox: tokio::sync::mpsc::Receiver<TcpStream>,
     shutdown_inbox: tokio::sync::mpsc::UnboundedReceiver<ShutdownWorkerCommand>,
-    handler: fn(http::Request<hyper::body::Incoming>, ApplicationState) -> HandlerFuture,
+    handler:
+        fn(http::Request<hyper::body::Incoming>, ConnectionInfo, ApplicationState) -> HandlerFuture,
     application_state: ApplicationState,
     id: usize,
 }
@@ -113,7 +115,11 @@ where
     pub(super) fn new(
         id: usize,
         max_queue_length: usize,
-        handler: fn(http::Request<hyper::body::Incoming>, ApplicationState) -> HandlerFuture,
+        handler: fn(
+            http::Request<hyper::body::Incoming>,
+            ConnectionInfo,
+            ApplicationState,
+        ) -> HandlerFuture,
         application_state: ApplicationState,
     ) -> (Self, WorkerHandle) {
         let (connection_outbox, connection_inbox) = tokio::sync::mpsc::channel(max_queue_length);
@@ -218,14 +224,21 @@ where
 
     fn handle_connection(
         connection: TcpStream,
-        handler: fn(http::Request<hyper::body::Incoming>, ApplicationState) -> HandlerFuture,
+        handler: fn(
+            http::Request<hyper::body::Incoming>,
+            ConnectionInfo,
+            ApplicationState,
+        ) -> HandlerFuture,
         application_state: ApplicationState,
     ) {
+        let peer_addr = connection.peer_addr().expect("todo");
+
         // A tiny bit of glue to adapt our handler to hyper's service interface.
         let handler = hyper::service::service_fn(move |request| {
             let state = application_state.clone();
+
             async move {
-                let handler = (handler)(request, state);
+                let handler = (handler)(request, ConnectionInfo(peer_addr), state);
                 let response = handler.await;
                 let response = hyper::Response::from(response);
                 Ok::<_, hyper::Error>(response)
