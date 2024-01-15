@@ -35,6 +35,14 @@ tar = "0.4.40"
 bytes = "1.5.0"
 tempfile = "3"
 ureq = "2.9.1"
+remove_dir_all = "0.8.2"
+config = { version = "0.13.4", features = [] }
+libc = { version = "0.2.152", features = [] }
+windows-sys = { version = "0.52.0", features = [] }
+cargo-like-utils = "0.1.0"
+serde = { version = "1", features = ["derive"] }
+toml = "0.8.8"
+semver = { version = "1.0.21", features = ["serde"] }
 
 [dev-dependencies]
 pavex_test_runner = { path = "../pavex_test_runner" }
