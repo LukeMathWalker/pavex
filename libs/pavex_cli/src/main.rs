@@ -1,4 +1,5 @@
 use anyhow::Context;
+use cargo_like_utils::shell::Shell;
 use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -7,7 +8,8 @@ use std::str::FromStr;
 use clap::{Parser, Subcommand};
 use pavex_cli::locator::PavexLocator;
 use pavex_cli::package_graph::compute_package_graph;
-use pavex_cli::pavexc::get_or_install_from_graph;
+use pavex_cli::pavexc::{get_or_install_from_graph, get_or_install_from_version};
+use pavex_cli::state::State;
 use pavexc_cli_client::commands::generate::BlueprintArgument;
 use pavexc_cli_client::Client;
 use tracing_chrome::{ChromeLayerBuilder, FlushGuard};
@@ -160,6 +162,7 @@ fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
     let system_home_dir =
         xdg_home::home_dir().context("Failed to get the system home directory")?;
     let locator = PavexLocator::new(&system_home_dir);
+    let mut shell = Shell::new();
 
     match cli.command {
         Commands::Generate {
@@ -167,7 +170,7 @@ fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
             diagnostics,
             output,
         } => generate(client, &locator, blueprint, diagnostics, output),
-        Commands::New { path } => scaffold_project(client, &locator, path),
+        Commands::New { path } => scaffold_project(client, &locator, &mut shell, path),
     }
 }
 
@@ -200,10 +203,20 @@ fn generate(
 
 #[tracing::instrument("Scaffold new project", skip(client, locator))]
 fn scaffold_project(
-    client: Client,
+    mut client: Client,
     locator: &PavexLocator,
+    shell: &mut Shell,
     path: PathBuf,
 ) -> Result<ExitCode, Box<dyn std::error::Error>> {
+    {
+        let version = State::new(locator)
+            .get_current_toolchain(shell)
+            .context("Failed to get the current toolchain")?;
+        let pavexc_cli_path = get_or_install_from_version(locator, &version)
+            .context("Failed to get or install the `pavexc` binary")?;
+        client = client.pavexc_cli_path(pavexc_cli_path);
+    }
+
     client.new_command(path).execute()?;
     Ok(ExitCode::SUCCESS)
 }

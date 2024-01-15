@@ -1,8 +1,8 @@
+use crate::locator::PavexLocator;
 use anyhow::Context;
 use cargo_like_utils::flock::{FileLock, Filesystem};
 use cargo_like_utils::shell::Shell;
 use std::io::{Read, Write};
-use std::path::Path;
 
 /// The current "state" of Pavex on this machine.
 ///
@@ -20,10 +20,9 @@ impl State {
     const STATE_FILENAME: &'static str = "state.toml";
 
     /// Given the system home directory, create a new `State`.
-    pub fn new(system_home_dir: &Path) -> Result<Self, anyhow::Error> {
-        let pavex_home_dir = system_home_dir.join(".pavex");
-        let filesystem = Filesystem::new(pavex_home_dir);
-        Ok(Self { filesystem })
+    pub fn new(locator: &PavexLocator) -> Self {
+        let filesystem = Filesystem::new(locator.root_dir().to_owned());
+        Self { filesystem }
     }
 
     /// Get the current toolchain.
