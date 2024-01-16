@@ -1,8 +1,9 @@
 use crate::locator::PavexLocator;
+use crate::pavexc::install::{GitReq, InstallSource};
 use anyhow::Context;
 use cargo_like_utils::shell::Shell;
 use fs_err::PathExt;
-use guppy::graph::{PackageGraph, PackageSource};
+use guppy::graph::PackageGraph;
 use semver::Version;
 use std::path::{Path, PathBuf};
 
@@ -30,7 +31,12 @@ pub fn get_or_install_from_graph(
         version,
         &package_source,
     )??;
-    _install(shell, &pavexc_cli_path, version, &package_source)?;
+    _install(
+        shell,
+        &pavexc_cli_path,
+        version,
+        &package_source.try_into()?,
+    )?;
     Ok(pavexc_cli_path)
 }
 
@@ -40,17 +46,23 @@ pub fn get_or_install_from_version(
     locator: &PavexLocator,
     version: &Version,
 ) -> Result<PathBuf, anyhow::Error> {
-    let revision_sha = crate::env::commit_sha();
     let pavexc_path = locator
         .toolchains()
-        .git()
-        .toolchain_dir(PAVEX_GITHUB_URL, revision_sha)
+        .registry()
+        // This is not quite true since we're installing from our GitHub repository
+        // and not from crates.io, but it's going to be good enough until we publish
+        // the Pavex CLI on crates.io.
+        .toolchain_dir(guppy::graph::ExternalSource::CRATES_IO_URL, version)
         .pavexc();
     _install(
         shell,
         &pavexc_path,
         version,
-        &PackageSource::External(&format!("git+{PAVEX_GITHUB_URL}#{revision_sha}",)),
+        &InstallSource::External(install::ExternalSource::Git {
+            repository: PAVEX_GITHUB_URL.to_owned(),
+            req: GitReq::Tag(version.to_string()),
+            resolved: None,
+        }),
     )?;
     Ok(pavexc_path)
 }
@@ -59,7 +71,7 @@ fn _install(
     shell: &mut Shell,
     pavexc_cli_path: &Path,
     version: &Version,
-    package_source: &PackageSource,
+    install_source: &InstallSource,
 ) -> Result<(), anyhow::Error> {
     if let Ok(true) = pavexc_cli_path.try_exists() {
         let metadata = pavexc_cli_path
@@ -74,7 +86,7 @@ fn _install(
         fs_err::create_dir_all(parent_dir).context("Failed to create binary cache directory")?;
     }
 
-    install::install(shell, &pavexc_cli_path, version, &package_source)?;
+    install::install(shell, &pavexc_cli_path, version, install_source)?;
     #[cfg(unix)]
     executable::make_executable(&pavexc_cli_path)?;
     Ok(())

@@ -30,7 +30,6 @@ pub(super) fn path_from_graph(
             let Some(parsed) = parsed else {
                 return Ok(Err(UnsupportedSourceError {
                     package_source: package_source.to_string(),
-                    version: version.to_owned(),
                 }));
             };
             match parsed {
@@ -41,7 +40,6 @@ pub(super) fn path_from_graph(
                                 "a private registry ({})",
                                 c.strip_prefix("registry+").unwrap_or(c)
                             ),
-                            version: version.to_owned(),
                         }));
                     }
                     Ok(Ok(toolchains_locator
@@ -60,7 +58,6 @@ pub(super) fn path_from_graph(
                 _ => {
                     return Ok(Err(UnsupportedSourceError {
                         package_source: package_source.to_string(),
-                        version: version.to_owned(),
                     }));
                 }
             }
