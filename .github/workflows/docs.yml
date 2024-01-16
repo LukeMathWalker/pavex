@@ -98,13 +98,19 @@ jobs:
             os: macos-12
           - target: x86_64-pc-windows-msvc
             os: windows-2022
-    env:
-      PAVEX_PAVEXC: /home/runner/.cargo/bin/${{ if startsWith(matrix.target, 'x86_64-pc-windows') }}pavex.exe${{ else }}pavex${{ endif }}
     needs:
       - build_clis
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+      - name: Set PAVEX_PAVEXC
+        run: |
+          if [[ "${{ matrix.os }}" == "windows-2022" ]]; then
+            PAVEX_PAVEXC="pavex.exe"
+          else
+            PAVEX_PAVEXC="pavex"
+          fi
+          echo "PAVEX_PAVEXC=/home/runner/.cargo/bin/${PAVEX_PAVEXC}" >> $GITHUB_ENV
       - name: Install Rust nightly toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
