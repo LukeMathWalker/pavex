@@ -30,3 +30,5 @@ object-pool = "0.5"
 num_cpus = "1"
 globwalk = "0.9.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+regex = "1.10.2"
+once_cell = "1.19.0"

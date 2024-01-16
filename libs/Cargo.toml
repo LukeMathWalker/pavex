@@ -5,6 +5,13 @@ resolver = "2"
 [workspace.dependencies]
 vergen = { version = "8.0.0", features = ["build", "git", "gitcl"] }
 
+# Config for 'cargo release'
+[workspace.metadata.release]
+shared-version = true
+tag-name = "{{version}}"
+# We don't want to publish to crates.io, yet
+publish = false
+
 # Config for 'cargo dist'
 [workspace.metadata.dist]
 # The preferred cargo-dist version to use in CI (Cargo.toml SemVer syntax)

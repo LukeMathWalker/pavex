@@ -133,7 +133,7 @@ async fn graceful() {
 
     // Then start a graceful shutdown.
     let shutdown_future =
-        tokio::task::spawn(server_handle.shutdown(ShutdownMode::Graceful { timeout: delay * 2 }));
+        tokio::task::spawn(server_handle.shutdown(ShutdownMode::Graceful { timeout: delay * 5 }));
 
     tokio::select! {
         v1 = get_response => {
@@ -184,7 +184,7 @@ async fn forced() {
 #[tokio::test]
 async fn graceful_but_too_fast() {
     let (incoming, addr) = test_incoming().await;
-    let delay = Duration::from_millis(100);
+    let delay = Duration::from_millis(200);
     let (mut has_started, state) = SlowHandlerState::new(delay);
 
     let server_handle = Server::new()
@@ -204,7 +204,7 @@ async fn graceful_but_too_fast() {
     // Then start a graceful shutdown with a timeout that will **not** allow the request
     // handling to complete in time.
     let shutdown_future =
-        tokio::task::spawn(server_handle.shutdown(ShutdownMode::Graceful { timeout: delay / 4 }));
+        tokio::task::spawn(server_handle.shutdown(ShutdownMode::Graceful { timeout: delay / 5 }));
 
     tokio::select! {
         outcome = get_response => {

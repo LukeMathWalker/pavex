@@ -11,10 +11,30 @@ on:
 
 jobs:
   build_clis:
-    runs-on: ubuntu-latest
+    name: "Build CLIs ${{ matrix.target }} (${{ matrix.os }})"
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - target: aarch64-pc-windows-msvc
+            os: windows-2022
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-22.04
+          - target: x86_64-apple-darwin
+            os: macos-12
+          - target: x86_64-pc-windows-msvc
+            os: windows-2022
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+      - name: Set BINARY_EXTENSION
+        if: ${{ matrix.os != 'windows-2022' }}
+        run: |
+          echo "BINARY_EXTENSION=" >> $GITHUB_ENV
+      - name: Set BINARY_EXTENSION
+        if: ${{ matrix.os == 'windows-2022' }}
+        run: |
+          Add-Content $env:GITHUB_ENV "BINARY_EXTENSION=.exe" -Encoding utf8
       - name: Install Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1.6.0
       - name: Cache dependencies
@@ -29,13 +49,13 @@ jobs:
       - name: Store pavex CLI artifact
         uses: actions/upload-artifact@v4
         with:
-          name: pavex_cli
-          path: libs/target/release/pavex
+          name: pavex_cli-${{ matrix.target }}
+          path: libs/target/release/pavex${{ env.BINARY_EXTENSION }}
       - name: Store pavexc CLI artifact
         uses: actions/upload-artifact@v4
         with:
-          name: pavexc_cli
-          path: libs/target/release/pavexc
+          name: pavexc_cli-${{ matrix.target }}
+          path: libs/target/release/pavexc${{ env.BINARY_EXTENSION }}
 
   build_tutorial_generator:
     runs-on: ubuntu-latest
@@ -59,14 +79,48 @@ jobs:
           path: doc_examples/tutorial_generator/target/debug/tutorial_generator
 
   tests:
-    runs-on: ubuntu-latest
-    env:
-      PAVEX_PAVEXC: "/home/runner/.cargo/bin/pavexc"
+    name: "Run tests ${{ matrix.target }} (${{ matrix.os }})"
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: aarch64-pc-windows-msvc
+            os: windows-2022
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-22.04
+          - target: x86_64-apple-darwin
+            os: macos-12
+          - target: x86_64-pc-windows-msvc
+            os: windows-2022
     needs:
       - build_clis
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+      - name: Set BINARY_EXTENSION
+        if: ${{ matrix.os != 'windows-2022' }}
+        run: |
+          echo "BINARY_EXTENSION=" >> $GITHUB_ENV
+      - name: Set BINARY_EXTENSION
+        if: ${{ matrix.os == 'windows-2022' }}
+        run: |
+          Add-Content $env:GITHUB_ENV "BINARY_EXTENSION=.exe" -Encoding utf8
+      - name: Set PAVEX
+        if: ${{ matrix.os == 'macos-12' }}
+        run: |
+          echo "PAVEX=/Users/runner/.cargo/bin/pavex${BINARY_EXTENSION}" >> $GITHUB_ENV
+          echo "PAVEXC=/Users/runner/.cargo/bin/pavexc${BINARY_EXTENSION}" >> $GITHUB_ENV
+      - name: Set PAVEX
+        if: ${{ matrix.os == 'ubuntu-22.04' }}
+        run: |
+          echo "PAVEX=/home/runner/.cargo/bin/pavex${BINARY_EXTENSION}" >> $GITHUB_ENV
+          echo "PAVEXC=/home/runner/.cargo/bin/pavexc${BINARY_EXTENSION}" >> $GITHUB_ENV
+      - name: Set PAVEX
+        if: ${{ matrix.os == 'windows-2022' }}
+        run: |
+          Add-Content $env:GITHUB_ENV "PAVEX=C:\Users\runneradmin\.cargo\bin\pavex${BINARY_EXTENSION}" -Encoding utf8
+          Add-Content $env:GITHUB_ENV "PAVEXC=C:\Users\runneradmin\.cargo\bin\pavexc${BINARY_EXTENSION}" -Encoding utf8
       - name: Install Rust nightly toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
@@ -86,23 +140,31 @@ jobs:
       - name: Download pavex CLI artifact
         uses: actions/download-artifact@v4
         with:
-          name: pavex_cli
+          name: pavex_cli-${{ matrix.target }}
           path: ~/.cargo/bin
       - name: Download pavexc CLI artifact
         uses: actions/download-artifact@v4
         with:
-          name: pavexc_cli
+          name: pavexc_cli-${{ matrix.target }}
           path: ~/.cargo/bin
       - name: Mark pavex as executable
-        run: chmod +x ~/.cargo/bin/pavex
+        if: ${{ matrix.os != 'windows-2022' }}
+        run: chmod +x ${{ env.PAVEX }}
       - name: Mark pavexc as executable
-        run: chmod +x ~/.cargo/bin/pavexc
+        if: ${{ matrix.os != 'windows-2022' }}
+        run: chmod +x ${{ env.PAVEXC }}
       - name: Run tests
+        working-directory: libs
         run: |
-          cd libs
           cargo test --no-run
           cargo test --workspace --exclude="pavex_cli"
-          PAVEX_TEST_CLI_PATH="pavex" cargo test --package pavex_cli
+      - name: Run UI tests
+        env:
+          PAVEX_TEST_CLI_PATH: ${{ env.PAVEX }}
+          PAVEX_PAVEXC: ${{ env.PAVEXC }}
+        working-directory: libs
+        run: |
+          cargo test --package pavex_cli
 
   is_up_to_date:
     runs-on: ubuntu-latest
@@ -132,12 +194,12 @@ jobs:
       - name: Download pavex CLI artifact
         uses: actions/download-artifact@v4
         with:
-          name: pavex_cli
+          name: pavex_cli-x86_64-unknown-linux-gnu
           path: ~/.cargo/bin
       - name: Download pavexc CLI artifact
         uses: actions/download-artifact@v4
         with:
-          name: pavexc_cli
+          name: pavexc_cli-x86_64-unknown-linux-gnu
           path: ~/.cargo/bin
       - name: Mark pavex as executable
         run: chmod +x ~/.cargo/bin/pavex

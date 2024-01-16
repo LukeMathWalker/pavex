@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 use console::style;
+use regex::Captures;
 use similar::{Algorithm, ChangeTag, TextDiff};
 
 fn term_width() -> usize {
@@ -29,6 +30,22 @@ impl SnapshotTest {
         let trimmed_expected = expected.trim();
         let actual = actual.trim();
 
+        // Replace all line endings with `\n` to make sure that the snapshots are cross-platform.
+        let trimmed_expected = trimmed_expected.replace("\r\n", "\n");
+        let actual = actual.replace("\r\n", "\n");
+
+        // Path normalization for Windows, which uses `\` instead of `/` as path separator.
+        static RE: once_cell::sync::Lazy<regex::Regex> = once_cell::sync::Lazy::new(|| {
+            regex::Regex::new(r#"(?<prefix>\[\[36;1;4m)(?<path>.*)"#).unwrap()
+        });
+        let normalizer = |c: &Captures| {
+            let prefix = c.name("prefix").unwrap().as_str();
+            let path = c.name("path").unwrap().as_str().replace("\\", "/");
+            format!("{prefix}{path}",)
+        };
+        let trimmed_expected = RE.replace_all(&trimmed_expected, normalizer);
+        let actual = RE.replace_all(&actual, normalizer);
+
         let expectation_directory = self.expectation_path.parent().unwrap();
         let last_snapshot_path = expectation_directory.join(format!(
             "{}.snap",
@@ -36,8 +53,8 @@ impl SnapshotTest {
         ));
 
         if trimmed_expected != actual {
-            print_changeset(expected.trim(), actual);
-            fs_err::write(last_snapshot_path, actual)
+            print_changeset(&trimmed_expected, &actual);
+            fs_err::write(last_snapshot_path, actual.as_ref())
                 .expect("Failed to save the actual value for a failed snapshot test");
             Err(())
         } else {
