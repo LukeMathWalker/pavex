@@ -36,12 +36,7 @@ struct Cli {
 }
 
 // Same structure used by `cargo --version`.
-static VERSION: &str = concat!(
-    pavex_cli::env::version(),
-    " (",
-    pavex_cli::env::commit_sha(),
-    ")"
-);
+static VERSION: &str = concat!(env!("CARGO_PKG_VERSION"), " (", env!("VERGEN_GIT_SHA"), ")");
 
 #[derive(Copy, Clone, Debug)]
 enum Color {
