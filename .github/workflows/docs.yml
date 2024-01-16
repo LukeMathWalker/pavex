@@ -82,6 +82,7 @@ jobs:
     name: "Run tests ${{ matrix.target }} (${{ matrix.os }})"
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         include:
           - target: aarch64-pc-windows-msvc
@@ -106,6 +107,17 @@ jobs:
         run: |
           Add-Content $env:GITHUB_ENV "BINARY_EXTENSION=.exe" -Encoding utf8
       - name: Set PAVEX
+        if: ${{ matrix.os == 'macos-12' }}
+        run: |
+          echo "PAVEX=/Users/runner/.cargo/bin/pavex${BINARY_EXTENSION}" >> $GITHUB_ENV
+          echo "PAVEXC=/Users/runner/.cargo/bin/pavexc${BINARY_EXTENSION}" >> $GITHUB_ENV
+      - name: Set PAVEX
+        if: ${{ matrix.os == 'ubuntu-22.04' }}
+        run: |
+          echo "PAVEX=/home/runner/.cargo/bin/pavex${BINARY_EXTENSION}" >> $GITHUB_ENV
+          echo "PAVEXC=/home/runner/.cargo/bin/pavexc${BINARY_EXTENSION}" >> $GITHUB_ENV
+      - name: Set PAVEX
+        if: ${{ matrix.os == 'windows-2022' }}
         run: |
           echo "PAVEX=/home/runner/.cargo/bin/pavex${BINARY_EXTENSION}" >> $GITHUB_ENV
           echo "PAVEXC=/home/runner/.cargo/bin/pavexc${BINARY_EXTENSION}" >> $GITHUB_ENV
