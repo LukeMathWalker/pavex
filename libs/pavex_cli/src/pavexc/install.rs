@@ -166,7 +166,7 @@ pub(super) fn install(
             }
             Err(e) => {
                 let _ =
-                    shell.warn("Download failed: {e}.\nI'll try to build it from source instead.");
+                    shell.warn("Download failed: {e}.\nI'll try compiling from source instead.");
                 tracing::warn!(
                     error.msg = %e,
                     error.cause = ?e,
@@ -176,7 +176,9 @@ pub(super) fn install(
         }
     }
 
+    let _ = shell.status("Compiling", format!("`pavexc@{version}` from source"));
     cargo_install(install_source, "pavexc", "pavexc_cli", pavexc_cli_path)?;
+    let _ = shell.status("Compiled", format!("`pavexc@{version}` from source"));
     Ok(())
 }
 
