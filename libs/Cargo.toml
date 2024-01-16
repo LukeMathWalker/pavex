@@ -8,6 +8,7 @@ vergen = { version = "8.0.0", features = ["build", "git", "gitcl"] }
 # Config for 'cargo release'
 [workspace.metadata.release]
 shared-version = true
+consolidate-commits = true
 tag-name = "{{version}}"
 # We don't want to publish to crates.io, yet
 publish = false
