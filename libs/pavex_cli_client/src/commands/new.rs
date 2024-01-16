@@ -53,7 +53,7 @@ impl NewBuilder {
     /// but do not run it.
     ///
     /// This method can be useful if you need to customize the command before running it.
-    /// If that's not your usecase, consider using [`GenerateBuilder::execute`] instead.
+    /// If that's not your usecase, consider using [`NewBuilder::execute`] instead.
     pub fn command(mut self) -> Command {
         self.cmd
             .arg("new")
