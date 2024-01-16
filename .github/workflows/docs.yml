@@ -119,8 +119,8 @@ jobs:
       - name: Set PAVEX
         if: ${{ matrix.os == 'windows-2022' }}
         run: |
-          echo "PAVEX=/home/runner/.cargo/bin/pavex${BINARY_EXTENSION}" >> $GITHUB_ENV
-          echo "PAVEXC=/home/runner/.cargo/bin/pavexc${BINARY_EXTENSION}" >> $GITHUB_ENV
+          Add-Content $env:GITHUB_ENV "PAVEX=C:\Users\runneradmin\.cargo\bin\pavex${BINARY_EXTENSION}" -Encoding utf8
+          Add-Content $env:GITHUB_ENV "PAVEXC=C:\Users\runneradmin\.cargo\bin\pavexc${BINARY_EXTENSION}" -Encoding utf8
       - name: Install Rust nightly toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
@@ -154,11 +154,14 @@ jobs:
         if: ${{ matrix.os != 'windows-2022' }}
         run: chmod +x ${{ env.PAVEXC }}
       - name: Run tests
+        env:
+          PAVEX_TEST_CLI_PATH: ${{ env.PAVEX }}
+          PAVEX_PAVEXC: ${{ env.PAVEXC }}
+        working-directory: libs
         run: |
-          cd libs
           cargo test --no-run
           cargo test --workspace --exclude="pavex_cli"
-          PAVEX_TEST_CLI_PATH="${{ env.PAVEX }}" PAVEX_PAVEXC="${{ env.PAVEXC }}" cargo test --package pavex_cli
+          cargo test --package pavex_cli
 
   is_up_to_date:
     runs-on: ubuntu-latest
