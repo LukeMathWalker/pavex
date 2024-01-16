@@ -121,13 +121,8 @@ fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
         } else {
             handler = handler.without_cause_chain()
         };
-        // This is an undocumented feature that allows us to force set the width of the
-        // terminal as seen by the graphical error handler.
-        // This is useful for testing/doc-generation purposes.
-        if let Ok(width) = std::env::var("PAVEX_TTY_WIDTH") {
-            if let Ok(width) = width.parse::<usize>() {
-                handler = handler.width(width);
-            }
+        if let Ok(width) = pavex_cli::env::tty_width() {
+            handler = handler.width(width);
         }
         match cli.color {
             Color::Auto => {}
@@ -183,15 +178,17 @@ fn generate(
     diagnostics: Option<PathBuf>,
     output: PathBuf,
 ) -> Result<ExitCode, Box<dyn std::error::Error>> {
-    // Match the version of the `pavexc` binary with the version of the `pavex` library
-    // crate used in the current workspace.
-    {
+    let pavexc_cli_path = if let Some(pavexc_override) = pavex_cli::env::pavexc_override() {
+        pavexc_override
+    } else {
+        // Match the version of the `pavexc` binary with the version of the `pavex` library
+        // crate used in the current workspace.
         let package_graph = compute_package_graph()
             .context("Failed to compute package graph for the current workspace")?;
-        let pavexc_cli_path = get_or_install_from_graph(shell, locator, &package_graph)
-            .context("Failed to get or install the `pavexc` binary")?;
-        client = client.pavexc_cli_path(pavexc_cli_path);
-    }
+        get_or_install_from_graph(shell, locator, &package_graph)
+            .context("Failed to get or install the `pavexc` binary")?
+    };
+    client = client.pavexc_cli_path(pavexc_cli_path);
 
     let blueprint = BlueprintArgument::Path(blueprint);
     let mut cmd = client.generate(blueprint, output);
@@ -209,14 +206,17 @@ fn scaffold_project(
     shell: &mut Shell,
     path: PathBuf,
 ) -> Result<ExitCode, Box<dyn std::error::Error>> {
-    {
+    let pavexc_cli_path = if let Some(pavexc_override) = pavex_cli::env::pavexc_override() {
+        pavexc_override
+    } else {
         let version = State::new(locator)
             .get_current_toolchain(shell)
             .context("Failed to get the current toolchain")?;
-        let pavexc_cli_path = get_or_install_from_version(shell, locator, &version)
-            .context("Failed to get or install the `pavexc` binary")?;
-        client = client.pavexc_cli_path(pavexc_cli_path);
-    }
+        get_or_install_from_version(shell, locator, &version)
+            .context("Failed to get or install the `pavexc` binary")?
+    };
+
+    client = client.pavexc_cli_path(pavexc_cli_path);
 
     client.new_command(path).execute()?;
     Ok(ExitCode::SUCCESS)
