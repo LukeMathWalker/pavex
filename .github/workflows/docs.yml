@@ -29,7 +29,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Set BINARY_EXTENSION
         run: |
-          if [[ "${{ matrix.os }}" == "windows-2022" ]]; then
+          if [ "${{ matrix.os }}" == "windows-2022" ]; then
             BINARY_EXTENSION=".exe"
           else
             BINARY_EXTENSION=""
@@ -97,14 +97,18 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Set PAVEX_PAVEXC
+      - name: Set BINARY_EXTENSION
         run: |
-          if [[ "${{ matrix.os }}" == "windows-2022" ]]; then
-            PAVEX_PAVEXC="pavex.exe"
+          if [ "${{ matrix.os }}" == "windows-2022" ]; then
+            BINARY_EXTENSION=".exe"
           else
-            PAVEX_PAVEXC="pavex"
+            BINARY_EXTENSION=""
           fi
-          echo "PAVEX_PAVEXC=/home/runner/.cargo/bin/${PAVEX_PAVEXC}" >> $GITHUB_ENV
+          echo "BINARY_EXTENSION=${BINARY_EXTENSION}" >> $GITHUB_ENV
+      - name: Set PAVEX
+        run: |
+          echo "PAVEX=/home/runner/.cargo/bin/pavex${BINARY_EXTENSION}" >> $GITHUB_ENV
+          echo "PAVEXC=/home/runner/.cargo/bin/pavexc${BINARY_EXTENSION}" >> $GITHUB_ENV
       - name: Install Rust nightly toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
@@ -132,17 +136,15 @@ jobs:
           name: pavexc_cli-${{ matrix.target }}
           path: ~/.cargo/bin
       - name: Mark pavex as executable
-        if: matrix.target != 'x86_64-pc-windows-msvc'
-        run: chmod +x ~/.cargo/bin/pavex
+        run: chmod +x ${{ env.PAVEX }}
       - name: Mark pavexc as executable
-        if: matrix.target != 'x86_64-pc-windows-msvc'
-        run: chmod +x ~/.cargo/bin/pavexc
+        run: chmod +x ${{ env.PAVEXC }}
       - name: Run tests
         run: |
           cd libs
           cargo test --no-run
           cargo test --workspace --exclude="pavex_cli"
-          PAVEX_TEST_CLI_PATH="pavex" cargo test --package pavex_cli
+          PAVEX_TEST_CLI_PATH="${{ env.PAVEX }}" PAVEX_PAVEXC="${{ env.PAVEXC }}" cargo test --package pavex_cli
 
   is_up_to_date:
     runs-on: ubuntu-latest
