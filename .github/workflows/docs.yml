@@ -11,7 +11,19 @@ on:
 
 jobs:
   build_clis:
-    runs-on: ubuntu-latest
+    name: "Build CLIs ${{ matrix.target }} (${{ matrix.os }})"
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - target: aarch64-pc-windows-msvc
+            os: windows-2022
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-22.04
+          - target: x86_64-apple-darwin
+            os: macos-12
+          - target: x86_64-pc-windows-msvc
+            os: windows-2022
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -28,14 +40,28 @@ jobs:
           cargo build --bin pavex --bin pavexc --release
       - name: Store pavex CLI artifact
         uses: actions/upload-artifact@v4
+        if: matrix.target != 'x86_64-pc-windows-msvc'
         with:
-          name: pavex_cli
+          name: pavex_cli-${{ matrix.target }}
           path: libs/target/release/pavex
+      - name: Store pavex CLI artifact
+        uses: actions/upload-artifact@v4
+        if: matrix.target == 'x86_64-pc-windows-msvc'
+        with:
+          name: pavex_cli-${{ matrix.target }}
+          path: libs/target/release/pavex.exe
       - name: Store pavexc CLI artifact
         uses: actions/upload-artifact@v4
+        if: matrix.target != 'x86_64-pc-windows-msvc'
         with:
-          name: pavexc_cli
+          name: pavexc_cli-${{ matrix.target }}
           path: libs/target/release/pavexc
+      - name: Store pavexc CLI artifact
+        uses: actions/upload-artifact@v4
+        if: matrix.target == 'x86_64-pc-windows-msvc'
+        with:
+          name: pavexc_cli-${{ matrix.target }}
+          path: libs/target/release/pavexc.exe
 
   build_tutorial_generator:
     runs-on: ubuntu-latest
@@ -59,7 +85,19 @@ jobs:
           path: doc_examples/tutorial_generator/target/debug/tutorial_generator
 
   tests:
-    runs-on: ubuntu-latest
+    name: "Run tests ${{ matrix.target }} (${{ matrix.os }})"
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - target: aarch64-pc-windows-msvc
+            os: windows-2022
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-22.04
+          - target: x86_64-apple-darwin
+            os: macos-12
+          - target: x86_64-pc-windows-msvc
+            os: windows-2022
     env:
       PAVEX_PAVEXC: "/home/runner/.cargo/bin/pavexc"
     needs:
@@ -86,16 +124,18 @@ jobs:
       - name: Download pavex CLI artifact
         uses: actions/download-artifact@v4
         with:
-          name: pavex_cli
+          name: pavex_cli-${{ matrix.target }}
           path: ~/.cargo/bin
       - name: Download pavexc CLI artifact
         uses: actions/download-artifact@v4
         with:
-          name: pavexc_cli
+          name: pavexc_cli-${{ matrix.target }}
           path: ~/.cargo/bin
       - name: Mark pavex as executable
+        if: matrix.target != 'x86_64-pc-windows-msvc'
         run: chmod +x ~/.cargo/bin/pavex
       - name: Mark pavexc as executable
+        if: matrix.target != 'x86_64-pc-windows-msvc'
         run: chmod +x ~/.cargo/bin/pavexc
       - name: Run tests
         run: |
@@ -132,12 +172,12 @@ jobs:
       - name: Download pavex CLI artifact
         uses: actions/download-artifact@v4
         with:
-          name: pavex_cli
+          name: pavex_cli-x86_64-unknown-linux-gnu
           path: ~/.cargo/bin
       - name: Download pavexc CLI artifact
         uses: actions/download-artifact@v4
         with:
-          name: pavexc_cli
+          name: pavexc_cli-x86_64-unknown-linux-gnu
           path: ~/.cargo/bin
       - name: Mark pavex as executable
         run: chmod +x ~/.cargo/bin/pavex
