@@ -11,7 +11,7 @@ pub(super) fn download_prebuilt(
 ) -> Result<(), DownloadPrebuiltError> {
     let host_triple = get_host_triple()?;
     let url_prefix =
-        format!("https://github.com/LukeMathWalker/pavex/releases/download/{version}/pavex_cli-{host_triple}");
+        format!("https://github.com/LukeMathWalker/pavex/releases/download/{version}/pavexc_cli-{host_triple}");
     let download_url = match host_triple.as_str() {
         "x86_64-unknown-linux-gnu" | "x86_64-apple-darwin" | "aarch64-apple-darwin" => {
             format!("{url_prefix}.tar.xz")

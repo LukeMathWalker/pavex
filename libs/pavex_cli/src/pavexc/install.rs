@@ -164,7 +164,7 @@ pub(super) fn install(
             }
             Err(e) => {
                 let _ = shell.warn(
-                    "Failed to download prebuilt `pavexc` binary. I'll try to build it from source instead.",
+                    "Failed to download prebuilt `pavexc` binary: {e}.\nI'll try to build it from source instead.",
                 );
                 tracing::warn!(
                     error.msg = %e,
