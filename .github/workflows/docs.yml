@@ -99,7 +99,7 @@ jobs:
           - target: x86_64-pc-windows-msvc
             os: windows-2022
     env:
-      PAVEX_PAVEXC: "/home/runner/.cargo/bin/pavexc"
+      PAVEX_PAVEXC: /home/runner/.cargo/bin/${{ if startsWith(matrix.target, 'x86_64-pc-windows') }}pavex.exe${{ else }}pavex${{ endif }}
     needs:
       - build_clis
     steps:
