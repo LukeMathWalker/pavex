@@ -107,6 +107,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PAVEX_PAVEXC: "~/.cargo/bin/pavexc"
+      PAVEX_DEBUG: "true"
     needs:
       - build_clis
       - build_tutorial_generator
