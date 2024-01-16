@@ -61,7 +61,7 @@ jobs:
   tests:
     runs-on: ubuntu-latest
     env:
-      PAVEX_PAVEXC: "~/.cargo/bin/pavexc"
+      PAVEX_PAVEXC: "/home/runner/.cargo/bin/pavexc"
     needs:
       - build_clis
     steps:
