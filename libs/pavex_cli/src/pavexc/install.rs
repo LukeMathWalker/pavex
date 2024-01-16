@@ -158,14 +158,15 @@ pub(super) fn install(
     };
 
     if try_prebuilt {
+        let _ = shell.status("Downloading", format!("prebuilt `pavexc@{version}` binary"));
         match download_prebuilt(pavexc_cli_path, version) {
             Ok(_) => {
+                let _ = shell.status("Downloaded", format!("prebuilt `pavexc@{version}` binary"));
                 return Ok(());
             }
             Err(e) => {
-                let _ = shell.warn(
-                    "Failed to download prebuilt `pavexc` binary: {e}.\nI'll try to build it from source instead.",
-                );
+                let _ =
+                    shell.warn("Download failed: {e}.\nI'll try to build it from source instead.");
                 tracing::warn!(
                     error.msg = %e,
                     error.cause = ?e,
