@@ -30,11 +30,11 @@ jobs:
       - name: Set BINARY_EXTENSION
         if: ${{ matrix.os != 'windows-2022' }}
         run: |
-          echo "BINARY_EXTENSION=''" >> $GITHUB_ENV
+          echo "BINARY_EXTENSION=" >> $GITHUB_ENV
       - name: Set BINARY_EXTENSION
         if: ${{ matrix.os == 'windows-2022' }}
         run: |
-          Add-Content $env:GITHUB_ENV "BINARY_EXTENSION='.exe'" -Encoding utf8
+          Add-Content $env:GITHUB_ENV "BINARY_EXTENSION=.exe" -Encoding utf8
       - name: Install Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1.6.0
       - name: Cache dependencies
@@ -100,11 +100,11 @@ jobs:
       - name: Set BINARY_EXTENSION
         if: ${{ matrix.os != 'windows-2022' }}
         run: |
-          echo "BINARY_EXTENSION=''" >> $GITHUB_ENV
+          echo "BINARY_EXTENSION=" >> $GITHUB_ENV
       - name: Set BINARY_EXTENSION
         if: ${{ matrix.os == 'windows-2022' }}
         run: |
-          Add-Content $env:GITHUB_ENV "BINARY_EXTENSION='.exe'" -Encoding utf8
+          Add-Content $env:GITHUB_ENV "BINARY_EXTENSION=.exe" -Encoding utf8
       - name: Set PAVEX
         run: |
           echo "PAVEX=/home/runner/.cargo/bin/pavex${BINARY_EXTENSION}" >> $GITHUB_ENV
