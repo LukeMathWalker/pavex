@@ -405,14 +405,14 @@ impl TestData {
         )?;
 
         let main_rs = format!(
-            r#"use app::blueprint;
+            r##"use app::blueprint;
 use pavex_cli_client::{{Client, config::Color}};
 use pavex_cli_client::commands::generate::GenerateError;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {{
     let outcome = Client::new()
         .color(Color::Always)
-        .pavex_cli_path("{}".into())
+        .pavex_cli_path(r#"{}"#.into())
         .generate(blueprint(), "generated_app".into())
         .diagnostics_path("diagnostics.dot".into())
         .execute();
@@ -426,7 +426,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {{
     }}
     Ok(())
 }}
-"#,
+"##,
             cli.to_str().unwrap()
         );
         persist_if_changed(&source_directory.join("main.rs"), main_rs.as_bytes())?;
