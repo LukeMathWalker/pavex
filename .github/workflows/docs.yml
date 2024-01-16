@@ -71,11 +71,12 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: nightly
-          components: rust-docs-json
+          components: rust-docs-json, rustfmt
           rustflags: ""
       - name: Install Rust stable toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1.6.0
         with:
+          components: rustfmt
           rustflags: ""
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
@@ -122,12 +123,13 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: nightly
-          components: rust-docs-json
+          components: rust-docs-json, rustfmt
           rustflags: ""
       - name: Install Rust stable toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1.6.0
         with:
           rustflags: ""
+          components: rustfmt
       - name: Download pavex CLI artifact
         uses: actions/download-artifact@v4
         with:
