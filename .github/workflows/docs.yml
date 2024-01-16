@@ -27,6 +27,14 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+      - name: Set BINARY_EXTENSION
+        run: |
+          if [[ "${{ matrix.os }}" == "windows-2022" ]]; then
+            BINARY_EXTENSION=".exe"
+          else
+            BINARY_EXTENSION=""
+          fi
+          echo "BINARY_EXTENSION=${BINARY_EXTENSION}" >> $GITHUB_ENV
       - name: Install Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1.6.0
       - name: Cache dependencies
@@ -40,28 +48,14 @@ jobs:
           cargo build --bin pavex --bin pavexc --release
       - name: Store pavex CLI artifact
         uses: actions/upload-artifact@v4
-        if: matrix.target != 'x86_64-pc-windows-msvc'
         with:
           name: pavex_cli-${{ matrix.target }}
-          path: libs/target/release/pavex
-      - name: Store pavex CLI artifact
-        uses: actions/upload-artifact@v4
-        if: matrix.target == 'x86_64-pc-windows-msvc'
-        with:
-          name: pavex_cli-${{ matrix.target }}
-          path: libs/target/release/pavex.exe
+          path: libs/target/release/pavex${{ env.BINARY_EXTENSION }}
       - name: Store pavexc CLI artifact
         uses: actions/upload-artifact@v4
-        if: matrix.target != 'x86_64-pc-windows-msvc'
         with:
           name: pavexc_cli-${{ matrix.target }}
-          path: libs/target/release/pavexc
-      - name: Store pavexc CLI artifact
-        uses: actions/upload-artifact@v4
-        if: matrix.target == 'x86_64-pc-windows-msvc'
-        with:
-          name: pavexc_cli-${{ matrix.target }}
-          path: libs/target/release/pavexc.exe
+          path: libs/target/release/pavexc${{ env.BINARY_EXTENSION }}
 
   build_tutorial_generator:
     runs-on: ubuntu-latest
