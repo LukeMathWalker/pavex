@@ -9,6 +9,8 @@ pub enum Source {
 
 pub enum GitSourceRevision {
     Rev(String),
+    Tag(String),
+    Branch(String),
 }
 
 /// Install a single binary via `cargo install` and copy it to the specified destination path.
@@ -37,6 +39,14 @@ pub fn cargo_install(
                 GitSourceRevision::Rev(rev) => {
                     cmd.arg("--rev");
                     cmd.arg(&rev);
+                }
+                GitSourceRevision::Tag(tag) => {
+                    cmd.arg("--tag");
+                    cmd.arg(&tag);
+                }
+                GitSourceRevision::Branch(branch) => {
+                    cmd.arg("--branch");
+                    cmd.arg(&branch);
                 }
             }
         }
