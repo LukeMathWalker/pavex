@@ -136,8 +136,10 @@ jobs:
           name: pavexc_cli-${{ matrix.target }}
           path: ~/.cargo/bin
       - name: Mark pavex as executable
+        if: ${{ matrix.os != 'windows-2022' }}
         run: chmod +x ${{ env.PAVEX }}
       - name: Mark pavexc as executable
+        if: ${{ matrix.os != 'windows-2022' }}
         run: chmod +x ${{ env.PAVEXC }}
       - name: Run tests
         run: |
