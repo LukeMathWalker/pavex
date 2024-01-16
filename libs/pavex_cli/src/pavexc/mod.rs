@@ -2,7 +2,7 @@ use crate::locator::PavexLocator;
 use anyhow::Context;
 use cargo_like_utils::shell::Shell;
 use fs_err::PathExt;
-use guppy::graph::{ExternalSource, PackageGraph, PackageSource};
+use guppy::graph::{PackageGraph, PackageSource};
 use semver::Version;
 use std::path::{Path, PathBuf};
 

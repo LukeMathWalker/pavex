@@ -406,7 +406,7 @@ impl TestData {
 
         let main_rs = format!(
             r#"use app::blueprint;
-use pavex_cli_client::{{Client, client::Color}};
+use pavex_cli_client::{{Client, config::Color}};
 use pavex_cli_client::commands::generate::GenerateError;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {{

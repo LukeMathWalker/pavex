@@ -10,7 +10,8 @@ use pavex_cli::locator::PavexLocator;
 use pavex_cli::package_graph::compute_package_graph;
 use pavex_cli::pavexc::{get_or_install_from_graph, get_or_install_from_version};
 use pavex_cli::state::State;
-use pavexc_cli_client::commands::generate::BlueprintArgument;
+use pavexc_cli_client::commands::generate::{BlueprintArgument, GenerateError};
+use pavexc_cli_client::commands::new::NewError;
 use pavexc_cli_client::Client;
 use tracing_chrome::{ChromeLayerBuilder, FlushGuard};
 use tracing_subscriber::fmt::format::FmtSpan;
@@ -112,7 +113,7 @@ fn init_telemetry() -> FlushGuard {
     guard
 }
 
-fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
+fn main() -> Result<ExitCode, miette::Error> {
     let cli = Cli::parse();
     miette::set_hook(Box::new(move |_| {
         let mut handler = pavex_miette::PavexMietteHandlerOpts::new();
@@ -121,7 +122,7 @@ fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
         } else {
             handler = handler.without_cause_chain()
         };
-        if let Ok(width) = pavex_cli::env::tty_width() {
+        if let Some(width) = pavex_cli::env::tty_width() {
             handler = handler.width(width);
         }
         match cli.color {
@@ -154,8 +155,9 @@ fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
         client = client.no_debug();
     }
 
-    let system_home_dir =
-        xdg_home::home_dir().context("Failed to get the system home directory")?;
+    let system_home_dir = xdg_home::home_dir().ok_or_else(|| {
+        miette::miette!("Failed to get the system home directory from the environment")
+    })?;
     let locator = PavexLocator::new(&system_home_dir);
     let mut shell = Shell::new();
 
@@ -167,6 +169,7 @@ fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
         } => generate(&mut shell, client, &locator, blueprint, diagnostics, output),
         Commands::New { path } => scaffold_project(client, &locator, &mut shell, path),
     }
+    .map_err(anyhow2miette)
 }
 
 #[tracing::instrument("Generate server sdk", skip(client, locator))]
@@ -177,7 +180,7 @@ fn generate(
     blueprint: PathBuf,
     diagnostics: Option<PathBuf>,
     output: PathBuf,
-) -> Result<ExitCode, Box<dyn std::error::Error>> {
+) -> Result<ExitCode, anyhow::Error> {
     let pavexc_cli_path = if let Some(pavexc_override) = pavex_cli::env::pavexc_override() {
         pavexc_override
     } else {
@@ -195,8 +198,12 @@ fn generate(
     if let Some(diagnostics) = diagnostics {
         cmd = cmd.diagnostics_path(diagnostics)
     };
-    cmd.execute()?;
-    Ok(ExitCode::SUCCESS)
+
+    match cmd.execute() {
+        Ok(()) => Ok(ExitCode::SUCCESS),
+        Err(GenerateError::NonZeroExitCode(e)) => Ok(ExitCode::from(e.code as u8)),
+        Err(e) => Err(e.into()),
+    }
 }
 
 #[tracing::instrument("Scaffold new project", skip(client, locator))]
@@ -205,7 +212,7 @@ fn scaffold_project(
     locator: &PavexLocator,
     shell: &mut Shell,
     path: PathBuf,
-) -> Result<ExitCode, Box<dyn std::error::Error>> {
+) -> Result<ExitCode, anyhow::Error> {
     let pavexc_cli_path = if let Some(pavexc_override) = pavex_cli::env::pavexc_override() {
         pavexc_override
     } else {
@@ -218,6 +225,28 @@ fn scaffold_project(
 
     client = client.pavexc_cli_path(pavexc_cli_path);
 
-    client.new_command(path).execute()?;
-    Ok(ExitCode::SUCCESS)
+    match client.new_command(path).execute() {
+        Ok(()) => Ok(ExitCode::SUCCESS),
+        Err(NewError::NonZeroExitCode(e)) => Ok(ExitCode::from(e.code as u8)),
+        Err(e) => Err(e.into()),
+    }
+}
+
+fn anyhow2miette(err: anyhow::Error) -> miette::Error {
+    #[derive(Debug, miette::Diagnostic)]
+    struct InteropError(anyhow::Error);
+
+    impl Display for InteropError {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            self.0.fmt(f)
+        }
+    }
+
+    impl std::error::Error for InteropError {
+        fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+            self.0.source()
+        }
+    }
+
+    miette::Error::from(InteropError(err))
 }
