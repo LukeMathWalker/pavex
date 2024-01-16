@@ -29,6 +29,10 @@ impl SnapshotTest {
         let trimmed_expected = expected.trim();
         let actual = actual.trim();
 
+        // Replace all line endings with `\n` to make sure that the snapshots are cross-platform.
+        let trimmed_expected = trimmed_expected.replace("\r\n", "\n");
+        let actual = actual.replace("\r\n", "\n");
+
         let expectation_directory = self.expectation_path.parent().unwrap();
         let last_snapshot_path = expectation_directory.join(format!(
             "{}.snap",
@@ -36,7 +40,7 @@ impl SnapshotTest {
         ));
 
         if trimmed_expected != actual {
-            print_changeset(expected.trim(), actual);
+            print_changeset(&trimmed_expected, &actual);
             fs_err::write(last_snapshot_path, actual)
                 .expect("Failed to save the actual value for a failed snapshot test");
             Err(())

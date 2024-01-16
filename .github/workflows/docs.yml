@@ -164,7 +164,7 @@ jobs:
         # It _might_ be related to line endings, but I'm not sure and
         # debugging this from a CI runner is excruciatingly slow and painful.
         # I'll pick this up again when I have a Windows machine at hand.
-        if: ${{ matrix.os =! 'windows-2022' }}
+        #        if: ${{ matrix.os =! 'windows-2022' }}
         env:
           PAVEX_TEST_CLI_PATH: ${{ env.PAVEX }}
           PAVEX_PAVEXC: ${{ env.PAVEXC }}
