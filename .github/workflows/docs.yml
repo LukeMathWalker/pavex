@@ -106,7 +106,7 @@ jobs:
   is_up_to_date:
     runs-on: ubuntu-latest
     env:
-      PAVEX_PAVEXC: "~/.cargo/bin/pavexc"
+      PAVEX_PAVEXC: "/home/runner/.cargo/bin/pavexc"
       PAVEX_DEBUG: "true"
     needs:
       - build_clis
