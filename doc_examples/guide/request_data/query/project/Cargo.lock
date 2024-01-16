@@ -366,7 +366,7 @@ checksum = "de3145af08024dea9fa9914f381a17b8fc6034dfb00f3a84013f7ff43f29ed4c"
 
 [[package]]
 name = "pavex"
-version = "0.1.0"
+version = "0.1.2"
 dependencies = [
  "anyhow",
  "bytes",
@@ -381,7 +381,9 @@ dependencies = [
  "matchit",
  "mime",
  "paste",
+ "pavex_bp_schema",
  "pavex_macros",
+ "pavex_reflection",
  "percent-encoding",
  "pin-project-lite",
  "ron",
@@ -398,8 +400,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "pavex_bp_schema"
+version = "0.1.2"
+dependencies = [
+ "pavex_reflection",
+ "serde",
+]
+
+[[package]]
 name = "pavex_cli_client"
-version = "0.1.0"
+version = "0.1.2"
 dependencies = [
  "anyhow",
  "pavex",
@@ -408,11 +418,18 @@ dependencies = [
 
 [[package]]
 name = "pavex_macros"
-version = "0.1.0"
+version = "0.1.2"
 dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "pavex_reflection"
+version = "0.1.2"
+dependencies = [
+ "serde",
 ]
 
 [[package]]

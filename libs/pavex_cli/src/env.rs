@@ -10,7 +10,7 @@ use std::path::PathBuf;
 /// Set a specific `pavexc` binary to be used, regardless of the
 /// logic that would otherwise be used to determine it.
 pub fn pavexc_override() -> Option<PathBuf> {
-    std::env::var("PAVEXC").ok().map(PathBuf::from)
+    std::env::var("PAVEX_PAVEXC").ok().map(PathBuf::from)
 }
 
 /// This is an undocumented feature that allows us to force set the width of the
