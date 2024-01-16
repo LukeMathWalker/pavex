@@ -21,3 +21,13 @@ pub fn tty_width() -> Option<usize> {
         .ok()
         .and_then(|s| s.parse().ok())
 }
+
+/// The SHA of the commit that `pavex_cli` was built from.
+pub const fn commit_sha() -> &'static str {
+    env!("VERGEN_GIT_SHA")
+}
+
+/// The version of `pavex_cli` that is being used.
+pub const fn version() -> &'static str {
+    env!("CARGO_PKG_VERSION")
+}

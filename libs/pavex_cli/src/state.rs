@@ -1,3 +1,4 @@
+use crate::env::version;
 use crate::locator::PavexLocator;
 use anyhow::Context;
 use cargo_like_utils::flock::{FileLock, Filesystem};
@@ -37,7 +38,7 @@ impl State {
             Some(current_state) => Ok(current_state.toolchain),
             None => {
                 // We default to the toolchain that matches the current version of the CLI.
-                let cli_version = semver::Version::parse(env!("CARGO_PKG_VERSION"))
+                let cli_version = semver::Version::parse(version())
                     .context("Failed to parse the current version of the CLI.")?;
                 Ok(cli_version)
             }

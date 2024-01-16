@@ -1,6 +1,6 @@
 [package]
 name = "pavex_test_runner"
-version = "0.1.2"
+version = "0.1.3"
 edition = "2021"
 
 [package.metadata.dist]

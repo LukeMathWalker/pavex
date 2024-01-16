@@ -40,7 +40,7 @@ pub fn get_or_install_from_version(
     locator: &PavexLocator,
     version: &Version,
 ) -> Result<PathBuf, anyhow::Error> {
-    let revision_sha = "b32592e21e753529ae7abd14c1829fa99bca150b";
+    let revision_sha = crate::env::commit_sha();
     let pavexc_path = locator
         .toolchains()
         .git()
