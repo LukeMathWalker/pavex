@@ -10,7 +10,7 @@ on:
       - main
 
 jobs:
-  build_pavex_cli:
+  build_clis:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -25,12 +25,17 @@ jobs:
       - name: Build CLI
         run: |
           cd libs
-          cargo build --package pavex_cli --bin pavex --release
-      - name: Store CLI artifact
+          cargo build --bin pavex --bin pavexc --release
+      - name: Store pavex CLI artifact
         uses: actions/upload-artifact@v4
         with:
           name: pavex_cli
           path: libs/target/release/pavex
+      - name: Store pavexc CLI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pavexc_cli
+          path: libs/target/release/pavexc
 
   build_tutorial_generator:
     runs-on: ubuntu-latest
@@ -55,8 +60,10 @@ jobs:
 
   tests:
     runs-on: ubuntu-latest
+    env:
+      PAVEX_PAVEXC: "/home/runner/.cargo/bin/pavexc"
     needs:
-      - build_pavex_cli
+      - build_clis
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -64,11 +71,12 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: nightly
-          components: rust-docs-json
+          components: rust-docs-json, rustfmt
           rustflags: ""
       - name: Install Rust stable toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1.6.0
         with:
+          components: rustfmt
           rustflags: ""
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
@@ -80,8 +88,15 @@ jobs:
         with:
           name: pavex_cli
           path: ~/.cargo/bin
-      - name: Mark as executable
+      - name: Download pavexc CLI artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: pavexc_cli
+          path: ~/.cargo/bin
+      - name: Mark pavex as executable
         run: chmod +x ~/.cargo/bin/pavex
+      - name: Mark pavexc as executable
+        run: chmod +x ~/.cargo/bin/pavexc
       - name: Run tests
         run: |
           cd libs
@@ -91,8 +106,10 @@ jobs:
 
   is_up_to_date:
     runs-on: ubuntu-latest
+    env:
+      PAVEX_PAVEXC: "/home/runner/.cargo/bin/pavexc"
     needs:
-      - build_pavex_cli
+      - build_clis
       - build_tutorial_generator
     steps:
       - name: Checkout repository
@@ -105,19 +122,27 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: nightly
-          components: rust-docs-json
+          components: rust-docs-json, rustfmt
           rustflags: ""
       - name: Install Rust stable toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1.6.0
         with:
           rustflags: ""
+          components: rustfmt
       - name: Download pavex CLI artifact
         uses: actions/download-artifact@v4
         with:
           name: pavex_cli
           path: ~/.cargo/bin
-      - name: Mark as executable
+      - name: Download pavexc CLI artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: pavexc_cli
+          path: ~/.cargo/bin
+      - name: Mark pavex as executable
         run: chmod +x ~/.cargo/bin/pavex
+      - name: Mark pavexc as executable
+        run: chmod +x ~/.cargo/bin/pavexc
       - name: Download tutorial_generator CLI artifact
         uses: actions/download-artifact@v4
         with:

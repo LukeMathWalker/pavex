@@ -1,14 +1,18 @@
+use anyhow::Context;
+use cargo_like_utils::shell::Shell;
 use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
 use std::process::ExitCode;
 use std::str::FromStr;
 
-use anyhow::Context;
-use cargo_generate::{GenerateArgs, TemplatePath};
 use clap::{Parser, Subcommand};
-use owo_colors::OwoColorize;
-use pavexc::App;
-use supports_color::Stream;
+use pavex_cli::locator::PavexLocator;
+use pavex_cli::package_graph::compute_package_graph;
+use pavex_cli::pavexc::{get_or_install_from_graph, get_or_install_from_version};
+use pavex_cli::state::State;
+use pavexc_cli_client::commands::generate::{BlueprintArgument, GenerateError};
+use pavexc_cli_client::commands::new::NewError;
+use pavexc_cli_client::Client;
 use tracing_chrome::{ChromeLayerBuilder, FlushGuard};
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::layer::SubscriberExt;
@@ -109,7 +113,7 @@ fn init_telemetry() -> FlushGuard {
     guard
 }
 
-fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
+fn main() -> Result<ExitCode, miette::Error> {
     let cli = Cli::parse();
     miette::set_hook(Box::new(move |_| {
         let mut handler = pavex_miette::PavexMietteHandlerOpts::new();
@@ -118,13 +122,8 @@ fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
         } else {
             handler = handler.without_cause_chain()
         };
-        // This is an undocumented feature that allows us to force set the width of the
-        // terminal as seen by the graphical error handler.
-        // This is useful for testing/doc-generation purposes.
-        if let Ok(width) = std::env::var("PAVEX_TTY_WIDTH") {
-            if let Ok(width) = width.parse::<usize>() {
-                handler = handler.width(width);
-            }
+        if let Some(width) = pavex_cli::env::tty_width() {
+            handler = handler.width(width);
         }
         match cli.color {
             Color::Auto => {}
@@ -143,122 +142,111 @@ fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
     } else {
         None
     };
+
+    let color_profile = match cli.color {
+        Color::Auto => pavexc_cli_client::config::Color::Auto,
+        Color::Always => pavexc_cli_client::config::Color::Always,
+        Color::Never => pavexc_cli_client::config::Color::Never,
+    };
+    let mut client = Client::new().color(color_profile);
+    if cli.debug {
+        client = client.debug();
+    } else {
+        client = client.no_debug();
+    }
+
+    let system_home_dir = xdg_home::home_dir().ok_or_else(|| {
+        miette::miette!("Failed to get the system home directory from the environment")
+    })?;
+    let locator = PavexLocator::new(&system_home_dir);
+    let mut shell = Shell::new();
+
     match cli.command {
         Commands::Generate {
             blueprint,
             diagnostics,
             output,
-        } => generate(blueprint, diagnostics, output, cli.color),
-        Commands::New { path } => scaffold_project(path),
+        } => generate(&mut shell, client, &locator, blueprint, diagnostics, output),
+        Commands::New { path } => scaffold_project(client, &locator, &mut shell, path),
     }
+    .map_err(anyhow2miette)
 }
 
-#[tracing::instrument("Generate server sdk")]
+#[tracing::instrument("Generate server sdk", skip(client, locator))]
 fn generate(
+    shell: &mut Shell,
+    mut client: Client,
+    locator: &PavexLocator,
     blueprint: PathBuf,
     diagnostics: Option<PathBuf>,
     output: PathBuf,
-    color_profile: Color,
-) -> Result<ExitCode, Box<dyn std::error::Error>> {
-    let color_on_stderr = use_color_on_stderr(color_profile);
-
-    let blueprint = {
-        let file = fs_err::OpenOptions::new().read(true).open(blueprint)?;
-        ron::de::from_reader(&file)?
+) -> Result<ExitCode, anyhow::Error> {
+    let pavexc_cli_path = if let Some(pavexc_override) = pavex_cli::env::pavexc_override() {
+        pavexc_override
+    } else {
+        // Match the version of the `pavexc` binary with the version of the `pavex` library
+        // crate used in the current workspace.
+        let package_graph = compute_package_graph()
+            .context("Failed to compute package graph for the current workspace")?;
+        get_or_install_from_graph(shell, locator, &package_graph)
+            .context("Failed to get or install the `pavexc` binary")?
     };
-    // We use the path to the generated application crate as a fingerprint for the project.
-    let project_fingerprint = output.to_string_lossy().into_owned();
-    let app = match App::build(blueprint, project_fingerprint) {
-        Ok(a) => a,
-        Err(errors) => {
-            for e in errors {
-                if color_on_stderr {
-                    eprintln!("{}: {e:?}", "ERROR".bold().red());
-                } else {
-                    eprintln!("ERROR: {e:?}");
-                };
-            }
-            return Ok(ExitCode::FAILURE);
+    client = client.pavexc_cli_path(pavexc_cli_path);
+
+    let blueprint = BlueprintArgument::Path(blueprint);
+    let mut cmd = client.generate(blueprint, output);
+    if let Some(diagnostics) = diagnostics {
+        cmd = cmd.diagnostics_path(diagnostics)
+    };
+
+    match cmd.execute() {
+        Ok(()) => Ok(ExitCode::SUCCESS),
+        Err(GenerateError::NonZeroExitCode(e)) => Ok(ExitCode::from(e.code as u8)),
+        Err(e) => Err(e.into()),
+    }
+}
+
+#[tracing::instrument("Scaffold new project", skip(client, locator))]
+fn scaffold_project(
+    mut client: Client,
+    locator: &PavexLocator,
+    shell: &mut Shell,
+    path: PathBuf,
+) -> Result<ExitCode, anyhow::Error> {
+    let pavexc_cli_path = if let Some(pavexc_override) = pavex_cli::env::pavexc_override() {
+        pavexc_override
+    } else {
+        let version = State::new(locator)
+            .get_current_toolchain(shell)
+            .context("Failed to get the current toolchain")?;
+        get_or_install_from_version(shell, locator, &version)
+            .context("Failed to get or install the `pavexc` binary")?
+    };
+
+    client = client.pavexc_cli_path(pavexc_cli_path);
+
+    match client.new_command(path).execute() {
+        Ok(()) => Ok(ExitCode::SUCCESS),
+        Err(NewError::NonZeroExitCode(e)) => Ok(ExitCode::from(e.code as u8)),
+        Err(e) => Err(e.into()),
+    }
+}
+
+fn anyhow2miette(err: anyhow::Error) -> miette::Error {
+    #[derive(Debug, miette::Diagnostic)]
+    struct InteropError(anyhow::Error);
+
+    impl Display for InteropError {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            self.0.fmt(f)
         }
-    };
-    if let Some(diagnostic_path) = diagnostics {
-        app.diagnostic_representation()
-            .persist_flat(&diagnostic_path)?;
     }
-    let generated_app = app.codegen()?;
-    generated_app.persist(&output)?;
-    Ok(ExitCode::SUCCESS)
-}
 
-fn use_color_on_stderr(color_profile: Color) -> bool {
-    match color_profile {
-        Color::Auto => supports_color::on(Stream::Stderr).is_some(),
-        Color::Always => true,
-        Color::Never => false,
+    impl std::error::Error for InteropError {
+        fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+            self.0.source()
+        }
     }
-}
 
-static TEMPLATE_DIR: include_dir::Dir =
-    include_dir::include_dir!("$CARGO_MANIFEST_DIR/../../template");
-
-fn scaffold_project(path: PathBuf) -> Result<ExitCode, Box<dyn std::error::Error>> {
-    let name = path
-        .file_name()
-        .ok_or_else(|| {
-            anyhow::anyhow!("Failed to derive a project name from the provided path")
-        })?
-        .to_str()
-        .ok_or_else(|| {
-            anyhow::anyhow!("The last segment of the provided path must be valid UTF8 to generate a valid project name")
-        })?
-        .to_string();
-
-    let target_directory =
-        std::env::temp_dir().join(format!("pavex-template-{}", env!("VERGEN_GIT_SHA")));
-    fs_err::create_dir_all(&target_directory)
-        .context("Failed to create a temporary directory for Pavex's template")?;
-    TEMPLATE_DIR
-        .extract(&target_directory)
-        .context("Failed to save Pavex's template to a temporary directory")?;
-
-    let pavex_package_spec = std::env::var("CARGO_GENERATE_VALUE_PAVEX_PACKAGE_SPEC")
-        .unwrap_or_else(|_| {
-            r#"git = "https://github.com/LukeMathWalker/pavex", branch = "main""#.to_string()
-        });
-    let pavex_cli_client_package_spec =
-        std::env::var("CARGO_GENERATE_VALUE_PAVEX_CLI_CLIENT_PACKAGE_SPEC").unwrap_or_else(|_| {
-            r#"git = "https://github.com/LukeMathWalker/pavex", branch = "main""#.to_string()
-        });
-
-    let generate_args = GenerateArgs {
-        template_path: TemplatePath {
-            path: Some(
-                target_directory
-                    .to_str()
-                    .context("Failed to convert the template path to a UTF8 string")?
-                    .into(),
-            ),
-            ..Default::default()
-        },
-        destination: path
-            .parent()
-            .map(|p| {
-                use path_absolutize::Absolutize;
-
-                p.absolutize().map(|p| p.to_path_buf())
-            })
-            .transpose()
-            .context("Failed to convert destination path to an absolute path")?,
-        name: Some(name),
-        force_git_init: true,
-        silent: true,
-        define: vec![
-            format!("pavex_package_spec={pavex_package_spec}"),
-            format!("pavex_cli_client_package_spec={pavex_cli_client_package_spec}"),
-        ],
-        ..Default::default()
-    };
-    cargo_generate::generate(generate_args)
-        .context("Failed to scaffold the project from Pavex's default template")?;
-    return Ok(ExitCode::SUCCESS);
+    miette::Error::from(InteropError(err))
 }
