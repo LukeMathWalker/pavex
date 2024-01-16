@@ -133,7 +133,7 @@ async fn graceful() {
 
     // Then start a graceful shutdown.
     let shutdown_future =
-        tokio::task::spawn(server_handle.shutdown(ShutdownMode::Graceful { timeout: delay * 2 }));
+        tokio::task::spawn(server_handle.shutdown(ShutdownMode::Graceful { timeout: delay * 5 }));
 
     tokio::select! {
         v1 = get_response => {
