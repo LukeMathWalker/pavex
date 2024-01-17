@@ -1,7 +1,10 @@
-mod cargo_install;
+pub mod cargo_install;
 pub mod env;
 pub mod locator;
 pub mod package_graph;
 pub mod pavexc;
+pub mod prebuilt;
 pub mod state;
 pub mod toolchain;
+pub mod utils;
+pub mod version;

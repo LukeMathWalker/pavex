@@ -9,7 +9,6 @@ use std::path::{Path, PathBuf};
 
 mod install;
 mod location;
-mod prebuilt;
 mod version;
 
 static PAVEX_GITHUB_URL: &str = "https://github.com/LukeMathWalker/pavex";
