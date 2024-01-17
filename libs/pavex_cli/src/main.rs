@@ -7,6 +7,7 @@ use std::str::FromStr;
 
 use clap::{Parser, Subcommand};
 use pavex_cli::cargo_install::{cargo_install, GitSourceRevision, Source};
+use pavex_cli::confirmation::confirm;
 use pavex_cli::locator::PavexLocator;
 use pavex_cli::package_graph::compute_package_graph;
 use pavex_cli::pavexc::{get_or_install_from_graph, get_or_install_from_version};
@@ -195,7 +196,7 @@ fn main() -> Result<ExitCode, miette::Error> {
         Commands::New { path } => scaffold_project(client, &locator, &mut shell, path),
         Commands::Self_ { command } => match command {
             SelfCommands::Update => update(&mut shell),
-            SelfCommands::Uninstall { y } => uninstall(&mut shell),
+            SelfCommands::Uninstall { y } => uninstall(&mut shell, !y, locator),
         },
     }
     .map_err(utils::anyhow2miette)
@@ -261,8 +262,27 @@ fn scaffold_project(
     }
 }
 
-#[tracing::instrument("Uninstall Pavex CLI", skip(shell))]
-fn uninstall(shell: &mut Shell) -> Result<ExitCode, anyhow::Error> {
+#[tracing::instrument("Uninstall Pavex CLI", skip(shell, locator))]
+fn uninstall(
+    shell: &mut Shell,
+    must_prompt_user: bool,
+    locator: PavexLocator,
+) -> Result<ExitCode, anyhow::Error> {
+    shell.warn(
+        "Thanks for hacking with Pavex!\n\
+This process will uninstall Pavex and all its associated data from your system.",
+    )?;
+    if must_prompt_user {
+        let continue_ = confirm("\nDo you wish to continue? (y/N)", false)?;
+        if !continue_ {
+            shell.status("Abort", "Uninstalling Pavex CLI")?;
+            return Ok(ExitCode::SUCCESS);
+        }
+    }
+
+    fs_err::remove_dir_all(locator.root_dir()).context("Failed to remove Pavex data")?;
+    self_replace::self_delete().context("Failed to delete the current Pavex CLI binary")?;
+
     Ok(ExitCode::SUCCESS)
 }
 
