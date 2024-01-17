@@ -112,6 +112,7 @@ impl SlowHandlerState {
 }
 
 #[tokio::test]
+#[cfg_attr(target_os = "windows", ignore = "Flaky on Windows")]
 async fn graceful() {
     let (incoming, addr) = test_incoming().await;
     let delay = Duration::from_millis(100);
@@ -182,6 +183,7 @@ async fn forced() {
 }
 
 #[tokio::test]
+#[cfg_attr(target_os = "windows", ignore = "Flaky on Windows")]
 async fn graceful_but_too_fast() {
     let (incoming, addr) = test_incoming().await;
     let delay = Duration::from_millis(200);

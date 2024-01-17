@@ -1,5 +1,5 @@
 use crate::cargo_install::{cargo_install, GitSourceRevision, Source};
-use crate::pavexc::prebuilt::download_prebuilt;
+use crate::prebuilt::{download_prebuilt, PrebuiltBinaryKind};
 use cargo_like_utils::shell::Shell;
 use guppy::graph::PackageSource;
 use guppy::Version;
@@ -159,7 +159,7 @@ pub(super) fn install(
 
     if try_prebuilt {
         let _ = shell.status("Downloading", format!("prebuilt `pavexc@{version}` binary"));
-        match download_prebuilt(pavexc_cli_path, version) {
+        match download_prebuilt(pavexc_cli_path, PrebuiltBinaryKind::Pavexc, version) {
             Ok(_) => {
                 let _ = shell.status("Downloaded", format!("prebuilt `pavexc@{version}` binary"));
                 return Ok(());

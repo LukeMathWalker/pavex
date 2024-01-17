@@ -1,18 +1,25 @@
 use anyhow::Context;
 use cargo_like_utils::shell::Shell;
 use std::fmt::{Display, Formatter};
-use std::path::PathBuf;
+use std::io::ErrorKind;
+use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::str::FromStr;
 
 use clap::{Parser, Subcommand};
+use pavex_cli::cargo_install::{cargo_install, GitSourceRevision, Source};
+use pavex_cli::confirmation::confirm;
 use pavex_cli::locator::PavexLocator;
 use pavex_cli::package_graph::compute_package_graph;
 use pavex_cli::pavexc::{get_or_install_from_graph, get_or_install_from_version};
+use pavex_cli::prebuilt::{download_prebuilt, PrebuiltBinaryKind};
 use pavex_cli::state::State;
+use pavex_cli::utils;
+use pavex_cli::version::latest_released_version;
 use pavexc_cli_client::commands::generate::{BlueprintArgument, GenerateError};
 use pavexc_cli_client::commands::new::NewError;
 use pavexc_cli_client::Client;
+use semver::Version;
 use tracing_chrome::{ChromeLayerBuilder, FlushGuard};
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::layer::SubscriberExt;
@@ -70,27 +77,47 @@ impl FromStr for Color {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Generate application runtime code according to an application blueprint.
+    /// Generate the server SDK code for an application blueprint.
     Generate {
         /// The source path for the serialized application blueprint.
         #[clap(short, long, value_parser)]
         blueprint: PathBuf,
-        /// Optional. If provided, pavex will serialize diagnostic information about
+        /// Optional.
+        /// If provided, Pavex will serialize diagnostic information about
         /// the application to the specified path.
         #[clap(long, value_parser)]
         diagnostics: Option<PathBuf>,
-        /// The path to the directory that will contain the manifest and the source code for the generated application crate.  
-        /// If the provided path is relative, it is interpreted as relative to the root of the current workspace.
+        /// The directory that will contain the newly generated server SDK crate.
+        /// If the directory path is relative,
+        /// it is interpreted as relative to the root of the current workspace.
         #[clap(short, long, value_parser)]
         output: PathBuf,
     },
     /// Scaffold a new Pavex project at <PATH>.
     New {
-        /// The path of the new directory that will contain the project files.  
+        /// The directory that will contain the project files.
         ///
         /// If any of the intermediate directories in the path don't exist, they'll be created.
         #[arg(index = 1)]
         path: PathBuf,
+    },
+    /// Modify the installation of the Pavex CLI.
+    #[command(name = "self")]
+    Self_ {
+        #[clap(subcommand)]
+        command: SelfCommands,
+    },
+}
+
+#[derive(Subcommand)]
+enum SelfCommands {
+    /// Download and install a newer version of Pavex CLI, if available.
+    Update,
+    /// Uninstall Pavex CLI and remove all its dependencies and artifacts.
+    Uninstall {
+        /// Don't ask for confirmation before uninstalling Pavex CLI.
+        #[clap(short, long, value_parser)]
+        y: bool,
     },
 }
 
@@ -168,11 +195,15 @@ fn main() -> Result<ExitCode, miette::Error> {
             output,
         } => generate(&mut shell, client, &locator, blueprint, diagnostics, output),
         Commands::New { path } => scaffold_project(client, &locator, &mut shell, path),
+        Commands::Self_ { command } => match command {
+            SelfCommands::Update => update(&mut shell),
+            SelfCommands::Uninstall { y } => uninstall(&mut shell, !y, locator),
+        },
     }
-    .map_err(anyhow2miette)
+    .map_err(utils::anyhow2miette)
 }
 
-#[tracing::instrument("Generate server sdk", skip(client, locator))]
+#[tracing::instrument("Generate server sdk", skip(client, locator, shell))]
 fn generate(
     shell: &mut Shell,
     mut client: Client,
@@ -206,7 +237,7 @@ fn generate(
     }
 }
 
-#[tracing::instrument("Scaffold new project", skip(client, locator))]
+#[tracing::instrument("Scaffold new project", skip(client, locator, shell))]
 fn scaffold_project(
     mut client: Client,
     locator: &PavexLocator,
@@ -232,21 +263,100 @@ fn scaffold_project(
     }
 }
 
-fn anyhow2miette(err: anyhow::Error) -> miette::Error {
-    #[derive(Debug, miette::Diagnostic)]
-    struct InteropError(anyhow::Error);
-
-    impl Display for InteropError {
-        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-            self.0.fmt(f)
+#[tracing::instrument("Uninstall Pavex CLI", skip(shell, locator))]
+fn uninstall(
+    shell: &mut Shell,
+    must_prompt_user: bool,
+    locator: PavexLocator,
+) -> Result<ExitCode, anyhow::Error> {
+    shell.status("Thanks", "for hacking with Pavex!")?;
+    if must_prompt_user {
+        shell.warn(
+            "This process will uninstall Pavex and all its associated data from your system.",
+        )?;
+        let continue_ = confirm("\nDo you wish to continue? (y/N)", false)?;
+        if !continue_ {
+            shell.status("Abort", "Uninstalling Pavex CLI")?;
+            return Ok(ExitCode::SUCCESS);
         }
     }
 
-    impl std::error::Error for InteropError {
-        fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-            self.0.source()
+    shell.status("Uninstalling", "Pavex")?;
+    if let Err(e) = fs_err::remove_dir_all(locator.root_dir()) {
+        if ErrorKind::NotFound != e.kind() {
+            Err(e).context("Failed to remove Pavex data")?;
+        }
+    }
+    self_replace::self_delete().context("Failed to delete the current Pavex CLI binary")?;
+    shell.status("Uninstalled", "Pavex")?;
+
+    Ok(ExitCode::SUCCESS)
+}
+
+#[tracing::instrument("Update Pavex CLI", skip(shell))]
+fn update(shell: &mut Shell) -> Result<ExitCode, anyhow::Error> {
+    shell.status("Checking", "for updates to Pavex CLI")?;
+    let latest_version = latest_released_version()?;
+    let current_version = pavex_cli::env::version();
+    if latest_version <= current_version {
+        shell.status(
+            "Up to date",
+            format!("{current_version} is the most recent version"),
+        )?;
+        return Ok(ExitCode::SUCCESS);
+    }
+
+    shell.status(
+        "Update available",
+        format!("You're running {current_version}, but {latest_version} is available"),
+    )?;
+
+    let new_cli_path = tempfile::NamedTempFile::new()
+        .context("Failed to create a temporary file to download the new Pavex CLI binary")?;
+    download_or_compile(
+        shell,
+        PrebuiltBinaryKind::Pavex,
+        &latest_version,
+        new_cli_path.path(),
+    )?;
+    self_replace::self_replace(new_cli_path.path())
+        .context("Failed to replace the current Pavex CLI with the newly downloaded version")?;
+
+    Ok(ExitCode::SUCCESS)
+}
+
+fn download_or_compile(
+    shell: &mut Shell,
+    kind: PrebuiltBinaryKind,
+    version: &Version,
+    destination: &Path,
+) -> Result<(), anyhow::Error> {
+    let _ = shell.status("Downloading", format!("prebuilt `{kind}@{version}` binary"));
+    match download_prebuilt(destination, kind, version) {
+        Ok(_) => {
+            let _ = shell.status("Downloaded", format!("prebuilt `{kind}@{version}` binary"));
+            return Ok(());
+        }
+        Err(e) => {
+            let _ = shell.warn("Download failed: {e}.\nI'll try compiling from source instead.");
+            tracing::warn!(
+                error.msg = %e,
+                error.cause = ?e,
+                "Failed to download prebuilt `{kind}` binary. I'll try to build it from source instead.",
+            );
         }
     }
 
-    miette::Error::from(InteropError(err))
+    let _ = shell.status("Compiling", format!("`{kind}@{version}` from source"));
+    cargo_install(
+        Source::Git {
+            url: "https://github.com/LukeMathWalker/pavex".into(),
+            rev: GitSourceRevision::Tag(version.to_string()),
+        },
+        &kind.to_string(),
+        &format!("{kind}_cli"),
+        destination,
+    )?;
+    let _ = shell.status("Compiled", format!("`{kind}@{version}` from source"));
+    Ok(())
 }
