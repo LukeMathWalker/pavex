@@ -1,6 +1,7 @@
 use anyhow::Context;
 use cargo_like_utils::shell::Shell;
 use std::fmt::{Display, Formatter};
+use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::str::FromStr;
@@ -268,11 +269,11 @@ fn uninstall(
     must_prompt_user: bool,
     locator: PavexLocator,
 ) -> Result<ExitCode, anyhow::Error> {
-    shell.warn(
-        "Thanks for hacking with Pavex!\n\
-This process will uninstall Pavex and all its associated data from your system.",
-    )?;
+    shell.status("Thanks", "for hacking with Pavex!")?;
     if must_prompt_user {
+        shell.warn(
+            "This process will uninstall Pavex and all its associated data from your system.",
+        )?;
         let continue_ = confirm("\nDo you wish to continue? (y/N)", false)?;
         if !continue_ {
             shell.status("Abort", "Uninstalling Pavex CLI")?;
@@ -280,15 +281,21 @@ This process will uninstall Pavex and all its associated data from your system."
         }
     }
 
-    fs_err::remove_dir_all(locator.root_dir()).context("Failed to remove Pavex data")?;
+    shell.status("Uninstalling", "Pavex")?;
+    if let Err(e) = fs_err::remove_dir_all(locator.root_dir()) {
+        if ErrorKind::NotFound != e.kind() {
+            Err(e).context("Failed to remove Pavex data")?;
+        }
+    }
     self_replace::self_delete().context("Failed to delete the current Pavex CLI binary")?;
+    shell.status("Uninstalled", "Pavex")?;
 
     Ok(ExitCode::SUCCESS)
 }
 
 #[tracing::instrument("Update Pavex CLI", skip(shell))]
 fn update(shell: &mut Shell) -> Result<ExitCode, anyhow::Error> {
-    shell.status("Checking for updates", "Pavex CLI")?;
+    shell.status("Checking", "for updates to Pavex CLI")?;
     let latest_version = latest_released_version()?;
     let current_version = pavex_cli::env::version();
     if latest_version <= current_version {
