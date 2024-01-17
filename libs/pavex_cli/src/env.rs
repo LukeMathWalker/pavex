@@ -28,6 +28,7 @@ pub const fn commit_sha() -> &'static str {
 }
 
 /// The version of `pavex_cli` that is being used.
-pub const fn version() -> &'static str {
-    env!("CARGO_PKG_VERSION")
+pub fn version() -> semver::Version {
+    semver::Version::parse(env!("CARGO_PKG_VERSION"))
+        .expect("CLI version is not valid according to SemVer")
 }
