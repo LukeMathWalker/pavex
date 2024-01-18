@@ -1,0 +1,19 @@
+[package]
+name = "generate_from_path"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.79"
+toml = "0.8.8"
+path-absolutize = "3.1.1"
+tracing = "0.1.40"
+tempfile = "3"
+fs-err = "2.11.0"
+liquid = "0.26.4"
+liquid-core = "0.26.4"
+heck = "0.5.0-rc.1"
+indicatif = "0.17.7"
+walkdir = "2.4.0"
+sanitize-filename = "0.5"
+regex = "1.10.2"
