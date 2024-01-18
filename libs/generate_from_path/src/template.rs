@@ -6,13 +6,11 @@ use indicatif::{MultiProgress, ProgressBar};
 use liquid::model::KString;
 use liquid::Parser;
 use liquid_core::{Object, Value};
-use std::cell::RefCell;
 use std::fs;
 use std::path::Path;
-use std::sync::{Arc, Mutex};
 use walkdir::WalkDir;
 
-pub type LiquidObjectResource = Arc<Mutex<RefCell<Object>>>;
+pub type LiquidObjectResource = Object;
 
 /// create liquid object for the template, and pre-fill it with all known variables
 pub fn create_liquid_object(args: &GenerateArgs) -> anyhow::Result<LiquidObjectResource> {
@@ -21,13 +19,13 @@ pub fn create_liquid_object(args: &GenerateArgs) -> anyhow::Result<LiquidObjectR
         "project-name".into(),
         Value::Scalar(args.name.clone().into()),
     );
-    Ok(Arc::new(Mutex::new(RefCell::new(liquid_object))))
+    Ok(liquid_object)
 }
 
 #[allow(clippy::too_many_arguments)]
 pub fn walk_dir(
     project_dir: &Path,
-    liquid_object: &LiquidObjectResource,
+    liquid_object: &mut LiquidObjectResource,
     liquid_engine: &Parser,
     mp: &mut MultiProgress,
     verbose: bool,
@@ -118,7 +116,7 @@ pub fn walk_dir(
 }
 
 fn template_process_file(
-    context: &LiquidObjectResource,
+    context: &mut LiquidObjectResource,
     parser: &Parser,
     file: &Path,
 ) -> liquid_core::Result<String> {
@@ -128,27 +126,13 @@ fn template_process_file(
 }
 
 pub fn render_string_gracefully(
-    context: &LiquidObjectResource,
+    context: &mut LiquidObjectResource,
     parser: &Parser,
     content: &str,
 ) -> liquid_core::Result<String> {
     let template = parser.parse(content)?;
 
-    // Liquid engine needs access to the context.
-    // At the same time, our own `rhai` liquid filter may also need it, but doesn't have access
-    // to the one provided to the liquid engine, thus it has it's own cloned `Arc` for it. These
-    // WILL collide and cause the `Mutex` to hang in case the user tries to modify any variable
-    // inside a rhai filter script - so we currently clone it, and let any rhai filter manipulate
-    // the original. Note that hooks do not run at the same time as liquid, thus they do not
-    // suffer these limitations.
-    let render_object_view = {
-        let ref_cell = context
-            .lock()
-            .map_err(|_| liquid_core::Error::with_msg("A lock was poisoned"))?;
-        let object_view = ref_cell.borrow();
-        object_view.to_owned()
-    };
-    let render_result = template.render(&render_object_view);
+    let render_result = template.render(context);
 
     match render_result {
         ctx @ Ok(_) => ctx,
@@ -162,12 +146,8 @@ pub fn render_string_gracefully(
                 let captures = requested_var.captures(msg.as_str()).unwrap();
                 if let Some(Some(req_var)) = captures.iter().last() {
                     let missing_variable = KString::from(req_var.as_str().to_string());
-                    // The missing variable might have been supplied by a rhai filter,
-                    // if not, substitute an empty string before retrying
+                    // Substitute an empty string before retrying
                     let _ = context
-                        .lock()
-                        .map_err(|_| liquid_core::Error::with_msg("A lock was poisoned"))?
-                        .borrow_mut()
                         .entry(missing_variable)
                         .or_insert_with(|| Value::scalar("".to_string()));
                     return render_string_gracefully(context, parser, content);

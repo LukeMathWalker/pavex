@@ -12,14 +12,11 @@ pub use project_name_input::ProjectNameInput;
 use std::path::Path;
 
 pub fn set_project_name_variables(
-    liquid_object: &LiquidObjectResource,
+    liquid_object: &mut LiquidObjectResource,
     project_dir: &ProjectDir,
     project_name: &ProjectName,
     crate_name: &CrateName,
 ) -> anyhow::Result<()> {
-    let ref_cell = liquid_object.lock().expect("Failed to acquire lock");
-    let mut liquid_object = ref_cell.borrow_mut();
-
     liquid_object.insert(
         "project-name".into(),
         Value::Scalar(project_name.as_ref().to_owned().into()),

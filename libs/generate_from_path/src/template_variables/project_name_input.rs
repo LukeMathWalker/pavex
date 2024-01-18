@@ -7,9 +7,7 @@ pub struct ProjectNameInput(String);
 
 impl From<&LiquidObjectResource> for ProjectNameInput {
     fn from(liquid_object: &LiquidObjectResource) -> Self {
-        let object = liquid_object.lock().expect("Failed to lock liquid object");
-        let object = object.borrow();
-        let name = object
+        let name = liquid_object
             .get("project-name")
             .expect("`project-name` should be in liquid object");
 

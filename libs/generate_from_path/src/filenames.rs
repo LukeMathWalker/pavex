@@ -7,7 +7,7 @@ use std::path::{Component, Path, PathBuf};
 pub fn substitute_filename(
     filepath: &Path,
     parser: &Parser,
-    context: &LiquidObjectResource,
+    context: &mut LiquidObjectResource,
 ) -> Result<PathBuf, anyhow::Error> {
     let mut path = PathBuf::new();
     for elem in filepath.components() {

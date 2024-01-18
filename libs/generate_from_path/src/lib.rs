@@ -34,19 +34,19 @@ pub fn generate(args: GenerateArgs) -> Result<PathBuf, anyhow::Error> {
 }
 
 fn expand_template(template_dir: &Path, args: &GenerateArgs) -> anyhow::Result<PathBuf> {
-    let liquid_object = create_liquid_object(args)?;
+    let mut liquid_object = create_liquid_object(args)?;
 
     let project_name_input = ProjectNameInput::from(&liquid_object);
     let destination = ProjectDir::try_from(args)?;
     let project_name = ProjectName::from(&project_name_input);
     let crate_name = CrateName::from(&project_name_input);
-    set_project_name_variables(&liquid_object, &destination, &project_name, &crate_name)?;
+    set_project_name_variables(&mut liquid_object, &destination, &project_name, &crate_name)?;
 
     info!("Destination: {destination}");
     info!("project-name: {project_name}");
     info!("Generating template");
 
-    add_defined_values(&liquid_object, &args);
+    add_defined_values(&mut liquid_object, &args);
 
     ignore_me::remove_unneeded_files(template_dir, &args.ignore, args.verbose)?;
     let mut pbar = progressbar::new();
@@ -54,7 +54,7 @@ fn expand_template(template_dir: &Path, args: &GenerateArgs) -> anyhow::Result<P
 
     template::walk_dir(
         template_dir,
-        &liquid_object,
+        &mut liquid_object,
         &liquid_engine,
         &mut pbar,
         args.verbose,
@@ -94,11 +94,7 @@ fn git_init(project_dir: &Path) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn add_defined_values(liquid_object_resource: &LiquidObjectResource, generate_args: &GenerateArgs) {
-    let liquid_object = liquid_object_resource
-        .lock()
-        .expect("Failed to lock liquid object");
-    let mut liquid_object = liquid_object.borrow_mut();
+fn add_defined_values(liquid_object: &mut LiquidObjectResource, generate_args: &GenerateArgs) {
     for (key, value) in &generate_args.define {
         liquid_object.insert(
             key.into(),
