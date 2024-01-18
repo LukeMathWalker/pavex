@@ -39,42 +39,45 @@ fn sanitize_filename(filename: &str) -> String {
 mod tests {
     use super::*;
     use liquid::{model::Value, Object};
-    use std::{
-        cell::RefCell,
-        sync::{Arc, Mutex},
-    };
 
     #[test]
     fn should_do_happy_path() {
         assert_eq!(
-            substitute_filename("{{author}}.rs", &prepare_context("sassman")).unwrap(),
+            substitute_filename("{{author}}.rs", &mut prepare_context("sassman")).unwrap(),
             "sassman.rs"
         );
         #[cfg(unix)]
         assert_eq!(
-            substitute_filename("/tmp/project/{{author}}.rs", &prepare_context("sassman")).unwrap(),
+            substitute_filename(
+                "/tmp/project/{{author}}.rs",
+                &mut prepare_context("sassman")
+            )
+            .unwrap(),
             "/tmp/project/sassman.rs"
         );
         #[cfg(unix)]
         assert_eq!(
             substitute_filename(
                 "/tmp/project/{{author}}/{{author}}.rs",
-                &prepare_context("sassman")
+                &mut prepare_context("sassman")
             )
             .unwrap(),
             "/tmp/project/sassman/sassman.rs"
         );
         #[cfg(windows)]
         assert_eq!(
-            substitute_filename("C:/tmp/project/{{author}}.rs", &prepare_context("sassman"))
-                .unwrap(),
+            substitute_filename(
+                "C:/tmp/project/{{author}}.rs",
+                &mut prepare_context("sassman")
+            )
+            .unwrap(),
             "C:\\tmp\\project\\sassman.rs"
         );
         #[cfg(windows)]
         assert_eq!(
             substitute_filename(
                 "C:/tmp/project/{{author}}/{{author}}.rs",
-                &prepare_context("sassman")
+                &mut prepare_context("sassman")
             )
             .unwrap(),
             "C:\\tmp\\project\\sassman\\sassman.rs"
@@ -85,14 +88,15 @@ mod tests {
     fn should_prevent_invalid_filenames() {
         #[cfg(unix)]
         assert_eq!(
-            substitute_filename("/tmp/project/{{author}}.rs", &prepare_context("s/a/s")).unwrap(),
+            substitute_filename("/tmp/project/{{author}}.rs", &mut prepare_context("s/a/s"))
+                .unwrap(),
             "/tmp/project/s_a_s.rs"
         );
         #[cfg(unix)]
         assert_eq!(
             substitute_filename(
                 "/tmp/project/{{author}}/{{author}}.rs",
-                &prepare_context("s/a/s")
+                &mut prepare_context("s/a/s")
             )
             .unwrap(),
             "/tmp/project/s_a_s/s_a_s.rs"
@@ -106,7 +110,7 @@ mod tests {
         assert_eq!(
             substitute_filename(
                 "C:/tmp/project/{{author}}/{{author}}.rs",
-                &prepare_context("s/a/s")
+                &mut prepare_context("s/a/s")
             )
             .unwrap(),
             "C:\\tmp\\project\\s_a_s\\s_a_s.rs"
@@ -119,7 +123,7 @@ mod tests {
         assert_eq!(
             substitute_filename(
                 "/tmp/project/{{author}}.rs",
-                &prepare_context("../../etc/passwd")
+                &mut prepare_context("../../etc/passwd")
             )
             .unwrap(),
             "/tmp/project/.._.._etc_passwd.rs"
@@ -128,7 +132,7 @@ mod tests {
         assert_eq!(
             substitute_filename(
                 "/tmp/project/{{author}}/main.rs",
-                &prepare_context("../../etc/passwd")
+                &mut prepare_context("../../etc/passwd")
             )
             .unwrap(),
             "/tmp/project/.._.._etc_passwd/main.rs"
@@ -137,7 +141,7 @@ mod tests {
         assert_eq!(
             substitute_filename(
                 "C:/tmp/project/{{author}}.rs",
-                &prepare_context("../../etc/passwd")
+                &mut prepare_context("../../etc/passwd")
             )
             .unwrap(),
             "C:\\tmp\\project\\.._.._etc_passwd.rs"
@@ -146,7 +150,7 @@ mod tests {
         assert_eq!(
             substitute_filename(
                 "C:/tmp/project/{{author}}/main.rs",
-                &prepare_context("../../etc/passwd")
+                &mut prepare_context("../../etc/passwd")
             )
             .unwrap(),
             "C:\\tmp\\project\\.._.._etc_passwd\\main.rs"
@@ -159,10 +163,10 @@ mod tests {
         ctx.entry("author")
             .or_insert(Value::scalar(value.to_string()));
 
-        Arc::new(Mutex::new(RefCell::new(ctx)))
+        ctx
     }
 
-    fn substitute_filename(f: &str, ctx: &LiquidObjectResource) -> Result<String> {
+    fn substitute_filename(f: &str, ctx: &mut LiquidObjectResource) -> anyhow::Result<String> {
         let parser = Parser::default();
 
         super::substitute_filename(f.as_ref(), &parser, ctx)
