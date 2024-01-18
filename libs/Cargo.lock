@@ -347,7 +347,7 @@ dependencies = [
  "fs-err",
  "git2",
  "gix-config",
- "heck",
+ "heck 0.4.1",
  "home",
  "ignore",
  "indexmap",
@@ -492,7 +492,7 @@ version = "4.4.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf9804afaaf59a91e75b022a30fb7229a7901f60c755489cc61c9b423b836442"
 dependencies = [
- "heck",
+ "heck 0.4.1",
  "proc-macro2",
  "quote",
  "syn",
@@ -962,6 +962,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "generate_from_path"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "fs-err",
+ "heck 0.5.0-rc.1",
+ "indicatif",
+ "liquid",
+ "liquid-core",
+ "path-absolutize",
+ "regex",
+ "sanitize-filename",
+ "tempfile",
+ "toml 0.8.8",
+ "tracing",
+ "walkdir",
+]
+
+[[package]]
 name = "generic-array"
 version = "0.14.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1356,6 +1375,12 @@ name = "heck"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "95505c38b4572b2d910cecb0281560f54b440a19336cbbcb27bf6ce6adc6f5a8"
+
+[[package]]
+name = "heck"
+version = "0.5.0-rc.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "28eaf72f9d21ee92f580d066b93d05742a4d188e91016b8165dc7a75c0475309"
 
 [[package]]
 name = "hermit-abi"

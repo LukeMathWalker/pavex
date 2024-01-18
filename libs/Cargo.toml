@@ -1,5 +1,5 @@
 [workspace]
-members = ["./pavex*", "persist_if_changed"]
+members = ["./pavex*", "generate_from_path", "persist_if_changed"]
 resolver = "2"
 
 [workspace.dependencies]
