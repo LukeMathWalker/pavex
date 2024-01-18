@@ -1,4 +1,3 @@
-use crate::scoped_working_directory::ScopedWorkingDirectory;
 use crate::template::{create_liquid_object, LiquidObjectResource};
 use crate::template_variables::{
     set_project_name_variables, CrateName, ProjectDir, ProjectName, ProjectNameInput,
@@ -13,7 +12,6 @@ use tracing::info;
 mod filenames;
 mod ignore_me;
 mod progressbar;
-mod scoped_working_directory;
 mod template;
 mod template_variables;
 
@@ -29,8 +27,6 @@ pub struct GenerateArgs {
 }
 
 pub fn generate(args: GenerateArgs) -> Result<PathBuf, anyhow::Error> {
-    let _working_dir_scope = ScopedWorkingDirectory::default();
-
     let template_dir = get_source_template_into_temp(&args.template_dir)?;
     let project_dir = expand_template(&template_dir.path(), &args)?;
 
