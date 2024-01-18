@@ -103,7 +103,11 @@ mod tests {
         );
         #[cfg(windows)]
         assert_eq!(
-            substitute_filename("C:/tmp/project/{{author}}.rs", &prepare_context("s/a/s")).unwrap(),
+            substitute_filename(
+                "C:/tmp/project/{{author}}.rs",
+                &mut prepare_context("s/a/s")
+            )
+            .unwrap(),
             "C:\\tmp\\project\\s_a_s.rs"
         );
         #[cfg(windows)]
