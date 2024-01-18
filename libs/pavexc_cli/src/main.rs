@@ -1,11 +1,12 @@
+use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
 use std::process::ExitCode;
 use std::str::FromStr;
 
 use anyhow::Context;
-use cargo_generate::{GenerateArgs, TemplatePath};
 use clap::{Parser, Subcommand};
+use generate_from_path::GenerateArgs;
 use owo_colors::OwoColorize;
 use pavexc::App;
 use supports_color::Stream;
@@ -199,10 +200,10 @@ fn use_color_on_stderr(color_profile: Color) -> bool {
 }
 
 static TEMPLATE_DIR: include_dir::Dir =
-    include_dir::include_dir!("$CARGO_MANIFEST_DIR/../../template");
+    include_dir::include_dir!("$CARGO_MANIFEST_DIR/../../template/template");
 
-fn scaffold_project(path: PathBuf) -> Result<ExitCode, Box<dyn std::error::Error>> {
-    let name = path
+fn scaffold_project(destination: PathBuf) -> Result<ExitCode, Box<dyn std::error::Error>> {
+    let name = destination
         .file_name()
         .ok_or_else(|| {
             anyhow::anyhow!("Failed to derive a project name from the provided path")
@@ -213,12 +214,12 @@ fn scaffold_project(path: PathBuf) -> Result<ExitCode, Box<dyn std::error::Error
         })?
         .to_string();
 
-    let target_directory =
-        std::env::temp_dir().join(format!("pavex-template-{}", env!("VERGEN_GIT_SHA")));
-    fs_err::create_dir_all(&target_directory)
+    let template_dir = tempfile::Builder::new()
+        .prefix(&format!("pavex-template-{}", env!("VERGEN_GIT_SHA")))
+        .tempdir()
         .context("Failed to create a temporary directory for Pavex's template")?;
     TEMPLATE_DIR
-        .extract(&target_directory)
+        .extract(&template_dir)
         .context("Failed to save Pavex's template to a temporary directory")?;
 
     let pavex_package_spec = std::env::var("CARGO_GENERATE_VALUE_PAVEX_PACKAGE_SPEC")
@@ -230,35 +231,33 @@ fn scaffold_project(path: PathBuf) -> Result<ExitCode, Box<dyn std::error::Error
             r#"git = "https://github.com/LukeMathWalker/pavex", branch = "main""#.to_string()
         });
 
-    let generate_args = GenerateArgs {
-        template_path: TemplatePath {
-            path: Some(
-                target_directory
-                    .to_str()
-                    .context("Failed to convert the template path to a UTF8 string")?
-                    .into(),
-            ),
-            ..Default::default()
-        },
-        destination: path
-            .parent()
-            .map(|p| {
-                use path_absolutize::Absolutize;
+    let mut define = HashMap::new();
+    define.insert("pavex_package_spec".to_string(), pavex_package_spec.clone());
+    define.insert(
+        "pavex_cli_client_package_spec".to_string(),
+        pavex_cli_client_package_spec.clone(),
+    );
 
-                p.absolutize().map(|p| p.to_path_buf())
-            })
-            .transpose()
-            .context("Failed to convert destination path to an absolute path")?,
-        name: Some(name),
-        force_git_init: true,
-        silent: true,
-        define: vec![
-            format!("pavex_package_spec={pavex_package_spec}"),
-            format!("pavex_cli_client_package_spec={pavex_cli_client_package_spec}"),
-        ],
-        ..Default::default()
+    let destination = {
+        use path_absolutize::Absolutize;
+
+        let path = destination
+            .parent()
+            .context("Failed to derive the parent directory of the provided path")?;
+        path.absolutize()
+            .map(|p| p.to_path_buf())
+            .context("Failed to convert destination path to an absolute path")?
     };
-    cargo_generate::generate(generate_args)
+    let generate_args = GenerateArgs {
+        template_dir: template_dir.path().to_path_buf(),
+        destination,
+        name,
+        define,
+        ignore: Some(vec!["target/".into(), "Cargo.lock".into(), ".idea".into()]),
+        overwrite: false,
+        verbose: true,
+    };
+    generate_from_path::generate(generate_args)
         .context("Failed to scaffold the project from Pavex's default template")?;
     return Ok(ExitCode::SUCCESS);
 }

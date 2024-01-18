@@ -7,5 +7,6 @@ fn main() -> Result<(), Box<dyn Error>> {
         // Emit VERGEN_GIT_SHA
         .git_sha(true)
         .emit()?;
+    println!("cargo:rerun-if-changed=../../template/template");
     Ok(())
 }

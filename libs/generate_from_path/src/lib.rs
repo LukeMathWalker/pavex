@@ -19,13 +19,13 @@ mod template_variables;
 
 #[derive(Debug)]
 pub struct GenerateArgs {
-    name: String,
-    template_dir: PathBuf,
-    destination: PathBuf,
-    define: HashMap<String, String>,
-    ignore: Option<Vec<String>>,
-    overwrite: bool,
-    verbose: bool,
+    pub name: String,
+    pub template_dir: PathBuf,
+    pub destination: PathBuf,
+    pub define: HashMap<String, String>,
+    pub ignore: Option<Vec<String>>,
+    pub overwrite: bool,
+    pub verbose: bool,
 }
 
 pub fn generate(args: GenerateArgs) -> Result<PathBuf, anyhow::Error> {
