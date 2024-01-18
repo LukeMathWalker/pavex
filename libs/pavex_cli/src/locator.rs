@@ -75,7 +75,8 @@ impl GitToolchainsLocator {
         let revision_sha = revision_sha.chars().take(7).collect::<String>();
         let toolchain_dir = self
             .git_toolchain_dir
-            .join(format!("{repository_hash}/{revision_sha}"));
+            .join(repository_hash)
+            .join(revision_sha);
         ToolchainLocator { toolchain_dir }
     }
 }
@@ -103,7 +104,8 @@ impl RegistryToolchainsLocator {
         let version = version.to_string().chars().take(7).collect::<String>();
         let toolchain_dir = self
             .registry_toolchain_dir
-            .join(format!("{registry_hash}/{version}"));
+            .join(registry_hash)
+            .join(version);
         ToolchainLocator { toolchain_dir }
     }
 }
