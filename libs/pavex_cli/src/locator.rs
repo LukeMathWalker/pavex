@@ -1,3 +1,4 @@
+use crate::cli_kind::CliKind;
 use semver::Version;
 use sha2::Digest;
 use std::path::{Path, PathBuf};
@@ -122,6 +123,6 @@ impl ToolchainLocator {
 
     /// Path to the `pavexc` binary for this toolchain.
     pub fn pavexc(&self) -> PathBuf {
-        self.toolchain_dir.join("pavexc")
+        self.toolchain_dir.join(CliKind::Pavexc.binary_filename())
     }
 }

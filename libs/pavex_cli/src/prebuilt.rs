@@ -1,32 +1,20 @@
+use crate::cli_kind::CliKind;
 use anyhow::Context;
 use guppy::Version;
 use std::io::Read;
 use std::path::Path;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum PrebuiltBinaryKind {
-    Pavex,
-    Pavexc,
-}
-
-impl std::fmt::Display for PrebuiltBinaryKind {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            PrebuiltBinaryKind::Pavex => write!(f, "pavex"),
-            PrebuiltBinaryKind::Pavexc => write!(f, "pavexc"),
-        }
-    }
-}
-
 /// Try downloading a prebuilt binary for the current host triple to the specified destination path.
 pub fn download_prebuilt(
     destination: &Path,
-    binary_kind: PrebuiltBinaryKind,
+    kind: CliKind,
     version: &Version,
 ) -> Result<(), DownloadPrebuiltError> {
     let host_triple = get_host_triple()?;
-    let url_prefix =
-        format!("https://github.com/LukeMathWalker/pavex/releases/download/{version}/{binary_kind}_cli-{host_triple}");
+    let url_prefix = format!(
+        "https://github.com/LukeMathWalker/pavex/releases/download/{version}/{}-{host_triple}",
+        kind.package_name()
+    );
     let download_url = match host_triple.as_str() {
         "x86_64-unknown-linux-gnu" | "x86_64-apple-darwin" | "aarch64-apple-darwin" => {
             format!("{url_prefix}.tar.xz")
@@ -57,7 +45,7 @@ pub fn download_prebuilt(
         .read_to_end(&mut bytes)
         .context(err_msg)?;
 
-    extract_binary(&download_url, binary_kind, bytes, destination)
+    extract_binary(&download_url, kind, bytes, destination)
         .context("Failed to unpack prebuilt binary")?;
 
     Ok(())
@@ -67,17 +55,11 @@ pub fn download_prebuilt(
 /// destination path.
 fn extract_binary(
     source_url: &str,
-    prebuilt_binary_kind: PrebuiltBinaryKind,
+    prebuilt_binary_kind: CliKind,
     bytes: Vec<u8>,
     destination: &Path,
 ) -> Result<(), anyhow::Error> {
-    let expected_filename = destination
-        .file_name()
-        .with_context(|| format!("{prebuilt_binary_kind}'s destination has no filename"))?
-        .to_str()
-        .with_context(|| {
-            format!("{prebuilt_binary_kind}'s destination filename is not valid UTF-8")
-        })?;
+    let expected_filename = prebuilt_binary_kind.binary_filename();
     if source_url.ends_with(".zip") {
         let mut archive = zip::ZipArchive::new(std::io::Cursor::new(bytes))?;
         for i in 0..archive.len() {
@@ -122,7 +104,7 @@ fn extract_binary(
         unimplemented!()
     }
     Err(anyhow::anyhow!(
-        "Failed to find the `{prebuilt_binary_kind}` binary in the downloaded archive"
+        "Failed to find `{expected_filename}` in the downloaded archive",
     ))
 }
 
