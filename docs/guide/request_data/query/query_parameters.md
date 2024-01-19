@@ -87,9 +87,9 @@ You can use the `serde`'s rename attribute to support the bracket style:
 ```rust
 #[derive(serde::Deserialize)]
 pub struct SearchParams {
-    // This will parse `?country_id[]=1&country_id[]=2&country_id[]=3`
+    // This will parse `?country_ids[]=1&country_ids[]=2&country_ids[]=3`
     // into a vector `vec![1, 2, 3]`.  
-    #[serde(rename = "country_id[]")]
+    #[serde(rename = "country_ids[]")]
     country_ids: Vec<u32>
 }
 ```
