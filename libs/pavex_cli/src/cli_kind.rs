@@ -23,8 +23,8 @@ impl CliKind {
         cfg_if::cfg_if! {
             if #[cfg(windows)] {
                 match self {
-                    CliTarget::Pavex => "pavex.exe",
-                    CliTarget::Pavexc => "pavexc.exe",
+                    CliKind::Pavex => "pavex.exe",
+                    CliKind::Pavexc => "pavexc.exe",
                 }
             } else {
                 match self {
