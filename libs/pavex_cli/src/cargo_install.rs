@@ -1,3 +1,4 @@
+use crate::cli_kind::CliKind;
 use anyhow::Context;
 use std::path::Path;
 use std::process::Stdio;
@@ -16,8 +17,7 @@ pub enum GitSourceRevision {
 /// Install a single binary via `cargo install` and copy it to the specified destination path.
 pub fn cargo_install(
     source: Source,
-    binary_name: &str,
-    package_name: &str,
+    kind: CliKind,
     destination: &Path,
 ) -> Result<(), anyhow::Error> {
     let temp_dir = tempfile::tempdir()?;
@@ -26,7 +26,7 @@ pub fn cargo_install(
         .arg("--root")
         .arg(temp_dir.path())
         .arg("--bin")
-        .arg(binary_name);
+        .arg(kind.binary_target_name());
     match source {
         Source::CratesIo { version } => {
             cmd.arg("--version");
@@ -51,7 +51,7 @@ pub fn cargo_install(
             }
         }
     }
-    cmd.arg(&package_name);
+    cmd.arg(kind.package_name());
     let cmd_debug = format!("{:?}", &cmd);
     let output = cmd
         .stdout(Stdio::inherit())
@@ -61,6 +61,9 @@ pub fn cargo_install(
     if !output.status.success() {
         anyhow::bail!("`{cmd_debug}` failed");
     }
-    fs_err::copy(temp_dir.path().join("bin").join(binary_name), destination)?;
+    fs_err::copy(
+        temp_dir.path().join("bin").join(kind.binary_filename()),
+        destination,
+    )?;
     Ok(())
 }

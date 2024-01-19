@@ -1,4 +1,5 @@
 pub mod cargo_install;
+pub mod cli_kind;
 pub mod confirmation;
 pub mod env;
 pub mod locator;

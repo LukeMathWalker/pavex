@@ -8,11 +8,12 @@ use std::str::FromStr;
 
 use clap::{Parser, Subcommand};
 use pavex_cli::cargo_install::{cargo_install, GitSourceRevision, Source};
+use pavex_cli::cli_kind::CliKind;
 use pavex_cli::confirmation::confirm;
 use pavex_cli::locator::PavexLocator;
 use pavex_cli::package_graph::compute_package_graph;
 use pavex_cli::pavexc::{get_or_install_from_graph, get_or_install_from_version};
-use pavex_cli::prebuilt::{download_prebuilt, PrebuiltBinaryKind};
+use pavex_cli::prebuilt::download_prebuilt;
 use pavex_cli::state::State;
 use pavex_cli::utils;
 use pavex_cli::version::latest_released_version;
@@ -313,12 +314,7 @@ fn update(shell: &mut Shell) -> Result<ExitCode, anyhow::Error> {
 
     let new_cli_path = tempfile::NamedTempFile::new()
         .context("Failed to create a temporary file to download the new Pavex CLI binary")?;
-    download_or_compile(
-        shell,
-        PrebuiltBinaryKind::Pavex,
-        &latest_version,
-        new_cli_path.path(),
-    )?;
+    download_or_compile(shell, CliKind::Pavex, &latest_version, new_cli_path.path())?;
     self_replace::self_replace(new_cli_path.path())
         .context("Failed to replace the current Pavex CLI with the newly downloaded version")?;
 
@@ -327,14 +323,20 @@ fn update(shell: &mut Shell) -> Result<ExitCode, anyhow::Error> {
 
 fn download_or_compile(
     shell: &mut Shell,
-    kind: PrebuiltBinaryKind,
+    kind: CliKind,
     version: &Version,
     destination: &Path,
 ) -> Result<(), anyhow::Error> {
-    let _ = shell.status("Downloading", format!("prebuilt `{kind}@{version}` binary"));
+    let _ = shell.status(
+        "Downloading",
+        format!("prebuilt `{}@{version}` binary", kind.binary_target_name()),
+    );
     match download_prebuilt(destination, kind, version) {
         Ok(_) => {
-            let _ = shell.status("Downloaded", format!("prebuilt `{kind}@{version}` binary"));
+            let _ = shell.status(
+                "Downloaded",
+                format!("prebuilt `{}@{version}` binary", kind.binary_target_name()),
+            );
             return Ok(());
         }
         Err(e) => {
@@ -342,21 +344,26 @@ fn download_or_compile(
             tracing::warn!(
                 error.msg = %e,
                 error.cause = ?e,
-                "Failed to download prebuilt `{kind}` binary. I'll try to build it from source instead.",
+                "Failed to download prebuilt `{}` binary. I'll try to build it from source instead.", kind.binary_target_name()
             );
         }
     }
 
-    let _ = shell.status("Compiling", format!("`{kind}@{version}` from source"));
+    let _ = shell.status(
+        "Compiling",
+        format!("`{}@{version}` from source", kind.package_name()),
+    );
     cargo_install(
         Source::Git {
             url: "https://github.com/LukeMathWalker/pavex".into(),
             rev: GitSourceRevision::Tag(version.to_string()),
         },
-        &kind.to_string(),
-        &format!("{kind}_cli"),
+        kind,
         destination,
     )?;
-    let _ = shell.status("Compiled", format!("`{kind}@{version}` from source"));
+    let _ = shell.status(
+        "Compiled",
+        format!("`{}@{version}` from source", kind.package_name()),
+    );
     Ok(())
 }

@@ -1,3 +1,4 @@
+use crate::cli_kind::CliKind;
 use crate::locator::ToolchainsLocator;
 use crate::pavexc::install::UnsupportedSourceError;
 use guppy::graph::{ExternalSource, PackageGraph, PackageSource};
@@ -15,14 +16,20 @@ pub(super) fn path_from_graph(
     match package_source {
         PackageSource::Workspace(_) => {
             let workspace_root = package_graph.workspace().root();
-            let pavexc_cli_path = workspace_root.join("target").join("release").join("pavexc");
+            let pavexc_cli_path = workspace_root
+                .join("target")
+                .join("release")
+                .join(CliKind::Pavexc.binary_filename());
             Ok(Ok(pavexc_cli_path.into_std_path_buf()))
         }
         PackageSource::Path(p) => {
             let workspace_root = p
                 .parent()
                 .expect("pavex's source path has to have a parent");
-            let pavexc_cli_path = workspace_root.join("target").join("release").join("pavexc");
+            let pavexc_cli_path = workspace_root
+                .join("target")
+                .join("release")
+                .join(CliKind::Pavexc.binary_filename());
             Ok(Ok(pavexc_cli_path.into_std_path_buf()))
         }
         PackageSource::External(_) => {
