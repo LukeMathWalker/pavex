@@ -818,7 +818,7 @@ dependencies = [
 
 [[package]]
 name = "generate_from_path"
-version = "0.1.7"
+version = "0.1.8"
 dependencies = [
  "anyhow",
  "fs-err",
@@ -1855,7 +1855,7 @@ dependencies = [
 
 [[package]]
 name = "pavex"
-version = "0.1.7"
+version = "0.1.8"
 dependencies = [
  "anyhow",
  "bytes",
@@ -1893,7 +1893,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_bp_schema"
-version = "0.1.7"
+version = "0.1.8"
 dependencies = [
  "pavex_reflection",
  "serde",
@@ -1901,7 +1901,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_cli"
-version = "0.1.7"
+version = "0.1.8"
 dependencies = [
  "anyhow",
  "bytes",
@@ -1941,7 +1941,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_cli_client"
-version = "0.1.7"
+version = "0.1.8"
 dependencies = [
  "anyhow",
  "pavex",
@@ -1950,7 +1950,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_macros"
-version = "0.1.7"
+version = "0.1.8"
 dependencies = [
  "pavex",
  "proc-macro2",
@@ -1962,7 +1962,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_miette"
-version = "0.1.7"
+version = "0.1.8"
 dependencies = [
  "miette",
  "owo-colors 3.5.0",
@@ -1976,14 +1976,14 @@ dependencies = [
 
 [[package]]
 name = "pavex_reflection"
-version = "0.1.7"
+version = "0.1.8"
 dependencies = [
  "serde",
 ]
 
 [[package]]
 name = "pavex_test_runner"
-version = "0.1.7"
+version = "0.1.8"
 dependencies = [
  "ahash 0.8.7",
  "anyhow",
@@ -2010,7 +2010,7 @@ dependencies = [
 
 [[package]]
 name = "pavexc"
-version = "0.1.7"
+version = "0.1.8"
 dependencies = [
  "ahash 0.8.7",
  "anyhow",
@@ -2057,7 +2057,7 @@ dependencies = [
 
 [[package]]
 name = "pavexc_cli"
-version = "0.1.7"
+version = "0.1.8"
 dependencies = [
  "anyhow",
  "clap",
@@ -2081,7 +2081,7 @@ dependencies = [
 
 [[package]]
 name = "pavexc_cli_client"
-version = "0.1.7"
+version = "0.1.8"
 dependencies = [
  "anyhow",
  "pavex",
@@ -2108,7 +2108,7 @@ checksum = "e3148f5046208a5d56bcfc03053e3ca6334e51da8dfb19b6cdc8b306fae3283e"
 
 [[package]]
 name = "persist_if_changed"
-version = "0.1.7"
+version = "0.1.8"
 dependencies = [
  "anyhow",
  "fs-err",

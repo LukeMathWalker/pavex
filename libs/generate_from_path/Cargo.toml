@@ -1,6 +1,6 @@
 [package]
 name = "generate_from_path"
-version = "0.1.7"
+version = "0.1.8"
 edition = "2021"
 
 [dependencies]
