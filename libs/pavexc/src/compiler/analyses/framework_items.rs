@@ -115,7 +115,7 @@ impl FrameworkItemDb {
         id2metadata.insert(
             Self::connection_info(),
             FrameworkItemMetadata {
-                lifecycle: Lifecycle::Singleton,
+                lifecycle: Lifecycle::RequestScoped,
                 cloning_strategy: CloningStrategy::CloneIfNecessary,
                 binding: format_ident!("connection_info"),
             },
