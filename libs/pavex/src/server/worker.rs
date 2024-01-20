@@ -106,8 +106,11 @@ pub(super) struct ShutdownWorkerCommand {
 pub(super) struct Worker<HandlerFuture, ApplicationState> {
     connection_inbox: tokio::sync::mpsc::Receiver<ConnectionMessage>,
     shutdown_inbox: tokio::sync::mpsc::UnboundedReceiver<ShutdownWorkerCommand>,
-    handler:
-        fn(http::Request<hyper::body::Incoming>, ConnectionInfo, ApplicationState) -> HandlerFuture,
+    handler: fn(
+        http::Request<hyper::body::Incoming>,
+        Option<ConnectionInfo>,
+        ApplicationState,
+    ) -> HandlerFuture,
     application_state: ApplicationState,
     id: usize,
 }
@@ -126,7 +129,7 @@ where
         max_queue_length: usize,
         handler: fn(
             http::Request<hyper::body::Incoming>,
-            ConnectionInfo,
+            Option<ConnectionInfo>,
             ApplicationState,
         ) -> HandlerFuture,
         application_state: ApplicationState,
@@ -235,7 +238,7 @@ where
         connection_message: ConnectionMessage,
         handler: fn(
             http::Request<hyper::body::Incoming>,
-            ConnectionInfo,
+            Option<ConnectionInfo>,
             ApplicationState,
         ) -> HandlerFuture,
         application_state: ApplicationState,
@@ -249,7 +252,7 @@ where
             let state = application_state.clone();
 
             async move {
-                let handler = (handler)(request, ConnectionInfo { peer_addr }, state);
+                let handler = (handler)(request, Some(ConnectionInfo { peer_addr }), state);
                 let response = handler.await;
                 let response = hyper::Response::from(response);
                 Ok::<_, hyper::Error>(response)

@@ -51,7 +51,7 @@ impl ServerHandle {
         incoming: Vec<IncomingStream>,
         handler: fn(
             http::Request<hyper::body::Incoming>,
-            ConnectionInfo,
+            Option<ConnectionInfo>,
             ApplicationState,
         ) -> HandlerFuture,
         application_state: ApplicationState,
@@ -112,8 +112,11 @@ struct Acceptor<HandlerFuture, ApplicationState> {
     config: ServerConfiguration,
     next_worker: usize,
     max_queue_length: usize,
-    handler:
-        fn(http::Request<hyper::body::Incoming>, ConnectionInfo, ApplicationState) -> HandlerFuture,
+    handler: fn(
+        http::Request<hyper::body::Incoming>,
+        Option<ConnectionInfo>,
+        ApplicationState,
+    ) -> HandlerFuture,
     application_state: ApplicationState,
     // We use a `fn() -> HandlerFuture` instead of a `HandlerFuture` because we need `Acceptor`
     // to be `Send` and `Sync`. That wouldn't work with `PhantomData<HandlerFuture>`.
@@ -136,7 +139,7 @@ where
         incoming: Vec<IncomingStream>,
         handler: fn(
             http::Request<hyper::body::Incoming>,
-            ConnectionInfo,
+            Option<ConnectionInfo>,
             ApplicationState,
         ) -> HandlerFuture,
         application_state: ApplicationState,

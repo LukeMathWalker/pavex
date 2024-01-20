@@ -11,7 +11,7 @@ use pavex::server::{IncomingStream, Server, ServerConfiguration, ShutdownMode};
 // A dummy handler for our server tests.
 async fn test_handler(
     _request: Request<Incoming>,
-    _connection_info: ConnectionInfo,
+    _connection_info: Option<ConnectionInfo>,
     _state: (),
 ) -> Response {
     Response::ok()
@@ -93,7 +93,7 @@ async fn serve() {
 
 async fn slow_handler(
     _req: Request<Incoming>,
-    _connection_info: ConnectionInfo,
+    _connection_info: Option<ConnectionInfo>,
     state: SlowHandlerState,
 ) -> Response {
     // Signal that the connection has been established before starting to

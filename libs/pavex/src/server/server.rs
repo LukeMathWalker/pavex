@@ -253,7 +253,7 @@ impl Server {
         self,
         handler: fn(
             http::Request<hyper::body::Incoming>,
-            ConnectionInfo,
+            Option<ConnectionInfo>,
             ApplicationState,
         ) -> HandlerFuture,
         application_state: ApplicationState,
