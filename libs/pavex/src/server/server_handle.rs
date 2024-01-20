@@ -11,7 +11,7 @@ use tokio::task::{JoinError, JoinSet, LocalSet};
 
 use crate::connection::ConnectionInfo;
 use crate::server::configuration::ServerConfiguration;
-use crate::server::worker::{Worker, WorkerHandle};
+use crate::server::worker::{ConnectionMessage, Worker, WorkerHandle};
 
 use super::{IncomingStream, ShutdownMode};
 
@@ -227,7 +227,7 @@ where
                     }
                 },
                 AcceptorInboxMessage::Connection(msg) => {
-                    let (incoming, mut connection, remote_peer) = match msg {
+                    let (incoming, connection, remote_peer) = match msg {
                         Some(Ok((incoming, connection, remote_peer))) => {
                             (incoming, connection, remote_peer)
                         }
@@ -253,16 +253,20 @@ where
 
                     // A flag to track if the connection has been successfully sent to a worker.
                     let mut has_been_handled = false;
-                    // We try to send the connection to a worker.
+                    // We try to send the connection to a worker (`ConnectionMessage`).
                     // If the worker's inbox is full, we try the next worker until we find one that can
                     // accept the connection or we've tried all workers.
+                    let mut connection_message = ConnectionMessage {
+                        connection,
+                        peer_addr: remote_peer,
+                    };
                     for _ in 0..n_workers {
                         // Track if the worker has crashed.
                         let mut has_crashed: Option<usize> = None;
                         let worker_handle = &worker_handles[next_worker];
-                        if let Err(e) = worker_handle.dispatch(connection) {
-                            connection = match e {
-                                TrySendError::Full(conn) => conn,
+                        if let Err(e) = worker_handle.dispatch(connection_message) {
+                            connection_message = match e {
+                                TrySendError::Full(message) => message,
                                 // A closed channel implies that the worker thread is no longer running,
                                 // therefore we need to restart it.
                                 TrySendError::Closed(conn) => {
