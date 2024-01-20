@@ -249,14 +249,7 @@ where
             let state = application_state.clone();
 
             async move {
-                let handler = (handler)(
-                    request,
-                    ConnectionInfo {
-                        // local_addr,
-                        peer_addr,
-                    },
-                    state,
-                );
+                let handler = (handler)(request, ConnectionInfo { peer_addr }, state);
                 let response = handler.await;
                 let response = hyper::Response::from(response);
                 Ok::<_, hyper::Error>(response)
