@@ -35,7 +35,7 @@ impl State {
     pub fn get_current_toolchain(
         &self,
         shell: &mut Shell,
-    ) -> Result<semver::Version, anyhow::Error> {
+    ) -> Result<semver::Version, StateReadError> {
         let (_, current_state) = self.immutable_read(shell)?;
         match current_state {
             Some(current_state) => Ok(current_state.toolchain),
@@ -47,7 +47,7 @@ impl State {
     }
 
     /// Get the activation key associated with this installation, if there is one.
-    pub fn get_activation_key(&self, shell: &mut Shell) -> Result<Option<String>, anyhow::Error> {
+    pub fn get_activation_key(&self, shell: &mut Shell) -> Result<Option<String>, StateReadError> {
         let (_, current_state) = self.immutable_read(shell)?;
         Ok(current_state.map(|s| s.activation_key).flatten())
     }
@@ -76,11 +76,11 @@ impl State {
             },
         };
         let updated_state = toml::to_string_pretty(&updated_state)
-            .context("Failed to serialize the updated toolchain state in TOML format.")?;
+            .context("Failed to serialize Pavex's updated state in TOML format.")?;
         locked_file
             .write_all(updated_state.as_bytes())
             .context(format!(
-                "Failed to write the updated toolchain state to {}.",
+                "Failed to write Pavex's updated state to {}.",
                 Self::STATE_FILENAME
             ))?;
         Ok(())
@@ -93,12 +93,11 @@ impl State {
     fn read_for_update(
         &self,
         shell: &mut Shell,
-    ) -> Result<(FileLock, Option<StateInner>), anyhow::Error> {
-        let locked_file = self.filesystem.open_rw_exclusive_create(
-            Self::STATE_FILENAME,
-            shell,
-            "toolchain state",
-        )?;
+    ) -> Result<(FileLock, Option<StateInner>), StateReadError> {
+        let locked_file = self
+            .filesystem
+            .open_rw_exclusive_create(Self::STATE_FILENAME, shell, "Pavex's state file")
+            .map_err(AcquireLockError)?;
         self._read(locked_file)
     }
 
@@ -109,32 +108,43 @@ impl State {
     fn immutable_read(
         &self,
         shell: &mut Shell,
-    ) -> Result<(FileLock, Option<StateInner>), anyhow::Error> {
-        let locked_file = self.filesystem.open_ro_shared_create(
-            Self::STATE_FILENAME,
-            shell,
-            "toolchain state",
-        )?;
+    ) -> Result<(FileLock, Option<StateInner>), StateReadError> {
+        let locked_file = self
+            .filesystem
+            .open_ro_shared_create(Self::STATE_FILENAME, shell, "Pavex's state file")
+            .map_err(AcquireLockError)?;
         self._read(locked_file)
     }
 
     fn _read(
         &self,
         mut locked_file: FileLock,
-    ) -> Result<(FileLock, Option<StateInner>), anyhow::Error> {
+    ) -> Result<(FileLock, Option<StateInner>), StateReadError> {
         let mut contents = String::new();
-        locked_file.read_to_string(&mut contents)?;
+        locked_file
+            .read_to_string(&mut contents)
+            .map_err(|e| StateReadError::ReadError(e, Self::STATE_FILENAME))?;
 
         if contents.is_empty() {
             return Ok((locked_file, None));
         } else {
-            let contents = toml::from_str(&contents).with_context(|| {
-                format!(
-                    "Failed to parse the toolchain state file, {}.",
-                    Self::STATE_FILENAME
-                )
-            })?;
+            let contents = toml::from_str(&contents)
+                .map_err(|e| StateReadError::CannotParse(e, Self::STATE_FILENAME))?;
             Ok((locked_file, Some(contents)))
         }
     }
+}
+
+#[derive(thiserror::Error, Debug)]
+#[error("Failed to acquire a lock on Pavex's state file.")]
+pub struct AcquireLockError(#[from] anyhow::Error);
+
+#[derive(thiserror::Error, Debug)]
+pub enum StateReadError {
+    #[error("Failed to parse Pavex's state file, {1}: {0}")]
+    CannotParse(#[source] toml::de::Error, &'static str),
+    #[error("Failed to read Pavex's state file, {1}: {0}")]
+    ReadError(#[source] std::io::Error, &'static str),
+    #[error(transparent)]
+    AcquireLock(#[from] AcquireLockError),
 }

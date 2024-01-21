@@ -196,11 +196,11 @@ fn main() -> Result<ExitCode, miette::Error> {
             diagnostics,
             output,
         } => {
-            check_activation(&State::new(&locator), &mut shell)?;
+            check_activation(&State::new(&locator), &mut shell).map_err(utils::anyhow2miette)?;
             generate(&mut shell, client, &locator, blueprint, diagnostics, output)
         }
         Commands::New { path } => {
-            check_activation(&State::new(&locator), &mut shell)?;
+            check_activation(&State::new(&locator), &mut shell).map_err(utils::anyhow2miette)?;
             scaffold_project(client, &locator, &mut shell, path)
         }
         Commands::Self_ { command } => {
