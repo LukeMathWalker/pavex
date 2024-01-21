@@ -1,7 +1,7 @@
 use anyhow::Context;
 use cargo_like_utils::shell::Shell;
 use std::fmt::{Display, Formatter};
-use std::io::ErrorKind;
+use std::io::{ErrorKind, IsTerminal};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::str::FromStr;
@@ -356,6 +356,18 @@ fn activate(
     let state = State::new(locator);
     let key = match key {
         None => {
+            let stdout = std::io::stdout();
+            if !stdout.is_terminal() {
+                return Err(anyhow::anyhow!(
+                    "The current terminal does not support interactive prompts. If you want to activate \
+                    Pavex in a non-interactive environment, please provide the activation key using one of \
+                    the following methods:\n\
+                    - Pass the activation key as standard input to the `pavex self activate` command (`echo \"<your-key>\" | pavex self activate` on Unix platforms)\n\
+                    - Pass the activation key as an argument to the `pavex self activate` command (`pavex self activate \"<your-key>\"`)\n\
+                    - Set the `PAVEX_ACTIVATION_KEY` environment variable"
+                ));
+            }
+
             println!();
             let mut k: Option<SecretString> = None;
             'outer: while k.is_none() {
