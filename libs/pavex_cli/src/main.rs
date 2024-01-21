@@ -9,7 +9,7 @@ use std::str::FromStr;
 use clap::{Parser, Subcommand};
 use clap_stdin::MaybeStdin;
 use owo_colors::OwoColorize;
-use pavex_cli::activation::check_activation;
+use pavex_cli::activation::{check_activation, check_activation_key};
 use pavex_cli::cargo_install::{cargo_install, GitSourceRevision, Source};
 use pavex_cli::cli_kind::CliKind;
 use pavex_cli::locator::PavexLocator;
@@ -357,19 +357,55 @@ fn activate(
     let key = match key {
         None => {
             println!();
-            let question = if use_color_on_stdout(color) {
-                format!(
-                    "Welcome to Pavex's beta program! Please enter your {}.\n{}",
-                    "activation key".bold().green(),
-                    "You can find the activation key for the beta program in the #announcement channel of Pavex's Discord server."
-                        .dimmed()
-                )
-            } else {
-                format!("Welcome to Pavex's beta program! Please enter your activation key.\nYou can find the activation key for the beta program in the #announcement channel of Pavex's Discord server.")
-            };
-            Secret::new(mandatory_question(&question).context("Failed to read activation key")?)
+            let mut k: Option<SecretString> = None;
+            'outer: while k.is_none() {
+                let question = if use_color_on_stdout(color) {
+                    format!(
+                        "Welcome to Pavex's beta program! Please enter your {}.\n{}",
+                        "activation key".bold().green(),
+                        "You can find the activation key for the beta program in the #announcement \
+                        channel of Pavex's Discord server.\n\
+                        You can join the beta program by visiting https://pavex.dev\n"
+                            .dimmed()
+                    )
+                } else {
+                    format!(
+                        "Welcome to Pavex's beta program! Please enter your activation key.\n\
+                        You can find the activation key for the beta program in the #announcement \
+                        channel of Pavex's Discord server.\n\
+                        You can join the beta program by visiting https://pavex.dev\n"
+                    )
+                };
+                let attempt = Secret::new(
+                    mandatory_question(&question).context("Failed to read activation key")?,
+                );
+                if check_activation_key(&attempt).is_ok() {
+                    k = Some(attempt);
+                    break 'outer;
+                }
+                if use_color_on_stderr(color) {
+                    eprintln!(
+                        "{}: {}",
+                        "ERROR".bold().red(),
+                        "The activation key you provided is not valid. Please try again."
+                    );
+                } else {
+                    eprintln!(
+                        "ERROR: The activation key you provided is not valid. Please try again."
+                    );
+                }
+                eprintln!();
+            }
+            k.unwrap()
         }
-        Some(k) => k,
+        Some(k) => {
+            if check_activation_key(&k).is_err() {
+                return Err(anyhow::anyhow!(
+                    "The activation key you provided is not valid"
+                ));
+            }
+            k
+        }
     };
     state
         .set_activation_key(shell, key)
@@ -428,6 +464,14 @@ fn download_or_compile(
 fn use_color_on_stdout(color_profile: Color) -> bool {
     match color_profile {
         Color::Auto => supports_color::on(Stream::Stdout).is_some(),
+        Color::Always => true,
+        Color::Never => false,
+    }
+}
+
+fn use_color_on_stderr(color_profile: Color) -> bool {
+    match color_profile {
+        Color::Auto => supports_color::on(Stream::Stderr).is_some(),
         Color::Always => true,
         Color::Never => false,
     }

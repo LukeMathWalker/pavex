@@ -11,7 +11,7 @@
 
 use crate::state::State;
 use cargo_like_utils::shell::Shell;
-use secrecy::ExposeSecret;
+use secrecy::{ExposeSecret, SecretString};
 use sha2::Digest;
 
 static BETA_ACTIVATION_KEY_SHA256: &str =
@@ -23,10 +23,16 @@ pub fn check_activation(state: &State, shell: &mut Shell) -> Result<(), anyhow::
     let Some(key) = key else {
         return Err(PavexMustBeActivated.into());
     };
+    check_activation_key(&key)?;
+    Ok(())
+}
+
+/// Verify that the given activation key is valid.
+pub fn check_activation_key(key: &SecretString) -> Result<(), InvalidActivationKey> {
     let key_sha256 = sha2::Sha256::digest(key.expose_secret().as_bytes());
     let key_sha256 = hex::encode(key_sha256);
     if key_sha256 != BETA_ACTIVATION_KEY_SHA256 {
-        Err(InvalidActivationKey.into())
+        Err(InvalidActivationKey)
     } else {
         Ok(())
     }
@@ -34,8 +40,8 @@ pub fn check_activation(state: &State, shell: &mut Shell) -> Result<(), anyhow::
 
 #[derive(thiserror::Error, Debug)]
 #[error("Your installation of Pavex must be activated before it can be used.\nRun `pavex self activate` to fix the issue.")]
-struct PavexMustBeActivated;
+pub struct PavexMustBeActivated;
 
 #[derive(thiserror::Error, Debug)]
 #[error("The activation key attached to your installation of Pavex is not valid.\nRun `pavex self activate` to fix the issue.")]
-struct InvalidActivationKey;
+pub struct InvalidActivationKey;
