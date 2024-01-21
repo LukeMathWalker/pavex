@@ -14,7 +14,10 @@ pub struct State {
 
 #[derive(serde::Deserialize, serde::Serialize, Debug)]
 struct StateInner {
+    /// The toolchain that's currently active.
     toolchain: semver::Version,
+    /// The activation key associated with this installation of Pavex.
+    activation_key: Option<String>,
 }
 
 impl State {
@@ -43,6 +46,12 @@ impl State {
         }
     }
 
+    /// Get the activation key associated with this installation, if there is one.
+    pub fn get_activation_key(&self, shell: &mut Shell) -> Result<Option<String>, anyhow::Error> {
+        let (_, current_state) = self.immutable_read(shell)?;
+        Ok(current_state.map(|s| s.activation_key).flatten())
+    }
+
     /// Update the current toolchain to the specified one.  
     ///
     /// It doesn't take care of installing the toolchain if it's not installed!
@@ -61,7 +70,10 @@ impl State {
                 current_state.toolchain = toolchain;
                 current_state
             }
-            None => StateInner { toolchain },
+            None => StateInner {
+                toolchain,
+                activation_key: None,
+            },
         };
         let updated_state = toml::to_string_pretty(&updated_state)
             .context("Failed to serialize the updated toolchain state in TOML format.")?;

@@ -7,6 +7,7 @@ use std::process::ExitCode;
 use std::str::FromStr;
 
 use clap::{Parser, Subcommand};
+use pavex_cli::activation::check_activation;
 use pavex_cli::cargo_install::{cargo_install, GitSourceRevision, Source};
 use pavex_cli::cli_kind::CliKind;
 use pavex_cli::confirmation::confirm;
@@ -194,12 +195,22 @@ fn main() -> Result<ExitCode, miette::Error> {
             blueprint,
             diagnostics,
             output,
-        } => generate(&mut shell, client, &locator, blueprint, diagnostics, output),
-        Commands::New { path } => scaffold_project(client, &locator, &mut shell, path),
-        Commands::Self_ { command } => match command {
-            SelfCommands::Update => update(&mut shell),
-            SelfCommands::Uninstall { y } => uninstall(&mut shell, !y, locator),
-        },
+        } => {
+            check_activation(&State::new(&locator), &mut shell)?;
+            generate(&mut shell, client, &locator, blueprint, diagnostics, output)
+        }
+        Commands::New { path } => {
+            check_activation(&State::new(&locator), &mut shell)?;
+            scaffold_project(client, &locator, &mut shell, path)
+        }
+        Commands::Self_ { command } => {
+            // You should always be able to run `self` commands, even if Pavex has
+            // not been activated yet.
+            match command {
+                SelfCommands::Update => update(&mut shell),
+                SelfCommands::Uninstall { y } => uninstall(&mut shell, !y, locator),
+            }
+        }
     }
     .map_err(utils::anyhow2miette)
 }

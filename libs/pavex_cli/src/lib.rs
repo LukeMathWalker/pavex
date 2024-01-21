@@ -1,3 +1,4 @@
+pub mod activation;
 pub mod cargo_install;
 pub mod cli_kind;
 pub mod confirmation;
