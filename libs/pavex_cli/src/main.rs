@@ -375,7 +375,7 @@ fn activate(
                     format!(
                         "Welcome to Pavex's beta program! Please enter your {}.\n{}",
                         "activation key".bold().green(),
-                        "You can find the activation key for the beta program in the #announcement \
+                        "You can find the activation key for the beta program in the #activation \
                         channel of Pavex's Discord server.\n\
                         You can join the beta program by visiting https://pavex.dev\n"
                             .dimmed()
@@ -383,7 +383,7 @@ fn activate(
                 } else {
                     format!(
                         "Welcome to Pavex's beta program! Please enter your activation key.\n\
-                        You can find the activation key for the beta program in the #announcement \
+                        You can find the activation key for the beta program in the #activation \
                         channel of Pavex's Discord server.\n\
                         You can join the beta program by visiting https://pavex.dev\n"
                     )
