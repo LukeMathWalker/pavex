@@ -11,6 +11,7 @@
 
 use crate::state::State;
 use cargo_like_utils::shell::Shell;
+use secrecy::ExposeSecret;
 use sha2::Digest;
 
 static BETA_ACTIVATION_KEY_SHA256: &str =
@@ -22,7 +23,7 @@ pub fn check_activation(state: &State, shell: &mut Shell) -> Result<(), anyhow::
     let Some(key) = key else {
         return Err(PavexMustBeActivated.into());
     };
-    let key_sha256 = sha2::Sha256::digest(key.as_bytes());
+    let key_sha256 = sha2::Sha256::digest(key.expose_secret().as_bytes());
     let key_sha256 = hex::encode(key_sha256);
     if key_sha256 != BETA_ACTIVATION_KEY_SHA256 {
         Err(InvalidActivationKey.into())

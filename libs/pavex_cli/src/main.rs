@@ -7,20 +7,22 @@ use std::process::ExitCode;
 use std::str::FromStr;
 
 use clap::{Parser, Subcommand};
+use clap_stdin::MaybeStdin;
 use pavex_cli::activation::check_activation;
 use pavex_cli::cargo_install::{cargo_install, GitSourceRevision, Source};
 use pavex_cli::cli_kind::CliKind;
-use pavex_cli::confirmation::confirm;
 use pavex_cli::locator::PavexLocator;
 use pavex_cli::package_graph::compute_package_graph;
 use pavex_cli::pavexc::{get_or_install_from_graph, get_or_install_from_version};
 use pavex_cli::prebuilt::download_prebuilt;
 use pavex_cli::state::State;
+use pavex_cli::user_input::{confirm, mandatory_question};
 use pavex_cli::utils;
 use pavex_cli::version::latest_released_version;
 use pavexc_cli_client::commands::generate::{BlueprintArgument, GenerateError};
 use pavexc_cli_client::commands::new::NewError;
 use pavexc_cli_client::Client;
+use secrecy::{Secret, SecretString};
 use semver::Version;
 use tracing_chrome::{ChromeLayerBuilder, FlushGuard};
 use tracing_subscriber::fmt::format::FmtSpan;
@@ -121,6 +123,13 @@ enum SelfCommands {
         #[clap(short, long, value_parser)]
         y: bool,
     },
+    Activate {
+        /// The activation key for Pavex.
+        /// You can find the activation key for the beta program in Pavex's Discord server,
+        /// in the #announcements channel.
+        #[arg(index = 1, env = "PAVEX_ACTIVATION_KEY")]
+        key: Option<MaybeStdin<SecretString>>,
+    },
 }
 
 fn init_telemetry() -> FlushGuard {
@@ -209,6 +218,9 @@ fn main() -> Result<ExitCode, miette::Error> {
             match command {
                 SelfCommands::Update => update(&mut shell),
                 SelfCommands::Uninstall { y } => uninstall(&mut shell, !y, locator),
+                SelfCommands::Activate { key } => {
+                    activate(&mut shell, &locator, key.map(|k| k.into_inner()))
+                }
             }
         }
     }
@@ -328,6 +340,28 @@ fn update(shell: &mut Shell) -> Result<ExitCode, anyhow::Error> {
     download_or_compile(shell, CliKind::Pavex, &latest_version, new_cli_path.path())?;
     self_replace::self_replace(new_cli_path.path())
         .context("Failed to replace the current Pavex CLI with the newly downloaded version")?;
+
+    Ok(ExitCode::SUCCESS)
+}
+
+#[tracing::instrument("Activate Pavex", skip(shell, locator, key))]
+fn activate(
+    shell: &mut Shell,
+    locator: &PavexLocator,
+    key: Option<SecretString>,
+) -> Result<ExitCode, anyhow::Error> {
+    let state = State::new(locator);
+    let key = match key {
+        None => {
+            let question = "Please enter your activation key.\n\
+            You can find the activation key for the beta program in the #announcement channel of Pavex's Discord server";
+            Secret::new(mandatory_question(question).context("Failed to read activation key")?)
+        }
+        Some(k) => k,
+    };
+    state
+        .set_activation_key(shell, key)
+        .context("Failed to set the activation key")?;
 
     Ok(ExitCode::SUCCESS)
 }

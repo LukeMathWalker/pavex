@@ -3,6 +3,7 @@ use crate::locator::PavexLocator;
 use anyhow::Context;
 use cargo_like_utils::flock::{FileLock, Filesystem};
 use cargo_like_utils::shell::Shell;
+use secrecy::{ExposeSecret, SecretString};
 use std::io::{Read, Write};
 
 /// The current "state" of Pavex on this machine.
@@ -12,12 +13,28 @@ pub struct State {
     filesystem: Filesystem,
 }
 
-#[derive(serde::Deserialize, serde::Serialize, Debug)]
+#[derive(serde::Deserialize, serde::Serialize, Debug, Default)]
 struct StateInner {
     /// The toolchain that's currently active.
-    toolchain: semver::Version,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    toolchain: Option<semver::Version>,
     /// The activation key associated with this installation of Pavex.
-    activation_key: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(serialize_with = "serialize_activation_key")]
+    activation_key: Option<SecretString>,
+}
+
+fn serialize_activation_key<S>(
+    activation_key: &Option<SecretString>,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    match activation_key {
+        Some(activation_key) => serializer.serialize_some(activation_key.expose_secret()),
+        None => serializer.serialize_none(),
+    }
 }
 
 impl State {
@@ -37,8 +54,9 @@ impl State {
         shell: &mut Shell,
     ) -> Result<semver::Version, StateReadError> {
         let (_, current_state) = self.immutable_read(shell)?;
-        match current_state {
-            Some(current_state) => Ok(current_state.toolchain),
+        let toolchain = current_state.map(|s| s.toolchain).flatten();
+        match toolchain {
+            Some(toolchain) => Ok(toolchain),
             None => {
                 // We default to the toolchain that matches the current version of the CLI.
                 Ok(version())
@@ -47,9 +65,30 @@ impl State {
     }
 
     /// Get the activation key associated with this installation, if there is one.
-    pub fn get_activation_key(&self, shell: &mut Shell) -> Result<Option<String>, StateReadError> {
+    pub fn get_activation_key(
+        &self,
+        shell: &mut Shell,
+    ) -> Result<Option<SecretString>, StateReadError> {
         let (_, current_state) = self.immutable_read(shell)?;
         Ok(current_state.map(|s| s.activation_key).flatten())
+    }
+
+    /// Set the activation key associated with this installation.
+    pub fn set_activation_key(
+        &self,
+        shell: &mut Shell,
+        activation_key: SecretString,
+    ) -> Result<(), anyhow::Error> {
+        let (mut locked_file, state) = self.read_for_update(shell)?;
+        let mut state = state.unwrap_or_default();
+        state.activation_key = Some(activation_key);
+        let state = toml::to_string_pretty(&state)
+            .context("Failed to serialize Pavex's updated state in TOML format.")?;
+        locked_file.write_all(state.as_bytes()).context(format!(
+            "Failed to write Pavex's updated state to {}.",
+            Self::STATE_FILENAME
+        ))?;
+        Ok(())
     }
 
     /// Update the current toolchain to the specified one.  
@@ -60,29 +99,20 @@ impl State {
         shell: &mut Shell,
         toolchain: semver::Version,
     ) -> Result<(), anyhow::Error> {
-        let (mut locked_file, current_state) = self.read_for_update(shell)?;
-        let updated_state = match current_state {
-            Some(current_state) if current_state.toolchain == toolchain => {
-                // No need to do anything.
-                return Ok(());
-            }
-            Some(mut current_state) => {
-                current_state.toolchain = toolchain;
-                current_state
-            }
-            None => StateInner {
-                toolchain,
-                activation_key: None,
-            },
-        };
-        let updated_state = toml::to_string_pretty(&updated_state)
+        let (mut locked_file, state) = self.read_for_update(shell)?;
+        let mut state = state.unwrap_or_default();
+        if state.toolchain.as_ref() == Some(&toolchain) {
+            // No need to do anything.
+            return Ok(());
+        } else {
+            state.toolchain = Some(toolchain);
+        }
+        let state = toml::to_string_pretty(&state)
             .context("Failed to serialize Pavex's updated state in TOML format.")?;
-        locked_file
-            .write_all(updated_state.as_bytes())
-            .context(format!(
-                "Failed to write Pavex's updated state to {}.",
-                Self::STATE_FILENAME
-            ))?;
+        locked_file.write_all(state.as_bytes()).context(format!(
+            "Failed to write Pavex's updated state to {}.",
+            Self::STATE_FILENAME
+        ))?;
         Ok(())
     }
 

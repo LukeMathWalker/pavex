@@ -19,6 +19,18 @@ pub fn confirm(question: &str, default: bool) -> Result<bool, anyhow::Error> {
     Ok(r)
 }
 
+/// Prompt the user for input, without a default value.
+pub fn mandatory_question(question: &str) -> anyhow::Result<String> {
+    let mut input = "".to_string();
+    while input.is_empty() {
+        writeln!(std::io::stdout().lock(), "{question}")?;
+        let _ = std::io::stdout().flush();
+        input = read_line()?;
+        writeln!(std::io::stdout().lock())?;
+    }
+    Ok(input)
+}
+
 fn read_line() -> Result<String, anyhow::Error> {
     let stdin = std::io::stdin();
     let stdin = stdin.lock();
