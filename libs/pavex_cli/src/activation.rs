@@ -15,7 +15,7 @@ use secrecy::{ExposeSecret, SecretString};
 use sha2::Digest;
 
 static BETA_ACTIVATION_KEY_SHA256: &str =
-    "7b027f749555e3a063b012caaa2508094eee34233f1bdc7a0b8e1f1f19627c1d";
+    "a0c04ee4345ad0900d29e9c525be9de2be44450e73f9ce2893c62eb96a66e157";
 
 /// Verify that Pavex has been correctly activated on this machine.
 pub fn check_activation(state: &State, shell: &mut Shell) -> Result<(), anyhow::Error> {
