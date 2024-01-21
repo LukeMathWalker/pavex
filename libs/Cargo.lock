@@ -1930,6 +1930,7 @@ dependencies = [
  "hex",
  "libc",
  "miette",
+ "owo-colors 4.0.0",
  "pavex_miette",
  "pavex_test_runner",
  "pavexc",

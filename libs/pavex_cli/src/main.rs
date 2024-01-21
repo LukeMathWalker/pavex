@@ -8,6 +8,7 @@ use std::str::FromStr;
 
 use clap::{Parser, Subcommand};
 use clap_stdin::MaybeStdin;
+use owo_colors::OwoColorize;
 use pavex_cli::activation::check_activation;
 use pavex_cli::cargo_install::{cargo_install, GitSourceRevision, Source};
 use pavex_cli::cli_kind::CliKind;
@@ -24,6 +25,7 @@ use pavexc_cli_client::commands::new::NewError;
 use pavexc_cli_client::Client;
 use secrecy::{Secret, SecretString};
 use semver::Version;
+use supports_color::Stream;
 use tracing_chrome::{ChromeLayerBuilder, FlushGuard};
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::layer::SubscriberExt;
@@ -219,7 +221,7 @@ fn main() -> Result<ExitCode, miette::Error> {
                 SelfCommands::Update => update(&mut shell),
                 SelfCommands::Uninstall { y } => uninstall(&mut shell, !y, locator),
                 SelfCommands::Activate { key } => {
-                    activate(&mut shell, &locator, key.map(|k| k.into_inner()))
+                    activate(&mut shell, cli.color, &locator, key.map(|k| k.into_inner()))
                 }
             }
         }
@@ -347,15 +349,25 @@ fn update(shell: &mut Shell) -> Result<ExitCode, anyhow::Error> {
 #[tracing::instrument("Activate Pavex", skip(shell, locator, key))]
 fn activate(
     shell: &mut Shell,
+    color: Color,
     locator: &PavexLocator,
     key: Option<SecretString>,
 ) -> Result<ExitCode, anyhow::Error> {
     let state = State::new(locator);
     let key = match key {
         None => {
-            let question = "Please enter your activation key.\n\
-            You can find the activation key for the beta program in the #announcement channel of Pavex's Discord server";
-            Secret::new(mandatory_question(question).context("Failed to read activation key")?)
+            println!();
+            let question = if use_color_on_stdout(color) {
+                format!(
+                    "Welcome to Pavex's beta program! Please enter your {}.\n{}",
+                    "activation key".bold().green(),
+                    "You can find the activation key for the beta program in the #announcement channel of Pavex's Discord server."
+                        .dimmed()
+                )
+            } else {
+                format!("Welcome to Pavex's beta program! Please enter your activation key.\nYou can find the activation key for the beta program in the #announcement channel of Pavex's Discord server.")
+            };
+            Secret::new(mandatory_question(&question).context("Failed to read activation key")?)
         }
         Some(k) => k,
     };
@@ -411,4 +423,12 @@ fn download_or_compile(
         format!("`{}@{version}` from source", kind.package_name()),
     );
     Ok(())
+}
+
+fn use_color_on_stdout(color_profile: Color) -> bool {
+    match color_profile {
+        Color::Auto => supports_color::on(Stream::Stdout).is_some(),
+        Color::Always => true,
+        Color::Never => false,
+    }
 }
