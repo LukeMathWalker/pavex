@@ -150,6 +150,11 @@ jobs:
       - name: Mark pavex as executable
         if: ${{ matrix.os != 'windows-2022' }}
         run: chmod +x ${{ env.PAVEX }}
+      - name: Activate pavex
+        env:
+          PAVEX_ACTIVATION_KEY: ${{ secrets.pavex_activation_key }}
+        run: |
+          pavex self activate
       - name: Mark pavexc as executable
         if: ${{ matrix.os != 'windows-2022' }}
         run: chmod +x ${{ env.PAVEXC }}
@@ -203,6 +208,11 @@ jobs:
           path: ~/.cargo/bin
       - name: Mark pavex as executable
         run: chmod +x ~/.cargo/bin/pavex
+      - name: Activate pavex
+        env:
+          PAVEX_ACTIVATION_KEY: ${{ secrets.pavex_activation_key }}
+        run: |
+          pavex self activate
       - name: Mark pavexc as executable
         run: chmod +x ~/.cargo/bin/pavexc
       - name: Download tutorial_generator CLI artifact
