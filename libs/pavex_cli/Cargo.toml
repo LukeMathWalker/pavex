@@ -1,6 +1,6 @@
 [package]
 name = "pavex_cli"
-version = "0.1.9"
+version = "0.1.10"
 description = "The companion CLI for Pavex, a Rust framework to build API services and web applications."
 keywords = ["pavex"]
 edition.workspace = true
@@ -19,9 +19,9 @@ harness = false
 vergen = { workspace = true }
 
 [dependencies]
-pavexc_cli_client = { path = "../pavexc_cli_client", version = "0.1.9" }
+pavexc_cli_client = { path = "../pavexc_cli_client", version = "0.1.10" }
 clap = { version = "4", features = ["derive", "env"] }
-pavex_miette = { path = "../pavex_miette", version = "0.1.9" }
+pavex_miette = { path = "../pavex_miette", version = "0.1.10" }
 miette = { version = "5.3.0" }
 fs-err = "2.7.0"
 tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter"] }
