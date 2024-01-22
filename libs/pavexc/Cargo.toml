@@ -18,8 +18,8 @@ vergen = { version = "8.0.0", features = ["build", "git", "gitcl"] }
 debug_assertions = []
 
 [dependencies]
-pavex = { path = "../pavex" }
-pavex_bp_schema = { path = "../pavex_bp_schema" }
+pavex = { path = "../pavex", version = "0.1.8" }
+pavex_bp_schema = { path = "../pavex_bp_schema", version = "0.1.8" }
 syn = { version = "2", features = ["full", "extra-traits", "visit"] }
 rustdoc-types = "0.24.0"
 serde = { version = "1.0.139", features = ["derive"] }

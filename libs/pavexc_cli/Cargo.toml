@@ -13,8 +13,8 @@ path = "src/main.rs"
 
 [dependencies]
 clap = { version = "4", features = ["derive", "env"] }
-pavexc = { path = "../pavexc" }
-pavex_miette = { path = "../pavex_miette" }
+pavexc = { path = "../pavexc", version = "0.1.8" }
+pavex_miette = { path = "../pavex_miette", version = "0.1.8" }
 miette = { version = "5.3.0" }
 fs-err = "2.7.0"
 tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter"] }
@@ -27,7 +27,7 @@ supports-color = { version = "2" }
 include_dir = "0.7.3"
 path-absolutize = "3.1.1"
 ron = "0.8"
-generate_from_path = { path = "../generate_from_path" }
+generate_from_path = { path = "../generate_from_path", version = "0.1.8" }
 tempfile = "3.9.0"
 
 [build-dependencies]
