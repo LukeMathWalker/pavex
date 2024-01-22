@@ -7,6 +7,7 @@ keywords = ["http", "web", "framework", "pavex", "rest"]
 edition.workspace = true
 repository.workspace = true
 license.workspace = true
+readme = "README.md"
 
 [features]
 default = ["server"]
