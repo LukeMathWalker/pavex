@@ -1,7 +1,11 @@
 [package]
 name = "persist_if_changed"
 version = "0.1.8"
-edition = "2021"
+description = "A library for persisting data to disk only if it has changed."
+keywords = ["pavex"]
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
 
 [dependencies]
 tracing = "0.1"

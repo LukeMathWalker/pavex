@@ -1,7 +1,11 @@
 [package]
 name = "pavex_miette"
 version = "0.1.8"
-edition = "2021"
+description = "A custom Miette theme for Pavex errors."
+keywords = ["pavex"]
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
 
 [dependencies]
 owo-colors = "3"

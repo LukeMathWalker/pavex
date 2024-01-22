@@ -1,7 +1,10 @@
 [package]
 name = "generate_from_path"
 version = "0.1.8"
-edition = "2021"
+edition.workspace = true
+repository.workspace = true
+description = "Generate a Rust project from a local Liquid template. A stripped-down version of cargo-generate."
+license = "MIT OR Apache-2.0"
 
 [dependencies]
 anyhow = "1.0.79"

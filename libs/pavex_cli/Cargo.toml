@@ -1,7 +1,11 @@
 [package]
 name = "pavex_cli"
 version = "0.1.8"
-edition = "2021"
+description = "The companion CLI for Pavex, a Rust framework to build API services and web applications."
+keywords = ["pavex"]
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
 
 [[bin]]
 name = "pavex"
@@ -15,9 +19,9 @@ harness = false
 vergen = { workspace = true }
 
 [dependencies]
-pavexc_cli_client = { path = "../pavexc_cli_client" }
+pavexc_cli_client = { path = "../pavexc_cli_client", version = "0.1.8" }
 clap = { version = "4", features = ["derive", "env"] }
-pavex_miette = { path = "../pavex_miette" }
+pavex_miette = { path = "../pavex_miette", version = "0.1.8" }
 miette = { version = "5.3.0" }
 fs-err = "2.7.0"
 tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter"] }
@@ -39,7 +43,7 @@ remove_dir_all = "0.8.2"
 config = { version = "0.13.4", features = [] }
 libc = { version = "0.2.152", features = [] }
 windows-sys = { version = "0.52.0", features = [] }
-cargo-like-utils = "0.1.0"
+cargo-like-utils = "0.1.2"
 serde = { version = "1", features = ["derive"] }
 toml = "0.8.8"
 semver = { version = "1.0.21", features = ["serde"] }

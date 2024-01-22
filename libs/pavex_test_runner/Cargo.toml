@@ -1,7 +1,12 @@
 [package]
 name = "pavex_test_runner"
 version = "0.1.8"
-edition = "2021"
+description = "A custom test runner to execute UI tests for Pavex"
+keywords = ["pavex"]
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
+publish = false
 
 [package.metadata.dist]
 dist = false
@@ -25,7 +30,7 @@ walkdir = "2"
 serde_json = "1"
 itertools = "0.12"
 sha2 = "0.10.6"
-persist_if_changed = { path = "../persist_if_changed" }
+persist_if_changed = { path = "../persist_if_changed", version = "0.1.8" }
 object-pool = "0.5"
 num_cpus = "1"
 globwalk = "0.9.1"

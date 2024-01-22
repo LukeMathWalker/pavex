@@ -1,7 +1,11 @@
 [package]
 name = "pavex_reflection"
 version = "0.1.8"
-edition = "2021"
+description = "Utility types when working with compile-time reflection in Rust"
+keywords = ["pavex"]
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }

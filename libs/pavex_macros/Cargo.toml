@@ -1,7 +1,11 @@
 [package]
 name = "pavex_macros"
 version = "0.1.8"
-edition = "2021"
+description = "Procedural macros for the Pavex framwork."
+keywords = ["pavex"]
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
 
 [lib]
 proc-macro = true
