@@ -63,4 +63,16 @@ You can check that it's been installed correctly by running:
 pavex --version
 ```
 
+### Activation
+
+To start using your Pavex installation, you need to activate it. Execute the following command:
+
+```bash
+pavex self activate
+```
+
+It will ask you for an **activation key**.  
+You can find the activation key for the beta program in Pavex's Discord server, in the `#activation` channel. 
+You can join the beta on [pavex.dev](https://pavex.dev).
+
 If there are no errors, you're ready to [embark on your Pavex journey](learning_paths.md)!
