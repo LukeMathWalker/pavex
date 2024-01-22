@@ -1,6 +1,6 @@
 [package]
 name = "pavex"
-version = "0.1.10"
+version = "0.1.11"
 description = "A framework for building API services and web applications in Rust."
 categories = ["asynchronous", "network-programming", "web-programming::http-server"]
 keywords = ["http", "web", "framework", "pavex", "rest"]
@@ -23,14 +23,14 @@ futures-util = "0.3"
 mime = "0.3"
 thiserror = "1"
 serde = { version = "1", features = ["derive"] }
-pavex_macros = { path = "../pavex_macros", version = "0.1.10" }
+pavex_macros = { path = "../pavex_macros", version = "0.1.11" }
 paste = "1"
 tracing = "0.1"
 http-body-util = "0.1"
 pin-project-lite = "0.2"
 ubyte = { version = "0.10.4", features = ["serde"] }
-pavex_bp_schema = { path = "../pavex_bp_schema", version = "0.1.10" }
-pavex_reflection = { path = "../pavex_reflection", version = "0.1.10" }
+pavex_bp_schema = { path = "../pavex_bp_schema", version = "0.1.11" }
+pavex_reflection = { path = "../pavex_reflection", version = "0.1.11" }
 
 # Route parameters
 matchit = { version = "0.7", package = "pavex_matchit" }
