@@ -1,0 +1,6 @@
+description = "Pavex can handle lifetimes that have been constrained (e.g. set to the same lifetime in handler)"
+
+[expectations]
+codegen = "pass"
+
+[dependencies]
