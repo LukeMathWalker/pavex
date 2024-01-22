@@ -324,8 +324,11 @@ impl ResolvedType {
             ResolvedType::ResolvedPath(path) => {
                 for arg in path.generic_arguments.iter_mut() {
                     if let GenericArgument::Lifetime(lifetime) = arg {
-                        if lifetime == &GenericLifetimeParameter::Named("_".to_string()) {
-                            *lifetime = GenericLifetimeParameter::Named(inferred_lifetime.clone());
+                        if let GenericLifetimeParameter::Named(name) = lifetime {
+                            if name == "_" {
+                                *lifetime =
+                                    GenericLifetimeParameter::Named(inferred_lifetime.clone());
+                            }
                         }
                     }
                 }

@@ -86,8 +86,8 @@ pub mod route_0 {
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
-        s_0: &'c pavex::request::path::RawPathParams<'c, 'c>,
-        next: fn(&'c pavex::request::path::RawPathParams<'c, 'c>) -> T,
+        s_0: &'c pavex::request::path::RawPathParams<'a, 'b>,
+        next: fn(&'c pavex::request::path::RawPathParams<'a, 'b>) -> T,
     }
     impl<'a, 'b, 'c, T> std::future::IntoFuture for Next0<'a, 'b, 'c, T>
     where
