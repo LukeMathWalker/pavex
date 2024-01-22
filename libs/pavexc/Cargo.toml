@@ -1,6 +1,6 @@
 [package]
 name = "pavexc"
-version = "0.1.8"
+version = "0.1.9"
 description = "The compiler powering Pavex"
 keywords = ["pavex"]
 edition.workspace = true
@@ -18,8 +18,8 @@ vergen = { version = "8.0.0", features = ["build", "git", "gitcl"] }
 debug_assertions = []
 
 [dependencies]
-pavex = { path = "../pavex", version = "0.1.8" }
-pavex_bp_schema = { path = "../pavex_bp_schema", version = "0.1.8" }
+pavex = { path = "../pavex", version = "0.1.9" }
+pavex_bp_schema = { path = "../pavex_bp_schema", version = "0.1.9" }
 syn = { version = "2", features = ["full", "extra-traits", "visit"] }
 rustdoc-types = "0.24.0"
 serde = { version = "1.0.139", features = ["derive"] }

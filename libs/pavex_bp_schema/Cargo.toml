@@ -1,6 +1,6 @@
 [package]
 name = "pavex_bp_schema"
-version = "0.1.8"
+version = "0.1.9"
 description = "The schema used to (de)serialize a Pavex Blueprint"
 keywords = ["pavex"]
 edition.workspace = true
@@ -9,4 +9,4 @@ license.workspace = true
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
-pavex_reflection = { path = "../pavex_reflection", version = "0.1.8" }
+pavex_reflection = { path = "../pavex_reflection", version = "0.1.9" }
