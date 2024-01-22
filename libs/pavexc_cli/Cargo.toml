@@ -6,6 +6,7 @@ keywords = ["pavex"]
 edition.workspace = true
 repository.workspace = true
 license.workspace = true
+include = ["template", "src", "build.rs"]
 
 [[bin]]
 name = "pavexc"

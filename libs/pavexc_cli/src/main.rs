@@ -199,8 +199,7 @@ fn use_color_on_stderr(color_profile: Color) -> bool {
     }
 }
 
-static TEMPLATE_DIR: include_dir::Dir =
-    include_dir::include_dir!("$CARGO_MANIFEST_DIR/../../template/template");
+static TEMPLATE_DIR: include_dir::Dir = include_dir::include_dir!("$CARGO_MANIFEST_DIR/template");
 
 fn scaffold_project(destination: PathBuf) -> Result<ExitCode, Box<dyn std::error::Error>> {
     let name = destination
