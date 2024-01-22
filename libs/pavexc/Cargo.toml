@@ -50,8 +50,7 @@ once_cell = "1.17.1"
 toml_edit = { version = "0.21", features = ["serde"] }
 semver = "1.0.17"
 persist_if_changed = { path = "../persist_if_changed" }
-
-matchit = { git = "https://github.com/ibraheemdev/matchit", branch = "master" }
+matchit = { version = "0.7", package = "pavex_matchit" }
 
 # Sqlite cache
 xdg-home = "1.0.0"

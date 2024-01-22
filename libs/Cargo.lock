@@ -1508,11 +1508,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "matchit"
-version = "0.7.3"
-source = "git+https://github.com/ibraheemdev/matchit?branch=master#7766d457ee20826497b5061581fa6cef682d05b7"
-
-[[package]]
 name = "memchr"
 version = "2.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1884,11 +1879,11 @@ dependencies = [
  "indexmap",
  "insta",
  "itertools 0.12.0",
- "matchit",
  "mime",
  "paste",
  "pavex_bp_schema",
  "pavex_macros",
+ "pavex_matchit",
  "pavex_reflection",
  "percent-encoding",
  "pin-project-lite",
@@ -1980,6 +1975,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "pavex_matchit"
+version = "0.7.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "77b9753b03381fd8856966146c4d626d9a8507901c1bcdfbc41df03deea551fc"
+
+[[package]]
 name = "pavex_miette"
 version = "0.1.8"
 dependencies = [
@@ -2044,13 +2045,13 @@ dependencies = [
  "indexmap",
  "itertools 0.12.0",
  "la-arena",
- "matchit",
  "miette",
  "num_cpus",
  "once_cell",
  "pathdiff",
  "pavex",
  "pavex_bp_schema",
+ "pavex_matchit",
  "persist_if_changed",
  "petgraph",
  "prettyplease",
