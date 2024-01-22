@@ -388,7 +388,7 @@ checksum = "de3145af08024dea9fa9914f381a17b8fc6034dfb00f3a84013f7ff43f29ed4c"
 
 [[package]]
 name = "pavex"
-version = "0.1.5"
+version = "0.1.8"
 dependencies = [
  "anyhow",
  "bytes",
@@ -423,7 +423,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_bp_schema"
-version = "0.1.5"
+version = "0.1.8"
 dependencies = [
  "pavex_reflection",
  "serde",
@@ -431,7 +431,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_cli_client"
-version = "0.1.5"
+version = "0.1.8"
 dependencies = [
  "anyhow",
  "pavex",
@@ -440,7 +440,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_macros"
-version = "0.1.5"
+version = "0.1.8"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -449,7 +449,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_reflection"
-version = "0.1.5"
+version = "0.1.8"
 dependencies = [
  "serde",
 ]

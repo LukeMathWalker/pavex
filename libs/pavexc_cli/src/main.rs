@@ -255,7 +255,7 @@ fn scaffold_project(destination: PathBuf) -> Result<ExitCode, Box<dyn std::error
         define,
         ignore: Some(vec!["target/".into(), "Cargo.lock".into(), ".idea".into()]),
         overwrite: false,
-        verbose: true,
+        verbose: false,
     };
     generate_from_path::generate(generate_args)
         .context("Failed to scaffold the project from Pavex's default template")?;

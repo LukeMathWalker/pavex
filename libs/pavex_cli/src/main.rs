@@ -1,26 +1,31 @@
 use anyhow::Context;
 use cargo_like_utils::shell::Shell;
 use std::fmt::{Display, Formatter};
-use std::io::ErrorKind;
+use std::io::{ErrorKind, IsTerminal};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::str::FromStr;
 
 use clap::{Parser, Subcommand};
+use clap_stdin::MaybeStdin;
+use owo_colors::OwoColorize;
+use pavex_cli::activation::{check_activation, check_activation_key};
 use pavex_cli::cargo_install::{cargo_install, GitSourceRevision, Source};
 use pavex_cli::cli_kind::CliKind;
-use pavex_cli::confirmation::confirm;
 use pavex_cli::locator::PavexLocator;
 use pavex_cli::package_graph::compute_package_graph;
 use pavex_cli::pavexc::{get_or_install_from_graph, get_or_install_from_version};
 use pavex_cli::prebuilt::download_prebuilt;
 use pavex_cli::state::State;
+use pavex_cli::user_input::{confirm, mandatory_question};
 use pavex_cli::utils;
 use pavex_cli::version::latest_released_version;
 use pavexc_cli_client::commands::generate::{BlueprintArgument, GenerateError};
 use pavexc_cli_client::commands::new::NewError;
 use pavexc_cli_client::Client;
+use secrecy::{Secret, SecretString};
 use semver::Version;
+use supports_color::Stream;
 use tracing_chrome::{ChromeLayerBuilder, FlushGuard};
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::layer::SubscriberExt;
@@ -120,6 +125,13 @@ enum SelfCommands {
         #[clap(short, long, value_parser)]
         y: bool,
     },
+    Activate {
+        /// The activation key for Pavex.
+        /// You can find the activation key for the beta program in Pavex's Discord server,
+        /// in the #announcements channel.
+        #[arg(index = 1, env = "PAVEX_ACTIVATION_KEY")]
+        key: Option<MaybeStdin<SecretString>>,
+    },
 }
 
 fn init_telemetry() -> FlushGuard {
@@ -194,12 +206,25 @@ fn main() -> Result<ExitCode, miette::Error> {
             blueprint,
             diagnostics,
             output,
-        } => generate(&mut shell, client, &locator, blueprint, diagnostics, output),
-        Commands::New { path } => scaffold_project(client, &locator, &mut shell, path),
-        Commands::Self_ { command } => match command {
-            SelfCommands::Update => update(&mut shell),
-            SelfCommands::Uninstall { y } => uninstall(&mut shell, !y, locator),
-        },
+        } => {
+            check_activation(&State::new(&locator), &mut shell).map_err(utils::anyhow2miette)?;
+            generate(&mut shell, client, &locator, blueprint, diagnostics, output)
+        }
+        Commands::New { path } => {
+            check_activation(&State::new(&locator), &mut shell).map_err(utils::anyhow2miette)?;
+            scaffold_project(client, &locator, &mut shell, path)
+        }
+        Commands::Self_ { command } => {
+            // You should always be able to run `self` commands, even if Pavex has
+            // not been activated yet.
+            match command {
+                SelfCommands::Update => update(&mut shell),
+                SelfCommands::Uninstall { y } => uninstall(&mut shell, !y, locator),
+                SelfCommands::Activate { key } => {
+                    activate(&mut shell, cli.color, &locator, key.map(|k| k.into_inner()))
+                }
+            }
+        }
     }
     .map_err(utils::anyhow2miette)
 }
@@ -321,6 +346,86 @@ fn update(shell: &mut Shell) -> Result<ExitCode, anyhow::Error> {
     Ok(ExitCode::SUCCESS)
 }
 
+#[tracing::instrument("Activate Pavex", skip(shell, locator, key))]
+fn activate(
+    shell: &mut Shell,
+    color: Color,
+    locator: &PavexLocator,
+    key: Option<SecretString>,
+) -> Result<ExitCode, anyhow::Error> {
+    let state = State::new(locator);
+    let key = match key {
+        None => {
+            let stdout = std::io::stdout();
+            if !stdout.is_terminal() {
+                return Err(anyhow::anyhow!(
+                    "The current terminal does not support interactive prompts. If you want to activate \
+                    Pavex in a non-interactive environment, please provide the activation key using one of \
+                    the following methods:\n\
+                    - Pass the activation key as standard input to the `pavex self activate` command (`echo \"<your-key>\" | pavex self activate` on Unix platforms)\n\
+                    - Pass the activation key as an argument to the `pavex self activate` command (`pavex self activate \"<your-key>\"`)\n\
+                    - Set the `PAVEX_ACTIVATION_KEY` environment variable"
+                ));
+            }
+
+            println!();
+            let mut k: Option<SecretString> = None;
+            'outer: while k.is_none() {
+                let question = if use_color_on_stdout(color) {
+                    format!(
+                        "Welcome to Pavex's beta program! Please enter your {}.\n{}",
+                        "activation key".bold().green(),
+                        "You can find the activation key for the beta program in the #activation \
+                        channel of Pavex's Discord server.\n\
+                        You can join the beta program by visiting https://pavex.dev\n"
+                            .dimmed()
+                    )
+                } else {
+                    format!(
+                        "Welcome to Pavex's beta program! Please enter your activation key.\n\
+                        You can find the activation key for the beta program in the #activation \
+                        channel of Pavex's Discord server.\n\
+                        You can join the beta program by visiting https://pavex.dev\n"
+                    )
+                };
+                let attempt = Secret::new(
+                    mandatory_question(&question).context("Failed to read activation key")?,
+                );
+                if check_activation_key(&attempt).is_ok() {
+                    k = Some(attempt);
+                    break 'outer;
+                }
+                if use_color_on_stderr(color) {
+                    eprintln!(
+                        "{}: {}",
+                        "ERROR".bold().red(),
+                        "The activation key you provided is not valid. Please try again."
+                    );
+                } else {
+                    eprintln!(
+                        "ERROR: The activation key you provided is not valid. Please try again."
+                    );
+                }
+                eprintln!();
+            }
+            k.unwrap()
+        }
+        Some(k) => {
+            if check_activation_key(&k).is_err() {
+                return Err(anyhow::anyhow!(
+                    "The activation key you provided is not valid"
+                ));
+            }
+            k
+        }
+    };
+    state
+        .set_activation_key(shell, key)
+        .context("Failed to set the activation key")?;
+
+    Ok(ExitCode::SUCCESS)
+}
+
 fn download_or_compile(
     shell: &mut Shell,
     kind: CliKind,
@@ -366,4 +471,20 @@ fn download_or_compile(
         format!("`{}@{version}` from source", kind.package_name()),
     );
     Ok(())
+}
+
+fn use_color_on_stdout(color_profile: Color) -> bool {
+    match color_profile {
+        Color::Auto => supports_color::on(Stream::Stdout).is_some(),
+        Color::Always => true,
+        Color::Never => false,
+    }
+}
+
+fn use_color_on_stderr(color_profile: Color) -> bool {
+    match color_profile {
+        Color::Auto => supports_color::on(Stream::Stderr).is_some(),
+        Color::Always => true,
+        Color::Never => false,
+    }
 }
