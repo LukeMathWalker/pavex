@@ -3,7 +3,7 @@
 //! All manual edits will be lost next time the code is generated.
 extern crate alloc;
 struct ServerState {
-    router: matchit::Router<u32>,
+    router: pavex_matchit::Router<u32>,
     application_state: ApplicationState,
 }
 pub struct ApplicationState {
@@ -23,8 +23,8 @@ pub fn run(
     });
     server_builder.serve(route_request, server_state)
 }
-fn build_router() -> matchit::Router<u32> {
-    let mut router = matchit::Router::new();
+fn build_router() -> pavex_matchit::Router<u32> {
+    let mut router = pavex_matchit::Router::new();
     router.insert("/after_handler", 0u32).unwrap();
     router.insert("/nested", 1u32).unwrap();
     router.insert("/top_level", 2u32).unwrap();

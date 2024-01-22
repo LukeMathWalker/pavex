@@ -312,9 +312,9 @@ dependencies = [
 
 [[package]]
 name = "cargo-like-utils"
-version = "0.1.1"
+version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "155199f354577820b263f0cee8b92ed3066fb9c7998226812010ba2e2eeb91bb"
+checksum = "0ec06a352c92d6acafe9231248671a79a1bf5e09ed0a3866e3689cd7b34c2d68"
 dependencies = [
  "anstream",
  "anstyle",
