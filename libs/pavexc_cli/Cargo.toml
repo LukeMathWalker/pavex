@@ -2,6 +2,7 @@
 name = "pavexc_cli"
 version = "0.1.8"
 description = "A CLI interface for the Pavex compiler."
+keywords = ["pavex"]
 edition.workspace = true
 repository.workspace = true
 license.workspace = true

@@ -2,6 +2,7 @@
 name = "pavex_bp_schema"
 version = "0.1.8"
 description = "The schema used to (de)serialize a Pavex Blueprint"
+keywords = ["pavex"]
 edition.workspace = true
 repository.workspace = true
 license.workspace = true

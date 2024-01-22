@@ -2,6 +2,7 @@
 name = "persist_if_changed"
 version = "0.1.8"
 description = "A library for persisting data to disk only if it has changed."
+keywords = ["pavex"]
 edition.workspace = true
 repository.workspace = true
 license.workspace = true

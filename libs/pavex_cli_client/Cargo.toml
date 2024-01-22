@@ -2,6 +2,7 @@
 name = "pavex_cli_client"
 version = "0.1.8"
 description = "A convenient Rust interface to execute Pavex CLI commands."
+keywords = ["pavex"]
 edition.workspace = true
 repository.workspace = true
 license.workspace = true

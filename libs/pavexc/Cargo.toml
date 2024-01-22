@@ -2,6 +2,7 @@
 name = "pavexc"
 version = "0.1.8"
 description = "The compiler powering Pavex"
+keywords = ["pavex"]
 edition.workspace = true
 repository.workspace = true
 license.workspace = true

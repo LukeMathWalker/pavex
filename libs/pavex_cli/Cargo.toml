@@ -2,6 +2,7 @@
 name = "pavex_cli"
 version = "0.1.8"
 description = "The companion CLI for Pavex, a Rust framework to build API services and web applications."
+keywords = ["pavex"]
 edition.workspace = true
 repository.workspace = true
 license.workspace = true

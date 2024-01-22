@@ -2,6 +2,7 @@
 name = "pavex_test_runner"
 version = "0.1.8"
 description = "A custom test runner to execute UI tests for Pavex"
+keywords = ["pavex"]
 edition.workspace = true
 repository.workspace = true
 license.workspace = true
