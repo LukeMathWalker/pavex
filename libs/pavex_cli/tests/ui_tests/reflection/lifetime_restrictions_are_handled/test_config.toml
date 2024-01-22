@@ -1,4 +1,8 @@
-description = "Pavex can handle lifetimes that have been constrained (e.g. set to the same lifetime in handler)"
+description = """A type might be defined with multiple unconstrained lifetimes (e.g. `struct Foo<'a, 'b> { ... }`),
+but it might be used, in a given context, with a more constrained set of lifetimes (e.g. `Foo<'a, 'a>`).
+Pavex handles this case when generating the state for `Next` by keeping the degrees of freedom that were
+present in the type definition.
+"""
 
 [expectations]
 codegen = "pass"
