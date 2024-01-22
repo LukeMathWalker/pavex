@@ -1,7 +1,10 @@
 [package]
 name = "pavexc_cli"
 version = "0.1.8"
-edition = "2021"
+description = "A CLI interface for the Pavex compiler."
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
 
 [[bin]]
 name = "pavexc"

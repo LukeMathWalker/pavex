@@ -1,8 +1,10 @@
 [package]
 name = "pavex"
 version = "0.1.8"
-edition = "2021"
-repository = "https://github.com/LukeMathWalker/pavex"
+description = "A framework for building API services and web applications in Rust."
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
 
 [features]
 default = ["server"]

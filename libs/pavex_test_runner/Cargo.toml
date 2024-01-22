@@ -1,7 +1,10 @@
 [package]
 name = "pavex_test_runner"
 version = "0.1.8"
-edition = "2021"
+description = "A custom test runner to execute UI tests for Pavex"
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
 publish = false
 
 [package.metadata.dist]

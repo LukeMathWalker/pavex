@@ -1,7 +1,10 @@
 [package]
 name = "pavex_cli"
 version = "0.1.8"
-edition = "2021"
+description = "The companion CLI for Pavex, a Rust framework to build API services and web applications."
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
 
 [[bin]]
 name = "pavex"

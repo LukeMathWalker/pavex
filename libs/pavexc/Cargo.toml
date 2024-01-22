@@ -1,7 +1,10 @@
 [package]
 name = "pavexc"
 version = "0.1.8"
-edition = "2021"
+description = "The compiler powering Pavex"
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
 
 [build-dependencies]
 vergen = { version = "8.0.0", features = ["build", "git", "gitcl"] }
