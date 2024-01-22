@@ -223,13 +223,10 @@ fn scaffold_project(destination: PathBuf) -> Result<ExitCode, Box<dyn std::error
         .context("Failed to save Pavex's template to a temporary directory")?;
 
     let pavex_package_spec = std::env::var("CARGO_GENERATE_VALUE_PAVEX_PACKAGE_SPEC")
-        .unwrap_or_else(|_| {
-            r#"git = "https://github.com/LukeMathWalker/pavex", branch = "main""#.to_string()
-        });
+        .unwrap_or_else(|_| format!("version = \"{}\"", env!("CARGO_PKG_VERSION")));
     let pavex_cli_client_package_spec =
-        std::env::var("CARGO_GENERATE_VALUE_PAVEX_CLI_CLIENT_PACKAGE_SPEC").unwrap_or_else(|_| {
-            r#"git = "https://github.com/LukeMathWalker/pavex", branch = "main""#.to_string()
-        });
+        std::env::var("CARGO_GENERATE_VALUE_PAVEX_CLI_CLIENT_PACKAGE_SPEC")
+            .unwrap_or_else(|_| format!("version = \"{}\"", env!("CARGO_PKG_VERSION")));
 
     let mut define = HashMap::new();
     define.insert("pavex_package_spec".to_string(), pavex_package_spec.clone());
