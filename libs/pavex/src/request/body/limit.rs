@@ -1,4 +1,4 @@
-use crate::blueprint::constructor::{Lifecycle, RegisteredConstructor};
+use crate::blueprint::constructor::{Constructor, Lifecycle, RegisteredConstructor};
 use crate::blueprint::Blueprint;
 use crate::f;
 use crate::unit::ByteUnit;
@@ -21,7 +21,11 @@ pub enum BodySizeLimit {
 impl BodySizeLimit {
     /// Register the [default constructor](BodySizeLimit::default) for [`BodySizeLimit`] with a [`Blueprint`].
     pub fn register(bp: &mut Blueprint) -> RegisteredConstructor {
-        bp.constructor(
+        Self::default_constructor().register(bp)
+    }
+
+    pub fn default_constructor() -> Constructor {
+        Constructor::new(
             f!(<pavex::request::body::BodySizeLimit as std::default::Default>::default),
             Lifecycle::RequestScoped,
         )

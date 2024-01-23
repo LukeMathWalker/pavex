@@ -1,4 +1,4 @@
-use crate::blueprint::constructor::{Lifecycle, RegisteredConstructor};
+use crate::blueprint::constructor::{Constructor, Lifecycle, RegisteredConstructor};
 use crate::blueprint::Blueprint;
 use crate::f;
 use crate::request::RequestHead;
@@ -61,7 +61,11 @@ impl QueryParams<()> {
     /// and [error handler](ExtractQueryParamsError::into_response)
     /// for [`QueryParams`] with a [`Blueprint`].
     pub fn register(bp: &mut Blueprint) -> RegisteredConstructor {
-        bp.constructor(
+        Self::default_constructor().register(bp)
+    }
+
+    pub fn default_constructor() -> Constructor {
+        Constructor::new(
             f!(pavex::request::query::QueryParams::extract),
             Lifecycle::RequestScoped,
         )
