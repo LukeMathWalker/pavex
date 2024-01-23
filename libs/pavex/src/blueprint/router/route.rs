@@ -1,19 +1,19 @@
 use crate::blueprint::conversions::raw_callable2registered_callable;
 use crate::blueprint::reflection::RawCallable;
-use pavex_bp_schema::{Blueprint as BlueprintSchema, RegisteredComponent, RegisteredRoute};
+use pavex_bp_schema::{Blueprint as BlueprintSchema, Component, Route};
 
 /// The type returned by [`Blueprint::route`].
 ///
 /// It allows you to further configure the behaviour of the registered route.
 ///
 /// [`Blueprint::route`]: crate::blueprint::Blueprint::route
-pub struct Route<'a> {
+pub struct RegisteredRoute<'a> {
     pub(crate) blueprint: &'a mut BlueprintSchema,
     /// The index of the registered route in the blueprint's `components` vector.
     pub(crate) component_id: usize,
 }
 
-impl<'a> Route<'a> {
+impl<'a> RegisteredRoute<'a> {
     #[track_caller]
     /// Register an error handler.
     ///
@@ -63,9 +63,9 @@ impl<'a> Route<'a> {
         self
     }
 
-    fn route(&mut self) -> &mut RegisteredRoute {
+    fn route(&mut self) -> &mut Route {
         let component = &mut self.blueprint.components[self.component_id];
-        let RegisteredComponent::Route(c) = component else {
+        let Component::Route(c) = component else {
             unreachable!("The component should be a route")
         };
         c

@@ -3,7 +3,7 @@ use http::header::CONTENT_LENGTH;
 use http_body_util::{BodyExt, Limited};
 use ubyte::ByteUnit;
 
-use crate::blueprint::constructor::{Constructor, Lifecycle};
+use crate::blueprint::constructor::{Lifecycle, RegisteredConstructor};
 use crate::blueprint::Blueprint;
 use crate::{f, request::body::errors::SizeLimitExceeded, request::RequestHead};
 
@@ -79,7 +79,7 @@ impl BufferedBody {
     /// Register the [default constructor](BufferedBody::extract)
     /// and [error handler](ExtractBufferedBodyError::into_response)
     /// for [`BufferedBody`] with a [`Blueprint`].
-    pub fn register(bp: &mut Blueprint) -> Constructor {
+    pub fn register(bp: &mut Blueprint) -> RegisteredConstructor {
         bp.constructor(
             f!(pavex::request::body::BufferedBody::extract),
             Lifecycle::RequestScoped,

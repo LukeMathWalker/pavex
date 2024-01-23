@@ -5,4 +5,4 @@
 //! [`Blueprint::wrap`]: crate::blueprint::Blueprint::wrap
 mod wrapping;
 
-pub use wrapping::WrappingMiddleware;
+pub use wrapping::RegisteredWrappingMiddleware;

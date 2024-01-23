@@ -1,6 +1,6 @@
 use serde::Deserialize;
 
-use crate::blueprint::constructor::{Constructor, Lifecycle};
+use crate::blueprint::constructor::{Lifecycle, RegisteredConstructor};
 use crate::blueprint::Blueprint;
 use crate::f;
 use crate::request::path::deserializer::PathDeserializer;
@@ -95,7 +95,7 @@ impl PathParams<()> {
     /// Register the [default constructor](PathParams::extract)
     /// and [error handler](ExtractPathParamsError::into_response)
     /// for [`PathParams`] with a [`Blueprint`].
-    pub fn register(bp: &mut Blueprint) -> Constructor {
+    pub fn register(bp: &mut Blueprint) -> RegisteredConstructor {
         bp.constructor(
             f!(pavex::request::path::PathParams::extract),
             Lifecycle::RequestScoped,

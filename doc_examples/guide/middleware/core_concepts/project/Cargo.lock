@@ -307,11 +307,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "302d7ab3130588088d277783b1e2d2e10c9e9e4a16dd9050e6ec93fb3e7048f4"
 
 [[package]]
-name = "matchit"
-version = "0.7.3"
-source = "git+https://github.com/ibraheemdev/matchit?branch=master#7766d457ee20826497b5061581fa6cef682d05b7"
-
-[[package]]
 name = "memchr"
 version = "2.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -382,7 +377,7 @@ checksum = "de3145af08024dea9fa9914f381a17b8fc6034dfb00f3a84013f7ff43f29ed4c"
 
 [[package]]
 name = "pavex"
-version = "0.1.8"
+version = "0.1.12"
 dependencies = [
  "anyhow",
  "bytes",
@@ -394,11 +389,11 @@ dependencies = [
  "hyper",
  "hyper-util",
  "indexmap",
- "matchit",
  "mime",
  "paste",
  "pavex_bp_schema",
  "pavex_macros",
+ "pavex_matchit",
  "pavex_reflection",
  "percent-encoding",
  "pin-project-lite",
@@ -417,7 +412,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_bp_schema"
-version = "0.1.8"
+version = "0.1.12"
 dependencies = [
  "pavex_reflection",
  "serde",
@@ -425,7 +420,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_cli_client"
-version = "0.1.8"
+version = "0.1.12"
 dependencies = [
  "anyhow",
  "pavex",
@@ -434,7 +429,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_macros"
-version = "0.1.8"
+version = "0.1.12"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -442,8 +437,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "pavex_matchit"
+version = "0.7.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "77b9753b03381fd8856966146c4d626d9a8507901c1bcdfbc41df03deea551fc"
+
+[[package]]
 name = "pavex_reflection"
-version = "0.1.8"
+version = "0.1.12"
 dependencies = [
  "serde",
 ]

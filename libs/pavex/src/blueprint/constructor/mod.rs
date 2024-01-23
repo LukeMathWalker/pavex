@@ -6,7 +6,7 @@
 //! section of Pavex's guide for a thorough introduction to dependency injection
 //! in Pavex applications.
 pub use lifecycle::Lifecycle;
-use pavex_bp_schema::{Blueprint as BlueprintSchema, RegisteredComponent, RegisteredConstructor};
+use pavex_bp_schema::{Blueprint as BlueprintSchema, Component, Constructor};
 
 use crate::blueprint::conversions::raw_callable2registered_callable;
 use crate::blueprint::reflection::RawCallable;
@@ -18,13 +18,13 @@ mod lifecycle;
 /// It allows you to further configure the behaviour of the registered constructor.
 ///
 /// [`Blueprint::constructor`]: crate::blueprint::Blueprint::constructor
-pub struct Constructor<'a> {
+pub struct RegisteredConstructor<'a> {
     pub(crate) blueprint: &'a mut BlueprintSchema,
     /// The index of the registered middleware in the blueprint's `constructors` vector.
     pub(crate) component_id: usize,
 }
 
-impl<'a> Constructor<'a> {
+impl<'a> RegisteredConstructor<'a> {
     #[track_caller]
     /// Register an error handler.
     ///
@@ -90,9 +90,9 @@ impl<'a> Constructor<'a> {
         self
     }
 
-    fn constructor(&mut self) -> &mut RegisteredConstructor {
+    fn constructor(&mut self) -> &mut Constructor {
         let component = &mut self.blueprint.components[self.component_id];
-        let RegisteredComponent::Constructor(c) = component else {
+        let Component::Constructor(c) = component else {
             unreachable!("The component should be a constructor")
         };
         c

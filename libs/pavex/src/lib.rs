@@ -15,6 +15,7 @@ pub use error::Error;
 pub mod blueprint;
 mod error;
 pub mod http;
+pub mod kit;
 pub mod middleware;
 pub mod request;
 pub mod response;
