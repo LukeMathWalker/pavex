@@ -92,13 +92,15 @@ impl<T> PathParams<T> {
 }
 
 impl PathParams<()> {
-    /// Register the [default constructor](PathParams::extract)
-    /// and [error handler](ExtractPathParamsError::into_response)
+    /// Register the [default constructor](Self::default_constructor)
     /// for [`PathParams`] with a [`Blueprint`].
     pub fn register(bp: &mut Blueprint) -> RegisteredConstructor {
         Self::default_constructor().register(bp)
     }
 
+    /// The [default constructor](PathParams::extract)
+    /// and [error handler](ExtractPathParamsError::into_response)
+    /// for [`PathParams`].
     pub fn default_constructor() -> Constructor {
         Constructor::new(
             f!(pavex::request::path::PathParams::extract),

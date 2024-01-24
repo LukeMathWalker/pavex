@@ -76,13 +76,15 @@ impl BufferedBody {
         }
     }
 
-    /// Register the [default constructor](BufferedBody::extract)
-    /// and [error handler](ExtractBufferedBodyError::into_response)
+    /// Register the [default constructor](Self::default_constructor)
     /// for [`BufferedBody`] with a [`Blueprint`].
     pub fn register(bp: &mut Blueprint) -> RegisteredConstructor {
         Self::default_constructor().register(bp)
     }
 
+    /// The [default constructor](BufferedBody::extract)
+    /// and [error handler](ExtractBufferedBodyError::into_response)
+    /// for [`BufferedBody`].
     pub fn default_constructor() -> Constructor {
         Constructor::new(
             f!(pavex::request::body::BufferedBody::extract),

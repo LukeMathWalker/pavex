@@ -57,13 +57,15 @@ impl<T> QueryParams<T> {
 }
 
 impl QueryParams<()> {
-    /// Register the [default constructor](QueryParams::extract)
-    /// and [error handler](ExtractQueryParamsError::into_response)
+    /// Register the [default constructor](Self::default_constructor)
     /// for [`QueryParams`] with a [`Blueprint`].
     pub fn register(bp: &mut Blueprint) -> RegisteredConstructor {
         Self::default_constructor().register(bp)
     }
 
+    /// The [default constructor](QueryParams::extract)
+    /// and [error handler](ExtractQueryParamsError::into_response)
+    /// for [`QueryParams`].
     pub fn default_constructor() -> Constructor {
         Constructor::new(
             f!(pavex::request::query::QueryParams::extract),

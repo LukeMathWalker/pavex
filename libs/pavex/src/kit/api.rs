@@ -82,20 +82,20 @@ impl ApiKit {
     ///
     /// Constructors that are set to `None` will not be registered—see
     /// [`ApiKit`]'s documentation for more information.
-    pub fn register(&self, bp: &mut Blueprint) {
-        if let Some(path_params) = &self.path_params {
+    pub fn register(self, bp: &mut Blueprint) {
+        if let Some(path_params) = self.path_params {
             path_params.register(bp);
         }
-        if let Some(query_params) = &self.query_params {
+        if let Some(query_params) = self.query_params {
             query_params.register(bp);
         }
-        if let Some(json_body) = &self.json_body {
+        if let Some(json_body) = self.json_body {
             json_body.register(bp);
         }
-        if let Some(buffered_body) = &self.buffered_body {
+        if let Some(buffered_body) = self.buffered_body {
             buffered_body.register(bp);
         }
-        if let Some(body_size_limit) = &self.body_size_limit {
+        if let Some(body_size_limit) = self.body_size_limit {
             body_size_limit.register(bp);
         }
     }

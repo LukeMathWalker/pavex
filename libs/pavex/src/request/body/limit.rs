@@ -19,11 +19,13 @@ pub enum BodySizeLimit {
 }
 
 impl BodySizeLimit {
-    /// Register the [default constructor](BodySizeLimit::default) for [`BodySizeLimit`] with a [`Blueprint`].
+    /// Register the [default constructor](Self::default_constructor)
+    /// for [`BodySizeLimit`] with a [`Blueprint`].
     pub fn register(bp: &mut Blueprint) -> RegisteredConstructor {
         Self::default_constructor().register(bp)
     }
 
+    /// The [default constructor](Self::default) for [`BodySizeLimit`].
     pub fn default_constructor() -> Constructor {
         Constructor::new(
             f!(<pavex::request::body::BodySizeLimit as std::default::Default>::default),

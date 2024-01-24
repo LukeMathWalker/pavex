@@ -1,4 +1,6 @@
-use crate::blueprint::conversions::raw_callable2registered_callable;
+use crate::blueprint::conversions::{
+    cloning2cloning, lifecycle2lifecycle, raw_callable2registered_callable,
+};
 use crate::blueprint::router::RegisteredFallback;
 use crate::router::AllowedMethods;
 use pavex_bp_schema::{
@@ -146,15 +148,28 @@ impl Blueprint {
     ) -> RegisteredConstructor {
         let registered_constructor = Constructor {
             constructor: raw_callable2registered_callable(callable),
-            lifecycle: match lifecycle {
-                Lifecycle::Singleton => pavex_bp_schema::Lifecycle::Singleton,
-                Lifecycle::RequestScoped => pavex_bp_schema::Lifecycle::RequestScoped,
-                Lifecycle::Transient => pavex_bp_schema::Lifecycle::Transient,
-            },
+            lifecycle: lifecycle2lifecycle(lifecycle),
             cloning_strategy: None,
             error_handler: None,
         };
         let component_id = self.push_component(registered_constructor);
+        RegisteredConstructor {
+            component_id,
+            blueprint: &mut self.schema,
+        }
+    }
+
+    pub(super) fn register_constructor(
+        &mut self,
+        constructor: super::constructor::Constructor,
+    ) -> RegisteredConstructor {
+        let constructor = Constructor {
+            constructor: constructor.callable,
+            lifecycle: lifecycle2lifecycle(constructor.lifecycle),
+            cloning_strategy: constructor.cloning_strategy.map(cloning2cloning),
+            error_handler: constructor.error_handler,
+        };
+        let component_id = self.push_component(constructor);
         RegisteredConstructor {
             component_id,
             blueprint: &mut self.schema,

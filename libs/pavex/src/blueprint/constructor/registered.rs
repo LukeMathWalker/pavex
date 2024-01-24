@@ -1,5 +1,5 @@
 use crate::blueprint::constructor::CloningStrategy;
-use crate::blueprint::conversions::raw_callable2registered_callable;
+use crate::blueprint::conversions::{cloning2cloning, raw_callable2registered_callable};
 use crate::blueprint::reflection::RawCallable;
 use pavex_bp_schema::Blueprint as BlueprintSchema;
 use pavex_bp_schema::{Component, Constructor};
@@ -73,11 +73,7 @@ impl<'a> RegisteredConstructor<'a> {
     /// to [`CloningStrategy::CloneIfNecessary`]: Pavex will clone the output type if
     /// it's necessary to generate code that satisfies Rust's borrow checker.
     pub fn cloning(mut self, strategy: CloningStrategy) -> Self {
-        let strategy = match strategy {
-            CloningStrategy::NeverClone => pavex_bp_schema::CloningStrategy::NeverClone,
-            CloningStrategy::CloneIfNecessary => pavex_bp_schema::CloningStrategy::CloneIfNecessary,
-        };
-        self.constructor().cloning_strategy = Some(strategy);
+        self.constructor().cloning_strategy = Some(cloning2cloning(strategy));
         self
     }
 

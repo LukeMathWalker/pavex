@@ -4,7 +4,7 @@ use std::collections::BTreeSet;
 use std::fmt;
 use std::fmt::Formatter;
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 pub struct Blueprint {
     /// The location where the `Blueprint` was created.
     pub creation_location: Location,
@@ -12,7 +12,7 @@ pub struct Blueprint {
     pub components: Vec<Component>,
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 pub enum Component {
     Constructor(Constructor),
     WrappingMiddleware(WrappingMiddleware),
@@ -51,7 +51,7 @@ impl From<NestedBlueprint> for Component {
     }
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 /// A route registered against a `Blueprint` via `Blueprint::route`.
 pub struct Route {
     /// The path of the route.
@@ -64,7 +64,7 @@ pub struct Route {
     pub error_handler: Option<Callable>,
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 /// A request handler registered against a `Blueprint` via `Blueprint::fallback` to
 /// process requests that don't match any of the registered routes.
 pub struct Fallback {
@@ -74,7 +74,7 @@ pub struct Fallback {
     pub error_handler: Option<Callable>,
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 /// A constructor registered against a `Blueprint` via `Blueprint::constructor`.
 pub struct Constructor {
     /// The callable in charge of constructing the desired type.
@@ -87,7 +87,7 @@ pub struct Constructor {
     pub error_handler: Option<Callable>,
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 /// A middleware registered against a `Blueprint` via `Blueprint::wrap`.
 pub struct WrappingMiddleware {
     /// The callable that executes the middleware's logic.
@@ -96,7 +96,7 @@ pub struct WrappingMiddleware {
     pub error_handler: Option<Callable>,
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 /// A "callable" registered against a `Blueprint`—either a free function or a method,
 /// used as a request handler, error handler or constructor.
 pub struct Callable {
@@ -106,7 +106,7 @@ pub struct Callable {
     pub location: Location,
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 /// A `Blueprint` that has been nested inside another `Blueprint` via `Blueprint::nest` or
 /// `Blueprint::nest_at`.
 pub struct NestedBlueprint {
