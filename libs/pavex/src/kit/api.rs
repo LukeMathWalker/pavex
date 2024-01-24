@@ -54,15 +54,15 @@ use crate::request::query::QueryParams;
 /// kit.register(&mut bp);
 /// ```
 pub struct ApiKit {
-    /// The default constructor for [`PathParams`](PathParams).
+    /// The default constructor for [`PathParams`](struct@PathParams).
     pub path_params: Option<Constructor>,
-    /// The default constructor for [`QueryParams`](QueryParams).
+    /// The default constructor for [`QueryParams`].
     pub query_params: Option<Constructor>,
-    /// The default constructor for [`JsonBody`](JsonBody).
+    /// The default constructor for [`JsonBody`].
     pub json_body: Option<Constructor>,
-    /// The default constructor for [`BufferedBody`](BufferedBody).
+    /// The default constructor for [`BufferedBody`].
     pub buffered_body: Option<Constructor>,
-    /// The default constructor for [`BodySizeLimit`](BodySizeLimit).
+    /// The default constructor for [`BodySizeLimit`].
     pub body_size_limit: Option<Constructor>,
 }
 
