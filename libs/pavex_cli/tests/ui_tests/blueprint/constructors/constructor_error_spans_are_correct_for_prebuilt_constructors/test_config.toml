@@ -1,0 +1,8 @@
+description = """
+Pavex reports the correct code snippets when codegen fails due to an error
+in a constructor that was pre-assembled via `Constructor` rather than
+being registered directly via `Blueprint::construct`
+"""
+
+[expectations]
+codegen = "fail"
