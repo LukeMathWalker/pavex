@@ -8,7 +8,13 @@ use crate::request::query::QueryParams;
 #[non_exhaustive]
 /// A collection of first-party constructors that are often needed when building APIs.
 ///
-/// # Default
+/// # Guide
+///
+/// Check out the ["Kits"](https://pavex.dev/docs/guide/dependency_injection/core_concepts/kits)
+/// section of Pavex's guide for a thorough introduction to kits and how to
+/// customize them.
+///
+/// # Example
 ///
 /// ```rust
 /// use pavex::blueprint::Blueprint;
@@ -16,42 +22,6 @@ use crate::request::query::QueryParams;
 ///  
 /// let mut bp = Blueprint::new();
 /// let kit = ApiKit::new().register(&mut bp);
-/// ```
-///
-/// # Skip constructors
-///
-/// You can skip registering some of the bundled constructors by setting their
-/// corresponding fields to `None`:
-///
-/// ```rust
-/// use pavex::blueprint::Blueprint;
-/// use pavex::kit::ApiKit;
-///
-/// let mut bp = Blueprint::new();
-/// let kit = ApiKit {
-///     // The constructor for `PathParams` will not be registered.
-///     path_params: None,
-///     ..ApiKit::new()
-/// };
-/// kit.register(&mut bp);
-/// ```
-///
-/// # Customize constructors
-///
-/// You can also customize the bundled constructors before registering them with
-/// a [`Blueprint`]:
-///
-/// ```rust
-/// use pavex::blueprint::Blueprint;
-/// use pavex::blueprint::constructor::CloningStrategy;
-/// use pavex::kit::ApiKit;
-///
-/// let mut bp = Blueprint::new();
-/// let mut kit = ApiKit::new();
-/// if let Some(mut buffered_body) = &mut kit.buffered_body {
-///     buffered_body = buffered_body.cloning(CloningStrategy::CloneIfNecessary);
-/// }
-/// kit.register(&mut bp);
 /// ```
 pub struct ApiKit {
     /// The default constructor for [`PathParams`](struct@PathParams).
@@ -80,8 +50,7 @@ impl ApiKit {
 
     /// Register all the bundled constructors with a [`Blueprint`].
     ///
-    /// Constructors that are set to `None` will not be registered—see
-    /// [`ApiKit`]'s documentation for more information.
+    /// Constructors that are set to `None` will not be registered.
     pub fn register(self, bp: &mut Blueprint) -> RegisteredApiKit {
         if let Some(path_params) = self.path_params {
             path_params.register(bp);

@@ -107,6 +107,7 @@ nav:
               - guide/dependency_injection/core_concepts/constructors.md
               - guide/dependency_injection/core_concepts/application_state.md
               - guide/dependency_injection/core_concepts/framework_primitives.md
+              - guide/dependency_injection/core_concepts/kits.md
           - guide/dependency_injection/cookbook.md
           - guide/dependency_injection/limitations.md
       - "Middleware": guide/middleware/index.md

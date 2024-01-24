@@ -12,7 +12,7 @@ It specifies:
 
 - The HTTP method (`GET`)
 - The path (`/api/ping`)
-- The [fully qualified path](../../guide/dependency_injection/cookbook.md) to the handler function (`crate::routes::status::ping`), wrapped in a macro (`f!`)
+- The [fully qualified path](../../guide/dependency_injection/cookbook.md) to the handler function (`crate::routes::status::ping`), wrapped in a macro ([`f!`][f!])
 
 ## Request handlers
 
@@ -97,3 +97,5 @@ You should see `Hello, Ursula!` in your terminal if everything went well.
 [Response::ok]: ../../api_reference/pavex/response/struct.Response.html#method.ok
 
 [set_typed_body]: ../../api_reference/pavex/response/struct.Response.html#method.set_typed_body
+
+[f!]: ../../api_reference/pavex/macro.f!.html

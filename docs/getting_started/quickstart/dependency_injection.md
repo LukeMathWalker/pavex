@@ -15,38 +15,9 @@ You need to go back to the [`Blueprint`][Blueprint] to find out:
 
 --8<-- "doc_examples/quickstart/04-register_common_invocation.snap"
 
-The `register_common_constructors` function takes care of registering constructors for a set of types that
-are defined in the `pavex` crate itself and commonly used in Pavex applications.
-If you check out its definition, you'll see that it registers a constructor for [`PathParams`][PathParams]:
-
---8<-- "doc_examples/quickstart/04-route_params_constructor.snap"
-
-Inside [`PathParams::register`][PathParams::register] you'll find:
-
-```rust
-use crate::blueprint::constructor::{Constructor, Lifecycle};
-use crate::blueprint::Blueprint;
-use crate::f;
-
-impl PathParams<()> {
-    pub fn register(bp: &mut Blueprint) -> Constructor {
-        bp.constructor(
-            f!(pavex::request::path::PathParams::extract),
-            Lifecycle::RequestScoped,
-        )
-        .error_handler(f!(
-            pavex::request::path::errors::ExtractPathParamsError::into_response
-        ))
-    }
-}
-```
-
-It specifies:
-
-- The [fully qualified path](../../guide/dependency_injection/cookbook.md) to the constructor method, wrapped in a macro (`f!`)
-- The constructor's lifecycle ([`Lifecycle::RequestScoped`](Lifecycle::RequestScoped)): the framework will invoke this
-  constructor at most once per
-  request
+[`ApiKit::register`][ApiKit::register] takes care of registering constructors for a set of types that
+are defined in the `pavex` crate itself and commonly used in APIs built with Pavex.  
+In particular, it registers a constructor for [`PathParams`][PathParams].  
 
 ## A new extractor: `UserAgent`
 
@@ -97,8 +68,16 @@ Now register the new constructor with the [`Blueprint`][Blueprint]:
 
 --8<-- "doc_examples/quickstart/06-register.snap"
 
+
+In [`Blueprint::constructor`][Blueprint::constructor] you must specify:
+
+- The [fully qualified path](../../guide/dependency_injection/cookbook.md) to the constructor method, wrapped in a macro ([`f!`][f!])
+- The constructor's lifecycle ([`Lifecycle::RequestScoped`](Lifecycle::RequestScoped))
+
 [`Lifecycle::RequestScoped`][Lifecycle::RequestScoped] is the right choice for this type: the data in `UserAgent` is
-request-specific.  
+request-specific.
+Using [`Lifecycle::RequestScoped`][Lifecycle::RequestScoped] ensures that the framework will invoke the constructor
+at most once per request.  
 You don't want to share it across requests ([`Lifecycle::Singleton`][Lifecycle::Singleton]) nor do you want to recompute
 it multiple times for
 the same request ([`Lifecycle::Transient`][Lifecycle::Transient]).
@@ -106,9 +85,10 @@ the same request ([`Lifecycle::Transient`][Lifecycle::Transient]).
 Make sure that the project compiles successfully now.
 
 [Blueprint]: ../../api_reference/pavex/blueprint/struct.Blueprint.html
-
+[Blueprint::constructor]: ../../api_reference/pavex/blueprint/struct.Blueprint.html#method.constructor
+[f!]: ../../api_reference/pavex/macro.f!.html
 [PathParams]: ../../api_reference/pavex/request/path/struct.PathParams.html
-[PathParams::register]: ../../api_reference/pavex/request/path/struct.PathParams.html#method.register
+[ApiKit::register]: ../../api_reference/pavex/kit/struct.ApiKit.html#method.register
 
 [Lifecycle::Singleton]: ../../api_reference/pavex/blueprint/constructor/enum.Lifecycle.html#variant.Singleton
 
