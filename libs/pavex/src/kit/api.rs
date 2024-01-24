@@ -82,7 +82,7 @@ impl ApiKit {
     ///
     /// Constructors that are set to `None` will not be registered—see
     /// [`ApiKit`]'s documentation for more information.
-    pub fn register(self, bp: &mut Blueprint) {
+    pub fn register(self, bp: &mut Blueprint) -> RegisteredApiKit {
         if let Some(path_params) = self.path_params {
             path_params.register(bp);
         }
@@ -98,5 +98,11 @@ impl ApiKit {
         if let Some(body_size_limit) = self.body_size_limit {
             body_size_limit.register(bp);
         }
+        RegisteredApiKit {}
     }
 }
+
+#[derive(Clone, Debug)]
+#[non_exhaustive]
+/// The type returned by [`ApiKit::register`].
+pub struct RegisteredApiKit {}
