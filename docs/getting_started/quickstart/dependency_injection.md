@@ -4,7 +4,7 @@ You just added a new input parameter to your `greet` handler and, somehow, the f
 at runtime without you having to do anything.  
 How does that work?
 
-It's all thanks to **dependency injection**.  
+It's all thanks to [**dependency injection**](../../guide/dependency_injection/index.md).  
 Pavex automatically injects the expected input parameters when invoking your handler functions as long as
 it knows how to construct them.
 
@@ -15,14 +15,17 @@ You need to go back to the [`Blueprint`][Blueprint] to find out:
 
 --8<-- "doc_examples/quickstart/04-register_common_invocation.snap"
 
-[`ApiKit::register`][ApiKit::register] takes care of registering constructors for a set of types that
-are defined in the `pavex` crate itself and commonly used in APIs built with Pavex.  
-In particular, it registers a constructor for [`PathParams`][PathParams].  
+[`ApiKit`][ApiKit] is one of Pavex's [kits](../../guide/dependency_injection/core_concepts/kits.md): it
+bundles together [constructors](../../guide/dependency_injection/core_concepts/constructors.md) for types
+that are commonly used when building APIs with Pavex.  
+In particular, it includes a constructor for [`PathParams`][PathParams].  
 
 ## A new extractor: `UserAgent`
 
-There's no substitute for hands-on experience, so let's design a brand-new constructor for our demo project to
-get a better understanding of how they work.  
+Kits give you a head start, but they're not the last stop on your journey: to leverage Pavex to 
+its full potential, you'll soon need to define and register your own constructors.  
+There's no substitute for hands-on experience: let's design together a brand-new constructor 
+for our demo project to get a better understanding of how it all works.  
 We only want to greet people who include a `User-Agent` header in their request(1).
 { .annotate }
 
@@ -88,7 +91,7 @@ Make sure that the project compiles successfully now.
 [Blueprint::constructor]: ../../api_reference/pavex/blueprint/struct.Blueprint.html#method.constructor
 [f!]: ../../api_reference/pavex/macro.f!.html
 [PathParams]: ../../api_reference/pavex/request/path/struct.PathParams.html
-[ApiKit::register]: ../../api_reference/pavex/kit/struct.ApiKit.html#method.register
+[ApiKit]: ../../api_reference/pavex/kit/struct.ApiKit.html
 
 [Lifecycle::Singleton]: ../../api_reference/pavex/blueprint/constructor/enum.Lifecycle.html#variant.Singleton
 
