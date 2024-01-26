@@ -16,6 +16,10 @@ and error handler:
 
 --8<-- "doc_examples/guide/request_data/route_params/project-route_params_installation.snap"
 
+If you're using the default [`ApiKit`](../../dependency_injection/core_concepts/kits.md),
+you don't need to register a constructor for [`PathParams<T>`][PathParams] manually:
+it's already included in the kit.
+
 ## Overview
 
 Let's keep using `https://example.com/users/123` as an example.  

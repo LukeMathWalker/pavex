@@ -14,6 +14,10 @@ and error handler:
 1. You also need to register a constructor for [`BufferedBody`][BufferedBody]!  
    Check out the [BufferedBody guide](../byte_wrappers.md) for more details.
 
+If you're using the default [`ApiKit`](../../../dependency_injection/core_concepts/kits.md),
+you don't need to register a constructor for [`JsonBody`][JsonBody] manually:
+it's already included in the kit.
+
 ## Extraction 
 
 Inject [`JsonBody<T>`][JsonBody] as an input in your components to access the parsed body:
