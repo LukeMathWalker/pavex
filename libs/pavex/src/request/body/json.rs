@@ -1,7 +1,7 @@
 use http::HeaderMap;
 use serde::Deserialize;
 
-use crate::blueprint::constructor::{Constructor, Lifecycle};
+use crate::blueprint::constructor::{Constructor, Lifecycle, RegisteredConstructor};
 use crate::blueprint::Blueprint;
 use crate::f;
 use crate::request::RequestHead;
@@ -20,7 +20,7 @@ use super::{
 ///
 /// # Guide
 ///
-/// Check out the [relevant section](http://localhost:8001/guide/request_data/body/deserializers/json/)
+/// Check out the [relevant section](https://pavex.dev/docs/guide/request_data/body/deserializers/json/)
 /// of Pavex's guide for a thorough introduction to `JsonBody`.
 ///
 /// # Example
@@ -78,11 +78,16 @@ impl<T> JsonBody<T> {
 }
 
 impl JsonBody<()> {
-    /// Register the [default constructor](JsonBody::extract)
-    /// and [error handler](ExtractJsonBodyError::into_response)
+    /// Register the [default constructor](Self::default_constructor)
     /// for [`JsonBody`] with a [`Blueprint`].
-    pub fn register(bp: &mut Blueprint) -> Constructor {
-        bp.constructor(
+    pub fn register(bp: &mut Blueprint) -> RegisteredConstructor {
+        Self::default_constructor().register(bp)
+    }
+
+    /// The [default constructor](JsonBody::extract)
+    /// and [error handler](ExtractJsonBodyError::into_response) for [`JsonBody`].
+    pub fn default_constructor() -> Constructor {
+        Constructor::new(
             f!(pavex::request::body::JsonBody::extract),
             Lifecycle::RequestScoped,
         )

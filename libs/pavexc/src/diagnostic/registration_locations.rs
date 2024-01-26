@@ -1,9 +1,10 @@
 //! Utility functions to obtain or manipulate the location where components (constructors,
 //! request handlers, etc.) have been registered by the user.
 use miette::SourceSpan;
+use std::ops::Deref;
 use syn::spanned::Spanned;
 use syn::visit::Visit;
-use syn::{ExprCall, ExprMethodCall, Stmt};
+use syn::{Expr, ExprCall, ExprMethodCall, Stmt};
 
 use pavex_bp_schema::Location;
 
@@ -50,9 +51,48 @@ pub(crate) fn get_f_macro_invocation_span(
             }?;
             Some(convert_proc_macro_span(raw_source, argument.span()))
         }
-        Call::FunctionCall(_) => {
+        Call::FunctionCall(node) => {
+            if let Expr::Path(path) = node.func.deref() {
+                let segments = &path.path.segments;
+                if segments.len() >= 2 {
+                    let method_name_segment = &segments[segments.len() - 1];
+                    let type_name_segment = &segments[segments.len() - 2];
+                    let index = if method_name_segment.ident == "route"
+                        || method_name_segment.ident == "error_handler"
+                        || method_name_segment.ident == "constructor"
+                        || method_name_segment.ident == "wrap"
+                        || method_name_segment.ident == "fallback"
+                    {
+                        // {X}::error_handler(self, handler)
+                        // Blueprint::constructor(bp, constructor, lifecycle)
+                        // Blueprint::wrap(bp, middleware)
+                        // Blueprint::fallback(bp, handler)
+                        1
+                    } else if method_name_segment.ident == "route" {
+                        // Blueprint::route(bp, method, path_pattern, handler)
+                        3
+                    } else if type_name_segment.ident == "Constructor"
+                        && method_name_segment.ident == "new"
+                    {
+                        // Constructor::new(constructor, lifecycle)
+                        0
+                    } else {
+                        tracing::trace!(
+                            node = ?node,
+                            "We couldn't extract an f-macro invocation span from this function call node",
+                        );
+                        return None;
+                    };
+                    return node
+                        .args
+                        .iter()
+                        .nth(index)
+                        .map(|argument| convert_proc_macro_span(raw_source, argument.span()));
+                }
+            }
             tracing::trace!(
-                "We do not handle (yet) function call spans when looking for f-macro invoation spans in diagnostics",
+                node = ?node,
+                "We couldn't extract an f-macro invocation span from this function call node",
             );
             None
         }

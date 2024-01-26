@@ -1,7 +1,0 @@
-```rust title="demo/src/blueprint.rs" hl_lines="3"
-// [...]
-fn register_common_constructors(bp: &mut Blueprint) {
-    PathParams::register(bp);
-    // [...]
-}
-```

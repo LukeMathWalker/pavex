@@ -1,19 +1,19 @@
 use crate::blueprint::conversions::raw_callable2registered_callable;
 use crate::blueprint::reflection::RawCallable;
-use pavex_bp_schema::{Blueprint as BlueprintSchema, RegisteredComponent, RegisteredFallback};
+use pavex_bp_schema::{Blueprint as BlueprintSchema, Component, Fallback};
 
 /// The type returned by [`Blueprint::fallback`].
 ///
 /// It allows you to further configure the behaviour of the registered handler.
 ///
 /// [`Blueprint::fallback`]: crate::blueprint::Blueprint::fallback
-pub struct Fallback<'a> {
+pub struct RegisteredFallback<'a> {
     pub(crate) blueprint: &'a mut BlueprintSchema,
     /// The index of the registered fallback in the blueprint's `components` vector.
     pub(crate) component_id: usize,
 }
 
-impl<'a> Fallback<'a> {
+impl<'a> RegisteredFallback<'a> {
     #[track_caller]
     /// Register an error handler.
     ///
@@ -63,9 +63,9 @@ impl<'a> Fallback<'a> {
         self
     }
 
-    fn fallback(&mut self) -> &mut RegisteredFallback {
+    fn fallback(&mut self) -> &mut Fallback {
         let component = &mut self.blueprint.components[self.component_id];
-        let RegisteredComponent::FallbackRequestHandler(fallback) = component else {
+        let Component::FallbackRequestHandler(fallback) = component else {
             unreachable!("The component should be a fallback request handler")
         };
         fallback

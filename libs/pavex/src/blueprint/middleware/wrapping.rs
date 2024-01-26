@@ -1,8 +1,6 @@
 use crate::blueprint::conversions::raw_callable2registered_callable;
 use crate::blueprint::reflection::RawCallable;
-use pavex_bp_schema::{
-    Blueprint as BlueprintSchema, RegisteredComponent, RegisteredWrappingMiddleware,
-};
+use pavex_bp_schema::{Blueprint as BlueprintSchema, Component, WrappingMiddleware};
 
 /// The type returned by [`Blueprint::wrap`].
 ///
@@ -10,13 +8,13 @@ use pavex_bp_schema::{
 /// middleware.
 ///
 /// [`Blueprint::wrap`]: crate::blueprint::Blueprint::wrap
-pub struct WrappingMiddleware<'a> {
+pub struct RegisteredWrappingMiddleware<'a> {
     pub(crate) blueprint: &'a mut BlueprintSchema,
     /// The index of the registered middleware in the blueprint's `components` vector.
     pub(crate) component_id: usize,
 }
 
-impl<'a> WrappingMiddleware<'a> {
+impl<'a> RegisteredWrappingMiddleware<'a> {
     #[track_caller]
     /// Register an error handler.
     ///
@@ -69,9 +67,9 @@ impl<'a> WrappingMiddleware<'a> {
         self
     }
 
-    fn wrapping_middleware(&mut self) -> &mut RegisteredWrappingMiddleware {
+    fn wrapping_middleware(&mut self) -> &mut WrappingMiddleware {
         let component = &mut self.blueprint.components[self.component_id];
-        let RegisteredComponent::WrappingMiddleware(c) = component else {
+        let Component::WrappingMiddleware(c) = component else {
             unreachable!("The component should be a wrapping middleware")
         };
         c

@@ -3,9 +3,8 @@ use anyhow::anyhow;
 use guppy::graph::PackageGraph;
 
 use pavex_bp_schema::{
-    Blueprint, CloningStrategy, Lifecycle, Location, NestedBlueprint, RawCallableIdentifiers,
-    RegisteredCallable, RegisteredComponent, RegisteredConstructor, RegisteredFallback,
-    RegisteredRoute, RegisteredWrappingMiddleware,
+    Blueprint, Callable, CloningStrategy, Component, Constructor, Fallback, Lifecycle, Location,
+    NestedBlueprint, RawCallableIdentifiers, Route, WrappingMiddleware,
 };
 
 use crate::compiler::analyses::user_components::router_key::RouterKey;
@@ -266,16 +265,16 @@ impl RawUserComponentDb {
         package_graph: &PackageGraph,
         diagnostics: &mut Vec<miette::Error>,
     ) {
-        let mut fallback: Option<&RegisteredFallback> = None;
+        let mut fallback: Option<&Fallback> = None;
         for component in &bp.components {
             match component {
-                RegisteredComponent::Constructor(c) => {
+                Component::Constructor(c) => {
                     self.process_constructor(&c, current_scope_id);
                 }
-                RegisteredComponent::WrappingMiddleware(w) => {
+                Component::WrappingMiddleware(w) => {
                     self.process_middleware(&w, current_scope_id, &mut current_middleware_chain);
                 }
-                RegisteredComponent::Route(r) => self.process_route(
+                Component::Route(r) => self.process_route(
                     &r,
                     &current_middleware_chain,
                     current_scope_id,
@@ -284,10 +283,10 @@ impl RawUserComponentDb {
                     package_graph,
                     diagnostics,
                 ),
-                RegisteredComponent::FallbackRequestHandler(f) => {
+                Component::FallbackRequestHandler(f) => {
                     fallback = Some(f);
                 }
-                RegisteredComponent::NestedBlueprint(b) => {
+                Component::NestedBlueprint(b) => {
                     bp_queue.push(QueueItem {
                         parent_scope_id: current_scope_id,
                         nested_bp: &b,
@@ -313,8 +312,8 @@ impl RawUserComponentDb {
                 "pavex::router::default_fallback".to_owned(),
                 "pavex".to_owned(),
             );
-            let registered_fallback = RegisteredFallback {
-                request_handler: RegisteredCallable {
+            let registered_fallback = Fallback {
+                request_handler: Callable {
                     callable: raw_callable_identifiers,
                     // We don't have a location for the default fallback handler.
                     // Nor do we have a way (yet) to identify this component as "framework provided".
@@ -338,7 +337,7 @@ impl RawUserComponentDb {
     /// (if present).
     fn process_route(
         &mut self,
-        registered_route: &RegisteredRoute,
+        registered_route: &Route,
         current_middleware_chain: &[UserComponentId],
         current_scope_id: ScopeId,
         path_prefix: Option<&str>,
@@ -396,7 +395,7 @@ impl RawUserComponentDb {
     /// (if present).  
     fn process_fallback(
         &mut self,
-        fallback: &RegisteredFallback,
+        fallback: &Fallback,
         path_prefix: Option<&str>,
         current_middleware_chain: &[UserComponentId],
         current_scope_id: ScopeId,
@@ -436,7 +435,7 @@ impl RawUserComponentDb {
     /// (if present).
     fn process_middleware(
         &mut self,
-        middleware: &RegisteredWrappingMiddleware,
+        middleware: &WrappingMiddleware,
         current_scope_id: ScopeId,
         current_middleware_chain: &mut Vec<UserComponentId>,
     ) {
@@ -468,11 +467,7 @@ impl RawUserComponentDb {
     /// registered against the provided `Blueprint`, including its error handler
     /// (if present).
     /// It is associated with or nested under the provided `current_scope_id`.
-    fn process_constructor(
-        &mut self,
-        constructor: &RegisteredConstructor,
-        current_scope_id: ScopeId,
-    ) {
+    fn process_constructor(&mut self, constructor: &Constructor, current_scope_id: ScopeId) {
         let raw_callable_identifiers_id = self
             .identifiers_interner
             .get_or_intern(constructor.constructor.callable.clone());
@@ -520,7 +515,7 @@ impl RawUserComponentDb {
     /// any.
     fn process_error_handler(
         &mut self,
-        error_handler: &Option<RegisteredCallable>,
+        error_handler: &Option<Callable>,
         lifecycle: Lifecycle,
         scope_id: ScopeId,
         fallible_component_id: UserComponentId,
@@ -544,7 +539,7 @@ impl RawUserComponentDb {
     fn validate_route(
         &self,
         route_id: UserComponentId,
-        route: &RegisteredRoute,
+        route: &Route,
         package_graph: &PackageGraph,
         diagnostics: &mut Vec<miette::Error>,
     ) {
@@ -653,7 +648,7 @@ impl std::ops::Index<&UserComponent> for RawUserComponentDb {
 impl RawUserComponentDb {
     fn route_path_must_start_with_a_slash(
         &self,
-        route: &RegisteredRoute,
+        route: &Route,
         route_id: UserComponentId,
         package_graph: &PackageGraph,
         diagnostics: &mut Vec<miette::Error>,

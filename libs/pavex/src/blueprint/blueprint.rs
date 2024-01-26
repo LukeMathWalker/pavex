@@ -1,16 +1,17 @@
-use crate::blueprint::conversions::raw_callable2registered_callable;
-use crate::blueprint::router::Fallback;
+use crate::blueprint::conversions::{
+    cloning2cloning, lifecycle2lifecycle, raw_callable2registered_callable,
+};
+use crate::blueprint::router::RegisteredFallback;
 use crate::router::AllowedMethods;
 use pavex_bp_schema::{
-    Blueprint as BlueprintSchema, NestedBlueprint, RegisteredConstructor, RegisteredFallback,
-    RegisteredRoute, RegisteredWrappingMiddleware,
+    Blueprint as BlueprintSchema, Constructor, Fallback, NestedBlueprint, Route, WrappingMiddleware,
 };
 use pavex_reflection::Location;
 
-use super::constructor::{Constructor, Lifecycle};
-use super::middleware::WrappingMiddleware;
+use super::constructor::{Lifecycle, RegisteredConstructor};
+use super::middleware::RegisteredWrappingMiddleware;
 use super::reflection::RawCallable;
-use super::router::{MethodGuard, Route};
+use super::router::{MethodGuard, RegisteredRoute};
 
 /// The starting point for building an application with Pavex.
 ///
@@ -86,21 +87,26 @@ impl Blueprint {
     ///
     /// [`router`]: crate::blueprint::router
     /// [`PathParams`]: struct@crate::request::path::PathParams
-    pub fn route(&mut self, method_guard: MethodGuard, path: &str, callable: RawCallable) -> Route {
+    pub fn route(
+        &mut self,
+        method_guard: MethodGuard,
+        path: &str,
+        callable: RawCallable,
+    ) -> RegisteredRoute {
         let method_guard = match method_guard.allowed_methods() {
             AllowedMethods::Some(m) => pavex_bp_schema::MethodGuard::Some(
                 m.into_iter().map(|m| m.as_str().to_owned()).collect(),
             ),
             AllowedMethods::All => pavex_bp_schema::MethodGuard::Any,
         };
-        let registered_route = RegisteredRoute {
+        let registered_route = Route {
             path: path.to_owned(),
             method_guard,
             request_handler: raw_callable2registered_callable(callable),
             error_handler: None,
         };
         let component_id = self.push_component(registered_route);
-        Route {
+        RegisteredRoute {
             blueprint: &mut self.schema,
             component_id,
         }
@@ -135,19 +141,36 @@ impl Blueprint {
     /// bp.constructor(f!(crate::logger), Lifecycle::Transient);
     /// # }
     /// ```
-    pub fn constructor(&mut self, callable: RawCallable, lifecycle: Lifecycle) -> Constructor {
-        let registered_constructor = RegisteredConstructor {
+    pub fn constructor(
+        &mut self,
+        callable: RawCallable,
+        lifecycle: Lifecycle,
+    ) -> RegisteredConstructor {
+        let registered_constructor = Constructor {
             constructor: raw_callable2registered_callable(callable),
-            lifecycle: match lifecycle {
-                Lifecycle::Singleton => pavex_bp_schema::Lifecycle::Singleton,
-                Lifecycle::RequestScoped => pavex_bp_schema::Lifecycle::RequestScoped,
-                Lifecycle::Transient => pavex_bp_schema::Lifecycle::Transient,
-            },
+            lifecycle: lifecycle2lifecycle(lifecycle),
             cloning_strategy: None,
             error_handler: None,
         };
         let component_id = self.push_component(registered_constructor);
-        Constructor {
+        RegisteredConstructor {
+            component_id,
+            blueprint: &mut self.schema,
+        }
+    }
+
+    pub(super) fn register_constructor(
+        &mut self,
+        constructor: super::constructor::Constructor,
+    ) -> RegisteredConstructor {
+        let constructor = Constructor {
+            constructor: constructor.callable,
+            lifecycle: lifecycle2lifecycle(constructor.lifecycle),
+            cloning_strategy: constructor.cloning_strategy.map(cloning2cloning),
+            error_handler: constructor.error_handler,
+        };
+        let component_id = self.push_component(constructor);
+        RegisteredConstructor {
             component_id,
             blueprint: &mut self.schema,
         }
@@ -305,13 +328,13 @@ impl Blueprint {
     /// [`Response`]: crate::response::Response
     /// [`Future`]: std::future::Future
     #[doc(alias = "middleware")]
-    pub fn wrap(&mut self, callable: RawCallable) -> WrappingMiddleware {
-        let registered = RegisteredWrappingMiddleware {
+    pub fn wrap(&mut self, callable: RawCallable) -> RegisteredWrappingMiddleware {
+        let registered = WrappingMiddleware {
             middleware: raw_callable2registered_callable(callable),
             error_handler: None,
         };
         let component_id = self.push_component(registered);
-        WrappingMiddleware {
+        RegisteredWrappingMiddleware {
             blueprint: &mut self.schema,
             component_id,
         }
@@ -618,23 +641,20 @@ impl Blueprint {
     /// prefix of the nested blueprint (`/route`).
     ///
     /// [`Response`]: crate::response::Response
-    pub fn fallback(&mut self, callable: RawCallable) -> Fallback {
-        let registered = RegisteredFallback {
+    pub fn fallback(&mut self, callable: RawCallable) -> RegisteredFallback {
+        let registered = Fallback {
             request_handler: raw_callable2registered_callable(callable),
             error_handler: None,
         };
         let component_id = self.push_component(registered);
-        Fallback {
+        RegisteredFallback {
             blueprint: &mut self.schema,
             component_id,
         }
     }
 
     /// Register a component and return its id (i.e. its index in the `components` vector).
-    fn push_component(
-        &mut self,
-        component: impl Into<pavex_bp_schema::RegisteredComponent>,
-    ) -> usize {
+    fn push_component(&mut self, component: impl Into<pavex_bp_schema::Component>) -> usize {
         let id = self.schema.components.len();
         self.schema.components.push(component.into());
         id

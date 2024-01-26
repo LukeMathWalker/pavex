@@ -57,7 +57,8 @@ pub fn get_test_name(ui_tests_folder: &Path, ui_test_folder: &Path) -> String {
 /// Our custom test runner is built on top of `libtest_mimic`, which gives us
 /// [compatibility out-of-the-box](https://nexte.st/book/custom-test-harnesses.html) with `cargo-nextest`.
 pub fn run_tests(
-    cli_path: PathBuf,
+    pavex_cli_path: PathBuf,
+    pavexc_cli_path: PathBuf,
     definition_directory: PathBuf,
     runtime_directory: PathBuf,
 ) -> Result<Conclusion, anyhow::Error> {
@@ -77,10 +78,11 @@ pub fn run_tests(
             .load_configuration()
             .expect("Failed to load test configuration");
         let is_ignored = test_configuration.ignore;
-        let cli = cli_path.clone();
+        let pavex_cli = pavex_cli_path.clone();
+        let pavexc_cli = pavexc_cli_path.clone();
         let pool = target_directory_pool.clone();
         let test = libtest_mimic::Trial::test(name.clone(), move || {
-            run_test(test_data, test_configuration, cli, pool)
+            run_test(test_data, test_configuration, pavex_cli, pavexc_cli, pool)
         })
         .with_ignored_flag(is_ignored);
         tests.push(test);
@@ -473,10 +475,11 @@ enum ShouldRunTests {
 fn run_test(
     test: TestData,
     config: TestConfig,
-    cli: PathBuf,
+    pavex_cli: PathBuf,
+    pavexc_cli: PathBuf,
     target_dir_pool: TargetDirectoryPool,
 ) -> Result<(), Failed> {
-    match _run_test(&config, &test, &cli, &target_dir_pool) {
+    match _run_test(&config, &test, &pavex_cli, &pavexc_cli, &target_dir_pool) {
         Ok(TestOutcome {
             outcome: Err(mut msg),
             codegen_output,
@@ -520,16 +523,18 @@ fn run_test(
 fn _run_test(
     test_config: &TestConfig,
     test: &TestData,
-    cli: &Path,
+    pavex_cli: &Path,
+    pavexc_cli: &Path,
     target_dir_pool: &TargetDirectoryPool,
 ) -> Result<TestOutcome, anyhow::Error> {
     let target_dir = target_dir_pool.pull();
     let should_run_tests = test
-        .seed_test_filesystem(test_config, cli, &target_dir)
+        .seed_test_filesystem(test_config, pavex_cli, &target_dir)
         .context("Failed to seed the filesystem for the test runtime folder")?;
 
     let output = std::process::Command::new("cargo")
         .env("RUSTFLAGS", "-Awarnings")
+        .env("PAVEX_PAVEXC", pavexc_cli)
         .arg("run")
         .arg("--jobs")
         .arg("1")

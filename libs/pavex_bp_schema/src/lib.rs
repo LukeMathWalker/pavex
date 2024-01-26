@@ -4,109 +4,109 @@ use std::collections::BTreeSet;
 use std::fmt;
 use std::fmt::Formatter;
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 pub struct Blueprint {
     /// The location where the `Blueprint` was created.
     pub creation_location: Location,
     /// All registered components, in the order they were registered.
-    pub components: Vec<RegisteredComponent>,
+    pub components: Vec<Component>,
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
-pub enum RegisteredComponent {
-    Constructor(RegisteredConstructor),
-    WrappingMiddleware(RegisteredWrappingMiddleware),
-    Route(RegisteredRoute),
-    FallbackRequestHandler(RegisteredFallback),
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+pub enum Component {
+    Constructor(Constructor),
+    WrappingMiddleware(WrappingMiddleware),
+    Route(Route),
+    FallbackRequestHandler(Fallback),
     NestedBlueprint(NestedBlueprint),
 }
 
-impl From<RegisteredConstructor> for RegisteredComponent {
-    fn from(c: RegisteredConstructor) -> Self {
+impl From<Constructor> for Component {
+    fn from(c: Constructor) -> Self {
         Self::Constructor(c)
     }
 }
 
-impl From<RegisteredWrappingMiddleware> for RegisteredComponent {
-    fn from(m: RegisteredWrappingMiddleware) -> Self {
+impl From<WrappingMiddleware> for Component {
+    fn from(m: WrappingMiddleware) -> Self {
         Self::WrappingMiddleware(m)
     }
 }
 
-impl From<RegisteredRoute> for RegisteredComponent {
-    fn from(r: RegisteredRoute) -> Self {
+impl From<Route> for Component {
+    fn from(r: Route) -> Self {
         Self::Route(r)
     }
 }
 
-impl From<RegisteredFallback> for RegisteredComponent {
-    fn from(f: RegisteredFallback) -> Self {
+impl From<Fallback> for Component {
+    fn from(f: Fallback) -> Self {
         Self::FallbackRequestHandler(f)
     }
 }
 
-impl From<NestedBlueprint> for RegisteredComponent {
+impl From<NestedBlueprint> for Component {
     fn from(b: NestedBlueprint) -> Self {
         Self::NestedBlueprint(b)
     }
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 /// A route registered against a `Blueprint` via `Blueprint::route`.
-pub struct RegisteredRoute {
+pub struct Route {
     /// The path of the route.
     pub path: String,
     /// The HTTP method guard for the route.
     pub method_guard: MethodGuard,
     /// The callable in charge of processing incoming requests for this route.
-    pub request_handler: RegisteredCallable,
+    pub request_handler: Callable,
     /// The callable in charge of processing errors returned by the request handler, if any.
-    pub error_handler: Option<RegisteredCallable>,
+    pub error_handler: Option<Callable>,
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 /// A request handler registered against a `Blueprint` via `Blueprint::fallback` to
 /// process requests that don't match any of the registered routes.
-pub struct RegisteredFallback {
+pub struct Fallback {
     /// The callable in charge of processing incoming requests.
-    pub request_handler: RegisteredCallable,
+    pub request_handler: Callable,
     /// The callable in charge of processing errors returned by the request handler, if any.
-    pub error_handler: Option<RegisteredCallable>,
+    pub error_handler: Option<Callable>,
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 /// A constructor registered against a `Blueprint` via `Blueprint::constructor`.
-pub struct RegisteredConstructor {
+pub struct Constructor {
     /// The callable in charge of constructing the desired type.
-    pub constructor: RegisteredCallable,
+    pub constructor: Callable,
     /// The lifecycle of the constructed type.
     pub lifecycle: Lifecycle,
     /// The strategy dictating when the constructed type can be cloned.
     pub cloning_strategy: Option<CloningStrategy>,
     /// The callable in charge of processing errors returned by this constructor, if any.
-    pub error_handler: Option<RegisteredCallable>,
+    pub error_handler: Option<Callable>,
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 /// A middleware registered against a `Blueprint` via `Blueprint::wrap`.
-pub struct RegisteredWrappingMiddleware {
+pub struct WrappingMiddleware {
     /// The callable that executes the middleware's logic.
-    pub middleware: RegisteredCallable,
+    pub middleware: Callable,
     /// The callable in charge of processing errors returned by this middleware, if any.
-    pub error_handler: Option<RegisteredCallable>,
+    pub error_handler: Option<Callable>,
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 /// A "callable" registered against a `Blueprint`—either a free function or a method,
 /// used as a request handler, error handler or constructor.
-pub struct RegisteredCallable {
+pub struct Callable {
     /// Metadata that uniquely identifies the callable.
     pub callable: RawCallableIdentifiers,
     /// The location where the callable was registered against the `Blueprint`.
     pub location: Location,
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 /// A `Blueprint` that has been nested inside another `Blueprint` via `Blueprint::nest` or
 /// `Blueprint::nest_at`.
 pub struct NestedBlueprint {

@@ -166,7 +166,7 @@ jobs:
       - name: Run UI tests
         env:
           PAVEX_TEST_CLI_PATH: ${{ env.PAVEX }}
-          PAVEX_PAVEXC: ${{ env.PAVEXC }}
+          PAVEXC_TEST_CLI_PATH: ${{ env.PAVEXC }}
         working-directory: libs
         run: |
           cargo test --package pavex_cli

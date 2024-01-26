@@ -2,7 +2,7 @@
 // [...]
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    register_common_constructors(&mut bp);
+    ApiKit::new().register(&mut bp);
 
     add_telemetry_middleware(&mut bp);
 
