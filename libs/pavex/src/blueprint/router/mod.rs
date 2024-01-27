@@ -9,7 +9,7 @@ pub use method_guard::{
     MethodGuard, ANY, ANY_WITH_EXTENSIONS, CONNECT, DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT,
     TRACE,
 };
-pub use route::RegisteredRoute;
+pub use route::{RegisteredRoute, Route};
 
 mod fallback;
 mod method_guard;

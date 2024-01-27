@@ -1,8 +1,8 @@
 use crate::blueprint::conversions::{
-    cloning2cloning, lifecycle2lifecycle, raw_callable2registered_callable,
+    cloning2cloning, lifecycle2lifecycle, method_guard2method_guard,
+    raw_callable2registered_callable,
 };
 use crate::blueprint::router::RegisteredFallback;
-use crate::router::AllowedMethods;
 use pavex_bp_schema::{
     Blueprint as BlueprintSchema, Constructor, Fallback, NestedBlueprint, Route, WrappingMiddleware,
 };
@@ -93,15 +93,9 @@ impl Blueprint {
         path: &str,
         callable: RawCallable,
     ) -> RegisteredRoute {
-        let method_guard = match method_guard.allowed_methods() {
-            AllowedMethods::Some(m) => pavex_bp_schema::MethodGuard::Some(
-                m.into_iter().map(|m| m.as_str().to_owned()).collect(),
-            ),
-            AllowedMethods::All => pavex_bp_schema::MethodGuard::Any,
-        };
         let registered_route = Route {
             path: path.to_owned(),
-            method_guard,
+            method_guard: method_guard2method_guard(method_guard),
             request_handler: raw_callable2registered_callable(callable),
             error_handler: None,
         };
@@ -109,6 +103,20 @@ impl Blueprint {
         RegisteredRoute {
             blueprint: &mut self.schema,
             component_id,
+        }
+    }
+
+    pub(super) fn register_route(&mut self, r: super::router::Route) -> RegisteredRoute {
+        let r = Route {
+            path: r.path,
+            method_guard: method_guard2method_guard(r.method_guard),
+            error_handler: r.error_handler,
+            request_handler: r.callable,
+        };
+        let component_id = self.push_component(r);
+        RegisteredRoute {
+            component_id,
+            blueprint: &mut self.schema,
         }
     }
 
