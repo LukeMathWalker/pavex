@@ -81,6 +81,11 @@ pub(crate) fn get_f_macro_invocation_span(
                     {
                         // WrappingMiddleware::new(mw)
                         0
+                    } else if type_name_segment.ident == "Fallback"
+                        && method_name_segment.ident == "new"
+                    {
+                        // Fallback::new(fallback)
+                        0
                     } else {
                         tracing::trace!(
                             node = ?node,

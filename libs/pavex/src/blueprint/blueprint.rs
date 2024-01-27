@@ -668,6 +668,18 @@ impl Blueprint {
         }
     }
 
+    pub(super) fn register_fallback(&mut self, f: super::router::Fallback) -> RegisteredFallback {
+        let f = Fallback {
+            request_handler: f.callable,
+            error_handler: f.error_handler,
+        };
+        let component_id = self.push_component(f);
+        RegisteredFallback {
+            component_id,
+            blueprint: &mut self.schema,
+        }
+    }
+
     /// Register a component and return its id (i.e. its index in the `components` vector).
     fn push_component(&mut self, component: impl Into<pavex_bp_schema::Component>) -> usize {
         let id = self.schema.components.len();
