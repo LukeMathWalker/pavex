@@ -55,9 +55,9 @@ pub(crate) fn get_f_macro_invocation_span(
             if let Expr::Path(path) = node.func.deref() {
                 let segments = &path.path.segments;
                 if segments.len() >= 2 {
-                    let method_name = segments[segments.len() - 1].ident.to_string().as_str();
-                    let type_name = segments[segments.len() - 2].ident.to_string().as_str();
-                    let index = match (type_name, method_name) {
+                    let method_name = segments[segments.len() - 1].ident.to_string();
+                    let type_name = segments[segments.len() - 2].ident.to_string();
+                    let index = match (type_name.as_str(), method_name.as_str()) {
                         ("Blueprint", "error_handler")
                         | ("Blueprint", "constructor")
                         | ("Blueprint", "wrap")
