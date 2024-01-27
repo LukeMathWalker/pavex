@@ -55,33 +55,42 @@ pub(crate) fn get_f_macro_invocation_span(
             if let Expr::Path(path) = node.func.deref() {
                 let segments = &path.path.segments;
                 if segments.len() >= 2 {
-                    let method_name_segment = &segments[segments.len() - 1];
-                    let type_name_segment = &segments[segments.len() - 2];
-                    let index = if method_name_segment.ident == "route"
-                        || method_name_segment.ident == "error_handler"
-                        || method_name_segment.ident == "constructor"
-                        || method_name_segment.ident == "wrap"
-                        || method_name_segment.ident == "fallback"
-                    {
-                        // {X}::error_handler(self, handler)
-                        // Blueprint::constructor(bp, constructor, lifecycle)
-                        // Blueprint::wrap(bp, middleware)
-                        // Blueprint::fallback(bp, handler)
-                        1
-                    } else if method_name_segment.ident == "route" {
-                        // Blueprint::route(bp, method, path_pattern, handler)
-                        3
-                    } else if type_name_segment.ident == "Constructor"
-                        && method_name_segment.ident == "new"
-                    {
-                        // Constructor::new(constructor, lifecycle)
-                        0
-                    } else {
-                        tracing::trace!(
+                    let method_name = segments[segments.len() - 1].ident.to_string();
+                    let type_name = segments[segments.len() - 2].ident.to_string();
+                    let index = match (type_name.as_str(), method_name.as_str()) {
+                        ("Blueprint", "error_handler")
+                        | ("Blueprint", "constructor")
+                        | ("Blueprint", "wrap")
+                        | ("Blueprint", "fallback") => {
+                            // Blueprint::error_handler(bp, handler)
+                            // Blueprint::constructor(bp, constructor, lifecycle)
+                            // Blueprint::wrap(bp, middleware)
+                            // Blueprint::fallback(bp, handler)
+                            1
+                        }
+                        ("Blueprint", "route") => {
+                            // Blueprint::route(bp, method, path_pattern, handler)
+                            3
+                        }
+                        ("Route", "new") => {
+                            // Route::new(method, path_pattern, handler)
+                            2
+                        }
+                        ("Constructor", "new")
+                        | ("WrappingMiddleware", "new")
+                        | ("Fallback", "new") => {
+                            // Constructor::new(constructor, lifecycle)
+                            // WrappingMiddleware::new(mw)
+                            // Fallback::new(fallback)
+                            0
+                        }
+                        _ => {
+                            tracing::trace!(
                             node = ?node,
                             "We couldn't extract an f-macro invocation span from this function call node",
-                        );
-                        return None;
+                            );
+                            return None;
+                        }
                     };
                     return node
                         .args

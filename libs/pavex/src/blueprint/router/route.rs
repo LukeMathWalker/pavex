@@ -1,12 +1,14 @@
 use crate::blueprint::conversions::raw_callable2registered_callable;
 use crate::blueprint::reflection::RawCallable;
-use pavex_bp_schema::{Blueprint as BlueprintSchema, Component, Route};
+use crate::blueprint::router::MethodGuard;
+use crate::blueprint::Blueprint;
+use pavex_bp_schema::{Blueprint as BlueprintSchema, Callable, Component};
 
 /// The type returned by [`Blueprint::route`].
 ///
 /// It allows you to further configure the behaviour of the registered route.
 ///
-/// [`Blueprint::route`]: crate::blueprint::Blueprint::route
+/// [`Blueprint::route`]: Blueprint::route
 pub struct RegisteredRoute<'a> {
     pub(crate) blueprint: &'a mut BlueprintSchema,
     /// The index of the registered route in the blueprint's `components` vector.
@@ -63,11 +65,64 @@ impl<'a> RegisteredRoute<'a> {
         self
     }
 
-    fn route(&mut self) -> &mut Route {
+    fn route(&mut self) -> &mut pavex_bp_schema::Route {
         let component = &mut self.blueprint.components[self.component_id];
         let Component::Route(c) = component else {
             unreachable!("The component should be a route")
         };
         c
+    }
+}
+
+/// A route that has been configured but has not yet been registered with a [`Blueprint`].
+///
+/// # Guide
+///
+/// Check out the ["Routing"](https://pavex.dev/docs/guide/routing) section of Pavex's guide
+/// for a thorough introduction to routing in Pavex applications.
+///
+/// # Use cases
+///
+/// [`Route`] is primarily used by
+/// [kits](https://pavex.dev/docs/guide/dependency_injection/core_concepts/kits)
+/// to allow users to customize (or disable!)
+/// the bundled routes **before** registering them with a [`Blueprint`].
+#[derive(Clone, Debug)]
+pub struct Route {
+    pub(in crate::blueprint) method_guard: MethodGuard,
+    pub(in crate::blueprint) path: String,
+    pub(in crate::blueprint) callable: Callable,
+    pub(in crate::blueprint) error_handler: Option<Callable>,
+}
+
+impl Route {
+    /// Create a new (unregistered) route.
+    ///
+    /// Check out the documentation of [`Blueprint::route`] for more details
+    /// on routes.
+    #[track_caller]
+    pub fn new(method_guard: MethodGuard, path: &str, callable: RawCallable) -> Self {
+        Self {
+            callable: raw_callable2registered_callable(callable),
+            error_handler: None,
+            method_guard,
+            path: path.to_owned(),
+        }
+    }
+
+    /// Register an error handler for this route.
+    ///
+    /// Check out the documentation of [`RegisteredRoute::error_handler`] for more details.
+    #[track_caller]
+    pub fn error_handler(mut self, error_handler: RawCallable) -> Self {
+        self.error_handler = Some(raw_callable2registered_callable(error_handler));
+        self
+    }
+
+    /// Register this route with a [`Blueprint`].
+    ///
+    /// Check out the documentation of [`Blueprint::route`] for more details.
+    pub fn register(self, bp: &mut Blueprint) -> RegisteredRoute {
+        bp.register_route(self)
     }
 }

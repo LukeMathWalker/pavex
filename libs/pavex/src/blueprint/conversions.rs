@@ -1,6 +1,7 @@
 //! Conversions between `pavex_bp_schema` and `pavex_bp` types.
 use crate::blueprint::constructor::{CloningStrategy, Lifecycle};
 use crate::blueprint::reflection::RawCallable;
+use crate::router::AllowedMethods;
 use pavex_bp_schema::{Callable, Location};
 
 #[track_caller]
@@ -26,5 +27,16 @@ pub(super) fn cloning2cloning(cloning: CloningStrategy) -> pavex_bp_schema::Clon
     match cloning {
         CloningStrategy::CloneIfNecessary => pavex_bp_schema::CloningStrategy::CloneIfNecessary,
         CloningStrategy::NeverClone => pavex_bp_schema::CloningStrategy::NeverClone,
+    }
+}
+
+pub(super) fn method_guard2method_guard(
+    method_guard: crate::blueprint::router::MethodGuard,
+) -> pavex_bp_schema::MethodGuard {
+    match method_guard.allowed_methods() {
+        AllowedMethods::Some(m) => pavex_bp_schema::MethodGuard::Some(
+            m.into_iter().map(|m| m.as_str().to_owned()).collect(),
+        ),
+        AllowedMethods::All => pavex_bp_schema::MethodGuard::Any,
     }
 }
