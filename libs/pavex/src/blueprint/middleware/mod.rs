@@ -3,6 +3,8 @@
 //! Check out [`Blueprint::wrap`] for a brief introduction to wrapping middlewares in Pavex.
 //!
 //! [`Blueprint::wrap`]: crate::blueprint::Blueprint::wrap
-mod wrapping;
+mod registered;
+mod unregistered;
 
-pub use wrapping::RegisteredWrappingMiddleware;
+pub use registered::RegisteredWrappingMiddleware;
+pub use unregistered::WrappingMiddleware;

@@ -340,6 +340,21 @@ impl Blueprint {
         }
     }
 
+    pub(super) fn register_wrapping_middleware(
+        &mut self,
+        mw: super::middleware::WrappingMiddleware,
+    ) -> RegisteredWrappingMiddleware {
+        let mw = WrappingMiddleware {
+            middleware: mw.callable,
+            error_handler: mw.error_handler,
+        };
+        let component_id = self.push_component(mw);
+        RegisteredWrappingMiddleware {
+            component_id,
+            blueprint: &mut self.schema,
+        }
+    }
+
     #[track_caller]
     /// Nest a [`Blueprint`] under the current [`Blueprint`] (the parent), adding a common prefix to all the new routes.  
     ///

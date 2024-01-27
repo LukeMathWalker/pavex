@@ -76,6 +76,11 @@ pub(crate) fn get_f_macro_invocation_span(
                     {
                         // Constructor::new(constructor, lifecycle)
                         0
+                    } else if type_name_segment.ident == "WrappingMiddleware"
+                        && method_name_segment.ident == "new"
+                    {
+                        // WrappingMiddleware::new(mw)
+                        0
                     } else {
                         tracing::trace!(
                             node = ?node,
