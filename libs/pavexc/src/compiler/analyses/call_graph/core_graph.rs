@@ -102,19 +102,25 @@ where
             };
         }
         if prebuilt_ids.contains(&id) {
+            let resolved_component = component_db.hydrated_component(id, computation_db);
+            assert!(
+                !matches!(resolved_component, HydratedComponent::ErrorObserver(_)),
+                "Error observers should never be prebuilt."
+            );
             return CallGraphNode::InputParameter {
-                type_: component_db
-                    .hydrated_component(id, computation_db)
-                    .output_type()
-                    .to_owned(),
+                type_: resolved_component.output_type().unwrap().to_owned(),
                 source: InputParameterSource::Component(id),
             };
         }
         match component_id2invocations(id) {
             None => {
                 let resolved_component = component_db.hydrated_component(id, computation_db);
+                assert!(
+                    !matches!(resolved_component, HydratedComponent::ErrorObserver(_)),
+                    "Error observers should never be input parameters."
+                );
                 CallGraphNode::InputParameter {
-                    type_: resolved_component.output_type().to_owned(),
+                    type_: resolved_component.output_type().unwrap().to_owned(),
                     source: InputParameterSource::Component(id),
                 }
             }

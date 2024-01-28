@@ -134,7 +134,9 @@ impl RequestHandlerPipeline {
                     if component_db.lifecycle(*component_id) == Some(&Lifecycle::RequestScoped) {
                         let component =
                             component_db.hydrated_component(*component_id, computation_db);
-                        next_field_types.remove(component.output_type());
+                        if let Some(output_type) = component.output_type() {
+                            next_field_types.remove(output_type);
+                        }
                     }
                 }
             }

@@ -63,10 +63,13 @@ impl DependencyGraph {
             } else {
                 match component_id2invocations(id) {
                     None => {
-                        let type_ = component_db
-                            .hydrated_component(id, computation_db)
-                            .output_type()
-                            .to_owned();
+                        let resolved_component =
+                            component_db.hydrated_component(id, computation_db);
+                        assert!(
+                            !matches!(resolved_component, HydratedComponent::ErrorObserver(_)),
+                            "Error observers should never be input parameters."
+                        );
+                        let type_ = resolved_component.output_type().unwrap().to_owned();
                         DependencyGraphNode::Input { type_ }
                     }
                     Some(_) => DependencyGraphNode::Compute { component_id: id },
