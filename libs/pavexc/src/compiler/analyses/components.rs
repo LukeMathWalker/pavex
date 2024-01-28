@@ -16,7 +16,7 @@ use crate::compiler::analyses::user_components::{
 };
 use crate::compiler::component::{
     Constructor, ConstructorValidationError, ErrorHandler, ErrorHandlerValidationError,
-    RequestHandler, RequestHandlerValidationError, WrappingMiddleware,
+    ErrorObserver, RequestHandler, RequestHandlerValidationError, WrappingMiddleware,
     WrappingMiddlewareValidationError,
 };
 use crate::compiler::computation::{Computation, MatchResult};
@@ -73,6 +73,9 @@ pub(crate) enum Component {
     ErrorHandler {
         source_id: SourceId,
     },
+    ErrorObserver {
+        user_component_id: UserComponentId,
+    },
     Constructor {
         source_id: SourceId,
     },
@@ -106,6 +109,7 @@ pub(crate) enum HydratedComponent<'a> {
     WrappingMiddleware(WrappingMiddleware<'a>),
     ErrorHandler(Cow<'a, ErrorHandler>),
     Transformer(Computation<'a>),
+    ErrorObserver(ErrorObserver<'a>),
 }
 
 impl<'a> HydratedComponent<'a> {
@@ -116,19 +120,21 @@ impl<'a> HydratedComponent<'a> {
             HydratedComponent::ErrorHandler(e) => Cow::Borrowed(e.input_types()),
             HydratedComponent::Transformer(c) => c.input_types(),
             HydratedComponent::WrappingMiddleware(c) => Cow::Borrowed(c.input_types()),
+            HydratedComponent::ErrorObserver(eo) => Cow::Borrowed(eo.input_types()),
         }
     }
 
-    pub(crate) fn output_type(&self) -> &ResolvedType {
+    pub(crate) fn output_type(&self) -> Option<&ResolvedType> {
         match self {
-            HydratedComponent::Constructor(c) => c.output_type(),
-            HydratedComponent::RequestHandler(r) => r.output_type(),
-            HydratedComponent::ErrorHandler(e) => e.output_type(),
-            HydratedComponent::WrappingMiddleware(e) => e.output_type(),
+            HydratedComponent::Constructor(c) => Some(c.output_type()),
+            HydratedComponent::RequestHandler(r) => Some(r.output_type()),
+            HydratedComponent::ErrorHandler(e) => Some(e.output_type()),
+            HydratedComponent::WrappingMiddleware(e) => Some(e.output_type()),
             // TODO: we are not enforcing that the output type of a transformer is not
             //  the unit type. In particular, you can successfully register a `Result<T, ()>`
             //  type, which will result into a `MatchResult` with output `()` for the error.
-            HydratedComponent::Transformer(c) => c.output_type().unwrap(),
+            HydratedComponent::Transformer(c) => c.output_type(),
+            HydratedComponent::ErrorObserver(_) => None,
         }
     }
 
@@ -140,6 +146,7 @@ impl<'a> HydratedComponent<'a> {
             HydratedComponent::WrappingMiddleware(w) => w.callable.clone().into(),
             HydratedComponent::ErrorHandler(e) => e.callable.clone().into(),
             HydratedComponent::Transformer(t) => t.clone(),
+            HydratedComponent::ErrorObserver(eo) => eo.callable.clone().into(),
         }
     }
 
@@ -156,6 +163,9 @@ impl<'a> HydratedComponent<'a> {
                 HydratedComponent::ErrorHandler(Cow::Owned(e.into_owned()))
             }
             HydratedComponent::Transformer(t) => HydratedComponent::Transformer(t.into_owned()),
+            HydratedComponent::ErrorObserver(eo) => {
+                HydratedComponent::ErrorObserver(eo.into_owned())
+            }
         }
     }
 }
@@ -182,6 +192,11 @@ pub(crate) struct ComponentDb {
     ///
     /// Invariants: there is an entry for every single transformer.
     transformer_id2when_to_insert: HashMap<ComponentId, InsertTransformer>,
+    /// Associate each error observer with the index of the error input in the list of its
+    /// input parameters.
+    ///
+    /// Invariants: there is an entry for every single error observer.
+    error_observer_id2error_input_index: HashMap<ComponentId, usize>,
     error_handler_id2error_handler: HashMap<ComponentId, ErrorHandler>,
     into_response: PathType,
     /// A mapping from the low-level [`UserComponentId`]s to the high-level [`ComponentId`]s.
@@ -218,6 +233,14 @@ impl ComponentDb {
             };
             into_response
         };
+        let pavex_error_ref = {
+            let error = process_framework_path("pavex::Error", package_graph, krate_collection);
+            ResolvedType::Reference(TypeReference {
+                lifetime: Lifetime::Elided,
+                inner: Box::new(error),
+                is_mutable: false,
+            })
+        };
 
         let mut self_ = Self {
             user_component_db,
@@ -231,13 +254,14 @@ impl ComponentDb {
             constructor_id2cloning_strategy: Default::default(),
             handler_id2middleware_ids: Default::default(),
             transformer_id2when_to_insert: Default::default(),
+            error_observer_id2error_input_index: Default::default(),
             error_handler_id2error_handler: Default::default(),
             into_response,
             user_component_id2component_id: Default::default(),
         };
 
         {
-            // Keep track of which components are fallible in order to emit a diagnostic
+            // Keep track of which components are fallible to emit a diagnostic
             // if they were not paired with an error handler.
             let mut needs_error_handler = IndexSet::new();
 
@@ -259,6 +283,14 @@ impl ComponentDb {
 
             self_.process_wrapping_middlewares(
                 &mut needs_error_handler,
+                computation_db,
+                package_graph,
+                krate_collection,
+                diagnostics,
+            );
+
+            self_.process_error_observers(
+                &pavex_error_ref,
                 computation_db,
                 package_graph,
                 krate_collection,
@@ -307,6 +339,7 @@ impl ComponentDb {
                     Constructor { .. }
                     | Transformer { .. }
                     | WrappingMiddleware { .. }
+                    | ErrorObserver { .. }
                     | ErrorHandler { .. } => None,
                 }
             })
@@ -613,6 +646,51 @@ impl ComponentDb {
                         self.match_id2fallible_id.insert(ok_id, mw_id);
                         self.match_id2fallible_id.insert(err_id, mw_id);
                     }
+                }
+            }
+        }
+    }
+
+    fn process_error_observers(
+        &mut self,
+        pavex_error_ref: &ResolvedType,
+        computation_db: &mut ComputationDb,
+        package_graph: &PackageGraph,
+        krate_collection: &CrateCollection,
+        diagnostics: &mut Vec<miette::Error>,
+    ) {
+        let error_observer_ids = self
+            .user_component_db
+            .error_observers()
+            .map(|(id, _)| id)
+            .collect::<Vec<_>>();
+        for user_component_id in error_observer_ids {
+            let user_component = &self.user_component_db[user_component_id];
+            let callable = &computation_db[user_component_id];
+            let UserComponent::ErrorObserver { .. } = user_component else {
+                unreachable!()
+            };
+            match ErrorObserver::new(Cow::Borrowed(callable), pavex_error_ref) {
+                Err(e) => {
+                    Self::invalid_error_observer(
+                        e,
+                        user_component_id,
+                        &self.user_component_db,
+                        computation_db,
+                        krate_collection,
+                        package_graph,
+                        diagnostics,
+                    );
+                }
+                Ok(eo) => {
+                    let eo_id = self
+                        .interner
+                        .get_or_intern(Component::ErrorObserver { user_component_id });
+                    self.user_component_id2component_id
+                        .insert(user_component_id, eo_id);
+                    self.error_observer_id2error_input_index
+                        .insert(eo_id, eo.error_input_index);
+                    self.id2lifecycle.insert(eo_id, Lifecycle::Transient);
                 }
             }
         }
@@ -1004,6 +1082,7 @@ impl ComponentDb {
         self.interner.iter().filter_map(|(id, c)| match c {
             Component::RequestHandler { .. }
             | Component::ErrorHandler { .. }
+            | Component::ErrorObserver { .. }
             | Component::WrappingMiddleware { .. }
             | Component::Transformer { .. } => None,
             Component::Constructor { source_id } => {
@@ -1081,6 +1160,14 @@ impl ComponentDb {
                 let c = &computation_db[*computation_id];
                 HydratedComponent::Transformer(c.clone())
             }
+            Component::ErrorObserver { user_component_id } => {
+                let callable = &computation_db[*user_component_id];
+                let error_observer = ErrorObserver {
+                    callable: Cow::Borrowed(callable),
+                    error_input_index: todo!(),
+                };
+                HydratedComponent::ErrorObserver(error_observer)
+            }
         }
     }
 
@@ -1097,7 +1184,8 @@ impl ComponentDb {
     /// Return the [`ScopeId`] of the given component.
     pub fn scope_id(&self, component_id: ComponentId) -> ScopeId {
         match &self[component_id] {
-            Component::RequestHandler { user_component_id } => {
+            Component::RequestHandler { user_component_id }
+            | Component::ErrorObserver { user_component_id } => {
                 self.user_component_db[*user_component_id].scope_id()
             }
             Component::WrappingMiddleware { source_id }
@@ -1186,6 +1274,7 @@ impl ComponentDb {
                 },
                 HydratedComponent::RequestHandler(_)
                 | HydratedComponent::ErrorHandler(_)
+                | HydratedComponent::ErrorObserver(_)
                 | HydratedComponent::Transformer(_) => {
                     todo!()
                 }
@@ -1260,6 +1349,7 @@ impl ComponentDb {
             }
             HydratedComponent::RequestHandler(_)
             | HydratedComponent::ErrorHandler(_)
+            | HydratedComponent::ErrorObserver(_)
             | HydratedComponent::Transformer(_) => {
                 todo!()
             }
@@ -1288,6 +1378,7 @@ impl ComponentDb {
                 let templated_output = self
                     .hydrated_component(id, computation_db)
                     .output_type()
+                    .unwrap()
                     .to_owned();
                 let ref_component_error_type = ResolvedType::Reference(TypeReference {
                     is_mutable: false,

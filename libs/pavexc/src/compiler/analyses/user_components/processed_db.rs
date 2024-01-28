@@ -166,6 +166,16 @@ impl UserComponentDb {
             .filter(|(_, c)| matches!(c, UserComponent::WrappingMiddleware { .. }))
     }
 
+    /// Iterate over all the error observer components in the database, returning their id and the
+    /// associated `UserComponent`.
+    pub fn error_observers(
+        &self,
+    ) -> impl Iterator<Item = (UserComponentId, &UserComponent)> + DoubleEndedIterator {
+        self.component_interner
+            .iter()
+            .filter(|(_, c)| matches!(c, UserComponent::ErrorObserver { .. }))
+    }
+
     /// Return the lifecycle of the component with the given id.
     pub fn get_lifecycle(&self, id: UserComponentId) -> &Lifecycle {
         &self.id2lifecycle[&id]
