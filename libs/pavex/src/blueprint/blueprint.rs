@@ -2,6 +2,7 @@ use crate::blueprint::conversions::{
     cloning2cloning, lifecycle2lifecycle, method_guard2method_guard,
     raw_callable2registered_callable,
 };
+use crate::blueprint::error_observer::RegisteredErrorObserver;
 use crate::blueprint::router::RegisteredFallback;
 use pavex_bp_schema::{
     Blueprint as BlueprintSchema, Constructor, Fallback, NestedBlueprint, Route, WrappingMiddleware,
@@ -683,6 +684,31 @@ impl Blueprint {
         };
         let component_id = self.push_component(f);
         RegisteredFallback {
+            component_id,
+            blueprint: &mut self.schema,
+        }
+    }
+
+    pub fn error_observer(&mut self, callable: RawCallable) -> RegisteredErrorObserver {
+        let registered = pavex_bp_schema::ErrorObserver {
+            error_observer: raw_callable2registered_callable(callable),
+        };
+        let component_id = self.push_component(registered);
+        RegisteredErrorObserver {
+            blueprint: &mut self.schema,
+            component_id,
+        }
+    }
+
+    pub(super) fn register_error_observer(
+        &mut self,
+        eo: super::error_observer::ErrorObserver,
+    ) -> RegisteredErrorObserver {
+        let eo = pavex_bp_schema::ErrorObserver {
+            error_observer: eo.callable,
+        };
+        let component_id = self.push_component(eo);
+        RegisteredErrorObserver {
             component_id,
             blueprint: &mut self.schema,
         }
