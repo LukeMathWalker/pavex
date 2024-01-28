@@ -33,7 +33,7 @@ impl<'a> ErrorObserver<'a> {
             .position(|i| i == pavex_error_ref)
             .ok_or_else(
                 || ErrorObserverValidationError::DoesNotTakeErrorReferenceAsInput {
-                    observer,
+                    observer: error_observer.into_owned(),
                     error_type: pavex_error_ref.to_owned(),
                 },
             )?;
@@ -65,14 +65,21 @@ impl<'a> ErrorObserver<'a> {
         &self.callable.inputs[self.error_input_index]
     }
 
+    pub fn into_owned(self) -> ErrorObserver<'static> {
+        ErrorObserver {
+            callable: Cow::Owned(self.callable.into_owned()),
+            error_input_index: self.error_input_index,
+        }
+    }
+
     pub fn input_types(&self) -> &[ResolvedType] {
         self.callable.inputs.as_slice()
     }
 }
 
-impl AsRef<Callable> for ErrorObserver {
+impl<'a> AsRef<Callable> for ErrorObserver<'a> {
     fn as_ref(&self) -> &Callable {
-        &self.callable
+        self.callable.as_ref()
     }
 }
 

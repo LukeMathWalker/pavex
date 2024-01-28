@@ -431,7 +431,7 @@ impl ConstructibleDb {
             .entry(scope_id)
             .or_insert_with(ConstructiblesInScope::new);
         let output = component.output_type();
-        scope_constructibles.insert(output.to_owned(), component_id);
+        scope_constructibles.insert(output.unwrap().to_owned(), component_id);
     }
 
     /// Find the constructor for a given type in a given scope.

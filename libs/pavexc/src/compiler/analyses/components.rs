@@ -16,8 +16,8 @@ use crate::compiler::analyses::user_components::{
 };
 use crate::compiler::component::{
     Constructor, ConstructorValidationError, ErrorHandler, ErrorHandlerValidationError,
-    ErrorObserver, RequestHandler, RequestHandlerValidationError, WrappingMiddleware,
-    WrappingMiddlewareValidationError,
+    ErrorObserver, ErrorObserverValidationError, RequestHandler, RequestHandlerValidationError,
+    WrappingMiddleware, WrappingMiddlewareValidationError,
 };
 use crate::compiler::computation::{Computation, MatchResult};
 use crate::compiler::interner::Interner;
@@ -1164,7 +1164,7 @@ impl ComponentDb {
                 let callable = &computation_db[*user_component_id];
                 let error_observer = ErrorObserver {
                     callable: Cow::Borrowed(callable),
-                    error_input_index: todo!(),
+                    error_input_index: self.error_observer_id2error_input_index[&id],
                 };
                 HydratedComponent::ErrorObserver(error_observer)
             }
@@ -1980,6 +1980,107 @@ impl ComponentDb {
         let diagnostic = CompilerDiagnostic::builder(source, error)
             .optional_label(label)
             .build();
+        diagnostics.push(diagnostic.into());
+    }
+
+    fn invalid_error_observer(
+        e: ErrorObserverValidationError,
+        raw_user_component_id: UserComponentId,
+        raw_user_component_db: &UserComponentDb,
+        computation_db: &ComputationDb,
+        krate_collection: &CrateCollection,
+        package_graph: &PackageGraph,
+        diagnostics: &mut Vec<miette::Error>,
+    ) {
+        let location = raw_user_component_db.get_location(raw_user_component_id);
+        let source = match location.source_file(package_graph) {
+            Ok(s) => s,
+            Err(e) => {
+                diagnostics.push(e.into());
+                return;
+            }
+        };
+        let label = diagnostic::get_f_macro_invocation_span(&source, location)
+            .map(|s| s.labeled("The error observer was registered here".into()));
+        let diagnostic = match &e {
+            // TODO: Add a sub-diagnostic showing the error handler signature, highlighting with
+            //  a label the non-unit return type.
+            ErrorObserverValidationError::MustReturnUnitType { .. } |
+            // TODO: Add a sub-diagnostic showing the error handler signature, highlighting with
+            //  a label the input types. 
+            ErrorObserverValidationError::DoesNotTakeErrorReferenceAsInput { .. } => {
+                CompilerDiagnostic::builder(source, e)
+                    .optional_label(label)
+                    .build()
+            }
+            ErrorObserverValidationError::UnassignedGenericParameters { ref parameters } => {
+                fn get_definition_span(
+                    callable: &Callable,
+                    free_parameters: &IndexSet<String>,
+                    krate_collection: &CrateCollection,
+                    package_graph: &PackageGraph,
+                ) -> Option<AnnotatedSnippet> {
+                    let global_item_id = callable.source_coordinates.as_ref()?;
+                    let item = krate_collection.get_type_by_global_type_id(global_item_id);
+                    let definition_span = item.span.as_ref()?;
+                    let source_contents = diagnostic::read_source_file(
+                        &definition_span.filename,
+                        &package_graph.workspace(),
+                    )
+                        .ok()?;
+                    let span = convert_rustdoc_span(&source_contents, definition_span.to_owned());
+                    let span_contents =
+                        source_contents[span.offset()..(span.offset() + span.len())].to_string();
+                    let generic_params = match &item.inner {
+                        ItemEnum::Function(_) => {
+                            if let Ok(item) = syn::parse_str::<syn::ItemFn>(&span_contents) {
+                                item.sig.generics.params
+                            } else if let Ok(item) =
+                                syn::parse_str::<syn::ImplItemFn>(&span_contents)
+                            {
+                                item.sig.generics.params
+                            } else {
+                                panic!("Could not parse as a function or method:\n{span_contents}")
+                            }
+                        }
+                        _ => unreachable!(),
+                    };
+
+                    let mut labels = vec![];
+                    for param in generic_params {
+                        if let syn::GenericParam::Type(ty) = param {
+                            if free_parameters.contains(ty.ident.to_string().as_str()) {
+                                labels.push(
+                                    convert_proc_macro_span(&span_contents, ty.span())
+                                        .labeled("I can't infer this".into()),
+                                );
+                            }
+                        }
+                    }
+                    let source_path = definition_span.filename.to_str().unwrap();
+                    Some(AnnotatedSnippet::new_with_labels(
+                        NamedSource::new(source_path, span_contents),
+                        labels,
+                    ))
+                }
+
+                let callable = &computation_db[raw_user_component_id];
+                let definition_snippet =
+                    get_definition_span(callable, parameters, krate_collection, package_graph);
+                let error = anyhow::anyhow!(e)
+                    .context(
+                        "All generic parameters must be assigned to a concrete type when you register an error observer, I can't infer them.".to_string());
+                CompilerDiagnostic::builder(source, error)
+                    .optional_label(label)
+                    .optional_additional_annotated_snippet(definition_snippet)
+                    .help(
+                        "Specify the concrete type(s) for the problematic \
+                        generic parameter(s) when registering the error observer against the blueprint: `f!(my_crate::my_observer::<ConcreteType>)`".into())
+                    // ^ TODO: add a proper code snippet here, using the actual function that needs
+                    //    to be amended instead of a made signature
+                    .build()
+            }
+        };
         diagnostics.push(diagnostic.into());
     }
 
