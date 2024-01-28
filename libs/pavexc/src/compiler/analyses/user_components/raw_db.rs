@@ -3,8 +3,8 @@ use anyhow::anyhow;
 use guppy::graph::PackageGraph;
 
 use pavex_bp_schema::{
-    Blueprint, Callable, CloningStrategy, Component, Constructor, Fallback, Lifecycle, Location,
-    NestedBlueprint, RawCallableIdentifiers, Route, WrappingMiddleware,
+    Blueprint, Callable, CloningStrategy, Component, Constructor, ErrorObserver, Fallback,
+    Lifecycle, Location, NestedBlueprint, RawCallableIdentifiers, Route, WrappingMiddleware,
 };
 
 use crate::compiler::analyses::user_components::router_key::RouterKey;
@@ -45,6 +45,10 @@ pub enum UserComponent {
         raw_callable_identifiers_id: RawCallableIdentifierId,
         scope_id: ScopeId,
     },
+    ErrorObserver {
+        raw_callable_identifiers_id: RawCallableIdentifierId,
+        scope_id: ScopeId,
+    },
 }
 
 impl UserComponent {
@@ -58,6 +62,7 @@ impl UserComponent {
             UserComponent::Constructor { .. } => CallableType::Constructor,
             UserComponent::WrappingMiddleware { .. } => CallableType::WrappingMiddleware,
             UserComponent::Fallback { .. } => CallableType::RequestHandler,
+            UserComponent::ErrorObserver { .. } => CallableType::ErrorObserver,
         }
     }
 
@@ -81,6 +86,10 @@ impl UserComponent {
                 raw_callable_identifiers_id,
                 ..
             }
+            | UserComponent::ErrorObserver {
+                raw_callable_identifiers_id,
+                ..
+            }
             | UserComponent::Constructor {
                 raw_callable_identifiers_id,
                 ..
@@ -91,7 +100,8 @@ impl UserComponent {
     /// Returns the [`ScopeId`] for the scope that this [`UserComponent`] is associated with.
     pub fn scope_id(&self) -> ScopeId {
         match self {
-            UserComponent::RequestHandler { scope_id, .. }
+            UserComponent::ErrorObserver { scope_id, .. }
+            | UserComponent::RequestHandler { scope_id, .. }
             | UserComponent::Fallback { scope_id, .. }
             | UserComponent::ErrorHandler { scope_id, .. }
             | UserComponent::WrappingMiddleware { scope_id, .. }
@@ -294,6 +304,9 @@ impl RawUserComponentDb {
                         current_middleware_chain: current_middleware_chain.clone(),
                     });
                 }
+                Component::ErrorObserver(eo) => {
+                    self.process_error_observer(&eo, current_scope_id);
+                }
             }
         }
         if let Some(fallback) = &fallback {
@@ -463,7 +476,7 @@ impl RawUserComponentDb {
         );
     }
 
-    /// Register with [`RawUserComponentDb`] a constructors that has been
+    /// Register with [`RawUserComponentDb`] a constructor that has been
     /// registered against the provided `Blueprint`, including its error handler
     /// (if present).
     /// It is associated with or nested under the provided `current_scope_id`.
@@ -494,6 +507,22 @@ impl RawUserComponentDb {
             current_scope_id,
             constructor_id,
         );
+    }
+
+    /// Register with [`RawUserComponentDb`] an error observer that has been
+    /// registered against the provided `Blueprint`.
+    /// It is associated with or nested under the provided `current_scope_id`.
+    fn process_error_observer(&mut self, eo: &ErrorObserver, current_scope_id: ScopeId) {
+        const LIFECYCLE: Lifecycle = Lifecycle::Transient;
+
+        let raw_callable_identifiers_id = self
+            .identifiers_interner
+            .get_or_intern(eo.error_observer.callable.clone());
+        let component = UserComponent::ErrorObserver {
+            raw_callable_identifiers_id,
+            scope_id: current_scope_id,
+        };
+        self.intern_component(component, LIFECYCLE, eo.error_observer.location.clone());
     }
 
     /// A helper function to intern a component without forgetting to do the necessary
@@ -605,7 +634,9 @@ impl RawUserComponentDb {
                         id
                     );
                 }
-                UserComponent::ErrorHandler { .. } | UserComponent::WrappingMiddleware { .. } => {}
+                UserComponent::ErrorHandler { .. }
+                | UserComponent::WrappingMiddleware { .. }
+                | UserComponent::ErrorObserver { .. } => {}
             }
         }
     }
