@@ -636,7 +636,8 @@ impl ComponentDb {
                         fallible_callable_identifiers_id,
                         ..
                     } => Some((id, *fallible_callable_identifiers_id)),
-                    Fallback { .. }
+                    ErrorObserver { .. }
+                    | Fallback { .. }
                     | RequestHandler { .. }
                     | Constructor { .. }
                     | WrappingMiddleware { .. } => None,
