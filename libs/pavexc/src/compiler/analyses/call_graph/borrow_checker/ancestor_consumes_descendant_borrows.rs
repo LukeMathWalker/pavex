@@ -98,7 +98,7 @@ pub(super) fn ancestor_consumes_descendant_borrows(
                 CallGraphNode::Compute { component_id, .. } => {
                     let hydrated_component =
                         component_db.hydrated_component(*component_id, computation_db);
-                    Some(hydrated_component.output_type().to_owned())
+                    hydrated_component.output_type().to_owned()
                 }
                 CallGraphNode::MatchBranching => None,
                 CallGraphNode::InputParameter { type_, .. } => Some(type_.to_owned()),

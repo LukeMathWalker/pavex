@@ -135,7 +135,7 @@ pub(crate) fn application_state_call_graph(
                 "One of the output components is not a `MatchResult` transformer: {:?}",
                 component
             );
-            map.entry(component.output_type().to_owned())
+            map.entry(component.output_type().unwrap().to_owned())
                 .or_default()
                 .insert(*component_id);
         }
@@ -242,7 +242,9 @@ pub(crate) fn application_state_call_graph(
                     }
                     HydratedComponent::WrappingMiddleware(w) => &w.callable,
                     HydratedComponent::RequestHandler(r) => &r.callable,
-                    HydratedComponent::ErrorHandler(_) | HydratedComponent::Transformer(_) => {
+                    HydratedComponent::ErrorObserver(_)
+                    | HydratedComponent::ErrorHandler(_)
+                    | HydratedComponent::Transformer(_) => {
                         unreachable!()
                     }
                 };
