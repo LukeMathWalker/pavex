@@ -65,6 +65,9 @@ where
                 lifetime: Lifetime::Elided,
                 inner: Box::new(dependency_type.to_owned()),
             }),
+            CallGraphEdgeMetadata::HappensBefore => {
+                unreachable!()
+            }
         };
         let fragment = &blocks[&dependency_index];
         let mut to_be_removed = false;
@@ -72,6 +75,7 @@ where
             Fragment::VariableReference(v) => match consumption_mode {
                 CallGraphEdgeMetadata::Move => Box::new(quote! { #v }),
                 CallGraphEdgeMetadata::SharedBorrow => Box::new(quote! { &#v }),
+                CallGraphEdgeMetadata::HappensBefore => unreachable!(),
             },
             Fragment::Block(_) | Fragment::Statement(_) => {
                 let parameter_name = variable_generator.generate();
@@ -83,6 +87,9 @@ where
                 match consumption_mode {
                     CallGraphEdgeMetadata::Move => Box::new(quote! { #parameter_name }),
                     CallGraphEdgeMetadata::SharedBorrow => Box::new(quote! { &#parameter_name }),
+                    CallGraphEdgeMetadata::HappensBefore => {
+                        unreachable!()
+                    }
                 }
             }
         };
