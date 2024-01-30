@@ -1106,6 +1106,7 @@ impl ComponentDb {
             | Component::WrappingMiddleware {
                 source_id: SourceId::UserComponentId(user_component_id),
             }
+            | Component::ErrorObserver { user_component_id }
             | Component::RequestHandler { user_component_id } => Some(*user_component_id),
             Component::ErrorHandler {
                 source_id: SourceId::ComputationId(..),

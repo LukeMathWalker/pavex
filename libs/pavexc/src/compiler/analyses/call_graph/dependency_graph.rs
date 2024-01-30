@@ -146,6 +146,13 @@ impl DependencyGraph {
                             input_types.remove(mw.next_input_index());
                             input_types
                         }
+                        HydratedComponent::ErrorObserver(eo) => {
+                            let mut input_types = eo.input_types().to_vec();
+                            // `Error` doesn't matter when it comes to verifying that we don't
+                            // have cyclic dependencies, so we can skip it.
+                            input_types.remove(eo.error_input_index);
+                            input_types
+                        }
                     };
                     for input_type in input_types {
                         if let Some((constructor_id, _)) = constructible_db.get(
@@ -299,13 +306,18 @@ fn cycle_error(
             cycle_components[i - 1]
         };
         let dependency_component = component_db.hydrated_component(*dependency_id, computation_db);
-        let mut dependency_type = dependency_component.output_type().to_owned();
+        let mut dependency_type = dependency_component
+            .output_type()
+            .cloned()
+            .to_owned()
+            .unwrap();
         // We want to skip the "intermediate" result type.
         if let Some((ok_id, _)) = component_db.match_ids(*dependency_id) {
             dependency_type = component_db
                 .hydrated_component(*ok_id, computation_db)
                 .output_type()
-                .to_owned();
+                .cloned()
+                .unwrap();
         }
         let dependency_path = match component_db
             .hydrated_component(*dependency_id, computation_db)

@@ -33,7 +33,7 @@ impl<'a> ErrorObserver<'a> {
             .position(|i| i == pavex_error_ref)
             .ok_or_else(
                 || ErrorObserverValidationError::DoesNotTakeErrorReferenceAsInput {
-                    observer: error_observer.into_owned(),
+                    observer: error_observer.clone().into_owned(),
                     error_type: pavex_error_ref.to_owned(),
                 },
             )?;

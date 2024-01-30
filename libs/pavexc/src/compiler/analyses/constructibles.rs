@@ -127,9 +127,13 @@ impl ConstructibleDb {
                             input_types[mw.next_input_index()] = None;
                         }
                         // Errors happen, they are not "constructed" (we use a transformer instead).
-                        // Therefore we skip the error input type for error handlers.
+                        // Therefore we skip the error input type for error handlers and
+                        // error observers.
                         HydratedComponent::ErrorHandler(e) => {
                             input_types[e.error_input_index] = None;
+                        }
+                        HydratedComponent::ErrorObserver(eo) => {
+                            input_types[eo.error_input_index] = None;
                         }
                         HydratedComponent::Constructor(_)
                         | HydratedComponent::RequestHandler(_)
@@ -594,11 +598,13 @@ impl ConstructibleDb {
         let singleton_type = component_db
             .hydrated_component(singleton_id, computation_db)
             .output_type()
-            .to_owned();
+            .cloned()
+            .unwrap();
         let dependency_type = component_db
             .hydrated_component(dependency_id, computation_db)
             .output_type()
-            .to_owned();
+            .cloned()
+            .unwrap();
         let dependency_lifecycle = component_db.lifecycle(dependency_id).unwrap();
 
         let e = anyhow::anyhow!(
