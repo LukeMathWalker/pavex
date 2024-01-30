@@ -78,6 +78,7 @@ pub(crate) fn codegen_callable_closure(
         let output_type = component_db
             .hydrated_component(*component_id, computation_db)
             .output_type()
+            .unwrap()
             .syn_type(package_id2name);
         syn::parse2(quote! {
             pub async fn handler(#(#inputs),*) -> #output_type {
