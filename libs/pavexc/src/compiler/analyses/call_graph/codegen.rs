@@ -435,17 +435,26 @@ fn get_node_type_inputs<'a, 'b: 'a>(
 ) -> impl Iterator<Item = (NodeIndex, ResolvedType, CallGraphEdgeMetadata)> + 'a {
     call_graph
         .edges_directed(node_index, Direction::Incoming)
-        .map(move |edge| {
+        .filter_map(move |edge| {
+            if edge.weight() == &CallGraphEdgeMetadata::HappensBefore {
+                // It's not an input parameter, so we don't care about it.
+                return None;
+            }
             let node = &call_graph[edge.source()];
             let type_ = match node {
                 CallGraphNode::Compute { component_id, .. } => {
                     let component = component_db.hydrated_component(*component_id, computation_db);
-                    component.output_type().to_owned()
+                    match component.output_type().cloned() {
+                        Some(type_) => type_,
+                        None => {
+                            return None;
+                        }
+                    }
                 }
                 CallGraphNode::InputParameter { type_, .. } => type_.to_owned(),
                 CallGraphNode::MatchBranching => unreachable!(),
             };
-            (edge.source(), type_, edge.weight().to_owned())
+            Some((edge.source(), type_, edge.weight().to_owned()))
         })
         .sorted_by_key(|(node_index, _, _)| node_id2position[node_index])
 }
