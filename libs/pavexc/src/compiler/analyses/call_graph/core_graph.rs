@@ -218,6 +218,11 @@ where
                         }
                         input_types
                     }
+                    HydratedComponent::ErrorObserver(eo) => {
+                        let mut inputs: Vec<_> = eo.input_types().to_vec();
+                        inputs.remove(eo.error_input_index);
+                        inputs
+                    }
                 };
                 for input_type in input_types {
                     if let Some((constructor_id, consumption_mode)) =
@@ -405,6 +410,7 @@ impl CallGraph {
                 &|_, edge| match edge.weight() {
                     CallGraphEdgeMetadata::Move => "".to_string(),
                     CallGraphEdgeMetadata::SharedBorrow => "label = \"&\"".to_string(),
+                    CallGraphEdgeMetadata::HappensBefore => "label = \"before\"".to_string(),
                 },
                 &|_, (id, node)| {
                     match node {
@@ -573,15 +579,22 @@ fn take_references_as_inputs_if_they_suffice(
 
 #[derive(Clone, Copy, Debug, Hash, Eq, PartialEq)]
 /// The edges in the call graph represent the dependency relationships between the nodes.
-/// The direction of the edge is from the node that provides the input to the node that requires it.
+/// All edges are **directed**.
 ///
+/// If the edge is either `Move` or `SharedBorrow`, the edge goes from the node that provides the input
+/// to the node that requires it.
 /// The type of edge determines *how* the input is consumed.
+///
+/// If the edge is `HappensBefore`, it encodes a temporal relationship but there is no
+/// output-input relationship between the two connected nodes.
 pub(crate) enum CallGraphEdgeMetadata {
-    /// The input is consumed by value—e.g. `String` in `fn handler(input: String)`.
+    /// The output of the source node is consumed by value—e.g. `String` in `fn handler(input: String)`.
     Move,
-    /// The dependent requires a shared reference to the input type —e.g. `&MyStruct` in
+    /// The target node requires a shared reference to output type of the source node —e.g. `&MyStruct` in
     /// `fn handler(input: &MyStruct)`.
     SharedBorrow,
+    /// The computation in the source node must be invoked before the computation in the target node.
+    HappensBefore,
 }
 
 impl From<ConsumptionMode> for CallGraphEdgeMetadata {
@@ -740,6 +753,8 @@ impl RawCallGraphExt for RawCallGraph {
                 &|_, edge| match edge.weight() {
                     CallGraphEdgeMetadata::Move => "".to_string(),
                     CallGraphEdgeMetadata::SharedBorrow => "label = \"&\"".to_string(),
+                    CallGraphEdgeMetadata::HappensBefore =>
+                        "label = \"happens before\"".to_string(),
                 },
                 &|_, (_, node)| {
                     match node {
@@ -790,6 +805,8 @@ impl RawCallGraphExt for RawCallGraph {
                 &|_, edge| match edge.weight() {
                     CallGraphEdgeMetadata::Move => "".to_string(),
                     CallGraphEdgeMetadata::SharedBorrow => "label = \"&\"".to_string(),
+                    CallGraphEdgeMetadata::HappensBefore =>
+                        "label = \"happens before\"".to_string(),
                 },
                 &|_, (index, node)| {
                     let label = match node {
