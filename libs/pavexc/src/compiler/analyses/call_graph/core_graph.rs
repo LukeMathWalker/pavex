@@ -378,6 +378,10 @@ where
                             error_observer_node_index,
                             CallGraphEdgeMetadata::HappensBefore,
                         );
+                        nodes_to_be_visited.insert(VisitorStackElement {
+                            node_index: error_observer_node_index,
+                            neighbour: None,
+                        });
                         previous_index = error_observer_node_index;
                     }
                     call_graph.update_edge(
