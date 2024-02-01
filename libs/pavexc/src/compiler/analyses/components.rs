@@ -32,8 +32,8 @@ use crate::diagnostic::{
     CompilerDiagnostic, LocationExt, SourceSpanExt,
 };
 use crate::language::{
-    Callable, Lifetime, PathType, ResolvedPath, ResolvedPathQualifiedSelf, ResolvedPathSegment,
-    ResolvedType, TypeReference,
+    Callable, Lifetime, ResolvedPath, ResolvedPathQualifiedSelf, ResolvedPathSegment, ResolvedType,
+    TypeReference,
 };
 use crate::rustdoc::CrateCollection;
 use crate::utils::comma_separated_list;
@@ -207,7 +207,6 @@ pub(crate) struct ComponentDb {
     /// Invariants: there is an entry for every single error observer.
     error_observer_id2error_input_index: HashMap<ComponentId, usize>,
     error_handler_id2error_handler: HashMap<ComponentId, ErrorHandler>,
-    into_response: PathType,
     /// A mapping from the low-level [`UserComponentId`]s to the high-level [`ComponentId`]s.
     ///
     /// This is used to "lift" mappings that use [`UserComponentId`] into mappings that
@@ -231,17 +230,6 @@ impl ComponentDb {
         krate_collection: &CrateCollection,
         diagnostics: &mut Vec<miette::Error>,
     ) -> ComponentDb {
-        let into_response = {
-            let into_response = process_framework_path(
-                "pavex::response::IntoResponse",
-                package_graph,
-                krate_collection,
-            );
-            let ResolvedType::ResolvedPath(into_response) = into_response else {
-                unreachable!()
-            };
-            into_response
-        };
         let pavex_error_ref = {
             let error = process_framework_path("pavex::Error", package_graph, krate_collection);
             ResolvedType::Reference(TypeReference {
@@ -266,7 +254,6 @@ impl ComponentDb {
             transformer_id2when_to_insert: Default::default(),
             error_observer_id2error_input_index: Default::default(),
             error_handler_id2error_handler: Default::default(),
-            into_response,
             user_component_id2component_id: Default::default(),
         };
 
@@ -327,98 +314,12 @@ impl ComponentDb {
             }
         }
 
-        // We need to make sure that all output nodes return the same output type.
-        // We do this by adding a "response transformer" node that converts the output type to a
-        // common type—`pavex::response::Response`.
-        let into_response_path = self_.into_response.resolved_path();
-        let iter: Vec<_> = self_
-            .interner
-            .iter()
-            .filter_map(|(id, c)| {
-                use Component::*;
-
-                match c {
-                    RequestHandler { user_component_id }
-                    | WrappingMiddleware {
-                        // There are no error handlers with a `ComputationId` source at this stage.
-                        source_id: SourceId::UserComponentId(user_component_id),
-                    }
-                    | ErrorHandler {
-                        // There are no error handlers with a `ComputationId` source at this stage.
-                        source_id: SourceId::UserComponentId(user_component_id),
-                    } => Some((id, *user_component_id)),
-                    Constructor { .. }
-                    | Transformer { .. }
-                    | WrappingMiddleware { .. }
-                    | ErrorObserver { .. }
-                    | ErrorHandler { .. } => None,
-                }
-            })
-            .collect();
-        for (component_id, user_component_id) in iter.into_iter() {
-            // If the component is fallible, we want to attach the transformer to its Ok matcher.
-            let component_id =
-                if let Some((ok_id, _)) = self_.fallible_id2match_ids.get(&component_id) {
-                    *ok_id
-                } else {
-                    component_id
-                };
-            let callable = &computation_db[user_component_id];
-            let output = callable.output.as_ref().unwrap();
-            let output = if output.is_result() {
-                get_ok_variant(output)
-            } else {
-                output
-            }
-            .to_owned();
-            if let Err(e) =
-                assert_trait_is_implemented(krate_collection, &output, &self_.into_response)
-            {
-                Self::invalid_response_type(
-                    e,
-                    &output,
-                    user_component_id,
-                    &self_.user_component_db,
-                    package_graph,
-                    diagnostics,
-                );
-                continue;
-            }
-            let mut transformer_segments = into_response_path.segments.clone();
-            transformer_segments.push(ResolvedPathSegment {
-                ident: "into_response".into(),
-                generic_arguments: vec![],
-            });
-            let transformer_path = ResolvedPath {
-                segments: transformer_segments,
-                qualified_self: Some(ResolvedPathQualifiedSelf {
-                    position: into_response_path.segments.len(),
-                    type_: output.clone().into(),
-                }),
-                package_id: into_response_path.package_id.clone(),
-            };
-            match computation_db.resolve_and_intern(krate_collection, &transformer_path, None) {
-                Ok(callable_id) => {
-                    self_.get_or_intern_transformer(
-                        callable_id,
-                        component_id,
-                        self_.scope_id(component_id),
-                        InsertTransformer::Eagerly,
-                        ConsumptionMode::Move,
-                    );
-                }
-                Err(e) => {
-                    Self::cannot_handle_into_response_implementation(
-                        e,
-                        &output,
-                        user_component_id,
-                        &self_.user_component_db,
-                        package_graph,
-                        diagnostics,
-                    );
-                }
-            }
-        }
+        self_.add_into_response_transformers(
+            computation_db,
+            package_graph,
+            krate_collection,
+            diagnostics,
+        );
 
         for (id, type_) in framework_item_db.iter() {
             let constructor = Constructor(Computation::FrameworkItem(Cow::Owned(type_.clone())));
@@ -840,6 +741,116 @@ impl ComponentDb {
             }
             self.handler_id2error_observer_ids
                 .insert(*handler_component_id, chain);
+        }
+    }
+
+    /// We need to make sure that all output nodes return the same output type.
+    /// We do this by adding a "response transformer" node that converts the output type to a
+    /// common type—`pavex::response::Response`.
+    fn add_into_response_transformers(
+        &mut self,
+        computation_db: &mut ComputationDb,
+        package_graph: &PackageGraph,
+        krate_collection: &CrateCollection,
+        diagnostics: &mut Vec<miette::Error>,
+    ) {
+        let into_response = {
+            let into_response = process_framework_path(
+                "pavex::response::IntoResponse",
+                package_graph,
+                krate_collection,
+            );
+            let ResolvedType::ResolvedPath(into_response) = into_response else {
+                unreachable!()
+            };
+            into_response
+        };
+        let into_response_path = into_response.resolved_path();
+        let iter: Vec<_> = self
+            .interner
+            .iter()
+            .filter_map(|(id, c)| {
+                use Component::*;
+
+                match c {
+                    RequestHandler { user_component_id }
+                    | WrappingMiddleware {
+                        // There are no error handlers with a `ComputationId` source at this stage.
+                        source_id: SourceId::UserComponentId(user_component_id),
+                    }
+                    | ErrorHandler {
+                        // There are no error handlers with a `ComputationId` source at this stage.
+                        source_id: SourceId::UserComponentId(user_component_id),
+                    } => Some((id, *user_component_id)),
+                    Constructor { .. }
+                    | Transformer { .. }
+                    | WrappingMiddleware { .. }
+                    | ErrorObserver { .. }
+                    | ErrorHandler { .. } => None,
+                }
+            })
+            .collect();
+        for (component_id, user_component_id) in iter.into_iter() {
+            // If the component is fallible, we want to attach the transformer to its Ok matcher.
+            let component_id =
+                if let Some((ok_id, _)) = self.fallible_id2match_ids.get(&component_id) {
+                    *ok_id
+                } else {
+                    component_id
+                };
+            let callable = &computation_db[user_component_id];
+            let output = callable.output.as_ref().unwrap();
+            let output = if output.is_result() {
+                get_ok_variant(output)
+            } else {
+                output
+            }
+            .to_owned();
+            if let Err(e) = assert_trait_is_implemented(krate_collection, &output, &into_response) {
+                Self::invalid_response_type(
+                    e,
+                    &output,
+                    user_component_id,
+                    &self.user_component_db,
+                    package_graph,
+                    diagnostics,
+                );
+                continue;
+            }
+            let mut transformer_segments = into_response_path.segments.clone();
+            transformer_segments.push(ResolvedPathSegment {
+                ident: "into_response".into(),
+                generic_arguments: vec![],
+            });
+            let transformer_path = ResolvedPath {
+                segments: transformer_segments,
+                qualified_self: Some(ResolvedPathQualifiedSelf {
+                    position: into_response_path.segments.len(),
+                    type_: output.clone().into(),
+                }),
+                package_id: into_response_path.package_id.clone(),
+            };
+            match computation_db.resolve_and_intern(krate_collection, &transformer_path, None) {
+                Ok(callable_id) => {
+                    self.get_or_intern_transformer(
+                        callable_id,
+                        component_id,
+                        self.scope_id(component_id),
+                        InsertTransformer::Eagerly,
+                        ConsumptionMode::Move,
+                    );
+                }
+                Err(e) => {
+                    Self::cannot_handle_into_response_implementation(
+                        e,
+                        &output,
+                        user_component_id,
+                        &self.user_component_db,
+                        package_graph,
+                        diagnostics,
+                    );
+                }
+            }
         }
     }
 }

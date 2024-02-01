@@ -41,7 +41,7 @@ pub(super) fn get_error_new_component_id(
     else {
         return None;
     };
-    let ResolvedType::Reference(error_ref) = &eh.error_ref() else {
+    let ResolvedType::Reference(error_ref) = &eh.error_type_ref() else {
         unreachable!()
     };
     let error = error_ref.inner.as_ref();
