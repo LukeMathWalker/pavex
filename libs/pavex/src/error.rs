@@ -37,7 +37,7 @@ pub struct Error {
 }
 
 impl Error {
-    /// Create a new `Error` from a boxable error.
+    /// Create a new [`Error`] from a boxable error.
     pub fn new<E>(error: E) -> Self
     where
         E: Into<Box<dyn std::error::Error + Send + Sync>>,
@@ -47,9 +47,14 @@ impl Error {
         }
     }
 
-    /// Convert an `Error` back into the underlying boxed trait object.
+    /// Convert [`Error`] back into the underlying boxed error.
     pub fn into_inner(self) -> Box<dyn std::error::Error + Send + Sync> {
         self.inner
+    }
+
+    /// Return a reference to the underlying boxed error.
+    pub fn inner_ref(&self) -> &(dyn std::error::Error + Send + Sync) {
+        &*self.inner
     }
 }
 
