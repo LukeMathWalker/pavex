@@ -1,0 +1,32 @@
+digraph "GET /home - 0" {
+    0 [ label = "app::handler(&app::B) -> pavex::response::Response"]
+    1 [ label = "core::prelude::rust_2015::Result<app::B, app::ErrorB> -> app::B"]
+    2 [ label = "app::b(&app::A) -> core::prelude::rust_2015::Result<app::B, app::ErrorB>"]
+    3 [ label = "app::a() -> app::A"]
+    4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    5 [ label = "core::prelude::rust_2015::Result<app::B, app::ErrorB> -> app::ErrorB"]
+    6 [ label = "app::error_handler(&app::A, &app::ErrorB) -> pavex::response::Response"]
+    7 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    8 [ label = "`match`"]
+    1 -> 0 [ label = "&"]
+    8 -> 5 [ ]
+    3 -> 2 [ label = "&"]
+    0 -> 4 [ ]
+    8 -> 1 [ ]
+    5 -> 6 [ label = "&"]
+    3 -> 6 [ label = "&"]
+    6 -> 7 [ ]
+    2 -> 8 [ ]
+}
+
+digraph "* /home - 0" {
+    0 [ label = "pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
+    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "&pavex::router::AllowedMethods"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
+}
+
+digraph app_state {
+    0 [ label = "crate::ApplicationState() -> crate::ApplicationState"]
+}
