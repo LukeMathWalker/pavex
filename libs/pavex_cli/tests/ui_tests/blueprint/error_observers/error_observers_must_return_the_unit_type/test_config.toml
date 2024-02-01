@@ -1,0 +1,4 @@
+description = """Pavex expects error observers to return nothing."""
+
+[expectations]
+codegen = "fail"

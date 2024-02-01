@@ -33,7 +33,7 @@ impl<'a> ErrorObserver<'a> {
             .position(|i| i == pavex_error_ref)
             .ok_or_else(
                 || ErrorObserverValidationError::DoesNotTakeErrorReferenceAsInput {
-                    observer: error_observer.clone().into_owned(),
+                    observer_path: error_observer.path.to_owned(),
                     error_type: pavex_error_ref.to_owned(),
                 },
             )?;
@@ -49,6 +49,7 @@ impl<'a> ErrorObserver<'a> {
         if !free_parameters.is_empty() {
             return Err(ErrorObserverValidationError::UnassignedGenericParameters {
                 parameters: free_parameters,
+                observer_path: error_observer.path.to_owned(),
             });
         }
 
@@ -90,10 +91,11 @@ pub(crate) enum ErrorObserverValidationError {
         output_type: ResolvedType,
     },
     DoesNotTakeErrorReferenceAsInput {
-        observer: Callable,
+        observer_path: ResolvedPath,
         error_type: ResolvedType,
     },
     UnassignedGenericParameters {
+        observer_path: ResolvedPath,
         parameters: IndexSet<String>,
     },
 }
@@ -101,25 +103,35 @@ pub(crate) enum ErrorObserverValidationError {
 impl Display for ErrorObserverValidationError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            ErrorObserverValidationError::MustReturnUnitType { output_type, .. } => {
-                write!(
-                    f,
-                    "Error observers must have no return type.\nThis error observer returns `{output_type:?}`."
-                )
-            }
-            ErrorObserverValidationError::DoesNotTakeErrorReferenceAsInput {
-                ref error_type,
-                ..
+            ErrorObserverValidationError::MustReturnUnitType {
+                output_type,
+                observer_path,
             } => {
                 write!(
                     f,
-                    "Error observers must take a reference to Pavex's common error type as input (`{error_type:?}`).",
+                    "Error observers must have no return type.\n`{observer_path}` returns `{output_type:?}`."
                 )
             }
-            ErrorObserverValidationError::UnassignedGenericParameters { .. } => {
+            ErrorObserverValidationError::DoesNotTakeErrorReferenceAsInput {
+                observer_path,
+                error_type,
+            } => {
                 write!(
                     f,
-                    "Input parameters for an error observer can't have any *unassigned* generic type parameters."
+                    "Error observers must take a reference to Pavex's common error type as input (`{error_type:?}`).\n\
+                    `{}` doesn't.",
+                    observer_path,
+                )
+            }
+            ErrorObserverValidationError::UnassignedGenericParameters {
+                observer_path,
+                parameters,
+            } => {
+                write!(
+                    f,
+                    "All generic parameters must be assigned to a concrete type when you register an error observer, I can't infer them.\n\
+                    `{observer_path}` has {} unassigned generic parameters.",
+                    parameters.len()
                 )
             }
         }

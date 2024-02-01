@@ -1,0 +1,5 @@
+description = """Pavex does not allow input parameters of error observers
+to have unassigned generic parameters"""
+
+[expectations]
+codegen = "fail"

@@ -2014,7 +2014,7 @@ impl ComponentDb {
                     .optional_label(label)
                     .build()
             }
-            ErrorObserverValidationError::UnassignedGenericParameters { ref parameters } => {
+            ErrorObserverValidationError::UnassignedGenericParameters { ref parameters, .. } => {
                 fn get_definition_span(
                     callable: &Callable,
                     free_parameters: &IndexSet<String>,
@@ -2068,10 +2068,7 @@ impl ComponentDb {
                 let callable = &computation_db[raw_user_component_id];
                 let definition_snippet =
                     get_definition_span(callable, parameters, krate_collection, package_graph);
-                let error = anyhow::anyhow!(e)
-                    .context(
-                        "All generic parameters must be assigned to a concrete type when you register an error observer, I can't infer them.".to_string());
-                CompilerDiagnostic::builder(source, error)
+                CompilerDiagnostic::builder(source, e)
                     .optional_label(label)
                     .optional_additional_annotated_snippet(definition_snippet)
                     .help(

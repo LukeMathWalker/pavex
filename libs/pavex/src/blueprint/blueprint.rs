@@ -689,6 +689,7 @@ impl Blueprint {
         }
     }
 
+    #[track_caller]
     pub fn error_observer(&mut self, callable: RawCallable) -> RegisteredErrorObserver {
         let registered = pavex_bp_schema::ErrorObserver {
             error_observer: raw_callable2registered_callable(callable),
