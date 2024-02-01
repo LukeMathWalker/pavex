@@ -11,6 +11,7 @@ use syn::spanned::Spanned;
 use pavex_bp_schema::{CloningStrategy, Lifecycle};
 
 use crate::compiler::analyses::computations::{ComputationDb, ComputationId};
+use crate::compiler::analyses::into_error::get_error_new_component_id;
 use crate::compiler::analyses::user_components::{
     ScopeGraph, ScopeId, UserComponent, UserComponentDb, UserComponentId,
 };
@@ -320,6 +321,7 @@ impl ComponentDb {
             krate_collection,
             diagnostics,
         );
+        self_.add_pavex_new_transformers(computation_db, package_graph, krate_collection);
 
         for (id, type_) in framework_item_db.iter() {
             let constructor = Constructor(Computation::FrameworkItem(Cow::Owned(type_.clone())));
@@ -853,6 +855,41 @@ impl ComponentDb {
             }
         }
     }
+
+    /// We need to make sure that all error types are upcasted into a `pavex::Error`
+    /// **if and only if** there is at least one error observer registered.
+    fn add_pavex_new_transformers(
+        &mut self,
+        computation_db: &mut ComputationDb,
+        package_graph: &PackageGraph,
+        krate_collection: &CrateCollection,
+    ) {
+        let mut contexts = vec![];
+        for component_id in self.request_handler_ids() {
+            if self.handler_id2error_observer_ids[&component_id].is_empty() {
+                continue;
+            }
+            contexts.push(self.scope_id(component_id));
+        }
+
+        let match_err_ids = self
+            .match_err_id2error_handler_id
+            .keys()
+            .copied()
+            .collect::<Vec<_>>();
+        for component_id in match_err_ids {
+            for scope_id in contexts.iter() {
+                get_error_new_component_id(
+                    component_id,
+                    package_graph,
+                    krate_collection,
+                    self,
+                    computation_db,
+                    *scope_id,
+                );
+            }
+        }
+    }
 }
 
 impl ComponentDb {
@@ -1143,6 +1180,16 @@ impl ComponentDb {
                 SourceId::UserComponentId(id) => computation_db[*id].clone().into(),
             };
             Some((id, Constructor(computation)))
+        })
+    }
+
+    /// Iterate over all the request handlers in the component database.
+    pub fn request_handler_ids(&self) -> impl Iterator<Item = ComponentId> + '_ {
+        self.interner.iter().filter_map(|(id, c)| {
+            let Component::RequestHandler { .. } = c else {
+                return None;
+            };
+            Some(id)
         })
     }
 
