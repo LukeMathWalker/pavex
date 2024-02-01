@@ -240,6 +240,7 @@ fn _codegen_callable_closure_body(
                                 computation_db,
                                 node_id2position,
                             ),
+                            get_node_happen_befores(current_index, call_graph, node_id2position),
                             callable.as_ref(),
                             blocks,
                             variable_name_generator,
@@ -458,4 +459,21 @@ fn get_node_type_inputs<'a, 'b: 'a>(
             Some((edge.source(), type_, edge.weight().to_owned()))
         })
         .sorted_by_key(|(node_index, _, _)| node_id2position[node_index])
+}
+
+fn get_node_happen_befores<'a>(
+    node_index: NodeIndex,
+    call_graph: &'a RawCallGraph,
+    node_id2position: &'a HashMap<NodeIndex, u16>,
+) -> impl Iterator<Item = NodeIndex> + 'a {
+    call_graph
+        .edges_directed(node_index, Direction::Incoming)
+        .filter_map(move |edge| {
+            if edge.weight() != &CallGraphEdgeMetadata::HappensBefore {
+                // It's an input parameter, so we don't care about it.
+                return None;
+            }
+            Some(edge.source())
+        })
+        .sorted_by_key(|node_index| node_id2position[node_index])
 }

@@ -74,6 +74,8 @@ pub mod route_0 {
             Err(v2) => {
                 return {
                     let v3 = app::error_handler(&v0, &v2);
+                    let v4 = pavex::Error::new(v2);
+                    app::error_observer(v0, &v4);
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
                         v3,
                     )

@@ -6,7 +6,16 @@ pub struct A;
 
 pub struct B;
 
+#[derive(Debug)]
 pub struct ErrorB {}
+
+impl std::fmt::Display for ErrorB {
+    fn fmt(&self, _f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        todo!()
+    }
+}
+
+impl std::error::Error for ErrorB {}
 
 pub fn a() -> A {
     todo!()

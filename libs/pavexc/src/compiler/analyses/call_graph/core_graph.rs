@@ -400,18 +400,20 @@ where
                         break 'inner;
                     };
 
-                    let mut previous_index = node_index;
+                    let mut previous_index = None;
                     for error_observer_id in error_observer_ids {
                         let error_observer_node_index = add_node_for_component(
                             &mut call_graph,
                             &mut node_deduplicator,
                             *error_observer_id,
                         );
-                        call_graph.update_edge(
-                            previous_index,
-                            error_observer_node_index,
-                            CallGraphEdgeMetadata::HappensBefore,
-                        );
+                        if let Some(previous_index) = previous_index {
+                            call_graph.update_edge(
+                                previous_index,
+                                error_observer_node_index,
+                                CallGraphEdgeMetadata::HappensBefore,
+                            );
+                        }
                         call_graph.update_edge(
                             pavex_error_new_node_index,
                             error_observer_node_index,
@@ -421,13 +423,15 @@ where
                             node_index: error_observer_node_index,
                             neighbour: None,
                         });
-                        previous_index = error_observer_node_index;
+                        previous_index = Some(error_observer_node_index);
                     }
-                    call_graph.update_edge(
-                        previous_index,
-                        child_id,
-                        CallGraphEdgeMetadata::HappensBefore,
-                    );
+                    if let Some(previous_index) = previous_index {
+                        call_graph.update_edge(
+                            previous_index,
+                            child_id,
+                            CallGraphEdgeMetadata::HappensBefore,
+                        );
+                    }
 
                     attached_observer_indexes.insert(node_index);
                 }
