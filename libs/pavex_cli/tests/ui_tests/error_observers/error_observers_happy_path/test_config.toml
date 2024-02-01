@@ -1,4 +1,6 @@
-description = """The state for `Next` can handle request-scoped state with a lifetime attached"""
+description = """Pavex invokes error observers as the user expects.
+They are invoked in the order they've been registered and they can take
+advantage of dependency injection."""
 
 [expectations]
 codegen = "pass"
