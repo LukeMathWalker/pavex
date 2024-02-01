@@ -911,14 +911,17 @@ impl RawCallGraphExt for RawCallGraph {
                                     format!("{i:?}")
                                 }
                             };
-                            format!("{component_label} (Component ix: {component_id:?})")
+                            format!(
+                                "{component_label} (Component ix: {})",
+                                component_id.into_raw().into_u32()
+                            )
                         }
                         CallGraphNode::InputParameter { type_, .. } => {
                             format!("{type_:?}")
                         }
                         CallGraphNode::MatchBranching => "`match`".to_string(),
                     };
-                    format!("label = \"{label} (Node ix: {index:?})\"")
+                    format!("label = \"{label} (Node ix: {})\"", index.index())
                 },
             )
         )
