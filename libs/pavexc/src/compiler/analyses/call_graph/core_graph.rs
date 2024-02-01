@@ -366,6 +366,36 @@ where
                         break 'inner;
                     };
 
+                    // An error handler is always downstream of an error matcher node.
+                    let match_error_node_index = call_graph
+                        .neighbors_directed(node_index, Direction::Incoming)
+                        .find_map(|parent_index| {
+                            let parent_node = &call_graph[parent_index];
+                            let CallGraphNode::Compute { component_id, .. } = parent_node else {
+                                return None;
+                            };
+                            let computation = component_db
+                                .hydrated_component(*component_id, computation_db)
+                                .computation();
+                            let Computation::MatchResult(m) = computation else {
+                                return None;
+                            };
+                            if m.variant == MatchResultVariant::Err {
+                                Some(parent_index)
+                            } else {
+                                None
+                            }
+                        })
+                        .unwrap();
+                    // All match error nodes have two children:
+                    // the error handler and the `pavex::Error::new` invocation.
+                    // We want the latter.
+                    let pavex_error_new_node_index = call_graph
+                        .neighbors_directed(match_error_node_index, Direction::Outgoing)
+                        .filter(|&child_index| child_index != node_index)
+                        .next()
+                        .unwrap();
+
                     let mut previous_index = node_index;
                     for error_observer_id in error_observer_ids {
                         let error_observer_node_index = add_node_for_component(
@@ -377,6 +407,11 @@ where
                             previous_index,
                             error_observer_node_index,
                             CallGraphEdgeMetadata::HappensBefore,
+                        );
+                        call_graph.update_edge(
+                            pavex_error_new_node_index,
+                            error_observer_node_index,
+                            CallGraphEdgeMetadata::SharedBorrow,
                         );
                         nodes_to_be_visited.insert(VisitorStackElement {
                             node_index: error_observer_node_index,

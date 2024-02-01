@@ -78,7 +78,7 @@ pub(super) fn get_error_new_component_id(
         computation_id,
         component_id,
         scope_id,
-        InsertTransformer::Lazily,
+        InsertTransformer::Eagerly,
         ConsumptionMode::Move,
     );
     Some(pavex_error_new_component_id)
