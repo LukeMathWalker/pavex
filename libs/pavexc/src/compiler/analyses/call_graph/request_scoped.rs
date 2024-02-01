@@ -20,6 +20,7 @@ pub(crate) fn request_scoped_ordered_call_graph(
     // The set of request-scoped components that have already been initialised in the upstream
     // stages of the pipeline.
     request_scoped_prebuilt_ids: &IndexSet<ComponentId>,
+    error_observer_ids: &[ComponentId],
     computation_db: &mut ComputationDb,
     component_db: &mut ComponentDb,
     constructible_db: &ConstructibleDb,
@@ -34,6 +35,7 @@ pub(crate) fn request_scoped_ordered_call_graph(
     }) = request_scoped_call_graph(
         root_component_id,
         request_scoped_prebuilt_ids,
+        error_observer_ids,
         computation_db,
         component_db,
         constructible_db,
@@ -65,6 +67,7 @@ pub(crate) fn request_scoped_call_graph(
     // The set of request-scoped components that have already been initialised in the upstream
     // stages of the pipeline.
     request_scoped_prebuilt_ids: &IndexSet<ComponentId>,
+    error_observer_ids: &[ComponentId],
     computation_db: &mut ComputationDb,
     component_db: &mut ComponentDb,
     constructible_db: &ConstructibleDb,
@@ -80,6 +83,7 @@ pub(crate) fn request_scoped_call_graph(
     build_call_graph(
         root_component_id,
         request_scoped_prebuilt_ids,
+        error_observer_ids,
         computation_db,
         component_db,
         constructible_db,

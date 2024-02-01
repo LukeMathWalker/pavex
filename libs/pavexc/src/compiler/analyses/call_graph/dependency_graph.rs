@@ -38,6 +38,7 @@ impl DependencyGraph {
         computation_db: &ComputationDb,
         component_db: &ComponentDb,
         constructible_db: &ConstructibleDb,
+        error_observer_ids: &[ComponentId],
         lifecycle2n_allowed_invocations: F,
     ) -> Self
     where
@@ -80,8 +81,12 @@ impl DependencyGraph {
         let mut transformed_node_indexes = HashSet::new();
         let mut handled_error_node_indexes = HashSet::new();
         let mut processed_node_indexes = HashSet::new();
-        let mut nodes_to_be_visited: IndexSet<VisitorStackElement> =
-            IndexSet::from_iter([VisitorStackElement::orphan(root_id)]);
+        let mut nodes_to_be_visited: IndexSet<VisitorStackElement> = IndexSet::from_iter(
+            error_observer_ids
+                .iter()
+                .map(|&id| VisitorStackElement::orphan(id))
+                .chain(std::iter::once(VisitorStackElement::orphan(root_id))),
+        );
 
         // For each component id, we should have at most one node in the dependency graph, no matter the lifecycle.
         let mut node2index = HashMap::<DependencyGraphNode, NodeIndex>::new();

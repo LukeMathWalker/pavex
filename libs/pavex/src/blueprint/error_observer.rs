@@ -7,9 +7,8 @@ use pavex_bp_schema::{Blueprint as BlueprintSchema, Callable};
 ///
 /// It allows you to further configure the behaviour of the registered error observer.
 pub struct RegisteredErrorObserver<'a> {
+    #[allow(dead_code)]
     pub(crate) blueprint: &'a mut BlueprintSchema,
-    /// The index of the registered error observer in the blueprint's `components` vector.
-    pub(crate) component_id: usize,
 }
 
 /// An error observer that has been configured but has not yet been registered with a [`Blueprint`].

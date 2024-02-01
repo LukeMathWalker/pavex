@@ -99,6 +99,7 @@ pub(crate) fn application_state_call_graph(
     }) = build_call_graph(
         application_state_id,
         &IndexSet::new(),
+        &[],
         computation_db,
         component_db,
         constructible_db,
@@ -311,6 +312,7 @@ pub(crate) fn application_state_call_graph(
         let Ok(cg) = build_call_graph(
             application_state_id,
             &IndexSet::new(),
+            &[],
             computation_db,
             component_db,
             constructible_db,

@@ -59,13 +59,6 @@ impl<'a> ErrorObserver<'a> {
         })
     }
 
-    /// Return the error type that this error observer takes as input.
-    ///
-    /// This is a **reference** to Pavex's common error type.
-    pub(crate) fn error_type_ref(&self) -> &ResolvedType {
-        &self.callable.inputs[self.error_input_index]
-    }
-
     pub fn into_owned(self) -> ErrorObserver<'static> {
         ErrorObserver {
             callable: Cow::Owned(self.callable.into_owned()),

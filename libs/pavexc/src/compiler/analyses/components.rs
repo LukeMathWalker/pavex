@@ -188,6 +188,11 @@ pub(crate) struct ComponentDb {
     ///
     /// Invariants: there is an entry for every single request handler.
     handler_id2middleware_ids: HashMap<ComponentId, Vec<ComponentId>>,
+    /// Associate each request handler with the ordered list of error observer that
+    /// must be invoked if something goes wrong.
+    ///
+    /// Invariants: there is an entry for every single request handler.
+    handler_id2error_observer_ids: HashMap<ComponentId, Vec<ComponentId>>,
     /// Associate each transformer with direction on when to apply it.
     ///
     /// Invariants: there is an entry for every single transformer.
@@ -253,6 +258,7 @@ impl ComponentDb {
             id2lifecycle: Default::default(),
             constructor_id2cloning_strategy: Default::default(),
             handler_id2middleware_ids: Default::default(),
+            handler_id2error_observer_ids: Default::default(),
             transformer_id2when_to_insert: Default::default(),
             error_observer_id2error_input_index: Default::default(),
             error_handler_id2error_handler: Default::default(),
@@ -298,6 +304,7 @@ impl ComponentDb {
             );
 
             self_.compute_request2middleware_chain();
+            self_.compute_request2error_observer_chain();
             self_.process_error_handlers(
                 &mut needs_error_handler,
                 computation_db,
@@ -807,6 +814,30 @@ impl ComponentDb {
                 .insert(*handler_component_id, middleware_chain);
         }
     }
+
+    /// Compute the list of error observers for each request handler that was successfully validated.
+    /// The list only includes error observers that were successfully validated.
+    /// Invalid error observers are ignored.
+    fn compute_request2error_observer_chain(&mut self) {
+        for (request_handler_id, _) in self.user_component_db.request_handlers() {
+            let Some(handler_component_id) =
+                self.user_component_id2component_id.get(&request_handler_id)
+            else {
+                continue;
+            };
+            let mut chain = vec![];
+            for id in self
+                .user_component_db
+                .get_error_observer_ids(request_handler_id)
+            {
+                if let Some(component_id) = self.user_component_id2component_id.get(id) {
+                    chain.push(*component_id);
+                }
+            }
+            self.handler_id2error_observer_ids
+                .insert(*handler_component_id, chain);
+        }
+    }
 }
 
 impl ComponentDb {
@@ -1023,6 +1054,15 @@ impl ComponentDb {
             .map(|v| &v[..])
     }
 
+    /// If the component is a request handler, return the ids of the error observers that must be
+    /// invoked when something goes wrong in the request processing pipeline.  
+    /// Otherwise, return `None`.
+    pub fn error_observers(&self, handler_id: ComponentId) -> Option<&[ComponentId]> {
+        self.handler_id2error_observer_ids
+            .get(&handler_id)
+            .map(|v| &v[..])
+    }
+
     /// If transformations must be applied to the component, return their ids.
     /// Otherwise, return `None`.
     pub fn transformer_ids(&self, component_id: ComponentId) -> Option<&IndexSet<ComponentId>> {
@@ -1079,19 +1119,15 @@ impl ComponentDb {
         &'a self,
         computation_db: &'a ComputationDb,
     ) -> impl Iterator<Item = (ComponentId, Constructor<'a>)> {
-        self.interner.iter().filter_map(|(id, c)| match c {
-            Component::RequestHandler { .. }
-            | Component::ErrorHandler { .. }
-            | Component::ErrorObserver { .. }
-            | Component::WrappingMiddleware { .. }
-            | Component::Transformer { .. } => None,
-            Component::Constructor { source_id } => {
-                let computation = match source_id {
-                    SourceId::ComputationId(id, _) => computation_db[*id].clone(),
-                    SourceId::UserComponentId(id) => computation_db[*id].clone().into(),
-                };
-                Some((id, Constructor(computation)))
-            }
+        self.interner.iter().filter_map(|(id, c)| {
+            let Component::Constructor { source_id } = c else {
+                return None;
+            };
+            let computation = match source_id {
+                SourceId::ComputationId(id, _) => computation_db[*id].clone(),
+                SourceId::UserComponentId(id) => computation_db[*id].clone().into(),
+            };
+            Some((id, Constructor(computation)))
         })
     }
 

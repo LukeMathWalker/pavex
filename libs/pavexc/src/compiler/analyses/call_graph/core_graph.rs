@@ -59,6 +59,7 @@ pub(super) fn build_call_graph<F>(
     // The set of long-lived components that have already been initialised and should be
     // taken as inputs rather than built again.
     prebuilt_ids: &IndexSet<ComponentId>,
+    error_observer_ids: &[ComponentId],
     computation_db: &ComputationDb,
     component_db: &ComponentDb,
     constructible_db: &ConstructibleDb,
@@ -74,6 +75,7 @@ where
         computation_db,
         component_db,
         constructible_db,
+        error_observer_ids,
         lifecycle2n_allowed_invocations.clone(),
     )
     .assert_acyclic(component_db, computation_db, diagnostics)

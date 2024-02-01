@@ -61,6 +61,8 @@ impl RequestHandlerPipeline {
         krate_collection: &CrateCollection,
         diagnostics: &mut Vec<miette::Error>,
     ) -> Result<Self, ()> {
+        let error_observer_ids = component_db.error_observers(handler_id).unwrap().to_owned();
+
         // Step 1: Determine the sequence of middlewares that the request handler is wrapped in.
         let middleware_ids = component_db
             .middleware_chain(handler_id)
@@ -83,6 +85,7 @@ impl RequestHandlerPipeline {
             let middleware_call_graph = request_scoped_call_graph(
                 middleware_id,
                 &request_scoped_prebuilt_ids,
+                &error_observer_ids,
                 computation_db,
                 component_db,
                 constructible_db,
@@ -101,6 +104,7 @@ impl RequestHandlerPipeline {
         let handler_call_graph = request_scoped_ordered_call_graph(
             handler_id,
             &request_scoped_prebuilt_ids,
+            &error_observer_ids,
             computation_db,
             component_db,
             constructible_db,
@@ -261,6 +265,7 @@ impl RequestHandlerPipeline {
             let middleware_call_graph = request_scoped_ordered_call_graph(
                 bound_middleware_id,
                 &request_scoped_prebuilt_ids,
+                &error_observer_ids,
                 computation_db,
                 component_db,
                 constructible_db,

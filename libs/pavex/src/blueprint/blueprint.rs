@@ -694,10 +694,9 @@ impl Blueprint {
         let registered = pavex_bp_schema::ErrorObserver {
             error_observer: raw_callable2registered_callable(callable),
         };
-        let component_id = self.push_component(registered);
+        self.push_component(registered);
         RegisteredErrorObserver {
             blueprint: &mut self.schema,
-            component_id,
         }
     }
 
@@ -708,9 +707,8 @@ impl Blueprint {
         let eo = pavex_bp_schema::ErrorObserver {
             error_observer: eo.callable,
         };
-        let component_id = self.push_component(eo);
+        self.push_component(eo);
         RegisteredErrorObserver {
-            component_id,
             blueprint: &mut self.schema,
         }
     }
