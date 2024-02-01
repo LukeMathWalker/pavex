@@ -202,7 +202,7 @@ impl GraphicalReportHandler {
             write!(header, "{}", link)?;
             writeln!(f, "{}", header)?;
         } else if let Some(code) = diagnostic.code() {
-            write!(header, "{}", code.style(severity_style), )?;
+            write!(header, "{}", code.style(severity_style),)?;
             if self.links == LinkStyle::Text && diagnostic.url().is_some() {
                 let url = diagnostic.url().unwrap(); // safe
                 write!(header, " ({})", url.style(self.theme.styles.link))?;
@@ -261,8 +261,8 @@ impl GraphicalReportHandler {
                     "  {}{}{} ",
                     char, self.theme.characters.hbar, self.theme.characters.rarrow
                 )
-                    .style(severity_style)
-                    .to_string();
+                .style(severity_style)
+                .to_string();
                 let rest_indent = format!(
                     "  {}   ",
                     if is_last {
@@ -271,8 +271,8 @@ impl GraphicalReportHandler {
                         self.theme.characters.vbar
                     }
                 )
-                    .style(severity_style)
-                    .to_string();
+                .style(severity_style)
+                .to_string();
                 let opts = textwrap::Options::new(width)
                     .initial_indent(&initial_indent)
                     .subsequent_indent(&rest_indent);
@@ -632,7 +632,7 @@ impl GraphicalReportHandler {
     }
 
     /// Returns an iterator over the visual width of each character in a line.
-    fn line_visual_char_width<'a>(&self, text: &'a str) -> impl Iterator<Item=usize> + 'a {
+    fn line_visual_char_width<'a>(&self, text: &'a str) -> impl Iterator<Item = usize> + 'a {
         let mut column = 0;
         let tab_width = self.tab_width;
         text.chars().map(move |c| {
@@ -725,8 +725,8 @@ impl GraphicalReportHandler {
                             chars.underline.to_string().repeat(num_right),
                             width = start.saturating_sub(highest),
                         )
-                            .style(hl.style)
-                            .to_string(),
+                        .style(hl.style)
+                        .to_string(),
                     );
                 }
                 highest = std::cmp::max(highest, end);
@@ -742,7 +742,9 @@ impl GraphicalReportHandler {
             Right,
         }
 
-        let post_linum_width = self.termwidth.saturating_sub(linum_width + 4 /*  length of "  │" */);
+        let post_linum_width = self
+            .termwidth
+            .saturating_sub(linum_width + 4 /*  length of "  │" */);
 
         for hl in single_liners.iter().rev() {
             if let Some(label) = &hl.label {
@@ -785,7 +787,7 @@ impl GraphicalReportHandler {
                 };
                 let sigil = match position {
                     LabelPosition::Right => {
-                        format!("{}{} ", chars.lbot, chars.hbar.to_string().repeat(2), )
+                        format!("{}{} ", chars.lbot, chars.hbar.to_string().repeat(2),)
                     }
                     LabelPosition::Left => {
                         format!("{}{} ", chars.hbar.to_string().repeat(2), chars.rbot)

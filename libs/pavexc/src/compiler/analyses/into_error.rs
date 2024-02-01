@@ -29,7 +29,7 @@ pub(super) fn get_error_new_component_id(
     // We only need to resolve this once.
     static PAVEX_ERROR: OnceCell<PathType> = OnceCell::new();
     let pavex_error = PAVEX_ERROR.get_or_init(|| {
-        let error = process_framework_path("pavex::Error::new", package_graph, krate_collection);
+        let error = process_framework_path("pavex::Error", package_graph, krate_collection);
         let ResolvedType::ResolvedPath(error) = error else {
             unreachable!()
         };
