@@ -355,7 +355,7 @@ where
                         let child_node_indexes = call_graph
                             .neighbors_directed(node_index, Direction::Outgoing)
                             .collect::<Vec<_>>();
-                        assert_eq!(child_node_indexes.len(), 1);
+                        assert!(child_node_indexes.len() <= 1);
                     }
                     let Some(child_id) = call_graph
                         .neighbors_directed(node_index, Direction::Outgoing)
@@ -367,7 +367,7 @@ where
                     };
 
                     // An error handler is always downstream of an error matcher node.
-                    let match_error_node_index = call_graph
+                    let Some(match_error_node_index) = call_graph
                         .neighbors_directed(node_index, Direction::Incoming)
                         .find_map(|parent_index| {
                             let parent_node = &call_graph[parent_index];
@@ -386,15 +386,19 @@ where
                                 None
                             }
                         })
-                        .unwrap();
+                    else {
+                        break 'inner;
+                    };
                     // All match error nodes have two children:
                     // the error handler and the `pavex::Error::new` invocation.
                     // We want the latter.
-                    let pavex_error_new_node_index = call_graph
+                    let Some(pavex_error_new_node_index) = call_graph
                         .neighbors_directed(match_error_node_index, Direction::Outgoing)
                         .filter(|&child_index| child_index != node_index)
                         .next()
-                        .unwrap();
+                    else {
+                        break 'inner;
+                    };
 
                     let mut previous_index = node_index;
                     for error_observer_id in error_observer_ids {
