@@ -33,19 +33,22 @@ use std::fmt;
 /// Pavex's error type: a thin shim over `Box<dyn std::error::Error + Send + Sync>`.
 #[derive(Debug)]
 pub struct Error {
-    inner: Box<dyn std::error::Error + Send + Sync>,
+    inner: Box<dyn std::error::Error + Send>,
 }
 
 impl Error {
     /// Create a new `Error` from a boxable error.
-    pub fn new(error: impl Into<Box<dyn std::error::Error + Send + Sync>>) -> Self {
+    pub fn new<E>(error: E) -> Self
+    where
+        E: Into<Box<dyn std::error::Error + Send>>,
+    {
         Self {
             inner: error.into(),
         }
     }
 
     /// Convert an `Error` back into the underlying boxed trait object.
-    pub fn into_inner(self) -> Box<dyn std::error::Error + Send + Sync> {
+    pub fn into_inner(self) -> Box<dyn std::error::Error + Send> {
         self.inner
     }
 }

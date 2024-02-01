@@ -11,4 +11,5 @@ mod borrow_checker;
 mod codegen;
 mod core_graph;
 mod dependency_graph;
+mod into_error;
 mod request_scoped;
