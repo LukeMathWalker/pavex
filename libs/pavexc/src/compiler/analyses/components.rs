@@ -1523,11 +1523,19 @@ impl ComponentDb {
             // Finally, we need to bound the error handler's transformers.
             if let Some(transformer_ids) = self.transformer_ids(err_handler_id).cloned() {
                 for transformer_id in transformer_ids {
+                    let consumption_mode = match &self[transformer_id] {
+                        Component::Transformer {
+                            transformation_mode,
+                            ..
+                        } => *transformation_mode,
+                        _ => unreachable!(),
+                    };
                     let HydratedComponent::Transformer(transformer) =
                         self.hydrated_component(transformer_id, computation_db)
                     else {
                         unreachable!()
                     };
+                    let insert_mode = self.transformer_id2when_to_insert[&transformer_id];
                     let bound_transformer = transformer
                         .bind_generic_type_parameters(bindings)
                         .into_owned();
@@ -1535,8 +1543,8 @@ impl ComponentDb {
                         bound_transformer,
                         bound_error_component_id,
                         scope_id,
-                        InsertTransformer::Eagerly,
-                        ConsumptionMode::SharedBorrow,
+                        insert_mode,
+                        consumption_mode,
                         computation_db,
                     );
                 }
