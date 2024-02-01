@@ -168,6 +168,10 @@ impl<'a> HydratedComponent<'a> {
             }
         }
     }
+
+    pub(crate) fn is_error_handler(&self) -> bool {
+        matches!(self, HydratedComponent::ErrorHandler(_))
+    }
 }
 
 #[derive(Debug)]

@@ -304,6 +304,7 @@ impl RawUserComponentDb {
                 Component::Route(r) => self.process_route(
                     &r,
                     &current_middleware_chain,
+                    &current_observer_chain,
                     current_scope_id,
                     path_prefix,
                     scope_graph_builder,
@@ -332,6 +333,7 @@ impl RawUserComponentDb {
                 fallback,
                 path_prefix,
                 current_middleware_chain,
+                current_observer_chain,
                 current_scope_id,
                 scope_graph_builder,
             );
@@ -357,6 +359,7 @@ impl RawUserComponentDb {
                 &registered_fallback,
                 path_prefix,
                 current_middleware_chain,
+                current_observer_chain,
                 current_scope_id,
                 scope_graph_builder,
             )
@@ -370,6 +373,7 @@ impl RawUserComponentDb {
         &mut self,
         registered_route: &Route,
         current_middleware_chain: &[UserComponentId],
+        current_observer_chain: &[UserComponentId],
         current_scope_id: ScopeId,
         path_prefix: Option<&str>,
         scope_graph_builder: &mut ScopeGraphBuilder,
@@ -405,6 +409,8 @@ impl RawUserComponentDb {
 
         self.handler_id2middleware_ids
             .insert(request_handler_id, current_middleware_chain.to_owned());
+        self.handler_id2error_observer_ids
+            .insert(request_handler_id, current_observer_chain.to_owned());
 
         self.validate_route(
             request_handler_id,
@@ -429,6 +435,7 @@ impl RawUserComponentDb {
         fallback: &Fallback,
         path_prefix: Option<&str>,
         current_middleware_chain: &[UserComponentId],
+        current_observer_chain: &[UserComponentId],
         current_scope_id: ScopeId,
         scope_graph_builder: &mut ScopeGraphBuilder,
     ) {
@@ -450,6 +457,8 @@ impl RawUserComponentDb {
 
         self.handler_id2middleware_ids
             .insert(fallback_id, current_middleware_chain.to_owned());
+        self.handler_id2error_observer_ids
+            .insert(fallback_id, current_observer_chain.to_owned());
         self.fallback_id2path_prefix
             .insert(fallback_id, path_prefix.map(|s| s.to_owned()));
 

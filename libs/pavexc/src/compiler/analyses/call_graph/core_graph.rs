@@ -135,49 +135,41 @@ where
 
     let mut transformed_node_indexes = HashSet::new();
     let mut handled_error_node_indexes = HashSet::new();
-
-    let mut nodes_to_be_visited: IndexSet<VisitorStackElement> =
-        IndexSet::from_iter([VisitorStackElement::orphan(root_id)]);
+    // We need to keep track of the nodes to which we have already attached error observers
+    // (or those that we determined don't need them).
+    let mut attached_observer_indexes = HashSet::new();
 
     // If the constructor for a type can be invoked at most once, then it should appear
-    // at most once in the call graph. This mapping, and the corresponding Rust closure, are used
-    // to make sure of that.
-    let mut indexes_for_unique_nodes = HashMap::<CallGraphNode, NodeIndex>::new();
-    let mut add_node_at_most_once = |graph: &mut RawCallGraph, node: CallGraphNode| {
-        assert!(!matches!(node, CallGraphNode::MatchBranching { .. }));
-        indexes_for_unique_nodes
-            .get(&node)
-            .cloned()
-            .unwrap_or_else(|| {
-                let index = graph.add_node(node.clone());
-                indexes_for_unique_nodes.insert(node, index);
-                index
-            })
+    // at most once in the call graph.
+    // Deduplicator makes sure of that.
+    let mut node_deduplicator = NodeDeduplicator::new();
+    let add_node_for_component = |graph: &mut RawCallGraph,
+                                  node_deduplicator: &mut NodeDeduplicator,
+                                  component_id: ComponentId| {
+        let node = component_id2node(component_id);
+        use {CallGraphNode::*, NumberOfAllowedInvocations::*};
+        match node {
+            Compute {
+                n_allowed_invocations: One,
+                ..
+            }
+            | InputParameter { .. } => node_deduplicator.add_node_at_most_once(graph, node),
+            Compute {
+                n_allowed_invocations: Multiple,
+                ..
+            } => graph.add_node(node),
+            MatchBranching => unreachable!(),
+        }
     };
+
+    let root_node_index = add_node_for_component(&mut call_graph, &mut node_deduplicator, root_id);
+    let mut nodes_to_be_visited: IndexSet<VisitorStackElement> =
+        IndexSet::from_iter([VisitorStackElement::orphan(root_node_index)]);
 
     loop {
         while let Some(node_to_be_visited) = nodes_to_be_visited.pop() {
-            let (component_id, neighbour_index) = (
-                node_to_be_visited.component_id,
-                node_to_be_visited.neighbour,
-            );
-            let current_index = {
-                let call_graph_node = component_id2node(component_id);
-                match call_graph_node {
-                    CallGraphNode::Compute {
-                        n_allowed_invocations: NumberOfAllowedInvocations::One,
-                        ..
-                    }
-                    | CallGraphNode::InputParameter { .. } => {
-                        add_node_at_most_once(&mut call_graph, call_graph_node)
-                    }
-                    CallGraphNode::Compute {
-                        n_allowed_invocations: NumberOfAllowedInvocations::Multiple,
-                        ..
-                    } => call_graph.add_node(call_graph_node),
-                    CallGraphNode::MatchBranching => unreachable!(),
-                }
-            };
+            let (current_index, neighbour_index) =
+                (node_to_be_visited.node_index, node_to_be_visited.neighbour);
 
             if let Some(neighbour_index) = neighbour_index {
                 match neighbour_index {
@@ -231,14 +223,18 @@ where
                         constructible_db.get(root_scope_id, &input_type, component_db.scope_graph())
                     {
                         nodes_to_be_visited.insert(VisitorStackElement {
-                            component_id: constructor_id,
+                            node_index: add_node_for_component(
+                                &mut call_graph,
+                                &mut node_deduplicator,
+                                constructor_id,
+                            ),
                             neighbour: Some(VisitorNeighbour::Child(
                                 current_index,
                                 consumption_mode.into(),
                             )),
                         });
                     } else {
-                        let index = add_node_at_most_once(
+                        let index = node_deduplicator.add_node_at_most_once(
                             &mut call_graph,
                             CallGraphNode::InputParameter {
                                 type_: input_type,
@@ -269,7 +265,11 @@ where
                 };
                 if let Some(error_handler_id) = component_db.error_handler_id(component_id) {
                     nodes_to_be_visited.insert(VisitorStackElement {
-                        component_id: *error_handler_id,
+                        node_index: add_node_for_component(
+                            &mut call_graph,
+                            &mut node_deduplicator,
+                            *error_handler_id,
+                        ),
                         neighbour: Some(VisitorNeighbour::Parent(
                             node_index,
                             CallGraphEdgeMetadata::SharedBorrow,
@@ -324,6 +324,73 @@ where
             transformed_node_indexes.insert(node_index);
         }
 
+        'observers: {
+            if error_observer_ids.is_empty() {
+                break 'observers;
+            }
+            let indexes = call_graph.node_indices().collect::<Vec<_>>();
+            for node_index in indexes {
+                if attached_observer_indexes.contains(&node_index) {
+                    continue;
+                }
+                'inner: {
+                    let node = call_graph[node_index].clone();
+                    let CallGraphNode::Compute { component_id, .. } = node else {
+                        break 'inner;
+                    };
+                    if !component_db
+                        .hydrated_component(component_id, computation_db)
+                        .is_error_handler()
+                    {
+                        break 'inner;
+                    };
+
+                    // Error handlers always have a single child node. It's either:
+                    // - an `IntoResponse` transformer, if the error handler is infallible
+                    // - a match node, if the error handler is fallible
+                    //
+                    // We want to insert our error observers in between the error handler and its child.
+                    #[cfg(debug_assertions)]
+                    {
+                        let child_node_indexes = call_graph
+                            .neighbors_directed(node_index, Direction::Outgoing)
+                            .collect::<Vec<_>>();
+                        assert_eq!(child_node_indexes.len(), 1);
+                    }
+                    let Some(child_id) = call_graph
+                        .neighbors_directed(node_index, Direction::Outgoing)
+                        .next()
+                    else {
+                        // The transformer might not have been processed yet, we'll come back to this
+                        // node later.
+                        break 'inner;
+                    };
+
+                    let mut previous_index = node_index;
+                    for error_observer_id in error_observer_ids {
+                        let error_observer_node_index = add_node_for_component(
+                            &mut call_graph,
+                            &mut node_deduplicator,
+                            *error_observer_id,
+                        );
+                        call_graph.update_edge(
+                            previous_index,
+                            error_observer_node_index,
+                            CallGraphEdgeMetadata::HappensBefore,
+                        );
+                        previous_index = error_observer_node_index;
+                    }
+                    call_graph.update_edge(
+                        previous_index,
+                        child_id,
+                        CallGraphEdgeMetadata::HappensBefore,
+                    );
+
+                    attached_observer_indexes.insert(node_index);
+                }
+            }
+        }
+
         if nodes_to_be_visited.is_empty()
             && call_graph.node_count() == graph_size_before_transformations
         {
@@ -341,14 +408,6 @@ where
     // it might no longer be without descendants after our insertion of `MatchBranching` nodes.
     // If that's the case, we determine a new `root_node_index` by picking the `Ok`
     // variant that descends from `root_node_index`.
-    let root_node_index = {
-        // Very hacky way of getting the index of the root node
-        let root_node = CallGraphNode::Compute {
-            component_id: root_id,
-            n_allowed_invocations: NumberOfAllowedInvocations::One,
-        };
-        add_node_at_most_once(&mut call_graph, root_node)
-    };
     let root_node_index = if call_graph
         .neighbors_directed(root_node_index, Direction::Outgoing)
         .count()
@@ -673,7 +732,7 @@ pub(crate) enum NumberOfAllowedInvocations {
 
 #[derive(Debug, Eq, PartialEq, Hash)]
 struct VisitorStackElement {
-    component_id: ComponentId,
+    node_index: NodeIndex,
     neighbour: Option<VisitorNeighbour>,
 }
 
@@ -685,11 +744,32 @@ enum VisitorNeighbour {
 
 impl VisitorStackElement {
     /// A short-cut to add a node without a parent to the visitor stack.
-    fn orphan(component_id: ComponentId) -> Self {
+    fn orphan(node_index: NodeIndex) -> Self {
         Self {
-            component_id,
+            node_index,
             neighbour: None,
         }
+    }
+}
+
+struct NodeDeduplicator(HashMap<CallGraphNode, NodeIndex>);
+
+impl NodeDeduplicator {
+    pub fn new() -> Self {
+        Self(HashMap::new())
+    }
+
+    pub fn add_node_at_most_once(
+        &mut self,
+        graph: &mut RawCallGraph,
+        node: CallGraphNode,
+    ) -> NodeIndex {
+        assert!(!matches!(node, CallGraphNode::MatchBranching { .. }));
+        self.0.get(&node).cloned().unwrap_or_else(|| {
+            let index = graph.add_node(node.clone());
+            self.0.insert(node, index);
+            index
+        })
     }
 }
 
