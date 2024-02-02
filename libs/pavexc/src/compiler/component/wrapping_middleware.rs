@@ -99,11 +99,6 @@ impl<'a> WrappingMiddleware<'a> {
         self.callable.inputs.as_slice()
     }
 
-    /// Returns `true` if this middleware is fallible—that is, if it returns a `Result`.
-    pub fn is_fallible(&self) -> bool {
-        self.output_type().is_result()
-    }
-
     /// Returns the index of the input parameter that is a `Next<_>`.
     pub fn next_input_index(&self) -> usize {
         self.callable.inputs.iter().position(is_next).unwrap()

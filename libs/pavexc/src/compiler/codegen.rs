@@ -95,6 +95,7 @@ pub(crate) fn codegen_app(
     let handler_id2codegened_pipeline = handler_id2pipeline
         .iter()
         .map(|(id, p)| {
+            p.print_debug_dot(component_db, computation_db);
             p.codegen(package_id2name, component_db, computation_db)
                 .map(|p| (*id, p))
         })
