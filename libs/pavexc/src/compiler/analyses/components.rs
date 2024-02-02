@@ -111,6 +111,7 @@ pub(crate) enum UnregisteredComponent {
     },
     ErrorObserver {
         user_component_id: UserComponentId,
+        error_input_index: usize,
     },
     UserConstructor {
         user_component_id: UserComponentId,
@@ -153,11 +154,11 @@ impl UnregisteredComponent {
             UnregisteredComponent::ErrorHandler { source_id, .. } => Component::ErrorHandler {
                 source_id: source_id.to_owned(),
             },
-            UnregisteredComponent::ErrorObserver { user_component_id } => {
-                Component::ErrorObserver {
-                    user_component_id: user_component_id.to_owned(),
-                }
-            }
+            UnregisteredComponent::ErrorObserver {
+                user_component_id, ..
+            } => Component::ErrorObserver {
+                user_component_id: user_component_id.to_owned(),
+            },
             UnregisteredComponent::UserConstructor { user_component_id } => {
                 Component::Constructor {
                     source_id: SourceId::UserComponentId(user_component_id.to_owned()),
@@ -561,13 +562,14 @@ impl ComponentDb {
                         .or_default()
                         .insert(id);
                 }
+                ErrorObserver {
+                    error_input_index, ..
+                } => {
+                    self.error_observer_id2error_input_index
+                        .insert(id, error_input_index);
+                }
                 _ => {}
             }
-        }
-
-        if let HydratedComponent::ErrorObserver(eo) = self.hydrated_component(id, computation_db) {
-            self.error_observer_id2error_input_index
-                .insert(id, eo.error_input_index);
         }
 
         if self.autoregister_matchers {
@@ -583,7 +585,7 @@ impl ComponentDb {
         let Some(output_type) = component.output_type() else {
             return;
         };
-        if !output_type.is_result() {
+        if !output_type.is_result() || matches!(component, HydratedComponent::Transformer(_)) {
             return;
         }
 
@@ -795,9 +797,12 @@ impl ComponentDb {
                         diagnostics,
                     );
                 }
-                Ok(_) => {
+                Ok(eo) => {
                     self.get_or_intern(
-                        UnregisteredComponent::ErrorObserver { user_component_id },
+                        UnregisteredComponent::ErrorObserver {
+                            user_component_id,
+                            error_input_index: eo.error_input_index,
+                        },
                         computation_db,
                     );
                 }

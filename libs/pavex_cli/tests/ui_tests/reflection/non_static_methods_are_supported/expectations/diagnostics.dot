@@ -1,13 +1,13 @@
 digraph "GET /home - 0" {
     0 [ label = "app::Streamer::stream_file(&app::Streamer, app::Logger) -> pavex::response::Response"]
-    1 [ label = "app::LoggerFactory::logger(&app::LoggerFactory) -> app::Logger"]
-    3 [ label = "app::Streamer::new() -> app::Streamer"]
+    1 [ label = "app::Streamer::new() -> app::Streamer"]
+    2 [ label = "app::LoggerFactory::logger(&app::LoggerFactory) -> app::Logger"]
     4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     5 [ label = "&app::LoggerFactory"]
-    1 -> 0 [ ]
-    3 -> 0 [ label = "&"]
+    2 -> 0 [ ]
+    1 -> 0 [ label = "&"]
     0 -> 4 [ ]
-    5 -> 1 [ ]
+    5 -> 2 [ ]
 }
 
 digraph "* /home - 0" {

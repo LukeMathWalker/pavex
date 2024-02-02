@@ -1,9 +1,9 @@
 digraph "GET /home - 0" {
     0 [ label = "app::handler_with_input_tuple((bool, char, u8), &dep::ActualType) -> pavex::response::Response"]
-    2 [ label = "(bool, char, u8)"]
+    1 [ label = "(bool, char, u8)"]
     3 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     4 [ label = "&dep::ActualType"]
-    2 -> 0 [ ]
+    1 -> 0 [ ]
     0 -> 3 [ ]
     4 -> 0 [ ]
 }
@@ -18,8 +18,8 @@ digraph "* /home - 0" {
 
 digraph app_state {
     0 [ label = "crate::ApplicationState((bool, char, u8), dep::ActualType) -> crate::ApplicationState"]
-    1 [ label = "app::RemoteAlias::new() -> dep::ActualType"]
-    2 [ label = "app::constructor_with_output_tuple() -> (bool, char, u8)"]
-    1 -> 0 [ ]
+    1 [ label = "app::constructor_with_output_tuple() -> (bool, char, u8)"]
+    2 [ label = "app::RemoteAlias::new() -> dep::ActualType"]
     2 -> 0 [ ]
+    1 -> 0 [ ]
 }
