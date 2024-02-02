@@ -184,8 +184,8 @@ impl UserComponentDb {
     }
 
     /// Return the lifecycle of the component with the given id.
-    pub fn get_lifecycle(&self, id: UserComponentId) -> &Lifecycle {
-        &self.id2lifecycle[&id]
+    pub fn get_lifecycle(&self, id: UserComponentId) -> Lifecycle {
+        self.id2lifecycle[&id]
     }
 
     /// Return the location where the component with the given id was registered against the
