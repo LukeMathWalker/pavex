@@ -42,7 +42,7 @@ impl DependencyGraph {
         lifecycle2n_allowed_invocations: F,
     ) -> Self
     where
-        F: Fn(&Lifecycle) -> Option<NumberOfAllowedInvocations> + Clone,
+        F: Fn(Lifecycle) -> Option<NumberOfAllowedInvocations> + Clone,
     {
         let mut graph = RawDependencyGraph::new();
         let root_scope_id = component_db.scope_id(root_id);
@@ -50,8 +50,7 @@ impl DependencyGraph {
         let component_id2invocations = |component_id: ComponentId| {
             // We don't expect to invoke this function for response transformers, therefore
             // it's fine to unwrap here.
-            let lifecycle = component_db.lifecycle(component_id).unwrap();
-            lifecycle2n_allowed_invocations(lifecycle)
+            lifecycle2n_allowed_invocations(component_db.lifecycle(component_id))
         };
         let component_id2node = |id: ComponentId| {
             if let Computation::FrameworkItem(i) = component_db

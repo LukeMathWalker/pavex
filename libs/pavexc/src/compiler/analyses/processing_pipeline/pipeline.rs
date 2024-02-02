@@ -135,7 +135,7 @@ impl RequestHandlerPipeline {
             // They can't be needed upstream since they were initialised here!
             for node in middleware_call_graph.call_graph.node_weights() {
                 if let CallGraphNode::Compute { component_id, .. } = node {
-                    if component_db.lifecycle(*component_id) == Some(&Lifecycle::RequestScoped) {
+                    if component_db.lifecycle(*component_id) == Lifecycle::RequestScoped {
                         let component =
                             component_db.hydrated_component(*component_id, computation_db);
                         if let Some(output_type) = component.output_type() {
@@ -341,7 +341,7 @@ fn extract_long_lived_inputs(
         };
         assert_ne!(
             component_db.lifecycle(*component_id),
-            Some(&Lifecycle::Transient),
+            Lifecycle::Transient,
             "Transient components should not appear as inputs in a call graph"
         );
         buffer.insert(type_.to_owned());
@@ -357,7 +357,7 @@ fn extract_request_scoped_compute_nodes(
         let CallGraphNode::Compute { component_id, .. } = node else {
             continue;
         };
-        if component_db.lifecycle(*component_id) == Some(&Lifecycle::RequestScoped) {
+        if component_db.lifecycle(*component_id) == Lifecycle::RequestScoped {
             buffer.insert(*component_id);
         }
     }

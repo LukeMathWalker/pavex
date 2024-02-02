@@ -383,16 +383,16 @@ fn get_required_singleton_types<'a>(
                     required_input,
                     component_db.scope_graph(),
                 ) {
-                    let lifecycle = component_db.lifecycle(component_id).unwrap();
+                    let lifecycle = component_db.lifecycle(component_id);
                     #[cfg(debug_assertions)]
                     {
                         // No scenario where this should/could happen.
-                        assert_ne!(*lifecycle, Lifecycle::Transient);
+                        assert_ne!(lifecycle, Lifecycle::Transient);
                     }
 
                     // Some inputs are request-scoped because they come from the `Next<_>` pass-along
                     // state. We don't care about those here.
-                    if *lifecycle == Lifecycle::Singleton {
+                    if lifecycle == Lifecycle::Singleton {
                         singletons_to_be_built.insert((required_input.to_owned(), component_id));
                     }
                 }

@@ -80,6 +80,7 @@ pub(super) fn get_error_new_component_id(
         scope_id,
         InsertTransformer::Eagerly,
         ConsumptionMode::Move,
+        computation_db,
     );
     Some(pavex_error_new_component_id)
 }

@@ -107,8 +107,7 @@ impl ConstructibleDb {
                 }
 
                 if let HydratedComponent::Constructor(_) = &resolved_component {
-                    let lifecycle = component_db.lifecycle(component_id).unwrap();
-                    if lifecycle == &Lifecycle::Singleton {
+                    if component_db.lifecycle(component_id) == Lifecycle::Singleton {
                         continue;
                     }
                 }
@@ -218,8 +217,7 @@ impl ConstructibleDb {
         let mut singleton_type2component_ids = HashMap::new();
         for (scope_id, constructibles) in &self.scope_id2constructibles {
             for (type_, component_id) in constructibles.type2constructor_id.iter() {
-                let lifecycle = component_db.lifecycle(*component_id).unwrap();
-                if lifecycle != &Lifecycle::Singleton {
+                if component_db.lifecycle(*component_id) != Lifecycle::Singleton {
                     continue;
                 }
                 let component_ids = singleton_type2component_ids
@@ -369,7 +367,7 @@ impl ConstructibleDb {
         diagnostics: &mut Vec<miette::Error>,
     ) {
         for (component_id, _) in component_db.iter() {
-            if component_db.lifecycle(component_id) != Some(&Lifecycle::Singleton) {
+            if component_db.lifecycle(component_id) != Lifecycle::Singleton {
                 continue;
             }
             let component = component_db.hydrated_component(component_id, computation_db);
@@ -378,8 +376,7 @@ impl ConstructibleDb {
                 if let Some((input_constructor_id, _)) =
                     self.get(component_scope, input_type, component_db.scope_graph())
                 {
-                    let input_lifecycle = component_db.lifecycle(input_constructor_id).unwrap();
-                    if input_lifecycle != &Lifecycle::Singleton {
+                    if component_db.lifecycle(input_constructor_id) != Lifecycle::Singleton {
                         Self::singleton_must_depend_on_singletons(
                             component_id,
                             input_constructor_id,
@@ -605,7 +602,7 @@ impl ConstructibleDb {
             .output_type()
             .cloned()
             .unwrap();
-        let dependency_lifecycle = component_db.lifecycle(dependency_id).unwrap();
+        let dependency_lifecycle = component_db.lifecycle(dependency_id);
 
         let e = anyhow::anyhow!(
             "Singletons can't depend on request-scoped or transient components.\n\

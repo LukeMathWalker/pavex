@@ -138,7 +138,7 @@ pub struct NestedBlueprint {
     pub nesting_location: Location,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub enum Lifecycle {
     Singleton,
     RequestScoped,
@@ -155,7 +155,7 @@ impl fmt::Display for Lifecycle {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 #[non_exhaustive]
 pub enum CloningStrategy {
     /// Pavex will **never** try clone the output type returned by the constructor.

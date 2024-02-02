@@ -12,11 +12,6 @@ use crate::language::ResolvedType;
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) struct Constructor<'a>(pub(crate) Computation<'a>);
 
-/// A [`Constructor`] that returns a `Result`.
-/// The `Ok` variant must be a non-unit type.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub(crate) struct FallibleConstructor<'a>(Computation<'a>);
-
 impl<'a> TryFrom<Computation<'a>> for Constructor<'a> {
     type Error = ConstructorValidationError;
 
@@ -64,18 +59,6 @@ impl<'a> TryFrom<Computation<'a>> for Constructor<'a> {
     }
 }
 
-impl<'a> TryFrom<Constructor<'a>> for FallibleConstructor<'a> {
-    type Error = FallibleConstructorValidationError;
-
-    fn try_from(c: Constructor<'a>) -> Result<Self, Self::Error> {
-        if !c.is_fallible() {
-            Err(FallibleConstructorValidationError::CannotBeInfallible)
-        } else {
-            Ok(Self(c.0))
-        }
-    }
-}
-
 impl<'a> From<Constructor<'a>> for Computation<'a> {
     fn from(value: Constructor<'a>) -> Self {
         value.0
@@ -93,14 +76,6 @@ impl<'a> Constructor<'a> {
         self.0.input_types()
     }
 
-    /// If the constructor is fallible, it returns a wrapper type that exposes additional methods
-    /// to manipulate the `Err` and the `Ok` variant it returns.
-    pub fn as_fallible(
-        &self,
-    ) -> Result<FallibleConstructor<'a>, FallibleConstructorValidationError> {
-        self.clone().try_into()
-    }
-
     /// Returns `true` if the constructor is fallible—that is, if it returns a `Result`.
     pub fn is_fallible(&self) -> bool {
         self.output_type().is_result()
@@ -108,23 +83,6 @@ impl<'a> Constructor<'a> {
 
     pub fn into_owned(self) -> Constructor<'static> {
         Constructor(self.0.into_owned())
-    }
-}
-
-impl<'a> FallibleConstructor<'a> {
-    /// The type returned by the constructor.
-    pub fn output_type(&self) -> &ResolvedType {
-        self.0.output_type().unwrap()
-    }
-
-    /// Return a new match-ing constructor for the `Ok(T)` variant and a computation for the
-    /// `Err(E)` variant of a `Result`.
-    pub fn matchers(&self) -> ConstructorResultMatchers {
-        let m = MatchResult::match_result(self.output_type());
-        // This is certainly valid because we validate that the `Ok` variant is a not a unit type
-        // when building a `Constructor`.
-        let ok = Constructor(m.ok.into());
-        ConstructorResultMatchers { ok, err: m.err }
     }
 }
 
@@ -141,18 +99,4 @@ pub(crate) enum ConstructorValidationError {
         that returns a generic `T` is a constructor that can build **any** type - which is unlikely \
         to be the case.")]
     NakedGenericOutputType { naked_parameter: String },
-}
-
-#[derive(thiserror::Error, Debug, Clone)]
-pub(crate) enum FallibleConstructorValidationError {
-    #[error("Fallible constructors must be infallible.\nThis constructor isn't: it doesn't return a `Result`.")]
-    CannotBeInfallible,
-}
-
-/// The `Ok` and `Err` `MatchResult`s returned by [`FallibleConstructor::matchers`].
-/// The `Ok` variant is guaranteed to be a valid constructor—i.e. it doesn't return the unit
-/// type.
-pub(crate) struct ConstructorResultMatchers<'a> {
-    pub(crate) ok: Constructor<'a>,
-    pub(crate) err: MatchResult,
 }

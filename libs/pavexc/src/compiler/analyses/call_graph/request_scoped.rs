@@ -73,7 +73,7 @@ pub(crate) fn request_scoped_call_graph(
     constructible_db: &ConstructibleDb,
     diagnostics: &mut Vec<miette::Error>,
 ) -> Result<CallGraph, ()> {
-    fn lifecycle2invocations(l: &Lifecycle) -> Option<NumberOfAllowedInvocations> {
+    fn lifecycle2invocations(l: Lifecycle) -> Option<NumberOfAllowedInvocations> {
         match l {
             Lifecycle::Singleton => None,
             Lifecycle::RequestScoped => Some(NumberOfAllowedInvocations::One),
