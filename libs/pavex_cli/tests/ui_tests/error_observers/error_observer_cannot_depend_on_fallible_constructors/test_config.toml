@@ -1,7 +1,0 @@
-description = """Error observers cannot take any input that, either
-directly or transitively, requires a fallible constructor.
-This doesn't apply to singleton types, where the failure is
-not relevant to error observers."""
-
-[expectations]
-codegen = "fail"
