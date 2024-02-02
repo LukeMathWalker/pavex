@@ -346,6 +346,7 @@ pub(crate) struct ComponentDb {
     /// - match request handlers with the sequence of middlewares that wrap around them.
     /// - convert the ids in the router.
     user_component_id2component_id: HashMap<UserComponentId, ComponentId>,
+    scope_ids_with_observers: Vec<ScopeId>,
     autoregister_matchers: bool,
 }
 
@@ -385,6 +386,7 @@ impl ComponentDb {
             error_observer_id2error_input_index: Default::default(),
             error_handler_id2error_handler: Default::default(),
             user_component_id2component_id: Default::default(),
+            scope_ids_with_observers: vec![],
             autoregister_matchers: false,
         };
 
@@ -401,6 +403,8 @@ impl ComponentDb {
                 diagnostics,
             );
 
+            // This **must** be invoked after `process_request_handlers` because it relies on
+            // all request handlers being registered to determine which scopes have error observers.
             self_.process_error_observers(
                 &pavex_error_ref,
                 computation_db,
@@ -409,12 +413,12 @@ impl ComponentDb {
                 diagnostics,
             );
 
-            // There are no "synthetic" request handlers or error observers, so we don't need to
-            // account for the possibility of more of those being added later.
-            // From now on, all registered error matchers will be automatically paired with
-            // a conversion into `pavex::error::Error` if needed, based on the request handler
-            // and error observer components that were registered.
+            // We process the backlog of matchers that were not registered during the initial
+            // registration phase for request handlers.
             self_.register_all_matchers(computation_db);
+            // From this point onwards, all fallible components will automatically get matchers registered.
+            // All error matchers will be automatically paired with a conversion into `pavex::error::Error` if needed,
+            // based on the scope they belong to.
             self_.autoregister_matchers = true;
 
             self_.process_constructors(
@@ -434,7 +438,6 @@ impl ComponentDb {
             );
 
             self_.compute_request2middleware_chain();
-            self_.compute_request2error_observer_chain();
             self_.process_error_handlers(
                 &mut needs_error_handler,
                 computation_db,
@@ -807,6 +810,16 @@ impl ComponentDb {
                     );
                 }
             }
+        }
+
+        self.compute_request2error_observer_chain();
+
+        for component_id in self.request_handler_ids() {
+            if self.handler_id2error_observer_ids[&component_id].is_empty() {
+                continue;
+            }
+            self.scope_ids_with_observers
+                .push(self.scope_id(component_id));
         }
     }
 
