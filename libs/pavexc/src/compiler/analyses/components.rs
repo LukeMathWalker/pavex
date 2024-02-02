@@ -11,7 +11,7 @@ use syn::spanned::Spanned;
 use pavex_bp_schema::{CloningStrategy, Lifecycle};
 
 use crate::compiler::analyses::computations::{ComputationDb, ComputationId};
-use crate::compiler::analyses::into_error::get_error_new_component_id;
+use crate::compiler::analyses::into_error::register_error_new_transformer;
 use crate::compiler::analyses::user_components::{
     ScopeGraph, ScopeId, UserComponent, UserComponentDb, UserComponentId,
 };
@@ -33,8 +33,8 @@ use crate::diagnostic::{
     CompilerDiagnostic, LocationExt, SourceSpanExt,
 };
 use crate::language::{
-    Callable, Lifetime, ResolvedPath, ResolvedPathQualifiedSelf, ResolvedPathSegment, ResolvedType,
-    TypeReference,
+    Callable, Lifetime, PathType, ResolvedPath, ResolvedPathQualifiedSelf, ResolvedPathSegment,
+    ResolvedType, TypeReference,
 };
 use crate::rustdoc::CrateCollection;
 use crate::utils::comma_separated_list;
@@ -348,6 +348,7 @@ pub(crate) struct ComponentDb {
     user_component_id2component_id: HashMap<UserComponentId, ComponentId>,
     scope_ids_with_observers: Vec<ScopeId>,
     autoregister_matchers: bool,
+    pavex_error: PathType,
 }
 
 /// The `build` method and its auxiliary routines.
@@ -361,11 +362,18 @@ impl ComponentDb {
         krate_collection: &CrateCollection,
         diagnostics: &mut Vec<miette::Error>,
     ) -> ComponentDb {
-        let pavex_error_ref = {
+        // We only need to resolve this once.
+        let pavex_error = {
             let error = process_framework_path("pavex::Error", package_graph, krate_collection);
+            let ResolvedType::ResolvedPath(error) = error else {
+                unreachable!()
+            };
+            error
+        };
+        let pavex_error_ref = {
             ResolvedType::Reference(TypeReference {
                 lifetime: Lifetime::Elided,
-                inner: Box::new(error),
+                inner: Box::new(ResolvedType::ResolvedPath(pavex_error.clone())),
                 is_mutable: false,
             })
         };
@@ -388,6 +396,7 @@ impl ComponentDb {
             user_component_id2component_id: Default::default(),
             scope_ids_with_observers: vec![],
             autoregister_matchers: false,
+            pavex_error,
         };
 
         {
@@ -462,7 +471,6 @@ impl ComponentDb {
             krate_collection,
             diagnostics,
         );
-        self_.add_pavex_new_transformers(computation_db, package_graph, krate_collection);
 
         for (id, type_) in framework_item_db.iter() {
             self_.get_or_intern(
@@ -633,6 +641,19 @@ impl ComponentDb {
             .insert(id.into(), (ok_id, err_id));
         self.match_id2fallible_id.insert(ok_id, id.into());
         self.match_id2fallible_id.insert(err_id, id.into());
+
+        // We need to make sure that all error types are upcasted into a `pavex::Error`
+        // **if and only if** there is at least one error observer registered.
+        let scope_ids = self.scope_ids_with_observers.clone();
+        for scope_id in scope_ids {
+            register_error_new_transformer(
+                err_id,
+                self,
+                computation_db,
+                scope_id,
+                &self.pavex_error.clone(),
+            );
+        }
     }
 
     /// Validate all user-registered constructors.
@@ -814,13 +835,14 @@ impl ComponentDb {
 
         self.compute_request2error_observer_chain();
 
+        let mut v = vec![];
         for component_id in self.request_handler_ids() {
             if self.handler_id2error_observer_ids[&component_id].is_empty() {
                 continue;
             }
-            self.scope_ids_with_observers
-                .push(self.scope_id(component_id));
+            v.push(self.scope_id(component_id));
         }
+        self.scope_ids_with_observers = v;
     }
 
     fn process_error_handlers(
@@ -1068,41 +1090,6 @@ impl ComponentDb {
                         diagnostics,
                     );
                 }
-            }
-        }
-    }
-
-    /// We need to make sure that all error types are upcasted into a `pavex::Error`
-    /// **if and only if** there is at least one error observer registered.
-    fn add_pavex_new_transformers(
-        &mut self,
-        computation_db: &mut ComputationDb,
-        package_graph: &PackageGraph,
-        krate_collection: &CrateCollection,
-    ) {
-        let mut contexts = vec![];
-        for component_id in self.request_handler_ids() {
-            if self.handler_id2error_observer_ids[&component_id].is_empty() {
-                continue;
-            }
-            contexts.push(self.scope_id(component_id));
-        }
-
-        let match_err_ids = self
-            .match_err_id2error_handler_id
-            .keys()
-            .copied()
-            .collect::<Vec<_>>();
-        for component_id in match_err_ids {
-            for scope_id in contexts.iter() {
-                get_error_new_component_id(
-                    component_id,
-                    package_graph,
-                    krate_collection,
-                    self,
-                    computation_db,
-                    *scope_id,
-                );
             }
         }
     }
