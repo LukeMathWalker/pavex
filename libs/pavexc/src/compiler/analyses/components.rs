@@ -1487,7 +1487,6 @@ impl ComponentDb {
         let id = _get_root_component_id(id, self, computation_db);
         let scope_id = self.scope_id(id);
 
-        let lifecycle = self.lifecycle(id);
         let bound_component_id = match self.hydrated_component(id, computation_db).into_owned() {
             HydratedComponent::Constructor(constructor) => {
                 let cloning_strategy = self.constructor_id2cloning_strategy[&id];
@@ -1497,12 +1496,12 @@ impl ComponentDb {
                     .into_owned();
                 let bound_computation_id = computation_db.get_or_intern(bound_computation);
 
-                // ^ This registers all "derived" constructors as well (borrowed references, matchers, etc.)
+                // This registers all "derived" constructors as well (borrowed references, matchers, etc.)
                 // but it doesn't take care of the error handler, in case `id` pointed to a fallible constructor.
                 // We need to do that manually.
                 self.get_or_intern_constructor(
                     bound_computation_id,
-                    lifecycle,
+                    self.lifecycle(id),
                     scope_id,
                     cloning_strategy,
                     computation_db,
@@ -1511,44 +1510,11 @@ impl ComponentDb {
             }
             HydratedComponent::WrappingMiddleware(mw) => {
                 let bound_callable = mw.callable.bind_generic_type_parameters(bindings);
-                let bound_component_id = self.get_or_intern_wrapping_middleware(
+                self.get_or_intern_wrapping_middleware(
                     Cow::Owned(bound_callable),
                     scope_id,
                     computation_db,
-                );
-                let HydratedComponent::WrappingMiddleware(mw) =
-                    self.hydrated_component(bound_component_id, computation_db)
-                else {
-                    unreachable!()
-                };
-                if mw.is_fallible() {
-                    // For each Result type, register two match transformers that de-structure
-                    // `Result<T,E>` into `T` or `E`.
-                    let m = MatchResult::match_result(mw.output_type());
-                    let (ok, err) = (m.ok, m.err);
-
-                    let ok_id = self.add_synthetic_transformer(
-                        ok.into(),
-                        bound_component_id,
-                        scope_id,
-                        InsertTransformer::Eagerly,
-                        ConsumptionMode::Move,
-                        computation_db,
-                    );
-                    let err_id = self.add_synthetic_transformer(
-                        err.into(),
-                        bound_component_id,
-                        scope_id,
-                        InsertTransformer::Eagerly,
-                        ConsumptionMode::Move,
-                        computation_db,
-                    );
-                    self.fallible_id2match_ids
-                        .insert(bound_component_id, (ok_id, err_id));
-                    self.match_id2fallible_id.insert(ok_id, bound_component_id);
-                    self.match_id2fallible_id.insert(err_id, bound_component_id);
-                }
-                bound_component_id
+                )
             }
             HydratedComponent::RequestHandler(_)
             | HydratedComponent::ErrorHandler(_)
