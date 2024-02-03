@@ -1,6 +1,6 @@
 [package]
 name = "pavexc"
-version = "0.1.13"
+version = "0.1.14"
 description = "The compiler powering Pavex"
 keywords = ["pavex"]
 edition.workspace = true
@@ -18,8 +18,8 @@ vergen = { version = "8.0.0", features = ["build", "git", "gitcl"] }
 debug_assertions = []
 
 [dependencies]
-pavex = { path = "../pavex", version = "0.1.13" }
-pavex_bp_schema = { path = "../pavex_bp_schema", version = "0.1.13" }
+pavex = { path = "../pavex", version = "0.1.14" }
+pavex_bp_schema = { path = "../pavex_bp_schema", version = "0.1.14" }
 syn = { version = "2", features = ["full", "extra-traits", "visit"] }
 rustdoc-types = "0.24.0"
 serde = { version = "1.0.139", features = ["derive"] }
@@ -49,7 +49,7 @@ textwrap = "0.16.0"
 once_cell = "1.17.1"
 toml_edit = { version = "0.21", features = ["serde"] }
 semver = "1.0.17"
-persist_if_changed = { path = "../persist_if_changed", version = "0.1.13" }
+persist_if_changed = { path = "../persist_if_changed", version = "0.1.14" }
 matchit = { version = "0.7", package = "pavex_matchit" }
 
 # Sqlite cache
