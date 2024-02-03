@@ -24,4 +24,5 @@ fn add_telemetry_middleware(bp: &mut Blueprint) {
     .cloning(CloningStrategy::CloneIfNecessary);
 
     bp.wrap(f!(crate::telemetry::logger));
+    bp.error_observer(f!(crate::telemetry::log_error));
 }

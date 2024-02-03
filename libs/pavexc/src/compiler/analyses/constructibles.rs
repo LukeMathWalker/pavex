@@ -3,6 +3,7 @@ use std::collections::VecDeque;
 use ahash::{HashMap, HashMapExt, HashSet};
 use guppy::graph::PackageGraph;
 use indexmap::{IndexMap, IndexSet};
+use itertools::Itertools;
 use miette::{NamedSource, SourceSpan};
 use syn::spanned::Spanned;
 
@@ -15,6 +16,7 @@ use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::user_components::{
     ScopeGraph, ScopeId, UserComponentDb, UserComponentId,
 };
+use crate::compiler::computation::Computation;
 use crate::diagnostic::{self, ParsedSourceFile};
 use crate::diagnostic::{
     convert_proc_macro_span, convert_rustdoc_span, read_source_file, AnnotatedSnippet,
@@ -56,6 +58,12 @@ impl ConstructibleDb {
         );
         self_.verify_singleton_ambiguity(component_db, computation_db, package_graph, diagnostics);
         self_.verify_lifecycle_of_singleton_dependencies(
+            component_db,
+            computation_db,
+            package_graph,
+            diagnostics,
+        );
+        self_.error_observers_cannot_depend_on_fallible_components(
             component_db,
             computation_db,
             package_graph,
@@ -107,8 +115,7 @@ impl ConstructibleDb {
                 }
 
                 if let HydratedComponent::Constructor(_) = &resolved_component {
-                    let lifecycle = component_db.lifecycle(component_id).unwrap();
-                    if lifecycle == &Lifecycle::Singleton {
+                    if component_db.lifecycle(component_id) == Lifecycle::Singleton {
                         continue;
                     }
                 }
@@ -127,9 +134,13 @@ impl ConstructibleDb {
                             input_types[mw.next_input_index()] = None;
                         }
                         // Errors happen, they are not "constructed" (we use a transformer instead).
-                        // Therefore we skip the error input type for error handlers.
+                        // Therefore we skip the error input type for error handlers and
+                        // error observers.
                         HydratedComponent::ErrorHandler(e) => {
                             input_types[e.error_input_index] = None;
+                        }
+                        HydratedComponent::ErrorObserver(eo) => {
+                            input_types[eo.error_input_index] = None;
                         }
                         HydratedComponent::Constructor(_)
                         | HydratedComponent::RequestHandler(_)
@@ -214,8 +225,7 @@ impl ConstructibleDb {
         let mut singleton_type2component_ids = HashMap::new();
         for (scope_id, constructibles) in &self.scope_id2constructibles {
             for (type_, component_id) in constructibles.type2constructor_id.iter() {
-                let lifecycle = component_db.lifecycle(*component_id).unwrap();
-                if lifecycle != &Lifecycle::Singleton {
+                if component_db.lifecycle(*component_id) != Lifecycle::Singleton {
                     continue;
                 }
                 let component_ids = singleton_type2component_ids
@@ -365,7 +375,7 @@ impl ConstructibleDb {
         diagnostics: &mut Vec<miette::Error>,
     ) {
         for (component_id, _) in component_db.iter() {
-            if component_db.lifecycle(component_id) != Some(&Lifecycle::Singleton) {
+            if component_db.lifecycle(component_id) != Lifecycle::Singleton {
                 continue;
             }
             let component = component_db.hydrated_component(component_id, computation_db);
@@ -374,8 +384,7 @@ impl ConstructibleDb {
                 if let Some((input_constructor_id, _)) =
                     self.get(component_scope, input_type, component_db.scope_graph())
                 {
-                    let input_lifecycle = component_db.lifecycle(input_constructor_id).unwrap();
-                    if input_lifecycle != &Lifecycle::Singleton {
+                    if component_db.lifecycle(input_constructor_id) != Lifecycle::Singleton {
                         Self::singleton_must_depend_on_singletons(
                             component_id,
                             input_constructor_id,
@@ -385,6 +394,84 @@ impl ConstructibleDb {
                             diagnostics,
                         )
                     }
+                }
+            }
+        }
+    }
+
+    /// Error observers must be infallible—this extends to their dependencies.  
+    /// This method checks that no error observer depends on a fallible component,
+    /// either directly or transitively.
+    ///
+    /// # Rationale
+    ///
+    /// If an error observer depends on a fallible component, we'll have to invoke
+    /// that fallible constructor _before_ invoking the error observer.  
+    /// If the fallible constructor fails, we'll have to invoke the error observer
+    /// on the error, which will in turn invoke the fallible constructor again,
+    /// resulting in an infinite loop.
+    fn error_observers_cannot_depend_on_fallible_components(
+        &self,
+        component_db: &ComponentDb,
+        computation_db: &ComputationDb,
+        package_graph: &PackageGraph,
+        diagnostics: &mut Vec<miette::Error>,
+    ) {
+        'outer: for (error_observer_id, _) in component_db.iter() {
+            let HydratedComponent::ErrorObserver(eo) =
+                component_db.hydrated_component(error_observer_id, computation_db)
+            else {
+                continue;
+            };
+            let mut queue = eo
+                .input_types()
+                .iter()
+                .enumerate()
+                .filter_map(|(i, input)| {
+                    if i == eo.error_input_index {
+                        return None;
+                    }
+                    Some((input.to_owned(), IndexSet::<ResolvedType>::new()))
+                })
+                .collect_vec();
+            'inner: while let Some((input, mut dependency_chain)) = queue.pop() {
+                let Some((input_constructor_id, _)) = self.get(
+                    component_db.scope_id(error_observer_id),
+                    &input,
+                    component_db.scope_graph(),
+                ) else {
+                    continue 'inner;
+                };
+                if component_db.lifecycle(input_constructor_id) == Lifecycle::Singleton {
+                    continue 'inner;
+                }
+                let HydratedComponent::Constructor(c) =
+                    component_db.hydrated_component(input_constructor_id, computation_db)
+                else {
+                    continue 'inner;
+                };
+                if let Computation::MatchResult(_) = c.0 {
+                    let fallible_id = component_db.fallible_id(input_constructor_id);
+                    dependency_chain.insert(input.clone());
+                    Self::error_observers_must_be_infallible(
+                        error_observer_id,
+                        dependency_chain,
+                        fallible_id,
+                        package_graph,
+                        component_db,
+                        computation_db,
+                        diagnostics,
+                    );
+                    continue 'outer;
+                }
+                if !dependency_chain.insert(input) {
+                    // We've already seen this type in the dependency chain, so we have a cycle.
+                    // Cycle errors are detected elsewhere, so we don't need to do anything here.
+                    // We just break to avoid infinite loops.
+                    continue 'inner;
+                }
+                for input in c.input_types().iter() {
+                    queue.push((input.to_owned(), dependency_chain.clone()));
                 }
             }
         }
@@ -431,7 +518,7 @@ impl ConstructibleDb {
             .entry(scope_id)
             .or_insert_with(ConstructiblesInScope::new);
         let output = component.output_type();
-        scope_constructibles.insert(output.to_owned(), component_id);
+        scope_constructibles.insert(output.unwrap().to_owned(), component_id);
     }
 
     /// Find the constructor for a given type in a given scope.
@@ -594,12 +681,14 @@ impl ConstructibleDb {
         let singleton_type = component_db
             .hydrated_component(singleton_id, computation_db)
             .output_type()
-            .to_owned();
+            .cloned()
+            .unwrap();
         let dependency_type = component_db
             .hydrated_component(dependency_id, computation_db)
             .output_type()
-            .to_owned();
-        let dependency_lifecycle = component_db.lifecycle(dependency_id).unwrap();
+            .cloned()
+            .unwrap();
+        let dependency_lifecycle = component_db.lifecycle(dependency_id);
 
         let e = anyhow::anyhow!(
             "Singletons can't depend on request-scoped or transient components.\n\
@@ -624,6 +713,75 @@ impl ConstructibleDb {
                     )),
                 ));
         }
+        diagnostics.push(diagnostic_builder.build().into());
+    }
+
+    fn error_observers_must_be_infallible(
+        error_observer_id: ComponentId,
+        dependency_chain: IndexSet<ResolvedType>,
+        fallible_id: ComponentId,
+        package_graph: &PackageGraph,
+        component_db: &ComponentDb,
+        computation_db: &ComputationDb,
+        diagnostics: &mut Vec<miette::Error>,
+    ) {
+        fn registration_span(
+            component_id: ComponentId,
+            package_graph: &PackageGraph,
+            component_db: &ComponentDb,
+            diagnostics: &mut Vec<miette::Error>,
+        ) -> Option<(ParsedSourceFile, SourceSpan)> {
+            let user_id = component_db.user_component_id(component_id)?;
+            let user_component_db = component_db.user_component_db();
+            let location = user_component_db.get_location(user_id);
+
+            let source = match location.source_file(package_graph) {
+                Ok(s) => s,
+                Err(e) => {
+                    diagnostics.push(e.into());
+                    return None;
+                }
+            };
+            let source_span = diagnostic::get_f_macro_invocation_span(&source, location)?;
+            Some((source, source_span))
+        }
+
+        let HydratedComponent::ErrorObserver(error_observer) =
+            component_db.hydrated_component(error_observer_id, computation_db)
+        else {
+            unreachable!()
+        };
+        let HydratedComponent::Constructor(fallible_constructor) =
+            component_db.hydrated_component(fallible_id, computation_db)
+        else {
+            unreachable!()
+        };
+        let Computation::Callable(c) = &fallible_constructor.0 else {
+            unreachable!()
+        };
+        let fallible_constructor_path = &c.path;
+
+        let mut err_msg = String::new();
+        for (i, type_) in dependency_chain.iter().enumerate() {
+            use std::fmt::Write as _;
+            if i != 0 {
+                write!(err_msg, ", which depends on").unwrap();
+            }
+            write!(err_msg, " `{type_:?}`").unwrap();
+        }
+
+        let e = anyhow::anyhow!(
+            "Error observers can't depend on a type with a fallible constructor, either directly or transitively.\n\
+            `{}` violates this constraints! \
+            It depends on{err_msg}, which is built with `{fallible_constructor_path}`, a fallible constructor.",
+            error_observer.callable.path,
+        );
+        let diagnostic_builder =
+            match registration_span(error_observer_id, package_graph, component_db, diagnostics) {
+                Some((source, source_span)) => CompilerDiagnostic::builder(source, e)
+                    .label(source_span.labeled("The error observer was registered here".into())),
+                None => CompilerDiagnostic::builder(NamedSource::new("", "".to_string()), e),
+            };
         diagnostics.push(diagnostic_builder.build().into());
     }
 }

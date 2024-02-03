@@ -70,20 +70,11 @@ Your middlewares can be fallible, i.e. they can return a [`Result`][Result].
 
 --8<-- "doc_examples/guide/middleware/core_concepts/project-fallible.snap"
 
-If they do, you must specify an **error handler** when registering them:
+If they do, you must specify an [**error handler**](../errors/error_handlers.md) when registering them:
 
 --8<-- "doc_examples/guide/middleware/core_concepts/project-registration_with_error_handler.snap"
 
-The error handler is in charge of building a response from the error returned by the middleware. Just like
-a middleware:
-
-- It can be synchronous or asynchronous.
-- It can take advantage of dependency injection.
-- It must return a type that implements [`IntoResponse`][IntoResponse].
-
-In addition, it must take a reference to the error type as one of its input parameters:
-
---8<-- "doc_examples/guide/middleware/core_concepts/project-error_handler.snap"
+Check out the [error handling guide](../errors/error_handlers.md) for more details.
 
 ## Execution order
 

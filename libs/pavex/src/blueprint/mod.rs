@@ -8,6 +8,7 @@ pub use blueprint::Blueprint;
 mod blueprint;
 pub mod constructor;
 mod conversions;
+pub mod error_observer;
 pub mod middleware;
 pub mod reflection;
 pub mod router;

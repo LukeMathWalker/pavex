@@ -61,6 +61,8 @@ impl RequestHandlerPipeline {
         krate_collection: &CrateCollection,
         diagnostics: &mut Vec<miette::Error>,
     ) -> Result<Self, ()> {
+        let error_observer_ids = component_db.error_observers(handler_id).unwrap().to_owned();
+
         // Step 1: Determine the sequence of middlewares that the request handler is wrapped in.
         let middleware_ids = component_db
             .middleware_chain(handler_id)
@@ -83,6 +85,7 @@ impl RequestHandlerPipeline {
             let middleware_call_graph = request_scoped_call_graph(
                 middleware_id,
                 &request_scoped_prebuilt_ids,
+                &error_observer_ids,
                 computation_db,
                 component_db,
                 constructible_db,
@@ -101,6 +104,7 @@ impl RequestHandlerPipeline {
         let handler_call_graph = request_scoped_ordered_call_graph(
             handler_id,
             &request_scoped_prebuilt_ids,
+            &error_observer_ids,
             computation_db,
             component_db,
             constructible_db,
@@ -131,10 +135,12 @@ impl RequestHandlerPipeline {
             // They can't be needed upstream since they were initialised here!
             for node in middleware_call_graph.call_graph.node_weights() {
                 if let CallGraphNode::Compute { component_id, .. } = node {
-                    if component_db.lifecycle(*component_id) == Some(&Lifecycle::RequestScoped) {
+                    if component_db.lifecycle(*component_id) == Lifecycle::RequestScoped {
                         let component =
                             component_db.hydrated_component(*component_id, computation_db);
-                        next_field_types.remove(component.output_type());
+                        if let Some(output_type) = component.output_type() {
+                            next_field_types.remove(output_type);
+                        }
                     }
                 }
             }
@@ -259,6 +265,7 @@ impl RequestHandlerPipeline {
             let middleware_call_graph = request_scoped_ordered_call_graph(
                 bound_middleware_id,
                 &request_scoped_prebuilt_ids,
+                &error_observer_ids,
                 computation_db,
                 component_db,
                 constructible_db,
@@ -334,7 +341,7 @@ fn extract_long_lived_inputs(
         };
         assert_ne!(
             component_db.lifecycle(*component_id),
-            Some(&Lifecycle::Transient),
+            Lifecycle::Transient,
             "Transient components should not appear as inputs in a call graph"
         );
         buffer.insert(type_.to_owned());
@@ -350,7 +357,7 @@ fn extract_request_scoped_compute_nodes(
         let CallGraphNode::Compute { component_id, .. } = node else {
             continue;
         };
-        if component_db.lifecycle(*component_id) == Some(&Lifecycle::RequestScoped) {
+        if component_db.lifecycle(*component_id) == Lifecycle::RequestScoped {
             buffer.insert(*component_id);
         }
     }

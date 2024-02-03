@@ -1,0 +1,11 @@
+```rust title="src/core/blueprint.rs" hl_lines="7"
+use pavex::blueprint::router::POST;
+use pavex::blueprint::Blueprint;
+use pavex::f;
+
+pub fn blueprint() -> Blueprint {
+    let mut bp = Blueprint::new();
+    bp.error_observer(f!(crate::core::error_logger));
+    // [...]
+}
+```

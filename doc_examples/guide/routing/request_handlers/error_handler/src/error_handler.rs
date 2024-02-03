@@ -6,5 +6,4 @@ pub fn greet_error_handler(e: &GreetError) -> Response {
         GreetError::DatabaseError => Response::internal_server_error()
             .set_typed_body("Something went wrong, please retry later."),
     }
-    .box_body()
 }

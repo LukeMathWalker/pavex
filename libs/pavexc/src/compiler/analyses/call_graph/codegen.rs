@@ -78,6 +78,7 @@ pub(crate) fn codegen_callable_closure(
         let output_type = component_db
             .hydrated_component(*component_id, computation_db)
             .output_type()
+            .unwrap()
             .syn_type(package_id2name);
         syn::parse2(quote! {
             pub async fn handler(#(#inputs),*) -> #output_type {
@@ -239,6 +240,7 @@ fn _codegen_callable_closure_body(
                                 computation_db,
                                 node_id2position,
                             ),
+                            get_node_happen_befores(current_index, call_graph, node_id2position),
                             callable.as_ref(),
                             blocks,
                             variable_name_generator,
@@ -435,17 +437,43 @@ fn get_node_type_inputs<'a, 'b: 'a>(
 ) -> impl Iterator<Item = (NodeIndex, ResolvedType, CallGraphEdgeMetadata)> + 'a {
     call_graph
         .edges_directed(node_index, Direction::Incoming)
-        .map(move |edge| {
+        .filter_map(move |edge| {
+            if edge.weight() == &CallGraphEdgeMetadata::HappensBefore {
+                // It's not an input parameter, so we don't care about it.
+                return None;
+            }
             let node = &call_graph[edge.source()];
             let type_ = match node {
                 CallGraphNode::Compute { component_id, .. } => {
                     let component = component_db.hydrated_component(*component_id, computation_db);
-                    component.output_type().to_owned()
+                    match component.output_type().cloned() {
+                        Some(type_) => type_,
+                        None => {
+                            return None;
+                        }
+                    }
                 }
                 CallGraphNode::InputParameter { type_, .. } => type_.to_owned(),
                 CallGraphNode::MatchBranching => unreachable!(),
             };
-            (edge.source(), type_, edge.weight().to_owned())
+            Some((edge.source(), type_, edge.weight().to_owned()))
         })
         .sorted_by_key(|(node_index, _, _)| node_id2position[node_index])
+}
+
+fn get_node_happen_befores<'a>(
+    node_index: NodeIndex,
+    call_graph: &'a RawCallGraph,
+    node_id2position: &'a HashMap<NodeIndex, u16>,
+) -> impl Iterator<Item = NodeIndex> + 'a {
+    call_graph
+        .edges_directed(node_index, Direction::Incoming)
+        .filter_map(move |edge| {
+            if edge.weight() != &CallGraphEdgeMetadata::HappensBefore {
+                // It's an input parameter, so we don't care about it.
+                return None;
+            }
+            Some(edge.source())
+        })
+        .sorted_by_key(|node_index| node_id2position[node_index])
 }

@@ -53,6 +53,11 @@ pub struct UserComponentDb {
     ///
     /// Invariants: there is an entry for every single request handler.
     handler_id2middleware_ids: HashMap<UserComponentId, Vec<UserComponentId>>,
+    /// Associate each request handler with the ordered list of error observers
+    /// that must be invoked when an error occurs while handling a request.
+    ///
+    /// Invariants: there is an entry for every single request handler.
+    handler_id2error_observer_ids: HashMap<UserComponentId, Vec<UserComponentId>>,
     scope_graph: ScopeGraph,
 }
 
@@ -104,6 +109,7 @@ impl UserComponentDb {
             id2lifecycle,
             identifiers_interner,
             handler_id2middleware_ids,
+            handler_id2error_observer_ids,
             fallback_id2path_prefix: _,
         } = raw_db;
 
@@ -116,6 +122,7 @@ impl UserComponentDb {
                 constructor_id2cloning_strategy,
                 id2lifecycle,
                 handler_id2middleware_ids,
+                handler_id2error_observer_ids,
                 scope_graph,
             },
         ))
@@ -166,9 +173,19 @@ impl UserComponentDb {
             .filter(|(_, c)| matches!(c, UserComponent::WrappingMiddleware { .. }))
     }
 
+    /// Iterate over all the error observer components in the database, returning their id and the
+    /// associated `UserComponent`.
+    pub fn error_observers(
+        &self,
+    ) -> impl Iterator<Item = (UserComponentId, &UserComponent)> + DoubleEndedIterator {
+        self.component_interner
+            .iter()
+            .filter(|(_, c)| matches!(c, UserComponent::ErrorObserver { .. }))
+    }
+
     /// Return the lifecycle of the component with the given id.
-    pub fn get_lifecycle(&self, id: UserComponentId) -> &Lifecycle {
-        &self.id2lifecycle[&id]
+    pub fn get_lifecycle(&self, id: UserComponentId) -> Lifecycle {
+        self.id2lifecycle[&id]
     }
 
     /// Return the location where the component with the given id was registered against the
@@ -202,6 +219,14 @@ impl UserComponentDb {
     /// It panics if the component with the given id is not a request handler.
     pub fn get_middleware_ids(&self, id: UserComponentId) -> &[UserComponentId] {
         &self.handler_id2middleware_ids[&id]
+    }
+
+    /// Return the ids of the error observers that must be invoked when something goes wrong
+    /// in the request processing pipeline for this handler.
+    ///
+    /// It panics if the component with the given id is not a request handler.
+    pub fn get_error_observer_ids(&self, id: UserComponentId) -> &[UserComponentId] {
+        &self.handler_id2error_observer_ids[&id]
     }
 }
 

@@ -39,7 +39,7 @@ pub(crate) fn application_state_call_graph(
     krate_collection: &CrateCollection,
     diagnostics: &mut Vec<miette::Error>,
 ) -> Result<ApplicationStateCallGraph, ()> {
-    fn lifecycle2invocations(lifecycle: &Lifecycle) -> Option<NumberOfAllowedInvocations> {
+    fn lifecycle2invocations(lifecycle: Lifecycle) -> Option<NumberOfAllowedInvocations> {
         match lifecycle {
             Lifecycle::Singleton => Some(NumberOfAllowedInvocations::One),
             Lifecycle::Transient | Lifecycle::RequestScoped => {
@@ -99,6 +99,7 @@ pub(crate) fn application_state_call_graph(
     }) = build_call_graph(
         application_state_id,
         &IndexSet::new(),
+        &[],
         computation_db,
         component_db,
         constructible_db,
@@ -135,7 +136,7 @@ pub(crate) fn application_state_call_graph(
                 "One of the output components is not a `MatchResult` transformer: {:?}",
                 component
             );
-            map.entry(component.output_type().to_owned())
+            map.entry(component.output_type().unwrap().to_owned())
                 .or_default()
                 .insert(*component_id);
         }
@@ -225,6 +226,7 @@ pub(crate) fn application_state_call_graph(
             application_state_scope_id,
             InsertTransformer::Eagerly,
             ConsumptionMode::Move,
+            computation_db,
         );
 
         let mut error_variants = IndexMap::new();
@@ -242,7 +244,9 @@ pub(crate) fn application_state_call_graph(
                     }
                     HydratedComponent::WrappingMiddleware(w) => &w.callable,
                     HydratedComponent::RequestHandler(r) => &r.callable,
-                    HydratedComponent::ErrorHandler(_) | HydratedComponent::Transformer(_) => {
+                    HydratedComponent::ErrorObserver(_)
+                    | HydratedComponent::ErrorHandler(_)
+                    | HydratedComponent::Transformer(_) => {
                         unreachable!()
                     }
                 };
@@ -293,6 +297,7 @@ pub(crate) fn application_state_call_graph(
                     application_state_scope_id,
                     InsertTransformer::Eagerly,
                     ConsumptionMode::Move,
+                    computation_db,
                 );
                 // We need to do an Err(..) wrap around the error variant returned by the transformer.
                 component_db.get_or_intern_transformer(
@@ -301,6 +306,7 @@ pub(crate) fn application_state_call_graph(
                     application_state_scope_id,
                     InsertTransformer::Eagerly,
                     ConsumptionMode::Move,
+                    computation_db,
                 );
             }
         }
@@ -309,6 +315,7 @@ pub(crate) fn application_state_call_graph(
         let Ok(cg) = build_call_graph(
             application_state_id,
             &IndexSet::new(),
+            &[],
             computation_db,
             component_db,
             constructible_db,

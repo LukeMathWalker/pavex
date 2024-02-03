@@ -1,15 +1,15 @@
 digraph "GET /home - 0" {
     0 [ label = "app::handler(app::B, app::C) -> pavex::response::Response"]
-    1 [ label = "app::c(app::A) -> app::C"]
-    2 [ label = "app::a() -> app::A"]
-    3 [ label = "app::b(app::A) -> app::B"]
+    1 [ label = "app::b(app::A) -> app::B"]
+    2 [ label = "app::c(app::A) -> app::C"]
+    3 [ label = "app::a() -> app::A"]
     4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     5 [ label = "<app::A as core::clone::Clone>::clone(&app::A) -> app::A"]
+    2 -> 0 [ ]
+    3 -> 2 [ ]
     1 -> 0 [ ]
-    3 -> 0 [ ]
-    2 -> 3 [ ]
     0 -> 4 [ ]
-    2 -> 5 [ label = "&"]
+    3 -> 5 [ label = "&"]
     5 -> 1 [ ]
 }
 

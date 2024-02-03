@@ -1,0 +1,4 @@
+description = """Error observers cannot take any input that requires a fallible constructor."""
+
+[expectations]
+codegen = "fail"

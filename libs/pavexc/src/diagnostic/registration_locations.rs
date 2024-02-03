@@ -39,7 +39,9 @@ pub(crate) fn get_f_macro_invocation_span(
     match node {
         Call::MethodCall(node) => {
             let argument = match node.method.to_string().as_str() {
-                "error_handler" | "constructor" | "wrap" | "fallback" => node.args.first(),
+                "error_handler" | "error_observer" | "constructor" | "wrap" | "fallback" => {
+                    node.args.first()
+                }
                 "route" => node.args.iter().nth(2),
                 s => {
                     tracing::trace!(
@@ -59,10 +61,12 @@ pub(crate) fn get_f_macro_invocation_span(
                     let type_name = segments[segments.len() - 2].ident.to_string();
                     let index = match (type_name.as_str(), method_name.as_str()) {
                         ("Blueprint", "error_handler")
+                        | ("Blueprint", "error_observer")
                         | ("Blueprint", "constructor")
                         | ("Blueprint", "wrap")
                         | ("Blueprint", "fallback") => {
                             // Blueprint::error_handler(bp, handler)
+                            // Blueprint::error_observer(bp, observer)
                             // Blueprint::constructor(bp, constructor, lifecycle)
                             // Blueprint::wrap(bp, middleware)
                             // Blueprint::fallback(bp, handler)
@@ -78,9 +82,11 @@ pub(crate) fn get_f_macro_invocation_span(
                         }
                         ("Constructor", "new")
                         | ("WrappingMiddleware", "new")
+                        | ("ErrorObserver", "new")
                         | ("Fallback", "new") => {
                             // Constructor::new(constructor, lifecycle)
                             // WrappingMiddleware::new(mw)
+                            // ErrorObserver::new(observer)
                             // Fallback::new(fallback)
                             0
                         }

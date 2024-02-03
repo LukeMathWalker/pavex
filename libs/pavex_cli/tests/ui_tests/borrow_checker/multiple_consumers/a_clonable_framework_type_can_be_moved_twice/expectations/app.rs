@@ -73,9 +73,9 @@ pub mod route_0 {
             '_,
             '_,
         > as core::clone::Clone>::clone(&v0);
-        let v2 = app::c(v1);
-        let v3 = app::b(v0);
-        let v4 = app::handler(v3, v2);
+        let v2 = app::b(v1);
+        let v3 = app::c(v0);
+        let v4 = app::handler(v2, v3);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
     }
 }

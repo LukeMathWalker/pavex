@@ -38,10 +38,11 @@ impl DependencyGraph {
         computation_db: &ComputationDb,
         component_db: &ComponentDb,
         constructible_db: &ConstructibleDb,
+        error_observer_ids: &[ComponentId],
         lifecycle2n_allowed_invocations: F,
     ) -> Self
     where
-        F: Fn(&Lifecycle) -> Option<NumberOfAllowedInvocations> + Clone,
+        F: Fn(Lifecycle) -> Option<NumberOfAllowedInvocations> + Clone,
     {
         let mut graph = RawDependencyGraph::new();
         let root_scope_id = component_db.scope_id(root_id);
@@ -49,8 +50,7 @@ impl DependencyGraph {
         let component_id2invocations = |component_id: ComponentId| {
             // We don't expect to invoke this function for response transformers, therefore
             // it's fine to unwrap here.
-            let lifecycle = component_db.lifecycle(component_id).unwrap();
-            lifecycle2n_allowed_invocations(lifecycle)
+            lifecycle2n_allowed_invocations(component_db.lifecycle(component_id))
         };
         let component_id2node = |id: ComponentId| {
             if let Computation::FrameworkItem(i) = component_db
@@ -63,10 +63,13 @@ impl DependencyGraph {
             } else {
                 match component_id2invocations(id) {
                     None => {
-                        let type_ = component_db
-                            .hydrated_component(id, computation_db)
-                            .output_type()
-                            .to_owned();
+                        let resolved_component =
+                            component_db.hydrated_component(id, computation_db);
+                        assert!(
+                            !matches!(resolved_component, HydratedComponent::ErrorObserver(_)),
+                            "Error observers should never be input parameters."
+                        );
+                        let type_ = resolved_component.output_type().unwrap().to_owned();
                         DependencyGraphNode::Input { type_ }
                     }
                     Some(_) => DependencyGraphNode::Compute { component_id: id },
@@ -77,8 +80,12 @@ impl DependencyGraph {
         let mut transformed_node_indexes = HashSet::new();
         let mut handled_error_node_indexes = HashSet::new();
         let mut processed_node_indexes = HashSet::new();
-        let mut nodes_to_be_visited: IndexSet<VisitorStackElement> =
-            IndexSet::from_iter([VisitorStackElement::orphan(root_id)]);
+        let mut nodes_to_be_visited: IndexSet<VisitorStackElement> = IndexSet::from_iter(
+            error_observer_ids
+                .iter()
+                .map(|&id| VisitorStackElement::orphan(id))
+                .chain(std::iter::once(VisitorStackElement::orphan(root_id))),
+        );
 
         // For each component id, we should have at most one node in the dependency graph, no matter the lifecycle.
         let mut node2index = HashMap::<DependencyGraphNode, NodeIndex>::new();
@@ -141,6 +148,13 @@ impl DependencyGraph {
                             // `Next` doesn't matter when it comes to verifying that we don't
                             // have cyclic dependencies, so we can skip it.
                             input_types.remove(mw.next_input_index());
+                            input_types
+                        }
+                        HydratedComponent::ErrorObserver(eo) => {
+                            let mut input_types = eo.input_types().to_vec();
+                            // `Error` doesn't matter when it comes to verifying that we don't
+                            // have cyclic dependencies, so we can skip it.
+                            input_types.remove(eo.error_input_index);
                             input_types
                         }
                     };
@@ -296,13 +310,18 @@ fn cycle_error(
             cycle_components[i - 1]
         };
         let dependency_component = component_db.hydrated_component(*dependency_id, computation_db);
-        let mut dependency_type = dependency_component.output_type().to_owned();
+        let mut dependency_type = dependency_component
+            .output_type()
+            .cloned()
+            .to_owned()
+            .unwrap();
         // We want to skip the "intermediate" result type.
         if let Some((ok_id, _)) = component_db.match_ids(*dependency_id) {
             dependency_type = component_db
                 .hydrated_component(*ok_id, computation_db)
                 .output_type()
-                .to_owned();
+                .cloned()
+                .unwrap();
         }
         let dependency_path = match component_db
             .hydrated_component(*dependency_id, computation_db)

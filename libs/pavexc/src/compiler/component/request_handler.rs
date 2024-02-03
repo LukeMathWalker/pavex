@@ -54,11 +54,6 @@ impl<'a> RequestHandler<'a> {
         self.callable.inputs.as_slice()
     }
 
-    /// Returns `true` if the request handler is fallible.
-    pub fn is_fallible(&self) -> bool {
-        self.callable.is_fallible()
-    }
-
     pub fn into_owned(self) -> RequestHandler<'static> {
         RequestHandler {
             callable: Cow::Owned(self.callable.into_owned()),

@@ -33,6 +33,7 @@ impl OwnershipRelationships {
                     let (source, target) = call_graph.edge_endpoints(edge_index).unwrap();
                     self_.node(target).consumes(source);
                 }
+                CallGraphEdgeMetadata::HappensBefore => {}
             }
         }
         self_

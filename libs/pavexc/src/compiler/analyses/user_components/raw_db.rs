@@ -3,8 +3,8 @@ use anyhow::anyhow;
 use guppy::graph::PackageGraph;
 
 use pavex_bp_schema::{
-    Blueprint, Callable, CloningStrategy, Component, Constructor, Fallback, Lifecycle, Location,
-    NestedBlueprint, RawCallableIdentifiers, Route, WrappingMiddleware,
+    Blueprint, Callable, CloningStrategy, Component, Constructor, ErrorObserver, Fallback,
+    Lifecycle, Location, NestedBlueprint, RawCallableIdentifiers, Route, WrappingMiddleware,
 };
 
 use crate::compiler::analyses::user_components::router_key::RouterKey;
@@ -45,6 +45,10 @@ pub enum UserComponent {
         raw_callable_identifiers_id: RawCallableIdentifierId,
         scope_id: ScopeId,
     },
+    ErrorObserver {
+        raw_callable_identifiers_id: RawCallableIdentifierId,
+        scope_id: ScopeId,
+    },
 }
 
 impl UserComponent {
@@ -58,6 +62,7 @@ impl UserComponent {
             UserComponent::Constructor { .. } => CallableType::Constructor,
             UserComponent::WrappingMiddleware { .. } => CallableType::WrappingMiddleware,
             UserComponent::Fallback { .. } => CallableType::RequestHandler,
+            UserComponent::ErrorObserver { .. } => CallableType::ErrorObserver,
         }
     }
 
@@ -81,6 +86,10 @@ impl UserComponent {
                 raw_callable_identifiers_id,
                 ..
             }
+            | UserComponent::ErrorObserver {
+                raw_callable_identifiers_id,
+                ..
+            }
             | UserComponent::Constructor {
                 raw_callable_identifiers_id,
                 ..
@@ -91,7 +100,8 @@ impl UserComponent {
     /// Returns the [`ScopeId`] for the scope that this [`UserComponent`] is associated with.
     pub fn scope_id(&self) -> ScopeId {
         match self {
-            UserComponent::RequestHandler { scope_id, .. }
+            UserComponent::ErrorObserver { scope_id, .. }
+            | UserComponent::RequestHandler { scope_id, .. }
             | UserComponent::Fallback { scope_id, .. }
             | UserComponent::ErrorHandler { scope_id, .. }
             | UserComponent::WrappingMiddleware { scope_id, .. }
@@ -147,6 +157,11 @@ pub(super) struct RawUserComponentDb {
     ///
     /// Invariants: there is an entry for every single request handler.
     pub(super) handler_id2middleware_ids: HashMap<UserComponentId, Vec<UserComponentId>>,
+    /// Associate each request handler with the ordered list of error observers
+    /// that must be invoked if there is an error while handling a request.
+    ///
+    /// Invariants: there is an entry for every single request handler.
+    pub(super) handler_id2error_observer_ids: HashMap<UserComponentId, Vec<UserComponentId>>,
     /// Associate each user-registered fallback with the path prefix of the `Blueprint`
     /// it was registered against.
     /// If it was registered against a deeply nested `Blueprint`, it contains the **concatenated**
@@ -163,6 +178,7 @@ struct QueueItem<'a> {
     parent_path_prefix: Option<String>,
     nested_bp: &'a NestedBlueprint,
     current_middleware_chain: Vec<UserComponentId>,
+    current_observer_chain: Vec<UserComponentId>,
 }
 
 // The public `build` method alongside its private supporting routines.
@@ -181,6 +197,7 @@ impl RawUserComponentDb {
             id2lifecycle: HashMap::new(),
             constructor_id2cloning_strategy: HashMap::new(),
             handler_id2middleware_ids: HashMap::new(),
+            handler_id2error_observer_ids: HashMap::new(),
             fallback_id2path_prefix: HashMap::new(),
         };
         let mut scope_graph_builder = ScopeGraph::builder(bp.creation_location.clone());
@@ -190,6 +207,12 @@ impl RawUserComponentDb {
         // its nested blueprints.
         // By default, the middleware chain is empty.
         let mut current_middleware_chain = Vec::new();
+        // The error observers that will be invoked if there is an error while handling a request
+        // in the current scope.
+        // We discover and add more error observers to this chain as we process the root blueprint
+        // and its nested blueprints.
+        // By default, the error observer chain is empty.
+        let mut current_observer_chain = Vec::new();
 
         let mut processing_queue = Vec::new();
 
@@ -200,6 +223,7 @@ impl RawUserComponentDb {
             None,
             &mut scope_graph_builder,
             &mut current_middleware_chain,
+            &mut current_observer_chain,
             true,
             &mut processing_queue,
             package_graph,
@@ -212,6 +236,7 @@ impl RawUserComponentDb {
                 nested_bp,
                 parent_path_prefix,
                 mut current_middleware_chain,
+                mut current_observer_chain,
             } = item;
             let nested_scope_id = scope_graph_builder
                 .add_scope(parent_scope_id, Some(nested_bp.nesting_location.clone()));
@@ -233,6 +258,7 @@ impl RawUserComponentDb {
                 path_prefix.as_deref(),
                 &mut scope_graph_builder,
                 &mut current_middleware_chain,
+                &mut current_observer_chain,
                 false,
                 &mut processing_queue,
                 package_graph,
@@ -260,6 +286,7 @@ impl RawUserComponentDb {
         path_prefix: Option<&str>,
         scope_graph_builder: &mut ScopeGraphBuilder,
         mut current_middleware_chain: &mut Vec<UserComponentId>,
+        mut current_observer_chain: &mut Vec<UserComponentId>,
         is_root: bool,
         bp_queue: &mut Vec<QueueItem<'a>>,
         package_graph: &PackageGraph,
@@ -277,6 +304,7 @@ impl RawUserComponentDb {
                 Component::Route(r) => self.process_route(
                     &r,
                     &current_middleware_chain,
+                    &current_observer_chain,
                     current_scope_id,
                     path_prefix,
                     scope_graph_builder,
@@ -292,7 +320,11 @@ impl RawUserComponentDb {
                         nested_bp: &b,
                         parent_path_prefix: path_prefix.map(|s| s.to_owned()),
                         current_middleware_chain: current_middleware_chain.clone(),
+                        current_observer_chain: current_observer_chain.clone(),
                     });
+                }
+                Component::ErrorObserver(eo) => {
+                    self.process_error_observer(&eo, current_scope_id, &mut current_observer_chain);
                 }
             }
         }
@@ -301,6 +333,7 @@ impl RawUserComponentDb {
                 fallback,
                 path_prefix,
                 current_middleware_chain,
+                current_observer_chain,
                 current_scope_id,
                 scope_graph_builder,
             );
@@ -326,6 +359,7 @@ impl RawUserComponentDb {
                 &registered_fallback,
                 path_prefix,
                 current_middleware_chain,
+                current_observer_chain,
                 current_scope_id,
                 scope_graph_builder,
             )
@@ -339,6 +373,7 @@ impl RawUserComponentDb {
         &mut self,
         registered_route: &Route,
         current_middleware_chain: &[UserComponentId],
+        current_observer_chain: &[UserComponentId],
         current_scope_id: ScopeId,
         path_prefix: Option<&str>,
         scope_graph_builder: &mut ScopeGraphBuilder,
@@ -374,6 +409,8 @@ impl RawUserComponentDb {
 
         self.handler_id2middleware_ids
             .insert(request_handler_id, current_middleware_chain.to_owned());
+        self.handler_id2error_observer_ids
+            .insert(request_handler_id, current_observer_chain.to_owned());
 
         self.validate_route(
             request_handler_id,
@@ -398,6 +435,7 @@ impl RawUserComponentDb {
         fallback: &Fallback,
         path_prefix: Option<&str>,
         current_middleware_chain: &[UserComponentId],
+        current_observer_chain: &[UserComponentId],
         current_scope_id: ScopeId,
         scope_graph_builder: &mut ScopeGraphBuilder,
     ) {
@@ -419,6 +457,8 @@ impl RawUserComponentDb {
 
         self.handler_id2middleware_ids
             .insert(fallback_id, current_middleware_chain.to_owned());
+        self.handler_id2error_observer_ids
+            .insert(fallback_id, current_observer_chain.to_owned());
         self.fallback_id2path_prefix
             .insert(fallback_id, path_prefix.map(|s| s.to_owned()));
 
@@ -463,7 +503,7 @@ impl RawUserComponentDb {
         );
     }
 
-    /// Register with [`RawUserComponentDb`] a constructors that has been
+    /// Register with [`RawUserComponentDb`] a constructor that has been
     /// registered against the provided `Blueprint`, including its error handler
     /// (if present).
     /// It is associated with or nested under the provided `current_scope_id`.
@@ -494,6 +534,28 @@ impl RawUserComponentDb {
             current_scope_id,
             constructor_id,
         );
+    }
+
+    /// Register with [`RawUserComponentDb`] an error observer that has been
+    /// registered against the provided `Blueprint`.
+    /// It is associated with or nested under the provided `current_scope_id`.
+    fn process_error_observer(
+        &mut self,
+        eo: &ErrorObserver,
+        current_scope_id: ScopeId,
+        current_observer_chain: &mut Vec<UserComponentId>,
+    ) {
+        const LIFECYCLE: Lifecycle = Lifecycle::Transient;
+
+        let raw_callable_identifiers_id = self
+            .identifiers_interner
+            .get_or_intern(eo.error_observer.callable.clone());
+        let component = UserComponent::ErrorObserver {
+            raw_callable_identifiers_id,
+            scope_id: current_scope_id,
+        };
+        let id = self.intern_component(component, LIFECYCLE, eo.error_observer.location.clone());
+        current_observer_chain.push(id);
     }
 
     /// A helper function to intern a component without forgetting to do the necessary
@@ -604,8 +666,15 @@ impl RawUserComponentDb {
                         "The middleware chain is missing for the user-registered request handler #{:?}",
                         id
                     );
+                    assert!(
+                        self.handler_id2error_observer_ids.get(&id).is_some(),
+                        "The list of error observers is missing for the user-registered request handler #{:?}",
+                        id
+                    );
                 }
-                UserComponent::ErrorHandler { .. } | UserComponent::WrappingMiddleware { .. } => {}
+                UserComponent::ErrorHandler { .. }
+                | UserComponent::WrappingMiddleware { .. }
+                | UserComponent::ErrorObserver { .. } => {}
             }
         }
     }

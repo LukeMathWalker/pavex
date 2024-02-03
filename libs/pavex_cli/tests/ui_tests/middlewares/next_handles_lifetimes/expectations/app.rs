@@ -71,24 +71,24 @@ pub mod route_0 {
         let v1 = app::a();
         let v2 = app::b(&v1, &v0);
         let v3 = crate::route_0::Next0 {
-            s_0: &v1,
-            s_1: &v0,
+            s_0: &v0,
+            s_1: &v1,
             next: handler,
         };
         let v4 = pavex::middleware::Next::new(v3);
         app::mw(v4, v2)
     }
-    pub async fn handler(v0: &app::A, v1: &app::C) -> pavex::response::Response {
-        let v2 = app::handler(v0, v1);
+    pub async fn handler(v0: &app::C, v1: &app::A) -> pavex::response::Response {
+        let v2 = app::handler(v1, v0);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
     }
     pub struct Next0<'a, 'b, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
-        s_0: &'a app::A,
-        s_1: &'b app::C,
-        next: fn(&'a app::A, &'b app::C) -> T,
+        s_0: &'a app::C,
+        s_1: &'b app::A,
+        next: fn(&'a app::C, &'b app::A) -> T,
     }
     impl<'a, 'b, T> std::future::IntoFuture for Next0<'a, 'b, T>
     where

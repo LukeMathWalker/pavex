@@ -45,8 +45,9 @@ impl VariableNameGenerator {
     }
 }
 
-pub(crate) fn codegen_call_block<I>(
+pub(crate) fn codegen_call_block<I, J>(
     dependencies: I,
+    happen_befores: J,
     callable: &Callable,
     blocks: &mut HashMap<NodeIndex, Fragment>,
     variable_generator: &mut VariableNameGenerator,
@@ -54,7 +55,17 @@ pub(crate) fn codegen_call_block<I>(
 ) -> Result<Fragment, anyhow::Error>
 where
     I: Iterator<Item = (NodeIndex, ResolvedType, CallGraphEdgeMetadata)>,
+    J: Iterator<Item = NodeIndex>,
 {
+    let mut before_block = quote! {};
+    for happen_before in happen_befores {
+        let fragment = &blocks[&happen_before];
+        before_block = quote! {
+            #before_block
+            #fragment;
+        };
+    }
+
     let mut block = quote! {};
     let mut dependency_bindings: HashMap<ResolvedType, Box<dyn ToTokens>> = HashMap::new();
     for (dependency_index, dependency_type, consumption_mode) in dependencies {
@@ -65,6 +76,9 @@ where
                 lifetime: Lifetime::Elided,
                 inner: Box::new(dependency_type.to_owned()),
             }),
+            CallGraphEdgeMetadata::HappensBefore => {
+                unreachable!()
+            }
         };
         let fragment = &blocks[&dependency_index];
         let mut to_be_removed = false;
@@ -72,6 +86,7 @@ where
             Fragment::VariableReference(v) => match consumption_mode {
                 CallGraphEdgeMetadata::Move => Box::new(quote! { #v }),
                 CallGraphEdgeMetadata::SharedBorrow => Box::new(quote! { &#v }),
+                CallGraphEdgeMetadata::HappensBefore => unreachable!(),
             },
             Fragment::Block(_) | Fragment::Statement(_) => {
                 let parameter_name = variable_generator.generate();
@@ -83,6 +98,9 @@ where
                 match consumption_mode {
                     CallGraphEdgeMetadata::Move => Box::new(quote! { #parameter_name }),
                     CallGraphEdgeMetadata::SharedBorrow => Box::new(quote! { &#parameter_name }),
+                    CallGraphEdgeMetadata::HappensBefore => {
+                        unreachable!()
+                    }
                 }
             }
         };
@@ -95,6 +113,7 @@ where
     let constructor_invocation = codegen_call(callable, &dependency_bindings, package_id2name);
     let block: syn::Block = syn::parse2(quote! {
         {
+            #before_block
             #block
             #constructor_invocation
         }

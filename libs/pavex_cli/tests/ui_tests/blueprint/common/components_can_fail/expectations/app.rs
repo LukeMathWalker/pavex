@@ -73,8 +73,8 @@ async fn route_request(
             match &request_head.method {
                 &pavex::http::Method::GET => {
                     route_0::middleware_0(
-                            request_head,
                             server_state.application_state.s0.clone(),
+                            request_head,
                         )
                         .await
                 }
@@ -92,12 +92,12 @@ async fn route_request(
 }
 pub mod route_0 {
     pub async fn middleware_0(
-        v0: pavex::request::RequestHead,
-        v1: app::HttpClient,
+        v0: app::HttpClient,
+        v1: pavex::request::RequestHead,
     ) -> pavex::response::Response {
         let v2 = crate::route_0::Next0 {
-            s_0: v1,
-            s_1: v0,
+            s_0: v0,
+            s_1: v1,
             next: handler,
         };
         let v3 = pavex::middleware::Next::new(v2);

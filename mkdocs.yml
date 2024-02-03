@@ -111,6 +111,10 @@ nav:
           - guide/dependency_injection/cookbook.md
           - guide/dependency_injection/limitations.md
       - "Middleware": guide/middleware/index.md
+      - "Errors":
+          - guide/errors/index.md
+          - guide/errors/error_handlers.md
+          - guide/errors/error_observers.md
   - "API Reference": api_reference/pavex/
 exclude_docs: |
   README.md

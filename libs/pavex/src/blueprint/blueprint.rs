@@ -2,6 +2,7 @@ use crate::blueprint::conversions::{
     cloning2cloning, lifecycle2lifecycle, method_guard2method_guard,
     raw_callable2registered_callable,
 };
+use crate::blueprint::error_observer::RegisteredErrorObserver;
 use crate::blueprint::router::RegisteredFallback;
 use pavex_bp_schema::{
     Blueprint as BlueprintSchema, Constructor, Fallback, NestedBlueprint, Route, WrappingMiddleware,
@@ -187,17 +188,11 @@ impl Blueprint {
     #[track_caller]
     /// Register a wrapping middleware.  
     ///
-    /// A wrapping middleware is invoked before the request handler and it is given
-    /// the opportunity to *wrap* the execution of the rest of the request processing
-    /// pipeline, including the request handler itself.
+    /// # Guide
     ///
-    /// It is primarily useful for functionality that requires access to the [`Future`]
-    /// representing the rest of the request processing pipeline, such as:
-    ///
-    /// - structured logging (e.g. attaching a `tracing` span to the request execution);
-    /// - timeouts;
-    /// - metric timers;
-    /// - etc.
+    /// Check out the ["Middleware"](https://pavex.dev/docs/guide/middleware)
+    /// section of Pavex's guide for a thorough introduction to middlewares
+    /// in Pavex applications.
     ///
     /// # Example: a timeout wrapper
     ///
@@ -222,119 +217,6 @@ impl Blueprint {
     ///     bp
     /// }
     /// ```
-    ///
-    /// # Signature
-    ///
-    /// A wrapping middleware is an asynchronous function (or a method) that takes [`Next`]
-    /// as input and returns a [`Response`], either directly (if infallible) or wrapped in a
-    /// [`Result`] (if fallible).
-    ///
-    /// [`Next`] represents the rest of the request processing pipeline, including the request
-    /// handler itself.  
-    /// It can be awaited directly or converted into a [`Future`] via the
-    /// [`into_future`](std::future::IntoFuture) method.
-    ///
-    /// ```rust
-    /// use pavex::{middleware::Next, response::Response};
-    /// use std::{future::{IntoFuture, Future}, time::Duration};
-    /// use tokio::time::{timeout, error::Elapsed};
-    /// use tracing::Instrument;
-    ///
-    /// // This is an infallible wrapping middleware. It returns a `Response` directly.
-    /// pub async fn logging_wrapper<C>(next: Next<C>) -> Response
-    /// where
-    ///     C: Future<Output = Response>
-    /// {
-    ///     let span = tracing::info_span!("Incoming request");
-    ///     next.into_future().instrument(span).await
-    /// }
-    ///
-    /// // This is a fallible wrapping middleware.
-    /// // It returns a `Result<Response, Elapsed>`.
-    /// pub async fn timeout_wrapper<C>(next: Next<C>) -> Result<Response, Elapsed>
-    /// where
-    ///     C: Future<Output = Response>
-    /// {
-    ///     timeout(Duration::from_secs(1), next.into_future()).await
-    /// }
-    /// ```
-    ///
-    /// ## Dependency injection
-    ///
-    /// Wrapping middlewares can take advantage of dependency injection, like any
-    /// other component.  
-    /// You list what you want to inject as function parameters (in _addition_ to [`Next`])
-    /// and Pavex will inject them for you in the generated code:
-    ///
-    /// ```rust
-    /// use pavex::{
-    ///     blueprint::{Blueprint, constructor::Lifecycle},
-    ///     f, middleware::Next, response::Response
-    /// };
-    /// use std::{future::{IntoFuture, Future}, time::Duration};
-    /// use tokio::time::{timeout, error::Elapsed};
-    ///
-    /// #[derive(Copy, Clone)]
-    /// pub struct TimeoutConfig {
-    ///     request_timeout: Duration
-    /// }
-    ///
-    /// pub async fn timeout_wrapper<C>(
-    ///     next: Next<C>,
-    ///     // This parameter will be injected by the framework.
-    ///     config: TimeoutConfig
-    /// ) -> Result<Response, Elapsed>
-    /// where
-    ///     C: IntoFuture<Output = Response>
-    /// {
-    ///     timeout(config.request_timeout, next.into_future()).await
-    /// }
-    ///
-    /// pub fn api() -> Blueprint {
-    ///     let mut bp = Blueprint::new();
-    ///     // We need to register a constructor for the dependencies
-    ///     // that we want to inject
-    ///     bp.constructor(f!(crate::timeout_config), Lifecycle::RequestScoped);
-    ///     bp.wrap(f!(crate::timeout_wrapper));
-    ///     // [...]
-    ///     bp
-    /// }
-    /// ```
-    ///
-    /// # Execution order
-    ///
-    /// Wrapping middlewares are invoked in the order they are registered.
-    ///
-    /// ```rust
-    /// use pavex::{f, blueprint::{Blueprint, router::GET}};
-    /// # use pavex::{request::RequestHead, response::Response, middleware::Next};
-    /// # use std::future::Future;
-    /// # pub fn first<C: Future<Output = Response>>(next: Next<C>) -> Response { todo!() }
-    /// # pub fn second<C: Future<Output = Response>>(next: Next<C>) -> Response { todo!() }
-    /// # fn main() {
-    /// let mut bp = Blueprint::new();
-    /// bp.wrap(f!(crate::first));
-    /// bp.wrap(f!(crate::second));
-    /// bp.route(GET, "/home", f!(crate::handler));
-    /// # }
-    /// ```
-    ///
-    /// `first` will be invoked before `second`, which is in turn invoked before the
-    /// request handler.  
-    /// Or, in other words:
-    ///
-    /// - `second` is invoked when `first` calls `.await` on its `Next` input
-    /// - the request handler is invoked when `second` calls `.await` on its `Next` input
-    ///
-    /// ## Nesting
-    ///
-    /// If a blueprint is nested under another blueprint, the wrapping middlewares registered
-    /// against the parent blueprint will be invoked before the wrapping middlewares registered
-    /// against the nested blueprint.
-    ///
-    /// [`Next`]: crate::middleware::Next
-    /// [`Response`]: crate::response::Response
-    /// [`Future`]: std::future::Future
     #[doc(alias = "middleware")]
     pub fn wrap(&mut self, callable: RawCallable) -> RegisteredWrappingMiddleware {
         let registered = WrappingMiddleware {
@@ -684,6 +566,57 @@ impl Blueprint {
         let component_id = self.push_component(f);
         RegisteredFallback {
             component_id,
+            blueprint: &mut self.schema,
+        }
+    }
+
+    #[track_caller]
+    /// Register an error observer to intercept and report errors that occur during request handling.
+    ///
+    /// # Guide
+    ///
+    /// Check out the ["Error observers"](https://pavex.dev/docs/guide/errors/error_observers)
+    /// section of Pavex's guide for a thorough introduction to error observers
+    /// in Pavex applications.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use pavex::f;
+    /// use pavex::blueprint::Blueprint;
+    ///
+    /// pub fn error_logger(e: &pavex::Error) {
+    ///     tracing::error!(
+    ///         error.msg = %e,
+    ///         error.details = ?e,
+    ///         "An error occurred while handling a request"
+    ///     );
+    /// }
+    ///
+    /// # fn main() {
+    /// let mut bp = Blueprint::new();
+    /// bp.error_observer(f!(crate::error_logger));
+    /// # }
+    /// ```
+    pub fn error_observer(&mut self, callable: RawCallable) -> RegisteredErrorObserver {
+        let registered = pavex_bp_schema::ErrorObserver {
+            error_observer: raw_callable2registered_callable(callable),
+        };
+        self.push_component(registered);
+        RegisteredErrorObserver {
+            blueprint: &mut self.schema,
+        }
+    }
+
+    pub(super) fn register_error_observer(
+        &mut self,
+        eo: super::error_observer::ErrorObserver,
+    ) -> RegisteredErrorObserver {
+        let eo = pavex_bp_schema::ErrorObserver {
+            error_observer: eo.callable,
+        };
+        self.push_component(eo);
+        RegisteredErrorObserver {
             blueprint: &mut self.schema,
         }
     }

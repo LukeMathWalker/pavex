@@ -269,7 +269,8 @@ fn emit_borrow_checking_error(
                 component_db
                     .hydrated_component(*component_id, computation_db)
                     .output_type()
-                    .to_owned(),
+                    .cloned()
+                    .unwrap(),
             ),
             CallGraphNode::InputParameter { type_, source } => {
                 let id = if let InputParameterSource::Component(id) = source {

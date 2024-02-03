@@ -9,7 +9,7 @@ A constructor must satisfy a few requirements:
 - It must be a function, a method or a trait method.
 - It must be public (1), importable from outside the crate it is defined in.
 - It must return, as output, the type you want to make injectable.  
-  Constructors can be fallible: a constructor for a type `T` can return `Result<T, E>`,
+  [Constructors can be fallible](#constructors-can-fail): a constructor for a type `T` can return `Result<T, E>`,
   where `E` is an error type.
 
 </div>
@@ -98,6 +98,13 @@ The order in which constructors are called would suddenly matter if they were al
 their dependencies.
 This would in turn require a way to specify that order, therefore increasing the overall complexity of the
 framework.
+
+## Constructors can fail
+
+Constructors can be fallible: they can return a `Result<T, E>`, where `E` is an error type.  
+If a constructor is fallible, you must specify an [**error handler**](../../errors/error_handlers.md) when registering 
+it with the application [`Blueprint`][Blueprint]. 
+Check out the [error handling guide](../../errors/error_handlers.md) for more details.
 
 [Blueprint]: ../../../api_reference/pavex/blueprint/struct.Blueprint.html
 [Blueprint::constructor]: ../../../api_reference/pavex/blueprint/struct.Blueprint.html#method.constructor

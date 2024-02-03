@@ -88,31 +88,39 @@ pub(super) fn ancestor_consumes_descendant_borrows(
 
         let dependency_edge_ids: Vec<_> = call_graph
             .edges_directed(node_index, Direction::Incoming)
-            .map(|edge_ref| edge_ref.id())
+            .filter_map(|edge_ref| {
+                // We only care about type dependencies, not timing relationships.
+                if let CallGraphEdgeMetadata::HappensBefore = edge_ref.weight() {
+                    None
+                } else {
+                    Some(edge_ref.id())
+                }
+            })
             .collect();
 
-        for edge_id in dependency_edge_ids {
+        'inner: for edge_id in dependency_edge_ids {
             let dependency_index = call_graph.edge_endpoints(edge_id).unwrap().0;
             let dependency_node = &call_graph[dependency_index];
             let dependency_type = match dependency_node {
                 CallGraphNode::Compute { component_id, .. } => {
                     let hydrated_component =
                         component_db.hydrated_component(*component_id, computation_db);
-                    Some(hydrated_component.output_type().to_owned())
+                    hydrated_component.output_type().cloned()
                 }
                 CallGraphNode::MatchBranching => None,
                 CallGraphNode::InputParameter { type_, .. } => Some(type_.to_owned()),
             };
-            if let Some(dependency_type) = dependency_type {
-                if captured_input_types.contains(&dependency_type) {
-                    let transitively_captured = node2captured_nodes
-                        .get(&dependency_index)
-                        .cloned()
-                        .unwrap_or_default();
-                    let held = node2captured_nodes.entry(node_index).or_default();
-                    held.extend(transitively_captured);
-                    held.insert(dependency_index);
-                }
+            let Some(dependency_type) = dependency_type else {
+                continue 'inner;
+            };
+            if captured_input_types.contains(&dependency_type) {
+                let transitively_captured = node2captured_nodes
+                    .get(&dependency_index)
+                    .cloned()
+                    .unwrap_or_default();
+                let held = node2captured_nodes.entry(node_index).or_default();
+                held.extend(transitively_captured);
+                held.insert(dependency_index);
             }
         }
 
@@ -151,7 +159,7 @@ pub(super) fn ancestor_consumes_descendant_borrows(
             .map(|edge_ref| edge_ref.id())
             .collect();
 
-        for edge_id in dependency_edge_ids {
+        'dependencies: for edge_id in dependency_edge_ids {
             let edge_metadata = call_graph.edge_weight(edge_id).unwrap();
             let dependency_index = call_graph.edge_endpoints(edge_id).unwrap().0;
             if !visited_nodes.contains(&dependency_index) {
@@ -161,9 +169,15 @@ pub(super) fn ancestor_consumes_descendant_borrows(
             if let Some(held) = node2captured_nodes.get(&dependency_index) {
                 borrowed_nodes.extend(held);
             }
-            if edge_metadata == &CallGraphEdgeMetadata::SharedBorrow {
-                borrowed_nodes.insert(dependency_index);
-                continue;
+            match edge_metadata {
+                CallGraphEdgeMetadata::Move => {}
+                CallGraphEdgeMetadata::SharedBorrow => {
+                    borrowed_nodes.insert(dependency_index);
+                    continue 'dependencies;
+                }
+                CallGraphEdgeMetadata::HappensBefore => {
+                    continue 'dependencies;
+                }
             }
 
             if borrowed_nodes.contains(&dependency_index) {
@@ -382,7 +396,8 @@ fn get_component_id_and_type(
             component_db
                 .hydrated_component(*component_id, computation_db)
                 .output_type()
-                .to_owned(),
+                .cloned()
+                .unwrap(),
         ),
         CallGraphNode::InputParameter { type_, source } => {
             let id = if let InputParameterSource::Component(id) = source {

@@ -1,0 +1,4 @@
+description = """Error observers work as expected even if the error to be observed has generic parameters"""
+
+[expectations]
+codegen = "pass"

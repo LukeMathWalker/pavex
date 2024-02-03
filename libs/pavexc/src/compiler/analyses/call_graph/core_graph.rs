@@ -59,6 +59,7 @@ pub(super) fn build_call_graph<F>(
     // The set of long-lived components that have already been initialised and should be
     // taken as inputs rather than built again.
     prebuilt_ids: &IndexSet<ComponentId>,
+    error_observer_ids: &[ComponentId],
     computation_db: &ComputationDb,
     component_db: &ComponentDb,
     constructible_db: &ConstructibleDb,
@@ -66,7 +67,7 @@ pub(super) fn build_call_graph<F>(
     diagnostics: &mut Vec<miette::Error>,
 ) -> Result<CallGraph, ()>
 where
-    F: Fn(&Lifecycle) -> Option<NumberOfAllowedInvocations> + Clone,
+    F: Fn(Lifecycle) -> Option<NumberOfAllowedInvocations> + Clone,
 {
     // If the dependency graph is not acyclic, we can't build a call graph—we'd get stuck in an infinite loop.
     if DependencyGraph::build(
@@ -74,6 +75,7 @@ where
         computation_db,
         component_db,
         constructible_db,
+        error_observer_ids,
         lifecycle2n_allowed_invocations.clone(),
     )
     .assert_acyclic(component_db, computation_db, diagnostics)
@@ -88,8 +90,7 @@ where
     let component_id2invocations = |component_id: ComponentId| {
         // We don't expect to invoke this function for response transformers, therefore
         // it's fine to unwrap here.
-        let lifecycle = component_db.lifecycle(component_id).unwrap();
-        lifecycle2n_allowed_invocations(lifecycle)
+        lifecycle2n_allowed_invocations(component_db.lifecycle(component_id))
     };
     let component_id2node = |id: ComponentId| {
         if let Computation::FrameworkItem(i) = component_db
@@ -102,19 +103,25 @@ where
             };
         }
         if prebuilt_ids.contains(&id) {
+            let resolved_component = component_db.hydrated_component(id, computation_db);
+            assert!(
+                !matches!(resolved_component, HydratedComponent::ErrorObserver(_)),
+                "Error observers should never be prebuilt."
+            );
             return CallGraphNode::InputParameter {
-                type_: component_db
-                    .hydrated_component(id, computation_db)
-                    .output_type()
-                    .to_owned(),
+                type_: resolved_component.output_type().unwrap().to_owned(),
                 source: InputParameterSource::Component(id),
             };
         }
         match component_id2invocations(id) {
             None => {
                 let resolved_component = component_db.hydrated_component(id, computation_db);
+                assert!(
+                    !matches!(resolved_component, HydratedComponent::ErrorObserver(_)),
+                    "Error observers should never be input parameters."
+                );
                 CallGraphNode::InputParameter {
-                    type_: resolved_component.output_type().to_owned(),
+                    type_: resolved_component.output_type().unwrap().to_owned(),
                     source: InputParameterSource::Component(id),
                 }
             }
@@ -127,49 +134,41 @@ where
 
     let mut transformed_node_indexes = HashSet::new();
     let mut handled_error_node_indexes = HashSet::new();
-
-    let mut nodes_to_be_visited: IndexSet<VisitorStackElement> =
-        IndexSet::from_iter([VisitorStackElement::orphan(root_id)]);
+    // We need to keep track of the nodes to which we have already attached error observers
+    // (or those that we determined don't need them).
+    let mut attached_observer_indexes = HashSet::new();
 
     // If the constructor for a type can be invoked at most once, then it should appear
-    // at most once in the call graph. This mapping, and the corresponding Rust closure, are used
-    // to make sure of that.
-    let mut indexes_for_unique_nodes = HashMap::<CallGraphNode, NodeIndex>::new();
-    let mut add_node_at_most_once = |graph: &mut RawCallGraph, node: CallGraphNode| {
-        assert!(!matches!(node, CallGraphNode::MatchBranching { .. }));
-        indexes_for_unique_nodes
-            .get(&node)
-            .cloned()
-            .unwrap_or_else(|| {
-                let index = graph.add_node(node.clone());
-                indexes_for_unique_nodes.insert(node, index);
-                index
-            })
+    // at most once in the call graph.
+    // Deduplicator makes sure of that.
+    let mut node_deduplicator = NodeDeduplicator::new();
+    let add_node_for_component = |graph: &mut RawCallGraph,
+                                  node_deduplicator: &mut NodeDeduplicator,
+                                  component_id: ComponentId| {
+        let node = component_id2node(component_id);
+        use {CallGraphNode::*, NumberOfAllowedInvocations::*};
+        match node {
+            Compute {
+                n_allowed_invocations: One,
+                ..
+            }
+            | InputParameter { .. } => node_deduplicator.add_node_at_most_once(graph, node),
+            Compute {
+                n_allowed_invocations: Multiple,
+                ..
+            } => graph.add_node(node),
+            MatchBranching => unreachable!(),
+        }
     };
+
+    let root_node_index = add_node_for_component(&mut call_graph, &mut node_deduplicator, root_id);
+    let mut nodes_to_be_visited: IndexSet<VisitorStackElement> =
+        IndexSet::from_iter([VisitorStackElement::orphan(root_node_index)]);
 
     loop {
         while let Some(node_to_be_visited) = nodes_to_be_visited.pop() {
-            let (component_id, neighbour_index) = (
-                node_to_be_visited.component_id,
-                node_to_be_visited.neighbour,
-            );
-            let current_index = {
-                let call_graph_node = component_id2node(component_id);
-                match call_graph_node {
-                    CallGraphNode::Compute {
-                        n_allowed_invocations: NumberOfAllowedInvocations::One,
-                        ..
-                    }
-                    | CallGraphNode::InputParameter { .. } => {
-                        add_node_at_most_once(&mut call_graph, call_graph_node)
-                    }
-                    CallGraphNode::Compute {
-                        n_allowed_invocations: NumberOfAllowedInvocations::Multiple,
-                        ..
-                    } => call_graph.add_node(call_graph_node),
-                    CallGraphNode::MatchBranching => unreachable!(),
-                }
-            };
+            let (current_index, neighbour_index) =
+                (node_to_be_visited.node_index, node_to_be_visited.neighbour);
 
             if let Some(neighbour_index) = neighbour_index {
                 match neighbour_index {
@@ -212,20 +211,29 @@ where
                         }
                         input_types
                     }
+                    HydratedComponent::ErrorObserver(eo) => {
+                        let mut inputs: Vec<_> = eo.input_types().to_vec();
+                        inputs.remove(eo.error_input_index);
+                        inputs
+                    }
                 };
                 for input_type in input_types {
                     if let Some((constructor_id, consumption_mode)) =
                         constructible_db.get(root_scope_id, &input_type, component_db.scope_graph())
                     {
                         nodes_to_be_visited.insert(VisitorStackElement {
-                            component_id: constructor_id,
+                            node_index: add_node_for_component(
+                                &mut call_graph,
+                                &mut node_deduplicator,
+                                constructor_id,
+                            ),
                             neighbour: Some(VisitorNeighbour::Child(
                                 current_index,
                                 consumption_mode.into(),
                             )),
                         });
                     } else {
-                        let index = add_node_at_most_once(
+                        let index = node_deduplicator.add_node_at_most_once(
                             &mut call_graph,
                             CallGraphNode::InputParameter {
                                 type_: input_type,
@@ -256,7 +264,11 @@ where
                 };
                 if let Some(error_handler_id) = component_db.error_handler_id(component_id) {
                     nodes_to_be_visited.insert(VisitorStackElement {
-                        component_id: *error_handler_id,
+                        node_index: add_node_for_component(
+                            &mut call_graph,
+                            &mut node_deduplicator,
+                            *error_handler_id,
+                        ),
                         neighbour: Some(VisitorNeighbour::Parent(
                             node_index,
                             CallGraphEdgeMetadata::SharedBorrow,
@@ -311,6 +323,120 @@ where
             transformed_node_indexes.insert(node_index);
         }
 
+        'observers: {
+            if error_observer_ids.is_empty() {
+                break 'observers;
+            }
+            let indexes = call_graph.node_indices().collect::<Vec<_>>();
+            for node_index in indexes {
+                if attached_observer_indexes.contains(&node_index) {
+                    continue;
+                }
+                'inner: {
+                    let node = call_graph[node_index].clone();
+                    let CallGraphNode::Compute { component_id, .. } = node else {
+                        break 'inner;
+                    };
+                    if !component_db
+                        .hydrated_component(component_id, computation_db)
+                        .is_error_handler()
+                    {
+                        break 'inner;
+                    };
+
+                    // Error handlers always have a single child node. It's either:
+                    // - an `IntoResponse` transformer, if the error handler is infallible
+                    // - a match node, if the error handler is fallible
+                    //
+                    // We want to insert our error observers in between the error handler and its child.
+                    #[cfg(debug_assertions)]
+                    {
+                        let child_node_indexes = call_graph
+                            .neighbors_directed(node_index, Direction::Outgoing)
+                            .collect::<Vec<_>>();
+                        assert!(child_node_indexes.len() <= 1);
+                    }
+                    let Some(child_id) = call_graph
+                        .neighbors_directed(node_index, Direction::Outgoing)
+                        .next()
+                    else {
+                        // The transformer might not have been processed yet, we'll come back to this
+                        // node later.
+                        break 'inner;
+                    };
+
+                    // An error handler is always downstream of an error matcher node.
+                    let Some(match_error_node_index) = call_graph
+                        .neighbors_directed(node_index, Direction::Incoming)
+                        .find_map(|parent_index| {
+                            let parent_node = &call_graph[parent_index];
+                            let CallGraphNode::Compute { component_id, .. } = parent_node else {
+                                return None;
+                            };
+                            let computation = component_db
+                                .hydrated_component(*component_id, computation_db)
+                                .computation();
+                            let Computation::MatchResult(m) = computation else {
+                                return None;
+                            };
+                            if m.variant == MatchResultVariant::Err {
+                                Some(parent_index)
+                            } else {
+                                None
+                            }
+                        })
+                    else {
+                        break 'inner;
+                    };
+                    // All match error nodes have two children:
+                    // the error handler and the `pavex::Error::new` invocation.
+                    // We want the latter.
+                    let Some(pavex_error_new_node_index) = call_graph
+                        .neighbors_directed(match_error_node_index, Direction::Outgoing)
+                        .filter(|&child_index| child_index != node_index)
+                        .next()
+                    else {
+                        break 'inner;
+                    };
+
+                    let mut previous_index = None;
+                    for error_observer_id in error_observer_ids {
+                        let error_observer_node_index = add_node_for_component(
+                            &mut call_graph,
+                            &mut node_deduplicator,
+                            *error_observer_id,
+                        );
+                        if let Some(previous_index) = previous_index {
+                            call_graph.update_edge(
+                                previous_index,
+                                error_observer_node_index,
+                                CallGraphEdgeMetadata::HappensBefore,
+                            );
+                        }
+                        call_graph.update_edge(
+                            pavex_error_new_node_index,
+                            error_observer_node_index,
+                            CallGraphEdgeMetadata::SharedBorrow,
+                        );
+                        nodes_to_be_visited.insert(VisitorStackElement {
+                            node_index: error_observer_node_index,
+                            neighbour: None,
+                        });
+                        previous_index = Some(error_observer_node_index);
+                    }
+                    if let Some(previous_index) = previous_index {
+                        call_graph.update_edge(
+                            previous_index,
+                            child_id,
+                            CallGraphEdgeMetadata::HappensBefore,
+                        );
+                    }
+
+                    attached_observer_indexes.insert(node_index);
+                }
+            }
+        }
+
         if nodes_to_be_visited.is_empty()
             && call_graph.node_count() == graph_size_before_transformations
         {
@@ -328,14 +454,6 @@ where
     // it might no longer be without descendants after our insertion of `MatchBranching` nodes.
     // If that's the case, we determine a new `root_node_index` by picking the `Ok`
     // variant that descends from `root_node_index`.
-    let root_node_index = {
-        // Very hacky way of getting the index of the root node
-        let root_node = CallGraphNode::Compute {
-            component_id: root_id,
-            n_allowed_invocations: NumberOfAllowedInvocations::One,
-        };
-        add_node_at_most_once(&mut call_graph, root_node)
-    };
     let root_node_index = if call_graph
         .neighbors_directed(root_node_index, Direction::Outgoing)
         .count()
@@ -399,6 +517,7 @@ impl CallGraph {
                 &|_, edge| match edge.weight() {
                     CallGraphEdgeMetadata::Move => "".to_string(),
                     CallGraphEdgeMetadata::SharedBorrow => "label = \"&\"".to_string(),
+                    CallGraphEdgeMetadata::HappensBefore => "label = \"before\"".to_string(),
                 },
                 &|_, (id, node)| {
                     match node {
@@ -567,15 +686,22 @@ fn take_references_as_inputs_if_they_suffice(
 
 #[derive(Clone, Copy, Debug, Hash, Eq, PartialEq)]
 /// The edges in the call graph represent the dependency relationships between the nodes.
-/// The direction of the edge is from the node that provides the input to the node that requires it.
+/// All edges are **directed**.
 ///
+/// If the edge is either `Move` or `SharedBorrow`, the edge goes from the node that provides the input
+/// to the node that requires it.
 /// The type of edge determines *how* the input is consumed.
+///
+/// If the edge is `HappensBefore`, it encodes a temporal relationship but there is no
+/// output-input relationship between the two connected nodes.
 pub(crate) enum CallGraphEdgeMetadata {
-    /// The input is consumed by value—e.g. `String` in `fn handler(input: String)`.
+    /// The output of the source node is consumed by value—e.g. `String` in `fn handler(input: String)`.
     Move,
-    /// The dependent requires a shared reference to the input type —e.g. `&MyStruct` in
+    /// The target node requires a shared reference to output type of the source node —e.g. `&MyStruct` in
     /// `fn handler(input: &MyStruct)`.
     SharedBorrow,
+    /// The computation in the source node must be invoked before the computation in the target node.
+    HappensBefore,
 }
 
 impl From<ConsumptionMode> for CallGraphEdgeMetadata {
@@ -652,7 +778,7 @@ pub(crate) enum NumberOfAllowedInvocations {
 
 #[derive(Debug, Eq, PartialEq, Hash)]
 struct VisitorStackElement {
-    component_id: ComponentId,
+    node_index: NodeIndex,
     neighbour: Option<VisitorNeighbour>,
 }
 
@@ -664,11 +790,32 @@ enum VisitorNeighbour {
 
 impl VisitorStackElement {
     /// A short-cut to add a node without a parent to the visitor stack.
-    fn orphan(component_id: ComponentId) -> Self {
+    fn orphan(node_index: NodeIndex) -> Self {
         Self {
-            component_id,
+            node_index,
             neighbour: None,
         }
+    }
+}
+
+struct NodeDeduplicator(HashMap<CallGraphNode, NodeIndex>);
+
+impl NodeDeduplicator {
+    pub fn new() -> Self {
+        Self(HashMap::new())
+    }
+
+    pub fn add_node_at_most_once(
+        &mut self,
+        graph: &mut RawCallGraph,
+        node: CallGraphNode,
+    ) -> NodeIndex {
+        assert!(!matches!(node, CallGraphNode::MatchBranching { .. }));
+        self.0.get(&node).cloned().unwrap_or_else(|| {
+            let index = graph.add_node(node.clone());
+            self.0.insert(node, index);
+            index
+        })
     }
 }
 
@@ -734,6 +881,8 @@ impl RawCallGraphExt for RawCallGraph {
                 &|_, edge| match edge.weight() {
                     CallGraphEdgeMetadata::Move => "".to_string(),
                     CallGraphEdgeMetadata::SharedBorrow => "label = \"&\"".to_string(),
+                    CallGraphEdgeMetadata::HappensBefore =>
+                        "label = \"happens before\"".to_string(),
                 },
                 &|_, (_, node)| {
                     match node {
@@ -784,6 +933,8 @@ impl RawCallGraphExt for RawCallGraph {
                 &|_, edge| match edge.weight() {
                     CallGraphEdgeMetadata::Move => "".to_string(),
                     CallGraphEdgeMetadata::SharedBorrow => "label = \"&\"".to_string(),
+                    CallGraphEdgeMetadata::HappensBefore =>
+                        "label = \"happens before\"".to_string(),
                 },
                 &|_, (index, node)| {
                     let label = match node {
@@ -802,14 +953,17 @@ impl RawCallGraphExt for RawCallGraph {
                                     format!("{i:?}")
                                 }
                             };
-                            format!("{component_label} (Component ix: {component_id:?})")
+                            format!(
+                                "{component_label} (Component ix: {})",
+                                component_id.into_raw().into_u32()
+                            )
                         }
                         CallGraphNode::InputParameter { type_, .. } => {
                             format!("{type_:?}")
                         }
                         CallGraphNode::MatchBranching => "`match`".to_string(),
                     };
-                    format!("label = \"{label} (Node ix: {index:?})\"")
+                    format!("label = \"{label} (Node ix: {})\"", index.index())
                 },
             )
         )

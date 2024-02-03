@@ -1,0 +1,20 @@
+starter_project_folder: "project"
+commands:
+  - command: "cargo px c"
+    expected_outcome: "success"
+snippets:
+  - name: "registration"
+    source_path: "src/core/blueprint.rs"
+    ranges: [ "0..7", "10..11" ]
+    hl_lines: [ 7 ]
+  - name: "example"
+    source_path: "src/core/error_observer.rs"
+    ranges: [ ".." ]
+  - name: "observer"
+    source_path: "src/core/error_observer.rs"
+    ranges: [ ".." ]
+    hl_lines: [ 1 ]
+  - name: "injection"
+    source_path: "src/di/error_observer.rs"
+    ranges: [ "0..4" ]
+    hl_lines: [ 1 ]

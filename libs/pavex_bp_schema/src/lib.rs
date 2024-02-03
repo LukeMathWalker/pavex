@@ -1,4 +1,7 @@
 //! The schema used by Pavex to serialize and deserialize blueprints.
+//!
+//! There are no guarantees that this schema will remain stable across Pavex versions:
+//! it is considered (for the time being) an internal implementation detail of Pavex's reflection system.
 pub use pavex_reflection::{Location, RawCallableIdentifiers};
 use std::collections::BTreeSet;
 use std::fmt;
@@ -19,6 +22,7 @@ pub enum Component {
     Route(Route),
     FallbackRequestHandler(Fallback),
     NestedBlueprint(NestedBlueprint),
+    ErrorObserver(ErrorObserver),
 }
 
 impl From<Constructor> for Component {
@@ -51,6 +55,12 @@ impl From<NestedBlueprint> for Component {
     }
 }
 
+impl From<ErrorObserver> for Component {
+    fn from(e: ErrorObserver) -> Self {
+        Self::ErrorObserver(e)
+    }
+}
+
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 /// A route registered against a `Blueprint` via `Blueprint::route`.
 pub struct Route {
@@ -72,6 +82,14 @@ pub struct Fallback {
     pub request_handler: Callable,
     /// The callable in charge of processing errors returned by the request handler, if any.
     pub error_handler: Option<Callable>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+/// An error observer registered against a `Blueprint` via `Blueprint::error_observer` to
+/// intercept unhandled errors.
+pub struct ErrorObserver {
+    /// The callable in charge of processing unhandled errors.
+    pub error_observer: Callable,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
@@ -120,7 +138,7 @@ pub struct NestedBlueprint {
     pub nesting_location: Location,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub enum Lifecycle {
     Singleton,
     RequestScoped,
@@ -137,7 +155,7 @@ impl fmt::Display for Lifecycle {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 #[non_exhaustive]
 pub enum CloningStrategy {
     /// Pavex will **never** try clone the output type returned by the constructor.

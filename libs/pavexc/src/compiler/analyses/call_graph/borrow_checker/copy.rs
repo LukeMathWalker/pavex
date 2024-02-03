@@ -44,12 +44,12 @@ impl<'a> CopyChecker<'a> {
         match &call_graph[node_index] {
             CallGraphNode::Compute { component_id, .. } => {
                 let component = component_db.hydrated_component(*component_id, computation_db);
-                assert_trait_is_implemented(
-                    self.krate_collection,
-                    component.output_type(),
-                    &self.copy_trait,
-                )
-                .is_ok()
+                let Some(output_type) = component.output_type() else {
+                    // `()` is `Copy`.
+                    return true;
+                };
+                assert_trait_is_implemented(self.krate_collection, output_type, &self.copy_trait)
+                    .is_ok()
             }
             CallGraphNode::MatchBranching => true,
             CallGraphNode::InputParameter { type_, .. } => {

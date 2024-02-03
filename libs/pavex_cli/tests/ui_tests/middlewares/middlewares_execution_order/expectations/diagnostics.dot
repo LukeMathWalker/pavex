@@ -1,12 +1,12 @@
 digraph "GET /after_handler - 0" {
     0 [ label = "app::first(&app::Spy, pavex::middleware::Next<crate::route_2::Next0>) -> pavex::response::Response"]
-    1 [ label = "pavex::middleware::Next::new(crate::route_2::Next0) -> pavex::middleware::Next<crate::route_2::Next0>"]
-    2 [ label = "crate::route_2::Next0(&app::Spy) -> crate::route_2::Next0"]
+    2 [ label = "pavex::middleware::Next::new(crate::route_2::Next0) -> pavex::middleware::Next<crate::route_2::Next0>"]
+    3 [ label = "crate::route_2::Next0(&app::Spy) -> crate::route_2::Next0"]
     4 [ label = "&app::Spy"]
-    1 -> 0 [ ]
-    2 -> 1 [ ]
+    2 -> 0 [ ]
+    3 -> 2 [ ]
     4 -> 0 [ ]
-    4 -> 2 [ ]
+    4 -> 3 [ ]
 }
 
 digraph "GET /after_handler - 1" {
@@ -27,24 +27,24 @@ digraph "* /after_handler - 0" {
 
 digraph "GET /nested - 0" {
     0 [ label = "app::first(&app::Spy, pavex::middleware::Next<crate::route_1::Next0>) -> pavex::response::Response"]
-    1 [ label = "pavex::middleware::Next::new(crate::route_1::Next0) -> pavex::middleware::Next<crate::route_1::Next0>"]
-    2 [ label = "crate::route_1::Next0(&app::Spy) -> crate::route_1::Next0"]
+    2 [ label = "pavex::middleware::Next::new(crate::route_1::Next0) -> pavex::middleware::Next<crate::route_1::Next0>"]
+    3 [ label = "crate::route_1::Next0(&app::Spy) -> crate::route_1::Next0"]
     4 [ label = "&app::Spy"]
-    1 -> 0 [ ]
-    2 -> 1 [ ]
+    2 -> 0 [ ]
+    3 -> 2 [ ]
     4 -> 0 [ ]
-    4 -> 2 [ ]
+    4 -> 3 [ ]
 }
 
 digraph "GET /nested - 1" {
     0 [ label = "app::second(&app::Spy, pavex::middleware::Next<crate::route_1::Next1>) -> pavex::response::Response"]
-    1 [ label = "pavex::middleware::Next::new(crate::route_1::Next1) -> pavex::middleware::Next<crate::route_1::Next1>"]
-    2 [ label = "crate::route_1::Next1(&app::Spy) -> crate::route_1::Next1"]
+    2 [ label = "pavex::middleware::Next::new(crate::route_1::Next1) -> pavex::middleware::Next<crate::route_1::Next1>"]
+    3 [ label = "crate::route_1::Next1(&app::Spy) -> crate::route_1::Next1"]
     4 [ label = "&app::Spy"]
-    1 -> 0 [ ]
-    2 -> 1 [ ]
+    2 -> 0 [ ]
+    3 -> 2 [ ]
     4 -> 0 [ ]
-    4 -> 2 [ ]
+    4 -> 3 [ ]
 }
 
 digraph "GET /nested - 2" {
@@ -65,24 +65,24 @@ digraph "* /nested - 0" {
 
 digraph "GET /top_level - 0" {
     0 [ label = "app::first(&app::Spy, pavex::middleware::Next<crate::route_3::Next0>) -> pavex::response::Response"]
-    1 [ label = "pavex::middleware::Next::new(crate::route_3::Next0) -> pavex::middleware::Next<crate::route_3::Next0>"]
-    2 [ label = "crate::route_3::Next0(&app::Spy) -> crate::route_3::Next0"]
+    2 [ label = "pavex::middleware::Next::new(crate::route_3::Next0) -> pavex::middleware::Next<crate::route_3::Next0>"]
+    3 [ label = "crate::route_3::Next0(&app::Spy) -> crate::route_3::Next0"]
     4 [ label = "&app::Spy"]
-    1 -> 0 [ ]
-    2 -> 1 [ ]
+    2 -> 0 [ ]
+    3 -> 2 [ ]
     4 -> 0 [ ]
-    4 -> 2 [ ]
+    4 -> 3 [ ]
 }
 
 digraph "GET /top_level - 1" {
     0 [ label = "app::second(&app::Spy, pavex::middleware::Next<crate::route_3::Next1>) -> pavex::response::Response"]
-    1 [ label = "pavex::middleware::Next::new(crate::route_3::Next1) -> pavex::middleware::Next<crate::route_3::Next1>"]
-    2 [ label = "crate::route_3::Next1(&app::Spy) -> crate::route_3::Next1"]
+    2 [ label = "pavex::middleware::Next::new(crate::route_3::Next1) -> pavex::middleware::Next<crate::route_3::Next1>"]
+    3 [ label = "crate::route_3::Next1(&app::Spy) -> crate::route_3::Next1"]
     4 [ label = "&app::Spy"]
-    1 -> 0 [ ]
-    2 -> 1 [ ]
+    2 -> 0 [ ]
+    3 -> 2 [ ]
     4 -> 0 [ ]
-    4 -> 2 [ ]
+    4 -> 3 [ ]
 }
 
 digraph "GET /top_level - 2" {
