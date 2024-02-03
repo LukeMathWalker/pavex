@@ -4,22 +4,48 @@ Error observers are a mechanism to **intercept errors**.
 They are primarily **designed for error reporting**—e.g. you can use them to log errors,
 increment a metric counter, etc.
 
+## Registration 
 
-An error observer must:
+You register an error observer using the [`Blueprint::error_observer`][Blueprint::error_observer] method.
 
-- take a reference to [`pavex::Error`][pavex::Error] as one of its input parameters.
-- have no return type (i.e. it must return `()`).
-- be [strictly infallible](#infallible).
-
-Error observers, like other components, can:
-
-- Be [synchronous or asynchronous](../routing/request_handlers.md#sync-or-async).
-- Take advantage of [dependency injection](../dependency_injection/index.md).
-
-Error observers are invoked after the relevant error handler has been called,
-but before the response is sent back to the client.  
+When registering an error observer, you must provide its **fully qualified path**, wrapped in the
+[`f!`][f] macro.  
 You can register as many error observers as you want: they'll all be called when an error occurs,
-in the order they were registered.
+in the order they were registered. They are invoked after the relevant error handler has been called,
+but before the response is sent back to the client.
+
+!!! note "Registration syntax"
+
+    You can use free functions, static methods, non-static methods, and trait methods as error handlers.
+    Check out the [dependency injection cookbook](../dependency_injection/cookbook.md) for more details on
+    the syntax for each case.
+
+## `pavex::Error`
+
+Error observers must take a reference to [`pavex::Error`][pavex::Error] as one of their input parameters.  
+
+
+[`pavex::Error`][pavex::Error] is an opaque error type—it's a wrapper around the actual error type returned by the 
+component that failed.  
+It implements the [`Error`][std::error::Error] trait from the standard library, so you can use its methods 
+to extract information about the error (e.g. [`source`][std::error::Error::source], [`Display`][std::fmt::Display]
+and [`Debug`][std::fmt::Debug] representations, etc.).  
+If you need to access the underlying error type, you can use the [`inner_ref`][pavex::Error::inner_ref] method 
+and then try to [downcast it][std::error::Error::downcast_ref].
+
+## Return type
+
+The primary purpose of error observers is to **perform side effects**, not to produce a value.  
+Therefore, they are expected to return the unit type, `()`—i.e. they don't return anything.  
+
+## Dependency injection
+
+Error observers can take advantage of **dependency injection**.
+
+You must specify the dependencies of your error observer as **input parameters** in its function signature.  
+Those inputs are going to be built and injected by the framework, according to the **constructors** you have registered.
+
+Check out the [dependency injection guide](../dependency_injection/index.md) for more details on how the process works.
 
 ## Strictly infallible
 
@@ -38,5 +64,18 @@ Something fails in the request processing pipeline:
 
 It never ends!
 
+## Sync or async?
+
+Error observers can be either synchronous or asynchronous.  
+Check out the ["Sync vs async"](../routing/request_handlers.md#sync-or-async) guide for more details
+on the differences between the two and how to choose the right one for your use case.
 
 [pavex::Error]: ../../api_reference/pavex/struct.Error.html
+[pavex::Error::inner_ref]: ../../api_reference/pavex/struct.Error.html#method.inner_ref
+[Blueprint::error_observer]: ../../api_reference/pavex/blueprint/struct.Blueprint.html#method.error_observer
+[f]: ../../api_reference/pavex/macro.f.html
+[std::error::Error]: https://doc.rust-lang.org/std/error/trait.Error.html
+[std::error::Error::source]: https://doc.rust-lang.org/std/error/trait.Error.html#method.source
+[std::fmt::Display]: https://doc.rust-lang.org/std/fmt/trait.Display.html
+[std::fmt::Debug]: https://doc.rust-lang.org/std/fmt/trait.Debug.html
+[std::error::Error::downcast_ref]: https://doc.rust-lang.org/std/error/trait.Error.html#method.downcast_ref

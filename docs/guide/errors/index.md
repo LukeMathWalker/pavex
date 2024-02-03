@@ -4,7 +4,7 @@
 [constructors](../dependency_injection/core_concepts/constructors.md), [middlewares](../middleware/index.md#middlewares-can-fail): 
 they can all be **fallible**.  
 
-(Insert example of a fallible request handler)
+--8<-- "doc_examples/guide/errors/error_handlers/project-fallible.snap"
 
 What happens when they fail, though? What does the framework do with the error?  
 Two different concerns must be addressed:
@@ -15,7 +15,7 @@ Two different concerns must be addressed:
   a log record, incrementing a counter, sending a notification, etc.).
 
 These two concerns are addressed by two different Pavex components: [**error handlers**](error_handlers.md) 
-and [**error observers**](error_observers.md)
+and [**error observers**](error_observers.md).
 
 !!! note
 

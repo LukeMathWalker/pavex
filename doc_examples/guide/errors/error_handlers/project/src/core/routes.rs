@@ -1,6 +1,8 @@
-use crate::core::error_handler::LoginError;
-use pavex::http::StatusCode;
-
-pub fn handler() -> Result<StatusCode, LoginError> {
+pub fn handler(head: &RequestHead) -> Result<Response, LoginError> {
+    // Handler logic...
     todo!()
 }
+
+use crate::core::error_handler::LoginError;
+use pavex::request::RequestHead;
+use pavex::response::Response;
