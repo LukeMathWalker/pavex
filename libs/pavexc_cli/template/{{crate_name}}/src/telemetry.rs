@@ -26,7 +26,7 @@ where
 /// It emits an error event and attaches information about the error to the root span.
 /// If multiple errors are observed for the same request, it will emit multiple error events
 /// but only the details of the last error will be attached to the root span.
-pub async fn log_error(e: &pavex::Error, root_span: &RootSpan) {
+pub async fn log_error(e: &pavex::Error, root_span: RootSpan) {
     let source_chain = error_source_chain(e);
     tracing::error!(
         error.msg = %e,
