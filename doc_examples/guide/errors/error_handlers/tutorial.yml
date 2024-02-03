@@ -1,0 +1,13 @@
+starter_project_folder: "project"
+commands:
+  - command: "cargo px c"
+    expected_outcome: "success"
+snippets:
+  - name: "registration"
+    source_path: "src/core/blueprint.rs"
+    ranges: [ "0..8", "9..10" ]
+    hl_lines: [ 8 ]
+  - name: "into_response"
+    source_path: "src/core/error_handler.rs"
+    ranges: [ "0..8" ]
+    hl_lines: [ 3 ]
