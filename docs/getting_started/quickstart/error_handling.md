@@ -18,7 +18,8 @@ If you try to build the project now, you'll get an error from Pavex:
 --8<-- "doc_examples/quickstart/07-error.snap"
 ```
 
-Pavex is complaining: you can register a fallible constructor, but you must also register an error handler for it.
+Pavex is complaining: you can register a fallible constructor, but you must also register an 
+[**error handler**](../../guide/errors/error_handlers.md) for it.
 
 ## Add an error handler
 

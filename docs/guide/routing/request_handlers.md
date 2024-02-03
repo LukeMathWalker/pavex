@@ -64,24 +64,13 @@ pub async fn greet(/* ... */) -> Result<Response, GreetError> {
 }
 ```
 
-If they do, you must specify an **error handler** when registering the route:
+If they do, you must specify an [**error handler**](../errors/error_handlers.md) when registering the route:
 
 ```rust hl_lines="7"
 --8<-- "doc_examples/guide/routing/request_handlers/error_handler/src/blueprint.rs"
 ```
 
-The error handler is in charge of building a response from the error returned by the request handler. Just like
-a request handler:
-
-- It can be synchronous or asynchronous.
-- It can take advantage of dependency injection.
-- It must return a type that implements [`IntoResponse`][IntoResponse].
-
-In addition, it must take a reference to the error type as one of its input parameters:
-
-```rust
---8<-- "doc_examples/guide/routing/request_handlers/error_handler/src/error_handler.rs"
-```
+Check out the [error handling guide](../errors/error_handlers.md) for more details.
 
 ## Sync or async?
 
