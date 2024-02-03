@@ -1,8 +1,9 @@
 //! Execute common logic across multiple routes.  
 //!
-//! Check out [`Blueprint::wrap`] for a brief introduction to wrapping middlewares in Pavex.
+//! # Guide
 //!
-//! [`Blueprint::wrap`]: crate::blueprint::Blueprint::wrap
+//! Check out the ["Middleware"](https://pavex.dev/docs/guide/middleware) section of Pavex's guide
+//! for a thorough introduction to middlewares in Pavex applications.
 mod registered;
 mod unregistered;
 
