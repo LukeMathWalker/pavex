@@ -31,6 +31,7 @@ pin-project-lite = "0.2"
 ubyte = { version = "0.10.4", features = ["serde"] }
 pavex_bp_schema = { path = "../pavex_bp_schema", version = "0.1.15" }
 pavex_reflection = { path = "../pavex_reflection", version = "0.1.15" }
+persist_if_changed = { path = "../persist_if_changed", version = "0.1.15" }
 
 # Route parameters
 matchit = { version = "0.7", package = "pavex_matchit" }

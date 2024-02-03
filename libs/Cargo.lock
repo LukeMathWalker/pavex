@@ -1886,6 +1886,7 @@ dependencies = [
  "pavex_matchit",
  "pavex_reflection",
  "percent-encoding",
+ "persist_if_changed",
  "pin-project-lite",
  "reqwest",
  "ron 0.8.1",

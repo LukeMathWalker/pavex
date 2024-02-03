@@ -1,5 +1,4 @@
 use std::collections::BTreeMap;
-use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use cargo_manifest::{Dependency, Edition};
@@ -128,13 +127,7 @@ impl GeneratedApp {
             }
         };
         cargo_toml.overwrite(&mut manifest);
-
-        let mut cargo_toml_file = fs_err::OpenOptions::new()
-            .write(true)
-            .truncate(true)
-            .create(true)
-            .open(&cargo_toml_path)?;
-        cargo_toml_file.write_all(manifest.to_string().as_bytes())?;
+        persist_if_changed(&cargo_toml_path, manifest.to_string().as_bytes())?;
         Ok(())
     }
 
