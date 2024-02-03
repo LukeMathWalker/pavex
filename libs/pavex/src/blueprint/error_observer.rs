@@ -1,3 +1,10 @@
+//! Register error observers to intercept and report errors that occur during request handling.
+//!
+//! # Guide
+//!
+//! Check out the ["Error observers"](https://pavex.dev/docs/guide/errors/error_observers)
+//! section of Pavex's guide for a thorough introduction to error observers
+//! in Pavex applications.
 use crate::blueprint::conversions::raw_callable2registered_callable;
 use crate::blueprint::reflection::RawCallable;
 use crate::blueprint::Blueprint;

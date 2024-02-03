@@ -690,6 +690,33 @@ impl Blueprint {
     }
 
     #[track_caller]
+    /// Register an error observer to intercept and report errors that occur during request handling.
+    ///
+    /// # Guide
+    ///
+    /// Check out the ["Error observers"](https://pavex.dev/docs/guide/errors/error_observers)
+    /// section of Pavex's guide for a thorough introduction to error observers
+    /// in Pavex applications.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use pavex::f;
+    /// use pavex::blueprint::Blueprint;
+    ///
+    /// pub fn error_logger(e: &pavex::Error) {
+    ///     tracing::error!(
+    ///         error.msg = %e,
+    ///         error.details = ?e,
+    ///         "An error occurred while handling a request"
+    ///     );
+    /// }
+    ///
+    /// # fn main() {
+    /// let mut bp = Blueprint::new();
+    /// bp.error_observer(f!(crate::error_logger));
+    /// # }
+    /// ```
     pub fn error_observer(&mut self, callable: RawCallable) -> RegisteredErrorObserver {
         let registered = pavex_bp_schema::ErrorObserver {
             error_observer: raw_callable2registered_callable(callable),
