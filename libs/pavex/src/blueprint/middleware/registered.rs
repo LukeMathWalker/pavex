@@ -18,12 +18,16 @@ impl<'a> RegisteredWrappingMiddleware<'a> {
     #[track_caller]
     /// Register an error handler.
     ///
-    /// Error handlers convert the error type returned by your middleware into an HTTP response.
+    /// If an error handler has already been registered for this middleware, it will be
+    /// overwritten.
     ///
-    /// Error handlers **can't** consume the error type, they must take a reference to the
-    /// error as input.  
-    /// Error handlers can have additional input parameters alongside the error, as long as there
-    /// are constructors registered for those parameter types.
+    /// # Guide
+    ///
+    /// Check out the ["Error handlers"](https://pavex.dev/docs/guide/errors/error_handlers)
+    /// section of Pavex's guide for a thorough introduction to error handlers
+    /// in Pavex applications.
+    ///
+    /// # Example
     ///
     /// ```rust
     /// use pavex::{f, blueprint::Blueprint, middleware::Next};
@@ -33,6 +37,7 @@ impl<'a> RegisteredWrappingMiddleware<'a> {
     /// # struct Logger;
     /// # struct TimeoutError;
     ///
+    /// // 👇 a fallible middleware
     /// fn timeout_middleware<C>(next: Next<C>) -> Result<Response, TimeoutError>
     /// where
     ///     C: Future<Output = Response>
@@ -52,15 +57,6 @@ impl<'a> RegisteredWrappingMiddleware<'a> {
     ///     .error_handler(f!(crate::error_to_response));
     /// # }
     /// ```
-    ///
-    /// If an error handler has already been registered for the same error type, it will be
-    /// overwritten.
-    ///
-    /// ## Common Errors
-    ///
-    /// Pavex will fail to generate the runtime code for your application if you register
-    /// an error handler for an infallible middleware (i.e. a middleware that doesn't return
-    /// a `Result`).
     pub fn error_handler(mut self, error_handler: RawCallable) -> Self {
         let callable = raw_callable2registered_callable(error_handler);
         self.wrapping_middleware().error_handler = Some(callable);
