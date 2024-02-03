@@ -4,9 +4,13 @@ Error observers are a mechanism to **intercept errors**.
 They are primarily **designed for error reporting**—e.g. you can use them to log errors,
 increment a metric counter, etc.
 
+--8<-- "doc_examples/guide/errors/error_observers/project-example.snap"
+
 ## Registration 
 
 You register an error observer using the [`Blueprint::error_observer`][Blueprint::error_observer] method.
+
+--8<-- "doc_examples/guide/errors/error_observers/project-registration.snap"
 
 When registering an error observer, you must provide its **fully qualified path**, wrapped in the
 [`f!`][f] macro.  
@@ -24,6 +28,7 @@ but before the response is sent back to the client.
 
 Error observers must take a reference to [`pavex::Error`][pavex::Error] as one of their input parameters.  
 
+--8<-- "doc_examples/guide/errors/error_observers/project-observer.snap"
 
 [`pavex::Error`][pavex::Error] is an opaque error type—it's a wrapper around the actual error type returned by the 
 component that failed.  
@@ -41,6 +46,10 @@ Therefore, they are expected to return the unit type, `()`—i.e. they don't ret
 ## Dependency injection
 
 Error observers can take advantage of **dependency injection**.
+
+--8<-- "doc_examples/guide/errors/error_observers/project-injection.snap"
+
+1. `&RootSpan` is injected into the error observer by the framework.
 
 You must specify the dependencies of your error observer as **input parameters** in its function signature.  
 Those inputs are going to be built and injected by the framework, according to the **constructors** you have registered.
@@ -62,7 +71,9 @@ Something fails in the request processing pipeline:
             - But to invoke the error observer, you need `A`!
                 - You try to construct `A` _again_ to report the failure of constructing `A`...
 
-It never ends!
+It never ends!  
+Pavex will detect this scenario and return an error during code generation, so that you don't end up
+in an infinite loop at runtime.
 
 ## Sync or async?
 
