@@ -5,7 +5,7 @@ use miette::{Diagnostic, LabeledSpan, NamedSource, Severity, SourceCode};
 /// A builder for a [`CompilerDiagnostic`].
 pub struct CompilerDiagnosticBuilder {
     severity: Severity,
-    source_code: NamedSource,
+    source_code: NamedSource<String>,
     labels: Option<Vec<LabeledSpan>>,
     help: Option<String>,
     help_with_snippet: Option<Vec<HelpWithSnippet>>,
@@ -14,7 +14,7 @@ pub struct CompilerDiagnosticBuilder {
 }
 
 impl CompilerDiagnosticBuilder {
-    fn new(source_code: impl Into<NamedSource>, error: impl Into<anyhow::Error>) -> Self {
+    fn new(source_code: impl Into<NamedSource<String>>, error: impl Into<anyhow::Error>) -> Self {
         Self {
             severity: Severity::Error,
             source_code: source_code.into(),
@@ -24,6 +24,11 @@ impl CompilerDiagnosticBuilder {
             error_source: error.into(),
             additional_annotated_snippets: None,
         }
+    }
+
+    /// A new diagnostic with an empty source code.
+    fn empty(e: impl Into<anyhow::Error>) -> Self {
+        Self::new(NamedSource::new(String::new(), String::new()), e)
     }
 
     pub fn label(self, label: LabeledSpan) -> Self {
@@ -190,10 +195,15 @@ impl CompilerDiagnostic {
     /// to the error (see [`CompilerDiagnosticBuilder::additional_annotated_snippet`] and
     /// [`CompilerDiagnosticBuilder::optional_additional_annotated_snippet`]).
     pub fn builder(
-        source_code: impl Into<NamedSource>,
+        source_code: impl Into<NamedSource<String>>,
         error: impl Into<anyhow::Error>,
     ) -> CompilerDiagnosticBuilder {
         CompilerDiagnosticBuilder::new(source_code, error)
+    }
+
+    /// A new diagnostic with an empty source code.
+    fn builder_no_source(e: impl Into<anyhow::Error>) -> CompilerDiagnosticBuilder {
+        Self::builder(NamedSource::new(String::new(), String::new()), e)
     }
 }
 
@@ -211,13 +221,13 @@ impl HelpWithSnippet {
 
 /// A source file annotated with one or more labels.
 pub struct AnnotatedSnippet {
-    pub source_code: NamedSource,
+    pub source_code: NamedSource<String>,
     pub labels: Vec<LabeledSpan>,
 }
 
 impl AnnotatedSnippet {
     /// Build a new annotated snippet with a single label.
-    pub fn new(source_code: impl Into<NamedSource>, label: LabeledSpan) -> Self {
+    pub fn new(source_code: impl Into<NamedSource<String>>, label: LabeledSpan) -> Self {
         Self {
             source_code: source_code.into(),
             labels: vec![label],
@@ -225,7 +235,10 @@ impl AnnotatedSnippet {
     }
 
     /// Build a new annotated snippet with an optional single label.
-    pub fn new_optional(source_code: impl Into<NamedSource>, label: Option<LabeledSpan>) -> Self {
+    pub fn new_optional(
+        source_code: impl Into<NamedSource<String>>,
+        label: Option<LabeledSpan>,
+    ) -> Self {
         Self {
             source_code: source_code.into(),
             labels: label.map(|l| vec![l]).unwrap_or_default(),
@@ -233,7 +246,10 @@ impl AnnotatedSnippet {
     }
 
     /// Build a new annotated snippet with multiple labels.
-    pub fn new_with_labels(source_code: impl Into<NamedSource>, labels: Vec<LabeledSpan>) -> Self {
+    pub fn new_with_labels(
+        source_code: impl Into<NamedSource<String>>,
+        labels: Vec<LabeledSpan>,
+    ) -> Self {
         Self {
             source_code: source_code.into(),
             labels,
@@ -254,7 +270,7 @@ impl AnnotatedSnippet {
 ///
 /// See [`CompilerDiagnostic::builder`] for how to create a diagnostic.
 pub struct CompilerDiagnostic {
-    source_code: NamedSource,
+    source_code: NamedSource<String>,
     severity: Severity,
     labels: Option<Vec<LabeledSpan>>,
     help: Option<String>,

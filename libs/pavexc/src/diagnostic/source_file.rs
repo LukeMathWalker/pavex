@@ -27,7 +27,7 @@ impl ParsedSourceFile {
     }
 }
 
-impl From<ParsedSourceFile> for NamedSource {
+impl From<ParsedSourceFile> for NamedSource<String> {
     fn from(f: ParsedSourceFile) -> Self {
         let file_name = f.path.to_string_lossy();
         NamedSource::new(file_name, f.contents)

@@ -20,12 +20,12 @@ anyhow = "1.0.59"
 ahash = "0.8"
 console = "0.15.1"
 fs-err = "2.7.0"
-libtest-mimic = "0.6.0"
+libtest-mimic = "0.7.0"
 serde = { version = "1.0.141", features = ["derive"] }
 similar = { version = "2.2.0", features = ["inline"] }
 textwrap = "0.16.0"
 toml = { version = "0.8", features = ["preserve_order"] }
-miette = { version = "5.3.0", features = ["fancy"] }
+miette = { version = "6.0.1", features = ["fancy"] }
 walkdir = "2"
 serde_json = "1"
 itertools = "0.12"
