@@ -827,7 +827,7 @@ dependencies = [
 
 [[package]]
 name = "generate_from_path"
-version = "0.1.15"
+version = "0.1.16"
 dependencies = [
  "anyhow",
  "fs-err",
@@ -1869,7 +1869,7 @@ dependencies = [
 
 [[package]]
 name = "pavex"
-version = "0.1.15"
+version = "0.1.16"
 dependencies = [
  "anyhow",
  "bytes",
@@ -1890,6 +1890,7 @@ dependencies = [
  "pavex_matchit",
  "pavex_reflection",
  "percent-encoding",
+ "persist_if_changed",
  "pin-project-lite",
  "reqwest",
  "ron 0.8.1",
@@ -1907,7 +1908,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_bp_schema"
-version = "0.1.15"
+version = "0.1.16"
 dependencies = [
  "pavex_reflection",
  "serde",
@@ -1915,7 +1916,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_cli"
-version = "0.1.15"
+version = "0.1.16"
 dependencies = [
  "anyhow",
  "bytes",
@@ -1958,7 +1959,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_cli_client"
-version = "0.1.15"
+version = "0.1.16"
 dependencies = [
  "anyhow",
  "pavex",
@@ -1967,7 +1968,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_macros"
-version = "0.1.15"
+version = "0.1.16"
 dependencies = [
  "pavex",
  "proc-macro2",
@@ -1985,7 +1986,7 @@ checksum = "77b9753b03381fd8856966146c4d626d9a8507901c1bcdfbc41df03deea551fc"
 
 [[package]]
 name = "pavex_miette"
-version = "0.1.15"
+version = "0.1.16"
 dependencies = [
  "miette",
  "owo-colors 3.5.0",
@@ -1999,14 +2000,14 @@ dependencies = [
 
 [[package]]
 name = "pavex_reflection"
-version = "0.1.15"
+version = "0.1.16"
 dependencies = [
  "serde",
 ]
 
 [[package]]
 name = "pavex_test_runner"
-version = "0.1.15"
+version = "0.1.16"
 dependencies = [
  "ahash 0.8.7",
  "anyhow",
@@ -2033,7 +2034,7 @@ dependencies = [
 
 [[package]]
 name = "pavexc"
-version = "0.1.15"
+version = "0.1.16"
 dependencies = [
  "ahash 0.8.7",
  "anyhow",
@@ -2080,7 +2081,7 @@ dependencies = [
 
 [[package]]
 name = "pavexc_cli"
-version = "0.1.15"
+version = "0.1.16"
 dependencies = [
  "anyhow",
  "clap",
@@ -2104,7 +2105,7 @@ dependencies = [
 
 [[package]]
 name = "pavexc_cli_client"
-version = "0.1.15"
+version = "0.1.16"
 dependencies = [
  "anyhow",
  "pavex",
@@ -2131,7 +2132,7 @@ checksum = "e3148f5046208a5d56bcfc03053e3ca6334e51da8dfb19b6cdc8b306fae3283e"
 
 [[package]]
 name = "persist_if_changed"
-version = "0.1.15"
+version = "0.1.16"
 dependencies = [
  "anyhow",
  "fs-err",
@@ -2141,9 +2142,9 @@ dependencies = [
 
 [[package]]
 name = "pest"
-version = "2.7.6"
+version = "2.7.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1f200d8d83c44a45b21764d1916299752ca035d15ecd46faca3e9a2a2bf6ad06"
+checksum = "219c0dcc30b6a27553f9cc242972b67f75b60eb0db71f0b5462f38b058c41546"
 dependencies = [
  "memchr",
  "thiserror",
@@ -2152,9 +2153,9 @@ dependencies = [
 
 [[package]]
 name = "pest_derive"
-version = "2.7.6"
+version = "2.7.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bcd6ab1236bbdb3a49027e920e693192ebfe8913f6d60e294de57463a493cfde"
+checksum = "22e1288dbd7786462961e69bfd4df7848c1e37e8b74303dbdab82c3a9cdd2809"
 dependencies = [
  "pest",
  "pest_generator",
@@ -2162,9 +2163,9 @@ dependencies = [
 
 [[package]]
 name = "pest_generator"
-version = "2.7.6"
+version = "2.7.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2a31940305ffc96863a735bef7c7994a00b325a7138fdbc5bda0f1a0476d3275"
+checksum = "1381c29a877c6d34b8c176e734f35d7f7f5b3adaefe940cb4d1bb7af94678e2e"
 dependencies = [
  "pest",
  "pest_meta",
@@ -2175,9 +2176,9 @@ dependencies = [
 
 [[package]]
 name = "pest_meta"
-version = "2.7.6"
+version = "2.7.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a7ff62f5259e53b78d1af898941cdcdccfae7385cf7d793a6e55de5d05bb4b7d"
+checksum = "d0934d6907f148c22a3acbda520c7eed243ad7487a30f51f6ce52b58b7077a8a"
 dependencies = [
  "once_cell",
  "pest",
@@ -3840,11 +3841,11 @@ dependencies = [
 
 [[package]]
 name = "xdg-home"
-version = "1.0.0"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2769203cd13a0c6015d515be729c526d041e9cf2c0cc478d57faee85f40c6dcd"
+checksum = "21e5a325c3cb8398ad6cf859c1135b25dd29e186679cf2da7581d9679f63b38e"
 dependencies = [
- "nix",
+ "libc",
  "winapi",
 ]
 

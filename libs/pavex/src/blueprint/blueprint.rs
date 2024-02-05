@@ -633,14 +633,12 @@ impl Blueprint {
 /// These are used to pass the blueprint data to Pavex's CLI.
 impl Blueprint {
     /// Serialize the [`Blueprint`] to a file in RON format.
+    ///
+    /// The file is only written to disk if the content of the blueprint has changed.
     pub fn persist(&self, filepath: &std::path::Path) -> Result<(), anyhow::Error> {
-        let mut file = fs_err::OpenOptions::new()
-            .create(true)
-            .write(true)
-            .truncate(true)
-            .open(filepath)?;
         let config = ron::ser::PrettyConfig::new();
-        ron::ser::to_writer_pretty(&mut file, &self.schema, config)?;
+        let contents = ron::ser::to_string_pretty(&self.schema, config)?;
+        persist_if_changed::persist_if_changed(filepath, contents.as_bytes())?;
         Ok(())
     }
 
