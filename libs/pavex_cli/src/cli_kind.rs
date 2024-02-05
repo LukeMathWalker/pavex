@@ -19,19 +19,11 @@ impl CliKind {
         }
     }
 
-    pub fn binary_filename(self) -> &'static str {
-        cfg_if::cfg_if! {
-            if #[cfg(windows)] {
-                match self {
-                    CliKind::Pavex => "pavex.exe",
-                    CliKind::Pavexc => "pavexc.exe",
-                }
-            } else {
-                match self {
-                    CliKind::Pavex => "pavex",
-                    CliKind::Pavexc => "pavexc",
-                }
-            }
-        }
+    pub fn binary_filename(self) -> String {
+        let name = match self {
+            CliKind::Pavex => "pavex",
+            CliKind::Pavexc => "pavexc",
+        };
+        format!("{}{}", name, std::env::consts::EXE_SUFFIX)
     }
 }

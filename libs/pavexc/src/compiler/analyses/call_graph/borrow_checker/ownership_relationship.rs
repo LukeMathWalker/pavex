@@ -118,7 +118,7 @@ impl NodeRelationships<'_> {
                     .node_id2borrower_ids
                     .get_mut(borrowed_node_index)
                 {
-                    borrowers.remove(&self.node_index);
+                    borrowers.shift_remove(&self.node_index);
                 }
             }
             borrowed.clear();
@@ -133,14 +133,14 @@ impl NodeRelationships<'_> {
             .node_id2consumer_ids
             .get_mut(&self.node_index)
         {
-            consumers.remove(&consumer_index);
+            consumers.shift_remove(&consumer_index);
         }
         if let Some(consumed) = self
             .relationships
             .node_id2consumed_ids
             .get_mut(&consumer_index)
         {
-            consumed.remove(&self.node_index);
+            consumed.shift_remove(&self.node_index);
         }
     }
 }
