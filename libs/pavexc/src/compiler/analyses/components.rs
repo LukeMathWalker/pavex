@@ -889,7 +889,7 @@ impl ComponentDb {
             if fallible_callable.is_fallible() {
                 let error_handler_callable = &computation_db[error_handler_user_component_id];
                 // Capture immediately that an error handler was registered for this fallible component.
-                missing_error_handlers.remove(&fallible_user_component_id);
+                missing_error_handlers.shift_remove(&fallible_user_component_id);
                 match ErrorHandler::new(error_handler_callable.to_owned(), fallible_callable) {
                     Ok(e) => {
                         // This may be `None` if the fallible component failed to pass its own

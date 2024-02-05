@@ -139,7 +139,7 @@ impl RequestHandlerPipeline {
                         let component =
                             component_db.hydrated_component(*component_id, computation_db);
                         if let Some(output_type) = component.output_type() {
-                            next_field_types.remove(output_type);
+                            next_field_types.shift_remove(output_type);
                         }
                     }
                 }
