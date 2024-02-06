@@ -1,4 +1,5 @@
 use crate::blueprint::constructor::Constructor;
+use crate::blueprint::linter::Lint;
 use crate::blueprint::Blueprint;
 use crate::request::body::{BodySizeLimit, BufferedBody, JsonBody};
 use crate::request::path::PathParams;
@@ -42,11 +43,11 @@ impl ApiKit {
     /// Create a new [`ApiKit`] with all the bundled constructors.
     pub fn new() -> Self {
         Self {
-            path_params: Some(PathParams::default_constructor()),
-            query_params: Some(QueryParams::default_constructor()),
-            json_body: Some(JsonBody::default_constructor()),
-            buffered_body: Some(BufferedBody::default_constructor()),
-            body_size_limit: Some(BodySizeLimit::default_constructor()),
+            path_params: Some(PathParams::default_constructor().ignore(Lint::Unused)),
+            query_params: Some(QueryParams::default_constructor().ignore(Lint::Unused)),
+            json_body: Some(JsonBody::default_constructor().ignore(Lint::Unused)),
+            buffered_body: Some(BufferedBody::default_constructor().ignore(Lint::Unused)),
+            body_size_limit: Some(BodySizeLimit::default_constructor().ignore(Lint::Unused)),
         }
     }
 

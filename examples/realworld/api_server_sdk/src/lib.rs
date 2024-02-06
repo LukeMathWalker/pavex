@@ -3,7 +3,7 @@
 //! All manual edits will be lost next time the code is generated.
 extern crate alloc;
 struct ServerState {
-    router: matchit::Router<u32>,
+    router: pavex_matchit::Router<u32>,
     application_state: ApplicationState,
 }
 pub struct ApplicationState {
@@ -57,8 +57,8 @@ pub fn run(
     });
     server_builder.serve(route_request, server_state)
 }
-fn build_router() -> matchit::Router<u32> {
-    let mut router = matchit::Router::new();
+fn build_router() -> pavex_matchit::Router<u32> {
+    let mut router = pavex_matchit::Router::new();
     router.insert("/api/ping", 0u32).unwrap();
     router.insert("/articles", 1u32).unwrap();
     router.insert("/articles/:slug", 2u32).unwrap();
@@ -93,8 +93,8 @@ async fn route_request(
                 "*",
             );
             return route_2::middleware_0(
-                    matched_route_template,
                     &allowed_methods,
+                    matched_route_template,
                     &request_head,
                 )
                 .await;
@@ -120,8 +120,8 @@ async fn route_request(
                         ])
                         .into();
                     route_2::middleware_0(
-                            matched_route_template,
                             &allowed_methods,
+                            matched_route_template,
                             &request_head,
                         )
                         .await
@@ -151,8 +151,8 @@ async fn route_request(
                         ])
                         .into();
                     route_2::middleware_0(
-                            matched_route_template,
                             &allowed_methods,
+                            matched_route_template,
                             &request_head,
                         )
                         .await
@@ -183,8 +183,8 @@ async fn route_request(
                 &pavex::http::Method::PUT => {
                     route_15::middleware_0(
                             matched_route_template,
-                            url_params,
                             request_body,
+                            url_params,
                             &request_head,
                         )
                         .await
@@ -197,8 +197,8 @@ async fn route_request(
                         ])
                         .into();
                     route_2::middleware_0(
-                            matched_route_template,
                             &allowed_methods,
+                            matched_route_template,
                             &request_head,
                         )
                         .await
@@ -221,8 +221,8 @@ async fn route_request(
                 &pavex::http::Method::POST => {
                     route_19::middleware_0(
                             matched_route_template,
-                            url_params,
                             request_body,
+                            url_params,
                             &request_head,
                         )
                         .await
@@ -234,8 +234,8 @@ async fn route_request(
                         ])
                         .into();
                     route_2::middleware_0(
-                            matched_route_template,
                             &allowed_methods,
+                            matched_route_template,
                             &request_head,
                         )
                         .await
@@ -261,8 +261,8 @@ async fn route_request(
                         ])
                         .into();
                     route_2::middleware_0(
-                            matched_route_template,
                             &allowed_methods,
+                            matched_route_template,
                             &request_head,
                         )
                         .await
@@ -297,8 +297,8 @@ async fn route_request(
                         ])
                         .into();
                     route_2::middleware_0(
-                            matched_route_template,
                             &allowed_methods,
+                            matched_route_template,
                             &request_head,
                         )
                         .await
@@ -319,8 +319,8 @@ async fn route_request(
                         ])
                         .into();
                     route_2::middleware_0(
-                            matched_route_template,
                             &allowed_methods,
+                            matched_route_template,
                             &request_head,
                         )
                         .await
@@ -346,8 +346,8 @@ async fn route_request(
                         ])
                         .into();
                     route_2::middleware_0(
-                            matched_route_template,
                             &allowed_methods,
+                            matched_route_template,
                             &request_head,
                         )
                         .await
@@ -382,8 +382,8 @@ async fn route_request(
                         ])
                         .into();
                     route_2::middleware_0(
-                            matched_route_template,
                             &allowed_methods,
+                            matched_route_template,
                             &request_head,
                         )
                         .await
@@ -404,8 +404,8 @@ async fn route_request(
                         ])
                         .into();
                     route_2::middleware_0(
-                            matched_route_template,
                             &allowed_methods,
+                            matched_route_template,
                             &request_head,
                         )
                         .await
@@ -435,8 +435,8 @@ async fn route_request(
                         ])
                         .into();
                     route_2::middleware_0(
-                            matched_route_template,
                             &allowed_methods,
+                            matched_route_template,
                             &request_head,
                         )
                         .await
@@ -450,8 +450,8 @@ async fn route_request(
             match &request_head.method {
                 &pavex::http::Method::POST => {
                     route_3::middleware_0(
-                            matched_route_template,
                             &server_state.application_state.s0,
+                            matched_route_template,
                             &server_state.application_state.s1,
                             request_body,
                             &request_head,
@@ -464,8 +464,8 @@ async fn route_request(
                         ])
                         .into();
                     route_2::middleware_0(
-                            matched_route_template,
                             &allowed_methods,
+                            matched_route_template,
                             &request_head,
                         )
                         .await
@@ -479,8 +479,8 @@ async fn route_request(
             match &request_head.method {
                 &pavex::http::Method::POST => {
                     route_4::middleware_0(
-                            matched_route_template,
                             &server_state.application_state.s0,
+                            matched_route_template,
                             &server_state.application_state.s1,
                             request_body,
                             &request_head,
@@ -493,8 +493,8 @@ async fn route_request(
                         ])
                         .into();
                     route_2::middleware_0(
-                            matched_route_template,
                             &allowed_methods,
+                            matched_route_template,
                             &request_head,
                         )
                         .await
@@ -572,13 +572,13 @@ pub mod route_1 {
 }
 pub mod route_2 {
     pub async fn middleware_0(
-        v0: pavex::request::path::MatchedPathPattern,
-        v1: &pavex::router::AllowedMethods,
+        v0: &pavex::router::AllowedMethods,
+        v1: pavex::request::path::MatchedPathPattern,
         v2: &pavex::request::RequestHead,
     ) -> pavex::response::Response {
-        let v3 = conduit_core::telemetry::RootSpan::new(v2, v0);
+        let v3 = conduit_core::telemetry::RootSpan::new(v2, v1);
         let v4 = crate::route_2::Next0 {
-            s_0: v1,
+            s_0: v0,
             next: handler,
         };
         let v5 = pavex::middleware::Next::new(v4);
@@ -610,28 +610,28 @@ pub mod route_2 {
 }
 pub mod route_3 {
     pub async fn middleware_0(
-        v0: pavex::request::path::MatchedPathPattern,
-        v1: &sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
+        v0: &sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
+        v1: pavex::request::path::MatchedPathPattern,
         v2: &jsonwebtoken::EncodingKey,
         v3: pavex::request::body::RawIncomingBody,
         v4: &pavex::request::RequestHead,
     ) -> pavex::response::Response {
-        let v5 = conduit_core::telemetry::RootSpan::new(v4, v0);
+        let v5 = conduit_core::telemetry::RootSpan::new(v4, v1);
         let v6 = crate::route_3::Next0 {
-            s_0: v1,
+            s_0: v2,
             s_1: v4,
             s_2: v3,
-            s_3: v2,
+            s_3: v0,
             next: handler,
         };
         let v7 = pavex::middleware::Next::new(v6);
         conduit_core::telemetry::logger(v7, v5).await
     }
     pub async fn handler(
-        v0: &sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
+        v0: &jsonwebtoken::EncodingKey,
         v1: &pavex::request::RequestHead,
         v2: pavex::request::body::RawIncomingBody,
-        v3: &jsonwebtoken::EncodingKey,
+        v3: &sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
     ) -> pavex::response::Response {
         let v4 = <pavex::request::body::BodySizeLimit as std::default::Default>::default();
         let v5 = pavex::request::body::BufferedBody::extract(v1, v2, v4).await;
@@ -662,7 +662,7 @@ pub mod route_3 {
                 };
             }
         };
-        let v9 = conduit_core::routes::users::signup(v8, v0, v3).await;
+        let v9 = conduit_core::routes::users::signup(v8, v3, v0).await;
         let v10 = match v9 {
             Ok(ok) => ok,
             Err(v10) => {
@@ -682,15 +682,15 @@ pub mod route_3 {
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
-        s_0: &'a sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
+        s_0: &'a jsonwebtoken::EncodingKey,
         s_1: &'b pavex::request::RequestHead,
         s_2: pavex::request::body::RawIncomingBody,
-        s_3: &'c jsonwebtoken::EncodingKey,
+        s_3: &'c sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
         next: fn(
-            &'a sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
+            &'a jsonwebtoken::EncodingKey,
             &'b pavex::request::RequestHead,
             pavex::request::body::RawIncomingBody,
-            &'c jsonwebtoken::EncodingKey,
+            &'c sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
         ) -> T,
     }
     impl<'a, 'b, 'c, T> std::future::IntoFuture for Next0<'a, 'b, 'c, T>
@@ -706,28 +706,28 @@ pub mod route_3 {
 }
 pub mod route_4 {
     pub async fn middleware_0(
-        v0: pavex::request::path::MatchedPathPattern,
-        v1: &sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
+        v0: &sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
+        v1: pavex::request::path::MatchedPathPattern,
         v2: &jsonwebtoken::EncodingKey,
         v3: pavex::request::body::RawIncomingBody,
         v4: &pavex::request::RequestHead,
     ) -> pavex::response::Response {
-        let v5 = conduit_core::telemetry::RootSpan::new(v4, v0);
+        let v5 = conduit_core::telemetry::RootSpan::new(v4, v1);
         let v6 = crate::route_4::Next0 {
-            s_0: v1,
+            s_0: v2,
             s_1: v4,
             s_2: v3,
-            s_3: v2,
+            s_3: v0,
             next: handler,
         };
         let v7 = pavex::middleware::Next::new(v6);
         conduit_core::telemetry::logger(v7, v5).await
     }
     pub async fn handler(
-        v0: &sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
+        v0: &jsonwebtoken::EncodingKey,
         v1: &pavex::request::RequestHead,
         v2: pavex::request::body::RawIncomingBody,
-        v3: &jsonwebtoken::EncodingKey,
+        v3: &sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
     ) -> pavex::response::Response {
         let v4 = <pavex::request::body::BodySizeLimit as std::default::Default>::default();
         let v5 = pavex::request::body::BufferedBody::extract(v1, v2, v4).await;
@@ -758,7 +758,7 @@ pub mod route_4 {
                 };
             }
         };
-        let v9 = conduit_core::routes::users::login(v8, v0, v3).await;
+        let v9 = conduit_core::routes::users::login(v8, v3, v0).await;
         let v10 = match v9 {
             Ok(ok) => ok,
             Err(v10) => {
@@ -778,15 +778,15 @@ pub mod route_4 {
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
-        s_0: &'a sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
+        s_0: &'a jsonwebtoken::EncodingKey,
         s_1: &'b pavex::request::RequestHead,
         s_2: pavex::request::body::RawIncomingBody,
-        s_3: &'c jsonwebtoken::EncodingKey,
+        s_3: &'c sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
         next: fn(
-            &'a sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
+            &'a jsonwebtoken::EncodingKey,
             &'b pavex::request::RequestHead,
             pavex::request::body::RawIncomingBody,
-            &'c jsonwebtoken::EncodingKey,
+            &'c sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
         ) -> T,
     }
     impl<'a, 'b, 'c, T> std::future::IntoFuture for Next0<'a, 'b, 'c, T>
@@ -1340,14 +1340,14 @@ pub mod route_14 {
 pub mod route_15 {
     pub async fn middleware_0(
         v0: pavex::request::path::MatchedPathPattern,
-        v1: pavex::request::path::RawPathParams<'_, '_>,
-        v2: pavex::request::body::RawIncomingBody,
+        v1: pavex::request::body::RawIncomingBody,
+        v2: pavex::request::path::RawPathParams<'_, '_>,
         v3: &pavex::request::RequestHead,
     ) -> pavex::response::Response {
         let v4 = conduit_core::telemetry::RootSpan::new(v3, v0);
         let v5 = crate::route_15::Next0 {
-            s_0: v2,
-            s_1: v1,
+            s_0: v1,
+            s_1: v2,
             s_2: v3,
             next: handler,
         };
@@ -1588,14 +1588,14 @@ pub mod route_18 {
 pub mod route_19 {
     pub async fn middleware_0(
         v0: pavex::request::path::MatchedPathPattern,
-        v1: pavex::request::path::RawPathParams<'_, '_>,
-        v2: pavex::request::body::RawIncomingBody,
+        v1: pavex::request::body::RawIncomingBody,
+        v2: pavex::request::path::RawPathParams<'_, '_>,
         v3: &pavex::request::RequestHead,
     ) -> pavex::response::Response {
         let v4 = conduit_core::telemetry::RootSpan::new(v3, v0);
         let v5 = crate::route_19::Next0 {
-            s_0: v2,
-            s_1: v1,
+            s_0: v1,
+            s_1: v2,
             s_2: v3,
             next: handler,
         };
