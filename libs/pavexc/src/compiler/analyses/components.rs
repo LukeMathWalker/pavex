@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::collections::BTreeMap;
 
 use ahash::{HashMap, HashMapExt, HashSet};
 use guppy::graph::PackageGraph;
@@ -7,7 +8,7 @@ use miette::NamedSource;
 use rustdoc_types::ItemEnum;
 use syn::spanned::Spanned;
 
-use pavex_bp_schema::{CloningStrategy, Lifecycle};
+use pavex_bp_schema::{CloningStrategy, Lifecycle, Lint, LintSetting};
 
 use crate::compiler::analyses::computations::{ComputationDb, ComputationId};
 use crate::compiler::analyses::into_error::register_error_new_transformer;
@@ -1222,6 +1223,14 @@ impl ComponentDb {
     /// Retrieve the lifecycle for a component.
     pub fn lifecycle(&self, id: ComponentId) -> Lifecycle {
         self.id2lifecycle[&id]
+    }
+
+    /// Retrieve the lint overrides for a component.
+    pub fn lints(&self, id: ComponentId) -> Option<&BTreeMap<Lint, LintSetting>> {
+        let Some(user_component_id) = self.user_component_id(id) else {
+            return None;
+        };
+        self.user_component_db.get_lints(user_component_id)
     }
 
     /// The mapping from a low-level [`UserComponentId`] to its corresponding [`ComponentId`].

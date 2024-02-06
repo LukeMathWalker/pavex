@@ -2,9 +2,12 @@ use ahash::HashMap;
 use guppy::graph::PackageGraph;
 use indexmap::IndexSet;
 use miette::{miette, NamedSource};
+use std::collections::BTreeMap;
 use syn::spanned::Spanned;
 
-use pavex_bp_schema::{Blueprint, CloningStrategy, Lifecycle, Location, RawCallableIdentifiers};
+use pavex_bp_schema::{
+    Blueprint, CloningStrategy, Lifecycle, Lint, LintSetting, Location, RawCallableIdentifiers,
+};
 
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::user_components::raw_db::RawUserComponentDb;
@@ -45,6 +48,9 @@ pub struct UserComponentDb {
     ///
     /// Invariants: there is an entry for every single user component.
     id2lifecycle: HashMap<UserComponentId, Lifecycle>,
+    /// Associate each user-registered component with its lint overrides, if any.
+    /// If there is no entry for a component, there are no overrides.
+    id2lints: HashMap<UserComponentId, BTreeMap<Lint, LintSetting>>,
     /// For each constructor component, determine if it can be cloned or not.
     ///
     /// Invariants: there is an entry for every constructor.
@@ -105,6 +111,7 @@ impl UserComponentDb {
         let RawUserComponentDb {
             component_interner,
             id2locations,
+            id2lints,
             constructor_id2cloning_strategy,
             id2lifecycle,
             identifiers_interner,
@@ -124,6 +131,7 @@ impl UserComponentDb {
                 handler_id2middleware_ids,
                 handler_id2error_observer_ids,
                 scope_graph,
+                id2lints,
             },
         ))
     }
@@ -219,6 +227,11 @@ impl UserComponentDb {
     /// It panics if the component with the given id is not a request handler.
     pub fn get_middleware_ids(&self, id: UserComponentId) -> &[UserComponentId] {
         &self.handler_id2middleware_ids[&id]
+    }
+
+    /// Return the lint overrides for this component, if any.
+    pub fn get_lints(&self, id: UserComponentId) -> Option<&BTreeMap<Lint, LintSetting>> {
+        self.id2lints.get(&id)
     }
 
     /// Return the ids of the error observers that must be invoked when something goes wrong

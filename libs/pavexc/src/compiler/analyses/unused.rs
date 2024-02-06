@@ -9,6 +9,7 @@ use crate::diagnostic::{CompilerDiagnostic, LocationExt, SourceSpanExt};
 use guppy::graph::PackageGraph;
 use indexmap::IndexSet;
 use miette::Severity;
+use pavex_bp_schema::{Lint, LintSetting};
 
 /// Emit a warning for each user-registered constructor that hasn't
 /// been used in the code-generated pipelines.
@@ -56,6 +57,13 @@ pub(crate) fn detect_unused<'a, I>(
         }
         if used_user_constructor_ids.contains(&id) {
             continue;
+        }
+
+        if let Some(overrides) = component_db.lints(id) {
+            if overrides.get(&Lint::Unused) == Some(&LintSetting::Ignore) {
+                // No warning!
+                continue;
+            }
         }
 
         emit_unused_warning(id, component_db, computation_db, diagnostics, package_graph);
