@@ -632,7 +632,7 @@ impl ComponentDb {
         let ok_id = match self.hydrated_component(id, computation_db) {
             HydratedComponent::Constructor(_) => {
                 let ok_computation_id = computation_db.get_or_intern(ok);
-                self.get_or_intern(
+                let ok_id = self.get_or_intern(
                     UnregisteredComponent::SyntheticConstructor {
                         computation_id: ok_computation_id,
                         scope_id: self.scope_id(id),
@@ -640,7 +640,12 @@ impl ComponentDb {
                         cloning_strategy: self.constructor_id2cloning_strategy[&id],
                     },
                     computation_db,
-                )
+                );
+                self.derived2user_registered.insert(
+                    ok_id,
+                    self.derived2user_registered.get(&id).cloned().unwrap_or(id),
+                );
+                ok_id
             }
             _ => self.add_synthetic_transformer(
                 ok.into(),
