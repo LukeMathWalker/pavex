@@ -213,6 +213,7 @@ impl RequestHandlerPipeline {
                     next_state_scope_id,
                     CloningStrategy::NeverClone,
                     computation_db,
+                    None,
                 )
                 .unwrap();
             constructible_db.insert(next_state_constructor_id, component_db, computation_db);

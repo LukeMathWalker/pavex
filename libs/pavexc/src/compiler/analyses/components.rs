@@ -121,6 +121,13 @@ pub(crate) enum UnregisteredComponent {
         computation_id: ComputationId,
         scope_id: ScopeId,
         cloning_strategy: CloningStrategy,
+        /// Synthetic constructors can be built by "deriving" user-registered constructors.
+        /// For example, by binding unassigned generic parameters or by extracting the `Ok` variant
+        /// from the output of fallible constructors.
+        ///
+        /// If that's the case,
+        /// this field should be populated with the id of the "source" constructor.
+        derived_from: Option<ComponentId>,
     },
     Transformer {
         computation_id: ComputationId,
@@ -505,6 +512,7 @@ impl ComponentDb {
                     scope_id: self_.scope_graph().root_scope_id(),
                     lifecycle: framework_item_db.lifecycle(id),
                     cloning_strategy: framework_item_db.cloning_strategy(id),
+                    derived_from: None,
                 },
                 computation_db,
             );
@@ -524,6 +532,7 @@ impl ComponentDb {
                     scope_id: self_.scope_graph().root_scope_id(),
                     lifecycle: Lifecycle::RequestScoped,
                     cloning_strategy: CloningStrategy::NeverClone,
+                    derived_from: None,
                 },
                 computation_db,
             );
@@ -580,10 +589,21 @@ impl ComponentDb {
                         .insert(id, cloning_strategy.to_owned());
                 }
                 SyntheticConstructor {
-                    cloning_strategy, ..
+                    cloning_strategy,
+                    derived_from,
+                    ..
                 } => {
                     self.constructor_id2cloning_strategy
                         .insert(id, cloning_strategy);
+                    if let Some(derived_from) = derived_from {
+                        self.derived2user_registered.insert(
+                            id,
+                            self.derived2user_registered
+                                .get(&derived_from)
+                                .cloned()
+                                .unwrap_or(derived_from),
+                        );
+                    }
                 }
                 Transformer {
                     when_to_insert,
@@ -638,12 +658,9 @@ impl ComponentDb {
                         scope_id: self.scope_id(id),
                         lifecycle: self.lifecycle(id),
                         cloning_strategy: self.constructor_id2cloning_strategy[&id],
+                        derived_from: Some(id),
                     },
                     computation_db,
-                );
-                self.derived2user_registered.insert(
-                    ok_id,
-                    self.derived2user_registered.get(&id).cloned().unwrap_or(id),
                 );
                 ok_id
             }
@@ -1152,6 +1169,7 @@ impl ComponentDb {
         scope_id: ScopeId,
         cloning_strategy: CloningStrategy,
         computation_db: &mut ComputationDb,
+        derived_from: Option<ComponentId>,
     ) -> Result<ComponentId, ConstructorValidationError> {
         let callable = computation_db[callable_id].to_owned();
         TryInto::<Constructor>::try_into(callable)?;
@@ -1160,6 +1178,7 @@ impl ComponentDb {
             computation_id: callable_id,
             scope_id,
             cloning_strategy,
+            derived_from,
         };
         Ok(self.get_or_intern(constructor_component, computation_db))
     }
@@ -1534,6 +1553,7 @@ impl ComponentDb {
                     scope_id,
                     cloning_strategy,
                     computation_db,
+                    Some(id),
                 )
                 .unwrap()
             }
