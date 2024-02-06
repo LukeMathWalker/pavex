@@ -356,6 +356,22 @@ pub(crate) struct ComponentDb {
     /// It's memoised here to avoid re-resolving it multiple times while analysing a single
     /// blueprint.
     pavex_error: PathType,
+    /// Users register constructors directly with a blueprint.  
+    /// From these user-provided constructors, we build **derived** constructors:
+    /// - if a constructor is fallible,
+    ///   we create a synthetic constructor to retrieve the Ok variant of its output type
+    /// - if a constructor is generic, we create new synthetic constructors by binding its unassigned generic parameters
+    ///   to concrete types
+    ///
+    /// This map holds an entry for each derived constructor.
+    /// The value points to the original user-registered constructor it was derived from.
+    ///
+    /// This dependency relationship can be **indirect**—e.g. an Ok-matcher is derived from a fallible constructor
+    /// which was in turn derived
+    /// by binding the generic parameters of a user-registered constructor.
+    /// The key for the Ok-matcher would point to the user-registered constructor in this scenario,
+    /// not to the intermediate derived constructor.
+    derived2user_registered: HashMap<ComponentId, ComponentId>,
 }
 
 /// The `build` method and its auxiliary routines.
@@ -404,6 +420,7 @@ impl ComponentDb {
             scope_ids_with_observers: vec![],
             autoregister_matchers: false,
             pavex_error,
+            derived2user_registered: Default::default(),
         };
 
         {
