@@ -2,7 +2,6 @@ use std::fmt::Write;
 
 use ahash::{HashMap, HashMapExt, HashSet, HashSetExt};
 use indexmap::IndexSet;
-use miette::NamedSource;
 use pavex_bp_schema::Lifecycle;
 use petgraph::stable_graph::{NodeIndex, StableDiGraph};
 
@@ -349,8 +348,7 @@ fn cycle_error(
         .unwrap();
     }
 
-    let dummy_source = NamedSource::new("", "".to_string());
-    let diagnostic_builder = CompilerDiagnostic::builder(dummy_source, anyhow::anyhow!(error_msg));
+    let diagnostic_builder = CompilerDiagnostic::builder_without_source(anyhow::anyhow!(error_msg));
 
     diagnostic_builder.help(
             "Break the cycle! Remove one of the 'depends-on' relationship by changing the signature of \

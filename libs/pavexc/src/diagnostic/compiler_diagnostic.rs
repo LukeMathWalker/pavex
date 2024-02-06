@@ -26,11 +26,6 @@ impl CompilerDiagnosticBuilder {
         }
     }
 
-    /// A new diagnostic with an empty source code.
-    fn empty(e: impl Into<anyhow::Error>) -> Self {
-        Self::new(NamedSource::new(String::new(), String::new()), e)
-    }
-
     pub fn label(self, label: LabeledSpan) -> Self {
         self.labels(std::iter::once(label))
     }
@@ -202,7 +197,7 @@ impl CompilerDiagnostic {
     }
 
     /// A new diagnostic with an empty source code.
-    fn builder_no_source(e: impl Into<anyhow::Error>) -> CompilerDiagnosticBuilder {
+    pub fn builder_without_source(e: impl Into<anyhow::Error>) -> CompilerDiagnosticBuilder {
         Self::builder(NamedSource::new(String::new(), String::new()), e)
     }
 }
@@ -231,6 +226,14 @@ impl AnnotatedSnippet {
         Self {
             source_code: source_code.into(),
             labels: vec![label],
+        }
+    }
+
+    /// Create an empty annotated snippet—no source and no labels.
+    pub fn empty() -> Self {
+        Self {
+            source_code: NamedSource::new(String::new(), String::new()),
+            labels: Vec::new(),
         }
     }
 

@@ -5,7 +5,6 @@ use std::ops::Deref;
 use ahash::{HashMap, HashMapExt};
 use guppy::graph::PackageGraph;
 use indexmap::IndexSet;
-use miette::NamedSource;
 use petgraph::graph::NodeIndex;
 use petgraph::prelude::EdgeRef;
 use petgraph::visit::NodeRef;
@@ -329,8 +328,7 @@ fn emit_ancestor_descendant_borrow_error(
     )
     .unwrap();
 
-    let dummy_source = NamedSource::new("", "");
-    let mut diagnostic = CompilerDiagnostic::builder(dummy_source, anyhow::anyhow!(error_msg));
+    let mut diagnostic = CompilerDiagnostic::builder_without_source(anyhow::anyhow!(error_msg));
 
     if let Some(component_id) = contended_component_id {
         if let Some(user_component_id) = component_db.user_component_id(component_id) {
@@ -349,10 +347,7 @@ fn emit_ancestor_descendant_borrow_error(
                 }
             };
             let help = match source {
-                None => HelpWithSnippet::new(
-                    help_msg,
-                    AnnotatedSnippet::new_with_labels(NamedSource::new("", ""), vec![]),
-                ),
+                None => HelpWithSnippet::new(help_msg, AnnotatedSnippet::empty()),
                 Some(source) => {
                     let labeled_span = diagnostic::get_f_macro_invocation_span(&source, location)
                         .labeled("The constructor was registered here".into());
@@ -371,7 +366,7 @@ fn emit_ancestor_descendant_borrow_error(
             "Consider changing the signature of `{consumer_path}`.\n\
             It takes `{contended_type:?}` by value. Would a shared reference, `&{contended_type:?}`, be enough?",
         ),
-        AnnotatedSnippet::new_with_labels(NamedSource::new("", ""), vec![]),
+        AnnotatedSnippet::empty(),
     );
     diagnostic = diagnostic.help_with_snippet(help);
 
