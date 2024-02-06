@@ -1,6 +1,5 @@
 use guppy::graph::PackageGraph;
 use indexmap::IndexSet;
-use miette::NamedSource;
 use petgraph::graph::NodeIndex;
 use petgraph::Direction;
 
@@ -292,8 +291,7 @@ fn emit_borrow_checking_error(
                     There are a few different ways to unblock me: check out the help messages below!\n\
                     You only need to follow *one* of them."
                 );
-            let dummy_source = NamedSource::new("", "");
-            let mut diagnostic = CompilerDiagnostic::builder(dummy_source, error);
+            let mut diagnostic = CompilerDiagnostic::builder_without_source(error);
 
             if let Some(user_component_id) = component_db.user_component_id(component_id) {
                 let help_msg = format!(
@@ -311,10 +309,7 @@ fn emit_borrow_checking_error(
                     }
                 };
                 let help = match source {
-                    None => HelpWithSnippet::new(
-                        help_msg,
-                        AnnotatedSnippet::new_with_labels(NamedSource::new("", ""), vec![]),
-                    ),
+                    None => HelpWithSnippet::new(help_msg, AnnotatedSnippet::empty()),
                     Some(source) => {
                         let callable_type =
                             component_db.user_component_db()[user_component_id].callable_type();
@@ -339,10 +334,7 @@ fn emit_borrow_checking_error(
                         It takes `{type_:?}` by value. Would a shared reference, `&{type_:?}`, be enough?",
                     callable.path
                 );
-                let help = HelpWithSnippet::new(
-                    help_msg,
-                    AnnotatedSnippet::new_with_labels(NamedSource::new("", ""), vec![]),
-                );
+                let help = HelpWithSnippet::new(help_msg, AnnotatedSnippet::empty());
                 diagnostic = diagnostic.help_with_snippet(help);
             }
 

@@ -3,7 +3,6 @@ use std::collections::BTreeSet;
 use ahash::{HashSet, HashSetExt};
 use guppy::graph::PackageGraph;
 use indexmap::IndexSet;
-use miette::NamedSource;
 use petgraph::algo::has_path_connecting;
 use petgraph::prelude::EdgeRef;
 use petgraph::stable_graph::NodeIndex;
@@ -203,8 +202,7 @@ fn emit_multiple_consumers_error(
         There are {n_consumers} components that take `{type_:?}` as an input parameter, consuming it by value. \
         Since I'm not allowed to clone `{type_:?}`, I can't resolve this conflict."
     );
-    let dummy_source = NamedSource::new("", "");
-    let mut diagnostic = CompilerDiagnostic::builder(dummy_source, anyhow::anyhow!(error_msg));
+    let mut diagnostic = CompilerDiagnostic::builder_without_source(anyhow::anyhow!(error_msg));
 
     if let Some(component_id) = consumed_component_id {
         if let Some(user_component_id) = component_db.user_component_id(component_id) {
@@ -224,10 +222,7 @@ fn emit_multiple_consumers_error(
                 }
             };
             let help = match source {
-                None => HelpWithSnippet::new(
-                    help_msg,
-                    AnnotatedSnippet::new_with_labels(NamedSource::new("", ""), vec![]),
-                ),
+                None => HelpWithSnippet::new(help_msg, AnnotatedSnippet::empty()),
                 Some(source) => {
                     let labeled_span = diagnostic::get_f_macro_invocation_span(&source, location)
                         .labeled(format!("The {callable_type} was registered here"));
@@ -246,7 +241,7 @@ fn emit_multiple_consumers_error(
             "Considering changing the signature of the components that consume `{type_:?}` by value.\n\
             Would a shared reference, `&{type_:?}`, be enough?",
         ),
-        AnnotatedSnippet::new_with_labels(NamedSource::new("", ""), vec![]),
+        AnnotatedSnippet::empty(),
     );
     diagnostic = diagnostic.help_with_snippet(help);
     for consumer_node_id in consuming_node_ids {

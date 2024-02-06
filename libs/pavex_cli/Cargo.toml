@@ -22,7 +22,7 @@ vergen = { workspace = true }
 pavexc_cli_client = { path = "../pavexc_cli_client", version = "0.1.16" }
 clap = { version = "4", features = ["derive", "env"] }
 pavex_miette = { path = "../pavex_miette", version = "0.1.16" }
-miette = { version = "5.3.0" }
+miette = { version = "6.0.1" }
 fs-err = "2.7.0"
 tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter"] }
 tracing-chrome = { version = "0.7" }
@@ -30,7 +30,7 @@ tracing = "0.1"
 anyhow = "1"
 thiserror = "1.0.56"
 guppy = "0.17"
-supports-color = { version = "2" }
+supports-color = { version = "3.0.0" }
 xdg-home = "1.0.0"
 sha2 = "0.10.8"
 zip = "0.6.6"
@@ -40,7 +40,7 @@ bytes = "1.5.0"
 tempfile = "3"
 ureq = { version = "2.9.1", features = ["json"] }
 remove_dir_all = "0.8.2"
-config = { version = "0.13.4", features = [] }
+config = { version = "0.14.0", features = [] }
 libc = { version = "0.2.152", features = [] }
 windows-sys = { version = "0.52.0", features = [] }
 cargo-like-utils = "0.1.2"

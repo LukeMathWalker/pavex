@@ -34,7 +34,7 @@ prettyplease = "0.2"
 quote = "1.0.20"
 proc-macro2 = { version = "1.0.40", features = ["span-locations"] }
 thiserror = "1.0.32"
-miette = { version = "5.3" }
+miette = { version = "6.0.1" }
 guppy = "0.17"
 itertools = "0.12"
 cargo-manifest = "0.13.0"

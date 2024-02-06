@@ -699,7 +699,7 @@ impl ConstructibleDb {
             match registration_span(singleton_id, package_graph, component_db, diagnostics) {
                 Some((source, source_span)) => CompilerDiagnostic::builder(source, e)
                     .label(source_span.labeled("The singleton was registered here".into())),
-                None => CompilerDiagnostic::builder(NamedSource::new("", "".to_string()), e),
+                None => CompilerDiagnostic::builder_without_source(e),
             };
 
         if let Some((source, source_span)) =
@@ -780,7 +780,7 @@ impl ConstructibleDb {
             match registration_span(error_observer_id, package_graph, component_db, diagnostics) {
                 Some((source, source_span)) => CompilerDiagnostic::builder(source, e)
                     .label(source_span.labeled("The error observer was registered here".into())),
-                None => CompilerDiagnostic::builder(NamedSource::new("", "".to_string()), e),
+                None => CompilerDiagnostic::builder_without_source(e),
             };
         diagnostics.push(diagnostic_builder.build().into());
     }

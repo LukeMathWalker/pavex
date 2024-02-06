@@ -11,8 +11,8 @@ license.workspace = true
 owo-colors = "3"
 textwrap = "0.16"
 unicode-width = "0.1"
-miette = { version = "5", features = ["fancy"] }
-supports-hyperlinks = { version = "2" }
-supports-color = { version = "2" }
-supports-unicode = { version = "2" }
+miette = { version = "6.0.1", features = ["fancy"] }
+supports-hyperlinks = { version = "3.0.0" }
+supports-color = { version = "3.0.0" }
+supports-unicode = { version = "3.0.0" }
 terminal_size = { version = "0.3" }

@@ -1,4 +1,3 @@
-use miette::NamedSource;
 use pavex_bp_schema::Lifecycle;
 
 use crate::{
@@ -27,10 +26,8 @@ pub(super) fn suggest_wrapping_in_a_smart_pointer(
         // And the user can't control whether a framework type does or doesn't implement Clone.
         if lifecycle != Lifecycle::Singleton && !is_framework {
             let ref_counting_help = format!("If `{type_:?}` itself cannot implement `Clone`, consider wrapping it in an `std::sync::Rc` or `std::sync::Arc`.");
-            let ref_counting_help = HelpWithSnippet::new(
-                ref_counting_help,
-                AnnotatedSnippet::new_with_labels(NamedSource::new("", ""), vec![]),
-            );
+            let ref_counting_help =
+                HelpWithSnippet::new(ref_counting_help, AnnotatedSnippet::empty());
             diagnostic = diagnostic.help_with_snippet(ref_counting_help);
         }
     }
