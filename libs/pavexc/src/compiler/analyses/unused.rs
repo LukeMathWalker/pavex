@@ -8,6 +8,7 @@ use crate::diagnostic;
 use crate::diagnostic::{CompilerDiagnostic, LocationExt, SourceSpanExt};
 use guppy::graph::PackageGraph;
 use indexmap::IndexSet;
+use miette::Severity;
 
 /// Emit a warning for each user-registered constructor that hasn't
 /// been used in the code-generated pipelines.
@@ -110,6 +111,7 @@ fn emit_unused_warning(
             CompilerDiagnostic::builder(source, error).optional_label(labeled_span)
         }
     }
+    .severity(Severity::Warning)
     .help(
         "If you want to ignore this warning, call `.allow(Lint::UnusedConstructor)` \
         on the registered constructor."
