@@ -3,7 +3,7 @@
 //! There are no guarantees that this schema will remain stable across Pavex versions:
 //! it is considered (for the time being) an internal implementation detail of Pavex's reflection system.
 pub use pavex_reflection::{Location, RawCallableIdentifiers};
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 use std::fmt::Formatter;
 
@@ -103,6 +103,8 @@ pub struct Constructor {
     pub cloning_strategy: Option<CloningStrategy>,
     /// The callable in charge of processing errors returned by this constructor, if any.
     pub error_handler: Option<Callable>,
+    /// Lint settings for this constructor.
+    pub lints: BTreeMap<Lint, LintSetting>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
@@ -171,4 +173,24 @@ pub enum CloningStrategy {
 pub enum MethodGuard {
     Any,
     Some(BTreeSet<String>),
+}
+
+#[derive(
+    Debug, Clone, Copy, Eq, Ord, PartialOrd, PartialEq, Hash, serde::Serialize, serde::Deserialize,
+)]
+#[non_exhaustive]
+/// Common mistakes and antipatterns that Pavex
+/// tries to catch when analysing your [`Blueprint`].  
+pub enum Lint {
+    /// You registered a component that's never used in the generated
+    /// server SDK code.
+    Unused,
+}
+
+#[derive(
+    Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash, serde::Serialize, serde::Deserialize,
+)]
+pub enum LintSetting {
+    Ignore,
+    Enforce,
 }

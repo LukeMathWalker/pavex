@@ -1,7 +1,8 @@
 use crate::blueprint::constructor::CloningStrategy;
-use crate::blueprint::conversions::{cloning2cloning, raw_callable2registered_callable};
+use crate::blueprint::conversions::{cloning2cloning, lint2lint, raw_callable2registered_callable};
+use crate::blueprint::linter::Lint;
 use crate::blueprint::reflection::RawCallable;
-use pavex_bp_schema::Blueprint as BlueprintSchema;
+use pavex_bp_schema::{Blueprint as BlueprintSchema, LintSetting};
 use pavex_bp_schema::{Component, Constructor};
 
 /// The type returned by [`Blueprint::constructor`].
@@ -70,6 +71,24 @@ impl<'a> RegisteredConstructor<'a> {
     /// it's necessary to generate code that satisfies Rust's borrow checker.
     pub fn cloning(mut self, strategy: CloningStrategy) -> Self {
         self.constructor().cloning_strategy = Some(cloning2cloning(strategy));
+        self
+    }
+
+    /// Tell Pavex to ignore a specific [`Lint`] when analysing
+    /// this constructor and the way it's used.
+    pub fn ignore(mut self, lint: Lint) -> Self {
+        self.constructor()
+            .lints
+            .insert(lint2lint(lint), LintSetting::Ignore);
+        self
+    }
+
+    /// Tell Pavex to enforce a specific [`Lint`] when analysing
+    /// this constructor and the way it's used.
+    pub fn enforce(mut self, lint: Lint) -> Self {
+        self.constructor()
+            .lints
+            .insert(lint2lint(lint), LintSetting::Enforce);
         self
     }
 

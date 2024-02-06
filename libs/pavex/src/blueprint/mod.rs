@@ -9,6 +9,7 @@ mod blueprint;
 pub mod constructor;
 mod conversions;
 pub mod error_observer;
+pub mod linter;
 pub mod middleware;
 pub mod reflection;
 pub mod router;
