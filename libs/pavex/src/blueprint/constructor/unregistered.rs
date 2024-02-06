@@ -1,8 +1,10 @@
 use crate::blueprint::constructor::{CloningStrategy, Lifecycle, RegisteredConstructor};
-use crate::blueprint::conversions::raw_callable2registered_callable;
+use crate::blueprint::conversions::{lint2lint, raw_callable2registered_callable};
+use crate::blueprint::linter::Lint;
 use crate::blueprint::reflection::RawCallable;
 use crate::blueprint::Blueprint;
-use pavex_bp_schema::Callable;
+use pavex_bp_schema::{Callable, LintSetting};
+use std::collections::BTreeMap;
 
 /// A constructor that has been configured but has not yet been registered with a [`Blueprint`].
 ///
@@ -23,6 +25,7 @@ pub struct Constructor {
     pub(in crate::blueprint) lifecycle: Lifecycle,
     pub(in crate::blueprint) cloning_strategy: Option<CloningStrategy>,
     pub(in crate::blueprint) error_handler: Option<Callable>,
+    pub(in crate::blueprint) lints: BTreeMap<pavex_bp_schema::Lint, LintSetting>,
 }
 
 impl Constructor {
@@ -37,6 +40,7 @@ impl Constructor {
             lifecycle,
             cloning_strategy: None,
             error_handler: None,
+            lints: Default::default(),
         }
     }
 
@@ -54,6 +58,20 @@ impl Constructor {
     /// Check out the documentation of [`RegisteredConstructor::cloning`] for more details.
     pub fn cloning(mut self, cloning_strategy: CloningStrategy) -> Self {
         self.cloning_strategy = Some(cloning_strategy);
+        self
+    }
+
+    /// Tell Pavex to ignore a specific [`Lint`] when analysing
+    /// this constructor and the way it's used.
+    pub fn ignore(mut self, lint: Lint) -> Self {
+        self.lints.insert(lint2lint(lint), LintSetting::Ignore);
+        self
+    }
+
+    /// Tell Pavex to enforce a specific [`Lint`] when analysing
+    /// this constructor and the way it's used.
+    pub fn enforce(mut self, lint: Lint) -> Self {
+        self.lints.insert(lint2lint(lint), LintSetting::Enforce);
         self
     }
 

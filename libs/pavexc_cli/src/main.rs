@@ -7,6 +7,7 @@ use std::str::FromStr;
 use anyhow::Context;
 use clap::{Parser, Subcommand};
 use generate_from_path::GenerateArgs;
+use miette::Severity;
 use owo_colors::OwoColorize;
 use pavexc::App;
 use supports_color::Stream;
@@ -170,7 +171,17 @@ fn generate(
     // We use the path to the generated application crate as a fingerprint for the project.
     let project_fingerprint = output.to_string_lossy().into_owned();
     let app = match App::build(blueprint, project_fingerprint) {
-        Ok(a) => a,
+        Ok((a, warnings)) => {
+            for e in warnings {
+                assert_eq!(e.severity(), Some(Severity::Warning));
+                if color_on_stderr {
+                    eprintln!("{}: {e:?}", "WARNING".bold().yellow());
+                } else {
+                    eprintln!("WARNING: {e:?}");
+                };
+            }
+            a
+        }
         Err(errors) => {
             for e in errors {
                 if color_on_stderr {

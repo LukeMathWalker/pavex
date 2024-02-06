@@ -26,6 +26,11 @@ impl CompilerDiagnosticBuilder {
         }
     }
 
+    pub fn severity(mut self, severity: Severity) -> Self {
+        self.severity = severity;
+        self
+    }
+
     pub fn label(self, label: LabeledSpan) -> Self {
         self.labels(std::iter::once(label))
     }

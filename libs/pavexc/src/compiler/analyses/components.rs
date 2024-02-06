@@ -1,14 +1,14 @@
 use std::borrow::Cow;
+use std::collections::BTreeMap;
 
-use ahash::{HashMap, HashMapExt};
-use bimap::BiHashMap;
+use ahash::{HashMap, HashMapExt, HashSet};
 use guppy::graph::PackageGraph;
 use indexmap::IndexSet;
 use miette::NamedSource;
 use rustdoc_types::ItemEnum;
 use syn::spanned::Spanned;
 
-use pavex_bp_schema::{CloningStrategy, Lifecycle};
+use pavex_bp_schema::{CloningStrategy, Lifecycle, Lint, LintSetting};
 
 use crate::compiler::analyses::computations::{ComputationDb, ComputationId};
 use crate::compiler::analyses::into_error::register_error_new_transformer;
@@ -121,6 +121,13 @@ pub(crate) enum UnregisteredComponent {
         computation_id: ComputationId,
         scope_id: ScopeId,
         cloning_strategy: CloningStrategy,
+        /// Synthetic constructors can be built by "deriving" user-registered constructors.
+        /// For example, by binding unassigned generic parameters or by extracting the `Ok` variant
+        /// from the output of fallible constructors.
+        ///
+        /// If that's the case,
+        /// this field should be populated with the id of the "source" constructor.
+        derived_from: Option<ComponentId>,
     },
     Transformer {
         computation_id: ComputationId,
@@ -310,7 +317,6 @@ pub(crate) struct ComponentDb {
     match_err_id2error_handler_id: HashMap<ComponentId, ComponentId>,
     fallible_id2match_ids: HashMap<ComponentId, (ComponentId, ComponentId)>,
     match_id2fallible_id: HashMap<ComponentId, ComponentId>,
-    borrow_id2owned_id: BiHashMap<ComponentId, ComponentId>,
     id2transformer_ids: HashMap<ComponentId, IndexSet<ComponentId>>,
     id2lifecycle: HashMap<ComponentId, Lifecycle>,
     /// For each constructor component, determine if it can be cloned or not.
@@ -346,9 +352,34 @@ pub(crate) struct ComponentDb {
     /// - match request handlers with the sequence of middlewares that wrap around them.
     /// - convert the ids in the router.
     user_component_id2component_id: HashMap<UserComponentId, ComponentId>,
+    /// For each scope, it stores the ordered list of error observers that should be
+    /// invoked if a component fails in that scope.
     scope_ids_with_observers: Vec<ScopeId>,
+    /// A switch to control if, when a fallible component is registered, [`ComponentDb`]
+    /// should automatically register matcher components for its output type.
     autoregister_matchers: bool,
+    /// The resolved path to `pavex::Error`.
+    /// It's memoised here to avoid re-resolving it multiple times while analysing a single
+    /// blueprint.
     pavex_error: PathType,
+    /// Users register constructors directly with a blueprint.  
+    /// From these user-provided constructors, we build **derived** constructors:
+    /// - if a constructor is fallible,
+    ///   we create a synthetic constructor to retrieve the Ok variant of its output type
+    /// - if a constructor is generic, we create new synthetic constructors by binding its unassigned generic parameters
+    ///   to concrete types
+    ///
+    /// This map holds an entry for each derived constructor.
+    /// The value points to the original user-registered constructor it was derived from.
+    ///
+    /// This dependency relationship can be **indirect**—e.g. an Ok-matcher is derived from a fallible constructor
+    /// which was in turn derived
+    /// by binding the generic parameters of a user-registered constructor.
+    /// The key for the Ok-matcher would point to the user-registered constructor in this scenario,
+    /// not to the intermediate derived constructor.
+    derived2user_registered: HashMap<ComponentId, ComponentId>,
+    /// The id for all framework primitives—i.e. components coming from [`FrameworkItemDb`].
+    framework_primitive_ids: HashSet<ComponentId>,
 }
 
 /// The `build` method and its auxiliary routines.
@@ -384,7 +415,6 @@ impl ComponentDb {
             match_err_id2error_handler_id: Default::default(),
             fallible_id2match_ids: Default::default(),
             match_id2fallible_id: Default::default(),
-            borrow_id2owned_id: Default::default(),
             id2transformer_ids: Default::default(),
             id2lifecycle: Default::default(),
             constructor_id2cloning_strategy: Default::default(),
@@ -397,6 +427,8 @@ impl ComponentDb {
             scope_ids_with_observers: vec![],
             autoregister_matchers: false,
             pavex_error,
+            derived2user_registered: Default::default(),
+            framework_primitive_ids: Default::default(),
         };
 
         {
@@ -473,7 +505,7 @@ impl ComponentDb {
         );
 
         for (id, type_) in framework_item_db.iter() {
-            self_.get_or_intern(
+            let component_id = self_.get_or_intern(
                 UnregisteredComponent::SyntheticConstructor {
                     computation_id: computation_db.get_or_intern(Constructor(
                         Computation::FrameworkItem(Cow::Owned(type_.clone())),
@@ -481,9 +513,11 @@ impl ComponentDb {
                     scope_id: self_.scope_graph().root_scope_id(),
                     lifecycle: framework_item_db.lifecycle(id),
                     cloning_strategy: framework_item_db.cloning_strategy(id),
+                    derived_from: None,
                 },
                 computation_db,
             );
+            self_.framework_primitive_ids.insert(component_id);
         }
 
         // Add a synthetic constructor for the `pavex::middleware::Next` type.
@@ -500,6 +534,7 @@ impl ComponentDb {
                     scope_id: self_.scope_graph().root_scope_id(),
                     lifecycle: Lifecycle::RequestScoped,
                     cloning_strategy: CloningStrategy::NeverClone,
+                    derived_from: None,
                 },
                 computation_db,
             );
@@ -556,10 +591,21 @@ impl ComponentDb {
                         .insert(id, cloning_strategy.to_owned());
                 }
                 SyntheticConstructor {
-                    cloning_strategy, ..
+                    cloning_strategy,
+                    derived_from,
+                    ..
                 } => {
                     self.constructor_id2cloning_strategy
                         .insert(id, cloning_strategy);
+                    if let Some(derived_from) = derived_from {
+                        self.derived2user_registered.insert(
+                            id,
+                            self.derived2user_registered
+                                .get(&derived_from)
+                                .cloned()
+                                .unwrap_or(derived_from),
+                        );
+                    }
                 }
                 Transformer {
                     when_to_insert,
@@ -608,15 +654,17 @@ impl ComponentDb {
         let ok_id = match self.hydrated_component(id, computation_db) {
             HydratedComponent::Constructor(_) => {
                 let ok_computation_id = computation_db.get_or_intern(ok);
-                self.get_or_intern(
+                let ok_id = self.get_or_intern(
                     UnregisteredComponent::SyntheticConstructor {
                         computation_id: ok_computation_id,
                         scope_id: self.scope_id(id),
                         lifecycle: self.lifecycle(id),
                         cloning_strategy: self.constructor_id2cloning_strategy[&id],
+                        derived_from: Some(id),
                     },
                     computation_db,
-                )
+                );
+                ok_id
             }
             _ => self.add_synthetic_transformer(
                 ok.into(),
@@ -1123,6 +1171,7 @@ impl ComponentDb {
         scope_id: ScopeId,
         cloning_strategy: CloningStrategy,
         computation_db: &mut ComputationDb,
+        derived_from: Option<ComponentId>,
     ) -> Result<ComponentId, ConstructorValidationError> {
         let callable = computation_db[callable_id].to_owned();
         TryInto::<Constructor>::try_into(callable)?;
@@ -1131,6 +1180,7 @@ impl ComponentDb {
             computation_id: callable_id,
             scope_id,
             cloning_strategy,
+            derived_from,
         };
         Ok(self.get_or_intern(constructor_component, computation_db))
     }
@@ -1173,6 +1223,14 @@ impl ComponentDb {
     /// Retrieve the lifecycle for a component.
     pub fn lifecycle(&self, id: ComponentId) -> Lifecycle {
         self.id2lifecycle[&id]
+    }
+
+    /// Retrieve the lint overrides for a component.
+    pub fn lints(&self, id: ComponentId) -> Option<&BTreeMap<Lint, LintSetting>> {
+        let Some(user_component_id) = self.user_component_id(id) else {
+            return None;
+        };
+        self.user_component_db.get_lints(user_component_id)
     }
 
     /// The mapping from a low-level [`UserComponentId`] to its corresponding [`ComponentId`].
@@ -1249,11 +1307,23 @@ impl ComponentDb {
             derived_ids.extend(self.derived_component_ids(match_ids.0));
             derived_ids.extend(self.derived_component_ids(match_ids.1));
         }
-        if let Some(borrow_id) = self.borrow_id2owned_id.get_by_right(&component_id) {
-            derived_ids.push(*borrow_id);
-            derived_ids.extend(self.derived_component_ids(*borrow_id));
-        }
         derived_ids
+    }
+
+    /// Return the id of user-registered component that `component_id` was derived from
+    /// (e.g. an Ok-matcher is derived from a fallible constructor or
+    /// a bound constructor from a generic user-registered one).
+    ///
+    /// **It only works for constructors**.
+    pub fn derived_from(&self, component_id: &ComponentId) -> Option<ComponentId> {
+        self.derived2user_registered.get(component_id).cloned()
+    }
+
+    /// Returns `true` if the component is a framework primitive (i.e. it comes from
+    /// [`FrameworkItemDb`].
+    /// `false` otherwise.
+    pub fn is_framework_primitive(&self, component_id: &ComponentId) -> bool {
+        self.framework_primitive_ids.contains(component_id)
     }
 
     /// Given the id of a [`MatchResult`] component, return the id of the corresponding fallible
@@ -1505,6 +1575,7 @@ impl ComponentDb {
                     scope_id,
                     cloning_strategy,
                     computation_db,
+                    Some(id),
                 )
                 .unwrap()
             }

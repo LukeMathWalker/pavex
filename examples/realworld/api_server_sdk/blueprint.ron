@@ -1,6 +1,6 @@
 (
     creation_location: (
-        line: 9,
+        line: 10,
         column: 18,
         file: "conduit_core/src/blueprint.rs",
     ),
@@ -8,122 +8,127 @@
         Constructor((
             constructor: (
                 callable: (
-                    registered_at: "conduit_core",
-                    import_path: "pavex::request::query::QueryParams::extract",
-                ),
-                location: (
-                    line: 33,
-                    column: 8,
-                    file: "conduit_core/src/blueprint.rs",
-                ),
-            ),
-            lifecycle: RequestScoped,
-            cloning_strategy: None,
-            error_handler: Some((
-                callable: (
-                    registered_at: "conduit_core",
-                    import_path: "pavex::request::query::errors::ExtractQueryParamsError::into_response",
-                ),
-                location: (
-                    line: 37,
-                    column: 6,
-                    file: "conduit_core/src/blueprint.rs",
-                ),
-            )),
-        )),
-        Constructor((
-            constructor: (
-                callable: (
-                    registered_at: "conduit_core",
+                    registered_at: "pavex",
                     import_path: "pavex::request::path::PathParams::extract",
                 ),
                 location: (
-                    line: 42,
-                    column: 8,
-                    file: "conduit_core/src/blueprint.rs",
+                    line: 105,
+                    column: 9,
+                    file: "/Users/luca/code/pavex/libs/pavex/src/request/path/path_params.rs",
                 ),
             ),
             lifecycle: RequestScoped,
             cloning_strategy: None,
             error_handler: Some((
                 callable: (
-                    registered_at: "conduit_core",
+                    registered_at: "pavex",
                     import_path: "pavex::request::path::errors::ExtractPathParamsError::into_response",
                 ),
                 location: (
-                    line: 46,
-                    column: 6,
-                    file: "conduit_core/src/blueprint.rs",
+                    line: 109,
+                    column: 10,
+                    file: "/Users/luca/code/pavex/libs/pavex/src/request/path/path_params.rs",
                 ),
             )),
+            lints: {},
         )),
         Constructor((
             constructor: (
                 callable: (
-                    registered_at: "conduit_core",
+                    registered_at: "pavex",
+                    import_path: "pavex::request::query::QueryParams::extract",
+                ),
+                location: (
+                    line: 70,
+                    column: 9,
+                    file: "/Users/luca/code/pavex/libs/pavex/src/request/query/query_params.rs",
+                ),
+            ),
+            lifecycle: RequestScoped,
+            cloning_strategy: None,
+            error_handler: Some((
+                callable: (
+                    registered_at: "pavex",
+                    import_path: "pavex::request::query::errors::ExtractQueryParamsError::into_response",
+                ),
+                location: (
+                    line: 74,
+                    column: 10,
+                    file: "/Users/luca/code/pavex/libs/pavex/src/request/query/query_params.rs",
+                ),
+            )),
+            lints: {},
+        )),
+        Constructor((
+            constructor: (
+                callable: (
+                    registered_at: "pavex",
                     import_path: "pavex::request::body::JsonBody::extract",
                 ),
                 location: (
-                    line: 51,
-                    column: 8,
-                    file: "conduit_core/src/blueprint.rs",
+                    line: 90,
+                    column: 9,
+                    file: "/Users/luca/code/pavex/libs/pavex/src/request/body/json.rs",
                 ),
             ),
             lifecycle: RequestScoped,
             cloning_strategy: None,
             error_handler: Some((
                 callable: (
-                    registered_at: "conduit_core",
+                    registered_at: "pavex",
                     import_path: "pavex::request::body::errors::ExtractJsonBodyError::into_response",
                 ),
                 location: (
-                    line: 55,
-                    column: 6,
-                    file: "conduit_core/src/blueprint.rs",
+                    line: 94,
+                    column: 10,
+                    file: "/Users/luca/code/pavex/libs/pavex/src/request/body/json.rs",
                 ),
             )),
+            lints: {},
         )),
         Constructor((
             constructor: (
                 callable: (
-                    registered_at: "conduit_core",
+                    registered_at: "pavex",
                     import_path: "pavex::request::body::BufferedBody::extract",
                 ),
                 location: (
-                    line: 58,
-                    column: 8,
-                    file: "conduit_core/src/blueprint.rs",
+                    line: 89,
+                    column: 9,
+                    file: "/Users/luca/code/pavex/libs/pavex/src/request/body/buffered_body.rs",
                 ),
             ),
             lifecycle: RequestScoped,
             cloning_strategy: None,
             error_handler: Some((
                 callable: (
-                    registered_at: "conduit_core",
+                    registered_at: "pavex",
                     import_path: "pavex::request::body::errors::ExtractBufferedBodyError::into_response",
                 ),
                 location: (
-                    line: 62,
-                    column: 6,
-                    file: "conduit_core/src/blueprint.rs",
+                    line: 93,
+                    column: 10,
+                    file: "/Users/luca/code/pavex/libs/pavex/src/request/body/buffered_body.rs",
                 ),
             )),
+            lints: {},
         )),
         Constructor((
             constructor: (
                 callable: (
-                    registered_at: "conduit_core",
+                    registered_at: "pavex",
                     import_path: "<pavex::request::body::BodySizeLimit as std::default::Default>::default",
                 ),
                 location: (
-                    line: 65,
-                    column: 8,
-                    file: "conduit_core/src/blueprint.rs",
+                    line: 30,
+                    column: 9,
+                    file: "/Users/luca/code/pavex/libs/pavex/src/request/body/limit.rs",
                 ),
             ),
             lifecycle: RequestScoped,
             cloning_strategy: None,
             error_handler: None,
+            lints: {},
         )),
         Constructor((
             constructor: (
@@ -132,7 +137,7 @@
                     import_path: "crate::configuration::DatabaseConfig::get_pool",
                 ),
                 location: (
-                    line: 11,
+                    line: 12,
                     column: 8,
                     file: "conduit_core/src/blueprint.rs",
                 ),
@@ -140,6 +145,7 @@
             lifecycle: Singleton,
             cloning_strategy: None,
             error_handler: None,
+            lints: {},
         )),
         Constructor((
             constructor: (
@@ -148,7 +154,7 @@
                     import_path: "crate::configuration::AuthConfig::decoding_key",
                 ),
                 location: (
-                    line: 15,
+                    line: 16,
                     column: 8,
                     file: "conduit_core/src/blueprint.rs",
                 ),
@@ -156,6 +162,7 @@
             lifecycle: Singleton,
             cloning_strategy: None,
             error_handler: None,
+            lints: {},
         )),
         Constructor((
             constructor: (
@@ -164,7 +171,7 @@
                     import_path: "crate::telemetry::RootSpan::new",
                 ),
                 location: (
-                    line: 73,
+                    line: 33,
                     column: 8,
                     file: "conduit_core/src/blueprint.rs",
                 ),
@@ -172,6 +179,7 @@
             lifecycle: RequestScoped,
             cloning_strategy: Some(CloneIfNecessary),
             error_handler: None,
+            lints: {},
         )),
         WrappingMiddleware((
             middleware: (
@@ -180,7 +188,7 @@
                     import_path: "crate::telemetry::logger",
                 ),
                 location: (
-                    line: 79,
+                    line: 39,
                     column: 8,
                     file: "conduit_core/src/blueprint.rs",
                 ),
@@ -397,7 +405,7 @@
             ),
             path_prefix: Some("/articles"),
             nesting_location: (
-                line: 22,
+                line: 23,
                 column: 8,
                 file: "conduit_core/src/blueprint.rs",
             ),
@@ -468,7 +476,7 @@
             ),
             path_prefix: Some("/profiles"),
             nesting_location: (
-                line: 23,
+                line: 24,
                 column: 8,
                 file: "conduit_core/src/blueprint.rs",
             ),
@@ -496,6 +504,7 @@
                         lifecycle: Singleton,
                         cloning_strategy: None,
                         error_handler: None,
+                        lints: {},
                     )),
                     Route((
                         path: "/users",
@@ -593,7 +602,7 @@
             ),
             path_prefix: None,
             nesting_location: (
-                line: 24,
+                line: 25,
                 column: 8,
                 file: "conduit_core/src/blueprint.rs",
             ),
@@ -609,7 +618,7 @@
                     import_path: "crate::routes::status::ping",
                 ),
                 location: (
-                    line: 25,
+                    line: 26,
                     column: 8,
                     file: "conduit_core/src/blueprint.rs",
                 ),
@@ -627,7 +636,7 @@
                     import_path: "crate::routes::tags::get_tags",
                 ),
                 location: (
-                    line: 26,
+                    line: 27,
                     column: 8,
                     file: "conduit_core/src/blueprint.rs",
                 ),

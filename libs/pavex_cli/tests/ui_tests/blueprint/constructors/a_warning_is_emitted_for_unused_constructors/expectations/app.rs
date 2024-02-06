@@ -3,17 +3,13 @@
 //! All manual edits will be lost next time the code is generated.
 extern crate alloc;
 struct ServerState {
-    router: matchit::Router<u32>,
+    router: pavex_matchit::Router<u32>,
+    #[allow(dead_code)]
     application_state: ApplicationState,
 }
-pub struct ApplicationState {
-    s0: app_blueprint::HttpClient,
-}
-pub async fn build_application_state(
-    v0: app_blueprint::Config,
-) -> crate::ApplicationState {
-    let v1 = app_blueprint::http_client(v0);
-    crate::ApplicationState { s0: v1 }
+pub struct ApplicationState {}
+pub async fn build_application_state() -> crate::ApplicationState {
+    crate::ApplicationState {}
 }
 pub fn run(
     server_builder: pavex::server::Server,
@@ -25,9 +21,8 @@ pub fn run(
     });
     server_builder.serve(route_request, server_state)
 }
-fn build_router() -> matchit::Router<u32> {
-    let mut router = matchit::Router::new();
-    router.insert("/home", 0u32).unwrap();
+fn build_router() -> pavex_matchit::Router<u32> {
+    let mut router = pavex_matchit::Router::new();
     router
 }
 async fn route_request(
@@ -45,7 +40,7 @@ async fn route_request(
                     vec![],
                 )
                 .into();
-            return route_1::handler(&allowed_methods).await;
+            return route_0::handler(&allowed_methods).await;
         }
     };
     let route_id = matched_route.value;
@@ -54,41 +49,10 @@ async fn route_request(
         .params
         .into();
     match route_id {
-        0u32 => {
-            match &request_head.method {
-                &pavex::http::Method::GET => {
-                    route_0::handler(
-                            server_state.application_state.s0.clone(),
-                            &request_head,
-                        )
-                        .await
-                }
-                _ => {
-                    let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
-                            pavex::http::Method::GET,
-                        ])
-                        .into();
-                    route_1::handler(&allowed_methods).await
-                }
-            }
-        }
         i => unreachable!("Unknown route id: {}", i),
     }
 }
 pub mod route_0 {
-    pub async fn handler(
-        v0: app_blueprint::HttpClient,
-        v1: &pavex::request::RequestHead,
-    ) -> pavex::response::Response {
-        let v2 = app_blueprint::extract_path(v1);
-        let v4 = {
-            let v3 = app_blueprint::logger();
-            app_blueprint::stream_file(v2, v3, v0)
-        };
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
-    }
-}
-pub mod route_1 {
     pub async fn handler(
         v0: &pavex::router::AllowedMethods,
     ) -> pavex::response::Response {

@@ -1,5 +1,6 @@
 //! Conversions between `pavex_bp_schema` and `pavex_bp` types.
 use crate::blueprint::constructor::{CloningStrategy, Lifecycle};
+use crate::blueprint::linter::Lint;
 use crate::blueprint::reflection::RawCallable;
 use crate::router::AllowedMethods;
 use pavex_bp_schema::{Callable, Location};
@@ -38,5 +39,11 @@ pub(super) fn method_guard2method_guard(
             m.into_iter().map(|m| m.as_str().to_owned()).collect(),
         ),
         AllowedMethods::All => pavex_bp_schema::MethodGuard::Any,
+    }
+}
+
+pub(super) fn lint2lint(lint: Lint) -> pavex_bp_schema::Lint {
+    match lint {
+        Lint::Unused => pavex_bp_schema::Lint::Unused,
     }
 }

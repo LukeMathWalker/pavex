@@ -24,6 +24,7 @@ use crate::compiler::analyses::constructibles::ConstructibleDb;
 use crate::compiler::analyses::framework_items::FrameworkItemDb;
 use crate::compiler::analyses::processing_pipeline::RequestHandlerPipeline;
 use crate::compiler::analyses::router::Router;
+use crate::compiler::analyses::unused::detect_unused;
 use crate::compiler::analyses::user_components::UserComponentDb;
 use crate::compiler::computation::Computation;
 use crate::compiler::generated_app::GeneratedApp;
@@ -60,11 +61,19 @@ impl App {
     ///
     /// Many different things can go wrong during this process: this method tries its best to
     /// report all errors to the user, but it may not be able to do so in all cases.
-    pub fn build(bp: Blueprint, project_fingerprint: String) -> Result<Self, Vec<miette::Error>> {
+    pub fn build(
+        bp: Blueprint,
+        project_fingerprint: String,
+    ) -> Result<(Self, Vec<miette::Error>), Vec<miette::Error>> {
         /// Exit early if there is at least one error.
         macro_rules! exit_on_errors {
             ($var:ident) => {
-                if !$var.is_empty() {
+                if !$var.is_empty()
+                    && $var.iter().any(|e| {
+                        let severity = e.severity();
+                        severity == Some(miette::Severity::Error) || severity.is_none()
+                    })
+                {
                     return Err($var);
                 }
             };
@@ -174,18 +183,29 @@ impl App {
         ) else {
             return Err(diagnostics);
         };
+        detect_unused(
+            handler_id2pipeline.values(),
+            &application_state_call_graph,
+            &component_db,
+            &computation_db,
+            &package_graph,
+            &mut diagnostics,
+        );
         exit_on_errors!(diagnostics);
-        Ok(Self {
-            package_graph,
-            router,
-            handler_id2pipeline,
-            component_db,
-            computation_db,
-            application_state_call_graph,
-            framework_item_db,
-            runtime_singleton_bindings,
-            codegen_deps,
-        })
+        Ok((
+            Self {
+                package_graph,
+                router,
+                handler_id2pipeline,
+                component_db,
+                computation_db,
+                application_state_call_graph,
+                framework_item_db,
+                runtime_singleton_bindings,
+                codegen_deps,
+            },
+            diagnostics,
+        ))
     }
 
     /// Generate the manifest and the Rust code for the analysed application.

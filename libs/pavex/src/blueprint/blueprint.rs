@@ -160,6 +160,7 @@ impl Blueprint {
             lifecycle: lifecycle2lifecycle(lifecycle),
             cloning_strategy: None,
             error_handler: None,
+            lints: Default::default(),
         };
         let component_id = self.push_component(registered_constructor);
         RegisteredConstructor {
@@ -177,6 +178,7 @@ impl Blueprint {
             lifecycle: lifecycle2lifecycle(constructor.lifecycle),
             cloning_strategy: constructor.cloning_strategy.map(cloning2cloning),
             error_handler: constructor.error_handler,
+            lints: constructor.lints,
         };
         let component_id = self.push_component(constructor);
         RegisteredConstructor {

@@ -1,10 +1,12 @@
 use ahash::{HashMap, HashMapExt};
 use anyhow::anyhow;
 use guppy::graph::PackageGraph;
+use std::collections::BTreeMap;
 
 use pavex_bp_schema::{
     Blueprint, Callable, CloningStrategy, Component, Constructor, ErrorObserver, Fallback,
-    Lifecycle, Location, NestedBlueprint, RawCallableIdentifiers, Route, WrappingMiddleware,
+    Lifecycle, Lint, LintSetting, Location, NestedBlueprint, RawCallableIdentifiers, Route,
+    WrappingMiddleware,
 };
 
 use crate::compiler::analyses::user_components::router_key::RouterKey;
@@ -149,6 +151,9 @@ pub(super) struct RawUserComponentDb {
     ///
     /// Invariants: there is an entry for every single user component.
     pub(super) id2lifecycle: HashMap<UserComponentId, Lifecycle>,
+    /// Associate each user-registered component with its lint overrides, if any.
+    /// If there is no entry for a component, there are no overrides.
+    pub(super) id2lints: HashMap<UserComponentId, BTreeMap<Lint, LintSetting>>,
     /// For each constructor component, determine if it can be cloned or not.
     ///
     /// Invariants: there is an entry for every constructor.
@@ -195,6 +200,7 @@ impl RawUserComponentDb {
             identifiers_interner: Interner::new(),
             id2locations: HashMap::new(),
             id2lifecycle: HashMap::new(),
+            id2lints: HashMap::new(),
             constructor_id2cloning_strategy: HashMap::new(),
             handler_id2middleware_ids: HashMap::new(),
             handler_id2error_observer_ids: HashMap::new(),
@@ -527,6 +533,10 @@ impl RawUserComponentDb {
                 .cloning_strategy
                 .unwrap_or(CloningStrategy::NeverClone),
         );
+        if !constructor.lints.is_empty() {
+            self.id2lints
+                .insert(constructor_id, constructor.lints.clone());
+        }
 
         self.process_error_handler(
             &constructor.error_handler,

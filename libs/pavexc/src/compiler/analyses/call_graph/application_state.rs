@@ -90,6 +90,7 @@ pub(crate) fn application_state_call_graph(
             application_state_scope_id,
             CloningStrategy::NeverClone,
             computation_db,
+            None,
         )
         .unwrap();
     let Ok(CallGraph {

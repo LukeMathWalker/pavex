@@ -12,8 +12,8 @@ conduit_core = { version = "0.1.0", path = "../conduit_core", package = "conduit
 http = { version = "1.0.0", package = "http" }
 hyper = { version = "1.1.0", package = "hyper" }
 jsonwebtoken = { version = "8.3.0", package = "jsonwebtoken" }
-matchit = { version = "0.7.3", git = "https://github.com/ibraheemdev/matchit", branch = "master", package = "matchit" }
-pavex = { version = "0.1.0", path = "../../../libs/pavex", package = "pavex" }
+pavex = { version = "0.1.16", path = "../../../libs/pavex", package = "pavex" }
+pavex_matchit = { version = "0.7.4", package = "pavex_matchit" }
 sqlx_core = { version = "0.7.3", package = "sqlx-core" }
 sqlx_postgres = { version = "0.7.3", package = "sqlx-postgres" }
 thiserror = { version = "1.0.56", package = "thiserror" }
