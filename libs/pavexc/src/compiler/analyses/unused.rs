@@ -1,0 +1,119 @@
+use crate::compiler::analyses::call_graph::ApplicationStateCallGraph;
+use crate::compiler::analyses::components::{ComponentDb, ComponentId, HydratedComponent};
+use crate::compiler::analyses::computations::ComputationDb;
+use crate::compiler::analyses::processing_pipeline::RequestHandlerPipeline;
+use crate::compiler::computation::Computation;
+use crate::compiler::utils::get_ok_variant;
+use crate::diagnostic;
+use crate::diagnostic::{CompilerDiagnostic, LocationExt, SourceSpanExt};
+use guppy::graph::PackageGraph;
+use indexmap::IndexSet;
+
+/// Emit a warning for each user-registered constructor that hasn't
+/// been used in the code-generated pipelines.
+pub(crate) fn detect_unused<'a, I>(
+    pipelines: I,
+    application_state_call_graph: &ApplicationStateCallGraph,
+    component_db: &ComponentDb,
+    computation_db: &ComputationDb,
+    package_graph: &PackageGraph,
+    diagnostics: &mut Vec<miette::Report>,
+) where
+    I: Iterator<Item = &'a RequestHandlerPipeline>,
+{
+    // Some user-registered constructors are never used directly—e.g. a constructor with
+    // unassigned generic parameters.
+    // We consider the original user-registered constructor as "used" if one of its derivations
+    // is used.
+    let mut used_user_constructor_ids = IndexSet::new();
+
+    let graphs = pipelines
+        .flat_map(|p| p.graph_iter())
+        .chain(std::iter::once(&application_state_call_graph.call_graph));
+
+    for graph in graphs {
+        for node in graph.call_graph.node_weights() {
+            let Some(component_id) = node.component_id() else {
+                continue;
+            };
+            let HydratedComponent::Constructor(_) =
+                component_db.hydrated_component(component_id, computation_db)
+            else {
+                continue;
+            };
+            used_user_constructor_ids.insert(
+                component_db
+                    .derived_from(&component_id)
+                    .unwrap_or(component_id),
+            );
+        }
+    }
+    for (id, _) in component_db.constructors(computation_db) {
+        if component_db.derived_from(&id).is_some() || component_db.is_framework_primitive(&id) {
+            // It's not a user-registered constructor.
+            continue;
+        }
+        if used_user_constructor_ids.contains(&id) {
+            continue;
+        }
+
+        emit_unused_warning(id, component_db, computation_db, diagnostics, package_graph);
+    }
+}
+
+fn emit_unused_warning(
+    constructor_id: ComponentId,
+    component_db: &ComponentDb,
+    computation_db: &ComputationDb,
+    diagnostics: &mut Vec<miette::Error>,
+    package_graph: &PackageGraph,
+) {
+    let source = component_db
+        .user_component_id(constructor_id)
+        .map(|id| component_db.user_component_db().get_location(id))
+        .map(|location| match location.source_file(package_graph) {
+            Ok(s) => {
+                let span = diagnostic::get_f_macro_invocation_span(&s, location)
+                    .map(|s| s.labeled("The unused constructor was registered here".into()));
+                Some((s, span))
+            }
+            Err(e) => {
+                diagnostics.push(e.into());
+                None
+            }
+        })
+        .flatten();
+    let HydratedComponent::Constructor(constructor) =
+        component_db.hydrated_component(constructor_id, computation_db)
+    else {
+        unreachable!()
+    };
+    let output_type = constructor.output_type();
+    let output_type = if output_type.is_result() {
+        get_ok_variant(output_type)
+    } else {
+        output_type
+    };
+    let Computation::Callable(callable) = &constructor.0 else {
+        unreachable!()
+    };
+    let error = anyhow::anyhow!(
+        "You registered a constructor for `{output_type:?}`, \
+    but it's never used.\n\
+    There is no component in your blueprint asking for `{output_type:?}` as one of its inputs,\
+    therefore `{}` is never invoked.",
+        &callable.path
+    );
+    let builder = match source {
+        None => CompilerDiagnostic::builder_without_source(error),
+        Some((source, labeled_span)) => {
+            CompilerDiagnostic::builder(source, error).optional_label(labeled_span)
+        }
+    }
+    .help(
+        "If you want to ignore this warning, call `.allow(Lint::UnusedConstructor)` \
+        on the registered constructor."
+            .to_string(),
+    );
+    diagnostics.push(builder.build().into())
+}

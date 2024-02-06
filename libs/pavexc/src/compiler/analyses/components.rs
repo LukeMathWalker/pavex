@@ -1,7 +1,6 @@
 use std::borrow::Cow;
 
-use ahash::{HashMap, HashMapExt};
-use bimap::BiHashMap;
+use ahash::{HashMap, HashMapExt, HashSet};
 use guppy::graph::PackageGraph;
 use indexmap::IndexSet;
 use miette::NamedSource;
@@ -317,7 +316,6 @@ pub(crate) struct ComponentDb {
     match_err_id2error_handler_id: HashMap<ComponentId, ComponentId>,
     fallible_id2match_ids: HashMap<ComponentId, (ComponentId, ComponentId)>,
     match_id2fallible_id: HashMap<ComponentId, ComponentId>,
-    borrow_id2owned_id: BiHashMap<ComponentId, ComponentId>,
     id2transformer_ids: HashMap<ComponentId, IndexSet<ComponentId>>,
     id2lifecycle: HashMap<ComponentId, Lifecycle>,
     /// For each constructor component, determine if it can be cloned or not.
@@ -379,6 +377,8 @@ pub(crate) struct ComponentDb {
     /// The key for the Ok-matcher would point to the user-registered constructor in this scenario,
     /// not to the intermediate derived constructor.
     derived2user_registered: HashMap<ComponentId, ComponentId>,
+    /// The id for all framework primitives—i.e. components coming from [`FrameworkItemDb`].
+    framework_primitive_ids: HashSet<ComponentId>,
 }
 
 /// The `build` method and its auxiliary routines.
@@ -414,7 +414,6 @@ impl ComponentDb {
             match_err_id2error_handler_id: Default::default(),
             fallible_id2match_ids: Default::default(),
             match_id2fallible_id: Default::default(),
-            borrow_id2owned_id: Default::default(),
             id2transformer_ids: Default::default(),
             id2lifecycle: Default::default(),
             constructor_id2cloning_strategy: Default::default(),
@@ -428,6 +427,7 @@ impl ComponentDb {
             autoregister_matchers: false,
             pavex_error,
             derived2user_registered: Default::default(),
+            framework_primitive_ids: Default::default(),
         };
 
         {
@@ -504,7 +504,7 @@ impl ComponentDb {
         );
 
         for (id, type_) in framework_item_db.iter() {
-            self_.get_or_intern(
+            let component_id = self_.get_or_intern(
                 UnregisteredComponent::SyntheticConstructor {
                     computation_id: computation_db.get_or_intern(Constructor(
                         Computation::FrameworkItem(Cow::Owned(type_.clone())),
@@ -516,6 +516,7 @@ impl ComponentDb {
                 },
                 computation_db,
             );
+            self_.framework_primitive_ids.insert(component_id);
         }
 
         // Add a synthetic constructor for the `pavex::middleware::Next` type.
@@ -1297,11 +1298,23 @@ impl ComponentDb {
             derived_ids.extend(self.derived_component_ids(match_ids.0));
             derived_ids.extend(self.derived_component_ids(match_ids.1));
         }
-        if let Some(borrow_id) = self.borrow_id2owned_id.get_by_right(&component_id) {
-            derived_ids.push(*borrow_id);
-            derived_ids.extend(self.derived_component_ids(*borrow_id));
-        }
         derived_ids
+    }
+
+    /// Return the id of user-registered component that `component_id` was derived from
+    /// (e.g. an Ok-matcher is derived from a fallible constructor or
+    /// a bound constructor from a generic user-registered one).
+    ///
+    /// **It only works for constructors**.
+    pub fn derived_from(&self, component_id: &ComponentId) -> Option<ComponentId> {
+        self.derived2user_registered.get(component_id).cloned()
+    }
+
+    /// Returns `true` if the component is a framework primitive (i.e. it comes from
+    /// [`FrameworkItemDb`].
+    /// `false` otherwise.
+    pub fn is_framework_primitive(&self, component_id: &ComponentId) -> bool {
+        self.framework_primitive_ids.contains(component_id)
     }
 
     /// Given the id of a [`MatchResult`] component, return the id of the corresponding fallible

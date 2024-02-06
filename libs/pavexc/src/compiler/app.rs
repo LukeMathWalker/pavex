@@ -24,6 +24,7 @@ use crate::compiler::analyses::constructibles::ConstructibleDb;
 use crate::compiler::analyses::framework_items::FrameworkItemDb;
 use crate::compiler::analyses::processing_pipeline::RequestHandlerPipeline;
 use crate::compiler::analyses::router::Router;
+use crate::compiler::analyses::unused::detect_unused;
 use crate::compiler::analyses::user_components::UserComponentDb;
 use crate::compiler::computation::Computation;
 use crate::compiler::generated_app::GeneratedApp;
@@ -175,6 +176,14 @@ impl App {
             return Err(diagnostics);
         };
         exit_on_errors!(diagnostics);
+        detect_unused(
+            handler_id2pipeline.values(),
+            &application_state_call_graph,
+            &component_db,
+            &computation_db,
+            &package_graph,
+            &mut diagnostics,
+        );
         Ok(Self {
             package_graph,
             router,
