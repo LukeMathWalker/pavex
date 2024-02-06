@@ -50,6 +50,7 @@ pub(crate) fn detect_unused<'a, I>(
             );
         }
     }
+
     for (id, _) in component_db.constructors(computation_db) {
         if component_db.derived_from(&id).is_some() || component_db.is_framework_primitive(&id) {
             // It's not a user-registered constructor.
@@ -77,21 +78,23 @@ fn emit_unused_warning(
     diagnostics: &mut Vec<miette::Error>,
     package_graph: &PackageGraph,
 ) {
-    let source = component_db
-        .user_component_id(constructor_id)
-        .map(|id| component_db.user_component_db().get_location(id))
-        .map(|location| match location.source_file(package_graph) {
-            Ok(s) => {
-                let span = diagnostic::get_f_macro_invocation_span(&s, location)
-                    .map(|s| s.labeled("The unused constructor was registered here".into()));
-                Some((s, span))
-            }
-            Err(e) => {
-                diagnostics.push(e.into());
-                None
-            }
-        })
-        .flatten();
+    let Some(user_component_id) = component_db.user_component_id(constructor_id) else {
+        return;
+    };
+    let location = component_db
+        .user_component_db()
+        .get_location(user_component_id);
+    let source = match location.source_file(package_graph) {
+        Ok(s) => {
+            let span = diagnostic::get_f_macro_invocation_span(&s, location)
+                .map(|s| s.labeled("The unused constructor was registered here".into()));
+            Some((s, span))
+        }
+        Err(e) => {
+            diagnostics.push(e.into());
+            None
+        }
+    };
     let HydratedComponent::Constructor(constructor) =
         component_db.hydrated_component(constructor_id, computation_db)
     else {
@@ -109,8 +112,7 @@ fn emit_unused_warning(
     let error = anyhow::anyhow!(
         "You registered a constructor for `{output_type:?}`, \
     but it's never used.\n\
-    There is no component in your blueprint asking for `{output_type:?}` as one of its inputs,\
-    therefore `{}` is never invoked.",
+    `{}` is never invoked since no component is asking for `{output_type:?}` to be injected as one of its inputs.",
         &callable.path
     );
     let builder = match source {
@@ -121,7 +123,7 @@ fn emit_unused_warning(
     }
     .severity(Severity::Warning)
     .help(
-        "If you want to ignore this warning, call `.allow(Lint::UnusedConstructor)` \
+        "If you want to ignore this warning, call `.ignore(Lint::Unused)` \
         on the registered constructor."
             .to_string(),
     );

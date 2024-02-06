@@ -147,12 +147,15 @@ struct TestExpectations {
     /// returned by Pavex to the user.
     #[serde(default = "ExpectedOutcome::pass")]
     codegen: ExpectedOutcome,
+    #[serde(default = "ExpectedOutcome::pass")]
+    lints: ExpectedOutcome,
 }
 
 impl Default for TestExpectations {
     fn default() -> Self {
         Self {
             codegen: ExpectedOutcome::Pass,
+            lints: ExpectedOutcome::Pass,
         }
     }
 }
@@ -581,6 +584,20 @@ fn _run_test(
             test_output: None,
         });
     };
+
+    if let ExpectedOutcome::Fail = test_config.expectations.lints {
+        let stderr_snapshot = SnapshotTest::new(expectations_directory.join("stderr.txt"));
+        if stderr_snapshot.verify(&codegen_output.stderr).is_err() {
+            return Ok(TestOutcome {
+                outcome: Err(
+                    "The warnings returned by code generation don't match what we expected".into(),
+                ),
+                codegen_output,
+                compilation_output: None,
+                test_output: None,
+            });
+        }
+    }
 
     let diagnostics_snapshot = SnapshotTest::new(expectations_directory.join("diagnostics.dot"));
     let actual_diagnostics =

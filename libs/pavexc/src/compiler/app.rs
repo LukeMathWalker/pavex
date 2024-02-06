@@ -61,11 +61,19 @@ impl App {
     ///
     /// Many different things can go wrong during this process: this method tries its best to
     /// report all errors to the user, but it may not be able to do so in all cases.
-    pub fn build(bp: Blueprint, project_fingerprint: String) -> Result<Self, Vec<miette::Error>> {
+    pub fn build(
+        bp: Blueprint,
+        project_fingerprint: String,
+    ) -> Result<(Self, Vec<miette::Error>), Vec<miette::Error>> {
         /// Exit early if there is at least one error.
         macro_rules! exit_on_errors {
             ($var:ident) => {
-                if !$var.is_empty() {
+                if !$var.is_empty()
+                    && $var.iter().any(|e| {
+                        let severity = e.severity();
+                        severity == Some(miette::Severity::Error) || severity.is_none()
+                    })
+                {
                     return Err($var);
                 }
             };
@@ -175,7 +183,6 @@ impl App {
         ) else {
             return Err(diagnostics);
         };
-        exit_on_errors!(diagnostics);
         detect_unused(
             handler_id2pipeline.values(),
             &application_state_call_graph,
@@ -184,17 +191,21 @@ impl App {
             &package_graph,
             &mut diagnostics,
         );
-        Ok(Self {
-            package_graph,
-            router,
-            handler_id2pipeline,
-            component_db,
-            computation_db,
-            application_state_call_graph,
-            framework_item_db,
-            runtime_singleton_bindings,
-            codegen_deps,
-        })
+        exit_on_errors!(diagnostics);
+        Ok((
+            Self {
+                package_graph,
+                router,
+                handler_id2pipeline,
+                component_db,
+                computation_db,
+                application_state_call_graph,
+                framework_item_db,
+                runtime_singleton_bindings,
+                codegen_deps,
+            },
+            diagnostics,
+        ))
     }
 
     /// Generate the manifest and the Rust code for the analysed application.
