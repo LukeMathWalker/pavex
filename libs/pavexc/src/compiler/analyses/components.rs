@@ -346,8 +346,15 @@ pub(crate) struct ComponentDb {
     /// - match request handlers with the sequence of middlewares that wrap around them.
     /// - convert the ids in the router.
     user_component_id2component_id: HashMap<UserComponentId, ComponentId>,
+    /// For each scope, it stores the ordered list of error observers that should be
+    /// invoked if a component fails in that scope.
     scope_ids_with_observers: Vec<ScopeId>,
+    /// A switch to control if, when a fallible component is registered, [`ComponentDb`]
+    /// should automatically register matcher components for its output type.
     autoregister_matchers: bool,
+    /// The resolved path to `pavex::Error`.
+    /// It's memoised here to avoid re-resolving it multiple times while analysing a single
+    /// blueprint.
     pavex_error: PathType,
 }
 
