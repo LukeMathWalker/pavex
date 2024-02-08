@@ -9,8 +9,9 @@ use petgraph::Direction;
 
 use pavex_bp_schema::Lifecycle;
 
+use crate::compiler::analyses::components::{ComponentDb, ComponentId};
 use crate::compiler::analyses::components::{
-    ComponentDb, ComponentId, ConsumptionMode, HydratedComponent, InsertTransformer,
+    ConsumptionMode, HydratedComponent, InsertTransformer,
 };
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::constructibles::ConstructibleDb;

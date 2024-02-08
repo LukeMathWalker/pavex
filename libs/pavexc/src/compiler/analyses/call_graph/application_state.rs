@@ -15,8 +15,9 @@ use crate::compiler::analyses::call_graph::{
     core_graph::build_call_graph, CallGraph, CallGraphNode, NumberOfAllowedInvocations,
     OrderedCallGraph,
 };
+use crate::compiler::analyses::components::{ComponentDb, ComponentId};
 use crate::compiler::analyses::components::{
-    ComponentDb, ComponentId, ConsumptionMode, HydratedComponent, InsertTransformer,
+    ConsumptionMode, HydratedComponent, InsertTransformer,
 };
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::constructibles::ConstructibleDb;

@@ -18,7 +18,8 @@ use pavex_bp_schema::{Blueprint, Lifecycle};
 use crate::compiler::analyses::call_graph::{
     application_state_call_graph, ApplicationStateCallGraph, RawCallGraphExt,
 };
-use crate::compiler::analyses::components::{ComponentDb, ComponentId, HydratedComponent};
+use crate::compiler::analyses::components::HydratedComponent;
+use crate::compiler::analyses::components::{ComponentDb, ComponentId};
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::constructibles::ConstructibleDb;
 use crate::compiler::analyses::framework_items::FrameworkItemDb;

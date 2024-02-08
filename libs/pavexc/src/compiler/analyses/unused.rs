@@ -1,5 +1,6 @@
 use crate::compiler::analyses::call_graph::ApplicationStateCallGraph;
-use crate::compiler::analyses::components::{ComponentDb, ComponentId, HydratedComponent};
+use crate::compiler::analyses::components::HydratedComponent;
+use crate::compiler::analyses::components::{ComponentDb, ComponentId};
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::processing_pipeline::RequestHandlerPipeline;
 use crate::compiler::computation::Computation;

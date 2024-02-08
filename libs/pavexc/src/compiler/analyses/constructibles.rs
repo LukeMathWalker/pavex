@@ -9,9 +9,8 @@ use syn::spanned::Spanned;
 
 use pavex_bp_schema::Lifecycle;
 
-use crate::compiler::analyses::components::{
-    ComponentDb, ComponentId, ConsumptionMode, HydratedComponent,
-};
+use crate::compiler::analyses::components::{ComponentDb, ComponentId};
+use crate::compiler::analyses::components::{ConsumptionMode, HydratedComponent};
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::user_components::{
     ScopeGraph, ScopeId, UserComponentDb, UserComponentId,
