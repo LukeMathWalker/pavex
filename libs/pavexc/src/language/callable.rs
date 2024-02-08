@@ -8,7 +8,7 @@ use bimap::BiHashMap;
 use guppy::PackageId;
 use indexmap::IndexSet;
 
-use crate::language::{ResolvedPath, ResolvedType};
+use crate::language::{Lifetime, ResolvedPath, ResolvedType};
 use crate::rustdoc::GlobalItemId;
 
 #[derive(Clone, Hash, Eq, PartialEq)]
@@ -178,13 +178,39 @@ impl Callable {
 
         let mut borrowed_indexes = vec![];
         for (i, input) in c.inputs.iter().enumerate() {
+            let ResolvedType::Reference(ref_ty) = input else {
+                continue;
+            };
+            let Lifetime::Named(lifetime) = &ref_ty.lifetime else {
+                continue;
+            };
+            if output_lifetime_parameters.contains(lifetime) {
+                borrowed_indexes.push(i)
+            }
+        }
+        borrowed_indexes
+    }
+
+    /// Returns the indices of all input parameters share a lifetime parameter with the output
+    ///
+    /// E.g. `fn f<'a, 'b>(x: Gen<'a>, y: &'b T) -> Min<'a>` returns `[0]`.
+    pub(crate) fn inputs_with_lifetime_tied_with_output(&self) -> Vec<usize> {
+        let c = self.unelide_output_lifetimes();
+        let Some(output) = &c.output else {
+            return vec![];
+        };
+
+        let output_lifetime_parameters = output.named_lifetime_parameters();
+
+        let mut borrowed_indexes = vec![];
+        for (i, input) in c.inputs.iter().enumerate() {
             if input
                 .named_lifetime_parameters()
                 .intersection(&output_lifetime_parameters)
                 .next()
                 .is_some()
             {
-                borrowed_indexes.push(i);
+                borrowed_indexes.push(i)
             }
         }
         borrowed_indexes

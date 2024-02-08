@@ -1,10 +1,10 @@
 digraph "GET /home - 0" {
-    0 [ label = "app::mw(pavex::middleware::Next<crate::route_0::Next0>, app::B<'l>) -> pavex::response::Response"]
-    1 [ label = "pavex::middleware::Next::new(crate::route_0::Next0) -> pavex::middleware::Next<crate::route_0::Next0>"]
+    0 [ label = "app::mw(pavex::middleware::Next<crate::route_0::Next0<'a, 'b>>, app::B<'l>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_0::Next0<'a, 'b>) -> pavex::middleware::Next<crate::route_0::Next0<'a, 'b>>"]
     2 [ label = "app::b(&''a app::A, &''a app::C) -> app::B<'a>"]
     3 [ label = "app::a() -> app::A"]
     4 [ label = "app::c() -> app::C"]
-    5 [ label = "crate::route_0::Next0(&app::C, &app::A) -> crate::route_0::Next0"]
+    5 [ label = "crate::route_0::Next0(&'a app::C, &'b app::A) -> crate::route_0::Next0<'a, 'b>"]
     2 -> 0 [ ]
     4 -> 2 [ label = "&"]
     3 -> 2 [ label = "&"]
@@ -25,12 +25,12 @@ digraph "GET /home - 1" {
 }
 
 digraph "* /home - 0" {
-    0 [ label = "app::mw(pavex::middleware::Next<crate::route_1::Next0>, app::B<'l>) -> pavex::response::Response"]
-    1 [ label = "pavex::middleware::Next::new(crate::route_1::Next0) -> pavex::middleware::Next<crate::route_1::Next0>"]
+    0 [ label = "app::mw(pavex::middleware::Next<crate::route_1::Next0<'a>>, app::B<'l>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_1::Next0<'a>) -> pavex::middleware::Next<crate::route_1::Next0<'a>>"]
     2 [ label = "app::b(&''a app::A, &''a app::C) -> app::B<'a>"]
     3 [ label = "app::a() -> app::A"]
     4 [ label = "app::c() -> app::C"]
-    5 [ label = "crate::route_1::Next0(&pavex::router::AllowedMethods) -> crate::route_1::Next0"]
+    5 [ label = "crate::route_1::Next0(&'a pavex::router::AllowedMethods) -> crate::route_1::Next0<'a>"]
     7 [ label = "&pavex::router::AllowedMethods"]
     2 -> 0 [ ]
     4 -> 2 [ label = "&"]
