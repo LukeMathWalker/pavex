@@ -118,7 +118,7 @@ impl ResolvedPathType {
                 let item = &resolved_item.item;
                 let used_by_package_id = resolved_item.item_id.package_id();
                 let (global_type_id, base_type) = krate_collection
-                    .get_canonical_path_by_local_type_id(used_by_package_id, &item.id)?;
+                    .get_canonical_path_by_local_type_id(used_by_package_id, &item.id, None)?;
                 let mut generic_arguments = vec![];
                 for segment in &p.path.segments {
                     for generic_path in &segment.generic_arguments {

@@ -26,9 +26,25 @@ pub(crate) fn resolve_type(
     generic_bindings: &HashMap<String, ResolvedType>,
 ) -> Result<ResolvedType, anyhow::Error> {
     match type_ {
-        Type::ResolvedPath(rustdoc_types::Path { id, args, .. }) => {
-            let (global_type_id, base_type) =
-                krate_collection.get_canonical_path_by_local_type_id(used_by_package_id, id)?;
+        Type::ResolvedPath(rustdoc_types::Path { id, args, name }) => {
+            let re_exporter_crate_name = if id.0.starts_with("0:") {
+                // 0 is the crate index of local types.
+                None
+            } else {
+                // It is not guaranteed that this type will be from a direct dependency of `used_by_package_id`.
+                // It might be a re-export from a transitive dependency, done by a direct dependency.
+                // Unfortunately, `rustdoc` does not provide the package id of the crate where the type
+                // was re-exported from, creating a "missing link".
+                // We try to infer it from the `name` property, which is usually the fully qualified
+                // name of the type, e.g. `std::collections::HashMap`.
+                name.split("::").next()
+            };
+            let (global_type_id, base_type) = krate_collection
+                .get_canonical_path_by_local_type_id(
+                    used_by_package_id,
+                    id,
+                    re_exporter_crate_name,
+                )?;
             let type_item = krate_collection.get_type_by_global_type_id(&global_type_id);
             // We want to remove any indirections (e.g. `type Foo = Bar;`) and get the actual type.
             if let ItemEnum::TypeAlias(type_alias) = &type_item.inner {
@@ -420,7 +436,7 @@ pub(crate) fn resolve_type_path(
     let item = &resolved_item.item;
     let used_by_package_id = resolved_item.item_id.package_id();
     let (global_type_id, base_type) =
-        krate_collection.get_canonical_path_by_local_type_id(used_by_package_id, &item.id)?;
+        krate_collection.get_canonical_path_by_local_type_id(used_by_package_id, &item.id, None)?;
     let mut generic_arguments = vec![];
     let (last_segment, first_segments) = path.segments.split_last().unwrap();
     for segment in first_segments {
