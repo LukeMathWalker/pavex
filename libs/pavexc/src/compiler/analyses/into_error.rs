@@ -1,8 +1,7 @@
 use std::borrow::Cow;
 
-use crate::compiler::analyses::components::{
-    ComponentDb, ComponentId, ConsumptionMode, InsertTransformer,
-};
+use crate::compiler::analyses::components::{ComponentDb, ComponentId};
+use crate::compiler::analyses::components::{ConsumptionMode, InsertTransformer};
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::user_components::ScopeId;
 use crate::compiler::computation::{Computation, MatchResultVariant};

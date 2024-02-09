@@ -18,7 +18,8 @@ use crate::compiler::analyses::call_graph::core_graph::{CallGraphEdgeMetadata, R
 use crate::compiler::analyses::call_graph::{
     CallGraphNode, NumberOfAllowedInvocations, OrderedCallGraph,
 };
-use crate::compiler::analyses::components::{ComponentDb, HydratedComponent};
+use crate::compiler::analyses::components::ComponentDb;
+use crate::compiler::analyses::components::HydratedComponent;
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::codegen_utils;
 use crate::compiler::codegen_utils::{Fragment, VariableNameGenerator};

@@ -11,7 +11,8 @@ use crate::compiler::analyses::call_graph::{
     request_scoped_call_graph, request_scoped_ordered_call_graph, CallGraphNode,
     InputParameterSource, OrderedCallGraph, RawCallGraph,
 };
-use crate::compiler::analyses::components::{ComponentDb, ComponentId, HydratedComponent};
+use crate::compiler::analyses::components::HydratedComponent;
+use crate::compiler::analyses::components::{ComponentDb, ComponentId};
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::constructibles::ConstructibleDb;
 use crate::compiler::analyses::processing_pipeline::graph_iter::PipelineGraphIterator;

@@ -1,11 +1,11 @@
 use guppy::graph::PackageGraph;
 use petgraph::stable_graph::NodeIndex;
 
+use crate::compiler::analyses::components::ComponentDb;
 use crate::{
     compiler::{
         analyses::{
             call_graph::{CallGraphNode, RawCallGraph},
-            components::ComponentDb,
             computations::ComputationDb,
         },
         traits::assert_trait_is_implemented,

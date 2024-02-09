@@ -5,11 +5,11 @@ use indexmap::IndexSet;
 use pavex_bp_schema::Lifecycle;
 use petgraph::stable_graph::{NodeIndex, StableDiGraph};
 
+use crate::compiler::analyses::components::{ComponentDb, ComponentId};
 use crate::{
     compiler::{
         analyses::{
-            components::{ComponentDb, ComponentId, HydratedComponent},
-            computations::ComputationDb,
+            components::HydratedComponent, computations::ComputationDb,
             constructibles::ConstructibleDb,
         },
         computation::Computation,
