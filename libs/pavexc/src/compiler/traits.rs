@@ -144,7 +144,11 @@ pub(crate) fn implements_trait(
                 };
                 if let Some(trait_id) = trait_id {
                     if let Ok((_, trait_path)) = krate_collection
-                        .get_canonical_path_by_local_type_id(&our_path_type.package_id, trait_id)
+                        .get_canonical_path_by_local_type_id(
+                            &our_path_type.package_id,
+                            trait_id,
+                            None,
+                        )
                     {
                         if trait_path == expected_trait.base_type
                             // The "impls" for a rustdoc item include implementations for
@@ -275,7 +279,7 @@ fn is_equivalent(
             };
             let rustdoc_type_id = &p.id;
             let Ok((rustdoc_global_type_id, _)) = krate_collection
-                .get_canonical_path_by_local_type_id(used_by_package_id, rustdoc_type_id)
+                .get_canonical_path_by_local_type_id(used_by_package_id, rustdoc_type_id, None)
             else {
                 tracing::trace!("Failed to look up {:?}", rustdoc_type_id);
                 return false;

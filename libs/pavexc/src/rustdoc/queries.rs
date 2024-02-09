@@ -449,12 +449,30 @@ impl CrateCollection {
         &self,
         used_by_package_id: &PackageId,
         item_id: &rustdoc_types::Id,
+        // The item might come from a transitive dependency via a re-export
+        // done by a direct dependency.
+        // We don't have a bulletproof way of finding the re-exporter name, but we can
+        // try to infer it (e.g. via the `name` proeprty).
+        re_exporter_crate_name: Option<&str>,
     ) -> Result<(GlobalItemId, &[String]), anyhow::Error> {
         let (definition_package_id, path) = {
             let used_by_krate = self.get_or_compute_crate_by_package_id(used_by_package_id)?;
             let local_type_summary = used_by_krate.get_type_summary_by_local_type_id(item_id)?;
             (
-                used_by_krate.compute_package_id_for_crate_id(local_type_summary.crate_id, self)?,
+                used_by_krate.compute_package_id_for_crate_id_with_hint(
+                    local_type_summary.crate_id,
+                    self,
+                    // If the type was re-exported from another crate, the two names here should not match.
+                    // The one coming from the summary is the name of the crate where the type was defined.
+                    // The one coming from the `maybe_reexport_from` is the name of the crate where the type
+                    // was re-exported from and used by the crate we are currently processing.
+                    if local_type_summary.path.first().map(|s| s.as_str()) != re_exporter_crate_name
+                    {
+                        re_exporter_crate_name
+                    } else {
+                        None
+                    },
+                )?,
                 local_type_summary.path.clone(),
             )
         };
@@ -615,17 +633,30 @@ pub(crate) struct LazyCrateItemIndex {
 impl CrateCore {
     /// Given a crate id, return the corresponding [`PackageId`].
     ///
+    /// # Disambiguation
+    ///
+    /// There might be multiple crates in the dependency graph with the same name, causing
+    /// disambiguation issues.
+    /// To help out, you can specify `maybe_dependent`: the name of a crate that you think
+    /// depends on the crate you're trying to resolve.
+    /// This can narrow down the portion of the dependency graph that we need to search,
+    /// thus removing ambiguity.
+    ///
+    /// # Panics
+    ///
     /// It panics if the provided crate id doesn't appear in the JSON documentation
     /// for this crate—i.e. if it's not `0` or assigned to one of its transitive dependencies.
     pub fn compute_package_id_for_crate_id(
         &self,
         crate_id: u32,
         collection: &CrateCollection,
+        maybe_dependent_crate_name: Option<&str>,
     ) -> Result<PackageId, anyhow::Error> {
         compute_package_id_for_crate_id(
             &self.package_id,
             &self.krate.external_crates,
             crate_id,
+            maybe_dependent_crate_name,
             &collection.package_graph,
         )
     }
@@ -708,7 +739,32 @@ impl Crate {
         collection: &CrateCollection,
     ) -> Result<PackageId, anyhow::Error> {
         self.core
-            .compute_package_id_for_crate_id(crate_id, collection)
+            .compute_package_id_for_crate_id(crate_id, collection, None)
+    }
+
+    /// Given a crate id, return the corresponding [`PackageId`].
+    ///
+    /// # Disambiguation
+    ///
+    /// There might be multiple crates in the dependency graph with the same name, causing
+    /// disambiguation issues.
+    /// To help out, you can specify `maybe_dependent`: the name of a crate that you think
+    /// depends on the crate you're trying to resolve.
+    /// This can narrow down the portion of the dependency graph that we need to search,
+    /// thus removing ambiguity.
+    ///
+    /// # Panics
+    ///
+    /// It panics if the provided crate id doesn't appear in the JSON documentation
+    /// for this crate—i.e. if it's not `0` or assigned to one of its transitive dependencies.
+    pub fn compute_package_id_for_crate_id_with_hint(
+        &self,
+        crate_id: u32,
+        collection: &CrateCollection,
+        maybe_dependent_crate_name: Option<&str>,
+    ) -> Result<PackageId, anyhow::Error> {
+        self.core
+            .compute_package_id_for_crate_id(crate_id, collection, maybe_dependent_crate_name)
     }
 
     pub fn get_type_id_by_path(
@@ -737,7 +793,7 @@ impl Crate {
 
                 let source_package_id = self
                     .core
-                    .compute_package_id_for_crate_id(*external_crate_num, krate_collection)
+                    .compute_package_id_for_crate_id(*external_crate_num, krate_collection, None)
                     .unwrap();
                 let source_krate = krate_collection
                     .get_or_compute_crate_by_package_id(&source_package_id)
@@ -1072,23 +1128,13 @@ impl RustdocCrateExt for rustdoc_types::Crate {
     }
 }
 
-#[allow(clippy::disallowed_types)]
-fn get_external_crate_name(
-    external_crates: &std::collections::HashMap<u32, ExternalCrate>,
-    crate_id: u32,
-) -> Option<(&ExternalCrate, Option<Version>)> {
-    let external_crate = external_crates.get(&crate_id);
-    if let Some(external_crate) = external_crate {
-        let version = if let Some(url) = &external_crate.html_root_url {
-            url.trim_end_matches('/')
-                .split('/')
-                .last()
-                .map(Version::parse)
-                .and_then(|x| x.ok())
-        } else {
-            None
-        };
-        Some((external_crate, version))
+fn get_external_crate_version(external_crate: &ExternalCrate) -> Option<Version> {
+    if let Some(url) = &external_crate.html_root_url {
+        url.trim_end_matches('/')
+            .split('/')
+            .last()
+            .map(Version::parse)
+            .and_then(|x| x.ok())
     } else {
         None
     }
@@ -1105,6 +1151,13 @@ pub fn compute_package_id_for_crate_id(
     // The mapping from crate id to external crate object.
     external_crate_index: &std::collections::HashMap<u32, ExternalCrate>,
     crate_id: u32,
+    // There might be multiple crates in the dependency graph with the same name, causing
+    // disambiguation issues.
+    // To help out, you can specify `maybe_dependent`: the name of a crate that you think
+    // depends on the crate you're trying to resolve.
+    // This can narrow down the portion of the dependency graph that we need to search,
+    // thus removing ambiguity.
+    maybe_dependent_crate_name: Option<&str>,
     package_graph: &PackageGraph,
 ) -> Result<PackageId, anyhow::Error> {
     #[derive(Debug, Hash, Eq, PartialEq)]
@@ -1114,90 +1167,138 @@ pub fn compute_package_id_for_crate_id(
         version: &'a Version,
     }
 
+    /// Find a transitive dependency of `search_root` given its name (and maybe the version).
+    /// It only returns `Some` if the dependency can be identified without ambiguity.
+    fn find_transitive_dependency(
+        package_graph: &PackageGraph,
+        search_root: &PackageId,
+        name: &str,
+        version: Option<&Version>,
+    ) -> Option<PackageId> {
+        let transitive_dependencies = package_graph
+            .query_forward([search_root])
+            .with_context(|| {
+                format!(
+                    "`{}` doesn't appear in the package graph for the current workspace",
+                    search_root.repr()
+                )
+            })
+            .unwrap()
+            .resolve();
+        let expected_link_name = utils::normalize_crate_name(name);
+        let package_candidates: IndexSet<_> = transitive_dependencies
+            .links(guppy::graph::DependencyDirection::Forward)
+            .filter(|link| {
+                let version_filter = if let Some(version) = version {
+                    link.to().version() == version
+                } else {
+                    true
+                };
+                utils::normalize_crate_name(link.to().name()) == expected_link_name
+                    && version_filter
+            })
+            .map(|link| {
+                let l = link.to();
+                PackageLinkMetadata {
+                    id: l.id(),
+                    name: l.name(),
+                    version: l.version(),
+                }
+            })
+            .collect();
+        if package_candidates.is_empty() {
+            panic!(
+                "I could not find any crate named `{}` among the dependencies of {}",
+                expected_link_name, search_root
+            )
+        }
+        if package_candidates.len() == 1 {
+            return Some(package_candidates.first().unwrap().id.to_owned());
+        }
+
+        if let Some(expected_link_version) = version {
+            let filtered_candidates: Vec<_> = package_candidates
+                .iter()
+                .filter(|l| l.version == expected_link_version)
+                .collect();
+            if filtered_candidates.is_empty() {
+                tracing::debug!("Searching for `{}` among the transitive dependencies of `{}` led to multiple results. \
+                    When the version ({}) is added to the search filters, no results come up. Could the inferred version be incorrect?",
+                    expected_link_name, search_root, expected_link_version
+                )
+            }
+            if filtered_candidates.len() == 1 {
+                return Some(filtered_candidates.first().unwrap().id.to_owned());
+            }
+        }
+
+        None
+    }
+
     if crate_id == 0 {
         return Ok(package_id.clone());
     }
 
-    let (external_crate, external_crate_version) =
-        get_external_crate_name(external_crate_index, crate_id)
-            .ok_or_else(|| {
-                anyhow!(
+    let external_crate = external_crate_index.get(&crate_id).ok_or_else(|| {
+        anyhow!(
             "There is no external crate associated with id `{}` in the JSON documentation for `{}`",
             crate_id,
             package_id.repr()
         )
-            })
-            .unwrap();
+    })?;
     if TOOLCHAIN_CRATES.contains(&external_crate.name.as_str()) {
         return Ok(PackageId::new(external_crate.name.clone()));
     }
-
-    let transitive_dependencies = package_graph
-        .query_forward([package_id])
-        .with_context(|| {
-            format!(
-                "`{}` doesn't appear in the package graph for the current workspace",
-                package_id.repr()
-            )
-        })
-        .unwrap()
-        .resolve();
-    let expected_link_name = utils::normalize_crate_name(&external_crate.name);
-    let package_candidates: IndexSet<_> = transitive_dependencies
-        .links(guppy::graph::DependencyDirection::Forward)
-        .filter(|link| utils::normalize_crate_name(link.to().name()) == expected_link_name)
-        .map(|link| {
-            let l = link.to();
-            PackageLinkMetadata {
-                id: l.id(),
-                name: l.name(),
-                version: l.version(),
-            }
-        })
-        .collect();
-
-    if package_candidates.is_empty() {
-        panic!(
-            "I could not find any crate named `{}` among the dependencies of {}",
-            expected_link_name, package_id
-        )
-    }
-    if package_candidates.len() == 1 {
-        return Ok(package_candidates.first().unwrap().id.to_owned());
+    let external_crate_version = get_external_crate_version(&external_crate);
+    if let Some(id) = find_transitive_dependency(
+        package_graph,
+        package_id,
+        &external_crate.name,
+        external_crate_version.as_ref(),
+    ) {
+        return Ok(id);
     }
 
     // We have multiple packages with the same name.
-    // We try to use the version to identify the one we are looking for.
-    // If we don't have a version, we panic: better than picking one randomly and failing
-    // later with a confusing message.
-    if let Some(expected_link_version) = external_crate_version.as_ref() {
-        Ok(package_candidates
-            .into_iter()
-            .find(|l| l.version == expected_link_version)
-            .ok_or_else(|| {
-                anyhow!(
-                    "None of the dependencies of {} named `{}` matches the version we expect ({})",
-                    package_id,
-                    expected_link_name,
-                    expected_link_version
-                )
-            })?
-            .id
-            .to_owned())
-    } else {
-        Err(
-            anyhow!(
-                "There are multiple packages named `{}` among the dependencies of {}. \
-                In order to disambiguate among them, I need to know their versions.\n\
-                Unfortunately, I couldn't extract the expected version for `{}` from HTML root URL included in the \
-                JSON documentation for `{}`.\n\
-                This due to a limitation in `rustdoc` itself: follow https://github.com/rust-lang/compiler-team/issues/622 \
-                to track progress on this issue.",
-                expected_link_name,
-                package_id.repr(),
-                expected_link_name,
-                package_id.repr()
-            )
-        )
+    // We need to disambiguate among them.
+    if let Some(maybe_dependent_crate_name) = maybe_dependent_crate_name.as_deref() {
+        let intermediate_crates: Vec<_> = external_crate_index
+            .values()
+            .filter(|c| c.name == maybe_dependent_crate_name)
+            .collect();
+        if intermediate_crates.len() == 1 {
+            let intermediate_crate = intermediate_crates.first().unwrap();
+            let intermediate_crate_version = get_external_crate_version(intermediate_crate);
+            if let Some(intermediate_package_id) = find_transitive_dependency(
+                package_graph,
+                package_id,
+                &intermediate_crate.name,
+                intermediate_crate_version.as_ref(),
+            ) {
+                if let Some(id) = find_transitive_dependency(
+                    package_graph,
+                    &intermediate_package_id,
+                    &external_crate.name,
+                    external_crate_version.as_ref(),
+                ) {
+                    return Ok(id);
+                }
+            }
+        }
     }
+
+    Err(
+        anyhow!(
+            "There are multiple packages named `{}` among the dependencies of {}. \
+            In order to disambiguate among them, I need to know their versions.\n\
+            Unfortunately, I couldn't extract the expected version for `{}` from HTML root URL included in the \
+            JSON documentation for `{}`.\n\
+            This due to a limitation in `rustdoc` itself: follow https://github.com/rust-lang/compiler-team/issues/622 \
+            to track progress on this issue.",
+            external_crate.name,
+            package_id.repr(),
+            external_crate.name,
+            package_id.repr()
+        )
+    )
 }
