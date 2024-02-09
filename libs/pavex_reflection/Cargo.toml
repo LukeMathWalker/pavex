@@ -1,6 +1,6 @@
 [package]
 name = "pavex_reflection"
-version = "0.1.17"
+version = "0.1.18"
 description = "Utility types when working with compile-time reflection in Rust"
 keywords = ["pavex"]
 edition.workspace = true
