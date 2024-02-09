@@ -6,7 +6,7 @@ use ahash::{HashMap, HashMapExt};
 use guppy::graph::PackageGraph;
 use indexmap::IndexSet;
 use petgraph::graph::NodeIndex;
-use petgraph::prelude::EdgeRef;
+use petgraph::prelude::{DfsPostOrder, EdgeRef};
 use petgraph::visit::NodeRef;
 use petgraph::Direction;
 
@@ -67,21 +67,38 @@ pub(super) fn ancestor_consumes_descendant_borrows(
         visited_nodes.insert(node_index);
         let node = &call_graph[node_index];
 
-        let mut captured_input_types = IndexSet::new();
+        let mut directly_borrows_from = IndexSet::new();
+        let mut transitively_borrows_from = IndexSet::new();
         if let Some(hydrated_component) = node.as_hydrated_component(component_db, computation_db) {
             if let Computation::Callable(callable) = hydrated_component.computation() {
-                captured_input_types = callable
+                directly_borrows_from = callable
                     .inputs_that_output_borrows_from()
                     .iter()
-                    .map(|&i| callable.inputs[i].clone())
-                    .map(|t| {
+                    .map(|&i| {
+                        let t = &callable.inputs[i];
                         if let ResolvedType::Reference(r) = t {
                             r.inner.deref().to_owned()
                         } else {
-                            t
+                            t.to_owned()
                         }
                     })
                     .collect();
+                transitively_borrows_from = callable
+                    .inputs_with_lifetime_tied_with_output()
+                    .iter()
+                    .map(|&i| {
+                        let t = &callable.inputs[i];
+                        if let ResolvedType::Reference(r) = t {
+                            r.inner.deref().to_owned()
+                        } else {
+                            t.to_owned()
+                        }
+                    })
+                    .collect();
+                #[cfg(debug_assertions)]
+                {
+                    assert!(directly_borrows_from.is_subset(&transitively_borrows_from));
+                }
             }
         }
 
@@ -112,14 +129,21 @@ pub(super) fn ancestor_consumes_descendant_borrows(
             let Some(dependency_type) = dependency_type else {
                 continue 'inner;
             };
-            if captured_input_types.contains(&dependency_type) {
+            if transitively_borrows_from.contains(&dependency_type) {
                 let transitively_captured = node2captured_nodes
                     .get(&dependency_index)
                     .cloned()
                     .unwrap_or_default();
-                let held = node2captured_nodes.entry(node_index).or_default();
-                held.extend(transitively_captured);
-                held.insert(dependency_index);
+                node2captured_nodes
+                    .entry(node_index)
+                    .or_default()
+                    .extend(transitively_captured);
+            }
+            if directly_borrows_from.contains(&dependency_type) {
+                node2captured_nodes
+                    .entry(node_index)
+                    .or_default()
+                    .insert(dependency_index);
             }
         }
 
@@ -139,11 +163,12 @@ pub(super) fn ancestor_consumes_descendant_borrows(
     // The following invariant MUST hold at all times: once we visit a node, we must have
     // already visited all the nodes that are connected with it by an outgoing edge (i.e.
     // all the nodes that depend on it).
-    let mut nodes_to_visit = VecDeque::from_iter(call_graph.externals(Direction::Outgoing));
-    let mut visited_nodes = IndexSet::new();
+    // Any source node works as a starting point for our DfS.
+    let source_id = call_graph.externals(Direction::Incoming).next().unwrap();
+    let mut dfs = DfsPostOrder::new(&call_graph, source_id);
     let mut downstream_borrows: HashMap<NodeIndex, IndexSet<NodeIndex>> = HashMap::new();
 
-    while let Some(node_index) = nodes_to_visit.pop_front() {
+    while let Some(node_index) = dfs.next(&call_graph) {
         let mut borrowed_nodes: IndexSet<NodeIndex> = call_graph
             .neighbors_directed(node_index, Direction::Outgoing)
             .fold(IndexSet::new(), |mut acc, neighbor_index| {
@@ -158,26 +183,30 @@ pub(super) fn ancestor_consumes_descendant_borrows(
             .map(|edge_ref| edge_ref.id())
             .collect();
 
-        'dependencies: for edge_id in dependency_edge_ids {
-            let edge_metadata = call_graph.edge_weight(edge_id).unwrap();
-            let dependency_index = call_graph.edge_endpoints(edge_id).unwrap().0;
-            if !visited_nodes.contains(&dependency_index) {
-                nodes_to_visit.push_back(dependency_index);
-            }
+        dependency_edge_ids.iter().for_each(|edge_id| {
+            let edge_metadata = call_graph.edge_weight(*edge_id).unwrap();
+            let dependency_index = call_graph.edge_endpoints(*edge_id).unwrap().0;
 
             if let Some(held) = node2captured_nodes.get(&dependency_index) {
                 borrowed_nodes.extend(held);
             }
             match edge_metadata {
-                CallGraphEdgeMetadata::Move => {}
+                CallGraphEdgeMetadata::HappensBefore | CallGraphEdgeMetadata::Move => {}
                 CallGraphEdgeMetadata::SharedBorrow => {
                     borrowed_nodes.insert(dependency_index);
-                    continue 'dependencies;
+                    return;
                 }
-                CallGraphEdgeMetadata::HappensBefore => {
+            }
+        });
+
+        'dependencies: for edge_id in dependency_edge_ids {
+            match call_graph.edge_weight(edge_id).unwrap() {
+                CallGraphEdgeMetadata::Move => {}
+                CallGraphEdgeMetadata::SharedBorrow | CallGraphEdgeMetadata::HappensBefore => {
                     continue 'dependencies;
                 }
             }
+            let dependency_index = call_graph.edge_endpoints(edge_id).unwrap().0;
 
             if borrowed_nodes.contains(&dependency_index) {
                 if copy_checker.is_copy(&call_graph, dependency_index, component_db, computation_db)
@@ -318,7 +347,7 @@ fn emit_ancestor_descendant_borrow_error(
         writeln!(
             &mut error_msg,
             "- `{borrower_path}` wants to borrow `{contended_type:?}`\n\
-            - but `{consumer_path}`, which is invoked earlier on, consumes `{contended_type:?}` by value"
+            - But `{consumer_path}`, which is invoked earlier on, consumes `{contended_type:?}` by value"
         )
             .unwrap();
     }

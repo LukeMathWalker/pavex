@@ -77,9 +77,9 @@ digraph "GET /home - 1" {
 }
 
 digraph "* /home - 0" {
-    0 [ label = "app::fallible_wrapping_middleware(pavex::middleware::Next<crate::route_1::Next0>) -> core::prelude::rust_2015::Result<pavex::response::Response, app::MiddlewareError>"]
-    1 [ label = "pavex::middleware::Next::new(crate::route_1::Next0) -> pavex::middleware::Next<crate::route_1::Next0>"]
-    2 [ label = "crate::route_1::Next0(&pavex::router::AllowedMethods) -> crate::route_1::Next0"]
+    0 [ label = "app::fallible_wrapping_middleware(pavex::middleware::Next<crate::route_1::Next0<'a>>) -> core::prelude::rust_2015::Result<pavex::response::Response, app::MiddlewareError>"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_1::Next0<'a>) -> pavex::middleware::Next<crate::route_1::Next0<'a>>"]
+    2 [ label = "crate::route_1::Next0(&'a pavex::router::AllowedMethods) -> crate::route_1::Next0<'a>"]
     4 [ label = "core::prelude::rust_2015::Result<pavex::response::Response, app::MiddlewareError> -> pavex::response::Response"]
     5 [ label = "core::prelude::rust_2015::Result<pavex::response::Response, app::MiddlewareError> -> app::MiddlewareError"]
     6 [ label = "app::handle_middleware_error(&app::MiddlewareError) -> pavex::response::Response"]

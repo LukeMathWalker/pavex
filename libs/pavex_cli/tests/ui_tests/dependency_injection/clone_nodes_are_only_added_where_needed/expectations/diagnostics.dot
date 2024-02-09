@@ -20,10 +20,10 @@ digraph "GET / - 1" {
 }
 
 digraph "* / - 0" {
-    0 [ label = "app::mw(app::Singleton, pavex::middleware::Next<crate::route_1::Next0>) -> pavex::response::Response"]
+    0 [ label = "app::mw(app::Singleton, pavex::middleware::Next<crate::route_1::Next0<'a>>) -> pavex::response::Response"]
     1 [ label = "app::Singleton"]
-    2 [ label = "pavex::middleware::Next::new(crate::route_1::Next0) -> pavex::middleware::Next<crate::route_1::Next0>"]
-    3 [ label = "crate::route_1::Next0(&pavex::router::AllowedMethods) -> crate::route_1::Next0"]
+    2 [ label = "pavex::middleware::Next::new(crate::route_1::Next0<'a>) -> pavex::middleware::Next<crate::route_1::Next0<'a>>"]
+    3 [ label = "crate::route_1::Next0(&'a pavex::router::AllowedMethods) -> crate::route_1::Next0<'a>"]
     5 [ label = "&pavex::router::AllowedMethods"]
     2 -> 0 [ ]
     3 -> 2 [ ]

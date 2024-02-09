@@ -1,6 +1,6 @@
 use bimap::BiHashMap;
 use guppy::PackageId;
-use indexmap::{IndexMap, IndexSet};
+use indexmap::IndexSet;
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote, ToTokens};
 use syn::ItemFn;
@@ -9,7 +9,7 @@ use crate::compiler::analyses::components::ComponentDb;
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::framework_items::FrameworkItemDb;
 use crate::compiler::analyses::processing_pipeline::RequestHandlerPipeline;
-use crate::language::ResolvedType;
+use crate::language::{GenericArgument, GenericLifetimeParameter, ResolvedType};
 
 impl RequestHandlerPipeline {
     /// Generates the code required to wire together this request handler pipeline.
@@ -47,37 +47,15 @@ impl RequestHandlerPipeline {
         let mut next_states = Vec::with_capacity(n_middlewares);
         for (i, stage_data) in self.middleware_id2stage_data.values().enumerate() {
             let next_state = &stage_data.next_state;
-            let mut lifetime_generator = LifetimeGenerator::new();
-            let mut state_lifetimes = IndexSet::new();
-            let field_bindings: Vec<_> = next_state
-                .field_bindings
-                .iter()
-                .map(|(name, ty_)| {
-                    let mut ty_ = ty_.to_owned();
-
-                    let lifetime2binding: IndexMap<_, _> = ty_
-                        .named_lifetime_parameters()
-                        .into_iter()
-                        .map(|lifetime| (lifetime, lifetime_generator.next()))
-                        .collect();
-                    ty_.rename_lifetime_parameters(&lifetime2binding);
-                    state_lifetimes.extend(lifetime2binding.values().cloned());
-
-                    if ty_.has_implicit_lifetime_parameters() {
-                        let implicit_lifetime_binding = lifetime_generator.next();
-                        state_lifetimes.insert(implicit_lifetime_binding.clone());
-                        ty_.set_implicit_lifetimes(implicit_lifetime_binding);
-                    }
-                    (name, ty_)
-                })
-                .collect();
-
             let next_stage = &stages[i + 1];
             let input_types: Vec<_> = next_stage
                 .input_parameters
                 .iter()
                 .map(|input| {
-                    let field = field_bindings.iter().find(|(_, ty_)| ty_ == input);
+                    let field = next_state
+                        .field_bindings
+                        .iter()
+                        .find(|(_, ty_)| *ty_ == input);
                     let Some((_, ty_)) = field else {
                         unreachable!();
                     };
@@ -85,7 +63,8 @@ impl RequestHandlerPipeline {
                     quote! { #ty_ }
                 })
                 .collect();
-            let fields = field_bindings
+            let fields = next_state
+                .field_bindings
                 .iter()
                 .map(|(name, ty_)| {
                     let name = format_ident!("{}", name);
@@ -97,9 +76,15 @@ impl RequestHandlerPipeline {
                 .chain(std::iter::once(quote! { next: fn(#(#input_types),*) -> T }));
 
             let struct_name = format_ident!("{}", next_state.type_.base_type.last().unwrap());
-            let state_generics: Vec<_> = state_lifetimes
+            let state_generics: Vec<_> = next_state
+                .type_
+                .generic_arguments
                 .iter()
-                .map(|lifetime| {
+                .map(|arg| {
+                    let GenericArgument::Lifetime(GenericLifetimeParameter::Named(lifetime)) = arg
+                    else {
+                        unreachable!()
+                    };
                     syn::Lifetime::new(&format!("'{lifetime}"), proc_macro2::Span::call_site())
                         .to_token_stream()
                 })
@@ -167,35 +152,6 @@ impl RequestHandlerPipeline {
             next_states,
             module_name: self.module_name.clone(),
         })
-    }
-}
-
-/// A generator of unique lifetime names.
-struct LifetimeGenerator {
-    next: usize,
-}
-
-impl LifetimeGenerator {
-    const ALPHABET: [char; 26] = [
-        'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r',
-        's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
-    ];
-
-    fn new() -> Self {
-        Self { next: 0 }
-    }
-
-    /// Generates a new lifetime name.
-    fn next(&mut self) -> String {
-        let next = self.next;
-        self.next += 1;
-        let round = next / Self::ALPHABET.len();
-        let letter = Self::ALPHABET[next % Self::ALPHABET.len()];
-        if round == 0 {
-            format!("{letter}")
-        } else {
-            format!("{letter}{round}")
-        }
     }
 }
 

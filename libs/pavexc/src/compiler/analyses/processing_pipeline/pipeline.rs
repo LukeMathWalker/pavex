@@ -16,7 +16,10 @@ use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::constructibles::ConstructibleDb;
 use crate::compiler::analyses::processing_pipeline::graph_iter::PipelineGraphIterator;
 use crate::compiler::app::GENERATED_APP_PACKAGE_ID;
-use crate::language::{Callable, InvocationStyle, PathType, ResolvedType};
+use crate::compiler::utils::LifetimeGenerator;
+use crate::language::{
+    Callable, GenericArgument, GenericLifetimeParameter, InvocationStyle, PathType, ResolvedType,
+};
 use crate::rustdoc::CrateCollection;
 
 /// A request handler pipeline is the combination of a root compute node (i.e. the request handler)
@@ -167,19 +170,39 @@ impl RequestHandlerPipeline {
         for (i, (middleware_id, next_state_types)) in
             middleware_id2next_field_types.iter().enumerate()
         {
+            let mut state_lifetimes = IndexSet::new();
+            let mut lifetime_generator = LifetimeGenerator::new();
             let next_state_bindings = next_state_types
                 .iter()
                 .enumerate()
-                .map(|(i, type_)| {
+                .map(|(i, ty_)| {
+                    let mut ty_ = ty_.to_owned();
+
+                    let lifetime2binding: IndexMap<_, _> = ty_
+                        .named_lifetime_parameters()
+                        .into_iter()
+                        .map(|lifetime| (lifetime, lifetime_generator.next()))
+                        .collect();
+                    ty_.rename_lifetime_parameters(&lifetime2binding);
+                    state_lifetimes.extend(lifetime2binding.values().cloned());
+
+                    if ty_.has_implicit_lifetime_parameters() {
+                        let implicit_lifetime_binding = lifetime_generator.next();
+                        state_lifetimes.insert(implicit_lifetime_binding.clone());
+                        ty_.set_implicit_lifetimes(implicit_lifetime_binding);
+                    }
                     // TODO: naming can be improved here.
-                    (format!("s_{i}"), type_.to_owned())
+                    (format!("s_{i}"), ty_.to_owned())
                 })
                 .collect::<BTreeMap<_, _>>();
             let next_state_type = PathType {
                 package_id: PackageId::new(GENERATED_APP_PACKAGE_ID),
                 rustdoc_id: None,
                 base_type: vec!["crate".into(), module_name.clone(), format!("Next{i}")],
-                generic_arguments: vec![],
+                generic_arguments: state_lifetimes
+                    .into_iter()
+                    .map(|s| GenericArgument::Lifetime(GenericLifetimeParameter::Named(s)))
+                    .collect(),
             };
 
             // We register a constructor, in order to make it possible to build an instance of
