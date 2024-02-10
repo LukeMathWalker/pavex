@@ -26,7 +26,7 @@ use super::{IncomingStream, ShutdownMode};
 /// use pavex::server::Server;
 ///
 /// # #[derive(Clone)] struct ApplicationState;
-/// # async fn router(_req: hyper::Request<hyper::body::Incoming>, _state: ApplicationState) -> pavex::response::Response { todo!() }
+/// # async fn router(_req: hyper::Request<hyper::body::Incoming>, _conn_info: Option<pavex::connection::ConnectionInfo>, _state: ApplicationState) -> pavex::response::Response { todo!() }
 /// # async fn t() -> std::io::Result<()> {
 /// # let application_state = ApplicationState;
 /// let addr = SocketAddr::from(([127, 0, 0, 1], 8080));
