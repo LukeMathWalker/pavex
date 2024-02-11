@@ -10,9 +10,11 @@ license.workspace = true
 readme = "README.md"
 
 [features]
-default = ["server"]
+default = ["server", "cookie"]
 
 server = ["dep:hyper", "dep:hyper-util", "dep:socket2"]
+
+cookie = ["dep:cookie"]
 
 [dependencies]
 bytes = "1"
@@ -48,6 +50,9 @@ serde_path_to_error = "0.1"
 indexmap = { version = "2", features = ["serde"] }
 fs-err = "2.7.0"
 ron = "0.8"
+
+# Cookie
+cookie = { package = "cookie", version = "0.18.0", features = ["percent-encode", "secure"], optional = true }
 
 tokio = { version = "1.32", features = ["net", "sync", "rt", "time"] }
 hyper = { version = "1", features = ["full"], optional = true }
