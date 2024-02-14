@@ -15,6 +15,7 @@ use crate::compiler::analyses::components::HydratedComponent;
 use crate::compiler::analyses::components::{ComponentDb, ComponentId};
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::constructibles::ConstructibleDb;
+use crate::compiler::analyses::framework_items::FrameworkItemDb;
 use crate::compiler::analyses::processing_pipeline::graph_iter::PipelineGraphIterator;
 use crate::compiler::app::GENERATED_APP_PACKAGE_ID;
 use crate::compiler::utils::LifetimeGenerator;
@@ -61,6 +62,7 @@ impl RequestHandlerPipeline {
         computation_db: &mut ComputationDb,
         component_db: &mut ComponentDb,
         constructible_db: &mut ConstructibleDb,
+        framework_item_db: &FrameworkItemDb,
         package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
         diagnostics: &mut Vec<miette::Error>,
@@ -237,6 +239,7 @@ impl RequestHandlerPipeline {
                     next_state_scope_id,
                     CloningStrategy::NeverClone,
                     computation_db,
+                    framework_item_db,
                     None,
                 )
                 .unwrap();
@@ -267,6 +270,7 @@ impl RequestHandlerPipeline {
                 *middleware_id,
                 &bindings,
                 computation_db,
+                framework_item_db,
             );
 
             let HydratedComponent::WrappingMiddleware(bound_mw) =
@@ -282,6 +286,7 @@ impl RequestHandlerPipeline {
                     &bound_mw.next_input_type().to_owned(),
                     component_db,
                     computation_db,
+                    framework_item_db,
                 )
                 .is_some());
 

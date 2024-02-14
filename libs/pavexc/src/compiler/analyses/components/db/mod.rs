@@ -187,6 +187,7 @@ impl ComponentDb {
                 computation_db,
                 package_graph,
                 krate_collection,
+                framework_item_db,
                 diagnostics,
             );
 
@@ -463,6 +464,7 @@ impl ComponentDb {
         computation_db: &mut ComputationDb,
         package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
+        framework_item_db: &FrameworkItemDb,
         diagnostics: &mut Vec<miette::Error>,
     ) {
         let constructor_ids = self
@@ -472,7 +474,7 @@ impl ComponentDb {
             .collect::<Vec<_>>();
         for user_component_id in constructor_ids {
             let c: Computation = computation_db[user_component_id].clone().into();
-            match Constructor::new(c, &self.pavex_error) {
+            match Constructor::new(c, &self.pavex_error, &framework_item_db) {
                 Err(e) => {
                     Self::invalid_constructor(
                         e,
@@ -960,10 +962,11 @@ impl ComponentDb {
         scope_id: ScopeId,
         cloning_strategy: CloningStrategy,
         computation_db: &mut ComputationDb,
+        framework_item_db: &FrameworkItemDb,
         derived_from: Option<ComponentId>,
     ) -> Result<ComponentId, ConstructorValidationError> {
         let callable = computation_db[callable_id].to_owned();
-        Constructor::new(callable, &self.pavex_error)?;
+        Constructor::new(callable, &self.pavex_error, framework_item_db)?;
         let constructor_component = UnregisteredComponent::SyntheticConstructor {
             lifecycle,
             computation_id: callable_id,
@@ -1306,6 +1309,7 @@ impl ComponentDb {
         id: ComponentId,
         bindings: &HashMap<String, ResolvedType>,
         computation_db: &mut ComputationDb,
+        framework_item_db: &FrameworkItemDb,
     ) -> ComponentId {
         fn _get_root_component_id(
             component_id: ComponentId,
@@ -1355,6 +1359,7 @@ impl ComponentDb {
                     self.scope_id(unbound_root_id),
                     cloning_strategy,
                     computation_db,
+                    framework_item_db,
                     Some(unbound_root_id),
                 )
                 .unwrap()

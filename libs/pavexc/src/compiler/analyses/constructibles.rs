@@ -160,7 +160,13 @@ impl ConstructibleDb {
                         }
                     }
                     if self
-                        .get_or_try_bind(scope_id, input, component_db, computation_db)
+                        .get_or_try_bind(
+                            scope_id,
+                            input,
+                            component_db,
+                            computation_db,
+                            framework_items_db,
+                        )
                         .is_some()
                     {
                         continue;
@@ -536,14 +542,18 @@ impl ConstructibleDb {
         type_: &ResolvedType,
         component_db: &mut ComponentDb,
         computation_db: &mut ComputationDb,
+        framework_item_db: &FrameworkItemDb,
     ) -> Option<(ComponentId, ConsumptionMode)> {
         let mut fifo = VecDeque::with_capacity(1);
         fifo.push_back(scope_id);
         while let Some(scope_id) = fifo.pop_front() {
             if let Some(constructibles) = self.scope_id2constructibles.get_mut(&scope_id) {
-                if let Some(output) =
-                    constructibles.get_or_try_bind(type_, component_db, computation_db)
-                {
+                if let Some(output) = constructibles.get_or_try_bind(
+                    type_,
+                    component_db,
+                    computation_db,
+                    framework_item_db,
+                ) {
                     return Some(output);
                 }
             }
@@ -841,6 +851,7 @@ impl ConstructiblesInScope {
         type_: &ResolvedType,
         component_db: &mut ComponentDb,
         computation_db: &mut ComputationDb,
+        framework_item_db: &FrameworkItemDb,
     ) -> Option<(ComponentId, ConsumptionMode)> {
         if let Some(output) = self.get(type_) {
             return Some(output);
@@ -852,6 +863,7 @@ impl ConstructiblesInScope {
                     templated_component_id,
                     component_db,
                     computation_db,
+                    framework_item_db,
                     &bindings,
                 );
                 return self.get(type_);
@@ -860,8 +872,12 @@ impl ConstructiblesInScope {
 
         match type_ {
             ResolvedType::Reference(ref_) if !ref_.lifetime.is_static() && !ref_.is_mutable => {
-                let (component_id, _) =
-                    self.get_or_try_bind(&ref_.inner, component_db, computation_db)?;
+                let (component_id, _) = self.get_or_try_bind(
+                    &ref_.inner,
+                    component_db,
+                    computation_db,
+                    framework_item_db,
+                )?;
                 Some((component_id, ConsumptionMode::SharedBorrow))
             }
             _ => None,
@@ -884,12 +900,14 @@ impl ConstructiblesInScope {
         templated_component_id: ComponentId,
         component_db: &mut ComponentDb,
         computation_db: &mut ComputationDb,
+        framework_item_db: &FrameworkItemDb,
         bindings: &HashMap<String, ResolvedType>,
     ) {
         let bound_component_id = component_db.bind_generic_type_parameters(
             templated_component_id,
             bindings,
             computation_db,
+            framework_item_db,
         );
 
         let mut derived_component_ids = component_db.derived_component_ids(bound_component_id);

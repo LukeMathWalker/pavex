@@ -45,6 +45,7 @@ impl ComponentDb {
         let diagnostic = match e {
             ConstructorValidationError::CannotFalliblyReturnTheUnitType
             | ConstructorValidationError::CannotConstructPavexError
+            | ConstructorValidationError::CannotConstructFrameworkPrimitive { .. }
             | ConstructorValidationError::CannotReturnTheUnitType => {
                 CompilerDiagnostic::builder(source, e)
                     .optional_label(label)
