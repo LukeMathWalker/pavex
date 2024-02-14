@@ -1,0 +1,4 @@
+description = """It is forbidden to register a constructor for pavex::Error or &pavex::Error"""
+
+[expectations]
+codegen = "fail"

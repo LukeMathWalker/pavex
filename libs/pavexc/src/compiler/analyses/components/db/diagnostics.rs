@@ -44,6 +44,7 @@ impl ComponentDb {
             .map(|s| s.labeled("The constructor was registered here".into()));
         let diagnostic = match e {
             ConstructorValidationError::CannotFalliblyReturnTheUnitType
+            | ConstructorValidationError::CannotConstructPavexError
             | ConstructorValidationError::CannotReturnTheUnitType => {
                 CompilerDiagnostic::builder(source, e)
                     .optional_label(label)

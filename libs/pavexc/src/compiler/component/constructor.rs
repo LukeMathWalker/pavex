@@ -12,10 +12,11 @@ use crate::language::ResolvedType;
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) struct Constructor<'a>(pub(crate) Computation<'a>);
 
-impl<'a> TryFrom<Computation<'a>> for Constructor<'a> {
-    type Error = ConstructorValidationError;
-
-    fn try_from(c: Computation<'a>) -> Result<Self, Self::Error> {
+impl<'a> Constructor<'a> {
+    pub fn new(
+        c: Computation<'a>,
+        pavex_error: &ResolvedType,
+    ) -> Result<Self, ConstructorValidationError> {
         if c.output_type().is_none() {
             return Err(ConstructorValidationError::CannotReturnTheUnitType);
         }
@@ -28,6 +29,16 @@ impl<'a> TryFrom<Computation<'a>> for Constructor<'a> {
             output_type = m.ok.output;
             if output_type == ResolvedType::UNIT_TYPE {
                 return Err(ConstructorValidationError::CannotFalliblyReturnTheUnitType);
+            }
+        }
+
+        // You can't construct `pavex::Error` or `&pavex::Error`.
+        if &output_type == pavex_error {
+            return Err(ConstructorValidationError::CannotConstructPavexError);
+        }
+        if let ResolvedType::Reference(ref_type) = &output_type {
+            if ref_type.inner.as_ref() == pavex_error {
+                return Err(ConstructorValidationError::CannotConstructPavexError);
             }
         }
 
@@ -92,6 +103,8 @@ pub(crate) enum ConstructorValidationError {
     CannotReturnTheUnitType,
     #[error("All fallible constructors must return *something* when successful.\nThis fallible constructor doesn't: it returns the unit type when successful, `Ok(())`.")]
     CannotFalliblyReturnTheUnitType,
+    #[error("You can't register a constructor for `pavex::Error`.\n`pavex::Error` can only be used as the error type of your fallible components.")]
+    CannotConstructPavexError,
     #[error("Input parameters for a constructor can't have any *unassigned* generic type parameters that appear exclusively in its input parameters.")]
     UnderconstrainedGenericParameters { parameters: IndexSet<String> },
     #[error("The output type of a constructor can't be a naked generic parameters (i.e. `T`).\n\

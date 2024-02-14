@@ -472,7 +472,7 @@ impl ComponentDb {
             .collect::<Vec<_>>();
         for user_component_id in constructor_ids {
             let c: Computation = computation_db[user_component_id].clone().into();
-            match TryInto::<Constructor>::try_into(c) {
+            match Constructor::new(c, &self.pavex_error) {
                 Err(e) => {
                     Self::invalid_constructor(
                         e,
@@ -963,7 +963,7 @@ impl ComponentDb {
         derived_from: Option<ComponentId>,
     ) -> Result<ComponentId, ConstructorValidationError> {
         let callable = computation_db[callable_id].to_owned();
-        TryInto::<Constructor>::try_into(callable)?;
+        Constructor::new(callable, &self.pavex_error)?;
         let constructor_component = UnregisteredComponent::SyntheticConstructor {
             lifecycle,
             computation_id: callable_id,
