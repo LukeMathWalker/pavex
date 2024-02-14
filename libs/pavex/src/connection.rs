@@ -11,6 +11,17 @@ pub struct ConnectionInfo {
 
 impl ConnectionInfo {
     /// Returns the peer address.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use pavex::connection::ConnectionInfo;
+    ///
+    /// // The `ConnectionInfo` extractor can be used to access a peer's address within a handler.
+    /// pub fn my_ip(conn_info: &ConnectionInfo) -> String {
+    ///     format!("Your IP is {}", conn_info.peer_addr())
+    /// }
+    /// ```
     pub fn peer_addr(&self) -> SocketAddr {
         self.peer_addr
     }
