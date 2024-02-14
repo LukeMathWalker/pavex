@@ -113,7 +113,7 @@ pub mod route_0 {
                 };
             }
         };
-        v5
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v5)
     }
     pub async fn handler(
         v0: app::HttpClient,
@@ -207,7 +207,7 @@ pub mod route_1 {
                 };
             }
         };
-        v4
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
     }
     pub async fn handler(
         v0: &pavex::router::AllowedMethods,

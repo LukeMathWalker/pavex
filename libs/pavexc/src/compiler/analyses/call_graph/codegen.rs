@@ -18,7 +18,8 @@ use crate::compiler::analyses::call_graph::core_graph::{CallGraphEdgeMetadata, R
 use crate::compiler::analyses::call_graph::{
     CallGraphNode, NumberOfAllowedInvocations, OrderedCallGraph,
 };
-use crate::compiler::analyses::components::{ComponentDb, HydratedComponent};
+use crate::compiler::analyses::components::ComponentDb;
+use crate::compiler::analyses::components::HydratedComponent;
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::codegen_utils;
 use crate::compiler::codegen_utils::{Fragment, VariableNameGenerator};
@@ -324,7 +325,7 @@ fn _codegen_callable_closure_body(
                     let variant_type = match &call_graph[variant_index] {
                         CallGraphNode::Compute { component_id, .. } => {
                             match component_db.hydrated_component(*component_id, computation_db) {
-                                HydratedComponent::Transformer(Computation::MatchResult(m))
+                                HydratedComponent::Transformer(Computation::MatchResult(m), ..)
                                 | HydratedComponent::Constructor(Constructor(
                                     Computation::MatchResult(m),
                                 )) => m.variant,

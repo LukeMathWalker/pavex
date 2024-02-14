@@ -114,7 +114,8 @@ pub mod route_1 {
             next: middleware_1,
         };
         let v2 = pavex::middleware::Next::new(v1);
-        app::first(v0, v2).await
+        let v3 = app::first(v0, v2).await;
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
     }
     pub async fn middleware_1(v0: &app::Spy) -> pavex::response::Response {
         let v1 = crate::route_1::Next1 {
@@ -122,7 +123,8 @@ pub mod route_1 {
             next: handler,
         };
         let v2 = pavex::middleware::Next::new(v1);
-        app::second(v0, v2).await
+        let v3 = app::second(v0, v2).await;
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
     }
     pub async fn handler(v0: &app::Spy) -> pavex::response::Response {
         let v1 = app::handler(v0).await;
@@ -170,7 +172,8 @@ pub mod route_2 {
             next: handler,
         };
         let v2 = pavex::middleware::Next::new(v1);
-        app::first(v0, v2).await
+        let v3 = app::first(v0, v2).await;
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
     }
     pub async fn handler(v0: &app::Spy) -> pavex::response::Response {
         let v1 = app::handler(v0).await;
@@ -201,7 +204,8 @@ pub mod route_3 {
             next: middleware_1,
         };
         let v2 = pavex::middleware::Next::new(v1);
-        app::first(v0, v2).await
+        let v3 = app::first(v0, v2).await;
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
     }
     pub async fn middleware_1(v0: &app::Spy) -> pavex::response::Response {
         let v1 = crate::route_3::Next1 {
@@ -209,7 +213,8 @@ pub mod route_3 {
             next: handler,
         };
         let v2 = pavex::middleware::Next::new(v1);
-        app::second(v0, v2).await
+        let v3 = app::second(v0, v2).await;
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
     }
     pub async fn handler(v0: &app::Spy) -> pavex::response::Response {
         let v1 = app::handler(v0).await;

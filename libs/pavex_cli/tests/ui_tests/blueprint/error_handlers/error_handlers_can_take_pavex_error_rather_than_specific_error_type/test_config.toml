@@ -1,0 +1,6 @@
+description = """Pavex allows an error handler to take &pavex::Error as input
+rather than the specific error type returned by the fallible component
+it is associated with."""
+
+[expectations]
+codegen = "pass"

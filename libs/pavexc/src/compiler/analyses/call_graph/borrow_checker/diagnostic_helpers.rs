@@ -1,13 +1,8 @@
 use pavex_bp_schema::Lifecycle;
 
+use crate::compiler::analyses::components::{ComponentDb, ComponentId};
 use crate::{
-    compiler::{
-        analyses::{
-            components::{ComponentDb, ComponentId},
-            computations::ComputationDb,
-        },
-        computation::Computation,
-    },
+    compiler::{analyses::computations::ComputationDb, computation::Computation},
     diagnostic::{AnnotatedSnippet, CompilerDiagnosticBuilder, HelpWithSnippet},
 };
 

@@ -2,10 +2,12 @@ digraph "GET / - 0" {
     0 [ label = "app::mw(pavex::middleware::Next<crate::route_0::Next0<'a, 'b, 'c>>) -> pavex::response::Response"]
     1 [ label = "pavex::middleware::Next::new(crate::route_0::Next0<'a, 'b, 'c>) -> pavex::middleware::Next<crate::route_0::Next0<'a, 'b, 'c>>"]
     2 [ label = "crate::route_0::Next0(&'c pavex::request::path::RawPathParams<'a, 'b>) -> crate::route_0::Next0<'a, 'b, 'c>"]
-    4 [ label = "&pavex::request::path::RawPathParams<'server, 'request>"]
+    4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    5 [ label = "&pavex::request::path::RawPathParams<'server, 'request>"]
     1 -> 0 [ ]
     2 -> 1 [ ]
-    4 -> 2 [ ]
+    0 -> 4 [ ]
+    5 -> 2 [ ]
 }
 
 digraph "GET / - 1" {
@@ -20,10 +22,12 @@ digraph "* / - 0" {
     0 [ label = "app::mw(pavex::middleware::Next<crate::route_1::Next0<'a>>) -> pavex::response::Response"]
     1 [ label = "pavex::middleware::Next::new(crate::route_1::Next0<'a>) -> pavex::middleware::Next<crate::route_1::Next0<'a>>"]
     2 [ label = "crate::route_1::Next0(&'a pavex::router::AllowedMethods) -> crate::route_1::Next0<'a>"]
-    4 [ label = "&pavex::router::AllowedMethods"]
+    4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    5 [ label = "&pavex::router::AllowedMethods"]
     1 -> 0 [ ]
     2 -> 1 [ ]
-    4 -> 2 [ ]
+    0 -> 4 [ ]
+    5 -> 2 [ ]
 }
 
 digraph "* / - 1" {

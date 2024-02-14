@@ -9,10 +9,7 @@ use guppy::PackageId;
 use indexmap::{IndexMap, IndexSet};
 use serde::{Deserializer, Serializer};
 
-use crate::language::resolved_type::generics_equivalence::{
-    compute_generic_argument_equivalence_mapping, generic_arguments_are_equivalent,
-    UnassignedIdGenerator,
-};
+use crate::language::resolved_type::generics_equivalence::UnassignedIdGenerator;
 use crate::language::{ResolvedPath, ResolvedPathSegment};
 
 #[derive(serde::Serialize, serde::Deserialize, Eq, PartialEq, Hash, Clone)]
@@ -223,9 +220,18 @@ impl ResolvedType {
         &'a self,
         other: &'b ResolvedType,
     ) -> Option<HashMap<&'a str, &'b str>> {
-        let mut bindings = HashMap::new();
-        if self._is_equivalent_to(other, &mut bindings) {
-            Some(bindings)
+        let mut self_id_gen = UnassignedIdGenerator::new();
+        let mut other_id_gen = UnassignedIdGenerator::new();
+        if self._is_equivalent_to(other, &mut self_id_gen, &mut other_id_gen) {
+            Some(
+                self_id_gen
+                    .into_iter()
+                    .zip(other_id_gen.into_iter())
+                    .map(|((self_name, _), (other_name, _))| {
+                        (self_name.as_ref(), other_name.as_ref())
+                    })
+                    .collect(),
+            )
         } else {
             None
         }
@@ -234,49 +240,36 @@ impl ResolvedType {
     fn _is_equivalent_to<'a, 'b>(
         &'a self,
         other: &'b ResolvedType,
-        bindings: &mut HashMap<&'a str, &'b str>,
+        self_id_gen: &mut UnassignedIdGenerator<'a>,
+        other_id_gen: &mut UnassignedIdGenerator<'b>,
     ) -> bool {
-        // The `PartialEq`/`Eq` implementation for `ResolvedType` already takes into account
-        // the possibility of remapping unassigned generic type parameters, so we can exit early
-        // here if they don't match.
-        if self != other {
-            return false;
-        }
         use ResolvedType::*;
         match (self, other) {
             (ResolvedPath(self_path), ResolvedPath(other_path)) => {
-                let remapping = compute_generic_argument_equivalence_mapping(
-                    &self_path.generic_arguments,
-                    &other_path.generic_arguments,
-                );
-                if let Some(remapping) = remapping {
-                    for (self_generic, other_generic) in remapping {
-                        let previous_other_name = bindings.insert(self_generic, other_generic);
-                        if let Some(previous_other_name) = previous_other_name {
-                            if previous_other_name != other_generic {
-                                return false;
-                            }
-                        }
-                    }
-                    true
-                } else {
-                    false
-                }
+                self_path._is_equivalent_to(other_path, self_id_gen, other_id_gen)
             }
-            (Slice(self_slice), Slice(other_slice)) => self_slice
-                .element_type
-                ._is_equivalent_to(&other_slice.element_type, bindings),
+            (Slice(self_slice), Slice(other_slice)) => self_slice.element_type._is_equivalent_to(
+                &other_slice.element_type,
+                self_id_gen,
+                other_id_gen,
+            ),
             (Reference(self_reference), Reference(other_reference)) => self_reference
                 .inner
-                ._is_equivalent_to(&other_reference.inner, bindings),
+                ._is_equivalent_to(&other_reference.inner, self_id_gen, other_id_gen),
             (Tuple(self_tuple), Tuple(other_tuple)) => self_tuple
                 .elements
                 .iter()
                 .zip(other_tuple.elements.iter())
-                .all(|(self_type, other_type)| self_type._is_equivalent_to(other_type, bindings)),
-            (ScalarPrimitive(_), ScalarPrimitive(_)) => true,
-            (Generic(_), Generic(_)) => true,
-            (_, _) => unreachable!(),
+                .all(|(self_type, other_type)| {
+                    self_type._is_equivalent_to(other_type, self_id_gen, other_id_gen)
+                }),
+            (ScalarPrimitive(self_p), ScalarPrimitive(other_p)) => self_p == other_p,
+            (Generic(self_g), Generic(other_g)) => {
+                let first_id = self_id_gen.id(&self_g.name);
+                let second_id = other_id_gen.id(&other_g.name);
+                first_id == second_id
+            }
+            (_, _) => false,
         }
     }
 
@@ -636,77 +629,32 @@ pub struct PathType {
     pub generic_arguments: Vec<GenericArgument>,
 }
 
-mod generics_equivalence {
-    use std::borrow::Cow;
-
-    use ahash::{HashMap, HashMapExt};
-
-    use crate::language::{GenericArgument, ResolvedType};
-
-    /// Returns `true` if the two lists of generic arguments are equivalent.
-    ///
-    /// Two lists of generic arguments are equivalent if:
-    ///
-    /// - All the assigned type parameters are the same;
-    /// - All the assigned lifetime parameters are the same;
-    /// - If there is a bijective renaming such that all the unassigned type parameters are the same.
-    ///
-    /// For example, `Vec<S, T>` and `Vec<T, S>` are equivalent—we just need to swap `S` and `T`.
-    /// `Vec<S, T>` and `Vec<S, S>`, instead, are not equivalent—the latter requires both parameters
-    /// to be identical, therefore there is no bijective renaming that can transform `Vec<S, T>`
-    /// into `Vec<S, S>`.
-    ///
-    /// If you need to compute the equivalence mapping, see [`compute_generic_argument_equivalence_mapping`].
-    pub(crate) fn generic_arguments_are_equivalent(
-        first_generic_args: &[GenericArgument],
-        second_generic_args: &[GenericArgument],
+impl PathType {
+    pub(crate) fn _is_equivalent_to<'a, 'b>(
+        &'a self,
+        other: &'b PathType,
+        self_id_gen: &mut UnassignedIdGenerator<'a>,
+        other_id_gen: &mut UnassignedIdGenerator<'b>,
     ) -> bool {
-        if first_generic_args.len() != second_generic_args.len() {
+        let self_args = &self.generic_arguments;
+        let other_args = &other.generic_arguments;
+        if self_args.len() != other_args.len() {
             return false;
         }
-        let mut first_id_gen = UnassignedIdGenerator::new();
-        let mut second_id_gen = UnassignedIdGenerator::new();
-        first_generic_args
-            .iter()
-            .zip(second_generic_args)
-            .all(|(first, second)| {
-                use GenericArgument::*;
-                use ResolvedType::*;
-                match (first, second) {
-                    (TypeParameter(Generic(first)), TypeParameter(Generic(second))) => {
-                        first_id_gen.id(&first.name) == second_id_gen.id(&second.name)
-                    }
-                    (first, second) => first == second,
-                }
-            })
-    }
-
-    /// If two lists of generic arguments are equivalent, returns a mapping from the unassigned
-    /// type parameters of the first list to the unassigned type parameters of the second list
-    /// that turns the first list of generic parameters into the second one.
-    ///
-    /// It returns `None` if the two lists of generic arguments are not equivalent.
-    pub(crate) fn compute_generic_argument_equivalence_mapping<'a, 'b>(
-        first_generic_args: &'a [GenericArgument],
-        second_generic_args: &'b [GenericArgument],
-    ) -> Option<HashMap<&'a str, &'b str>> {
-        if first_generic_args.len() != second_generic_args.len() {
-            return None;
-        }
-        let mut first_id_gen = UnassignedIdGenerator::new();
-        let mut second_id_gen = UnassignedIdGenerator::new();
-        let mut mapping = HashMap::new();
-        for (first, second) in first_generic_args.iter().zip(second_generic_args) {
+        for (self_arg, other_arg) in self_args.iter().zip(other_args) {
             use GenericArgument::*;
             use ResolvedType::*;
-            match (first, second) {
+            match (self_arg, other_arg) {
                 (TypeParameter(Generic(first)), TypeParameter(Generic(second))) => {
-                    let first_id = first_id_gen.id(&first.name);
-                    let second_id = second_id_gen.id(&second.name);
-                    if first_id == second_id {
-                        mapping.insert(first.name.as_str(), second.name.as_str());
-                    } else {
-                        return None;
+                    let first_id = self_id_gen.id(&first.name);
+                    let second_id = other_id_gen.id(&second.name);
+                    if first_id != second_id {
+                        return false;
+                    }
+                }
+                (TypeParameter(first), TypeParameter(second)) => {
+                    if !first._is_equivalent_to(&second, self_id_gen, other_id_gen) {
+                        return false;
                     }
                 }
                 (Lifetime(_), Lifetime(_)) => {
@@ -714,20 +662,24 @@ mod generics_equivalence {
                 }
                 (first, second) => {
                     if first != second {
-                        return None;
+                        return false;
                     }
                 }
             }
         }
-        Some(mapping)
+        true
     }
+}
+
+mod generics_equivalence {
+    use ahash::{HashMap, HashMapExt};
 
     /// To make the comparison easier, we assign a monotonically increasing unique id to all
     /// unassigned generic parameters.
     /// If the ids match, we know that the two sequences of unassigned generic parameters are equivalent.
-    pub(super) struct UnassignedIdGenerator<'a> {
+    pub(crate) struct UnassignedIdGenerator<'a> {
         next_id: usize,
-        known_ids: HashMap<Cow<'a, str>, usize>,
+        known_ids: HashMap<&'a str, usize>,
     }
 
     impl<'a> UnassignedIdGenerator<'a> {
@@ -738,11 +690,10 @@ mod generics_equivalence {
             }
         }
 
-        pub(super) fn id<'b>(&'b mut self, name: impl Into<Cow<'a, str>>) -> usize
+        pub(super) fn id<'b>(&'b mut self, name: &'a str) -> usize
         where
             'a: 'b,
         {
-            let name = name.into();
             if let Some(id) = self.known_ids.get(&name) {
                 *id
             } else {
@@ -752,21 +703,23 @@ mod generics_equivalence {
                 id
             }
         }
+
+        pub(super) fn into_iter(self) -> impl Iterator<Item = (&'a str, usize)> {
+            self.known_ids.into_iter()
+        }
     }
 }
 
 impl PartialEq for PathType {
     fn eq(&self, other: &Self) -> bool {
-        let Self {
-            package_id,
-            rustdoc_id,
-            base_type,
-            generic_arguments,
-        } = self;
-        package_id == other.package_id
-            && rustdoc_id == &other.rustdoc_id
-            && base_type == &other.base_type
-            && generic_arguments_are_equivalent(generic_arguments, &other.generic_arguments)
+        self.rustdoc_id == other.rustdoc_id
+            && self.base_type == other.base_type
+            && self.package_id == other.package_id
+            && self._is_equivalent_to(
+                other,
+                &mut UnassignedIdGenerator::new(),
+                &mut UnassignedIdGenerator::new(),
+            )
     }
 }
 

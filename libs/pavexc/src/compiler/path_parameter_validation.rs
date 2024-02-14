@@ -8,7 +8,8 @@ use petgraph::Direction;
 use rustdoc_types::{ItemEnum, StructKind};
 
 use crate::compiler::analyses::call_graph::{CallGraphNode, RawCallGraph};
-use crate::compiler::analyses::components::{ComponentDb, ComponentId, HydratedComponent};
+use crate::compiler::analyses::components::HydratedComponent;
+use crate::compiler::analyses::components::{ComponentDb, ComponentId};
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::processing_pipeline::RequestHandlerPipeline;
 use crate::compiler::analyses::router::Router;

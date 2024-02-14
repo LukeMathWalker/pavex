@@ -1,12 +1,11 @@
 use std::borrow::Cow;
 
-use crate::compiler::analyses::components::{
-    ComponentDb, ComponentId, ConsumptionMode, InsertTransformer,
-};
+use crate::compiler::analyses::components::{ComponentDb, ComponentId};
+use crate::compiler::analyses::components::{ConsumptionMode, InsertTransformer};
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::user_components::ScopeId;
 use crate::compiler::computation::{Computation, MatchResultVariant};
-use crate::language::{Callable, InvocationStyle, PathType, ResolvedPath, ResolvedPathSegment};
+use crate::language::{Callable, InvocationStyle, ResolvedPath, ResolvedPathSegment, ResolvedType};
 
 /// Returns the [`ComponentId`] for a transformer component that calls `pavex::Error::new` on the
 /// error returned by a fallible computation.
@@ -17,7 +16,6 @@ pub(super) fn register_error_new_transformer(
     component_db: &mut ComponentDb,
     computation_db: &mut ComputationDb,
     scope_id: ScopeId,
-    pavex_error: &PathType,
 ) -> Option<ComponentId> {
     let Computation::MatchResult(m) = component_db
         .hydrated_component(component_id, computation_db)
@@ -30,6 +28,9 @@ pub(super) fn register_error_new_transformer(
     }
     let error = m.output.clone();
 
+    let ResolvedType::ResolvedPath(pavex_error) = &component_db.pavex_error else {
+        unreachable!()
+    };
     let pavex_error_path = &pavex_error.resolved_path();
     let pavex_error_new_segments = {
         let mut c = pavex_error_path.segments.clone();
@@ -63,6 +64,7 @@ pub(super) fn register_error_new_transformer(
         scope_id,
         InsertTransformer::Eagerly,
         ConsumptionMode::Move,
+        0,
         computation_db,
     );
     Some(pavex_error_new_component_id)

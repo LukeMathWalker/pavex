@@ -74,7 +74,8 @@ pub mod route_0 {
             next: handler,
         };
         let v2 = pavex::middleware::Next::new(v1);
-        app::mw(v2)
+        let v3 = app::mw(v2);
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
     }
     pub async fn handler(
         v0: &pavex::request::path::RawPathParams<'_, '_>,
@@ -109,7 +110,8 @@ pub mod route_1 {
             next: handler,
         };
         let v2 = pavex::middleware::Next::new(v1);
-        app::mw(v2)
+        let v3 = app::mw(v2);
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
     }
     pub async fn handler(
         v0: &pavex::router::AllowedMethods,

@@ -5,11 +5,11 @@ use indexmap::IndexSet;
 use pavex_bp_schema::Lifecycle;
 use petgraph::stable_graph::{NodeIndex, StableDiGraph};
 
+use crate::compiler::analyses::components::{ComponentDb, ComponentId};
 use crate::{
     compiler::{
         analyses::{
-            components::{ComponentDb, ComponentId, HydratedComponent},
-            computations::ComputationDb,
+            components::HydratedComponent, computations::ComputationDb,
             constructibles::ConstructibleDb,
         },
         computation::Computation,
@@ -131,16 +131,11 @@ impl DependencyGraph {
                             constructor.input_types().to_vec()
                         }
                         HydratedComponent::RequestHandler(r) => r.input_types().to_vec(),
-                        HydratedComponent::ErrorHandler(error_handler) => error_handler
-                            .input_types()
-                            .iter()
-                            // We have already added the error -> error handler edge at this stage.
-                            .filter(|&t| error_handler.error_type_ref() != t)
-                            .map(|t| t.to_owned())
-                            .collect(),
-                        HydratedComponent::Transformer(_) => {
-                            // We don't allow/need dependency injection for transformers at the moment.
-                            vec![]
+                        HydratedComponent::Transformer(t, info) => {
+                            let mut input_types = t.input_types().to_vec();
+                            // We have already added the transformed -> transformer edge at this stage.
+                            input_types.remove(info.input_index);
+                            input_types
                         }
                         HydratedComponent::WrappingMiddleware(mw) => {
                             let mut input_types = mw.input_types().to_vec();

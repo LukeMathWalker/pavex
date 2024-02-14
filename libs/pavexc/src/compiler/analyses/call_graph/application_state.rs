@@ -15,8 +15,9 @@ use crate::compiler::analyses::call_graph::{
     core_graph::build_call_graph, CallGraph, CallGraphNode, NumberOfAllowedInvocations,
     OrderedCallGraph,
 };
+use crate::compiler::analyses::components::{ComponentDb, ComponentId};
 use crate::compiler::analyses::components::{
-    ComponentDb, ComponentId, ConsumptionMode, HydratedComponent, InsertTransformer,
+    ConsumptionMode, HydratedComponent, InsertTransformer,
 };
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::constructibles::ConstructibleDb;
@@ -132,7 +133,7 @@ pub(crate) fn application_state_call_graph(
             assert!(
                 matches!(
                     component,
-                    HydratedComponent::Transformer(Computation::MatchResult(_)),
+                    HydratedComponent::Transformer(Computation::MatchResult(_), ..),
                 ),
                 "One of the output components is not a `MatchResult` transformer: {:?}",
                 component
@@ -227,6 +228,7 @@ pub(crate) fn application_state_call_graph(
             application_state_scope_id,
             InsertTransformer::Eagerly,
             ConsumptionMode::Move,
+            0,
             computation_db,
         );
 
@@ -245,9 +247,7 @@ pub(crate) fn application_state_call_graph(
                     }
                     HydratedComponent::WrappingMiddleware(w) => &w.callable,
                     HydratedComponent::RequestHandler(r) => &r.callable,
-                    HydratedComponent::ErrorObserver(_)
-                    | HydratedComponent::ErrorHandler(_)
-                    | HydratedComponent::Transformer(_) => {
+                    HydratedComponent::ErrorObserver(_) | HydratedComponent::Transformer(..) => {
                         unreachable!()
                     }
                 };
@@ -298,6 +298,7 @@ pub(crate) fn application_state_call_graph(
                     application_state_scope_id,
                     InsertTransformer::Eagerly,
                     ConsumptionMode::Move,
+                    0,
                     computation_db,
                 );
                 // We need to do an Err(..) wrap around the error variant returned by the transformer.
@@ -307,6 +308,7 @@ pub(crate) fn application_state_call_graph(
                     application_state_scope_id,
                     InsertTransformer::Eagerly,
                     ConsumptionMode::Move,
+                    0,
                     computation_db,
                 );
             }

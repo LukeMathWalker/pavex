@@ -9,9 +9,8 @@ use syn::spanned::Spanned;
 
 use pavex_bp_schema::Lifecycle;
 
-use crate::compiler::analyses::components::{
-    ComponentDb, ComponentId, ConsumptionMode, HydratedComponent,
-};
+use crate::compiler::analyses::components::{ComponentDb, ComponentId};
+use crate::compiler::analyses::components::{ConsumptionMode, HydratedComponent};
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::user_components::{
     ScopeGraph, ScopeId, UserComponentDb, UserComponentId,
@@ -110,7 +109,7 @@ impl ConstructibleDb {
                 let resolved_component =
                     component_db.hydrated_component(component_id, computation_db);
                 // We don't support dependency injection for transformers (yet).
-                if let HydratedComponent::Transformer(_) = &resolved_component {
+                if let HydratedComponent::Transformer(..) = &resolved_component {
                     continue;
                 }
 
@@ -133,18 +132,17 @@ impl ConstructibleDb {
                         HydratedComponent::WrappingMiddleware(mw) => {
                             input_types[mw.next_input_index()] = None;
                         }
-                        // Errors happen, they are not "constructed" (we use a transformer instead).
-                        // Therefore we skip the error input type for error handlers and
-                        // error observers.
-                        HydratedComponent::ErrorHandler(e) => {
-                            input_types[e.error_input_index] = None;
-                        }
                         HydratedComponent::ErrorObserver(eo) => {
                             input_types[eo.error_input_index] = None;
                         }
+                        HydratedComponent::Transformer(_, info) => {
+                            // The transformer is only invoked when the transformed component is
+                            // present in the graph, so we don't need to check for the transformed
+                            // component's constructor.
+                            input_types[info.input_index] = None;
+                        }
                         HydratedComponent::Constructor(_)
-                        | HydratedComponent::RequestHandler(_)
-                        | HydratedComponent::Transformer(_) => {}
+                        | HydratedComponent::RequestHandler(_) => {}
                     }
                     input_types
                 };
