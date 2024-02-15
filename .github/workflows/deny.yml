@@ -23,4 +23,5 @@ jobs:
       - uses: EmbarkStudios/cargo-deny-action@v1
         with:
           command: check ${{ matrix.checks }}
-          arguments: --all-features --manifest-path libs/Cargo.toml
+          arguments: --all-features
+          manifest_path: libs/Cargo.toml
