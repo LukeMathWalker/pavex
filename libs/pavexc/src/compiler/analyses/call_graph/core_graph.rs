@@ -2,9 +2,9 @@ use ahash::{HashMap, HashMapExt, HashSet, HashSetExt};
 use bimap::BiHashMap;
 use guppy::PackageId;
 use indexmap::IndexSet;
+use petgraph::algo::has_path_connecting;
 use petgraph::prelude::{StableDiGraph, StableGraph};
 use petgraph::stable_graph::NodeIndex;
-use petgraph::visit::Bfs;
 use petgraph::Direction;
 
 use pavex_bp_schema::Lifecycle;
@@ -447,35 +447,62 @@ where
 
     // `root_node_index` might point to a `Compute` node that returns a `Result`, therefore
     // it might no longer be without descendants after our insertion of `MatchBranching` nodes.
-    // If that's the case, we determine a new `root_node_index` by picking the `Ok`
-    // variant that descends from `root_node_index`.
-    let root_node_index = if call_graph
-        .neighbors_directed(root_node_index, Direction::Outgoing)
-        .count()
-        != 0
-    {
-        let mut bfs = Bfs::new(&call_graph, root_node_index);
-        let mut new_root_index = root_node_index;
-        while let Some(node_index) = bfs.next(&call_graph) {
-            let node = &call_graph[node_index];
-            if let CallGraphNode::Compute { component_id, .. } = node {
-                if let HydratedComponent::Transformer(Computation::MatchResult(m), ..) =
-                    component_db.hydrated_component(*component_id, computation_db)
-                {
-                    if m.variant == MatchResultVariant::Ok {
-                        new_root_index = node_index;
-                        break;
+    // If that's the case, we determine a new `root_node_index` by picking the terminal node
+    // that descends from `root_node_index` on the `Ok`-matcher side.
+    let root_node = &call_graph[root_node_index];
+    let root_component = root_node
+        .as_hydrated_component(component_db, computation_db)
+        .unwrap();
+    let root_is_fallible = root_component.output_type().unwrap().is_result();
+    let new_root_index = if root_is_fallible {
+        let match_node_index = {
+            let children: Vec<_> = call_graph
+                .neighbors_directed(root_node_index, Direction::Outgoing)
+                .collect();
+            assert_eq!(children.len(), 1);
+            children[0]
+        };
+        let ok_matcher_node_index = {
+            let children: Vec<_> = call_graph
+                .neighbors_directed(match_node_index, Direction::Outgoing)
+                .collect();
+            assert_eq!(children.len(), 2);
+            children
+                .into_iter()
+                .find(|node_ix| {
+                    let node = &call_graph[*node_ix];
+                    if let CallGraphNode::Compute { component_id, .. } = node {
+                        if let HydratedComponent::Transformer(Computation::MatchResult(m), ..) =
+                            component_db.hydrated_component(*component_id, computation_db)
+                        {
+                            if m.variant == MatchResultVariant::Ok {
+                                return true;
+                            }
+                        }
                     }
-                }
-            }
-        }
-        new_root_index
+                    false
+                })
+                .unwrap()
+        };
+        let into_response_node_index = {
+            let children: Vec<_> = call_graph
+                .neighbors_directed(ok_matcher_node_index, Direction::Outgoing)
+                .collect();
+            assert_eq!(children.len(), 1);
+            children[0]
+        };
+        into_response_node_index
     } else {
-        root_node_index
+        let downstream_sources: Vec<_> = call_graph
+            .externals(Direction::Outgoing)
+            .filter(|index| has_path_connecting(&call_graph, root_node_index, *index, None))
+            .collect();
+        assert_eq!(downstream_sources.len(), 1);
+        downstream_sources[0]
     };
     Ok(CallGraph {
         call_graph,
-        root_node_index,
+        root_node_index: new_root_index,
         root_scope_id,
     })
 }
