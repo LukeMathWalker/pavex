@@ -13,6 +13,8 @@
 pub use error::Error;
 
 pub mod blueprint;
+#[cfg(feature = "cookie")]
+pub mod cookie;
 mod error;
 pub mod http;
 pub mod kit;
