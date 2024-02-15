@@ -4,7 +4,7 @@ use guppy::PackageId;
 use indexmap::IndexSet;
 use petgraph::prelude::{StableDiGraph, StableGraph};
 use petgraph::stable_graph::NodeIndex;
-use petgraph::visit::Dfs;
+use petgraph::visit::Bfs;
 use petgraph::Direction;
 
 use pavex_bp_schema::Lifecycle;
@@ -454,19 +454,19 @@ where
         .count()
         != 0
     {
-        let mut dfs = Dfs::new(&call_graph, root_node_index);
+        let mut bfs = Bfs::new(&call_graph, root_node_index);
         let mut new_root_index = root_node_index;
-        while let Some(node_index) = dfs.next(&call_graph) {
+        while let Some(node_index) = bfs.next(&call_graph) {
             let node = &call_graph[node_index];
             if let CallGraphNode::Compute { component_id, .. } = node {
                 if let HydratedComponent::Transformer(Computation::MatchResult(m), ..) =
                     component_db.hydrated_component(*component_id, computation_db)
                 {
-                    if m.variant == MatchResultVariant::Err {
-                        continue;
+                    if m.variant == MatchResultVariant::Ok {
+                        new_root_index = node_index;
+                        break;
                     }
                 }
-                new_root_index = node_index;
             }
         }
         new_root_index
