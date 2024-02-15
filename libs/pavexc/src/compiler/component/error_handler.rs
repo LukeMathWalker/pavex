@@ -1,11 +1,10 @@
 use std::fmt::{Display, Formatter};
 
-use ahash::HashMap;
+use crate::compiler::utils::get_err_variant;
 use indexmap::IndexSet;
+use itertools::Itertools;
 
-use crate::language::{
-    Callable, GenericArgument, Lifetime, ResolvedPath, ResolvedType, TypeReference,
-};
+use crate::language::{Callable, Lifetime, ResolvedPath, ResolvedType};
 
 /// A transformation that, given a reference to an error type (and, optionally, other inputs),
 /// returns an HTTP response.
@@ -20,51 +19,36 @@ impl ErrorHandler {
     pub fn new(
         error_handler: Callable,
         fallible_callable: &Callable,
+        pavex_error: &ResolvedType,
     ) -> Result<Self, ErrorHandlerValidationError> {
         if error_handler.output.is_none() {
             return Err(ErrorHandlerValidationError::CannotReturnTheUnitType(
                 error_handler.path,
             ));
         }
-        let result_type = fallible_callable
-            .output
-            .as_ref()
-            .expect("Fallible callable must have an output type")
-            .clone();
-        assert!(
-            result_type.is_result(),
-            "Fallible callable must return a Result"
-        );
-        let error_type_ref = {
-            let ResolvedType::ResolvedPath(result_type) = result_type else {
-                unreachable!()
-            };
-            let GenericArgument::TypeParameter(e) = result_type.generic_arguments[1].clone() else {
-                unreachable!()
-            };
-            ResolvedType::Reference(TypeReference {
-                is_mutable: false,
-                lifetime: Lifetime::Elided,
-                inner: Box::new(e),
-            })
-        };
+
+        let error_type = get_err_variant(fallible_callable.output.as_ref().unwrap());
         // TODO: verify that the error handler does NOT return a `Result`
-        // TODO: return a more specific error if the error handler takes the error as an input
-        //  parameter by value instead of taking it by reference.
-        let error_input_index = error_handler
+        let (error_input_index, error_ref_parameter) = error_handler
             .inputs
             .iter()
-            .position(|i| i == &error_type_ref)
+            .find_position(|t| {
+                if let ResolvedType::Reference(t) = t {
+                    !t.is_mutable
+                        && (t.lifetime != Lifetime::Static)
+                        && (t.inner.as_ref() == error_type || t.inner.as_ref() == pavex_error)
+                } else {
+                    // TODO: return a more specific error if the error handler takes the error as an input
+                    //  parameter by value instead of taking it by reference.
+                    false
+                }
+            })
             .ok_or_else(
                 || ErrorHandlerValidationError::DoesNotTakeErrorReferenceAsInput {
                     fallible_callable: fallible_callable.to_owned(),
-                    error_type: error_type_ref,
+                    error_type: error_type.to_owned(),
                 },
             )?;
-        let error_ref_parameter = error_handler
-            .inputs
-            .get(error_input_index)
-            .expect("Error input index must be valid");
 
         // All "free" generic parameters in the error handler must be assigned to concrete types.
         // The only ones that are allowed to be unassigned are those used by the error type,
@@ -105,25 +89,6 @@ impl ErrorHandler {
     /// that this is error handler is associated with.
     pub(crate) fn error_type_ref(&self) -> &ResolvedType {
         &self.callable.inputs[self.error_input_index]
-    }
-
-    pub fn output_type(&self) -> &ResolvedType {
-        self.callable.output.as_ref().unwrap()
-    }
-
-    pub fn input_types(&self) -> &[ResolvedType] {
-        self.callable.inputs.as_slice()
-    }
-
-    /// Replace all unassigned generic type parameters in this error handler with the
-    /// concrete types specified in `bindings`.
-    ///
-    /// The newly "bound" error handler will be returned.
-    pub fn bind_generic_type_parameters(&self, bindings: &HashMap<String, ResolvedType>) -> Self {
-        Self {
-            callable: self.callable.bind_generic_type_parameters(bindings),
-            error_input_index: self.error_input_index,
-        }
     }
 }
 
@@ -168,7 +133,7 @@ impl Display for ErrorHandlerValidationError {
                     "Error handlers associated with a fallible operation must take a reference \
                     to the operation's error type as input.\n\
                     This error handler is associated with `{}`, therefore I \
-                    expect `{error_type:?}` to be one of its input parameters.",
+                    expect `&{error_type:?}` to be one of its input parameters.",
                     fallible_callable.path,
                 )
             }

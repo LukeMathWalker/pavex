@@ -1,0 +1,62 @@
+digraph "GET /with_observer - 0" {
+    0 [ label = "app::handler(alloc::string::String) -> pavex::response::Response"]
+    1 [ label = "core::prelude::rust_2015::Result<alloc::string::String, app::CustomError> -> alloc::string::String"]
+    2 [ label = "app::fallible_constructor() -> core::prelude::rust_2015::Result<alloc::string::String, app::CustomError>"]
+    3 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    4 [ label = "core::prelude::rust_2015::Result<alloc::string::String, app::CustomError> -> app::CustomError"]
+    5 [ label = "pavex::Error::new(app::CustomError) -> pavex::Error"]
+    6 [ label = "app::error_handler(&pavex::Error) -> pavex::response::Response"]
+    7 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    8 [ label = "app::error_observer(&pavex::Error)"]
+    9 [ label = "`match`"]
+    1 -> 0 [ ]
+    9 -> 4 [ ]
+    9 -> 1 [ ]
+    0 -> 3 [ ]
+    4 -> 5 [ ]
+    5 -> 6 [ label = "&"]
+    6 -> 7 [ ]
+    5 -> 8 [ label = "&"]
+    8 -> 7 [ label = "happens before"]
+    2 -> 9 [ ]
+}
+
+digraph "* /with_observer - 0" {
+    0 [ label = "pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
+    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "&pavex::router::AllowedMethods"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
+}
+
+digraph "GET /without_observer - 0" {
+    0 [ label = "app::handler(alloc::string::String) -> pavex::response::Response"]
+    1 [ label = "core::prelude::rust_2015::Result<alloc::string::String, app::CustomError> -> alloc::string::String"]
+    2 [ label = "app::fallible_constructor() -> core::prelude::rust_2015::Result<alloc::string::String, app::CustomError>"]
+    3 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    4 [ label = "core::prelude::rust_2015::Result<alloc::string::String, app::CustomError> -> app::CustomError"]
+    5 [ label = "pavex::Error::new(app::CustomError) -> pavex::Error"]
+    6 [ label = "app::error_handler(&pavex::Error) -> pavex::response::Response"]
+    7 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    8 [ label = "`match`"]
+    1 -> 0 [ ]
+    8 -> 4 [ ]
+    8 -> 1 [ ]
+    0 -> 3 [ ]
+    4 -> 5 [ ]
+    5 -> 6 [ label = "&"]
+    6 -> 7 [ ]
+    2 -> 8 [ ]
+}
+
+digraph "* /without_observer - 0" {
+    0 [ label = "pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
+    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "&pavex::router::AllowedMethods"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
+}
+
+digraph app_state {
+    0 [ label = "crate::ApplicationState() -> crate::ApplicationState"]
+}

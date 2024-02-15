@@ -11,6 +11,10 @@ snippets:
     source_path: "src/core/error_handler.rs"
     ranges: [ "0..8" ]
     hl_lines: [ 3 ]
+  - name: "universal_into_response"
+    source_path: "src/universal/error_handler.rs"
+    ranges: [ "0..5" ]
+    hl_lines: [ 3 ]
   - name: "fallible"
     source_path: "src/core/routes.rs"
     ranges: [ "0..2", "3..4" ]

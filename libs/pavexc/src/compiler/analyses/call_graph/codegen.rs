@@ -325,7 +325,7 @@ fn _codegen_callable_closure_body(
                     let variant_type = match &call_graph[variant_index] {
                         CallGraphNode::Compute { component_id, .. } => {
                             match component_db.hydrated_component(*component_id, computation_db) {
-                                HydratedComponent::Transformer(Computation::MatchResult(m))
+                                HydratedComponent::Transformer(Computation::MatchResult(m), ..)
                                 | HydratedComponent::Constructor(Constructor(
                                     Computation::MatchResult(m),
                                 )) => m.variant,

@@ -6,6 +6,8 @@ they can all be **fallible**.
 
 --8<-- "doc_examples/guide/errors/error_handlers/project-fallible.snap"
 
+1. The request handler is fallible because it returns a `Result`, with `LoginError` as its error type.
+
 What happens when they fail, though? What does the framework do with the error?  
 Two different concerns must be addressed:
 

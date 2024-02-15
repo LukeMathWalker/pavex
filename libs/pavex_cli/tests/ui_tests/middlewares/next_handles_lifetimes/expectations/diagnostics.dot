@@ -5,6 +5,7 @@ digraph "GET /home - 0" {
     3 [ label = "app::a() -> app::A"]
     4 [ label = "app::c() -> app::C"]
     5 [ label = "crate::route_0::Next0(&'a app::C, &'b app::A) -> crate::route_0::Next0<'a, 'b>"]
+    6 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     2 -> 0 [ ]
     4 -> 2 [ label = "&"]
     3 -> 2 [ label = "&"]
@@ -12,6 +13,7 @@ digraph "GET /home - 0" {
     5 -> 1 [ ]
     3 -> 5 [ label = "&"]
     4 -> 5 [ label = "&"]
+    0 -> 6 [ ]
 }
 
 digraph "GET /home - 1" {
@@ -31,13 +33,15 @@ digraph "* /home - 0" {
     3 [ label = "app::a() -> app::A"]
     4 [ label = "app::c() -> app::C"]
     5 [ label = "crate::route_1::Next0(&'a pavex::router::AllowedMethods) -> crate::route_1::Next0<'a>"]
-    7 [ label = "&pavex::router::AllowedMethods"]
+    7 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    8 [ label = "&pavex::router::AllowedMethods"]
     2 -> 0 [ ]
     4 -> 2 [ label = "&"]
     3 -> 2 [ label = "&"]
     1 -> 0 [ ]
     5 -> 1 [ ]
-    7 -> 5 [ ]
+    0 -> 7 [ ]
+    8 -> 5 [ ]
 }
 
 digraph "* /home - 1" {

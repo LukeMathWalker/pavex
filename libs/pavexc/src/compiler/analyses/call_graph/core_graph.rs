@@ -2,9 +2,9 @@ use ahash::{HashMap, HashMapExt, HashSet, HashSetExt};
 use bimap::BiHashMap;
 use guppy::PackageId;
 use indexmap::IndexSet;
+use petgraph::algo::has_path_connecting;
 use petgraph::prelude::{StableDiGraph, StableGraph};
 use petgraph::stable_graph::NodeIndex;
-use petgraph::visit::Dfs;
 use petgraph::Direction;
 
 use pavex_bp_schema::Lifecycle;
@@ -134,7 +134,6 @@ where
     };
 
     let mut transformed_node_indexes = HashSet::new();
-    let mut handled_error_node_indexes = HashSet::new();
     // We need to keep track of the nodes to which we have already attached error observers
     // (or those that we determined don't need them).
     let mut attached_observer_indexes = HashSet::new();
@@ -190,16 +189,12 @@ where
                         constructor.input_types().to_vec()
                     }
                     HydratedComponent::RequestHandler(r) => r.input_types().to_vec(),
-                    HydratedComponent::ErrorHandler(error_handler) => error_handler
-                        .input_types()
-                        .iter()
-                        // We have already added the error -> error handler edge at this stage.
-                        .filter(|&t| error_handler.error_type_ref() != t)
-                        .map(|t| t.to_owned())
-                        .collect(),
-                    HydratedComponent::Transformer(_) => {
-                        // We don't allow/need dependency injection for transformers at the moment.
-                        vec![]
+                    HydratedComponent::Transformer(c, info) => {
+                        let mut inputs = c.input_types().to_vec();
+                        // The component we are transforming must have been added to the graph
+                        // before the transformer.
+                        inputs.remove(info.input_index);
+                        inputs
                     }
                     HydratedComponent::WrappingMiddleware(mw) => {
                         let mut input_types = mw.input_types().to_vec();
@@ -247,38 +242,10 @@ where
             }
         }
 
-        // For each node, we try to add a `Compute` node for the respective
-        // error handler (if one was registered).
         let indexes = call_graph.node_indices().collect::<Vec<_>>();
         // We might need to go through multiple cycles of applying transformers
         // until the graph stabilizes (i.e. we reach a fixed point).
         let graph_size_before_transformations = indexes.len();
-
-        for node_index in indexes {
-            if handled_error_node_indexes.contains(&node_index) {
-                continue;
-            }
-            'inner: {
-                let node = call_graph[node_index].clone();
-                let CallGraphNode::Compute { component_id, .. } = node else {
-                    break 'inner;
-                };
-                if let Some(error_handler_id) = component_db.error_handler_id(component_id) {
-                    nodes_to_be_visited.insert(VisitorStackElement {
-                        node_index: add_node_for_component(
-                            &mut call_graph,
-                            &mut node_deduplicator,
-                            *error_handler_id,
-                        ),
-                        neighbour: Some(VisitorNeighbour::Parent(
-                            node_index,
-                            CallGraphEdgeMetadata::SharedBorrow,
-                        )),
-                    });
-                }
-            }
-            handled_error_node_indexes.insert(node_index);
-        }
 
         // For each node, we add the respective transformers, if they have been registered.
         let indexes = call_graph.node_indices().collect::<Vec<_>>();
@@ -288,19 +255,21 @@ where
             }
             'inner: {
                 let node = call_graph[node_index].clone();
-                let CallGraphNode::Compute {
-                    component_id,
-                    n_allowed_invocations,
-                } = node
-                else {
+                let CallGraphNode::Compute { component_id, .. } = node else {
+                    transformed_node_indexes.insert(node_index);
                     break 'inner;
                 };
                 let Some(transformer_ids) = component_db.transformer_ids(component_id) else {
+                    transformed_node_indexes.insert(node_index);
                     break 'inner;
                 };
                 for transformer_id in transformer_ids {
-                    let when_to_insert = component_db.when_to_insert(*transformer_id);
-                    if when_to_insert == InsertTransformer::Lazily {
+                    let HydratedComponent::Transformer(_, transformer_info) =
+                        component_db.hydrated_component(*transformer_id, computation_db)
+                    else {
+                        unreachable!()
+                    };
+                    if transformer_info.when_to_insert == InsertTransformer::Lazily {
                         continue;
                     }
                     // Not all transformers might be relevant to this `CallGraph`, we need to take their scope into account.
@@ -308,16 +277,22 @@ where
                     if root_scope_id
                         .is_descendant_of(transformer_scope_id, component_db.scope_graph())
                     {
-                        let transformer_node_index = call_graph.add_node(CallGraphNode::Compute {
-                            component_id: *transformer_id,
-                            n_allowed_invocations,
+                        nodes_to_be_visited.insert(VisitorStackElement {
+                            node_index: add_node_for_component(
+                                &mut call_graph,
+                                &mut node_deduplicator,
+                                *transformer_id,
+                            ),
+                            neighbour: Some(VisitorNeighbour::Parent(
+                                node_index,
+                                match transformer_info.transformation_mode {
+                                    ConsumptionMode::Move => CallGraphEdgeMetadata::Move,
+                                    ConsumptionMode::SharedBorrow => {
+                                        CallGraphEdgeMetadata::SharedBorrow
+                                    }
+                                },
+                            )),
                         });
-                        // TODO: Is it correct to assume move semantics here?
-                        call_graph.update_edge(
-                            node_index,
-                            transformer_node_index,
-                            CallGraphEdgeMetadata::Move,
-                        );
                     }
                 }
             }
@@ -336,19 +311,15 @@ where
                 'inner: {
                     let node = call_graph[node_index].clone();
                     let CallGraphNode::Compute { component_id, .. } = node else {
+                        attached_observer_indexes.insert(node_index);
                         break 'inner;
                     };
-                    if !component_db
-                        .hydrated_component(component_id, computation_db)
-                        .is_error_handler()
-                    {
+                    if !component_db.is_error_handler(component_id) {
+                        attached_observer_indexes.insert(node_index);
                         break 'inner;
                     };
 
-                    // Error handlers always have a single child node. It's either:
-                    // - an `IntoResponse` transformer, if the error handler is infallible
-                    // - a match node, if the error handler is fallible
-                    //
+                    // Error handlers always have a single child node: an `IntoResponse` transformer.
                     // We want to insert our error observers in between the error handler and its child.
                     #[cfg(debug_assertions)]
                     {
@@ -366,8 +337,11 @@ where
                         break 'inner;
                     };
 
-                    // An error handler is always downstream of an error matcher node.
-                    let Some(match_error_node_index) = call_graph
+                    // There are two topologies for error handlers:
+                    // - Directly downstream of an error matcher, which in turn has `pavex::Error::new` as a child
+                    // - Directly downstream of a `pavex::Error::new` invocations
+                    // We want to find the `pavex::Error::new` node index for this error.
+                    let pavex_error_new_node_index = match call_graph
                         .neighbors_directed(node_index, Direction::Incoming)
                         .find_map(|parent_index| {
                             let parent_node = &call_graph[parent_index];
@@ -385,19 +359,39 @@ where
                             } else {
                                 None
                             }
-                        })
-                    else {
-                        break 'inner;
-                    };
-                    // All match error nodes have two children:
-                    // the error handler and the `pavex::Error::new` invocation.
-                    // We want the latter.
-                    let Some(pavex_error_new_node_index) = call_graph
-                        .neighbors_directed(match_error_node_index, Direction::Outgoing)
-                        .filter(|&child_index| child_index != node_index)
-                        .next()
-                    else {
-                        break 'inner;
+                        }) {
+                        None => call_graph
+                            .neighbors_directed(node_index, Direction::Incoming)
+                            .find_map(|parent_index| {
+                                let parent_node = &call_graph[parent_index];
+                                let CallGraphNode::Compute { component_id, .. } = parent_node
+                                else {
+                                    return None;
+                                };
+                                let component =
+                                    component_db.hydrated_component(*component_id, computation_db);
+                                let Some(output_type) = component.output_type() else {
+                                    return None;
+                                };
+                                if output_type == &component_db.pavex_error {
+                                    Some(parent_index)
+                                } else {
+                                    None
+                                }
+                            })
+                            .unwrap(),
+                        Some(match_error_node_index) => {
+                            // We can now find the `pavex::Error::new` invocation as one of
+                            // the children of the error matcher.
+                            let Some(pavex_error_new_node_index) = call_graph
+                                .neighbors_directed(match_error_node_index, Direction::Outgoing)
+                                .filter(|&child_index| child_index != node_index)
+                                .next()
+                            else {
+                                break 'inner;
+                            };
+                            pavex_error_new_node_index
+                        }
                     };
 
                     let mut previous_index = None;
@@ -453,35 +447,62 @@ where
 
     // `root_node_index` might point to a `Compute` node that returns a `Result`, therefore
     // it might no longer be without descendants after our insertion of `MatchBranching` nodes.
-    // If that's the case, we determine a new `root_node_index` by picking the `Ok`
-    // variant that descends from `root_node_index`.
-    let root_node_index = if call_graph
-        .neighbors_directed(root_node_index, Direction::Outgoing)
-        .count()
-        != 0
-    {
-        let mut dfs = Dfs::new(&call_graph, root_node_index);
-        let mut new_root_index = root_node_index;
-        while let Some(node_index) = dfs.next(&call_graph) {
-            let node = &call_graph[node_index];
-            if let CallGraphNode::Compute { component_id, .. } = node {
-                if let HydratedComponent::Transformer(Computation::MatchResult(m)) =
-                    component_db.hydrated_component(*component_id, computation_db)
-                {
-                    if m.variant == MatchResultVariant::Err {
-                        continue;
+    // If that's the case, we determine a new `root_node_index` by picking the terminal node
+    // that descends from `root_node_index` on the `Ok`-matcher side.
+    let root_node = &call_graph[root_node_index];
+    let root_component = root_node
+        .as_hydrated_component(component_db, computation_db)
+        .unwrap();
+    let root_is_fallible = root_component.output_type().unwrap().is_result();
+    let new_root_index = if root_is_fallible {
+        let match_node_index = {
+            let children: Vec<_> = call_graph
+                .neighbors_directed(root_node_index, Direction::Outgoing)
+                .collect();
+            assert_eq!(children.len(), 1);
+            children[0]
+        };
+        let ok_matcher_node_index = {
+            let children: Vec<_> = call_graph
+                .neighbors_directed(match_node_index, Direction::Outgoing)
+                .collect();
+            assert_eq!(children.len(), 2);
+            children
+                .into_iter()
+                .find(|node_ix| {
+                    let node = &call_graph[*node_ix];
+                    if let CallGraphNode::Compute { component_id, .. } = node {
+                        if let HydratedComponent::Transformer(Computation::MatchResult(m), ..) =
+                            component_db.hydrated_component(*component_id, computation_db)
+                        {
+                            if m.variant == MatchResultVariant::Ok {
+                                return true;
+                            }
+                        }
                     }
-                }
-                new_root_index = node_index;
-            }
-        }
-        new_root_index
+                    false
+                })
+                .unwrap()
+        };
+        let into_response_node_index = {
+            let children: Vec<_> = call_graph
+                .neighbors_directed(ok_matcher_node_index, Direction::Outgoing)
+                .collect();
+            assert_eq!(children.len(), 1);
+            children[0]
+        };
+        into_response_node_index
     } else {
-        root_node_index
+        let downstream_sources: Vec<_> = call_graph
+            .externals(Direction::Outgoing)
+            .filter(|index| has_path_connecting(&call_graph, root_node_index, *index, None))
+            .collect();
+        assert_eq!(downstream_sources.len(), 1);
+        downstream_sources[0]
     };
     Ok(CallGraph {
         call_graph,
-        root_node_index,
+        root_node_index: new_root_index,
         root_scope_id,
     })
 }
@@ -587,7 +608,7 @@ fn inject_match_branching_nodes(
         assert_eq!(
             child_node_indexes.len(),
             2,
-            "Fallible nodes should have either none, one or two children. This is not the case for node {:?}.\nGraph:\n{}",
+            "Fallible nodes should have two child nodes. This is not the case for node {:?}.\nGraph:\n{}",
             node_index,
             call_graph.debug_dot(component_db, computation_db)
         );
@@ -596,8 +617,20 @@ fn inject_match_branching_nodes(
         let second_child_node_index = child_node_indexes[1];
         for idx in [first_child_node_index, second_child_node_index] {
             match &call_graph[idx] {
-                CallGraphNode::Compute { component_id, .. } => {
-                    assert!([ok_match_id, err_match_id].contains(&component_id));
+                CallGraphNode::Compute {
+                    component_id: child_id,
+                    ..
+                } => {
+                    let unknown_component =
+                        component_db.hydrated_component(*child_id, computation_db);
+                    let parent_component =
+                        component_db.hydrated_component(component_id, computation_db);
+                    assert!(
+                        [ok_match_id, err_match_id].contains(&child_id),
+                        "{child_id:?} is neither the Ok-matcher ({ok_match_id:?}) nor the Err-matcher ({err_match_id:?}) for fallible component `{component_id:?}`.\n\
+                        {child_id:?}: {unknown_component:?}\n\
+                        {component_id:?}: {parent_component:?}",
+                    );
                 }
                 _ => unreachable!(),
             }

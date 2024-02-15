@@ -28,17 +28,42 @@ Error handlers, like request handlers and middlewares, must return a type that c
 
 --8<-- "doc_examples/guide/errors/error_handlers/project-into_response.snap"
 
-1. Pavex implements `IntoResponse` for `StatusCode`, thus it's an acceptable return type for an error handler.
-
+Pavex implements `IntoResponse` for `StatusCode`, thus it's an acceptable return type for an error handler.  
 If you want to return a custom type from your error handler, you must implement [`IntoResponse`][IntoResponse] for it.
 
 ## Error reference
 
-Error handlers must take a reference to the error type they're handling as one of their input parameters.  
+Error handlers must take a reference (`&`) to the error as one of their input parameters.  
+What should the error type be?
+
+Let's look at an example: you want to register an error handler for the following request handler, `login`.
+
+--8<-- "doc_examples/guide/errors/error_handlers/project-fallible.snap"
+
+1. The request handler is fallible because it returns a `Result`, with `LoginError` as its error type.
+
+### Specialized
+
+Your error handler can be **specialized**, thus taking `&LoginError` as one of its input parameters:
 
 --8<-- "doc_examples/guide/errors/error_handlers/project-into_response.snap"
 
-1. In this example, `LoginError` is the error type returned by the fallible request handler.
+A specialized error handler is the best choice when you want to leverage the information encoded in the error
+type to customize the response returned to the caller.  
+In the example above, we are matching on the error variants to choose the most appropriate status code.
+
+### Universal
+
+You can also opt for a **universal** error handler. 
+Instead of `&LoginError`, you use `&pavex::Error` as one of its input parameters: 
+
+--8<-- "doc_examples/guide/errors/error_handlers/project-universal_into_response.snap"
+
+Pavex will automatically convert `LoginError` into `pavex::Error` before invoking your universal error handler.
+
+Universal error handlers are convenient when you want to return a non-specific response.  
+In the example above, we are always returning the same status code, with error information encoded
+in the body.
 
 ## Error handlers can't fail
 

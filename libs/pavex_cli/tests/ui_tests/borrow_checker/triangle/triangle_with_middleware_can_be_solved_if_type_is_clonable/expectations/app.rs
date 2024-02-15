@@ -74,7 +74,8 @@ pub mod route_0 {
         };
         let v2 = pavex::middleware::Next::new(v1);
         let v3 = <app::A as core::clone::Clone>::clone(&v0);
-        app::mw(v3, v2)
+        let v4 = app::mw(v3, v2);
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
     }
     pub async fn handler(v0: &app::A) -> pavex::response::Response {
         let v1 = app::handler(v0);
@@ -108,7 +109,8 @@ pub mod route_1 {
         };
         let v2 = pavex::middleware::Next::new(v1);
         let v3 = app::a();
-        app::mw(v3, v2)
+        let v4 = app::mw(v3, v2);
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
     }
     pub async fn handler(
         v0: &pavex::router::AllowedMethods,

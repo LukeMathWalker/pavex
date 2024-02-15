@@ -25,7 +25,15 @@ pub(crate) enum UnregisteredComponent {
     },
     ErrorHandler {
         source_id: SourceId,
-        fallible_component_id: ComponentId,
+        error_matcher_id: ComponentId,
+        /// The id of the component that returns the error type that this error handler handles.
+        ///
+        /// It can be a fallible component (e.g. constructor or request handler) if the error type
+        /// returned by the fallible component is the same as the error type taken as input by the error handler.
+        ///
+        /// It can be a transformer if the error type is transformed
+        /// before being handled by the error handler—i.e. if it gets upcasted to a `pavex::Error` type.
+        error_source_id: ComponentId,
         error_handler: ErrorHandler,
     },
     ErrorObserver {
@@ -52,6 +60,9 @@ pub(crate) enum UnregisteredComponent {
         computation_id: ComputationId,
         transformed_component_id: ComponentId,
         transformation_mode: ConsumptionMode,
+        /// The index of the input parameter of the transformer that corresponds to the output of the
+        /// transformed component.
+        transformed_input_index: usize,
         scope_id: ScopeId,
         when_to_insert: InsertTransformer,
     },
@@ -77,8 +88,13 @@ impl UnregisteredComponent {
             } => Component::WrappingMiddleware {
                 source_id: SourceId::ComputationId(computation_id.to_owned(), *scope_id),
             },
-            UnregisteredComponent::ErrorHandler { source_id, .. } => Component::ErrorHandler {
+            UnregisteredComponent::ErrorHandler {
+                source_id,
+                error_matcher_id,
+                ..
+            } => Component::Transformer {
                 source_id: source_id.to_owned(),
+                transformed_component_id: *error_matcher_id,
             },
             UnregisteredComponent::ErrorObserver {
                 user_component_id, ..
@@ -100,14 +116,11 @@ impl UnregisteredComponent {
             UnregisteredComponent::Transformer {
                 computation_id,
                 transformed_component_id,
-                transformation_mode,
                 scope_id,
                 ..
             } => Component::Transformer {
-                computation_id: computation_id.to_owned(),
+                source_id: SourceId::ComputationId(computation_id.to_owned(), *scope_id),
                 transformed_component_id: transformed_component_id.to_owned(),
-                transformation_mode: transformation_mode.to_owned(),
-                scope_id: scope_id.to_owned(),
             },
         }
     }
@@ -121,7 +134,7 @@ impl UnregisteredComponent {
             ErrorObserver { .. } => Lifecycle::Transient,
             SyntheticConstructor { lifecycle, .. } => lifecycle.to_owned(),
             ErrorHandler {
-                fallible_component_id: id,
+                error_matcher_id: id,
                 ..
             }
             | Transformer {

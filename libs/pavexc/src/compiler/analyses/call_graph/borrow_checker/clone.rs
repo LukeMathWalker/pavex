@@ -94,6 +94,7 @@ pub(super) fn get_clone_component_id(
         scope_id,
         InsertTransformer::Lazily,
         ConsumptionMode::SharedBorrow,
+        0,
         computation_db,
     );
     Some(clone_component_id)

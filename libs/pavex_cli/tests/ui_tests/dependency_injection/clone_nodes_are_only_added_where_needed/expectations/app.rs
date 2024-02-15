@@ -86,7 +86,8 @@ pub mod route_0 {
             next: handler,
         };
         let v3 = pavex::middleware::Next::new(v2);
-        app::mw(v1, v3)
+        let v4 = app::mw(v1, v3);
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
     }
     pub async fn handler(v0: app::Singleton) -> pavex::response::Response {
         let v1 = app::handler(v0);
@@ -120,7 +121,8 @@ pub mod route_1 {
             next: handler,
         };
         let v3 = pavex::middleware::Next::new(v2);
-        app::mw(v0, v3)
+        let v4 = app::mw(v0, v3);
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
     }
     pub async fn handler(
         v0: &pavex::router::AllowedMethods,
