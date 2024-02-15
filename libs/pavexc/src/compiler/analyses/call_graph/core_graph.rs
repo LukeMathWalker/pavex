@@ -581,7 +581,7 @@ fn inject_match_branching_nodes(
         assert_eq!(
             child_node_indexes.len(),
             2,
-            "Fallible nodes should have either none, one or two children. This is not the case for node {:?}.\nGraph:\n{}",
+            "Fallible nodes should have two child nodes. This is not the case for node {:?}.\nGraph:\n{}",
             node_index,
             call_graph.debug_dot(component_db, computation_db)
         );
@@ -590,8 +590,20 @@ fn inject_match_branching_nodes(
         let second_child_node_index = child_node_indexes[1];
         for idx in [first_child_node_index, second_child_node_index] {
             match &call_graph[idx] {
-                CallGraphNode::Compute { component_id, .. } => {
-                    assert!([ok_match_id, err_match_id].contains(&component_id));
+                CallGraphNode::Compute {
+                    component_id: child_id,
+                    ..
+                } => {
+                    let unknown_component =
+                        component_db.hydrated_component(*child_id, computation_db);
+                    let parent_component =
+                        component_db.hydrated_component(component_id, computation_db);
+                    assert!(
+                        [ok_match_id, err_match_id].contains(&child_id),
+                        "{child_id:?} is neither the Ok-matcher ({ok_match_id:?}) nor the Err-matcher ({err_match_id:?}) for fallible component `{component_id:?}`.\n\
+                        {child_id:?}: {unknown_component:?}\n\
+                        {component_id:?}: {parent_component:?}",
+                    );
                 }
                 _ => unreachable!(),
             }
