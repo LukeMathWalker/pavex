@@ -8,8 +8,8 @@ use crate::compiler::component::{
 use crate::compiler::resolvers::CallableResolutionError;
 use crate::compiler::traits::MissingTraitImplementationError;
 use crate::diagnostic::{
-    convert_proc_macro_span, convert_rustdoc_span, AnnotatedSnippet, CallableType,
-    CompilerDiagnostic, OptionalSourceSpanExt, SourceSpanExt,
+    convert_proc_macro_span, convert_rustdoc_span, AnnotatedSnippet, CallableDefinition,
+    CallableType, CompilerDiagnostic, OptionalSourceSpanExt, SourceSpanExt,
 };
 use crate::language::{Callable, ResolvedType};
 use crate::rustdoc::CrateCollection;
@@ -19,7 +19,6 @@ use guppy::graph::PackageGraph;
 use indexmap::IndexSet;
 use miette::NamedSource;
 use rustdoc_types::ItemEnum;
-use std::path::PathBuf;
 use syn::spanned::Spanned;
 
 /// Utility functions to produce diagnostics.
@@ -580,12 +579,9 @@ impl ComponentDb {
         let label = diagnostic::get_f_macro_invocation_span(&source, location)
             .labeled("The error handler was registered here".into());
         let diagnostic = match &e {
-            // TODO: Add a sub-diagnostic showing the error handler signature, highlighting with
-            // a label the missing return type.
             ErrorHandlerValidationError::CannotReturnTheUnitType(_) |
-            // TODO: Add a sub-diagnostic showing the error handler signature, highlighting with
-            // a label the input types. Perhaps add a signature showing the signature of
-            // the associate fallible handler, highlighting the output type.
+            // TODO: Perhaps add a snippet showing the signature of
+            //  the associate fallible handler, highlighting the output type.
             ErrorHandlerValidationError::DoesNotTakeErrorReferenceAsInput { .. } => {
                 CompilerDiagnostic::builder(source, e)
                     .optional_label(label)
@@ -746,60 +742,5 @@ impl ComponentDb {
             .help("Add an error handler via `.error_handler`".to_string())
             .build();
         diagnostics.push(diagnostic.into());
-    }
-}
-
-pub struct CallableDefinition {
-    pub attrs: Vec<syn::Attribute>,
-    pub vis: syn::Visibility,
-    pub sig: syn::Signature,
-    pub block: Box<syn::Block>,
-    pub span_contents: String,
-    pub source_file: PathBuf,
-}
-
-impl CallableDefinition {
-    pub fn compute(
-        callable: &Callable,
-        krate_collection: &CrateCollection,
-        package_graph: &PackageGraph,
-    ) -> Option<CallableDefinition> {
-        let global_item_id = callable.source_coordinates.as_ref()?;
-        let item = krate_collection.get_type_by_global_type_id(global_item_id);
-        let definition_span = item.span.as_ref()?;
-        let source_contents =
-            diagnostic::read_source_file(&definition_span.filename, &package_graph.workspace())
-                .ok()?;
-        let span = convert_rustdoc_span(&source_contents, definition_span.to_owned());
-        let span_contents =
-            source_contents[span.offset()..(span.offset() + span.len())].to_string();
-        let (attrs, vis, sig, block) = match &item.inner {
-            ItemEnum::Function(_) => {
-                if let Ok(item) = syn::parse_str::<syn::ItemFn>(&span_contents) {
-                    (item.attrs, item.vis, item.sig, item.block)
-                } else if let Ok(item) = syn::parse_str::<syn::ImplItemFn>(&span_contents) {
-                    (item.attrs, item.vis, item.sig, Box::new(item.block))
-                } else {
-                    // TODO: convert into miette diagnostics
-                    panic!("Could not parse as a function or method:\n{span_contents}")
-                }
-            }
-            _ => unreachable!(),
-        };
-        Some(CallableDefinition {
-            attrs,
-            vis,
-            sig,
-            block,
-            span_contents,
-            source_file: definition_span.filename.clone(),
-        })
-    }
-
-    pub fn named_source(&self) -> NamedSource<String> {
-        NamedSource::new(
-            self.source_file.display().to_string(),
-            self.span_contents.clone(),
-        )
     }
 }
