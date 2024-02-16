@@ -1,0 +1,4 @@
+description = """Error handlers cannot ask for a mutable reference to an injectable type."""
+
+[expectations]
+codegen = "fail"

@@ -58,6 +58,19 @@ impl ErrorHandler {
                 },
             )?;
 
+        for (i, input_type) in error_handler.inputs.iter().enumerate() {
+            if let ResolvedType::Reference(input_type) = input_type {
+                if input_type.is_mutable {
+                    return Err(
+                        ErrorHandlerValidationError::CannotTakeAMutableReferenceAsInput {
+                            error_handler_path: error_handler.path,
+                            mut_ref_input_index: i,
+                        },
+                    );
+                }
+            }
+        }
+
         // All "free" generic parameters in the error handler must be assigned to concrete types.
         // The only ones that are allowed to be unassigned are those used by the error type,
         // because they might/will be dictated by the fallible callable that this error handler
@@ -116,6 +129,10 @@ impl AsRef<Callable> for ErrorHandler {
 pub(crate) enum ErrorHandlerValidationError {
     CannotReturnTheUnitType(ResolvedPath),
     CannotBeFallible(ResolvedPath),
+    CannotTakeAMutableReferenceAsInput {
+        error_handler_path: ResolvedPath,
+        mut_ref_input_index: usize,
+    },
     DoesNotTakeErrorReferenceAsInput {
         fallible_callable: Callable,
         error_type: ResolvedType,
@@ -157,6 +174,15 @@ impl Display for ErrorHandlerValidationError {
                 write!(
                     f,
                     "Error handlers must be infallible.\n`{path}` isn't, it returns a `Result`!"
+                )
+            }
+            ErrorHandlerValidationError::CannotTakeAMutableReferenceAsInput {
+                error_handler_path,
+                ..
+            } => {
+                write!(
+                    f,
+                    "You can't inject a mutable reference as an input parameter to `{error_handler_path}`, an error handler."
                 )
             }
         }

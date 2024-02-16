@@ -695,6 +695,38 @@ impl ComponentDb {
                     //    to be amended instead of a made signature
                     .build()
             }
+            ErrorHandlerValidationError::CannotTakeAMutableReferenceAsInput { mut_ref_input_index, .. } => {
+                fn get_snippet(
+                    callable: &Callable,
+                    krate_collection: &CrateCollection,
+                    package_graph: &PackageGraph,
+                    mut_ref_input_index: usize
+                ) -> Option<AnnotatedSnippet> {
+                    let def = CallableDefinition::compute(
+                        callable,
+                        krate_collection,
+                        package_graph,
+                    )?;
+
+                    let input = &def.sig.inputs[mut_ref_input_index];
+                    let label = convert_proc_macro_span(&def.span_contents, input.span())
+                        .labeled("The &mut input".into());
+                    Some(AnnotatedSnippet::new(
+                        def.named_source(),
+                        label,
+                    ))
+                }
+
+                let definition_snippet =
+                    get_snippet(&computation_db[raw_user_component_id], krate_collection, package_graph, *mut_ref_input_index);
+                CompilerDiagnostic::builder(source, e)
+                    .optional_additional_annotated_snippet(definition_snippet)
+                    .help(
+                        "Injected inputs can only be taken by value or via a shared reference (`&`). \
+                         If you absolutely need to mutate the input, consider internal mutability (e.g. `RefCell`).".into()
+                    )
+                    .build()
+            }
         };
         diagnostics.push(diagnostic.into());
     }

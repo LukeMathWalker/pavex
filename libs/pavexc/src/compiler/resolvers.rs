@@ -201,12 +201,6 @@ pub(crate) fn resolve_type(
             mutable,
             type_,
         } => {
-            if *mutable {
-                return Err(anyhow!(
-                    "Mutable references are not allowed. You can only pass an argument \
-                    by value (`move` semantic) or via a shared reference (`&MyType`)",
-                ));
-            }
             let resolved_type = resolve_type(
                 type_,
                 used_by_package_id,
