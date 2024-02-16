@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 
 use crate::compiler::analyses::framework_items::FrameworkItemDb;
+use crate::compiler::component::CannotTakeMutReferenceError;
 use indexmap::IndexSet;
 
 use crate::compiler::computation::{Computation, MatchResult};
@@ -31,6 +32,21 @@ impl<'a> Constructor<'a> {
             output_type = m.ok.output;
             if output_type == ResolvedType::UNIT_TYPE {
                 return Err(ConstructorValidationError::CannotFalliblyReturnTheUnitType);
+            }
+        }
+
+        for (i, input_type) in c.input_types().iter().enumerate() {
+            if let ResolvedType::Reference(input_type) = input_type {
+                if input_type.is_mutable {
+                    let Computation::Callable(c) = &c else {
+                        unreachable!()
+                    };
+                    return Err(CannotTakeMutReferenceError {
+                        component_path: c.path.clone(),
+                        mut_ref_input_index: i,
+                    }
+                    .into());
+                }
             }
         }
 
@@ -136,4 +152,6 @@ pub(crate) enum ConstructorValidationError {
         that returns a generic `T` is a constructor that can build **any** type - which is unlikely \
         to be the case.")]
     NakedGenericOutputType { naked_parameter: String },
+    #[error(transparent)]
+    CannotTakeAMutableReferenceAsInput(#[from] CannotTakeMutReferenceError),
 }
