@@ -507,16 +507,20 @@ impl ComponentDb {
         let source = source_or_exit_with_error!(location, package_graph, diagnostics);
         let label = diagnostic::get_f_macro_invocation_span(&source, location)
             .labeled("The error observer was registered here".into());
-        let diagnostic = match &e {
+        match e {
+            ErrorObserverValidationError::CannotTakeAMutableReferenceAsInput(inner) => {
+                inner.emit(raw_user_component_id, raw_user_component_db, computation_db, krate_collection, package_graph, CallableType::ErrorObserver, diagnostics);
+            }
             // TODO: Add a sub-diagnostic showing the error handler signature, highlighting with
             //  a label the non-unit return type.
             ErrorObserverValidationError::MustReturnUnitType { .. } |
             // TODO: Add a sub-diagnostic showing the error handler signature, highlighting with
             //  a label the input types. 
             ErrorObserverValidationError::DoesNotTakeErrorReferenceAsInput { .. } => {
-                CompilerDiagnostic::builder(source, e)
+                let d = CompilerDiagnostic::builder(source, e)
                     .optional_label(label)
-                    .build()
+                    .build();
+                diagnostics.push(d.into());
             }
             ErrorObserverValidationError::UnassignedGenericParameters { ref parameters, .. } => {
                 fn get_snippet(
@@ -551,7 +555,7 @@ impl ComponentDb {
                 let callable = &computation_db[raw_user_component_id];
                 let definition_snippet =
                     get_snippet(callable, parameters, krate_collection, package_graph);
-                CompilerDiagnostic::builder(source, e)
+                let d = CompilerDiagnostic::builder(source, e)
                     .optional_label(label)
                     .optional_additional_annotated_snippet(definition_snippet)
                     .help(
@@ -559,10 +563,10 @@ impl ComponentDb {
                         generic parameter(s) when registering the error observer against the blueprint: `f!(my_crate::my_observer::<ConcreteType>)`".into())
                     // ^ TODO: add a proper code snippet here, using the actual function that needs
                     //    to be amended instead of a made signature
-                    .build()
-            }
+                    .build();
+                diagnostics.push(d.into());
+            },
         };
-        diagnostics.push(diagnostic.into());
     }
 
     pub(super) fn invalid_error_handler(

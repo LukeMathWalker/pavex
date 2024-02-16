@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 use std::fmt::{Display, Formatter};
 
+use crate::compiler::component::CannotTakeMutReferenceError;
 use indexmap::IndexSet;
 
 use crate::language::{Callable, ResolvedPath, ResolvedType};
@@ -37,6 +38,18 @@ impl<'a> ErrorObserver<'a> {
                     error_type: pavex_error_ref.to_owned(),
                 },
             )?;
+
+        for (i, input_type) in error_observer.inputs.iter().enumerate() {
+            if let ResolvedType::Reference(input_type) = input_type {
+                if input_type.is_mutable {
+                    return Err(CannotTakeMutReferenceError {
+                        component_path: error_observer.path.clone(),
+                        mut_ref_input_index: i,
+                    }
+                    .into());
+                }
+            }
+        }
 
         // All "free" generic parameters in the error handler must be assigned to concrete types.
         // The only ones that are allowed to be unassigned are those used by the error type,
@@ -91,6 +104,7 @@ pub(crate) enum ErrorObserverValidationError {
         observer_path: ResolvedPath,
         parameters: IndexSet<String>,
     },
+    CannotTakeAMutableReferenceAsInput(#[from] CannotTakeMutReferenceError),
 }
 
 impl Display for ErrorObserverValidationError {
@@ -126,6 +140,9 @@ impl Display for ErrorObserverValidationError {
                     `{observer_path}` has {} unassigned generic parameters.",
                     parameters.len()
                 )
+            }
+            ErrorObserverValidationError::CannotTakeAMutableReferenceAsInput(e) => {
+                write!(f, "{e}")
             }
         }
     }

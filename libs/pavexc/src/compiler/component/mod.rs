@@ -23,7 +23,7 @@ pub(crate) use request_handler::{RequestHandler, RequestHandlerValidationError};
 pub(crate) use wrapping_middleware::{WrappingMiddleware, WrappingMiddlewareValidationError};
 
 #[derive(thiserror::Error, Debug, Clone)]
-#[error("You can't inject a mutable reference as an input parameter to `{component_path}`, an error handler.")]
+#[error("You can't inject a mutable reference as an input parameter to `{component_path}`.")]
 pub(crate) struct CannotTakeMutReferenceError {
     pub component_path: ResolvedPath,
     pub mut_ref_input_index: usize,
