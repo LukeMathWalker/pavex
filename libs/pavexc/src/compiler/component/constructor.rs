@@ -35,19 +35,8 @@ impl<'a> Constructor<'a> {
             }
         }
 
-        for (i, input_type) in c.input_types().iter().enumerate() {
-            if let ResolvedType::Reference(input_type) = input_type {
-                if input_type.is_mutable {
-                    let Computation::Callable(c) = &c else {
-                        unreachable!()
-                    };
-                    return Err(CannotTakeMutReferenceError {
-                        component_path: c.path.clone(),
-                        mut_ref_input_index: i,
-                    }
-                    .into());
-                }
-            }
+        if let Computation::Callable(c) = &c {
+            CannotTakeMutReferenceError::check_callable(c.as_ref())?;
         }
 
         // You can't construct `pavex::Error` or `&pavex::Error`.

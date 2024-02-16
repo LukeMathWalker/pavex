@@ -39,17 +39,7 @@ impl<'a> ErrorObserver<'a> {
                 },
             )?;
 
-        for (i, input_type) in error_observer.inputs.iter().enumerate() {
-            if let ResolvedType::Reference(input_type) = input_type {
-                if input_type.is_mutable {
-                    return Err(CannotTakeMutReferenceError {
-                        component_path: error_observer.path.clone(),
-                        mut_ref_input_index: i,
-                    }
-                    .into());
-                }
-            }
-        }
+        CannotTakeMutReferenceError::check_callable(error_observer.as_ref())?;
 
         // All "free" generic parameters in the error handler must be assigned to concrete types.
         // The only ones that are allowed to be unassigned are those used by the error type,

@@ -10,7 +10,7 @@ use crate::diagnostic::{
     convert_proc_macro_span, AnnotatedSnippet, CallableDefinition, CallableType,
     CompilerDiagnostic, OptionalSourceSpanExt, SourceSpanExt,
 };
-use crate::language::{Callable, ResolvedPath};
+use crate::language::{Callable, ResolvedPath, ResolvedType};
 use crate::rustdoc::CrateCollection;
 use crate::{diagnostic, source_or_exit_with_error};
 use guppy::graph::PackageGraph;
@@ -30,6 +30,21 @@ pub(crate) struct CannotTakeMutReferenceError {
 }
 
 impl CannotTakeMutReferenceError {
+    pub(crate) fn check_callable(c: &Callable) -> Result<(), Self> {
+        for (i, input_type) in c.inputs.iter().enumerate() {
+            if let ResolvedType::Reference(input_type) = input_type {
+                if input_type.is_mutable {
+                    return Err(CannotTakeMutReferenceError {
+                        component_path: c.path.clone(),
+                        mut_ref_input_index: i,
+                    }
+                    .into());
+                }
+            }
+        }
+        Ok(())
+    }
+
     pub(crate) fn emit(
         self,
         raw_user_component_id: UserComponentId,
