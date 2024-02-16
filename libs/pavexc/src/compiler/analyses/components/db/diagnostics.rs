@@ -252,12 +252,24 @@ impl ComponentDb {
         let source = source_or_exit_with_error!(location, package_graph, diagnostics);
         let label = diagnostic::get_f_macro_invocation_span(&source, location)
             .labeled("The request handler was registered here".into());
-        let diagnostic = match e {
+        match e {
+            RequestHandlerValidationError::CannotTakeAMutableReferenceAsInput(inner) => {
+                inner.emit(
+                    user_component_id,
+                    user_component_db,
+                    computation_db,
+                    krate_collection,
+                    package_graph,
+                    CallableType::RequestHandler,
+                    diagnostics,
+                );
+            }
             RequestHandlerValidationError::CannotReturnTheUnitType
             | RequestHandlerValidationError::CannotFalliblyReturnTheUnitType => {
-                CompilerDiagnostic::builder(source, e)
+                let d = CompilerDiagnostic::builder(source, e)
                     .optional_label(label)
-                    .build()
+                    .build();
+                diagnostics.push(d.into());
             }
             RequestHandlerValidationError::UnderconstrainedGenericParameters { ref parameters } => {
                 fn get_definition_span(
@@ -336,7 +348,7 @@ impl ComponentDb {
                             There should no unassigned generic parameters in request handlers, but {free_parameters} {verb} \
                             not seem to have been assigned a concrete type.",
                             callable.path));
-                CompilerDiagnostic::builder(source, error)
+                let d = CompilerDiagnostic::builder(source, error)
                     .optional_label(label)
                     .optional_additional_annotated_snippet(definition_snippet)
                     .help(
@@ -347,10 +359,10 @@ impl ComponentDb {
                         |  )"))
                     // ^ TODO: add a proper code snippet here, using the actual function that needs
                     //    to be amended instead of a made signature
-                    .build()
+                    .build();
+                diagnostics.push(d.into());
             }
         };
-        diagnostics.push(diagnostic.into());
     }
 
     pub(super) fn invalid_wrapping_middleware(

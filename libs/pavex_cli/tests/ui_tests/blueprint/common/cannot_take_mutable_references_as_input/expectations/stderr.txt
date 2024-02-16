@@ -1,5 +1,26 @@
 [31m[1mERROR[0m[39m: 
   [31m×[0m You can't inject a mutable reference as an input parameter to
+  [31m│[0m `app::handler`.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:34:1]
+  [31m│[0m  [2m34[0m │     bp.error_observer(f!(crate::observer));
+  [31m│[0m  [2m35[0m │     bp.route(GET, "/home", f!(crate::handler))
+  [31m│[0m     · [35;1m                           ─────────┬────────[0m
+  [31m│[0m     ·                  [35;1mThe request handler was registered here[0m
+  [31m│[0m  [2m36[0m │         .error_handler(f!(crate::error_handler));
+  [31m│[0m     ╰────
+  [31m│[0m    ╭─[[36;1;4msrc/lib.rs[0m:1:1]
+  [31m│[0m  [2m1[0m │ pub fn handler(s: &mut String) -> Result<Response, pavex::Error> {
+  [31m│[0m    · [35;1m               ───────┬──────[0m
+  [31m│[0m    ·                       [35;1m╰── The &mut input[0m
+  [31m│[0m  [2m2[0m │     todo!()
+  [31m│[0m    ╰────
+  [31m│[0m [36m  help: [0mInjected inputs can only be taken by value or via a shared reference
+  [31m│[0m         (`&`). If you absolutely need to mutate the input, consider internal
+  [31m│[0m         mutability (e.g. `RefCell`).
+
+[31m[1mERROR[0m[39m: 
+  [31m×[0m You can't inject a mutable reference as an input parameter to
   [31m│[0m `app::observer`.
   [31m│[0m
   [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:33:1]
