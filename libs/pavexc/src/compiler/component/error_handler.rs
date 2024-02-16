@@ -129,8 +129,8 @@ pub(crate) enum ErrorHandlerValidationError {
 impl Display for ErrorHandlerValidationError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            ErrorHandlerValidationError::CannotReturnTheUnitType(_) => {
-                write!(f, "All error handlers must return a type that implements `pavex::response::IntoResponse`.\nThis error handler doesn't: it returns the unit type, `()`. I can't convert `()` into an HTTP response!")
+            ErrorHandlerValidationError::CannotReturnTheUnitType(path) => {
+                write!(f, "All error handlers must return a type that implements `pavex::response::IntoResponse`.\n`{path}` doesn't, it returns the unit type, `()`. I can't convert `()` into an HTTP response!")
             }
             ErrorHandlerValidationError::DoesNotTakeErrorReferenceAsInput {
                 ref fallible_callable,
