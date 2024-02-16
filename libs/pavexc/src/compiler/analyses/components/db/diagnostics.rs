@@ -578,14 +578,15 @@ impl ComponentDb {
         let source = source_or_exit_with_error!(location, package_graph, diagnostics);
         let label = diagnostic::get_f_macro_invocation_span(&source, location)
             .labeled("The error handler was registered here".into());
-        let diagnostic = match &e {
+        match e {
             ErrorHandlerValidationError::CannotReturnTheUnitType(_) |
             // TODO: Perhaps add a snippet showing the signature of
             //  the associate fallible handler, highlighting the output type.
             ErrorHandlerValidationError::DoesNotTakeErrorReferenceAsInput { .. } => {
-                CompilerDiagnostic::builder(source, e)
+                let diagnostic = CompilerDiagnostic::builder(source, e)
                     .optional_label(label)
-                    .build()
+                    .build();
+                diagnostics.push(diagnostic.into());
             }
             ErrorHandlerValidationError::CannotBeFallible(_) => {
                 fn get_snippet(
@@ -613,9 +614,11 @@ impl ComponentDb {
 
                 let definition_snippet =
                     get_snippet(&computation_db[raw_user_component_id], krate_collection, package_graph);
-                CompilerDiagnostic::builder(source, e)
+                let diagnostic = CompilerDiagnostic::builder(source, e)
+                    .optional_label(label)
                     .optional_additional_annotated_snippet(definition_snippet)
-                    .build()
+                    .build();
+                diagnostics.push(diagnostic.into());
             },
             ErrorHandlerValidationError::UnderconstrainedGenericParameters { ref parameters, ref error_ref_input_index } => {
                 fn get_snippet(
@@ -682,7 +685,7 @@ impl ComponentDb {
                             I can only infer the type of an unassigned generic parameter if it appears in the error type processed by this error handler. This is \
                             not the case for {free_parameters}, since {subject_verb} used by the error type.",
                             callable.path));
-                CompilerDiagnostic::builder(source, error)
+                let diagnostic = CompilerDiagnostic::builder(source, error)
                     .optional_label(label)
                     .optional_additional_annotated_snippet(definition_snippet)
                     .help(
@@ -693,42 +696,13 @@ impl ComponentDb {
                         |  )".into())
                     // ^ TODO: add a proper code snippet here, using the actual function that needs
                     //    to be amended instead of a made signature
-                    .build()
+                    .build();
+                diagnostics.push(diagnostic.into());
             }
-            ErrorHandlerValidationError::CannotTakeAMutableReferenceAsInput { mut_ref_input_index, .. } => {
-                fn get_snippet(
-                    callable: &Callable,
-                    krate_collection: &CrateCollection,
-                    package_graph: &PackageGraph,
-                    mut_ref_input_index: usize
-                ) -> Option<AnnotatedSnippet> {
-                    let def = CallableDefinition::compute(
-                        callable,
-                        krate_collection,
-                        package_graph,
-                    )?;
-
-                    let input = &def.sig.inputs[mut_ref_input_index];
-                    let label = convert_proc_macro_span(&def.span_contents, input.span())
-                        .labeled("The &mut input".into());
-                    Some(AnnotatedSnippet::new(
-                        def.named_source(),
-                        label,
-                    ))
-                }
-
-                let definition_snippet =
-                    get_snippet(&computation_db[raw_user_component_id], krate_collection, package_graph, *mut_ref_input_index);
-                CompilerDiagnostic::builder(source, e)
-                    .optional_additional_annotated_snippet(definition_snippet)
-                    .help(
-                        "Injected inputs can only be taken by value or via a shared reference (`&`). \
-                         If you absolutely need to mutate the input, consider internal mutability (e.g. `RefCell`).".into()
-                    )
-                    .build()
+            ErrorHandlerValidationError::CannotTakeAMutableReferenceAsInput(inner) => {
+                inner.emit(raw_user_component_id, raw_user_component_db, computation_db, krate_collection, package_graph, CallableType::ErrorHandler, diagnostics);
             }
         };
-        diagnostics.push(diagnostic.into());
     }
 
     pub(super) fn error_handler_for_infallible_component(

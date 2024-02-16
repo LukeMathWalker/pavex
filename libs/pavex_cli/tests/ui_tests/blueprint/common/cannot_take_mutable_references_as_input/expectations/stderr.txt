@@ -2,6 +2,13 @@
   [31m×[0m You can't inject a mutable reference as an input parameter to
   [31m│[0m `app::error_handler`, an error handler.
   [31m│[0m
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:35:1]
+  [31m│[0m  [2m35[0m │     bp.route(GET, "/home", f!(crate::handler))
+  [31m│[0m  [2m36[0m │         .error_handler(f!(crate::error_handler));
+  [31m│[0m     · [35;1m                       ────────────┬───────────[0m
+  [31m│[0m     ·                   [35;1mThe error handler was registered here[0m
+  [31m│[0m  [2m37[0m │     bp
+  [31m│[0m     ╰────
   [31m│[0m    ╭─[[36;1;4msrc/lib.rs[0m:1:1]
   [31m│[0m  [2m1[0m │ pub fn error_handler(e: &pavex::Error, s: &mut String) -> Response {
   [31m│[0m    · [35;1m                                       ───────┬──────[0m

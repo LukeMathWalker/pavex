@@ -1,5 +1,6 @@
 use std::fmt::{Display, Formatter};
 
+use crate::compiler::component::CannotTakeMutReferenceError;
 use crate::compiler::utils::get_err_variant;
 use indexmap::IndexSet;
 use itertools::Itertools;
@@ -61,12 +62,11 @@ impl ErrorHandler {
         for (i, input_type) in error_handler.inputs.iter().enumerate() {
             if let ResolvedType::Reference(input_type) = input_type {
                 if input_type.is_mutable {
-                    return Err(
-                        ErrorHandlerValidationError::CannotTakeAMutableReferenceAsInput {
-                            error_handler_path: error_handler.path,
-                            mut_ref_input_index: i,
-                        },
-                    );
+                    return Err(CannotTakeMutReferenceError {
+                        component_path: error_handler.path,
+                        mut_ref_input_index: i,
+                    }
+                    .into());
                 }
             }
         }
@@ -129,10 +129,7 @@ impl AsRef<Callable> for ErrorHandler {
 pub(crate) enum ErrorHandlerValidationError {
     CannotReturnTheUnitType(ResolvedPath),
     CannotBeFallible(ResolvedPath),
-    CannotTakeAMutableReferenceAsInput {
-        error_handler_path: ResolvedPath,
-        mut_ref_input_index: usize,
-    },
+    CannotTakeAMutableReferenceAsInput(#[from] CannotTakeMutReferenceError),
     DoesNotTakeErrorReferenceAsInput {
         fallible_callable: Callable,
         error_type: ResolvedType,
@@ -176,14 +173,8 @@ impl Display for ErrorHandlerValidationError {
                     "Error handlers must be infallible.\n`{path}` isn't, it returns a `Result`!"
                 )
             }
-            ErrorHandlerValidationError::CannotTakeAMutableReferenceAsInput {
-                error_handler_path,
-                ..
-            } => {
-                write!(
-                    f,
-                    "You can't inject a mutable reference as an input parameter to `{error_handler_path}`, an error handler."
-                )
+            ErrorHandlerValidationError::CannotTakeAMutableReferenceAsInput(e) => {
+                write!(f, "{e}")
             }
         }
     }
