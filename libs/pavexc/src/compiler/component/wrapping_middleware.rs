@@ -1,5 +1,6 @@
 use indexmap::IndexSet;
 
+use crate::compiler::component::CannotTakeMutReferenceError;
 use crate::language::GenericArgument;
 use crate::{
     compiler::computation::MatchResult,
@@ -67,6 +68,18 @@ impl<'a> WrappingMiddleware<'a> {
                 return Err(NextGenericParameterMustBeNaked {
                     parameter: format!("{:?}", t),
                 });
+            }
+        }
+
+        for (i, input_type) in c.inputs.iter().enumerate() {
+            if let ResolvedType::Reference(input_type) = input_type {
+                if input_type.is_mutable {
+                    return Err(CannotTakeMutReferenceError {
+                        component_path: c.path.clone(),
+                        mut_ref_input_index: i,
+                    }
+                    .into());
+                }
             }
         }
 
@@ -158,4 +171,6 @@ pub(crate) enum WrappingMiddlewareValidationError {
         apart from the one used in `pavex::middleware::Next<_>`."
     )]
     UnderconstrainedGenericParameters { parameters: IndexSet<String> },
+    #[error(transparent)]
+    CannotTakeAMutableReferenceAsInput(#[from] CannotTakeMutReferenceError),
 }

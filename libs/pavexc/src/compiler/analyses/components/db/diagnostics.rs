@@ -380,23 +380,41 @@ impl ComponentDb {
         let source = source_or_exit_with_error!(location, package_graph, diagnostics);
         let label = diagnostic::get_f_macro_invocation_span(&source, location)
             .labeled("The wrapping middleware was registered here".into());
-        let diagnostic = match e {
+        match e {
+            CannotTakeAMutableReferenceAsInput(inner) => {
+                inner.emit(
+                    user_component_id,
+                    user_component_db,
+                    computation_db,
+                    krate_collection,
+                    package_graph,
+                    CallableType::WrappingMiddleware,
+                    diagnostics,
+                );
+            }
             CannotReturnTheUnitType
             | CannotFalliblyReturnTheUnitType
-            | MustTakeNextAsInputParameter => CompilerDiagnostic::builder(source, e)
-                .optional_label(label)
-                .build(),
-            CannotTakeMoreThanOneNextAsInputParameter => CompilerDiagnostic::builder(source, e)
-                .optional_label(label)
-                .help("Remove the extra `Next` input parameters until only one is left.".into())
-                .build(),
+            | MustTakeNextAsInputParameter => {
+                let d = CompilerDiagnostic::builder(source, e)
+                    .optional_label(label)
+                    .build();
+                diagnostics.push(d.into());
+            }
+            CannotTakeMoreThanOneNextAsInputParameter => {
+                let d = CompilerDiagnostic::builder(source, e)
+                    .optional_label(label)
+                    .help("Remove the extra `Next` input parameters until only one is left.".into())
+                    .build();
+                diagnostics.push(d.into());
+            }
             NextGenericParameterMustBeNaked { ref parameter } => {
                 let help =
                     format!("Take `Next<T>` rather than `Next<{parameter}>` as input parameter in your middleware.");
-                CompilerDiagnostic::builder(source, e)
+                let d = CompilerDiagnostic::builder(source, e)
                     .optional_label(label)
                     .help(help)
-                    .build()
+                    .build();
+                diagnostics.push(d.into());
             }
             UnderconstrainedGenericParameters { ref parameters } => {
                 fn get_snippet(
@@ -451,7 +469,7 @@ impl ComponentDb {
                             There should no unassigned generic parameters in wrapping middlewares apart from the one in `Next<_>`, but {free_parameters} {verb} \
                             not seem to have been assigned a concrete type.",
                             callable.path));
-                CompilerDiagnostic::builder(source, error)
+                let d = CompilerDiagnostic::builder(source, error)
                     .optional_label(label)
                     .optional_additional_annotated_snippet(definition_snippet)
                     .help(
@@ -461,10 +479,10 @@ impl ComponentDb {
                         |  )"))
                     // ^ TODO: add a proper code snippet here, using the actual function that needs
                     //    to be amended instead of a made signature
-                    .build()
+                    .build();
+                diagnostics.push(d.into());
             }
         };
-        diagnostics.push(diagnostic.into());
     }
 
     pub(super) fn invalid_response_type(
