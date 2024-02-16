@@ -82,7 +82,7 @@
 [31m[1mERROR[0m[39m: 
   [31m×[0m All error handlers must return a type that implements
   [31m│[0m `pavex::response::IntoResponse`.
-  [31m│[0m This error handler doesn't: it returns the unit type, `()`. I can't
+  [31m│[0m `app::error_handler` doesn't, it returns the unit type, `()`. I can't
   [31m│[0m convert `()` into an HTTP response!
   [31m│[0m
   [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:50:1]
@@ -96,7 +96,7 @@
 [31m[1mERROR[0m[39m: 
   [31m×[0m All error handlers must return a type that implements
   [31m│[0m `pavex::response::IntoResponse`.
-  [31m│[0m This error handler doesn't: it returns the unit type, `()`. I can't
+  [31m│[0m `app::error_handler` doesn't, it returns the unit type, `()`. I can't
   [31m│[0m convert `()` into an HTTP response!
   [31m│[0m
   [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:54:1]
@@ -110,7 +110,7 @@
 [31m[1mERROR[0m[39m: 
   [31m×[0m All error handlers must return a type that implements
   [31m│[0m `pavex::response::IntoResponse`.
-  [31m│[0m This error handler doesn't: it returns the unit type, `()`. I can't
+  [31m│[0m `app::error_handler` doesn't, it returns the unit type, `()`. I can't
   [31m│[0m convert `()` into an HTTP response!
   [31m│[0m
   [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:58:1]
