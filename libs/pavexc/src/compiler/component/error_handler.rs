@@ -21,14 +21,22 @@ impl ErrorHandler {
         fallible_callable: &Callable,
         pavex_error: &ResolvedType,
     ) -> Result<Self, ErrorHandlerValidationError> {
-        if error_handler.output.is_none() {
-            return Err(ErrorHandlerValidationError::CannotReturnTheUnitType(
-                error_handler.path,
-            ));
+        match &error_handler.output {
+            None => {
+                return Err(ErrorHandlerValidationError::CannotReturnTheUnitType(
+                    error_handler.path,
+                ));
+            }
+            Some(output_type) => {
+                if output_type.is_result() {
+                    return Err(ErrorHandlerValidationError::CannotBeFallible(
+                        error_handler.path,
+                    ));
+                }
+            }
         }
 
         let error_type = get_err_variant(fallible_callable.output.as_ref().unwrap());
-        // TODO: verify that the error handler does NOT return a `Result`
         let (error_input_index, error_ref_parameter) = error_handler
             .inputs
             .iter()
@@ -107,6 +115,7 @@ impl AsRef<Callable> for ErrorHandler {
 #[derive(thiserror::Error, Debug, Clone)]
 pub(crate) enum ErrorHandlerValidationError {
     CannotReturnTheUnitType(ResolvedPath),
+    CannotBeFallible(ResolvedPath),
     DoesNotTakeErrorReferenceAsInput {
         fallible_callable: Callable,
         error_type: ResolvedType,
@@ -142,6 +151,12 @@ impl Display for ErrorHandlerValidationError {
                     f,
                     "Input parameters for an error handler can't have any *unassigned* \
                        generic type parameters that do not appear in the error type itself."
+                )
+            }
+            ErrorHandlerValidationError::CannotBeFallible(path) => {
+                write!(
+                    f,
+                    "Error handlers must be infallible.\n`{path}` isn't, it returns a `Result`!"
                 )
             }
         }

@@ -1,0 +1,10 @@
+[31m[1mERROR[0m[39m: 
+  [31m×[0m Error handlers must be infallible.
+  [31m│[0m `app::error_handler` isn't, it returns a `Result`!
+  [31m│[0m
+  [31m│[0m    ╭─[[36;1;4msrc/lib.rs[0m:1:1]
+  [31m│[0m  [2m1[0m │ pub fn error_handler(e: &pavex::Error) -> Result<Response, String> {
+  [31m│[0m    · [35;1m                                          ────────────┬───────────[0m
+  [31m│[0m    ·                                                       [35;1m╰── The output type[0m
+  [31m│[0m  [2m2[0m │     todo!()
+  [31m│[0m    ╰────

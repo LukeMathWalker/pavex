@@ -587,6 +587,36 @@ impl ComponentDb {
                     .optional_label(label)
                     .build()
             }
+            ErrorHandlerValidationError::CannotBeFallible(_) => {
+                fn get_snippet(
+                    callable: &Callable,
+                    krate_collection: &CrateCollection,
+                    package_graph: &PackageGraph,
+                ) -> Option<AnnotatedSnippet> {
+                    let def = CallableDefinition::compute(
+                        callable,
+                        krate_collection,
+                        package_graph,
+                    )?;
+
+                    let label = if let syn::ReturnType::Type(_, ty) = &def.sig.output {
+                        Some(convert_proc_macro_span(&def.span_contents, ty.span())
+                            .labeled("The output type".into()))
+                    } else {
+                        None
+                    };
+                    Some(AnnotatedSnippet::new_optional(
+                        def.named_source(),
+                        label,
+                    ))
+                }
+
+                let definition_snippet =
+                    get_snippet(&computation_db[raw_user_component_id], krate_collection, package_graph);
+                CompilerDiagnostic::builder(source, e)
+                    .optional_additional_annotated_snippet(definition_snippet)
+                    .build()
+            },
             ErrorHandlerValidationError::UnderconstrainedGenericParameters { ref parameters, ref error_ref_input_index } => {
                 fn get_snippet(
                     callable: &Callable,
