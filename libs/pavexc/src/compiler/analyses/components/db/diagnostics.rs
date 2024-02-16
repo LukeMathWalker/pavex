@@ -7,14 +7,14 @@ use crate::compiler::component::{
 };
 use crate::compiler::resolvers::CallableResolutionError;
 use crate::compiler::traits::MissingTraitImplementationError;
-use crate::diagnostic;
 use crate::diagnostic::{
     convert_proc_macro_span, convert_rustdoc_span, AnnotatedSnippet, CallableType,
-    CompilerDiagnostic, LocationExt, SourceSpanExt,
+    CompilerDiagnostic, LocationExt, OptionalSourceSpanExt, SourceSpanExt,
 };
 use crate::language::{Callable, ResolvedType};
 use crate::rustdoc::CrateCollection;
 use crate::utils::comma_separated_list;
+use crate::{diagnostic, source_or_exit_with_error};
 use guppy::graph::PackageGraph;
 use indexmap::IndexSet;
 use miette::NamedSource;
@@ -33,15 +33,9 @@ impl ComponentDb {
         diagnostics: &mut Vec<miette::Error>,
     ) {
         let location = user_component_db.get_location(user_component_id);
-        let source = match location.source_file(package_graph) {
-            Ok(s) => s,
-            Err(e) => {
-                diagnostics.push(e.into());
-                return;
-            }
-        };
+        let source = source_or_exit_with_error!(location, package_graph, diagnostics);
         let label = diagnostic::get_f_macro_invocation_span(&source, location)
-            .map(|s| s.labeled("The constructor was registered here".into()));
+            .labeled("The constructor was registered here".into());
         let diagnostic = match e {
             ConstructorValidationError::CannotFalliblyReturnTheUnitType
             | ConstructorValidationError::CannotConstructPavexError
@@ -242,15 +236,9 @@ impl ComponentDb {
         diagnostics: &mut Vec<miette::Error>,
     ) {
         let location = user_component_db.get_location(user_component_id);
-        let source = match location.source_file(package_graph) {
-            Ok(s) => s,
-            Err(e) => {
-                diagnostics.push(e.into());
-                return;
-            }
-        };
+        let source = source_or_exit_with_error!(location, package_graph, diagnostics);
         let label = diagnostic::get_f_macro_invocation_span(&source, location)
-            .map(|s| s.labeled("The request handler was registered here".into()));
+            .labeled("The request handler was registered here".into());
         let diagnostic = match e {
             RequestHandlerValidationError::CannotReturnTheUnitType
             | RequestHandlerValidationError::CannotFalliblyReturnTheUnitType => {
@@ -364,15 +352,9 @@ impl ComponentDb {
         use crate::compiler::component::WrappingMiddlewareValidationError::*;
 
         let location = user_component_db.get_location(user_component_id);
-        let source = match location.source_file(package_graph) {
-            Ok(s) => s,
-            Err(e) => {
-                diagnostics.push(e.into());
-                return;
-            }
-        };
+        let source = source_or_exit_with_error!(location, package_graph, diagnostics);
         let label = diagnostic::get_f_macro_invocation_span(&source, location)
-            .map(|s| s.labeled("The wrapping middleware was registered here".into()));
+            .labeled("The wrapping middleware was registered here".into());
         let diagnostic = match e {
             CannotReturnTheUnitType
             | CannotFalliblyReturnTheUnitType
@@ -495,15 +477,9 @@ impl ComponentDb {
         let location = user_component_db.get_location(user_component_id);
         let raw_user_component = &user_component_db[user_component_id];
         let callable_type = raw_user_component.callable_type();
-        let source = match location.source_file(package_graph) {
-            Ok(s) => s,
-            Err(e) => {
-                diagnostics.push(e.into());
-                return;
-            }
-        };
+        let source = source_or_exit_with_error!(location, package_graph, diagnostics);
         let label = diagnostic::get_f_macro_invocation_span(&source, location)
-            .map(|s| s.labeled(format!("The {callable_type} was registered here")));
+            .labeled(format!("The {callable_type} was registered here"));
         let error = anyhow::Error::from(e).context(format!(
             "I can't use the type returned by this {callable_type} to create an HTTP \
                 response.\n\
@@ -528,15 +504,9 @@ impl ComponentDb {
         let location = raw_user_component_db.get_location(raw_user_component_id);
         let raw_user_component = &raw_user_component_db[raw_user_component_id];
         let callable_type = raw_user_component.callable_type();
-        let source = match location.source_file(package_graph) {
-            Ok(s) => s,
-            Err(e) => {
-                diagnostics.push(e.into());
-                return;
-            }
-        };
+        let source = source_or_exit_with_error!(location, package_graph, diagnostics);
         let label = diagnostic::get_f_macro_invocation_span(&source, location)
-            .map(|s| s.labeled(format!("The {callable_type} was registered here")));
+            .labeled(format!("The {callable_type} was registered here"));
         let error = anyhow::Error::from(e).context(format!(
             "Something went wrong when I tried to analyze the implementation of \
                 `pavex::response::IntoResponse` for {output_type:?}, the type returned by 
@@ -560,15 +530,9 @@ impl ComponentDb {
         diagnostics: &mut Vec<miette::Error>,
     ) {
         let location = raw_user_component_db.get_location(raw_user_component_id);
-        let source = match location.source_file(package_graph) {
-            Ok(s) => s,
-            Err(e) => {
-                diagnostics.push(e.into());
-                return;
-            }
-        };
+        let source = source_or_exit_with_error!(location, package_graph, diagnostics);
         let label = diagnostic::get_f_macro_invocation_span(&source, location)
-            .map(|s| s.labeled("The error observer was registered here".into()));
+            .labeled("The error observer was registered here".into());
         let diagnostic = match &e {
             // TODO: Add a sub-diagnostic showing the error handler signature, highlighting with
             //  a label the non-unit return type.
@@ -658,15 +622,9 @@ impl ComponentDb {
         diagnostics: &mut Vec<miette::Error>,
     ) {
         let location = raw_user_component_db.get_location(raw_user_component_id);
-        let source = match location.source_file(package_graph) {
-            Ok(s) => s,
-            Err(e) => {
-                diagnostics.push(e.into());
-                return;
-            }
-        };
+        let source = source_or_exit_with_error!(location, package_graph, diagnostics);
         let label = diagnostic::get_f_macro_invocation_span(&source, location)
-            .map(|s| s.labeled("The error handler was registered here".into()));
+            .labeled("The error handler was registered here".into());
         let diagnostic = match &e {
             // TODO: Add a sub-diagnostic showing the error handler signature, highlighting with
             // a label the missing return type.
@@ -789,15 +747,9 @@ impl ComponentDb {
     ) {
         let fallible_kind = raw_user_component_db[fallible_id].callable_type();
         let location = raw_user_component_db.get_location(error_handler_id);
-        let source = match location.source_file(package_graph) {
-            Ok(s) => s,
-            Err(e) => {
-                diagnostics.push(e.into());
-                return;
-            }
-        };
+        let source = source_or_exit_with_error!(location, package_graph, diagnostics);
         let label = diagnostic::get_f_macro_invocation_span(&source, location)
-            .map(|s| s.labeled("The unnecessary error handler was registered here".into()));
+            .labeled("The unnecessary error handler was registered here".into());
         let error = anyhow::anyhow!(
             "You registered an error handler for a {} that doesn't return a `Result`.",
             fallible_kind
@@ -823,15 +775,9 @@ impl ComponentDb {
             CallableType::Constructor
         );
         let location = raw_user_component_db.get_location(error_handler_id);
-        let source = match location.source_file(package_graph) {
-            Ok(s) => s,
-            Err(e) => {
-                diagnostics.push(e.into());
-                return;
-            }
-        };
+        let source = source_or_exit_with_error!(location, package_graph, diagnostics);
         let label = diagnostic::get_f_macro_invocation_span(&source, location)
-            .map(|s| s.labeled("The unnecessary error handler was registered here".into()));
+            .labeled("The unnecessary error handler was registered here".into());
         let error = anyhow::anyhow!(
             "You can't register an error handler for a singleton constructor. \n\
                 If I fail to build a singleton, I bubble up the error - it doesn't get handled.",
@@ -851,15 +797,9 @@ impl ComponentDb {
     ) {
         let fallible_kind = raw_user_component_db[fallible_id].callable_type();
         let location = raw_user_component_db.get_location(fallible_id);
-        let source = match location.source_file(package_graph) {
-            Ok(s) => s,
-            Err(e) => {
-                diagnostics.push(e.into());
-                return;
-            }
-        };
+        let source = source_or_exit_with_error!(location, package_graph, diagnostics);
         let label = diagnostic::get_f_macro_invocation_span(&source, location)
-            .map(|s| s.labeled(format!("The fallible {fallible_kind} was registered here")));
+            .labeled(format!("The fallible {fallible_kind} was registered here"));
         let error = anyhow::anyhow!(
                 "You registered a {fallible_kind} that returns a `Result`, but you did not register an \
                  error handler for it. \

@@ -21,6 +21,7 @@ mod ordinals;
 mod proc_macro_utils;
 mod registration_locations;
 mod source_file;
+mod utils;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub enum CallableType {
