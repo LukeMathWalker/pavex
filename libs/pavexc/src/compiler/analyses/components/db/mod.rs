@@ -185,9 +185,9 @@ impl ComponentDb {
             self_.process_constructors(
                 &mut needs_error_handler,
                 computation_db,
+                framework_item_db,
                 package_graph,
                 krate_collection,
-                framework_item_db,
                 diagnostics,
             );
 
@@ -462,9 +462,9 @@ impl ComponentDb {
         &mut self,
         needs_error_handler: &mut IndexSet<UserComponentId>,
         computation_db: &mut ComputationDb,
+        framework_item_db: &FrameworkItemDb,
         package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
-        framework_item_db: &FrameworkItemDb,
         diagnostics: &mut Vec<miette::Error>,
     ) {
         let constructor_ids = self
@@ -474,7 +474,7 @@ impl ComponentDb {
             .collect::<Vec<_>>();
         for user_component_id in constructor_ids {
             let c: Computation = computation_db[user_component_id].clone().into();
-            match Constructor::new(c, &self.pavex_error, &framework_item_db) {
+            match Constructor::new(c, &self.pavex_error, framework_item_db) {
                 Err(e) => {
                     Self::invalid_constructor(
                         e,
@@ -966,7 +966,7 @@ impl ComponentDb {
         derived_from: Option<ComponentId>,
     ) -> Result<ComponentId, ConstructorValidationError> {
         let callable = computation_db[callable_id].to_owned();
-        Constructor::new(callable, &self.pavex_error, framework_item_db)?;
+        Constructor::new(callable, &self.pavex_error, &framework_item_db)?;
         let constructor_component = UnregisteredComponent::SyntheticConstructor {
             lifecycle,
             computation_id: callable_id,

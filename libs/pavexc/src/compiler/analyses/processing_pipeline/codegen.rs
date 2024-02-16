@@ -31,12 +31,13 @@ impl RequestHandlerPipeline {
         let n_middlewares = self.middleware_id2stage_data.len();
         let mut stages = Vec::with_capacity(n_middlewares + 1);
         for (i, call_graph) in self.graph_iter().enumerate() {
-            let mut fn_ = call_graph.codegen(package_id2name, component_db, computation_db)?;
-            fn_.sig.ident = if i < n_middlewares {
+            let ident = if i < n_middlewares {
                 format_ident!("middleware_{}", i)
             } else {
                 format_ident!("handler")
             };
+            let mut fn_ = call_graph.codegen(package_id2name, component_db, computation_db)?;
+            fn_.sig.ident = ident;
             let stage = CodegenedFn {
                 fn_,
                 input_parameters: call_graph.required_input_types(),

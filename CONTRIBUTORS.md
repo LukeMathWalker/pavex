@@ -9,3 +9,4 @@ We contributors to Pavex:
 -----------
 * Luca Palmieri (@LukeMathWalker)
 * Bozhidar Atanasov (@Bobby-Wan)
+* Karl Lindfors (@darkkeh)

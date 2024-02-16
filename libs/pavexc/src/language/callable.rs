@@ -271,8 +271,9 @@ impl std::fmt::Debug for Callable {
                 write!(f, ", ")?;
             }
         }
+        write!(f, ")")?;
         if let Some(output) = &self.output {
-            write!(f, ") -> {output:?}")?;
+            write!(f, " -> {output:?}")?;
         }
         Ok(())
     }

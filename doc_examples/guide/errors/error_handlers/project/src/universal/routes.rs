@@ -3,6 +3,6 @@ pub fn handler(head: &RequestHead) -> Result<Response, LoginError /* (1)! */> {
     todo!()
 }
 
-use crate::core::error_handler::LoginError;
+use crate::universal::LoginError;
 use pavex::request::RequestHead;
 use pavex::response::Response;
