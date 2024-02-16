@@ -9,7 +9,7 @@ use crate::compiler::resolvers::CallableResolutionError;
 use crate::compiler::traits::MissingTraitImplementationError;
 use crate::diagnostic::{
     convert_proc_macro_span, convert_rustdoc_span, AnnotatedSnippet, CallableType,
-    CompilerDiagnostic, LocationExt, OptionalSourceSpanExt, SourceSpanExt,
+    CompilerDiagnostic, OptionalSourceSpanExt, SourceSpanExt,
 };
 use crate::language::{Callable, ResolvedType};
 use crate::rustdoc::CrateCollection;
@@ -19,6 +19,7 @@ use guppy::graph::PackageGraph;
 use indexmap::IndexSet;
 use miette::NamedSource;
 use rustdoc_types::ItemEnum;
+use std::path::PathBuf;
 use syn::spanned::Spanned;
 
 /// Utility functions to produce diagnostics.
@@ -374,60 +375,36 @@ impl ComponentDb {
                     .build()
             }
             UnderconstrainedGenericParameters { ref parameters } => {
-                fn get_definition_span(
+                fn get_snippet(
                     callable: &Callable,
                     free_parameters: &IndexSet<String>,
                     krate_collection: &CrateCollection,
                     package_graph: &PackageGraph,
                 ) -> Option<AnnotatedSnippet> {
-                    let global_item_id = callable.source_coordinates.as_ref()?;
-                    let item = krate_collection.get_type_by_global_type_id(global_item_id);
-                    let definition_span = item.span.as_ref()?;
-                    let source_contents = diagnostic::read_source_file(
-                        &definition_span.filename,
-                        &package_graph.workspace(),
-                    )
-                    .ok()?;
-                    let span = convert_rustdoc_span(&source_contents, definition_span.to_owned());
-                    let span_contents =
-                        source_contents[span.offset()..(span.offset() + span.len())].to_string();
-                    let generic_params = match &item.inner {
-                        ItemEnum::Function(_) => {
-                            if let Ok(item) = syn::parse_str::<syn::ItemFn>(&span_contents) {
-                                item.sig.generics.params
-                            } else if let Ok(item) =
-                                syn::parse_str::<syn::ImplItemFn>(&span_contents)
-                            {
-                                item.sig.generics.params
-                            } else {
-                                panic!("Could not parse as a function or method:\n{span_contents}")
-                            }
-                        }
-                        _ => unreachable!(),
-                    };
+                    let def =
+                        CallableDefinition::compute(callable, krate_collection, package_graph)?;
 
                     let mut labels = vec![];
-                    for param in generic_params {
+                    for param in &def.sig.generics.params {
                         if let syn::GenericParam::Type(ty) = param {
                             if free_parameters.contains(ty.ident.to_string().as_str()) {
                                 labels.push(
-                                    convert_proc_macro_span(&span_contents, ty.span()).labeled(
+                                    convert_proc_macro_span(&def.span_contents, ty.span()).labeled(
                                         "The generic parameter without a concrete type".into(),
                                     ),
                                 );
                             }
                         }
                     }
-                    let source_path = definition_span.filename.to_str().unwrap();
                     Some(AnnotatedSnippet::new_with_labels(
-                        NamedSource::new(source_path, span_contents),
+                        def.named_source(),
                         labels,
                     ))
                 }
 
                 let callable = &computation_db[user_component_id];
                 let definition_snippet =
-                    get_definition_span(callable, parameters, krate_collection, package_graph);
+                    get_snippet(callable, parameters, krate_collection, package_graph);
                 let free_parameters = if parameters.len() == 1 {
                     format!("`{}`", &parameters[0])
                 } else {
@@ -475,8 +452,7 @@ impl ComponentDb {
         diagnostics: &mut Vec<miette::Error>,
     ) {
         let location = user_component_db.get_location(user_component_id);
-        let raw_user_component = &user_component_db[user_component_id];
-        let callable_type = raw_user_component.callable_type();
+        let callable_type = user_component_db[user_component_id].callable_type();
         let source = source_or_exit_with_error!(location, package_graph, diagnostics);
         let label = diagnostic::get_f_macro_invocation_span(&source, location)
             .labeled(format!("The {callable_type} was registered here"));
@@ -502,14 +478,13 @@ impl ComponentDb {
         diagnostics: &mut Vec<miette::Error>,
     ) {
         let location = raw_user_component_db.get_location(raw_user_component_id);
-        let raw_user_component = &raw_user_component_db[raw_user_component_id];
-        let callable_type = raw_user_component.callable_type();
+        let callable_type = raw_user_component_db[raw_user_component_id].callable_type();
         let source = source_or_exit_with_error!(location, package_graph, diagnostics);
         let label = diagnostic::get_f_macro_invocation_span(&source, location)
             .labeled(format!("The {callable_type} was registered here"));
         let error = anyhow::Error::from(e).context(format!(
             "Something went wrong when I tried to analyze the implementation of \
-                `pavex::response::IntoResponse` for {output_type:?}, the type returned by 
+                `pavex::response::IntoResponse` for {output_type:?}, the type returned by \
                 one of your {callable_type}s.\n\
                 This is definitely a bug, I am sorry! Please file an issue on \
                 https://github.com/LukeMathWalker/pavex"
@@ -545,59 +520,38 @@ impl ComponentDb {
                     .build()
             }
             ErrorObserverValidationError::UnassignedGenericParameters { ref parameters, .. } => {
-                fn get_definition_span(
+                fn get_snippet(
                     callable: &Callable,
                     free_parameters: &IndexSet<String>,
                     krate_collection: &CrateCollection,
                     package_graph: &PackageGraph,
                 ) -> Option<AnnotatedSnippet> {
-                    let global_item_id = callable.source_coordinates.as_ref()?;
-                    let item = krate_collection.get_type_by_global_type_id(global_item_id);
-                    let definition_span = item.span.as_ref()?;
-                    let source_contents = diagnostic::read_source_file(
-                        &definition_span.filename,
-                        &package_graph.workspace(),
-                    )
-                        .ok()?;
-                    let span = convert_rustdoc_span(&source_contents, definition_span.to_owned());
-                    let span_contents =
-                        source_contents[span.offset()..(span.offset() + span.len())].to_string();
-                    let generic_params = match &item.inner {
-                        ItemEnum::Function(_) => {
-                            if let Ok(item) = syn::parse_str::<syn::ItemFn>(&span_contents) {
-                                item.sig.generics.params
-                            } else if let Ok(item) =
-                                syn::parse_str::<syn::ImplItemFn>(&span_contents)
-                            {
-                                item.sig.generics.params
-                            } else {
-                                panic!("Could not parse as a function or method:\n{span_contents}")
-                            }
-                        }
-                        _ => unreachable!(),
-                    };
+                    let def = CallableDefinition::compute(
+                        callable,
+                        krate_collection,
+                        package_graph,
+                    )?;
 
                     let mut labels = vec![];
-                    for param in generic_params {
+                    for param in &def.sig.generics.params {
                         if let syn::GenericParam::Type(ty) = param {
                             if free_parameters.contains(ty.ident.to_string().as_str()) {
                                 labels.push(
-                                    convert_proc_macro_span(&span_contents, ty.span())
+                                    convert_proc_macro_span(&def.span_contents, ty.span())
                                         .labeled("I can't infer this".into()),
                                 );
                             }
                         }
                     }
-                    let source_path = definition_span.filename.to_str().unwrap();
                     Some(AnnotatedSnippet::new_with_labels(
-                        NamedSource::new(source_path, span_contents),
+                        def.named_source(),
                         labels,
                     ))
                 }
 
                 let callable = &computation_db[raw_user_component_id];
                 let definition_snippet =
-                    get_definition_span(callable, parameters, krate_collection, package_graph);
+                    get_snippet(callable, parameters, krate_collection, package_graph);
                 CompilerDiagnostic::builder(source, e)
                     .optional_label(label)
                     .optional_additional_annotated_snippet(definition_snippet)
@@ -638,38 +592,20 @@ impl ComponentDb {
                     .build()
             }
             ErrorHandlerValidationError::UnderconstrainedGenericParameters { ref parameters, ref error_ref_input_index } => {
-                fn get_definition_span(
+                fn get_snippet(
                     callable: &Callable,
                     free_parameters: &IndexSet<String>,
                     error_ref_input_index: usize,
                     krate_collection: &CrateCollection,
                     package_graph: &PackageGraph,
                 ) -> Option<AnnotatedSnippet> {
-                    let global_item_id = callable.source_coordinates.as_ref()?;
-                    let item = krate_collection.get_type_by_global_type_id(global_item_id);
-                    let definition_span = item.span.as_ref()?;
-                    let source_contents = diagnostic::read_source_file(
-                        &definition_span.filename,
-                        &package_graph.workspace(),
-                    )
-                        .ok()?;
-                    let span = convert_rustdoc_span(&source_contents, definition_span.to_owned());
-                    let span_contents =
-                        source_contents[span.offset()..(span.offset() + span.len())].to_string();
-                    let (generic_params, error_input) = match &item.inner {
-                        ItemEnum::Function(_) => {
-                            if let Ok(item) = syn::parse_str::<syn::ItemFn>(&span_contents) {
-                                (item.sig.generics.params, item.sig.inputs[error_ref_input_index].clone())
-                            } else if let Ok(item) =
-                                syn::parse_str::<syn::ImplItemFn>(&span_contents)
-                            {
-                                (item.sig.generics.params, item.sig.inputs[error_ref_input_index].clone())
-                            } else {
-                                panic!("Could not parse as a function or method:\n{span_contents}")
-                            }
-                        }
-                        _ => unreachable!(),
-                    };
+                    let callable_definition = CallableDefinition::compute(
+                        callable,
+                        krate_collection,
+                        package_graph,
+                    )?;
+                    let error_input = callable_definition.sig.inputs[error_ref_input_index].clone();
+                    let generic_params = &callable_definition.sig.generics.params;
 
                     let mut labels = vec![];
                     let subject_verb = if generic_params.len() == 1 {
@@ -681,7 +617,7 @@ impl ComponentDb {
                         if let syn::GenericParam::Type(ty) = param {
                             if free_parameters.contains(ty.ident.to_string().as_str()) {
                                 labels.push(
-                                    convert_proc_macro_span(&span_contents, ty.span())
+                                    convert_proc_macro_span(&callable_definition.span_contents, ty.span())
                                         .labeled("I can't infer this..".into()),
                                 );
                             }
@@ -689,19 +625,18 @@ impl ComponentDb {
                     }
                     let error_input_span = error_input.span();
                     labels.push(
-                        convert_proc_macro_span(&span_contents, error_input_span)
+                        convert_proc_macro_span(&callable_definition.span_contents, error_input_span)
                             .labeled(format!("..because {subject_verb} not used here")),
                     );
-                    let source_path = definition_span.filename.to_str().unwrap();
                     Some(AnnotatedSnippet::new_with_labels(
-                        NamedSource::new(source_path, span_contents),
+                        callable_definition.named_source(),
                         labels,
                     ))
                 }
 
                 let callable = &computation_db[raw_user_component_id];
                 let definition_snippet =
-                    get_definition_span(callable, parameters, *error_ref_input_index, krate_collection, package_graph);
+                    get_snippet(callable, parameters, *error_ref_input_index, krate_collection, package_graph);
                 let subject_verb = if parameters.len() == 1 {
                     "it isn't"
                 } else {
@@ -811,5 +746,60 @@ impl ComponentDb {
             .help("Add an error handler via `.error_handler`".to_string())
             .build();
         diagnostics.push(diagnostic.into());
+    }
+}
+
+pub struct CallableDefinition {
+    pub attrs: Vec<syn::Attribute>,
+    pub vis: syn::Visibility,
+    pub sig: syn::Signature,
+    pub block: Box<syn::Block>,
+    pub span_contents: String,
+    pub source_file: PathBuf,
+}
+
+impl CallableDefinition {
+    pub fn compute(
+        callable: &Callable,
+        krate_collection: &CrateCollection,
+        package_graph: &PackageGraph,
+    ) -> Option<CallableDefinition> {
+        let global_item_id = callable.source_coordinates.as_ref()?;
+        let item = krate_collection.get_type_by_global_type_id(global_item_id);
+        let definition_span = item.span.as_ref()?;
+        let source_contents =
+            diagnostic::read_source_file(&definition_span.filename, &package_graph.workspace())
+                .ok()?;
+        let span = convert_rustdoc_span(&source_contents, definition_span.to_owned());
+        let span_contents =
+            source_contents[span.offset()..(span.offset() + span.len())].to_string();
+        let (attrs, vis, sig, block) = match &item.inner {
+            ItemEnum::Function(_) => {
+                if let Ok(item) = syn::parse_str::<syn::ItemFn>(&span_contents) {
+                    (item.attrs, item.vis, item.sig, item.block)
+                } else if let Ok(item) = syn::parse_str::<syn::ImplItemFn>(&span_contents) {
+                    (item.attrs, item.vis, item.sig, Box::new(item.block))
+                } else {
+                    // TODO: convert into miette diagnostics
+                    panic!("Could not parse as a function or method:\n{span_contents}")
+                }
+            }
+            _ => unreachable!(),
+        };
+        Some(CallableDefinition {
+            attrs,
+            vis,
+            sig,
+            block,
+            span_contents,
+            source_file: definition_span.filename.clone(),
+        })
+    }
+
+    pub fn named_source(&self) -> NamedSource<String> {
+        NamedSource::new(
+            self.source_file.display().to_string(),
+            self.span_contents.clone(),
+        )
     }
 }
