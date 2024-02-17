@@ -51,7 +51,7 @@ impl RequestCookies {
     }
 
     /// Iterator over all the [`Cookie`]s extracted from a Request
-    pub fn iter<'a>(&'a self) -> impl Iterator<Item = &'a Cookie<'static>> {
+    pub fn iter(&self) -> impl Iterator<Item = &Cookie<'static>> {
         self.jar.iter()
     }
 }
