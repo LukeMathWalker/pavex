@@ -13,8 +13,7 @@ use crate::compiler::analyses::user_components::{
     ScopeGraph, ScopeId, UserComponent, UserComponentId,
 };
 use crate::diagnostic::{
-    AnnotatedSnippet, CompilerDiagnostic, LocationExt, OptionalSourceSpanExt, SourceSpanExt,
-    ZeroBasedOrdinal,
+    AnnotatedSnippet, CompilerDiagnostic, OptionalSourceSpanExt, SourceSpanExt, ZeroBasedOrdinal,
 };
 use crate::utils::comma_separated_list;
 use crate::{diagnostic, try_source};
@@ -713,15 +712,9 @@ fn push_fallback_method_ambiguity_diagnostic(
                 unreachable!()
             };
             let location = raw_user_component_db.get_location(*fallback_id);
-            let source = try_source!(location, package_graph, diagnostics);
-            let label = source
-                .as_ref()
-                .map(|source| {
-                    diagnostic::get_f_macro_invocation_span(&source, location)
-                        .labeled(format!("The {} fallback", ZeroBasedOrdinal::from(i)))
-                })
-                .flatten();
-            if let Some(source) = source {
+            if let Some(source) = try_source!(location, package_graph, diagnostics) {
+                let label = diagnostic::get_f_macro_invocation_span(&source, location)
+                    .labeled(format!("The {} fallback", ZeroBasedOrdinal::from(i)));
                 let snippet = AnnotatedSnippet::new_optional(source, label);
                 if first_snippet.is_none() {
                     first_snippet = Some(snippet);
@@ -847,12 +840,8 @@ fn push_router_conflict_diagnostic(
     let mut annotated_snippets: Vec<AnnotatedSnippet> = Vec::with_capacity(n_unique_handlers);
     for (i, raw_user_component_id) in raw_user_component_ids.iter().enumerate() {
         let location = raw_user_component_db.get_location(**raw_user_component_id);
-        let source = match location.source_file(package_graph) {
-            Ok(s) => s,
-            Err(e) => {
-                diagnostics.push(e.into());
-                continue;
-            }
+        let Some(source) = try_source!(location, package_graph, diagnostics) else {
+            continue;
         };
         if let Some(s) = diagnostic::get_f_macro_invocation_span(&source, location) {
             let label = s.labeled(format!("The {} conflicting handler", ZeroBasedOrdinal(i)));
@@ -866,7 +855,7 @@ fn push_router_conflict_diagnostic(
         ));
     if let Some(first) = annotated_snippets.next() {
         builder = builder
-            .optional_source(annotated_snippets.next().map(|first| first.source_code))
+            .source(first.source_code)
             .labels(first.labels.into_iter());
     }
     builder = builder
