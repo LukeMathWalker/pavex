@@ -19,14 +19,17 @@ use crate::compiler::traits::assert_trait_is_implemented;
 use crate::compiler::utils::{
     get_ok_variant, process_framework_callable_path, process_framework_path,
 };
+use crate::diagnostic::ParsedSourceFile;
 use crate::language::{
     Callable, Lifetime, ResolvedPath, ResolvedPathQualifiedSelf, ResolvedPathSegment, ResolvedType,
     TypeReference,
 };
 use crate::rustdoc::CrateCollection;
+use crate::try_source;
 use ahash::{HashMap, HashMapExt, HashSet};
 use guppy::graph::PackageGraph;
 use indexmap::IndexSet;
+use miette::SourceSpan;
 use pavex_bp_schema::{CloningStrategy, Lifecycle, Lint, LintSetting};
 use std::borrow::Cow;
 use std::collections::BTreeMap;
@@ -1255,6 +1258,29 @@ impl ComponentDb {
                 SourceId::UserComponentId(id) => self.user_component_db[*id].scope_id(),
             },
         }
+    }
+
+    /// Return the source file where the component is defined and the span of its definition
+    /// within that file.
+    /// Both can be `None` (e.g. the component is synthetic and/or we can't find the definition
+    /// in the file).
+    pub fn registration_span(
+        &self,
+        component_id: ComponentId,
+        package_graph: &PackageGraph,
+        diagnostics: &mut Vec<miette::Error>,
+    ) -> (Option<ParsedSourceFile>, Option<SourceSpan>) {
+        let Some(user_id) = self.user_component_id(component_id) else {
+            return (None, None);
+        };
+        let user_component_db = self.user_component_db();
+        let location = user_component_db.get_location(user_id);
+        let source = try_source!(location, package_graph, diagnostics);
+        let source_span = source
+            .as_ref()
+            .map(|source| crate::diagnostic::get_f_macro_invocation_span(&source, location))
+            .flatten();
+        (source, source_span)
     }
 }
 

@@ -82,7 +82,8 @@ impl ResolvedPathDb {
                 ),
             ),
         };
-        let diagnostic = CompilerDiagnostic::builder(source, e)
+        let diagnostic = CompilerDiagnostic::builder(e)
+            .source(source)
             .optional_label(source_span.labeled(label.into()))
             .optional_help(help.map(ToOwned::to_owned))
             .build();

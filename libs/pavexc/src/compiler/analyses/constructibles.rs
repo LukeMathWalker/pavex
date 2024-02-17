@@ -4,7 +4,7 @@ use ahash::{HashMap, HashMapExt, HashSet};
 use guppy::graph::PackageGraph;
 use indexmap::{IndexMap, IndexSet};
 use itertools::Itertools;
-use miette::{NamedSource, SourceSpan};
+use miette::NamedSource;
 use syn::spanned::Spanned;
 
 use pavex_bp_schema::Lifecycle;
@@ -16,13 +16,14 @@ use crate::compiler::analyses::user_components::{
     ScopeGraph, ScopeId, UserComponentDb, UserComponentId,
 };
 use crate::compiler::computation::Computation;
-use crate::diagnostic::{self, ParsedSourceFile};
+use crate::diagnostic::{self, OptionalSourceSpanExt};
 use crate::diagnostic::{
     convert_proc_macro_span, convert_rustdoc_span, read_source_file, AnnotatedSnippet,
     CompilerDiagnostic, HelpWithSnippet, LocationExt, SourceSpanExt,
 };
 use crate::language::{Callable, ResolvedType};
 use crate::rustdoc::CrateCollection;
+use crate::try_source;
 
 use super::framework_items::FrameworkItemDb;
 
@@ -239,7 +240,7 @@ impl ConstructibleDb {
             }
         }
 
-        'outer: for (type_, component_ids) in singleton_type2component_ids {
+        for (type_, component_ids) in singleton_type2component_ids {
             if component_ids.len() > 1 {
                 let n_unique_constructors = component_ids
                     .iter()
@@ -255,33 +256,22 @@ impl ConstructibleDb {
                 let mut snippets = Vec::new();
                 let mut source_code = None;
                 'inner: for (_, component_id) in &component_ids {
-                    let Some(user_component_id) = component_db.user_component_id(**component_id)
-                    else {
+                    let (source, source_span) =
+                        component_db.registration_span(**component_id, package_graph, diagnostics);
+                    let Some(source) = source else {
                         continue 'inner;
                     };
-                    let location = component_db
-                        .user_component_db()
-                        .get_location(user_component_id);
-                    let source = match location.source_file(package_graph) {
-                        Ok(s) => s,
-                        Err(e) => {
-                            diagnostics.push(e.into());
-                            continue 'inner;
-                        }
+                    let Some(source_span) = source_span else {
+                        continue 'inner;
                     };
                     if source_code.is_none() {
                         source_code = Some(source.clone());
                     }
-                    let label = diagnostic::get_f_macro_invocation_span(&source, location)
-                        .map(|s| s.labeled("A constructor was registered here".to_string()));
-                    if let Some(label) = label {
-                        let snippet = AnnotatedSnippet::new(source, label);
-                        snippets.push(snippet);
-                    }
+                    let label =
+                        source_span.labeled("A constructor was registered here".to_string());
+                    let snippet = AnnotatedSnippet::new(source, label);
+                    snippets.push(snippet);
                 }
-                let Some(source_code) = source_code else {
-                    continue 'outer;
-                };
                 let diagnostic = if n_unique_constructors > 1 {
                     let error = anyhow::anyhow!(
                         "You can't register multiple constructors for the same singleton type, `{type_:?}`.\n\
@@ -290,7 +280,8 @@ impl ConstructibleDb {
                         that unique instance!\n\
                         I have found {n_constructors} different constructors for `{type_:?}`:",
                     );
-                    CompilerDiagnostic::builder(source_code, error)
+                    CompilerDiagnostic::builder(error)
+                        .optional_source(source_code)
                         .additional_annotated_snippets(snippets.into_iter())
                         .help(format!(
                             "If you want a single instance of `{type_:?}`, remove \
@@ -308,19 +299,11 @@ impl ConstructibleDb {
                         diagnostics: &mut Vec<miette::Error>,
                     ) -> Option<HelpWithSnippet> {
                         let location = scope_graph.get_location(common_ancestor_id).unwrap();
-                        let source = match location.source_file(package_graph) {
-                            Ok(s) => s,
-                            Err(e) => {
-                                diagnostics.push(e.into());
-                                return None;
-                            }
-                        };
-                        let label = diagnostic::get_bp_new_span(&source, &location).map(|s| {
-                            s.labeled(
-                                "Register your constructor against this blueprint".to_string(),
-                            )
-                        });
-                        label.map(|label| HelpWithSnippet::new(
+                        let source = try_source!(location, package_graph, diagnostics)?;
+                        let label = diagnostic::get_bp_new_span(&source, &location).labeled(
+                            "Register your constructor against this blueprint".to_string(),
+                        )?;
+                        Some(HelpWithSnippet::new(
                             format!(
                                 "If you want to share a single instance of `{type_:?}`, remove \
                                     constructors for `{type_:?}` until there is only one left. It should \
@@ -352,7 +335,8 @@ impl ConstructibleDb {
                         all those nested blueprints, or do you want to create a new instance for each \
                         nested blueprint?",
                     );
-                    CompilerDiagnostic::builder(source_code, error)
+                    CompilerDiagnostic::builder(error)
+                        .optional_source(source_code)
                         .additional_annotated_snippets(snippets.into_iter())
                         .optional_help_with_snippet(help_snippet)
                         .help(format!(
@@ -647,7 +631,8 @@ impl ConstructibleDb {
             package_graph,
             krate_collection,
         );
-        let diagnostic = CompilerDiagnostic::builder(source, e)
+        let diagnostic = CompilerDiagnostic::builder(e)
+            .source(source)
             .optional_label(label)
             .optional_additional_annotated_snippet(definition_info)
             .help(format!(
@@ -665,27 +650,6 @@ impl ConstructibleDb {
         computation_db: &ComputationDb,
         diagnostics: &mut Vec<miette::Error>,
     ) {
-        fn registration_span(
-            component_id: ComponentId,
-            package_graph: &PackageGraph,
-            component_db: &ComponentDb,
-            diagnostics: &mut Vec<miette::Error>,
-        ) -> Option<(ParsedSourceFile, SourceSpan)> {
-            let user_id = component_db.user_component_id(component_id)?;
-            let user_component_db = component_db.user_component_db();
-            let location = user_component_db.get_location(user_id);
-
-            let source = match location.source_file(package_graph) {
-                Ok(s) => s,
-                Err(e) => {
-                    diagnostics.push(e.into());
-                    return None;
-                }
-            };
-            let source_span = diagnostic::get_f_macro_invocation_span(&source, location)?;
-            Some((source, source_span))
-        }
-
         let singleton_type = component_db
             .hydrated_component(singleton_id, computation_db)
             .output_type()
@@ -703,18 +667,18 @@ impl ConstructibleDb {
             They are constructed before the application starts, outside of the request-response lifecycle.\n\
             But your singleton `{singleton_type:?}` depends on `{dependency_type:?}`, which has a {dependency_lifecycle} lifecycle.",
         );
-        let mut diagnostic_builder =
-            match registration_span(singleton_id, package_graph, component_db, diagnostics) {
-                Some((source, source_span)) => CompilerDiagnostic::builder(source, e)
-                    .label(source_span.labeled("The singleton was registered here".into())),
-                None => CompilerDiagnostic::builder_without_source(e),
-            };
 
-        if let Some((source, source_span)) =
-            registration_span(dependency_id, package_graph, component_db, diagnostics)
+        let (source, source_span) =
+            component_db.registration_span(singleton_id, package_graph, diagnostics);
+        let mut diagnostic_builder = CompilerDiagnostic::builder(e)
+            .optional_source(source)
+            .optional_label(source_span.labeled("The singleton was registered here".into()));
+
+        if let (Some(source), source_span) =
+            component_db.registration_span(dependency_id, package_graph, diagnostics)
         {
             diagnostic_builder =
-                diagnostic_builder.additional_annotated_snippet(AnnotatedSnippet::new(
+                diagnostic_builder.additional_annotated_snippet(AnnotatedSnippet::new_optional(
                     source,
                     source_span.labeled(format!(
                         "The {dependency_lifecycle} dependency was registered here"
@@ -733,27 +697,6 @@ impl ConstructibleDb {
         computation_db: &ComputationDb,
         diagnostics: &mut Vec<miette::Error>,
     ) {
-        fn registration_span(
-            component_id: ComponentId,
-            package_graph: &PackageGraph,
-            component_db: &ComponentDb,
-            diagnostics: &mut Vec<miette::Error>,
-        ) -> Option<(ParsedSourceFile, SourceSpan)> {
-            let user_id = component_db.user_component_id(component_id)?;
-            let user_component_db = component_db.user_component_db();
-            let location = user_component_db.get_location(user_id);
-
-            let source = match location.source_file(package_graph) {
-                Ok(s) => s,
-                Err(e) => {
-                    diagnostics.push(e.into());
-                    return None;
-                }
-            };
-            let source_span = diagnostic::get_f_macro_invocation_span(&source, location)?;
-            Some((source, source_span))
-        }
-
         let HydratedComponent::ErrorObserver(error_observer) =
             component_db.hydrated_component(error_observer_id, computation_db)
         else {
@@ -784,12 +727,11 @@ impl ConstructibleDb {
             It depends on{err_msg}, which is built with `{fallible_constructor_path}`, a fallible constructor.",
             error_observer.callable.path,
         );
-        let diagnostic_builder =
-            match registration_span(error_observer_id, package_graph, component_db, diagnostics) {
-                Some((source, source_span)) => CompilerDiagnostic::builder(source, e)
-                    .label(source_span.labeled("The error observer was registered here".into())),
-                None => CompilerDiagnostic::builder_without_source(e),
-            };
+        let (source, label) =
+            component_db.registration_span(error_observer_id, package_graph, diagnostics);
+        let diagnostic_builder = CompilerDiagnostic::builder(e)
+            .optional_source(source)
+            .optional_label(label.labeled("The error observer was registered here".into()));
         diagnostics.push(diagnostic_builder.build().into());
     }
 }

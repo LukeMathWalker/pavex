@@ -517,7 +517,8 @@ fn verify_singletons(
                 Pavex runs on a multi-threaded HTTP server and singletons must be shared \
                  across all worker threads."
             .into();
-        let diagnostic = CompilerDiagnostic::builder(source, e)
+        let diagnostic = CompilerDiagnostic::builder(e)
+            .source(source)
             .optional_label(label)
             .help(help)
             .build();

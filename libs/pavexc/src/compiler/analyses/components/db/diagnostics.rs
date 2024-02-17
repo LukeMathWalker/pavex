@@ -14,7 +14,7 @@ use crate::diagnostic::{
 use crate::language::{Callable, ResolvedType};
 use crate::rustdoc::CrateCollection;
 use crate::utils::comma_separated_list;
-use crate::{diagnostic, source_or_exit_with_error};
+use crate::{diagnostic, try_source};
 use guppy::graph::PackageGraph;
 use indexmap::IndexSet;
 use miette::NamedSource;
@@ -33,9 +33,14 @@ impl ComponentDb {
         diagnostics: &mut Vec<miette::Error>,
     ) {
         let location = user_component_db.get_location(user_component_id);
-        let source = source_or_exit_with_error!(location, package_graph, diagnostics);
-        let label = diagnostic::get_f_macro_invocation_span(&source, location)
-            .labeled("The constructor was registered here".into());
+        let source = try_source!(location, package_graph, diagnostics);
+        let label = source
+            .as_ref()
+            .map(|source| {
+                diagnostic::get_f_macro_invocation_span(&source, location)
+                    .labeled("The constructor was registered here".into())
+            })
+            .flatten();
         match e {
             ConstructorValidationError::CannotTakeAMutableReferenceAsInput(inner) => {
                 inner.emit(
@@ -52,7 +57,8 @@ impl ComponentDb {
             | ConstructorValidationError::CannotConstructPavexError
             | ConstructorValidationError::CannotConstructFrameworkPrimitive { .. }
             | ConstructorValidationError::CannotReturnTheUnitType => {
-                let d = CompilerDiagnostic::builder(source, e)
+                let d = CompilerDiagnostic::builder(e)
+                    .optional_source(source)
                     .optional_label(label)
                     .build();
                 diagnostics.push(d.into());
@@ -150,7 +156,7 @@ impl ComponentDb {
                             I can only infer the type of an unassigned generic parameter if it appears in the output type returned by the constructor. This is \
                             not the case for {free_parameters}, since {subject_verb} only used by the input parameters.",
                             callable.path));
-                let d = CompilerDiagnostic::builder(source, error)
+                let d = CompilerDiagnostic::builder(error).optional_source(source)
                     .optional_label(label)
                     .optional_additional_annotated_snippet(definition_snippet)
                     .help(
@@ -224,7 +230,8 @@ impl ComponentDb {
                     callable.path
                 );
                 let error = anyhow::anyhow!(e).context(msg);
-                let d = CompilerDiagnostic::builder(source, error)
+                let d = CompilerDiagnostic::builder(error)
+                    .optional_source(source)
                     .optional_label(label)
                     .optional_additional_annotated_snippet(definition_snippet)
                     .help(
@@ -249,9 +256,14 @@ impl ComponentDb {
         diagnostics: &mut Vec<miette::Error>,
     ) {
         let location = user_component_db.get_location(user_component_id);
-        let source = source_or_exit_with_error!(location, package_graph, diagnostics);
-        let label = diagnostic::get_f_macro_invocation_span(&source, location)
-            .labeled("The request handler was registered here".into());
+        let source = try_source!(location, package_graph, diagnostics);
+        let label = source
+            .as_ref()
+            .map(|source| {
+                diagnostic::get_f_macro_invocation_span(&source, location)
+                    .labeled("The request handler was registered here".into())
+            })
+            .flatten();
         match e {
             RequestHandlerValidationError::CannotTakeAMutableReferenceAsInput(inner) => {
                 inner.emit(
@@ -266,7 +278,8 @@ impl ComponentDb {
             }
             RequestHandlerValidationError::CannotReturnTheUnitType
             | RequestHandlerValidationError::CannotFalliblyReturnTheUnitType => {
-                let d = CompilerDiagnostic::builder(source, e)
+                let d = CompilerDiagnostic::builder(e)
+                    .optional_source(source)
                     .optional_label(label)
                     .build();
                 diagnostics.push(d.into());
@@ -348,7 +361,7 @@ impl ComponentDb {
                             There should no unassigned generic parameters in request handlers, but {free_parameters} {verb} \
                             not seem to have been assigned a concrete type.",
                             callable.path));
-                let d = CompilerDiagnostic::builder(source, error)
+                let d = CompilerDiagnostic::builder(error).optional_source(source)
                     .optional_label(label)
                     .optional_additional_annotated_snippet(definition_snippet)
                     .help(
@@ -377,9 +390,14 @@ impl ComponentDb {
         use crate::compiler::component::WrappingMiddlewareValidationError::*;
 
         let location = user_component_db.get_location(user_component_id);
-        let source = source_or_exit_with_error!(location, package_graph, diagnostics);
-        let label = diagnostic::get_f_macro_invocation_span(&source, location)
-            .labeled("The wrapping middleware was registered here".into());
+        let source = try_source!(location, package_graph, diagnostics);
+        let label = source
+            .as_ref()
+            .map(|source| {
+                diagnostic::get_f_macro_invocation_span(source, location)
+                    .labeled("The wrapping middleware was registered here".into())
+            })
+            .flatten();
         match e {
             CannotTakeAMutableReferenceAsInput(inner) => {
                 inner.emit(
@@ -395,13 +413,15 @@ impl ComponentDb {
             CannotReturnTheUnitType
             | CannotFalliblyReturnTheUnitType
             | MustTakeNextAsInputParameter => {
-                let d = CompilerDiagnostic::builder(source, e)
+                let d = CompilerDiagnostic::builder(e)
+                    .optional_source(source)
                     .optional_label(label)
                     .build();
                 diagnostics.push(d.into());
             }
             CannotTakeMoreThanOneNextAsInputParameter => {
-                let d = CompilerDiagnostic::builder(source, e)
+                let d = CompilerDiagnostic::builder(e)
+                    .optional_source(source)
                     .optional_label(label)
                     .help("Remove the extra `Next` input parameters until only one is left.".into())
                     .build();
@@ -410,7 +430,8 @@ impl ComponentDb {
             NextGenericParameterMustBeNaked { ref parameter } => {
                 let help =
                     format!("Take `Next<T>` rather than `Next<{parameter}>` as input parameter in your middleware.");
-                let d = CompilerDiagnostic::builder(source, e)
+                let d = CompilerDiagnostic::builder(e)
+                    .optional_source(source)
                     .optional_label(label)
                     .help(help)
                     .build();
@@ -469,7 +490,8 @@ impl ComponentDb {
                             There should no unassigned generic parameters in wrapping middlewares apart from the one in `Next<_>`, but {free_parameters} {verb} \
                             not seem to have been assigned a concrete type.",
                             callable.path));
-                let d = CompilerDiagnostic::builder(source, error)
+                let d = CompilerDiagnostic::builder(error)
+                    .optional_source(source)
                     .optional_label(label)
                     .optional_additional_annotated_snippet(definition_snippet)
                     .help(
@@ -495,16 +517,22 @@ impl ComponentDb {
     ) {
         let location = user_component_db.get_location(user_component_id);
         let callable_type = user_component_db[user_component_id].callable_type();
-        let source = source_or_exit_with_error!(location, package_graph, diagnostics);
-        let label = diagnostic::get_f_macro_invocation_span(&source, location)
-            .labeled(format!("The {callable_type} was registered here"));
+        let source = try_source!(location, package_graph, diagnostics);
+        let label = source
+            .as_ref()
+            .map(|source| {
+                diagnostic::get_f_macro_invocation_span(source, location)
+                    .labeled(format!("The {callable_type} was registered here"))
+            })
+            .flatten();
         let error = anyhow::Error::from(e).context(format!(
             "I can't use the type returned by this {callable_type} to create an HTTP \
                 response.\n\
                 It doesn't implement `pavex::response::IntoResponse`."
         ));
         let help = format!("Implement `pavex::response::IntoResponse` for `{output_type:?}`.");
-        let diagnostic = CompilerDiagnostic::builder(source, error)
+        let diagnostic = CompilerDiagnostic::builder(error)
+            .optional_source(source)
             .optional_label(label)
             .help(help)
             .build();
@@ -521,9 +549,14 @@ impl ComponentDb {
     ) {
         let location = raw_user_component_db.get_location(raw_user_component_id);
         let callable_type = raw_user_component_db[raw_user_component_id].callable_type();
-        let source = source_or_exit_with_error!(location, package_graph, diagnostics);
-        let label = diagnostic::get_f_macro_invocation_span(&source, location)
-            .labeled(format!("The {callable_type} was registered here"));
+        let source = try_source!(location, package_graph, diagnostics);
+        let label = source
+            .as_ref()
+            .map(|source| {
+                diagnostic::get_f_macro_invocation_span(&source, location)
+                    .labeled(format!("The {callable_type} was registered here"))
+            })
+            .flatten();
         let error = anyhow::Error::from(e).context(format!(
             "Something went wrong when I tried to analyze the implementation of \
                 `pavex::response::IntoResponse` for {output_type:?}, the type returned by \
@@ -531,7 +564,8 @@ impl ComponentDb {
                 This is definitely a bug, I am sorry! Please file an issue on \
                 https://github.com/LukeMathWalker/pavex"
         ));
-        let diagnostic = CompilerDiagnostic::builder(source, error)
+        let diagnostic = CompilerDiagnostic::builder(error)
+            .optional_source(source)
             .optional_label(label)
             .build();
         diagnostics.push(diagnostic.into());
@@ -547,9 +581,14 @@ impl ComponentDb {
         diagnostics: &mut Vec<miette::Error>,
     ) {
         let location = raw_user_component_db.get_location(raw_user_component_id);
-        let source = source_or_exit_with_error!(location, package_graph, diagnostics);
-        let label = diagnostic::get_f_macro_invocation_span(&source, location)
-            .labeled("The error observer was registered here".into());
+        let source = try_source!(location, package_graph, diagnostics);
+        let label = source
+            .as_ref()
+            .map(|source| {
+                diagnostic::get_f_macro_invocation_span(&source, location)
+                    .labeled("The error observer was registered here".into())
+            })
+            .flatten();
         match e {
             ErrorObserverValidationError::CannotTakeAMutableReferenceAsInput(inner) => {
                 inner.emit(raw_user_component_id, raw_user_component_db, computation_db, krate_collection, package_graph, CallableType::ErrorObserver, diagnostics);
@@ -560,7 +599,7 @@ impl ComponentDb {
             // TODO: Add a sub-diagnostic showing the error handler signature, highlighting with
             //  a label the input types. 
             ErrorObserverValidationError::DoesNotTakeErrorReferenceAsInput { .. } => {
-                let d = CompilerDiagnostic::builder(source, e)
+                let d = CompilerDiagnostic::builder(e).optional_source(source)
                     .optional_label(label)
                     .build();
                 diagnostics.push(d.into());
@@ -598,7 +637,7 @@ impl ComponentDb {
                 let callable = &computation_db[raw_user_component_id];
                 let definition_snippet =
                     get_snippet(callable, parameters, krate_collection, package_graph);
-                let d = CompilerDiagnostic::builder(source, e)
+                let d = CompilerDiagnostic::builder(e).optional_source(source)
                     .optional_label(label)
                     .optional_additional_annotated_snippet(definition_snippet)
                     .help(
@@ -622,15 +661,20 @@ impl ComponentDb {
         diagnostics: &mut Vec<miette::Error>,
     ) {
         let location = raw_user_component_db.get_location(raw_user_component_id);
-        let source = source_or_exit_with_error!(location, package_graph, diagnostics);
-        let label = diagnostic::get_f_macro_invocation_span(&source, location)
-            .labeled("The error handler was registered here".into());
+        let source = try_source!(location, package_graph, diagnostics);
+        let label = source
+            .as_ref()
+            .map(|source| {
+                diagnostic::get_f_macro_invocation_span(&source, location)
+                    .labeled("The error handler was registered here".into())
+            })
+            .flatten();
         match e {
             ErrorHandlerValidationError::CannotReturnTheUnitType(_) |
             // TODO: Perhaps add a snippet showing the signature of
             //  the associate fallible handler, highlighting the output type.
             ErrorHandlerValidationError::DoesNotTakeErrorReferenceAsInput { .. } => {
-                let diagnostic = CompilerDiagnostic::builder(source, e)
+                let diagnostic = CompilerDiagnostic::builder(e).optional_source(source)
                     .optional_label(label)
                     .build();
                 diagnostics.push(diagnostic.into());
@@ -661,7 +705,7 @@ impl ComponentDb {
 
                 let definition_snippet =
                     get_snippet(&computation_db[raw_user_component_id], krate_collection, package_graph);
-                let diagnostic = CompilerDiagnostic::builder(source, e)
+                let diagnostic = CompilerDiagnostic::builder(e).optional_source(source)
                     .optional_label(label)
                     .optional_additional_annotated_snippet(definition_snippet)
                     .build();
@@ -732,7 +776,7 @@ impl ComponentDb {
                             I can only infer the type of an unassigned generic parameter if it appears in the error type processed by this error handler. This is \
                             not the case for {free_parameters}, since {subject_verb} used by the error type.",
                             callable.path));
-                let diagnostic = CompilerDiagnostic::builder(source, error)
+                let diagnostic = CompilerDiagnostic::builder(error).optional_source(source)
                     .optional_label(label)
                     .optional_additional_annotated_snippet(definition_snippet)
                     .help(
@@ -761,14 +805,20 @@ impl ComponentDb {
     ) {
         let fallible_kind = raw_user_component_db[fallible_id].callable_type();
         let location = raw_user_component_db.get_location(error_handler_id);
-        let source = source_or_exit_with_error!(location, package_graph, diagnostics);
-        let label = diagnostic::get_f_macro_invocation_span(&source, location)
-            .labeled("The unnecessary error handler was registered here".into());
+        let source = try_source!(location, package_graph, diagnostics);
+        let label = source
+            .as_ref()
+            .map(|source| {
+                diagnostic::get_f_macro_invocation_span(&source, location)
+                    .labeled("The unnecessary error handler was registered here".into())
+            })
+            .flatten();
         let error = anyhow::anyhow!(
             "You registered an error handler for a {} that doesn't return a `Result`.",
             fallible_kind
         );
-        let diagnostic = CompilerDiagnostic::builder(source, error)
+        let diagnostic = CompilerDiagnostic::builder(error)
+            .optional_source(source)
             .optional_label(label)
             .help(format!(
                 "Remove the error handler, it is not needed. The {fallible_kind} is infallible!"
@@ -789,14 +839,20 @@ impl ComponentDb {
             CallableType::Constructor
         );
         let location = raw_user_component_db.get_location(error_handler_id);
-        let source = source_or_exit_with_error!(location, package_graph, diagnostics);
-        let label = diagnostic::get_f_macro_invocation_span(&source, location)
-            .labeled("The unnecessary error handler was registered here".into());
+        let source = try_source!(location, package_graph, diagnostics);
+        let label = source
+            .as_ref()
+            .map(|source| {
+                diagnostic::get_f_macro_invocation_span(&source, location)
+                    .labeled("The unnecessary error handler was registered here".into())
+            })
+            .flatten();
         let error = anyhow::anyhow!(
             "You can't register an error handler for a singleton constructor. \n\
                 If I fail to build a singleton, I bubble up the error - it doesn't get handled.",
         );
-        let diagnostic = CompilerDiagnostic::builder(source, error)
+        let diagnostic = CompilerDiagnostic::builder(error)
+            .optional_source(source)
             .optional_label(label)
             .help("Remove the error handler, it is not needed.".to_string())
             .build();
@@ -811,16 +867,22 @@ impl ComponentDb {
     ) {
         let fallible_kind = raw_user_component_db[fallible_id].callable_type();
         let location = raw_user_component_db.get_location(fallible_id);
-        let source = source_or_exit_with_error!(location, package_graph, diagnostics);
-        let label = diagnostic::get_f_macro_invocation_span(&source, location)
-            .labeled(format!("The fallible {fallible_kind} was registered here"));
+        let source = try_source!(location, package_graph, diagnostics);
+        let label = source
+            .as_ref()
+            .map(|source| {
+                diagnostic::get_f_macro_invocation_span(&source, location)
+                    .labeled(format!("The fallible {fallible_kind} was registered here"))
+            })
+            .flatten();
         let error = anyhow::anyhow!(
                 "You registered a {fallible_kind} that returns a `Result`, but you did not register an \
                  error handler for it. \
                  If I don't have an error handler, I don't know what to do with the error when the \
                  {fallible_kind} fails!",
             );
-        let diagnostic = CompilerDiagnostic::builder(source, error)
+        let diagnostic = CompilerDiagnostic::builder(error)
+            .optional_source(source)
             .optional_label(label)
             .help("Add an error handler via `.error_handler`".to_string())
             .build();

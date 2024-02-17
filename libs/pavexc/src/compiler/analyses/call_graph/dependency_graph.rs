@@ -343,7 +343,7 @@ fn cycle_error(
         .unwrap();
     }
 
-    let diagnostic_builder = CompilerDiagnostic::builder_without_source(anyhow::anyhow!(error_msg));
+    let diagnostic_builder = CompilerDiagnostic::builder(anyhow::anyhow!(error_msg));
 
     diagnostic_builder.help(
             "Break the cycle! Remove one of the 'depends-on' relationship by changing the signature of \

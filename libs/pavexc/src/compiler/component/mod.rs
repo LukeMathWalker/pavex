@@ -12,7 +12,7 @@ use crate::diagnostic::{
 };
 use crate::language::{Callable, ResolvedPath, ResolvedType};
 use crate::rustdoc::CrateCollection;
-use crate::{diagnostic, source_or_exit_with_error};
+use crate::{diagnostic, try_source};
 use guppy::graph::PackageGraph;
 use syn::spanned::Spanned;
 
@@ -69,9 +69,14 @@ impl CannotTakeMutReferenceError {
         }
 
         let location = raw_user_component_db.get_location(raw_user_component_id);
-        let source = source_or_exit_with_error!(location, package_graph, diagnostics);
-        let label = diagnostic::get_f_macro_invocation_span(&source, location)
-            .labeled(format!("The {callable_type} was registered here"));
+        let source = try_source!(location, package_graph, diagnostics);
+        let label = source
+            .as_ref()
+            .map(|source| {
+                diagnostic::get_f_macro_invocation_span(&source, location)
+                    .labeled(format!("The {callable_type} was registered here"))
+            })
+            .flatten();
 
         let definition_snippet = get_snippet(
             &computation_db[raw_user_component_id],
@@ -79,7 +84,8 @@ impl CannotTakeMutReferenceError {
             package_graph,
             self.mut_ref_input_index,
         );
-        let diagnostic = CompilerDiagnostic::builder(source, self)
+        let diagnostic = CompilerDiagnostic::builder(self)
+            .optional_source(source)
             .optional_label(label)
             .optional_additional_annotated_snippet(definition_snippet)
             .help(

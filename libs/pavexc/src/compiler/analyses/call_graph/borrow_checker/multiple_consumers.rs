@@ -202,7 +202,7 @@ fn emit_multiple_consumers_error(
         There are {n_consumers} components that take `{type_:?}` as an input parameter, consuming it by value. \
         Since I'm not allowed to clone `{type_:?}`, I can't resolve this conflict."
     );
-    let mut diagnostic = CompilerDiagnostic::builder_without_source(anyhow::anyhow!(error_msg));
+    let mut diagnostic = CompilerDiagnostic::builder(anyhow::anyhow!(error_msg));
 
     if let Some(component_id) = consumed_component_id {
         if let Some(user_component_id) = component_db.user_component_id(component_id) {

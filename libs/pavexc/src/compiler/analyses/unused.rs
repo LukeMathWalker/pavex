@@ -5,8 +5,8 @@ use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::processing_pipeline::RequestHandlerPipeline;
 use crate::compiler::computation::Computation;
 use crate::compiler::utils::get_ok_variant;
-use crate::diagnostic;
-use crate::diagnostic::{CompilerDiagnostic, LocationExt, SourceSpanExt};
+use crate::diagnostic::{CompilerDiagnostic, OptionalSourceSpanExt};
+use crate::{diagnostic, try_source};
 use guppy::graph::PackageGraph;
 use indexmap::IndexSet;
 use miette::Severity;
@@ -85,17 +85,14 @@ fn emit_unused_warning(
     let location = component_db
         .user_component_db()
         .get_location(user_component_id);
-    let source = match location.source_file(package_graph) {
-        Ok(s) => {
-            let span = diagnostic::get_f_macro_invocation_span(&s, location)
-                .map(|s| s.labeled("The unused constructor was registered here".into()));
-            Some((s, span))
-        }
-        Err(e) => {
-            diagnostics.push(e.into());
-            None
-        }
-    };
+    let source = try_source!(location, package_graph, diagnostics);
+    let label = source
+        .as_ref()
+        .map(|source| {
+            diagnostic::get_f_macro_invocation_span(source, location)
+                .labeled("The unused constructor was registered here".into())
+        })
+        .flatten();
     let HydratedComponent::Constructor(constructor) =
         component_db.hydrated_component(constructor_id, computation_db)
     else {
@@ -116,17 +113,14 @@ fn emit_unused_warning(
     `{}` is never invoked since no component is asking for `{output_type:?}` to be injected as one of its inputs.",
         &callable.path
     );
-    let builder = match source {
-        None => CompilerDiagnostic::builder_without_source(error),
-        Some((source, labeled_span)) => {
-            CompilerDiagnostic::builder(source, error).optional_label(labeled_span)
-        }
-    }
-    .severity(Severity::Warning)
-    .help(
-        "If you want to ignore this warning, call `.ignore(Lint::Unused)` \
+    let builder = CompilerDiagnostic::builder(error)
+        .optional_source(source)
+        .optional_label(label)
+        .severity(Severity::Warning)
+        .help(
+            "If you want to ignore this warning, call `.ignore(Lint::Unused)` \
         on the registered constructor."
-            .to_string(),
-    );
+                .to_string(),
+        );
     diagnostics.push(builder.build().into())
 }

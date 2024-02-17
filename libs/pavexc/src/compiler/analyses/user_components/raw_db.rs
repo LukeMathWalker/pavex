@@ -13,8 +13,8 @@ use crate::compiler::analyses::user_components::router_key::RouterKey;
 use crate::compiler::analyses::user_components::scope_graph::ScopeGraphBuilder;
 use crate::compiler::analyses::user_components::{ScopeGraph, ScopeId};
 use crate::compiler::interner::Interner;
-use crate::diagnostic;
-use crate::diagnostic::{CallableType, CompilerDiagnostic, LocationExt, SourceSpanExt};
+use crate::diagnostic::{CallableType, CompilerDiagnostic, OptionalSourceSpanExt};
+use crate::{diagnostic, try_source};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 /// A component registered by a framework user against the `Blueprint` for their application.
@@ -733,19 +733,19 @@ impl RawUserComponentDb {
         diagnostics: &mut Vec<miette::Error>,
     ) {
         let location = self.get_location(route_id);
-        let source = match location.source_file(package_graph) {
-            Ok(source) => source,
-            Err(e) => {
-                diagnostics.push(e.into());
-                return;
-            }
-        };
-        let label = diagnostic::get_route_path_span(&source, location)
-            .map(|s| s.labeled("The path missing a leading '/'".to_string()));
+        let source = try_source!(location, package_graph, diagnostics);
+        let label = source
+            .as_ref()
+            .map(|source| {
+                diagnostic::get_route_path_span(&source, location)
+                    .labeled("The path missing a leading '/'".to_string())
+            })
+            .flatten();
         let path = &route.path;
         let err =
             anyhow!("Route paths must either be empty or begin with a forward slash, `/`.\n`{path}` is not empty and it doesn't begin with a `/`.",);
-        let diagnostic = CompilerDiagnostic::builder(source, err)
+        let diagnostic = CompilerDiagnostic::builder(err)
+            .optional_source(source)
             .optional_label(label)
             .help(format!("Add a '/' at the beginning of the route path to fix this error: use `/{path}` instead of `{path}`."));
         diagnostics.push(diagnostic.build().into());
@@ -758,17 +758,17 @@ impl RawUserComponentDb {
         diagnostics: &mut Vec<miette::Error>,
     ) {
         let location = &nested_bp.nesting_location;
-        let source = match location.source_file(package_graph) {
-            Ok(source) => source,
-            Err(e) => {
-                diagnostics.push(e.into());
-                return;
-            }
-        };
-        let label = diagnostic::get_nest_at_prefix_span(&source, location)
-            .map(|s| s.labeled("The empty prefix".to_string()));
+        let source = try_source!(location, package_graph, diagnostics);
+        let label = source
+            .as_ref()
+            .map(|source| {
+                diagnostic::get_nest_at_prefix_span(&source, location)
+                    .labeled("The empty prefix".to_string())
+            })
+            .flatten();
         let err = anyhow!("The path prefix passed to `nest_at` cannot be empty.");
-        let diagnostic = CompilerDiagnostic::builder(source, err)
+        let diagnostic = CompilerDiagnostic::builder(err)
+            .optional_source(source)
             .optional_label(label)
             .help(
                 "If you don't want to add a common prefix to all routes in the nested blueprint, \
@@ -785,21 +785,21 @@ impl RawUserComponentDb {
         diagnostics: &mut Vec<miette::Error>,
     ) {
         let location = &nested_bp.nesting_location;
-        let source = match location.source_file(package_graph) {
-            Ok(source) => source,
-            Err(e) => {
-                diagnostics.push(e.into());
-                return;
-            }
-        };
-        let label = diagnostic::get_nest_at_prefix_span(&source, location)
-            .map(|s| s.labeled("The prefix missing a leading '/'".to_string()));
+        let source = try_source!(location, package_graph, diagnostics);
+        let label = source
+            .as_ref()
+            .map(|source| {
+                diagnostic::get_nest_at_prefix_span(&source, location)
+                    .labeled("The prefix missing a leading '/'".to_string())
+            })
+            .flatten();
         let prefix = nested_bp.path_prefix.as_deref().unwrap();
         let err = anyhow!(
             "The path prefix passed to `nest_at` must begin with a forward slash, `/`.\n\
             `{prefix}` doesn't.",
         );
-        let diagnostic = CompilerDiagnostic::builder(source, err)
+        let diagnostic = CompilerDiagnostic::builder(err)
+            .optional_source(source)
             .optional_label(label)
             .help(format!("Add a '/' at the beginning of the path prefix to fix this error: use `/{prefix}` instead of `{prefix}`."));
         diagnostics.push(diagnostic.build().into());
@@ -812,15 +812,14 @@ impl RawUserComponentDb {
         diagnostics: &mut Vec<miette::Error>,
     ) {
         let location = &nested_bp.nesting_location;
-        let source = match location.source_file(package_graph) {
-            Ok(source) => source,
-            Err(e) => {
-                diagnostics.push(e.into());
-                return;
-            }
-        };
-        let label = diagnostic::get_nest_at_prefix_span(&source, location)
-            .map(|s| s.labeled("The prefix ending with a trailing '/'".to_string()));
+        let source = try_source!(location, package_graph, diagnostics);
+        let label = source
+            .as_ref()
+            .map(|source| {
+                diagnostic::get_nest_at_prefix_span(&source, location)
+                    .labeled("The prefix ending with a trailing '/'".to_string())
+            })
+            .flatten();
         let prefix = nested_bp.path_prefix.as_deref().unwrap();
         let err = anyhow!(
             "The path prefix passed to `nest_at` can't end with a trailing slash, `/`. \
@@ -831,7 +830,8 @@ impl RawUserComponentDb {
             registered against the nested blueprint.",
         );
         let correct_prefix = prefix.trim_end_matches('/');
-        let diagnostic = CompilerDiagnostic::builder(source, err)
+        let diagnostic = CompilerDiagnostic::builder(err)
+            .optional_source(source)
             .optional_label(label)
             .help(format!("Remove the '/' at the end of the path prefix to fix this error: use `{correct_prefix}` instead of `{prefix}`."));
         diagnostics.push(diagnostic.build().into());

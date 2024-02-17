@@ -212,7 +212,8 @@ fn report_non_existing_path_parameters(
                     But there are no path parameters in `{path}`, the corresponding path pattern!",
                     raw_identifiers.fully_qualified_path().join("::"),
                 );
-            let d = CompilerDiagnostic::builder(source, error)
+            let d = CompilerDiagnostic::builder(error)
+                .source(source)
                 .optional_label(source_span.labeled(format!(
                     "The {callable_type} asking for `PathParams<{extracted_type:?}>`"
                 )))
@@ -258,7 +259,8 @@ fn report_non_existing_path_parameters(
                     {missing_msg}. This is going to cause a runtime error!",
                     raw_identifiers.fully_qualified_path().join("::"),
                 );
-            let d = CompilerDiagnostic::builder(source, error)
+            let d = CompilerDiagnostic::builder(error)
+                .source(source)
                 .optional_label(source_span.labeled(format!(
                     "The {callable_type} asking for `PathParams<{extracted_type:?}>`"
                 )))
@@ -344,7 +346,8 @@ fn must_be_a_plain_struct(
             fail at runtime, when trying to process an incoming request.",
             raw_identifiers.fully_qualified_path().join("::")
         );
-        let d = CompilerDiagnostic::builder(source, error)
+        let d = CompilerDiagnostic::builder(error)
+            .source(source)
             .optional_label(source_span.labeled(format!(
                 "The {callable_type} asking for `PathParams<{extracted_type:?}>`"
             )))

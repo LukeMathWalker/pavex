@@ -16,12 +16,12 @@ use crate::compiler::analyses::user_components::router::Router;
 use crate::compiler::analyses::user_components::{ScopeGraph, UserComponent, UserComponentId};
 use crate::compiler::interner::Interner;
 use crate::compiler::resolvers::CallableResolutionError;
-use crate::diagnostic;
 use crate::diagnostic::{
     convert_proc_macro_span, convert_rustdoc_span, AnnotatedSnippet, CompilerDiagnostic,
-    LocationExt, SourceSpanExt,
+    OptionalSourceSpanExt, SourceSpanExt,
 };
 use crate::rustdoc::CrateCollection;
+use crate::{diagnostic, try_source};
 
 /// A database that contains all the user components that have been registered against the
 /// `Blueprint` for the application.
@@ -298,18 +298,17 @@ impl UserComponentDb {
         let location = component_db.get_location(component_id);
         let component = &component_db[component_id];
         let callable_type = component.callable_type();
-        let source = match location.source_file(package_graph) {
-            Ok(source) => source,
-            Err(e) => {
-                diagnostics.push(e.into());
-                return;
-            }
-        };
+        let source = try_source!(location, package_graph, diagnostics);
         match e {
             CallableResolutionError::UnknownCallable(_) => {
-                let label = diagnostic::get_f_macro_invocation_span(&source, location)
-                    .map(|s| s.labeled(format!("The {callable_type} that we can't resolve")));
-                let diagnostic = CompilerDiagnostic::builder(source, e)
+                let label = source
+                    .as_ref()
+                    .map(|source| {
+                        diagnostic::get_f_macro_invocation_span(&source, location)
+                            .labeled(format!("The {callable_type} that we can't resolve"))
+                    })
+                    .flatten();
+                let diagnostic = CompilerDiagnostic::builder(e).optional_source(source)
                     .optional_label(label)
                     .help("Check that the path is spelled correctly and that the function (or method) is public.".into())
                     .build();
@@ -378,21 +377,33 @@ impl UserComponentDb {
                         None
                     }
                 };
-                let label = diagnostic::get_f_macro_invocation_span(&source, location)
-                    .map(|s| s.labeled(format!("The {callable_type} was registered here")));
-                let diagnostic = CompilerDiagnostic::builder(source, e.clone())
+                let label = source
+                    .as_ref()
+                    .map(|source| {
+                        diagnostic::get_f_macro_invocation_span(&source, location)
+                            .labeled(format!("The {callable_type} was registered here"))
+                    })
+                    .flatten();
+                let diagnostic = CompilerDiagnostic::builder(e.clone())
+                    .optional_source(source)
                     .optional_label(label)
                     .optional_additional_annotated_snippet(definition_snippet)
                     .build();
                 diagnostics.push(diagnostic.into());
             }
             CallableResolutionError::UnsupportedCallableKind(ref inner_error) => {
-                let label = diagnostic::get_f_macro_invocation_span(&source, location)
-                    .map(|s| s.labeled(format!("It was registered as a {callable_type} here")));
+                let label = source
+                    .as_ref()
+                    .map(|source| {
+                        diagnostic::get_f_macro_invocation_span(&source, location)
+                            .labeled(format!("It was registered as a {callable_type} here"))
+                    })
+                    .flatten();
                 let message = format!("I can work with functions and methods, but `{}` is neither.\nIt is {} and I don't know how to use it as a {}.", inner_error.import_path, inner_error.item_kind, callable_type);
                 let error = anyhow::anyhow!(e).context(message);
                 diagnostics.push(
-                    CompilerDiagnostic::builder(source, error)
+                    CompilerDiagnostic::builder(error)
+                        .optional_source(source)
                         .optional_label(label)
                         .build()
                         .into(),
@@ -464,10 +475,16 @@ impl UserComponentDb {
                     }
                 };
 
-                let label = diagnostic::get_f_macro_invocation_span(&source, location)
-                    .map(|s| s.labeled(format!("The {callable_type} was registered here")));
+                let label = source
+                    .as_ref()
+                    .map(|source| {
+                        diagnostic::get_f_macro_invocation_span(&source, location)
+                            .labeled(format!("The {callable_type} was registered here"))
+                    })
+                    .flatten();
                 diagnostics.push(
-                    CompilerDiagnostic::builder(source, e.clone())
+                    CompilerDiagnostic::builder(e.clone())
+                        .optional_source(source)
                         .optional_label(label)
                         .optional_additional_annotated_snippet(annotated_snippet)
                         .build()
@@ -478,9 +495,15 @@ impl UserComponentDb {
                 diagnostics.push(miette!(e));
             }
             CallableResolutionError::GenericParameterResolutionError(_) => {
-                let label = diagnostic::get_f_macro_invocation_span(&source, location)
-                    .map(|s| s.labeled(format!("The {callable_type} was registered here")));
-                let diagnostic = CompilerDiagnostic::builder(source, e)
+                let label = source
+                    .as_ref()
+                    .map(|source| {
+                        diagnostic::get_f_macro_invocation_span(&source, location)
+                            .labeled(format!("The {callable_type} was registered here"))
+                    })
+                    .flatten();
+                let diagnostic = CompilerDiagnostic::builder(e)
+                    .optional_source(source)
                     .optional_label(label)
                     .build();
                 diagnostics.push(diagnostic.into());

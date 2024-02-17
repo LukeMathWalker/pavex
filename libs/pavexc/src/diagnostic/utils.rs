@@ -1,12 +1,12 @@
 #[macro_export]
-macro_rules! source_or_exit_with_error {
+macro_rules! try_source {
     ($location:ident, $graph:ident, $diagnostics:ident) => {{
         use crate::diagnostic::LocationExt as _;
         match $location.source_file($graph) {
-            Ok(s) => s,
+            Ok(s) => Some(s),
             Err(e) => {
                 $diagnostics.push(e.into());
-                return;
+                None
             }
         }
     }};

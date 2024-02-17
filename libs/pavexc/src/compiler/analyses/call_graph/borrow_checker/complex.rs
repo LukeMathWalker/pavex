@@ -291,7 +291,7 @@ fn emit_borrow_checking_error(
                     There are a few different ways to unblock me: check out the help messages below!\n\
                     You only need to follow *one* of them."
                 );
-            let mut diagnostic = CompilerDiagnostic::builder_without_source(error);
+            let mut diagnostic = CompilerDiagnostic::builder(error);
 
             if let Some(user_component_id) = component_db.user_component_id(component_id) {
                 let help_msg = format!(
