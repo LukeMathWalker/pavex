@@ -1,26 +1,34 @@
-use crate::blueprint::constructor::{Constructor, Lifecycle, RegisteredConstructor};
+use crate::blueprint::constructor::{
+    CloningStrategy, Constructor, Lifecycle, RegisteredConstructor,
+};
 use crate::blueprint::Blueprint;
 use crate::f;
 use crate::middleware::Next;
 use crate::request::RequestHead;
 use crate::response::Response;
+use cookie::CookieJar;
 use http::header::SET_COOKIE;
 use http::HeaderValue;
+use std::cell::RefCell;
 use std::future::IntoFuture;
-use std::sync::{Mutex, MutexGuard};
+use std::rc::Rc;
 
 pub use cookie::Cookie;
 
 #[derive(Debug)]
-/// A wrapper around [CookieJar](https://docs.rs/cookie/0.18.0/cookie/struct.CookieJar.html) from the [cookie crate](https://docs.rs/cookie/0.18.0/cookie), that can be injected as a shared reference to conveniently manage client state.
-/// It will encode and decode values to allow for reserved characters. Note that a simple cookie **can never be trusted** and **should never contain sensitive information**.
-pub struct Cookies {
-    jar: Box<Mutex<cookie::CookieJar>>,
+/// Structure that facilitates reading Cookies from HTTP Request Headers
+/// Wraps a [`CookieJar`] from the cookie crate.  
+pub struct RequestCookies {
+    jar: CookieJar,
 }
 
-impl Cookies {
-    /// Builds a CookieJar from request headers.
-    pub fn from_request_head(head: &RequestHead) -> Self {
+impl RequestCookies {
+    /// Extracts [`Cookie`]s from a [`RequestHead`] and adds them to a new [`CookieJar`]
+    /// Decodes percent-encoded characters.
+    /// Silently skips invalid Headers and Cookies.
+    /// Accepts multiple `Cookie`-Headers.
+    /// If there are multiple cookies by the same name present, the last one wins.
+    pub fn extract(head: &RequestHead) -> Self {
         let mut jar = cookie::CookieJar::new();
         head.headers
             .get_all("cookie")
@@ -29,36 +37,63 @@ impl Cookies {
             .flat_map(|c| c.split("; "))
             .filter_map(|c| Cookie::parse_encoded(c.to_owned()).ok())
             .for_each(|c| jar.add_original(c));
-        Cookies {
-            jar: Box::from(Mutex::new(jar)),
+        RequestCookies { jar }
+    }
+
+    /// Get a reference to a [`Cookie`] by name, if it exists.
+    pub fn get(&self, name: &str) -> Option<&Cookie> {
+        self.jar.get(name)
+    }
+
+    /// Get a reference to the underlying [`CookieJar`]
+    pub fn jar(&self) -> &CookieJar {
+        &self.jar
+    }
+
+    /// Iterator over all the [`Cookie`]s extracted from a Request
+    pub fn iter<'a>(&'a self) -> impl Iterator<Item = &'a Cookie<'static>> {
+        self.jar.iter()
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ResponseCookies {
+    jar: Rc<RefCell<CookieJar>>,
+}
+impl ResponseCookies {
+    /// Creates an instance of [`ResponseCookies`] from [`RequestCookies`]
+    pub fn from_request_cookies(request_cookies: &RequestCookies) -> Self {
+        ResponseCookies {
+            jar: Rc::new(RefCell::from(request_cookies.jar().to_owned())),
         }
     }
 
-    /// Retrieve a cookie by name.
-    pub fn get(&self, name: &str) -> Option<Cookie> {
-        self.inner().get(name).cloned()
-    }
-
-    /// Get all the currently registered cookies.
-    /// This will also reflect changes that are not yet sent to the client.
-    pub fn get_all(&self) -> Vec<Cookie> {
-        self.inner().iter().map(|c| c.to_owned()).collect()
-    }
-
-    /// Add a cookie. If a cookie by the same name already exists, this will override its value.
+    /// Adds a [`Cookie`] to the [`CookieJar`]`.
+    /// If a cookie by the same name is already present, it will be overwritten.
     pub fn add(&self, cookie: Cookie<'static>) {
-        self.inner().add(cookie)
+        self.jar.borrow_mut().add(cookie)
     }
 
-    /// Mark a cookie for deletion.
+    /// Removes a [`Cookie`] from the [`CookieJar`]`.
     pub fn remove(&self, cookie: Cookie<'static>) {
-        self.inner().remove(cookie)
+        self.jar.borrow_mut().remove(cookie)
     }
 
-    /// Attaches the changes in the Cookies to a Response
-    /// This should only be done once per Response and is generally handled by cookies_middleware
+    /// Gets a Copy of a [`Cookie`] by name, if it exists.
+    pub fn get_cloned(&self, key: &str) -> Option<Cookie> {
+        self.jar.borrow().get(key).map(|c| c.to_owned())
+    }
+
+    /// Gets a Copy of all the [`Cookie`]s present in the [`CookieJar`].
+    pub fn get_all_cloned(&self) -> Vec<Cookie> {
+        self.jar.borrow().iter().map(|c| c.to_owned()).collect()
+    }
+
+    /// Attaches the changes in the [`CookieJar`] to the [`Response`]
+    /// It percent-encodes reserved characters.
+    /// This should only be done once per Response and is generally handled by [cookie_middleware](cookie_middleware)
     pub fn apply_delta(&self, mut response: Response) -> Response {
-        for delta in self.inner().delta() {
+        for delta in self.jar.borrow().delta() {
             match HeaderValue::from_str(&delta.encoded().to_string()) {
                 Ok(headervalue) => response = response.append_header(SET_COOKIE, headervalue),
                 Err(e) => {
@@ -68,15 +103,10 @@ impl Cookies {
         }
         response
     }
-
-    fn inner(&self) -> MutexGuard<'_, cookie::CookieJar> {
-        // anything that could cause the mutex to be poisoned will also cause the request to fail
-        self.jar.lock().expect("Mutex should not be poisoned")
-    }
 }
 
 /// Middleware to handle updating cookies
-pub async fn cookies_middleware<C>(next: Next<C>, cookies: &Cookies) -> Response
+pub async fn cookie_middleware<C>(next: Next<C>, cookies: &ResponseCookies) -> Response
 where
     C: IntoFuture<Output = Response>,
 {
@@ -84,25 +114,42 @@ where
     cookies.apply_delta(response)
 }
 
-impl Cookies {
+impl RequestCookies {
     /// Register the [default constructor](Self::default_constructor)
-    /// for [`Cookies`] with a [`Blueprint`].
+    /// for [`RequestCookies`] with a [`Blueprint`].
     pub fn register(bp: &mut Blueprint) -> RegisteredConstructor {
         Self::default_constructor().register(bp)
     }
 
-    /// The [default constructor](Cookies::extract) for [`Cookies`].
+    /// The [default constructor](RequestCookies::extract) for [`RequestCookies`].
     pub fn default_constructor() -> Constructor {
         Constructor::new(
-            f!(pavex::cookie::Cookies::from_request_head),
+            f!(crate::cookie::RequestCookies::extract),
             Lifecycle::RequestScoped,
         )
     }
 }
 
+impl ResponseCookies {
+    /// Register the [default constructor](Self::default_constructor)
+    /// for [`ResponseCookies`] with a [`Blueprint`].
+    pub fn register(bp: &mut Blueprint) -> RegisteredConstructor {
+        Self::default_constructor().register(bp)
+    }
+
+    /// The [default constructor](ResponseCookies::from_request_cookies) for [`ResponseCookies`].
+    pub fn default_constructor() -> Constructor {
+        Constructor::new(
+            f!(crate::cookie::ResponseCookies::from_request_cookies),
+            Lifecycle::RequestScoped,
+        )
+        .cloning(CloningStrategy::CloneIfNecessary)
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::Cookies;
+    use super::{RequestCookies, ResponseCookies};
     use crate::{
         http::header::{COOKIE, SET_COOKIE},
         response::Response,
@@ -111,19 +158,23 @@ mod tests {
     #[test]
     fn empty_cookie_jar() {
         let (parts, _) = http::Request::builder().body(()).unwrap().into_parts();
-        let cookies = Cookies::from_request_head(&parts.into());
-        assert!(cookies.get_all().is_empty());
+        let cookies = RequestCookies::extract(&parts.into());
+        assert!(cookies.iter().next().is_none());
     }
 
     #[test]
     fn add_and_remove_cookies() {
         let (parts, _) = http::Request::builder().body(()).unwrap().into_parts();
-        let cookies = Cookies::from_request_head(&parts.into());
+        let rcookies = RequestCookies::extract(&parts.into());
+        let cookies = ResponseCookies::from_request_cookies(&rcookies);
         cookies.add(("flavour", "chocolate chip").into());
         cookies.add(("foo", "bar").into());
         cookies.remove("foo".into());
-        assert!(cookies.get("foo").is_none());
-        assert_eq!(cookies.get("flavour").unwrap().value(), "chocolate chip");
+        assert!(cookies.get_cloned("foo").is_none());
+        assert_eq!(
+            cookies.get_cloned("flavour").unwrap().value(),
+            "chocolate chip"
+        );
     }
 
     #[test]
@@ -134,11 +185,12 @@ mod tests {
             .body(())
             .unwrap()
             .into_parts();
-        let cookies = Cookies::from_request_head(&parts.into());
+        let cookies = RequestCookies::extract(&parts.into());
         assert_eq!(cookies.get("foo").unwrap().value(), "bar");
         assert_eq!(cookies.get("baz").unwrap().value(), "bam");
         let flavourcookie = cookies.get("flavour").unwrap();
         assert_eq!(flavourcookie.value(), "yummy");
+        let cookies = ResponseCookies::from_request_cookies(&cookies);
         cookies.remove((flavourcookie.name().to_owned()).into());
         let mut res = Response::ok();
         res = cookies.apply_delta(res);
@@ -163,9 +215,10 @@ mod tests {
             .body(())
             .unwrap()
             .into_parts();
-        let cookies = Cookies::from_request_head(&parts.into());
+        let cookies = RequestCookies::extract(&parts.into());
         let testv = cookies.get("test").unwrap().value().to_owned();
         assert_eq!(testv, " \"#%&(),/:;=?@[]");
+        let cookies = ResponseCookies::from_request_cookies(&cookies);
         cookies.add(("test2", testv).into());
         let mut res = Response::ok();
         res = cookies.apply_delta(res);
