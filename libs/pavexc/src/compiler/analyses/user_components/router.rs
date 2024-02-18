@@ -778,6 +778,7 @@ fn push_fallback_method_ambiguity_diagnostic(
     let mut builder = CompilerDiagnostic::builder(error);
     if let Some(first_snippet) = first_snippet {
         builder = builder
+            .source(first_snippet.source_code)
             .labels(first_snippet.labels.into_iter())
             .additional_annotated_snippets(annotated_snippets.into_iter());
     }
