@@ -13,6 +13,7 @@ readme = "README.md"
 default = ["server"]
 
 server = ["dep:hyper", "dep:hyper-util", "dep:socket2"]
+server_request_id = ["dep:uuid"]
 
 [dependencies]
 bytes = "1"
@@ -48,6 +49,9 @@ serde_path_to_error = "0.1"
 indexmap = { version = "2", features = ["serde"] }
 fs-err = "2.7.0"
 ron = "0.8"
+
+# Server request id
+uuid = { version = "1", features = ["v7"], optional = true }
 
 tokio = { version = "1.32", features = ["net", "sync", "rt", "time"] }
 hyper = { version = "1", features = ["full"], optional = true }

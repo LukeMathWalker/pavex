@@ -23,4 +23,5 @@ pub mod router;
 pub mod serialization;
 #[cfg(feature = "server")]
 pub mod server;
+pub mod telemetry;
 pub mod unit;

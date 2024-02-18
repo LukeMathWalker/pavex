@@ -4,6 +4,7 @@ use crate::blueprint::Blueprint;
 use crate::request::body::{BodySizeLimit, BufferedBody, JsonBody};
 use crate::request::path::PathParams;
 use crate::request::query::QueryParams;
+use crate::telemetry::ServerRequestId;
 
 #[derive(Clone, Debug)]
 #[non_exhaustive]
@@ -37,6 +38,8 @@ pub struct ApiKit {
     pub buffered_body: Option<Constructor>,
     /// The [default constructor](BodySizeLimit::default_constructor) for [`BodySizeLimit`].
     pub body_size_limit: Option<Constructor>,
+    /// The [default constructor](ServerRequestId::default_constructor) for [`ServerRequestId`].
+    pub server_request_id: Option<Constructor>,
 }
 
 impl ApiKit {
@@ -48,6 +51,7 @@ impl ApiKit {
             json_body: Some(JsonBody::default_constructor().ignore(Lint::Unused)),
             buffered_body: Some(BufferedBody::default_constructor().ignore(Lint::Unused)),
             body_size_limit: Some(BodySizeLimit::default_constructor().ignore(Lint::Unused)),
+            server_request_id: Some(ServerRequestId::default_constructor().ignore(Lint::Unused)),
         }
     }
 
@@ -69,6 +73,9 @@ impl ApiKit {
         }
         if let Some(body_size_limit) = self.body_size_limit {
             body_size_limit.register(bp);
+        }
+        if let Some(server_request_id) = self.server_request_id {
+            server_request_id.register(bp);
         }
         RegisteredApiKit {}
     }

@@ -25,7 +25,6 @@ use crate::http::Method;
 ///         Response::not_found()
 ///     }
 /// }
-///
 /// ```
 ///
 /// # Framework primitive

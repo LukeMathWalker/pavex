@@ -1,0 +1,11 @@
+[package]
+name = "pavex_tracing"
+version = "0.1.0"
+edition.workspace = true
+repository.workspace = true
+homepage.workspace = true
+license.workspace = true
+readme = "README.md"
+
+[dependencies]
+tracing = "0.1"

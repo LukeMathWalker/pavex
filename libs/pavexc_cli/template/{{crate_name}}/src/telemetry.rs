@@ -3,6 +3,8 @@ use pavex::middleware::Next;
 use pavex::request::path::MatchedPathPattern;
 use pavex::request::RequestHead;
 use pavex::response::Response;
+use pavex::telemetry::ServerRequestId;
+use pavex_tracing::RootSpan;
 use std::borrow::Cow;
 use std::future::IntoFuture;
 use tracing::Instrument;
@@ -17,7 +19,7 @@ where
         .into_future()
         .instrument(root_span.clone().into_inner())
         .await;
-    root_span.record_response_data(&response);
+    root_span.record("http.response.status_code", &response.status().as_u16());
     response
 }
 
@@ -52,66 +54,35 @@ fn error_source_chain(e: &pavex::Error) -> String {
     chain
 }
 
-/// A root span is the top-level *logical* span for an incoming request.  
+/// Construct a new root span for the given request.
 ///
-/// It is not necessarily the top-level *physical* span, as it may be a child of
-/// another span (e.g. a span representing the underlying HTTP connection).
-///
-/// We use the root span to attach as much information as possible about the
-/// incoming request, and to record the final outcome of the request (success or
-/// failure).  
-#[derive(Debug, Clone)]
-pub struct RootSpan(tracing::Span);
+/// We follow OpenTelemetry's HTTP semantic conventions as closely as
+/// possible for field naming.
+pub fn root_span(
+    request_head: &RequestHead,
+    matched_route: MatchedPathPattern,
+    request_id: &ServerRequestId,
+) -> RootSpan {
+    let user_agent = request_head
+        .headers
+        .get("User-Agent")
+        .map(|h| h.to_str().unwrap_or_default())
+        .unwrap_or_default();
 
-impl std::ops::Deref for RootSpan {
-    type Target = tracing::Span;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl RootSpan {
-    /// Create a new root span for the given request.
-    ///
-    /// We follow OpenTelemetry's HTTP semantic conventions as closely as
-    /// possible for field naming.
-    pub fn new(request_head: &RequestHead, matched_route: MatchedPathPattern) -> Self {
-        let user_agent = request_head
-            .headers
-            .get("User-Agent")
-            .map(|h| h.to_str().unwrap_or_default())
-            .unwrap_or_default();
-
-        let span = tracing::info_span!(
-            "HTTP request",
-            http.method = %request_head.method,
-            http.flavor = %http_flavor(request_head.version),
-            user_agent.original = %user_agent,
-            http.response.status_code = tracing::field::Empty,
-            http.route = %matched_route,
-            http.target = %request_head.target.path_and_query().map(|p| p.as_str()).unwrap_or(""),
-            error.msg = tracing::field::Empty,
-            error.details = tracing::field::Empty,
-            error.source_chain = tracing::field::Empty,
-        );
-        Self(span)
-    }
-
-    pub fn record_response_data(&self, response: &Response) {
-        self.0
-            .record("http.response.status_code", &response.status().as_u16());
-    }
-
-    /// Get a reference to the underlying [`tracing::Span`].
-    pub fn inner(&self) -> &tracing::Span {
-        &self.0
-    }
-
-    /// Deconstruct the root span into its underlying [`tracing::Span`].
-    pub fn into_inner(self) -> tracing::Span {
-        self.0
-    }
+    let span = tracing::info_span!(
+        "HTTP request",
+        http.method = %request_head.method,
+        http.flavor = %http_flavor(request_head.version),
+        user_agent.original = %user_agent,
+        http.response.status_code = tracing::field::Empty,
+        http.route = %matched_route,
+        http.target = %request_head.target.path_and_query().map(|p| p.as_str()).unwrap_or(""),
+        request_id = %request_id,
+        error.msg = tracing::field::Empty,
+        error.details = tracing::field::Empty,
+        error.source_chain = tracing::field::Empty,
+    );
+    RootSpan::new(span)
 }
 
 fn http_flavor(version: Version) -> Cow<'static, str> {
