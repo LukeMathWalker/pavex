@@ -21,6 +21,7 @@ use crate::compiler::analyses::components::{
 };
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::constructibles::ConstructibleDb;
+use crate::compiler::analyses::framework_items::FrameworkItemDb;
 use crate::compiler::app::GENERATED_APP_PACKAGE_ID;
 use crate::compiler::computation::Computation;
 use crate::language::{
@@ -36,6 +37,7 @@ pub(crate) fn application_state_call_graph(
     computation_db: &mut ComputationDb,
     component_db: &mut ComponentDb,
     constructible_db: &mut ConstructibleDb,
+    framework_item_db: &FrameworkItemDb,
     package_graph: &PackageGraph,
     krate_collection: &CrateCollection,
     diagnostics: &mut Vec<miette::Error>,
@@ -91,6 +93,7 @@ pub(crate) fn application_state_call_graph(
             application_state_scope_id,
             CloningStrategy::NeverClone,
             computation_db,
+            framework_item_db,
             None,
         )
         .unwrap();

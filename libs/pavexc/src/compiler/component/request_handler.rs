@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 
+use crate::compiler::component::CannotTakeMutReferenceError;
 use indexmap::IndexSet;
 
 use crate::compiler::computation::MatchResult;
@@ -30,6 +31,8 @@ impl<'a> RequestHandler<'a> {
                 return Err(RequestHandlerValidationError::CannotFalliblyReturnTheUnitType);
             }
         }
+
+        CannotTakeMutReferenceError::check_callable(&c)?;
 
         let mut free_parameters = IndexSet::new();
         for input in c.inputs.iter() {
@@ -77,4 +80,6 @@ pub(crate) enum RequestHandlerValidationError {
     CannotFalliblyReturnTheUnitType,
     #[error("Input parameters for a request handler can't have any *unassigned* generic type parameters.")]
     UnderconstrainedGenericParameters { parameters: IndexSet<String> },
+    #[error(transparent)]
+    CannotTakeAMutableReferenceAsInput(#[from] CannotTakeMutReferenceError),
 }

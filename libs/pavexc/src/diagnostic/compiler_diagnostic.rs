@@ -5,7 +5,7 @@ use miette::{Diagnostic, LabeledSpan, NamedSource, Severity, SourceCode};
 /// A builder for a [`CompilerDiagnostic`].
 pub struct CompilerDiagnosticBuilder {
     severity: Severity,
-    source_code: NamedSource<String>,
+    source_code: Option<NamedSource<String>>,
     labels: Option<Vec<LabeledSpan>>,
     help: Option<String>,
     help_with_snippet: Option<Vec<HelpWithSnippet>>,
@@ -14,10 +14,10 @@ pub struct CompilerDiagnosticBuilder {
 }
 
 impl CompilerDiagnosticBuilder {
-    fn new(source_code: impl Into<NamedSource<String>>, error: impl Into<anyhow::Error>) -> Self {
+    fn new(error: impl Into<anyhow::Error>) -> Self {
         Self {
             severity: Severity::Error,
-            source_code: source_code.into(),
+            source_code: None,
             labels: None,
             help: None,
             help_with_snippet: None,
@@ -26,6 +26,20 @@ impl CompilerDiagnosticBuilder {
         }
     }
 
+    /// Attach a source file to this diagnostic.
+    pub fn source(mut self, source: impl Into<NamedSource<String>>) -> Self {
+        self.source_code = Some(source.into());
+        self
+    }
+
+    /// An optional version of [`CompilerDiagnosticBuilder::source`].
+    pub fn optional_source(mut self, source: Option<impl Into<NamedSource<String>>>) -> Self {
+        self.source_code = source.map(Into::into);
+        self
+    }
+
+    /// Change the severity of this diagnostic.
+    /// [`Severity::Error`] is the default.
     pub fn severity(mut self, severity: Severity) -> Self {
         self.severity = severity;
         self
@@ -147,7 +161,8 @@ impl CompilerDiagnosticBuilder {
                 snippets
                     .into_iter()
                     .map(|s| {
-                        CompilerDiagnosticBuilder::new(s.source_code, anyhow::anyhow!(""))
+                        CompilerDiagnosticBuilder::new(anyhow::anyhow!(""))
+                            .source(s.source_code)
                             .labels(s.labels.into_iter())
                             .build()
                     })
@@ -157,18 +172,17 @@ impl CompilerDiagnosticBuilder {
 
         if let Some(helps) = help_with_snippet {
             related_diagnostics.extend(helps.into_iter().map(|s| {
-                let mut d = CompilerDiagnosticBuilder::new(
-                    s.snippet.source_code,
-                    anyhow::anyhow!("{}", s.help),
-                )
-                .labels(s.snippet.labels.into_iter())
-                .build();
+                let mut d = CompilerDiagnosticBuilder::new(anyhow::anyhow!("{}", s.help))
+                    .source(s.snippet.source_code)
+                    .labels(s.snippet.labels.into_iter())
+                    .build();
                 d.severity = Severity::Advice;
                 d
             }))
         }
         CompilerDiagnostic {
-            source_code,
+            source_code: source_code
+                .unwrap_or_else(|| NamedSource::new(String::new(), String::new())),
             severity,
             labels,
             help,
@@ -180,13 +194,12 @@ impl CompilerDiagnosticBuilder {
 
 impl CompilerDiagnostic {
     /// Start building a diagnostic.
-    /// You must specify:
-    ///
-    /// - the source code that the diagnostic is about;
-    /// - the error that caused the diagnostic.
+    /// You must specify the error that caused the diagnostic.
     ///
     /// You can optionally specify:
     ///
+    /// - the source code the diagnostic refer to (see [`CompilerDiagnosticBuilder::source`]
+    /// and [`CompilerDiagnosticBuilder::optional_source`])
     /// - labels to highlight specific parts of the source code (see
     /// [`CompilerDiagnosticBuilder::label`] and [`CompilerDiagnosticBuilder::optional_label`]);
     /// - a help message to provide more information about the error (see
@@ -194,16 +207,8 @@ impl CompilerDiagnostic {
     /// - related errors. This can be leveraged to point at other source files that are related
     /// to the error (see [`CompilerDiagnosticBuilder::additional_annotated_snippet`] and
     /// [`CompilerDiagnosticBuilder::optional_additional_annotated_snippet`]).
-    pub fn builder(
-        source_code: impl Into<NamedSource<String>>,
-        error: impl Into<anyhow::Error>,
-    ) -> CompilerDiagnosticBuilder {
-        CompilerDiagnosticBuilder::new(source_code, error)
-    }
-
-    /// A new diagnostic with an empty source code.
-    pub fn builder_without_source(e: impl Into<anyhow::Error>) -> CompilerDiagnosticBuilder {
-        Self::builder(NamedSource::new(String::new(), String::new()), e)
+    pub fn builder(error: impl Into<anyhow::Error>) -> CompilerDiagnosticBuilder {
+        CompilerDiagnosticBuilder::new(error)
     }
 }
 

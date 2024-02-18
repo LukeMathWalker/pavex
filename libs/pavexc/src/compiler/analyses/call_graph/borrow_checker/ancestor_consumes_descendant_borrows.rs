@@ -357,7 +357,7 @@ fn emit_ancestor_descendant_borrow_error(
     )
     .unwrap();
 
-    let mut diagnostic = CompilerDiagnostic::builder_without_source(anyhow::anyhow!(error_msg));
+    let mut diagnostic = CompilerDiagnostic::builder(anyhow::anyhow!(error_msg));
 
     if let Some(component_id) = contended_component_id {
         if let Some(user_component_id) = component_db.user_component_id(component_id) {

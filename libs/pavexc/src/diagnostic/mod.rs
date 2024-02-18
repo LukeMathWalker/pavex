@@ -14,13 +14,16 @@ pub(crate) use source_file::{read_source_file, LocationExt, ParsedSourceFile};
 pub(crate) use self::miette::{
     convert_proc_macro_span, convert_rustdoc_span, OptionalSourceSpanExt, SourceSpanExt,
 };
+pub(crate) use callable_definition::CallableDefinition;
 
+mod callable_definition;
 mod compiler_diagnostic;
 mod miette;
 mod ordinals;
 mod proc_macro_utils;
 mod registration_locations;
 mod source_file;
+mod utils;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub enum CallableType {

@@ -621,15 +621,13 @@ fn inject_match_branching_nodes(
                     component_id: child_id,
                     ..
                 } => {
-                    let unknown_component =
-                        component_db.hydrated_component(*child_id, computation_db);
-                    let parent_component =
-                        component_db.hydrated_component(component_id, computation_db);
                     assert!(
                         [ok_match_id, err_match_id].contains(&child_id),
                         "{child_id:?} is neither the Ok-matcher ({ok_match_id:?}) nor the Err-matcher ({err_match_id:?}) for fallible component `{component_id:?}`.\n\
-                        {child_id:?}: {unknown_component:?}\n\
-                        {component_id:?}: {parent_component:?}",
+                        {child_id:?}: {:?}\n\
+                        {component_id:?}: {:?}",
+                        component_db.hydrated_component(*child_id, computation_db),
+                        component_db.hydrated_component(component_id, computation_db),
                     );
                 }
                 _ => unreachable!(),

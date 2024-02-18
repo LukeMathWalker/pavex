@@ -1,5 +1,6 @@
 use indexmap::IndexSet;
 
+use crate::compiler::component::CannotTakeMutReferenceError;
 use crate::language::GenericArgument;
 use crate::{
     compiler::computation::MatchResult,
@@ -69,6 +70,8 @@ impl<'a> WrappingMiddleware<'a> {
                 });
             }
         }
+
+        CannotTakeMutReferenceError::check_callable(&c)?;
 
         // We make sure that the callable doesn't have any unassigned generic type parameters
         // apart from the one used in Next.
@@ -158,4 +161,6 @@ pub(crate) enum WrappingMiddlewareValidationError {
         apart from the one used in `pavex::middleware::Next<_>`."
     )]
     UnderconstrainedGenericParameters { parameters: IndexSet<String> },
+    #[error(transparent)]
+    CannotTakeAMutableReferenceAsInput(#[from] CannotTakeMutReferenceError),
 }

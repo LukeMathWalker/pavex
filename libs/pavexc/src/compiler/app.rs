@@ -129,6 +129,7 @@ impl App {
                     &mut computation_db,
                     &mut component_db,
                     &mut constructible_db,
+                    &framework_item_db,
                     &package_graph,
                     &krate_collection,
                     &mut diagnostics,
@@ -178,6 +179,7 @@ impl App {
             &mut computation_db,
             &mut component_db,
             &mut constructible_db,
+            &framework_item_db,
             &package_graph,
             &krate_collection,
             &mut diagnostics,
@@ -515,7 +517,8 @@ fn verify_singletons(
                 Pavex runs on a multi-threaded HTTP server and singletons must be shared \
                  across all worker threads."
             .into();
-        let diagnostic = CompilerDiagnostic::builder(source, e)
+        let diagnostic = CompilerDiagnostic::builder(e)
+            .source(source)
             .optional_label(label)
             .help(help)
             .build();

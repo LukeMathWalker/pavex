@@ -12,12 +12,11 @@ use crate::compiler::analyses::user_components::raw_db::RawUserComponentDb;
 use crate::compiler::analyses::user_components::{
     ScopeGraph, ScopeId, UserComponent, UserComponentId,
 };
-use crate::diagnostic;
 use crate::diagnostic::{
-    AnnotatedSnippet, CompilerDiagnostic, LocationExt, OptionalSourceSpanExt, SourceSpanExt,
-    ZeroBasedOrdinal,
+    AnnotatedSnippet, CompilerDiagnostic, OptionalSourceSpanExt, SourceSpanExt, ZeroBasedOrdinal,
 };
 use crate::utils::comma_separated_list;
+use crate::{diagnostic, try_source};
 
 #[derive(Debug)]
 pub(crate) struct Router {
@@ -616,15 +615,14 @@ fn push_fallback_ambiguity_diagnostic(
         unreachable!()
     };
     let route_location = raw_user_component_db.get_location(route_id);
-    let route_source = match route_location.source_file(package_graph) {
-        Ok(s) => s,
-        Err(e) => {
-            diagnostics.push(e.into());
-            return;
-        }
-    };
-    let label = diagnostic::get_route_path_span(&route_source, route_location)
-        .labeled("The route was registered here".to_string());
+    let route_source = try_source!(route_location, package_graph, diagnostics);
+    let label = route_source
+        .as_ref()
+        .map(|source| {
+            diagnostic::get_route_path_span(&source, route_location)
+                .labeled("The route was registered here".to_string())
+        })
+        .flatten();
     let route_repr = router_key.diagnostic_repr();
     let scope_fallback = {
         let UserComponent::Fallback {
@@ -666,7 +664,8 @@ fn push_fallback_ambiguity_diagnostic(
         with a method that doesn't match the ones you registered a handler for.",
         router_key.path
     );
-    let diagnostic = CompilerDiagnostic::builder(route_source, error)
+    let diagnostic = CompilerDiagnostic::builder(error)
+        .optional_source(route_source)
         .optional_label(label)
         .help(format!(
             "You can fix this by registering `{route_repr}` against the nested blueprint \
@@ -713,20 +712,15 @@ fn push_fallback_method_ambiguity_diagnostic(
                 unreachable!()
             };
             let location = raw_user_component_db.get_location(*fallback_id);
-            let source = match location.source_file(package_graph) {
-                Ok(s) => s,
-                Err(e) => {
-                    diagnostics.push(e.into());
-                    return;
+            if let Some(source) = try_source!(location, package_graph, diagnostics) {
+                let label = diagnostic::get_f_macro_invocation_span(&source, location)
+                    .labeled(format!("The {} fallback", ZeroBasedOrdinal::from(i)));
+                let snippet = AnnotatedSnippet::new_optional(source, label);
+                if first_snippet.is_none() {
+                    first_snippet = Some(snippet);
+                } else {
+                    annotated_snippets.push(snippet);
                 }
-            };
-            let label = diagnostic::get_f_macro_invocation_span(&source, location)
-                .labeled(format!("The {} fallback", ZeroBasedOrdinal::from(i)));
-            let snippet = AnnotatedSnippet::new_optional(source, label);
-            if first_snippet.is_none() {
-                first_snippet = Some(snippet);
-            } else {
-                annotated_snippets.push(snippet);
             }
             let fallback_path = raw_user_component_db.identifiers_interner
                 [*raw_callable_identifiers_id]
@@ -781,14 +775,17 @@ fn push_fallback_method_ambiguity_diagnostic(
     )
     .unwrap();
     let error = anyhow::anyhow!(err_msg);
-    let first_snippet = first_snippet.unwrap();
-    let diagnostic = CompilerDiagnostic::builder(first_snippet.source_code, error)
-        .labels(first_snippet.labels.into_iter())
-        .additional_annotated_snippets(annotated_snippets.into_iter())
-        .help(format!(
-            "Adjust your blueprint to have the same fallback handler for all `{route_path}` routes."
-        ));
-    diagnostics.push(diagnostic.build().into());
+    let mut builder = CompilerDiagnostic::builder(error);
+    if let Some(first_snippet) = first_snippet {
+        builder = builder
+            .source(first_snippet.source_code)
+            .labels(first_snippet.labels.into_iter())
+            .additional_annotated_snippets(annotated_snippets.into_iter());
+    }
+    builder = builder.help(format!(
+        "Adjust your blueprint to have the same fallback handler for all `{route_path}` routes."
+    ));
+    diagnostics.push(builder.build().into());
 }
 
 fn push_matchit_diagnostic(
@@ -818,16 +815,17 @@ fn push_matchit_diagnostic(
     };
 
     let location = raw_user_component_db.get_location(raw_user_component_id);
-    let source = match location.source_file(package_graph) {
-        Ok(s) => s,
-        Err(e) => {
-            diagnostics.push(e.into());
-            return;
-        }
-    };
-    let label = diagnostic::get_route_path_span(&source, location)
-        .labeled("The problematic path".to_string());
-    let diagnostic = CompilerDiagnostic::builder(source, error).optional_label(label);
+    let source = try_source!(location, package_graph, diagnostics);
+    let label = source
+        .as_ref()
+        .map(|source| {
+            diagnostic::get_route_path_span(&source, location)
+                .labeled("The problematic path".to_string())
+        })
+        .flatten();
+    let diagnostic = CompilerDiagnostic::builder(error)
+        .optional_source(source)
+        .optional_label(label);
     diagnostics.push(diagnostic.build().into());
 }
 
@@ -843,12 +841,8 @@ fn push_router_conflict_diagnostic(
     let mut annotated_snippets: Vec<AnnotatedSnippet> = Vec::with_capacity(n_unique_handlers);
     for (i, raw_user_component_id) in raw_user_component_ids.iter().enumerate() {
         let location = raw_user_component_db.get_location(**raw_user_component_id);
-        let source = match location.source_file(package_graph) {
-            Ok(s) => s,
-            Err(e) => {
-                diagnostics.push(e.into());
-                continue;
-            }
+        let Some(source) = try_source!(location, package_graph, diagnostics) else {
+            continue;
         };
         if let Some(s) = diagnostic::get_f_macro_invocation_span(&source, location) {
             let label = s.labeled(format!("The {} conflicting handler", ZeroBasedOrdinal(i)));
@@ -856,16 +850,21 @@ fn push_router_conflict_diagnostic(
         }
     }
     let mut annotated_snippets = annotated_snippets.into_iter();
-    let first = annotated_snippets.next().unwrap();
-    let overall = CompilerDiagnostic::builder(first.source_code, anyhow!(
+    let mut builder = CompilerDiagnostic::builder(anyhow!(
             "I don't know how to route incoming `{method} {path}` requests: you have registered {n_unique_handlers} \
             different request handlers for this path+method combination."
-        ))
-        .labels(first.labels.into_iter())
+        ));
+    if let Some(first) = annotated_snippets.next() {
+        builder = builder
+            .source(first.source_code)
+            .labels(first.labels.into_iter());
+    }
+    builder = builder
         .additional_annotated_snippets(annotated_snippets)
         .help(
             "You can only register one request handler for each path+method combination. \
-            Remove all but one of the conflicting request handlers.".into()
+            Remove all but one of the conflicting request handlers."
+                .into(),
         );
-    diagnostics.push(overall.build().into());
+    diagnostics.push(builder.build().into());
 }

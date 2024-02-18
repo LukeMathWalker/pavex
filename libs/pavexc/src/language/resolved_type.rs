@@ -636,6 +636,12 @@ impl PathType {
         self_id_gen: &mut UnassignedIdGenerator<'a>,
         other_id_gen: &mut UnassignedIdGenerator<'b>,
     ) -> bool {
+        if (self.package_id != other.package_id)
+            || (self.rustdoc_id != other.rustdoc_id)
+            || (self.base_type != other.base_type)
+        {
+            return false;
+        }
         let self_args = &self.generic_arguments;
         let other_args = &other.generic_arguments;
         if self_args.len() != other_args.len() {
@@ -712,14 +718,11 @@ mod generics_equivalence {
 
 impl PartialEq for PathType {
     fn eq(&self, other: &Self) -> bool {
-        self.rustdoc_id == other.rustdoc_id
-            && self.base_type == other.base_type
-            && self.package_id == other.package_id
-            && self._is_equivalent_to(
-                other,
-                &mut UnassignedIdGenerator::new(),
-                &mut UnassignedIdGenerator::new(),
-            )
+        self._is_equivalent_to(
+            other,
+            &mut UnassignedIdGenerator::new(),
+            &mut UnassignedIdGenerator::new(),
+        )
     }
 }
 

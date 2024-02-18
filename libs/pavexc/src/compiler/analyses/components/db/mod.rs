@@ -19,14 +19,17 @@ use crate::compiler::traits::assert_trait_is_implemented;
 use crate::compiler::utils::{
     get_ok_variant, process_framework_callable_path, process_framework_path,
 };
+use crate::diagnostic::ParsedSourceFile;
 use crate::language::{
     Callable, Lifetime, ResolvedPath, ResolvedPathQualifiedSelf, ResolvedPathSegment, ResolvedType,
     TypeReference,
 };
 use crate::rustdoc::CrateCollection;
+use crate::try_source;
 use ahash::{HashMap, HashMapExt, HashSet};
 use guppy::graph::PackageGraph;
 use indexmap::IndexSet;
+use miette::SourceSpan;
 use pavex_bp_schema::{CloningStrategy, Lifecycle, Lint, LintSetting};
 use std::borrow::Cow;
 use std::collections::BTreeMap;
@@ -185,6 +188,7 @@ impl ComponentDb {
             self_.process_constructors(
                 &mut needs_error_handler,
                 computation_db,
+                framework_item_db,
                 package_graph,
                 krate_collection,
                 diagnostics,
@@ -461,6 +465,7 @@ impl ComponentDb {
         &mut self,
         needs_error_handler: &mut IndexSet<UserComponentId>,
         computation_db: &mut ComputationDb,
+        framework_item_db: &FrameworkItemDb,
         package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
         diagnostics: &mut Vec<miette::Error>,
@@ -472,7 +477,7 @@ impl ComponentDb {
             .collect::<Vec<_>>();
         for user_component_id in constructor_ids {
             let c: Computation = computation_db[user_component_id].clone().into();
-            match TryInto::<Constructor>::try_into(c) {
+            match Constructor::new(c, &self.pavex_error, framework_item_db) {
                 Err(e) => {
                     Self::invalid_constructor(
                         e,
@@ -960,10 +965,11 @@ impl ComponentDb {
         scope_id: ScopeId,
         cloning_strategy: CloningStrategy,
         computation_db: &mut ComputationDb,
+        framework_item_db: &FrameworkItemDb,
         derived_from: Option<ComponentId>,
     ) -> Result<ComponentId, ConstructorValidationError> {
         let callable = computation_db[callable_id].to_owned();
-        TryInto::<Constructor>::try_into(callable)?;
+        Constructor::new(callable, &self.pavex_error, &framework_item_db)?;
         let constructor_component = UnregisteredComponent::SyntheticConstructor {
             lifecycle,
             computation_id: callable_id,
@@ -1253,6 +1259,29 @@ impl ComponentDb {
             },
         }
     }
+
+    /// Return the source file where the component is defined and the span of its definition
+    /// within that file.
+    /// Both can be `None` (e.g. the component is synthetic and/or we can't find the definition
+    /// in the file).
+    pub fn registration_span(
+        &self,
+        component_id: ComponentId,
+        package_graph: &PackageGraph,
+        diagnostics: &mut Vec<miette::Error>,
+    ) -> (Option<ParsedSourceFile>, Option<SourceSpan>) {
+        let Some(user_id) = self.user_component_id(component_id) else {
+            return (None, None);
+        };
+        let user_component_db = self.user_component_db();
+        let location = user_component_db.get_location(user_id);
+        let source = try_source!(location, package_graph, diagnostics);
+        let source_span = source
+            .as_ref()
+            .map(|source| crate::diagnostic::get_f_macro_invocation_span(&source, location))
+            .flatten();
+        (source, source_span)
+    }
 }
 
 impl ComponentDb {
@@ -1306,6 +1335,7 @@ impl ComponentDb {
         id: ComponentId,
         bindings: &HashMap<String, ResolvedType>,
         computation_db: &mut ComputationDb,
+        framework_item_db: &FrameworkItemDb,
     ) -> ComponentId {
         fn _get_root_component_id(
             component_id: ComponentId,
@@ -1355,6 +1385,7 @@ impl ComponentDb {
                     self.scope_id(unbound_root_id),
                     cloning_strategy,
                     computation_db,
+                    framework_item_db,
                     Some(unbound_root_id),
                 )
                 .unwrap()

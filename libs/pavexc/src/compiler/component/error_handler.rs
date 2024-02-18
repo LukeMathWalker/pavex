@@ -1,5 +1,6 @@
 use std::fmt::{Display, Formatter};
 
+use crate::compiler::component::CannotTakeMutReferenceError;
 use crate::compiler::utils::get_err_variant;
 use indexmap::IndexSet;
 use itertools::Itertools;
@@ -21,14 +22,22 @@ impl ErrorHandler {
         fallible_callable: &Callable,
         pavex_error: &ResolvedType,
     ) -> Result<Self, ErrorHandlerValidationError> {
-        if error_handler.output.is_none() {
-            return Err(ErrorHandlerValidationError::CannotReturnTheUnitType(
-                error_handler.path,
-            ));
+        match &error_handler.output {
+            None => {
+                return Err(ErrorHandlerValidationError::CannotReturnTheUnitType(
+                    error_handler.path,
+                ));
+            }
+            Some(output_type) => {
+                if output_type.is_result() {
+                    return Err(ErrorHandlerValidationError::CannotBeFallible(
+                        error_handler.path,
+                    ));
+                }
+            }
         }
 
         let error_type = get_err_variant(fallible_callable.output.as_ref().unwrap());
-        // TODO: verify that the error handler does NOT return a `Result`
         let (error_input_index, error_ref_parameter) = error_handler
             .inputs
             .iter()
@@ -49,6 +58,8 @@ impl ErrorHandler {
                     error_type: error_type.to_owned(),
                 },
             )?;
+
+        CannotTakeMutReferenceError::check_callable(&error_handler)?;
 
         // All "free" generic parameters in the error handler must be assigned to concrete types.
         // The only ones that are allowed to be unassigned are those used by the error type,
@@ -107,6 +118,8 @@ impl AsRef<Callable> for ErrorHandler {
 #[derive(thiserror::Error, Debug, Clone)]
 pub(crate) enum ErrorHandlerValidationError {
     CannotReturnTheUnitType(ResolvedPath),
+    CannotBeFallible(ResolvedPath),
+    CannotTakeAMutableReferenceAsInput(#[from] CannotTakeMutReferenceError),
     DoesNotTakeErrorReferenceAsInput {
         fallible_callable: Callable,
         error_type: ResolvedType,
@@ -120,8 +133,8 @@ pub(crate) enum ErrorHandlerValidationError {
 impl Display for ErrorHandlerValidationError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            ErrorHandlerValidationError::CannotReturnTheUnitType(_) => {
-                write!(f, "All error handlers must return a type that implements `pavex::response::IntoResponse`.\nThis error handler doesn't: it returns the unit type, `()`. I can't convert `()` into an HTTP response!")
+            ErrorHandlerValidationError::CannotReturnTheUnitType(path) => {
+                write!(f, "All error handlers must return a type that implements `pavex::response::IntoResponse`.\n`{path}` doesn't, it returns the unit type, `()`. I can't convert `()` into an HTTP response!")
             }
             ErrorHandlerValidationError::DoesNotTakeErrorReferenceAsInput {
                 ref fallible_callable,
@@ -143,6 +156,15 @@ impl Display for ErrorHandlerValidationError {
                     "Input parameters for an error handler can't have any *unassigned* \
                        generic type parameters that do not appear in the error type itself."
                 )
+            }
+            ErrorHandlerValidationError::CannotBeFallible(path) => {
+                write!(
+                    f,
+                    "Error handlers must be infallible.\n`{path}` isn't, it returns a `Result`!"
+                )
+            }
+            ErrorHandlerValidationError::CannotTakeAMutableReferenceAsInput(e) => {
+                write!(f, "{e}")
             }
         }
     }

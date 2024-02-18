@@ -1,5 +1,7 @@
 use std::borrow::Cow;
 
+use crate::compiler::analyses::framework_items::FrameworkItemDb;
+use crate::compiler::component::CannotTakeMutReferenceError;
 use indexmap::IndexSet;
 
 use crate::compiler::computation::{Computation, MatchResult};
@@ -12,10 +14,12 @@ use crate::language::ResolvedType;
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) struct Constructor<'a>(pub(crate) Computation<'a>);
 
-impl<'a> TryFrom<Computation<'a>> for Constructor<'a> {
-    type Error = ConstructorValidationError;
-
-    fn try_from(c: Computation<'a>) -> Result<Self, Self::Error> {
+impl<'a> Constructor<'a> {
+    pub fn new(
+        c: Computation<'a>,
+        pavex_error: &ResolvedType,
+        framework_item_db: &FrameworkItemDb,
+    ) -> Result<Self, ConstructorValidationError> {
         if c.output_type().is_none() {
             return Err(ConstructorValidationError::CannotReturnTheUnitType);
         }
@@ -28,6 +32,39 @@ impl<'a> TryFrom<Computation<'a>> for Constructor<'a> {
             output_type = m.ok.output;
             if output_type == ResolvedType::UNIT_TYPE {
                 return Err(ConstructorValidationError::CannotFalliblyReturnTheUnitType);
+            }
+        }
+
+        if let Computation::Callable(c) = &c {
+            CannotTakeMutReferenceError::check_callable(c.as_ref())?;
+        }
+
+        // You can't construct `pavex::Error` or `&pavex::Error`.
+        if &output_type == pavex_error {
+            return Err(ConstructorValidationError::CannotConstructPavexError);
+        }
+        if let ResolvedType::Reference(ref_type) = &output_type {
+            if ref_type.inner.as_ref() == pavex_error {
+                return Err(ConstructorValidationError::CannotConstructPavexError);
+            }
+        }
+
+        for (_, framework_primitive_type) in framework_item_db.iter() {
+            if &output_type == framework_primitive_type {
+                return Err(
+                    ConstructorValidationError::CannotConstructFrameworkPrimitive {
+                        primitive_type: framework_primitive_type.to_owned(),
+                    },
+                );
+            }
+            if let ResolvedType::Reference(ref_type) = &output_type {
+                if ref_type.inner.as_ref() == framework_primitive_type {
+                    return Err(
+                        ConstructorValidationError::CannotConstructFrameworkPrimitive {
+                            primitive_type: framework_primitive_type.to_owned(),
+                        },
+                    );
+                }
             }
         }
 
@@ -92,6 +129,11 @@ pub(crate) enum ConstructorValidationError {
     CannotReturnTheUnitType,
     #[error("All fallible constructors must return *something* when successful.\nThis fallible constructor doesn't: it returns the unit type when successful, `Ok(())`.")]
     CannotFalliblyReturnTheUnitType,
+    #[error("You can't register a constructor for `pavex::Error`.\n`pavex::Error` can only be used as the error type of your fallible components.")]
+    CannotConstructPavexError,
+    #[error("You can't register a constructor for `{primitive_type:?}`.\n\
+        `{primitive_type:?}` is a framework primitive, you can't override the way it's built by Pavex.")]
+    CannotConstructFrameworkPrimitive { primitive_type: ResolvedType },
     #[error("Input parameters for a constructor can't have any *unassigned* generic type parameters that appear exclusively in its input parameters.")]
     UnderconstrainedGenericParameters { parameters: IndexSet<String> },
     #[error("The output type of a constructor can't be a naked generic parameters (i.e. `T`).\n\
@@ -99,4 +141,6 @@ pub(crate) enum ConstructorValidationError {
         that returns a generic `T` is a constructor that can build **any** type - which is unlikely \
         to be the case.")]
     NakedGenericOutputType { naked_parameter: String },
+    #[error(transparent)]
+    CannotTakeAMutableReferenceAsInput(#[from] CannotTakeMutReferenceError),
 }
