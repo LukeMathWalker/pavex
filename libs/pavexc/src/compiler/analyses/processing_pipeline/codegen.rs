@@ -36,6 +36,9 @@ impl RequestHandlerPipeline {
             } else {
                 format_ident!("handler")
             };
+            if tracing::event_enabled!(tracing::Level::TRACE) {
+                call_graph.print_debug_dot(component_db, computation_db);
+            }
             let mut fn_ = call_graph.codegen(package_id2name, component_db, computation_db)?;
             fn_.sig.ident = ident;
             let stage = CodegenedFn {

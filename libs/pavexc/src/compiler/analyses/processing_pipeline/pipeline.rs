@@ -20,7 +20,8 @@ use crate::compiler::analyses::processing_pipeline::graph_iter::PipelineGraphIte
 use crate::compiler::app::GENERATED_APP_PACKAGE_ID;
 use crate::compiler::utils::LifetimeGenerator;
 use crate::language::{
-    Callable, GenericArgument, GenericLifetimeParameter, InvocationStyle, PathType, ResolvedType,
+    Callable, GenericArgument, GenericLifetimeParameter, InvocationStyle, Lifetime, PathType,
+    ResolvedType, TypeReference,
 };
 use crate::rustdoc::CrateCollection;
 
@@ -126,16 +127,17 @@ impl RequestHandlerPipeline {
         //
         // In order to pull this off, we walk the chain in reverse order and accumulate the set of
         // request-scoped and singleton components that are expected as input.
-        let mut next_field_types: IndexSet<ResolvedType> = IndexSet::new();
+        let mut long_lived_types: IndexSet<ResolvedType> = IndexSet::new();
         extract_long_lived_inputs(
             &handler_call_graph.call_graph,
             component_db,
-            &mut next_field_types,
+            &mut long_lived_types,
         );
         let mut middleware_id2next_field_types: IndexMap<ComponentId, IndexSet<ResolvedType>> =
             IndexMap::new();
         for (middleware_id, middleware_call_graph) in middleware_call_graphs.iter().rev() {
-            middleware_id2next_field_types.insert(*middleware_id, next_field_types.clone());
+            middleware_id2next_field_types
+                .insert(*middleware_id, get_next_field_types(&long_lived_types));
 
             // Remove all the request-scoped components initialised by this middleware from the set.
             // They can't be needed upstream since they were initialised here!
@@ -145,7 +147,14 @@ impl RequestHandlerPipeline {
                         let component =
                             component_db.hydrated_component(*component_id, computation_db);
                         if let Some(output_type) = component.output_type() {
-                            next_field_types.shift_remove(output_type);
+                            long_lived_types.shift_remove(output_type);
+                            // We also need to remove the corresponding &-ref type from the set.
+                            let ref_output_type = ResolvedType::Reference(TypeReference {
+                                is_mutable: false,
+                                lifetime: Lifetime::Elided,
+                                inner: Box::new(output_type.to_owned()),
+                            });
+                            long_lived_types.shift_remove(&ref_output_type);
                         }
                     }
                 }
@@ -157,7 +166,7 @@ impl RequestHandlerPipeline {
             extract_long_lived_inputs(
                 &middleware_call_graph.call_graph,
                 component_db,
-                &mut next_field_types,
+                &mut long_lived_types,
             );
         }
         middleware_id2next_field_types.reverse();
@@ -351,6 +360,40 @@ impl RequestHandlerPipeline {
             graph.print_debug_dot(component_db, computation_db)
         }
     }
+}
+
+/// Given the set of long-lived components that must be stored inside the middleware state,
+/// determine the types of its fields.
+///
+/// In particular, if both `T` and `&T` are needed, only `T` should appear as a field type.
+fn get_next_field_types(long_lived_types: &IndexSet<ResolvedType>) -> IndexSet<ResolvedType> {
+    let mut inner_type2by_value: IndexMap<&ResolvedType, bool> = IndexMap::new();
+    for ty_ in long_lived_types {
+        if let ResolvedType::Reference(ref_) = ty_ {
+            if !ref_.lifetime.is_static() {
+                inner_type2by_value
+                    .entry(ref_.inner.as_ref())
+                    .or_insert(false);
+                continue;
+            }
+        }
+        inner_type2by_value.insert(ty_, true);
+    }
+    inner_type2by_value
+        .into_iter()
+        .map(|(ty_, by_value)| {
+            let ty_ = ty_.to_owned();
+            if by_value {
+                ty_
+            } else {
+                ResolvedType::Reference(TypeReference {
+                    is_mutable: false,
+                    lifetime: Lifetime::Elided,
+                    inner: Box::new(ty_),
+                })
+            }
+        })
+        .collect()
 }
 
 /// Extract the set of request-scoped and singleton components that are used as inputs

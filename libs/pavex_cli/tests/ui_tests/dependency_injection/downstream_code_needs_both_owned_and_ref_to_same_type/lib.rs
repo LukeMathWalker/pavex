@@ -25,7 +25,14 @@ where
     todo!()
 }
 
-pub fn handler(s: Scoped, t: &Scoped) -> pavex::response::Response {
+pub fn mw2<C>(s: &Scoped, next: Next<C>) -> Response
+where
+    C: IntoFuture<Output = Response>,
+{
+    todo!()
+}
+
+pub fn handler(s: Scoped) -> pavex::response::Response {
     todo!()
 }
 
@@ -34,6 +41,7 @@ pub fn blueprint() -> Blueprint {
     bp.constructor(f!(crate::Scoped::new), Lifecycle::RequestScoped)
         .cloning(CloningStrategy::CloneIfNecessary);
     bp.wrap(f!(crate::mw));
+    bp.wrap(f!(crate::mw2));
     bp.route(GET, "/", f!(crate::handler));
     bp
 }
