@@ -96,6 +96,7 @@ dependencies = [
  "jsonwebtoken",
  "pavex",
  "pavex_matchit",
+ "pavex_tracing",
  "sqlx-core",
  "sqlx-postgres",
  "thiserror",
@@ -121,6 +122,12 @@ checksum = "f28d99ec8bfea296261ca1af174f24225171fea9664ba9003cbebee704810528"
 dependencies = [
  "num-traits",
 ]
+
+[[package]]
+name = "atomic"
+version = "0.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c59bdb34bc650a32731b31bd8f0829cc15d24a708ee31559e0bb34f2bc320cba"
 
 [[package]]
 name = "atomic"
@@ -305,6 +312,7 @@ dependencies = [
  "jwt-simple",
  "pavex",
  "pavex_cli_client",
+ "pavex_tracing",
  "rand",
  "secrecy",
  "serde",
@@ -579,7 +587,7 @@ version = "0.10.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7629b8c7bcd214a072c2c88b263b5bb3ceb54c34365d8c41c1665461aeae0993"
 dependencies = [
- "atomic",
+ "atomic 0.6.0",
  "pear",
  "serde",
  "serde_yaml",
@@ -1528,7 +1536,7 @@ checksum = "de3145af08024dea9fa9914f381a17b8fc6034dfb00f3a84013f7ff43f29ed4c"
 
 [[package]]
 name = "pavex"
-version = "0.1.17"
+version = "0.1.18"
 dependencies = [
  "anyhow",
  "bytes",
@@ -1560,11 +1568,12 @@ dependencies = [
  "tokio",
  "tracing",
  "ubyte",
+ "uuid",
 ]
 
 [[package]]
 name = "pavex_bp_schema"
-version = "0.1.17"
+version = "0.1.18"
 dependencies = [
  "pavex_reflection",
  "serde",
@@ -1572,7 +1581,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_cli_client"
-version = "0.1.17"
+version = "0.1.18"
 dependencies = [
  "anyhow",
  "pavex",
@@ -1581,7 +1590,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_macros"
-version = "0.1.17"
+version = "0.1.18"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1596,9 +1605,17 @@ checksum = "77b9753b03381fd8856966146c4d626d9a8507901c1bcdfbc41df03deea551fc"
 
 [[package]]
 name = "pavex_reflection"
-version = "0.1.17"
+version = "0.1.18"
 dependencies = [
  "serde",
+]
+
+[[package]]
+name = "pavex_tracing"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "tracing",
 ]
 
 [[package]]
@@ -1659,7 +1676,7 @@ checksum = "e3148f5046208a5d56bcfc03053e3ca6334e51da8dfb19b6cdc8b306fae3283e"
 
 [[package]]
 name = "persist_if_changed"
-version = "0.1.17"
+version = "0.1.18"
 dependencies = [
  "anyhow",
  "fs-err",
@@ -2973,6 +2990,7 @@ version = "1.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5e395fcf16a7a3d8127ec99782007af141946b4795001f876d54fb0d55978560"
 dependencies = [
+ "atomic 0.5.3",
  "getrandom",
  "serde",
 ]

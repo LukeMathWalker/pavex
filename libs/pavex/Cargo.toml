@@ -10,7 +10,7 @@ license.workspace = true
 readme = "README.md"
 
 [features]
-default = ["server"]
+default = ["server", "server_request_id"]
 
 server = ["dep:hyper", "dep:hyper-util", "dep:socket2"]
 server_request_id = ["dep:uuid"]

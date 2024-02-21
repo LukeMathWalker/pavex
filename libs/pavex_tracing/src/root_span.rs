@@ -14,12 +14,38 @@
 /// - With data from the processing (e.g. error information, if processing failed)
 /// - With data from the response (e.g. status code)
 ///
+/// You can read [Stripe's "Canonical log line" blog post](https://stripe.com/blog/canonical-log-lines)
+/// for more details on the benefits of this pattern.
+///
 /// # Accessing `RootSpan`
 ///
 /// You can leverage [Pavex's dependency injection system](https://pavex.dev/docs/guide/dependency_injection/)
 /// to access the root span from any of your components—request handlers,
 /// middlewares, error observers, etc.  
 /// It's enough to add an input parameter with type `&RootSpan` to your component.
+///
+/// ```rust
+/// use pavex::blueprint::Blueprint;
+/// use pavex::middleware::Next;
+/// use pavex::response::Response;
+/// use pavex_tracing::fields::{http_response_status_code, HTTP_RESPONSE_STATUS_CODE};
+/// use pavex_tracing::RootSpan;
+/// use std::future::IntoFuture;
+///
+/// /// A middleware to enrich `RootSpan` with information extracted from the
+/// /// outgoing response.
+/// pub async fn response_logger<T>(next: Next<T>, root_span: &RootSpan) -> Response
+///     where
+///         T: IntoFuture<Output = Response>,
+/// {
+///     let response = next.await;
+///     root_span.record(
+///         HTTP_RESPONSE_STATUS_CODE,
+///         http_response_status_code(&response),
+///     );
+///     response
+/// }
+/// ```
 ///
 /// # Why is there no default constructor for `RootSpan` in `pavex_tracing`?
 ///
@@ -49,22 +75,12 @@
 /// have tighter control over the way "default" fields are named or populated.  
 /// To make it happen, you need to control span creation, which in turn implies that you need
 /// to control the constructor.  
-/// For this very reason, `pavex new` adds a constructor for [`RootSpan`] **in your own project**,
+/// For this very reason, `pavex new` scaffolds a constructor for [`RootSpan`] **in your own project**,
 /// which you are then free to customize and tailor to your own needs when the time comes.
 ///
-/// # Why is `RootSpan` defined in `pavex_tracing`?
-///
-/// You may wonder: what's the purpose of adding `RootSpan` to `pavex_tracing` then?
-/// Why don't we define `RootSpan` inside the template project, like its "default" constructor?
-///
-/// You could!  
-/// By moving `RootSpan` inside `pavex_tracing`, though, we can **standardize on the same type**.  
-/// For example, a third-party crate could provide a middleware to populate the `status_code` field on
-/// `RootSpan`: you can pull it into your project and it'll work, since it operates on the very
-/// same `RootSpan` type.
-/// That wouldn't be the case if `RootSpan` was defined in your own project: **every single piece
-/// of telemetry logic would have to be bespoke**.
-/// Not ideal.
+/// You can leverage the helpers defined in the [`fields`](crate::fields) module to keep
+/// your field names (and the way their values are represented) in line with a "standard"
+/// Pavex application.
 ///
 /// [`tracing::Span`]: https://docs.rs/tracing/0.1.40/tracing/struct.Span.html
 #[derive(Debug, Clone)]

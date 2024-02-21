@@ -30,7 +30,19 @@
 // DEALINGS IN THE SOFTWARE.
 use std::fmt;
 
-/// Pavex's error type: a thin shim over `Box<dyn std::error::Error + Send + Sync>`.
+/// Pavex's error type: an opaque wrapper around the concrete error type
+/// return by your components (e.g. request handlers, constructors, etc.).  
+/// It is primarily used as an input parameter for
+/// [error observers](https://pavex.dev/docs/guide/errors/error_observers/).
+///
+/// # Guide
+///
+/// Check out [the guide](https://pavex.dev/docs/guide/errors/)
+/// for a thorough introduction to error handling and reporting in Pavex.
+///
+/// # Implementation details
+///
+/// It's a thin shim over `Box<dyn std::error::Error + Send + Sync>`.
 #[derive(Debug)]
 pub struct Error {
     inner: Box<dyn std::error::Error + Send + Sync>,
