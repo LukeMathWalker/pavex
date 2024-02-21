@@ -1,6 +1,5 @@
 use crate::telemetry;
-use pavex::blueprint::constructor::CloningStrategy;
-use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
+use pavex::blueprint::{router::GET, Blueprint};
 use pavex::f;
 use pavex::kit::ApiKit;
 

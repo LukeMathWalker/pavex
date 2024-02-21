@@ -1,4 +1,8 @@
-use pavex::blueprint::Blueprint;
+use pavex::blueprint::{
+    constructor::{CloningStrategy, Lifecycle},
+    Blueprint,
+};
+use pavex::f;
 use pavex::middleware::Next;
 use pavex::request::path::MatchedPathPattern;
 use pavex::request::RequestHead;
