@@ -1,10 +1,9 @@
 use anyhow::Context;
-use api_server::{
-    configuration::load_configuration,
-    telemetry::{get_subscriber, init_telemetry},
-};
+use api_server::configuration::Config;
+use api_server::telemetry::{get_subscriber, init_telemetry};
 use api_server_sdk::{build_application_state, run};
 use pavex::server::Server;
+use pavex_tracing::fields::{error_details, error_message, ERROR_DETAILS, ERROR_MESSAGE};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -12,12 +11,13 @@ async fn main() -> anyhow::Result<()> {
     init_telemetry(subscriber)?;
 
     // We isolate all the server setup and launch logic in a separate function
-    // in order to have a single choke point where we make sure to log fatal errors
+    //  to have a single choke point where we make sure to log fatal errors
     // that will cause the application to exit.
     if let Err(e) = _main().await {
-        tracing::error!(
-            error.msg = %e,
-            error.error_chain = ?e,
+        tracing::event!(
+            tracing::Level::ERROR,
+            { ERROR_MESSAGE } = error_message(&e),
+            { ERROR_DETAILS } = error_details(&e),
             "The application is exiting due to an error"
         )
     }
@@ -26,8 +26,8 @@ async fn main() -> anyhow::Result<()> {
 }
 
 async fn _main() -> anyhow::Result<()> {
-    let config = load_configuration(None)?;
-    let application_state = build_application_state(&config.auth, &config.database)
+    let config = Config::load(None)?;
+    let application_state = build_application_state(&config.app)
         .await
         .context("Failed to build the application state")?;
 

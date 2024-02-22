@@ -14,7 +14,7 @@ hyper = { version = "1.1.0", package = "hyper" }
 jsonwebtoken = { version = "8.3.0", package = "jsonwebtoken" }
 pavex = { version = "0.1.18", path = "../../../libs/pavex", package = "pavex" }
 pavex_matchit = { version = "0.7.4", package = "pavex_matchit" }
-pavex_tracing = { version = "0.1.0", path = "../../../libs/pavex_tracing", package = "pavex_tracing" }
+pavex_tracing = { version = "0.1.18", path = "../../../libs/pavex_tracing", package = "pavex_tracing" }
 sqlx_core = { version = "0.7.3", package = "sqlx-core" }
 sqlx_postgres = { version = "0.7.3", package = "sqlx-postgres" }
 thiserror = { version = "1.0.56", package = "thiserror" }

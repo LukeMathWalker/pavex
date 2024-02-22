@@ -1,41 +1,49 @@
 use jsonwebtoken::{DecodingKey, EncodingKey};
-use pavex::server::IncomingStream;
+use pavex::blueprint::constructor::Lifecycle;
+use pavex::blueprint::Blueprint;
+use pavex::f;
 use secrecy::{ExposeSecret, Secret};
 use serde_aux::field_attributes::deserialize_number_from_string;
 use sqlx::postgres::{PgConnectOptions, PgSslMode};
-use std::net::SocketAddr;
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, Debug, Clone)]
 /// The top-level configuration, holding all the values required
 /// to configure the entire application.
-pub struct Config {
-    pub server: ServerConfig,
+pub struct ApplicationConfig {
     pub database: DatabaseConfig,
     pub auth: AuthConfig,
 }
 
-#[derive(serde::Deserialize, Clone)]
-/// Configuration for the HTTP server used to expose our API
-/// to users.
-pub struct ServerConfig {
-    /// The port that the server must listen on.
-    pub port: u16,
-    /// The network interface that the server must be bound to.
-    ///
-    /// E.g. `0.0.0.0` for listening to incoming requests from
-    /// all sources.
-    pub ip: std::net::IpAddr,
-}
+impl ApplicationConfig {
+    pub fn database_config(&self) -> &DatabaseConfig {
+        &self.database
+    }
 
-impl ServerConfig {
-    /// Bind a TCP listener according to the specified parameters.
-    pub async fn listener(&self) -> Result<IncomingStream, std::io::Error> {
-        let addr = SocketAddr::new(self.ip, self.port);
-        IncomingStream::bind(addr).await
+    pub fn auth_config(&self) -> &AuthConfig {
+        &self.auth
+    }
+
+    pub fn register(bp: &mut Blueprint) {
+        bp.constructor(
+            f!(crate::configuration::ApplicationConfig::database_config),
+            Lifecycle::Singleton,
+        );
+        bp.constructor(
+            f!(crate::configuration::ApplicationConfig::auth_config),
+            Lifecycle::Singleton,
+        );
+        bp.constructor(
+            f!(crate::configuration::DatabaseConfig::get_pool),
+            Lifecycle::Singleton,
+        );
+        bp.constructor(
+            f!(crate::configuration::AuthConfig::decoding_key),
+            Lifecycle::Singleton,
+        );
     }
 }
 
-#[derive(serde::Deserialize, Clone)]
+#[derive(serde::Deserialize, Debug, Clone)]
 pub struct DatabaseConfig {
     pub username: String,
     pub password: Secret<String>,
@@ -70,7 +78,7 @@ impl DatabaseConfig {
     }
 }
 
-#[derive(serde::Deserialize, Clone)]
+#[derive(serde::Deserialize, Clone, Debug)]
 /// Configuration for the authentication system.
 pub struct AuthConfig {
     /// The private key used to sign JWTs.
