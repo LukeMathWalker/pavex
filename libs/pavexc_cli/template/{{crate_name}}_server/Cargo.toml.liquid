@@ -10,6 +10,7 @@ name = "api"
 [dependencies]
 anyhow = "1"
 pavex = { {{pavex_package_spec}} }
+pavex_tracing = { {{pavex_tracing_package_spec}} }
 tokio = { version = "1", features = ["full"] }
 {{crate_name}}_server_sdk = { path = "../{{crate_name}}_server_sdk" }
 {{crate_name}} = { path = "../{{crate_name}}" }
@@ -17,7 +18,7 @@ tokio = { version = "1", features = ["full"] }
 # Configuration
 dotenvy = "0.15"
 figment = { version = "0.10", features = ["env", "yaml"] }
-serde = { version = "1", features = ["derive"]}
+serde = { version = "1", features = ["derive"] }
 
 # Telemetry
 tracing = "0.1"

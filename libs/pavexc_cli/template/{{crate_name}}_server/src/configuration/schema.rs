@@ -1,6 +1,6 @@
 use crate::configuration::ApplicationProfile;
 use anyhow::Context;
-use conduit_core::configuration::ApplicationConfig;
+use {{crate_name}}::configuration::ApplicationConfig;
 use figment::providers::{Env, Format, Yaml};
 use figment::Figment;
 use pavex::server::IncomingStream;

@@ -8,8 +8,6 @@ use tracing_subscriber::{layer::SubscriberExt, EnvFilter, Registry};
 /// Perform all the required setup steps for our telemetry:
 ///
 /// - Register a subscriber as global default to process span data
-/// - Register a `tracing`<>`log` bridge to capture telemetry from crates that use the `log`
-///   crate instead of `tracing`
 /// - Register a panic hook to capture any panic and record its details
 ///
 /// It should only be called once!

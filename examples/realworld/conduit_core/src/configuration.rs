@@ -7,8 +7,8 @@ use serde_aux::field_attributes::deserialize_number_from_string;
 use sqlx::postgres::{PgConnectOptions, PgSslMode};
 
 #[derive(serde::Deserialize, Debug, Clone)]
-/// The top-level configuration, holding all the values required
-/// to configure the entire application.
+/// The configuration object holding all the values required
+/// to configure the application.
 pub struct ApplicationConfig {
     pub database: DatabaseConfig,
     pub auth: AuthConfig,
