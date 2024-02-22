@@ -20,8 +20,7 @@ Anything beyond 20 lines of code? **Open an issue first**.
 
 - Rust's stable toolchain (`rustup toolchain install stable`);
 - Rust's nightly toolchain (`rustup toolchain install nightly`);
-- `sscache` (see [here](https://github.com/mozilla/sccache#installation) for installation instructions)
-- `cargo-px` (`cargo install --locked cargo-px`)
+- [`cargo-px`](https://lukemathwalker.github.io/cargo-px/)
 
 # Running tests
 
@@ -58,13 +57,3 @@ cargo r --bin snaps
 
 It will cycle through all `.snap` files and print the changeset with respect to our previous expectations.  
 You will then be prompted to decide if you want to update the saved snapshot to match the new value or if you prefer to keep it as it.
-
-# Checking examples
-
-Each example project under the `examples` folder is its own workspace.  
-The easiest way to check that everything compiles and works as expected is to rely on the `./ci.sh` script at root of the repository.  
-It runs whatever `cargo` command you specify against all workspaces in this project (i.e. `libs` + all examples).
-
-E.g. `./ci.sh check` will run `cargo check` in each workspace. 
-
-It will also forward any flag to `cargo`—e.g. `./ci.sh check --all-features` will run `cargo check --all-features` in all workspaces.
