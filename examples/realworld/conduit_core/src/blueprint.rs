@@ -18,7 +18,7 @@ pub fn blueprint() -> Blueprint {
         Lifecycle::Singleton,
     );
 
-    add_telemetry_middleware(&mut bp);
+    setup_telemetry(&mut bp);
 
     bp.nest_at("/articles", routes::articles::articles_bp());
     bp.nest_at("/profiles", routes::profiles::profiles_bp());
@@ -28,13 +28,10 @@ pub fn blueprint() -> Blueprint {
     bp
 }
 
-/// Add the telemetry middleware, as well as the constructors of its dependencies.
-fn add_telemetry_middleware(bp: &mut Blueprint) {
-    bp.constructor(
-        f!(crate::telemetry::RootSpan::new),
-        Lifecycle::RequestScoped,
-    )
-    .cloning(CloningStrategy::CloneIfNecessary);
+fn setup_telemetry(bp: &mut Blueprint) {
+    bp.constructor(f!(crate::telemetry::root_span), Lifecycle::RequestScoped)
+        .cloning(CloningStrategy::CloneIfNecessary);
 
-    bp.wrap(f!(crate::telemetry::logger));
+    bp.wrap(f!(pavex_tracing::logger));
+    bp.wrap(f!(crate::telemetry::response_logger));
 }

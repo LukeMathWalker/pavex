@@ -1,23 +1,76 @@
-use pavex::http::Version;
+use pavex::blueprint::{
+    constructor::{CloningStrategy, Lifecycle},
+    Blueprint,
+};
+use pavex::f;
 use pavex::middleware::Next;
 use pavex::request::path::MatchedPathPattern;
 use pavex::request::RequestHead;
 use pavex::response::Response;
-use std::borrow::Cow;
+use pavex::telemetry::ServerRequestId;
+use pavex_tracing::fields::{
+    error_details, error_message, error_source_chain, http_request_method, http_request_server_id,
+    http_response_status_code, http_route, network_protocol_version, url_path, url_query,
+    user_agent_original, ERROR_DETAILS, ERROR_MESSAGE, ERROR_SOURCE_CHAIN, HTTP_REQUEST_METHOD,
+    HTTP_REQUEST_SERVER_ID, HTTP_RESPONSE_STATUS_CODE, HTTP_ROUTE, NETWORK_PROTOCOL_VERSION,
+    URL_PATH, URL_QUERY, USER_AGENT_ORIGINAL,
+};
+use pavex_tracing::RootSpan;
 use std::future::IntoFuture;
-use tracing::Instrument;
 
-/// A logging middleware that wraps the request pipeline in the root span.
-/// It takes care to record key information about the request and the response.
-pub async fn logger<T>(next: Next<T>, root_span: RootSpan) -> Response
+/// Register telemetry middlewares, an error observer and the relevant constructors
+/// with the application blueprint.
+pub(crate) fn register(bp: &mut Blueprint) {
+    bp.constructor(f!(crate::telemetry::root_span), Lifecycle::RequestScoped)
+        .cloning(CloningStrategy::CloneIfNecessary);
+    bp.wrap(f!(pavex_tracing::logger));
+    bp.wrap(f!(crate::telemetry::response_logger));
+    bp.error_observer(f!(crate::telemetry::error_logger));
+}
+
+/// Construct a new root span for the given request.
+pub fn root_span(
+    request_head: &RequestHead,
+    matched_path_pattern: MatchedPathPattern,
+    request_id: ServerRequestId,
+) -> RootSpan {
+    // We use the `{ <expr> }` syntax to tell `tracing` that it should
+    // interpret those identifiers as expressions rather than string literals.
+    // I.e. `{ HTTP_REQUEST_METHOD }` should be evaluated as "http.request.method"
+    // rather than "HTTP_REQUEST_METHOD".
+    let span = tracing::info_span!(
+        "HTTP request",
+        { HTTP_REQUEST_METHOD } = http_request_method(request_head),
+        { HTTP_REQUEST_SERVER_ID } = http_request_server_id(request_id),
+        { HTTP_ROUTE } = http_route(matched_path_pattern),
+        { NETWORK_PROTOCOL_VERSION } = network_protocol_version(request_head),
+        { URL_QUERY } = url_query(request_head),
+        { URL_PATH } = url_path(request_head),
+        { USER_AGENT_ORIGINAL } = user_agent_original(request_head),
+        // These fields will be populated later by
+        // `response_logger` and (if necessary) by `error_logger`.
+        // Nonetheless, they must be declared upfront since `tracing`
+        // requires all fields on a span to be known when the span
+        // is created, even if they don't have a value (yet).
+        { HTTP_RESPONSE_STATUS_CODE } = tracing::field::Empty,
+        { ERROR_MESSAGE } = tracing::field::Empty,
+        { ERROR_DETAILS } = tracing::field::Empty,
+        { ERROR_SOURCE_CHAIN } = tracing::field::Empty,
+    );
+    RootSpan::new(span)
+}
+
+/// A middleware to enrich [`RootSpan`] with information extracted from the
+/// outgoing response.
+pub async fn response_logger<T>(next: Next<T>, root_span: &RootSpan) -> Response
 where
     T: IntoFuture<Output = Response>,
 {
-    let response = next
-        .into_future()
-        .instrument(root_span.clone().into_inner())
-        .await;
-    root_span.record_response_data(&response);
+    let response = next.await;
+    root_span.record(
+        HTTP_RESPONSE_STATUS_CODE,
+        http_response_status_code(&response),
+    );
     response
 }
 
@@ -26,101 +79,15 @@ where
 /// It emits an error event and attaches information about the error to the root span.
 /// If multiple errors are observed for the same request, it will emit multiple error events
 /// but only the details of the last error will be attached to the root span.
-pub async fn log_error(e: &pavex::Error, root_span: RootSpan) {
-    let source_chain = error_source_chain(e);
-    tracing::error!(
-        error.msg = %e,
-        error.details = ?e,
-        error.source_chain = %source_chain,
+pub async fn error_logger(e: &pavex::Error, root_span: &RootSpan) {
+    tracing::event!(
+        tracing::Level::ERROR,
+        { ERROR_MESSAGE } = error_message(e),
+        { ERROR_DETAILS } = error_details(e),
+        { ERROR_SOURCE_CHAIN } = error_source_chain(e),
         "An error occurred during request handling",
     );
-    root_span.record("error.msg", tracing::field::display(e));
-    root_span.record("error.details", tracing::field::debug(e));
-    root_span.record("error.source_chain", error_source_chain(e));
-}
-
-fn error_source_chain(e: &pavex::Error) -> String {
-    use std::error::Error as _;
-    use std::fmt::Write as _;
-
-    let mut chain = String::new();
-    let mut source = e.source();
-    while let Some(s) = source {
-        let _ = writeln!(chain, "- {}", s);
-        source = s.source();
-    }
-    chain
-}
-
-/// A root span is the top-level *logical* span for an incoming request.  
-///
-/// It is not necessarily the top-level *physical* span, as it may be a child of
-/// another span (e.g. a span representing the underlying HTTP connection).
-///
-/// We use the root span to attach as much information as possible about the
-/// incoming request, and to record the final outcome of the request (success or
-/// failure).  
-#[derive(Debug, Clone)]
-pub struct RootSpan(tracing::Span);
-
-impl std::ops::Deref for RootSpan {
-    type Target = tracing::Span;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl RootSpan {
-    /// Create a new root span for the given request.
-    ///
-    /// We follow OpenTelemetry's HTTP semantic conventions as closely as
-    /// possible for field naming.
-    pub fn new(request_head: &RequestHead, matched_route: MatchedPathPattern) -> Self {
-        let user_agent = request_head
-            .headers
-            .get("User-Agent")
-            .map(|h| h.to_str().unwrap_or_default())
-            .unwrap_or_default();
-
-        let span = tracing::info_span!(
-            "HTTP request",
-            http.method = %request_head.method,
-            http.flavor = %http_flavor(request_head.version),
-            user_agent.original = %user_agent,
-            http.response.status_code = tracing::field::Empty,
-            http.route = %matched_route,
-            http.target = %request_head.target.path_and_query().map(|p| p.as_str()).unwrap_or(""),
-            error.msg = tracing::field::Empty,
-            error.details = tracing::field::Empty,
-            error.source_chain = tracing::field::Empty,
-        );
-        Self(span)
-    }
-
-    pub fn record_response_data(&self, response: &Response) {
-        self.0
-            .record("http.response.status_code", &response.status().as_u16());
-    }
-
-    /// Get a reference to the underlying [`tracing::Span`].
-    pub fn inner(&self) -> &tracing::Span {
-        &self.0
-    }
-
-    /// Deconstruct the root span into its underlying [`tracing::Span`].
-    pub fn into_inner(self) -> tracing::Span {
-        self.0
-    }
-}
-
-fn http_flavor(version: Version) -> Cow<'static, str> {
-    match version {
-        Version::HTTP_09 => "0.9".into(),
-        Version::HTTP_10 => "1.0".into(),
-        Version::HTTP_11 => "1.1".into(),
-        Version::HTTP_2 => "2.0".into(),
-        Version::HTTP_3 => "3.0".into(),
-        other => format!("{other:?}").into(),
-    }
+    root_span.record(ERROR_MESSAGE, error_message(e));
+    root_span.record(ERROR_DETAILS, error_details(e));
+    root_span.record(ERROR_SOURCE_CHAIN, error_source_chain(e));
 }

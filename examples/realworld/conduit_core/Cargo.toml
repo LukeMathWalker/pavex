@@ -12,6 +12,7 @@ anyhow = "1"
 pavex_cli_client = { path = "../../../libs/pavex_cli_client" }
 cargo_px_env = "0.1"
 pavex = { path = "../../../libs/pavex" }
+pavex_tracing = { path = "../../../libs/pavex_tracing" }
 
 time = { version = "0.3", features = ["serde"] }
 sqlx = { version = "0.7", features = [ "runtime-tokio", "tls-rustls", "migrate", "uuid", "macros", "time", "postgres" ] }

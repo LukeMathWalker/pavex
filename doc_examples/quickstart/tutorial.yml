@@ -96,7 +96,7 @@ steps:
         hl_lines: [ 5, 6, 7, 8, 9, 10, 11, 12, 13, 14 ]
       - name: "register"
         source_path: "demo/src/blueprint.rs"
-        ranges: [ "7..8", "11..15", "21..22" ]
+        ranges: [ "8..9", "13..17", "21..22" ]
         hl_lines: [ 10, 11, 12, 13 ]
     commands:
       - command: "cargo px c"
@@ -117,7 +117,7 @@ steps:
         ranges: [ "21..25" ]
       - name: "register"
         source_path: "demo/src/blueprint.rs"
-        ranges: [ "7..8", "11..16", "22..23" ]
+        ranges: [ "8..9", "13..18", "22..23" ]
         hl_lines: [ 8 ]
     commands:
       - command: "cargo px c"

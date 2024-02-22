@@ -234,6 +234,9 @@ fn scaffold_project(destination: PathBuf) -> Result<ExitCode, Box<dyn std::error
 
     let pavex_package_spec = std::env::var("CARGO_GENERATE_VALUE_PAVEX_PACKAGE_SPEC")
         .unwrap_or_else(|_| format!("version = \"{}\"", env!("CARGO_PKG_VERSION")));
+    let pavex_tracing_package_spec =
+        std::env::var("CARGO_GENERATE_VALUE_PAVEX_TRACING_PACKAGE_SPEC")
+            .unwrap_or_else(|_| format!("version = \"{}\"", env!("CARGO_PKG_VERSION")));
     let pavex_cli_client_package_spec =
         std::env::var("CARGO_GENERATE_VALUE_PAVEX_CLI_CLIENT_PACKAGE_SPEC")
             .unwrap_or_else(|_| format!("version = \"{}\"", env!("CARGO_PKG_VERSION")));
@@ -243,6 +246,10 @@ fn scaffold_project(destination: PathBuf) -> Result<ExitCode, Box<dyn std::error
     define.insert(
         "pavex_cli_client_package_spec".to_string(),
         pavex_cli_client_package_spec.clone(),
+    );
+    define.insert(
+        "pavex_tracing_package_spec".to_string(),
+        pavex_tracing_package_spec.clone(),
     );
 
     let destination = {

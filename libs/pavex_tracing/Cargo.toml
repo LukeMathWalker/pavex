@@ -1,0 +1,14 @@
+[package]
+name = "pavex_tracing"
+version = "0.1.18"
+edition.workspace = true
+repository.workspace = true
+homepage.workspace = true
+license.workspace = true
+description = "The official integration between `tracing` and the Pavex framework."
+keywords = ["pavex", "tracing", "telemetry", "logging"]
+readme = "README.md"
+
+[dependencies]
+tracing = { version = "0.1", default-features = false, features = ["std"] }
+pavex = { version = "0.1.18", path = "../pavex" }

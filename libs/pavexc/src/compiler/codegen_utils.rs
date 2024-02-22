@@ -140,7 +140,22 @@ pub(crate) fn codegen_call(
     };
     let mut invocation = match &callable.invocation_style {
         InvocationStyle::FunctionCall => {
-            let parameters = callable.inputs.iter().map(|i| &variable_bindings[i]);
+            let parameters = callable.inputs.iter().map(|i| {
+                match variable_bindings.get(i) {
+                    Some(tokens) => tokens,
+                    None => {
+                        use std::fmt::Write as _;
+
+                        let mut msg = String::new();
+                        for ty in variable_bindings.keys() {
+                            let _ = writeln!(&mut msg, "- {ty:?}`");
+                        }
+                        panic!(
+                            "There is no variable with type {i:?} in scope.\nTypes of bound variables:\n{msg}",
+                        )
+                    }
+                }
+            });
             quote! {
                 #callable_path(#(#parameters),*)
             }
@@ -153,7 +168,20 @@ pub(crate) fn codegen_call(
                 .iter()
                 .map(|(field_name, field_type)| {
                     let field_name = format_ident!("{}", field_name);
-                    let binding = &variable_bindings[field_type];
+                    let binding = match variable_bindings.get(field_type) {
+                        Some(tokens) => tokens,
+                        None => {
+                            use std::fmt::Write as _;
+
+                            let mut msg = String::new();
+                            for ty in variable_bindings.keys() {
+                                let _ = writeln!(&mut msg, "- {ty:?}`");
+                            }
+                            panic!(
+                                "There is no variable with type {field_type:?} in scope.\nTypes of bound variables:\n{msg}",
+                            )
+                        }
+                    };
                     quote! {
                         #field_name: #binding
                     }
