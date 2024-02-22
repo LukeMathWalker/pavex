@@ -37,9 +37,15 @@ impl TestApi {
         }
     }
 
+    /// Load the dev configuration and tweak it to ensure that tests are
+    /// properly isolated from each other.
     fn get_config() -> Config {
-        let config = Config::load(Some(ApplicationProfile::Test))
+        let mut config = Config::load(Some(ApplicationProfile::Dev))
             .expect("Failed to load test configuration");
+        // We use port `0` to get the operating system to assign us a random port.
+        // This lets us run tests in parallel without running into "port X is already in use"
+        // errors.
+        config.server.port = 0;
         config
     }
 
