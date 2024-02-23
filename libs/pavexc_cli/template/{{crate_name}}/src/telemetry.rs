@@ -21,11 +21,11 @@ use std::future::IntoFuture;
 /// Register telemetry middlewares, an error observer and the relevant constructors
 /// with the application blueprint.
 pub(crate) fn register(bp: &mut Blueprint) {
-    bp.constructor(f!(crate::telemetry::root_span), Lifecycle::RequestScoped)
+    bp.constructor(f!(self::root_span), Lifecycle::RequestScoped)
         .cloning(CloningStrategy::CloneIfNecessary);
     bp.wrap(f!(pavex_tracing::logger));
-    bp.wrap(f!(crate::telemetry::response_logger));
-    bp.error_observer(f!(crate::telemetry::error_logger));
+    bp.wrap(f!(self::response_logger));
+    bp.error_observer(f!(self::error_logger));
 }
 
 /// Construct a new root span for the given request.

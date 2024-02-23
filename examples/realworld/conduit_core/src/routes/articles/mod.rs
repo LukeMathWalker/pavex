@@ -4,36 +4,20 @@ use pavex::f;
 
 pub(crate) fn articles_bp() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.route(GET, "", f!(crate::routes::articles::list_articles));
-    bp.route(POST, "", f!(crate::routes::articles::publish_article));
-    bp.route(GET, "/feed", f!(crate::routes::articles::get_feed));
-    bp.route(GET, "/:slug", f!(crate::routes::articles::get_article));
-    bp.route(DELETE, "/:slug", f!(crate::routes::articles::delete_article));
-    bp.route(PUT, "/:slug", f!(crate::routes::articles::update_article));
-    bp.route(
-        DELETE,
-        "/:slug/favorite",
-        f!(crate::routes::articles::unfavorite_article),
-    );
-    bp.route(
-        POST,
-        "/:slug/favorite",
-        f!(crate::routes::articles::favorite_article),
-    );
-    bp.route(
-        GET,
-        "/:slug/comments",
-        f!(crate::routes::articles::list_comments),
-    );
-    bp.route(
-        POST,
-        "/:slug/comments",
-        f!(crate::routes::articles::publish_comment),
-    );
+    bp.route(GET, "", f!(self::list_articles));
+    bp.route(POST, "", f!(self::publish_article));
+    bp.route(GET, "/feed", f!(self::get_feed));
+    bp.route(GET, "/:slug", f!(self::get_article));
+    bp.route(DELETE, "/:slug", f!(self::delete_article));
+    bp.route(PUT, "/:slug", f!(self::update_article));
+    bp.route(DELETE, "/:slug/favorite", f!(self::unfavorite_article));
+    bp.route(POST, "/:slug/favorite", f!(self::favorite_article));
+    bp.route(GET, "/:slug/comments", f!(self::list_comments));
+    bp.route(POST, "/:slug/comments", f!(self::publish_comment));
     bp.route(
         DELETE,
         "/:slug/comments/:comment_id",
-        f!(crate::routes::articles::delete_comment),
+        f!(self::delete_comment),
     );
     bp
 }
