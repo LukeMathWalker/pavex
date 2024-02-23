@@ -1,5 +1,5 @@
-demo/
-demo_server/
-demo_server_sdk/
+app/
+server/
+server_sdk/
 Cargo.toml
 README.md

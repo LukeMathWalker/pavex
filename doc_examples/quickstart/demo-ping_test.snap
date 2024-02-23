@@ -1,4 +1,4 @@
-```rust title="demo_server/tests/integration/ping.rs"
+```rust title="server/tests/integration/ping.rs"
 use crate::helpers::TestApi;
 use pavex::http::StatusCode;
 

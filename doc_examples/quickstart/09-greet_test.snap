@@ -1,4 +1,4 @@
-```rust title="demo_server/tests/integration/greet.rs"
+```rust title="server/tests/integration/greet.rs"
 use pavex::http::StatusCode;
 
 use crate::helpers::TestApi;

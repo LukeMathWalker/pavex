@@ -1,6 +1,6 @@
-diff --git a/demo/src/blueprint.rs b/demo/src/blueprint.rs
---- a/demo/src/blueprint.rs
-+++ b/demo/src/blueprint.rs
+diff --git a/app/src/blueprint.rs b/app/src/blueprint.rs
+--- a/app/src/blueprint.rs
++++ b/app/src/blueprint.rs
 @@ -1,4 +1,5 @@
  use crate::{configuration::ApplicationConfig, telemetry};
 +use pavex::blueprint::constructor::Lifecycle;
@@ -19,9 +19,9 @@ diff --git a/demo/src/blueprint.rs b/demo/src/blueprint.rs
      bp.route(GET, "/api/ping", f!(crate::routes::status::ping));
      bp.route(GET, "/api/greet/:name", f!(crate::routes::greet::greet));
      bp
-diff --git a/demo/src/user_agent.rs b/demo/src/user_agent.rs
---- a/demo/src/user_agent.rs
-+++ b/demo/src/user_agent.rs
+diff --git a/app/src/user_agent.rs b/app/src/user_agent.rs
+--- a/app/src/user_agent.rs
++++ b/app/src/user_agent.rs
 @@ -1,6 +1,22 @@
 +use pavex::http::header::USER_AGENT;
 +use pavex::request::RequestHead;

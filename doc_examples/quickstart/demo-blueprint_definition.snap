@@ -1,4 +1,4 @@
-```rust title="demo/src/blueprint.rs"
+```rust title="app/src/blueprint.rs"
 // [...]
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();

@@ -12,7 +12,7 @@ the CLI will create a project with the following structure:
 --8<-- "doc_examples/quickstart/demo-project_structure.snap"
 ```
 
-What is the purpose of all those folders? Why is `cargo-px` needed to build a Pavex project?
+What is the purpose of all those folders? Why is [`cargo-px`][cargo-px] needed to build a Pavex project?
 Are there any conventions to follow?
 
 This guide will answer all these questions and more.
@@ -23,10 +23,10 @@ If you're in a hurry, here's a quick summary of the most important points:
 
 - A Pavex project is a [Cargo workspace](https://doc.rust-lang.org/cargo/reference/workspaces.html)
   with at least three crates: 
-    - a core crate (_library_)
-    - a server SDK crate (_library_) 
-    - a server crate (_binary_)
-- The core crate contains the [`Blueprint`][Blueprint] for your API. It's where you'll spend most of your time.
+    - a core crate (_library_), conventionally named `app`
+    - a server SDK crate (_library_), conventionally named `server_sdk`
+    - a server crate (_binary_), conventionally named `server`
+- The `app` crate contains the [`Blueprint`][Blueprint] for your API. It's where you'll spend most of your time.
 - The server SDK crate is generated from the core crate by `pavex generate`, which is invoked automatically
   by [`cargo-px`][cargo-px] when building or running the project.
 - The server crate is the entry point for your application. It's also where you'll write your integration tests.
@@ -35,10 +35,10 @@ Using the `demo` project as an example, the relationship between the project cra
 
 ```mermaid
 graph 
-  d[demo] -->|contains| bp[Blueprint];
-  bp -->|is used to generate| dss[demo_server_sdk];
-  dss -->|is used by| ds[demo_server];
-  dss -->|is used by| dst[API tests in demo_server];
+  d[app] -->|contains| bp[Blueprint];
+  bp -->|is used to generate| dss[server_sdk];
+  dss -->|is used by| ds[server];
+  dss -->|is used by| dst[API tests in server];
 ```
 
 If you want to know more, read on!
@@ -70,9 +70,9 @@ Rust crate, the **server SDK** for your Pavex project.
 
 !!! note
 
-    As a convention, the generated crate is named `{project_name}_server_sdk`.  
-    In the `demo` project, the generated crate is called `demo_server_sdk`.
-
+    As a convention, the generated crate is named `server_sdk`.  
+    You can use `{project_name}_server_sdk` if you need to disambiguate between
+    multiple Pavex applications in the same workspace.
 
 #### `cargo-px`
 
@@ -80,7 +80,7 @@ If you went through the [Quickstart](../../getting_started/quickstart/index.md) 
 wondering: I've never run `pavex generate`! How comes my project worked?
 
 That's thanks to [`cargo-px`][cargo-px]!  
-If you look into the `Cargo.toml` manifest for the `demo_server_sdk` crate in the `demo` project,
+If you look into the `Cargo.toml` manifest for the `server_sdk` crate in the `demo` project,
 you'll find this section:
 
 ```toml
@@ -88,7 +88,7 @@ you'll find this section:
 ```
 
 It's a [`cargo-px`][cargo-px] configuration section.  
-The `demo_server_sdk` crate is telling [`cargo-px`][cargo-px] to generate the whole crate
+The `server_sdk` crate is telling [`cargo-px`][cargo-px] to generate the whole crate
 by executing a binary called `bp` (short for `blueprint`) from the current Cargo workspace.
 
 That binary is defined in the `demo` crate:
@@ -150,8 +150,9 @@ That's why you need a **server crate**.
 
 !!! note
 
-    As a convention, the server crate is named `{project_name}_server`.  
-    In the `demo` project, the generated crate is called `demo_server`.
+    As a convention, the server crate is named `server`.  
+    You can use `{project_name}_server` if you need to disambiguate between
+    multiple Pavex applications in the same workspace.
 
 ### The executable binary
 
@@ -160,7 +161,7 @@ In that `main` function you'll be building an instance of `ApplicationState` and
 You'll be doing a few other things too: initializing your `tracing` subscriber, loading
 configuration, etc.
 
-??? info "The `main` function in `demo_server`"
+??? info "The `main` function in `server`"
 
     --8<-- "doc_examples/quickstart/demo-bp_server_binary.snap"
 

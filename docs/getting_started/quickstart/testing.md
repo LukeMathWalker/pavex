@@ -14,7 +14,7 @@ The template project includes a reference example for the `/api/ping` endpoint:
 --8<-- "doc_examples/quickstart/09-ping_test.snap"
 
 1. `TestApi` is a helper struct that provides a convenient interface to interact with the application.  
-   It's defined in `demo_server/tests/helpers.rs`.
+   It's defined in `server/tests/helpers.rs`.
 2. `TestApi::spawn` starts a new instance of the application in the background.
 3. `TestApi::get_ping` issues an actual `GET /api/ping` request to the application.
 

@@ -1,7 +1,7 @@
-diff --git a/demo/src/routes/greet.rs b/demo/src/routes/greet.rs
+diff --git a/app/src/routes/greet.rs b/app/src/routes/greet.rs
 index e0be313..5080f53 100644
---- a/demo/src/routes/greet.rs
-+++ b/demo/src/routes/greet.rs
+--- a/app/src/routes/greet.rs
++++ b/app/src/routes/greet.rs
 @@ -3,9 +3,11 @@ use pavex::response::Response;
 
  #[PathParams]

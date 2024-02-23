@@ -1,12 +1,12 @@
-```rust title="demo_server/src/bin/api.rs"
+```rust title="server/src/bin/api.rs"
 use anyhow::Context;
-use demo_server::{
+use pavex::server::Server;
+use pavex_tracing::fields::{error_details, error_message, ERROR_DETAILS, ERROR_MESSAGE};
+use server::{
     configuration::Config,
     telemetry::{get_subscriber, init_telemetry},
 };
-use demo_server_sdk::{build_application_state, run};
-use pavex::server::Server;
-use pavex_tracing::fields::{error_details, error_message, ERROR_DETAILS, ERROR_MESSAGE};
+use server_sdk::{build_application_state, run};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

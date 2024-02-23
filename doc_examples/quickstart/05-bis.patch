@@ -1,7 +1,7 @@
-diff --git a/demo/src/blueprint.rs b/demo/src/blueprint.rs
+diff --git a/app/src/blueprint.rs b/app/src/blueprint.rs
 index a282fa0..2067e4a 100644
---- a/demo/src/blueprint.rs
-+++ b/demo/src/blueprint.rs
+--- a/app/src/blueprint.rs
++++ b/app/src/blueprint.rs
 @@ -12,10 +12,6 @@ pub fn blueprint() -> Blueprint {
      ApplicationConfig::register(&mut bp);
 
@@ -15,9 +15,9 @@ index a282fa0..2067e4a 100644
      bp
  }
 
-diff --git a/demo/src/routes/greet.rs b/demo/src/routes/greet.rs
---- a/demo/src/routes/greet.rs
-+++ b/demo/src/routes/greet.rs
+diff --git a/app/src/routes/greet.rs b/app/src/routes/greet.rs
+--- a/app/src/routes/greet.rs
++++ b/app/src/routes/greet.rs
 @@ -8,7 +8,7 @@ pub struct GreetParams {
      pub name: String,
  }
