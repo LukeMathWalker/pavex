@@ -87,13 +87,8 @@ impl JsonBody<()> {
     /// The [default constructor](JsonBody::extract)
     /// and [error handler](ExtractJsonBodyError::into_response) for [`JsonBody`].
     pub fn default_constructor() -> Constructor {
-        Constructor::new(
-            f!(pavex::request::body::JsonBody::extract),
-            Lifecycle::RequestScoped,
-        )
-        .error_handler(f!(
-            pavex::request::body::errors::ExtractJsonBodyError::into_response
-        ))
+        Constructor::new(f!(super::JsonBody::extract), Lifecycle::RequestScoped)
+            .error_handler(f!(super::errors::ExtractJsonBodyError::into_response))
     }
 }
 

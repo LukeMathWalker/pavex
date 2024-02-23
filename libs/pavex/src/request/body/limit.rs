@@ -28,7 +28,7 @@ impl BodySizeLimit {
     /// The [default constructor](Self::default) for [`BodySizeLimit`].
     pub fn default_constructor() -> Constructor {
         Constructor::new(
-            f!(<pavex::request::body::BodySizeLimit as std::default::Default>::default),
+            f!(<super::BodySizeLimit as std::default::Default>::default),
             Lifecycle::RequestScoped,
         )
     }

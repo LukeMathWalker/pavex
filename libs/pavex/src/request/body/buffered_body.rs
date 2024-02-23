@@ -86,13 +86,8 @@ impl BufferedBody {
     /// and [error handler](ExtractBufferedBodyError::into_response)
     /// for [`BufferedBody`].
     pub fn default_constructor() -> Constructor {
-        Constructor::new(
-            f!(pavex::request::body::BufferedBody::extract),
-            Lifecycle::RequestScoped,
-        )
-        .error_handler(f!(
-            pavex::request::body::errors::ExtractBufferedBodyError::into_response
-        ))
+        Constructor::new(f!(super::BufferedBody::extract), Lifecycle::RequestScoped)
+            .error_handler(f!(super::errors::ExtractBufferedBodyError::into_response))
     }
 
     async fn _extract_with_limit<B>(
