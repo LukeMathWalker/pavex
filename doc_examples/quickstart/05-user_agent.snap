@@ -1,4 +1,4 @@
-```rust title="demo/src/user_agent.rs"
+```rust title="app/src/user_agent.rs"
 pub enum UserAgent {
     /// No `User-Agent` header was provided.
     Unknown,

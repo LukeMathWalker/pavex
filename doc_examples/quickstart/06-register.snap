@@ -1,4 +1,4 @@
-```rust title="demo/src/blueprint.rs" hl_lines="10 11 12 13"
+```rust title="app/src/blueprint.rs" hl_lines="10 11 12 13"
 // [...]
 pub fn blueprint() -> Blueprint {
     // [...]

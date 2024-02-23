@@ -1,7 +1,7 @@
-diff --git a/demo/src/user_agent.rs b/demo/src/user_agent.rs
+diff --git a/app/src/user_agent.rs b/app/src/user_agent.rs
 index c9d0771..bb1f65b 100644
---- a/demo/src/user_agent.rs
-+++ b/demo/src/user_agent.rs
+--- a/app/src/user_agent.rs
++++ b/app/src/user_agent.rs
 @@ -1,4 +1,4 @@
 -use pavex::http::header::USER_AGENT;
 +use pavex::http::header::{ToStrError, USER_AGENT};

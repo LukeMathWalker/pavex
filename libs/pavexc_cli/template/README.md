@@ -4,16 +4,15 @@
 
 ## Prerequisites
 
-- [Rust](https://lukemathwalker.github.io/cargo-px/)
+- [Rust](https://www.rust-lang.org/tools/install)
 - [`cargo-px`](https://lukemathwalker.github.io/cargo-px/)
 - [Pavex](https://pavex.dev)
 
 ## Useful commands
 
-`{{crate_name}}` is built using the [Pavex](https://pavex.dev) web framework, which relies on code generation.  
+This API is built using the [Pavex](https://pavex.dev) web framework, which relies on code generation.  
 You need to use the `cargo px` command instead of `cargo`: it ensures that the
-`{{crate_name}}_server_sdk` crate is correctly regenerated when the
-application blueprint changes.
+`server_sdk` crate is correctly regenerated when the application blueprint changes.
 
 `cargo px` is a wrapper around `cargo` that will automatically regenerate the
 server SDK when needed. Check out its [documentation](https://github.com/LukeMathWalker/cargo-px)
@@ -39,7 +38,7 @@ cargo px test
 
 ## Configuration
 
-All configurable parameters are listed in `{{crate_name}}/src/configuration.rs`.
+All configurable parameters are listed in `server/src/configuration/schema.rs`.
 
 Configuration values are loaded from two sources:
 
@@ -48,13 +47,13 @@ Configuration values are loaded from two sources:
 
 Environment variables take precedence over configuration files.
 
-All configuration files are in the `{{crate_name}}_server/configuration` folder.
+All configuration files are in the `server/configuration` folder.
 The application can be run in two different profiles: `dev` and `prod`.  
 The settings that you want to share across all profiles should be placed
-in `{{crate_name}}_server/configuration/base.yml`.
+in `server/configuration/base.yml`.
 Profile-specific configuration files can be then used
 to override or supply additional values on top of the default settings (
-e.g. `{{crate_name}}_server/configuration/dev.yml`).
+e.g. `server/configuration/dev.yml`).
 
 You can specify the app profile that you want to use by setting the `APP_PROFILE` environment variable; e.g.:
 

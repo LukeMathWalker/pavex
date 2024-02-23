@@ -1,7 +1,7 @@
 [workspace]
-members = ["{{crate_name}}", "{{crate_name}}_server_sdk", "{{crate_name}}_server"]
-# By setting `{{crate_name}}_server` as the default member, `cargo run` will default to running the server binary
+members = ["app", "server_sdk", "server"]
+# By setting `server` as the default member, `cargo run` will default to running the server binary
 # when executed from the root of the workspace.
 # Otherwise, you would have to use `cargo run --bin api` to run the server binary.
-default-members = ["{{crate_name}}_server"]
+default-members = ["server"]
 resolver = "2"

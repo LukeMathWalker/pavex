@@ -1,7 +1,7 @@
-diff --git a/demo/src/blueprint.rs b/demo/src/blueprint.rs
+diff --git a/app/src/blueprint.rs b/app/src/blueprint.rs
 index e3623cd..c431f69 100644
---- a/demo/src/blueprint.rs
-+++ b/demo/src/blueprint.rs
+--- a/app/src/blueprint.rs
++++ b/app/src/blueprint.rs
 @@ -11,7 +11,8 @@ pub fn blueprint() -> Blueprint {
      bp.constructor(
          f!(crate::user_agent::UserAgent::extract),
@@ -12,10 +12,10 @@ index e3623cd..c431f69 100644
  
      add_telemetry_middleware(&mut bp);
  
-diff --git a/demo/src/user_agent.rs b/demo/src/user_agent.rs
+diff --git a/app/src/user_agent.rs b/app/src/user_agent.rs
 index bb1f65b..78360bd 100644
---- a/demo/src/user_agent.rs
-+++ b/demo/src/user_agent.rs
+--- a/app/src/user_agent.rs
++++ b/app/src/user_agent.rs
 @@ -1,5 +1,6 @@
  use pavex::http::header::{ToStrError, USER_AGENT};
  use pavex::request::RequestHead;

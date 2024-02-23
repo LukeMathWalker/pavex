@@ -1,0 +1,25 @@
+[package]
+name = "server_sdk"
+version = "0.1.0"
+edition = "2021"
+
+[package.metadata.px.generate]
+generator_type = "cargo_workspace_binary"
+generator_name = "bp"
+
+[package.metadata.px.verify]
+verifier_type = "cargo_workspace_binary"
+verifier_name = "bp"
+verifier_args = ["--check"]
+
+[dependencies]
+app = { version = "0.1.0", path = "../app", package = "app" }
+http = { version = "1.0.0", package = "http" }
+hyper = { version = "1.2.0", package = "hyper" }
+jsonwebtoken = { version = "8.3.0", package = "jsonwebtoken" }
+pavex = { version = "0.1.18", path = "../../../libs/pavex", package = "pavex" }
+pavex_matchit = { version = "0.7.4", package = "pavex_matchit" }
+pavex_tracing = { version = "0.1.18", path = "../../../libs/pavex_tracing", package = "pavex_tracing" }
+sqlx_core = { version = "0.7.3", package = "sqlx-core" }
+sqlx_postgres = { version = "0.7.3", package = "sqlx-postgres" }
+thiserror = { version = "1.0.57", package = "thiserror" }

@@ -1,8 +1,8 @@
-diff --git a/demo_server/tests/integration/greet.rs b/demo_server/tests/integration/greet.rs
+diff --git a/server/tests/integration/greet.rs b/server/tests/integration/greet.rs
 new file mode 100644
 index 0000000..fb02807
 --- /dev/null
-+++ b/demo_server/tests/integration/greet.rs
++++ b/server/tests/integration/greet.rs
 @@ -0,0 +1,20 @@
 +use pavex::http::StatusCode;
 +
@@ -24,18 +24,18 @@ index 0000000..fb02807
 +    assert_eq!(response.status().as_u16(), StatusCode::OK.as_u16());
 +    assert_eq!(response.text().await.unwrap(), "Hello, Ursula!");
 +}
-diff --git a/demo_server/tests/integration/main.rs b/demo_server/tests/integration/main.rs
+diff --git a/server/tests/integration/main.rs b/server/tests/integration/main.rs
 index 7a28419..e8440f3 100644
---- a/demo_server/tests/integration/main.rs
-+++ b/demo_server/tests/integration/main.rs
+--- a/server/tests/integration/main.rs
++++ b/server/tests/integration/main.rs
 @@ -1,2 +1,3 @@
  mod helpers;
 +mod greet;
  mod ping;
-diff --git a/demo_server/tests/integration/ping.rs b/demo_server/tests/integration/ping.rs
+diff --git a/server/tests/integration/ping.rs b/server/tests/integration/ping.rs
 index c79eb0e..bfd2726 100644
---- a/demo_server/tests/integration/ping.rs
-+++ b/demo_server/tests/integration/ping.rs
+--- a/server/tests/integration/ping.rs
++++ b/server/tests/integration/ping.rs
 @@ -1,11 +1,13 @@
 -use crate::helpers::TestApi;
  use pavex::http::StatusCode;

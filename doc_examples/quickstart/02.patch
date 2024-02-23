@@ -1,7 +1,7 @@
-diff --git a/demo/src/blueprint.rs b/demo/src/blueprint.rs
+diff --git a/app/src/blueprint.rs b/app/src/blueprint.rs
 index f2b3732..a282fa0 100644
---- a/demo/src/blueprint.rs
-+++ b/demo/src/blueprint.rs
+--- a/app/src/blueprint.rs
++++ b/app/src/blueprint.rs
 @@ -12,5 +12,10 @@ pub fn blueprint() -> Blueprint {
      ApplicationConfig::register(&mut bp);
 
@@ -14,21 +14,21 @@ index f2b3732..a282fa0 100644
      bp
  }
 
-diff --git a/demo/src/routes/greet.rs b/demo/src/routes/greet.rs
+diff --git a/app/src/routes/greet.rs b/app/src/routes/greet.rs
 new file mode 100644
 index 0000000..38ec1e3
 --- /dev/null
-+++ b/demo/src/routes/greet.rs
++++ b/app/src/routes/greet.rs
 @@ -0,0 +1,5 @@
 +use pavex::response::Response;
 +
 +pub fn greet() -> Response {
 +    todo!()
 +}
-diff --git a/demo/src/routes/mod.rs b/demo/src/routes/mod.rs
+diff --git a/app/src/routes/mod.rs b/app/src/routes/mod.rs
 index 822c729..d709a21 100644
---- a/demo/src/routes/mod.rs
-+++ b/demo/src/routes/mod.rs
+--- a/app/src/routes/mod.rs
++++ b/app/src/routes/mod.rs
 @@ -1 +1,2 @@
 +pub mod greet;
  pub mod status;

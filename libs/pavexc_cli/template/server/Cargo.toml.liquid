@@ -1,0 +1,30 @@
+[package]
+name = "server"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+path = "src/bin/api.rs"
+name = "api"
+
+[dependencies]
+anyhow = "1"
+pavex = { {{pavex_package_spec}} }
+pavex_tracing = { {{pavex_tracing_package_spec}} }
+tokio = { version = "1", features = ["full"] }
+server_sdk = { path = "../server_sdk" }
+app = { path = "../app" }
+
+# Configuration
+dotenvy = "0.15"
+figment = { version = "0.10", features = ["env", "yaml"] }
+serde = { version = "1", features = ["derive"] }
+
+# Telemetry
+tracing = "0.1"
+tracing-bunyan-formatter = "0.3"
+tracing-panic = "0.1"
+tracing-subscriber = { version = "0.3", default-features = false, features = ["env-filter", "registry", "smallvec", "std", "tracing-log"] }
+
+[dev-dependencies]
+reqwest = "0.11"

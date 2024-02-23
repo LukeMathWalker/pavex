@@ -1,4 +1,4 @@
-```rust title="demo/src/routes/greet.rs" hl_lines="4"
+```rust title="app/src/routes/greet.rs" hl_lines="4"
 // [...]
 use crate::user_agent::UserAgent;
 // [...]

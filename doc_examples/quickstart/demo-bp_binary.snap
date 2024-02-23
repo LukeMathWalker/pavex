@@ -1,17 +1,25 @@
-```rust title="demo/src/bin/bp.rs"
+```rust title="app/src/bin/bp.rs"
+use app::blueprint;
 use cargo_px_env::generated_pkg_manifest_path;
-use demo::blueprint;
 use pavex_cli_client::Client;
+use std::env::args;
 use std::error::Error;
 
-/// Generate the `demo_server_sdk` crate using Pavex's CLI.
+/// Generate the `server_sdk` crate using Pavex's CLI.
 ///
 /// Pavex will automatically wire all our routes, constructors and error handlers
-/// into the a "server SDK" that can be used by the final API server binary to launch
+/// into a "server SDK" that can be used by the final API server binary to launch
 /// the application.
+///
+/// If `--check` is passed as an argument, it only verifies that the server SDK
+/// crate is up-to-date. An error is returned if it isn't.
 fn main() -> Result<(), Box<dyn Error>> {
     let generated_dir = generated_pkg_manifest_path()?.parent().unwrap().into();
-    if let Err(e) = Client::new().generate(blueprint(), generated_dir).execute() {
+    let mut cmd = Client::new().generate(blueprint(), generated_dir);
+    if args().any(|arg| arg == "--check") {
+        cmd = cmd.check()
+    };
+    if let Err(e) = cmd.execute() {
         eprintln!("{e}");
         std::process::exit(1);
     }

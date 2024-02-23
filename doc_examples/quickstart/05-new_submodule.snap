@@ -1,4 +1,4 @@
-```rust title="demo/src/lib.rs" hl_lines="7"
+```rust title="app/src/lib.rs" hl_lines="7"
 pub use blueprint::blueprint;
 
 mod blueprint;

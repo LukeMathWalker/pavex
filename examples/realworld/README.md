@@ -16,17 +16,11 @@ For more information on how this works with other frontends/backends, head over 
 
 ### Prerequisites
 
-- Rust (see [here](https://www.rust-lang.org/tools/install) for instructions)
-- Docker (see [here](https://docs.docker.com/install/) for instructions)
-- Postgres (see [here](https://www.postgresql.org/download/) for instructions)
-- `cargo-px`:
-  ```bash
-  cargo install cargo-px
-  ```
-- `pavex_cli`:
-  ```bash
-  cd ../../libs && cargo build --release -p pavex_cli  
-  ```
+- [Rust](https://www.rust-lang.org/tools/install)
+- [`cargo-px`](https://lukemathwalker.github.io/cargo-px/)
+- [Pavex](https://pavex.dev)
+- [Docker](https://docs.docker.com/install/)
+- [Postgres](https://www.postgresql.org/download/)
 - `sqlx` CLI:
   ```bash
   cargo install sqlx-cli \
@@ -54,22 +48,41 @@ cargo px build
 ## Run the application
 
 ```bash
-APP_PROFILE=dev cargo px run --bin api
+cargo px run
 ```
 
 ## Configuration
 
-All configuration files are in the `api_server/configuration` folder.  
-The default settings are stored in `api_server/configuration/base.yml`.
+All configurable parameters are listed in `server/src/configuration/schema.rs`.
 
-Environment-specific configuration files can be used to override or supply additional values on top the default settings (see `prod.yml`).  
-You must specify the app profile that you want to use by setting the `APP_PROFILE` environment variable to either `dev`, `test` or `prod`; e.g.:
+Configuration values are loaded from two sources:
+
+- Configuration files
+- Environment variables
+
+Environment variables take precedence over configuration files.
+
+All configuration files are in the `server/configuration` folder.
+The application can be run in two different profiles: `dev` and `prod`.  
+The settings that you want to share across all profiles should be placed
+in `server/configuration/base.yml`.
+Profile-specific configuration files can be then used
+to override or supply additional values on top of the default settings (
+e.g. `server/configuration/dev.yml`).
+
+You can specify the app profile that you want to use by setting the `APP_PROFILE` environment variable; e.g.:
 
 ```bash
-APP_PROFILE=prod cargo px run --bin api
+APP_PROFILE=prod cargo px run
 ```
 
-All configurable parameters are listed in `conduit_core/src/configuration.rs`.
+for running the application with the `prod` profile.
+
+By default, the `dev` profile is used since `APP_PROFILE` is set to `dev` in the `.env` file at the root of the project.
+The `.env` file should not be committed to version control: it is meant to be used for local development only,
+so that each developer can specify their own environment variables for secret values (e.g. database credentials)
+that shouldn't be stored in configuration files (given their sensitive nature).
+Since this an example, the `.env` file is committed for reference.
 
 ### Auth configuration
 
@@ -86,13 +99,14 @@ local development:
 
 ```yaml
 # [...]
-auth:
-  eddsa_private_key_pem: |
-    -----BEGIN PRIVATE KEY-----
-    # Paste the contents of private.pem here
-    -----END PRIVATE KEY-----
-  eddsa_public_key_pem: |
-    -----BEGIN PUBLIC KEY-----
-    # Paste the contents of public.pem here
-    -----END PUBLIC KEY-----
+app:
+  auth:
+    eddsa_private_key_pem: |
+      -----BEGIN PRIVATE KEY-----
+      # Paste the contents of private.pem here
+      -----END PRIVATE KEY-----
+    eddsa_public_key_pem: |
+      -----BEGIN PUBLIC KEY-----
+      # Paste the contents of public.pem here
+      -----END PUBLIC KEY-----
 ```
