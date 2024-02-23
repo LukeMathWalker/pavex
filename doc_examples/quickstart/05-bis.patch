@@ -1,9 +1,10 @@
 diff --git a/demo/src/blueprint.rs b/demo/src/blueprint.rs
+index a282fa0..2067e4a 100644
 --- a/demo/src/blueprint.rs
 +++ b/demo/src/blueprint.rs
-@@ -11,11 +11,7 @@ pub fn blueprint() -> Blueprint {
-     add_telemetry_middleware(&mut bp);
- 
+@@ -12,10 +12,6 @@ pub fn blueprint() -> Blueprint {
+     ApplicationConfig::register(&mut bp);
+
      bp.route(GET, "/api/ping", f!(crate::routes::status::ping));
 -    bp.route(
 -        GET,
@@ -13,7 +14,7 @@ diff --git a/demo/src/blueprint.rs b/demo/src/blueprint.rs
 +    bp.route(GET, "/api/greet/:name", f!(crate::routes::greet::greet));
      bp
  }
- 
+
 diff --git a/demo/src/routes/greet.rs b/demo/src/routes/greet.rs
 --- a/demo/src/routes/greet.rs
 +++ b/demo/src/routes/greet.rs

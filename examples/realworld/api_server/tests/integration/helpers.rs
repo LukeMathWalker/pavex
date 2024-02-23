@@ -1,6 +1,5 @@
-use api_server::configuration::{load_configuration, ApplicationProfile};
+use api_server::configuration::{ApplicationProfile, Config};
 use api_server_sdk::{build_application_state, run};
-use conduit_core::configuration::Config;
 use pavex::server::Server;
 use std::sync::Once;
 use tracing::subscriber::set_global_default;
@@ -16,7 +15,7 @@ impl TestApi {
         Self::init_telemetry();
         let config = Self::get_config();
 
-        let application_state = build_application_state(&config.auth, &config.database)
+        let application_state = build_application_state(&config.app)
             .await
             .expect("Failed to build the application state");
 
@@ -39,14 +38,14 @@ impl TestApi {
     }
 
     fn get_config() -> Config {
-        let mut config = load_configuration(Some(ApplicationProfile::Test))
+        let mut config = Config::load(Some(ApplicationProfile::Test))
             .expect("Failed to load test configuration");
 
         // We generate the key pair on the fly rather than hardcoding it in the
         // configuration file.
         let key_pair = jwt_simple::algorithms::Ed25519KeyPair::generate();
-        config.auth.eddsa_public_key_pem = key_pair.public_key().to_pem();
-        config.auth.eddsa_private_key_pem = secrecy::Secret::new(key_pair.to_pem());
+        config.app.auth.eddsa_public_key_pem = key_pair.public_key().to_pem();
+        config.app.auth.eddsa_private_key_pem = secrecy::Secret::new(key_pair.to_pem());
         config
     }
 

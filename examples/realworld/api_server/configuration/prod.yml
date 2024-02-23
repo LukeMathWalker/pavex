@@ -1,4 +1,5 @@
 server:
   ip: "0.0.0.0"
-database:
-  require_ssl: true
+app:
+  database:
+    require_ssl: true

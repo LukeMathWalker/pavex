@@ -18,10 +18,10 @@ pub enum ApplicationStateError {
     GetPool(sqlx_core::Error),
 }
 pub async fn build_application_state(
-    v0: &conduit_core::configuration::AuthConfig,
-    v1: &conduit_core::configuration::DatabaseConfig,
+    v0: &conduit_core::configuration::ApplicationConfig,
 ) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
-    let v2 = conduit_core::configuration::AuthConfig::encoding_key(v0);
+    let v1 = conduit_core::configuration::ApplicationConfig::auth_config(v0);
+    let v2 = conduit_core::configuration::AuthConfig::encoding_key(v1);
     let v3 = match v2 {
         Ok(ok) => ok,
         Err(v3) => {
@@ -31,21 +31,22 @@ pub async fn build_application_state(
             };
         }
     };
-    let v4 = conduit_core::configuration::DatabaseConfig::get_pool(v1).await;
-    let v5 = match v4 {
+    let v4 = conduit_core::configuration::ApplicationConfig::database_config(v0);
+    let v5 = conduit_core::configuration::DatabaseConfig::get_pool(v4).await;
+    let v6 = match v5 {
         Ok(ok) => ok,
-        Err(v5) => {
+        Err(v6) => {
             return {
-                let v6 = crate::ApplicationStateError::GetPool(v5);
-                core::result::Result::Err(v6)
+                let v7 = crate::ApplicationStateError::GetPool(v6);
+                core::result::Result::Err(v7)
             };
         }
     };
-    let v6 = crate::ApplicationState {
-        s0: v5,
+    let v7 = crate::ApplicationState {
+        s0: v6,
         s1: v3,
     };
-    core::result::Result::Ok(v6)
+    core::result::Result::Ok(v7)
 }
 pub fn run(
     server_builder: pavex::server::Server,
@@ -717,9 +718,9 @@ pub mod route_3 {
         let v7 = crate::route_3::Next0 {
             s_0: v0,
             s_1: v4,
-            s_2: v2,
-            s_3: v1,
-            s_4: &v6,
+            s_2: &v6,
+            s_3: v2,
+            s_4: v1,
             next: middleware_1,
         };
         let v8 = pavex::middleware::Next::new(v7);
@@ -737,8 +738,9 @@ pub mod route_3 {
         let v5 = crate::route_3::Next1 {
             s_0: v1,
             s_1: v0,
-            s_2: v3,
-            s_3: v2,
+            s_2: v4,
+            s_3: v3,
+            s_4: v2,
             next: handler,
         };
         let v6 = pavex::middleware::Next::new(v5);
@@ -748,53 +750,60 @@ pub mod route_3 {
     pub async fn handler(
         v0: &jsonwebtoken::EncodingKey,
         v1: &pavex::request::RequestHead,
-        v2: pavex::request::body::RawIncomingBody,
-        v3: &sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
+        v2: &pavex_tracing::RootSpan,
+        v3: pavex::request::body::RawIncomingBody,
+        v4: &sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
     ) -> pavex::response::Response {
-        let v4 = <pavex::request::body::BodySizeLimit as std::default::Default>::default();
-        let v5 = pavex::request::body::BufferedBody::extract(v1, v2, v4).await;
-        let v6 = match v5 {
+        let v5 = <pavex::request::body::BodySizeLimit as std::default::Default>::default();
+        let v6 = pavex::request::body::BufferedBody::extract(v1, v3, v5).await;
+        let v7 = match v6 {
             Ok(ok) => ok,
-            Err(v6) => {
+            Err(v7) => {
                 return {
-                    let v7 = pavex::request::body::errors::ExtractBufferedBodyError::into_response(
-                        &v6,
+                    let v8 = pavex::request::body::errors::ExtractBufferedBodyError::into_response(
+                        &v7,
                     );
+                    let v9 = pavex::Error::new(v7);
+                    conduit_core::telemetry::error_logger(&v9, v2).await;
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v7,
+                        v8,
                     )
                 };
             }
         };
-        let v7 = pavex::request::body::JsonBody::extract(v1, &v6);
-        let v8 = match v7 {
+        let v8 = pavex::request::body::JsonBody::extract(v1, &v7);
+        let v9 = match v8 {
             Ok(ok) => ok,
-            Err(v8) => {
+            Err(v9) => {
                 return {
-                    let v9 = pavex::request::body::errors::ExtractJsonBodyError::into_response(
-                        &v8,
+                    let v10 = pavex::request::body::errors::ExtractJsonBodyError::into_response(
+                        &v9,
                     );
+                    let v11 = pavex::Error::new(v9);
+                    conduit_core::telemetry::error_logger(&v11, v2).await;
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v9,
+                        v10,
                     )
                 };
             }
         };
-        let v9 = conduit_core::routes::users::signup(v8, v3, v0).await;
-        let v10 = match v9 {
+        let v10 = conduit_core::routes::users::signup(v9, v4, v0).await;
+        let v11 = match v10 {
             Ok(ok) => ok,
-            Err(v10) => {
+            Err(v11) => {
                 return {
-                    let v11 = conduit_core::routes::users::SignupError::into_response(
-                        &v10,
+                    let v12 = conduit_core::routes::users::SignupError::into_response(
+                        &v11,
                     );
+                    let v13 = pavex::Error::new(v11);
+                    conduit_core::telemetry::error_logger(&v13, v2).await;
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v11,
+                        v12,
                     )
                 };
             }
         };
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v10)
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v11)
     }
     pub struct Next0<'a, 'b, 'c, 'd, T>
     where
@@ -802,15 +811,15 @@ pub mod route_3 {
     {
         s_0: &'a jsonwebtoken::EncodingKey,
         s_1: &'b pavex::request::RequestHead,
-        s_2: pavex::request::body::RawIncomingBody,
-        s_3: &'c sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
-        s_4: &'d pavex_tracing::RootSpan,
+        s_2: &'c pavex_tracing::RootSpan,
+        s_3: pavex::request::body::RawIncomingBody,
+        s_4: &'d sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
         next: fn(
             &'b pavex::request::RequestHead,
             &'a jsonwebtoken::EncodingKey,
-            &'c sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
+            &'d sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
             pavex::request::body::RawIncomingBody,
-            &'d pavex_tracing::RootSpan,
+            &'c pavex_tracing::RootSpan,
         ) -> T,
     }
     impl<'a, 'b, 'c, 'd, T> std::future::IntoFuture for Next0<'a, 'b, 'c, 'd, T>
@@ -820,32 +829,34 @@ pub mod route_3 {
         type Output = pavex::response::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            (self.next)(self.s_1, self.s_0, self.s_3, self.s_2, self.s_4)
+            (self.next)(self.s_1, self.s_0, self.s_4, self.s_3, self.s_2)
         }
     }
-    pub struct Next1<'a, 'b, 'c, T>
+    pub struct Next1<'a, 'b, 'c, 'd, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
         s_0: &'a jsonwebtoken::EncodingKey,
         s_1: &'b pavex::request::RequestHead,
-        s_2: pavex::request::body::RawIncomingBody,
-        s_3: &'c sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
+        s_2: &'c pavex_tracing::RootSpan,
+        s_3: pavex::request::body::RawIncomingBody,
+        s_4: &'d sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
         next: fn(
             &'a jsonwebtoken::EncodingKey,
             &'b pavex::request::RequestHead,
+            &'c pavex_tracing::RootSpan,
             pavex::request::body::RawIncomingBody,
-            &'c sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
+            &'d sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
         ) -> T,
     }
-    impl<'a, 'b, 'c, T> std::future::IntoFuture for Next1<'a, 'b, 'c, T>
+    impl<'a, 'b, 'c, 'd, T> std::future::IntoFuture for Next1<'a, 'b, 'c, 'd, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
         type Output = pavex::response::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            (self.next)(self.s_0, self.s_1, self.s_2, self.s_3)
+            (self.next)(self.s_0, self.s_1, self.s_2, self.s_3, self.s_4)
         }
     }
 }
@@ -862,9 +873,9 @@ pub mod route_4 {
         let v7 = crate::route_4::Next0 {
             s_0: v0,
             s_1: v4,
-            s_2: v2,
-            s_3: v1,
-            s_4: &v6,
+            s_2: &v6,
+            s_3: v2,
+            s_4: v1,
             next: middleware_1,
         };
         let v8 = pavex::middleware::Next::new(v7);
@@ -882,8 +893,9 @@ pub mod route_4 {
         let v5 = crate::route_4::Next1 {
             s_0: v1,
             s_1: v0,
-            s_2: v3,
-            s_3: v2,
+            s_2: v4,
+            s_3: v3,
+            s_4: v2,
             next: handler,
         };
         let v6 = pavex::middleware::Next::new(v5);
@@ -893,53 +905,60 @@ pub mod route_4 {
     pub async fn handler(
         v0: &jsonwebtoken::EncodingKey,
         v1: &pavex::request::RequestHead,
-        v2: pavex::request::body::RawIncomingBody,
-        v3: &sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
+        v2: &pavex_tracing::RootSpan,
+        v3: pavex::request::body::RawIncomingBody,
+        v4: &sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
     ) -> pavex::response::Response {
-        let v4 = <pavex::request::body::BodySizeLimit as std::default::Default>::default();
-        let v5 = pavex::request::body::BufferedBody::extract(v1, v2, v4).await;
-        let v6 = match v5 {
+        let v5 = <pavex::request::body::BodySizeLimit as std::default::Default>::default();
+        let v6 = pavex::request::body::BufferedBody::extract(v1, v3, v5).await;
+        let v7 = match v6 {
             Ok(ok) => ok,
-            Err(v6) => {
+            Err(v7) => {
                 return {
-                    let v7 = pavex::request::body::errors::ExtractBufferedBodyError::into_response(
-                        &v6,
+                    let v8 = pavex::request::body::errors::ExtractBufferedBodyError::into_response(
+                        &v7,
                     );
+                    let v9 = pavex::Error::new(v7);
+                    conduit_core::telemetry::error_logger(&v9, v2).await;
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v7,
+                        v8,
                     )
                 };
             }
         };
-        let v7 = pavex::request::body::JsonBody::extract(v1, &v6);
-        let v8 = match v7 {
+        let v8 = pavex::request::body::JsonBody::extract(v1, &v7);
+        let v9 = match v8 {
             Ok(ok) => ok,
-            Err(v8) => {
+            Err(v9) => {
                 return {
-                    let v9 = pavex::request::body::errors::ExtractJsonBodyError::into_response(
-                        &v8,
+                    let v10 = pavex::request::body::errors::ExtractJsonBodyError::into_response(
+                        &v9,
                     );
+                    let v11 = pavex::Error::new(v9);
+                    conduit_core::telemetry::error_logger(&v11, v2).await;
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v9,
+                        v10,
                     )
                 };
             }
         };
-        let v9 = conduit_core::routes::users::login(v8, v3, v0).await;
-        let v10 = match v9 {
+        let v10 = conduit_core::routes::users::login(v9, v4, v0).await;
+        let v11 = match v10 {
             Ok(ok) => ok,
-            Err(v10) => {
+            Err(v11) => {
                 return {
-                    let v11 = conduit_core::routes::users::LoginError::into_response(
-                        &v10,
+                    let v12 = conduit_core::routes::users::LoginError::into_response(
+                        &v11,
                     );
+                    let v13 = pavex::Error::new(v11);
+                    conduit_core::telemetry::error_logger(&v13, v2).await;
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v11,
+                        v12,
                     )
                 };
             }
         };
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v10)
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v11)
     }
     pub struct Next0<'a, 'b, 'c, 'd, T>
     where
@@ -947,15 +966,15 @@ pub mod route_4 {
     {
         s_0: &'a jsonwebtoken::EncodingKey,
         s_1: &'b pavex::request::RequestHead,
-        s_2: pavex::request::body::RawIncomingBody,
-        s_3: &'c sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
-        s_4: &'d pavex_tracing::RootSpan,
+        s_2: &'c pavex_tracing::RootSpan,
+        s_3: pavex::request::body::RawIncomingBody,
+        s_4: &'d sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
         next: fn(
             &'b pavex::request::RequestHead,
             &'a jsonwebtoken::EncodingKey,
-            &'c sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
+            &'d sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
             pavex::request::body::RawIncomingBody,
-            &'d pavex_tracing::RootSpan,
+            &'c pavex_tracing::RootSpan,
         ) -> T,
     }
     impl<'a, 'b, 'c, 'd, T> std::future::IntoFuture for Next0<'a, 'b, 'c, 'd, T>
@@ -965,32 +984,34 @@ pub mod route_4 {
         type Output = pavex::response::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            (self.next)(self.s_1, self.s_0, self.s_3, self.s_2, self.s_4)
+            (self.next)(self.s_1, self.s_0, self.s_4, self.s_3, self.s_2)
         }
     }
-    pub struct Next1<'a, 'b, 'c, T>
+    pub struct Next1<'a, 'b, 'c, 'd, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
         s_0: &'a jsonwebtoken::EncodingKey,
         s_1: &'b pavex::request::RequestHead,
-        s_2: pavex::request::body::RawIncomingBody,
-        s_3: &'c sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
+        s_2: &'c pavex_tracing::RootSpan,
+        s_3: pavex::request::body::RawIncomingBody,
+        s_4: &'d sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
         next: fn(
             &'a jsonwebtoken::EncodingKey,
             &'b pavex::request::RequestHead,
+            &'c pavex_tracing::RootSpan,
             pavex::request::body::RawIncomingBody,
-            &'c sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
+            &'d sqlx_core::driver_prelude::pool::Pool<sqlx_postgres::Postgres>,
         ) -> T,
     }
-    impl<'a, 'b, 'c, T> std::future::IntoFuture for Next1<'a, 'b, 'c, T>
+    impl<'a, 'b, 'c, 'd, T> std::future::IntoFuture for Next1<'a, 'b, 'c, 'd, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
         type Output = pavex::response::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            (self.next)(self.s_0, self.s_1, self.s_2, self.s_3)
+            (self.next)(self.s_0, self.s_1, self.s_2, self.s_3, self.s_4)
         }
     }
 }
@@ -1067,9 +1088,9 @@ pub mod route_6 {
         let v3 = pavex::telemetry::ServerRequestId::generate();
         let v4 = conduit_core::telemetry::root_span(v2, v1, v3);
         let v5 = crate::route_6::Next0 {
-            s_0: v0,
-            s_1: v2,
-            s_2: &v4,
+            s_0: &v4,
+            s_1: v0,
+            s_2: v2,
             next: middleware_1,
         };
         let v6 = pavex::middleware::Next::new(v5);
@@ -1083,8 +1104,9 @@ pub mod route_6 {
         v2: &pavex_tracing::RootSpan,
     ) -> pavex::response::Response {
         let v3 = crate::route_6::Next1 {
-            s_0: v1,
-            s_1: v0,
+            s_0: v2,
+            s_1: v1,
+            s_2: v0,
             next: handler,
         };
         let v4 = pavex::middleware::Next::new(v3);
@@ -1092,52 +1114,57 @@ pub mod route_6 {
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v5)
     }
     pub async fn handler(
-        v0: pavex::request::body::RawIncomingBody,
-        v1: &pavex::request::RequestHead,
+        v0: &pavex_tracing::RootSpan,
+        v1: pavex::request::body::RawIncomingBody,
+        v2: &pavex::request::RequestHead,
     ) -> pavex::response::Response {
-        let v2 = <pavex::request::body::BodySizeLimit as std::default::Default>::default();
-        let v3 = pavex::request::body::BufferedBody::extract(v1, v0, v2).await;
-        let v4 = match v3 {
+        let v3 = <pavex::request::body::BodySizeLimit as std::default::Default>::default();
+        let v4 = pavex::request::body::BufferedBody::extract(v2, v1, v3).await;
+        let v5 = match v4 {
             Ok(ok) => ok,
-            Err(v4) => {
+            Err(v5) => {
                 return {
-                    let v5 = pavex::request::body::errors::ExtractBufferedBodyError::into_response(
-                        &v4,
+                    let v6 = pavex::request::body::errors::ExtractBufferedBodyError::into_response(
+                        &v5,
                     );
+                    let v7 = pavex::Error::new(v5);
+                    conduit_core::telemetry::error_logger(&v7, v0).await;
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v5,
+                        v6,
                     )
                 };
             }
         };
-        let v5 = pavex::request::body::JsonBody::extract(v1, &v4);
-        let v6 = match v5 {
+        let v6 = pavex::request::body::JsonBody::extract(v2, &v5);
+        let v7 = match v6 {
             Ok(ok) => ok,
-            Err(v6) => {
+            Err(v7) => {
                 return {
-                    let v7 = pavex::request::body::errors::ExtractJsonBodyError::into_response(
-                        &v6,
+                    let v8 = pavex::request::body::errors::ExtractJsonBodyError::into_response(
+                        &v7,
                     );
+                    let v9 = pavex::Error::new(v7);
+                    conduit_core::telemetry::error_logger(&v9, v0).await;
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v7,
+                        v8,
                     )
                 };
             }
         };
-        let v7 = conduit_core::routes::users::update_user(v6);
-        <http::StatusCode as pavex::response::IntoResponse>::into_response(v7)
+        let v8 = conduit_core::routes::users::update_user(v7);
+        <http::StatusCode as pavex::response::IntoResponse>::into_response(v8)
     }
     pub struct Next0<'a, 'b, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
-        s_0: pavex::request::body::RawIncomingBody,
-        s_1: &'a pavex::request::RequestHead,
-        s_2: &'b pavex_tracing::RootSpan,
+        s_0: &'a pavex_tracing::RootSpan,
+        s_1: pavex::request::body::RawIncomingBody,
+        s_2: &'b pavex::request::RequestHead,
         next: fn(
-            &'a pavex::request::RequestHead,
+            &'b pavex::request::RequestHead,
             pavex::request::body::RawIncomingBody,
-            &'b pavex_tracing::RootSpan,
+            &'a pavex_tracing::RootSpan,
         ) -> T,
     }
     impl<'a, 'b, T> std::future::IntoFuture for Next0<'a, 'b, T>
@@ -1147,28 +1174,30 @@ pub mod route_6 {
         type Output = pavex::response::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            (self.next)(self.s_1, self.s_0, self.s_2)
+            (self.next)(self.s_2, self.s_1, self.s_0)
         }
     }
-    pub struct Next1<'a, T>
+    pub struct Next1<'a, 'b, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
-        s_0: pavex::request::body::RawIncomingBody,
-        s_1: &'a pavex::request::RequestHead,
+        s_0: &'a pavex_tracing::RootSpan,
+        s_1: pavex::request::body::RawIncomingBody,
+        s_2: &'b pavex::request::RequestHead,
         next: fn(
+            &'a pavex_tracing::RootSpan,
             pavex::request::body::RawIncomingBody,
-            &'a pavex::request::RequestHead,
+            &'b pavex::request::RequestHead,
         ) -> T,
     }
-    impl<'a, T> std::future::IntoFuture for Next1<'a, T>
+    impl<'a, 'b, T> std::future::IntoFuture for Next1<'a, 'b, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
         type Output = pavex::response::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            (self.next)(self.s_0, self.s_1)
+            (self.next)(self.s_0, self.s_1, self.s_2)
         }
     }
 }
@@ -1196,6 +1225,7 @@ pub mod route_7 {
     ) -> pavex::response::Response {
         let v2 = crate::route_7::Next1 {
             s_0: v0,
+            s_1: v1,
             next: handler,
         };
         let v3 = pavex::middleware::Next::new(v2);
@@ -1204,23 +1234,26 @@ pub mod route_7 {
     }
     pub async fn handler(
         v0: pavex::request::path::RawPathParams<'_, '_>,
+        v1: &pavex_tracing::RootSpan,
     ) -> pavex::response::Response {
-        let v1 = pavex::request::path::PathParams::extract(v0);
-        let v2 = match v1 {
+        let v2 = pavex::request::path::PathParams::extract(v0);
+        let v3 = match v2 {
             Ok(ok) => ok,
-            Err(v2) => {
+            Err(v3) => {
                 return {
-                    let v3 = pavex::request::path::errors::ExtractPathParamsError::into_response(
-                        &v2,
+                    let v4 = pavex::request::path::errors::ExtractPathParamsError::into_response(
+                        &v3,
                     );
+                    let v5 = pavex::Error::new(v3);
+                    conduit_core::telemetry::error_logger(&v5, v1).await;
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v3,
+                        v4,
                     )
                 };
             }
         };
-        let v3 = conduit_core::routes::profiles::get_profile(v2);
-        <http::StatusCode as pavex::response::IntoResponse>::into_response(v3)
+        let v4 = conduit_core::routes::profiles::get_profile(v3);
+        <http::StatusCode as pavex::response::IntoResponse>::into_response(v4)
     }
     pub struct Next0<'a, 'b, 'c, T>
     where
@@ -1243,21 +1276,25 @@ pub mod route_7 {
             (self.next)(self.s_0, self.s_1)
         }
     }
-    pub struct Next1<'a, 'b, T>
+    pub struct Next1<'a, 'b, 'c, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
         s_0: pavex::request::path::RawPathParams<'a, 'b>,
-        next: fn(pavex::request::path::RawPathParams<'a, 'b>) -> T,
+        s_1: &'c pavex_tracing::RootSpan,
+        next: fn(
+            pavex::request::path::RawPathParams<'a, 'b>,
+            &'c pavex_tracing::RootSpan,
+        ) -> T,
     }
-    impl<'a, 'b, T> std::future::IntoFuture for Next1<'a, 'b, T>
+    impl<'a, 'b, 'c, T> std::future::IntoFuture for Next1<'a, 'b, 'c, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
         type Output = pavex::response::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            (self.next)(self.s_0)
+            (self.next)(self.s_0, self.s_1)
         }
     }
 }
@@ -1285,6 +1322,7 @@ pub mod route_8 {
     ) -> pavex::response::Response {
         let v2 = crate::route_8::Next1 {
             s_0: v0,
+            s_1: v1,
             next: handler,
         };
         let v3 = pavex::middleware::Next::new(v2);
@@ -1293,23 +1331,26 @@ pub mod route_8 {
     }
     pub async fn handler(
         v0: pavex::request::path::RawPathParams<'_, '_>,
+        v1: &pavex_tracing::RootSpan,
     ) -> pavex::response::Response {
-        let v1 = pavex::request::path::PathParams::extract(v0);
-        let v2 = match v1 {
+        let v2 = pavex::request::path::PathParams::extract(v0);
+        let v3 = match v2 {
             Ok(ok) => ok,
-            Err(v2) => {
+            Err(v3) => {
                 return {
-                    let v3 = pavex::request::path::errors::ExtractPathParamsError::into_response(
-                        &v2,
+                    let v4 = pavex::request::path::errors::ExtractPathParamsError::into_response(
+                        &v3,
                     );
+                    let v5 = pavex::Error::new(v3);
+                    conduit_core::telemetry::error_logger(&v5, v1).await;
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v3,
+                        v4,
                     )
                 };
             }
         };
-        let v3 = conduit_core::routes::profiles::follow_profile(v2);
-        <http::StatusCode as pavex::response::IntoResponse>::into_response(v3)
+        let v4 = conduit_core::routes::profiles::follow_profile(v3);
+        <http::StatusCode as pavex::response::IntoResponse>::into_response(v4)
     }
     pub struct Next0<'a, 'b, 'c, T>
     where
@@ -1332,21 +1373,25 @@ pub mod route_8 {
             (self.next)(self.s_0, self.s_1)
         }
     }
-    pub struct Next1<'a, 'b, T>
+    pub struct Next1<'a, 'b, 'c, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
         s_0: pavex::request::path::RawPathParams<'a, 'b>,
-        next: fn(pavex::request::path::RawPathParams<'a, 'b>) -> T,
+        s_1: &'c pavex_tracing::RootSpan,
+        next: fn(
+            pavex::request::path::RawPathParams<'a, 'b>,
+            &'c pavex_tracing::RootSpan,
+        ) -> T,
     }
-    impl<'a, 'b, T> std::future::IntoFuture for Next1<'a, 'b, T>
+    impl<'a, 'b, 'c, T> std::future::IntoFuture for Next1<'a, 'b, 'c, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
         type Output = pavex::response::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            (self.next)(self.s_0)
+            (self.next)(self.s_0, self.s_1)
         }
     }
 }
@@ -1374,6 +1419,7 @@ pub mod route_9 {
     ) -> pavex::response::Response {
         let v2 = crate::route_9::Next1 {
             s_0: v0,
+            s_1: v1,
             next: handler,
         };
         let v3 = pavex::middleware::Next::new(v2);
@@ -1382,23 +1428,26 @@ pub mod route_9 {
     }
     pub async fn handler(
         v0: pavex::request::path::RawPathParams<'_, '_>,
+        v1: &pavex_tracing::RootSpan,
     ) -> pavex::response::Response {
-        let v1 = pavex::request::path::PathParams::extract(v0);
-        let v2 = match v1 {
+        let v2 = pavex::request::path::PathParams::extract(v0);
+        let v3 = match v2 {
             Ok(ok) => ok,
-            Err(v2) => {
+            Err(v3) => {
                 return {
-                    let v3 = pavex::request::path::errors::ExtractPathParamsError::into_response(
-                        &v2,
+                    let v4 = pavex::request::path::errors::ExtractPathParamsError::into_response(
+                        &v3,
                     );
+                    let v5 = pavex::Error::new(v3);
+                    conduit_core::telemetry::error_logger(&v5, v1).await;
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v3,
+                        v4,
                     )
                 };
             }
         };
-        let v3 = conduit_core::routes::profiles::unfollow_profile(v2);
-        <http::StatusCode as pavex::response::IntoResponse>::into_response(v3)
+        let v4 = conduit_core::routes::profiles::unfollow_profile(v3);
+        <http::StatusCode as pavex::response::IntoResponse>::into_response(v4)
     }
     pub struct Next0<'a, 'b, 'c, T>
     where
@@ -1421,21 +1470,25 @@ pub mod route_9 {
             (self.next)(self.s_0, self.s_1)
         }
     }
-    pub struct Next1<'a, 'b, T>
+    pub struct Next1<'a, 'b, 'c, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
         s_0: pavex::request::path::RawPathParams<'a, 'b>,
-        next: fn(pavex::request::path::RawPathParams<'a, 'b>) -> T,
+        s_1: &'c pavex_tracing::RootSpan,
+        next: fn(
+            pavex::request::path::RawPathParams<'a, 'b>,
+            &'c pavex_tracing::RootSpan,
+        ) -> T,
     }
-    impl<'a, 'b, T> std::future::IntoFuture for Next1<'a, 'b, T>
+    impl<'a, 'b, 'c, T> std::future::IntoFuture for Next1<'a, 'b, 'c, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
         type Output = pavex::response::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            (self.next)(self.s_0)
+            (self.next)(self.s_0, self.s_1)
         }
     }
 }
@@ -1447,8 +1500,8 @@ pub mod route_10 {
         let v2 = pavex::telemetry::ServerRequestId::generate();
         let v3 = conduit_core::telemetry::root_span(v1, v0, v2);
         let v4 = crate::route_10::Next0 {
-            s_0: v1,
-            s_1: &v3,
+            s_0: &v3,
+            s_1: v1,
             next: middleware_1,
         };
         let v5 = pavex::middleware::Next::new(v4);
@@ -1461,38 +1514,44 @@ pub mod route_10 {
         v1: &pavex_tracing::RootSpan,
     ) -> pavex::response::Response {
         let v2 = crate::route_10::Next1 {
-            s_0: v0,
+            s_0: v1,
+            s_1: v0,
             next: handler,
         };
         let v3 = pavex::middleware::Next::new(v2);
         let v4 = conduit_core::telemetry::response_logger(v3, v1).await;
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
     }
-    pub async fn handler(v0: &pavex::request::RequestHead) -> pavex::response::Response {
-        let v1 = pavex::request::query::QueryParams::extract(v0);
-        let v2 = match v1 {
+    pub async fn handler(
+        v0: &pavex_tracing::RootSpan,
+        v1: &pavex::request::RequestHead,
+    ) -> pavex::response::Response {
+        let v2 = pavex::request::query::QueryParams::extract(v1);
+        let v3 = match v2 {
             Ok(ok) => ok,
-            Err(v2) => {
+            Err(v3) => {
                 return {
-                    let v3 = pavex::request::query::errors::ExtractQueryParamsError::into_response(
-                        &v2,
+                    let v4 = pavex::request::query::errors::ExtractQueryParamsError::into_response(
+                        &v3,
                     );
+                    let v5 = pavex::Error::new(v3);
+                    conduit_core::telemetry::error_logger(&v5, v0).await;
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v3,
+                        v4,
                     )
                 };
             }
         };
-        let v3 = conduit_core::routes::articles::list_articles(v2);
-        <http::StatusCode as pavex::response::IntoResponse>::into_response(v3)
+        let v4 = conduit_core::routes::articles::list_articles(v3);
+        <http::StatusCode as pavex::response::IntoResponse>::into_response(v4)
     }
     pub struct Next0<'a, 'b, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
-        s_0: &'a pavex::request::RequestHead,
-        s_1: &'b pavex_tracing::RootSpan,
-        next: fn(&'a pavex::request::RequestHead, &'b pavex_tracing::RootSpan) -> T,
+        s_0: &'a pavex_tracing::RootSpan,
+        s_1: &'b pavex::request::RequestHead,
+        next: fn(&'b pavex::request::RequestHead, &'a pavex_tracing::RootSpan) -> T,
     }
     impl<'a, 'b, T> std::future::IntoFuture for Next0<'a, 'b, T>
     where
@@ -1501,24 +1560,25 @@ pub mod route_10 {
         type Output = pavex::response::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            (self.next)(self.s_0, self.s_1)
+            (self.next)(self.s_1, self.s_0)
         }
     }
-    pub struct Next1<'a, T>
+    pub struct Next1<'a, 'b, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
-        s_0: &'a pavex::request::RequestHead,
-        next: fn(&'a pavex::request::RequestHead) -> T,
+        s_0: &'a pavex_tracing::RootSpan,
+        s_1: &'b pavex::request::RequestHead,
+        next: fn(&'a pavex_tracing::RootSpan, &'b pavex::request::RequestHead) -> T,
     }
-    impl<'a, T> std::future::IntoFuture for Next1<'a, T>
+    impl<'a, 'b, T> std::future::IntoFuture for Next1<'a, 'b, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
         type Output = pavex::response::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            (self.next)(self.s_0)
+            (self.next)(self.s_0, self.s_1)
         }
     }
 }
@@ -1531,9 +1591,9 @@ pub mod route_11 {
         let v3 = pavex::telemetry::ServerRequestId::generate();
         let v4 = conduit_core::telemetry::root_span(v2, v1, v3);
         let v5 = crate::route_11::Next0 {
-            s_0: v0,
-            s_1: v2,
-            s_2: &v4,
+            s_0: &v4,
+            s_1: v0,
+            s_2: v2,
             next: middleware_1,
         };
         let v6 = pavex::middleware::Next::new(v5);
@@ -1547,8 +1607,9 @@ pub mod route_11 {
         v2: &pavex_tracing::RootSpan,
     ) -> pavex::response::Response {
         let v3 = crate::route_11::Next1 {
-            s_0: v1,
-            s_1: v0,
+            s_0: v2,
+            s_1: v1,
+            s_2: v0,
             next: handler,
         };
         let v4 = pavex::middleware::Next::new(v3);
@@ -1556,52 +1617,57 @@ pub mod route_11 {
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v5)
     }
     pub async fn handler(
-        v0: pavex::request::body::RawIncomingBody,
-        v1: &pavex::request::RequestHead,
+        v0: &pavex_tracing::RootSpan,
+        v1: pavex::request::body::RawIncomingBody,
+        v2: &pavex::request::RequestHead,
     ) -> pavex::response::Response {
-        let v2 = <pavex::request::body::BodySizeLimit as std::default::Default>::default();
-        let v3 = pavex::request::body::BufferedBody::extract(v1, v0, v2).await;
-        let v4 = match v3 {
+        let v3 = <pavex::request::body::BodySizeLimit as std::default::Default>::default();
+        let v4 = pavex::request::body::BufferedBody::extract(v2, v1, v3).await;
+        let v5 = match v4 {
             Ok(ok) => ok,
-            Err(v4) => {
+            Err(v5) => {
                 return {
-                    let v5 = pavex::request::body::errors::ExtractBufferedBodyError::into_response(
-                        &v4,
+                    let v6 = pavex::request::body::errors::ExtractBufferedBodyError::into_response(
+                        &v5,
                     );
+                    let v7 = pavex::Error::new(v5);
+                    conduit_core::telemetry::error_logger(&v7, v0).await;
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v5,
+                        v6,
                     )
                 };
             }
         };
-        let v5 = pavex::request::body::JsonBody::extract(v1, &v4);
-        let v6 = match v5 {
+        let v6 = pavex::request::body::JsonBody::extract(v2, &v5);
+        let v7 = match v6 {
             Ok(ok) => ok,
-            Err(v6) => {
+            Err(v7) => {
                 return {
-                    let v7 = pavex::request::body::errors::ExtractJsonBodyError::into_response(
-                        &v6,
+                    let v8 = pavex::request::body::errors::ExtractJsonBodyError::into_response(
+                        &v7,
                     );
+                    let v9 = pavex::Error::new(v7);
+                    conduit_core::telemetry::error_logger(&v9, v0).await;
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v7,
+                        v8,
                     )
                 };
             }
         };
-        let v7 = conduit_core::routes::articles::publish_article(v6);
-        <http::StatusCode as pavex::response::IntoResponse>::into_response(v7)
+        let v8 = conduit_core::routes::articles::publish_article(v7);
+        <http::StatusCode as pavex::response::IntoResponse>::into_response(v8)
     }
     pub struct Next0<'a, 'b, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
-        s_0: pavex::request::body::RawIncomingBody,
-        s_1: &'a pavex::request::RequestHead,
-        s_2: &'b pavex_tracing::RootSpan,
+        s_0: &'a pavex_tracing::RootSpan,
+        s_1: pavex::request::body::RawIncomingBody,
+        s_2: &'b pavex::request::RequestHead,
         next: fn(
-            &'a pavex::request::RequestHead,
+            &'b pavex::request::RequestHead,
             pavex::request::body::RawIncomingBody,
-            &'b pavex_tracing::RootSpan,
+            &'a pavex_tracing::RootSpan,
         ) -> T,
     }
     impl<'a, 'b, T> std::future::IntoFuture for Next0<'a, 'b, T>
@@ -1611,28 +1677,30 @@ pub mod route_11 {
         type Output = pavex::response::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            (self.next)(self.s_1, self.s_0, self.s_2)
+            (self.next)(self.s_2, self.s_1, self.s_0)
         }
     }
-    pub struct Next1<'a, T>
+    pub struct Next1<'a, 'b, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
-        s_0: pavex::request::body::RawIncomingBody,
-        s_1: &'a pavex::request::RequestHead,
+        s_0: &'a pavex_tracing::RootSpan,
+        s_1: pavex::request::body::RawIncomingBody,
+        s_2: &'b pavex::request::RequestHead,
         next: fn(
+            &'a pavex_tracing::RootSpan,
             pavex::request::body::RawIncomingBody,
-            &'a pavex::request::RequestHead,
+            &'b pavex::request::RequestHead,
         ) -> T,
     }
-    impl<'a, T> std::future::IntoFuture for Next1<'a, T>
+    impl<'a, 'b, T> std::future::IntoFuture for Next1<'a, 'b, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
         type Output = pavex::response::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            (self.next)(self.s_0, self.s_1)
+            (self.next)(self.s_0, self.s_1, self.s_2)
         }
     }
 }
@@ -1644,8 +1712,8 @@ pub mod route_12 {
         let v2 = pavex::telemetry::ServerRequestId::generate();
         let v3 = conduit_core::telemetry::root_span(v1, v0, v2);
         let v4 = crate::route_12::Next0 {
-            s_0: v1,
-            s_1: &v3,
+            s_0: &v3,
+            s_1: v1,
             next: middleware_1,
         };
         let v5 = pavex::middleware::Next::new(v4);
@@ -1658,38 +1726,44 @@ pub mod route_12 {
         v1: &pavex_tracing::RootSpan,
     ) -> pavex::response::Response {
         let v2 = crate::route_12::Next1 {
-            s_0: v0,
+            s_0: v1,
+            s_1: v0,
             next: handler,
         };
         let v3 = pavex::middleware::Next::new(v2);
         let v4 = conduit_core::telemetry::response_logger(v3, v1).await;
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
     }
-    pub async fn handler(v0: &pavex::request::RequestHead) -> pavex::response::Response {
-        let v1 = pavex::request::query::QueryParams::extract(v0);
-        let v2 = match v1 {
+    pub async fn handler(
+        v0: &pavex_tracing::RootSpan,
+        v1: &pavex::request::RequestHead,
+    ) -> pavex::response::Response {
+        let v2 = pavex::request::query::QueryParams::extract(v1);
+        let v3 = match v2 {
             Ok(ok) => ok,
-            Err(v2) => {
+            Err(v3) => {
                 return {
-                    let v3 = pavex::request::query::errors::ExtractQueryParamsError::into_response(
-                        &v2,
+                    let v4 = pavex::request::query::errors::ExtractQueryParamsError::into_response(
+                        &v3,
                     );
+                    let v5 = pavex::Error::new(v3);
+                    conduit_core::telemetry::error_logger(&v5, v0).await;
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v3,
+                        v4,
                     )
                 };
             }
         };
-        let v3 = conduit_core::routes::articles::get_feed(v2);
-        <http::StatusCode as pavex::response::IntoResponse>::into_response(v3)
+        let v4 = conduit_core::routes::articles::get_feed(v3);
+        <http::StatusCode as pavex::response::IntoResponse>::into_response(v4)
     }
     pub struct Next0<'a, 'b, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
-        s_0: &'a pavex::request::RequestHead,
-        s_1: &'b pavex_tracing::RootSpan,
-        next: fn(&'a pavex::request::RequestHead, &'b pavex_tracing::RootSpan) -> T,
+        s_0: &'a pavex_tracing::RootSpan,
+        s_1: &'b pavex::request::RequestHead,
+        next: fn(&'b pavex::request::RequestHead, &'a pavex_tracing::RootSpan) -> T,
     }
     impl<'a, 'b, T> std::future::IntoFuture for Next0<'a, 'b, T>
     where
@@ -1698,24 +1772,25 @@ pub mod route_12 {
         type Output = pavex::response::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            (self.next)(self.s_0, self.s_1)
+            (self.next)(self.s_1, self.s_0)
         }
     }
-    pub struct Next1<'a, T>
+    pub struct Next1<'a, 'b, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
-        s_0: &'a pavex::request::RequestHead,
-        next: fn(&'a pavex::request::RequestHead) -> T,
+        s_0: &'a pavex_tracing::RootSpan,
+        s_1: &'b pavex::request::RequestHead,
+        next: fn(&'a pavex_tracing::RootSpan, &'b pavex::request::RequestHead) -> T,
     }
-    impl<'a, T> std::future::IntoFuture for Next1<'a, T>
+    impl<'a, 'b, T> std::future::IntoFuture for Next1<'a, 'b, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
         type Output = pavex::response::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            (self.next)(self.s_0)
+            (self.next)(self.s_0, self.s_1)
         }
     }
 }
@@ -1743,6 +1818,7 @@ pub mod route_13 {
     ) -> pavex::response::Response {
         let v2 = crate::route_13::Next1 {
             s_0: v0,
+            s_1: v1,
             next: handler,
         };
         let v3 = pavex::middleware::Next::new(v2);
@@ -1751,23 +1827,26 @@ pub mod route_13 {
     }
     pub async fn handler(
         v0: pavex::request::path::RawPathParams<'_, '_>,
+        v1: &pavex_tracing::RootSpan,
     ) -> pavex::response::Response {
-        let v1 = pavex::request::path::PathParams::extract(v0);
-        let v2 = match v1 {
+        let v2 = pavex::request::path::PathParams::extract(v0);
+        let v3 = match v2 {
             Ok(ok) => ok,
-            Err(v2) => {
+            Err(v3) => {
                 return {
-                    let v3 = pavex::request::path::errors::ExtractPathParamsError::into_response(
-                        &v2,
+                    let v4 = pavex::request::path::errors::ExtractPathParamsError::into_response(
+                        &v3,
                     );
+                    let v5 = pavex::Error::new(v3);
+                    conduit_core::telemetry::error_logger(&v5, v1).await;
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v3,
+                        v4,
                     )
                 };
             }
         };
-        let v3 = conduit_core::routes::articles::get_article(v2);
-        <http::StatusCode as pavex::response::IntoResponse>::into_response(v3)
+        let v4 = conduit_core::routes::articles::get_article(v3);
+        <http::StatusCode as pavex::response::IntoResponse>::into_response(v4)
     }
     pub struct Next0<'a, 'b, 'c, T>
     where
@@ -1790,21 +1869,25 @@ pub mod route_13 {
             (self.next)(self.s_0, self.s_1)
         }
     }
-    pub struct Next1<'a, 'b, T>
+    pub struct Next1<'a, 'b, 'c, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
         s_0: pavex::request::path::RawPathParams<'a, 'b>,
-        next: fn(pavex::request::path::RawPathParams<'a, 'b>) -> T,
+        s_1: &'c pavex_tracing::RootSpan,
+        next: fn(
+            pavex::request::path::RawPathParams<'a, 'b>,
+            &'c pavex_tracing::RootSpan,
+        ) -> T,
     }
-    impl<'a, 'b, T> std::future::IntoFuture for Next1<'a, 'b, T>
+    impl<'a, 'b, 'c, T> std::future::IntoFuture for Next1<'a, 'b, 'c, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
         type Output = pavex::response::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            (self.next)(self.s_0)
+            (self.next)(self.s_0, self.s_1)
         }
     }
 }
@@ -1832,6 +1915,7 @@ pub mod route_14 {
     ) -> pavex::response::Response {
         let v2 = crate::route_14::Next1 {
             s_0: v0,
+            s_1: v1,
             next: handler,
         };
         let v3 = pavex::middleware::Next::new(v2);
@@ -1840,23 +1924,26 @@ pub mod route_14 {
     }
     pub async fn handler(
         v0: pavex::request::path::RawPathParams<'_, '_>,
+        v1: &pavex_tracing::RootSpan,
     ) -> pavex::response::Response {
-        let v1 = pavex::request::path::PathParams::extract(v0);
-        let v2 = match v1 {
+        let v2 = pavex::request::path::PathParams::extract(v0);
+        let v3 = match v2 {
             Ok(ok) => ok,
-            Err(v2) => {
+            Err(v3) => {
                 return {
-                    let v3 = pavex::request::path::errors::ExtractPathParamsError::into_response(
-                        &v2,
+                    let v4 = pavex::request::path::errors::ExtractPathParamsError::into_response(
+                        &v3,
                     );
+                    let v5 = pavex::Error::new(v3);
+                    conduit_core::telemetry::error_logger(&v5, v1).await;
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v3,
+                        v4,
                     )
                 };
             }
         };
-        let v3 = conduit_core::routes::articles::delete_article(v2);
-        <http::StatusCode as pavex::response::IntoResponse>::into_response(v3)
+        let v4 = conduit_core::routes::articles::delete_article(v3);
+        <http::StatusCode as pavex::response::IntoResponse>::into_response(v4)
     }
     pub struct Next0<'a, 'b, 'c, T>
     where
@@ -1879,21 +1966,25 @@ pub mod route_14 {
             (self.next)(self.s_0, self.s_1)
         }
     }
-    pub struct Next1<'a, 'b, T>
+    pub struct Next1<'a, 'b, 'c, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
         s_0: pavex::request::path::RawPathParams<'a, 'b>,
-        next: fn(pavex::request::path::RawPathParams<'a, 'b>) -> T,
+        s_1: &'c pavex_tracing::RootSpan,
+        next: fn(
+            pavex::request::path::RawPathParams<'a, 'b>,
+            &'c pavex_tracing::RootSpan,
+        ) -> T,
     }
-    impl<'a, 'b, T> std::future::IntoFuture for Next1<'a, 'b, T>
+    impl<'a, 'b, 'c, T> std::future::IntoFuture for Next1<'a, 'b, 'c, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
         type Output = pavex::response::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            (self.next)(self.s_0)
+            (self.next)(self.s_0, self.s_1)
         }
     }
 }
@@ -1907,10 +1998,10 @@ pub mod route_15 {
         let v4 = pavex::telemetry::ServerRequestId::generate();
         let v5 = conduit_core::telemetry::root_span(v3, v2, v4);
         let v6 = crate::route_15::Next0 {
-            s_0: v0,
-            s_1: v1,
-            s_2: v3,
-            s_3: &v5,
+            s_0: &v5,
+            s_1: v0,
+            s_2: v1,
+            s_3: v3,
             next: middleware_1,
         };
         let v7 = pavex::middleware::Next::new(v6);
@@ -1925,9 +2016,10 @@ pub mod route_15 {
         v3: &pavex_tracing::RootSpan,
     ) -> pavex::response::Response {
         let v4 = crate::route_15::Next1 {
-            s_0: v1,
-            s_1: v2,
-            s_2: v0,
+            s_0: v3,
+            s_1: v1,
+            s_2: v2,
+            s_3: v0,
             next: handler,
         };
         let v5 = pavex::middleware::Next::new(v4);
@@ -1935,69 +2027,76 @@ pub mod route_15 {
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
     }
     pub async fn handler(
-        v0: pavex::request::body::RawIncomingBody,
-        v1: pavex::request::path::RawPathParams<'_, '_>,
-        v2: &pavex::request::RequestHead,
+        v0: &pavex_tracing::RootSpan,
+        v1: pavex::request::body::RawIncomingBody,
+        v2: pavex::request::path::RawPathParams<'_, '_>,
+        v3: &pavex::request::RequestHead,
     ) -> pavex::response::Response {
-        let v3 = <pavex::request::body::BodySizeLimit as std::default::Default>::default();
-        let v4 = pavex::request::body::BufferedBody::extract(v2, v0, v3).await;
-        let v5 = match v4 {
+        let v4 = <pavex::request::body::BodySizeLimit as std::default::Default>::default();
+        let v5 = pavex::request::body::BufferedBody::extract(v3, v1, v4).await;
+        let v6 = match v5 {
             Ok(ok) => ok,
-            Err(v5) => {
+            Err(v6) => {
                 return {
-                    let v6 = pavex::request::body::errors::ExtractBufferedBodyError::into_response(
-                        &v5,
+                    let v7 = pavex::request::body::errors::ExtractBufferedBodyError::into_response(
+                        &v6,
                     );
+                    let v8 = pavex::Error::new(v6);
+                    conduit_core::telemetry::error_logger(&v8, v0).await;
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v6,
+                        v7,
                     )
                 };
             }
         };
-        let v6 = pavex::request::body::JsonBody::extract(v2, &v5);
-        let v7 = match v6 {
+        let v7 = pavex::request::body::JsonBody::extract(v3, &v6);
+        let v8 = match v7 {
             Ok(ok) => ok,
-            Err(v7) => {
+            Err(v8) => {
                 return {
-                    let v8 = pavex::request::body::errors::ExtractJsonBodyError::into_response(
-                        &v7,
+                    let v9 = pavex::request::body::errors::ExtractJsonBodyError::into_response(
+                        &v8,
                     );
+                    let v10 = pavex::Error::new(v8);
+                    conduit_core::telemetry::error_logger(&v10, v0).await;
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v8,
+                        v9,
                     )
                 };
             }
         };
-        let v8 = pavex::request::path::PathParams::extract(v1);
-        let v9 = match v8 {
+        let v9 = pavex::request::path::PathParams::extract(v2);
+        let v10 = match v9 {
             Ok(ok) => ok,
-            Err(v9) => {
+            Err(v10) => {
                 return {
-                    let v10 = pavex::request::path::errors::ExtractPathParamsError::into_response(
-                        &v9,
+                    let v11 = pavex::request::path::errors::ExtractPathParamsError::into_response(
+                        &v10,
                     );
+                    let v12 = pavex::Error::new(v10);
+                    conduit_core::telemetry::error_logger(&v12, v0).await;
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v10,
+                        v11,
                     )
                 };
             }
         };
-        let v10 = conduit_core::routes::articles::update_article(v9, v7);
-        <http::StatusCode as pavex::response::IntoResponse>::into_response(v10)
+        let v11 = conduit_core::routes::articles::update_article(v10, v8);
+        <http::StatusCode as pavex::response::IntoResponse>::into_response(v11)
     }
     pub struct Next0<'a, 'b, 'c, 'd, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
-        s_0: pavex::request::body::RawIncomingBody,
-        s_1: pavex::request::path::RawPathParams<'a, 'b>,
-        s_2: &'c pavex::request::RequestHead,
-        s_3: &'d pavex_tracing::RootSpan,
+        s_0: &'a pavex_tracing::RootSpan,
+        s_1: pavex::request::body::RawIncomingBody,
+        s_2: pavex::request::path::RawPathParams<'b, 'c>,
+        s_3: &'d pavex::request::RequestHead,
         next: fn(
-            &'c pavex::request::RequestHead,
+            &'d pavex::request::RequestHead,
             pavex::request::body::RawIncomingBody,
-            pavex::request::path::RawPathParams<'a, 'b>,
-            &'d pavex_tracing::RootSpan,
+            pavex::request::path::RawPathParams<'b, 'c>,
+            &'a pavex_tracing::RootSpan,
         ) -> T,
     }
     impl<'a, 'b, 'c, 'd, T> std::future::IntoFuture for Next0<'a, 'b, 'c, 'd, T>
@@ -2007,30 +2106,32 @@ pub mod route_15 {
         type Output = pavex::response::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            (self.next)(self.s_2, self.s_0, self.s_1, self.s_3)
+            (self.next)(self.s_3, self.s_1, self.s_2, self.s_0)
         }
     }
-    pub struct Next1<'a, 'b, 'c, T>
+    pub struct Next1<'a, 'b, 'c, 'd, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
-        s_0: pavex::request::body::RawIncomingBody,
-        s_1: pavex::request::path::RawPathParams<'a, 'b>,
-        s_2: &'c pavex::request::RequestHead,
+        s_0: &'a pavex_tracing::RootSpan,
+        s_1: pavex::request::body::RawIncomingBody,
+        s_2: pavex::request::path::RawPathParams<'b, 'c>,
+        s_3: &'d pavex::request::RequestHead,
         next: fn(
+            &'a pavex_tracing::RootSpan,
             pavex::request::body::RawIncomingBody,
-            pavex::request::path::RawPathParams<'a, 'b>,
-            &'c pavex::request::RequestHead,
+            pavex::request::path::RawPathParams<'b, 'c>,
+            &'d pavex::request::RequestHead,
         ) -> T,
     }
-    impl<'a, 'b, 'c, T> std::future::IntoFuture for Next1<'a, 'b, 'c, T>
+    impl<'a, 'b, 'c, 'd, T> std::future::IntoFuture for Next1<'a, 'b, 'c, 'd, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
         type Output = pavex::response::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            (self.next)(self.s_0, self.s_1, self.s_2)
+            (self.next)(self.s_0, self.s_1, self.s_2, self.s_3)
         }
     }
 }
@@ -2058,6 +2159,7 @@ pub mod route_16 {
     ) -> pavex::response::Response {
         let v2 = crate::route_16::Next1 {
             s_0: v0,
+            s_1: v1,
             next: handler,
         };
         let v3 = pavex::middleware::Next::new(v2);
@@ -2066,23 +2168,26 @@ pub mod route_16 {
     }
     pub async fn handler(
         v0: pavex::request::path::RawPathParams<'_, '_>,
+        v1: &pavex_tracing::RootSpan,
     ) -> pavex::response::Response {
-        let v1 = pavex::request::path::PathParams::extract(v0);
-        let v2 = match v1 {
+        let v2 = pavex::request::path::PathParams::extract(v0);
+        let v3 = match v2 {
             Ok(ok) => ok,
-            Err(v2) => {
+            Err(v3) => {
                 return {
-                    let v3 = pavex::request::path::errors::ExtractPathParamsError::into_response(
-                        &v2,
+                    let v4 = pavex::request::path::errors::ExtractPathParamsError::into_response(
+                        &v3,
                     );
+                    let v5 = pavex::Error::new(v3);
+                    conduit_core::telemetry::error_logger(&v5, v1).await;
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v3,
+                        v4,
                     )
                 };
             }
         };
-        let v3 = conduit_core::routes::articles::unfavorite_article(v2);
-        <http::StatusCode as pavex::response::IntoResponse>::into_response(v3)
+        let v4 = conduit_core::routes::articles::unfavorite_article(v3);
+        <http::StatusCode as pavex::response::IntoResponse>::into_response(v4)
     }
     pub struct Next0<'a, 'b, 'c, T>
     where
@@ -2105,21 +2210,25 @@ pub mod route_16 {
             (self.next)(self.s_0, self.s_1)
         }
     }
-    pub struct Next1<'a, 'b, T>
+    pub struct Next1<'a, 'b, 'c, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
         s_0: pavex::request::path::RawPathParams<'a, 'b>,
-        next: fn(pavex::request::path::RawPathParams<'a, 'b>) -> T,
+        s_1: &'c pavex_tracing::RootSpan,
+        next: fn(
+            pavex::request::path::RawPathParams<'a, 'b>,
+            &'c pavex_tracing::RootSpan,
+        ) -> T,
     }
-    impl<'a, 'b, T> std::future::IntoFuture for Next1<'a, 'b, T>
+    impl<'a, 'b, 'c, T> std::future::IntoFuture for Next1<'a, 'b, 'c, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
         type Output = pavex::response::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            (self.next)(self.s_0)
+            (self.next)(self.s_0, self.s_1)
         }
     }
 }
@@ -2147,6 +2256,7 @@ pub mod route_17 {
     ) -> pavex::response::Response {
         let v2 = crate::route_17::Next1 {
             s_0: v0,
+            s_1: v1,
             next: handler,
         };
         let v3 = pavex::middleware::Next::new(v2);
@@ -2155,23 +2265,26 @@ pub mod route_17 {
     }
     pub async fn handler(
         v0: pavex::request::path::RawPathParams<'_, '_>,
+        v1: &pavex_tracing::RootSpan,
     ) -> pavex::response::Response {
-        let v1 = pavex::request::path::PathParams::extract(v0);
-        let v2 = match v1 {
+        let v2 = pavex::request::path::PathParams::extract(v0);
+        let v3 = match v2 {
             Ok(ok) => ok,
-            Err(v2) => {
+            Err(v3) => {
                 return {
-                    let v3 = pavex::request::path::errors::ExtractPathParamsError::into_response(
-                        &v2,
+                    let v4 = pavex::request::path::errors::ExtractPathParamsError::into_response(
+                        &v3,
                     );
+                    let v5 = pavex::Error::new(v3);
+                    conduit_core::telemetry::error_logger(&v5, v1).await;
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v3,
+                        v4,
                     )
                 };
             }
         };
-        let v3 = conduit_core::routes::articles::favorite_article(v2);
-        <http::StatusCode as pavex::response::IntoResponse>::into_response(v3)
+        let v4 = conduit_core::routes::articles::favorite_article(v3);
+        <http::StatusCode as pavex::response::IntoResponse>::into_response(v4)
     }
     pub struct Next0<'a, 'b, 'c, T>
     where
@@ -2194,21 +2307,25 @@ pub mod route_17 {
             (self.next)(self.s_0, self.s_1)
         }
     }
-    pub struct Next1<'a, 'b, T>
+    pub struct Next1<'a, 'b, 'c, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
         s_0: pavex::request::path::RawPathParams<'a, 'b>,
-        next: fn(pavex::request::path::RawPathParams<'a, 'b>) -> T,
+        s_1: &'c pavex_tracing::RootSpan,
+        next: fn(
+            pavex::request::path::RawPathParams<'a, 'b>,
+            &'c pavex_tracing::RootSpan,
+        ) -> T,
     }
-    impl<'a, 'b, T> std::future::IntoFuture for Next1<'a, 'b, T>
+    impl<'a, 'b, 'c, T> std::future::IntoFuture for Next1<'a, 'b, 'c, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
         type Output = pavex::response::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            (self.next)(self.s_0)
+            (self.next)(self.s_0, self.s_1)
         }
     }
 }
@@ -2236,6 +2353,7 @@ pub mod route_18 {
     ) -> pavex::response::Response {
         let v2 = crate::route_18::Next1 {
             s_0: v0,
+            s_1: v1,
             next: handler,
         };
         let v3 = pavex::middleware::Next::new(v2);
@@ -2244,23 +2362,26 @@ pub mod route_18 {
     }
     pub async fn handler(
         v0: pavex::request::path::RawPathParams<'_, '_>,
+        v1: &pavex_tracing::RootSpan,
     ) -> pavex::response::Response {
-        let v1 = pavex::request::path::PathParams::extract(v0);
-        let v2 = match v1 {
+        let v2 = pavex::request::path::PathParams::extract(v0);
+        let v3 = match v2 {
             Ok(ok) => ok,
-            Err(v2) => {
+            Err(v3) => {
                 return {
-                    let v3 = pavex::request::path::errors::ExtractPathParamsError::into_response(
-                        &v2,
+                    let v4 = pavex::request::path::errors::ExtractPathParamsError::into_response(
+                        &v3,
                     );
+                    let v5 = pavex::Error::new(v3);
+                    conduit_core::telemetry::error_logger(&v5, v1).await;
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v3,
+                        v4,
                     )
                 };
             }
         };
-        let v3 = conduit_core::routes::articles::list_comments(v2);
-        <http::StatusCode as pavex::response::IntoResponse>::into_response(v3)
+        let v4 = conduit_core::routes::articles::list_comments(v3);
+        <http::StatusCode as pavex::response::IntoResponse>::into_response(v4)
     }
     pub struct Next0<'a, 'b, 'c, T>
     where
@@ -2283,21 +2404,25 @@ pub mod route_18 {
             (self.next)(self.s_0, self.s_1)
         }
     }
-    pub struct Next1<'a, 'b, T>
+    pub struct Next1<'a, 'b, 'c, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
         s_0: pavex::request::path::RawPathParams<'a, 'b>,
-        next: fn(pavex::request::path::RawPathParams<'a, 'b>) -> T,
+        s_1: &'c pavex_tracing::RootSpan,
+        next: fn(
+            pavex::request::path::RawPathParams<'a, 'b>,
+            &'c pavex_tracing::RootSpan,
+        ) -> T,
     }
-    impl<'a, 'b, T> std::future::IntoFuture for Next1<'a, 'b, T>
+    impl<'a, 'b, 'c, T> std::future::IntoFuture for Next1<'a, 'b, 'c, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
         type Output = pavex::response::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            (self.next)(self.s_0)
+            (self.next)(self.s_0, self.s_1)
         }
     }
 }
@@ -2311,10 +2436,10 @@ pub mod route_19 {
         let v4 = pavex::telemetry::ServerRequestId::generate();
         let v5 = conduit_core::telemetry::root_span(v3, v2, v4);
         let v6 = crate::route_19::Next0 {
-            s_0: v0,
-            s_1: v1,
-            s_2: v3,
-            s_3: &v5,
+            s_0: &v5,
+            s_1: v0,
+            s_2: v1,
+            s_3: v3,
             next: middleware_1,
         };
         let v7 = pavex::middleware::Next::new(v6);
@@ -2329,9 +2454,10 @@ pub mod route_19 {
         v3: &pavex_tracing::RootSpan,
     ) -> pavex::response::Response {
         let v4 = crate::route_19::Next1 {
-            s_0: v1,
-            s_1: v2,
-            s_2: v0,
+            s_0: v3,
+            s_1: v1,
+            s_2: v2,
+            s_3: v0,
             next: handler,
         };
         let v5 = pavex::middleware::Next::new(v4);
@@ -2339,69 +2465,76 @@ pub mod route_19 {
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
     }
     pub async fn handler(
-        v0: pavex::request::body::RawIncomingBody,
-        v1: pavex::request::path::RawPathParams<'_, '_>,
-        v2: &pavex::request::RequestHead,
+        v0: &pavex_tracing::RootSpan,
+        v1: pavex::request::body::RawIncomingBody,
+        v2: pavex::request::path::RawPathParams<'_, '_>,
+        v3: &pavex::request::RequestHead,
     ) -> pavex::response::Response {
-        let v3 = <pavex::request::body::BodySizeLimit as std::default::Default>::default();
-        let v4 = pavex::request::body::BufferedBody::extract(v2, v0, v3).await;
-        let v5 = match v4 {
+        let v4 = <pavex::request::body::BodySizeLimit as std::default::Default>::default();
+        let v5 = pavex::request::body::BufferedBody::extract(v3, v1, v4).await;
+        let v6 = match v5 {
             Ok(ok) => ok,
-            Err(v5) => {
+            Err(v6) => {
                 return {
-                    let v6 = pavex::request::body::errors::ExtractBufferedBodyError::into_response(
-                        &v5,
+                    let v7 = pavex::request::body::errors::ExtractBufferedBodyError::into_response(
+                        &v6,
                     );
+                    let v8 = pavex::Error::new(v6);
+                    conduit_core::telemetry::error_logger(&v8, v0).await;
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v6,
+                        v7,
                     )
                 };
             }
         };
-        let v6 = pavex::request::body::JsonBody::extract(v2, &v5);
-        let v7 = match v6 {
+        let v7 = pavex::request::body::JsonBody::extract(v3, &v6);
+        let v8 = match v7 {
             Ok(ok) => ok,
-            Err(v7) => {
+            Err(v8) => {
                 return {
-                    let v8 = pavex::request::body::errors::ExtractJsonBodyError::into_response(
-                        &v7,
+                    let v9 = pavex::request::body::errors::ExtractJsonBodyError::into_response(
+                        &v8,
                     );
+                    let v10 = pavex::Error::new(v8);
+                    conduit_core::telemetry::error_logger(&v10, v0).await;
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v8,
+                        v9,
                     )
                 };
             }
         };
-        let v8 = pavex::request::path::PathParams::extract(v1);
-        let v9 = match v8 {
+        let v9 = pavex::request::path::PathParams::extract(v2);
+        let v10 = match v9 {
             Ok(ok) => ok,
-            Err(v9) => {
+            Err(v10) => {
                 return {
-                    let v10 = pavex::request::path::errors::ExtractPathParamsError::into_response(
-                        &v9,
+                    let v11 = pavex::request::path::errors::ExtractPathParamsError::into_response(
+                        &v10,
                     );
+                    let v12 = pavex::Error::new(v10);
+                    conduit_core::telemetry::error_logger(&v12, v0).await;
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v10,
+                        v11,
                     )
                 };
             }
         };
-        let v10 = conduit_core::routes::articles::publish_comment(v9, v7);
-        <http::StatusCode as pavex::response::IntoResponse>::into_response(v10)
+        let v11 = conduit_core::routes::articles::publish_comment(v10, v8);
+        <http::StatusCode as pavex::response::IntoResponse>::into_response(v11)
     }
     pub struct Next0<'a, 'b, 'c, 'd, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
-        s_0: pavex::request::body::RawIncomingBody,
-        s_1: pavex::request::path::RawPathParams<'a, 'b>,
-        s_2: &'c pavex::request::RequestHead,
-        s_3: &'d pavex_tracing::RootSpan,
+        s_0: &'a pavex_tracing::RootSpan,
+        s_1: pavex::request::body::RawIncomingBody,
+        s_2: pavex::request::path::RawPathParams<'b, 'c>,
+        s_3: &'d pavex::request::RequestHead,
         next: fn(
-            &'c pavex::request::RequestHead,
+            &'d pavex::request::RequestHead,
             pavex::request::body::RawIncomingBody,
-            pavex::request::path::RawPathParams<'a, 'b>,
-            &'d pavex_tracing::RootSpan,
+            pavex::request::path::RawPathParams<'b, 'c>,
+            &'a pavex_tracing::RootSpan,
         ) -> T,
     }
     impl<'a, 'b, 'c, 'd, T> std::future::IntoFuture for Next0<'a, 'b, 'c, 'd, T>
@@ -2411,30 +2544,32 @@ pub mod route_19 {
         type Output = pavex::response::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            (self.next)(self.s_2, self.s_0, self.s_1, self.s_3)
+            (self.next)(self.s_3, self.s_1, self.s_2, self.s_0)
         }
     }
-    pub struct Next1<'a, 'b, 'c, T>
+    pub struct Next1<'a, 'b, 'c, 'd, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
-        s_0: pavex::request::body::RawIncomingBody,
-        s_1: pavex::request::path::RawPathParams<'a, 'b>,
-        s_2: &'c pavex::request::RequestHead,
+        s_0: &'a pavex_tracing::RootSpan,
+        s_1: pavex::request::body::RawIncomingBody,
+        s_2: pavex::request::path::RawPathParams<'b, 'c>,
+        s_3: &'d pavex::request::RequestHead,
         next: fn(
+            &'a pavex_tracing::RootSpan,
             pavex::request::body::RawIncomingBody,
-            pavex::request::path::RawPathParams<'a, 'b>,
-            &'c pavex::request::RequestHead,
+            pavex::request::path::RawPathParams<'b, 'c>,
+            &'d pavex::request::RequestHead,
         ) -> T,
     }
-    impl<'a, 'b, 'c, T> std::future::IntoFuture for Next1<'a, 'b, 'c, T>
+    impl<'a, 'b, 'c, 'd, T> std::future::IntoFuture for Next1<'a, 'b, 'c, 'd, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
         type Output = pavex::response::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            (self.next)(self.s_0, self.s_1, self.s_2)
+            (self.next)(self.s_0, self.s_1, self.s_2, self.s_3)
         }
     }
 }
@@ -2462,6 +2597,7 @@ pub mod route_20 {
     ) -> pavex::response::Response {
         let v2 = crate::route_20::Next1 {
             s_0: v0,
+            s_1: v1,
             next: handler,
         };
         let v3 = pavex::middleware::Next::new(v2);
@@ -2470,23 +2606,26 @@ pub mod route_20 {
     }
     pub async fn handler(
         v0: pavex::request::path::RawPathParams<'_, '_>,
+        v1: &pavex_tracing::RootSpan,
     ) -> pavex::response::Response {
-        let v1 = pavex::request::path::PathParams::extract(v0);
-        let v2 = match v1 {
+        let v2 = pavex::request::path::PathParams::extract(v0);
+        let v3 = match v2 {
             Ok(ok) => ok,
-            Err(v2) => {
+            Err(v3) => {
                 return {
-                    let v3 = pavex::request::path::errors::ExtractPathParamsError::into_response(
-                        &v2,
+                    let v4 = pavex::request::path::errors::ExtractPathParamsError::into_response(
+                        &v3,
                     );
+                    let v5 = pavex::Error::new(v3);
+                    conduit_core::telemetry::error_logger(&v5, v1).await;
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v3,
+                        v4,
                     )
                 };
             }
         };
-        let v3 = conduit_core::routes::articles::delete_comment(v2);
-        <http::StatusCode as pavex::response::IntoResponse>::into_response(v3)
+        let v4 = conduit_core::routes::articles::delete_comment(v3);
+        <http::StatusCode as pavex::response::IntoResponse>::into_response(v4)
     }
     pub struct Next0<'a, 'b, 'c, T>
     where
@@ -2509,21 +2648,25 @@ pub mod route_20 {
             (self.next)(self.s_0, self.s_1)
         }
     }
-    pub struct Next1<'a, 'b, T>
+    pub struct Next1<'a, 'b, 'c, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
         s_0: pavex::request::path::RawPathParams<'a, 'b>,
-        next: fn(pavex::request::path::RawPathParams<'a, 'b>) -> T,
+        s_1: &'c pavex_tracing::RootSpan,
+        next: fn(
+            pavex::request::path::RawPathParams<'a, 'b>,
+            &'c pavex_tracing::RootSpan,
+        ) -> T,
     }
-    impl<'a, 'b, T> std::future::IntoFuture for Next1<'a, 'b, T>
+    impl<'a, 'b, 'c, T> std::future::IntoFuture for Next1<'a, 'b, 'c, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
         type Output = pavex::response::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            (self.next)(self.s_0)
+            (self.next)(self.s_0, self.s_1)
         }
     }
 }

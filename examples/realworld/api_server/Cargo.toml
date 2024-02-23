@@ -22,6 +22,7 @@ serde = { version = "1", features = ["derive"]}
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", default-features = false, features = ["env-filter", "smallvec", "std", "registry", "tracing-log"] }
 tracing-bunyan-formatter = "0.3"
+pavex_tracing = { path = "../../../libs/pavex_tracing" }
 
 [dev-dependencies]
 reqwest = { version = "0.11", features = ["json"] }

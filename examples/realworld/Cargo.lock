@@ -76,6 +76,7 @@ dependencies = [
  "figment",
  "jwt-simple",
  "pavex",
+ "pavex_tracing",
  "reqwest",
  "secrecy",
  "serde",
@@ -1612,7 +1613,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_tracing"
-version = "0.1.0"
+version = "0.1.18"
 dependencies = [
  "pavex",
  "tracing",
