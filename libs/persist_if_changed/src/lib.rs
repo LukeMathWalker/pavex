@@ -2,7 +2,9 @@
 //!
 //! This is useful to avoid triggering unnecessary rebuilds in systems that look at
 //! the modification time (`mtime`) as part of their file fingerprint (e.g. `cargo`).
+use fs_err::File;
 use sha2::Digest;
+use std::io::ErrorKind;
 use std::{
     io::{Read, Write},
     path::Path,
@@ -44,11 +46,26 @@ pub fn copy_if_changed(from: &Path, to: &Path) -> Result<(), anyhow::Error> {
 /// Returns `true` if the file contents are different, `false` otherwise.
 ///
 /// It returns an error if we could not determine the outcome due to a
-/// failure in any of the intermediate operations (e.g. there is no file
-/// at the destination path).
-fn has_changed_file2file(from: &Path, to: &Path) -> Result<bool, anyhow::Error> {
-    let from_file = fs_err::File::open(from)?;
-    let to_file = fs_err::File::open(to)?;
+/// failure in any of the intermediate operations.
+#[tracing::instrument(skip_all, level=tracing::Level::TRACE)]
+pub fn has_changed_file2file(from: &Path, to: &Path) -> Result<bool, anyhow::Error> {
+    let from_file = File::open(from);
+    let to_file = File::open(to);
+    let (from_file, to_file) = match (from_file, to_file) {
+        (Ok(from_file), Ok(to_file)) => (from_file, to_file),
+        (Ok(_), Err(e)) | (Err(e), Ok(_)) => {
+            if e.kind() == ErrorKind::NotFound {
+                return Ok(true);
+            }
+            return Err(e.into());
+        }
+        (Err(e1), Err(e2)) => {
+            if e1.kind() == ErrorKind::NotFound && e2.kind() == ErrorKind::NotFound {
+                return Ok(false);
+            }
+            return Err(e1.into());
+        }
+    };
 
     // Cheaper check first: if the file size is not the same,
     // we can skip computing the checksum.
@@ -63,12 +80,21 @@ fn has_changed_file2file(from: &Path, to: &Path) -> Result<bool, anyhow::Error> 
     Ok(from_checksum != to_checksum)
 }
 
-/// Returns `true` if the file contents are different from the buffer, `false` otherwise.
+/// Returns `true` if the file contents are different, `false` otherwise.
 ///
 /// It returns an error if we could not determine the outcome due to a
-/// failure in any of the intermediate operations (e.g. the file doesn't exist).
-fn has_changed_file2buffer(path: &Path, contents: &[u8]) -> Result<bool, anyhow::Error> {
-    let file = fs_err::File::open(path)?;
+/// failure in any of the intermediate operations.
+#[tracing::instrument(skip_all, level=tracing::Level::TRACE)]
+pub fn has_changed_file2buffer(path: &Path, contents: &[u8]) -> Result<bool, anyhow::Error> {
+    let file = match File::open(path) {
+        Ok(f) => f,
+        Err(e) => {
+            if e.kind() == ErrorKind::NotFound {
+                return Ok(true);
+            }
+            return Err(e.into());
+        }
+    };
     // Cheaper check first: if the file size is not the same,
     // we can skip computing the checksum.
     let metadata = file.metadata()?;

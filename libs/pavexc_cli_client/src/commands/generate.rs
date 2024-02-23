@@ -13,6 +13,7 @@ pub struct GenerateBuilder {
     diagnostics_path: Option<PathBuf>,
     blueprint: BlueprintArgument,
     output_directory: PathBuf,
+    check: bool,
 }
 
 pub enum BlueprintArgument {
@@ -34,6 +35,7 @@ impl GenerateBuilder {
             blueprint,
             cmd,
             output_directory,
+            check: false,
         }
     }
 
@@ -99,6 +101,9 @@ impl GenerateBuilder {
         if let Some(path) = self.diagnostics_path {
             self.cmd.arg("--diagnostics").arg(path);
         }
+        if self.check {
+            self.cmd.arg("--check");
+        }
         Ok(self.cmd)
     }
 
@@ -110,6 +115,23 @@ impl GenerateBuilder {
     /// If this is not set, Pavex will not persist any diagnostic information.
     pub fn diagnostics_path(mut self, path: PathBuf) -> Self {
         self.diagnostics_path = Some(path);
+        self
+    }
+
+    /// Enable check mode.
+    ///
+    /// In check mode, `pavexc generate` verifies that the generated server SDK is up-to-date.  
+    /// If it isn't, it returns an error without updating the SDK.
+    pub fn check(mut self) -> Self {
+        self.check = true;
+        self
+    }
+
+    /// Disable check mode.
+    ///
+    /// `pavexc` will regenerate the server SDK and update it on disk if it is outdated.
+    pub fn no_check(mut self) -> Self {
+        self.check = false;
         self
     }
 }

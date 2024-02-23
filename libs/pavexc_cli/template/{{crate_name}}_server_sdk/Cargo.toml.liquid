@@ -7,5 +7,10 @@ edition = "2021"
 generator_type = "cargo_workspace_binary"
 generator_name = "bp"
 
+[package.metadata.px.verify]
+verifier_type = "cargo_workspace_binary"
+verifier_name = "bp"
+verifier_args = ["--check"]
+
 [lints]
 clippy = { all = "allow" }

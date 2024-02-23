@@ -7,7 +7,7 @@ use proc_macro2::TokenStream;
 use serde::Serialize;
 use toml_edit::ser::ValueSerializer;
 
-use persist_if_changed::persist_if_changed;
+use crate::AppWriter;
 
 #[derive(Clone)]
 /// The manifest and the code for a generated application.
@@ -58,7 +58,7 @@ impl GeneratedApp {
     /// Save the code and the manifest for the generated application to disk.
     /// The newly created library crate is also injected as a member into the current workspace.
     #[tracing::instrument(skip_all, level = tracing::Level::INFO)]
-    pub fn persist(self, directory: &Path) -> Result<(), anyhow::Error> {
+    pub fn persist(self, directory: &Path, writer: &mut AppWriter) -> Result<(), anyhow::Error> {
         let Self {
             lib_rs,
             mut cargo_toml,
@@ -73,14 +73,14 @@ impl GeneratedApp {
         };
 
         Self::normalize_path_dependencies(&mut cargo_toml, &pkg_directory)?;
-        Self::inject_app_into_workspace_members(&workspace, &pkg_directory)?;
+        Self::inject_app_into_workspace_members(&workspace, &pkg_directory, writer)?;
 
         let source_directory = pkg_directory.join("src");
         fs_err::create_dir_all(&source_directory)?;
-        Self::persist_manifest(&cargo_toml, &pkg_directory)?;
+        Self::persist_manifest(&cargo_toml, &pkg_directory, writer)?;
 
         let lib_rs = prettyplease::unparse(&syn::parse2(lib_rs)?);
-        persist_if_changed(&source_directory.join("lib.rs"), lib_rs.as_bytes())?;
+        writer.persist_if_changed(&source_directory.join("lib.rs"), lib_rs.as_bytes())?;
 
         Ok(())
     }
@@ -107,6 +107,7 @@ impl GeneratedApp {
     fn persist_manifest(
         cargo_toml: &GeneratedManifest,
         pkg_directory: &Path,
+        writer: &mut AppWriter,
     ) -> Result<(), anyhow::Error> {
         let cargo_toml_path = pkg_directory.join("Cargo.toml");
         // If the manifest already exists, we need to modify it in place.
@@ -127,7 +128,7 @@ impl GeneratedApp {
             }
         };
         cargo_toml.overwrite(&mut manifest);
-        persist_if_changed(&cargo_toml_path, manifest.to_string().as_bytes())?;
+        writer.persist_if_changed(&cargo_toml_path, manifest.to_string().as_bytes())?;
         Ok(())
     }
 
@@ -137,6 +138,7 @@ impl GeneratedApp {
     fn inject_app_into_workspace_members(
         workspace: &guppy::graph::Workspace,
         generated_crate_directory: &Path,
+        writer: &mut AppWriter,
     ) -> Result<(), anyhow::Error> {
         let root_path = workspace.root().as_std_path();
         let root_manifest_path = root_path.join("Cargo.toml");
@@ -189,7 +191,7 @@ impl GeneratedApp {
             }
         }
         let contents = root_manifest.to_string();
-        persist_if_changed(&root_manifest_path, contents.as_bytes())?;
+        writer.persist_if_changed(&root_manifest_path, contents.as_bytes())?;
         Ok(())
     }
 }

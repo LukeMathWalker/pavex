@@ -93,6 +93,11 @@ enum Commands {
         /// the application to the specified path.
         #[clap(long, value_parser)]
         diagnostics: Option<PathBuf>,
+        #[clap(long)]
+        /// Verify that the generated server SDK is up-to-date.  
+        /// If it isn't, `pavex` will return an error without updating
+        /// the server SDK code.
+        check: bool,
         /// The directory that will contain the newly generated server SDK crate.
         /// If the directory path is relative,
         /// it is interpreted as relative to the root of the current workspace.
@@ -205,10 +210,22 @@ fn main() -> Result<ExitCode, miette::Error> {
         Commands::Generate {
             blueprint,
             diagnostics,
+            check,
             output,
         } => {
-            check_activation(&State::new(&locator), &mut shell).map_err(utils::anyhow2miette)?;
-            generate(&mut shell, client, &locator, blueprint, diagnostics, output)
+            if !check {
+                check_activation(&State::new(&locator), &mut shell)
+                    .map_err(utils::anyhow2miette)?;
+            }
+            generate(
+                &mut shell,
+                client,
+                &locator,
+                blueprint,
+                diagnostics,
+                output,
+                check,
+            )
         }
         Commands::New { path } => {
             check_activation(&State::new(&locator), &mut shell).map_err(utils::anyhow2miette)?;
@@ -237,6 +254,7 @@ fn generate(
     blueprint: PathBuf,
     diagnostics: Option<PathBuf>,
     output: PathBuf,
+    check: bool,
 ) -> Result<ExitCode, anyhow::Error> {
     let pavexc_cli_path = if let Some(pavexc_override) = pavex_cli::env::pavexc_override() {
         pavexc_override
@@ -255,6 +273,9 @@ fn generate(
     if let Some(diagnostics) = diagnostics {
         cmd = cmd.diagnostics_path(diagnostics)
     };
+    if check {
+        cmd = cmd.check();
+    }
 
     match cmd.execute() {
         Ok(()) => Ok(ExitCode::SUCCESS),
