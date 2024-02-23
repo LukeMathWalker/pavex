@@ -1,20 +1,12 @@
 diff --git a/app/src/blueprint.rs b/app/src/blueprint.rs
+index 90f25e6..e03ac7c 100644
 --- a/app/src/blueprint.rs
 +++ b/app/src/blueprint.rs
-@@ -1,4 +1,5 @@
- use crate::{configuration::ApplicationConfig, telemetry};
-+use pavex::blueprint::constructor::Lifecycle;
- use pavex::blueprint::{router::GET, Blueprint};
- use pavex::f;
- use pavex::kit::ApiKit;
-@@ -11,6 +12,11 @@ pub fn blueprint() -> Blueprint {
+@@ -11,6 +11,8 @@ pub fn blueprint() -> Blueprint {
      telemetry::register(&mut bp);
-     ApplicationConfig::register(&mut bp);
+     AppConfig::register(&mut bp);
 
-+    bp.constructor(
-+        f!(crate::user_agent::UserAgent::extract),
-+        Lifecycle::RequestScoped,
-+    );
++    bp.request_scoped(f!(crate::user_agent::UserAgent::extract));
 +
      bp.route(GET, "/api/ping", f!(crate::routes::status::ping));
      bp.route(GET, "/api/greet/:name", f!(crate::routes::greet::greet));

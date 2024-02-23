@@ -34,7 +34,7 @@ error handler.
 1. Error handlers, just like request handlers and constructors, can take advantage of dependency injection!
    You could, for example, change the response representation according to the `Accept` header specified in the request.
 
-Define a new `invalid_user_agent` function in `demo/src/user_agent.rs`:
+Define a new `invalid_user_agent` function in `app/src/user_agent.rs`:
 
 --8<-- "doc_examples/quickstart/08-error_handler.snap"
 

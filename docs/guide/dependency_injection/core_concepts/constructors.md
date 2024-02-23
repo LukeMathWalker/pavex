@@ -30,15 +30,22 @@ Going back to our `User` example, this would be a valid signature for a construc
 
 ## Registration
 
-Once you have defined a constructor, you need to register it with the application [`Blueprint`][Blueprint]
-using its [`constructor`][Blueprint::constructor] method:
+Once you have defined a constructor, you need to register it with the application [`Blueprint`][Blueprint]:
 
 --8<-- "doc_examples/guide/dependency_injection/user_middleware/project-constructor_registration.snap"
 
-[`constructor`][Blueprint::constructor] takes two arguments:
+[`Blueprint::constructor`][Blueprint::constructor] takes two arguments:
 
 - The [fully qualified path](../cookbook.md) to the constructor, wrapped in a macro ([`f!`][f])
-- The **constructor's lifecycle**.
+- The [constructor's lifecycle](#lifecycles).
+
+Alternatively, you could use [`Blueprint::request_scoped`][Blueprint::request_scoped] as 
+a shorthand to perform the same registration:
+
+--8<-- "doc_examples/guide/dependency_injection/user_middleware/02-constructor_registration.snap"
+
+There is a shorthand for each lifecycle: [`Blueprint::singleton`][Blueprint::singleton], 
+[`Blueprint::request_scoped`][Blueprint::request_scoped], [`Blueprint::transient`][Blueprint::transient].
 
 ## Lifecycles
 
@@ -108,6 +115,9 @@ Check out the [error handling guide](../../errors/error_handlers.md) for more de
 
 [Blueprint]: ../../../api_reference/pavex/blueprint/struct.Blueprint.html
 [Blueprint::constructor]: ../../../api_reference/pavex/blueprint/struct.Blueprint.html#method.constructor
+[Blueprint::singleton]: ../../../api_reference/pavex/blueprint/struct.Blueprint.html#method.singleton
+[Blueprint::request_scoped]: ../../../api_reference/pavex/blueprint/struct.Blueprint.html#method.request_scoped
+[Blueprint::transient]: ../../../api_reference/pavex/blueprint/struct.Blueprint.html#method.transient
 [f]: ../../../api_reference/pavex/macro.f.html
 [Lifecycle::Singleton]: ../../../api_reference/pavex/blueprint/constructor/enum.Lifecycle.html#variant.Singleton
 [Lifecycle::RequestScoped]: ../../../api_reference/pavex/blueprint/constructor/enum.Lifecycle.html#variant.RequestScoped

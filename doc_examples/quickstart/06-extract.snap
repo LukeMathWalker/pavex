@@ -1,4 +1,4 @@
-```rust title="app/src/user_agent.rs" hl_lines="5 6 7 8 9 10 11 12 13 14"
+```rust title="app/src/user_agent.rs"
 use pavex::http::header::USER_AGENT;
 use pavex::request::RequestHead;
 // [...]

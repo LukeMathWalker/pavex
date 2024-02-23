@@ -71,32 +71,36 @@ Now register the new constructor with the [`Blueprint`][Blueprint]:
 
 --8<-- "doc_examples/quickstart/06-register.snap"
 
+In [`Blueprint::request_scoped`][Blueprint::request_scoped] you must specify 
+the [fully qualified path](../../guide/dependency_injection/cookbook.md) to the constructor method, wrapped in a macro ([`f!`][f!]).
 
-In [`Blueprint::constructor`][Blueprint::constructor] you must specify:
+Make sure that the project compiles successfully at this point.
 
-- The [fully qualified path](../../guide/dependency_injection/cookbook.md) to the constructor method, wrapped in a macro ([`f!`][f!])
-- The constructor's lifecycle ([`Lifecycle::RequestScoped`](Lifecycle::RequestScoped))
+## Lifecycles
 
-[`Lifecycle::RequestScoped`][Lifecycle::RequestScoped] is the right choice for this type: the data in `UserAgent` is
-request-specific.
-Using [`Lifecycle::RequestScoped`][Lifecycle::RequestScoped] ensures that the framework will invoke the constructor
-at most once per request.  
-You don't want to share it across requests ([`Lifecycle::Singleton`][Lifecycle::Singleton]) nor do you want to recompute
-it multiple times for
-the same request ([`Lifecycle::Transient`][Lifecycle::Transient]).
+A constructor registered via [`Blueprint::request_scoped`][Blueprint::request_scoped] has
+a **[request-scoped lifecycle][lifecycle]**: the framework
+will invoke a request-scoped constructor **at most once per request**.
 
-Make sure that the project compiles successfully now.
+You can register constructors with two other lifecycles: **[singleton][lifecycle]**
+and **[transient][lifecycle]**.  
+Singletons are built once and shared across requests.  
+Transient constructors, instead, are invoked every time their output type is needed—potentially
+multiple times for the same request.
+
+`UserAgent` wouldn't be a good fit as a singleton or a transient constructor:
+
+- `UserAgent` depends on the headers of the incoming request.
+  It would be incorrect to mark it as a singleton and share it across requests 
+  (and Pavex wouldn't allow it!)
+- You _could_ register `UserAgent` as transient, but extracting (and parsing) the `User-Agent` header
+  multiple times would be wasteful.
+  As a request-scoped constructor, it's done once and the outcome is reused.
 
 [Blueprint]: ../../api_reference/pavex/blueprint/struct.Blueprint.html
-[Blueprint::constructor]: ../../api_reference/pavex/blueprint/struct.Blueprint.html#method.constructor
+[Blueprint::request_scoped]: ../../api_reference/pavex/blueprint/struct.Blueprint.html#method.request_scoped
 [f!]: ../../api_reference/pavex/macro.f!.html
 [PathParams]: ../../api_reference/pavex/request/path/struct.PathParams.html
 [ApiKit]: ../../api_reference/pavex/kit/struct.ApiKit.html
-
-[Lifecycle::Singleton]: ../../api_reference/pavex/blueprint/constructor/enum.Lifecycle.html#variant.Singleton
-
-[Lifecycle::RequestScoped]: ../../api_reference/pavex/blueprint/constructor/enum.Lifecycle.html#variant.RequestScoped
-
-[Lifecycle::Transient]: ../../api_reference/pavex/blueprint/constructor/enum.Lifecycle.html#variant.Transient
-
+[lifecycle]: ../../guide/dependency_injection/core_concepts/constructors.md#lifecycles
 [RequestHead]: ../../api_reference/pavex/request/struct.RequestHead.html

@@ -93,11 +93,10 @@ steps:
       - name: "extract"
         source_path: "app/src/user_agent.rs"
         ranges: [ "0..2", "10..23" ]
-        hl_lines: [ 5, 6, 7, 8, 9, 10, 11, 12, 13, 14 ]
       - name: "register"
         source_path: "app/src/blueprint.rs"
-        ranges: [ "8..9", "14..18", "22..23" ]
-        hl_lines: [ 10, 11, 12, 13 ]
+        ranges: [ "7..8", "13..14", "18..19" ]
+        hl_lines: [ 4 ]
     commands:
       - command: "cargo px c"
         expected_outcome: "success"
@@ -117,8 +116,8 @@ steps:
         ranges: [ "21..25" ]
       - name: "register"
         source_path: "app/src/blueprint.rs"
-        ranges: [ "8..9", "14..19", "23..24" ]
-        hl_lines: [ 8 ]
+        ranges: [ "7..8", "13..15", "19..20" ]
+        hl_lines: [ 5 ]
     commands:
       - command: "cargo px c"
         expected_outcome: "success"

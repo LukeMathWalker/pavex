@@ -1,11 +1,8 @@
-```rust title="app/src/blueprint.rs" hl_lines="10 11 12 13"
+```rust title="app/src/blueprint.rs" hl_lines="4"
 // [...]
 pub fn blueprint() -> Blueprint {
     // [...]
-    bp.constructor(
-        f!(crate::user_agent::UserAgent::extract),
-        Lifecycle::RequestScoped,
-    );
+    bp.request_scoped(f!(crate::user_agent::UserAgent::extract));
     // [...]
 }
 ```

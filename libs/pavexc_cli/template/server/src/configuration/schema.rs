@@ -1,6 +1,6 @@
 use crate::configuration::ApplicationProfile;
 use anyhow::Context;
-use app::configuration::ApplicationConfig;
+use app::configuration::AppConfig;
 use figment::providers::{Env, Format, Yaml};
 use figment::Figment;
 use pavex::server::IncomingStream;
@@ -11,12 +11,12 @@ use std::net::SocketAddr;
 /// we expect to see in the configuration files stored under `api_server/configuration`.
 ///
 /// It is defined in `api_server` since it bundles together the app configuration
-/// ([`ApplicationConfig`]) and the HTTP server configuration ([`ServerConfig`]).
+/// ([`AppConfig`]) and the HTTP server configuration ([`ServerConfig`]).
 /// The app configuration will be visible to constructors and other components,
 /// while the HTTP server configuration won't.
 pub struct Config {
     pub server: ServerConfig,
-    pub app: ApplicationConfig,
+    pub app: AppConfig,
 }
 
 impl Config {

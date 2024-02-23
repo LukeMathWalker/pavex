@@ -1,17 +1,17 @@
 diff --git a/app/src/blueprint.rs b/app/src/blueprint.rs
-index e3623cd..c431f69 100644
+index e03ac7c..87475f0 100644
 --- a/app/src/blueprint.rs
 +++ b/app/src/blueprint.rs
 @@ -11,7 +11,8 @@ pub fn blueprint() -> Blueprint {
-     bp.constructor(
-         f!(crate::user_agent::UserAgent::extract),
-         Lifecycle::RequestScoped,
--    );
-+    )
+     telemetry::register(&mut bp);
+     AppConfig::register(&mut bp);
+
+-    bp.request_scoped(f!(crate::user_agent::UserAgent::extract));
++    bp.request_scoped(f!(crate::user_agent::UserAgent::extract))
 +        .error_handler(f!(crate::user_agent::invalid_user_agent));
- 
-     add_telemetry_middleware(&mut bp);
- 
+
+     bp.route(GET, "/api/ping", f!(crate::routes::status::ping));
+     bp.route(GET, "/api/greet/:name", f!(crate::routes::greet::greet));
 diff --git a/app/src/user_agent.rs b/app/src/user_agent.rs
 index bb1f65b..78360bd 100644
 --- a/app/src/user_agent.rs

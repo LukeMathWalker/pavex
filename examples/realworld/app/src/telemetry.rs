@@ -1,7 +1,4 @@
-use pavex::blueprint::{
-    constructor::{CloningStrategy, Lifecycle},
-    Blueprint,
-};
+use pavex::blueprint::{constructor::CloningStrategy, Blueprint};
 use pavex::f;
 use pavex::middleware::Next;
 use pavex::request::path::MatchedPathPattern;
@@ -21,7 +18,7 @@ use std::future::IntoFuture;
 /// Register telemetry middlewares, an error observer and the relevant constructors
 /// with the application blueprint.
 pub(crate) fn register(bp: &mut Blueprint) {
-    bp.constructor(f!(self::root_span), Lifecycle::RequestScoped)
+    bp.request_scoped(f!(self::root_span))
         .cloning(CloningStrategy::CloneIfNecessary);
     bp.wrap(f!(pavex_tracing::logger));
     bp.wrap(f!(self::response_logger));
