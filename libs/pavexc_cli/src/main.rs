@@ -9,7 +9,7 @@ use clap::{Parser, Subcommand};
 use generate_from_path::GenerateArgs;
 use miette::Severity;
 use owo_colors::OwoColorize;
-use pavexc::App;
+use pavexc::{App, AppWriter};
 use supports_color::Stream;
 use tracing_chrome::{ChromeLayerBuilder, FlushGuard};
 use tracing_subscriber::fmt::format::FmtSpan;
@@ -68,7 +68,7 @@ impl FromStr for Color {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Generate application runtime code according to an application blueprint.
+    /// Generate a server SDK crate according to an application blueprint.
     Generate {
         /// The source path for the serialized application blueprint.
         #[clap(short, long, value_parser)]
@@ -81,6 +81,11 @@ enum Commands {
         /// If the provided path is relative, it is interpreted as relative to the root of the current workspace.
         #[clap(short, long, value_parser)]
         output: PathBuf,
+        #[clap(long)]
+        /// Verify that the generated server SDK is up-to-date.  
+        /// If it isn't, `pavexc` will return an error without updating
+        /// the server SDK code.
+        check: bool,
     },
     /// Scaffold a new Pavex project at <PATH>.
     New {
@@ -150,7 +155,8 @@ fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
             blueprint,
             diagnostics,
             output,
-        } => generate(blueprint, diagnostics, output, cli.color),
+            check,
+        } => generate(blueprint, diagnostics, output, cli.color, check),
         Commands::New { path } => scaffold_project(path),
     }
 }
@@ -161,6 +167,7 @@ fn generate(
     diagnostics: Option<PathBuf>,
     output: PathBuf,
     color_profile: Color,
+    check: bool,
 ) -> Result<ExitCode, Box<dyn std::error::Error>> {
     let color_on_stderr = use_color_on_stderr(color_profile);
 
@@ -198,7 +205,22 @@ fn generate(
             .persist_flat(&diagnostic_path)?;
     }
     let generated_app = app.codegen()?;
-    generated_app.persist(&output)?;
+    let mut writer = if check {
+        AppWriter::check_mode()
+    } else {
+        AppWriter::update_mode()
+    };
+    generated_app.persist(&output, &mut writer)?;
+    if let Err(errors) = writer.verify() {
+        for e in errors {
+            if color_on_stderr {
+                eprintln!("{}: {e:?}", "ERROR".bold().red());
+            } else {
+                eprintln!("ERROR: {e:?}");
+            };
+        }
+        return Ok(ExitCode::FAILURE);
+    }
     Ok(ExitCode::SUCCESS)
 }
 
