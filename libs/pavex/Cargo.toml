@@ -30,8 +30,8 @@ tracing = "0.1"
 http-body-util = "0.1"
 pin-project-lite = "0.2"
 ubyte = { version = "0.10.4", features = ["serde"] }
-pavex_bp_schema = { path = "../pavex_bp_schema", version = "0.1.18" }
-pavex_reflection = { path = "../pavex_reflection", version = "0.1.18" }
+pavex_bp_schema = { path = "../pavex_bp_schema", version = "=0.1.18" }
+pavex_reflection = { path = "../pavex_reflection", version = "=0.1.18" }
 persist_if_changed = { path = "../persist_if_changed", version = "0.1.18" }
 
 # Route parameters
