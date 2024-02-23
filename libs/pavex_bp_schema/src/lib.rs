@@ -2,7 +2,7 @@
 //!
 //! There are no guarantees that this schema will remain stable across Pavex versions:
 //! it is considered (for the time being) an internal implementation detail of Pavex's reflection system.
-pub use pavex_reflection::{Location, RawCallableIdentifiers};
+pub use pavex_reflection::{Location, RawCallableIdentifiers, RegisteredAt};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 use std::fmt::Formatter;

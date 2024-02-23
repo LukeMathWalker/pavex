@@ -8,6 +8,5 @@ pub fn blueprint() -> Blueprint {
         f!(<crate::User as crate::trait_methods::WithId>::id),
         Lifecycle::RequestScoped,
     );
-    bp.constructor(f!(crate::functions::extract), Lifecycle::RequestScoped);
     bp
 }

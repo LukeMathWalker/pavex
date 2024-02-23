@@ -1,0 +1,4 @@
+description = "Pavex can resolve paths that use `self` as their beginning"
+
+[expectations]
+codegen = "pass"

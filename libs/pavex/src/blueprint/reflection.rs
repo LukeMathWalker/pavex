@@ -14,7 +14,9 @@ pub struct RawCallable {
     #[doc(hidden)]
     pub import_path: &'static str,
     #[doc(hidden)]
-    pub registered_at: &'static str,
+    pub crate_name: &'static str,
+    #[doc(hidden)]
+    pub module_path: &'static str,
 }
 
 // The `pavex_ide_hint`-let binding is a hack to "nudge"
@@ -47,7 +49,8 @@ macro_rules! f {
         const P:() = $p;
         $crate::blueprint::reflection::RawCallable {
             import_path: stringify!($p),
-            registered_at: ::std::env!("CARGO_PKG_NAME", "Failed to load the CARGO_PKG_NAME environment variable. Are you using a custom build system?")
+            crate_name: ::std::env!("CARGO_PKG_NAME", "Failed to load the CARGO_PKG_NAME environment variable. Are you using a custom build system?"),
+            module_path: module_path!()
         }
     }};
 }

@@ -5,8 +5,8 @@ use std::collections::BTreeMap;
 
 use pavex_bp_schema::{
     Blueprint, Callable, CloningStrategy, Component, Constructor, ErrorObserver, Fallback,
-    Lifecycle, Lint, LintSetting, Location, NestedBlueprint, RawCallableIdentifiers, Route,
-    WrappingMiddleware,
+    Lifecycle, Lint, LintSetting, Location, NestedBlueprint, RawCallableIdentifiers, RegisteredAt,
+    Route, WrappingMiddleware,
 };
 
 use crate::compiler::analyses::user_components::router_key::RouterKey;
@@ -349,7 +349,10 @@ impl RawUserComponentDb {
             // we must provide a framework default.
             let raw_callable_identifiers = RawCallableIdentifiers::from_raw_parts(
                 "pavex::router::default_fallback".to_owned(),
-                "pavex".to_owned(),
+                RegisteredAt {
+                    crate_name: "pavex".to_owned(),
+                    module_path: "pavex".to_owned(),
+                },
             );
             let registered_fallback = Fallback {
                 request_handler: Callable {
