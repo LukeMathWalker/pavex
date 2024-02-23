@@ -380,6 +380,43 @@ impl ResolvedPath {
                     .chain(old_segments.into_iter().skip(1))
                     .collect();
                 p.segments = new_segments;
+            } else if p.leading_path_segment() == "super" {
+                // We make the path absolute by adding replacing `super` with the relevant
+                // parts of the module path.
+                let n_super: usize = {
+                    let mut n_super = 0;
+                    let mut iter = p.segments.iter();
+                    while let Some(p) = iter.next() {
+                        if p.ident == "super" {
+                            n_super += 1;
+                        } else {
+                            break;
+                        }
+                    }
+                    n_super
+                };
+                let old_segments = std::mem::take(&mut p.segments);
+                // The path is relative to the current module.
+                // We "rebase" it to get an absolute path.
+                let module_segments: Vec<_> = identifiers
+                    .registered_at
+                    .module_path
+                    .split("::")
+                    .map(|s| {
+                        let ident = format_ident!("{}", s.trim().to_owned());
+                        CallPathSegment {
+                            ident,
+                            generic_arguments: vec![],
+                        }
+                    })
+                    .collect();
+                let n_module_segments = module_segments.len();
+                let new_segments: Vec<_> = module_segments
+                    .into_iter()
+                    .take(n_module_segments - n_super)
+                    .chain(old_segments.into_iter().skip(n_super))
+                    .collect();
+                p.segments = new_segments;
             }
             for segment in p.segments.iter_mut() {
                 for generic_argument in segment.generic_arguments.iter_mut() {

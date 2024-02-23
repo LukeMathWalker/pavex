@@ -101,6 +101,7 @@ impl RawCallableIdentifiers {
             .map(|s| s.trim())
             .map(ToOwned::to_owned)
             .collect();
+        eprintln!("{:?}", &segments);
         // Replace the relative portion of the path (`crate`) with the actual crate name.
         if segments[0] == "crate" {
             // Hyphens are allowed in crate names, but the Rust compiler doesn't
@@ -119,6 +120,36 @@ impl RawCallableIdentifiers {
                 .map(ToOwned::to_owned)
                 .collect();
             new_segments.extend(segments.into_iter().skip(1));
+            new_segments
+        } else if segments[0] == "super" {
+            let n_super: usize = {
+                let mut n_super = 0;
+                let mut iter = segments.iter();
+                while let Some(p) = iter.next() {
+                    if p == "super" {
+                        n_super += 1;
+                    } else {
+                        break;
+                    }
+                }
+                n_super
+            };
+            eprintln!("{:?}", n_super);
+            // The path is relative to the current module.
+            // We "rebase" it to get an absolute path.
+            let module_segments: Vec<_> = self
+                .registered_at
+                .module_path
+                .split("::")
+                .map(|s| s.trim())
+                .map(ToOwned::to_owned)
+                .collect();
+            let n_module_segments = module_segments.len();
+            let new_segments = module_segments
+                .into_iter()
+                .take(n_module_segments - n_super)
+                .chain(segments.into_iter().skip(n_super))
+                .collect();
             new_segments
         } else {
             segments
