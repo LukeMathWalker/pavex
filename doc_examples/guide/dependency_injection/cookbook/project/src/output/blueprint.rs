@@ -4,7 +4,7 @@ use pavex::f;
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.constructor(f!(crate::output::parse), Lifecycle::RequestScoped);
+    bp.constructor(f!(super::parse), Lifecycle::RequestScoped);
     bp.constructor(
         f!(pavex::request::body::BufferedBody::extract),
         Lifecycle::RequestScoped,

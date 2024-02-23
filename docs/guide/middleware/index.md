@@ -17,7 +17,7 @@ You register a middleware against a blueprint via the [`wrap`](crate::blueprint:
 
 --8<-- "doc_examples/guide/middleware/core_concepts/project-registration.snap"
 
-When registering a middleware, you must provide its **fully qualified path**, wrapped in the [`f!` macro][f].  
+When registering a middleware, you must provide its **[fully qualified path]**, wrapped in the [`f!` macro][f].  
 A middleware applies to all request handlers registered against the same [`Blueprint`][Blueprint].
 See the [execution order](#execution-order) section for more details.
 
@@ -145,3 +145,4 @@ First - end
 [Future]: https://doc.rust-lang.org/std/future/trait.Future.html
 [IntoFuture]: https://doc.rust-lang.org/std/future/trait.IntoFuture.html
 [Result]: https://doc.rust-lang.org/std/result/index.html
+[fully qualified path](../dependency_injection/cookbook.md)

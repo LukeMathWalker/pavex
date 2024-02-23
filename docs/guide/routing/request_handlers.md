@@ -10,7 +10,7 @@ The request handler is in charge of building the response that will be sent back
 
 ## Registration
 
-When registering a route, you must provide the **fully qualified path** to the request handler:
+When registering a route, you must provide the **[fully qualified path]** to the request handler:
 
 ```rust hl_lines="6"
 --8<-- "doc_examples/guide/routing/request_handlers/intro/src/blueprint.rs"
@@ -115,3 +115,4 @@ If you want to learn more about what "blocking" means in async Rust, check out [
 [spawn_blocking]: https://docs.rs/tokio/latest/tokio/task/fn.spawn_blocking.html
 [f!]: ../../api_reference/pavex/macro.f.html
 [Result]: https://doc.rust-lang.org/std/result/index.html
+[fully qualified path](../dependency_injection/cookbook.md)

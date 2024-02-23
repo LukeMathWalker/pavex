@@ -25,21 +25,15 @@ impl ApplicationConfig {
 
     pub fn register(bp: &mut Blueprint) {
         bp.constructor(
-            f!(crate::configuration::ApplicationConfig::database_config),
+            f!(self::ApplicationConfig::database_config),
             Lifecycle::Singleton,
         );
         bp.constructor(
-            f!(crate::configuration::ApplicationConfig::auth_config),
+            f!(self::ApplicationConfig::auth_config),
             Lifecycle::Singleton,
         );
-        bp.constructor(
-            f!(crate::configuration::DatabaseConfig::get_pool),
-            Lifecycle::Singleton,
-        );
-        bp.constructor(
-            f!(crate::configuration::AuthConfig::decoding_key),
-            Lifecycle::Singleton,
-        );
+        bp.constructor(f!(self::DatabaseConfig::get_pool), Lifecycle::Singleton);
+        bp.constructor(f!(self::AuthConfig::decoding_key), Lifecycle::Singleton);
     }
 }
 

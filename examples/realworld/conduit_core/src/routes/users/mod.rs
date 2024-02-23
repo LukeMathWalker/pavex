@@ -12,12 +12,12 @@ pub(crate) fn users_bp() -> Blueprint {
         Lifecycle::Singleton,
     );
 
-    bp.route(POST, "/users", f!(crate::routes::users::signup))
-        .error_handler(f!(crate::routes::users::SignupError::into_response));
-    bp.route(POST, "/users/login", f!(crate::routes::users::login))
-        .error_handler(f!(crate::routes::users::LoginError::into_response));
-    bp.route(GET, "/user", f!(crate::routes::users::get_user));
-    bp.route(PUT, "/user", f!(crate::routes::users::update_user));
+    bp.route(POST, "/users", f!(self::signup))
+        .error_handler(f!(self::SignupError::into_response));
+    bp.route(POST, "/users/login", f!(self::login))
+        .error_handler(f!(self::LoginError::into_response));
+    bp.route(GET, "/user", f!(self::get_user));
+    bp.route(PUT, "/user", f!(self::update_user));
     bp
 }
 

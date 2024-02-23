@@ -4,6 +4,6 @@ use pavex::f;
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.constructor(f!(crate::functions::extract), Lifecycle::RequestScoped);
+    bp.constructor(f!(super::extract), Lifecycle::RequestScoped);
     bp
 }

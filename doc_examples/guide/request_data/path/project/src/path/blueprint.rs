@@ -4,6 +4,6 @@ use pavex::f;
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.route(GET, "/path", f!(crate::path::handler));
+    bp.route(GET, "/path", f!(super::handler));
     bp
 }

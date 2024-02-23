@@ -1,6 +1,6 @@
 use guppy::graph::PackageGraph;
 
-use pavex_bp_schema::RawCallableIdentifiers;
+use pavex_bp_schema::{RawCallableIdentifiers, RegisteredAt};
 
 use crate::compiler::resolvers::{resolve_callable, resolve_type_path};
 use crate::language::{Callable, GenericArgument, ResolvedPath, ResolvedType};
@@ -34,10 +34,16 @@ pub(crate) fn process_framework_path(
     package_graph: &PackageGraph,
     krate_collection: &CrateCollection,
 ) -> ResolvedType {
-    // We are relying on a little hack to anchor our search:
-    // all framework types belong to crates that are direct dependencies of `pavex`.
-    // TODO: find a better way in the future.
-    let identifiers = RawCallableIdentifiers::from_raw_parts(raw_path.into(), "pavex".into());
+    let identifiers = RawCallableIdentifiers::from_raw_parts(
+        raw_path.into(),
+        RegisteredAt {
+            // We are relying on a little hack to anchor our search:
+            // all framework types belong to crates that are direct dependencies of `pavex`.
+            // TODO: find a better way in the future.
+            crate_name: "pavex".to_owned(),
+            module_path: "pavex".to_owned(),
+        },
+    );
     let path = ResolvedPath::parse(&identifiers, package_graph).unwrap();
     let (item, _) = path.find_rustdoc_items(krate_collection).unwrap();
     resolve_type_path(&path, &item.item, krate_collection).unwrap()
@@ -49,10 +55,16 @@ pub(crate) fn process_framework_callable_path(
     package_graph: &PackageGraph,
     krate_collection: &CrateCollection,
 ) -> Callable {
-    // We are relying on a little hack to anchor our search:
-    // all framework types belong to crates that are direct dependencies of `pavex`.
-    // TODO: find a better way in the future.
-    let identifiers = RawCallableIdentifiers::from_raw_parts(raw_path.into(), "pavex".into());
+    let identifiers = RawCallableIdentifiers::from_raw_parts(
+        raw_path.into(),
+        RegisteredAt {
+            // We are relying on a little hack to anchor our search:
+            // all framework types belong to crates that are direct dependencies of `pavex`.
+            // TODO: find a better way in the future.
+            crate_name: "pavex".to_owned(),
+            module_path: "pavex".to_owned(),
+        },
+    );
     let path = ResolvedPath::parse(&identifiers, package_graph).unwrap();
     resolve_callable(krate_collection, &path).unwrap()
 }

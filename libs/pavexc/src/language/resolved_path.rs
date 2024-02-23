@@ -13,7 +13,9 @@ use quote::format_ident;
 
 use pavex_bp_schema::RawCallableIdentifiers;
 
-use crate::language::callable_path::{CallPathGenericArgument, CallPathLifetime, CallPathType};
+use crate::language::callable_path::{
+    CallPathGenericArgument, CallPathLifetime, CallPathSegment, CallPathType,
+};
 use crate::language::resolved_type::{GenericArgument, Lifetime, ScalarPrimitive, Slice};
 use crate::language::{CallPath, InvalidCallPath, ResolvedType, Tuple, TypeReference};
 use crate::rustdoc::{CrateCollection, CORE_PACKAGE_ID};
@@ -357,8 +359,64 @@ impl ResolvedPath {
                 // Unwrapping here is safe: there is always at least one path segment in a successfully
                 // parsed `ExprPath`.
                 // We must make sure to normalize the crate name, since it may contain hyphens.
-                first_segment.ident =
-                    format_ident!("{}", identifiers.registered_at().replace('-', "_"));
+                first_segment.ident = format_ident!(
+                    "{}",
+                    identifiers.registered_at().crate_name.replace('-', "_")
+                );
+            } else if p.leading_path_segment() == "self" {
+                // We make the path absolute by adding the module path to its beginning.
+                let old_segments = std::mem::take(&mut p.segments);
+                let new_segments: Vec<_> = identifiers
+                    .registered_at()
+                    .module_path
+                    .split("::")
+                    .map(|s| {
+                        let ident = format_ident!("{}", s.trim().to_owned());
+                        CallPathSegment {
+                            ident,
+                            generic_arguments: vec![],
+                        }
+                    })
+                    .chain(old_segments.into_iter().skip(1))
+                    .collect();
+                p.segments = new_segments;
+            } else if p.leading_path_segment() == "super" {
+                // We make the path absolute by adding replacing `super` with the relevant
+                // parts of the module path.
+                let n_super: usize = {
+                    let mut n_super = 0;
+                    let mut iter = p.segments.iter();
+                    while let Some(p) = iter.next() {
+                        if p.ident == "super" {
+                            n_super += 1;
+                        } else {
+                            break;
+                        }
+                    }
+                    n_super
+                };
+                let old_segments = std::mem::take(&mut p.segments);
+                // The path is relative to the current module.
+                // We "rebase" it to get an absolute path.
+                let module_segments: Vec<_> = identifiers
+                    .registered_at
+                    .module_path
+                    .split("::")
+                    .map(|s| {
+                        let ident = format_ident!("{}", s.trim().to_owned());
+                        CallPathSegment {
+                            ident,
+                            generic_arguments: vec![],
+                        }
+                    })
+                    .collect();
+                let n_module_segments = module_segments.len();
+                let new_segments: Vec<_> = module_segments
+                    .into_iter()
+                    .take(n_module_segments - n_super)
+                    .chain(old_segments.into_iter().skip(n_super))
+                    .collect();
+                p.segments = new_segments;
             }
             for segment in p.segments.iter_mut() {
                 for generic_argument in segment.generic_arguments.iter_mut() {
@@ -475,7 +533,7 @@ impl ResolvedPath {
             crate_name.replace('-', "_")
         }
 
-        let registered_at = normalize(identifiers.registered_at());
+        let registered_at = normalize(&identifiers.registered_at().crate_name);
         let krate_name_candidate = normalize(&path.leading_path_segment().to_string());
 
         let mut segments = vec![];

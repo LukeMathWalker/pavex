@@ -11,11 +11,11 @@ pub fn body_size_limit() -> BodySizeLimit {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.constructor(f!(crate::body_size_limit), Lifecycle::Singleton);
+    bp.constructor(f!(self::body_size_limit), Lifecycle::Singleton);
     bp.route(
         pavex::blueprint::router::GET,
         "/custom_limit",
-        f!(crate::custom_limit::handler),
+        f!(super::handler),
     );
     bp
 }

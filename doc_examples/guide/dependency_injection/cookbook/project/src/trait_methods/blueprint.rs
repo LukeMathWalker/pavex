@@ -5,9 +5,9 @@ use pavex::f;
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.constructor(
-        f!(<crate::User as crate::trait_methods::WithId>::id),
+        f!(<crate::User as super::WithId>::id),
         Lifecycle::RequestScoped,
     );
-    bp.constructor(f!(crate::functions::extract), Lifecycle::RequestScoped);
+    bp.constructor(f!(crate::User::extract), Lifecycle::RequestScoped);
     bp
 }

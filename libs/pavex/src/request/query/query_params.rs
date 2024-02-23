@@ -67,13 +67,8 @@ impl QueryParams<()> {
     /// and [error handler](ExtractQueryParamsError::into_response)
     /// for [`QueryParams`].
     pub fn default_constructor() -> Constructor {
-        Constructor::new(
-            f!(pavex::request::query::QueryParams::extract),
-            Lifecycle::RequestScoped,
-        )
-        .error_handler(f!(
-            pavex::request::query::errors::ExtractQueryParamsError::into_response
-        ))
+        Constructor::new(f!(super::QueryParams::extract), Lifecycle::RequestScoped)
+            .error_handler(f!(super::errors::ExtractQueryParamsError::into_response))
     }
 }
 

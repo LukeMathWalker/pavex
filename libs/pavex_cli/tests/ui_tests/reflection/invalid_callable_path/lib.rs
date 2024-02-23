@@ -6,7 +6,8 @@ pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     let callable = RawCallable {
         import_path: "my_f,",
-        registered_at: "app",
+        crate_name: "app",
+        module_path: "app",
     };
     bp.route(POST, "/home", callable);
     bp

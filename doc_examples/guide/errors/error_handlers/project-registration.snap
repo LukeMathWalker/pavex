@@ -5,8 +5,8 @@ use pavex::f;
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.route(POST, "/login", f!(crate::core::handler))
-        .error_handler(f!(crate::core::login_error2response)); // (1)!
+    bp.route(POST, "/login", f!(super::handler))
+        .error_handler(f!(super::login_error2response)); // (1)!
         // [...]
 }
 ```
