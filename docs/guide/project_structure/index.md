@@ -37,8 +37,8 @@ Using the `demo` project as an example, the relationship between the project cra
 graph 
   d[demo] -->|contains| bp[Blueprint];
   bp -->|is used to generate| dss[demo_server_sdk];
-  dss -->|is invoked by| ds[demo_server];
-  dss -->|is invoked by| dst[API tests in demo_server];
+  dss -->|is used by| ds[demo_server];
+  dss -->|is used by| dst[API tests in demo_server];
 ```
 
 If you want to know more, read on!
@@ -46,7 +46,8 @@ If you want to know more, read on!
 ## Blueprint
 
 Every Pavex project has, at its core, a [`Blueprint`][Blueprint].  
-It's the type you use to declare the structure of your API: [routes], middlewares, [constructors], error handlers, etc.
+It's the type you use to declare the structure of your API:
+[routes], [middlewares], [constructors], [error handlers], [error observers], etc.
 
 --8<-- "doc_examples/quickstart/demo-blueprint_definition.snap"
 
@@ -183,4 +184,7 @@ The `demo` project includes an example of such a test which you can use as a ref
 
 [routes]: ../routing/index.md
 [constructors]: ../dependency_injection/index.md
+[middlewares]: ../middleware/index.md
+[error handlers]: ../errors/error_handlers.md
+[error observers]: ../errors/error_observers.md
 [cargo-px]: https://github.com/LukeMathWalker/cargo-px
