@@ -1,5 +1,4 @@
 use jsonwebtoken::{DecodingKey, EncodingKey};
-use pavex::blueprint::constructor::Lifecycle;
 use pavex::blueprint::Blueprint;
 use pavex::f;
 use secrecy::{ExposeSecret, Secret};
@@ -24,16 +23,10 @@ impl ApplicationConfig {
     }
 
     pub fn register(bp: &mut Blueprint) {
-        bp.constructor(
-            f!(self::ApplicationConfig::database_config),
-            Lifecycle::Singleton,
-        );
-        bp.constructor(
-            f!(self::ApplicationConfig::auth_config),
-            Lifecycle::Singleton,
-        );
-        bp.constructor(f!(self::DatabaseConfig::get_pool), Lifecycle::Singleton);
-        bp.constructor(f!(self::AuthConfig::decoding_key), Lifecycle::Singleton);
+        bp.singleton(f!(self::ApplicationConfig::database_config));
+        bp.singleton(f!(self::ApplicationConfig::auth_config));
+        bp.singleton(f!(self::DatabaseConfig::get_pool));
+        bp.singleton(f!(self::AuthConfig::decoding_key));
     }
 }
 

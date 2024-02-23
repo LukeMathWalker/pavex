@@ -169,6 +169,96 @@ impl Blueprint {
         }
     }
 
+    #[track_caller]
+    /// Register a constructor with a [singleton lifecycle][Lifecycle::Singleton].
+    ///
+    /// It's a shorthand for [`Blueprint::constructor`]—refer to its documentation for
+    /// more information on dependency injection in Pavex.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use pavex::f;
+    /// use pavex::blueprint::Blueprint;
+    /// # struct LogLevel;
+    /// # struct Logger;
+    ///
+    /// fn logger(log_level: LogLevel) -> Logger {
+    ///     // [...]
+    ///     # todo!()
+    /// }
+    ///
+    /// # fn main() {
+    /// let mut bp = Blueprint::new();
+    /// bp.singleton(f!(crate::logger));
+    /// // ^ is equivalent to:
+    /// // bp.constructor(f!(crate::logger), Lifecycle::Singleton));
+    /// # }
+    /// ```
+    pub fn singleton(&mut self, callable: RawCallable) -> RegisteredConstructor {
+        self.constructor(callable, Lifecycle::Singleton)
+    }
+
+    #[track_caller]
+    /// Register a constructor with a [request-scoped lifecycle][Lifecycle::RequestScoped].
+    ///
+    /// It's a shorthand for [`Blueprint::constructor`]—refer to its documentation for
+    /// more information on dependency injection in Pavex.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use pavex::f;
+    /// use pavex::blueprint::Blueprint;
+    /// # struct LogLevel;
+    /// # struct Logger;
+    ///
+    /// fn logger(log_level: LogLevel) -> Logger {
+    ///     // [...]
+    ///     # todo!()
+    /// }
+    ///
+    /// # fn main() {
+    /// let mut bp = Blueprint::new();
+    /// bp.request_scoped(f!(crate::logger));
+    /// // ^ is equivalent to:
+    /// // bp.constructor(f!(crate::logger), Lifecycle::RequestScoped));
+    /// # }
+    /// ```
+    pub fn request_scoped(&mut self, callable: RawCallable) -> RegisteredConstructor {
+        self.constructor(callable, Lifecycle::RequestScoped)
+    }
+
+    #[track_caller]
+    /// Register a constructor with a [transient lifecycle][Lifecycle::Transient].
+    ///
+    /// It's a shorthand for [`Blueprint::constructor`]—refer to its documentation for
+    /// more information on dependency injection in Pavex.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use pavex::f;
+    /// use pavex::blueprint::Blueprint;
+    /// # struct LogLevel;
+    /// # struct Logger;
+    ///
+    /// fn logger(log_level: LogLevel) -> Logger {
+    ///     // [...]
+    ///     # todo!()
+    /// }
+    ///
+    /// # fn main() {
+    /// let mut bp = Blueprint::new();
+    /// bp.transient(f!(crate::logger));
+    /// // ^ is equivalent to:
+    /// // bp.constructor(f!(crate::logger), Lifecycle::Transient));
+    /// # }
+    /// ```
+    pub fn transient(&mut self, callable: RawCallable) -> RegisteredConstructor {
+        self.constructor(callable, Lifecycle::Transient)
+    }
+
     pub(super) fn register_constructor(
         &mut self,
         constructor: super::constructor::Constructor,

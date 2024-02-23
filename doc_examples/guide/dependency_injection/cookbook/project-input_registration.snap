@@ -1,14 +1,10 @@
-```rust title="src/input/blueprint.rs" hl_lines="8"
-use pavex::blueprint::constructor::Lifecycle;
+```rust title="src/input/blueprint.rs" hl_lines="6"
 use pavex::blueprint::Blueprint;
 use pavex::f;
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.constructor(
-        f!(super::length::<crate::input::GreetBody>),
-        Lifecycle::RequestScoped,
-    );
+    bp.request_scoped(f!(super::length::<super::GreetBody>));
     // [...]
 }
 ```

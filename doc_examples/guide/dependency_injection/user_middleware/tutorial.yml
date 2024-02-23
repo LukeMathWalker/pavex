@@ -21,3 +21,15 @@ steps:
         source_path: "src/user.rs"
         ranges: [ "0..1", "11..16" ]
         hl_lines: [ 4 ]
+    commands:
+      - command: "cargo px c"
+        expected_outcome: "success"
+  - patch: "02.patch"
+    snippets:
+      - name: "constructor_registration"
+        source_path: "src/blueprint.rs"
+        ranges: [ "0..7", "10..11" ]
+        hl_lines: [ 7 ]
+    commands:
+      - command: "cargo px c"
+        expected_outcome: "success"

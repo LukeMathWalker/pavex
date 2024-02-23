@@ -1,12 +1,11 @@
-```rust title="src/non_static_methods/blueprint.rs" hl_lines="8"
-use pavex::blueprint::constructor::Lifecycle;
+```rust title="src/non_static_methods/blueprint.rs" hl_lines="7"
 use pavex::blueprint::Blueprint;
 use pavex::f;
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     // [...]
-    bp.constructor(f!(super::UserStore::new), Lifecycle::Singleton);
+    bp.request_scoped(f!(super::UserStore::new));
     // [...]
 }
 ```

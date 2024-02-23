@@ -33,8 +33,7 @@ Let's spice things up with a new route: `GET /api/greet/:name`.
 It takes a dynamic **route parameter** (`name`) and we want it to return a success response with `Hello, {name}` as its
 body.
 
-Create a new module, `greet.rs`, in the `demo/src/routes` folder:
-
+Create a new module, `greet.rs`, in the `app/src/routes` folder:
 
 --8<-- "doc_examples/quickstart/02-new_submodule.snap"
 

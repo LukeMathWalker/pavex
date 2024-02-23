@@ -10,17 +10,17 @@ We refer to this system as Pavex's **dependency injection framework**.
 
 ## What is the purpose of dependency injection?
 
-Let's look at an example: rejecting unauthenticated requests in a middleware.  
+Let's look at an example: rejecting unauthenticated requests in [a middleware](../middleware/index.md).  
 
 The desired behavior:
 
-- If you're logged in, the middleware lets the request through.  
-- If you're not, a `401 Unauthorized` response is returned.
+- If the user is logged in, the middleware lets the request through.  
+- If the user isn't logged in, a `401 Unauthorized` response is returned.
 
 --8<-- "doc_examples/guide/dependency_injection/user_middleware/project-middleware_def.snap"
 
 The middleware logic doesn't care about _how_ authentication is performed. It only cares about
-the result: are you authenticated or not?
+the result: is the user authenticated or not?
 
 **The contract is data-driven**: as long as the outcome of the authentication process doesn't change
 (i.e. the `User` type) the middleware will work as expected and doesn't need to be modified.  
