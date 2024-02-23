@@ -5,8 +5,8 @@ use pavex::f;
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.wrap(f!(crate::core::middleware));
-    bp.route(GET, "/", f!(crate::core::handler));
+    bp.wrap(f!(super::middleware));
+    bp.route(GET, "/", f!(super::handler));
     bp
 }
 ```

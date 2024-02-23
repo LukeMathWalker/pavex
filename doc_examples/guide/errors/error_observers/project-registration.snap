@@ -5,7 +5,7 @@ use pavex::f;
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.error_observer(f!(crate::core::error_logger));
+    bp.error_observer(f!(super::error_logger));
     // [...]
 }
 ```

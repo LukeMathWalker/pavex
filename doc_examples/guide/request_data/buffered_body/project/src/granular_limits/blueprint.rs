@@ -14,7 +14,7 @@ fn upload_bp() -> Blueprint {
     let mut bp = Blueprint::new();
     // This limit will only apply to the routes registered
     // in this nested blueprint.
-    bp.constructor(f!(crate::upload_size_limit), Lifecycle::Singleton);
+    bp.constructor(f!(self::upload_size_limit), Lifecycle::Singleton);
     bp.route(POST, "/upload", f!(crate::upload));
     bp
 }

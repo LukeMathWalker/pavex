@@ -4,7 +4,7 @@ use pavex::f;
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.wrap(f!(crate::logging::middleware));
-    bp.route(GET, "/logging", f!(crate::logging::handler));
+    bp.wrap(f!(super::middleware));
+    bp.route(GET, "/logging", f!(super::handler));
     bp
 }

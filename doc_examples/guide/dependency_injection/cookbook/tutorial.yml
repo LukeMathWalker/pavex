@@ -22,15 +22,15 @@ snippets:
     ranges: [ "0..7", "12..14", "15..17" ]
   - name: "non_static_method_registration"
     source_path: "src/non_static_methods/blueprint.rs"
-    ranges: [ "0..10", "15..16" ]
-    hl_lines: [ 8 ]
+    ranges: [ "0..7", "9..10" ]
+    hl_lines: [ 7 ]
   - name: "non_static_method_self_constructor_def"
     source_path: "src/non_static_methods/constructor.rs"
     ranges: [ "6..9", "10..11", "16..17" ]
   - name: "non_static_method_self_constructor_registration"
     source_path: "src/non_static_methods/blueprint.rs"
-    ranges: [ "0..6", "10..14", "15..16" ]
-    hl_lines: [ 9 ]
+    ranges: [ "0..6", "7..8", "9..10" ]
+    hl_lines: [ 8 ]
   - name: "trait_method_def"
     source_path: "src/trait_methods/constructor.rs"
     ranges: [ "0..6", "7..9" ]

@@ -20,12 +20,13 @@ The format differs between [local items](#local-items) and [items imported from 
 ### Local items
 
 If the item you want to register is defined in the current crate,
-you can use two different formats for its fully qualified path:
+you can use three different formats for its fully qualified path:
 
 - A path prefixed with `crate`, spelling out where the item is located **with respect to the root of the crate**.
 ```rust
 //! You can use `crate::my_module::handler` as a fully qualified path
-//! for the `handler` function.
+//! for the `handler` function from anywhere in your crate.
+
 pub mod my_module {
    pub fn handler() {
       // [...]
@@ -42,10 +43,21 @@ pub mod my_module {
    }
 }
 ```
+- A path prefixed with `super`, spelling out where the item is located **with respect to the parent of the current module**.
+```rust
+pub fn handler() {
+   // [...]
+}
 
-The two formats are equivalent for Pavex.
+pub mod my_module {
+   //! From inside `my_module`, you can use `super::handler` as a fully qualified path
+   //! for the `handler` function.
+}
+```
+
+The three formats are equivalent for Pavex.
 In practice,
-paths prefixed with `self` often end up being shorter—you might prefer them if you want to make your registration code terser.
+paths prefixed with `self` or `super` often end up being shorter—prefer them if you want to make your registration code terser.
 
 ### From a dependency
 
