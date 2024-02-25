@@ -33,7 +33,7 @@ pub struct RawCallable {
 // compile if the callable is generic, because the compiler would
 // demand to know the type of each generic parameter without a default.
 #[macro_export]
-/// A macro to convert a fully-qualified path into a [`RawCallable`].
+/// A macro to convert an [unambiguous path](https://pavex.dev/docs/guide/dependency_injection/cookbook/#unambiguous-paths) into a [`RawCallable`].
 ///
 /// # Guide
 ///
