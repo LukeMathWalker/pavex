@@ -1,4 +1,4 @@
-```rust title="server/src/bin/api.rs"
+```rust title="server/src/bin/server.rs"
 use anyhow::Context;
 use pavex::server::Server;
 use pavex_tracing::fields::{error_details, error_message, ERROR_DETAILS, ERROR_MESSAGE};
@@ -14,7 +14,7 @@ async fn main() -> anyhow::Result<()> {
     init_telemetry(subscriber)?;
 
     // We isolate all the server setup and launch logic in a separate function
-    // in order to have a single choke point where we make sure to log fatal errors
+    // to have a single choke point where we make sure to log fatal errors
     // that will cause the application to exit.
     if let Err(e) = _main().await {
         tracing::event!(
