@@ -3,7 +3,7 @@
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     ApiKit::new().register(&mut bp);
+    telemetry::register(&mut bp);
     // [...]
-    bp
 }
 ```

@@ -4,11 +4,11 @@ starter_project_folder: demo
 snippets:
   - name: "blueprint_definition"
     source_path: "app/src/blueprint.rs"
-    ranges: [ "7..16" ]
+    ranges: [ "6..16" ]
   - name: "route_registration"
-    source_path: "app/src/blueprint.rs"
-    ranges: [ "7..16" ]
-    hl_lines: [ 8 ]
+    source_path: "app/src/routes/mod.rs"
+    ranges: [ "2.." ]
+    hl_lines: [ 6 ]
   - name: "ping_handler"
     source_path: "app/src/routes/status.rs"
     ranges: [ ".." ]
@@ -35,15 +35,15 @@ steps:
     snippets:
       - name: "new_submodule"
         source_path: "app/src/routes/mod.rs"
-        ranges: [ ".." ]
+        ranges: [ "0..2" ]
         hl_lines: [ 1 ]
       - name: "route_def"
         source_path: "app/src/routes/greet.rs"
         ranges: [ ".." ]
       - name: "register_new_route"
-        source_path: "app/src/blueprint.rs"
-        ranges: [ "7..21" ]
-        hl_lines: [ 9, 10, 11, 12, 13 ]
+        source_path: "app/src/routes/mod.rs"
+        ranges: [ "6..10" ]
+        hl_lines: [ 4 ]
     commands:
       - command: "cargo px c"
         expected_outcome: "success"
@@ -62,7 +62,7 @@ steps:
         ranges: [ ".." ]
       - name: "register_common_invocation"
         source_path: "app/src/blueprint.rs"
-        ranges: [ "7..10", "19..21" ]
+        ranges: [ "6..10", "14..15" ]
         hl_lines: [ 4 ]
     commands:
       - command: "cargo px c"
@@ -95,7 +95,7 @@ steps:
         ranges: [ "0..2", "10..23" ]
       - name: "register"
         source_path: "app/src/blueprint.rs"
-        ranges: [ "7..8", "13..14", "18..19" ]
+        ranges: [ "7..8", "12..13", "16..17" ]
         hl_lines: [ 4 ]
     commands:
       - command: "cargo px c"
@@ -116,7 +116,7 @@ steps:
         ranges: [ "21..25" ]
       - name: "register"
         source_path: "app/src/blueprint.rs"
-        ranges: [ "7..8", "13..15", "19..20" ]
+        ranges: [ "7..8", "12..14", "17..18" ]
         hl_lines: [ 5 ]
     commands:
       - command: "cargo px c"
