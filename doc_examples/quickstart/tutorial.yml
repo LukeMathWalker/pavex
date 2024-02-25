@@ -19,7 +19,7 @@ snippets:
     source_path: "app/src/bin/bp.rs"
     ranges: [ ".." ]
   - name: "bp_server_binary"
-    source_path: "server/src/bin/api.rs"
+    source_path: "server/src/bin/server.rs"
     ranges: [ ".." ]
   - name: "ping_test"
     source_path: "server/tests/integration/ping.rs"
