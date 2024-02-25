@@ -1,6 +1,6 @@
 [package]
 name = "pavexc_cli"
-version = "0.1.18"
+version = "0.1.19"
 description = "A CLI interface for the Pavex compiler."
 keywords = ["pavex"]
 edition.workspace = true
@@ -14,8 +14,8 @@ path = "src/main.rs"
 
 [dependencies]
 clap = { version = "4", features = ["derive", "env"] }
-pavexc = { path = "../pavexc", version = "0.1.18" }
-pavex_miette = { path = "../pavex_miette", version = "0.1.18" }
+pavexc = { path = "../pavexc", version = "0.1.19" }
+pavex_miette = { path = "../pavex_miette", version = "0.1.19" }
 miette = { version = "6.0.1" }
 fs-err = "2.7.0"
 tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter"] }
@@ -28,7 +28,7 @@ supports-color = { version = "3.0.0" }
 include_dir = "0.7.3"
 path-absolutize = "3.1.1"
 ron = "0.8"
-generate_from_path = { path = "../generate_from_path", version = "0.1.18" }
+generate_from_path = { path = "../generate_from_path", version = "0.1.19" }
 tempfile = "3.9.0"
 
 [build-dependencies]
