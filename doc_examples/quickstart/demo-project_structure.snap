@@ -2,4 +2,7 @@ app/
 server/
 server_sdk/
 Cargo.toml
+deny.toml
+Dockerfile
 README.md
+rust-toolchain.toml

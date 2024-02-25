@@ -1,2 +1,2 @@
-mod ping;
 mod helpers;
+mod ping;

@@ -1,5 +1,5 @@
 use pavex::blueprint::constructor::CloningStrategy;
-use pavex::blueprint::Blueprint;
+use pavex::blueprint::{Blueprint, linter::Lint};
 use pavex::f;
 
 #[derive(serde::Deserialize, Debug, Clone)]
@@ -37,7 +37,8 @@ impl AppConfig {
 
     pub fn register(bp: &mut Blueprint) {
         bp.singleton(f!(self::AppConfig::dummy_config))
-            .cloning(CloningStrategy::CloneIfNecessary);
+            .cloning(CloningStrategy::CloneIfNecessary)
+            .ignore(Lint::Unused);
     }
 }
 
