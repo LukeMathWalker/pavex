@@ -13,7 +13,7 @@ async fn main() -> anyhow::Result<()> {
     init_telemetry(subscriber)?;
 
     // We isolate all the server setup and launch logic in a separate function
-    // in order to have a single choke point where we make sure to log fatal errors
+    // to have a single choke point where we make sure to log fatal errors
     // that will cause the application to exit.
     if let Err(e) = _main().await {
         tracing::event!(
