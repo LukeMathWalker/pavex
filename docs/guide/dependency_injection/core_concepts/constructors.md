@@ -36,7 +36,7 @@ Once you have defined a constructor, you need to register it with the applicatio
 
 [`Blueprint::constructor`][Blueprint::constructor] takes two arguments:
 
-- The [fully qualified path](../cookbook.md) to the constructor, wrapped in a macro ([`f!`][f])
+- An [unambiguous path](../cookbook.md) to the constructor, wrapped in the [`f!`][f] macro.
 - The [constructor's lifecycle](#lifecycles).
 
 Alternatively, you could use [`Blueprint::request_scoped`][Blueprint::request_scoped] as 

@@ -1,6 +1,5 @@
-use crate::{configuration::AppConfig, telemetry};
-use pavex::blueprint::{router::GET, Blueprint};
-use pavex::f;
+use crate::{configuration, routes, telemetry};
+use pavex::blueprint::Blueprint;
 use pavex::kit::ApiKit;
 
 /// The main blueprint, containing all the routes, middlewares, constructors and error handlers
@@ -9,8 +8,8 @@ pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     ApiKit::new().register(&mut bp);
     telemetry::register(&mut bp);
-    AppConfig::register(&mut bp);
+    configuration::register(&mut bp);
 
-    bp.route(GET, "/api/ping", f!(crate::routes::status::ping));
+    routes::register(&mut bp);
     bp
 }

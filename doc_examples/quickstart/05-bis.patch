@@ -1,20 +1,14 @@
-diff --git a/app/src/blueprint.rs b/app/src/blueprint.rs
-index a282fa0..2067e4a 100644
---- a/app/src/blueprint.rs
-+++ b/app/src/blueprint.rs
-@@ -12,10 +12,6 @@ pub fn blueprint() -> Blueprint {
-     ApplicationConfig::register(&mut bp);
+diff --git a/app/src/routes/mod.rs b/app/src/routes/mod.rs
+index 042c06f..01a843c 100644
+--- a/app/src/routes/mod.rs
++++ b/app/src/routes/mod.rs
+@@ -6,5 +6,5 @@ use pavex::f;
 
-     bp.route(GET, "/api/ping", f!(crate::routes::status::ping));
--    bp.route(
--        GET,
--        "/api/greet/:name", /* (1)! */
--        f!(crate::routes::greet::greet),
--    );
-+    bp.route(GET, "/api/greet/:name", f!(crate::routes::greet::greet));
-     bp
+ pub fn register(bp: &mut Blueprint) {
+     bp.route(GET, "/api/ping", f!(self::status::ping));
+-    bp.route(GET, "/api/greet/:name", f!(self::greet::greet)); // (1)!
++    bp.route(GET, "/api/greet/:name", f!(self::greet::greet));
  }
-
 diff --git a/app/src/routes/greet.rs b/app/src/routes/greet.rs
 --- a/app/src/routes/greet.rs
 +++ b/app/src/routes/greet.rs

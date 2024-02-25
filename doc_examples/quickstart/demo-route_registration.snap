@@ -1,12 +1,9 @@
-```rust title="app/src/blueprint.rs" hl_lines="8"
+```rust title="app/src/routes/mod.rs" hl_lines="6"
 // [...]
-pub fn blueprint() -> Blueprint {
-    let mut bp = Blueprint::new();
-    ApiKit::new().register(&mut bp);
-    telemetry::register(&mut bp);
-    AppConfig::register(&mut bp);
+use pavex::blueprint::{router::GET, Blueprint};
+use pavex::f;
 
-    bp.route(GET, "/api/ping", f!(crate::routes::status::ping));
-    bp
+pub fn register(bp: &mut Blueprint) {
+    bp.route(GET, "/api/ping", f!(self::status::ping));
 }
 ```

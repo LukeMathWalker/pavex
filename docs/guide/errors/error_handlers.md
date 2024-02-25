@@ -12,8 +12,7 @@ You must specify an error handler every time you register a fallible component
 
 1. Pavex will return an error during code generation if you register an error handler for an infallible component.
 
-When registering an error handler, you must provide its **[fully qualified path]**, 
-wrapped in the [`f!`][f] macro.  
+You must provide an **[unambiguous path]** to the error handler, wrapped in the [`f!`][f] macro.  
 
 !!! note "Registration syntax"
 
@@ -93,4 +92,4 @@ on the differences between the two and how to choose the right one for your use 
 [IntoResponse]: ../../../api_reference/pavex/response/trait.IntoResponse.html
 [Response]: ../../../api_reference/pavex/response/struct.Response.html
 [f]: ../../../api_reference/pavex/macro.f.html
-[fully qualified path](../dependency_injection/cookbook.md)
+[unambiguous path](../dependency_injection/cookbook.md#unambiguous-paths)
