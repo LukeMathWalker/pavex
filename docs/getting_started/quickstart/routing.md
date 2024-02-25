@@ -12,7 +12,7 @@ It specifies:
 
 - The HTTP method (`GET`)
 - The path (`/api/ping`)
-- The [fully qualified path](../../guide/dependency_injection/cookbook.md) to the handler function (`self::status::ping`), wrapped in a macro ([`f!`][f!])
+- An [unambiguous path](../../guide/dependency_injection/cookbook.md) to the handler function (`self::status::ping`), wrapped in the [`f!`][f!] macro
 
 ## Request handlers
 

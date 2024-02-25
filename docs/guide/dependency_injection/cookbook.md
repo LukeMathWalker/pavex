@@ -11,20 +11,20 @@ Use it a reference in your day-to-day Pavex development if you're not sure of th
     All the examples register constructors, but the very same `f!` invocations can be used to register 
     request handlers, error handlers, error observers and middlewares.
 
-## Fully qualified paths
+## Unambiguous paths
 
-In all the cases described in this cookbook, we'll talk about **fully qualified paths**. 
-They allow Pavex to unambiguously identify the callable you want to register.  
+In all the cases described in this cookbook, we'll talk about **unambiguous paths**. 
+They allow Pavex to identify with certainty the callable you want to register.  
 The format differs between [local items](#local-items) and [items imported from a dependency of your crate](#from-a-dependency).
 
 ### Local items
 
 If the item you want to register is defined in the current crate,
-you can use three different formats for its fully qualified path:
+you can use three different formats for its unambiguous path:
 
 - A path prefixed with `crate`, spelling out where the item is located **with respect to the root of the crate**.
 ```rust
-//! You can use `crate::my_module::handler` as a fully qualified path
+//! You can use `crate::my_module::handler` as an unambiguous path
 //! for the `handler` function from anywhere in your crate.
 
 pub mod my_module {
@@ -36,7 +36,7 @@ pub mod my_module {
 - A path prefixed with `self`, spelling out where the item is located **with respect to the root of the current module**.
 ```rust
 pub mod my_module {
-   //! From inside `my_module`, you can use `self::handler` as a fully qualified path
+   //! From inside `my_module`, you can use `self::handler` as an unambiguous path
    //! for the `handler` function.
    pub fn handler() {
       // [...]
@@ -50,7 +50,7 @@ pub fn handler() {
 }
 
 pub mod my_module {
-   //! From inside `my_module`, you can use `super::handler` as a fully qualified path
+   //! From inside `my_module`, you can use `super::handler` as an unambiguous path
    //! for the `handler` function.
 }
 ```
@@ -66,8 +66,8 @@ the crate it is defined into. E.g. `reqwest::Client`, if `reqwest` is one of you
 
 ## Free functions
 
-Free functions are the simplest case.
-You register them as constructors by passing their [fully qualified path] to the [`f!` macro][f!].
+Free functions are the simplest case.  
+You pass an [unambiguous path] to the [`f!` macro][f!] as input.
 
 --8<-- "doc_examples/guide/dependency_injection/cookbook/project-function_registration.snap"
 
@@ -75,8 +75,7 @@ You register them as constructors by passing their [fully qualified path] to the
 
 ## Static methods
 
-Static methods (1) behave exactly like free functions:
-you can register them as constructors by passing their [fully qualified path] to the [`f!` macro][f!].
+Static methods (1) behave exactly like free functions: you provide an [unambiguous path] to the [`f!` macro][f!].
 { .annotate }
 
 1. A static method is a method that doesn't take `self` (or one of its variants) as an input parameter.
@@ -88,7 +87,7 @@ you can register them as constructors by passing their [fully qualified path] to
 ## Non-static methods
 
 On the surface, non-static methods are registered in the same way as static methods: 
-by passing their [fully qualified path] to the [`f!` macro][f!].
+by passing an [unambiguous path] to the [`f!` macro][f!].
 
 --8<-- "doc_examples/guide/dependency_injection/cookbook/project-non_static_method_registration.snap"
 
@@ -156,5 +155,5 @@ when registering the constructor.
 
 
 [f!]: ../../api_reference/pavex/macro.f!.html
-[fully qualified path]: #fully-qualified-paths
+[unambiguous path]: #unambiguous-paths
 [^ufcs]: Check out the [relevant RFC](https://github.com/rust-lang/rfcs/blob/master/text/0132-ufcs.md) if you're curious.

@@ -72,7 +72,8 @@ Now register the new constructor with the [`Blueprint`][Blueprint]:
 --8<-- "doc_examples/quickstart/06-register.snap"
 
 In [`Blueprint::request_scoped`][Blueprint::request_scoped] you must specify 
-the [fully qualified path](../../guide/dependency_injection/cookbook.md) to the constructor method, wrapped in a macro ([`f!`][f!]).
+an [unambiguous path](../../guide/dependency_injection/cookbook.md) to the constructor method,
+wrapped in the [`f!`][f!] macro.
 
 Make sure that the project compiles successfully at this point.
 

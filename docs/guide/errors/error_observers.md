@@ -12,8 +12,7 @@ You register an error observer using the [`Blueprint::error_observer`][Blueprint
 
 --8<-- "doc_examples/guide/errors/error_observers/project-registration.snap"
 
-When registering an error observer, you must provide its **[fully qualified path]**, wrapped in the
-[`f!`][f] macro.  
+You must provide an **[unambiguous path]** to the error observer, wrapped in the [`f!`][f] macro.  
 You can register as many error observers as you want: they'll all be called when an error occurs,
 in the order they were registered. They are invoked after the relevant error handler has been called,
 but before the response is sent back to the client.
