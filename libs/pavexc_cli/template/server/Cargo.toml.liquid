@@ -10,7 +10,6 @@ name = "api"
 [dependencies]
 anyhow = "1"
 pavex = { {{pavex_package_spec}} }
-pavex_tracing = { {{pavex_tracing_package_spec}} }
 tokio = { version = "1", features = ["full"] }
 server_sdk = { path = "../server_sdk" }
 app = { path = "../app" }
@@ -21,6 +20,7 @@ figment = { version = "0.10", features = ["env", "yaml"] }
 serde = { version = "1", features = ["derive"] }
 
 # Telemetry
+pavex_tracing = { {{pavex_tracing_package_spec}} }
 tracing = "0.1"
 tracing-bunyan-formatter = "0.3"
 tracing-panic = "0.1"
