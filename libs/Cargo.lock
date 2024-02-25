@@ -854,7 +854,7 @@ dependencies = [
 
 [[package]]
 name = "generate_from_path"
-version = "0.1.19"
+version = "0.1.20"
 dependencies = [
  "anyhow",
  "fs-err",
@@ -1881,7 +1881,7 @@ dependencies = [
 
 [[package]]
 name = "pavex"
-version = "0.1.19"
+version = "0.1.20"
 dependencies = [
  "anyhow",
  "bytes",
@@ -1921,7 +1921,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_bp_schema"
-version = "0.1.19"
+version = "0.1.20"
 dependencies = [
  "pavex_reflection",
  "serde",
@@ -1929,7 +1929,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_cli"
-version = "0.1.19"
+version = "0.1.20"
 dependencies = [
  "anyhow",
  "bytes",
@@ -1972,7 +1972,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_cli_client"
-version = "0.1.19"
+version = "0.1.20"
 dependencies = [
  "anyhow",
  "pavex",
@@ -1981,7 +1981,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_macros"
-version = "0.1.19"
+version = "0.1.20"
 dependencies = [
  "pavex",
  "proc-macro2",
@@ -1999,7 +1999,7 @@ checksum = "77b9753b03381fd8856966146c4d626d9a8507901c1bcdfbc41df03deea551fc"
 
 [[package]]
 name = "pavex_miette"
-version = "0.1.19"
+version = "0.1.20"
 dependencies = [
  "miette",
  "owo-colors 3.5.0",
@@ -2013,14 +2013,14 @@ dependencies = [
 
 [[package]]
 name = "pavex_reflection"
-version = "0.1.19"
+version = "0.1.20"
 dependencies = [
  "serde",
 ]
 
 [[package]]
 name = "pavex_test_runner"
-version = "0.1.19"
+version = "0.1.20"
 dependencies = [
  "ahash",
  "anyhow",
@@ -2047,7 +2047,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_tracing"
-version = "0.1.19"
+version = "0.1.20"
 dependencies = [
  "pavex",
  "tracing",
@@ -2055,7 +2055,7 @@ dependencies = [
 
 [[package]]
 name = "pavexc"
-version = "0.1.19"
+version = "0.1.20"
 dependencies = [
  "ahash",
  "anyhow",
@@ -2102,7 +2102,7 @@ dependencies = [
 
 [[package]]
 name = "pavexc_cli"
-version = "0.1.19"
+version = "0.1.20"
 dependencies = [
  "anyhow",
  "clap",
@@ -2126,7 +2126,7 @@ dependencies = [
 
 [[package]]
 name = "pavexc_cli_client"
-version = "0.1.19"
+version = "0.1.20"
 dependencies = [
  "anyhow",
  "pavex",
@@ -2153,7 +2153,7 @@ checksum = "e3148f5046208a5d56bcfc03053e3ca6334e51da8dfb19b6cdc8b306fae3283e"
 
 [[package]]
 name = "persist_if_changed"
-version = "0.1.19"
+version = "0.1.20"
 dependencies = [
  "anyhow",
  "fs-err",
