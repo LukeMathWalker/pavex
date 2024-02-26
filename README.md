@@ -26,11 +26,12 @@ Pavex is currently in **closed beta**—you can sign up [here](https://pavex.dev
 
 We regularly publish project updates.
 
-Last update: [Rust web frameworks have subpar error reporting](https://www.lpalmieri.com/posts/rust-web-frameworks-have-subpar-error-reporting/) [February 2024]
+Last update: [This month in Pavex #9](https://www.lpalmieri.com/posts/this-month-in-pavex-09/) [February 2024]
 
 <details>
 <summary>Previous updates:</summary>
 
+- [Rust web frameworks have subpar error reporting](https://www.lpalmieri.com/posts/rust-web-frameworks-have-subpar-error-reporting/) [February 2024]
 - [This month in Pavex #8](https://www.lpalmieri.com/posts/this-month-in-pavex-08/) [January 2024]
 - [Closed beta announcement](https://www.lpalmieri.com/posts/pavex-is-in-closed-beta/) [November 2023]
 - [Progress report #6](https://www.lpalmieri.com/posts/pavex-progress-report-06/) [August 2023]
