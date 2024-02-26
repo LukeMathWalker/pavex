@@ -73,7 +73,7 @@ impl Config {
         let figment = Figment::new()
             .merge(Yaml::file(base_filepath))
             .merge(Yaml::file(profile_filepath))
-            .merge(Env::prefixed("APP_"));
+            .merge(Env::prefixed("APP_").split("__"));
 
         let configuration: Config = figment
             .extract()
