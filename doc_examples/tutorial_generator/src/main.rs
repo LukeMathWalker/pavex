@@ -415,14 +415,6 @@ impl ScriptRunner {
         let env_vars = HashMap::from([
             ("PAVEX_TTY_WIDTH".to_string(), "100".to_string()),
             ("PAVEX_COLOR".to_string(), "always".to_string()),
-            (
-                "CARGO_GENERATE_VALUE_PAVEX_PACKAGE_SPEC".to_string(),
-                r#"path = "../../../../../libs/pavex""#.to_string(),
-            ),
-            (
-                "CARGO_GENERATE_VALUE_PAVEX_CLI_CLIENT_PACKAGE_SPEC".to_string(),
-                r#"path = "../../../../../libs/pavex_cli_client""#.to_string(),
-            ),
             ("CARGO_TARGET_DIR".to_string(), self.target_dir.to_string()),
         ]);
         options.env_vars = Some(env_vars);
