@@ -7,5 +7,6 @@ pub fn blueprint() -> Blueprint {
     BufferedBody::register(&mut bp);
     BodySizeLimit::register(&mut bp); // (1)!
     // [...]
+    bp
 }
 ```

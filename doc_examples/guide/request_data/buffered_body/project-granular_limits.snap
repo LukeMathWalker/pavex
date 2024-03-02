@@ -1,5 +1,5 @@
 ```rust title="src/granular_limits/blueprint.rs"
-use pavex::blueprint::{constructor::Lifecycle, router::POST, Blueprint};
+use pavex::blueprint::{router::POST, Blueprint};
 use pavex::f;
 use pavex::request::body::BodySizeLimit;
 use pavex::unit::ToByteUnit;
@@ -15,7 +15,7 @@ fn upload_bp() -> Blueprint {
     let mut bp = Blueprint::new();
     // This limit will only apply to the routes registered
     // in this nested blueprint.
-    bp.constructor(f!(self::upload_size_limit), Lifecycle::Singleton);
+    bp.request_scoped(f!(self::upload_size_limit));
     bp.route(POST, "/upload", f!(crate::upload));
     bp
 }
