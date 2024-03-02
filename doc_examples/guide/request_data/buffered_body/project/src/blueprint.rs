@@ -7,5 +7,7 @@ pub fn blueprint() -> Blueprint {
     BodySizeLimit::register(&mut bp); // (1)!
 
     bp.nest(crate::buffered_body::blueprint());
+    bp.nest(crate::custom_limit::blueprint());
+    bp.nest(crate::no_limit::blueprint());
     bp
 }

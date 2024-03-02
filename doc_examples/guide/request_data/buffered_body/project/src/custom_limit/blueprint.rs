@@ -1,4 +1,4 @@
-use pavex::blueprint::{constructor::Lifecycle, Blueprint};
+use pavex::blueprint::Blueprint;
 use pavex::f;
 use pavex::request::body::BodySizeLimit;
 use pavex::unit::ToByteUnit;
@@ -11,7 +11,7 @@ pub fn body_size_limit() -> BodySizeLimit {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.constructor(f!(self::body_size_limit), Lifecycle::Singleton);
+    bp.request_scoped(f!(self::body_size_limit));
     bp.route(
         pavex::blueprint::router::GET,
         "/custom_limit",
