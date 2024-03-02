@@ -1,14 +1,14 @@
 # Error handling
 
 In `UserAgent::extract` you're only handling the happy path:
-the method panics if the `User-Agent` header is not valid UTF-8.  
+the method panics if the `User-Agent` header value is not comprised of ASCII printable characters.
 Panicking for bad user input is poor behavior: you should handle the issue gracefully and return an error instead.
 
 Let's change the signature of `UserAgent::extract` to return a `Result` instead:
 
 --8<-- "doc_examples/quickstart/07-extract.snap"
 
-1. `ToStrError` is the error type returned by `to_str` when the header value is not valid UTF-8.
+1. `ToStrError` is the error type returned by `to_str` when the header value is not comprised of ASCII printable characters.
 
 ## All errors must be handled
 
