@@ -1,2 +1,0 @@
-[patch.crates-io]
-pavex_tracing = { path = "../libs/pavex_tracing" }
