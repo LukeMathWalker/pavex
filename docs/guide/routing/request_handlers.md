@@ -115,4 +115,4 @@ If you want to learn more about what "blocking" means in async Rust, check out [
 [spawn_blocking]: https://docs.rs/tokio/latest/tokio/task/fn.spawn_blocking.html
 [f!]: ../../api_reference/pavex/macro.f.html
 [Result]: https://doc.rust-lang.org/std/result/index.html
-[unambiguous path](../dependency_injection/cookbook.md#unambiguous-paths)
+[unambiguous path]: ../dependency_injection/cookbook.md#unambiguous-paths
