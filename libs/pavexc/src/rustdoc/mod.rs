@@ -14,6 +14,7 @@ mod compute;
 mod package_id_spec;
 mod queries;
 mod utils;
+mod version_matcher;
 
 pub const STD_PACKAGE_ID_REPR: &str = "std";
 pub static STD_PACKAGE_ID: Lazy<PackageId> = Lazy::new(|| PackageId::new(STD_PACKAGE_ID_REPR));
