@@ -203,6 +203,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "better-panic"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6fa9e1d11a268684cbd90ed36370d7577afb6c62d912ddff5c15fc34343e5036"
+dependencies = [
+ "backtrace",
+ "console",
+]
+
+[[package]]
 name = "bimap"
 version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2106,6 +2116,7 @@ name = "pavexc_cli"
 version = "0.1.21"
 dependencies = [
  "anyhow",
+ "better-panic",
  "clap",
  "fs-err",
  "generate_from_path",

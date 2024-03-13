@@ -12,6 +12,7 @@ use indexmap::IndexSet;
 use rustdoc_types::{ExternalCrate, Item, ItemEnum, ItemKind, ItemSummary, Visibility};
 use tracing::Span;
 
+use crate::rustdoc::version_matcher::VersionMatcher;
 use crate::rustdoc::{compute::compute_crate_docs, utils, CannotGetCrateData, TOOLCHAIN_CRATES};
 use crate::rustdoc::{ALLOC_PACKAGE_ID, CORE_PACKAGE_ID, STD_PACKAGE_ID};
 
@@ -1188,15 +1189,7 @@ pub fn compute_package_id_for_crate_id(
         let expected_link_name = utils::normalize_crate_name(name);
         let package_candidates: IndexSet<_> = transitive_dependencies
             .links(guppy::graph::DependencyDirection::Forward)
-            .filter(|link| {
-                let version_filter = if let Some(version) = version {
-                    link.to().version() == version
-                } else {
-                    true
-                };
-                utils::normalize_crate_name(link.to().name()) == expected_link_name
-                    && version_filter
-            })
+            .filter(|link| utils::normalize_crate_name(link.to().name()) == expected_link_name)
             .map(|link| {
                 let l = link.to();
                 PackageLinkMetadata {
@@ -1208,8 +1201,8 @@ pub fn compute_package_id_for_crate_id(
             .collect();
         if package_candidates.is_empty() {
             panic!(
-                "I could not find any crate named `{}` among the dependencies of {}",
-                expected_link_name, search_root
+                "I could not find any crate named `{expected_link_name}` \
+                among the dependencies of {search_root}",
             )
         }
         if package_candidates.len() == 1 {
@@ -1217,14 +1210,23 @@ pub fn compute_package_id_for_crate_id(
         }
 
         if let Some(expected_link_version) = version {
+            let version_matcher = VersionMatcher::new(expected_link_version);
             let filtered_candidates: Vec<_> = package_candidates
                 .iter()
-                .filter(|l| l.version == expected_link_version)
+                .filter(|l| version_matcher.matches(l.version))
                 .collect();
             if filtered_candidates.is_empty() {
-                tracing::debug!("Searching for `{}` among the transitive dependencies of `{}` led to multiple results. \
-                    When the version ({}) is added to the search filters, no results come up. Could the inferred version be incorrect?",
-                    expected_link_name, search_root, expected_link_version
+                let candidates = package_candidates
+                    .iter()
+                    .map(|l| format!("- {}@{}", l.name, l.version))
+                    .collect::<Vec<_>>()
+                    .join("\n");
+                panic!("Searching for `{expected_link_name}` among the transitive dependencies \
+                    of `{search_root}` led to multiple results:\n{candidates}\n\
+                    When the version ({expected_link_version}) was added to the search filters, \
+                    no results come up. Could the inferred version be incorrect?\n\
+                    This can happen if `{expected_link_name}` is using `#![doc(html_root_url = \"..\")]` \
+                    with a URL that points to the documentation for a different (older?) version of itself."
                 )
             }
             if filtered_candidates.len() == 1 {

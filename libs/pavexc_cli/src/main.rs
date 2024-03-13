@@ -145,6 +145,8 @@ fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
         Box::new(handler.build())
     }))
     .unwrap();
+
+    better_panic::install();
     let _guard = if cli.debug {
         Some(init_telemetry())
     } else {
