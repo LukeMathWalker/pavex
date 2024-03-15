@@ -76,6 +76,11 @@ where
                 lifetime: Lifetime::Elided,
                 inner: Box::new(dependency_type.to_owned()),
             }),
+            CallGraphEdgeMetadata::ExclusiveBorrow => ResolvedType::Reference(TypeReference {
+                is_mutable: true,
+                lifetime: Lifetime::Elided,
+                inner: Box::new(dependency_type.to_owned()),
+            }),
             CallGraphEdgeMetadata::HappensBefore => {
                 unreachable!()
             }
@@ -86,6 +91,7 @@ where
             Fragment::VariableReference(v) => match consumption_mode {
                 CallGraphEdgeMetadata::Move => Box::new(quote! { #v }),
                 CallGraphEdgeMetadata::SharedBorrow => Box::new(quote! { &#v }),
+                CallGraphEdgeMetadata::ExclusiveBorrow => Box::new(quote! { &mut #v }),
                 CallGraphEdgeMetadata::HappensBefore => unreachable!(),
             },
             Fragment::Block(_) | Fragment::Statement(_) => {
@@ -98,6 +104,9 @@ where
                 match consumption_mode {
                     CallGraphEdgeMetadata::Move => Box::new(quote! { #parameter_name }),
                     CallGraphEdgeMetadata::SharedBorrow => Box::new(quote! { &#parameter_name }),
+                    CallGraphEdgeMetadata::ExclusiveBorrow => {
+                        Box::new(quote! { &mut #parameter_name })
+                    }
                     CallGraphEdgeMetadata::HappensBefore => {
                         unreachable!()
                     }

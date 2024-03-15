@@ -1455,6 +1455,11 @@ impl ComponentDb {
                         lifetime: Lifetime::Elided,
                         inner: Box::new(unbound_transformed_output),
                     }),
+                    ConsumptionMode::ExclusiveBorrow => ResolvedType::Reference(TypeReference {
+                        is_mutable: true,
+                        lifetime: Lifetime::Elided,
+                        inner: Box::new(unbound_transformed_output),
+                    }),
                 };
                 let remapping = unbound_transformed_output
                     .is_equivalent_to(transformer_input_type)

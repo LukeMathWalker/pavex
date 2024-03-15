@@ -106,6 +106,7 @@ impl OrderedCallGraph {
                 &|_, edge| match edge.weight() {
                     CallGraphEdgeMetadata::Move => "".to_string(),
                     CallGraphEdgeMetadata::SharedBorrow => "label = \"&\"".to_string(),
+                    CallGraphEdgeMetadata::ExclusiveBorrow => "label = \"&mut \"".to_string(),
                     CallGraphEdgeMetadata::HappensBefore =>
                         "label = \"happens-before\"".to_string(),
                 },

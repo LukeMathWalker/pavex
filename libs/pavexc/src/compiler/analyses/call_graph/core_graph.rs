@@ -285,12 +285,7 @@ where
                             ),
                             neighbour: Some(VisitorNeighbour::Parent(
                                 node_index,
-                                match transformer_info.transformation_mode {
-                                    ConsumptionMode::Move => CallGraphEdgeMetadata::Move,
-                                    ConsumptionMode::SharedBorrow => {
-                                        CallGraphEdgeMetadata::SharedBorrow
-                                    }
-                                },
+                                transformer_info.transformation_mode.into(),
                             )),
                         });
                     }
@@ -539,6 +534,7 @@ impl CallGraph {
                 &|_, edge| match edge.weight() {
                     CallGraphEdgeMetadata::Move => "".to_string(),
                     CallGraphEdgeMetadata::SharedBorrow => "label = \"&\"".to_string(),
+                    CallGraphEdgeMetadata::ExclusiveBorrow => "label = \"&mut \"".to_string(),
                     CallGraphEdgeMetadata::HappensBefore => "label = \"before\"".to_string(),
                 },
                 &|_, (id, node)| {
@@ -729,9 +725,12 @@ fn take_references_as_inputs_if_they_suffice(
 pub(crate) enum CallGraphEdgeMetadata {
     /// The output of the source node is consumed by value—e.g. `String` in `fn handler(input: String)`.
     Move,
-    /// The target node requires a shared reference to output type of the source node —e.g. `&MyStruct` in
+    /// The target node requires a shared reference to the output type of the source node —e.g. `&MyStruct` in
     /// `fn handler(input: &MyStruct)`.
     SharedBorrow,
+    /// The target node requires a mutable reference to the output type of the source node —e.g. `&mut MyStruct`
+    /// in `fn handler(input: &mut MyStruct)`.
+    ExclusiveBorrow,
     /// The computation in the source node must be invoked before the computation in the target node.
     HappensBefore,
 }
@@ -741,6 +740,7 @@ impl From<ConsumptionMode> for CallGraphEdgeMetadata {
         match value {
             ConsumptionMode::Move => CallGraphEdgeMetadata::Move,
             ConsumptionMode::SharedBorrow => CallGraphEdgeMetadata::SharedBorrow,
+            ConsumptionMode::ExclusiveBorrow => CallGraphEdgeMetadata::ExclusiveBorrow,
         }
     }
 }
@@ -913,6 +913,7 @@ impl RawCallGraphExt for RawCallGraph {
                 &|_, edge| match edge.weight() {
                     CallGraphEdgeMetadata::Move => "".to_string(),
                     CallGraphEdgeMetadata::SharedBorrow => "label = \"&\"".to_string(),
+                    CallGraphEdgeMetadata::ExclusiveBorrow => "label = \"&mut \"".to_string(),
                     CallGraphEdgeMetadata::HappensBefore =>
                         "label = \"happens before\"".to_string(),
                 },
@@ -965,6 +966,7 @@ impl RawCallGraphExt for RawCallGraph {
                 &|_, edge| match edge.weight() {
                     CallGraphEdgeMetadata::Move => "".to_string(),
                     CallGraphEdgeMetadata::SharedBorrow => "label = \"&\"".to_string(),
+                    CallGraphEdgeMetadata::ExclusiveBorrow => "label = \"&mut \"".to_string(),
                     CallGraphEdgeMetadata::HappensBefore =>
                         "label = \"happens before\"".to_string(),
                 },

@@ -165,10 +165,10 @@ impl Callable {
     }
 
     /// Returns the indices of all input parameters that the output type
-    /// borrows from.
+    /// borrows immutably from (i.e. not `&mut`).
     ///
     /// E.g. `fn f(x: &T) -> &T` returns `[0]`.
-    pub(crate) fn inputs_that_output_borrows_from(&self) -> Vec<usize> {
+    pub(crate) fn inputs_that_output_borrows_immutably_from(&self) -> Vec<usize> {
         let c = self.unelide_output_lifetimes();
         let Some(output) = &c.output else {
             return vec![];
@@ -181,6 +181,9 @@ impl Callable {
             let ResolvedType::Reference(ref_ty) = input else {
                 continue;
             };
+            if ref_ty.is_mutable {
+                continue;
+            }
             let Lifetime::Named(lifetime) = &ref_ty.lifetime else {
                 continue;
             };

@@ -32,8 +32,6 @@ impl<'a> RequestHandler<'a> {
             }
         }
 
-        CannotTakeMutReferenceError::check_callable(&c)?;
-
         let mut free_parameters = IndexSet::new();
         for input in c.inputs.iter() {
             free_parameters.extend(input.unassigned_generic_type_parameters());

@@ -44,7 +44,7 @@ use super::diagnostic_helpers::suggest_wrapping_in_a_smart_pointer;
 /// The same error can play out across a larger sub-graph, which makes explaining to
 /// the user what is wrong particularly challenging.
 ///
-/// [`ancestor_consumes_descendant_borrows`]: super::ancestor_consumes_descendant_borrows::ancestor_consumes_descendant_borrows
+/// [`ancestor_consumes_descendant_borrows`]: super::move_while_borrowed::move_while_borrowed
 pub(super) fn complex_borrow_check(
     call_graph: CallGraph,
     copy_checker: &CopyChecker,

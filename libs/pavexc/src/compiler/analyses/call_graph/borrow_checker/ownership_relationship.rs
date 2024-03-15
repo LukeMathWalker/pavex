@@ -24,13 +24,16 @@ impl OwnershipRelationships {
     pub(super) fn compute(call_graph: &RawCallGraph) -> Self {
         let mut self_ = Self::default();
         for edge_index in call_graph.edge_indices() {
+            let (source, target) = call_graph.edge_endpoints(edge_index).unwrap();
             match call_graph[edge_index] {
                 CallGraphEdgeMetadata::SharedBorrow => {
-                    let (source, target) = call_graph.edge_endpoints(edge_index).unwrap();
+                    self_.node(target).borrows(source);
+                }
+                CallGraphEdgeMetadata::ExclusiveBorrow => {
+                    // TODO: treat &mut differently
                     self_.node(target).borrows(source);
                 }
                 CallGraphEdgeMetadata::Move => {
-                    let (source, target) = call_graph.edge_endpoints(edge_index).unwrap();
                     self_.node(target).consumes(source);
                 }
                 CallGraphEdgeMetadata::HappensBefore => {}
