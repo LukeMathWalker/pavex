@@ -181,6 +181,16 @@ impl UserComponentDb {
             .filter(|(_, c)| matches!(c, UserComponent::WrappingMiddleware { .. }))
     }
 
+    /// Iterate over all the post-processing middleware components in the database, returning their id and the
+    /// associated `UserComponent`.
+    pub fn post_processing_middlewares(
+        &self,
+    ) -> impl Iterator<Item = (UserComponentId, &UserComponent)> + DoubleEndedIterator {
+        self.component_interner
+            .iter()
+            .filter(|(_, c)| matches!(c, UserComponent::PostProcessingMiddleware { .. }))
+    }
+
     /// Iterate over all the error observer components in the database, returning their id and the
     /// associated `UserComponent`.
     pub fn error_observers(

@@ -80,6 +80,17 @@ where
     todo!()
 }
 
+#[derive(Debug)]
+pub struct PPMiddlewareError;
+
+pub fn handle_pp_middleware_error(_e: &PPMiddlewareError) -> Response {
+    todo!()
+}
+
+pub fn fallible_pp_middleware<T>(_response: Response) -> Result<Response, PPMiddlewareError> {
+    todo!()
+}
+
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.constructor(f!(crate::http_client), Lifecycle::Singleton);
@@ -89,6 +100,8 @@ pub fn blueprint() -> Blueprint {
         .error_handler(f!(crate::handle_logger_error));
     bp.wrap(f!(crate::fallible_wrapping_middleware))
         .error_handler(f!(crate::handle_middleware_error));
+    bp.post_process(f!(crate::fallible_pp_middleware))
+        .error_handler(f!(crate::handle_pp_middleware_error));
     bp.route(GET, "/home", f!(crate::request_handler))
         .error_handler(f!(crate::handle_handler_error));
     bp

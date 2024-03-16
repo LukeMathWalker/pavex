@@ -19,9 +19,14 @@ pub(crate) enum UnregisteredComponent {
     UserWrappingMiddleware {
         user_component_id: UserComponentId,
     },
+    UserPostProcessingMiddleware {
+        user_component_id: UserComponentId,
+    },
     SyntheticWrappingMiddleware {
         computation_id: ComputationId,
         scope_id: ScopeId,
+        /// Synthetic middlewares are created by binding the generic parameter for Next.
+        derived_from: ComponentId,
     },
     ErrorHandler {
         source_id: SourceId,
@@ -85,6 +90,7 @@ impl UnregisteredComponent {
             UnregisteredComponent::SyntheticWrappingMiddleware {
                 computation_id,
                 scope_id,
+                ..
             } => Component::WrappingMiddleware {
                 source_id: SourceId::ComputationId(computation_id.to_owned(), *scope_id),
             },
@@ -122,6 +128,11 @@ impl UnregisteredComponent {
                 source_id: SourceId::ComputationId(computation_id.to_owned(), *scope_id),
                 transformed_component_id: transformed_component_id.to_owned(),
             },
+            UnregisteredComponent::UserPostProcessingMiddleware { user_component_id } => {
+                Component::PostProcessingMiddleware {
+                    source_id: SourceId::UserComponentId(user_component_id.to_owned()),
+                }
+            }
         }
     }
 
@@ -129,6 +140,7 @@ impl UnregisteredComponent {
         use UnregisteredComponent::*;
         match &self {
             UserWrappingMiddleware { .. }
+            | UserPostProcessingMiddleware { .. }
             | SyntheticWrappingMiddleware { .. }
             | RequestHandler { .. } => Lifecycle::RequestScoped,
             ErrorObserver { .. } => Lifecycle::Transient,

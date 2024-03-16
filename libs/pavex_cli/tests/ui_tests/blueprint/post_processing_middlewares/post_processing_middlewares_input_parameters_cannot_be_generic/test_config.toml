@@ -1,0 +1,5 @@
+description = """Pavex does not allow input parameters of post-processing middlewares
+to have unassigned generic parameters"""
+
+[expectations]
+codegen = "fail"

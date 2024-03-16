@@ -10,8 +10,8 @@ use crate::compiler::analyses::user_components::{
     ScopeGraph, ScopeId, UserComponent, UserComponentDb, UserComponentId,
 };
 use crate::compiler::component::{
-    Constructor, ConstructorValidationError, ErrorHandler, ErrorObserver, RequestHandler,
-    WrappingMiddleware,
+    Constructor, ConstructorValidationError, ErrorHandler, ErrorObserver, PostProcessingMiddleware,
+    RequestHandler, WrappingMiddleware,
 };
 use crate::compiler::computation::{Computation, MatchResult};
 use crate::compiler::interner::Interner;
@@ -195,6 +195,13 @@ impl ComponentDb {
             );
 
             self_.process_wrapping_middlewares(
+                &mut needs_error_handler,
+                computation_db,
+                package_graph,
+                krate_collection,
+                diagnostics,
+            );
+            self_.process_post_processing_middlewares(
                 &mut needs_error_handler,
                 computation_db,
                 package_graph,
@@ -389,6 +396,15 @@ impl ComponentDb {
                 } => {
                     self.error_observer_id2error_input_index
                         .insert(id, error_input_index);
+                }
+                SyntheticWrappingMiddleware { derived_from, .. } => {
+                    self.derived2user_registered.insert(
+                        id,
+                        self.derived2user_registered
+                            .get(&derived_from)
+                            .cloned()
+                            .unwrap_or(derived_from),
+                    );
                 }
                 _ => {}
             }
@@ -593,6 +609,51 @@ impl ComponentDb {
         }
     }
 
+    fn process_post_processing_middlewares(
+        &mut self,
+        needs_error_handler: &mut IndexSet<UserComponentId>,
+        computation_db: &mut ComputationDb,
+        package_graph: &PackageGraph,
+        krate_collection: &CrateCollection,
+        diagnostics: &mut Vec<miette::Error>,
+    ) {
+        let middleware_ids = self
+            .user_component_db
+            .post_processing_middlewares()
+            .map(|(id, _)| id)
+            .collect::<Vec<_>>();
+        for user_component_id in middleware_ids {
+            let user_component = &self.user_component_db[user_component_id];
+            let callable = &computation_db[user_component_id];
+            let UserComponent::PostProcessingMiddleware { .. } = user_component else {
+                unreachable!()
+            };
+            match PostProcessingMiddleware::new(Cow::Borrowed(callable)) {
+                Err(e) => {
+                    Self::invalid_post_processing_middleware(
+                        e,
+                        user_component_id,
+                        &self.user_component_db,
+                        computation_db,
+                        krate_collection,
+                        package_graph,
+                        diagnostics,
+                    );
+                }
+                Ok(_) => {
+                    let id = self.get_or_intern(
+                        UnregisteredComponent::UserPostProcessingMiddleware { user_component_id },
+                        computation_db,
+                    );
+                    if self.hydrated_component(id, computation_db).is_fallible() {
+                        // We'll try to match it with an error handler later.
+                        needs_error_handler.insert(user_component_id);
+                    }
+                }
+            }
+        }
+    }
+
     fn process_error_observers(
         &mut self,
         pavex_error_ref: &ResolvedType,
@@ -670,6 +731,7 @@ impl ComponentDb {
                     | Fallback { .. }
                     | RequestHandler { .. }
                     | Constructor { .. }
+                    | PostProcessingMiddleware { .. }
                     | WrappingMiddleware { .. } => None,
                 }
             })
@@ -852,6 +914,10 @@ impl ComponentDb {
 
                 match c {
                     RequestHandler { user_component_id }
+                    // There are no middlewares with a `ComputationId` source at this stage.
+                    | PostProcessingMiddleware {
+                        source_id: SourceId::UserComponentId(user_component_id),
+                    }
                     | WrappingMiddleware {
                         // There are no middlewares with a `ComputationId` source at this stage.
                         source_id: SourceId::UserComponentId(user_component_id),
@@ -864,7 +930,7 @@ impl ComponentDb {
                         }
                         None
                     }
-                    Constructor { .. } | WrappingMiddleware { .. } | ErrorObserver { .. } => None,
+                    Constructor { .. } | WrappingMiddleware { .. } | PostProcessingMiddleware { .. } | ErrorObserver { .. } => None,
                 }
             })
             .collect();
@@ -984,6 +1050,7 @@ impl ComponentDb {
         &mut self,
         callable: Cow<'_, Callable>,
         scope_id: ScopeId,
+        derived_from: ComponentId,
         computation_db: &mut ComputationDb,
     ) -> ComponentId {
         let computation = Computation::Callable(callable).into_owned();
@@ -991,6 +1058,7 @@ impl ComponentDb {
         let middleware_component = UnregisteredComponent::SyntheticWrappingMiddleware {
             computation_id,
             scope_id,
+            derived_from,
         };
         let middleware_id = self.get_or_intern(middleware_component, computation_db);
         middleware_id
@@ -1110,7 +1178,7 @@ impl ComponentDb {
     /// (e.g. an Ok-matcher is derived from a fallible constructor or
     /// a bound constructor from a generic user-registered one).
     ///
-    /// **It only works for constructors**.
+    /// **It only works for constructors and middlewares**.
     pub fn derived_from(&self, component_id: &ComponentId) -> Option<ComponentId> {
         self.derived2user_registered.get(component_id).cloned()
     }
@@ -1171,12 +1239,18 @@ impl ComponentDb {
             | Component::WrappingMiddleware {
                 source_id: SourceId::UserComponentId(user_component_id),
             }
+            | Component::PostProcessingMiddleware {
+                source_id: SourceId::UserComponentId(user_component_id),
+            }
             | Component::ErrorObserver { user_component_id }
             | Component::RequestHandler { user_component_id } => Some(*user_component_id),
             Component::Constructor {
                 source_id: SourceId::ComputationId(..),
             }
             | Component::WrappingMiddleware {
+                source_id: SourceId::ComputationId(..),
+            }
+            | Component::PostProcessingMiddleware {
                 source_id: SourceId::ComputationId(..),
             }
             | Component::Transformer { .. } => None,
@@ -1196,6 +1270,17 @@ impl ComponentDb {
                     callable: Cow::Borrowed(callable),
                 };
                 HydratedComponent::RequestHandler(request_handler)
+            }
+            Component::PostProcessingMiddleware { source_id } => {
+                let c = match source_id {
+                    SourceId::ComputationId(id, _) => computation_db[*id].clone(),
+                    SourceId::UserComponentId(id) => computation_db[*id].clone().into(),
+                };
+                let Computation::Callable(callable) = c else {
+                    unreachable!()
+                };
+                let pp = PostProcessingMiddleware { callable };
+                HydratedComponent::PostProcessingMiddleware(pp)
             }
             Component::WrappingMiddleware { source_id } => {
                 let c = match source_id {
@@ -1253,6 +1338,7 @@ impl ComponentDb {
             }
             Component::Transformer { source_id, .. }
             | Component::WrappingMiddleware { source_id }
+            | Component::PostProcessingMiddleware { source_id }
             | Component::Constructor { source_id } => match source_id {
                 SourceId::ComputationId(_, scope_id) => *scope_id,
                 SourceId::UserComponentId(id) => self.user_component_db[*id].scope_id(),
@@ -1346,20 +1432,21 @@ impl ComponentDb {
                 .hydrated_component(component_id, computation_db)
                 .into_owned();
             match templated_component {
-                HydratedComponent::WrappingMiddleware(_) => component_id,
+                HydratedComponent::WrappingMiddleware(..) => component_id,
                 // We want to make sure we are binding the root component (i.e. a constructor registered
                 // by the user), not a derived one. If not, we might have resolution issues when computing
                 // the call graph for handlers where these derived components are used.
                 HydratedComponent::Constructor(constructor) => match &constructor.0 {
-                    Computation::FrameworkItem(_) | Computation::Callable(_) => component_id,
-                    Computation::MatchResult(_) => _get_root_component_id(
+                    Computation::FrameworkItem(..) | Computation::Callable(..) => component_id,
+                    Computation::MatchResult(..) => _get_root_component_id(
                         component_db.fallible_id(component_id),
                         component_db,
                         computation_db,
                     ),
                 },
-                HydratedComponent::RequestHandler(_)
-                | HydratedComponent::ErrorObserver(_)
+                HydratedComponent::RequestHandler(..)
+                | HydratedComponent::PostProcessingMiddleware(..)
+                | HydratedComponent::ErrorObserver(..)
                 | HydratedComponent::Transformer(..) => {
                     todo!()
                 }
@@ -1395,11 +1482,13 @@ impl ComponentDb {
                 self.get_or_intern_wrapping_middleware(
                     Cow::Owned(bound_callable),
                     self.scope_id(unbound_root_id),
+                    unbound_root_id,
                     computation_db,
                 )
             }
             HydratedComponent::RequestHandler(_)
             | HydratedComponent::ErrorObserver(_)
+            | HydratedComponent::PostProcessingMiddleware(_)
             | HydratedComponent::Transformer(..) => {
                 todo!()
             }

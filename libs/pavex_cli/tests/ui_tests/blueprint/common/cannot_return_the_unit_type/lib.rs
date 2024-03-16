@@ -1,5 +1,6 @@
 use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
 use pavex::f;
+use pavex::response::Response;
 
 pub fn constructor() {
     todo!()
@@ -20,7 +21,7 @@ pub fn error_handler(e: &Error) {
     todo!()
 }
 
-pub fn handler() -> pavex::response::Response {
+pub fn handler() -> Response {
     todo!()
 }
 
@@ -29,6 +30,14 @@ pub fn unit_wrapping_middleware() {
 }
 
 pub fn fallible_wrapping_middleware() -> Result<(), Error> {
+    todo!()
+}
+
+pub fn unit_pp_middleware(_response: Response) {
+    todo!()
+}
+
+pub fn fallible_pp_middleware(_response: Response) -> Result<(), Error> {
     todo!()
 }
 
@@ -52,6 +61,9 @@ pub fn blueprint() -> Blueprint {
 
     bp.wrap(f!(crate::unit_wrapping_middleware));
     bp.wrap(f!(crate::fallible_wrapping_middleware))
+        .error_handler(f!(crate::error_handler));
+    bp.post_process(f!(crate::unit_pp_middleware));
+    bp.post_process(f!(crate::fallible_pp_middleware))
         .error_handler(f!(crate::error_handler));
     bp.route(GET, "/home", f!(crate::handler));
     bp.route(GET, "/unit", f!(crate::unit_handler));

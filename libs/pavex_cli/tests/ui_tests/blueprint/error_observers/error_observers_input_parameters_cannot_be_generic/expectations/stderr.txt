@@ -10,11 +10,12 @@
   [31m│[0m     ·                                [35;1m╰── The error observer was registered here[0m
   [31m│[0m  [2m22[0m │     bp.error_observer(f!(crate::generic2));
   [31m│[0m     ╰────
-  [31m│[0m    ╭─[[36;1;4msrc/lib.rs[0m:1:1]
-  [31m│[0m  [2m1[0m │ pub fn generic<T>(generic_input: GenericType<T>, e: &Error) {
+  [31m│[0m    ╭─[[36;1;4msrc/lib.rs[0m:6:1]
+  [31m│[0m  [2m6[0m │ 
+  [31m│[0m  [2m7[0m │ pub fn generic<T>(generic_input: GenericType<T>, e: &Error) {
   [31m│[0m    · [35;1m               ┬[0m
   [31m│[0m    ·                [35;1m╰── I can't infer this[0m
-  [31m│[0m  [2m2[0m │     todo!()
+  [31m│[0m  [2m8[0m │     todo!()
   [31m│[0m    ╰────
   [31m│[0m [36m  help: [0mSpecify the concrete type(s) for the problematic generic
   [31m│[0m         parameter(s) when registering the error observer against the
@@ -32,13 +33,14 @@
   [31m│[0m     ·                                [35;1m╰── The error observer was registered here[0m
   [31m│[0m  [2m23[0m │     bp.error_observer(f!(crate::generic3));
   [31m│[0m     ╰────
-  [31m│[0m    ╭─[[36;1;4msrc/lib.rs[0m:1:1]
-  [31m│[0m  [2m1[0m │ pub fn generic2<T, S>(i1: GenericType<T>, i2: GenericType<S>, e: &Error) {
-  [31m│[0m    · [35;1m                ┬[0m[33;1m  ┬[0m
-  [31m│[0m    ·                 [35;1m│[0m  [33;1m╰── I can't infer this[0m
-  [31m│[0m    ·                 [35;1m╰── I can't infer this[0m
-  [31m│[0m  [2m2[0m │     todo!()
-  [31m│[0m    ╰────
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:10:1]
+  [31m│[0m  [2m10[0m │ 
+  [31m│[0m  [2m11[0m │ pub fn generic2<T, S>(i1: GenericType<T>, i2: GenericType<S>, e: &Error) {
+  [31m│[0m     · [35;1m                ┬[0m[33;1m  ┬[0m
+  [31m│[0m     ·                 [35;1m│[0m  [33;1m╰── I can't infer this[0m
+  [31m│[0m     ·                 [35;1m╰── I can't infer this[0m
+  [31m│[0m  [2m12[0m │     todo!()
+  [31m│[0m     ╰────
   [31m│[0m [36m  help: [0mSpecify the concrete type(s) for the problematic generic
   [31m│[0m         parameter(s) when registering the error observer against the
   [31m│[0m         blueprint: `f!(my_crate::my_observer::<ConcreteType>)`
@@ -55,14 +57,15 @@
   [31m│[0m     ·                                [35;1m╰── The error observer was registered here[0m
   [31m│[0m  [2m24[0m │     bp
   [31m│[0m     ╰────
-  [31m│[0m    ╭─[[36;1;4msrc/lib.rs[0m:1:1]
-  [31m│[0m  [2m1[0m │ pub fn generic3<T, S, U>(i1: GenericType<T>, i2: GenericType<S>, i3: GenericType<U>, e: &Error) {
-  [31m│[0m    · [35;1m                ┬[0m[33;1m  ┬[0m[32;1m  ┬[0m
-  [31m│[0m    ·                 [35;1m│[0m  [33;1m│[0m  [32;1m╰── I can't infer this[0m
-  [31m│[0m    ·                 [35;1m│[0m  [33;1m╰── I can't infer this[0m
-  [31m│[0m    ·                 [35;1m╰── I can't infer this[0m
-  [31m│[0m  [2m2[0m │     todo!()
-  [31m│[0m    ╰────
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:14:1]
+  [31m│[0m  [2m14[0m │ 
+  [31m│[0m  [2m15[0m │ pub fn generic3<T, S, U>(i1: GenericType<T>, i2: GenericType<S>, i3: GenericType<U>, e: &Error) {
+  [31m│[0m     · [35;1m                ┬[0m[33;1m  ┬[0m[32;1m  ┬[0m
+  [31m│[0m     ·                 [35;1m│[0m  [33;1m│[0m  [32;1m╰── I can't infer this[0m
+  [31m│[0m     ·                 [35;1m│[0m  [33;1m╰── I can't infer this[0m
+  [31m│[0m     ·                 [35;1m╰── I can't infer this[0m
+  [31m│[0m  [2m16[0m │     todo!()
+  [31m│[0m     ╰────
   [31m│[0m [36m  help: [0mSpecify the concrete type(s) for the problematic generic
   [31m│[0m         parameter(s) when registering the error observer against the
   [31m│[0m         blueprint: `f!(my_crate::my_observer::<ConcreteType>)`

@@ -1,0 +1,85 @@
+[31m[1mERROR[0m[39m: 
+  [31m×[0m I am not smart enough to figure out the concrete type for all the generic
+  [31m│[0m parameters in `app::generic_wrapping_middleware`.
+  [31m│[0m There should no unassigned generic parameters in post-processing
+  [31m│[0m middlewares, but `T` does not seem to have been assigned a concrete type.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:39:1]
+  [31m│[0m  [2m39[0m │     let mut bp = Blueprint::new();
+  [31m│[0m  [2m40[0m │     bp.post_process(f!(crate::generic_wrapping_middleware));
+  [31m│[0m     · [35;1m                    ───────────────────┬──────────────────[0m
+  [31m│[0m     ·             [35;1mThe post-processing middleware was registered here[0m
+  [31m│[0m  [2m41[0m │     bp.post_process(f!(crate::doubly_generic_wrapping_middleware));
+  [31m│[0m     ╰────
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:9:1]
+  [31m│[0m  [2m 9[0m │ 
+  [31m│[0m  [2m10[0m │ pub fn generic_wrapping_middleware<T>(
+  [31m│[0m     · [35;1m                                   ┬[0m
+  [31m│[0m     ·               [35;1mThe generic parameter without a concrete type[0m
+  [31m│[0m  [2m11[0m │     _response: Response,
+  [31m│[0m     ╰────
+  [31m│[0m [36m  help: [0mSpecify the concrete type for `T` when registering the post-
+  [31m│[0m         processing middleware against the blueprint:
+  [31m│[0m         |  bp.post_process(
+  [31m│[0m         |    f!(my_crate::my_middleware::<ConcreteType>),
+  [31m│[0m         |  )
+
+[31m[1mERROR[0m[39m: 
+  [31m×[0m I am not smart enough to figure out the concrete type for all the generic
+  [31m│[0m parameters in `app::doubly_generic_wrapping_middleware`.
+  [31m│[0m There should no unassigned generic parameters in post-processing
+  [31m│[0m middlewares, but `T` and `S` do not seem to have been assigned a concrete
+  [31m│[0m type.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:40:1]
+  [31m│[0m  [2m40[0m │     bp.post_process(f!(crate::generic_wrapping_middleware));
+  [31m│[0m  [2m41[0m │     bp.post_process(f!(crate::doubly_generic_wrapping_middleware));
+  [31m│[0m     · [35;1m                    ──────────────────────┬──────────────────────[0m
+  [31m│[0m     ·             [35;1mThe post-processing middleware was registered here[0m
+  [31m│[0m  [2m42[0m │     bp.post_process(f!(crate::triply_generic_wrapping_middleware));
+  [31m│[0m     ╰────
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:16:1]
+  [31m│[0m  [2m16[0m │ 
+  [31m│[0m  [2m17[0m │ pub fn doubly_generic_wrapping_middleware<T, S>(
+  [31m│[0m     · [35;1m                                          ┬[0m[33;1m  ┬[0m
+  [31m│[0m     ·                                           [35;1m│[0m[33;1mThe generic parameter without a[0m
+  [31m│[0m     ·                                           [35;1m│[0m         [33;1mconcrete type[0m
+  [31m│[0m     ·               [35;1mThe generic parameter without a concrete type[0m
+  [31m│[0m  [2m18[0m │     _response: Response,
+  [31m│[0m     ╰────
+  [31m│[0m [36m  help: [0mSpecify the concrete types for `T` and `S` when registering the
+  [31m│[0m         post-processing middleware against the blueprint:
+  [31m│[0m         |  bp.post_process(
+  [31m│[0m         |    f!(my_crate::my_middleware::<ConcreteType>),
+  [31m│[0m         |  )
+
+[31m[1mERROR[0m[39m: 
+  [31m×[0m I am not smart enough to figure out the concrete type for all the generic
+  [31m│[0m parameters in `app::triply_generic_wrapping_middleware`.
+  [31m│[0m There should no unassigned generic parameters in post-processing
+  [31m│[0m middlewares, but `T`, `S` and `U` do not seem to have been assigned a
+  [31m│[0m concrete type.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:41:1]
+  [31m│[0m  [2m41[0m │     bp.post_process(f!(crate::doubly_generic_wrapping_middleware));
+  [31m│[0m  [2m42[0m │     bp.post_process(f!(crate::triply_generic_wrapping_middleware));
+  [31m│[0m     · [35;1m                    ──────────────────────┬──────────────────────[0m
+  [31m│[0m     ·             [35;1mThe post-processing middleware was registered here[0m
+  [31m│[0m  [2m43[0m │     bp.route(GET, "/home", f!(crate::handler));
+  [31m│[0m     ╰────
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:24:1]
+  [31m│[0m  [2m24[0m │ 
+  [31m│[0m  [2m25[0m │ pub fn triply_generic_wrapping_middleware<T, S, U>(
+  [31m│[0m     · [35;1m                                          ┬[0m[33;1m  ┬[0m[32;1m  ┬[0m
+  [31m│[0m     ·                                           [35;1m│[0m  [33;1m│[0m[32;1mThe generic parameter without[0m
+  [31m│[0m     ·                                           [35;1m│[0m  [33;1m│[0m       [32;1ma concrete type[0m
+  [31m│[0m     ·                                           [35;1m│[0m[33;1mThe generic parameter without a[0m
+  [31m│[0m     ·                                           [35;1m│[0m         [33;1mconcrete type[0m
+  [31m│[0m     ·               [35;1mThe generic parameter without a concrete type[0m
+  [31m│[0m  [2m26[0m │     _response: Response,
+  [31m│[0m     ╰────
+  [31m│[0m [36m  help: [0mSpecify the concrete types for `T`, `S` and `U` when registering the
+  [31m│[0m         post-processing middleware against the blueprint:
+  [31m│[0m         |  bp.post_process(
+  [31m│[0m         |    f!(my_crate::my_middleware::<ConcreteType>),
+  [31m│[0m         |  )

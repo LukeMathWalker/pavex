@@ -16,9 +16,7 @@ use crate::compiler::analyses::user_components::{
 };
 use crate::compiler::computation::Computation;
 use crate::diagnostic::{self, CallableDefinition, OptionalSourceSpanExt};
-use crate::diagnostic::{
-    convert_proc_macro_span, AnnotatedSnippet, CompilerDiagnostic, HelpWithSnippet, SourceSpanExt,
-};
+use crate::diagnostic::{AnnotatedSnippet, CompilerDiagnostic, HelpWithSnippet, SourceSpanExt};
 use crate::language::{Callable, ResolvedType};
 use crate::rustdoc::CrateCollection;
 use crate::try_source;
@@ -130,6 +128,9 @@ impl ConstructibleDb {
                         // specific to each request handling chain.
                         HydratedComponent::WrappingMiddleware(mw) => {
                             input_types[mw.next_input_index()] = None;
+                        }
+                        HydratedComponent::PostProcessingMiddleware(pp) => {
+                            input_types[pp.response_input_index()] = None;
                         }
                         HydratedComponent::ErrorObserver(eo) => {
                             input_types[eo.error_input_index] = None;
@@ -584,7 +585,7 @@ impl ConstructibleDb {
         ) -> Option<AnnotatedSnippet> {
             let def = CallableDefinition::compute(callable, krate_collection, package_graph)?;
             let input = &def.sig.inputs[unconstructible_type_index];
-            let label = convert_proc_macro_span(&def.span_contents, input.span()).labeled(
+            let label = def.convert_local_span(input.span()).labeled(
                 "I don't know how to construct an instance of this input parameter".into(),
             );
             Some(AnnotatedSnippet::new(def.named_source(), label))
@@ -642,7 +643,8 @@ impl ConstructibleDb {
         ) -> Option<AnnotatedSnippet> {
             let def = CallableDefinition::compute(callable, krate_collection, package_graph)?;
             let input = &def.sig.inputs[mut_ref_input_index];
-            let label = convert_proc_macro_span(&def.span_contents, input.span())
+            let label = def
+                .convert_local_span(input.span())
                 .labeled("The &mut singleton".into());
             Some(AnnotatedSnippet::new(def.named_source(), label))
         }

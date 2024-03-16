@@ -11,6 +11,9 @@ pub(crate) enum Component {
     WrappingMiddleware {
         source_id: SourceId,
     },
+    PostProcessingMiddleware {
+        source_id: SourceId,
+    },
     ErrorObserver {
         user_component_id: UserComponentId,
     },

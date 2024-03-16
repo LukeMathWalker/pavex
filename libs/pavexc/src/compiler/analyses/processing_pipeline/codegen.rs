@@ -56,6 +56,10 @@ impl RequestHandlerPipeline {
                 .input_parameters
                 .iter()
                 .map(|input| {
+                    // This is rather subtle: we're using types
+                    // as they appears in the field definitions
+                    // to make sure that (possible) lifetime parameters
+                    // are aligned.
                     let field = next_state
                         .field_bindings
                         .iter()

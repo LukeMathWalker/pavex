@@ -58,6 +58,8 @@ pub fn top_level() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.wrap(f!(crate::first));
     bp.wrap(f!(crate::second));
+    bp.post_process(f!(crate::first_pp));
+    bp.post_process(f!(crate::second_pp));
     bp.route(GET, "/top_level", f!(crate::handler));
     bp
 }
@@ -65,21 +67,26 @@ pub fn top_level() -> Blueprint {
 pub fn after_handler() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.wrap(f!(crate::first));
+    bp.post_process(f!(crate::first_pp));
     bp.route(GET, "/after_handler", f!(crate::handler));
     bp.wrap(f!(crate::second));
+    bp.post_process(f!(crate::second_pp));
     bp
 }
 
 pub fn nested() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.wrap(f!(crate::first));
+    bp.post_process(f!(crate::first_pp));
     bp.nest({
         let mut bp = Blueprint::new();
         bp.wrap(f!(crate::second));
+        bp.post_process(f!(crate::second_pp));
         bp.route(GET, "/nested", f!(crate::handler));
         bp
     });
     bp.wrap(f!(crate::third));
+    bp.post_process(f!(crate::third_pp));
     bp
 }
 
@@ -103,3 +110,19 @@ macro_rules! spy_mw {
 spy_mw!(first);
 spy_mw!(second);
 spy_mw!(third);
+
+macro_rules! spy_pp {
+    ($name:ident) => {
+        pub async fn $name(
+            spy: &$crate::Spy,
+            response: pavex::response::Response,
+        ) -> pavex::response::Response {
+            spy.push(format!("{}", stringify!($name))).await;
+            response
+        }
+    };
+}
+
+spy_pp!(first_pp);
+spy_pp!(second_pp);
+spy_pp!(third_pp);

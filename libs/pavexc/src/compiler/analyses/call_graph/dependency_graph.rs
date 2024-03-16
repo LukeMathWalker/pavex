@@ -131,6 +131,13 @@ impl DependencyGraph {
                             constructor.input_types().to_vec()
                         }
                         HydratedComponent::RequestHandler(r) => r.input_types().to_vec(),
+                        HydratedComponent::PostProcessingMiddleware(pp) => {
+                            let mut input_types = pp.input_types().to_vec();
+                            // `Response` doesn't matter when it comes to verifying that we don't
+                            // have cyclic dependencies, so we can skip it.
+                            input_types.remove(pp.response_input_index());
+                            input_types
+                        }
                         HydratedComponent::Transformer(t, info) => {
                             let mut input_types = t.input_types().to_vec();
                             // We have already added the transformed -> transformer edge at this stage.

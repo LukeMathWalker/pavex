@@ -4,12 +4,12 @@
   [31m│[0m This request handler doesn't: it returns the unit type, `()`. I can't
   [31m│[0m convert `()` into an HTTP response.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:56:1]
-  [31m│[0m  [2m56[0m │     bp.route(GET, "/home", f!(crate::handler));
-  [31m│[0m  [2m57[0m │     bp.route(GET, "/unit", f!(crate::unit_handler));
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:68:1]
+  [31m│[0m  [2m68[0m │     bp.route(GET, "/home", f!(crate::handler));
+  [31m│[0m  [2m69[0m │     bp.route(GET, "/unit", f!(crate::unit_handler));
   [31m│[0m     · [35;1m                           ───────────┬───────────[0m
   [31m│[0m     ·                  [35;1mThe request handler was registered here[0m
-  [31m│[0m  [2m58[0m │     bp.route(GET, "/fallible_unit", f!(crate::fallible_unit_handler))
+  [31m│[0m  [2m70[0m │     bp.route(GET, "/fallible_unit", f!(crate::fallible_unit_handler))
   [31m│[0m     ╰────
 
 [31m[1mERROR[0m[39m: 
@@ -18,24 +18,24 @@
   [31m│[0m This request handler doesn't: it returns the unit type, `()`, when
   [31m│[0m successful. I can't convert `()` into an HTTP response.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:57:1]
-  [31m│[0m  [2m57[0m │     bp.route(GET, "/unit", f!(crate::unit_handler));
-  [31m│[0m  [2m58[0m │     bp.route(GET, "/fallible_unit", f!(crate::fallible_unit_handler))
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:69:1]
+  [31m│[0m  [2m69[0m │     bp.route(GET, "/unit", f!(crate::unit_handler));
+  [31m│[0m  [2m70[0m │     bp.route(GET, "/fallible_unit", f!(crate::fallible_unit_handler))
   [31m│[0m     · [35;1m                                    ────────────────┬───────────────[0m
   [31m│[0m     ·           [35;1mThe request handler was registered here ──╯[0m
-  [31m│[0m  [2m59[0m │         .error_handler(f!(crate::error_handler));
+  [31m│[0m  [2m71[0m │         .error_handler(f!(crate::error_handler));
   [31m│[0m     ╰────
 
 [31m[1mERROR[0m[39m: 
   [31m×[0m All constructors must return *something*.
   [31m│[0m This constructor doesn't: it returns the unit type, `()`.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:44:1]
-  [31m│[0m  [2m44[0m │     let mut bp = Blueprint::new();
-  [31m│[0m  [2m45[0m │     bp.constructor(f!(crate::constructor), Lifecycle::Singleton);
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:53:1]
+  [31m│[0m  [2m53[0m │     let mut bp = Blueprint::new();
+  [31m│[0m  [2m54[0m │     bp.constructor(f!(crate::constructor), Lifecycle::Singleton);
   [31m│[0m     · [35;1m                   ───────────┬──────────[0m
   [31m│[0m     ·                               [35;1m╰── The constructor was registered here[0m
-  [31m│[0m  [2m46[0m │     bp.constructor(
+  [31m│[0m  [2m55[0m │     bp.constructor(
   [31m│[0m     ╰────
 
 [31m[1mERROR[0m[39m: 
@@ -43,12 +43,12 @@
   [31m│[0m This fallible constructor doesn't: it returns the unit type when
   [31m│[0m successful, `Ok(())`.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:46:1]
-  [31m│[0m  [2m46[0m │     bp.constructor(
-  [31m│[0m  [2m47[0m │         f!(crate::fallible_constructor_building_unit),
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:55:1]
+  [31m│[0m  [2m55[0m │     bp.constructor(
+  [31m│[0m  [2m56[0m │         f!(crate::fallible_constructor_building_unit),
   [31m│[0m     · [35;1m        ──────────────────────┬──────────────────────[0m
   [31m│[0m     ·                               [35;1m╰── The constructor was registered here[0m
-  [31m│[0m  [2m48[0m │         Lifecycle::RequestScoped,
+  [31m│[0m  [2m57[0m │         Lifecycle::RequestScoped,
   [31m│[0m     ╰────
 
 [31m[1mERROR[0m[39m: 
@@ -57,12 +57,12 @@
   [31m│[0m This middleware doesn't: it returns the unit type, `()`. I can't convert
   [31m│[0m `()` into an HTTP response.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:52:1]
-  [31m│[0m  [2m52[0m │ 
-  [31m│[0m  [2m53[0m │     bp.wrap(f!(crate::unit_wrapping_middleware));
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:61:1]
+  [31m│[0m  [2m61[0m │ 
+  [31m│[0m  [2m62[0m │     bp.wrap(f!(crate::unit_wrapping_middleware));
   [31m│[0m     · [35;1m            ─────────────────┬─────────────────[0m
   [31m│[0m     ·                [35;1mThe wrapping middleware was registered here[0m
-  [31m│[0m  [2m54[0m │     bp.wrap(f!(crate::fallible_wrapping_middleware))
+  [31m│[0m  [2m63[0m │     bp.wrap(f!(crate::fallible_wrapping_middleware))
   [31m│[0m     ╰────
 
 [31m[1mERROR[0m[39m: 
@@ -71,12 +71,40 @@
   [31m│[0m This middleware doesn't: it returns the unit type, `()`, when successful.
   [31m│[0m I can't convert `()` into an HTTP response.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:53:1]
-  [31m│[0m  [2m53[0m │     bp.wrap(f!(crate::unit_wrapping_middleware));
-  [31m│[0m  [2m54[0m │     bp.wrap(f!(crate::fallible_wrapping_middleware))
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:62:1]
+  [31m│[0m  [2m62[0m │     bp.wrap(f!(crate::unit_wrapping_middleware));
+  [31m│[0m  [2m63[0m │     bp.wrap(f!(crate::fallible_wrapping_middleware))
   [31m│[0m     · [35;1m            ───────────────────┬───────────────────[0m
   [31m│[0m     ·                [35;1mThe wrapping middleware was registered here[0m
-  [31m│[0m  [2m55[0m │         .error_handler(f!(crate::error_handler));
+  [31m│[0m  [2m64[0m │         .error_handler(f!(crate::error_handler));
+  [31m│[0m     ╰────
+
+[31m[1mERROR[0m[39m: 
+  [31m×[0m Post-processing middlewares must return a type that can be converted into
+  [31m│[0m a `pavex::response::Response`.
+  [31m│[0m This middleware doesn't: it returns the unit type, `()`. I can't convert
+  [31m│[0m `()` into an HTTP response.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:64:1]
+  [31m│[0m  [2m64[0m │         .error_handler(f!(crate::error_handler));
+  [31m│[0m  [2m65[0m │     bp.post_process(f!(crate::unit_pp_middleware));
+  [31m│[0m     · [35;1m                    ──────────────┬──────────────[0m
+  [31m│[0m     ·             [35;1mThe post-processing middleware was registered here[0m
+  [31m│[0m  [2m66[0m │     bp.post_process(f!(crate::fallible_pp_middleware))
+  [31m│[0m     ╰────
+
+[31m[1mERROR[0m[39m: 
+  [31m×[0m Post-processing middlewares must return a type that can be converted into
+  [31m│[0m a `pavex::response::Response`.
+  [31m│[0m This middleware doesn't: it returns the unit type, `()`, when successful.
+  [31m│[0m I can't convert `()` into an HTTP response.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:65:1]
+  [31m│[0m  [2m65[0m │     bp.post_process(f!(crate::unit_pp_middleware));
+  [31m│[0m  [2m66[0m │     bp.post_process(f!(crate::fallible_pp_middleware))
+  [31m│[0m     · [35;1m                    ────────────────┬────────────────[0m
+  [31m│[0m     ·             [35;1mThe post-processing middleware was registered here[0m
+  [31m│[0m  [2m67[0m │         .error_handler(f!(crate::error_handler));
   [31m│[0m     ╰────
 
 [31m[1mERROR[0m[39m: 
@@ -85,12 +113,12 @@
   [31m│[0m `app::error_handler` doesn't, it returns the unit type, `()`. I can't
   [31m│[0m convert `()` into an HTTP response!
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:50:1]
-  [31m│[0m  [2m50[0m │     bp.constructor(f!(crate::fallible_constructor), Lifecycle::RequestScoped)
-  [31m│[0m  [2m51[0m │         .error_handler(f!(crate::error_handler));
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:59:1]
+  [31m│[0m  [2m59[0m │     bp.constructor(f!(crate::fallible_constructor), Lifecycle::RequestScoped)
+  [31m│[0m  [2m60[0m │         .error_handler(f!(crate::error_handler));
   [31m│[0m     · [35;1m                       ────────────┬───────────[0m
   [31m│[0m     ·                   [35;1mThe error handler was registered here[0m
-  [31m│[0m  [2m52[0m │ 
+  [31m│[0m  [2m61[0m │ 
   [31m│[0m     ╰────
 
 [31m[1mERROR[0m[39m: 
@@ -99,12 +127,12 @@
   [31m│[0m `app::error_handler` doesn't, it returns the unit type, `()`. I can't
   [31m│[0m convert `()` into an HTTP response!
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:54:1]
-  [31m│[0m  [2m54[0m │     bp.wrap(f!(crate::fallible_wrapping_middleware))
-  [31m│[0m  [2m55[0m │         .error_handler(f!(crate::error_handler));
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:63:1]
+  [31m│[0m  [2m63[0m │     bp.wrap(f!(crate::fallible_wrapping_middleware))
+  [31m│[0m  [2m64[0m │         .error_handler(f!(crate::error_handler));
   [31m│[0m     · [35;1m                       ────────────┬───────────[0m
   [31m│[0m     ·                   [35;1mThe error handler was registered here[0m
-  [31m│[0m  [2m56[0m │     bp.route(GET, "/home", f!(crate::handler));
+  [31m│[0m  [2m65[0m │     bp.post_process(f!(crate::unit_pp_middleware));
   [31m│[0m     ╰────
 
 [31m[1mERROR[0m[39m: 
@@ -113,10 +141,24 @@
   [31m│[0m `app::error_handler` doesn't, it returns the unit type, `()`. I can't
   [31m│[0m convert `()` into an HTTP response!
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:58:1]
-  [31m│[0m  [2m58[0m │     bp.route(GET, "/fallible_unit", f!(crate::fallible_unit_handler))
-  [31m│[0m  [2m59[0m │         .error_handler(f!(crate::error_handler));
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:66:1]
+  [31m│[0m  [2m66[0m │     bp.post_process(f!(crate::fallible_pp_middleware))
+  [31m│[0m  [2m67[0m │         .error_handler(f!(crate::error_handler));
   [31m│[0m     · [35;1m                       ────────────┬───────────[0m
   [31m│[0m     ·                   [35;1mThe error handler was registered here[0m
-  [31m│[0m  [2m60[0m │     bp
+  [31m│[0m  [2m68[0m │     bp.route(GET, "/home", f!(crate::handler));
+  [31m│[0m     ╰────
+
+[31m[1mERROR[0m[39m: 
+  [31m×[0m All error handlers must return a type that implements
+  [31m│[0m `pavex::response::IntoResponse`.
+  [31m│[0m `app::error_handler` doesn't, it returns the unit type, `()`. I can't
+  [31m│[0m convert `()` into an HTTP response!
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:70:1]
+  [31m│[0m  [2m70[0m │     bp.route(GET, "/fallible_unit", f!(crate::fallible_unit_handler))
+  [31m│[0m  [2m71[0m │         .error_handler(f!(crate::error_handler));
+  [31m│[0m     · [35;1m                       ────────────┬───────────[0m
+  [31m│[0m     ·                   [35;1mThe error handler was registered here[0m
+  [31m│[0m  [2m72[0m │     bp
   [31m│[0m     ╰────

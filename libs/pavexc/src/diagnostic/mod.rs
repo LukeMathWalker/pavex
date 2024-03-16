@@ -31,6 +31,7 @@ pub enum CallableType {
     Constructor,
     ErrorHandler,
     WrappingMiddleware,
+    PostProcessingMiddleware,
     ErrorObserver,
 }
 
@@ -41,6 +42,7 @@ impl Display for CallableType {
             CallableType::Constructor => "constructor",
             CallableType::ErrorHandler => "error handler",
             CallableType::WrappingMiddleware => "wrapping middleware",
+            CallableType::PostProcessingMiddleware => "post-processing middleware",
             CallableType::ErrorObserver => "error observer",
         };
         write!(f, "{s}")

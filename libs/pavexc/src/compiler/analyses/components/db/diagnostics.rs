@@ -3,7 +3,8 @@ use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::user_components::{UserComponentDb, UserComponentId};
 use crate::compiler::component::{
     ConstructorValidationError, ErrorHandlerValidationError, ErrorObserverValidationError,
-    RequestHandlerValidationError, WrappingMiddlewareValidationError,
+    PostProcessingMiddlewareValidationError, RequestHandlerValidationError,
+    WrappingMiddlewareValidationError,
 };
 use crate::compiler::resolvers::CallableResolutionError;
 use crate::compiler::traits::MissingTraitImplementationError;
@@ -451,11 +452,9 @@ impl ComponentDb {
                     for param in &def.sig.generics.params {
                         if let syn::GenericParam::Type(ty) = param {
                             if free_parameters.contains(ty.ident.to_string().as_str()) {
-                                labels.push(
-                                    convert_proc_macro_span(&def.span_contents, ty.span()).labeled(
-                                        "The generic parameter without a concrete type".into(),
-                                    ),
-                                );
+                                labels.push(def.convert_local_span(ty.span()).labeled(
+                                    "The generic parameter without a concrete type".into(),
+                                ));
                             }
                         }
                     }
@@ -497,6 +496,115 @@ impl ComponentDb {
                     .help(
                         format!("Specify the concrete type{plural} for {free_parameters} when registering the wrapping middleware against the blueprint: \n\
                         |  bp.wrap(\n\
+                        |    f!(my_crate::my_middleware::<ConcreteType>), \n\
+                        |  )"))
+                    // ^ TODO: add a proper code snippet here, using the actual function that needs
+                    //    to be amended instead of a made signature
+                    .build();
+                diagnostics.push(d.into());
+            }
+        };
+    }
+
+    pub(super) fn invalid_post_processing_middleware(
+        e: PostProcessingMiddlewareValidationError,
+        user_component_id: UserComponentId,
+        user_component_db: &UserComponentDb,
+        computation_db: &ComputationDb,
+        krate_collection: &CrateCollection,
+        package_graph: &PackageGraph,
+        diagnostics: &mut Vec<miette::Error>,
+    ) {
+        use crate::compiler::component::PostProcessingMiddlewareValidationError::*;
+
+        let location = user_component_db.get_location(user_component_id);
+        let source = try_source!(location, package_graph, diagnostics);
+        let label = source
+            .as_ref()
+            .map(|source| {
+                diagnostic::get_f_macro_invocation_span(source, location)
+                    .labeled("The post-processing middleware was registered here".into())
+            })
+            .flatten();
+        match e {
+            CannotReturnTheUnitType
+            | CannotFalliblyReturnTheUnitType
+            | MustTakeResponseAsInputParameter => {
+                let d = CompilerDiagnostic::builder(e)
+                    .optional_source(source)
+                    .optional_label(label)
+                    .build();
+                diagnostics.push(d.into());
+            }
+            CannotTakeMoreThanOneResponseAsInputParameter => {
+                let d = CompilerDiagnostic::builder(e)
+                    .optional_source(source)
+                    .optional_label(label)
+                    .help(
+                        "Remove the extra `Response` input parameters until only one is left."
+                            .into(),
+                    )
+                    .build();
+                diagnostics.push(d.into());
+            }
+            UnderconstrainedGenericParameters { ref parameters } => {
+                fn get_snippet(
+                    callable: &Callable,
+                    free_parameters: &IndexSet<String>,
+                    krate_collection: &CrateCollection,
+                    package_graph: &PackageGraph,
+                ) -> Option<AnnotatedSnippet> {
+                    let def =
+                        CallableDefinition::compute(callable, krate_collection, package_graph)?;
+
+                    let mut labels = vec![];
+                    for param in &def.sig.generics.params {
+                        if let syn::GenericParam::Type(ty) = param {
+                            if free_parameters.contains(ty.ident.to_string().as_str()) {
+                                labels.push(def.convert_local_span(ty.span()).labeled(
+                                    "The generic parameter without a concrete type".into(),
+                                ));
+                            }
+                        }
+                    }
+                    Some(AnnotatedSnippet::new_with_labels(
+                        def.named_source(),
+                        labels,
+                    ))
+                }
+
+                let callable = &computation_db[user_component_id];
+                let definition_snippet =
+                    get_snippet(callable, parameters, krate_collection, package_graph);
+                let free_parameters = if parameters.len() == 1 {
+                    format!("`{}`", &parameters[0])
+                } else {
+                    let mut buffer = String::new();
+                    comma_separated_list(
+                        &mut buffer,
+                        parameters.iter(),
+                        |p| format!("`{}`", p),
+                        "and",
+                    )
+                    .unwrap();
+                    buffer
+                };
+                let verb = if parameters.len() == 1 { "does" } else { "do" };
+                let plural = if parameters.len() == 1 { "" } else { "s" };
+                let error = anyhow::anyhow!(e)
+                    .context(
+                        format!(
+                            "I am not smart enough to figure out the concrete type for all the generic parameters in `{}`.\n\
+                            There should no unassigned generic parameters in post-processing middlewares, but {free_parameters} {verb} \
+                            not seem to have been assigned a concrete type.",
+                            callable.path));
+                let d = CompilerDiagnostic::builder(error)
+                    .optional_source(source)
+                    .optional_label(label)
+                    .optional_additional_annotated_snippet(definition_snippet)
+                    .help(
+                        format!("Specify the concrete type{plural} for {free_parameters} when registering the post-processing middleware against the blueprint: \n\
+                        |  bp.post_process(\n\
                         |    f!(my_crate::my_middleware::<ConcreteType>), \n\
                         |  )"))
                     // ^ TODO: add a proper code snippet here, using the actual function that needs
@@ -622,7 +730,7 @@ impl ComponentDb {
                         if let syn::GenericParam::Type(ty) = param {
                             if free_parameters.contains(ty.ident.to_string().as_str()) {
                                 labels.push(
-                                    convert_proc_macro_span(&def.span_contents, ty.span())
+                                    def.convert_local_span(ty.span())
                                         .labeled("I can't infer this".into()),
                                 );
                             }
@@ -692,7 +800,7 @@ impl ComponentDb {
                     )?;
 
                     let label = if let syn::ReturnType::Type(_, ty) = &def.sig.output {
-                        Some(convert_proc_macro_span(&def.span_contents, ty.span())
+                        Some(def.convert_local_span(ty.span())
                             .labeled("The output type".into()))
                     } else {
                         None
@@ -737,7 +845,7 @@ impl ComponentDb {
                         if let syn::GenericParam::Type(ty) = param {
                             if free_parameters.contains(ty.ident.to_string().as_str()) {
                                 labels.push(
-                                    convert_proc_macro_span(&callable_definition.span_contents, ty.span())
+                                    callable_definition.convert_local_span(ty.span())
                                         .labeled("I can't infer this..".into()),
                                 );
                             }
@@ -745,7 +853,7 @@ impl ComponentDb {
                     }
                     let error_input_span = error_input.span();
                     labels.push(
-                        convert_proc_macro_span(&callable_definition.span_contents, error_input_span)
+                        callable_definition.convert_local_span(error_input_span)
                             .labeled(format!("..because {subject_verb} not used here")),
                     );
                     Some(AnnotatedSnippet::new_with_labels(
