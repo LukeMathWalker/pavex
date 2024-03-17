@@ -145,4 +145,4 @@ First - end
 [Future]: https://doc.rust-lang.org/std/future/trait.Future.html
 [IntoFuture]: https://doc.rust-lang.org/std/future/trait.IntoFuture.html
 [Result]: https://doc.rust-lang.org/std/result/index.html
-[unambiguous path](../dependency_injection/cookbook.md#unambiguous-paths)
+[unambiguous path]: ../dependency_injection/cookbook.md#unambiguous-paths

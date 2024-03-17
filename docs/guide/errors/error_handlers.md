@@ -92,4 +92,4 @@ on the differences between the two and how to choose the right one for your use 
 [IntoResponse]: ../../../api_reference/pavex/response/trait.IntoResponse.html
 [Response]: ../../../api_reference/pavex/response/struct.Response.html
 [f]: ../../../api_reference/pavex/macro.f.html
-[unambiguous path](../dependency_injection/cookbook.md#unambiguous-paths)
+[unambiguous path]: ../dependency_injection/cookbook.md#unambiguous-paths
