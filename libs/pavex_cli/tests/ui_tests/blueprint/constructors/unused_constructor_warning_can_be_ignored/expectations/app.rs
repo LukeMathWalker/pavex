@@ -31,6 +31,7 @@ async fn route_request(
     server_state: std::sync::Arc<ServerState>,
 ) -> pavex::response::Response {
     let (request_head, request_body) = request.into_parts();
+    let _ = connection_info;
     #[allow(unused)]
     let request_body = pavex::request::body::RawIncomingBody::from(request_body);
     let request_head: pavex::request::RequestHead = request_head.into();

@@ -396,9 +396,24 @@ fn get_request_dispatcher(
                             #pavex::http::Method::#m
                         }
                     });
+
+                    let connection_info = if fallback_codegened_pipeline
+                        .needs_connection_info(framework_items_db)
+                    {
+                        quote! {
+                            let connection_info = connection_info.expect("Required ConnectionInfo is missing");
+                        }
+                    } else {
+                        quote! {
+                            let _ = connection_info;
+                        }
+                    };
                     sub_router_dispatch_table = quote! {
                         #sub_router_dispatch_table
-                        #(&#well_known_methods)|* => #invocation,
+                        #(&#well_known_methods)|* => {
+                            #connection_info
+                            #invocation
+                        },
                     };
                 };
 

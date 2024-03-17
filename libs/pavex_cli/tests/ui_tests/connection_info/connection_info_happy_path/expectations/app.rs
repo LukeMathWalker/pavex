@@ -23,7 +23,7 @@ pub fn run(
 }
 fn build_router() -> pavex_matchit::Router<u32> {
     let mut router = pavex_matchit::Router::new();
-    router.insert("/home", 0u32).unwrap();
+    router.insert("/", 0u32).unwrap();
     router
 }
 async fn route_request(
@@ -32,7 +32,6 @@ async fn route_request(
     server_state: std::sync::Arc<ServerState>,
 ) -> pavex::response::Response {
     let (request_head, request_body) = request.into_parts();
-    let _ = connection_info;
     #[allow(unused)]
     let request_body = pavex::request::body::RawIncomingBody::from(request_body);
     let request_head: pavex::request::RequestHead = request_head.into();
@@ -54,7 +53,10 @@ async fn route_request(
     match route_id {
         0u32 => {
             match &request_head.method {
-                &pavex::http::Method::GET => route_0::handler().await,
+                &pavex::http::Method::GET => {
+                    let _ = connection_info;
+                    route_0::handler(&connection_info).await
+                }
                 _ => {
                     let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
                             pavex::http::Method::GET,
@@ -68,9 +70,11 @@ async fn route_request(
     }
 }
 pub mod route_0 {
-    pub async fn handler() -> pavex::response::Response {
-        let v0 = app::handler();
-        <http::StatusCode as pavex::response::IntoResponse>::into_response(v0)
+    pub async fn handler(
+        v0: &pavex::connection::ConnectionInfo,
+    ) -> pavex::response::Response {
+        let v1 = app::get_connection_info(v0);
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
     }
 }
 pub mod route_1 {

@@ -281,6 +281,13 @@ impl CodegenedRequestHandlerPipeline {
         self.needs_input_type(allowed_methods_type)
     }
 
+    pub(crate) fn needs_connection_info(&self, framework_item_db: &FrameworkItemDb) -> bool {
+        let connection_info_type = framework_item_db
+            .get_type(FrameworkItemDb::connection_info())
+            .unwrap();
+        self.needs_input_type(connection_info_type)
+    }
+
     pub(crate) fn needs_matched_route(&self, framework_item_db: &FrameworkItemDb) -> bool {
         let matched_route_type = framework_item_db
             .get_type(FrameworkItemDb::matched_route_template_id())

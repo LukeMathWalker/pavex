@@ -27,34 +27,43 @@ fn build_router() -> pavex_matchit::Router<u32> {
     router
 }
 async fn route_request(
-    request: http_1_1_0::Request<hyper::body::Incoming>,
+    request: http_1_0_0::Request<hyper::body::Incoming>,
     connection_info: Option<pavex::connection::ConnectionInfo>,
     server_state: std::sync::Arc<ServerState>,
 ) -> pavex::response::Response {
     let (request_head, request_body) = request.into_parts();
+    let _ = connection_info;
     #[allow(unused)]
     let request_body = pavex::request::body::RawIncomingBody::from(request_body);
     let request_head: pavex::request::RequestHead = request_head.into();
     let matched_route = match server_state.router.at(&request_head.target.path()) {
         Ok(m) => m,
         Err(_) => {
-            let allowed_methods: pavex::router::AllowedMethods =
-                pavex::router::MethodAllowList::from_iter(vec![]).into();
+            let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter(
+                    vec![],
+                )
+                .into();
             return route_1::handler(&allowed_methods).await;
         }
     };
     let route_id = matched_route.value;
     #[allow(unused)]
-    let url_params: pavex::request::path::RawPathParams<'_, '_> = matched_route.params.into();
+    let url_params: pavex::request::path::RawPathParams<'_, '_> = matched_route
+        .params
+        .into();
     match route_id {
-        0u32 => match &request_head.method {
-            &pavex::http::Method::GET => route_0::handler().await,
-            _ => {
-                let allowed_methods: pavex::router::AllowedMethods =
-                    pavex::router::MethodAllowList::from_iter([pavex::http::Method::GET]).into();
-                route_1::handler(&allowed_methods).await
+        0u32 => {
+            match &request_head.method {
+                &pavex::http::Method::GET => route_0::handler().await,
+                _ => {
+                    let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
+                            pavex::http::Method::GET,
+                        ])
+                        .into();
+                    route_1::handler(&allowed_methods).await
+                }
             }
-        },
+        }
         i => unreachable!("Unknown route id: {}", i),
     }
 }
@@ -67,7 +76,9 @@ pub mod route_0 {
     }
 }
 pub mod route_1 {
-    pub async fn handler(v0: &pavex::router::AllowedMethods) -> pavex::response::Response {
+    pub async fn handler(
+        v0: &pavex::router::AllowedMethods,
+    ) -> pavex::response::Response {
         let v1 = pavex::router::default_fallback(v0).await;
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
     }
