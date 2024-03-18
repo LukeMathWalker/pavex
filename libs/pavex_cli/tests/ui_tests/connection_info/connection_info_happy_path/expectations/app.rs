@@ -54,7 +54,8 @@ async fn route_request(
         0u32 => {
             match &request_head.method {
                 &pavex::http::Method::GET => {
-                    let _ = connection_info;
+                    let connection_info = connection_info
+                        .expect("Required ConnectionInfo is missing");
                     route_0::handler(&connection_info).await
                 }
                 _ => {

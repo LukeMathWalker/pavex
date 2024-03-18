@@ -385,6 +385,17 @@ fn get_request_dispatcher(
                     invocation
                 };
 
+                let invocation = if request_pipeline.needs_connection_info(framework_items_db) {
+                    quote! {
+                        {
+                            let connection_info = connection_info.expect("Required ConnectionInfo is missing");
+                            #invocation
+                        }
+                    }
+                } else {
+                    invocation
+                };
+
                 let (well_known_methods, custom_methods) = methods
                     .iter()
                     .partition::<Vec<_>, _>(|m| WELL_KNOWN_METHODS.contains(m.as_str()));
@@ -397,23 +408,9 @@ fn get_request_dispatcher(
                         }
                     });
 
-                    let connection_info = if fallback_codegened_pipeline
-                        .needs_connection_info(framework_items_db)
-                    {
-                        quote! {
-                            let connection_info = connection_info.expect("Required ConnectionInfo is missing");
-                        }
-                    } else {
-                        quote! {
-                            let _ = connection_info;
-                        }
-                    };
                     sub_router_dispatch_table = quote! {
                         #sub_router_dispatch_table
-                        #(&#well_known_methods)|* => {
-                            #connection_info
-                            #invocation
-                        },
+                        #(&#well_known_methods)|* => #invocation,
                     };
                 };
 
@@ -444,6 +441,12 @@ fn get_request_dispatcher(
                 request_scoped_bindings,
                 &server_state_ident,
             );
+            if fallback_codegened_pipeline.needs_connection_info(framework_items_db) {
+                fallback_invocation = quote! {
+                    let connection_info = connection_info.expect("Required ConnectionInfo is missing");
+                    #fallback_invocation
+                }
+            }
             if sub_router
                 .catch_all_pipeline
                 .needs_allowed_methods(framework_items_db)
