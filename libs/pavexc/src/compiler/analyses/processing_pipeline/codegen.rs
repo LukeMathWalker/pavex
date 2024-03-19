@@ -1,162 +1,242 @@
 use bimap::BiHashMap;
 use guppy::PackageId;
-use indexmap::IndexSet;
+use indexmap::{IndexMap, IndexSet};
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote, ToTokens};
 use syn::ItemFn;
 
-use crate::compiler::analyses::components::ComponentDb;
+use crate::compiler::analyses::components::{ComponentDb, HydratedComponent};
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::framework_items::FrameworkItemDb;
 use crate::compiler::analyses::processing_pipeline::RequestHandlerPipeline;
 use crate::language::{GenericArgument, GenericLifetimeParameter, ResolvedType};
 
 impl RequestHandlerPipeline {
-    /// Generates the code required to wire together this request handler pipeline.
-    ///
-    /// This method generates the code for the following:
-    /// - The closure of the request handler function
-    /// - The closure of each middleware functions
-    /// - The `Next` state for each middleware invocation
-    ///
-    /// You can wrap the generated code in an inline module by calling the
-    /// [`as_inline_module`](CodegenedRequestHandlerPipeline::as_inline_module) method on
-    /// the output.
     pub(crate) fn codegen(
         &self,
+        pavex: &Ident,
         package_id2name: &BiHashMap<PackageId, String>,
         component_db: &ComponentDb,
         computation_db: &ComputationDb,
     ) -> Result<CodegenedRequestHandlerPipeline, anyhow::Error> {
-        let n_middlewares = self.middleware_id2stage_data.len();
-        let mut stages = Vec::with_capacity(n_middlewares + 1);
-        for (i, call_graph) in self.graph_iter().enumerate() {
-            let ident = if i < n_middlewares {
-                format_ident!("middleware_{}", i)
-            } else {
-                format_ident!("handler")
-            };
-            if tracing::event_enabled!(tracing::Level::TRACE) {
-                call_graph.print_debug_dot(component_db, computation_db);
+        let id2codegened_fn = {
+            let mut id2codegened_fn = IndexMap::new();
+            let mut wrapping_index = 0u32;
+            let mut post_processing_index = 0u32;
+            for (&id, call_graph) in self.id2call_graph.iter() {
+                let ident = match component_db.hydrated_component(id, computation_db) {
+                    HydratedComponent::WrappingMiddleware(_) => {
+                        let ident = format_ident!("wrapping_{}", wrapping_index);
+                        wrapping_index += 1;
+                        ident
+                    }
+                    HydratedComponent::PostProcessingMiddleware(_) => {
+                        let ident = format_ident!("post_processing_{}", post_processing_index);
+                        post_processing_index += 1;
+                        ident
+                    }
+                    HydratedComponent::RequestHandler(_) => format_ident!("handler"),
+                    _ => unreachable!(),
+                };
+                if tracing::event_enabled!(tracing::Level::TRACE) {
+                    call_graph.print_debug_dot(component_db, computation_db);
+                }
+                let fn_ = CodegenedFn {
+                    fn_: {
+                        let mut f =
+                            call_graph.codegen(package_id2name, component_db, computation_db)?;
+                        f.sig.ident = ident;
+                        f
+                    },
+                    input_parameters: call_graph.required_input_types(),
+                };
+                id2codegened_fn.insert(id, fn_);
             }
-            let mut fn_ = call_graph.codegen(package_id2name, component_db, computation_db)?;
-            fn_.sig.ident = ident;
-            let stage = CodegenedFn {
-                fn_,
-                input_parameters: call_graph.required_input_types(),
-            };
-            stages.push(stage);
-        }
+            id2codegened_fn
+        };
 
-        let mut next_states = Vec::with_capacity(n_middlewares);
-        for (i, stage_data) in self.middleware_id2stage_data.values().enumerate() {
-            let next_state = &stage_data.next_state;
-            let next_stage = &stages[i + 1];
-            let input_types: Vec<_> = next_stage
-                .input_parameters
-                .iter()
-                .map(|input| {
-                    // This is rather subtle: we're using types
-                    // as they appears in the field definitions
-                    // to make sure that (possible) lifetime parameters
-                    // are aligned.
-                    let field = next_state
-                        .field_bindings
-                        .iter()
-                        .find(|(_, ty_)| *ty_ == input);
-                    let Some((_, ty_)) = field else {
-                        unreachable!();
-                    };
-                    let ty_ = ty_.syn_type(package_id2name);
-                    quote! { #ty_ }
-                })
-                .collect();
-            let fields = next_state
-                .field_bindings
-                .iter()
-                .map(|(name, ty_)| {
-                    let name = format_ident!("{}", name);
-                    let ty_ = ty_.syn_type(package_id2name);
-                    quote! {
-                        #name: #ty_
-                    }
-                })
-                .chain(std::iter::once(quote! { next: fn(#(#input_types),*) -> T }));
+        let mut stage_fns = vec![];
+        for stage in &self.stages {
+            let input_parameters = stage.input_parameters(&self.id2call_graph);
+            let response_ident = format_ident!("response");
 
-            let struct_name = format_ident!("{}", next_state.type_.base_type.last().unwrap());
-            let state_generics: Vec<_> = next_state
-                .type_
-                .generic_arguments
-                .iter()
-                .map(|arg| {
-                    let GenericArgument::Lifetime(GenericLifetimeParameter::Named(lifetime)) = arg
-                    else {
-                        unreachable!()
-                    };
-                    syn::Lifetime::new(&format!("'{lifetime}"), proc_macro2::Span::call_site())
-                        .to_token_stream()
-                })
-                .chain(std::iter::once(quote! { T }))
-                .collect();
-            let generics = quote! { <#(#state_generics),*> };
-            let def = syn::parse2(quote! {
-                pub struct #struct_name #generics
-                where T: std::future::Future<Output = pavex::response::Response> {
-                    #(#fields),*
-                }
-            })
-            .unwrap();
-            let inputs: Vec<_> = next_stage
-                .input_parameters
-                .iter()
-                .map(|input| {
-                    let field_name = next_state
-                        .field_bindings
-                        .iter()
-                        .find(|(_, ty_)| ty_ == &input);
-                    if let Some((field_name, _)) = field_name {
-                        let ident = format_ident!("{}", field_name);
-                        quote! {
-                            self.#ident
-                        }
-                    } else if let ResolvedType::Reference(r) = input {
-                        let field_name = next_state
-                            .field_bindings
+            let invocations = {
+                let mut invocations = vec![];
+                let ids = std::iter::once(stage.wrapping_id)
+                    .chain(stage.post_processing_ids.iter().copied());
+                let input_parameters = stage.input_parameters(&self.id2call_graph);
+                for id in ids {
+                    let fn_ = &id2codegened_fn[&id].fn_;
+                    let input_parameters =
+                        id2codegened_fn[&id]
+                            .input_parameters
                             .iter()
-                            .find(|(_, ty_)| *ty_ == r.inner.as_ref())
-                            .unwrap()
-                            .0;
-                        let ident = format_ident!("{}", field_name);
-                        quote! {
-                                &self.#ident
-                            }
-                    } else {
-                        panic!("Could not find field name for input type `{:?}` in `Next`'s state, `{:?}`", input, next_state.field_bindings);
-                    }
-                })
-                .collect();
-            let into_future_impl = syn::parse2(quote! {
-                impl #generics std::future::IntoFuture for #struct_name #generics
-                where
-                    T: std::future::Future<Output = pavex::response::Response>,
-                {
-                    type Output = pavex::response::Response;
-                    type IntoFuture = T;
+                            .map(|input_type| {
+                                let variable_name = input_parameters
+                                    .iter()
+                                    .find(|param| &param.type_ == input_type)
+                                    .unwrap();
+                                let field_name = format_ident!("{}", variable_name.ident);
+                                quote! {
+                                    #field_name
+                                }
+                            });
+                    let await_ = fn_.sig.asyncness.and_then(|_| Some(quote! { .await }));
+                    // TODO: should the bound variable be mutable?
+                    let invocation = quote! {
+                        let #response_ident = #fn_(#(#input_parameters),*)#await_;
+                    };
+                    invocations.push(invocation);
+                }
+                invocations
+            };
 
-                    fn into_future(self) -> Self::IntoFuture {
-                        (self.next)(#(#inputs),*)
+            let fn_ = {
+                let asyncness = if std::iter::once(stage.wrapping_id)
+                    .chain(stage.post_processing_ids.iter().copied())
+                    .any(|id| id2codegened_fn[&id].fn_.sig.asyncness.is_some())
+                {
+                    Some(quote! { async })
+                } else {
+                    None
+                };
+                let fn_name = format_ident!("{}", stage.name);
+                let input_parameters = input_parameters.iter().map(|input| {
+                    let name = format_ident!("{}", input.ident);
+                    let ty = input.type_.syn_type(package_id2name);
+                    let mut_ = input.mutable.then(|| quote! { mut });
+                    quote! {
+                        #mut_ #name: #ty
+                    }
+                });
+                quote! {
+                    #asyncness fn #fn_name(#(#input_parameters),*) -> #pavex::response::Response {
+                        #(#invocations)*
+                        #response_ident
                     }
                 }
-            })
-            .unwrap();
-            next_states.push(CodegenedNextState {
-                state: def,
-                into_future_impl,
+            };
+            stage_fns.push(CodegenedFn {
+                fn_: syn::parse2(fn_).unwrap(),
+                input_parameters: input_parameters.iter().map(|i| i.type_.clone()).collect(),
             });
         }
 
+        let next_states = {
+            let mut next_states = vec![];
+            for (i, stage) in self.stages[..self.stages.len() - 1].iter().enumerate() {
+                let next_state = stage.next_state.as_ref().unwrap();
+                let next_stage = &self.stages[i + 1];
+                let input_types: Vec<_> = next_stage
+                    .input_parameters(&self.id2call_graph)
+                    .iter()
+                    .map(|input| {
+                        // This is rather subtle: we're using types
+                        // as they appear in the field definitions
+                        // to make sure that (possible) lifetime parameters
+                        // are aligned.
+                        let field = next_state
+                            .field_bindings
+                            .iter()
+                            .find(|(_, ty_)| *ty_ == &input.type_);
+                        let Some((_, ty_)) = field else {
+                            unreachable!();
+                        };
+                        let ty_ = ty_.syn_type(package_id2name);
+                        quote! { #ty_ }
+                    })
+                    .collect();
+                let fields = next_state
+                    .field_bindings
+                    .iter()
+                    .map(|(name, ty_)| {
+                        let name = format_ident!("{}", name);
+                        let ty_ = ty_.syn_type(package_id2name);
+                        quote! {
+                            #name: #ty_
+                        }
+                    })
+                    .chain(std::iter::once(quote! { next: fn(#(#input_types),*) -> T }));
+
+                let struct_name = format_ident!("{}", next_state.type_.base_type.last().unwrap());
+                let state_generics: Vec<_> = next_state
+                    .type_
+                    .generic_arguments
+                    .iter()
+                    .map(|arg| {
+                        let GenericArgument::Lifetime(GenericLifetimeParameter::Named(lifetime)) =
+                            arg
+                        else {
+                            unreachable!()
+                        };
+                        syn::Lifetime::new(&format!("'{lifetime}"), proc_macro2::Span::call_site())
+                            .to_token_stream()
+                    })
+                    .chain(std::iter::once(quote! { T }))
+                    .collect();
+                let generics = quote! { <#(#state_generics),*> };
+                let def = syn::parse2(quote! {
+                    pub struct #struct_name #generics
+                    where T: std::future::Future<Output = pavex::response::Response> {
+                        #(#fields),*
+                    }
+                })
+                .unwrap();
+                let inputs: Vec<_> = next_stage
+                    .input_parameters(&self.id2call_graph)
+                    .iter()
+                    .map(|input| {
+                        let field_name = next_state
+                            .field_bindings
+                            .iter()
+                            .find(|(_, ty_)| *ty_ == &input.type_);
+                        if let Some((field_name, _)) = field_name {
+                            let ident = format_ident!("{}", field_name);
+                            quote! {
+                            self.#ident
+                        }
+                        } else if let ResolvedType::Reference(r) = &input.type_ {
+                            let field_name = next_state
+                                .field_bindings
+                                .iter()
+                                .find(|(_, ty_)| *ty_ == r.inner.as_ref())
+                                .unwrap()
+                                .0;
+                            let ident = format_ident!("{}", field_name);
+                            let mut_ = r.is_mutable.then(|| quote! { mut });
+                            quote! {
+                                &#mut_ self.#ident
+                            }
+                        } else {
+                            panic!("Could not find field name for input type `{:?}` in `Next`'s state, `{:?}`", input, next_state.field_bindings);
+                        }
+                    })
+                    .collect();
+                let into_future_impl = syn::parse2(quote! {
+                    impl #generics std::future::IntoFuture for #struct_name #generics
+                    where
+                        T: std::future::Future<Output = pavex::response::Response>,
+                    {
+                        type Output = pavex::response::Response;
+                        type IntoFuture = T;
+
+                        fn into_future(self) -> Self::IntoFuture {
+                            (self.next)(#(#inputs),*)
+                        }
+                    }
+                })
+                .unwrap();
+                next_states.push(CodegenedNextState {
+                    state: def,
+                    into_future_impl,
+                });
+            }
+            next_states
+        };
+
         Ok(CodegenedRequestHandlerPipeline {
-            stages,
+            stages: stage_fns,
+            wrapped_components: id2codegened_fn.into_values().collect(),
             next_states,
             module_name: self.module_name.clone(),
         })
@@ -165,8 +245,12 @@ impl RequestHandlerPipeline {
 
 #[derive(Debug, Clone)]
 pub(crate) struct CodegenedRequestHandlerPipeline {
-    /// The closure for each stage (i.e. middleware or request handler) of the pipeline.
+    /// The function that groups together the middleware/handler and (possible) post-processing
+    /// invocations for each stage.
     pub(crate) stages: Vec<CodegenedFn>,
+    /// The function wrapper around each middleware/handler invocation, including
+    /// constructor invocations.
+    pub(crate) wrapped_components: Vec<CodegenedFn>,
     /// The `Next` state for each middleware invocation.
     pub(crate) next_states: Vec<CodegenedNextState>,
     /// The name of the module that will contain the generated code.
@@ -179,6 +263,7 @@ impl CodegenedRequestHandlerPipeline {
     pub(crate) fn as_inline_module(&self) -> TokenStream {
         let Self {
             stages,
+            wrapped_components,
             next_states,
             module_name,
         } = self;
@@ -186,6 +271,7 @@ impl CodegenedRequestHandlerPipeline {
         quote! {
             pub mod #module_name {
                 #(#stages)*
+                #(#wrapped_components)*
                 #(#next_states)*
             }
         }

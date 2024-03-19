@@ -22,6 +22,12 @@ pub enum ResolvedType {
     Generic(Generic),
 }
 
+impl AsRef<ResolvedType> for ResolvedType {
+    fn as_ref(&self) -> &ResolvedType {
+        &self
+    }
+}
+
 impl ResolvedType {
     pub const UNIT_TYPE: ResolvedType = ResolvedType::Tuple(Tuple { elements: vec![] });
 

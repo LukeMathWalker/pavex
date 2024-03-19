@@ -95,12 +95,4 @@ impl<'a> HydratedComponent<'a> {
             false
         }
     }
-
-    pub(crate) fn is_request_handler(&self) -> bool {
-        if let HydratedComponent::RequestHandler(_) = self {
-            true
-        } else {
-            false
-        }
-    }
 }

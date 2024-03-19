@@ -4,7 +4,6 @@ use ahash::{HashMap, HashMapExt};
 use guppy::graph::PackageGraph;
 use guppy::PackageId;
 use indexmap::{IndexMap, IndexSet};
-use itertools::{FoldWhile, Itertools};
 
 use pavex_bp_schema::{CloningStrategy, Lifecycle};
 
@@ -14,10 +13,9 @@ use crate::compiler::analyses::call_graph::{
 };
 use crate::compiler::analyses::components::HydratedComponent;
 use crate::compiler::analyses::components::{ComponentDb, ComponentId};
-use crate::compiler::analyses::computations::{ComputationDb, ComputationId};
+use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::constructibles::ConstructibleDb;
 use crate::compiler::analyses::framework_items::FrameworkItemDb;
-use crate::compiler::analyses::processing_pipeline::graph_iter::PipelineGraphIterator;
 use crate::compiler::app::GENERATED_APP_PACKAGE_ID;
 use crate::compiler::utils::LifetimeGenerator;
 use crate::language::{
@@ -31,27 +29,38 @@ use crate::rustdoc::CrateCollection;
 pub(crate) struct RequestHandlerPipeline {
     /// The name of the module where the pipeline is defined.
     pub(crate) module_name: String,
-    pub(crate) id2call_graph: HashMap<ComponentId, OrderedCallGraph>,
+    pub(crate) id2call_graph: IndexMap<ComponentId, OrderedCallGraph>,
     pub(crate) stages: Vec<Stage>,
-    /// The post-processing middlewares to be invoked after all the stages have completed.
-    pub(crate) post_processing_ids: Vec<ComponentId>,
 }
 
 pub struct Stage {
+    /// The name of the function that represents this stage.
+    pub(crate) name: String,
     /// Either a wrapping middleware or a request handler.
-    wrapping_id: ComponentId,
+    pub(crate) wrapping_id: ComponentId,
     /// Only set if `component_id` is a wrapping middleware.
-    next_state: Option<NextState>,
+    pub(crate) next_state: Option<NextState>,
     /// Post-processing middlewares to be invoked after `computation_id` has completed,
     /// but before returning to the caller.
-    post_processing_ids: Vec<ComponentId>,
+    pub(crate) post_processing_ids: Vec<ComponentId>,
 }
 
-/// Additional per-middleware data that is required to generate code for the over-arching
-/// request handler pipeline.
-pub(crate) struct MiddlewareData {
-    pub(crate) call_graph: OrderedCallGraph,
-    pub(crate) next_state: NextState,
+impl Stage {
+    pub(crate) fn input_parameters(
+        &self,
+        id2call_graphs: &IndexMap<ComponentId, OrderedCallGraph>,
+    ) -> InputParameters {
+        let iter = std::iter::once(&id2call_graphs[&self.wrapping_id])
+            .chain(
+                self.post_processing_ids
+                    .iter()
+                    .map(|id| &id2call_graphs[id]),
+            )
+            // TODO: Remove `Response` from the list of input types.
+            .map(|g| g.required_input_types().into_iter())
+            .flatten();
+        InputParameters::from_iter(iter)
+    }
 }
 
 /// The "state" for `Next<T>` is the concrete type for `T` used in a specific middleware invocation.
@@ -83,13 +92,34 @@ impl RequestHandlerPipeline {
         let error_observer_ids = component_db.error_observers(handler_id).unwrap().to_owned();
 
         // Step 1: Determine the sequence of middlewares that the request handler is wrapped in.
-        let middleware_ids = component_db
+        let ordered_by_registration = component_db
             .middleware_chain(handler_id)
             .unwrap()
             .to_owned();
 
+        let stage_names = {
+            let mut stage_names = vec![];
+            let mut current_stage_id = 0;
+            for middleware_id in &ordered_by_registration {
+                let middleware = component_db.hydrated_component(*middleware_id, computation_db);
+                match middleware {
+                    HydratedComponent::RequestHandler(_)
+                    | HydratedComponent::WrappingMiddleware(_) => {
+                        if current_stage_id == 0 {
+                            stage_names.push("entrypoint".to_string());
+                        } else {
+                            stage_names.push(format!("stage_{current_stage_id}"));
+                        }
+                        current_stage_id += 1;
+                    }
+                    _ => {}
+                };
+            }
+            stage_names
+        };
+
         // Wrapping middlewares -> request handler -> Post-processing middlewares
-        let ordered_by_invocation: Vec<_> = middleware_ids
+        let ordered_by_invocation: Vec<_> = ordered_by_registration
             .iter()
             .filter(|id| {
                 component_db
@@ -97,7 +127,7 @@ impl RequestHandlerPipeline {
                     .is_wrapping_middleware()
             })
             .chain(std::iter::once(&handler_id))
-            .chain(middleware_ids.iter().filter(|id| {
+            .chain(ordered_by_registration.iter().filter(|id| {
                 component_db
                     .hydrated_component(**id, computation_db)
                     .is_post_processing_middleware()
@@ -116,7 +146,7 @@ impl RequestHandlerPipeline {
         let mut request_scoped_prebuilt_ids = IndexSet::new();
         let mut id2call_graphs = HashMap::with_capacity(ordered_by_invocation.len());
 
-        for component_id in ordered_by_invocation {
+        for &component_id in ordered_by_invocation.iter() {
             let call_graph = request_scoped_call_graph(
                 *component_id,
                 &request_scoped_prebuilt_ids,
@@ -145,7 +175,7 @@ impl RequestHandlerPipeline {
         // In order to pull this off, we walk the chain in reverse order and accumulate the set of
         // request-scoped and singleton components that are expected as input.
         let mut long_lived_types: IndexSet<ResolvedType> = IndexSet::new();
-        let mut wrapping_id2next_field_types: IndexMap<ComponentId, IndexSet<ResolvedType>> =
+        let mut wrapping_id2next_field_types: IndexMap<ComponentId, InputParameters> =
             IndexMap::new();
         for &middleware_id in ordered_by_invocation.iter().rev() {
             let call_graph = &id2call_graphs[middleware_id];
@@ -153,8 +183,10 @@ impl RequestHandlerPipeline {
             if let HydratedComponent::WrappingMiddleware(_) =
                 component_db.hydrated_component(*middleware_id, computation_db)
             {
-                wrapping_id2next_field_types
-                    .insert(*middleware_id, get_next_field_types(&long_lived_types));
+                wrapping_id2next_field_types.insert(
+                    *middleware_id,
+                    InputParameters::from_iter(long_lived_types.iter()),
+                );
             }
 
             // Remove all the request-scoped components initialised by this middleware from the set.
@@ -195,37 +227,12 @@ impl RequestHandlerPipeline {
         let mut wrapping_id2bound_id = HashMap::new();
         let mut request_scoped_prebuilt_ids = IndexSet::new();
         let mut wrapping_id = 0;
-        let mut id2ordered_call_graphs = HashMap::with_capacity(ordered_by_invocation.len());
-        for (index, &middleware_id) in ordered_by_invocation.iter().enumerate() {
+        let mut id2ordered_call_graphs = IndexMap::with_capacity(ordered_by_invocation.len());
+        for &middleware_id in ordered_by_invocation.iter() {
             let middleware_id = if let HydratedComponent::WrappingMiddleware(_) =
                 component_db.hydrated_component(*middleware_id, computation_db)
             {
-                let mut state_lifetimes = IndexSet::new();
-                let mut lifetime_generator = LifetimeGenerator::new();
-                let next_state_types = &wrapping_id2next_field_types[middleware_id];
-                let next_state_bindings = next_state_types
-                    .iter()
-                    .enumerate()
-                    .map(|(i, ty_)| {
-                        let mut ty_ = ty_.to_owned();
-
-                        let lifetime2binding: IndexMap<_, _> = ty_
-                            .named_lifetime_parameters()
-                            .into_iter()
-                            .map(|lifetime| (lifetime, lifetime_generator.next()))
-                            .collect();
-                        ty_.rename_lifetime_parameters(&lifetime2binding);
-                        state_lifetimes.extend(lifetime2binding.values().cloned());
-
-                        if ty_.has_implicit_lifetime_parameters() {
-                            let implicit_lifetime_binding = lifetime_generator.next();
-                            state_lifetimes.insert(implicit_lifetime_binding.clone());
-                            ty_.set_implicit_lifetimes(implicit_lifetime_binding);
-                        }
-                        // TODO: naming can be improved here.
-                        (format!("s_{i}"), ty_.to_owned())
-                    })
-                    .collect::<BTreeMap<_, _>>();
+                let next_state_parameters = &wrapping_id2next_field_types[middleware_id];
                 let next_state_type = PathType {
                     package_id: PackageId::new(GENERATED_APP_PACKAGE_ID),
                     rustdoc_id: None,
@@ -234,51 +241,33 @@ impl RequestHandlerPipeline {
                         module_name.clone(),
                         format!("Next{wrapping_id}"),
                     ],
-                    generic_arguments: state_lifetimes
-                        .into_iter()
-                        .map(|s| GenericArgument::Lifetime(GenericLifetimeParameter::Named(s)))
+                    generic_arguments: next_state_parameters
+                        .lifetimes
+                        .iter()
+                        .map(|s| GenericArgument::Lifetime(s.to_owned()))
                         .collect(),
                 };
 
                 // We register a constructor, in order to make it possible to build an instance of
                 // `next_type`.
+                let next_state_bindings = next_state_parameters
+                    .iter()
+                    .map(|input| (input.ident.clone(), input.type_.clone()))
+                    .collect::<BTreeMap<_, _>>();
                 let next_state_constructor = Callable {
                     is_async: false,
                     takes_self_as_ref: false,
                     path: next_state_type.resolved_path(),
                     output: Some(next_state_type.clone().into()),
-                    inputs: next_state_bindings.values().cloned().collect(),
+                    inputs: next_state_parameters
+                        .iter()
+                        .map(|input| input.type_.clone())
+                        .collect(),
                     invocation_style: InvocationStyle::StructLiteral {
                         field_names: next_state_bindings.clone(),
                         // TODO: remove when TAIT stabilises
                         extra_field2default_value: {
-                            let next_fn_name =
-                                if wrapping_id + 1 < wrapping_id2next_field_types.len() {
-                                    format!("middleware_{}", wrapping_id + 1)
-                                } else {
-                                    "handler".to_string()
-                                };
-                            let n_post_processors = ordered_by_invocation[index + 1..]
-                                .iter()
-                                .fold_while(0_u32, |acc, &id| {
-                                    if let HydratedComponent::PostProcessingMiddleware(_) =
-                                        component_db.hydrated_component(*id, computation_db)
-                                    {
-                                        FoldWhile::Continue(acc + 1)
-                                    } else {
-                                        FoldWhile::Done(acc)
-                                    }
-                                })
-                                .into_inner();
-                            let post_processors = (0..n_post_processors).map(|i| {
-                                let name = format!("post_processor_{i}");
-                                (name.clone(), name)
-                            });
-                            BTreeMap::from_iter(
-                                [("next".into(), next_fn_name)]
-                                    .into_iter()
-                                    .chain(post_processors),
-                            )
+                            BTreeMap::from([("next".into(), stage_names[wrapping_id + 1].clone())])
                         },
                     },
                     source_coordinates: None,
@@ -370,65 +359,58 @@ impl RequestHandlerPipeline {
                 krate_collection,
                 diagnostics,
             )?;
-            id2ordered_call_graphs.insert(middleware_id, middleware_call_graph);
             // Add all request-scoped components initialised by this middleware to the set.
             extract_request_scoped_compute_nodes(
                 &middleware_call_graph.call_graph,
                 component_db,
                 &mut request_scoped_prebuilt_ids,
             );
+            id2ordered_call_graphs.insert(middleware_id, middleware_call_graph);
         }
 
-        let mut stages = vec![];
-        let mut final_post_processing_ids = vec![];
-        for middleware_id in &middleware_ids {
-            let middleware_id = wrapping_id2bound_id
-                .get(middleware_id)
-                .unwrap_or(middleware_id);
-            match component_db.hydrated_component(*middleware_id, computation_db) {
-                HydratedComponent::WrappingMiddleware(_) => {
-                    let next_state = wrapping_id2next_state.remove(middleware_id).unwrap();
-                    stages.push(Stage {
-                        wrapping_id: *middleware_id,
-                        next_state: Some(next_state),
-                        post_processing_ids: vec![],
-                    });
-                }
-                HydratedComponent::RequestHandler(_) => {
-                    stages.push(Stage {
-                        wrapping_id: *middleware_id,
-                        next_state: None,
-                        post_processing_ids: vec![],
-                    });
-                }
-                HydratedComponent::PostProcessingMiddleware(_) => {
-                    if let Some(last_stage) = stages.last_mut() {
-                        last_stage.post_processing_ids.push(*middleware_id);
-                    } else {
-                        final_post_processing_ids.push(*middleware_id);
+        let stages = {
+            let mut stages = vec![];
+            let mut post_processing_ids = vec![];
+            for middleware_id in &ordered_by_registration {
+                let middleware_id = wrapping_id2bound_id
+                    .get(middleware_id)
+                    .unwrap_or(middleware_id);
+                match component_db.hydrated_component(*middleware_id, computation_db) {
+                    HydratedComponent::RequestHandler(_)
+                    | HydratedComponent::WrappingMiddleware(_) => {
+                        let stage_id = stages.len();
+                        stages.push(Stage {
+                            name: stage_names[stage_id].clone(),
+                            wrapping_id: *middleware_id,
+                            next_state: wrapping_id2next_state.remove(middleware_id),
+                            post_processing_ids: std::mem::take(&mut post_processing_ids),
+                        });
                     }
+                    HydratedComponent::PostProcessingMiddleware(_) => {
+                        post_processing_ids.push(*middleware_id);
+                    }
+                    _ => unreachable!(),
                 }
-                _ => unreachable!(),
             }
-        }
+            assert!(post_processing_ids.is_empty());
+            stages
+        };
 
         Ok(Self {
             module_name,
             id2call_graph: id2ordered_call_graphs,
             stages,
-            post_processing_ids: final_post_processing_ids,
         })
     }
 }
 
 impl RequestHandlerPipeline {
-    /// Iterate over all the call graphs in the pipeline, in execution order (middlewares first,
-    /// request handler last).
-    pub(crate) fn graph_iter(&self) -> PipelineGraphIterator {
-        PipelineGraphIterator {
-            pipeline: self,
-            current_stage: Some(0),
-        }
+    /// Iterate over all the call graphs in the pipeline.
+    ///
+    /// The order is consistent across invocations, but it should not be assumed to be
+    /// invocation order.
+    pub(crate) fn graph_iter(&self) -> impl Iterator<Item = &OrderedCallGraph> + '_ {
+        self.id2call_graph.values()
     }
 
     /// Print a representation of the pipeline in graphviz's .DOT format, geared towards
@@ -445,38 +427,139 @@ impl RequestHandlerPipeline {
     }
 }
 
-/// Given the set of long-lived components that must be stored inside the middleware state,
-/// determine the types of its fields.
-///
-/// In particular, if both `T` and `&T` are needed, only `T` should appear as a field type.
-fn get_next_field_types(long_lived_types: &IndexSet<ResolvedType>) -> IndexSet<ResolvedType> {
-    let mut inner_type2by_value: IndexMap<&ResolvedType, bool> = IndexMap::new();
-    for ty_ in long_lived_types {
-        if let ResolvedType::Reference(ref_) = ty_ {
-            if !ref_.lifetime.is_static() {
-                inner_type2by_value
-                    .entry(ref_.inner.as_ref())
-                    .or_insert(false);
-                continue;
-            }
+pub(crate) struct InputParameters {
+    pub(crate) input_parameters: IndexSet<InputParameter>,
+    pub(crate) lifetimes: IndexSet<GenericLifetimeParameter>,
+}
+
+impl InputParameters {
+    /// Given a set of input types, determine the minimal set of types that should be used as input
+    /// parameters for a function or a method.
+    ///
+    /// In particular:
+    ///
+    /// - if both `T` and `&T` are needed, only `T` should appear as a field type.
+    /// - if both `T` and `&mut T` are needed, only `T` should appear as a field type marked as mutable.
+    pub(crate) fn from_iter<'a, T>(types: impl IntoIterator<Item = T>) -> Self
+    where
+        T: AsRef<ResolvedType>,
+    {
+        let input_parameters = Self::get_input_types(types);
+        let mut lifetimes = IndexSet::new();
+        let mut lifetime_generator = LifetimeGenerator::new();
+        let input_parameters = input_parameters
+            .into_iter()
+            .map(|input| {
+                let InputParameter {
+                    ident,
+                    mut type_,
+                    mutable,
+                } = input;
+                let lifetime2binding: IndexMap<_, _> = type_
+                    .named_lifetime_parameters()
+                    .into_iter()
+                    .map(|lifetime| (lifetime, lifetime_generator.next()))
+                    .collect();
+                type_.rename_lifetime_parameters(&lifetime2binding);
+                lifetimes.extend(lifetime2binding.values().cloned());
+
+                if type_.has_implicit_lifetime_parameters() {
+                    let implicit_lifetime_binding = lifetime_generator.next();
+                    lifetimes.insert(implicit_lifetime_binding.clone());
+                    type_.set_implicit_lifetimes(implicit_lifetime_binding);
+                }
+                InputParameter {
+                    ident,
+                    type_,
+                    mutable,
+                }
+            })
+            .collect();
+
+        Self {
+            input_parameters,
+            lifetimes: lifetimes
+                .into_iter()
+                .map(|s| GenericLifetimeParameter::Named(s))
+                .collect(),
         }
-        inner_type2by_value.insert(ty_, true);
     }
-    inner_type2by_value
-        .into_iter()
-        .map(|(ty_, by_value)| {
-            let ty_ = ty_.to_owned();
-            if by_value {
-                ty_
-            } else {
-                ResolvedType::Reference(TypeReference {
-                    is_mutable: false,
-                    lifetime: Lifetime::Elided,
-                    inner: Box::new(ty_),
-                })
+
+    pub(crate) fn iter(&self) -> impl Iterator<Item = &InputParameter> {
+        self.input_parameters.iter()
+    }
+
+    fn get_input_types<T>(types: impl IntoIterator<Item = T>) -> IndexSet<InputParameter>
+    where
+        T: AsRef<ResolvedType>,
+    {
+        struct Metadata {
+            by_value: bool,
+            mutable: bool,
+        }
+
+        let mut inner_type2by_value: IndexMap<ResolvedType, Metadata> = IndexMap::new();
+        for ty_ in types {
+            let ty_ = ty_.as_ref();
+            if let ResolvedType::Reference(ref_) = ty_ {
+                if !ref_.lifetime.is_static() {
+                    let entry = inner_type2by_value
+                        .entry(ref_.inner.as_ref().to_owned())
+                        .or_insert(Metadata {
+                            by_value: false,
+                            mutable: false,
+                        });
+                    entry.mutable |= ref_.is_mutable;
+                    continue;
+                }
             }
-        })
-        .collect()
+            let entry = inner_type2by_value
+                .entry(ty_.to_owned())
+                .or_insert(Metadata {
+                    by_value: true,
+                    mutable: false,
+                });
+            entry.by_value = true;
+        }
+        inner_type2by_value
+            .into_iter()
+            .enumerate()
+            .map(|(i, (ty_, metadata))| {
+                let (ty_, mutable_binding) = if metadata.by_value {
+                    (ty_, metadata.mutable)
+                } else {
+                    (
+                        ResolvedType::Reference(TypeReference {
+                            is_mutable: metadata.mutable,
+                            lifetime: Lifetime::Elided,
+                            inner: Box::new(ty_),
+                        }),
+                        false,
+                    )
+                };
+                InputParameter {
+                    ident: format!("s_{i}"),
+                    type_: ty_,
+                    mutable: mutable_binding,
+                }
+            })
+            .collect()
+    }
+}
+
+/// An input parameter for a function or a method.
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+pub(crate) struct InputParameter {
+    /// The binding name.
+    ///
+    /// E.g. `foo` in `foo: Foo`.
+    pub(crate) ident: String,
+    /// The type that should be taken as input.
+    pub(crate) type_: ResolvedType,
+    /// Whether the binding should be marked as mutable with `mut`.
+    ///
+    /// E.g. `mut foo: Foo` vs `foo: Foo`.
+    pub(crate) mutable: bool,
 }
 
 /// Extract the set of request-scoped and singleton components that are used as inputs
