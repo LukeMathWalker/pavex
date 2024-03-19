@@ -82,9 +82,10 @@ impl RequestHandlerPipeline {
                                 }
                             });
                     let await_ = fn_.sig.asyncness.and_then(|_| Some(quote! { .await }));
+                    let fn_name = &fn_.sig.ident;
                     // TODO: should the bound variable be mutable?
                     let invocation = quote! {
-                        let #response_ident = #fn_(#(#input_parameters),*)#await_;
+                        let #response_ident = #fn_name(#(#input_parameters),*)#await_;
                     };
                     invocations.push(invocation);
                 }
@@ -109,6 +110,7 @@ impl RequestHandlerPipeline {
                         #mut_ #name: #ty
                     }
                 });
+                // TODO: add lifetimes to the function signature
                 quote! {
                     #asyncness fn #fn_name(#(#input_parameters),*) -> #pavex::response::Response {
                         #(#invocations)*
