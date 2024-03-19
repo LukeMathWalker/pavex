@@ -92,10 +92,14 @@ impl RequestHandlerPipeline {
         let error_observer_ids = component_db.error_observers(handler_id).unwrap().to_owned();
 
         // Step 1: Determine the sequence of middlewares that the request handler is wrapped in.
-        let ordered_by_registration = component_db
-            .middleware_chain(handler_id)
-            .unwrap()
-            .to_owned();
+        let ordered_by_registration = {
+            let mut v = component_db
+                .middleware_chain(handler_id)
+                .unwrap()
+                .to_owned();
+            v.push(handler_id);
+            v
+        };
 
         let stage_names = {
             let mut stage_names = vec![];
