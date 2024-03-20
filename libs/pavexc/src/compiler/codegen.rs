@@ -443,8 +443,10 @@ fn get_request_dispatcher(
             );
             if fallback_codegened_pipeline.needs_connection_info(framework_items_db) {
                 fallback_invocation = quote! {
-                    let connection_info = connection_info.expect("Required ConnectionInfo is missing");
-                    #fallback_invocation
+                    {
+                        let connection_info = connection_info.expect("Required ConnectionInfo is missing");
+                        #fallback_invocation
+                    }
                 }
             }
             if sub_router
@@ -493,6 +495,14 @@ fn get_request_dispatcher(
     } else {
         quote! {}
     };
+    let unwrap_connection_info =
+        if fallback_codegened_pipeline.needs_connection_info(framework_items_db) {
+            quote! {
+                let connection_info = connection_info.expect("Required ConnectionInfo is missing");
+            }
+        } else {
+            quote! {}
+        };
     syn::parse2(quote! {
         async fn route_request(
             request: #http::Request<#hyper::body::Incoming>,
@@ -508,6 +518,7 @@ fn get_request_dispatcher(
                 Err(_) => {
                     #allowed_methods
                     #unmatched_route
+                    #unwrap_connection_info
                     return #root_fallback_invocation;
                 }
             };
