@@ -22,6 +22,14 @@ where
     request_pipeline: C,
 }
 
+/// A wrapping middleware that...does nothing.  
+///
+/// It just invokes the next stage in the request processing pipeline and returns its result.
+#[doc(hidden)]
+pub async fn wrap_noop<C: IntoFuture<Output = Response>>(next: Next<C>) -> Response {
+    next.await
+}
+
 impl<C> Next<C>
 where
     C: IntoFuture<Output = Response>,

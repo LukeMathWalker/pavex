@@ -26,6 +26,20 @@ pub(crate) enum Component {
     },
 }
 
+impl Component {
+    /// Get the source id of this component.
+    pub(crate) fn source_id(&self) -> SourceId {
+        match self {
+            Component::RequestHandler { user_component_id } => user_component_id.clone().into(),
+            Component::WrappingMiddleware { source_id }
+            | Component::PostProcessingMiddleware { source_id }
+            | Component::Constructor { source_id }
+            | Component::Transformer { source_id, .. } => source_id.clone(),
+            Component::ErrorObserver { user_component_id } => user_component_id.clone().into(),
+        }
+    }
+}
+
 /// Additional information about a transformer in [`ComponentDb`].
 /// This information is not necessary to determine the "identity" of a transformer,
 /// therefore it is not stored inside [`Component::Transformer`] to keep the size of the enum small.

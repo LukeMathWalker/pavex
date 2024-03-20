@@ -25,8 +25,9 @@ pub(crate) enum UnregisteredComponent {
     SyntheticWrappingMiddleware {
         computation_id: ComputationId,
         scope_id: ScopeId,
-        /// Synthetic middlewares are created by binding the generic parameter for Next.
-        derived_from: ComponentId,
+        /// Synthetic middlewares are usually created by binding the generic parameter for Next,
+        /// except for the noop middleware.
+        derived_from: Option<ComponentId>,
     },
     ErrorHandler {
         source_id: SourceId,

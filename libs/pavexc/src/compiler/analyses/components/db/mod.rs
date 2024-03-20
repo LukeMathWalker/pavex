@@ -137,6 +137,16 @@ impl ComponentDb {
                 is_mutable: false,
             })
         };
+        let pavex_noop_wrap_id = {
+            let pavex_noop_wrap_callable = process_framework_callable_path(
+                "pavex::middleware::wrap_noop",
+                package_graph,
+                krate_collection,
+            );
+            let pavex_noop_wrap_computation =
+                Computation::Callable(Cow::Owned(pavex_noop_wrap_callable));
+            computation_db.get_or_intern(pavex_noop_wrap_computation)
+        };
 
         let mut self_ = Self {
             user_component_db,
@@ -216,7 +226,7 @@ impl ComponentDb {
                 diagnostics,
             );
 
-            self_.compute_request2middleware_chain();
+            self_.compute_request2middleware_chain(pavex_noop_wrap_id, computation_db);
             self_.process_error_handlers(
                 &mut needs_error_handler,
                 computation_db,
@@ -405,13 +415,15 @@ impl ComponentDb {
                         .insert(id, error_input_index);
                 }
                 SyntheticWrappingMiddleware { derived_from, .. } => {
-                    self.derived2user_registered.insert(
-                        id,
-                        self.derived2user_registered
-                            .get(&derived_from)
-                            .cloned()
-                            .unwrap_or(derived_from),
-                    );
+                    if let Some(derived_from) = derived_from {
+                        self.derived2user_registered.insert(
+                            id,
+                            self.derived2user_registered
+                                .get(&derived_from)
+                                .cloned()
+                                .unwrap_or(derived_from),
+                        );
+                    }
                 }
                 _ => {}
             }
@@ -844,10 +856,21 @@ impl ComponentDb {
     /// Compute the middleware chain for each request handler that was successfully validated.
     /// The middleware chain only includes wrapping middlewares that were successfully validated.
     /// Invalid middlewares are ignored.
-    fn compute_request2middleware_chain(&mut self) {
-        for (request_handler_id, _) in self.user_component_db.request_handlers() {
-            let Some(handler_component_id) =
-                self.user_component_id2component_id.get(&request_handler_id)
+    fn compute_request2middleware_chain(
+        &mut self,
+        pavex_noop_wrap_id: ComputationId,
+        computation_db: &mut ComputationDb,
+    ) {
+        let request_handler_ids = self
+            .user_component_db
+            .request_handlers()
+            .map(|(id, _)| id)
+            .collect::<Vec<_>>();
+        for request_handler_id in request_handler_ids {
+            let Some(handler_component_id) = self
+                .user_component_id2component_id
+                .get(&request_handler_id)
+                .cloned()
             else {
                 continue;
             };
@@ -862,8 +885,36 @@ impl ComponentDb {
                     middleware_chain.push(*middleware_component_id);
                 }
             }
+
+            if let Some(first) = middleware_chain.first().cloned() {
+                let first_middleware = self.hydrated_component(first, computation_db);
+                match first_middleware {
+                    HydratedComponent::WrappingMiddleware(_) => {}
+                    HydratedComponent::PostProcessingMiddleware(_) => {
+                        // We need to add a synthetic wrapping middleware to have a place where to
+                        // "attach" state that needs to be shared between the request handler and the
+                        // post-processing middlewares.
+                        let noop_component_id = self.get_or_intern(
+                            UnregisteredComponent::SyntheticWrappingMiddleware {
+                                computation_id: pavex_noop_wrap_id,
+                                scope_id: self.scope_id(handler_component_id),
+                                derived_from: None,
+                            },
+                            computation_db,
+                        );
+                        middleware_chain.insert(0, noop_component_id);
+                    }
+                    HydratedComponent::RequestHandler(_)
+                    | HydratedComponent::Transformer(_, _)
+                    | HydratedComponent::Constructor(_)
+                    | HydratedComponent::ErrorObserver(_) => {
+                        unreachable!()
+                    }
+                }
+            }
+
             self.handler_id2middleware_ids
-                .insert(*handler_component_id, middleware_chain);
+                .insert(handler_component_id, middleware_chain);
         }
     }
 
@@ -920,28 +971,21 @@ impl ComponentDb {
                 use crate::compiler::analyses::components::component::Component::*;
 
                 match c {
-                    RequestHandler { user_component_id }
-                    // There are no middlewares with a `ComputationId` source at this stage.
-                    | PostProcessingMiddleware {
-                        source_id: SourceId::UserComponentId(user_component_id),
-                    }
-                    | WrappingMiddleware {
-                        // There are no middlewares with a `ComputationId` source at this stage.
-                        source_id: SourceId::UserComponentId(user_component_id),
-                    } => Some((id, *user_component_id)),
+                    RequestHandler { .. }
+                    | PostProcessingMiddleware { .. }
+                    | WrappingMiddleware { .. } => Some((id, c.source_id())),
                     Transformer { source_id, .. } => {
                         if self.is_error_handler(id) {
-                            if let SourceId::UserComponentId(user_component_id) = source_id {
-                                return Some((id, *user_component_id));
-                            }
+                            Some((id, source_id.clone()))
+                        } else {
+                            None
                         }
-                        None
                     }
-                    Constructor { .. } | WrappingMiddleware { .. } | PostProcessingMiddleware { .. } | ErrorObserver { .. } => None,
+                    Constructor { .. } | ErrorObserver { .. } => None,
                 }
             })
             .collect();
-        for (component_id, user_component_id) in iter.into_iter() {
+        for (component_id, source_id) in iter.into_iter() {
             // If the component is fallible, we want to attach the transformer to its Ok matcher.
             let component_id =
                 if let Some((ok_id, _)) = self.fallible_id2match_ids.get(&component_id) {
@@ -949,7 +993,17 @@ impl ComponentDb {
                 } else {
                     component_id
                 };
-            let callable = &computation_db[user_component_id];
+            let callable = match source_id {
+                SourceId::ComputationId(computation_id, _) => {
+                    let Computation::Callable(callable) = &computation_db[computation_id] else {
+                        continue;
+                    };
+                    callable.clone()
+                }
+                SourceId::UserComponentId(user_component_id) => {
+                    Cow::Borrowed(&computation_db[user_component_id])
+                }
+            };
             let output = callable.output.as_ref().unwrap();
             let output = if output.is_result() {
                 get_ok_variant(output)
@@ -958,14 +1012,16 @@ impl ComponentDb {
             }
             .to_owned();
             if let Err(e) = assert_trait_is_implemented(krate_collection, &output, &into_response) {
-                Self::invalid_response_type(
-                    e,
-                    &output,
-                    user_component_id,
-                    &self.user_component_db,
-                    package_graph,
-                    diagnostics,
-                );
+                if let SourceId::UserComponentId(user_component_id) = source_id {
+                    Self::invalid_response_type(
+                        e,
+                        &output,
+                        user_component_id,
+                        &self.user_component_db,
+                        package_graph,
+                        diagnostics,
+                    );
+                }
                 continue;
             }
             let mut transformer_segments = into_response_path.segments.clone();
@@ -994,14 +1050,16 @@ impl ComponentDb {
                     self.get_or_intern(transformer, computation_db);
                 }
                 Err(e) => {
-                    Self::cannot_handle_into_response_implementation(
-                        e,
-                        &output,
-                        user_component_id,
-                        &self.user_component_db,
-                        package_graph,
-                        diagnostics,
-                    );
+                    if let SourceId::UserComponentId(user_component_id) = source_id {
+                        Self::cannot_handle_into_response_implementation(
+                            e,
+                            &output,
+                            user_component_id,
+                            &self.user_component_db,
+                            package_graph,
+                            diagnostics,
+                        );
+                    }
                 }
             }
         }
@@ -1065,7 +1123,7 @@ impl ComponentDb {
         let middleware_component = UnregisteredComponent::SyntheticWrappingMiddleware {
             computation_id,
             scope_id,
-            derived_from,
+            derived_from: Some(derived_from),
         };
         let middleware_id = self.get_or_intern(middleware_component, computation_db);
         middleware_id

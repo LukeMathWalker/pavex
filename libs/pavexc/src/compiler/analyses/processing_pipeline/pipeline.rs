@@ -186,7 +186,7 @@ impl RequestHandlerPipeline {
         let mut long_lived_types: IndexSet<ResolvedType> = IndexSet::new();
         let mut wrapping_id2next_field_types: IndexMap<ComponentId, InputParameters> =
             IndexMap::new();
-        for &middleware_id in ordered_by_invocation.iter().rev() {
+        for middleware_id in ordered_by_registration.iter().rev() {
             let call_graph = &id2call_graphs[middleware_id];
 
             if let HydratedComponent::WrappingMiddleware(_) =

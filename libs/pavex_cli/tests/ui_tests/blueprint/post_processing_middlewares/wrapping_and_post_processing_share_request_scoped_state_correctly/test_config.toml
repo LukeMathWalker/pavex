@@ -1,0 +1,2 @@
+description = """A post-processing middleware can access request-scoped state that's initialized in a wrapping middleware
+that executes before it."""
