@@ -54,7 +54,7 @@ async fn route_request(
                     vec![],
                 )
                 .into();
-            return route_14::handler(&allowed_methods).await;
+            return route_14::entrypoint(&allowed_methods).await;
         }
     };
     let route_id = matched_route.value;
@@ -73,7 +73,7 @@ async fn route_request(
                 | &pavex::http::Method::PATCH
                 | &pavex::http::Method::POST
                 | &pavex::http::Method::PUT
-                | &pavex::http::Method::TRACE => route_9::handler().await,
+                | &pavex::http::Method::TRACE => route_9::entrypoint().await,
                 _ => {
                     let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
                             pavex::http::Method::CONNECT,
@@ -87,76 +87,76 @@ async fn route_request(
                             pavex::http::Method::TRACE,
                         ])
                         .into();
-                    route_14::handler(&allowed_methods).await
+                    route_14::entrypoint(&allowed_methods).await
                 }
             }
         }
-        1u32 => route_10::handler().await,
+        1u32 => route_10::entrypoint().await,
         2u32 => {
             match &request_head.method {
-                &pavex::http::Method::CONNECT => route_0::handler().await,
+                &pavex::http::Method::CONNECT => route_0::entrypoint().await,
                 _ => {
                     let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
                             pavex::http::Method::CONNECT,
                         ])
                         .into();
-                    route_14::handler(&allowed_methods).await
+                    route_14::entrypoint(&allowed_methods).await
                 }
             }
         }
         3u32 => {
             match &request_head.method {
-                s if s.as_str() == "CUSTOM" => route_12::handler().await,
+                s if s.as_str() == "CUSTOM" => route_12::entrypoint().await,
                 _ => {
                     let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
                             pavex::http::Method::try_from("CUSTOM")
                                 .expect("CUSTOM is not a valid (custom) HTTP method"),
                         ])
                         .into();
-                    route_14::handler(&allowed_methods).await
+                    route_14::entrypoint(&allowed_methods).await
                 }
             }
         }
         4u32 => {
             match &request_head.method {
-                &pavex::http::Method::DELETE => route_1::handler().await,
+                &pavex::http::Method::DELETE => route_1::entrypoint().await,
                 _ => {
                     let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
                             pavex::http::Method::DELETE,
                         ])
                         .into();
-                    route_14::handler(&allowed_methods).await
+                    route_14::entrypoint(&allowed_methods).await
                 }
             }
         }
         5u32 => {
             match &request_head.method {
-                &pavex::http::Method::GET => route_2::handler().await,
+                &pavex::http::Method::GET => route_2::entrypoint().await,
                 _ => {
                     let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
                             pavex::http::Method::GET,
                         ])
                         .into();
-                    route_14::handler(&allowed_methods).await
+                    route_14::entrypoint(&allowed_methods).await
                 }
             }
         }
         6u32 => {
             match &request_head.method {
-                &pavex::http::Method::HEAD => route_3::handler().await,
+                &pavex::http::Method::HEAD => route_3::entrypoint().await,
                 _ => {
                     let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
                             pavex::http::Method::HEAD,
                         ])
                         .into();
-                    route_14::handler(&allowed_methods).await
+                    route_14::entrypoint(&allowed_methods).await
                 }
             }
         }
         7u32 => {
             match &request_head.method {
                 &pavex::http::Method::PATCH | &pavex::http::Method::POST => {
-                    route_11::handler().await
+                    route_11::entrypoint().await
                 }
                 _ => {
                     let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
@@ -164,15 +164,15 @@ async fn route_request(
                             pavex::http::Method::POST,
                         ])
                         .into();
-                    route_14::handler(&allowed_methods).await
+                    route_14::entrypoint(&allowed_methods).await
                 }
             }
         }
         8u32 => {
             match &request_head.method {
-                &pavex::http::Method::GET => route_13::handler().await,
+                &pavex::http::Method::GET => route_13::entrypoint().await,
                 s if s.as_str() == "CUSTOM" || s.as_str() == "HEY" => {
-                    route_13::handler().await
+                    route_13::entrypoint().await
                 }
                 _ => {
                     let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
@@ -183,67 +183,67 @@ async fn route_request(
                                 .expect("HEY is not a valid (custom) HTTP method"),
                         ])
                         .into();
-                    route_14::handler(&allowed_methods).await
+                    route_14::entrypoint(&allowed_methods).await
                 }
             }
         }
         9u32 => {
             match &request_head.method {
-                &pavex::http::Method::OPTIONS => route_4::handler().await,
+                &pavex::http::Method::OPTIONS => route_4::entrypoint().await,
                 _ => {
                     let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
                             pavex::http::Method::OPTIONS,
                         ])
                         .into();
-                    route_14::handler(&allowed_methods).await
+                    route_14::entrypoint(&allowed_methods).await
                 }
             }
         }
         10u32 => {
             match &request_head.method {
-                &pavex::http::Method::PATCH => route_5::handler().await,
+                &pavex::http::Method::PATCH => route_5::entrypoint().await,
                 _ => {
                     let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
                             pavex::http::Method::PATCH,
                         ])
                         .into();
-                    route_14::handler(&allowed_methods).await
+                    route_14::entrypoint(&allowed_methods).await
                 }
             }
         }
         11u32 => {
             match &request_head.method {
-                &pavex::http::Method::POST => route_6::handler().await,
+                &pavex::http::Method::POST => route_6::entrypoint().await,
                 _ => {
                     let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
                             pavex::http::Method::POST,
                         ])
                         .into();
-                    route_14::handler(&allowed_methods).await
+                    route_14::entrypoint(&allowed_methods).await
                 }
             }
         }
         12u32 => {
             match &request_head.method {
-                &pavex::http::Method::PUT => route_7::handler().await,
+                &pavex::http::Method::PUT => route_7::entrypoint().await,
                 _ => {
                     let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
                             pavex::http::Method::PUT,
                         ])
                         .into();
-                    route_14::handler(&allowed_methods).await
+                    route_14::entrypoint(&allowed_methods).await
                 }
             }
         }
         13u32 => {
             match &request_head.method {
-                &pavex::http::Method::TRACE => route_8::handler().await,
+                &pavex::http::Method::TRACE => route_8::entrypoint().await,
                 _ => {
                     let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
                             pavex::http::Method::TRACE,
                         ])
                         .into();
-                    route_14::handler(&allowed_methods).await
+                    route_14::entrypoint(&allowed_methods).await
                 }
             }
         }
@@ -251,90 +251,152 @@ async fn route_request(
     }
 }
 pub mod route_0 {
+    pub async fn entrypoint() -> pavex::response::Response {
+        let response = handler().await;
+        response
+    }
     pub async fn handler() -> pavex::response::Response {
         let v0 = app::handler();
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v0)
     }
 }
 pub mod route_1 {
+    pub async fn entrypoint() -> pavex::response::Response {
+        let response = handler().await;
+        response
+    }
     pub async fn handler() -> pavex::response::Response {
         let v0 = app::handler();
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v0)
     }
 }
 pub mod route_2 {
+    pub async fn entrypoint() -> pavex::response::Response {
+        let response = handler().await;
+        response
+    }
     pub async fn handler() -> pavex::response::Response {
         let v0 = app::handler();
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v0)
     }
 }
 pub mod route_3 {
+    pub async fn entrypoint() -> pavex::response::Response {
+        let response = handler().await;
+        response
+    }
     pub async fn handler() -> pavex::response::Response {
         let v0 = app::handler();
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v0)
     }
 }
 pub mod route_4 {
+    pub async fn entrypoint() -> pavex::response::Response {
+        let response = handler().await;
+        response
+    }
     pub async fn handler() -> pavex::response::Response {
         let v0 = app::handler();
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v0)
     }
 }
 pub mod route_5 {
+    pub async fn entrypoint() -> pavex::response::Response {
+        let response = handler().await;
+        response
+    }
     pub async fn handler() -> pavex::response::Response {
         let v0 = app::handler();
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v0)
     }
 }
 pub mod route_6 {
+    pub async fn entrypoint() -> pavex::response::Response {
+        let response = handler().await;
+        response
+    }
     pub async fn handler() -> pavex::response::Response {
         let v0 = app::handler();
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v0)
     }
 }
 pub mod route_7 {
+    pub async fn entrypoint() -> pavex::response::Response {
+        let response = handler().await;
+        response
+    }
     pub async fn handler() -> pavex::response::Response {
         let v0 = app::handler();
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v0)
     }
 }
 pub mod route_8 {
+    pub async fn entrypoint() -> pavex::response::Response {
+        let response = handler().await;
+        response
+    }
     pub async fn handler() -> pavex::response::Response {
         let v0 = app::handler();
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v0)
     }
 }
 pub mod route_9 {
+    pub async fn entrypoint() -> pavex::response::Response {
+        let response = handler().await;
+        response
+    }
     pub async fn handler() -> pavex::response::Response {
         let v0 = app::handler();
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v0)
     }
 }
 pub mod route_10 {
+    pub async fn entrypoint() -> pavex::response::Response {
+        let response = handler().await;
+        response
+    }
     pub async fn handler() -> pavex::response::Response {
         let v0 = app::handler();
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v0)
     }
 }
 pub mod route_11 {
+    pub async fn entrypoint() -> pavex::response::Response {
+        let response = handler().await;
+        response
+    }
     pub async fn handler() -> pavex::response::Response {
         let v0 = app::handler();
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v0)
     }
 }
 pub mod route_12 {
+    pub async fn entrypoint() -> pavex::response::Response {
+        let response = handler().await;
+        response
+    }
     pub async fn handler() -> pavex::response::Response {
         let v0 = app::handler();
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v0)
     }
 }
 pub mod route_13 {
+    pub async fn entrypoint() -> pavex::response::Response {
+        let response = handler().await;
+        response
+    }
     pub async fn handler() -> pavex::response::Response {
         let v0 = app::handler();
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v0)
     }
 }
 pub mod route_14 {
+    pub async fn entrypoint<'a>(
+        s_0: &'a pavex::router::AllowedMethods,
+    ) -> pavex::response::Response {
+        let response = handler(s_0).await;
+        response
+    }
     pub async fn handler(
         v0: &pavex::router::AllowedMethods,
     ) -> pavex::response::Response {

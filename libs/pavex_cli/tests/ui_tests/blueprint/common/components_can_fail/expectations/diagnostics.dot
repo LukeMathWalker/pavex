@@ -78,6 +78,24 @@ digraph "GET /home - 1" {
     16 -> 26 [ ]
 }
 
+digraph "GET /home - 2" {
+    0 [ label = "app::fallible_pp_middleware(pavex::response::Response) -> core::prelude::rust_2015::Result<pavex::response::Response, app::PPMiddlewareError>"]
+    1 [ label = "pavex::response::Response"]
+    2 [ label = "core::prelude::rust_2015::Result<pavex::response::Response, app::PPMiddlewareError> -> pavex::response::Response"]
+    3 [ label = "core::prelude::rust_2015::Result<pavex::response::Response, app::PPMiddlewareError> -> app::PPMiddlewareError"]
+    4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    5 [ label = "app::handle_pp_middleware_error(&app::PPMiddlewareError) -> pavex::response::Response"]
+    6 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    7 [ label = "`match`"]
+    1 -> 0 [ ]
+    7 -> 2 [ ]
+    7 -> 3 [ ]
+    3 -> 5 [ label = "&"]
+    2 -> 4 [ ]
+    5 -> 6 [ ]
+    0 -> 7 [ ]
+}
+
 digraph "* /home - 0" {
     0 [ label = "app::fallible_wrapping_middleware(pavex::middleware::Next<crate::route_1::Next0<'a>>) -> core::prelude::rust_2015::Result<pavex::response::Response, app::MiddlewareError>"]
     1 [ label = "pavex::middleware::Next::new(crate::route_1::Next0<'a>) -> pavex::middleware::Next<crate::route_1::Next0<'a>>"]
@@ -106,6 +124,24 @@ digraph "* /home - 1" {
     3 [ label = "&pavex::router::AllowedMethods"]
     0 -> 2 [ ]
     3 -> 0 [ ]
+}
+
+digraph "* /home - 2" {
+    0 [ label = "app::fallible_pp_middleware(pavex::response::Response) -> core::prelude::rust_2015::Result<pavex::response::Response, app::PPMiddlewareError>"]
+    1 [ label = "pavex::response::Response"]
+    2 [ label = "core::prelude::rust_2015::Result<pavex::response::Response, app::PPMiddlewareError> -> pavex::response::Response"]
+    3 [ label = "core::prelude::rust_2015::Result<pavex::response::Response, app::PPMiddlewareError> -> app::PPMiddlewareError"]
+    4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    5 [ label = "app::handle_pp_middleware_error(&app::PPMiddlewareError) -> pavex::response::Response"]
+    6 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    7 [ label = "`match`"]
+    1 -> 0 [ ]
+    7 -> 2 [ ]
+    7 -> 3 [ ]
+    3 -> 5 [ label = "&"]
+    2 -> 4 [ ]
+    5 -> 6 [ ]
+    0 -> 7 [ ]
 }
 
 digraph app_state {
