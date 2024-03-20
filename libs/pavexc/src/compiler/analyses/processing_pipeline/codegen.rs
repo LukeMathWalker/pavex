@@ -123,7 +123,7 @@ impl RequestHandlerPipeline {
                 let generics = input_lifetimes
                     .iter()
                     .map(|lifetime| {
-                        syn::Lifetime::new(&format!("{lifetime}"), proc_macro2::Span::call_site())
+                        syn::Lifetime::new(&format!("'{lifetime}"), proc_macro2::Span::call_site())
                             .to_token_stream()
                     })
                     .collect::<Vec<_>>();

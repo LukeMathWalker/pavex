@@ -250,6 +250,7 @@ impl RequestHandlerPipeline {
                 component_db.hydrated_component(*middleware_id, computation_db)
             {
                 let next_state_parameters = &wrapping_id2next_field_types[middleware_id];
+                eprintln!("next_state_parameters: {:?}", next_state_parameters);
                 let next_state_type = PathType {
                     package_id: PackageId::new(GENERATED_APP_PACKAGE_ID),
                     rustdoc_id: None,
@@ -261,7 +262,9 @@ impl RequestHandlerPipeline {
                     generic_arguments: next_state_parameters
                         .lifetimes
                         .iter()
-                        .map(|s| GenericArgument::Lifetime(s.to_owned()))
+                        .map(|s| {
+                            GenericArgument::Lifetime(GenericLifetimeParameter::Named(s.to_owned()))
+                        })
                         .collect(),
                 };
 
@@ -443,9 +446,10 @@ impl RequestHandlerPipeline {
     }
 }
 
+#[derive(Debug, Clone)]
 pub(crate) struct InputParameters {
     pub(crate) bindings: Bindings,
-    pub(crate) lifetimes: IndexSet<GenericLifetimeParameter>,
+    pub(crate) lifetimes: IndexSet<String>,
 }
 
 impl InputParameters {
@@ -494,10 +498,7 @@ impl InputParameters {
 
         Self {
             bindings: Bindings(input_parameters),
-            lifetimes: lifetimes
-                .into_iter()
-                .map(|s| GenericLifetimeParameter::Named(s))
-                .collect(),
+            lifetimes,
         }
     }
 

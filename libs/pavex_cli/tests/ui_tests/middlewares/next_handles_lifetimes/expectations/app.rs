@@ -70,7 +70,10 @@ pub mod route_0 {
         let response = wrapping_0().await;
         response
     }
-    async fn stage_1<'a>(s_0: &'a app::C, s_1: &'b app::A) -> pavex::response::Response {
+    async fn stage_1<'a, 'b>(
+        s_0: &'a app::C,
+        s_1: &'b app::A,
+    ) -> pavex::response::Response {
         let response = handler(s_0, s_1).await;
         response
     }
@@ -91,7 +94,7 @@ pub mod route_0 {
         let v2 = app::handler(v1, v0);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
     }
-    pub struct Next0<'a, T>
+    pub struct Next0<'a, 'b, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
@@ -99,7 +102,7 @@ pub mod route_0 {
         s_1: &'b app::A,
         next: fn(&'a app::C, &'b app::A) -> T,
     }
-    impl<'a, T> std::future::IntoFuture for Next0<'a, T>
+    impl<'a, 'b, T> std::future::IntoFuture for Next0<'a, 'b, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
