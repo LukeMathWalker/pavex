@@ -27,7 +27,7 @@ fn build_router() -> pavex_matchit::Router<u32> {
     router
 }
 async fn route_request(
-    request: http_1_0_0::Request<hyper::body::Incoming>,
+    request: http_1_1_0::Request<hyper::body::Incoming>,
     connection_info: Option<pavex::connection::ConnectionInfo>,
     server_state: std::sync::Arc<ServerState>,
 ) -> pavex::response::Response {
