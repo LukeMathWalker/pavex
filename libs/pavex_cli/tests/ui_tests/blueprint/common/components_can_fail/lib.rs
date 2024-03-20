@@ -87,7 +87,7 @@ pub fn handle_pp_middleware_error(_e: &PPMiddlewareError) -> Response {
     todo!()
 }
 
-pub fn fallible_pp_middleware<T>(_response: Response) -> Result<Response, PPMiddlewareError> {
+pub fn fallible_pp_middleware(_response: Response) -> Result<Response, PPMiddlewareError> {
     todo!()
 }
 
