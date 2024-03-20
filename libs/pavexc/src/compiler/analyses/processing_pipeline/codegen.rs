@@ -337,8 +337,12 @@ impl CodegenedRequestHandlerPipeline {
             } else {
                 let Some(field_name) = request_scoped_bindings.get_by_right(inner_type) else {
                     panic!(
-                        "Could not find a binding for input type `{:?}` in the application state or request-scoped bindings",
-                        type_
+                        "Could not find a binding for input type `{:?}` in the application state or request-scoped bindings.\n\
+                        Request-scoped bindings: {:?}\n\
+                        Application state: {:?}",
+                        type_,
+                        request_scoped_bindings,
+                        server_state_bindings
                     );
                 };
                 if is_shared_reference {
