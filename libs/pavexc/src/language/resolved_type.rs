@@ -779,6 +779,15 @@ pub enum GenericLifetimeParameter {
     Static,
 }
 
+impl Display for GenericLifetimeParameter {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            GenericLifetimeParameter::Named(s) => write!(f, "'{}", s),
+            GenericLifetimeParameter::Static => write!(f, "'static"),
+        }
+    }
+}
+
 impl PartialEq for GenericLifetimeParameter {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {

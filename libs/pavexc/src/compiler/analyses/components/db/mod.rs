@@ -91,6 +91,10 @@ pub(crate) struct ComponentDb {
     /// It's memoised here to avoid re-resolving it multiple times while analysing a single
     /// blueprint.
     pub(crate) pavex_error: ResolvedType,
+    /// The resolved type for `pavex::Response`.
+    /// It's memoised here to avoid re-resolving it multiple times while analysing a single
+    /// blueprint.
+    pub(crate) pavex_response: ResolvedType,
     /// Users register constructors directly with a blueprint.
     /// From these user-provided constructors, we build **derived** constructors:
     /// - if a constructor is fallible,
@@ -122,8 +126,10 @@ impl ComponentDb {
         krate_collection: &CrateCollection,
         diagnostics: &mut Vec<miette::Error>,
     ) -> ComponentDb {
-        // We only need to resolve this once.
+        // We only need to resolve these once.
         let pavex_error = process_framework_path("pavex::Error", package_graph, krate_collection);
+        let pavex_response =
+            process_framework_path("pavex::response::Response", package_graph, krate_collection);
         let pavex_error_ref = {
             ResolvedType::Reference(TypeReference {
                 lifetime: Lifetime::Elided,
@@ -150,6 +156,7 @@ impl ComponentDb {
             scope_ids_with_observers: vec![],
             autoregister_matchers: false,
             pavex_error,
+            pavex_response,
             derived2user_registered: Default::default(),
             framework_primitive_ids: Default::default(),
         };
@@ -628,7 +635,7 @@ impl ComponentDb {
             let UserComponent::PostProcessingMiddleware { .. } = user_component else {
                 unreachable!()
             };
-            match PostProcessingMiddleware::new(Cow::Borrowed(callable)) {
+            match PostProcessingMiddleware::new(Cow::Borrowed(callable), &self.pavex_response) {
                 Err(e) => {
                     Self::invalid_post_processing_middleware(
                         e,

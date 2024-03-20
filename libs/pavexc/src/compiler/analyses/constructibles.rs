@@ -130,7 +130,8 @@ impl ConstructibleDb {
                             input_types[mw.next_input_index()] = None;
                         }
                         HydratedComponent::PostProcessingMiddleware(pp) => {
-                            input_types[pp.response_input_index()] = None;
+                            input_types[pp.response_input_index(&component_db.pavex_response)] =
+                                None;
                         }
                         HydratedComponent::ErrorObserver(eo) => {
                             input_types[eo.error_input_index] = None;

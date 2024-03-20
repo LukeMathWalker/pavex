@@ -28,7 +28,10 @@ impl<'a> PostProcessingMiddleware<'a> {
     ///
     /// This function validates that the callable satisfies all the constraints of
     /// a post-processing middleware. An error is returned if it doesn't.
-    pub fn new(c: Cow<'a, Callable>) -> Result<Self, PostProcessingMiddlewareValidationError> {
+    pub fn new(
+        c: Cow<'a, Callable>,
+        response_type: &ResolvedType,
+    ) -> Result<Self, PostProcessingMiddlewareValidationError> {
         use PostProcessingMiddlewareValidationError::*;
 
         let mut output_type = c.output.as_ref().ok_or(CannotReturnTheUnitType)?.clone();
@@ -44,7 +47,8 @@ impl<'a> PostProcessingMiddleware<'a> {
 
         // We verify that exactly one of the input parameters is a `Response`.
         {
-            let response_parameters: Vec<_> = c.inputs.iter().filter(|t| is_response(t)).collect();
+            let response_parameters: Vec<_> =
+                c.inputs.iter().filter(|t| *t == response_type).collect();
             if response_parameters.is_empty() {
                 return Err(MustTakeResponseAsInputParameter);
             }
@@ -76,8 +80,12 @@ impl<'a> PostProcessingMiddleware<'a> {
     }
 
     /// Returns the index of the input parameter that is a `Response`.
-    pub fn response_input_index(&self) -> usize {
-        self.callable.inputs.iter().position(is_response).unwrap()
+    pub fn response_input_index(&self, response_type: &ResolvedType) -> usize {
+        self.callable
+            .inputs
+            .iter()
+            .position(|t| t == response_type)
+            .unwrap()
     }
 
     pub fn into_owned(self) -> PostProcessingMiddleware<'static> {
@@ -85,14 +93,6 @@ impl<'a> PostProcessingMiddleware<'a> {
             callable: Cow::Owned(self.callable.into_owned()),
         }
     }
-}
-
-/// Returns `true` if the given type is an owned `Response`.
-fn is_response(t: &ResolvedType) -> bool {
-    let ResolvedType::ResolvedPath(t) = t else {
-        return false;
-    };
-    t.base_type == ["pavex", "response", "Response"]
 }
 
 #[derive(thiserror::Error, Debug, Clone)]

@@ -135,7 +135,8 @@ impl DependencyGraph {
                             let mut input_types = pp.input_types().to_vec();
                             // `Response` doesn't matter when it comes to verifying that we don't
                             // have cyclic dependencies, so we can skip it.
-                            input_types.remove(pp.response_input_index());
+                            input_types
+                                .remove(pp.response_input_index(&component_db.pavex_response));
                             input_types
                         }
                         HydratedComponent::Transformer(t, info) => {

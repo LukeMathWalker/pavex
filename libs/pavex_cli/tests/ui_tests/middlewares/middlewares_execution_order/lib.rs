@@ -58,8 +58,8 @@ pub fn top_level() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.wrap(f!(crate::first));
     bp.wrap(f!(crate::second));
-    bp.post_process(f!(crate::first_pp));
-    bp.post_process(f!(crate::second_pp));
+    bp.post_process(f!(crate::first_post));
+    bp.post_process(f!(crate::second_post));
     bp.route(GET, "/top_level", f!(crate::handler));
     bp
 }
@@ -67,26 +67,26 @@ pub fn top_level() -> Blueprint {
 pub fn after_handler() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.wrap(f!(crate::first));
-    bp.post_process(f!(crate::first_pp));
+    bp.post_process(f!(crate::first_post));
     bp.route(GET, "/after_handler", f!(crate::handler));
     bp.wrap(f!(crate::second));
-    bp.post_process(f!(crate::second_pp));
+    bp.post_process(f!(crate::second_post));
     bp
 }
 
 pub fn nested() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.wrap(f!(crate::first));
-    bp.post_process(f!(crate::first_pp));
+    bp.post_process(f!(crate::first_post));
     bp.nest({
         let mut bp = Blueprint::new();
         bp.wrap(f!(crate::second));
-        bp.post_process(f!(crate::second_pp));
+        bp.post_process(f!(crate::second_post));
         bp.route(GET, "/nested", f!(crate::handler));
         bp
     });
     bp.wrap(f!(crate::third));
-    bp.post_process(f!(crate::third_pp));
+    bp.post_process(f!(crate::third_post));
     bp
 }
 
@@ -123,6 +123,6 @@ macro_rules! spy_pp {
     };
 }
 
-spy_pp!(first_pp);
-spy_pp!(second_pp);
-spy_pp!(third_pp);
+spy_pp!(first_post);
+spy_pp!(second_post);
+spy_pp!(third_post);

@@ -44,6 +44,8 @@ async fn top_level_mw_execute_in_order() {
             "first - start",
             "second - start",
             "handler",
+            "first_post",
+            "second_post",
             "second - end",
             "first - end"
         ]
@@ -62,7 +64,10 @@ async fn mw_registered_after_handler_does_not_wrap_handler() {
         .expect("Failed to get successful response");
 
     let state = state.get().await;
-    assert_eq!(state, vec!["first - start", "handler", "first - end"]);
+    assert_eq!(
+        state,
+        vec!["first - start", "handler", "first_post", "first - end"]
+    );
 }
 
 #[tokio::test]
@@ -83,7 +88,9 @@ async fn order_is_preserved_with_nesting() {
             "first - start",
             "second - start",
             "handler",
+            "second_post",
             "second - end",
+            "first_post",
             "first - end"
         ]
     );

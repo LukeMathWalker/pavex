@@ -4,6 +4,7 @@ use ahash::{HashMap, HashMapExt};
 use guppy::graph::PackageGraph;
 use guppy::PackageId;
 use indexmap::{IndexMap, IndexSet};
+use quote::quote;
 
 use pavex_bp_schema::{CloningStrategy, Lifecycle};
 
@@ -49,6 +50,7 @@ impl Stage {
     pub(crate) fn input_parameters(
         &self,
         id2call_graphs: &IndexMap<ComponentId, OrderedCallGraph>,
+        response_type: &ResolvedType,
     ) -> InputParameters {
         let iter = std::iter::once(&id2call_graphs[&self.wrapping_id])
             .chain(
@@ -56,8 +58,11 @@ impl Stage {
                     .iter()
                     .map(|id| &id2call_graphs[id]),
             )
-            // TODO: Remove `Response` from the list of input types.
-            .map(|g| g.required_input_types().into_iter())
+            .map(|g| {
+                g.required_input_types()
+                    .into_iter()
+                    .filter(|t| t != response_type)
+            })
             .flatten();
         InputParameters::from_iter(iter)
     }
@@ -73,7 +78,7 @@ pub(crate) struct NextState {
     /// The state is always a struct.
     /// This map contains the bindings for the fields of the struct: the field name and the type
     /// of the field.
-    pub(crate) field_bindings: BTreeMap<String, ResolvedType>,
+    pub(crate) field_bindings: Bindings,
 }
 
 impl RequestHandlerPipeline {
@@ -202,13 +207,21 @@ impl RequestHandlerPipeline {
                             component_db.hydrated_component(*component_id, computation_db);
                         if let Some(output_type) = component.output_type() {
                             long_lived_types.shift_remove(output_type);
-                            // We also need to remove the corresponding &-ref type from the set.
-                            let ref_output_type = ResolvedType::Reference(TypeReference {
-                                is_mutable: false,
-                                lifetime: Lifetime::Elided,
-                                inner: Box::new(output_type.to_owned()),
-                            });
-                            long_lived_types.shift_remove(&ref_output_type);
+                            // We also need to remove the corresponding &- and &mut- ref types from the set.
+                            long_lived_types.shift_remove(&ResolvedType::Reference(
+                                TypeReference {
+                                    is_mutable: false,
+                                    lifetime: Lifetime::Elided,
+                                    inner: Box::new(output_type.to_owned()),
+                                },
+                            ));
+                            long_lived_types.shift_remove(&ResolvedType::Reference(
+                                TypeReference {
+                                    is_mutable: true,
+                                    lifetime: Lifetime::Elided,
+                                    inner: Box::new(output_type.to_owned()),
+                                },
+                            ));
                         }
                     }
                 }
@@ -254,10 +267,6 @@ impl RequestHandlerPipeline {
 
                 // We register a constructor, in order to make it possible to build an instance of
                 // `next_type`.
-                let next_state_bindings = next_state_parameters
-                    .iter()
-                    .map(|input| (input.ident.clone(), input.type_.clone()))
-                    .collect::<BTreeMap<_, _>>();
                 let next_state_constructor = Callable {
                     is_async: false,
                     takes_self_as_ref: false,
@@ -268,7 +277,10 @@ impl RequestHandlerPipeline {
                         .map(|input| input.type_.clone())
                         .collect(),
                     invocation_style: InvocationStyle::StructLiteral {
-                        field_names: next_state_bindings.clone(),
+                        field_names: next_state_parameters
+                            .iter()
+                            .map(|input| (input.ident.clone(), input.type_.clone()))
+                            .collect::<BTreeMap<_, _>>(),
                         // TODO: remove when TAIT stabilises
                         extra_field2default_value: {
                             BTreeMap::from([("next".into(), stage_names[wrapping_id + 1].clone())])
@@ -342,7 +354,7 @@ impl RequestHandlerPipeline {
                     bound_middleware_id,
                     NextState {
                         type_: next_state_type,
-                        field_bindings: next_state_bindings,
+                        field_bindings: next_state_parameters.bindings.clone(),
                     },
                 );
                 wrapping_id2bound_id.insert(*middleware_id, bound_middleware_id);
@@ -432,7 +444,7 @@ impl RequestHandlerPipeline {
 }
 
 pub(crate) struct InputParameters {
-    pub(crate) input_parameters: IndexSet<InputParameter>,
+    pub(crate) bindings: Bindings,
     pub(crate) lifetimes: IndexSet<GenericLifetimeParameter>,
 }
 
@@ -448,13 +460,13 @@ impl InputParameters {
     where
         T: AsRef<ResolvedType>,
     {
-        let input_parameters = Self::get_input_types(types);
+        let input_parameters: Vec<_> = Self::get_input_types(types).into_iter().collect();
         let mut lifetimes = IndexSet::new();
         let mut lifetime_generator = LifetimeGenerator::new();
         let input_parameters = input_parameters
             .into_iter()
             .map(|input| {
-                let InputParameter {
+                let Binding {
                     ident,
                     mut type_,
                     mutable,
@@ -472,7 +484,7 @@ impl InputParameters {
                     lifetimes.insert(implicit_lifetime_binding.clone());
                     type_.set_implicit_lifetimes(implicit_lifetime_binding);
                 }
-                InputParameter {
+                Binding {
                     ident,
                     type_,
                     mutable,
@@ -481,7 +493,7 @@ impl InputParameters {
             .collect();
 
         Self {
-            input_parameters,
+            bindings: Bindings(input_parameters),
             lifetimes: lifetimes
                 .into_iter()
                 .map(|s| GenericLifetimeParameter::Named(s))
@@ -489,11 +501,11 @@ impl InputParameters {
         }
     }
 
-    pub(crate) fn iter(&self) -> impl Iterator<Item = &InputParameter> {
-        self.input_parameters.iter()
+    pub(crate) fn iter(&self) -> impl Iterator<Item = &Binding> {
+        self.bindings.0.iter()
     }
 
-    fn get_input_types<T>(types: impl IntoIterator<Item = T>) -> IndexSet<InputParameter>
+    fn get_input_types<T>(types: impl IntoIterator<Item = T>) -> IndexSet<Binding>
     where
         T: AsRef<ResolvedType>,
     {
@@ -541,7 +553,7 @@ impl InputParameters {
                         false,
                     )
                 };
-                InputParameter {
+                Binding {
                     ident: format!("s_{i}"),
                     type_: ty_,
                     mutable: mutable_binding,
@@ -551,19 +563,73 @@ impl InputParameters {
     }
 }
 
-/// An input parameter for a function or a method.
+/// A binding attaches a name to an instance of a type.  
+/// We use it to represent the input parameters of a function or a method,
+/// fields of a struct, or a variable binding (e.g. `let mut foo: Foo = ...`).
+///
+/// It can optionally be marked as mutable to allow for mutation of the instance.
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
-pub(crate) struct InputParameter {
+pub(crate) struct Binding {
     /// The binding name.
     ///
     /// E.g. `foo` in `foo: Foo`.
     pub(crate) ident: String,
-    /// The type that should be taken as input.
+    /// The type bound to the name.
     pub(crate) type_: ResolvedType,
     /// Whether the binding should be marked as mutable with `mut`.
     ///
     /// E.g. `mut foo: Foo` vs `foo: Foo`.
     pub(crate) mutable: bool,
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct Bindings(pub(crate) Vec<Binding>);
+
+impl Bindings {
+    /// Produce an expression that has the given type.  
+    ///
+    /// This can either be achieved by referencing an existing binding, or by constructing a new
+    /// one either by immutable reference or by mutable reference.
+    ///
+    /// E.g. if `self` contains `name: Foo`, you get:
+    ///
+    /// - `name` if the caller wants an instance of `Foo`
+    /// - `&name` if the caller wants an instance of `&Foo`
+    /// - `&mut name` if the caller wants an instance of `&mut Foo`
+    ///
+    /// In the last case, the binding is automatically marked as mutable.
+    pub(crate) fn get_expr_for_type(&mut self, type_: &ResolvedType) -> Option<syn::Expr> {
+        let binding = self.0.iter().find(|binding| binding.type_ == *type_);
+        if let Some(binding) = binding {
+            let ident: syn::Expr = syn::parse_str(&binding.ident).unwrap();
+            let block = quote! { #ident };
+            return Some(syn::parse2(block).unwrap());
+        }
+
+        // No exact match.
+        // But if they want a reference, perhaps we can borrow something.
+        let ResolvedType::Reference(ref_) = type_ else {
+            return None;
+        };
+        let binding = self
+            .0
+            .iter_mut()
+            .find(|binding| ref_.inner.as_ref() == &binding.type_)?;
+        let mut_ = if ref_.is_mutable {
+            binding.mutable = true;
+            Some(quote! { mut })
+        } else {
+            None
+        };
+        let ident: syn::Expr = syn::parse_str(&binding.ident).unwrap();
+        let block = quote! { &#mut_ #ident };
+        Some(syn::parse2(block).unwrap())
+    }
+
+    /// Return the first binding with a given type.
+    pub(crate) fn find_exact_by_type(&self, type_: &ResolvedType) -> Option<&Binding> {
+        self.0.iter().find(|binding| binding.type_ == *type_)
+    }
 }
 
 /// Extract the set of request-scoped and singleton components that are used as inputs

@@ -3,11 +3,12 @@ use guppy::PackageId;
 use indexmap::{IndexMap, IndexSet};
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote, ToTokens};
-use syn::ItemFn;
+use syn::{ItemFn, Token};
 
 use crate::compiler::analyses::components::{ComponentDb, HydratedComponent};
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::framework_items::FrameworkItemDb;
+use crate::compiler::analyses::processing_pipeline::pipeline::Binding;
 use crate::compiler::analyses::processing_pipeline::RequestHandlerPipeline;
 use crate::language::{GenericArgument, GenericLifetimeParameter, ResolvedType};
 
@@ -57,14 +58,21 @@ impl RequestHandlerPipeline {
 
         let mut stage_fns = vec![];
         for stage in &self.stages {
-            let input_parameters = stage.input_parameters(&self.id2call_graph);
+            let input_parameters =
+                stage.input_parameters(&self.id2call_graph, &component_db.pavex_response);
+            let (mut input_bindings, input_lifetimes) =
+                (input_parameters.bindings, input_parameters.lifetimes);
             let response_ident = format_ident!("response");
+            input_bindings.0.push(Binding {
+                ident: response_ident.to_string(),
+                type_: component_db.pavex_response.clone(),
+                mutable: false,
+            });
 
             let invocations = {
                 let mut invocations = vec![];
                 let ids = std::iter::once(stage.wrapping_id)
                     .chain(stage.post_processing_ids.iter().copied());
-                let input_parameters = stage.input_parameters(&self.id2call_graph);
                 for id in ids {
                     let fn_ = &id2codegened_fn[&id].fn_;
                     let input_parameters =
@@ -72,14 +80,9 @@ impl RequestHandlerPipeline {
                             .input_parameters
                             .iter()
                             .map(|input_type| {
-                                let variable_name = input_parameters
-                                    .iter()
-                                    .find(|param| &param.type_ == input_type)
-                                    .unwrap();
-                                let field_name = format_ident!("{}", variable_name.ident);
-                                quote! {
-                                    #field_name
-                                }
+                                input_bindings
+                                    .get_expr_for_type(input_type)
+                                    .expect("Could not find input parameter")
                             });
                     let await_ = fn_.sig.asyncness.and_then(|_| Some(quote! { .await }));
                     let fn_name = &fn_.sig.ident;
@@ -91,6 +94,8 @@ impl RequestHandlerPipeline {
                 }
                 invocations
             };
+            // Remove the response binding from the input bindings, as it's not an input parameter
+            input_bindings.0.pop();
 
             let fn_ = {
                 let asyncness = if std::iter::once(stage.wrapping_id)
@@ -102,17 +107,33 @@ impl RequestHandlerPipeline {
                     None
                 };
                 let fn_name = format_ident!("{}", stage.name);
-                let input_parameters = input_parameters.iter().map(|input| {
-                    let name = format_ident!("{}", input.ident);
+                let visibility = if stage.name == "entrypoint" {
+                    Some(Token![pub](proc_macro2::Span::call_site()))
+                } else {
+                    None
+                };
+                let input_parameters = input_bindings.0.iter().map(|input| {
+                    let bound: syn::Expr = syn::parse_str(&input.ident).unwrap();
                     let ty = input.type_.syn_type(package_id2name);
                     let mut_ = input.mutable.then(|| quote! { mut });
                     quote! {
-                        #mut_ #name: #ty
+                        #mut_ #bound: #ty
                     }
                 });
-                // TODO: add lifetimes to the function signature
+                let generics = input_lifetimes
+                    .iter()
+                    .map(|lifetime| {
+                        syn::Lifetime::new(&format!("{lifetime}"), proc_macro2::Span::call_site())
+                            .to_token_stream()
+                    })
+                    .collect::<Vec<_>>();
+                let generics = if !generics.is_empty() {
+                    Some(quote! { <#(#generics),*> })
+                } else {
+                    None
+                };
                 quote! {
-                    #asyncness fn #fn_name(#(#input_parameters),*) -> #pavex::response::Response {
+                    #visibility #asyncness fn #fn_name #generics(#(#input_parameters),*) -> #pavex::response::Response {
                         #(#invocations)*
                         #response_ident
                     }
@@ -120,7 +141,7 @@ impl RequestHandlerPipeline {
             };
             stage_fns.push(CodegenedFn {
                 fn_: syn::parse2(fn_).unwrap(),
-                input_parameters: input_parameters.iter().map(|i| i.type_.clone()).collect(),
+                input_parameters: input_bindings.0.iter().map(|i| i.type_.clone()).collect(),
             });
         }
 
@@ -129,36 +150,36 @@ impl RequestHandlerPipeline {
             for (i, stage) in self.stages[..self.stages.len() - 1].iter().enumerate() {
                 let next_state = stage.next_state.as_ref().unwrap();
                 let next_stage = &self.stages[i + 1];
-                let input_types: Vec<_> = next_stage
-                    .input_parameters(&self.id2call_graph)
+                let bindings = next_state.field_bindings.clone();
+                let next_input_types: Vec<_> = next_stage
+                    .input_parameters(&self.id2call_graph, &component_db.pavex_response)
                     .iter()
                     .map(|input| {
                         // This is rather subtle: we're using types
                         // as they appear in the field definitions
                         // to make sure that (possible) lifetime parameters
                         // are aligned.
-                        let field = next_state
-                            .field_bindings
-                            .iter()
-                            .find(|(_, ty_)| *ty_ == &input.type_);
-                        let Some((_, ty_)) = field else {
-                            unreachable!();
+                        let Some(binding) = &bindings.find_exact_by_type(&input.type_) else {
+                            panic!("Could not find field name for input type `{:?}` in `Next`'s state, `{:?}`", input.type_, next_state.field_bindings);
                         };
-                        let ty_ = ty_.syn_type(package_id2name);
+                        let ty_ = binding.type_.syn_type(package_id2name);
                         quote! { #ty_ }
                     })
                     .collect();
                 let fields = next_state
                     .field_bindings
+                    .0
                     .iter()
-                    .map(|(name, ty_)| {
-                        let name = format_ident!("{}", name);
-                        let ty_ = ty_.syn_type(package_id2name);
+                    .map(|binding| {
+                        let name = format_ident!("{}", binding.ident);
+                        let ty_ = binding.type_.syn_type(package_id2name);
                         quote! {
                             #name: #ty_
                         }
                     })
-                    .chain(std::iter::once(quote! { next: fn(#(#input_types),*) -> T }));
+                    .chain(std::iter::once(
+                        quote! { next: fn(#(#next_input_types),*) -> T },
+                    ));
 
                 let struct_name = format_ident!("{}", next_state.type_.base_type.last().unwrap());
                 let state_generics: Vec<_> = next_state
@@ -184,33 +205,17 @@ impl RequestHandlerPipeline {
                     }
                 })
                 .unwrap();
+                let field_bindings = &next_state.field_bindings;
                 let inputs: Vec<_> = next_stage
-                    .input_parameters(&self.id2call_graph)
+                    .input_parameters(&self.id2call_graph, &component_db.pavex_response)
                     .iter()
                     .map(|input| {
-                        let field_name = next_state
-                            .field_bindings
-                            .iter()
-                            .find(|(_, ty_)| *ty_ == &input.type_);
-                        if let Some((field_name, _)) = field_name {
-                            let ident = format_ident!("{}", field_name);
-                            quote! {
-                            self.#ident
-                        }
-                        } else if let ResolvedType::Reference(r) = &input.type_ {
-                            let field_name = next_state
-                                .field_bindings
-                                .iter()
-                                .find(|(_, ty_)| *ty_ == r.inner.as_ref())
-                                .unwrap()
-                                .0;
-                            let ident = format_ident!("{}", field_name);
-                            let mut_ = r.is_mutable.then(|| quote! { mut });
-                            quote! {
-                                &#mut_ self.#ident
-                            }
-                        } else {
+                        let Some(binding) = field_bindings.find_exact_by_type(&input.type_) else {
                             panic!("Could not find field name for input type `{:?}` in `Next`'s state, `{:?}`", input, next_state.field_bindings);
+                        };
+                        let ident = format_ident!("{}", binding.ident);
+                        quote! {
+                            self.#ident
                         }
                     })
                     .collect();
@@ -330,7 +335,12 @@ impl CodegenedRequestHandlerPipeline {
                     #field_name
                 }
             } else {
-                let field_name = request_scoped_bindings.get_by_right(inner_type).unwrap();
+                let Some(field_name) = request_scoped_bindings.get_by_right(inner_type) else {
+                    panic!(
+                        "Could not find a binding for input type `{:?}` in the application state or request-scoped bindings",
+                        type_
+                    );
+                };
                 if is_shared_reference {
                     quote! {
                         &#field_name
