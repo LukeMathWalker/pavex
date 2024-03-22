@@ -22,6 +22,9 @@ pub(crate) enum UnregisteredComponent {
     UserPostProcessingMiddleware {
         user_component_id: UserComponentId,
     },
+    UserPreProcessingMiddleware {
+        user_component_id: UserComponentId,
+    },
     SyntheticWrappingMiddleware {
         computation_id: ComputationId,
         scope_id: ScopeId,

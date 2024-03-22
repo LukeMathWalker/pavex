@@ -11,7 +11,7 @@ use crate::compiler::analyses::user_components::{
 };
 use crate::compiler::component::{
     Constructor, ConstructorValidationError, ErrorHandler, ErrorObserver, PostProcessingMiddleware,
-    RequestHandler, WrappingMiddleware,
+    PreProcessingMiddleware, RequestHandler, WrappingMiddleware,
 };
 use crate::compiler::computation::{Computation, MatchResult};
 use crate::compiler::interner::Interner;
@@ -597,11 +597,7 @@ impl ComponentDb {
             .map(|(id, _)| id)
             .collect::<Vec<_>>();
         for user_component_id in wrapping_middleware_ids {
-            let user_component = &self.user_component_db[user_component_id];
             let callable = &computation_db[user_component_id];
-            let UserComponent::WrappingMiddleware { .. } = user_component else {
-                unreachable!()
-            };
             match WrappingMiddleware::new(Cow::Borrowed(callable)) {
                 Err(e) => {
                     Self::invalid_wrapping_middleware(
@@ -628,6 +624,47 @@ impl ComponentDb {
         }
     }
 
+    fn process_pre_processing_middlewares(
+        &mut self,
+        needs_error_handler: &mut IndexSet<UserComponentId>,
+        computation_db: &mut ComputationDb,
+        package_graph: &PackageGraph,
+        krate_collection: &CrateCollection,
+        diagnostics: &mut Vec<miette::Error>,
+    ) {
+        let middleware_ids = self
+            .user_component_db
+            .pre_processing_middlewares()
+            .map(|(id, _)| id)
+            .collect::<Vec<_>>();
+        for user_component_id in middleware_ids {
+            let callable = &computation_db[user_component_id];
+            match PreProcessingMiddleware::new(Cow::Borrowed(callable)) {
+                Err(e) => {
+                    Self::invalid_pre_processing_middleware(
+                        e,
+                        user_component_id,
+                        &self.user_component_db,
+                        computation_db,
+                        krate_collection,
+                        package_graph,
+                        diagnostics,
+                    );
+                }
+                Ok(_) => {
+                    let id = self.get_or_intern(
+                        UnregisteredComponent::UserPreProcessingMiddleware { user_component_id },
+                        computation_db,
+                    );
+                    if self.hydrated_component(id, computation_db).is_fallible() {
+                        // We'll try to match it with an error handler later.
+                        needs_error_handler.insert(user_component_id);
+                    }
+                }
+            }
+        }
+    }
+
     fn process_post_processing_middlewares(
         &mut self,
         needs_error_handler: &mut IndexSet<UserComponentId>,
@@ -642,11 +679,7 @@ impl ComponentDb {
             .map(|(id, _)| id)
             .collect::<Vec<_>>();
         for user_component_id in middleware_ids {
-            let user_component = &self.user_component_db[user_component_id];
             let callable = &computation_db[user_component_id];
-            let UserComponent::PostProcessingMiddleware { .. } = user_component else {
-                unreachable!()
-            };
             match PostProcessingMiddleware::new(Cow::Borrowed(callable), &self.pavex_response) {
                 Err(e) => {
                     Self::invalid_post_processing_middleware(
