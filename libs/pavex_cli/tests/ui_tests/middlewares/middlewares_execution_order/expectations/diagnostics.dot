@@ -63,6 +63,16 @@ digraph "GET /nested - 0" {
 }
 
 digraph "GET /nested - 1" {
+    0 [ label = "app::first_post(&app::Spy, pavex::response::Response) -> pavex::response::Response"]
+    2 [ label = "pavex::response::Response"]
+    3 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    4 [ label = "&app::Spy"]
+    2 -> 0 [ ]
+    0 -> 3 [ ]
+    4 -> 0 [ ]
+}
+
+digraph "GET /nested - 2" {
     0 [ label = "app::second(&app::Spy, pavex::middleware::Next<crate::route_1::Next1<'a>>) -> pavex::response::Response"]
     2 [ label = "pavex::middleware::Next::new(crate::route_1::Next1<'a>) -> pavex::middleware::Next<crate::route_1::Next1<'a>>"]
     3 [ label = "crate::route_1::Next1(&'a app::Spy) -> crate::route_1::Next1<'a>"]
@@ -75,22 +85,12 @@ digraph "GET /nested - 1" {
     5 -> 3 [ ]
 }
 
-digraph "GET /nested - 2" {
+digraph "GET /nested - 3" {
     0 [ label = "app::handler(&app::Spy) -> pavex::response::Response"]
     2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     3 [ label = "&app::Spy"]
     0 -> 2 [ ]
     3 -> 0 [ ]
-}
-
-digraph "GET /nested - 3" {
-    0 [ label = "app::first_post(&app::Spy, pavex::response::Response) -> pavex::response::Response"]
-    2 [ label = "pavex::response::Response"]
-    3 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    4 [ label = "&app::Spy"]
-    2 -> 0 [ ]
-    0 -> 3 [ ]
-    4 -> 0 [ ]
 }
 
 digraph "GET /nested - 4" {

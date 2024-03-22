@@ -171,6 +171,13 @@ pub mod route_1 {
         let v3 = app::first(v0, v2).await;
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
     }
+    pub async fn post_processing_0(
+        v0: pavex::response::Response,
+        v1: &app::Spy,
+    ) -> pavex::response::Response {
+        let v2 = app::first_post(v1, v0).await;
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
+    }
     pub async fn wrapping_1(v0: &app::Spy) -> pavex::response::Response {
         let v1 = crate::route_1::Next1 {
             s_0: v0,
@@ -183,13 +190,6 @@ pub mod route_1 {
     pub async fn handler(v0: &app::Spy) -> pavex::response::Response {
         let v1 = app::handler(v0).await;
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
-    }
-    pub async fn post_processing_0(
-        v0: pavex::response::Response,
-        v1: &app::Spy,
-    ) -> pavex::response::Response {
-        let v2 = app::first_post(v1, v0).await;
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
     }
     pub async fn post_processing_1(
         v0: pavex::response::Response,

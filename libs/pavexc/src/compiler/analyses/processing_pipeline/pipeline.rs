@@ -112,22 +112,6 @@ impl RequestHandlerPipeline {
             stage_names
         };
 
-        // Wrapping middlewares -> request handler -> Post-processing middlewares
-        let ordered_by_invocation: Vec<_> = ordered_by_registration
-            .iter()
-            .filter(|id| {
-                component_db
-                    .hydrated_component(**id, computation_db)
-                    .is_wrapping_middleware()
-            })
-            .chain(std::iter::once(&handler_id))
-            .chain(ordered_by_registration.iter().filter(|id| {
-                component_db
-                    .hydrated_component(**id, computation_db)
-                    .is_post_processing_middleware()
-            }))
-            .collect();
-
         let grouped_by_stage = {
             // Partition middlewares into groups, where each group contains 1 wrapping middleware
             // and all the post-processing middlewares (+handlers) that are invoked after the next
@@ -212,7 +196,6 @@ impl RequestHandlerPipeline {
         //
         // In order to pull this off, we walk the chain in reverse order and accumulate the set of
         // request-scoped and singleton components that are expected as input.
-
         let mut middleware_id2prebuilt_rs_ids: IndexMap<ComponentId, IndexSet<ComponentId>> =
             IndexMap::new();
 
@@ -241,7 +224,12 @@ impl RequestHandlerPipeline {
                     }
                 }
             }
+            middleware_id2prebuilt_rs_ids.insert(*middleware_id, prebuilt_ids.clone());
 
+            // We recompute the call graph for the middleware,
+            // this time with the right set of prebuilt
+            // request-scoped components.
+            // This is necessary because the required long-lived inputs may change based on what's already prebuilt!
             let call_graph = request_scoped_call_graph(
                 *middleware_id,
                 &prebuilt_ids,
@@ -251,20 +239,7 @@ impl RequestHandlerPipeline {
                 constructible_db,
                 diagnostics,
             )?;
-
-            if !component_db
-                .hydrated_component(*middleware_id, computation_db)
-                .is_wrapping_middleware()
-            {
-                extract_long_lived_inputs(
-                    &call_graph.call_graph,
-                    component_db,
-                    &mut state_accumulator,
-                );
-            }
             id2call_graphs.insert(*middleware_id, call_graph);
-
-            middleware_id2prebuilt_rs_ids.insert(*middleware_id, prebuilt_ids.clone());
 
             if component_db
                 .hydrated_component(*middleware_id, computation_db)
@@ -288,6 +263,11 @@ impl RequestHandlerPipeline {
                     }
                 }
             }
+            extract_long_lived_inputs(
+                &id2call_graphs[middleware_id].call_graph,
+                component_db,
+                &mut state_accumulator,
+            );
         }
 
         // Since we now know which request-scoped components are prebuilt for each middleware, we can
@@ -297,8 +277,8 @@ impl RequestHandlerPipeline {
         let mut wrapping_id2next_state = HashMap::new();
         let mut wrapping_id2bound_id = HashMap::new();
         let mut wrapping_id = 0;
-        let mut id2ordered_call_graphs = IndexMap::with_capacity(ordered_by_invocation.len());
-        for &middleware_id in ordered_by_invocation.iter() {
+        let mut id2ordered_call_graphs = IndexMap::with_capacity(grouped_by_stage.len());
+        for middleware_id in grouped_by_stage.iter() {
             let new_middleware_id = if let HydratedComponent::WrappingMiddleware(_) =
                 component_db.hydrated_component(*middleware_id, computation_db)
             {

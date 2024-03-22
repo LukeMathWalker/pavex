@@ -89,6 +89,13 @@ pub mod route_0 {
         let v3 = pavex::middleware::wrap_noop(v2).await;
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
     }
+    pub async fn post_processing_0(
+        v0: pavex::response::Response,
+        v1: app::A,
+    ) -> pavex::response::Response {
+        let v2 = app::post(v0, v1);
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
+    }
     pub async fn wrapping_1(v0: &app::A) -> pavex::response::Response {
         let v1 = crate::route_0::Next1 {
             next: stage_2,
@@ -100,13 +107,6 @@ pub mod route_0 {
     pub async fn handler() -> pavex::response::Response {
         let v0 = app::handler();
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v0)
-    }
-    pub async fn post_processing_0(
-        v0: pavex::response::Response,
-        v1: app::A,
-    ) -> pavex::response::Response {
-        let v2 = app::post(v0, v1);
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
     }
     pub struct Next0<T>
     where
@@ -176,6 +176,13 @@ pub mod route_1 {
         let v4 = pavex::middleware::wrap_noop(v3).await;
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
     }
+    pub async fn post_processing_0(
+        v0: pavex::response::Response,
+        v1: app::A,
+    ) -> pavex::response::Response {
+        let v2 = app::post(v0, v1);
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
+    }
     pub async fn wrapping_1(
         v0: &pavex::router::AllowedMethods,
         v1: &app::A,
@@ -193,13 +200,6 @@ pub mod route_1 {
     ) -> pavex::response::Response {
         let v1 = pavex::router::default_fallback(v0).await;
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
-    }
-    pub async fn post_processing_0(
-        v0: pavex::response::Response,
-        v1: app::A,
-    ) -> pavex::response::Response {
-        let v2 = app::post(v0, v1);
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
     }
     pub struct Next0<'a, T>
     where
