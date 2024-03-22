@@ -6,7 +6,7 @@ use crate::blueprint::error_observer::RegisteredErrorObserver;
 use crate::blueprint::router::RegisteredFallback;
 use pavex_bp_schema::{
     Blueprint as BlueprintSchema, Constructor, Fallback, NestedBlueprint, PostProcessingMiddleware,
-    Route, WrappingMiddleware,
+    PreProcessingMiddleware, Route, WrappingMiddleware,
 };
 use pavex_reflection::Location;
 
@@ -370,8 +370,8 @@ impl Blueprint {
     ///
     /// pub fn api() -> Blueprint {
     ///     let mut bp = Blueprint::new();
-    ///     // Register the wrapping middleware against the blueprint.
-    ///     bp.wrap(f!(crate::response_logger));
+    ///     // Register the post-processing middleware against the blueprint.
+    ///     bp.post_process(f!(crate::response_logger));
     ///     // [...]
     ///     bp
     /// }
@@ -385,6 +385,55 @@ impl Blueprint {
         };
         let component_id = self.push_component(registered);
         RegisteredPostProcessingMiddleware {
+            blueprint: &mut self.schema,
+            component_id,
+        }
+    }
+
+    #[track_caller]
+    /// Register a pre-processing middleware.  
+    ///
+    /// # Guide
+    ///
+    /// Check out the ["Middleware"](https://pavex.dev/docs/guide/middleware)
+    /// section of Pavex's guide for a thorough introduction to middlewares
+    /// in Pavex applications.
+    ///
+    /// # Example: access control
+    ///
+    /// ```rust
+    /// use pavex::{f, blueprint::Blueprint, response::Response};
+    /// use pavex::middleware::Processing;
+    /// use pavex::http::header::USER_AGENT;
+    /// use pavex::request::RequestHead;
+    ///
+    /// /// Reject requests without a `User-Agent` header.
+    /// pub fn reject_anonymous(request_head: &RequestHead) -> Processing
+    /// {
+    ///     if request_head.headers.get(USER_AGENT).is_none() {
+    ///         Processing::Abort(Response::unauthorized())
+    ///     } else {
+    ///         Processing::Continue
+    ///     }
+    /// }
+    ///
+    /// pub fn api() -> Blueprint {
+    ///     let mut bp = Blueprint::new();
+    ///     // Register the pre-processing middleware against the blueprint.
+    ///     bp.pre_process(f!(crate::reject_anonymous));
+    ///     // [...]
+    ///     bp
+    /// }
+    /// ```
+    #[doc(alias = "middleware")]
+    #[doc(alias = "preprocess")]
+    pub fn pre_process(&mut self, callable: RawCallable) -> RegisteredPreProcessingMiddleware {
+        let registered = PreProcessingMiddleware {
+            middleware: raw_callable2registered_callable(callable),
+            error_handler: None,
+        };
+        let component_id = self.push_component(registered);
+        RegisteredPreProcessingMiddleware {
             blueprint: &mut self.schema,
             component_id,
         }

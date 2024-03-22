@@ -45,6 +45,12 @@ impl From<PostProcessingMiddleware> for Component {
     }
 }
 
+impl From<PreProcessingMiddleware> for Component {
+    fn from(m: PreProcessingMiddleware) -> Self {
+        Self::PreProcessingMiddleware(m)
+    }
+}
+
 impl From<Route> for Component {
     fn from(r: Route) -> Self {
         Self::Route(r)
