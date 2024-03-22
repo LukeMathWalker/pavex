@@ -277,10 +277,19 @@ impl RequestHandlerPipeline {
                     request_scoped_id2users.shift_remove(&request_scoped_id);
                     if !build_in_place.contains(&request_scoped_id) {
                         state_accumulator.insert(request_scoped_id);
-                        prebuilt_request_scoped_ids.shift_remove(&request_scoped_id);
                     }
                 } else {
                     prebuilt_request_scoped_ids.insert(request_scoped_id);
+                }
+            }
+
+            if component_db
+                .hydrated_component(*middleware_id, computation_db)
+                .is_wrapping_middleware()
+            {
+                // We'll build them now as part of the state of this wrapping middleware.
+                for state_id in &state_accumulator {
+                    prebuilt_request_scoped_ids.shift_remove(state_id);
                 }
             }
 
