@@ -4,6 +4,7 @@ use ahash::{HashMap, HashMapExt};
 use guppy::graph::PackageGraph;
 use guppy::PackageId;
 use indexmap::{IndexMap, IndexSet};
+use itertools::Itertools;
 use quote::quote;
 
 use pavex_bp_schema::{CloningStrategy, Lifecycle};
@@ -222,12 +223,13 @@ impl RequestHandlerPipeline {
             let call_graph = &id2call_graphs[middleware_id];
 
             let mut prebuilt_ids = IndexSet::new();
-            for request_scoped_id in
+            let required_scope_ids =
                 extract_request_scoped_compute_nodes(&call_graph.call_graph, component_db)
-            {
+                    .collect_vec();
+            for &request_scoped_id in &required_scope_ids {
                 let users = &request_scoped_id2users[&request_scoped_id];
                 let n_users = users.len();
-                if users.first().unwrap() != middleware_id {
+                if &users[0] != middleware_id {
                     prebuilt_ids.insert(request_scoped_id);
                 } else {
                     if n_users > 1
@@ -270,8 +272,21 @@ impl RequestHandlerPipeline {
             {
                 wrapping_id2next_field_types.insert(
                     *middleware_id,
-                    InputParameters::from_iter(std::mem::take(&mut state_accumulator).iter()),
+                    InputParameters::from_iter(state_accumulator.iter()),
                 );
+
+                // We are done with these components, no one needs them upstream.
+                for request_scoped_id in required_scope_ids {
+                    let users = &request_scoped_id2users[&request_scoped_id];
+                    if &users[0] == middleware_id {
+                        state_accumulator.shift_remove(
+                            component_db
+                                .hydrated_component(request_scoped_id, computation_db)
+                                .output_type()
+                                .unwrap(),
+                        );
+                    }
+                }
             }
         }
 
