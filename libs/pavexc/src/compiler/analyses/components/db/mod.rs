@@ -751,6 +751,7 @@ impl ComponentDb {
                     | RequestHandler { .. }
                     | Constructor { .. }
                     | PostProcessingMiddleware { .. }
+                    | PreProcessingMiddleware { .. }
                     | WrappingMiddleware { .. } => None,
                 }
             })

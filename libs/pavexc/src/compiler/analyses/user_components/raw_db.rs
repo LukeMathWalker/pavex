@@ -6,7 +6,7 @@ use std::collections::BTreeMap;
 use pavex_bp_schema::{
     Blueprint, Callable, CloningStrategy, Component, Constructor, ErrorObserver, Fallback,
     Lifecycle, Lint, LintSetting, Location, NestedBlueprint, PostProcessingMiddleware,
-    RawCallableIdentifiers, RegisteredAt, Route, WrappingMiddleware,
+    PreProcessingMiddleware, RawCallableIdentifiers, RegisteredAt, Route, WrappingMiddleware,
 };
 
 use crate::compiler::analyses::user_components::router_key::RouterKey;
@@ -51,6 +51,10 @@ pub enum UserComponent {
         raw_callable_identifiers_id: RawCallableIdentifierId,
         scope_id: ScopeId,
     },
+    PreProcessingMiddleware {
+        raw_callable_identifiers_id: RawCallableIdentifierId,
+        scope_id: ScopeId,
+    },
     ErrorObserver {
         raw_callable_identifiers_id: RawCallableIdentifierId,
         scope_id: ScopeId,
@@ -72,6 +76,7 @@ impl UserComponent {
             UserComponent::PostProcessingMiddleware { .. } => {
                 CallableType::PostProcessingMiddleware
             }
+            UserComponent::PreProcessingMiddleware { .. } => CallableType::PreProcessingMiddleware,
         }
     }
 
@@ -80,6 +85,10 @@ impl UserComponent {
     pub fn raw_callable_identifiers_id(&self) -> RawCallableIdentifierId {
         match self {
             UserComponent::PostProcessingMiddleware {
+                raw_callable_identifiers_id,
+                ..
+            }
+            | UserComponent::PreProcessingMiddleware {
                 raw_callable_identifiers_id,
                 ..
             }
@@ -119,6 +128,7 @@ impl UserComponent {
             | UserComponent::ErrorHandler { scope_id, .. }
             | UserComponent::WrappingMiddleware { scope_id, .. }
             | UserComponent::PostProcessingMiddleware { scope_id, .. }
+            | UserComponent::PreProcessingMiddleware { scope_id, .. }
             | UserComponent::Constructor { scope_id, .. } => *scope_id,
         }
     }
@@ -319,8 +329,19 @@ impl RawUserComponentDb {
                 Component::WrappingMiddleware(w) => {
                     self.process_middleware(&w, current_scope_id, &mut current_middleware_chain);
                 }
+                Component::PreProcessingMiddleware(p) => {
+                    self.process_pre_processing_middleware(
+                        &p,
+                        current_scope_id,
+                        &mut current_middleware_chain,
+                    );
+                }
                 Component::PostProcessingMiddleware(p) => {
-                    self.process_pp_middleware(&p, current_scope_id, &mut current_middleware_chain);
+                    self.process_post_processing_middleware(
+                        &p,
+                        current_scope_id,
+                        &mut current_middleware_chain,
+                    );
                 }
                 Component::Route(r) => self.process_route(
                     &r,
@@ -527,10 +548,43 @@ impl RawUserComponentDb {
         );
     }
 
+    /// Register with [`RawUserComponentDb`] a pre-processing middleware that has been
+    /// registered against the provided `Blueprint`, including its error handler
+    /// (if present).
+    fn process_pre_processing_middleware(
+        &mut self,
+        middleware: &PreProcessingMiddleware,
+        current_scope_id: ScopeId,
+        current_middleware_chain: &mut Vec<UserComponentId>,
+    ) {
+        const MIDDLEWARE_LIFECYCLE: Lifecycle = Lifecycle::RequestScoped;
+
+        let raw_callable_identifiers_id = self
+            .identifiers_interner
+            .get_or_intern(middleware.middleware.callable.clone());
+        let component = UserComponent::PreProcessingMiddleware {
+            raw_callable_identifiers_id,
+            scope_id: current_scope_id,
+        };
+        let component_id = self.intern_component(
+            component,
+            MIDDLEWARE_LIFECYCLE,
+            middleware.middleware.location.clone(),
+        );
+        current_middleware_chain.push(component_id);
+
+        self.process_error_handler(
+            &middleware.error_handler,
+            MIDDLEWARE_LIFECYCLE,
+            current_scope_id,
+            component_id,
+        );
+    }
+
     /// Register with [`RawUserComponentDb`] a post-processing middleware that has been
     /// registered against the provided `Blueprint`, including its error handler
     /// (if present).
-    fn process_pp_middleware(
+    fn process_post_processing_middleware(
         &mut self,
         middleware: &PostProcessingMiddleware,
         current_scope_id: ScopeId,
@@ -736,6 +790,7 @@ impl RawUserComponentDb {
                 UserComponent::ErrorHandler { .. }
                 | UserComponent::WrappingMiddleware { .. }
                 | UserComponent::PostProcessingMiddleware { .. }
+                | UserComponent::PreProcessingMiddleware { .. }
                 | UserComponent::ErrorObserver { .. } => {}
             }
         }

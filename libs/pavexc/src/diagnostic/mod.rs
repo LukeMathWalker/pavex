@@ -32,6 +32,7 @@ pub enum CallableType {
     ErrorHandler,
     WrappingMiddleware,
     PostProcessingMiddleware,
+    PreProcessingMiddleware,
     ErrorObserver,
 }
 
@@ -43,6 +44,7 @@ impl Display for CallableType {
             CallableType::ErrorHandler => "error handler",
             CallableType::WrappingMiddleware => "wrapping middleware",
             CallableType::PostProcessingMiddleware => "post-processing middleware",
+            CallableType::PreProcessingMiddleware => "pre-processing middleware",
             CallableType::ErrorObserver => "error observer",
         };
         write!(f, "{s}")
