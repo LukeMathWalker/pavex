@@ -96,8 +96,24 @@ impl<'a> HydratedComponent<'a> {
         }
     }
 
+    pub(crate) fn is_request_handler(&self) -> bool {
+        if let HydratedComponent::RequestHandler(_) = self {
+            true
+        } else {
+            false
+        }
+    }
+
     pub(crate) fn is_post_processing_middleware(&self) -> bool {
         if let HydratedComponent::PostProcessingMiddleware(_) = self {
+            true
+        } else {
+            false
+        }
+    }
+
+    pub(crate) fn is_pre_processing_middleware(&self) -> bool {
+        if let HydratedComponent::PreProcessingMiddleware(_) = self {
             true
         } else {
             false

@@ -32,6 +32,8 @@ where
 /// # Constraints
 ///
 /// `T` must implement [`IntoResponse`].
+///
+/// [`Blueprint::pre_process`]: crate::blueprint::Blueprint::pre_process
 pub enum Processing<T = Response> {
     Continue,
     Abort(T),

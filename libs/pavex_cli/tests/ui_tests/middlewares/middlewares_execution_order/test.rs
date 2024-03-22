@@ -43,6 +43,8 @@ async fn top_level_mw_execute_in_order() {
         vec![
             "first - start",
             "second - start",
+            "first_pre",
+            "second_pre",
             "handler",
             "first_post",
             "second_post",
@@ -66,7 +68,13 @@ async fn mw_registered_after_handler_does_not_wrap_handler() {
     let state = state.get().await;
     assert_eq!(
         state,
-        vec!["first - start", "handler", "first_post", "first - end"]
+        vec![
+            "first - start",
+            "first_pre",
+            "handler",
+            "first_post",
+            "first - end"
+        ]
     );
 }
 
@@ -86,7 +94,9 @@ async fn order_is_preserved_with_nesting() {
         state,
         vec![
             "first - start",
+            "first_pre",
             "second - start",
+            "second_pre",
             "handler",
             "second_post",
             "second - end",

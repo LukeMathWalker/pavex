@@ -153,14 +153,19 @@ pub mod route_1 {
         response
     }
     async fn stage_1<'a>(s_0: &'a app::Spy) -> pavex::response::Response {
+        let response = pre_processing_0(s_0).await;
         let response = wrapping_1(s_0).await;
         let response = post_processing_0(response, s_0).await;
         response
     }
     async fn stage_2<'a>(s_0: &'a app::Spy) -> pavex::response::Response {
+        let response = pre_processing_1(s_0).await;
         let response = handler(s_0).await;
         let response = post_processing_1(response, s_0).await;
         response
+    }
+    pub async fn pre_processing_0(v0: &app::Spy) -> pavex::middleware::Processing {
+        app::first_pre(v0).await
     }
     pub async fn wrapping_0(v0: &app::Spy) -> pavex::response::Response {
         let v1 = crate::route_1::Next0 {
@@ -177,6 +182,9 @@ pub mod route_1 {
     ) -> pavex::response::Response {
         let v2 = app::first_post(v1, v0).await;
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
+    }
+    pub async fn pre_processing_1(v0: &app::Spy) -> pavex::middleware::Processing {
+        app::second_pre(v0).await
     }
     pub async fn wrapping_1(v0: &app::Spy) -> pavex::response::Response {
         let v1 = crate::route_1::Next1 {
@@ -239,9 +247,13 @@ pub mod route_2 {
         response
     }
     async fn stage_1<'a>(s_0: &'a app::Spy) -> pavex::response::Response {
+        let response = pre_processing_0(s_0).await;
         let response = handler(s_0).await;
         let response = post_processing_0(response, s_0).await;
         response
+    }
+    pub async fn pre_processing_0(v0: &app::Spy) -> pavex::middleware::Processing {
+        app::first_pre(v0).await
     }
     pub async fn wrapping_0(v0: &app::Spy) -> pavex::response::Response {
         let v1 = crate::route_2::Next0 {
@@ -291,6 +303,8 @@ pub mod route_3 {
         response
     }
     async fn stage_2<'a>(s_0: &'a app::Spy) -> pavex::response::Response {
+        let response = pre_processing_0(s_0).await;
+        let response = pre_processing_1(s_0).await;
         let response = handler(s_0).await;
         let response = post_processing_0(response, s_0).await;
         let response = post_processing_1(response, s_0).await;
@@ -304,6 +318,12 @@ pub mod route_3 {
         let v2 = pavex::middleware::Next::new(v1);
         let v3 = app::first(v0, v2).await;
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
+    }
+    pub async fn pre_processing_0(v0: &app::Spy) -> pavex::middleware::Processing {
+        app::first_pre(v0).await
+    }
+    pub async fn pre_processing_1(v0: &app::Spy) -> pavex::middleware::Processing {
+        app::second_pre(v0).await
     }
     pub async fn wrapping_1(v0: &app::Spy) -> pavex::response::Response {
         let v1 = crate::route_3::Next1 {

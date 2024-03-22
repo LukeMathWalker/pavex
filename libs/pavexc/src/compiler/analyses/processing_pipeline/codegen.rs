@@ -23,6 +23,7 @@ impl RequestHandlerPipeline {
         let id2codegened_fn = {
             let mut id2codegened_fn = IndexMap::new();
             let mut wrapping_index = 0u32;
+            let mut pre_processing_index = 0u32;
             let mut post_processing_index = 0u32;
             for (&id, call_graph) in self.id2call_graph.iter() {
                 let ident = match component_db.hydrated_component(id, computation_db) {
@@ -34,6 +35,11 @@ impl RequestHandlerPipeline {
                     HydratedComponent::PostProcessingMiddleware(_) => {
                         let ident = format_ident!("post_processing_{}", post_processing_index);
                         post_processing_index += 1;
+                        ident
+                    }
+                    HydratedComponent::PreProcessingMiddleware(_) => {
+                        let ident = format_ident!("pre_processing_{}", pre_processing_index);
+                        pre_processing_index += 1;
                         ident
                     }
                     HydratedComponent::RequestHandler(_) => format_ident!("handler"),
@@ -70,7 +76,11 @@ impl RequestHandlerPipeline {
 
             let invocations = {
                 let mut invocations = vec![];
-                let ids = std::iter::once(stage.wrapping_id)
+                let ids = stage
+                    .pre_processing_ids
+                    .iter()
+                    .copied()
+                    .chain(std::iter::once(stage.wrapping_id))
                     .chain(stage.post_processing_ids.iter().copied());
                 for id in ids {
                     let fn_ = &id2codegened_fn[&id].fn_;
@@ -104,7 +114,11 @@ impl RequestHandlerPipeline {
             input_bindings.0.pop();
 
             let fn_ = {
-                let asyncness = if std::iter::once(stage.wrapping_id)
+                let asyncness = if stage
+                    .pre_processing_ids
+                    .iter()
+                    .copied()
+                    .chain(std::iter::once(stage.wrapping_id))
                     .chain(stage.post_processing_ids.iter().copied())
                     .any(|id| id2codegened_fn[&id].fn_.sig.asyncness.is_some())
                 {
