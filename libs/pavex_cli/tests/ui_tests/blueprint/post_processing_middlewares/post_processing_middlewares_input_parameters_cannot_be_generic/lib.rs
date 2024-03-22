@@ -1,5 +1,3 @@
-use std::future::IntoFuture;
-
 use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
 use pavex::f;
 use pavex::middleware::Next;
@@ -7,14 +5,11 @@ use pavex::response::Response;
 
 pub struct GenericType<V>(V);
 
-pub fn generic_wrapping_middleware<T>(
-    _response: Response,
-    generic_input: GenericType<T>,
-) -> Response {
+pub fn generic<T>(_response: Response, generic_input: GenericType<T>) -> Response {
     todo!()
 }
 
-pub fn doubly_generic_wrapping_middleware<T, S>(
+pub fn doubly_generic<T, S>(
     _response: Response,
     i1: GenericType<T>,
     i2: GenericType<S>,
@@ -22,7 +17,7 @@ pub fn doubly_generic_wrapping_middleware<T, S>(
     todo!()
 }
 
-pub fn triply_generic_wrapping_middleware<T, S, U>(
+pub fn triply_generic<T, S, U>(
     _response: Response,
     i1: GenericType<T>,
     i2: GenericType<S>,
@@ -37,9 +32,9 @@ pub fn handler() -> pavex::response::Response {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.post_process(f!(crate::generic_wrapping_middleware));
-    bp.post_process(f!(crate::doubly_generic_wrapping_middleware));
-    bp.post_process(f!(crate::triply_generic_wrapping_middleware));
+    bp.post_process(f!(crate::generic));
+    bp.post_process(f!(crate::doubly_generic));
+    bp.post_process(f!(crate::triply_generic));
     bp.route(GET, "/home", f!(crate::handler));
     bp
 }
