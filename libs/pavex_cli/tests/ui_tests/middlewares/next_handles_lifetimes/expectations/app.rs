@@ -41,7 +41,7 @@ async fn route_request(
                     vec![],
                 )
                 .into();
-            return route_1::middleware_0(&allowed_methods).await;
+            return route_1::entrypoint(&allowed_methods).await;
         }
     };
     let route_id = matched_route.value;
@@ -52,13 +52,13 @@ async fn route_request(
     match route_id {
         0u32 => {
             match &request_head.method {
-                &pavex::http::Method::GET => route_0::middleware_0().await,
+                &pavex::http::Method::GET => route_0::entrypoint().await,
                 _ => {
                     let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
                             pavex::http::Method::GET,
                         ])
                         .into();
-                    route_1::middleware_0(&allowed_methods).await
+                    route_1::entrypoint(&allowed_methods).await
                 }
             }
         }
@@ -66,14 +66,25 @@ async fn route_request(
     }
 }
 pub mod route_0 {
-    pub async fn middleware_0() -> pavex::response::Response {
+    pub async fn entrypoint() -> pavex::response::Response {
+        let response = wrapping_0().await;
+        response
+    }
+    async fn stage_1<'a, 'b>(
+        s_0: &'a app::C,
+        s_1: &'b app::A,
+    ) -> pavex::response::Response {
+        let response = handler(s_0, s_1).await;
+        response
+    }
+    pub async fn wrapping_0() -> pavex::response::Response {
         let v0 = app::c();
         let v1 = app::a();
         let v2 = app::b(&v1, &v0);
         let v3 = crate::route_0::Next0 {
             s_0: &v0,
             s_1: &v1,
-            next: handler,
+            next: stage_1,
         };
         let v4 = pavex::middleware::Next::new(v3);
         let v5 = app::mw(v4, v2);
@@ -103,7 +114,19 @@ pub mod route_0 {
     }
 }
 pub mod route_1 {
-    pub async fn middleware_0(
+    pub async fn entrypoint<'a>(
+        s_0: &'a pavex::router::AllowedMethods,
+    ) -> pavex::response::Response {
+        let response = wrapping_0(s_0).await;
+        response
+    }
+    async fn stage_1<'a>(
+        s_0: &'a pavex::router::AllowedMethods,
+    ) -> pavex::response::Response {
+        let response = handler(s_0).await;
+        response
+    }
+    pub async fn wrapping_0(
         v0: &pavex::router::AllowedMethods,
     ) -> pavex::response::Response {
         let v1 = app::c();
@@ -111,7 +134,7 @@ pub mod route_1 {
         let v3 = app::b(&v2, &v1);
         let v4 = crate::route_1::Next0 {
             s_0: v0,
-            next: handler,
+            next: stage_1,
         };
         let v5 = pavex::middleware::Next::new(v4);
         let v6 = app::mw(v5, v3);

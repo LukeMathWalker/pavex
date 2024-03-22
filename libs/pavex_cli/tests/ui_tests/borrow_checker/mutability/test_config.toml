@@ -1,0 +1,5 @@
+description = """Paves should detect when a graph can't satisfy the constraints of the borrow-checker
+due to a type that holds an immutable reference to a type that is also being borrowed mutably."""
+
+[expectations]
+codegen = "fail"

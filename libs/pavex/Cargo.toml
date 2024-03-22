@@ -65,3 +65,4 @@ insta = "1.29.0"
 tracing = "0.1"
 reqwest = "0.11"
 itertools = "0.12"
+pavex_tracing = { path = "../pavex_tracing" }

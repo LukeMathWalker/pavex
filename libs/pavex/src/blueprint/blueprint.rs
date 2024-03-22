@@ -5,12 +5,13 @@ use crate::blueprint::conversions::{
 use crate::blueprint::error_observer::RegisteredErrorObserver;
 use crate::blueprint::router::RegisteredFallback;
 use pavex_bp_schema::{
-    Blueprint as BlueprintSchema, Constructor, Fallback, NestedBlueprint, Route, WrappingMiddleware,
+    Blueprint as BlueprintSchema, Constructor, Fallback, NestedBlueprint, PostProcessingMiddleware,
+    Route, WrappingMiddleware,
 };
 use pavex_reflection::Location;
 
 use super::constructor::{Lifecycle, RegisteredConstructor};
-use super::middleware::RegisteredWrappingMiddleware;
+use super::middleware::{RegisteredPostProcessingMiddleware, RegisteredWrappingMiddleware};
 use super::reflection::RawCallable;
 use super::router::{MethodGuard, RegisteredRoute};
 
@@ -332,6 +333,70 @@ impl Blueprint {
         };
         let component_id = self.push_component(mw);
         RegisteredWrappingMiddleware {
+            component_id,
+            blueprint: &mut self.schema,
+        }
+    }
+
+    #[track_caller]
+    /// Register a post-processing middleware.  
+    ///
+    /// # Guide
+    ///
+    /// Check out the ["Middleware"](https://pavex.dev/docs/guide/middleware)
+    /// section of Pavex's guide for a thorough introduction to middlewares
+    /// in Pavex applications.
+    ///
+    /// # Example: a logging middleware
+    ///
+    /// ```rust
+    /// use pavex::{f, blueprint::Blueprint, response::Response};
+    /// use pavex_tracing::{
+    ///     RootSpan,
+    ///     fields::{http_response_status_code, HTTP_RESPONSE_STATUS_CODE}
+    /// };
+    ///
+    /// pub fn response_logger(response: Response, root_span: &RootSpan) -> Response
+    /// {
+    ///     root_span.record(
+    ///         HTTP_RESPONSE_STATUS_CODE,
+    ///         http_response_status_code(&response),
+    ///     );
+    ///     response
+    /// }
+    ///
+    /// pub fn api() -> Blueprint {
+    ///     let mut bp = Blueprint::new();
+    ///     // Register the wrapping middleware against the blueprint.
+    ///     bp.wrap(f!(crate::response_logger));
+    ///     // [...]
+    ///     bp
+    /// }
+    /// ```
+    #[doc(alias = "middleware")]
+    #[doc(alias = "postprocess")]
+    pub fn post_process(&mut self, callable: RawCallable) -> RegisteredPostProcessingMiddleware {
+        let registered = PostProcessingMiddleware {
+            middleware: raw_callable2registered_callable(callable),
+            error_handler: None,
+        };
+        let component_id = self.push_component(registered);
+        RegisteredPostProcessingMiddleware {
+            blueprint: &mut self.schema,
+            component_id,
+        }
+    }
+
+    pub(super) fn register_post_processing_middleware(
+        &mut self,
+        mw: super::middleware::PostProcessingMiddleware,
+    ) -> RegisteredPostProcessingMiddleware {
+        let mw = PostProcessingMiddleware {
+            middleware: mw.callable,
+            error_handler: mw.error_handler,
+        };
+        let component_id = self.push_component(mw);
+        RegisteredPostProcessingMiddleware {
             component_id,
             blueprint: &mut self.schema,
         }

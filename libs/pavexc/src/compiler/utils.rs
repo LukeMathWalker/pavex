@@ -70,6 +70,7 @@ pub(crate) fn process_framework_callable_path(
 }
 
 /// A generator of unique lifetime names.
+#[derive(Debug, Clone)]
 pub struct LifetimeGenerator {
     next: usize,
 }

@@ -1,0 +1,4 @@
+description = "Pavex lets you inject mutable references into request handlers"
+
+[expectations]
+codegen = "pass"

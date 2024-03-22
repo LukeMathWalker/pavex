@@ -1,4 +1,18 @@
 digraph "GET /home - 0" {
+    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_0::Next0>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_0::Next0) -> pavex::middleware::Next<crate::route_0::Next0>"]
+    2 [ label = "crate::route_0::Next0(app::HttpClient, pavex::request::RequestHead) -> crate::route_0::Next0"]
+    3 [ label = "app::HttpClient"]
+    4 [ label = "pavex::request::RequestHead"]
+    5 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    4 -> 2 [ ]
+    3 -> 2 [ ]
+    0 -> 5 [ ]
+}
+
+digraph "GET /home - 1" {
     0 [ label = "app::stream_file(std::path::PathBuf, app::Logger, app::HttpClient) -> pavex::response::Response"]
     1 [ label = "core::prelude::rust_2015::Result<std::path::PathBuf, app::ExtractPathError<alloc::string::String>> -> std::path::PathBuf"]
     2 [ label = "app::logger() -> app::Logger"]
@@ -25,6 +39,18 @@ digraph "GET /home - 0" {
 }
 
 digraph "* /home - 0" {
+    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_1::Next0<'a>>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_1::Next0<'a>) -> pavex::middleware::Next<crate::route_1::Next0<'a>>"]
+    2 [ label = "crate::route_1::Next0(&'a pavex::router::AllowedMethods) -> crate::route_1::Next0<'a>"]
+    4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    5 [ label = "&pavex::router::AllowedMethods"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 4 [ ]
+    5 -> 2 [ ]
+}
+
+digraph "* /home - 1" {
     0 [ label = "pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
     2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     3 [ label = "&pavex::router::AllowedMethods"]

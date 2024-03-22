@@ -10,8 +10,8 @@ use crate::compiler::analyses::user_components::{
     ScopeGraph, ScopeId, UserComponent, UserComponentDb, UserComponentId,
 };
 use crate::compiler::component::{
-    Constructor, ConstructorValidationError, ErrorHandler, ErrorObserver, RequestHandler,
-    WrappingMiddleware,
+    Constructor, ConstructorValidationError, ErrorHandler, ErrorObserver, PostProcessingMiddleware,
+    RequestHandler, WrappingMiddleware,
 };
 use crate::compiler::computation::{Computation, MatchResult};
 use crate::compiler::interner::Interner;
@@ -91,6 +91,10 @@ pub(crate) struct ComponentDb {
     /// It's memoised here to avoid re-resolving it multiple times while analysing a single
     /// blueprint.
     pub(crate) pavex_error: ResolvedType,
+    /// The resolved type for `pavex::Response`.
+    /// It's memoised here to avoid re-resolving it multiple times while analysing a single
+    /// blueprint.
+    pub(crate) pavex_response: ResolvedType,
     /// Users register constructors directly with a blueprint.
     /// From these user-provided constructors, we build **derived** constructors:
     /// - if a constructor is fallible,
@@ -122,14 +126,26 @@ impl ComponentDb {
         krate_collection: &CrateCollection,
         diagnostics: &mut Vec<miette::Error>,
     ) -> ComponentDb {
-        // We only need to resolve this once.
+        // We only need to resolve these once.
         let pavex_error = process_framework_path("pavex::Error", package_graph, krate_collection);
+        let pavex_response =
+            process_framework_path("pavex::response::Response", package_graph, krate_collection);
         let pavex_error_ref = {
             ResolvedType::Reference(TypeReference {
                 lifetime: Lifetime::Elided,
                 inner: Box::new(pavex_error.clone()),
                 is_mutable: false,
             })
+        };
+        let pavex_noop_wrap_id = {
+            let pavex_noop_wrap_callable = process_framework_callable_path(
+                "pavex::middleware::wrap_noop",
+                package_graph,
+                krate_collection,
+            );
+            let pavex_noop_wrap_computation =
+                Computation::Callable(Cow::Owned(pavex_noop_wrap_callable));
+            computation_db.get_or_intern(pavex_noop_wrap_computation)
         };
 
         let mut self_ = Self {
@@ -150,6 +166,7 @@ impl ComponentDb {
             scope_ids_with_observers: vec![],
             autoregister_matchers: false,
             pavex_error,
+            pavex_response,
             derived2user_registered: Default::default(),
             framework_primitive_ids: Default::default(),
         };
@@ -201,8 +218,15 @@ impl ComponentDb {
                 krate_collection,
                 diagnostics,
             );
+            self_.process_post_processing_middlewares(
+                &mut needs_error_handler,
+                computation_db,
+                package_graph,
+                krate_collection,
+                diagnostics,
+            );
 
-            self_.compute_request2middleware_chain();
+            self_.compute_request2middleware_chain(pavex_noop_wrap_id, computation_db);
             self_.process_error_handlers(
                 &mut needs_error_handler,
                 computation_db,
@@ -389,6 +413,17 @@ impl ComponentDb {
                 } => {
                     self.error_observer_id2error_input_index
                         .insert(id, error_input_index);
+                }
+                SyntheticWrappingMiddleware { derived_from, .. } => {
+                    if let Some(derived_from) = derived_from {
+                        self.derived2user_registered.insert(
+                            id,
+                            self.derived2user_registered
+                                .get(&derived_from)
+                                .cloned()
+                                .unwrap_or(derived_from),
+                        );
+                    }
                 }
                 _ => {}
             }
@@ -593,6 +628,51 @@ impl ComponentDb {
         }
     }
 
+    fn process_post_processing_middlewares(
+        &mut self,
+        needs_error_handler: &mut IndexSet<UserComponentId>,
+        computation_db: &mut ComputationDb,
+        package_graph: &PackageGraph,
+        krate_collection: &CrateCollection,
+        diagnostics: &mut Vec<miette::Error>,
+    ) {
+        let middleware_ids = self
+            .user_component_db
+            .post_processing_middlewares()
+            .map(|(id, _)| id)
+            .collect::<Vec<_>>();
+        for user_component_id in middleware_ids {
+            let user_component = &self.user_component_db[user_component_id];
+            let callable = &computation_db[user_component_id];
+            let UserComponent::PostProcessingMiddleware { .. } = user_component else {
+                unreachable!()
+            };
+            match PostProcessingMiddleware::new(Cow::Borrowed(callable), &self.pavex_response) {
+                Err(e) => {
+                    Self::invalid_post_processing_middleware(
+                        e,
+                        user_component_id,
+                        &self.user_component_db,
+                        computation_db,
+                        krate_collection,
+                        package_graph,
+                        diagnostics,
+                    );
+                }
+                Ok(_) => {
+                    let id = self.get_or_intern(
+                        UnregisteredComponent::UserPostProcessingMiddleware { user_component_id },
+                        computation_db,
+                    );
+                    if self.hydrated_component(id, computation_db).is_fallible() {
+                        // We'll try to match it with an error handler later.
+                        needs_error_handler.insert(user_component_id);
+                    }
+                }
+            }
+        }
+    }
+
     fn process_error_observers(
         &mut self,
         pavex_error_ref: &ResolvedType,
@@ -670,6 +750,7 @@ impl ComponentDb {
                     | Fallback { .. }
                     | RequestHandler { .. }
                     | Constructor { .. }
+                    | PostProcessingMiddleware { .. }
                     | WrappingMiddleware { .. } => None,
                 }
             })
@@ -775,10 +856,21 @@ impl ComponentDb {
     /// Compute the middleware chain for each request handler that was successfully validated.
     /// The middleware chain only includes wrapping middlewares that were successfully validated.
     /// Invalid middlewares are ignored.
-    fn compute_request2middleware_chain(&mut self) {
-        for (request_handler_id, _) in self.user_component_db.request_handlers() {
-            let Some(handler_component_id) =
-                self.user_component_id2component_id.get(&request_handler_id)
+    fn compute_request2middleware_chain(
+        &mut self,
+        pavex_noop_wrap_id: ComputationId,
+        computation_db: &mut ComputationDb,
+    ) {
+        let request_handler_ids = self
+            .user_component_db
+            .request_handlers()
+            .map(|(id, _)| id)
+            .collect::<Vec<_>>();
+        for request_handler_id in request_handler_ids {
+            let Some(handler_component_id) = self
+                .user_component_id2component_id
+                .get(&request_handler_id)
+                .cloned()
             else {
                 continue;
             };
@@ -793,8 +885,46 @@ impl ComponentDb {
                     middleware_chain.push(*middleware_component_id);
                 }
             }
+
+            if let Some(first) = middleware_chain.first().cloned() {
+                let first_middleware = self.hydrated_component(first, computation_db);
+                match first_middleware {
+                    HydratedComponent::WrappingMiddleware(_) => {}
+                    HydratedComponent::PostProcessingMiddleware(_) => {
+                        // We need to add a synthetic wrapping middleware to have a place where to
+                        // "attach" state that needs to be shared between the request handler and the
+                        // post-processing middlewares.
+                        let noop_component_id = self.get_or_intern(
+                            UnregisteredComponent::SyntheticWrappingMiddleware {
+                                computation_id: pavex_noop_wrap_id,
+                                scope_id: self.scope_id(handler_component_id),
+                                derived_from: None,
+                            },
+                            computation_db,
+                        );
+                        middleware_chain.insert(0, noop_component_id);
+                    }
+                    HydratedComponent::RequestHandler(_)
+                    | HydratedComponent::Transformer(_, _)
+                    | HydratedComponent::Constructor(_)
+                    | HydratedComponent::ErrorObserver(_) => {
+                        unreachable!()
+                    }
+                }
+            } else {
+                let noop_component_id = self.get_or_intern(
+                    UnregisteredComponent::SyntheticWrappingMiddleware {
+                        computation_id: pavex_noop_wrap_id,
+                        scope_id: self.scope_id(handler_component_id),
+                        derived_from: None,
+                    },
+                    computation_db,
+                );
+                middleware_chain.insert(0, noop_component_id);
+            }
+
             self.handler_id2middleware_ids
-                .insert(*handler_component_id, middleware_chain);
+                .insert(handler_component_id, middleware_chain);
         }
     }
 
@@ -851,24 +981,21 @@ impl ComponentDb {
                 use crate::compiler::analyses::components::component::Component::*;
 
                 match c {
-                    RequestHandler { user_component_id }
-                    | WrappingMiddleware {
-                        // There are no middlewares with a `ComputationId` source at this stage.
-                        source_id: SourceId::UserComponentId(user_component_id),
-                    } => Some((id, *user_component_id)),
+                    RequestHandler { .. }
+                    | PostProcessingMiddleware { .. }
+                    | WrappingMiddleware { .. } => Some((id, c.source_id())),
                     Transformer { source_id, .. } => {
                         if self.is_error_handler(id) {
-                            if let SourceId::UserComponentId(user_component_id) = source_id {
-                                return Some((id, *user_component_id));
-                            }
+                            Some((id, source_id.clone()))
+                        } else {
+                            None
                         }
-                        None
                     }
-                    Constructor { .. } | WrappingMiddleware { .. } | ErrorObserver { .. } => None,
+                    Constructor { .. } | ErrorObserver { .. } => None,
                 }
             })
             .collect();
-        for (component_id, user_component_id) in iter.into_iter() {
+        for (component_id, source_id) in iter.into_iter() {
             // If the component is fallible, we want to attach the transformer to its Ok matcher.
             let component_id =
                 if let Some((ok_id, _)) = self.fallible_id2match_ids.get(&component_id) {
@@ -876,7 +1003,17 @@ impl ComponentDb {
                 } else {
                     component_id
                 };
-            let callable = &computation_db[user_component_id];
+            let callable = match source_id {
+                SourceId::ComputationId(computation_id, _) => {
+                    let Computation::Callable(callable) = &computation_db[computation_id] else {
+                        continue;
+                    };
+                    callable.clone()
+                }
+                SourceId::UserComponentId(user_component_id) => {
+                    Cow::Borrowed(&computation_db[user_component_id])
+                }
+            };
             let output = callable.output.as_ref().unwrap();
             let output = if output.is_result() {
                 get_ok_variant(output)
@@ -885,14 +1022,16 @@ impl ComponentDb {
             }
             .to_owned();
             if let Err(e) = assert_trait_is_implemented(krate_collection, &output, &into_response) {
-                Self::invalid_response_type(
-                    e,
-                    &output,
-                    user_component_id,
-                    &self.user_component_db,
-                    package_graph,
-                    diagnostics,
-                );
+                if let SourceId::UserComponentId(user_component_id) = source_id {
+                    Self::invalid_response_type(
+                        e,
+                        &output,
+                        user_component_id,
+                        &self.user_component_db,
+                        package_graph,
+                        diagnostics,
+                    );
+                }
                 continue;
             }
             let mut transformer_segments = into_response_path.segments.clone();
@@ -921,14 +1060,16 @@ impl ComponentDb {
                     self.get_or_intern(transformer, computation_db);
                 }
                 Err(e) => {
-                    Self::cannot_handle_into_response_implementation(
-                        e,
-                        &output,
-                        user_component_id,
-                        &self.user_component_db,
-                        package_graph,
-                        diagnostics,
-                    );
+                    if let SourceId::UserComponentId(user_component_id) = source_id {
+                        Self::cannot_handle_into_response_implementation(
+                            e,
+                            &output,
+                            user_component_id,
+                            &self.user_component_db,
+                            package_graph,
+                            diagnostics,
+                        );
+                    }
                 }
             }
         }
@@ -984,6 +1125,7 @@ impl ComponentDb {
         &mut self,
         callable: Cow<'_, Callable>,
         scope_id: ScopeId,
+        derived_from: ComponentId,
         computation_db: &mut ComputationDb,
     ) -> ComponentId {
         let computation = Computation::Callable(callable).into_owned();
@@ -991,6 +1133,7 @@ impl ComponentDb {
         let middleware_component = UnregisteredComponent::SyntheticWrappingMiddleware {
             computation_id,
             scope_id,
+            derived_from: Some(derived_from),
         };
         let middleware_id = self.get_or_intern(middleware_component, computation_db);
         middleware_id
@@ -1110,7 +1253,7 @@ impl ComponentDb {
     /// (e.g. an Ok-matcher is derived from a fallible constructor or
     /// a bound constructor from a generic user-registered one).
     ///
-    /// **It only works for constructors**.
+    /// **It only works for constructors and middlewares**.
     pub fn derived_from(&self, component_id: &ComponentId) -> Option<ComponentId> {
         self.derived2user_registered.get(component_id).cloned()
     }
@@ -1171,12 +1314,18 @@ impl ComponentDb {
             | Component::WrappingMiddleware {
                 source_id: SourceId::UserComponentId(user_component_id),
             }
+            | Component::PostProcessingMiddleware {
+                source_id: SourceId::UserComponentId(user_component_id),
+            }
             | Component::ErrorObserver { user_component_id }
             | Component::RequestHandler { user_component_id } => Some(*user_component_id),
             Component::Constructor {
                 source_id: SourceId::ComputationId(..),
             }
             | Component::WrappingMiddleware {
+                source_id: SourceId::ComputationId(..),
+            }
+            | Component::PostProcessingMiddleware {
                 source_id: SourceId::ComputationId(..),
             }
             | Component::Transformer { .. } => None,
@@ -1196,6 +1345,17 @@ impl ComponentDb {
                     callable: Cow::Borrowed(callable),
                 };
                 HydratedComponent::RequestHandler(request_handler)
+            }
+            Component::PostProcessingMiddleware { source_id } => {
+                let c = match source_id {
+                    SourceId::ComputationId(id, _) => computation_db[*id].clone(),
+                    SourceId::UserComponentId(id) => computation_db[*id].clone().into(),
+                };
+                let Computation::Callable(callable) = c else {
+                    unreachable!()
+                };
+                let pp = PostProcessingMiddleware { callable };
+                HydratedComponent::PostProcessingMiddleware(pp)
             }
             Component::WrappingMiddleware { source_id } => {
                 let c = match source_id {
@@ -1253,6 +1413,7 @@ impl ComponentDb {
             }
             Component::Transformer { source_id, .. }
             | Component::WrappingMiddleware { source_id }
+            | Component::PostProcessingMiddleware { source_id }
             | Component::Constructor { source_id } => match source_id {
                 SourceId::ComputationId(_, scope_id) => *scope_id,
                 SourceId::UserComponentId(id) => self.user_component_db[*id].scope_id(),
@@ -1346,20 +1507,21 @@ impl ComponentDb {
                 .hydrated_component(component_id, computation_db)
                 .into_owned();
             match templated_component {
-                HydratedComponent::WrappingMiddleware(_) => component_id,
+                HydratedComponent::WrappingMiddleware(..) => component_id,
                 // We want to make sure we are binding the root component (i.e. a constructor registered
                 // by the user), not a derived one. If not, we might have resolution issues when computing
                 // the call graph for handlers where these derived components are used.
                 HydratedComponent::Constructor(constructor) => match &constructor.0 {
-                    Computation::FrameworkItem(_) | Computation::Callable(_) => component_id,
-                    Computation::MatchResult(_) => _get_root_component_id(
+                    Computation::FrameworkItem(..) | Computation::Callable(..) => component_id,
+                    Computation::MatchResult(..) => _get_root_component_id(
                         component_db.fallible_id(component_id),
                         component_db,
                         computation_db,
                     ),
                 },
-                HydratedComponent::RequestHandler(_)
-                | HydratedComponent::ErrorObserver(_)
+                HydratedComponent::RequestHandler(..)
+                | HydratedComponent::PostProcessingMiddleware(..)
+                | HydratedComponent::ErrorObserver(..)
                 | HydratedComponent::Transformer(..) => {
                     todo!()
                 }
@@ -1395,11 +1557,13 @@ impl ComponentDb {
                 self.get_or_intern_wrapping_middleware(
                     Cow::Owned(bound_callable),
                     self.scope_id(unbound_root_id),
+                    unbound_root_id,
                     computation_db,
                 )
             }
             HydratedComponent::RequestHandler(_)
             | HydratedComponent::ErrorObserver(_)
+            | HydratedComponent::PostProcessingMiddleware(_)
             | HydratedComponent::Transformer(..) => {
                 todo!()
             }
@@ -1452,6 +1616,11 @@ impl ComponentDb {
                     ConsumptionMode::Move => unbound_transformed_output,
                     ConsumptionMode::SharedBorrow => ResolvedType::Reference(TypeReference {
                         is_mutable: false,
+                        lifetime: Lifetime::Elided,
+                        inner: Box::new(unbound_transformed_output),
+                    }),
+                    ConsumptionMode::ExclusiveBorrow => ResolvedType::Reference(TypeReference {
+                        is_mutable: true,
                         lifetime: Lifetime::Elided,
                         inner: Box::new(unbound_transformed_output),
                     }),

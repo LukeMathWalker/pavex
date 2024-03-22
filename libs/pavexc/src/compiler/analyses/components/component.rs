@@ -11,6 +11,9 @@ pub(crate) enum Component {
     WrappingMiddleware {
         source_id: SourceId,
     },
+    PostProcessingMiddleware {
+        source_id: SourceId,
+    },
     ErrorObserver {
         user_component_id: UserComponentId,
     },
@@ -21,6 +24,20 @@ pub(crate) enum Component {
         source_id: SourceId,
         transformed_component_id: ComponentId,
     },
+}
+
+impl Component {
+    /// Get the source id of this component.
+    pub(crate) fn source_id(&self) -> SourceId {
+        match self {
+            Component::RequestHandler { user_component_id } => user_component_id.clone().into(),
+            Component::WrappingMiddleware { source_id }
+            | Component::PostProcessingMiddleware { source_id }
+            | Component::Constructor { source_id }
+            | Component::Transformer { source_id, .. } => source_id.clone(),
+            Component::ErrorObserver { user_component_id } => user_component_id.clone().into(),
+        }
+    }
 }
 
 /// Additional information about a transformer in [`ComponentDb`].

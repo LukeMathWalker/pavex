@@ -89,8 +89,6 @@ where
     let mut call_graph = RawCallGraph::new();
 
     let component_id2invocations = |component_id: ComponentId| {
-        // We don't expect to invoke this function for response transformers, therefore
-        // it's fine to unwrap here.
         lifecycle2n_allowed_invocations(component_db.lifecycle(component_id))
     };
     let component_id2node = |id: ComponentId| {
@@ -189,6 +187,7 @@ where
                         constructor.input_types().to_vec()
                     }
                     HydratedComponent::RequestHandler(r) => r.input_types().to_vec(),
+                    HydratedComponent::PostProcessingMiddleware(pp) => pp.input_types().to_vec(),
                     HydratedComponent::Transformer(c, info) => {
                         let mut inputs = c.input_types().to_vec();
                         // The component we are transforming must have been added to the graph
@@ -285,12 +284,7 @@ where
                             ),
                             neighbour: Some(VisitorNeighbour::Parent(
                                 node_index,
-                                match transformer_info.transformation_mode {
-                                    ConsumptionMode::Move => CallGraphEdgeMetadata::Move,
-                                    ConsumptionMode::SharedBorrow => {
-                                        CallGraphEdgeMetadata::SharedBorrow
-                                    }
-                                },
+                                transformer_info.transformation_mode.into(),
                             )),
                         });
                     }
@@ -539,6 +533,7 @@ impl CallGraph {
                 &|_, edge| match edge.weight() {
                     CallGraphEdgeMetadata::Move => "".to_string(),
                     CallGraphEdgeMetadata::SharedBorrow => "label = \"&\"".to_string(),
+                    CallGraphEdgeMetadata::ExclusiveBorrow => "label = \"&mut \"".to_string(),
                     CallGraphEdgeMetadata::HappensBefore => "label = \"before\"".to_string(),
                 },
                 &|_, (id, node)| {
@@ -662,7 +657,8 @@ fn inject_match_branching_nodes(
 }
 
 /// If we only need to borrow an input parameter, we refactor the graph to use a `Move` edge
-/// from a reference input type rather than a `SharedBorrow` edge from a non-reference input type.
+/// from a reference input type rather than a `SharedBorrow`/`ExclusiveBorrow`
+/// edge from a non-reference input type.
 ///
 /// This is done in order to generate a closure that asks for a reference instead of an owned
 /// type, therefore avoiding an unnecessary clone for the caller.
@@ -684,12 +680,19 @@ fn take_references_as_inputs_if_they_suffice(
         match input_type {
             ResolvedType::Reference(_) => continue,
             _ => {
-                let is_only_borrowed = call_graph
-                    .edges_directed(node_index, Direction::Outgoing)
-                    .all(|edge| edge.weight() == &CallGraphEdgeMetadata::SharedBorrow);
-                if is_only_borrowed {
+                let mut by_value = false;
+                let mut borrowed_mutably = false;
+                for edge in call_graph.edges_directed(node_index, Direction::Outgoing) {
+                    match edge.weight() {
+                        CallGraphEdgeMetadata::Move => by_value = true,
+                        CallGraphEdgeMetadata::SharedBorrow => {}
+                        CallGraphEdgeMetadata::ExclusiveBorrow => borrowed_mutably = true,
+                        CallGraphEdgeMetadata::HappensBefore => {}
+                    }
+                }
+                if !by_value {
                     let reference_input_type = ResolvedType::Reference(TypeReference {
-                        is_mutable: false,
+                        is_mutable: borrowed_mutably,
                         lifetime: Lifetime::Elided,
                         inner: Box::new(input_type.to_owned()),
                     });
@@ -729,9 +732,12 @@ fn take_references_as_inputs_if_they_suffice(
 pub(crate) enum CallGraphEdgeMetadata {
     /// The output of the source node is consumed by value—e.g. `String` in `fn handler(input: String)`.
     Move,
-    /// The target node requires a shared reference to output type of the source node —e.g. `&MyStruct` in
+    /// The target node requires a shared reference to the output type of the source node —e.g. `&MyStruct` in
     /// `fn handler(input: &MyStruct)`.
     SharedBorrow,
+    /// The target node requires a mutable reference to the output type of the source node —e.g. `&mut MyStruct`
+    /// in `fn handler(input: &mut MyStruct)`.
+    ExclusiveBorrow,
     /// The computation in the source node must be invoked before the computation in the target node.
     HappensBefore,
 }
@@ -741,6 +747,7 @@ impl From<ConsumptionMode> for CallGraphEdgeMetadata {
         match value {
             ConsumptionMode::Move => CallGraphEdgeMetadata::Move,
             ConsumptionMode::SharedBorrow => CallGraphEdgeMetadata::SharedBorrow,
+            ConsumptionMode::ExclusiveBorrow => CallGraphEdgeMetadata::ExclusiveBorrow,
         }
     }
 }
@@ -913,6 +920,7 @@ impl RawCallGraphExt for RawCallGraph {
                 &|_, edge| match edge.weight() {
                     CallGraphEdgeMetadata::Move => "".to_string(),
                     CallGraphEdgeMetadata::SharedBorrow => "label = \"&\"".to_string(),
+                    CallGraphEdgeMetadata::ExclusiveBorrow => "label = \"&mut \"".to_string(),
                     CallGraphEdgeMetadata::HappensBefore =>
                         "label = \"happens before\"".to_string(),
                 },
@@ -965,6 +973,7 @@ impl RawCallGraphExt for RawCallGraph {
                 &|_, edge| match edge.weight() {
                     CallGraphEdgeMetadata::Move => "".to_string(),
                     CallGraphEdgeMetadata::SharedBorrow => "label = \"&\"".to_string(),
+                    CallGraphEdgeMetadata::ExclusiveBorrow => "label = \"&mut \"".to_string(),
                     CallGraphEdgeMetadata::HappensBefore =>
                         "label = \"happens before\"".to_string(),
                 },

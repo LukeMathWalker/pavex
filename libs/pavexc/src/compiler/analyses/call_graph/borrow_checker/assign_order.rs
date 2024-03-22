@@ -4,8 +4,8 @@ use indexmap::IndexSet;
 use petgraph::stable_graph::NodeIndex;
 use petgraph::Direction;
 
-use crate::compiler::analyses::call_graph::borrow_checker::ancestor_consumes_descendant_borrows::ancestor_consumes_descendant_borrows;
 use crate::compiler::analyses::call_graph::borrow_checker::complex::complex_borrow_check;
+use crate::compiler::analyses::call_graph::borrow_checker::move_while_borrowed::move_while_borrowed;
 use crate::compiler::analyses::call_graph::borrow_checker::multiple_consumers::multiple_consumers;
 use crate::compiler::analyses::call_graph::borrow_checker::ownership_relationship::OwnershipRelationships;
 use crate::compiler::analyses::call_graph::{CallGraph, OrderedCallGraph};
@@ -74,7 +74,7 @@ impl OrderedCallGraph {
             krate_collection,
             diagnostics,
         );
-        let call_graph = ancestor_consumes_descendant_borrows(
+        let call_graph = move_while_borrowed(
             call_graph,
             copy_checker,
             component_db,

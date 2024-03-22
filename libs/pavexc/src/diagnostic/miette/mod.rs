@@ -5,12 +5,14 @@ use miette::{LabeledSpan, SourceOffset, SourceSpan};
 pub trait SourceSpanExt {
     fn labeled(self, label_msg: String) -> LabeledSpan;
     fn unlabeled(self) -> LabeledSpan;
+    fn shift(self, offset: usize) -> SourceSpan;
 }
 
 /// Helper methods to reduce boilerplate when working with an optional [`miette::SourceSpan`].  
 pub trait OptionalSourceSpanExt {
     fn labeled(self, label_msg: String) -> Option<LabeledSpan>;
     fn unlabeled(self) -> Option<LabeledSpan>;
+    fn shift(self, offset: usize) -> Option<SourceSpan>;
 }
 
 impl OptionalSourceSpanExt for Option<SourceSpan> {
@@ -21,6 +23,10 @@ impl OptionalSourceSpanExt for Option<SourceSpan> {
     fn unlabeled(self) -> Option<LabeledSpan> {
         self.map(|s| s.unlabeled())
     }
+
+    fn shift(self, offset: usize) -> Option<SourceSpan> {
+        self.map(|s| s.shift(offset))
+    }
 }
 
 impl SourceSpanExt for SourceSpan {
@@ -30,6 +36,10 @@ impl SourceSpanExt for SourceSpan {
 
     fn unlabeled(self) -> LabeledSpan {
         LabeledSpan::new_with_span(None, self)
+    }
+
+    fn shift(self, offset: usize) -> SourceSpan {
+        SourceSpan::new((offset + self.offset()).into(), self.len().into())
     }
 }
 

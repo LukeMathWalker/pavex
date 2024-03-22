@@ -19,6 +19,7 @@ pub struct Blueprint {
 pub enum Component {
     Constructor(Constructor),
     WrappingMiddleware(WrappingMiddleware),
+    PostProcessingMiddleware(PostProcessingMiddleware),
     Route(Route),
     FallbackRequestHandler(Fallback),
     NestedBlueprint(NestedBlueprint),
@@ -34,6 +35,12 @@ impl From<Constructor> for Component {
 impl From<WrappingMiddleware> for Component {
     fn from(m: WrappingMiddleware) -> Self {
         Self::WrappingMiddleware(m)
+    }
+}
+
+impl From<PostProcessingMiddleware> for Component {
+    fn from(m: PostProcessingMiddleware) -> Self {
+        Self::PostProcessingMiddleware(m)
     }
 }
 
@@ -110,6 +117,15 @@ pub struct Constructor {
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 /// A middleware registered against a `Blueprint` via `Blueprint::wrap`.
 pub struct WrappingMiddleware {
+    /// The callable that executes the middleware's logic.
+    pub middleware: Callable,
+    /// The callable in charge of processing errors returned by this middleware, if any.
+    pub error_handler: Option<Callable>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+/// A middleware registered against a `Blueprint` via `Blueprint::post_process`.
+pub struct PostProcessingMiddleware {
     /// The callable that executes the middleware's logic.
     pub middleware: Callable,
     /// The callable in charge of processing errors returned by this middleware, if any.

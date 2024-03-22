@@ -29,9 +29,15 @@ where
     todo!()
 }
 
+pub fn pp_middleware<T>(_response: Response) -> Result<MyCustomOutputType, ErrorType> {
+    todo!()
+}
+
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.wrap(f!(crate::wrapping_middleware))
+        .error_handler(f!(crate::error_handler));
+    bp.post_process(f!(crate::pp_middleware))
         .error_handler(f!(crate::error_handler));
     bp.constructor(f!(crate::request_scoped), Lifecycle::RequestScoped)
         .error_handler(f!(crate::error_handler));

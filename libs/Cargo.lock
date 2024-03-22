@@ -868,7 +868,7 @@ version = "0.1.21"
 dependencies = [
  "anyhow",
  "fs-err",
- "heck 0.5.0-rc.1",
+ "heck 0.5.0",
  "indicatif",
  "liquid",
  "liquid-core",
@@ -1042,9 +1042,9 @@ checksum = "95505c38b4572b2d910cecb0281560f54b440a19336cbbcb27bf6ce6adc6f5a8"
 
 [[package]]
 name = "heck"
-version = "0.5.0-rc.1"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "28eaf72f9d21ee92f580d066b93d05742a4d188e91016b8165dc7a75c0475309"
+checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
 
 [[package]]
 name = "hermit-abi"
@@ -1912,6 +1912,7 @@ dependencies = [
  "pavex_macros",
  "pavex_matchit",
  "pavex_reflection",
+ "pavex_tracing",
  "percent-encoding",
  "persist_if_changed",
  "pin-project-lite",

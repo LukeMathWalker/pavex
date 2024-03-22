@@ -7,5 +7,5 @@
 mod registered;
 mod unregistered;
 
-pub use registered::RegisteredWrappingMiddleware;
-pub use unregistered::WrappingMiddleware;
+pub use registered::{RegisteredPostProcessingMiddleware, RegisteredWrappingMiddleware};
+pub use unregistered::{PostProcessingMiddleware, WrappingMiddleware};
