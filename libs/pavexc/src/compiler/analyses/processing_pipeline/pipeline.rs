@@ -128,44 +128,6 @@ impl RequestHandlerPipeline {
             }))
             .collect();
 
-        // Step 2: For each middleware, build an ordered call graph.
-        // We associate each request-scoped component with the set of middlewares that need it.
-        let mut request_scoped_id2users: IndexMap<ComponentId, IndexSet<ComponentId>> =
-            IndexMap::new();
-        let mut id2call_graphs = HashMap::with_capacity(ordered_by_invocation.len());
-
-        for &middleware_id in ordered_by_invocation.iter() {
-            let call_graph = request_scoped_call_graph(
-                *middleware_id,
-                &IndexSet::new(),
-                &error_observer_ids,
-                computation_db,
-                component_db,
-                constructible_db,
-                diagnostics,
-            )?;
-
-            // Add all request-scoped components initialized by this component to the set.
-            for request_scoped_id in
-                extract_request_scoped_compute_nodes(&call_graph.call_graph, component_db)
-            {
-                request_scoped_id2users
-                    .entry(request_scoped_id)
-                    .or_default()
-                    .insert(*middleware_id);
-            }
-
-            id2call_graphs.insert(*middleware_id, call_graph);
-        }
-
-        // Step 3: Combine the call graphs together.
-        // For each wrapping middleware, determine which request-scoped and singleton components
-        // must actually be passed down through the `Next<_>` parameter to the downstream
-        // stages of the pipeline.
-        //
-        // In order to pull this off, we walk the chain in reverse order and accumulate the set of
-        // request-scoped and singleton components that are expected as input.
-
         let grouped_by_stage = {
             // Partition middlewares into groups, where each group contains 1 wrapping middleware
             // and all the post-processing middlewares (+handlers) that are invoked after the next
@@ -212,6 +174,44 @@ impl RequestHandlerPipeline {
             }
             grouped_by_stage
         };
+
+        // Step 2: For each middleware, build an ordered call graph.
+        // We associate each request-scoped component with the set of middlewares that need it.
+        let mut request_scoped_id2users: IndexMap<ComponentId, IndexSet<ComponentId>> =
+            IndexMap::new();
+        let mut id2call_graphs = HashMap::with_capacity(grouped_by_stage.len());
+
+        for middleware_id in grouped_by_stage.iter() {
+            let call_graph = request_scoped_call_graph(
+                *middleware_id,
+                &IndexSet::new(),
+                &error_observer_ids,
+                computation_db,
+                component_db,
+                constructible_db,
+                diagnostics,
+            )?;
+
+            // Add all request-scoped components initialized by this component to the set.
+            for request_scoped_id in
+                extract_request_scoped_compute_nodes(&call_graph.call_graph, component_db)
+            {
+                request_scoped_id2users
+                    .entry(request_scoped_id)
+                    .or_default()
+                    .insert(*middleware_id);
+            }
+
+            id2call_graphs.insert(*middleware_id, call_graph);
+        }
+
+        // Step 3: Combine the call graphs together.
+        // For each wrapping middleware, determine which request-scoped and singleton components
+        // must actually be passed down through the `Next<_>` parameter to the downstream
+        // stages of the pipeline.
+        //
+        // In order to pull this off, we walk the chain in reverse order and accumulate the set of
+        // request-scoped and singleton components that are expected as input.
 
         let mut middleware_id2prebuilt_rs_ids: IndexMap<ComponentId, IndexSet<ComponentId>> =
             IndexMap::new();
