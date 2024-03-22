@@ -1,18 +1,18 @@
 digraph "GET /home - 0" {
-    0 [ label = "app::mw(pavex::middleware::Next<crate::route_0::Next0<'a, 'b>>, app::B<'l>) -> pavex::response::Response"]
-    1 [ label = "pavex::middleware::Next::new(crate::route_0::Next0<'a, 'b>) -> pavex::middleware::Next<crate::route_0::Next0<'a, 'b>>"]
+    0 [ label = "app::mw(pavex::middleware::Next<crate::route_0::Next0>, app::B<'l>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_0::Next0) -> pavex::middleware::Next<crate::route_0::Next0>"]
     2 [ label = "app::b(&''a app::A, &''a app::C) -> app::B<'a>"]
     3 [ label = "app::a() -> app::A"]
     4 [ label = "app::c() -> app::C"]
-    5 [ label = "crate::route_0::Next0(&'a app::C, &'b app::A) -> crate::route_0::Next0<'a, 'b>"]
+    5 [ label = "crate::route_0::Next0(app::A, app::C) -> crate::route_0::Next0"]
     6 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     2 -> 0 [ ]
     4 -> 2 [ label = "&"]
     3 -> 2 [ label = "&"]
     1 -> 0 [ ]
     5 -> 1 [ ]
-    3 -> 5 [ label = "&"]
-    4 -> 5 [ label = "&"]
+    4 -> 5 [ ]
+    3 -> 5 [ ]
     0 -> 6 [ ]
 }
 

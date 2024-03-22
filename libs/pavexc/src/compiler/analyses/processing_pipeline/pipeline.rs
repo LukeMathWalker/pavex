@@ -10,7 +10,7 @@ use pavex_bp_schema::{CloningStrategy, Lifecycle};
 
 use crate::compiler::analyses::call_graph::{
     request_scoped_call_graph, request_scoped_ordered_call_graph, CallGraphNode,
-    InputParameterSource, OrderedCallGraph, RawCallGraph,
+    InputParameterSource, OrderedCallGraph, RawCallGraph, RawCallGraphExt,
 };
 use crate::compiler::analyses::components::component::Component;
 use crate::compiler::analyses::components::HydratedComponent;
@@ -42,33 +42,13 @@ pub struct Stage {
     pub(crate) name: String,
     /// Either a wrapping middleware or a request handler.
     pub(crate) wrapping_id: ComponentId,
+    /// The input parameters for this stage of the pipeline (excluding the response type).
+    pub(crate) input_parameters: InputParameters,
     /// Only set if `component_id` is a wrapping middleware.
     pub(crate) next_state: Option<NextState>,
     /// Post-processing middlewares to be invoked after `computation_id` has completed,
     /// but before returning to the caller.
     pub(crate) post_processing_ids: Vec<ComponentId>,
-}
-
-impl Stage {
-    pub(crate) fn input_parameters(
-        &self,
-        id2call_graphs: &IndexMap<ComponentId, OrderedCallGraph>,
-        response_type: &ResolvedType,
-    ) -> InputParameters {
-        let iter = std::iter::once(&id2call_graphs[&self.wrapping_id])
-            .chain(
-                self.post_processing_ids
-                    .iter()
-                    .map(|id| &id2call_graphs[id]),
-            )
-            .map(|g| {
-                g.required_input_types()
-                    .into_iter()
-                    .filter(|t| t != response_type)
-            })
-            .flatten();
-        InputParameters::from_iter(iter)
-    }
 }
 
 /// The "state" for `Next<T>` is the concrete type for `T` used in a specific middleware invocation.
@@ -472,9 +452,25 @@ impl RequestHandlerPipeline {
                     HydratedComponent::RequestHandler(_)
                     | HydratedComponent::WrappingMiddleware(_) => {
                         let stage_id = stages.len();
+                        let input_parameters = if stage_id == 0 {
+                            assert!(post_processing_ids.is_empty());
+                            InputParameters::from_iter(
+                                id2ordered_call_graphs[middleware_id]
+                                    .call_graph
+                                    .required_input_types(),
+                            )
+                        } else {
+                            let previous_stage: &Stage = &stages[stage_id - 1];
+                            let bindings =
+                                &previous_stage.next_state.as_ref().unwrap().field_bindings;
+                            InputParameters::from_iter(
+                                bindings.0.iter().map(|binding| &binding.type_),
+                            )
+                        };
                         stages.push(Stage {
                             name: stage_names[stage_id].clone(),
                             wrapping_id: *middleware_id,
+                            input_parameters,
                             next_state: wrapping_id2next_state.remove(middleware_id),
                             post_processing_ids: std::mem::take(&mut post_processing_ids),
                         });

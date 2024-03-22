@@ -138,13 +138,13 @@ pub mod route_1 {
         response
     }
     async fn stage_1<'a>(
-        s_0: &'a pavex::router::AllowedMethods,
-        mut s_1: app::A,
+        mut s_0: app::A,
+        s_1: &'a pavex::router::AllowedMethods,
     ) -> pavex::response::Response {
-        let response = handler(s_0).await;
-        let response = post_processing_0(response, &mut s_1).await;
-        let response = post_processing_1(response, &mut s_1).await;
-        let response = post_processing_2(response, s_1).await;
+        let response = handler(s_1).await;
+        let response = post_processing_0(response, &mut s_0).await;
+        let response = post_processing_1(response, &mut s_0).await;
+        let response = post_processing_2(response, s_0).await;
         response
     }
     pub async fn wrapping_0(
@@ -193,7 +193,7 @@ pub mod route_1 {
     {
         s_0: app::A,
         s_1: &'a pavex::router::AllowedMethods,
-        next: fn(&'a pavex::router::AllowedMethods, app::A) -> T,
+        next: fn(app::A, &'a pavex::router::AllowedMethods) -> T,
     }
     impl<'a, T> std::future::IntoFuture for Next0<'a, T>
     where
@@ -202,7 +202,7 @@ pub mod route_1 {
         type Output = pavex::response::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            (self.next)(self.s_1, self.s_0)
+            (self.next)(self.s_0, self.s_1)
         }
     }
 }

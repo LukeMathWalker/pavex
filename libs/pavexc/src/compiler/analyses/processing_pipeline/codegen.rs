@@ -58,8 +58,7 @@ impl RequestHandlerPipeline {
 
         let mut stage_fns = vec![];
         for stage in &self.stages {
-            let input_parameters =
-                stage.input_parameters(&self.id2call_graph, &component_db.pavex_response);
+            let input_parameters = stage.input_parameters.clone();
             let (mut input_bindings, input_lifetimes) =
                 (input_parameters.bindings, input_parameters.lifetimes);
             let response_ident = format_ident!("response");
@@ -86,7 +85,6 @@ impl RequestHandlerPipeline {
                             });
                     let await_ = fn_.sig.asyncness.and_then(|_| Some(quote! { .await }));
                     let fn_name = &fn_.sig.ident;
-                    // TODO: should the bound variable be mutable?
                     let invocation = quote! {
                         let #response_ident = #fn_name(#(#input_parameters),*)#await_;
                     };
@@ -152,7 +150,7 @@ impl RequestHandlerPipeline {
                 let next_stage = &self.stages[i + 1];
                 let bindings = next_state.field_bindings.clone();
                 let next_input_types: Vec<_> = next_stage
-                    .input_parameters(&self.id2call_graph, &component_db.pavex_response)
+                    .input_parameters
                     .iter()
                     .map(|input| {
                         // This is rather subtle: we're using types
@@ -207,7 +205,7 @@ impl RequestHandlerPipeline {
                 .unwrap();
                 let field_bindings = &next_state.field_bindings;
                 let inputs: Vec<_> = next_stage
-                    .input_parameters(&self.id2call_graph, &component_db.pavex_response)
+                    .input_parameters
                     .iter()
                     .map(|input| {
                         let Some(binding) = field_bindings.find_exact_by_type(&input.type_) else {

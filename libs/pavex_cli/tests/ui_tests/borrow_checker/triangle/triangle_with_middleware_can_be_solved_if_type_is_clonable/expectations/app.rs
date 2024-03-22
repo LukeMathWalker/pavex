@@ -70,33 +70,33 @@ pub mod route_0 {
         let response = wrapping_0().await;
         response
     }
-    async fn stage_1<'a>(s_0: &'a app::A) -> pavex::response::Response {
-        let response = handler(s_0).await;
+    async fn stage_1(s_0: app::A) -> pavex::response::Response {
+        let response = handler(&s_0).await;
         response
     }
     pub async fn wrapping_0() -> pavex::response::Response {
         let v0 = app::a();
-        let v1 = crate::route_0::Next0 {
-            s_0: &v0,
+        let v1 = <app::A as core::clone::Clone>::clone(&v0);
+        let v2 = crate::route_0::Next0 {
+            s_0: v0,
             next: stage_1,
         };
-        let v2 = pavex::middleware::Next::new(v1);
-        let v3 = <app::A as core::clone::Clone>::clone(&v0);
-        let v4 = app::mw(v3, v2);
+        let v3 = pavex::middleware::Next::new(v2);
+        let v4 = app::mw(v1, v3);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
     }
     pub async fn handler(v0: &app::A) -> pavex::response::Response {
         let v1 = app::handler(v0);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
     }
-    pub struct Next0<'a, T>
+    pub struct Next0<T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
-        s_0: &'a app::A,
-        next: fn(&'a app::A) -> T,
+        s_0: app::A,
+        next: fn(app::A) -> T,
     }
-    impl<'a, T> std::future::IntoFuture for Next0<'a, T>
+    impl<T> std::future::IntoFuture for Next0<T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
