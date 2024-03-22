@@ -20,6 +20,7 @@ pub enum Component {
     Constructor(Constructor),
     WrappingMiddleware(WrappingMiddleware),
     PostProcessingMiddleware(PostProcessingMiddleware),
+    PreProcessingMiddleware(PreProcessingMiddleware),
     Route(Route),
     FallbackRequestHandler(Fallback),
     NestedBlueprint(NestedBlueprint),
@@ -126,6 +127,15 @@ pub struct WrappingMiddleware {
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 /// A middleware registered against a `Blueprint` via `Blueprint::post_process`.
 pub struct PostProcessingMiddleware {
+    /// The callable that executes the middleware's logic.
+    pub middleware: Callable,
+    /// The callable in charge of processing errors returned by this middleware, if any.
+    pub error_handler: Option<Callable>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+/// A middleware registered against a `Blueprint` via `Blueprint::pre_process`.
+pub struct PreProcessingMiddleware {
     /// The callable that executes the middleware's logic.
     pub middleware: Callable,
     /// The callable in charge of processing errors returned by this middleware, if any.

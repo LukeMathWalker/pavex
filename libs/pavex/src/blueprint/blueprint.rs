@@ -11,7 +11,10 @@ use pavex_bp_schema::{
 use pavex_reflection::Location;
 
 use super::constructor::{Lifecycle, RegisteredConstructor};
-use super::middleware::{RegisteredPostProcessingMiddleware, RegisteredWrappingMiddleware};
+use super::middleware::{
+    RegisteredPostProcessingMiddleware, RegisteredPreProcessingMiddleware,
+    RegisteredWrappingMiddleware,
+};
 use super::reflection::RawCallable;
 use super::router::{MethodGuard, RegisteredRoute};
 
@@ -397,6 +400,21 @@ impl Blueprint {
         };
         let component_id = self.push_component(mw);
         RegisteredPostProcessingMiddleware {
+            component_id,
+            blueprint: &mut self.schema,
+        }
+    }
+
+    pub(super) fn register_pre_processing_middleware(
+        &mut self,
+        mw: super::middleware::PreProcessingMiddleware,
+    ) -> RegisteredPreProcessingMiddleware {
+        let mw = PostProcessingMiddleware {
+            middleware: mw.callable,
+            error_handler: mw.error_handler,
+        };
+        let component_id = self.push_component(mw);
+        RegisteredPreProcessingMiddleware {
             component_id,
             blueprint: &mut self.schema,
         }

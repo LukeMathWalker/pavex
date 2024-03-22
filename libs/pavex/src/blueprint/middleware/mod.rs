@@ -9,4 +9,5 @@ mod pre;
 mod wrapping;
 
 pub use post::{PostProcessingMiddleware, RegisteredPostProcessingMiddleware};
+pub use pre::{PreProcessingMiddleware, RegisteredPreProcessingMiddleware};
 pub use wrapping::{RegisteredWrappingMiddleware, WrappingMiddleware};
