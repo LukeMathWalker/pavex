@@ -1,4 +1,4 @@
-description = "Pavex can extract path parameters"
+description = "Middlewares execute in the expected order"
 
 [expectations]
 codegen = "pass"

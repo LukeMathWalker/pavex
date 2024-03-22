@@ -1,6 +1,6 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 
-use ahash::{HashMap, HashMapExt, HashSet};
+use ahash::{HashMap, HashMapExt};
 use guppy::graph::PackageGraph;
 use guppy::PackageId;
 use indexmap::{IndexMap, IndexSet};
@@ -129,7 +129,7 @@ impl RequestHandlerPipeline {
 
         // Step 2: For each middleware, build an ordered call graph.
         // We associate each request-scoped component with the set of middlewares that need it.
-        let mut request_scoped_id2users: IndexMap<ComponentId, BTreeSet<ComponentId>> =
+        let mut request_scoped_id2users: IndexMap<ComponentId, IndexSet<ComponentId>> =
             IndexMap::new();
         let mut id2call_graphs = HashMap::with_capacity(ordered_by_invocation.len());
 
@@ -144,7 +144,7 @@ impl RequestHandlerPipeline {
                 diagnostics,
             )?;
 
-            // Add all request-scoped components initialised by this component to the set.
+            // Add all request-scoped components initialized by this component to the set.
             for request_scoped_id in
                 extract_request_scoped_compute_nodes(&call_graph.call_graph, component_db)
             {
@@ -170,11 +170,13 @@ impl RequestHandlerPipeline {
             // and all the post-processing middlewares (+handlers) that are invoked after the next
             // wrapping middleware has completed but before that wrapping middleware completes.
             // Within each group, we sort the middlewares by their invocation order.
-            assert!(matches!(
-                component_db
-                    .hydrated_component(*ordered_by_registration.first().unwrap(), computation_db),
-                HydratedComponent::RequestHandler(_) | HydratedComponent::WrappingMiddleware(_)
-            ));
+            let first = component_db
+                .hydrated_component(*ordered_by_registration.first().unwrap(), computation_db);
+            assert!(
+                matches!(first, HydratedComponent::WrappingMiddleware(_)),
+                "First component should be a wrapping middleware, but it's a {:?}",
+                first
+            );
             let mut groups = vec![];
             for id in ordered_by_registration.iter() {
                 let component = component_db.hydrated_component(*id, computation_db);
@@ -210,89 +212,66 @@ impl RequestHandlerPipeline {
             grouped_by_stage
         };
 
-        let build_in_place: HashSet<_> = request_scoped_id2users
-            .iter()
-            .filter_map(
-                |(id, users)| {
-                    if users.len() == 1 {
-                        Some(*id)
-                    } else {
-                        None
-                    }
-                },
-            )
-            .collect();
-
         let mut middleware_id2prebuilt_rs_ids: IndexMap<ComponentId, IndexSet<ComponentId>> =
             IndexMap::new();
 
-        let mut entrypoint_input_types: IndexSet<ResolvedType> = IndexSet::new();
-        let mut prebuilt_request_scoped_ids: IndexSet<ComponentId> = IndexSet::new();
         let mut state_accumulator = IndexSet::new();
         let mut wrapping_id2next_field_types: HashMap<ComponentId, InputParameters> =
             HashMap::new();
         for middleware_id in grouped_by_stage.iter().rev() {
             let call_graph = &id2call_graphs[middleware_id];
 
-            // This middleware may ask for some components to be passed
-            // down from the entrypoint of the pipeline:
-            //
-            // - framework primitives that are request-scoped (e.g. the request object)
-            // - singleton types from the application state
-            extract_long_lived_inputs(
-                &call_graph.call_graph,
-                component_db,
-                &mut entrypoint_input_types,
-            );
-
+            let mut prebuilt_ids = IndexSet::new();
             for request_scoped_id in
                 extract_request_scoped_compute_nodes(&call_graph.call_graph, component_db)
             {
-                let is_empty = {
-                    let entry = &mut request_scoped_id2users[&request_scoped_id];
-                    entry.remove(middleware_id);
-                    entry.is_empty()
-                };
-                if is_empty {
-                    request_scoped_id2users.shift_remove(&request_scoped_id);
-                    if !build_in_place.contains(&request_scoped_id) {
-                        state_accumulator.insert(request_scoped_id);
-                    }
+                let users = &request_scoped_id2users[&request_scoped_id];
+                let n_users = users.len();
+                if users.first().unwrap() != middleware_id {
+                    prebuilt_ids.insert(request_scoped_id);
                 } else {
-                    prebuilt_request_scoped_ids.insert(request_scoped_id);
+                    if n_users > 1
+                        && !component_db
+                            .hydrated_component(*middleware_id, computation_db)
+                            .is_wrapping_middleware()
+                    {
+                        prebuilt_ids.insert(request_scoped_id);
+                    }
                 }
             }
+
+            let call_graph = request_scoped_call_graph(
+                *middleware_id,
+                &prebuilt_ids,
+                &error_observer_ids,
+                computation_db,
+                component_db,
+                constructible_db,
+                diagnostics,
+            )?;
+
+            if !component_db
+                .hydrated_component(*middleware_id, computation_db)
+                .is_wrapping_middleware()
+            {
+                extract_long_lived_inputs(
+                    &call_graph.call_graph,
+                    component_db,
+                    &mut state_accumulator,
+                );
+            }
+            id2call_graphs.insert(*middleware_id, call_graph);
+
+            middleware_id2prebuilt_rs_ids.insert(*middleware_id, prebuilt_ids.clone());
 
             if component_db
                 .hydrated_component(*middleware_id, computation_db)
                 .is_wrapping_middleware()
             {
-                // We'll build them now as part of the state of this wrapping middleware.
-                for state_id in &state_accumulator {
-                    prebuilt_request_scoped_ids.shift_remove(state_id);
-                }
-            }
-
-            middleware_id2prebuilt_rs_ids
-                .insert(*middleware_id, prebuilt_request_scoped_ids.clone());
-
-            if component_db
-                .hydrated_component(*middleware_id, computation_db)
-                .is_wrapping_middleware()
-            {
-                let state_ids = std::mem::take(&mut state_accumulator);
-                let state_types = prebuilt_request_scoped_ids
-                    .iter()
-                    .chain(state_ids.iter())
-                    .filter_map(|id| {
-                        component_db
-                            .hydrated_component(*id, computation_db)
-                            .output_type()
-                            .cloned()
-                    })
-                    .chain(entrypoint_input_types.iter().cloned());
-                wrapping_id2next_field_types
-                    .insert(*middleware_id, InputParameters::from_iter(state_types));
+                wrapping_id2next_field_types.insert(
+                    *middleware_id,
+                    InputParameters::from_iter(std::mem::take(&mut state_accumulator).iter()),
+                );
             }
         }
 
@@ -438,6 +417,7 @@ impl RequestHandlerPipeline {
                 krate_collection,
                 diagnostics,
             )?;
+
             id2ordered_call_graphs.insert(new_middleware_id, middleware_call_graph);
         }
 

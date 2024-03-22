@@ -911,6 +911,16 @@ impl ComponentDb {
                         unreachable!()
                     }
                 }
+            } else {
+                let noop_component_id = self.get_or_intern(
+                    UnregisteredComponent::SyntheticWrappingMiddleware {
+                        computation_id: pavex_noop_wrap_id,
+                        scope_id: self.scope_id(handler_component_id),
+                        derived_from: None,
+                    },
+                    computation_db,
+                );
+                middleware_chain.insert(0, noop_component_id);
             }
 
             self.handler_id2middleware_ids

@@ -79,9 +79,17 @@ impl RequestHandlerPipeline {
                             .input_parameters
                             .iter()
                             .map(|input_type| {
-                                input_bindings
-                                    .get_expr_for_type(input_type)
-                                    .expect("Could not find input parameter")
+                                match input_bindings
+                                    .get_expr_for_type(input_type) {
+                                    None => {
+                                        panic!(
+                                            "Could not find a binding for input type `{:?}` in the input bindings.\n\
+                                            Input bindings: {:?}",
+                                            input_type,
+                                            input_bindings)
+                                    }
+                                    Some(i) => i,
+                                }
                             });
                     let await_ = fn_.sig.asyncness.and_then(|_| Some(quote! { .await }));
                     let fn_name = &fn_.sig.ident;

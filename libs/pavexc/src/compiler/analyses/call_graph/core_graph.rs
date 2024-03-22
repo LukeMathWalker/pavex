@@ -89,8 +89,6 @@ where
     let mut call_graph = RawCallGraph::new();
 
     let component_id2invocations = |component_id: ComponentId| {
-        // We don't expect to invoke this function for response transformers, therefore
-        // it's fine to unwrap here.
         lifecycle2n_allowed_invocations(component_db.lifecycle(component_id))
     };
     let component_id2node = |id: ComponentId| {
