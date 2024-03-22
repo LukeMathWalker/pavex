@@ -218,6 +218,13 @@ impl ComponentDb {
                 krate_collection,
                 diagnostics,
             );
+            self_.process_pre_processing_middlewares(
+                &mut needs_error_handler,
+                computation_db,
+                package_graph,
+                krate_collection,
+                diagnostics,
+            );
             self_.process_post_processing_middlewares(
                 &mut needs_error_handler,
                 computation_db,
