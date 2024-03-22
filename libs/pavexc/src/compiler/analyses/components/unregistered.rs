@@ -137,6 +137,11 @@ impl UnregisteredComponent {
                     source_id: SourceId::UserComponentId(user_component_id.to_owned()),
                 }
             }
+            UnregisteredComponent::UserPreProcessingMiddleware { user_component_id } => {
+                Component::PreProcessingMiddleware {
+                    source_id: SourceId::UserComponentId(user_component_id.to_owned()),
+                }
+            }
         }
     }
 
@@ -145,6 +150,7 @@ impl UnregisteredComponent {
         match &self {
             UserWrappingMiddleware { .. }
             | UserPostProcessingMiddleware { .. }
+            | UserPreProcessingMiddleware { .. }
             | SyntheticWrappingMiddleware { .. }
             | RequestHandler { .. } => Lifecycle::RequestScoped,
             ErrorObserver { .. } => Lifecycle::Transient,

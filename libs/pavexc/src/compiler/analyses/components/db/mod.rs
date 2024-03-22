@@ -924,10 +924,11 @@ impl ComponentDb {
                 let first_middleware = self.hydrated_component(first, computation_db);
                 match first_middleware {
                     HydratedComponent::WrappingMiddleware(_) => {}
-                    HydratedComponent::PostProcessingMiddleware(_) => {
+                    HydratedComponent::PreProcessingMiddleware(_)
+                    | HydratedComponent::PostProcessingMiddleware(_) => {
                         // We need to add a synthetic wrapping middleware to have a place where to
                         // "attach" state that needs to be shared between the request handler and the
-                        // post-processing middlewares.
+                        // pre/post-processing middlewares.
                         let noop_component_id = self.get_or_intern(
                             UnregisteredComponent::SyntheticWrappingMiddleware {
                                 computation_id: pavex_noop_wrap_id,
@@ -1025,7 +1026,9 @@ impl ComponentDb {
                             None
                         }
                     }
-                    Constructor { .. } | ErrorObserver { .. } => None,
+                    PreProcessingMiddleware { .. } | Constructor { .. } | ErrorObserver { .. } => {
+                        None
+                    }
                 }
             })
             .collect();
@@ -1351,6 +1354,9 @@ impl ComponentDb {
             | Component::PostProcessingMiddleware {
                 source_id: SourceId::UserComponentId(user_component_id),
             }
+            | Component::PreProcessingMiddleware {
+                source_id: SourceId::UserComponentId(user_component_id),
+            }
             | Component::ErrorObserver { user_component_id }
             | Component::RequestHandler { user_component_id } => Some(*user_component_id),
             Component::Constructor {
@@ -1360,6 +1366,9 @@ impl ComponentDb {
                 source_id: SourceId::ComputationId(..),
             }
             | Component::PostProcessingMiddleware {
+                source_id: SourceId::ComputationId(..),
+            }
+            | Component::PreProcessingMiddleware {
                 source_id: SourceId::ComputationId(..),
             }
             | Component::Transformer { .. } => None,
@@ -1390,6 +1399,17 @@ impl ComponentDb {
                 };
                 let pp = PostProcessingMiddleware { callable };
                 HydratedComponent::PostProcessingMiddleware(pp)
+            }
+            Component::PreProcessingMiddleware { source_id } => {
+                let c = match source_id {
+                    SourceId::ComputationId(id, _) => computation_db[*id].clone(),
+                    SourceId::UserComponentId(id) => computation_db[*id].clone().into(),
+                };
+                let Computation::Callable(callable) = c else {
+                    unreachable!()
+                };
+                let pp = PreProcessingMiddleware { callable };
+                HydratedComponent::PreProcessingMiddleware(pp)
             }
             Component::WrappingMiddleware { source_id } => {
                 let c = match source_id {
@@ -1448,6 +1468,7 @@ impl ComponentDb {
             Component::Transformer { source_id, .. }
             | Component::WrappingMiddleware { source_id }
             | Component::PostProcessingMiddleware { source_id }
+            | Component::PreProcessingMiddleware { source_id }
             | Component::Constructor { source_id } => match source_id {
                 SourceId::ComputationId(_, scope_id) => *scope_id,
                 SourceId::UserComponentId(id) => self.user_component_db[*id].scope_id(),
@@ -1555,6 +1576,7 @@ impl ComponentDb {
                 },
                 HydratedComponent::RequestHandler(..)
                 | HydratedComponent::PostProcessingMiddleware(..)
+                | HydratedComponent::PreProcessingMiddleware(..)
                 | HydratedComponent::ErrorObserver(..)
                 | HydratedComponent::Transformer(..) => {
                     todo!()
@@ -1598,6 +1620,7 @@ impl ComponentDb {
             HydratedComponent::RequestHandler(_)
             | HydratedComponent::ErrorObserver(_)
             | HydratedComponent::PostProcessingMiddleware(_)
+            | HydratedComponent::PreProcessingMiddleware(_)
             | HydratedComponent::Transformer(..) => {
                 todo!()
             }

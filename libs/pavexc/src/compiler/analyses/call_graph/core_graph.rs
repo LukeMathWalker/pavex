@@ -188,6 +188,7 @@ where
                     }
                     HydratedComponent::RequestHandler(r) => r.input_types().to_vec(),
                     HydratedComponent::PostProcessingMiddleware(pp) => pp.input_types().to_vec(),
+                    HydratedComponent::PreProcessingMiddleware(pp) => pp.input_types().to_vec(),
                     HydratedComponent::Transformer(c, info) => {
                         let mut inputs = c.input_types().to_vec();
                         // The component we are transforming must have been added to the graph
