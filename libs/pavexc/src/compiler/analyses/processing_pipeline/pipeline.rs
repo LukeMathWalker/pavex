@@ -500,6 +500,9 @@ impl RequestHandlerPipeline {
                 let CallGraphNode::Compute { component_id, .. } = node else {
                     return None;
                 };
+                if component_db.lifecycle(*component_id) != Lifecycle::RequestScoped {
+                    return None;
+                }
                 let component = component_db.hydrated_component(*component_id, computation_db);
                 let HydratedComponent::Constructor(constructor) = &component else {
                     return None;
