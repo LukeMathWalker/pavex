@@ -19,6 +19,7 @@ use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::constructibles::ConstructibleDb;
 use crate::compiler::analyses::framework_items::FrameworkItemDb;
 use crate::compiler::app::GENERATED_APP_PACKAGE_ID;
+use crate::compiler::computation::Computation;
 use crate::compiler::utils::LifetimeGenerator;
 use crate::language::{
     Callable, GenericArgument, GenericLifetimeParameter, InvocationStyle, Lifetime, PathType,
@@ -479,11 +480,57 @@ impl RequestHandlerPipeline {
             stages
         };
 
-        Ok(Self {
+        let self_ = Self {
             module_name,
             id2call_graph: id2ordered_call_graphs,
             stages,
-        })
+        };
+
+        self_.enforce_invariants(component_db, computation_db);
+
+        Ok(self_)
+    }
+
+    fn enforce_invariants(&self, component_db: &ComponentDb, computation_db: &ComputationDb) {
+        let request_scoped_ids2n_invocations = self
+            .id2call_graph
+            .values()
+            .flat_map(|g| g.call_graph.node_weights())
+            .filter_map(|node| {
+                let CallGraphNode::Compute { component_id, .. } = node else {
+                    return None;
+                };
+                let component = component_db.hydrated_component(*component_id, computation_db);
+                let HydratedComponent::Constructor(constructor) = &component else {
+                    return None;
+                };
+                let Computation::Callable(_) = &constructor.0 else {
+                    return None;
+                };
+                Some(component_id)
+            })
+            .fold(HashMap::new(), |mut acc, id| {
+                *acc.entry(id).or_insert(0) += 1;
+                acc
+            });
+
+        for (id, n_invocations) in request_scoped_ids2n_invocations {
+            if n_invocations > 1 {
+                let component = component_db.hydrated_component(*id, computation_db);
+                let HydratedComponent::Constructor(constructor) = &component else {
+                    unreachable!()
+                };
+                let Computation::Callable(callable) = &constructor.0 else {
+                    unreachable!()
+                };
+                let path = callable.path.to_string();
+                let message = format!(
+                    "Request-scoped component `{}` should be invoked at most once in a request pipeline, but it's invoked {} times instead.",
+                    path, n_invocations
+                );
+                panic!("{}", message);
+            }
+        }
     }
 }
 

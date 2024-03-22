@@ -70,10 +70,10 @@ pub mod route_0 {
         let response = wrapping_0().await;
         response
     }
-    async fn stage_1(s_0: app::A) -> pavex::response::Response {
+    async fn stage_1(mut s_0: app::A) -> pavex::response::Response {
         let response = handler().await;
-        let response = post_processing_0(response, s_0).await;
-        let response = post_processing_1(response, s_0).await;
+        let response = post_processing_0(response, &mut s_0).await;
+        let response = post_processing_1(response, &mut s_0).await;
         let response = post_processing_2(response, s_0).await;
         response
     }
@@ -94,16 +94,16 @@ pub mod route_0 {
     }
     pub async fn post_processing_0(
         v0: pavex::response::Response,
-        v1: app::A,
+        v1: &mut app::A,
     ) -> pavex::response::Response {
-        let v2 = app::first(v0, &mut v1);
+        let v2 = app::first(v0, v1);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
     }
     pub async fn post_processing_1(
         v0: pavex::response::Response,
-        v1: app::A,
+        v1: &mut app::A,
     ) -> pavex::response::Response {
-        let v2 = app::second(v0, &mut v1);
+        let v2 = app::second(v0, v1);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
     }
     pub async fn post_processing_2(
@@ -140,11 +140,11 @@ pub mod route_1 {
     }
     async fn stage_1<'a>(
         s_0: &'a pavex::router::AllowedMethods,
-        s_1: app::A,
+        mut s_1: app::A,
     ) -> pavex::response::Response {
         let response = handler(s_0).await;
         let response = post_processing_0(response).await;
-        let response = post_processing_1(response, s_1).await;
+        let response = post_processing_1(response, &mut s_1).await;
         let response = post_processing_2(response, s_1).await;
         response
     }
@@ -176,9 +176,9 @@ pub mod route_1 {
     }
     pub async fn post_processing_1(
         v0: pavex::response::Response,
-        v1: app::A,
+        v1: &mut app::A,
     ) -> pavex::response::Response {
-        let v2 = app::second(v0, &mut v1);
+        let v2 = app::second(v0, v1);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
     }
     pub async fn post_processing_2(

@@ -659,7 +659,8 @@ fn inject_match_branching_nodes(
 }
 
 /// If we only need to borrow an input parameter, we refactor the graph to use a `Move` edge
-/// from a reference input type rather than a `SharedBorrow` edge from a non-reference input type.
+/// from a reference input type rather than a `SharedBorrow`/`ExclusiveBorrow`
+/// edge from a non-reference input type.
 ///
 /// This is done in order to generate a closure that asks for a reference instead of an owned
 /// type, therefore avoiding an unnecessary clone for the caller.
@@ -681,12 +682,19 @@ fn take_references_as_inputs_if_they_suffice(
         match input_type {
             ResolvedType::Reference(_) => continue,
             _ => {
-                let is_only_borrowed = call_graph
-                    .edges_directed(node_index, Direction::Outgoing)
-                    .all(|edge| edge.weight() == &CallGraphEdgeMetadata::SharedBorrow);
-                if is_only_borrowed {
+                let mut by_value = false;
+                let mut borrowed_mutably = false;
+                for edge in call_graph.edges_directed(node_index, Direction::Outgoing) {
+                    match edge.weight() {
+                        CallGraphEdgeMetadata::Move => by_value = true,
+                        CallGraphEdgeMetadata::SharedBorrow => {}
+                        CallGraphEdgeMetadata::ExclusiveBorrow => borrowed_mutably = true,
+                        CallGraphEdgeMetadata::HappensBefore => {}
+                    }
+                }
+                if !by_value {
                     let reference_input_type = ResolvedType::Reference(TypeReference {
-                        is_mutable: false,
+                        is_mutable: borrowed_mutably,
                         lifetime: Lifetime::Elided,
                         inner: Box::new(input_type.to_owned()),
                     });
