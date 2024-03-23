@@ -302,10 +302,21 @@ impl RequestHandlerPipeline {
                             .output_type()
                             .cloned()
                             .unwrap();
-                        tmp.shift_remove(&output);
+                        let to_be_removed: Vec<_> = tmp
+                            .iter()
+                            .filter(|ty| match ty {
+                                ResolvedType::ResolvedPath(_) => *ty == &output,
+                                ResolvedType::Reference(ref_) => ref_.inner.as_ref() == &output,
+                                _ => false,
+                            })
+                            .cloned()
+                            .collect();
+                        for ty in to_be_removed {
+                            tmp.shift_remove(&ty);
+                        }
                     }
                 }
-                state_accumulators[stage_index - 2] = state_accumulator.clone();
+                state_accumulators[stage_index - 2] = tmp;
             }
         }
 

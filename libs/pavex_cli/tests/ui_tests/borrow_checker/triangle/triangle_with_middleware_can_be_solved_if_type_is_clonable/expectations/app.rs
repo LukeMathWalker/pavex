@@ -70,15 +70,27 @@ pub mod route_0 {
         let response = wrapping_0().await;
         response
     }
-    async fn stage_1<'a>(s_0: &'a app::A) -> pavex::response::Response {
+    async fn stage_1() -> pavex::response::Response {
+        let response = wrapping_1().await;
+        response
+    }
+    async fn stage_2<'a>(s_0: &'a app::A) -> pavex::response::Response {
         let response = handler(s_0).await;
         response
     }
     pub async fn wrapping_0() -> pavex::response::Response {
-        let v0 = app::a();
-        let v1 = crate::route_0::Next0 {
-            s_0: &v0,
+        let v0 = crate::route_0::Next0 {
             next: stage_1,
+        };
+        let v1 = pavex::middleware::Next::new(v0);
+        let v2 = pavex::middleware::wrap_noop(v1).await;
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
+    }
+    pub async fn wrapping_1() -> pavex::response::Response {
+        let v0 = app::a();
+        let v1 = crate::route_0::Next1 {
+            s_0: &v0,
+            next: stage_2,
         };
         let v2 = pavex::middleware::Next::new(v1);
         let v3 = <app::A as core::clone::Clone>::clone(&v0);
@@ -89,14 +101,30 @@ pub mod route_0 {
         let v1 = app::handler(v0);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
     }
-    pub struct Next0<'a, T>
+    pub struct Next0<T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        next: fn() -> T,
+    }
+    impl<T> std::future::IntoFuture for Next0<T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        type Output = pavex::response::Response;
+        type IntoFuture = T;
+        fn into_future(self) -> Self::IntoFuture {
+            (self.next)()
+        }
+    }
+    pub struct Next1<'a, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
         s_0: &'a app::A,
         next: fn(&'a app::A) -> T,
     }
-    impl<'a, T> std::future::IntoFuture for Next0<'a, T>
+    impl<'a, T> std::future::IntoFuture for Next1<'a, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
@@ -117,6 +145,12 @@ pub mod route_1 {
     async fn stage_1<'a>(
         s_0: &'a pavex::router::AllowedMethods,
     ) -> pavex::response::Response {
+        let response = wrapping_1(s_0).await;
+        response
+    }
+    async fn stage_2<'a>(
+        s_0: &'a pavex::router::AllowedMethods,
+    ) -> pavex::response::Response {
         let response = handler(s_0).await;
         response
     }
@@ -126,6 +160,17 @@ pub mod route_1 {
         let v1 = crate::route_1::Next0 {
             s_0: v0,
             next: stage_1,
+        };
+        let v2 = pavex::middleware::Next::new(v1);
+        let v3 = pavex::middleware::wrap_noop(v2).await;
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
+    }
+    pub async fn wrapping_1(
+        v0: &pavex::router::AllowedMethods,
+    ) -> pavex::response::Response {
+        let v1 = crate::route_1::Next1 {
+            s_0: v0,
+            next: stage_2,
         };
         let v2 = pavex::middleware::Next::new(v1);
         let v3 = app::a();
@@ -146,6 +191,23 @@ pub mod route_1 {
         next: fn(&'a pavex::router::AllowedMethods) -> T,
     }
     impl<'a, T> std::future::IntoFuture for Next0<'a, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        type Output = pavex::response::Response;
+        type IntoFuture = T;
+        fn into_future(self) -> Self::IntoFuture {
+            (self.next)(self.s_0)
+        }
+    }
+    pub struct Next1<'a, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        s_0: &'a pavex::router::AllowedMethods,
+        next: fn(&'a pavex::router::AllowedMethods) -> T,
+    }
+    impl<'a, T> std::future::IntoFuture for Next1<'a, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
