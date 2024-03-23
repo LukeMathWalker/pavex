@@ -1242,6 +1242,11 @@ impl ComponentDb {
         self.error_handler_id2error_handler.contains_key(&id)
     }
 
+    /// Returns `true` if the component is a pre-processing middleware, `false` otherwise.
+    pub fn is_pre_processing_middleware(&self, id: ComponentId) -> bool {
+        matches!(self[id], Component::PreProcessingMiddleware { .. })
+    }
+
     /// If the component is a request handler, return the ids of the middlewares that wrap around
     /// it.
     /// Otherwise, return `None`.

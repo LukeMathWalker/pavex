@@ -1,6 +1,7 @@
 use bimap::BiHashMap;
 use guppy::PackageId;
 use indexmap::{IndexMap, IndexSet};
+use itertools::Itertools;
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote, ToTokens};
 use syn::{ItemFn, Token};
@@ -74,18 +75,20 @@ impl RequestHandlerPipeline {
                 mutable: false,
             });
 
+            let ordered_by_invocation = stage
+                .pre_processing_ids
+                .iter()
+                .copied()
+                .chain(std::iter::once(stage.wrapping_id))
+                .chain(stage.post_processing_ids.iter().copied())
+                .collect_vec();
+
             let invocations = {
                 let mut invocations = vec![];
-                let ids = stage
-                    .pre_processing_ids
-                    .iter()
-                    .copied()
-                    .chain(std::iter::once(stage.wrapping_id))
-                    .chain(stage.post_processing_ids.iter().copied());
-                for id in ids {
-                    let fn_ = &id2codegened_fn[&id].fn_;
+                for id in &ordered_by_invocation {
+                    let fn_ = &id2codegened_fn[id].fn_;
                     let input_parameters =
-                        id2codegened_fn[&id]
+                        id2codegened_fn[id]
                             .input_parameters
                             .iter()
                             .map(|input_type| {
@@ -103,8 +106,16 @@ impl RequestHandlerPipeline {
                             });
                     let await_ = fn_.sig.asyncness.and_then(|_| Some(quote! { .await }));
                     let fn_name = &fn_.sig.ident;
-                    let invocation = quote! {
-                        let #response_ident = #fn_name(#(#input_parameters),*)#await_;
+                    let invocation = if component_db.is_pre_processing_middleware(*id) {
+                        quote! {
+                            if let Some(#response_ident) = #fn_name(#(#input_parameters),*)#await_.into_response() {
+                                return #response_ident;
+                            }
+                        }
+                    } else {
+                        quote! {
+                            let #response_ident = #fn_name(#(#input_parameters),*)#await_;
+                        }
                     };
                     invocations.push(invocation);
                 }
@@ -114,18 +125,10 @@ impl RequestHandlerPipeline {
             input_bindings.0.pop();
 
             let fn_ = {
-                let asyncness = if stage
-                    .pre_processing_ids
+                let asyncness = ordered_by_invocation
                     .iter()
-                    .copied()
-                    .chain(std::iter::once(stage.wrapping_id))
-                    .chain(stage.post_processing_ids.iter().copied())
-                    .any(|id| id2codegened_fn[&id].fn_.sig.asyncness.is_some())
-                {
-                    Some(quote! { async })
-                } else {
-                    None
-                };
+                    .any(|id| id2codegened_fn[id].fn_.sig.asyncness.is_some())
+                    .then(|| quote! { async});
                 let fn_name = format_ident!("{}", stage.name);
                 let visibility = if stage.name == "entrypoint" {
                     Some(Token![pub](proc_macro2::Span::call_site()))

@@ -168,13 +168,17 @@ pub mod route_1 {
         response
     }
     async fn stage_1<'a>(s_0: &'a app::Spy) -> pavex::response::Response {
-        let response = pre_processing_0(s_0).await;
+        if let Some(response) = pre_processing_0(s_0).await.into_response() {
+            return response;
+        }
         let response = wrapping_1(s_0).await;
         let response = post_processing_0(response, s_0).await;
         response
     }
     async fn stage_2<'a>(s_0: &'a app::Spy) -> pavex::response::Response {
-        let response = pre_processing_1(s_0).await;
+        if let Some(response) = pre_processing_1(s_0).await.into_response() {
+            return response;
+        }
         let response = handler(s_0).await;
         let response = post_processing_1(response, s_0).await;
         response
@@ -262,13 +266,17 @@ pub mod route_2 {
         response
     }
     async fn stage_1<'a>(s_0: &'a app::Spy) -> pavex::response::Response {
-        let response = pre_processing_0(s_0).await;
+        if let Some(response) = pre_processing_0(s_0).await.into_response() {
+            return response;
+        }
         let response = wrapping_1(s_0).await;
         let response = post_processing_0(response, s_0).await;
         response
     }
     async fn stage_2<'a>(s_0: &'a app::Spy) -> pavex::response::Response {
-        let response = pre_processing_1(s_0).await;
+        if let Some(response) = pre_processing_1(s_0).await.into_response() {
+            return response;
+        }
         let response = handler(s_0).await;
         let response = post_processing_1(response, s_0).await;
         response
@@ -356,7 +364,9 @@ pub mod route_3 {
         response
     }
     async fn stage_1<'a>(s_0: &'a app::Spy) -> pavex::response::Response {
-        let response = pre_processing_0(s_0).await;
+        if let Some(response) = pre_processing_0(s_0).await.into_response() {
+            return response;
+        }
         let response = handler(s_0).await;
         let response = post_processing_0(response, s_0).await;
         response
@@ -412,8 +422,12 @@ pub mod route_4 {
         response
     }
     async fn stage_2<'a>(s_0: &'a app::Spy) -> pavex::response::Response {
-        let response = pre_processing_0(s_0).await;
-        let response = pre_processing_1(s_0).await;
+        if let Some(response) = pre_processing_0(s_0).await.into_response() {
+            return response;
+        }
+        if let Some(response) = pre_processing_1(s_0).await.into_response() {
+            return response;
+        }
         let response = handler(s_0).await;
         let response = post_processing_0(response, s_0).await;
         let response = post_processing_1(response, s_0).await;
