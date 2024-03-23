@@ -3,7 +3,7 @@ use std::path::PathBuf;
 
 use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
 use pavex::f;
-use pavex::middleware::Next;
+use pavex::middleware::{Next, Processing};
 use pavex::{request::RequestHead, response::Response};
 
 pub struct Logger;
@@ -81,13 +81,24 @@ where
 }
 
 #[derive(Debug)]
-pub struct PPMiddlewareError;
+pub struct PostError;
 
-pub fn handle_pp_middleware_error(_e: &PPMiddlewareError) -> Response {
+pub fn post_error(_e: &PostError) -> Response {
     todo!()
 }
 
-pub fn fallible_pp_middleware(_response: Response) -> Result<Response, PPMiddlewareError> {
+pub fn fallible_post(_response: Response) -> Result<Response, PostError> {
+    todo!()
+}
+
+#[derive(Debug)]
+pub struct PreError;
+
+pub fn pre_error(_e: &PreError) -> Response {
+    todo!()
+}
+
+pub fn fallible_pre() -> Result<Processing, PreError> {
     todo!()
 }
 
@@ -100,8 +111,10 @@ pub fn blueprint() -> Blueprint {
         .error_handler(f!(crate::handle_logger_error));
     bp.wrap(f!(crate::fallible_wrapping_middleware))
         .error_handler(f!(crate::handle_middleware_error));
-    bp.post_process(f!(crate::fallible_pp_middleware))
-        .error_handler(f!(crate::handle_pp_middleware_error));
+    bp.pre_process(f!(crate::fallible_pre))
+        .error_handler(f!(crate::pre_error));
+    bp.post_process(f!(crate::fallible_post))
+        .error_handler(f!(crate::post_error));
     bp.route(GET, "/home", f!(crate::request_handler))
         .error_handler(f!(crate::handle_handler_error));
     bp
