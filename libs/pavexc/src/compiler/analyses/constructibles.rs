@@ -143,6 +143,7 @@ impl ConstructibleDb {
                             input_types[info.input_index] = None;
                         }
                         HydratedComponent::Constructor(_)
+                        | HydratedComponent::PreProcessingMiddleware(_)
                         | HydratedComponent::RequestHandler(_) => {}
                     }
                     input_types

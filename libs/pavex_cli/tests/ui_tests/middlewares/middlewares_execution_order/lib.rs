@@ -50,6 +50,7 @@ pub fn blueprint() -> Blueprint {
     bp.constructor(f!(crate::Spy::new), Lifecycle::Singleton);
     bp.nest(top_level());
     bp.nest(after_handler());
+    bp.nest(early_return());
     bp.nest(nested());
     bp
 }
@@ -60,6 +61,8 @@ pub fn top_level() -> Blueprint {
     bp.wrap(f!(crate::second));
     bp.post_process(f!(crate::first_post));
     bp.post_process(f!(crate::second_post));
+    bp.pre_process(f!(crate::first_pre));
+    bp.pre_process(f!(crate::second_pre));
     bp.route(GET, "/top_level", f!(crate::handler));
     bp
 }
@@ -68,24 +71,41 @@ pub fn after_handler() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.wrap(f!(crate::first));
     bp.post_process(f!(crate::first_post));
+    bp.pre_process(f!(crate::first_pre));
     bp.route(GET, "/after_handler", f!(crate::handler));
     bp.wrap(f!(crate::second));
+    bp.pre_process(f!(crate::second_pre));
     bp.post_process(f!(crate::second_post));
+    bp
+}
+
+pub fn early_return() -> Blueprint {
+    let mut bp = Blueprint::new();
+    bp.wrap(f!(crate::first));
+    bp.post_process(f!(crate::first_post));
+    bp.pre_process(f!(crate::early_return_pre));
+    bp.wrap(f!(crate::second));
+    bp.pre_process(f!(crate::second_pre));
+    bp.post_process(f!(crate::second_post));
+    bp.route(GET, "/early_return", f!(crate::handler));
     bp
 }
 
 pub fn nested() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.wrap(f!(crate::first));
+    bp.pre_process(f!(crate::first_pre));
     bp.post_process(f!(crate::first_post));
     bp.nest({
         let mut bp = Blueprint::new();
         bp.wrap(f!(crate::second));
         bp.post_process(f!(crate::second_post));
+        bp.pre_process(f!(crate::second_pre));
         bp.route(GET, "/nested", f!(crate::handler));
         bp
     });
     bp.wrap(f!(crate::third));
+    bp.pre_process(f!(crate::third_pre));
     bp.post_process(f!(crate::third_post));
     bp
 }
@@ -111,7 +131,7 @@ spy_mw!(first);
 spy_mw!(second);
 spy_mw!(third);
 
-macro_rules! spy_pp {
+macro_rules! spy_post {
     ($name:ident) => {
         pub async fn $name(
             spy: &$crate::Spy,
@@ -123,6 +143,24 @@ macro_rules! spy_pp {
     };
 }
 
-spy_pp!(first_post);
-spy_pp!(second_post);
-spy_pp!(third_post);
+spy_post!(first_post);
+spy_post!(second_post);
+spy_post!(third_post);
+
+pub async fn early_return_pre(spy: &Spy) -> pavex::middleware::Processing {
+    spy.push("early_return_pre".to_string()).await;
+    pavex::middleware::Processing::EarlyReturn(Response::ok())
+}
+
+macro_rules! spy_pre {
+    ($name:ident) => {
+        pub async fn $name(spy: &$crate::Spy) -> pavex::middleware::Processing {
+            spy.push(format!("{}", stringify!($name))).await;
+            pavex::middleware::Processing::Continue
+        }
+    };
+}
+
+spy_pre!(first_pre);
+spy_pre!(second_pre);
+spy_pre!(third_pre);

@@ -1,6 +1,7 @@
 use crate::compiler::analyses::components::component::TransformerInfo;
 use crate::compiler::component::{
-    Constructor, ErrorObserver, PostProcessingMiddleware, RequestHandler, WrappingMiddleware,
+    Constructor, ErrorObserver, PostProcessingMiddleware, PreProcessingMiddleware, RequestHandler,
+    WrappingMiddleware,
 };
 use crate::compiler::computation::Computation;
 use crate::language::ResolvedType;
@@ -12,6 +13,7 @@ pub(crate) enum HydratedComponent<'a> {
     Constructor(Constructor<'a>),
     RequestHandler(RequestHandler<'a>),
     WrappingMiddleware(WrappingMiddleware<'a>),
+    PreProcessingMiddleware(PreProcessingMiddleware<'a>),
     PostProcessingMiddleware(PostProcessingMiddleware<'a>),
     Transformer(Computation<'a>, TransformerInfo),
     ErrorObserver(ErrorObserver<'a>),
@@ -25,6 +27,7 @@ impl<'a> HydratedComponent<'a> {
             HydratedComponent::Transformer(c, ..) => c.input_types(),
             HydratedComponent::WrappingMiddleware(c) => Cow::Borrowed(c.input_types()),
             HydratedComponent::PostProcessingMiddleware(p) => Cow::Borrowed(p.input_types()),
+            HydratedComponent::PreProcessingMiddleware(p) => Cow::Borrowed(p.input_types()),
             HydratedComponent::ErrorObserver(eo) => Cow::Borrowed(eo.input_types()),
         }
     }
@@ -35,6 +38,7 @@ impl<'a> HydratedComponent<'a> {
             HydratedComponent::RequestHandler(r) => Some(r.output_type()),
             HydratedComponent::WrappingMiddleware(e) => Some(e.output_type()),
             HydratedComponent::PostProcessingMiddleware(p) => Some(p.output_type()),
+            HydratedComponent::PreProcessingMiddleware(p) => Some(p.output_type()),
             // TODO: we are not enforcing that the output type of a transformer is not
             //  the unit type. In particular, you can successfully register a `Result<T, ()>`
             //  type, which will result into a `MatchResult` with output `()` for the error.
@@ -54,6 +58,7 @@ impl<'a> HydratedComponent<'a> {
             HydratedComponent::RequestHandler(r) => r.callable.clone().into(),
             HydratedComponent::WrappingMiddleware(w) => w.callable.clone().into(),
             HydratedComponent::PostProcessingMiddleware(p) => p.callable.clone().into(),
+            HydratedComponent::PreProcessingMiddleware(p) => p.callable.clone().into(),
             HydratedComponent::Transformer(t, ..) => t.clone(),
             HydratedComponent::ErrorObserver(eo) => eo.callable.clone().into(),
         }
@@ -77,6 +82,9 @@ impl<'a> HydratedComponent<'a> {
             HydratedComponent::PostProcessingMiddleware(p) => {
                 HydratedComponent::PostProcessingMiddleware(p.into_owned())
             }
+            HydratedComponent::PreProcessingMiddleware(p) => {
+                HydratedComponent::PreProcessingMiddleware(p.into_owned())
+            }
         }
     }
 
@@ -88,8 +96,24 @@ impl<'a> HydratedComponent<'a> {
         }
     }
 
+    pub(crate) fn is_request_handler(&self) -> bool {
+        if let HydratedComponent::RequestHandler(_) = self {
+            true
+        } else {
+            false
+        }
+    }
+
     pub(crate) fn is_post_processing_middleware(&self) -> bool {
         if let HydratedComponent::PostProcessingMiddleware(_) = self {
+            true
+        } else {
+            false
+        }
+    }
+
+    pub(crate) fn is_pre_processing_middleware(&self) -> bool {
+        if let HydratedComponent::PreProcessingMiddleware(_) = self {
             true
         } else {
             false

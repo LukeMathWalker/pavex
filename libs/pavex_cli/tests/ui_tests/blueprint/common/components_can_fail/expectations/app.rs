@@ -102,9 +102,28 @@ pub mod route_0 {
         s_0: app::HttpClient,
         s_1: pavex::request::RequestHead,
     ) -> pavex::response::Response {
+        if let Some(response) = pre_processing_0().await.into_response() {
+            return response;
+        }
         let response = handler(s_0, s_1).await;
         let response = post_processing_0(response).await;
         response
+    }
+    pub async fn pre_processing_0() -> pavex::middleware::Processing {
+        let v0 = app::fallible_pre();
+        let v1 = match v0 {
+            Ok(ok) => ok,
+            Err(v1) => {
+                return {
+                    let v2 = app::pre_error(&v1);
+                    let v3 = <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v2,
+                    );
+                    pavex::middleware::Processing::EarlyReturn(v3)
+                };
+            }
+        };
+        v1
     }
     pub async fn wrapping_0(
         v0: app::HttpClient,
@@ -185,12 +204,12 @@ pub mod route_0 {
     pub async fn post_processing_0(
         v0: pavex::response::Response,
     ) -> pavex::response::Response {
-        let v1 = app::fallible_pp_middleware(v0);
+        let v1 = app::fallible_post(v0);
         let v2 = match v1 {
             Ok(ok) => ok,
             Err(v2) => {
                 return {
-                    let v3 = app::handle_pp_middleware_error(&v2);
+                    let v3 = app::post_error(&v2);
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
                         v3,
                     )
@@ -228,9 +247,28 @@ pub mod route_1 {
     async fn stage_1<'a>(
         s_0: &'a pavex::router::AllowedMethods,
     ) -> pavex::response::Response {
+        if let Some(response) = pre_processing_0().await.into_response() {
+            return response;
+        }
         let response = handler(s_0).await;
         let response = post_processing_0(response).await;
         response
+    }
+    pub async fn pre_processing_0() -> pavex::middleware::Processing {
+        let v0 = app::fallible_pre();
+        let v1 = match v0 {
+            Ok(ok) => ok,
+            Err(v1) => {
+                return {
+                    let v2 = app::pre_error(&v1);
+                    let v3 = <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v2,
+                    );
+                    pavex::middleware::Processing::EarlyReturn(v3)
+                };
+            }
+        };
+        v1
     }
     pub async fn wrapping_0(
         v0: &pavex::router::AllowedMethods,
@@ -263,12 +301,12 @@ pub mod route_1 {
     pub async fn post_processing_0(
         v0: pavex::response::Response,
     ) -> pavex::response::Response {
-        let v1 = app::fallible_pp_middleware(v0);
+        let v1 = app::fallible_post(v0);
         let v2 = match v1 {
             Ok(ok) => ok,
             Err(v2) => {
                 return {
-                    let v3 = app::handle_pp_middleware_error(&v2);
+                    let v3 = app::post_error(&v2);
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
                         v3,
                     )

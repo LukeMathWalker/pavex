@@ -43,6 +43,8 @@ async fn top_level_mw_execute_in_order() {
         vec![
             "first - start",
             "second - start",
+            "first_pre",
+            "second_pre",
             "handler",
             "first_post",
             "second_post",
@@ -66,7 +68,13 @@ async fn mw_registered_after_handler_does_not_wrap_handler() {
     let state = state.get().await;
     assert_eq!(
         state,
-        vec!["first - start", "handler", "first_post", "first - end"]
+        vec![
+            "first - start",
+            "first_pre",
+            "handler",
+            "first_post",
+            "first - end"
+        ]
     );
 }
 
@@ -86,12 +94,32 @@ async fn order_is_preserved_with_nesting() {
         state,
         vec![
             "first - start",
+            "first_pre",
             "second - start",
+            "second_pre",
             "handler",
             "second_post",
             "second - end",
             "first_post",
             "first - end"
         ]
+    );
+}
+
+#[tokio::test]
+async fn pre_processing_mw_can_early_return() {
+    let state = SpyState::new();
+    let port = spawn_test_server(state.clone()).await;
+
+    reqwest::get(&format!("http://localhost:{}/early_return", port))
+        .await
+        .expect("Failed to make request")
+        .error_for_status()
+        .expect("Failed to get successful response");
+
+    let state = state.get().await;
+    assert_eq!(
+        state,
+        vec!["first - start", "early_return_pre", "first - end"]
     );
 }

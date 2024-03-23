@@ -11,13 +11,13 @@ use pavex_bp_schema::Location;
 ///
 /// All components are assigned to a scope.
 /// Scopes can be user-defined (e.g. a `nest` call) or implicit (e.g. the root scope,
-/// the scope for each request handler and the scope for the application state).
+/// the scope for each request handler/middleware and the scope for the application state).
 ///
 /// "Normal" scopes have a single parent scope and zero or more child scopes.
 /// The root scope has no parent scope and zero or more child scopes.
 /// The application state scope has multiple parent scopes and no child scopes.
-/// Each request handler has a dedicated scope with no children—this allows us to register
-/// components that are only visible to the call graph of a specific request handler.
+/// Each request handler/middleware has a dedicated scope with no children—this allows us to register
+/// components that are only visible to the call graph of a specific request handler/middleware.
 ///
 /// All the components in a scope are visible to all the components in the scope's subgraph.
 ///

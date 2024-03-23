@@ -47,9 +47,11 @@ pub struct Stage {
     pub(crate) input_parameters: InputParameters,
     /// Only set if `component_id` is a wrapping middleware.
     pub(crate) next_state: Option<NextState>,
-    /// Post-processing middlewares to be invoked after `computation_id` has completed,
+    /// Post-processing middlewares to be invoked after `wrapping_id` has completed,
     /// but before returning to the caller.
     pub(crate) post_processing_ids: Vec<ComponentId>,
+    /// Pre-processing middlewares to be invoked before `wrapping_id` has completed.
+    pub(crate) pre_processing_ids: Vec<ComponentId>,
 }
 
 /// The "state" for `Next<T>` is the concrete type for `T` used in a specific middleware invocation.
@@ -106,7 +108,9 @@ impl RequestHandlerPipeline {
                         }
                         current_stage_id += 1;
                     }
-                    _ => {}
+                    HydratedComponent::PreProcessingMiddleware(_)
+                    | HydratedComponent::PostProcessingMiddleware(_) => {}
+                    _ => unreachable!(),
                 };
             }
             stage_names
@@ -139,11 +143,24 @@ impl RequestHandlerPipeline {
                     group
                         .iter()
                         .filter(|id| {
-                            !component_db
+                            component_db
                                 .hydrated_component(**id, computation_db)
-                                .is_post_processing_middleware()
+                                .is_pre_processing_middleware()
                         })
                         .cloned()
+                        .chain(
+                            group
+                                .iter()
+                                .filter(|id| {
+                                    component_db
+                                        .hydrated_component(**id, computation_db)
+                                        .is_wrapping_middleware()
+                                        | component_db
+                                            .hydrated_component(**id, computation_db)
+                                            .is_request_handler()
+                                })
+                                .cloned(),
+                        )
                         .chain(
                             group
                                 .iter()
@@ -419,6 +436,7 @@ impl RequestHandlerPipeline {
         let stages = {
             let mut stages = vec![];
             let mut post_processing_ids = vec![];
+            let mut pre_processing_ids = vec![];
             for middleware_id in &ordered_by_registration {
                 let middleware_id = wrapping_id2bound_id
                     .get(middleware_id)
@@ -429,6 +447,7 @@ impl RequestHandlerPipeline {
                         let stage_id = stages.len();
                         let input_parameters = if stage_id == 0 {
                             assert!(post_processing_ids.is_empty());
+                            assert!(pre_processing_ids.is_empty());
                             InputParameters::from_iter(
                                 id2ordered_call_graphs[middleware_id]
                                     .call_graph
@@ -448,10 +467,14 @@ impl RequestHandlerPipeline {
                             input_parameters,
                             next_state: wrapping_id2next_state.remove(middleware_id),
                             post_processing_ids: std::mem::take(&mut post_processing_ids),
+                            pre_processing_ids: std::mem::take(&mut pre_processing_ids),
                         });
                     }
                     HydratedComponent::PostProcessingMiddleware(_) => {
                         post_processing_ids.push(*middleware_id);
+                    }
+                    HydratedComponent::PreProcessingMiddleware(_) => {
+                        pre_processing_ids.push(*middleware_id);
                     }
                     _ => unreachable!(),
                 }

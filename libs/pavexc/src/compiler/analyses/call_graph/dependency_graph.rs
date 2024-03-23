@@ -157,6 +157,7 @@ impl DependencyGraph {
                             input_types.remove(eo.error_input_index);
                             input_types
                         }
+                        HydratedComponent::PreProcessingMiddleware(p) => p.input_types().to_vec(),
                     };
                     for input_type in input_types {
                         if let Some((constructor_id, _)) = constructible_db.get(

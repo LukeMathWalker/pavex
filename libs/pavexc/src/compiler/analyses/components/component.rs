@@ -11,6 +11,9 @@ pub(crate) enum Component {
     WrappingMiddleware {
         source_id: SourceId,
     },
+    PreProcessingMiddleware {
+        source_id: SourceId,
+    },
     PostProcessingMiddleware {
         source_id: SourceId,
     },
@@ -33,6 +36,7 @@ impl Component {
             Component::RequestHandler { user_component_id } => user_component_id.clone().into(),
             Component::WrappingMiddleware { source_id }
             | Component::PostProcessingMiddleware { source_id }
+            | Component::PreProcessingMiddleware { source_id }
             | Component::Constructor { source_id }
             | Component::Transformer { source_id, .. } => source_id.clone(),
             Component::ErrorObserver { user_component_id } => user_component_id.clone().into(),

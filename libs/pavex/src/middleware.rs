@@ -5,7 +5,7 @@
 //! [`Blueprint::wrap`]: crate::blueprint::Blueprint::wrap
 use std::future::IntoFuture;
 
-use crate::response::Response;
+use crate::response::{IntoResponse, Response};
 
 /// A handle to trigger the execution of the rest of the request processing pipeline.
 ///
@@ -20,6 +20,33 @@ where
     C: IntoFuture<Output = Response>,
 {
     request_pipeline: C,
+}
+
+/// The return type of a pre-processing middleware.
+///
+/// It signals to Pavex whether the request processing should continue or be aborted,
+/// and if so, with what response.  
+///
+/// Check out [`Blueprint::pre_process`] for more information.
+///
+/// [`Blueprint::pre_process`]: crate::blueprint::Blueprint::pre_process
+pub enum Processing<T = Response>
+where
+    T: IntoResponse,
+{
+    Continue,
+    EarlyReturn(T),
+}
+
+impl<T: IntoResponse> Processing<T> {
+    /// Converts the [`Processing`] instance into a response, if the intention is to abort.  
+    /// It returns `None` if the intention is to continue the request processing.
+    pub fn into_response(self) -> Option<T> {
+        match self {
+            Processing::Continue => None,
+            Processing::EarlyReturn(response) => Some(response),
+        }
+    }
 }
 
 /// A wrapping middleware that...does nothing.  
