@@ -50,6 +50,7 @@ pub fn blueprint() -> Blueprint {
     bp.constructor(f!(crate::Spy::new), Lifecycle::Singleton);
     bp.nest(top_level());
     bp.nest(after_handler());
+    bp.nest(early_return());
     bp.nest(nested());
     bp
 }
@@ -75,6 +76,18 @@ pub fn after_handler() -> Blueprint {
     bp.wrap(f!(crate::second));
     bp.pre_process(f!(crate::second_pre));
     bp.post_process(f!(crate::second_post));
+    bp
+}
+
+pub fn early_return() -> Blueprint {
+    let mut bp = Blueprint::new();
+    bp.wrap(f!(crate::first));
+    bp.post_process(f!(crate::first_post));
+    bp.pre_process(f!(crate::early_return_pre));
+    bp.wrap(f!(crate::second));
+    bp.pre_process(f!(crate::second_pre));
+    bp.post_process(f!(crate::second_post));
+    bp.route(GET, "/early_return", f!(crate::handler));
     bp
 }
 
@@ -133,6 +146,11 @@ macro_rules! spy_post {
 spy_post!(first_post);
 spy_post!(second_post);
 spy_post!(third_post);
+
+pub async fn early_return_pre(spy: &Spy) -> pavex::middleware::Processing {
+    spy.push("early_return_pre".to_string()).await;
+    pavex::middleware::Processing::EarlyReturn(Response::ok())
+}
 
 macro_rules! spy_pre {
     ($name:ident) => {

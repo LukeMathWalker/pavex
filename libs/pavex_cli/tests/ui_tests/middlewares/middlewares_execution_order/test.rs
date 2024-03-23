@@ -105,3 +105,21 @@ async fn order_is_preserved_with_nesting() {
         ]
     );
 }
+
+#[tokio::test]
+async fn pre_processing_mw_can_early_return() {
+    let state = SpyState::new();
+    let port = spawn_test_server(state.clone()).await;
+
+    reqwest::get(&format!("http://localhost:{}/early_return", port))
+        .await
+        .expect("Failed to make request")
+        .error_for_status()
+        .expect("Failed to get successful response");
+
+    let state = state.get().await;
+    assert_eq!(
+        state,
+        vec!["first - start", "early_return_pre", "first - end"]
+    );
+}

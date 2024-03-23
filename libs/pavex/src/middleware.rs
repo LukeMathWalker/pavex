@@ -36,7 +36,7 @@ where
 /// [`Blueprint::pre_process`]: crate::blueprint::Blueprint::pre_process
 pub enum Processing<T = Response> {
     Continue,
-    Abort(T),
+    EarlyReturn(T),
 }
 
 impl<T: IntoResponse> Processing<T> {
@@ -45,7 +45,7 @@ impl<T: IntoResponse> Processing<T> {
     pub fn into_response(self) -> Option<T> {
         match self {
             Processing::Continue => None,
-            Processing::Abort(response) => Some(response),
+            Processing::EarlyReturn(response) => Some(response),
         }
     }
 }

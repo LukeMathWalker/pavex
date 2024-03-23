@@ -411,7 +411,7 @@ impl Blueprint {
     /// pub fn reject_anonymous(request_head: &RequestHead) -> Processing
     /// {
     ///     if request_head.headers.get(USER_AGENT).is_none() {
-    ///         Processing::Abort(Response::unauthorized())
+    ///         Processing::EarlyReturn(Response::unauthorized())
     ///     } else {
     ///         Processing::Continue
     ///     }
