@@ -77,9 +77,6 @@ pub mod route_0 {
         let response = handler().await;
         response
     }
-    pub async fn pre_processing_0() -> pavex::middleware::Processing {
-        app::pre()
-    }
     pub async fn wrapping_0() -> pavex::response::Response {
         let v0 = crate::route_0::Next0 {
             next: stage_1,
@@ -87,6 +84,9 @@ pub mod route_0 {
         let v1 = pavex::middleware::Next::new(v0);
         let v2 = pavex::middleware::wrap_noop(v1).await;
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
+    }
+    pub async fn pre_processing_0() -> pavex::middleware::Processing {
+        app::pre()
     }
     pub async fn handler() -> pavex::response::Response {
         let v0 = app::handler();
@@ -125,9 +125,6 @@ pub mod route_1 {
         let response = handler(s_0).await;
         response
     }
-    pub async fn pre_processing_0() -> pavex::middleware::Processing {
-        app::pre()
-    }
     pub async fn wrapping_0(
         v0: &pavex::router::AllowedMethods,
     ) -> pavex::response::Response {
@@ -138,6 +135,9 @@ pub mod route_1 {
         let v2 = pavex::middleware::Next::new(v1);
         let v3 = pavex::middleware::wrap_noop(v2).await;
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
+    }
+    pub async fn pre_processing_0() -> pavex::middleware::Processing {
+        app::pre()
     }
     pub async fn handler(
         v0: &pavex::router::AllowedMethods,

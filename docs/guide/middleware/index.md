@@ -1,9 +1,6 @@
-# Middleware
+# Overview
 
 Middlewares are a mechanism to execute logic before and/or after the request handler.  
-
---8<-- "doc_examples/guide/middleware/core_concepts/project-basic.snap"
-
 Middlewares are often used to implement **cross-cutting functionality**, such as:
 
 - telemetry (e.g. structured logging, metrics, etc.)
@@ -11,138 +8,32 @@ Middlewares are often used to implement **cross-cutting functionality**, such as
 - access control (e.g. authentication, authorization, etc.)
 - etc.
 
-## Registration
+## Middleware types
 
-You register a middleware against a blueprint via the [`wrap`](crate::blueprint::Blueprint::wrap) method.
-
---8<-- "doc_examples/guide/middleware/core_concepts/project-registration.snap"
-
-You must provide an **[unambiguous path]** to the middleware, wrapped in the [`f!`][f] macro.  
-A middleware applies to all request handlers registered against the same [`Blueprint`][Blueprint].
-See the [execution order](#execution-order) section for more details.
-
-!!! note "Registration syntax"
-
-    You can use free functions, static methods, non-static methods, and trait methods as middlewares.
-    Check out the [dependency injection cookbook](../dependency_injection/cookbook.md) for more details on
-    the syntax for each case.
+Pavex provides three types of middlewares: [pre-processing], [post-processing], and [wrapping middlewares].  
+As the naming suggests, they differ in **when** they start and complete their execution, making them suitable for different use cases.
 
 
-## `IntoResponse`
+!!! note "Request processing pipeline"
 
-Middlewares, like request handlers, must return a type that can be converted into a [`Response`][Response] via the
-[`IntoResponse`][IntoResponse] trait.  
-If you want to return a custom type from your middleware, you must implement [`IntoResponse`][IntoResponse] for it.
+    In this guide we'll often talk about the **request processing pipeline**.  
+    This term refers to the sequence of components that handle a request, from the moment it arrives to the moment 
+    the response is sent back to the caller.  
+    It includes, in particular, the request handler and all the middlewares that apply to that route.
 
-## `Next`
+At a glance:
 
-Middlewares **wrap** around the rest of the request processing pipeline.
-They are invoked before the request handler and _all the other middlewares_ that were registered later. 
-The remaining request processing pipeline is represented by the [`Next`][Next] type.  
+| Type              | Starts                     | Completes                  | Suitable for                                                                                                                                                                     |
+|-------------------|----------------------------|----------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [Pre-processing]  | Before the request handler | Before the request handler | Skipping the remaining processing, returning an early response.<br/> Example: rejecting unauthenticated requests.                                                                |
+| [Post-processing] | After the request handler  | After the request handler  | Modifying the response and/or performing side-effects based on the its contents.<br/>Examples: logging the response's status code, injecting headers.                            |
+| [Wrapping]        | Before the request handler | After the request handler  | Accessing the future representing the rest of the request processing pipeline.<br/>Examples: enforcing a timeout, attaching a `tracing` span to the request processing pipeline. |
 
-All middlewares must take an instance of [`Next`][Next] as input.  
-To invoke the rest of the request processing pipeline, you call `.await` on the [`Next`][Next] instance.
+Check out the dedicated section for each middleware type to learn more about their usage and requirements.
 
---8<-- "doc_examples/guide/middleware/core_concepts/project-basic.snap"
-
-You can also choose to go through the intermediate step of converting [`Next`][Next] into a [`Future`][Future] via the
-[`IntoFuture`][IntoFuture] trait.  
-This can be useful when you need to invoke APIs that _wrap_ around a [`Future`][Future] (e.g. [`tokio::time::timeout`][timeout]
-for timeouts or `tracing`'s [`.instrument()`][instrument] for logging).
-
---8<-- "doc_examples/guide/middleware/core_concepts/project-into_future.snap"
-
-## Dependency injection
-
-Middlewares can take advantage of **dependency injection**.
-
-You must specify the dependencies of your middleware as **input parameters** in its function signature.  
-Those inputs are going to be built and injected by the framework, according to the **constructors** you have registered.
-
-Check out the [dependency injection guide](../dependency_injection/index.md) for more details
-on how the process works.  
-Check out the [request data guide](../request_data/index.md) for an overview of the data you can extract from the request
-using Pavex's first-party extractors.
-
-## Middlewares can fail
-
-Your middlewares can be fallible, i.e. they can return a [`Result`][Result].
-
---8<-- "doc_examples/guide/middleware/core_concepts/project-fallible.snap"
-
-If they do, you must specify an [**error handler**](../errors/error_handlers.md) when registering them:
-
---8<-- "doc_examples/guide/middleware/core_concepts/project-registration_with_error_handler.snap"
-
-Check out the [error handling guide](../errors/error_handlers.md) for more details.
-
-## Execution order
-
-Middlewares are executed in the order they are registered. 
-
-### Example
-
-Let's consider the following request handler and middlewares:
-
---8<-- "doc_examples/guide/middleware/core_concepts/project-signalers.snap"
-
-Each middleware prints a message before and after invoking the rest of the request processing pipeline.  
-The request handler prints a message when it is invoked, before returning a response.
-
-If you register them as follows
-
---8<-- "doc_examples/guide/middleware/core_concepts/project-vanilla_order.snap"
-
-you'll see this output when you make a request:
-
-```
-First - start
-Second - start
-Handler
-Second - end
-First - end
-```
-
-### Edge cases
-
-Middlewares apply to all routes that were **registered after** them.
-
---8<-- "doc_examples/guide/middleware/core_concepts/project-mw_after_handler.snap"
-
-1. The route has been registered **before** the `second` middleware, so it is not affected by it.
-
-You'll see this output when you make a request:
-
-```
-First - start
-Handler
-First - end
-```
-
-The same principle applies to nested [`Blueprint`s][Blueprint]. 
-Middlewares apply to all routes in nested [`Blueprint`s][Blueprint] that were **nested after** the middleware.
-
---8<-- "doc_examples/guide/middleware/core_concepts/project-mw_after_nested.snap"
-
-1. The nested [`Blueprint`] has been nested **after** the registration of the `first` middleware, so it will apply to its routes.
-2. The nested [`Blueprint`] has been nested **before** the registration of the `second` middleware, so it won't apply to its routes.
-
-You'll see this output when you make a request:
-
-```
-First - start
-Handler
-First - end
-```
-
-[f]: ../../api_reference/pavex/macro.f.html
-[IntoResponse]: ../../api_reference/pavex/response/trait.IntoResponse.html
-[Response]: ../../api_reference/pavex/response/struct.Response.html
-[Blueprint]: ../../api_reference/pavex/blueprint/struct.Blueprint.html
-[Next]: ../../api_reference/pavex/middleware/struct.Next.html
-[instrument]: https://docs.rs/tracing/0.1.40/tracing/trait.Instrument.html#method.instrument
-[timeout]: https://docs.rs/tokio/1.35.1/tokio/time/fn.timeout.html
-[Future]: https://doc.rust-lang.org/std/future/trait.Future.html
-[IntoFuture]: https://doc.rust-lang.org/std/future/trait.IntoFuture.html
-[Result]: https://doc.rust-lang.org/std/result/index.html
-[unambiguous path]: ../dependency_injection/cookbook.md#unambiguous-paths
+[pre-processing]: ./pre_processing.md
+[post-processing]: ./post_processing.md
+[wrapping middlewares]: ./wrapping.md
+[Pre-processing]: ./pre_processing.md
+[Post-processing]: ./post_processing.md
+[Wrapping]: ./wrapping.md

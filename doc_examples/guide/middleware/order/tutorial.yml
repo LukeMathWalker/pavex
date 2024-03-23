@@ -1,0 +1,16 @@
+starter_project_folder: "project"
+commands:
+  - command: "cargo px c"
+    expected_outcome: "success"
+snippets:
+  - name: "registration"
+    source_path: "src/core/blueprint.rs"
+    ranges: [ ".." ]
+  - name: "mw_after_handler"
+    source_path: "src/order1/blueprint.rs"
+    ranges: [ ".." ]
+    hl_lines: [ 7, 8, 9 ]
+  - name: "mw_after_nested"
+    source_path: "src/order2/blueprint.rs"
+    ranges: [ ".." ]
+    hl_lines: [ 7, 8, 9 ]

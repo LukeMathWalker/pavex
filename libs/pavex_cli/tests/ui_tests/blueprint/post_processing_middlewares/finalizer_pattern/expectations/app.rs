@@ -138,13 +138,13 @@ pub mod route_1 {
         response
     }
     async fn stage_1<'a>(
-        mut s_0: app::A,
-        s_1: &'a pavex::router::AllowedMethods,
+        s_0: &'a pavex::router::AllowedMethods,
+        mut s_1: app::A,
     ) -> pavex::response::Response {
-        let response = handler(s_1).await;
-        let response = post_processing_0(response, &mut s_0).await;
-        let response = post_processing_1(response, &mut s_0).await;
-        let response = post_processing_2(response, s_0).await;
+        let response = handler(s_0).await;
+        let response = post_processing_0(response, &mut s_1).await;
+        let response = post_processing_1(response, &mut s_1).await;
+        let response = post_processing_2(response, s_1).await;
         response
     }
     pub async fn wrapping_0(
@@ -152,8 +152,8 @@ pub mod route_1 {
     ) -> pavex::response::Response {
         let v1 = app::a();
         let v2 = crate::route_1::Next0 {
-            s_0: v1,
-            s_1: v0,
+            s_0: v0,
+            s_1: v1,
             next: stage_1,
         };
         let v3 = pavex::middleware::Next::new(v2);
@@ -191,9 +191,9 @@ pub mod route_1 {
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
-        s_0: app::A,
-        s_1: &'a pavex::router::AllowedMethods,
-        next: fn(app::A, &'a pavex::router::AllowedMethods) -> T,
+        s_0: &'a pavex::router::AllowedMethods,
+        s_1: app::A,
+        next: fn(&'a pavex::router::AllowedMethods, app::A) -> T,
     }
     impl<'a, T> std::future::IntoFuture for Next0<'a, T>
     where

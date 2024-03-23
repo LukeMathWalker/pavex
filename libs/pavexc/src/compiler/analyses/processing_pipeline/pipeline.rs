@@ -54,6 +54,35 @@ pub struct Stage {
     pub(crate) pre_processing_ids: Vec<ComponentId>,
 }
 
+struct PipelineIds(Vec<StageIds>);
+
+impl PipelineIds {
+    fn iter(&self) -> impl Iterator<Item = ComponentId> + '_ {
+        self.0
+            .iter()
+            .map(|stage_ids| stage_ids.invocation_order().into_iter())
+            .flatten()
+    }
+}
+
+struct StageIds {
+    pre_processing_ids: Vec<ComponentId>,
+    /// Either a wrapping middleware or a request handler.
+    middle_id: ComponentId,
+    post_processing_ids: Vec<ComponentId>,
+}
+
+impl StageIds {
+    fn invocation_order(&self) -> Vec<ComponentId> {
+        self.pre_processing_ids
+            .iter()
+            .cloned()
+            .chain(std::iter::once(self.middle_id))
+            .chain(self.post_processing_ids.iter().cloned())
+            .collect()
+    }
+}
+
 /// The "state" for `Next<T>` is the concrete type for `T` used in a specific middleware invocation.
 ///
 /// It is computed on a per-pipeline and per-middleware basis, in order to pass down the
@@ -116,11 +145,7 @@ impl RequestHandlerPipeline {
             stage_names
         };
 
-        let grouped_by_stage = {
-            // Partition middlewares into groups, where each group contains 1 wrapping middleware
-            // and all the post-processing middlewares (+handlers) that are invoked after the next
-            // wrapping middleware has completed but before that wrapping middleware completes.
-            // Within each group, we sort the middlewares by their invocation order.
+        let pipeline_ids = {
             let first = component_db
                 .hydrated_component(*ordered_by_registration.first().unwrap(), computation_db);
             assert!(
@@ -128,83 +153,82 @@ impl RequestHandlerPipeline {
                 "First component should be a wrapping middleware, but it's a {:?}",
                 first
             );
-            let mut groups = vec![];
+            let mut stage_ids = vec![];
+            let mut pres = vec![];
+            let mut posts = vec![];
             for id in ordered_by_registration.iter() {
                 let component = component_db.hydrated_component(*id, computation_db);
-                if let HydratedComponent::WrappingMiddleware(_) = component {
-                    groups.push(vec![*id]);
-                } else {
-                    groups.last_mut().unwrap().push(*id);
+                match component {
+                    HydratedComponent::PreProcessingMiddleware(_) => {
+                        pres.push(*id);
+                    }
+                    HydratedComponent::RequestHandler(_)
+                    | HydratedComponent::WrappingMiddleware(_) => {
+                        stage_ids.push(StageIds {
+                            pre_processing_ids: std::mem::take(&mut pres),
+                            middle_id: *id,
+                            post_processing_ids: std::mem::take(&mut posts),
+                        });
+                    }
+                    HydratedComponent::PostProcessingMiddleware(_) => {
+                        posts.push(*id);
+                    }
+                    _ => unreachable!(),
                 }
             }
-            let mut grouped_by_stage = vec![];
-            for group in groups {
-                grouped_by_stage.extend(
-                    group
-                        .iter()
-                        .filter(|id| {
-                            component_db
-                                .hydrated_component(**id, computation_db)
-                                .is_pre_processing_middleware()
-                        })
-                        .cloned()
-                        .chain(
-                            group
-                                .iter()
-                                .filter(|id| {
-                                    component_db
-                                        .hydrated_component(**id, computation_db)
-                                        .is_wrapping_middleware()
-                                        | component_db
-                                            .hydrated_component(**id, computation_db)
-                                            .is_request_handler()
-                                })
-                                .cloned(),
-                        )
-                        .chain(
-                            group
-                                .iter()
-                                .filter(|id| {
-                                    component_db
-                                        .hydrated_component(**id, computation_db)
-                                        .is_post_processing_middleware()
-                                })
-                                .cloned(),
-                        ),
-                );
-            }
-            grouped_by_stage
+            assert!(stage_ids[0].pre_processing_ids.is_empty());
+            assert!(stage_ids[0].post_processing_ids.is_empty());
+            PipelineIds(stage_ids)
         };
 
         // Step 2: For each middleware, build an ordered call graph.
-        // We associate each request-scoped component with the set of middlewares that need it.
-        let mut request_scoped_id2users: IndexMap<ComponentId, IndexSet<ComponentId>> =
-            IndexMap::new();
-        let mut id2call_graphs = HashMap::with_capacity(grouped_by_stage.len());
+        // We associate each request-scoped component with the stage
+        // where it must be built and the number of users.
+        let mut request_scoped_id2state_stage_index: HashMap<ComponentId, (usize, usize)> =
+            HashMap::new();
+        let mut id2call_graphs = HashMap::new();
 
-        for middleware_id in grouped_by_stage.iter() {
-            let call_graph = request_scoped_call_graph(
-                *middleware_id,
-                &IndexSet::new(),
-                &error_observer_ids,
-                computation_db,
-                component_db,
-                constructible_db,
-                diagnostics,
-            )?;
+        for (stage_index, stage_ids) in pipeline_ids.0.iter().enumerate().rev() {
+            for middleware_id in stage_ids.invocation_order().into_iter().rev() {
+                let call_graph = request_scoped_call_graph(
+                    middleware_id,
+                    &IndexSet::new(),
+                    &error_observer_ids,
+                    computation_db,
+                    component_db,
+                    constructible_db,
+                    diagnostics,
+                )?;
 
-            // Add all request-scoped components initialized by this component to the set.
-            for request_scoped_id in
-                extract_request_scoped_compute_nodes(&call_graph.call_graph, component_db)
-            {
-                request_scoped_id2users
-                    .entry(request_scoped_id)
-                    .or_default()
-                    .insert(*middleware_id);
+                // Add all request-scoped components initialized by this component to the set.
+                for request_scoped_id in
+                    extract_request_scoped_compute_nodes(&call_graph.call_graph, component_db)
+                {
+                    let build_in = if component_db.is_wrapping_middleware(middleware_id) {
+                        stage_index
+                    } else {
+                        stage_index - 1
+                    };
+                    let entry = request_scoped_id2state_stage_index
+                        .entry(request_scoped_id)
+                        .or_insert((build_in, 0));
+                    entry.0 = entry.0.min(build_in);
+                    entry.1 += 1;
+                }
+
+                id2call_graphs.insert(middleware_id, call_graph);
             }
-
-            id2call_graphs.insert(*middleware_id, call_graph);
         }
+
+        let request_scoped2built_at_stage_index = {
+            let mut request_scoped2built_at_stage_index = HashMap::new();
+            for (request_scoped_id, (stage_index, n_users)) in request_scoped_id2state_stage_index {
+                if n_users > 1 {
+                    request_scoped2built_at_stage_index.insert(request_scoped_id, stage_index);
+                }
+            }
+            request_scoped2built_at_stage_index
+        };
 
         // Step 3: Combine the call graphs together.
         // For each wrapping middleware, determine which request-scoped and singleton components
@@ -215,77 +239,96 @@ impl RequestHandlerPipeline {
         // request-scoped and singleton components that are expected as input.
         let mut middleware_id2prebuilt_rs_ids: IndexMap<ComponentId, IndexSet<ComponentId>> =
             IndexMap::new();
+        for (stage_index, stage_ids) in pipeline_ids.0.iter().enumerate().rev() {
+            for middleware_id in stage_ids.invocation_order().into_iter().rev() {
+                let call_graph = &id2call_graphs[&middleware_id];
 
-        let mut state_accumulator = IndexSet::new();
-        let mut wrapping_id2next_field_types: HashMap<ComponentId, InputParameters> =
-            HashMap::new();
-        for middleware_id in grouped_by_stage.iter().rev() {
-            let call_graph = &id2call_graphs[middleware_id];
-
-            let mut prebuilt_ids = IndexSet::new();
-            let required_scope_ids =
-                extract_request_scoped_compute_nodes(&call_graph.call_graph, component_db)
-                    .collect_vec();
-            for &request_scoped_id in &required_scope_ids {
-                let users = &request_scoped_id2users[&request_scoped_id];
-                let n_users = users.len();
-                if &users[0] != middleware_id {
-                    prebuilt_ids.insert(request_scoped_id);
-                } else {
-                    if n_users > 1
-                        && !component_db
-                            .hydrated_component(*middleware_id, computation_db)
-                            .is_wrapping_middleware()
-                    {
+                let mut prebuilt_ids = IndexSet::new();
+                let required_scope_ids =
+                    extract_request_scoped_compute_nodes(&call_graph.call_graph, component_db)
+                        .collect_vec();
+                for &request_scoped_id in &required_scope_ids {
+                    let Some(&built_at) =
+                        request_scoped2built_at_stage_index.get(&request_scoped_id)
+                    else {
+                        continue;
+                    };
+                    if built_at < stage_index {
                         prebuilt_ids.insert(request_scoped_id);
+                    } else if built_at == stage_index {
+                        assert!(component_db.is_wrapping_middleware(middleware_id));
                     }
                 }
+                middleware_id2prebuilt_rs_ids.insert(middleware_id, prebuilt_ids.clone());
+
+                // We recompute the call graph for the middleware,
+                // this time with the right set of prebuilt
+                // request-scoped components.
+                // This is necessary because the required long-lived inputs may change based on what's already prebuilt!
+                let call_graph = request_scoped_call_graph(
+                    middleware_id,
+                    &prebuilt_ids,
+                    &error_observer_ids,
+                    computation_db,
+                    component_db,
+                    constructible_db,
+                    diagnostics,
+                )?;
+                id2call_graphs.insert(middleware_id, call_graph);
             }
-            middleware_id2prebuilt_rs_ids.insert(*middleware_id, prebuilt_ids.clone());
-
-            // We recompute the call graph for the middleware,
-            // this time with the right set of prebuilt
-            // request-scoped components.
-            // This is necessary because the required long-lived inputs may change based on what's already prebuilt!
-            let call_graph = request_scoped_call_graph(
-                *middleware_id,
-                &prebuilt_ids,
-                &error_observer_ids,
-                computation_db,
-                component_db,
-                constructible_db,
-                diagnostics,
-            )?;
-            id2call_graphs.insert(*middleware_id, call_graph);
-
-            if component_db
-                .hydrated_component(*middleware_id, computation_db)
-                .is_wrapping_middleware()
-            {
-                wrapping_id2next_field_types.insert(
-                    *middleware_id,
-                    InputParameters::from_iter(state_accumulator.iter()),
-                );
-
-                // We are done with these components, no one needs them upstream.
-                for request_scoped_id in required_scope_ids {
-                    let users = &request_scoped_id2users[&request_scoped_id];
-                    if &users[0] == middleware_id {
-                        state_accumulator.shift_remove(
-                            component_db
-                                .hydrated_component(request_scoped_id, computation_db)
-                                .output_type()
-                                .unwrap(),
-                        );
-                    }
-                }
-            }
-            extract_long_lived_inputs(
-                &id2call_graphs[middleware_id].call_graph,
-                component_db,
-                &mut state_accumulator,
-            );
         }
+
+        let mut state_accumulators = std::iter::repeat(IndexSet::new())
+            .take(pipeline_ids.0.len() - 1)
+            .collect_vec();
+
+        for (stage_index, stage_ids) in pipeline_ids.0.iter().enumerate().rev() {
+            if stage_index == 0 {
+                break;
+            }
+            let state_accumulator = &mut state_accumulators[stage_index - 1];
+            for middleware_id in stage_ids.invocation_order() {
+                let call_graph = &id2call_graphs[&middleware_id];
+                extract_long_lived_inputs(&call_graph.call_graph, component_db, state_accumulator);
+
+                state_accumulator.shift_remove(&component_db.pavex_response);
+            }
+            if stage_index > 1 {
+                let mut tmp = state_accumulator.clone();
+                for (id, built_at) in &request_scoped2built_at_stage_index {
+                    if *built_at == stage_index - 1 {
+                        let output = component_db
+                            .hydrated_component(*id, computation_db)
+                            .output_type()
+                            .cloned()
+                            .unwrap();
+                        tmp.shift_remove(&output);
+                    }
+                }
+                state_accumulators[stage_index - 2] = state_accumulator.clone();
+            }
+        }
+
+        let wrapping_id2next_field_types: HashMap<ComponentId, InputParameters> = pipeline_ids
+            .0
+            .iter()
+            .enumerate()
+            .filter_map(|(stage_index, stage_ids)| {
+                if component_db.is_request_handler(stage_ids.middle_id) {
+                    return None;
+                }
+                let inputs = state_accumulators[stage_index]
+                    .iter()
+                    .filter(|ty| match ty {
+                        ResolvedType::ResolvedPath(_) => *ty != &component_db.pavex_response,
+                        ResolvedType::Reference(ref_) => {
+                            ref_.inner.as_ref() != &component_db.pavex_response
+                        }
+                        _ => true,
+                    });
+                Some((stage_ids.middle_id, InputParameters::from_iter(inputs)))
+            })
+            .collect();
 
         // Since we now know which request-scoped components are prebuilt for each middleware, we can
         // compute the final call graph for each of them.
@@ -294,12 +337,12 @@ impl RequestHandlerPipeline {
         let mut wrapping_id2next_state = HashMap::new();
         let mut wrapping_id2bound_id = HashMap::new();
         let mut wrapping_id = 0;
-        let mut id2ordered_call_graphs = IndexMap::with_capacity(grouped_by_stage.len());
-        for middleware_id in grouped_by_stage.iter() {
+        let mut id2ordered_call_graphs = IndexMap::new();
+        for middleware_id in pipeline_ids.iter() {
             let new_middleware_id = if let HydratedComponent::WrappingMiddleware(_) =
-                component_db.hydrated_component(*middleware_id, computation_db)
+                component_db.hydrated_component(middleware_id, computation_db)
             {
-                let next_state_parameters = &wrapping_id2next_field_types[middleware_id];
+                let next_state_parameters = &wrapping_id2next_field_types[&middleware_id];
                 let next_state_type = PathType {
                     package_id: PackageId::new(GENERATED_APP_PACKAGE_ID),
                     rustdoc_id: None,
@@ -341,7 +384,7 @@ impl RequestHandlerPipeline {
                     source_coordinates: None,
                 };
                 let next_state_callable_id = computation_db.get_or_intern(next_state_constructor);
-                let next_state_scope_id = component_db.scope_id(*middleware_id);
+                let next_state_scope_id = component_db.scope_id(middleware_id);
                 let next_state_constructor_id = component_db
                     .get_or_intern_constructor(
                         next_state_callable_id,
@@ -358,7 +401,7 @@ impl RequestHandlerPipeline {
                 // Since we now have the concrete type of the generic in `Next<_>`, we can bind
                 // the generic type parameter of the middleware to that concrete type.
                 let HydratedComponent::WrappingMiddleware(mw) =
-                    component_db.hydrated_component(*middleware_id, computation_db)
+                    component_db.hydrated_component(middleware_id, computation_db)
                 else {
                     unreachable!()
                 };
@@ -378,7 +421,7 @@ impl RequestHandlerPipeline {
                 let mut bindings = HashMap::with_capacity(1);
                 bindings.insert(next_generic_parameter, next_state_type.clone().into());
                 let bound_middleware_id = component_db.bind_generic_type_parameters(
-                    *middleware_id,
+                    middleware_id,
                     &bindings,
                     computation_db,
                     framework_item_db,
@@ -409,14 +452,14 @@ impl RequestHandlerPipeline {
                         field_bindings: next_state_parameters.bindings.clone(),
                     },
                 );
-                wrapping_id2bound_id.insert(*middleware_id, bound_middleware_id);
+                wrapping_id2bound_id.insert(middleware_id, bound_middleware_id);
                 bound_middleware_id
             } else {
                 // Nothing to do for other middlewares/handlers.
-                *middleware_id
+                middleware_id
             };
 
-            let prebuilt_request_scoped_ids = &middleware_id2prebuilt_rs_ids[middleware_id];
+            let prebuilt_request_scoped_ids = &middleware_id2prebuilt_rs_ids[&middleware_id];
 
             let middleware_call_graph = request_scoped_ordered_call_graph(
                 new_middleware_id,
@@ -534,6 +577,9 @@ impl RequestHandlerPipeline {
                     "Request-scoped component `{}` should be invoked at most once in a request pipeline, but it's invoked {} times instead.",
                     path, n_invocations
                 );
+                for call_graph in self.id2call_graph.values() {
+                    call_graph.print_debug_dot(component_db, computation_db);
+                }
                 panic!("{}", message);
             }
         }
@@ -763,14 +809,13 @@ fn extract_long_lived_inputs(
         let CallGraphNode::InputParameter { type_, source } = node else {
             continue;
         };
-        let InputParameterSource::Component(component_id) = source else {
-            continue;
+        if let InputParameterSource::Component(component_id) = source {
+            assert_ne!(
+                component_db.lifecycle(*component_id),
+                Lifecycle::Transient,
+                "Transient components should not appear as inputs in a call graph"
+            );
         };
-        assert_ne!(
-            component_db.lifecycle(*component_id),
-            Lifecycle::Transient,
-            "Transient components should not appear as inputs in a call graph"
-        );
         buffer.insert(type_.to_owned());
     }
 }

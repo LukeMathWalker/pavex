@@ -11,16 +11,6 @@ digraph "GET /home - 0" {
 }
 
 digraph "GET /home - 1" {
-    0 [ label = "app::post(pavex::response::Response, app::A) -> pavex::response::Response"]
-    1 [ label = "pavex::response::Response"]
-    2 [ label = "app::A"]
-    3 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    1 -> 0 [ ]
-    2 -> 0 [ ]
-    0 -> 3 [ ]
-}
-
-digraph "GET /home - 2" {
     0 [ label = "app::wrap(pavex::middleware::Next<crate::route_0::Next1>, &app::A) -> pavex::response::Response"]
     1 [ label = "pavex::middleware::Next::new(crate::route_0::Next1) -> pavex::middleware::Next<crate::route_0::Next1>"]
     3 [ label = "crate::route_0::Next1() -> crate::route_0::Next1"]
@@ -30,6 +20,16 @@ digraph "GET /home - 2" {
     3 -> 1 [ ]
     0 -> 4 [ ]
     5 -> 0 [ ]
+}
+
+digraph "GET /home - 2" {
+    0 [ label = "app::post(pavex::response::Response, app::A) -> pavex::response::Response"]
+    1 [ label = "pavex::response::Response"]
+    2 [ label = "app::A"]
+    3 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    1 -> 0 [ ]
+    2 -> 0 [ ]
+    0 -> 3 [ ]
 }
 
 digraph "GET /home - 3" {
@@ -53,16 +53,6 @@ digraph "* /home - 0" {
 }
 
 digraph "* /home - 1" {
-    0 [ label = "app::post(pavex::response::Response, app::A) -> pavex::response::Response"]
-    1 [ label = "pavex::response::Response"]
-    2 [ label = "app::A"]
-    3 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    1 -> 0 [ ]
-    2 -> 0 [ ]
-    0 -> 3 [ ]
-}
-
-digraph "* /home - 2" {
     0 [ label = "app::wrap(pavex::middleware::Next<crate::route_1::Next1<'a>>, &app::A) -> pavex::response::Response"]
     1 [ label = "pavex::middleware::Next::new(crate::route_1::Next1<'a>) -> pavex::middleware::Next<crate::route_1::Next1<'a>>"]
     2 [ label = "&pavex::router::AllowedMethods"]
@@ -74,6 +64,16 @@ digraph "* /home - 2" {
     3 -> 1 [ ]
     0 -> 5 [ ]
     6 -> 0 [ ]
+}
+
+digraph "* /home - 2" {
+    0 [ label = "app::post(pavex::response::Response, app::A) -> pavex::response::Response"]
+    1 [ label = "pavex::response::Response"]
+    2 [ label = "app::A"]
+    3 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    1 -> 0 [ ]
+    2 -> 0 [ ]
+    0 -> 3 [ ]
 }
 
 digraph "* /home - 3" {

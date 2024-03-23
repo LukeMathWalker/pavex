@@ -69,11 +69,6 @@ impl RequestHandlerPipeline {
             let (mut input_bindings, input_lifetimes) =
                 (input_parameters.bindings, input_parameters.lifetimes);
             let response_ident = format_ident!("response");
-            input_bindings.0.push(Binding {
-                ident: response_ident.to_string(),
-                type_: component_db.pavex_response.clone(),
-                mutable: false,
-            });
 
             let ordered_by_invocation = stage
                 .pre_processing_ids
@@ -87,6 +82,13 @@ impl RequestHandlerPipeline {
                 let mut invocations = vec![];
                 for id in &ordered_by_invocation {
                     let fn_ = &id2codegened_fn[id].fn_;
+                    if component_db.is_post_processing_middleware(*id) {
+                        input_bindings.0.push(Binding {
+                            ident: response_ident.to_string(),
+                            type_: component_db.pavex_response.clone(),
+                            mutable: false,
+                        });
+                    }
                     let input_parameters =
                         id2codegened_fn[id]
                             .input_parameters
@@ -118,11 +120,13 @@ impl RequestHandlerPipeline {
                         }
                     };
                     invocations.push(invocation);
+                    if component_db.is_post_processing_middleware(*id) {
+                        // Remove the response binding from the input bindings, as it's not an input parameter
+                        input_bindings.0.pop();
+                    }
                 }
                 invocations
             };
-            // Remove the response binding from the input bindings, as it's not an input parameter
-            input_bindings.0.pop();
 
             let fn_ = {
                 let asyncness = ordered_by_invocation
