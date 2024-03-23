@@ -1,7 +1,7 @@
 use std::error::Error;
 
 use cargo_px_env::generated_pkg_manifest_path;
-use mw_core::blueprint;
+use order::blueprint;
 use pavex_cli_client::Client;
 
 fn main() -> Result<(), Box<dyn Error>> {
