@@ -402,10 +402,9 @@ impl Blueprint {
     /// # Example: path normalization
     ///
     /// ```rust
-    /// use http::HeaderValue;
     /// use pavex::{f, blueprint::Blueprint, response::Response};
     /// use pavex::middleware::Processing;
-    /// use pavex::http::header::LOCATION;
+    /// use pavex::http::{HeaderValue, header::LOCATION};
     /// use pavex::request::RequestHead;
     ///
     /// /// If the request path ends with a `/`,
