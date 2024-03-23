@@ -1,12 +1,16 @@
 use pavex::blueprint::{router::GET, Blueprint};
 use pavex::f;
-use pavex::middleware::Next;
+use pavex::middleware::{Next, Processing};
 use pavex::response::Response;
 use std::future::IntoFuture;
 
 pub struct A;
 
 pub fn a() -> A {
+    todo!()
+}
+
+pub fn pre(_a: &A) -> Processing {
     todo!()
 }
 
@@ -25,6 +29,7 @@ pub fn handler() -> Response {
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.request_scoped(f!(crate::a));
+    bp.pre_process(f!(crate::pre));
     bp.post_process(f!(crate::post));
     bp.wrap(f!(crate::wrap));
     bp.route(GET, "/home", f!(crate::handler));
