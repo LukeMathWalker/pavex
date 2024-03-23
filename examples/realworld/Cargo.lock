@@ -1498,7 +1498,7 @@ checksum = "de3145af08024dea9fa9914f381a17b8fc6034dfb00f3a84013f7ff43f29ed4c"
 
 [[package]]
 name = "pavex"
-version = "0.1.18"
+version = "0.1.21"
 dependencies = [
  "anyhow",
  "bytes",
@@ -1535,7 +1535,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_bp_schema"
-version = "0.1.18"
+version = "0.1.21"
 dependencies = [
  "pavex_reflection",
  "serde",
@@ -1543,7 +1543,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_cli_client"
-version = "0.1.18"
+version = "0.1.21"
 dependencies = [
  "anyhow",
  "pavex",
@@ -1552,7 +1552,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_macros"
-version = "0.1.18"
+version = "0.1.21"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1567,14 +1567,14 @@ checksum = "77b9753b03381fd8856966146c4d626d9a8507901c1bcdfbc41df03deea551fc"
 
 [[package]]
 name = "pavex_reflection"
-version = "0.1.18"
+version = "0.1.21"
 dependencies = [
  "serde",
 ]
 
 [[package]]
 name = "pavex_tracing"
-version = "0.1.18"
+version = "0.1.21"
 dependencies = [
  "pavex",
  "tracing",
@@ -1638,7 +1638,7 @@ checksum = "e3148f5046208a5d56bcfc03053e3ca6334e51da8dfb19b6cdc8b306fae3283e"
 
 [[package]]
 name = "persist_if_changed"
-version = "0.1.18"
+version = "0.1.21"
 dependencies = [
  "anyhow",
  "fs-err",

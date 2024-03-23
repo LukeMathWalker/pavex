@@ -1,6 +1,5 @@
 use pavex::blueprint::{constructor::CloningStrategy, Blueprint};
 use pavex::f;
-use pavex::middleware::Next;
 use pavex::request::path::MatchedPathPattern;
 use pavex::request::RequestHead;
 use pavex::response::Response;
@@ -13,7 +12,6 @@ use pavex_tracing::fields::{
     URL_PATH, URL_QUERY, USER_AGENT_ORIGINAL,
 };
 use pavex_tracing::RootSpan;
-use std::future::IntoFuture;
 
 /// Register telemetry middlewares, an error observer and the relevant constructors
 /// with the application blueprint.
@@ -21,7 +19,7 @@ pub(crate) fn register(bp: &mut Blueprint) {
     bp.request_scoped(f!(self::root_span))
         .cloning(CloningStrategy::CloneIfNecessary);
     bp.wrap(f!(pavex_tracing::logger));
-    bp.wrap(f!(self::response_logger));
+    bp.post_process(f!(self::response_logger));
     bp.error_observer(f!(self::error_logger));
 }
 
@@ -57,13 +55,8 @@ pub fn root_span(
     RootSpan::new(span)
 }
 
-/// A middleware to enrich [`RootSpan`] with information extracted from the
-/// outgoing response.
-pub async fn response_logger<T>(next: Next<T>, root_span: &RootSpan) -> Response
-where
-    T: IntoFuture<Output = Response>,
-{
-    let response = next.await;
+/// Enrich [`RootSpan`] with information extracted from the outgoing response.
+pub async fn response_logger(response: Response, root_span: &RootSpan) -> Response {
     root_span.record(
         HTTP_RESPONSE_STATUS_CODE,
         http_response_status_code(&response),
