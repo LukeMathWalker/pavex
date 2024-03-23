@@ -1,11 +1,12 @@
+```rust title="src/core/blueprint.rs" hl_lines="7"
 use pavex::blueprint::router::GET;
 use pavex::blueprint::Blueprint;
 use pavex::f;
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.wrap(f!(crate::first));
-    bp.wrap(f!(crate::second));
-    bp.route(GET, "/", f!(crate::handler));
+    bp.pre_process(f!(super::redirect_to_normalized));
+    bp.route(GET, "/", f!(super::handler));
     bp
 }
+```

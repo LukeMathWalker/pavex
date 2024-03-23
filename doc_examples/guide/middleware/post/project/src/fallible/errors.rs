@@ -1,6 +1,6 @@
 use pavex::response::Response;
-use tokio::time::error::Elapsed;
+use super::CompressionError;
 
-pub fn timeout_error_handler(_e: &Elapsed) -> Response {
+pub fn compression_error_handler(_e: &CompressionError) -> Response {
     Response::internal_server_error()
 }

@@ -4,11 +4,13 @@ Post-processing middlewares are invoked after the request handler.
 They are suitable for modifying the response and/or performing side-effects based on its contents.
 E.g. logging the response's status code, injecting response headers, etc.
 
+--8<-- "doc_examples/guide/middleware/post/project-basic.snap"
+
 ## Registration
 
 You register a post-processing middleware against a blueprint via the [`post_process`](crate::blueprint::Blueprint::post_process) method.
 
-// TODO: code example
+--8<-- "doc_examples/guide/middleware/post/project-registration.snap"
 
 You must provide an **[unambiguous path]** to the middleware, wrapped in the [`f!`][f] macro.  
 
@@ -32,11 +34,11 @@ If you want to return a custom type from your middleware, you must implement [`I
 
 Post-processing middlewares can be fallible, i.e. they can return a [`Result`][Result].
 
-// TODO: example
+--8<-- "doc_examples/guide/middleware/post/project-fallible.snap"
 
 If they do, you must specify an [**error handler**](../errors/error_handlers.md) when registering them:
 
-// TODO: example
+--8<-- "doc_examples/guide/middleware/post/project-registration_with_error_handler.snap"
 
 Check out the [error handling guide](../errors/error_handlers.md) for more details.
 

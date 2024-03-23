@@ -4,8 +4,8 @@ use pavex::f;
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.wrap(f!(super::timeout))
-        .error_handler(f!(super::timeout_error_handler));
-    bp.route(GET, "/fallible", f!(super::handler));
+    bp.post_process(f!(super::compress))
+        .error_handler(f!(super::compression_error_handler));
+    bp.route(GET, "/", f!(super::handler));
     bp
 }

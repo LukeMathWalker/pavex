@@ -1,13 +1,14 @@
-use pavex::middleware::Next;
-use pavex::response::Response;
-use std::future::IntoFuture;
+use pavex::{response::Response};
+use pavex_tracing::{
+    RootSpan,
+    fields::{http_response_status_code, HTTP_RESPONSE_STATUS_CODE}
+};
 
-pub async fn middleware<C>(next: Next<C>) -> Response
-where
-    C: IntoFuture<Output = Response>,
+pub fn response_logger(response: Response, root_span: &RootSpan) -> Response
 {
-    println!("Before the handler");
-    let response = next.await;
-    println!("After the handler");
+    root_span.record(
+        HTTP_RESPONSE_STATUS_CODE,
+        http_response_status_code(&response),
+    );
     response
 }

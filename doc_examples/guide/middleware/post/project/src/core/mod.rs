@@ -1,5 +1,5 @@
 pub use blueprint::blueprint;
-pub use mw::middleware;
+pub use mw::response_logger;
 pub use routes::handler;
 
 mod blueprint;

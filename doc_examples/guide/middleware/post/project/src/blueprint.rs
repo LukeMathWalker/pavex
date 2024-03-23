@@ -1,12 +1,14 @@
 use pavex::blueprint::Blueprint;
+use pavex::f;
+
+pub fn root_span() -> pavex_tracing::RootSpan {
+    todo!()
+}
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
+    bp.request_scoped(f!(self::root_span));
     bp.nest(crate::core::blueprint());
-    bp.nest(crate::logging::blueprint());
-    bp.nest(crate::fallible::blueprint());
-    bp.nest_at("/order1", crate::order1::blueprint());
-    bp.nest_at("/order2", crate::order3::blueprint());
-    bp.nest_at("/order3", crate::order2::blueprint());
+    bp.nest_at("/fallible", crate::fallible::blueprint());
     bp
 }

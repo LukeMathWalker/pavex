@@ -1,12 +1,11 @@
-use pavex::middleware::Next;
 use pavex::response::Response;
-use std::future::IntoFuture;
-use tokio::time::error::Elapsed;
+use super::CompressionError;
 
-pub async fn timeout<C>(next: Next<C>) -> Result<Response, Elapsed>
-where
-    C: IntoFuture<Output = Response>,
+pub fn compress(response: Response) -> Result<Response, CompressionError>
 {
-    let max_duration = std::time::Duration::from_secs(20);
-    tokio::time::timeout(max_duration, next.into_future()).await
+    let compressed = {
+        // Try to compress the response
+        Err(CompressionError)
+    }?;
+    Ok(compressed)
 }

@@ -5,7 +5,7 @@ use pavex::f;
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.wrap(f!(super::middleware));
+    bp.post_process(f!(super::response_logger));
     bp.route(GET, "/", f!(super::handler));
     bp
 }
