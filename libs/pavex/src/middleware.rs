@@ -29,12 +29,11 @@ where
 ///
 /// Check out [`Blueprint::pre_process`] for more information.
 ///
-/// # Constraints
-///
-/// `T` must implement [`IntoResponse`].
-///
 /// [`Blueprint::pre_process`]: crate::blueprint::Blueprint::pre_process
-pub enum Processing<T = Response> {
+pub enum Processing<T = Response>
+where
+    T: IntoResponse,
+{
     Continue,
     EarlyReturn(T),
 }

@@ -399,28 +399,34 @@ impl Blueprint {
     /// section of Pavex's guide for a thorough introduction to middlewares
     /// in Pavex applications.
     ///
-    /// # Example: access control
+    /// # Example: path normalization
     ///
     /// ```rust
+    /// use http::HeaderValue;
     /// use pavex::{f, blueprint::Blueprint, response::Response};
     /// use pavex::middleware::Processing;
-    /// use pavex::http::header::USER_AGENT;
+    /// use pavex::http::header::LOCATION;
     /// use pavex::request::RequestHead;
     ///
-    /// /// Reject requests without a `User-Agent` header.
-    /// pub fn reject_anonymous(request_head: &RequestHead) -> Processing
+    /// /// If the request path ends with a `/`,
+    /// /// redirect to the same path without the trailing `/`.
+    /// pub fn redirect_to_normalized(request_head: &RequestHead) -> Processing
     /// {
-    ///     if request_head.headers.get(USER_AGENT).is_none() {
-    ///         Processing::EarlyReturn(Response::unauthorized())
-    ///     } else {
-    ///         Processing::Continue
-    ///     }
+    ///     let Some(normalized_path) = request_head.target.path().strip_suffix('/') else {
+    ///         // No need to redirect, we continue processing the request.
+    ///         return Processing::Continue;
+    ///     };
+    ///     let location = HeaderValue::from_str(normalized_path).unwrap();
+    ///     let redirect = Response::temporary_redirect().insert_header(LOCATION, location);
+    ///     // Short-circuit the request processing pipeline and return the redirect response
+    ///     // to the client without invoking downstream middlewares and the request handler.
+    ///     Processing::EarlyReturn(redirect)
     /// }
     ///
     /// pub fn api() -> Blueprint {
     ///     let mut bp = Blueprint::new();
     ///     // Register the pre-processing middleware against the blueprint.
-    ///     bp.pre_process(f!(crate::reject_anonymous));
+    ///     bp.pre_process(f!(crate::redirect_to_normalized));
     ///     // [...]
     ///     bp
     /// }
