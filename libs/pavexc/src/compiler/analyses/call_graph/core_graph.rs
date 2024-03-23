@@ -449,7 +449,7 @@ where
         .as_hydrated_component(component_db, computation_db)
         .unwrap();
     let root_is_fallible = root_component.output_type().unwrap().is_result();
-    let new_root_index = if root_is_fallible {
+    let search_start_index = if root_is_fallible {
         let match_node_index = {
             let children: Vec<_> = call_graph
                 .neighbors_directed(root_node_index, Direction::Outgoing)
@@ -479,18 +479,14 @@ where
                 })
                 .unwrap()
         };
-        let into_response_node_index = {
-            let children: Vec<_> = call_graph
-                .neighbors_directed(ok_matcher_node_index, Direction::Outgoing)
-                .collect();
-            assert_eq!(children.len(), 1);
-            children[0]
-        };
-        into_response_node_index
+        ok_matcher_node_index
     } else {
+        root_node_index
+    };
+    let new_root_index = {
         let downstream_sources: Vec<_> = call_graph
             .externals(Direction::Outgoing)
-            .filter(|index| has_path_connecting(&call_graph, root_node_index, *index, None))
+            .filter(|index| has_path_connecting(&call_graph, search_start_index, *index, None))
             .collect();
         assert_eq!(downstream_sources.len(), 1);
         downstream_sources[0]

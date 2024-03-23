@@ -327,13 +327,19 @@ impl RawUserComponentDb {
                     self.process_constructor(&c, current_scope_id);
                 }
                 Component::WrappingMiddleware(w) => {
-                    self.process_middleware(&w, current_scope_id, &mut current_middleware_chain);
+                    self.process_middleware(
+                        &w,
+                        current_scope_id,
+                        &mut current_middleware_chain,
+                        scope_graph_builder,
+                    );
                 }
                 Component::PreProcessingMiddleware(p) => {
                     self.process_pre_processing_middleware(
                         &p,
                         current_scope_id,
                         &mut current_middleware_chain,
+                        scope_graph_builder,
                     );
                 }
                 Component::PostProcessingMiddleware(p) => {
@@ -341,6 +347,7 @@ impl RawUserComponentDb {
                         &p,
                         current_scope_id,
                         &mut current_middleware_chain,
+                        scope_graph_builder,
                     );
                 }
                 Component::Route(r) => self.process_route(
@@ -523,15 +530,17 @@ impl RawUserComponentDb {
         middleware: &WrappingMiddleware,
         current_scope_id: ScopeId,
         current_middleware_chain: &mut Vec<UserComponentId>,
+        scope_graph_builder: &mut ScopeGraphBuilder,
     ) {
         const MIDDLEWARE_LIFECYCLE: Lifecycle = Lifecycle::RequestScoped;
 
+        let middleware_scope_id = scope_graph_builder.add_scope(current_scope_id, None);
         let raw_callable_identifiers_id = self
             .identifiers_interner
             .get_or_intern(middleware.middleware.callable.clone());
         let component = UserComponent::WrappingMiddleware {
             raw_callable_identifiers_id,
-            scope_id: current_scope_id,
+            scope_id: middleware_scope_id,
         };
         let component_id = self.intern_component(
             component,
@@ -556,15 +565,17 @@ impl RawUserComponentDb {
         middleware: &PreProcessingMiddleware,
         current_scope_id: ScopeId,
         current_middleware_chain: &mut Vec<UserComponentId>,
+        scope_graph_builder: &mut ScopeGraphBuilder,
     ) {
         const MIDDLEWARE_LIFECYCLE: Lifecycle = Lifecycle::RequestScoped;
 
+        let middleware_scope_id = scope_graph_builder.add_scope(current_scope_id, None);
         let raw_callable_identifiers_id = self
             .identifiers_interner
             .get_or_intern(middleware.middleware.callable.clone());
         let component = UserComponent::PreProcessingMiddleware {
             raw_callable_identifiers_id,
-            scope_id: current_scope_id,
+            scope_id: middleware_scope_id,
         };
         let component_id = self.intern_component(
             component,
@@ -589,15 +600,17 @@ impl RawUserComponentDb {
         middleware: &PostProcessingMiddleware,
         current_scope_id: ScopeId,
         current_middleware_chain: &mut Vec<UserComponentId>,
+        scope_graph_builder: &mut ScopeGraphBuilder,
     ) {
         const MIDDLEWARE_LIFECYCLE: Lifecycle = Lifecycle::RequestScoped;
 
+        let middleware_scope_id = scope_graph_builder.add_scope(current_scope_id, None);
         let raw_callable_identifiers_id = self
             .identifiers_interner
             .get_or_intern(middleware.middleware.callable.clone());
         let component = UserComponent::PostProcessingMiddleware {
             raw_callable_identifiers_id,
-            scope_id: current_scope_id,
+            scope_id: middleware_scope_id,
         };
         let component_id = self.intern_component(
             component,

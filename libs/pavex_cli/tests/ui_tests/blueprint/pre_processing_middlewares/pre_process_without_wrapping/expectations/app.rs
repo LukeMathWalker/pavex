@@ -71,7 +71,9 @@ pub mod route_0 {
         response
     }
     async fn stage_1() -> pavex::response::Response {
-        let response = pre_processing_0().await;
+        if let Some(response) = pre_processing_0().await.into_response() {
+            return response;
+        }
         let response = handler().await;
         response
     }
@@ -117,7 +119,9 @@ pub mod route_1 {
     async fn stage_1<'a>(
         s_0: &'a pavex::router::AllowedMethods,
     ) -> pavex::response::Response {
-        let response = pre_processing_0().await;
+        if let Some(response) = pre_processing_0().await.into_response() {
+            return response;
+        }
         let response = handler(s_0).await;
         response
     }

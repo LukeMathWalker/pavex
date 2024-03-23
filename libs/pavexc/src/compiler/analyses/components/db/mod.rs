@@ -95,6 +95,10 @@ pub(crate) struct ComponentDb {
     /// It's memoised here to avoid re-resolving it multiple times while analysing a single
     /// blueprint.
     pub(crate) pavex_response: ResolvedType,
+    /// The resolved type for `pavex::middleware::Processing`.  
+    /// It's memoised here to avoid re-resolving it multiple times while analysing a single
+    /// blueprint.
+    pub(crate) pavex_processing: ResolvedType,
     /// Users register constructors directly with a blueprint.
     /// From these user-provided constructors, we build **derived** constructors:
     /// - if a constructor is fallible,
@@ -128,6 +132,11 @@ impl ComponentDb {
     ) -> ComponentDb {
         // We only need to resolve these once.
         let pavex_error = process_framework_path("pavex::Error", package_graph, krate_collection);
+        let pavex_processing = process_framework_path(
+            "pavex::middleware::Processing",
+            package_graph,
+            krate_collection,
+        );
         let pavex_response =
             process_framework_path("pavex::response::Response", package_graph, krate_collection);
         let pavex_error_ref = {
@@ -167,6 +176,7 @@ impl ComponentDb {
             autoregister_matchers: false,
             pavex_error,
             pavex_response,
+            pavex_processing,
             derived2user_registered: Default::default(),
             framework_primitive_ids: Default::default(),
         };
