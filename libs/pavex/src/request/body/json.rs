@@ -130,7 +130,7 @@ mod tests {
     fn missing_content_type() {
         let headers = http::HeaderMap::new();
         let err = super::check_json_content_type(&headers).unwrap_err();
-        insta::assert_display_snapshot!(err, @"The `Content-Type` header is missing. This endpoint expects requests with a `Content-Type` header set to `application/json`, or another `application/*+json` MIME type");
+        insta::assert_snapshot!(err, @"The `Content-Type` header is missing. This endpoint expects requests with a `Content-Type` header set to `application/json`, or another `application/*+json` MIME type");
         insta::assert_debug_snapshot!(err, @r###"
         MissingContentType(
             MissingJsonContentType,
@@ -144,7 +144,7 @@ mod tests {
         headers.insert(http::header::CONTENT_TYPE, "hello world".parse().unwrap());
 
         let err = super::check_json_content_type(&headers).unwrap_err();
-        insta::assert_display_snapshot!(err, @"The `Content-Type` header was set to `hello world`. This endpoint expects requests with a `Content-Type` header set to `application/json`, or another `application/*+json` MIME type");
+        insta::assert_snapshot!(err, @"The `Content-Type` header was set to `hello world`. This endpoint expects requests with a `Content-Type` header set to `application/json`, or another `application/*+json` MIME type");
         insta::assert_debug_snapshot!(err, @r###"
         ContentTypeMismatch(
             JsonContentTypeMismatch {
@@ -163,7 +163,7 @@ mod tests {
         );
 
         let err = super::check_json_content_type(&headers).unwrap_err();
-        insta::assert_display_snapshot!(err, @"The `Content-Type` header was set to `application/xml`. This endpoint expects requests with a `Content-Type` header set to `application/json`, or another `application/*+json` MIME type");
+        insta::assert_snapshot!(err, @"The `Content-Type` header was set to `application/xml`. This endpoint expects requests with a `Content-Type` header set to `application/json`, or another `application/*+json` MIME type");
         insta::assert_debug_snapshot!(err, @r###"
         ContentTypeMismatch(
             JsonContentTypeMismatch {
@@ -247,7 +247,7 @@ mod tests {
 
         // Assert
         let err = outcome.unwrap_err();
-        insta::assert_display_snapshot!(err, @r###"
+        insta::assert_snapshot!(err, @r###"
         Failed to deserialize the body as a JSON document.
         missing field `surname` at line 1 column 28
         "###);
