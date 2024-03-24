@@ -30,5 +30,5 @@ index bb1f65b..78360bd 100644
 +
 +pub fn invalid_user_agent(_e: &ToStrError) -> Response {
 +    Response::bad_request()
-+        .set_typed_body("The `User-Agent` header value must be a valid UTF-8 string")
++        .set_typed_body("The `User-Agent` header value can only use ASCII printable characters.")
 +}
