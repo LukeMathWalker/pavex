@@ -4,7 +4,7 @@
   [31m│[0m There are 2 components that take `app::A` as an input parameter, consuming
   [31m│[0m it by value:
   [31m│[0m - `app::mw`, a wrapping middleware
-  [31m│[0m - `crate::route_0::Next0`
+  [31m│[0m - `crate::route_0::Next1`
   [31m│[0m Since I'm not allowed to clone `app::A`, I can't resolve this conflict.
   [31m│[0m 
   [31m│[0m

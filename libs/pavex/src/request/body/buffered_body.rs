@@ -183,7 +183,7 @@ mod tests {
         let err = BufferedBody::_extract_with_limit(&dummy_request_head(), body, max_n_bytes)
             .await
             .unwrap_err();
-        insta::assert_display_snapshot!(err, @"The request body is larger than the maximum size limit enforced by this server.");
+        insta::assert_snapshot!(err, @"The request body is larger than the maximum size limit enforced by this server.");
         insta::assert_debug_snapshot!(err, @r###"
         SizeLimitExceeded(
             SizeLimitExceeded {
@@ -215,7 +215,7 @@ mod tests {
         let err = BufferedBody::_extract_with_limit(&request_head, body, max_size)
             .await
             .unwrap_err();
-        insta::assert_display_snapshot!(err, @"The request body is larger than the maximum size limit enforced by this server.");
+        insta::assert_snapshot!(err, @"The request body is larger than the maximum size limit enforced by this server.");
         insta::assert_debug_snapshot!(err, @r###"
         SizeLimitExceeded(
             SizeLimitExceeded {

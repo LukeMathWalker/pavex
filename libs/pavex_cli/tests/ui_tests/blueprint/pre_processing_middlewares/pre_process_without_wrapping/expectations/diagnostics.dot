@@ -1,8 +1,4 @@
 digraph "GET /home - 0" {
-    0 [ label = "app::pre() -> pavex::middleware::Processing"]
-}
-
-digraph "GET /home - 1" {
     0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_0::Next0>) -> pavex::response::Response"]
     1 [ label = "pavex::middleware::Next::new(crate::route_0::Next0) -> pavex::middleware::Next<crate::route_0::Next0>"]
     2 [ label = "crate::route_0::Next0() -> crate::route_0::Next0"]
@@ -12,6 +8,10 @@ digraph "GET /home - 1" {
     0 -> 3 [ ]
 }
 
+digraph "GET /home - 1" {
+    0 [ label = "app::pre() -> pavex::middleware::Processing"]
+}
+
 digraph "GET /home - 2" {
     0 [ label = "app::handler() -> pavex::response::Response"]
     1 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
@@ -19,10 +19,6 @@ digraph "GET /home - 2" {
 }
 
 digraph "* /home - 0" {
-    0 [ label = "app::pre() -> pavex::middleware::Processing"]
-}
-
-digraph "* /home - 1" {
     0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_1::Next0<'a>>) -> pavex::response::Response"]
     1 [ label = "pavex::middleware::Next::new(crate::route_1::Next0<'a>) -> pavex::middleware::Next<crate::route_1::Next0<'a>>"]
     2 [ label = "crate::route_1::Next0(&'a pavex::router::AllowedMethods) -> crate::route_1::Next0<'a>"]
@@ -32,6 +28,10 @@ digraph "* /home - 1" {
     2 -> 1 [ ]
     0 -> 4 [ ]
     5 -> 2 [ ]
+}
+
+digraph "* /home - 1" {
+    0 [ label = "app::pre() -> pavex::middleware::Processing"]
 }
 
 digraph "* /home - 2" {

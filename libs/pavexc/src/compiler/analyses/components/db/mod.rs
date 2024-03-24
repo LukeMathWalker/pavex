@@ -925,7 +925,19 @@ impl ComponentDb {
             else {
                 continue;
             };
-            let mut middleware_chain = vec![];
+            // We add a synthetic no-op wrapping middleware to have a place where to
+            // "attach" state that needs to be shared between the first non-trivial middleware
+            // and its siblings (i.e. the pre- and post-processing middlewares around it).
+            let noop_component_id = self.get_or_intern(
+                UnregisteredComponent::SyntheticWrappingMiddleware {
+                    computation_id: pavex_noop_wrap_id,
+                    scope_id: self.scope_id(handler_component_id),
+                    derived_from: None,
+                },
+                computation_db,
+            );
+            let mut middleware_chain = vec![noop_component_id];
+
             for middleware_id in self
                 .user_component_db
                 .get_middleware_ids(request_handler_id)
@@ -935,44 +947,6 @@ impl ComponentDb {
                 {
                     middleware_chain.push(*middleware_component_id);
                 }
-            }
-
-            if let Some(first) = middleware_chain.first().cloned() {
-                let first_middleware = self.hydrated_component(first, computation_db);
-                match first_middleware {
-                    HydratedComponent::WrappingMiddleware(_) => {}
-                    HydratedComponent::PreProcessingMiddleware(_)
-                    | HydratedComponent::PostProcessingMiddleware(_) => {
-                        // We need to add a synthetic wrapping middleware to have a place where to
-                        // "attach" state that needs to be shared between the request handler and the
-                        // pre/post-processing middlewares.
-                        let noop_component_id = self.get_or_intern(
-                            UnregisteredComponent::SyntheticWrappingMiddleware {
-                                computation_id: pavex_noop_wrap_id,
-                                scope_id: self.scope_id(handler_component_id),
-                                derived_from: None,
-                            },
-                            computation_db,
-                        );
-                        middleware_chain.insert(0, noop_component_id);
-                    }
-                    HydratedComponent::RequestHandler(_)
-                    | HydratedComponent::Transformer(_, _)
-                    | HydratedComponent::Constructor(_)
-                    | HydratedComponent::ErrorObserver(_) => {
-                        unreachable!()
-                    }
-                }
-            } else {
-                let noop_component_id = self.get_or_intern(
-                    UnregisteredComponent::SyntheticWrappingMiddleware {
-                        computation_id: pavex_noop_wrap_id,
-                        scope_id: self.scope_id(handler_component_id),
-                        derived_from: None,
-                    },
-                    computation_db,
-                );
-                middleware_chain.insert(0, noop_component_id);
             }
 
             self.handler_id2middleware_ids
@@ -1255,6 +1229,21 @@ impl ComponentDb {
     /// Returns `true` if the component is a pre-processing middleware, `false` otherwise.
     pub fn is_pre_processing_middleware(&self, id: ComponentId) -> bool {
         matches!(self[id], Component::PreProcessingMiddleware { .. })
+    }
+
+    /// Returns `true` if the component is a wrapping middleware, `false` otherwise.
+    pub fn is_wrapping_middleware(&self, id: ComponentId) -> bool {
+        matches!(self[id], Component::WrappingMiddleware { .. })
+    }
+
+    /// Returns `true` if the component is a post-processing middleware, `false` otherwise.
+    pub fn is_post_processing_middleware(&self, id: ComponentId) -> bool {
+        matches!(self[id], Component::PostProcessingMiddleware { .. })
+    }
+
+    /// Returns `true` if the component is a request handler, `false` otherwise.
+    pub fn is_request_handler(&self, id: ComponentId) -> bool {
+        matches!(self[id], Component::RequestHandler { .. })
     }
 
     /// If the component is a request handler, return the ids of the middlewares that wrap around
