@@ -95,8 +95,8 @@ steps:
         ranges: [ "0..2", "10..23" ]
       - name: "register"
         source_path: "app/src/blueprint.rs"
-        ranges: [ "7..8", "12..13", "16..17" ]
-        hl_lines: [ 4 ]
+        ranges: [ "2..3", "7..8", "12..13", "16..17" ]
+        hl_lines: [ 6 ]
     commands:
       - command: "cargo px c"
         expected_outcome: "success"
