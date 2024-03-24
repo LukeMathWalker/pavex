@@ -10,7 +10,7 @@ snippets:
     ranges: [ "2.." ]
     hl_lines: [ 6 ]
   - name: "ping_handler"
-    source_path: "app/src/routes/status.rs"
+    source_path: "app/src/routes/ping.rs"
     ranges: [ ".." ]
   - name: "cargo_px_in_manifest"
     source_path: "server_sdk/Cargo.toml"

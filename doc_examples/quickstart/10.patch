@@ -3,7 +3,7 @@ index fb02807..eeb2652 100644
 --- a/server/tests/integration/greet.rs
 +++ b/server/tests/integration/greet.rs
 @@ -18,3 +18,23 @@ async fn greet_happy_path() {
-     assert_eq!(response.status().as_u16(), StatusCode::OK.as_u16());
+     assert_eq!(response.status(), StatusCode::OK);
      assert_eq!(response.text().await.unwrap(), "Hello, Ursula!");
  }
 +
@@ -20,7 +20,7 @@ index fb02807..eeb2652 100644
 +        .await
 +        .expect("Failed to execute request.");
 +
-+    assert_eq!(response.status().as_u16(), StatusCode::BAD_REQUEST.as_u16());
++    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 +    assert_eq!(
 +        response.text().await.unwrap(),
 +        "The `User-Agent` header value can only use ASCII printable characters."

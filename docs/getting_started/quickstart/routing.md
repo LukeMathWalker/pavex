@@ -12,7 +12,7 @@ It specifies:
 
 - The HTTP method (`GET`)
 - The path (`/api/ping`)
-- An [unambiguous path](../../guide/dependency_injection/cookbook.md) to the handler function (`self::status::ping`), wrapped in the [`f!`][f!] macro
+- An [unambiguous path](../../guide/dependency_injection/cookbook.md) to the handler function (`self::ping::get`), wrapped in the [`f!`][f!] macro
 
 ## Request handlers
 
@@ -39,7 +39,7 @@ Create a new module, `greet.rs`, in the `app/src/routes` folder:
 
 --8<-- "doc_examples/quickstart/02-route_def.snap"
 
-The body of the `greet` handler is stubbed out with `todo!()` for now, but we'll fix that soon enough.  
+The body of the `GET /api/greet/:name` handler is stubbed out with `todo!()` for now, but we'll fix that soon enough.  
 Let's register the new route with the [`Blueprint`][Blueprint] in the meantime:
 
 --8<-- "doc_examples/quickstart/02-register_new_route.snap"
@@ -50,7 +50,6 @@ Let's register the new route with the [`Blueprint`][Blueprint] in the meantime:
 
 To access the `name` route parameter from your new handler you must use the [`PathParams`][PathParams] extractor:
 
-
 --8<-- "doc_examples/quickstart/03-route_def.snap"
 
 1. The name of the field must match the name of the route parameter as it appears in the path we registered with
@@ -58,7 +57,7 @@ To access the `name` route parameter from your new handler you must use the [`Pa
 2. The [`PathParams`][PathParams] extractor is generic over the type of the path parameters.  
    In this case, we're using the `GreetParams` type we just defined.
 
-You can now return the expected response from the `greet` handler:
+You can now return the expected response from the handler:
 
 --8<-- "doc_examples/quickstart/04-route_def.snap"
 

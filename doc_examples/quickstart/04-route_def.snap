@@ -7,7 +7,7 @@ pub struct GreetParams {
     pub name: String,
 }
 
-pub fn greet(params: PathParams<GreetParams>) -> Response {
+pub fn get(params: PathParams<GreetParams>) -> Response {
     let GreetParams { name }/* (1)! */ = params.0;
     Response::ok() // (2)!
         .set_typed_body(format!("Hello, {name}!")) // (3)!

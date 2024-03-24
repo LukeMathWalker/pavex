@@ -1,18 +1,18 @@
 [31m[1mERROR[0m[39m: 
-  [31m×[0m I can't invoke your request handler, `app::routes::greet::greet`, because it needs an instance
+  [31m×[0m I can't invoke your request handler, `app::routes::greet::get`, because it needs an instance
   [31m│[0m of `app::user_agent::UserAgent` as input, but I can't find a constructor for that type.
   [31m│[0m
   [31m│[0m     ╭─[[36;1;4mapp/src/routes/mod.rs[0m:8:1]
-  [31m│[0m  [2m 8[0m │     bp.route(GET, "/api/ping", f!(self::status::ping));
-  [31m│[0m  [2m 9[0m │     bp.route(GET, "/api/greet/:name", f!(self::greet::greet));
-  [31m│[0m     · [35;1m                                      ───────────┬──────────[0m
-  [31m│[0m     ·                                                  [35;1m╰── The request handler was registered here[0m
+  [31m│[0m  [2m 8[0m │     bp.route(GET, "/api/ping", f!(self::ping::get));
+  [31m│[0m  [2m 9[0m │     bp.route(GET, "/api/greet/:name", f!(self::greet::get));
+  [31m│[0m     · [35;1m                                      ──────────┬─────────[0m
+  [31m│[0m     ·                                                 [35;1m╰── The request handler was registered here[0m
   [31m│[0m  [2m10[0m │ }
   [31m│[0m     ╰────
   [31m│[0m     ╭─[[36;1;4mapp/src/routes/greet.rs[0m:10:1]
   [31m│[0m  [2m10[0m │ 
-  [31m│[0m  [2m11[0m │ pub fn greet(params: PathParams<GreetParams>, user_agent: UserAgent) -> Response {
-  [31m│[0m     · [35;1m                                              ──────────┬──────────[0m
+  [31m│[0m  [2m11[0m │ pub fn get(params: PathParams<GreetParams>, user_agent: UserAgent) -> Response {
+  [31m│[0m     · [35;1m                                            ──────────┬──────────[0m
   [31m│[0m     ·               [35;1mI don't know how to construct an instance of this input parameter[0m
   [31m│[0m  [2m12[0m │     if let UserAgent::Unknown = user_agent {
   [31m│[0m     ╰────
