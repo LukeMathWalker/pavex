@@ -32,8 +32,9 @@ use std::fmt;
 
 /// Pavex's error type: an opaque wrapper around the concrete error type
 /// return by your components (e.g. request handlers, constructors, etc.).  
-/// It is primarily used as an input parameter for
-/// [error observers](https://pavex.dev/docs/guide/errors/error_observers/).
+/// It is used as an input parameter by
+/// [error observers](https://pavex.dev/docs/guide/errors/error_observers/) and
+/// [universal error handlers](https://pavex.dev/docs/guide/errors/error_handlers/#universal).
 ///
 /// # Guide
 ///
