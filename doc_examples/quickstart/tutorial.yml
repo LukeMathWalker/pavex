@@ -134,7 +134,7 @@ steps:
         source_path: "server/tests/integration/greet.rs"
         ranges: [ ".." ]
     commands:
-      - command: "cargo px c"
+      - command: "cargo px t"
         expected_outcome: "success"
   - patch: "10.patch"
     snippets:
@@ -142,5 +142,5 @@ steps:
         source_path: "server/tests/integration/greet.rs"
         ranges: [ "21.." ]
     commands:
-      - command: "cargo px c"
+      - command: "cargo px t"
         expected_outcome: "success"
