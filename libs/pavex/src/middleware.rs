@@ -1,8 +1,10 @@
 //! Middleware types and utilities.
 //!
-//! See [`Blueprint::wrap`] and [`Next`] for more information.
+//! # Guide
 //!
-//! [`Blueprint::wrap`]: crate::blueprint::Blueprint::wrap
+//! Check out the ["Middleware"](https://pavex.dev/docs/guide/middleware)
+//! section of Pavex's guide for a thorough introduction to middlewares
+//! in Pavex applications.
 use std::future::IntoFuture;
 
 use crate::response::{IntoResponse, Response};
