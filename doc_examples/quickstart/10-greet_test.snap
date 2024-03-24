@@ -16,7 +16,7 @@ async fn non_utf8_user_agent_is_rejected() {
     assert_eq!(response.status().as_u16(), StatusCode::BAD_REQUEST.as_u16());
     assert_eq!(
         response.text().await.unwrap(),
-        "The `User-Agent` header value must be a valid UTF-8 string"
+        "The `User-Agent` header value can only use ASCII printable characters."
     );
 }
 ```
