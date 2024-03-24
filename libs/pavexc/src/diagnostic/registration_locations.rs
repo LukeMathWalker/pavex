@@ -39,8 +39,10 @@ pub(crate) fn get_f_macro_invocation_span(
     match node {
         Call::MethodCall(node) => {
             let argument = match node.method.to_string().as_str() {
-                "error_handler" | "error_observer" | "constructor" | "wrap" | "post_process"
-                | "fallback" | "singleton" | "request_scoped" | "transient" => node.args.first(),
+                "error_handler" | "error_observer" | "constructor" | "wrap" | "pre_process"
+                | "post_process" | "fallback" | "singleton" | "request_scoped" | "transient" => {
+                    node.args.first()
+                }
                 "route" => node.args.iter().nth(2),
                 s => {
                     tracing::trace!(
@@ -66,6 +68,7 @@ pub(crate) fn get_f_macro_invocation_span(
                         | ("Blueprint", "request_scoped")
                         | ("Blueprint", "transient")
                         | ("Blueprint", "wrap")
+                        | ("Blueprint", "pre_process")
                         | ("Blueprint", "post_process")
                         | ("Blueprint", "fallback") => {
                             // Blueprint::error_handler(bp, handler)
@@ -75,6 +78,7 @@ pub(crate) fn get_f_macro_invocation_span(
                             // Blueprint::request_scoped(bp, constructor)
                             // Blueprint::transient(bp, constructor)
                             // Blueprint::wrap(bp, middleware)
+                            // Blueprint::pre_process(bp, middleware)
                             // Blueprint::post_process(bp, middleware)
                             // Blueprint::fallback(bp, handler)
                             1
@@ -89,11 +93,13 @@ pub(crate) fn get_f_macro_invocation_span(
                         }
                         ("Constructor", "new")
                         | ("WrappingMiddleware", "new")
+                        | ("PreProcessingMiddleware", "new")
                         | ("PostProcessingMiddleware", "new")
                         | ("ErrorObserver", "new")
                         | ("Fallback", "new") => {
                             // Constructor::new(constructor, lifecycle)
                             // WrappingMiddleware::new(mw)
+                            // PreProcessingMiddleware::new(mw)
                             // PostProcessingMiddleware::new(mw)
                             // ErrorObserver::new(observer)
                             // Fallback::new(fallback)
