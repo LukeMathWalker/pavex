@@ -1,4 +1,4 @@
-# Wrapping middlewares
+# Wrapping
 
 [Pre-processing](pre_processing.md) and [post-processing](post_processing.md) middlewares can take you a long way, but they can't do everything. 
 It is impossible, for example, to enforce a request-wide timeout or attach a `tracing` span to the request processing pipeline
@@ -19,8 +19,10 @@ You register a wrapping middleware against a blueprint via the [`wrap`](crate::b
 --8<-- "doc_examples/guide/middleware/wrapping/project-registration.snap"
 
 You must provide an **[unambiguous path]** to the middleware, wrapped in the [`f!`][f] macro.  
-A middleware applies to all request handlers registered against the same [`Blueprint`][Blueprint].
-See the [execution order](#execution-order) section for more details.
+
+The middleware will be invoked for all request handlers registered after it, as long as they were registered against the same [`Blueprint`][Blueprint]
+or one of its nested children.
+Check out the [scoping section](scoping.md) for more details.
 
 !!! note "Registration syntax"
 

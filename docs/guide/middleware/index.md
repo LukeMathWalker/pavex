@@ -29,7 +29,7 @@ At a glance:
 | [Post-processing] | After the request handler  | After the request handler  | Modifying the response and/or performing side-effects based on the its contents.<br/>Examples: logging the response's status code, injecting headers.                            |
 | [Wrapping]        | Before the request handler | After the request handler  | Accessing the future representing the rest of the request processing pipeline.<br/>Examples: enforcing a timeout, attaching a `tracing` span to the request processing pipeline. |
 
-Check out the dedicated section for each middleware type to learn more about their usage and requirements.
+Each middleware type has a dedicated section in this guide. Check them out for more details!
 
 [pre-processing]: ./pre_processing.md
 [post-processing]: ./post_processing.md

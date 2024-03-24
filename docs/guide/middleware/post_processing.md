@@ -1,4 +1,4 @@
-# Post-processing middlewares
+# Post-processing
 
 Post-processing middlewares are invoked after the request handler.  
 They are suitable for modifying the response and/or performing side-effects based on its contents.
@@ -16,6 +16,7 @@ You must provide an **[unambiguous path]** to the middleware, wrapped in the [`f
 
 The middleware will be invoked for all request handlers registered after it, as long as they were registered against the same [`Blueprint`][Blueprint]
 or one of its nested children.
+Check out the [scoping section](scoping.md) for more details.
 
 !!! note "Registration syntax"
 

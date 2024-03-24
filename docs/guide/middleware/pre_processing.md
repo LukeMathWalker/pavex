@@ -1,4 +1,4 @@
-# Pre-processing middlewares
+# Pre-processing
 
 Pre-processing middlewares execute ahead of the request handler.  
 They can be used to enforce pre-conditions and return an early response if they are not met, 
@@ -17,6 +17,7 @@ You must provide an **[unambiguous path]** to the middleware, wrapped in the [`f
 
 The middleware will be invoked for all request handlers registered after it, as long as they were registered against the same [`Blueprint`][Blueprint]
 or one of its nested children.
+Check out the [scoping section](scoping.md) for more details.
 
 !!! note "Registration syntax"
 

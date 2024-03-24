@@ -26,6 +26,11 @@ pub async fn pre2() -> Processing
     Processing::Continue
 }
 
+pub async fn pre3() -> Processing
+{
+    Processing::Continue
+}
+
 pub async fn post1(response: Response) -> Response
 {
     response
