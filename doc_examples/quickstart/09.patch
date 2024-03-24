@@ -21,7 +21,7 @@ index 0000000..fb02807
 +        .await
 +        .expect("Failed to execute request.");
 +
-+    assert_eq!(response.status().as_u16(), StatusCode::OK.as_u16());
++    assert_eq!(response.status(), StatusCode::OK);
 +    assert_eq!(response.text().await.unwrap(), "Hello, Ursula!");
 +}
 diff --git a/server/tests/integration/main.rs b/server/tests/integration/main.rs
@@ -51,5 +51,5 @@ index c79eb0e..bfd2726 100644
 -    let response = api.get_ping().await;
 +    let response = api.get_ping().await; //(3)!
  
-     assert_eq!(response.status().as_u16(), StatusCode::OK.as_u16());
+     assert_eq!(response.status(), StatusCode::OK);
  }
