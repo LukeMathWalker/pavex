@@ -9,7 +9,7 @@ pub fn constructor() {
 #[derive(Debug)]
 pub struct Error;
 
-pub fn fallible_constructor_building_unit() -> Result<(), Error> {
+pub fn fallible_unit_constructor() -> Result<(), Error> {
     todo!()
 }
 
@@ -25,19 +25,27 @@ pub fn handler() -> Response {
     todo!()
 }
 
-pub fn unit_wrapping_middleware() {
+pub fn unit_wrapping() {
     todo!()
 }
 
-pub fn fallible_wrapping_middleware() -> Result<(), Error> {
+pub fn fallible_unit_wrapping() -> Result<(), Error> {
     todo!()
 }
 
-pub fn unit_pp_middleware(_response: Response) {
+pub fn unit_pre() {
     todo!()
 }
 
-pub fn fallible_pp_middleware(_response: Response) -> Result<(), Error> {
+pub fn unit_post(_response: Response) {
+    todo!()
+}
+
+pub fn fallible_unit_pre() -> Result<(), Error> {
+    todo!()
+}
+
+pub fn fallible_unit_post(_response: Response) -> Result<(), Error> {
     todo!()
 }
 
@@ -52,19 +60,22 @@ pub fn fallible_unit_handler() -> Result<(), Error> {
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.constructor(f!(crate::constructor), Lifecycle::Singleton);
-    bp.constructor(
-        f!(crate::fallible_constructor_building_unit),
-        Lifecycle::RequestScoped,
-    );
-    bp.constructor(f!(crate::fallible_constructor), Lifecycle::RequestScoped)
+    bp.request_scoped(f!(crate::fallible_unit_constructor));
+    bp.request_scoped(f!(crate::fallible_constructor))
         .error_handler(f!(crate::error_handler));
 
-    bp.wrap(f!(crate::unit_wrapping_middleware));
-    bp.wrap(f!(crate::fallible_wrapping_middleware))
+    bp.pre_process(f!(crate::unit_pre));
+    bp.pre_process(f!(crate::fallible_unit_pre))
         .error_handler(f!(crate::error_handler));
-    bp.post_process(f!(crate::unit_pp_middleware));
-    bp.post_process(f!(crate::fallible_pp_middleware))
+
+    bp.wrap(f!(crate::unit_wrapping));
+    bp.wrap(f!(crate::fallible_unit_wrapping))
         .error_handler(f!(crate::error_handler));
+
+    bp.post_process(f!(crate::unit_post));
+    bp.post_process(f!(crate::fallible_unit_post))
+        .error_handler(f!(crate::error_handler));
+
     bp.route(GET, "/home", f!(crate::handler));
     bp.route(GET, "/unit", f!(crate::unit_handler));
     bp.route(GET, "/fallible_unit", f!(crate::fallible_unit_handler))
