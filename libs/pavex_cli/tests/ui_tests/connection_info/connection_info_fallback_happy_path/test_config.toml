@@ -4,4 +4,7 @@ description = "Pavex can extract path parameters"
 codegen = "pass"
 
 [dev-dependencies]
+http-body-util = "0.1.1"
+hyper = "1.2.0"
+hyper-util = "0.1.3"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }

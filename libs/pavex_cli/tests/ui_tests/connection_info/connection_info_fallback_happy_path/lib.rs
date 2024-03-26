@@ -8,7 +8,7 @@ pub fn root() -> Response {
 
 pub fn get_connection_info(conn_info: &ConnectionInfo) -> Response {
     let peer_addr = conn_info.peer_addr();
-    Response::ok().set_typed_body(format!("Success"))
+    Response::ok().set_typed_body(format!("{peer_addr}"))
 }
 
 pub fn blueprint() -> Blueprint {

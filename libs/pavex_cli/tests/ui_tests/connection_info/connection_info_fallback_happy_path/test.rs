@@ -1,6 +1,13 @@
 use std::future::IntoFuture;
 use std::net::TcpListener;
 
+use http_body_util::{BodyExt, Empty};
+use hyper::body::Bytes;
+use hyper::client::conn::http1::handshake;
+use hyper::Request;
+use hyper_util::rt::TokioIo;
+use tokio::io::AsyncWriteExt;
+
 use application::{build_application_state, run};
 
 async fn spawn_test_server() -> u16 {
@@ -28,11 +35,33 @@ async fn spawn_test_server() -> u16 {
 #[tokio::test]
 async fn connection_info_extraction_works() {
     let port = spawn_test_server().await;
-    let response = reqwest::get(&format!("http://localhost:{port}"))
+    let addr = format!("localhost:{port}");
+    let stream = tokio::net::TcpStream::connect(addr)
         .await
-        .expect("Failed to make request")
-        .error_for_status()
-        .expect("Failed to get successful response");
-    let text = response.text().await.expect("Failed to get response body");
-    assert_eq!(format!("Success"), text);
+        .expect("Failed to connect TCP stream");
+    let local_addr = stream.local_addr().expect("Failed to get local address");
+    let io = TokioIo::new(stream);
+    let (mut sender, conn) = handshake(io).await.expect("TCP handshake failed");
+    tokio::task::spawn(async move { conn.await.expect("TCP connection failed") });
+
+    let req = Request::builder()
+        .uri("/")
+        .body(Empty::<Bytes>::new())
+        .expect("Failed to construct request");
+
+    let mut res = sender
+        .send_request(req)
+        .await
+        .expect("Failed to send request");
+
+    let mut body = Vec::new();
+    while let Some(next) = res.frame().await {
+        let frame = next.expect("Failed to get frame");
+        if let Some(chunk) = frame.data_ref() {
+            body.write_all(&chunk).await.expect("Failed to write chunk");
+        }
+    }
+    let body = String::from_utf8(body).expect("Body is not UTF8");
+
+    assert_eq!(format!("{local_addr}"), body);
 }
