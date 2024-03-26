@@ -13,6 +13,7 @@
 pub use error::Error;
 
 pub mod blueprint;
+pub mod connection;
 mod error;
 pub mod http;
 pub mod kit;

@@ -105,6 +105,21 @@ impl FrameworkItemDb {
                 binding: format_ident!("allowed_methods"),
             },
         );
+
+        let connection_info = process_framework_path(
+            "pavex::connection::ConnectionInfo",
+            package_graph,
+            krate_collection,
+        );
+        items.insert(connection_info, Self::connection_info());
+        id2metadata.insert(
+            Self::connection_info(),
+            FrameworkItemMetadata {
+                lifecycle: Lifecycle::RequestScoped,
+                cloning_strategy: CloningStrategy::CloneIfNecessary,
+                binding: format_ident!("connection_info"),
+            },
+        );
         Self { items, id2metadata }
     }
 
@@ -116,6 +131,10 @@ impl FrameworkItemDb {
     /// Return the id for the `MatchedPathPattern` type.
     pub(crate) fn allowed_methods_id() -> FrameworkItemId {
         4
+    }
+
+    pub(crate) fn connection_info() -> FrameworkItemId {
+        5
     }
 
     /// Return the [`Lifecycle`] associated with a framework item.
