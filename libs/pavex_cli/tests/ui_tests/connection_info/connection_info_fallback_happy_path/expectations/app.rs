@@ -40,7 +40,7 @@ async fn route_request(
         Err(_) => {
             let connection_info = connection_info
                 .expect("Required ConnectionInfo is missing");
-            return route_1::handler(&connection_info).await;
+            return route_1::entrypoint(&connection_info).await;
         }
     };
     let route_id = matched_route.value;
@@ -51,11 +51,11 @@ async fn route_request(
     match route_id {
         0u32 => {
             match &request_head.method {
-                &pavex::http::Method::GET => route_0::handler().await,
+                &pavex::http::Method::GET => route_0::entrypoint().await,
                 _ => {
                     let connection_info = connection_info
                         .expect("Required ConnectionInfo is missing");
-                    route_1::handler(&connection_info).await
+                    route_1::entrypoint(&connection_info).await
                 }
             }
         }
@@ -63,16 +63,88 @@ async fn route_request(
     }
 }
 pub mod route_0 {
+    pub async fn entrypoint() -> pavex::response::Response {
+        let response = wrapping_0().await;
+        response
+    }
+    async fn stage_1() -> pavex::response::Response {
+        let response = handler().await;
+        response
+    }
+    pub async fn wrapping_0() -> pavex::response::Response {
+        let v0 = crate::route_0::Next0 {
+            next: stage_1,
+        };
+        let v1 = pavex::middleware::Next::new(v0);
+        let v2 = pavex::middleware::wrap_noop(v1).await;
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
+    }
     pub async fn handler() -> pavex::response::Response {
         let v0 = app::root();
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v0)
     }
+    pub struct Next0<T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        next: fn() -> T,
+    }
+    impl<T> std::future::IntoFuture for Next0<T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        type Output = pavex::response::Response;
+        type IntoFuture = T;
+        fn into_future(self) -> Self::IntoFuture {
+            (self.next)()
+        }
+    }
 }
 pub mod route_1 {
+    pub async fn entrypoint<'a>(
+        s_0: &'a pavex::connection::ConnectionInfo,
+    ) -> pavex::response::Response {
+        let response = wrapping_0(s_0).await;
+        response
+    }
+    async fn stage_1<'a>(
+        s_0: &'a pavex::connection::ConnectionInfo,
+    ) -> pavex::response::Response {
+        let response = handler(s_0).await;
+        response
+    }
+    pub async fn wrapping_0(
+        v0: &pavex::connection::ConnectionInfo,
+    ) -> pavex::response::Response {
+        let v1 = crate::route_1::Next0 {
+            s_0: v0,
+            next: stage_1,
+        };
+        let v2 = pavex::middleware::Next::new(v1);
+        let v3 = pavex::middleware::wrap_noop(v2).await;
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
+    }
     pub async fn handler(
         v0: &pavex::connection::ConnectionInfo,
     ) -> pavex::response::Response {
         let v1 = app::get_connection_info(v0);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
+    }
+    pub struct Next0<'a, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        s_0: &'a pavex::connection::ConnectionInfo,
+        next: fn(&'a pavex::connection::ConnectionInfo) -> T,
+    }
+    impl<'a, T> std::future::IntoFuture for Next0<'a, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        type Output = pavex::response::Response;
+        type IntoFuture = T;
+        fn into_future(self) -> Self::IntoFuture {
+            (self.next)(self.s_0)
+        }
     }
 }
