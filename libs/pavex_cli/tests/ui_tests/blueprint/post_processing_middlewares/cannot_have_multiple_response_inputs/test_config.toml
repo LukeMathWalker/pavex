@@ -1,0 +1,5 @@
+description = """Post-processing middlewares must take exactly one `Response` instance as
+an input parameter. Having more than one `Response` input parameter is not allowed."""
+
+[expectations]
+codegen = "fail"

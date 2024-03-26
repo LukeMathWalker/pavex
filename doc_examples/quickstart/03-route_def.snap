@@ -7,7 +7,7 @@ pub struct GreetParams {
     pub name: String, /* (1)! */
 }
 
-pub fn greet(params: PathParams<GreetParams> /* (2)! */) -> Response {
+pub fn get(params: PathParams<GreetParams> /* (2)! */) -> Response {
     todo!()
 }
 ```

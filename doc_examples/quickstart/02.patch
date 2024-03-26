@@ -6,7 +6,7 @@ index 0000000..38ec1e3
 @@ -0,0 +1,5 @@
 +use pavex::response::Response;
 +
-+pub fn greet() -> Response {
++pub fn get() -> Response {
 +    todo!()
 +}
 diff --git a/app/src/routes/mod.rs b/app/src/routes/mod.rs
@@ -15,12 +15,12 @@ index 0472c7d..3c53d60 100644
 +++ b/app/src/routes/mod.rs
 @@ -1,3 +1,4 @@
 +pub mod greet;
- pub mod status;
+ pub mod ping;
 
  use pavex::blueprint::{router::GET, Blueprint};
 @@ -5,4 +5,5 @@ use pavex::f;
 
  pub fn register(bp: &mut Blueprint) {
-     bp.route(GET, "/api/ping", f!(self::status::ping));
-+    bp.route(GET, "/api/greet/:name", f!(self::greet::greet)); // (1)!
+     bp.route(GET, "/api/ping", f!(self::ping::get));
++    bp.route(GET, "/api/greet/:name", f!(self::greet::get)); // (1)!
  }

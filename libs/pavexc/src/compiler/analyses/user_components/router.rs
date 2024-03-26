@@ -283,7 +283,7 @@ impl Router {
                 None => {
                     format!("{path_prefix}*catch_all")
                 }
-                Some(Capture::CatchAll(_)) => {
+                Some(Capture::CatchAll) => {
                     continue;
                 }
                 Some(Capture::Parameter(param)) => {
@@ -491,8 +491,8 @@ fn prefix_ends_with_capture(path: &str) -> Option<Capture> {
     let last_segment = path.split('/').last().unwrap();
     if let Some((_, param)) = last_segment.split_once(':') {
         Some(Capture::Parameter(param.to_owned()))
-    } else if let Some((_, param)) = last_segment.split_once('*') {
-        Some(Capture::CatchAll(param.to_owned()))
+    } else if let Some(_) = last_segment.split_once('*') {
+        Some(Capture::CatchAll)
     } else {
         None
     }
@@ -594,7 +594,7 @@ struct FallbackNode {
 
 enum Capture {
     /// E.g. `*foo`
-    CatchAll(String),
+    CatchAll,
     /// E.g. `:foo`
     Parameter(String),
 }

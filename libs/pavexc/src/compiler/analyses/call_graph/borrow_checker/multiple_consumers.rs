@@ -15,11 +15,12 @@ use crate::compiler::analyses::call_graph::{
 };
 use crate::compiler::analyses::components::ComponentDb;
 use crate::compiler::analyses::computations::ComputationDb;
-use crate::diagnostic;
+use crate::compiler::computation::Computation;
 use crate::diagnostic::{
     AnnotatedSnippet, CompilerDiagnostic, HelpWithSnippet, LocationExt, OptionalSourceSpanExt,
 };
 use crate::rustdoc::CrateCollection;
+use crate::{diagnostic, try_source};
 
 use super::copy::CopyChecker;
 use super::diagnostic_helpers::suggest_wrapping_in_a_smart_pointer;
@@ -173,6 +174,8 @@ fn emit_multiple_consumers_error(
     call_graph: &RawCallGraph,
     diagnostics: &mut Vec<miette::Error>,
 ) {
+    use std::fmt::Write as _;
+
     let (consumed_component_id, type_) = match &call_graph[consumed_node_id] {
         CallGraphNode::Compute { component_id, .. } => (
             Some(*component_id),
@@ -196,12 +199,62 @@ fn emit_multiple_consumers_error(
     };
 
     let n_consumers = consuming_node_ids.len();
-    let error_msg = format!(
+    let mut consuming_snippets = vec![];
+    let mut error_msg = format!(
         "I can't generate code that will pass the borrow checker *and* match the instructions \
         in your blueprint.\n\
-        There are {n_consumers} components that take `{type_:?}` as an input parameter, consuming it by value. \
-        Since I'm not allowed to clone `{type_:?}`, I can't resolve this conflict."
+        There are {n_consumers} components that take `{type_:?}` as an input parameter, consuming it by value:\n"
     );
+
+    for consuming_node_id in &consuming_node_ids {
+        let Some(component_id) = &call_graph[*consuming_node_id].component_id() else {
+            continue;
+        };
+        let component_id = component_db
+            .derived_from(component_id)
+            .unwrap_or(*component_id);
+        let Computation::Callable(callable) = component_db
+            .hydrated_component(component_id, computation_db)
+            .computation()
+        else {
+            continue;
+        };
+        let user_component_id = component_db.user_component_id(component_id);
+
+        write!(&mut error_msg, "- `{}`", callable.path).unwrap();
+        match user_component_id {
+            None => writeln!(&mut error_msg, ""),
+            Some(user_component_id) => {
+                let callable_type =
+                    component_db.user_component_db()[user_component_id].callable_type();
+                writeln!(&mut error_msg, ", a {callable_type}")
+            }
+        }
+        .unwrap();
+
+        let Some(user_component_id) = user_component_id else {
+            continue;
+        };
+        let location = component_db
+            .user_component_db()
+            .get_location(user_component_id);
+        let Some(source) = try_source!(location, package_graph, diagnostics) else {
+            continue;
+        };
+        let callable_type = component_db.user_component_db()[user_component_id].callable_type();
+        let labeled_span = diagnostic::get_f_macro_invocation_span(&source, location)
+            .labeled(format!("One of the consuming {callable_type}s"));
+        consuming_snippets.push(HelpWithSnippet::new(
+            String::new(),
+            AnnotatedSnippet::new_optional(source, labeled_span),
+        ));
+    }
+    writeln!(
+        &mut error_msg,
+        "Since I'm not allowed to clone `{type_:?}`, I can't resolve this conflict."
+    )
+    .unwrap();
+
     let mut diagnostic = CompilerDiagnostic::builder(anyhow::anyhow!(error_msg));
 
     if let Some(component_id) = consumed_component_id {
@@ -244,32 +297,8 @@ fn emit_multiple_consumers_error(
         AnnotatedSnippet::empty(),
     );
     diagnostic = diagnostic.help_with_snippet(help);
-    for consumer_node_id in consuming_node_ids {
-        let CallGraphNode::Compute { component_id, .. } = call_graph[consumer_node_id] else {
-            continue;
-        };
-        let Some(user_component_id) = component_db.user_component_id(component_id) else {
-            continue;
-        };
-        let location = component_db
-            .user_component_db()
-            .get_location(user_component_id);
-        let source = match location.source_file(package_graph) {
-            Ok(s) => Some(s),
-            Err(e) => {
-                diagnostics.push(e.into());
-                None
-            }
-        };
-        if let Some(source) = source {
-            let callable_type = component_db.user_component_db()[user_component_id].callable_type();
-            let labeled_span = diagnostic::get_f_macro_invocation_span(&source, location)
-                .labeled(format!("One of the consuming {callable_type}s"));
-            diagnostic = diagnostic.help_with_snippet(HelpWithSnippet::new(
-                String::new(),
-                AnnotatedSnippet::new_optional(source, labeled_span),
-            ));
-        }
+    for snippet in consuming_snippets {
+        diagnostic = diagnostic.help_with_snippet(snippet);
     }
 
     let diagnostic = suggest_wrapping_in_a_smart_pointer(

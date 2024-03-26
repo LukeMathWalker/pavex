@@ -5,12 +5,16 @@ use crate::blueprint::conversions::{
 use crate::blueprint::error_observer::RegisteredErrorObserver;
 use crate::blueprint::router::RegisteredFallback;
 use pavex_bp_schema::{
-    Blueprint as BlueprintSchema, Constructor, Fallback, NestedBlueprint, Route, WrappingMiddleware,
+    Blueprint as BlueprintSchema, Constructor, Fallback, NestedBlueprint, PostProcessingMiddleware,
+    PreProcessingMiddleware, Route, WrappingMiddleware,
 };
 use pavex_reflection::Location;
 
 use super::constructor::{Lifecycle, RegisteredConstructor};
-use super::middleware::RegisteredWrappingMiddleware;
+use super::middleware::{
+    RegisteredPostProcessingMiddleware, RegisteredPreProcessingMiddleware,
+    RegisteredWrappingMiddleware,
+};
 use super::reflection::RawCallable;
 use super::router::{MethodGuard, RegisteredRoute};
 
@@ -332,6 +336,139 @@ impl Blueprint {
         };
         let component_id = self.push_component(mw);
         RegisteredWrappingMiddleware {
+            component_id,
+            blueprint: &mut self.schema,
+        }
+    }
+
+    #[track_caller]
+    /// Register a post-processing middleware.  
+    ///
+    /// # Guide
+    ///
+    /// Check out the ["Middleware"](https://pavex.dev/docs/guide/middleware)
+    /// section of Pavex's guide for a thorough introduction to middlewares
+    /// in Pavex applications.
+    ///
+    /// # Example: a logging middleware
+    ///
+    /// ```rust
+    /// use pavex::{f, blueprint::Blueprint, response::Response};
+    /// use pavex_tracing::{
+    ///     RootSpan,
+    ///     fields::{http_response_status_code, HTTP_RESPONSE_STATUS_CODE}
+    /// };
+    ///
+    /// pub fn response_logger(response: Response, root_span: &RootSpan) -> Response
+    /// {
+    ///     root_span.record(
+    ///         HTTP_RESPONSE_STATUS_CODE,
+    ///         http_response_status_code(&response),
+    ///     );
+    ///     response
+    /// }
+    ///
+    /// pub fn api() -> Blueprint {
+    ///     let mut bp = Blueprint::new();
+    ///     // Register the post-processing middleware against the blueprint.
+    ///     bp.post_process(f!(crate::response_logger));
+    ///     // [...]
+    ///     bp
+    /// }
+    /// ```
+    #[doc(alias = "middleware")]
+    #[doc(alias = "postprocess")]
+    pub fn post_process(&mut self, callable: RawCallable) -> RegisteredPostProcessingMiddleware {
+        let registered = PostProcessingMiddleware {
+            middleware: raw_callable2registered_callable(callable),
+            error_handler: None,
+        };
+        let component_id = self.push_component(registered);
+        RegisteredPostProcessingMiddleware {
+            blueprint: &mut self.schema,
+            component_id,
+        }
+    }
+
+    #[track_caller]
+    /// Register a pre-processing middleware.  
+    ///
+    /// # Guide
+    ///
+    /// Check out the ["Middleware"](https://pavex.dev/docs/guide/middleware)
+    /// section of Pavex's guide for a thorough introduction to middlewares
+    /// in Pavex applications.
+    ///
+    /// # Example: path normalization
+    ///
+    /// ```rust
+    /// use pavex::{f, blueprint::Blueprint, response::Response};
+    /// use pavex::middleware::Processing;
+    /// use pavex::http::{HeaderValue, header::LOCATION};
+    /// use pavex::request::RequestHead;
+    ///
+    /// /// If the request path ends with a `/`,
+    /// /// redirect to the same path without the trailing `/`.
+    /// pub fn redirect_to_normalized(request_head: &RequestHead) -> Processing
+    /// {
+    ///     let Some(normalized_path) = request_head.target.path().strip_suffix('/') else {
+    ///         // No need to redirect, we continue processing the request.
+    ///         return Processing::Continue;
+    ///     };
+    ///     let location = HeaderValue::from_str(normalized_path).unwrap();
+    ///     let redirect = Response::temporary_redirect().insert_header(LOCATION, location);
+    ///     // Short-circuit the request processing pipeline and return the redirect response
+    ///     // to the client without invoking downstream middlewares and the request handler.
+    ///     Processing::EarlyReturn(redirect)
+    /// }
+    ///
+    /// pub fn api() -> Blueprint {
+    ///     let mut bp = Blueprint::new();
+    ///     // Register the pre-processing middleware against the blueprint.
+    ///     bp.pre_process(f!(crate::redirect_to_normalized));
+    ///     // [...]
+    ///     bp
+    /// }
+    /// ```
+    #[doc(alias = "middleware")]
+    #[doc(alias = "preprocess")]
+    pub fn pre_process(&mut self, callable: RawCallable) -> RegisteredPreProcessingMiddleware {
+        let registered = PreProcessingMiddleware {
+            middleware: raw_callable2registered_callable(callable),
+            error_handler: None,
+        };
+        let component_id = self.push_component(registered);
+        RegisteredPreProcessingMiddleware {
+            blueprint: &mut self.schema,
+            component_id,
+        }
+    }
+
+    pub(super) fn register_post_processing_middleware(
+        &mut self,
+        mw: super::middleware::PostProcessingMiddleware,
+    ) -> RegisteredPostProcessingMiddleware {
+        let mw = PostProcessingMiddleware {
+            middleware: mw.callable,
+            error_handler: mw.error_handler,
+        };
+        let component_id = self.push_component(mw);
+        RegisteredPostProcessingMiddleware {
+            component_id,
+            blueprint: &mut self.schema,
+        }
+    }
+
+    pub(super) fn register_pre_processing_middleware(
+        &mut self,
+        mw: super::middleware::PreProcessingMiddleware,
+    ) -> RegisteredPreProcessingMiddleware {
+        let mw = PostProcessingMiddleware {
+            middleware: mw.callable,
+            error_handler: mw.error_handler,
+        };
+        let component_id = self.push_component(mw);
+        RegisteredPreProcessingMiddleware {
             component_id,
             blueprint: &mut self.schema,
         }

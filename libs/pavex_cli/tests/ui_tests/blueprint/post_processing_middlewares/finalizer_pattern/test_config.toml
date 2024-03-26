@@ -1,0 +1,2 @@
+description = """The finalizer pattern (i.e. create a request scoped, modify it, then consume it in a
+post-processing middleware) works as expected."""

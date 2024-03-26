@@ -1,14 +1,16 @@
 mod constructor;
 mod error_handler;
 mod error_observer;
+mod post_processing_middleware;
+mod pre_processing_middleware;
 mod request_handler;
 mod wrapping_middleware;
 
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::user_components::{UserComponentDb, UserComponentId};
 use crate::diagnostic::{
-    convert_proc_macro_span, AnnotatedSnippet, CallableDefinition, CallableType,
-    CompilerDiagnostic, OptionalSourceSpanExt, SourceSpanExt,
+    AnnotatedSnippet, CallableDefinition, CallableType, CompilerDiagnostic, OptionalSourceSpanExt,
+    SourceSpanExt,
 };
 use crate::language::{Callable, ResolvedPath, ResolvedType};
 use crate::rustdoc::CrateCollection;
@@ -19,6 +21,12 @@ use syn::spanned::Spanned;
 pub(crate) use constructor::{Constructor, ConstructorValidationError};
 pub(crate) use error_handler::{ErrorHandler, ErrorHandlerValidationError};
 pub(crate) use error_observer::{ErrorObserver, ErrorObserverValidationError};
+pub(crate) use post_processing_middleware::{
+    PostProcessingMiddleware, PostProcessingMiddlewareValidationError,
+};
+pub(crate) use pre_processing_middleware::{
+    PreProcessingMiddleware, PreProcessingMiddlewareValidationError,
+};
 pub(crate) use request_handler::{RequestHandler, RequestHandlerValidationError};
 pub(crate) use wrapping_middleware::{WrappingMiddleware, WrappingMiddlewareValidationError};
 
@@ -63,7 +71,8 @@ impl CannotTakeMutReferenceError {
         ) -> Option<AnnotatedSnippet> {
             let def = CallableDefinition::compute(callable, krate_collection, package_graph)?;
             let input = &def.sig.inputs[mut_ref_input_index];
-            let label = convert_proc_macro_span(&def.span_contents, input.span())
+            let label = def
+                .convert_local_span(input.span())
                 .labeled("The &mut input".into());
             Some(AnnotatedSnippet::new(def.named_source(), label))
         }

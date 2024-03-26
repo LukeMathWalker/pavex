@@ -3,7 +3,7 @@
   [31m│[0m instructions in your blueprint:
   [31m│[0m - `app::handler` wants to consume `app::C<'_>`
   [31m│[0m - `app::C<'_>` captures a reference to `app::A`
-  [31m│[0m - But `app::b`, which is invoked earlier on, consumes `app::A` by value
+  [31m│[0m - But, earlier on, `app::b` consumed `app::A` by value
   [31m│[0m 
   [31m│[0m Since I'm not allowed to clone `app::A`, I can't resolve this conflict.
   [31m│[0m

@@ -513,7 +513,7 @@ fn verify_singletons(
         };
         let label = diagnostic::get_f_macro_invocation_span(&source, location)
             .map(|s| s.labeled(format!("The {component_kind} was registered here")));
-        let help = "All singletons must implement the `Send`, `Sync` and `Clone` traits.\n \
+        let help = "All singletons must implement the `Send`, `Sync` and `Clone` traits.\n\
                 Pavex runs on a multi-threaded HTTP server and singletons must be shared \
                  across all worker threads."
             .into();

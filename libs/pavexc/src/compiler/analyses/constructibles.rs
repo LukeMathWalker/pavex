@@ -4,7 +4,6 @@ use ahash::{HashMap, HashMapExt, HashSet};
 use guppy::graph::PackageGraph;
 use indexmap::{IndexMap, IndexSet};
 use itertools::Itertools;
-use miette::NamedSource;
 use syn::spanned::Spanned;
 
 use pavex_bp_schema::Lifecycle;
@@ -16,11 +15,8 @@ use crate::compiler::analyses::user_components::{
     ScopeGraph, ScopeId, UserComponentDb, UserComponentId,
 };
 use crate::compiler::computation::Computation;
-use crate::diagnostic::{self, OptionalSourceSpanExt};
-use crate::diagnostic::{
-    convert_proc_macro_span, convert_rustdoc_span, read_source_file, AnnotatedSnippet,
-    CompilerDiagnostic, HelpWithSnippet, LocationExt, SourceSpanExt,
-};
+use crate::diagnostic::{self, CallableDefinition, OptionalSourceSpanExt};
+use crate::diagnostic::{AnnotatedSnippet, CompilerDiagnostic, HelpWithSnippet, SourceSpanExt};
 use crate::language::{Callable, ResolvedType};
 use crate::rustdoc::CrateCollection;
 use crate::try_source;
@@ -133,6 +129,10 @@ impl ConstructibleDb {
                         HydratedComponent::WrappingMiddleware(mw) => {
                             input_types[mw.next_input_index()] = None;
                         }
+                        HydratedComponent::PostProcessingMiddleware(pp) => {
+                            input_types[pp.response_input_index(&component_db.pavex_response)] =
+                                None;
+                        }
                         HydratedComponent::ErrorObserver(eo) => {
                             input_types[eo.error_input_index] = None;
                         }
@@ -143,6 +143,7 @@ impl ConstructibleDb {
                             input_types[info.input_index] = None;
                         }
                         HydratedComponent::Constructor(_)
+                        | HydratedComponent::PreProcessingMiddleware(_)
                         | HydratedComponent::RequestHandler(_) => {}
                     }
                     input_types
@@ -160,16 +161,38 @@ impl ConstructibleDb {
                             continue;
                         }
                     }
-                    if self
-                        .get_or_try_bind(
-                            scope_id,
-                            input,
-                            component_db,
-                            computation_db,
-                            framework_items_db,
-                        )
-                        .is_some()
-                    {
+
+                    if let Some((input_component_id, mode)) = self.get_or_try_bind(
+                        scope_id,
+                        input,
+                        component_db,
+                        computation_db,
+                        framework_items_db,
+                    ) {
+                        if ConsumptionMode::ExclusiveBorrow == mode
+                            && component_db.lifecycle(input_component_id) == Lifecycle::Singleton
+                        {
+                            if let Some(user_component_id) =
+                                component_db.user_component_id(component_id)
+                            {
+                                Self::mut_ref_to_singleton(
+                                    user_component_id,
+                                    component_db.user_component_db(),
+                                    input,
+                                    input_index,
+                                    package_graph,
+                                    krate_collection,
+                                    computation_db,
+                                    diagnostics,
+                                )
+                            } else {
+                                tracing::warn!(
+                                    "&mut singleton input ({:?}) for component {:?}, but the component is not a user component.",
+                                    input,
+                                    component_id
+                                );
+                            }
+                        }
                         continue;
                     }
                     if let Some(user_component_id) = component_db.user_component_id(component_id) {
@@ -562,64 +585,26 @@ impl ConstructibleDb {
             package_graph: &PackageGraph,
             krate_collection: &CrateCollection,
         ) -> Option<AnnotatedSnippet> {
-            let (callable_type, _) = callable.path.find_rustdoc_items(krate_collection).ok()?;
-            let callable_item = callable_type.item.item;
-            let definition_span = callable_item.span.as_ref()?;
-            let source_contents =
-                read_source_file(&definition_span.filename, &package_graph.workspace()).ok()?;
-            let span = convert_rustdoc_span(&source_contents, definition_span.to_owned());
-            let span_contents = &source_contents[span.offset()..(span.offset() + span.len())];
-            let input = match &callable_item.inner {
-                rustdoc_types::ItemEnum::Function(_) => {
-                    if let Ok(item) = syn::parse_str::<syn::ItemFn>(span_contents) {
-                        let mut inputs = item.sig.inputs.iter();
-                        inputs.nth(unconstructible_type_index).cloned()
-                    } else if let Ok(item) = syn::parse_str::<syn::ImplItemFn>(span_contents) {
-                        let mut inputs = item.sig.inputs.iter();
-                        inputs.nth(unconstructible_type_index).cloned()
-                    } else {
-                        eprintln!("Could not parse as a function or method:\n{span_contents}");
-                        return None;
-                    }
-                }
-                _ => unreachable!(),
-            }?;
-            let s = convert_proc_macro_span(
-                span_contents,
-                match input {
-                    syn::FnArg::Typed(typed) => typed.ty.span(),
-                    syn::FnArg::Receiver(r) => r.span(),
-                },
+            let def = CallableDefinition::compute(callable, krate_collection, package_graph)?;
+            let input = &def.sig.inputs[unconstructible_type_index];
+            let label = def.convert_local_span(input.span()).labeled(
+                "I don't know how to construct an instance of this input parameter".into(),
             );
-            let label = miette::SourceSpan::new(
-                // We must shift the offset forward because it's the
-                // offset from the beginning of the file slice that
-                // we deserialized, instead of the entire file
-                (s.offset() + span.offset()).into(),
-                s.len().into(),
-            )
-            .labeled("I don't know how to construct an instance of this input parameter".into());
-            let source_path = definition_span.filename.to_str().unwrap();
-            Some(AnnotatedSnippet::new(
-                NamedSource::new(source_path, source_contents),
-                label,
-            ))
+            Some(AnnotatedSnippet::new(def.named_source(), label))
         }
 
-        let user_component = &user_component_db[user_component_id];
-        let callable = &computation_db[user_component_id];
-        let component_kind = user_component.callable_type();
+        let component_kind = user_component_db[user_component_id].callable_type();
         let location = user_component_db.get_location(user_component_id);
+        let source = try_source!(location, package_graph, diagnostics);
+        let label = source
+            .as_ref()
+            .map(|source| {
+                diagnostic::get_f_macro_invocation_span(&source, location)
+                    .labeled(format!("The {component_kind} was registered here"))
+            })
+            .flatten();
 
-        let source = match location.source_file(package_graph) {
-            Ok(s) => s,
-            Err(e) => {
-                diagnostics.push(e.into());
-                return;
-            }
-        };
-        let label = diagnostic::get_f_macro_invocation_span(&source, location)
-            .map(|s| s.labeled(format!("The {component_kind} was registered here")));
+        let callable = &computation_db[user_component_id];
         let e = anyhow::anyhow!(
                 "I can't invoke your {component_kind}, `{}`, because it needs an instance \
                 of `{unconstructible_type:?}` as input, but I can't find a constructor for that type.",
@@ -632,12 +617,67 @@ impl ConstructibleDb {
             krate_collection,
         );
         let diagnostic = CompilerDiagnostic::builder(e)
-            .source(source)
+            .optional_source(source)
             .optional_label(label)
             .optional_additional_annotated_snippet(definition_info)
             .help(format!(
                 "Register a constructor for `{unconstructible_type:?}`"
             ))
+            .build();
+        diagnostics.push(diagnostic.into());
+    }
+
+    fn mut_ref_to_singleton(
+        user_component_id: UserComponentId,
+        user_component_db: &UserComponentDb,
+        singleton_input_type: &ResolvedType,
+        singleton_input_index: usize,
+        package_graph: &PackageGraph,
+        krate_collection: &CrateCollection,
+        computation_db: &ComputationDb,
+        diagnostics: &mut Vec<miette::Error>,
+    ) {
+        fn get_snippet(
+            callable: &Callable,
+            krate_collection: &CrateCollection,
+            package_graph: &PackageGraph,
+            mut_ref_input_index: usize,
+        ) -> Option<AnnotatedSnippet> {
+            let def = CallableDefinition::compute(callable, krate_collection, package_graph)?;
+            let input = &def.sig.inputs[mut_ref_input_index];
+            let label = def
+                .convert_local_span(input.span())
+                .labeled("The &mut singleton".into());
+            Some(AnnotatedSnippet::new(def.named_source(), label))
+        }
+
+        let component_kind = user_component_db[user_component_id].callable_type();
+        let callable = &computation_db[user_component_id];
+        let location = user_component_db.get_location(user_component_id);
+        let source = try_source!(location, package_graph, diagnostics);
+        let label = source
+            .as_ref()
+            .map(|source| {
+                diagnostic::get_f_macro_invocation_span(&source, location)
+                    .labeled(format!("The {component_kind} was registered here"))
+            })
+            .flatten();
+
+        let definition_snippet = get_snippet(
+            &computation_db[user_component_id],
+            krate_collection,
+            package_graph,
+            singleton_input_index,
+        );
+        let error = anyhow::anyhow!("You can't inject a mutable reference to a singleton (`{singleton_input_type:?}`) as an input parameter to `{}`.", callable.path);
+        let diagnostic = CompilerDiagnostic::builder(error)
+            .optional_source(source)
+            .optional_label(label)
+            .optional_additional_annotated_snippet(definition_snippet)
+            .help(
+                "Singletons can only be taken via a shared reference (`&`) or by value (if cloneable). \
+                If you absolutely need to mutate a singleton, consider internal mutability (e.g. `Arc<Mutex<..>>`).".into()
+            )
             .build();
         diagnostics.push(diagnostic.into());
     }
@@ -773,9 +813,16 @@ impl ConstructiblesInScope {
         }
 
         match type_ {
-            ResolvedType::Reference(ref_) if !ref_.lifetime.is_static() && !ref_.is_mutable => {
+            ResolvedType::Reference(ref_) if !ref_.lifetime.is_static() => {
                 if let Some(constructor_id) = self.type2constructor_id.get(&ref_.inner).copied() {
-                    return Some((constructor_id, ConsumptionMode::SharedBorrow));
+                    return Some((
+                        constructor_id,
+                        if ref_.is_mutable {
+                            ConsumptionMode::ExclusiveBorrow
+                        } else {
+                            ConsumptionMode::SharedBorrow
+                        },
+                    ));
                 }
             }
             _ => {}
@@ -813,14 +860,34 @@ impl ConstructiblesInScope {
         }
 
         match type_ {
-            ResolvedType::Reference(ref_) if !ref_.lifetime.is_static() && !ref_.is_mutable => {
+            ResolvedType::Reference(ref_) if !ref_.lifetime.is_static() => {
                 let (component_id, _) = self.get_or_try_bind(
                     &ref_.inner,
                     component_db,
                     computation_db,
                     framework_item_db,
                 )?;
-                Some((component_id, ConsumptionMode::SharedBorrow))
+                let lifecycle = component_db.lifecycle(component_id);
+                if ref_.is_mutable {
+                    match lifecycle {
+                        Lifecycle::Singleton => {
+                            // TODO: emit error diagnostic
+                            panic!("You can't take a mutable reference to a singleton")
+                        }
+                        Lifecycle::Transient => {
+                            // TODO: emit warning diagnostic.
+                        }
+                        Lifecycle::RequestScoped => {}
+                    }
+                }
+                Some((
+                    component_id,
+                    if ref_.is_mutable {
+                        ConsumptionMode::ExclusiveBorrow
+                    } else {
+                        ConsumptionMode::SharedBorrow
+                    },
+                ))
             }
             _ => None,
         }

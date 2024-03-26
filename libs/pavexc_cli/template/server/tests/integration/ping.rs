@@ -7,5 +7,5 @@ async fn ping_works() {
 
     let response = api.get_ping().await;
 
-    assert_eq!(response.status().as_u16(), StatusCode::OK.as_u16());
+    assert_eq!(response.status(), StatusCode::OK);
 }

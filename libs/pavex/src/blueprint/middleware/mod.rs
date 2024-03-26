@@ -4,8 +4,10 @@
 //!
 //! Check out the ["Middleware"](https://pavex.dev/docs/guide/middleware) section of Pavex's guide
 //! for a thorough introduction to middlewares in Pavex applications.
-mod registered;
-mod unregistered;
+mod post;
+mod pre;
+mod wrapping;
 
-pub use registered::RegisteredWrappingMiddleware;
-pub use unregistered::WrappingMiddleware;
+pub use post::{PostProcessingMiddleware, RegisteredPostProcessingMiddleware};
+pub use pre::{PreProcessingMiddleware, RegisteredPreProcessingMiddleware};
+pub use wrapping::{RegisteredWrappingMiddleware, WrappingMiddleware};

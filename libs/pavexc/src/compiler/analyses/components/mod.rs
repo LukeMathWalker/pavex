@@ -19,6 +19,8 @@ pub(crate) enum ConsumptionMode {
     Move,
     /// The component takes a shared borrow of the input (e.g. `fn f(t: &MyStruct)`).
     SharedBorrow,
+    /// The component takes an exclusive borrow of the input (e.g. `fn f(t: &mut MyStruct)`).
+    ExclusiveBorrow,
 }
 
 /// When should the transformer node be inserted in the graph?

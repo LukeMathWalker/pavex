@@ -1,7 +1,21 @@
 digraph "GET /home - 0" {
-    0 [ label = "app::fallible_wrapping_middleware(pavex::middleware::Next<crate::route_0::Next0>) -> core::prelude::rust_2015::Result<pavex::response::Response, app::MiddlewareError>"]
+    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_0::Next0>) -> pavex::response::Response"]
     1 [ label = "pavex::middleware::Next::new(crate::route_0::Next0) -> pavex::middleware::Next<crate::route_0::Next0>"]
     2 [ label = "crate::route_0::Next0(app::HttpClient, pavex::request::RequestHead) -> crate::route_0::Next0"]
+    3 [ label = "app::HttpClient"]
+    4 [ label = "pavex::request::RequestHead"]
+    5 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    4 -> 2 [ ]
+    3 -> 2 [ ]
+    0 -> 5 [ ]
+}
+
+digraph "GET /home - 1" {
+    0 [ label = "app::fallible_wrapping_middleware(pavex::middleware::Next<crate::route_0::Next1>) -> core::prelude::rust_2015::Result<pavex::response::Response, app::MiddlewareError>"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_0::Next1) -> pavex::middleware::Next<crate::route_0::Next1>"]
+    2 [ label = "crate::route_0::Next1(app::HttpClient, pavex::request::RequestHead) -> crate::route_0::Next1"]
     3 [ label = "app::HttpClient"]
     4 [ label = "pavex::request::RequestHead"]
     5 [ label = "core::prelude::rust_2015::Result<pavex::response::Response, app::MiddlewareError> -> pavex::response::Response"]
@@ -22,7 +36,23 @@ digraph "GET /home - 0" {
     0 -> 10 [ ]
 }
 
-digraph "GET /home - 1" {
+digraph "GET /home - 2" {
+    0 [ label = "app::fallible_pre() -> core::prelude::rust_2015::Result<pavex::middleware::Processing, app::PreError>"]
+    1 [ label = "core::prelude::rust_2015::Result<pavex::middleware::Processing, app::PreError> -> pavex::middleware::Processing"]
+    2 [ label = "core::prelude::rust_2015::Result<pavex::middleware::Processing, app::PreError> -> app::PreError"]
+    3 [ label = "app::pre_error(&app::PreError) -> pavex::response::Response"]
+    4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    5 [ label = "pavex::middleware::Processing::EarlyReturn(pavex::response::Response) -> pavex::middleware::Processing<T>"]
+    6 [ label = "`match`"]
+    6 -> 1 [ ]
+    6 -> 2 [ ]
+    2 -> 3 [ label = "&"]
+    3 -> 4 [ ]
+    4 -> 5 [ ]
+    0 -> 6 [ ]
+}
+
+digraph "GET /home - 3" {
     0 [ label = "app::request_handler(std::path::PathBuf, app::Logger, app::HttpClient) -> core::prelude::rust_2015::Result<pavex::response::Response, app::HandlerError>"]
     1 [ label = "core::prelude::rust_2015::Result<std::path::PathBuf, app::ExtractPathError<alloc::string::String>> -> std::path::PathBuf"]
     2 [ label = "core::prelude::rust_2015::Result<app::Logger, app::LoggerError> -> app::Logger"]
@@ -78,10 +108,40 @@ digraph "GET /home - 1" {
     16 -> 26 [ ]
 }
 
+digraph "GET /home - 4" {
+    0 [ label = "app::fallible_post(pavex::response::Response) -> core::prelude::rust_2015::Result<pavex::response::Response, app::PostError>"]
+    1 [ label = "pavex::response::Response"]
+    2 [ label = "core::prelude::rust_2015::Result<pavex::response::Response, app::PostError> -> pavex::response::Response"]
+    3 [ label = "core::prelude::rust_2015::Result<pavex::response::Response, app::PostError> -> app::PostError"]
+    4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    5 [ label = "app::post_error(&app::PostError) -> pavex::response::Response"]
+    6 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    7 [ label = "`match`"]
+    1 -> 0 [ ]
+    7 -> 2 [ ]
+    7 -> 3 [ ]
+    3 -> 5 [ label = "&"]
+    2 -> 4 [ ]
+    5 -> 6 [ ]
+    0 -> 7 [ ]
+}
+
 digraph "* /home - 0" {
-    0 [ label = "app::fallible_wrapping_middleware(pavex::middleware::Next<crate::route_1::Next0<'a>>) -> core::prelude::rust_2015::Result<pavex::response::Response, app::MiddlewareError>"]
+    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_1::Next0<'a>>) -> pavex::response::Response"]
     1 [ label = "pavex::middleware::Next::new(crate::route_1::Next0<'a>) -> pavex::middleware::Next<crate::route_1::Next0<'a>>"]
     2 [ label = "crate::route_1::Next0(&'a pavex::router::AllowedMethods) -> crate::route_1::Next0<'a>"]
+    4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    5 [ label = "&pavex::router::AllowedMethods"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 4 [ ]
+    5 -> 2 [ ]
+}
+
+digraph "* /home - 1" {
+    0 [ label = "app::fallible_wrapping_middleware(pavex::middleware::Next<crate::route_1::Next1<'a>>) -> core::prelude::rust_2015::Result<pavex::response::Response, app::MiddlewareError>"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_1::Next1<'a>) -> pavex::middleware::Next<crate::route_1::Next1<'a>>"]
+    2 [ label = "crate::route_1::Next1(&'a pavex::router::AllowedMethods) -> crate::route_1::Next1<'a>"]
     4 [ label = "core::prelude::rust_2015::Result<pavex::response::Response, app::MiddlewareError> -> pavex::response::Response"]
     5 [ label = "core::prelude::rust_2015::Result<pavex::response::Response, app::MiddlewareError> -> app::MiddlewareError"]
     6 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
@@ -100,12 +160,46 @@ digraph "* /home - 0" {
     10 -> 2 [ ]
 }
 
-digraph "* /home - 1" {
+digraph "* /home - 2" {
+    0 [ label = "app::fallible_pre() -> core::prelude::rust_2015::Result<pavex::middleware::Processing, app::PreError>"]
+    1 [ label = "core::prelude::rust_2015::Result<pavex::middleware::Processing, app::PreError> -> pavex::middleware::Processing"]
+    2 [ label = "core::prelude::rust_2015::Result<pavex::middleware::Processing, app::PreError> -> app::PreError"]
+    3 [ label = "app::pre_error(&app::PreError) -> pavex::response::Response"]
+    4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    5 [ label = "pavex::middleware::Processing::EarlyReturn(pavex::response::Response) -> pavex::middleware::Processing<T>"]
+    6 [ label = "`match`"]
+    6 -> 1 [ ]
+    6 -> 2 [ ]
+    2 -> 3 [ label = "&"]
+    3 -> 4 [ ]
+    4 -> 5 [ ]
+    0 -> 6 [ ]
+}
+
+digraph "* /home - 3" {
     0 [ label = "pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
     2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     3 [ label = "&pavex::router::AllowedMethods"]
     0 -> 2 [ ]
     3 -> 0 [ ]
+}
+
+digraph "* /home - 4" {
+    0 [ label = "app::fallible_post(pavex::response::Response) -> core::prelude::rust_2015::Result<pavex::response::Response, app::PostError>"]
+    1 [ label = "pavex::response::Response"]
+    2 [ label = "core::prelude::rust_2015::Result<pavex::response::Response, app::PostError> -> pavex::response::Response"]
+    3 [ label = "core::prelude::rust_2015::Result<pavex::response::Response, app::PostError> -> app::PostError"]
+    4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    5 [ label = "app::post_error(&app::PostError) -> pavex::response::Response"]
+    6 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    7 [ label = "`match`"]
+    1 -> 0 [ ]
+    7 -> 2 [ ]
+    7 -> 3 [ ]
+    3 -> 5 [ label = "&"]
+    2 -> 4 [ ]
+    5 -> 6 [ ]
+    0 -> 7 [ ]
 }
 
 digraph app_state {

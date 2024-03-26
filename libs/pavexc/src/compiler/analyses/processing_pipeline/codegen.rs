@@ -1,158 +1,276 @@
 use bimap::BiHashMap;
 use guppy::PackageId;
-use indexmap::IndexSet;
+use indexmap::{IndexMap, IndexSet};
+use itertools::Itertools;
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote, ToTokens};
-use syn::ItemFn;
+use syn::{ItemFn, Token};
 
-use crate::compiler::analyses::components::ComponentDb;
+use crate::compiler::analyses::components::{ComponentDb, HydratedComponent};
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::framework_items::FrameworkItemDb;
+use crate::compiler::analyses::processing_pipeline::pipeline::Binding;
 use crate::compiler::analyses::processing_pipeline::RequestHandlerPipeline;
 use crate::language::{GenericArgument, GenericLifetimeParameter, ResolvedType};
 
 impl RequestHandlerPipeline {
-    /// Generates the code required to wire together this request handler pipeline.
-    ///
-    /// This method generates the code for the following:
-    /// - The closure of the request handler function
-    /// - The closure of each middleware functions
-    /// - The `Next` state for each middleware invocation
-    ///
-    /// You can wrap the generated code in an inline module by calling the
-    /// [`as_inline_module`](CodegenedRequestHandlerPipeline::as_inline_module) method on
-    /// the output.
     pub(crate) fn codegen(
         &self,
+        pavex: &Ident,
         package_id2name: &BiHashMap<PackageId, String>,
         component_db: &ComponentDb,
         computation_db: &ComputationDb,
     ) -> Result<CodegenedRequestHandlerPipeline, anyhow::Error> {
-        let n_middlewares = self.middleware_id2stage_data.len();
-        let mut stages = Vec::with_capacity(n_middlewares + 1);
-        for (i, call_graph) in self.graph_iter().enumerate() {
-            let ident = if i < n_middlewares {
-                format_ident!("middleware_{}", i)
-            } else {
-                format_ident!("handler")
-            };
-            if tracing::event_enabled!(tracing::Level::TRACE) {
-                call_graph.print_debug_dot(component_db, computation_db);
+        let id2codegened_fn = {
+            let mut id2codegened_fn = IndexMap::new();
+            let mut wrapping_index = 0u32;
+            let mut pre_processing_index = 0u32;
+            let mut post_processing_index = 0u32;
+            for (&id, call_graph) in self.id2call_graph.iter() {
+                let ident = match component_db.hydrated_component(id, computation_db) {
+                    HydratedComponent::WrappingMiddleware(_) => {
+                        let ident = format_ident!("wrapping_{}", wrapping_index);
+                        wrapping_index += 1;
+                        ident
+                    }
+                    HydratedComponent::PostProcessingMiddleware(_) => {
+                        let ident = format_ident!("post_processing_{}", post_processing_index);
+                        post_processing_index += 1;
+                        ident
+                    }
+                    HydratedComponent::PreProcessingMiddleware(_) => {
+                        let ident = format_ident!("pre_processing_{}", pre_processing_index);
+                        pre_processing_index += 1;
+                        ident
+                    }
+                    HydratedComponent::RequestHandler(_) => format_ident!("handler"),
+                    _ => unreachable!(),
+                };
+                if tracing::event_enabled!(tracing::Level::TRACE) {
+                    call_graph.print_debug_dot(component_db, computation_db);
+                }
+                let fn_ = CodegenedFn {
+                    fn_: {
+                        let mut f =
+                            call_graph.codegen(package_id2name, component_db, computation_db)?;
+                        f.sig.ident = ident;
+                        f
+                    },
+                    input_parameters: call_graph.required_input_types(),
+                };
+                id2codegened_fn.insert(id, fn_);
             }
-            let mut fn_ = call_graph.codegen(package_id2name, component_db, computation_db)?;
-            fn_.sig.ident = ident;
-            let stage = CodegenedFn {
-                fn_,
-                input_parameters: call_graph.required_input_types(),
-            };
-            stages.push(stage);
-        }
+            id2codegened_fn
+        };
 
-        let mut next_states = Vec::with_capacity(n_middlewares);
-        for (i, stage_data) in self.middleware_id2stage_data.values().enumerate() {
-            let next_state = &stage_data.next_state;
-            let next_stage = &stages[i + 1];
-            let input_types: Vec<_> = next_stage
-                .input_parameters
+        let mut stage_fns = vec![];
+        for stage in &self.stages {
+            let input_parameters = stage.input_parameters.clone();
+            let (mut input_bindings, input_lifetimes) =
+                (input_parameters.bindings, input_parameters.lifetimes);
+            let response_ident = format_ident!("response");
+
+            let ordered_by_invocation = stage
+                .pre_processing_ids
                 .iter()
-                .map(|input| {
-                    let field = next_state
-                        .field_bindings
-                        .iter()
-                        .find(|(_, ty_)| *ty_ == input);
-                    let Some((_, ty_)) = field else {
-                        unreachable!();
-                    };
-                    let ty_ = ty_.syn_type(package_id2name);
-                    quote! { #ty_ }
-                })
-                .collect();
-            let fields = next_state
-                .field_bindings
-                .iter()
-                .map(|(name, ty_)| {
-                    let name = format_ident!("{}", name);
-                    let ty_ = ty_.syn_type(package_id2name);
-                    quote! {
-                        #name: #ty_
+                .copied()
+                .chain(std::iter::once(stage.wrapping_id))
+                .chain(stage.post_processing_ids.iter().copied())
+                .collect_vec();
+
+            let invocations = {
+                let mut invocations = vec![];
+                for id in &ordered_by_invocation {
+                    let fn_ = &id2codegened_fn[id].fn_;
+                    if component_db.is_post_processing_middleware(*id) {
+                        input_bindings.0.push(Binding {
+                            ident: response_ident.to_string(),
+                            type_: component_db.pavex_response.clone(),
+                            mutable: false,
+                        });
                     }
-                })
-                .chain(std::iter::once(quote! { next: fn(#(#input_types),*) -> T }));
-
-            let struct_name = format_ident!("{}", next_state.type_.base_type.last().unwrap());
-            let state_generics: Vec<_> = next_state
-                .type_
-                .generic_arguments
-                .iter()
-                .map(|arg| {
-                    let GenericArgument::Lifetime(GenericLifetimeParameter::Named(lifetime)) = arg
-                    else {
-                        unreachable!()
-                    };
-                    syn::Lifetime::new(&format!("'{lifetime}"), proc_macro2::Span::call_site())
-                        .to_token_stream()
-                })
-                .chain(std::iter::once(quote! { T }))
-                .collect();
-            let generics = quote! { <#(#state_generics),*> };
-            let def = syn::parse2(quote! {
-                pub struct #struct_name #generics
-                where T: std::future::Future<Output = pavex::response::Response> {
-                    #(#fields),*
-                }
-            })
-            .unwrap();
-            let inputs: Vec<_> = next_stage
-                .input_parameters
-                .iter()
-                .map(|input| {
-                    let field_name = next_state
-                        .field_bindings
-                        .iter()
-                        .find(|(_, ty_)| ty_ == &input);
-                    if let Some((field_name, _)) = field_name {
-                        let ident = format_ident!("{}", field_name);
-                        quote! {
-                            self.#ident
-                        }
-                    } else if let ResolvedType::Reference(r) = input {
-                        let field_name = next_state
-                            .field_bindings
+                    let input_parameters =
+                        id2codegened_fn[id]
+                            .input_parameters
                             .iter()
-                            .find(|(_, ty_)| *ty_ == r.inner.as_ref())
-                            .unwrap()
-                            .0;
-                        let ident = format_ident!("{}", field_name);
+                            .map(|input_type| {
+                                match input_bindings
+                                    .get_expr_for_type(input_type) {
+                                    None => {
+                                        panic!(
+                                            "Could not find a binding for input type `{:?}` in the input bindings.\n\
+                                            Input bindings: {:?}",
+                                            input_type,
+                                            input_bindings)
+                                    }
+                                    Some(i) => i,
+                                }
+                            });
+                    let await_ = fn_.sig.asyncness.and_then(|_| Some(quote! { .await }));
+                    let fn_name = &fn_.sig.ident;
+                    let invocation = if component_db.is_pre_processing_middleware(*id) {
                         quote! {
-                                &self.#ident
+                            if let Some(#response_ident) = #fn_name(#(#input_parameters),*)#await_.into_response() {
+                                return #response_ident;
                             }
+                        }
                     } else {
-                        panic!("Could not find field name for input type `{:?}` in `Next`'s state, `{:?}`", input, next_state.field_bindings);
-                    }
-                })
-                .collect();
-            let into_future_impl = syn::parse2(quote! {
-                impl #generics std::future::IntoFuture for #struct_name #generics
-                where
-                    T: std::future::Future<Output = pavex::response::Response>,
-                {
-                    type Output = pavex::response::Response;
-                    type IntoFuture = T;
-
-                    fn into_future(self) -> Self::IntoFuture {
-                        (self.next)(#(#inputs),*)
+                        quote! {
+                            let #response_ident = #fn_name(#(#input_parameters),*)#await_;
+                        }
+                    };
+                    invocations.push(invocation);
+                    if component_db.is_post_processing_middleware(*id) {
+                        // Remove the response binding from the input bindings, as it's not an input parameter
+                        input_bindings.0.pop();
                     }
                 }
-            })
-            .unwrap();
-            next_states.push(CodegenedNextState {
-                state: def,
-                into_future_impl,
+                invocations
+            };
+
+            let fn_ = {
+                let asyncness = ordered_by_invocation
+                    .iter()
+                    .any(|id| id2codegened_fn[id].fn_.sig.asyncness.is_some())
+                    .then(|| quote! { async});
+                let fn_name = format_ident!("{}", stage.name);
+                let visibility = if stage.name == "entrypoint" {
+                    Some(Token![pub](proc_macro2::Span::call_site()))
+                } else {
+                    None
+                };
+                let input_parameters = input_bindings.0.iter().map(|input| {
+                    let bound: syn::Expr = syn::parse_str(&input.ident).unwrap();
+                    let ty = input.type_.syn_type(package_id2name);
+                    let mut_ = input.mutable.then(|| quote! { mut });
+                    quote! {
+                        #mut_ #bound: #ty
+                    }
+                });
+                let generics = input_lifetimes
+                    .iter()
+                    .map(|lifetime| {
+                        syn::Lifetime::new(&format!("'{lifetime}"), proc_macro2::Span::call_site())
+                            .to_token_stream()
+                    })
+                    .collect::<Vec<_>>();
+                let generics = if !generics.is_empty() {
+                    Some(quote! { <#(#generics),*> })
+                } else {
+                    None
+                };
+                quote! {
+                    #visibility #asyncness fn #fn_name #generics(#(#input_parameters),*) -> #pavex::response::Response {
+                        #(#invocations)*
+                        #response_ident
+                    }
+                }
+            };
+            stage_fns.push(CodegenedFn {
+                fn_: syn::parse2(fn_).unwrap(),
+                input_parameters: input_bindings.0.iter().map(|i| i.type_.clone()).collect(),
             });
         }
 
+        let next_states = {
+            let mut next_states = vec![];
+            for (i, stage) in self.stages[..self.stages.len() - 1].iter().enumerate() {
+                let next_state = stage.next_state.as_ref().unwrap();
+                let next_stage = &self.stages[i + 1];
+                let bindings = next_state.field_bindings.clone();
+                let next_input_types: Vec<_> = next_stage
+                    .input_parameters
+                    .iter()
+                    .map(|input| {
+                        // This is rather subtle: we're using types
+                        // as they appear in the field definitions
+                        // to make sure that (possible) lifetime parameters
+                        // are aligned.
+                        let Some(binding) = &bindings.find_exact_by_type(&input.type_) else {
+                            panic!("Could not find field name for input type `{:?}` in `Next`'s state, `{:?}`", input.type_, next_state.field_bindings);
+                        };
+                        let ty_ = binding.type_.syn_type(package_id2name);
+                        quote! { #ty_ }
+                    })
+                    .collect();
+                let fields = next_state
+                    .field_bindings
+                    .0
+                    .iter()
+                    .map(|binding| {
+                        let name = format_ident!("{}", binding.ident);
+                        let ty_ = binding.type_.syn_type(package_id2name);
+                        quote! {
+                            #name: #ty_
+                        }
+                    })
+                    .chain(std::iter::once(
+                        quote! { next: fn(#(#next_input_types),*) -> T },
+                    ));
+
+                let struct_name = format_ident!("{}", next_state.type_.base_type.last().unwrap());
+                let state_generics: Vec<_> = next_state
+                    .type_
+                    .generic_arguments
+                    .iter()
+                    .map(|arg| {
+                        let GenericArgument::Lifetime(GenericLifetimeParameter::Named(lifetime)) =
+                            arg
+                        else {
+                            unreachable!()
+                        };
+                        syn::Lifetime::new(&format!("'{lifetime}"), proc_macro2::Span::call_site())
+                            .to_token_stream()
+                    })
+                    .chain(std::iter::once(quote! { T }))
+                    .collect();
+                let generics = quote! { <#(#state_generics),*> };
+                let def = syn::parse2(quote! {
+                    pub struct #struct_name #generics
+                    where T: std::future::Future<Output = pavex::response::Response> {
+                        #(#fields),*
+                    }
+                })
+                .unwrap();
+                let field_bindings = &next_state.field_bindings;
+                let inputs: Vec<_> = next_stage
+                    .input_parameters
+                    .iter()
+                    .map(|input| {
+                        let Some(binding) = field_bindings.find_exact_by_type(&input.type_) else {
+                            panic!("Could not find field name for input type `{:?}` in `Next`'s state, `{:?}`", input, next_state.field_bindings);
+                        };
+                        let ident = format_ident!("{}", binding.ident);
+                        quote! {
+                            self.#ident
+                        }
+                    })
+                    .collect();
+                let into_future_impl = syn::parse2(quote! {
+                    impl #generics std::future::IntoFuture for #struct_name #generics
+                    where
+                        T: std::future::Future<Output = pavex::response::Response>,
+                    {
+                        type Output = pavex::response::Response;
+                        type IntoFuture = T;
+
+                        fn into_future(self) -> Self::IntoFuture {
+                            (self.next)(#(#inputs),*)
+                        }
+                    }
+                })
+                .unwrap();
+                next_states.push(CodegenedNextState {
+                    state: def,
+                    into_future_impl,
+                });
+            }
+            next_states
+        };
+
         Ok(CodegenedRequestHandlerPipeline {
-            stages,
+            stages: stage_fns,
+            wrapped_components: id2codegened_fn.into_values().collect(),
             next_states,
             module_name: self.module_name.clone(),
         })
@@ -161,8 +279,12 @@ impl RequestHandlerPipeline {
 
 #[derive(Debug, Clone)]
 pub(crate) struct CodegenedRequestHandlerPipeline {
-    /// The closure for each stage (i.e. middleware or request handler) of the pipeline.
+    /// The function that groups together the middleware/handler and (possible) post-processing
+    /// invocations for each stage.
     pub(crate) stages: Vec<CodegenedFn>,
+    /// The function wrapper around each middleware/handler invocation, including
+    /// constructor invocations.
+    pub(crate) wrapped_components: Vec<CodegenedFn>,
     /// The `Next` state for each middleware invocation.
     pub(crate) next_states: Vec<CodegenedNextState>,
     /// The name of the module that will contain the generated code.
@@ -175,6 +297,7 @@ impl CodegenedRequestHandlerPipeline {
     pub(crate) fn as_inline_module(&self) -> TokenStream {
         let Self {
             stages,
+            wrapped_components,
             next_states,
             module_name,
         } = self;
@@ -182,6 +305,7 @@ impl CodegenedRequestHandlerPipeline {
         quote! {
             pub mod #module_name {
                 #(#stages)*
+                #(#wrapped_components)*
                 #(#next_states)*
             }
         }
@@ -238,7 +362,16 @@ impl CodegenedRequestHandlerPipeline {
                     #field_name
                 }
             } else {
-                let field_name = request_scoped_bindings.get_by_right(inner_type).unwrap();
+                let Some(field_name) = request_scoped_bindings.get_by_right(inner_type) else {
+                    panic!(
+                        "Could not find a binding for input type `{:?}` in the application state or request-scoped bindings.\n\
+                        Request-scoped bindings: {:?}\n\
+                        Application state: {:?}",
+                        type_,
+                        request_scoped_bindings,
+                        server_state_bindings
+                    );
+                };
                 if is_shared_reference {
                     quote! {
                         &#field_name

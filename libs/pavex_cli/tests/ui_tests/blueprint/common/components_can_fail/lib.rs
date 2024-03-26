@@ -3,7 +3,7 @@ use std::path::PathBuf;
 
 use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
 use pavex::f;
-use pavex::middleware::Next;
+use pavex::middleware::{Next, Processing};
 use pavex::{request::RequestHead, response::Response};
 
 pub struct Logger;
@@ -80,6 +80,28 @@ where
     todo!()
 }
 
+#[derive(Debug)]
+pub struct PostError;
+
+pub fn post_error(_e: &PostError) -> Response {
+    todo!()
+}
+
+pub fn fallible_post(_response: Response) -> Result<Response, PostError> {
+    todo!()
+}
+
+#[derive(Debug)]
+pub struct PreError;
+
+pub fn pre_error(_e: &PreError) -> Response {
+    todo!()
+}
+
+pub fn fallible_pre() -> Result<Processing, PreError> {
+    todo!()
+}
+
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.constructor(f!(crate::http_client), Lifecycle::Singleton);
@@ -89,6 +111,10 @@ pub fn blueprint() -> Blueprint {
         .error_handler(f!(crate::handle_logger_error));
     bp.wrap(f!(crate::fallible_wrapping_middleware))
         .error_handler(f!(crate::handle_middleware_error));
+    bp.pre_process(f!(crate::fallible_pre))
+        .error_handler(f!(crate::pre_error));
+    bp.post_process(f!(crate::fallible_post))
+        .error_handler(f!(crate::post_error));
     bp.route(GET, "/home", f!(crate::request_handler))
         .error_handler(f!(crate::handle_handler_error));
     bp

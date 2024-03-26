@@ -16,7 +16,7 @@ async fn greet_happy_path() {
         .await
         .expect("Failed to execute request.");
 
-    assert_eq!(response.status().as_u16(), StatusCode::OK.as_u16());
+    assert_eq!(response.status(), StatusCode::OK);
     assert_eq!(response.text().await.unwrap(), "Hello, Ursula!");
 }
 ```

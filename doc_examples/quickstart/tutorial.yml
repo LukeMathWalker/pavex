@@ -10,7 +10,7 @@ snippets:
     ranges: [ "2.." ]
     hl_lines: [ 6 ]
   - name: "ping_handler"
-    source_path: "app/src/routes/status.rs"
+    source_path: "app/src/routes/ping.rs"
     ranges: [ ".." ]
   - name: "cargo_px_in_manifest"
     source_path: "server_sdk/Cargo.toml"
@@ -95,8 +95,8 @@ steps:
         ranges: [ "0..2", "10..23" ]
       - name: "register"
         source_path: "app/src/blueprint.rs"
-        ranges: [ "7..8", "12..13", "16..17" ]
-        hl_lines: [ 4 ]
+        ranges: [ "2..3", "7..8", "12..13", "16..17" ]
+        hl_lines: [ 6 ]
     commands:
       - command: "cargo px c"
         expected_outcome: "success"
@@ -134,7 +134,7 @@ steps:
         source_path: "server/tests/integration/greet.rs"
         ranges: [ ".." ]
     commands:
-      - command: "cargo px c"
+      - command: "cargo px t"
         expected_outcome: "success"
   - patch: "10.patch"
     snippets:
@@ -142,5 +142,5 @@ steps:
         source_path: "server/tests/integration/greet.rs"
         ranges: [ "21.." ]
     commands:
-      - command: "cargo px c"
+      - command: "cargo px t"
         expected_outcome: "success"

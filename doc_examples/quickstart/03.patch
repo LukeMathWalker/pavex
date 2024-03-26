@@ -6,12 +6,12 @@ index 38ec1e3..adfbbd5 100644
 +use pavex::request::path::PathParams;
  use pavex::response::Response;
  
--pub fn greet() -> Response {
+-pub fn get() -> Response {
 +#[PathParams]
 +pub struct GreetParams {
 +    pub name: String /* (1)! */
 +}
 +
-+pub fn greet(params: PathParams<GreetParams> /* (2)! */) -> Response {
++pub fn get(params: PathParams<GreetParams> /* (2)! */) -> Response {
      todo!()
  }

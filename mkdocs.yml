@@ -110,7 +110,13 @@ nav:
               - guide/dependency_injection/core_concepts/kits.md
           - guide/dependency_injection/cookbook.md
           - guide/dependency_injection/limitations.md
-      - "Middleware": guide/middleware/index.md
+      - "Middlewares":
+          - guide/middleware/index.md
+          - guide/middleware/pre_processing.md
+          - guide/middleware/post_processing.md
+          - guide/middleware/wrapping.md
+          - guide/middleware/scoping.md
+          - guide/middleware/execution_order.md
       - "Errors":
           - guide/errors/index.md
           - guide/errors/error_handlers.md

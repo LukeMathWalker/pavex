@@ -22,6 +22,12 @@ pub enum ResolvedType {
     Generic(Generic),
 }
 
+impl AsRef<ResolvedType> for ResolvedType {
+    fn as_ref(&self) -> &ResolvedType {
+        &self
+    }
+}
+
 impl ResolvedType {
     pub const UNIT_TYPE: ResolvedType = ResolvedType::Tuple(Tuple { elements: vec![] });
 
@@ -771,6 +777,15 @@ pub enum GenericArgument {
 pub enum GenericLifetimeParameter {
     Named(String),
     Static,
+}
+
+impl Display for GenericLifetimeParameter {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            GenericLifetimeParameter::Named(s) => write!(f, "'{}", s),
+            GenericLifetimeParameter::Static => write!(f, "'static"),
+        }
+    }
 }
 
 impl PartialEq for GenericLifetimeParameter {

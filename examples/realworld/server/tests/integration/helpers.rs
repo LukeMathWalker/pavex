@@ -1,6 +1,6 @@
-use api_server::configuration::{ApplicationProfile, Config};
-use api_server_sdk::{build_application_state, run};
 use pavex::server::Server;
+use server::configuration::{ApplicationProfile, Config};
+use server_sdk::{build_application_state, run};
 use std::sync::Once;
 use tracing::subscriber::set_global_default;
 use tracing_subscriber::EnvFilter;
@@ -38,8 +38,8 @@ impl TestApi {
     }
 
     fn get_config() -> Config {
-        let mut config = Config::load(Some(ApplicationProfile::Test))
-            .expect("Failed to load test configuration");
+        let mut config =
+            Config::load(Some(ApplicationProfile::Dev)).expect("Failed to load test configuration");
 
         // We generate the key pair on the fly rather than hardcoding it in the
         // configuration file.

@@ -42,7 +42,7 @@ async fn route_request(
                     vec![],
                 )
                 .into();
-            return route_1::middleware_0(&allowed_methods).await;
+            return route_1::entrypoint(&allowed_methods).await;
         }
     };
     let route_id = matched_route.value;
@@ -53,13 +53,13 @@ async fn route_request(
     match route_id {
         0u32 => {
             match &request_head.method {
-                &pavex::http::Method::GET => route_0::middleware_0(&url_params).await,
+                &pavex::http::Method::GET => route_0::entrypoint(&url_params).await,
                 _ => {
                     let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
                             pavex::http::Method::GET,
                         ])
                         .into();
-                    route_1::middleware_0(&allowed_methods).await
+                    route_1::entrypoint(&allowed_methods).await
                 }
             }
         }
@@ -67,12 +67,41 @@ async fn route_request(
     }
 }
 pub mod route_0 {
-    pub async fn middleware_0(
+    pub async fn entrypoint<'a, 'b, 'c>(
+        s_0: &'c pavex::request::path::RawPathParams<'a, 'b>,
+    ) -> pavex::response::Response {
+        let response = wrapping_0(s_0).await;
+        response
+    }
+    async fn stage_1<'a, 'b, 'c>(
+        s_0: &'c pavex::request::path::RawPathParams<'a, 'b>,
+    ) -> pavex::response::Response {
+        let response = wrapping_1(s_0).await;
+        response
+    }
+    async fn stage_2<'a, 'b, 'c>(
+        s_0: &'c pavex::request::path::RawPathParams<'a, 'b>,
+    ) -> pavex::response::Response {
+        let response = handler(s_0).await;
+        response
+    }
+    pub async fn wrapping_0(
         v0: &pavex::request::path::RawPathParams<'_, '_>,
     ) -> pavex::response::Response {
         let v1 = crate::route_0::Next0 {
             s_0: v0,
-            next: handler,
+            next: stage_1,
+        };
+        let v2 = pavex::middleware::Next::new(v1);
+        let v3 = pavex::middleware::wrap_noop(v2).await;
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
+    }
+    pub async fn wrapping_1(
+        v0: &pavex::request::path::RawPathParams<'_, '_>,
+    ) -> pavex::response::Response {
+        let v1 = crate::route_0::Next1 {
+            s_0: v0,
+            next: stage_2,
         };
         let v2 = pavex::middleware::Next::new(v1);
         let v3 = app::mw(v2);
@@ -101,14 +130,60 @@ pub mod route_0 {
             (self.next)(self.s_0)
         }
     }
+    pub struct Next1<'a, 'b, 'c, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        s_0: &'c pavex::request::path::RawPathParams<'a, 'b>,
+        next: fn(&'c pavex::request::path::RawPathParams<'a, 'b>) -> T,
+    }
+    impl<'a, 'b, 'c, T> std::future::IntoFuture for Next1<'a, 'b, 'c, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        type Output = pavex::response::Response;
+        type IntoFuture = T;
+        fn into_future(self) -> Self::IntoFuture {
+            (self.next)(self.s_0)
+        }
+    }
 }
 pub mod route_1 {
-    pub async fn middleware_0(
+    pub async fn entrypoint<'a>(
+        s_0: &'a pavex::router::AllowedMethods,
+    ) -> pavex::response::Response {
+        let response = wrapping_0(s_0).await;
+        response
+    }
+    async fn stage_1<'a>(
+        s_0: &'a pavex::router::AllowedMethods,
+    ) -> pavex::response::Response {
+        let response = wrapping_1(s_0).await;
+        response
+    }
+    async fn stage_2<'a>(
+        s_0: &'a pavex::router::AllowedMethods,
+    ) -> pavex::response::Response {
+        let response = handler(s_0).await;
+        response
+    }
+    pub async fn wrapping_0(
         v0: &pavex::router::AllowedMethods,
     ) -> pavex::response::Response {
         let v1 = crate::route_1::Next0 {
             s_0: v0,
-            next: handler,
+            next: stage_1,
+        };
+        let v2 = pavex::middleware::Next::new(v1);
+        let v3 = pavex::middleware::wrap_noop(v2).await;
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
+    }
+    pub async fn wrapping_1(
+        v0: &pavex::router::AllowedMethods,
+    ) -> pavex::response::Response {
+        let v1 = crate::route_1::Next1 {
+            s_0: v0,
+            next: stage_2,
         };
         let v2 = pavex::middleware::Next::new(v1);
         let v3 = app::mw(v2);
@@ -128,6 +203,23 @@ pub mod route_1 {
         next: fn(&'a pavex::router::AllowedMethods) -> T,
     }
     impl<'a, T> std::future::IntoFuture for Next0<'a, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        type Output = pavex::response::Response;
+        type IntoFuture = T;
+        fn into_future(self) -> Self::IntoFuture {
+            (self.next)(self.s_0)
+        }
+    }
+    pub struct Next1<'a, T>
+    where
+        T: std::future::Future<Output = pavex::response::Response>,
+    {
+        s_0: &'a pavex::router::AllowedMethods,
+        next: fn(&'a pavex::router::AllowedMethods) -> T,
+    }
+    impl<'a, T> std::future::IntoFuture for Next1<'a, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {

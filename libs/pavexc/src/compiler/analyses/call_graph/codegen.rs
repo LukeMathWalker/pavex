@@ -259,8 +259,12 @@ fn _codegen_callable_closure_body(
                             // all dependents to refer to the constructed value via that
                             // variable name.
                             let parameter_name = variable_name_generator.generate();
+                            let is_borrowed_mutably = call_graph
+                                .edges_directed(current_index, Direction::Outgoing)
+                                .any(|e| e.weight() == &CallGraphEdgeMetadata::ExclusiveBorrow);
+                            let maybe_mut = is_borrowed_mutably.then(|| quote! {mut});
                             let block = quote! {
-                                let #parameter_name = #block;
+                                let #maybe_mut #parameter_name = #block;
                             };
                             at_most_once_constructor_blocks.insert(current_index, block);
                             blocks

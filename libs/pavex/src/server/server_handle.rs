@@ -1,4 +1,5 @@
 use std::future::{poll_fn, Future, IntoFuture};
+use std::io::Error;
 use std::marker::PhantomData;
 use std::net::SocketAddr;
 use std::pin::Pin;
@@ -178,11 +179,31 @@ where
         async fn accept_connection(
             incoming: IncomingStream,
         ) -> (IncomingStream, TcpStream, SocketAddr) {
+            #[allow(deprecated)]
+            // This has been inlined from `tokio`'s codebase, since it's not public API.
+            fn is_rt_shutdown_err(err: &Error) -> bool {
+                const RT_SHUTDOWN_ERR: &str =
+                    "A Tokio 1.x context was found, but it is being shutdown.";
+                if err.kind() != std::io::ErrorKind::Other {
+                    return false;
+                }
+                let Some(inner) = err.get_ref() else {
+                    return false;
+                };
+                // Using `Error::description()` is more efficient than `format!("{inner}")`,
+                // so we use it here even if it is deprecated.
+                inner.source().is_none() && inner.description() == RT_SHUTDOWN_ERR
+            }
+
             loop {
                 match incoming.accept().await {
                     Ok((connection, remote_peer)) => return (incoming, connection, remote_peer),
                     Err(e) => {
-                        tracing::error!(error.msg = %e, error.details = ?e, "Failed to accept connection");
+                        if is_rt_shutdown_err(&e) {
+                            tracing::debug!(error.msg = %e, error.details = ?e, "Failed to accept connection");
+                        } else {
+                            tracing::error!(error.msg = %e, error.details = ?e, "Failed to accept connection");
+                        }
                         continue;
                     }
                 }

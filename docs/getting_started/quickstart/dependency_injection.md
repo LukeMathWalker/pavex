@@ -1,6 +1,6 @@
 # Dependency injection
 
-You just added a new input parameter to your `greet` handler and, somehow, the framework was able to provide its value
+You just added a new input parameter to your request handler and, somehow, the framework was able to provide its value
 at runtime without you having to do anything.  
 How does that work?
 
@@ -39,7 +39,7 @@ Let's start by defining a new `UserAgent` type:
 
 ## Missing constructor
 
-What if you tried to inject `UserAgent` into your `greet` handler straight away? Would it work?  
+What if you tried to inject `UserAgent` into your request handler straight away? Would it work?  
 Let's find out!
 
 --8<-- "doc_examples/quickstart/05-inject.snap"
@@ -59,7 +59,7 @@ We strive to make them as helpful as possible. If you find them confusing, repor
 
 ## Add a new constructor
 
-To inject `UserAgent` into our `greet` handler, you need to define a constructor for it.  
+To inject `UserAgent` into your request handler, you need to define a constructor for it.  
 Constructors, just like request handlers, can take advantage of dependency injection: they can request input parameters
 that will be injected by the framework at runtime.  
 Since you need to look at headers, ask for [`RequestHead`][RequestHead] as input parameter: the incoming request data,

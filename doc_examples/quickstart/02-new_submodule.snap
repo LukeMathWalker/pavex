@@ -1,4 +1,4 @@
 ```rust title="app/src/routes/mod.rs" hl_lines="1"
 pub mod greet;
-pub mod status;
+pub mod ping;
 ```

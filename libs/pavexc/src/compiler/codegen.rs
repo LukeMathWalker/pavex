@@ -95,8 +95,13 @@ pub(crate) fn codegen_app(
     let handler_id2codegened_pipeline = handler_id2pipeline
         .iter()
         .map(|(id, p)| {
-            p.codegen(package_id2name, component_db, computation_db)
-                .map(|p| (*id, p))
+            p.codegen(
+                &pavex_import_name,
+                package_id2name,
+                component_db,
+                computation_db,
+            )
+            .map(|p| (*id, p))
         })
         .collect::<Result<BTreeMap<_, _>, _>>()?;
     let handler_modules = handler_id2codegened_pipeline

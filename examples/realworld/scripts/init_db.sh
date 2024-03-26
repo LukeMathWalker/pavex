@@ -58,6 +58,6 @@ done
 
 export DATABASE_URL=postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}
 sqlx database create
-sqlx migrate run --source conduit_core/migrations
+sqlx migrate run --source app/migrations
 
 >&2 echo "Postgres has been migrated, ready to go!"

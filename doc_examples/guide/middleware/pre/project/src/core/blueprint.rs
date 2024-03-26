@@ -1,0 +1,10 @@
+use pavex::blueprint::router::GET;
+use pavex::blueprint::Blueprint;
+use pavex::f;
+
+pub fn blueprint() -> Blueprint {
+    let mut bp = Blueprint::new();
+    bp.pre_process(f!(super::redirect_to_normalized));
+    bp.route(GET, "/", f!(super::handler));
+    bp
+}

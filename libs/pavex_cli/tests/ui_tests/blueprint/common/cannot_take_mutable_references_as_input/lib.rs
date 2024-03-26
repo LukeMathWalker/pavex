@@ -23,7 +23,7 @@ pub fn observer(e: &pavex::Error, s: &mut String) {
     todo!()
 }
 
-pub fn handler(s: &mut String) -> Result<Response, pavex::Error> {
+pub fn handler(s: &String) -> Result<Response, pavex::Error> {
     todo!()
 }
 

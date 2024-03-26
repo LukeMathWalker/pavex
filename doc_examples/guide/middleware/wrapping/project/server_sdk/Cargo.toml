@@ -1,0 +1,8 @@
+[package]
+name = "wrapping_server_sdk"
+version = "0.1.0"
+edition = "2021"
+
+[package.metadata.px.generate]
+generator_type = "cargo_workspace_binary"
+generator_name = "wrapping"

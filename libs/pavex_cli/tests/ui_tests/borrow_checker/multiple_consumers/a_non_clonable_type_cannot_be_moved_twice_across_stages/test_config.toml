@@ -1,0 +1,5 @@
+description = """A non-clonable cannot be consumed by value by a middleware
+and a request handler"""
+
+[expectations]
+codegen = "fail"

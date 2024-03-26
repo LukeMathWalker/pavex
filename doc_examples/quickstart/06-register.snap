@@ -1,4 +1,6 @@
-```rust title="app/src/blueprint.rs" hl_lines="4"
+```rust title="app/src/blueprint.rs" hl_lines="6"
+// [...]
+use pavex::f;
 // [...]
 pub fn blueprint() -> Blueprint {
     // [...]
