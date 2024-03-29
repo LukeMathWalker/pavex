@@ -1,0 +1,4 @@
+description = "You can't borrow a mutable reference to a transient"
+
+[expectations]
+codegen = "fail"

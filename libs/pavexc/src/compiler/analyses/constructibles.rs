@@ -169,28 +169,54 @@ impl ConstructibleDb {
                         computation_db,
                         framework_items_db,
                     ) {
-                        if ConsumptionMode::ExclusiveBorrow == mode
-                            && component_db.lifecycle(input_component_id) == Lifecycle::Singleton
-                        {
-                            if let Some(user_component_id) =
-                                component_db.user_component_id(component_id)
-                            {
-                                Self::mut_ref_to_singleton(
-                                    user_component_id,
-                                    component_db.user_component_db(),
-                                    input,
-                                    input_index,
-                                    package_graph,
-                                    krate_collection,
-                                    computation_db,
-                                    diagnostics,
-                                )
-                            } else {
-                                tracing::warn!(
-                                    "&mut singleton input ({:?}) for component {:?}, but the component is not a user component.",
-                                    input,
-                                    component_id
-                                );
+                        if ConsumptionMode::ExclusiveBorrow == mode {
+                            let lifecycle = component_db.lifecycle(input_component_id);
+                            match lifecycle {
+                                Lifecycle::Singleton => {
+                                    if let Some(user_component_id) =
+                                        component_db.user_component_id(component_id)
+                                    {
+                                        Self::mut_ref_to_singleton(
+                                            user_component_id,
+                                            component_db.user_component_db(),
+                                            input,
+                                            input_index,
+                                            package_graph,
+                                            krate_collection,
+                                            computation_db,
+                                            diagnostics,
+                                        )
+                                    } else {
+                                        tracing::warn!(
+                                            "&mut singleton input ({:?}) for component {:?}, but the component is not a user component.",
+                                            input,
+                                            component_id
+                                        );
+                                    };
+                                }
+                                Lifecycle::RequestScoped => {}
+                                Lifecycle::Transient => {
+                                    if let Some(user_component_id) =
+                                        component_db.user_component_id(component_id)
+                                    {
+                                        Self::mut_ref_to_transient(
+                                            user_component_id,
+                                            component_db.user_component_db(),
+                                            input,
+                                            input_index,
+                                            package_graph,
+                                            krate_collection,
+                                            computation_db,
+                                            diagnostics,
+                                        )
+                                    } else {
+                                        tracing::warn!(
+                                            "&mut transient input ({:?}) for component {:?}, but the component is not a user component.",
+                                            input,
+                                            component_id
+                                        );
+                                    };
+                                }
                             }
                         }
                         continue;
@@ -678,6 +704,60 @@ impl ConstructibleDb {
                 "Singletons can only be taken via a shared reference (`&`) or by value (if cloneable). \
                 If you absolutely need to mutate a singleton, consider internal mutability (e.g. `Arc<Mutex<..>>`).".into()
             )
+            .build();
+        diagnostics.push(diagnostic.into());
+    }
+
+    fn mut_ref_to_transient(
+        user_component_id: UserComponentId,
+        user_component_db: &UserComponentDb,
+        transient_input_type: &ResolvedType,
+        transient_input_index: usize,
+        package_graph: &PackageGraph,
+        krate_collection: &CrateCollection,
+        computation_db: &ComputationDb,
+        diagnostics: &mut Vec<miette::Error>,
+    ) {
+        fn get_snippet(
+            callable: &Callable,
+            krate_collection: &CrateCollection,
+            package_graph: &PackageGraph,
+            mut_ref_input_index: usize,
+        ) -> Option<AnnotatedSnippet> {
+            let def = CallableDefinition::compute(callable, krate_collection, package_graph)?;
+            let input = &def.sig.inputs[mut_ref_input_index];
+            let label = def
+                .convert_local_span(input.span())
+                .labeled("The &mut transient".into());
+            Some(AnnotatedSnippet::new(def.named_source(), label))
+        }
+
+        let component_kind = user_component_db[user_component_id].callable_type();
+        let callable = &computation_db[user_component_id];
+        let location = user_component_db.get_location(user_component_id);
+        let source = try_source!(location, package_graph, diagnostics);
+        let label = source
+            .as_ref()
+            .map(|source| {
+                diagnostic::get_f_macro_invocation_span(&source, location)
+                    .labeled(format!("The {component_kind} was registered here"))
+            })
+            .flatten();
+
+        let definition_snippet = get_snippet(
+            &computation_db[user_component_id],
+            krate_collection,
+            package_graph,
+            transient_input_index,
+        );
+        let error = anyhow::anyhow!("You can't inject a mutable reference to a transient type (`{transient_input_type:?}`) as an input parameter to `{}`.\n\
+        Transient constructors are invoked every time their output is needed—instances of transient types are never reused. \
+        The result of any mutation would be immediately discarded.", callable.path);
+        let diagnostic = CompilerDiagnostic::builder(error)
+            .optional_source(source)
+            .optional_label(label)
+            .optional_additional_annotated_snippet(definition_snippet)
+            .help("Take the type by value, or use a `&` reference.".into())
             .build();
         diagnostics.push(diagnostic.into());
     }
