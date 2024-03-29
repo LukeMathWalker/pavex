@@ -16,6 +16,14 @@ pub fn error_ref(request_head: &RequestHead) -> &pavex::Error {
     todo!()
 }
 
+pub fn response() -> pavex::response::Response {
+    todo!()
+}
+
+pub fn response_ref(request_head: &RequestHead) -> &pavex::response::Response {
+    todo!()
+}
+
 pub fn request_head() -> RequestHead {
     todo!()
 }
@@ -61,6 +69,7 @@ pub fn blueprint() -> Blueprint {
     bp.nest({
         let mut bp = Blueprint::new();
         bp.constructor(f!(crate::error), Lifecycle::RequestScoped);
+        bp.constructor(f!(crate::response), Lifecycle::RequestScoped);
         bp.constructor(f!(crate::request_head), Lifecycle::RequestScoped);
         bp.constructor(f!(crate::allowed_methods), Lifecycle::RequestScoped);
         bp.constructor(f!(crate::raw_incoming_body), Lifecycle::RequestScoped);
@@ -71,6 +80,7 @@ pub fn blueprint() -> Blueprint {
     bp.nest({
         let mut bp = Blueprint::new();
         bp.constructor(f!(crate::error_ref), Lifecycle::RequestScoped);
+        bp.constructor(f!(crate::response_ref), Lifecycle::RequestScoped);
         bp.constructor(f!(crate::request_head_ref), Lifecycle::RequestScoped);
         bp.constructor(f!(crate::allowed_methods_ref), Lifecycle::RequestScoped);
         bp.constructor(f!(crate::raw_incoming_body_ref), Lifecycle::RequestScoped);
