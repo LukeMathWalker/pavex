@@ -18,6 +18,7 @@ impl<'a> Constructor<'a> {
     pub fn new(
         c: Computation<'a>,
         pavex_error: &ResolvedType,
+        pavex_response: &ResolvedType,
         framework_item_db: &FrameworkItemDb,
     ) -> Result<Self, ConstructorValidationError> {
         if c.output_type().is_none() {
@@ -46,6 +47,16 @@ impl<'a> Constructor<'a> {
         if let ResolvedType::Reference(ref_type) = &output_type {
             if ref_type.inner.as_ref() == pavex_error {
                 return Err(ConstructorValidationError::CannotConstructPavexError);
+            }
+        }
+
+        // You can't construct `pavex::Response` or `&pavex::Response`.
+        if &output_type == pavex_response {
+            return Err(ConstructorValidationError::CannotConstructPavexResponse);
+        }
+        if let ResolvedType::Reference(ref_type) = &output_type {
+            if ref_type.inner.as_ref() == pavex_response {
+                return Err(ConstructorValidationError::CannotConstructPavexResponse);
             }
         }
 
@@ -131,6 +142,8 @@ pub(crate) enum ConstructorValidationError {
     CannotFalliblyReturnTheUnitType,
     #[error("You can't register a constructor for `pavex::Error`.\n`pavex::Error` can only be used as the error type of your fallible components.")]
     CannotConstructPavexError,
+    #[error("You can't register a constructor for `pavex::Response`.\nYou can only return a response from request handlers, middlewares or error handlers.")]
+    CannotConstructPavexResponse,
     #[error("You can't register a constructor for `{primitive_type:?}`.\n\
         `{primitive_type:?}` is a framework primitive, you can't override the way it's built by Pavex.")]
     CannotConstructFrameworkPrimitive { primitive_type: ResolvedType },

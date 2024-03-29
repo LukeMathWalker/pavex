@@ -56,6 +56,7 @@ impl ComponentDb {
             }
             ConstructorValidationError::CannotFalliblyReturnTheUnitType
             | ConstructorValidationError::CannotConstructPavexError
+            | ConstructorValidationError::CannotConstructPavexResponse
             | ConstructorValidationError::CannotConstructFrameworkPrimitive { .. }
             | ConstructorValidationError::CannotReturnTheUnitType => {
                 let d = CompilerDiagnostic::builder(e)

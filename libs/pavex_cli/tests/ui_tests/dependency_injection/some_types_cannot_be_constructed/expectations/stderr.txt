@@ -3,12 +3,25 @@
   [31m│[0m `pavex::Error` can only be used as the error type of your fallible
   [31m│[0m components.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:72:1]
-  [31m│[0m  [2m72[0m │         let mut bp = Blueprint::new();
-  [31m│[0m  [2m73[0m │         bp.constructor(f!(crate::error_ref), Lifecycle::RequestScoped);
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:81:1]
+  [31m│[0m  [2m81[0m │         let mut bp = Blueprint::new();
+  [31m│[0m  [2m82[0m │         bp.constructor(f!(crate::error_ref), Lifecycle::RequestScoped);
   [31m│[0m     · [35;1m                       ──────────┬─────────[0m
   [31m│[0m     ·                                  [35;1m╰── The constructor was registered here[0m
-  [31m│[0m  [2m74[0m │         bp.constructor(f!(crate::request_head_ref), Lifecycle::RequestScoped);
+  [31m│[0m  [2m83[0m │         bp.constructor(f!(crate::response_ref), Lifecycle::RequestScoped);
+  [31m│[0m     ╰────
+
+[31m[1mERROR[0m[39m: 
+  [31m×[0m You can't register a constructor for `pavex::Response`.
+  [31m│[0m You can only return a response from request handlers, middlewares or error
+  [31m│[0m handlers.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:82:1]
+  [31m│[0m  [2m82[0m │         bp.constructor(f!(crate::error_ref), Lifecycle::RequestScoped);
+  [31m│[0m  [2m83[0m │         bp.constructor(f!(crate::response_ref), Lifecycle::RequestScoped);
+  [31m│[0m     · [35;1m                       ───────────┬───────────[0m
+  [31m│[0m     ·                                   [35;1m╰── The constructor was registered here[0m
+  [31m│[0m  [2m84[0m │         bp.constructor(f!(crate::request_head_ref), Lifecycle::RequestScoped);
   [31m│[0m     ╰────
 
 [31m[1mERROR[0m[39m: 
@@ -16,12 +29,12 @@
   [31m│[0m `pavex::request::RequestHead` is a framework primitive, you can't override
   [31m│[0m the way it's built by Pavex.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:73:1]
-  [31m│[0m  [2m73[0m │         bp.constructor(f!(crate::error_ref), Lifecycle::RequestScoped);
-  [31m│[0m  [2m74[0m │         bp.constructor(f!(crate::request_head_ref), Lifecycle::RequestScoped);
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:83:1]
+  [31m│[0m  [2m83[0m │         bp.constructor(f!(crate::response_ref), Lifecycle::RequestScoped);
+  [31m│[0m  [2m84[0m │         bp.constructor(f!(crate::request_head_ref), Lifecycle::RequestScoped);
   [31m│[0m     · [35;1m                       ─────────────┬─────────────[0m
   [31m│[0m     ·                                     [35;1m╰── The constructor was registered here[0m
-  [31m│[0m  [2m75[0m │         bp.constructor(f!(crate::allowed_methods_ref), Lifecycle::RequestScoped);
+  [31m│[0m  [2m85[0m │         bp.constructor(f!(crate::allowed_methods_ref), Lifecycle::RequestScoped);
   [31m│[0m     ╰────
 
 [31m[1mERROR[0m[39m: 
@@ -29,12 +42,12 @@
   [31m│[0m `pavex::router::AllowedMethods` is a framework primitive, you can't
   [31m│[0m override the way it's built by Pavex.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:74:1]
-  [31m│[0m  [2m74[0m │         bp.constructor(f!(crate::request_head_ref), Lifecycle::RequestScoped);
-  [31m│[0m  [2m75[0m │         bp.constructor(f!(crate::allowed_methods_ref), Lifecycle::RequestScoped);
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:84:1]
+  [31m│[0m  [2m84[0m │         bp.constructor(f!(crate::request_head_ref), Lifecycle::RequestScoped);
+  [31m│[0m  [2m85[0m │         bp.constructor(f!(crate::allowed_methods_ref), Lifecycle::RequestScoped);
   [31m│[0m     · [35;1m                       ───────────────┬──────────────[0m
   [31m│[0m     ·                                       [35;1m╰── The constructor was registered here[0m
-  [31m│[0m  [2m76[0m │         bp.constructor(f!(crate::raw_incoming_body_ref), Lifecycle::RequestScoped);
+  [31m│[0m  [2m86[0m │         bp.constructor(f!(crate::raw_incoming_body_ref), Lifecycle::RequestScoped);
   [31m│[0m     ╰────
 
 [31m[1mERROR[0m[39m: 
@@ -43,12 +56,12 @@
   [31m│[0m `pavex::request::body::RawIncomingBody` is a framework primitive, you
   [31m│[0m can't override the way it's built by Pavex.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:75:1]
-  [31m│[0m  [2m75[0m │         bp.constructor(f!(crate::allowed_methods_ref), Lifecycle::RequestScoped);
-  [31m│[0m  [2m76[0m │         bp.constructor(f!(crate::raw_incoming_body_ref), Lifecycle::RequestScoped);
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:85:1]
+  [31m│[0m  [2m85[0m │         bp.constructor(f!(crate::allowed_methods_ref), Lifecycle::RequestScoped);
+  [31m│[0m  [2m86[0m │         bp.constructor(f!(crate::raw_incoming_body_ref), Lifecycle::RequestScoped);
   [31m│[0m     · [35;1m                       ────────────────┬───────────────[0m
   [31m│[0m     ·                                        [35;1m╰── The constructor was registered here[0m
-  [31m│[0m  [2m77[0m │         bp.constructor(
+  [31m│[0m  [2m87[0m │         bp.constructor(
   [31m│[0m     ╰────
 
 [31m[1mERROR[0m[39m: 
@@ -57,12 +70,12 @@
   [31m│[0m `pavex::request::path::MatchedPathPattern` is a framework primitive, you
   [31m│[0m can't override the way it's built by Pavex.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:77:1]
-  [31m│[0m  [2m77[0m │         bp.constructor(
-  [31m│[0m  [2m78[0m │             f!(crate::matched_path_pattern_ref),
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:87:1]
+  [31m│[0m  [2m87[0m │         bp.constructor(
+  [31m│[0m  [2m88[0m │             f!(crate::matched_path_pattern_ref),
   [31m│[0m     · [35;1m            ─────────────────┬─────────────────[0m
   [31m│[0m     ·                              [35;1m╰── The constructor was registered here[0m
-  [31m│[0m  [2m79[0m │             Lifecycle::RequestScoped,
+  [31m│[0m  [2m89[0m │             Lifecycle::RequestScoped,
   [31m│[0m     ╰────
 
 [31m[1mERROR[0m[39m: 
@@ -71,12 +84,12 @@
   [31m│[0m `pavex::request::path::RawPathParams<'server, 'request>` is a framework
   [31m│[0m primitive, you can't override the way it's built by Pavex.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:80:1]
-  [31m│[0m  [2m80[0m │         );
-  [31m│[0m  [2m81[0m │         bp.constructor(f!(crate::raw_path_params_ref), Lifecycle::RequestScoped);
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:90:1]
+  [31m│[0m  [2m90[0m │         );
+  [31m│[0m  [2m91[0m │         bp.constructor(f!(crate::raw_path_params_ref), Lifecycle::RequestScoped);
   [31m│[0m     · [35;1m                       ───────────────┬──────────────[0m
   [31m│[0m     ·                                       [35;1m╰── The constructor was registered here[0m
-  [31m│[0m  [2m82[0m │         bp
+  [31m│[0m  [2m92[0m │         bp
   [31m│[0m     ╰────
 
 [31m[1mERROR[0m[39m: 
@@ -84,12 +97,25 @@
   [31m│[0m `pavex::Error` can only be used as the error type of your fallible
   [31m│[0m components.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:62:1]
-  [31m│[0m  [2m62[0m │         let mut bp = Blueprint::new();
-  [31m│[0m  [2m63[0m │         bp.constructor(f!(crate::error), Lifecycle::RequestScoped);
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:70:1]
+  [31m│[0m  [2m70[0m │         let mut bp = Blueprint::new();
+  [31m│[0m  [2m71[0m │         bp.constructor(f!(crate::error), Lifecycle::RequestScoped);
   [31m│[0m     · [35;1m                       ────────┬───────[0m
   [31m│[0m     ·                                [35;1m╰── The constructor was registered here[0m
-  [31m│[0m  [2m64[0m │         bp.constructor(f!(crate::request_head), Lifecycle::RequestScoped);
+  [31m│[0m  [2m72[0m │         bp.constructor(f!(crate::response), Lifecycle::RequestScoped);
+  [31m│[0m     ╰────
+
+[31m[1mERROR[0m[39m: 
+  [31m×[0m You can't register a constructor for `pavex::Response`.
+  [31m│[0m You can only return a response from request handlers, middlewares or error
+  [31m│[0m handlers.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:71:1]
+  [31m│[0m  [2m71[0m │         bp.constructor(f!(crate::error), Lifecycle::RequestScoped);
+  [31m│[0m  [2m72[0m │         bp.constructor(f!(crate::response), Lifecycle::RequestScoped);
+  [31m│[0m     · [35;1m                       ─────────┬─────────[0m
+  [31m│[0m     ·                                 [35;1m╰── The constructor was registered here[0m
+  [31m│[0m  [2m73[0m │         bp.constructor(f!(crate::request_head), Lifecycle::RequestScoped);
   [31m│[0m     ╰────
 
 [31m[1mERROR[0m[39m: 
@@ -97,12 +123,12 @@
   [31m│[0m `pavex::request::RequestHead` is a framework primitive, you can't override
   [31m│[0m the way it's built by Pavex.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:63:1]
-  [31m│[0m  [2m63[0m │         bp.constructor(f!(crate::error), Lifecycle::RequestScoped);
-  [31m│[0m  [2m64[0m │         bp.constructor(f!(crate::request_head), Lifecycle::RequestScoped);
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:72:1]
+  [31m│[0m  [2m72[0m │         bp.constructor(f!(crate::response), Lifecycle::RequestScoped);
+  [31m│[0m  [2m73[0m │         bp.constructor(f!(crate::request_head), Lifecycle::RequestScoped);
   [31m│[0m     · [35;1m                       ───────────┬───────────[0m
   [31m│[0m     ·                                   [35;1m╰── The constructor was registered here[0m
-  [31m│[0m  [2m65[0m │         bp.constructor(f!(crate::allowed_methods), Lifecycle::RequestScoped);
+  [31m│[0m  [2m74[0m │         bp.constructor(f!(crate::allowed_methods), Lifecycle::RequestScoped);
   [31m│[0m     ╰────
 
 [31m[1mERROR[0m[39m: 
@@ -110,12 +136,12 @@
   [31m│[0m `pavex::router::AllowedMethods` is a framework primitive, you can't
   [31m│[0m override the way it's built by Pavex.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:64:1]
-  [31m│[0m  [2m64[0m │         bp.constructor(f!(crate::request_head), Lifecycle::RequestScoped);
-  [31m│[0m  [2m65[0m │         bp.constructor(f!(crate::allowed_methods), Lifecycle::RequestScoped);
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:73:1]
+  [31m│[0m  [2m73[0m │         bp.constructor(f!(crate::request_head), Lifecycle::RequestScoped);
+  [31m│[0m  [2m74[0m │         bp.constructor(f!(crate::allowed_methods), Lifecycle::RequestScoped);
   [31m│[0m     · [35;1m                       ─────────────┬────────────[0m
   [31m│[0m     ·                                     [35;1m╰── The constructor was registered here[0m
-  [31m│[0m  [2m66[0m │         bp.constructor(f!(crate::raw_incoming_body), Lifecycle::RequestScoped);
+  [31m│[0m  [2m75[0m │         bp.constructor(f!(crate::raw_incoming_body), Lifecycle::RequestScoped);
   [31m│[0m     ╰────
 
 [31m[1mERROR[0m[39m: 
@@ -124,12 +150,12 @@
   [31m│[0m `pavex::request::body::RawIncomingBody` is a framework primitive, you
   [31m│[0m can't override the way it's built by Pavex.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:65:1]
-  [31m│[0m  [2m65[0m │         bp.constructor(f!(crate::allowed_methods), Lifecycle::RequestScoped);
-  [31m│[0m  [2m66[0m │         bp.constructor(f!(crate::raw_incoming_body), Lifecycle::RequestScoped);
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:74:1]
+  [31m│[0m  [2m74[0m │         bp.constructor(f!(crate::allowed_methods), Lifecycle::RequestScoped);
+  [31m│[0m  [2m75[0m │         bp.constructor(f!(crate::raw_incoming_body), Lifecycle::RequestScoped);
   [31m│[0m     · [35;1m                       ──────────────┬─────────────[0m
   [31m│[0m     ·                                      [35;1m╰── The constructor was registered here[0m
-  [31m│[0m  [2m67[0m │         bp.constructor(f!(crate::matched_path_pattern), Lifecycle::RequestScoped);
+  [31m│[0m  [2m76[0m │         bp.constructor(f!(crate::matched_path_pattern), Lifecycle::RequestScoped);
   [31m│[0m     ╰────
 
 [31m[1mERROR[0m[39m: 
@@ -138,12 +164,12 @@
   [31m│[0m `pavex::request::path::MatchedPathPattern` is a framework primitive, you
   [31m│[0m can't override the way it's built by Pavex.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:66:1]
-  [31m│[0m  [2m66[0m │         bp.constructor(f!(crate::raw_incoming_body), Lifecycle::RequestScoped);
-  [31m│[0m  [2m67[0m │         bp.constructor(f!(crate::matched_path_pattern), Lifecycle::RequestScoped);
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:75:1]
+  [31m│[0m  [2m75[0m │         bp.constructor(f!(crate::raw_incoming_body), Lifecycle::RequestScoped);
+  [31m│[0m  [2m76[0m │         bp.constructor(f!(crate::matched_path_pattern), Lifecycle::RequestScoped);
   [31m│[0m     · [35;1m                       ───────────────┬───────────────[0m
   [31m│[0m     ·                                       [35;1m╰── The constructor was registered here[0m
-  [31m│[0m  [2m68[0m │         bp.constructor(f!(crate::raw_path_params), Lifecycle::RequestScoped);
+  [31m│[0m  [2m77[0m │         bp.constructor(f!(crate::raw_path_params), Lifecycle::RequestScoped);
   [31m│[0m     ╰────
 
 [31m[1mERROR[0m[39m: 
@@ -152,10 +178,10 @@
   [31m│[0m `pavex::request::path::RawPathParams<'server, 'request>` is a framework
   [31m│[0m primitive, you can't override the way it's built by Pavex.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:67:1]
-  [31m│[0m  [2m67[0m │         bp.constructor(f!(crate::matched_path_pattern), Lifecycle::RequestScoped);
-  [31m│[0m  [2m68[0m │         bp.constructor(f!(crate::raw_path_params), Lifecycle::RequestScoped);
+  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:76:1]
+  [31m│[0m  [2m76[0m │         bp.constructor(f!(crate::matched_path_pattern), Lifecycle::RequestScoped);
+  [31m│[0m  [2m77[0m │         bp.constructor(f!(crate::raw_path_params), Lifecycle::RequestScoped);
   [31m│[0m     · [35;1m                       ─────────────┬────────────[0m
   [31m│[0m     ·                                     [35;1m╰── The constructor was registered here[0m
-  [31m│[0m  [2m69[0m │         bp
+  [31m│[0m  [2m78[0m │         bp
   [31m│[0m     ╰────
