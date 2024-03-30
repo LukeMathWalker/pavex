@@ -749,16 +749,16 @@ checksum = "dff9641d1cd4be8d1a070daf9e3773c5f67e78b4d9d42263020c057706765c04"
 
 [[patch.unused]]
 name = "pavex"
-version = "0.1.21"
+version = "0.1.22"
 
 [[patch.unused]]
 name = "pavex_bp_schema"
-version = "0.1.21"
+version = "0.1.22"
 
 [[patch.unused]]
 name = "pavex_cli_client"
-version = "0.1.21"
+version = "0.1.22"
 
 [[patch.unused]]
 name = "pavex_tracing"
-version = "0.1.21"
+version = "0.1.22"

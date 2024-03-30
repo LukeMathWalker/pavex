@@ -10,12 +10,20 @@ use std::net::SocketAddr;
 /// The top-level configuration object, determining the schema
 /// we expect to see in the configuration files stored under `api_server/configuration`.
 ///
-/// It is defined in `api_server` since it bundles together the app configuration
+/// # Location
+///
+/// It is defined in `server` since it bundles together the app configuration
 /// ([`AppConfig`]) and the HTTP server configuration ([`ServerConfig`]).
 /// The app configuration will be visible to constructors and other components,
-/// while the HTTP server configuration won't.
+/// while the HTTP server configuration will only be used inside the `main` entrypoint.
+///
+/// # Loading
+///
+/// Check out [`Config::load`]'s documentation for more details on how configuration
+/// values are populated.
 pub struct Config {
     pub server: ServerConfig,
+    #[serde(flatten)]
     pub app: AppConfig,
 }
 
@@ -43,9 +51,9 @@ impl Config {
     ///
     /// The configuration sources are:
     ///
-    /// 1. `base.yml` - Contains the default configuration values, common to all profiles.
-    /// 2. `<profile>.yml` - Contains the configuration values specific to the desired profile.
-    /// 3. Environment variables - Contains the configuration values specific to the current environment.
+    /// 1. `base.yml` - The default configuration values, common to all profiles.
+    /// 2. `<profile>.yml` - Configuration values specific to the desired profile.
+    /// 3. Environment variables - Configuration values specific to the current environment.
     ///
     /// The configuration sources are listed in priority order, i.e.
     /// the last source in the list will override any previous source.
@@ -53,6 +61,26 @@ impl Config {
     /// For example, if the same configuration key is defined in both
     /// the YAML file and the environment, the value from the environment
     /// will be used.
+    ///
+    /// # Environment variables
+    ///
+    /// You can use environment variables to override every single configuration value.
+    ///
+    /// All config-related environment variables must be prefixed with `APP_`.
+    /// The prefix tries to minimise the chance of a collision with unrelated environment
+    /// variables that might be set on the host where the application is launched.
+    ///
+    /// After the `APP_` prefix, you must concatenate the names of the fields that must
+    /// be traversed (starting from [`AppConfig`]) to reach the configuration value you want to
+    /// override.
+    ///
+    /// E.g. `APP_SERVER__PORT` for [`ServerConfig::port`] since, to reach it, you go through:
+    ///
+    /// - the `server` field in [`AppConfig`]
+    /// - the `port` field in [`ServerConfig`]
+    ///
+    /// We make an exception for [`AppConfig::app`].
+    /// You can use `APP_` as prefix for its subfields rather than `APP_APP__*`.
     pub fn load(default_profile: Option<ApplicationProfile>) -> Result<Config, anyhow::Error> {
         let application_profile = ApplicationProfile::load(default_profile)
             .context("Failed to load the desired application profile")?;
@@ -87,11 +115,15 @@ impl Config {
 /// to users.
 pub struct ServerConfig {
     /// The port that the server must listen on.
+    ///
+    /// Set the `APP_SERVER__PORT` environment variable to override its value.
     pub port: u16,
     /// The network interface that the server must be bound to.
     ///
     /// E.g. `0.0.0.0` for listening to incoming requests from
     /// all sources.
+    ///
+    /// Set the `APP_SERVER__IP` environment variable to override its value.
     pub ip: std::net::IpAddr,
 }
 
