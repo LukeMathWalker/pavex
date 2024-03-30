@@ -18,25 +18,8 @@ Rust is a great language, but it has a large surface area: it's easy to feel lik
 Pavex aims to **lower the barrier of entry**: you'll only need **an understanding of Rust core concepts to get up and running**.
 When things go wrong, we'll be there to help you: Pavex's transpiler will provide **detailed error messages** to help you understand what went wrong and how to fix it.
 
-```
-ERROR:
-× I can't invoke your wrapping middleware, `timeout`, because it needs an instance of
-│ `TimeoutConfig` as input, but I can't find a constructor for that type.
-│
-│     ╭─[src/blueprint.rs:18:1]
-│  18 │
-│  19 │     bp.wrap(f!(crate::timeout));
-│     ·             ────────┬────────
-│     ·                     ╰── The wrapping middleware was registered here
-│  20 │
-│     ╰────
-│    ╭─[src/load_shedding.rs:5:1]
-│  5 │
-│  6 │ pub async fn timeout<T>(next: Next<T>, timeout_config: TimeoutConfig) -> Response
-│    ·                                                        ──────┬──────
-│    ·                I don't know how to construct an instance of this input parameter
-│    ╰────
-│   help: Register a constructor for `TimeoutConfig`
+```ansi-color
+--8<-- "doc_examples/quickstart/07-error.snap"
 ```
 
 ## Safe

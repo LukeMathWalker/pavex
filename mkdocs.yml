@@ -43,7 +43,6 @@ theme:
     - navigation.tabs.sticky
     - navigation.footer
     - navigation.top
-    - toc.integrate
     - toc.follow
     - content.action.edit
     - content.code.copy

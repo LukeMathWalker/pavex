@@ -413,7 +413,7 @@ impl ScriptRunner {
     ) -> Result<ScriptOutcome, anyhow::Error> {
         let mut options = ScriptOptions::new();
         let env_vars = HashMap::from([
-            ("PAVEX_TTY_WIDTH".to_string(), "100".to_string()),
+            ("PAVEX_TTY_WIDTH".to_string(), "80".to_string()),
             ("PAVEX_COLOR".to_string(), "always".to_string()),
             ("CARGO_TARGET_DIR".to_string(), self.target_dir.to_string()),
         ]);
