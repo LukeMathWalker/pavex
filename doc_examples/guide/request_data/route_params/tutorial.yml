@@ -10,7 +10,7 @@ snippets:
   - name: "route_params_registration"
     source_path: "src/route_params/blueprint.rs"
     ranges: [ ".." ]
-    hl_lines: [ 9 ]
+    hl_lines: [ 7 ]
   - name: "route_params_extraction"
     source_path: "src/route_params/routes.rs"
     ranges: [ ".." ]

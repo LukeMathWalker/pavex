@@ -1,4 +1,4 @@
-```rust title="src/route_params/blueprint.rs" hl_lines="9"
+```rust title="src/route_params/blueprint.rs" hl_lines="7"
 use pavex::blueprint::router::GET;
 use pavex::blueprint::Blueprint;
 use pavex::f;
