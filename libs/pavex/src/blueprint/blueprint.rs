@@ -474,8 +474,7 @@ impl Blueprint {
         }
     }
 
-    #[track_caller]
-    /// Nest a [`Blueprint`] under the current [`Blueprint`] (the parent), adding a common prefix to all the new routes.  
+    /// Nest a [`Blueprint`] under the current [`Blueprint`] (the parent), adding a common prefix to all the new routes.
     ///
     /// # Routes
     ///
@@ -629,6 +628,8 @@ impl Blueprint {
     /// must be registered **exactly once** for each type.  
     /// If multiple nested blueprints need access to the singleton, the constructor must be
     /// registered against a common parent blueprint—the root blueprint, if necessary.
+    #[track_caller]
+    #[doc(alias("scope"))]
     pub fn nest_at(&mut self, prefix: &str, blueprint: Blueprint) {
         self.push_component(NestedBlueprint {
             blueprint: blueprint.schema,
@@ -637,10 +638,11 @@ impl Blueprint {
         });
     }
 
-    #[track_caller]
-    /// Nest a [`Blueprint`] under the current [`Blueprint`] (the parent), without adding a common prefix to all the new routes.  
+    /// Nest a [`Blueprint`] under the current [`Blueprint`] (the parent), without adding a common prefix to all the new routes.
     ///
     /// Check out [`Blueprint::nest_at`] for more details.
+    #[track_caller]
+    #[doc(alias("scope"))]
     pub fn nest(&mut self, blueprint: Blueprint) {
         self.push_component(NestedBlueprint {
             blueprint: blueprint.schema,
