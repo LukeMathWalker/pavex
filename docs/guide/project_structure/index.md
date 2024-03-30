@@ -114,22 +114,23 @@ It's right there in your filesystem: you can open it, you can read it, you can u
 to get a deeper understanding of how Pavex works under the hood.
 
 At the same time, you actually don't need to know how it works to use it.  
-As a Pavex user, **you only need to care about** the two public types it exports: **the `run` function and the `ApplicationState`
+As a Pavex user, **you only need to care about** the two public types it exports: **the `run` function and the [`ApplicationState`](#applicationstate)
 struct**.
 
 ### `ApplicationState`
 
-`ApplicationState` holds all the types with a [`Singleton` lifecycle][Lifecycle::Singleton]
-that your application needs to access at runtime when processing a request.
+[`ApplicationState`](../dependency_injection/core_concepts/application_state.md) holds all the types
+with a [`Singleton` lifecycle][Lifecycle::Singleton] that your application needs to access at runtime when processing a request.
 
-To build an instance of `ApplicationState`, the server SDK exposes a function called `build_application_state`.
+To build an instance of [`ApplicationState`](../dependency_injection/core_concepts/application_state.md), 
+the server SDK exposes a function called `build_application_state`.
 
 ### `run`
 
 `run` is the entrypoint of your application.  
 It takes as input:
 
-- an instance of `ApplicationState`
+- an instance of [`ApplicationState`](#applicationstate)
 - a [`pavex::server::Server`][Server] instance
 
 [`pavex::server::Server`][Server] holds the configuration for the HTTP server that will be used to serve your API:
@@ -157,7 +158,7 @@ That's why you need a **server crate**.
 ### The executable binary
 
 The server crate contains the `main` function that you'll be running to start your application.  
-In that `main` function you'll be building an instance of `ApplicationState` and passing it to `run`.
+In that `main` function you'll be building an instance of [`ApplicationState`](#applicationstate) and passing it to `run`.
 You'll be doing a few other things too: initializing your `tracing` subscriber, loading
 configuration, etc.
 
