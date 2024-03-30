@@ -377,25 +377,12 @@ dependencies = [
 [[package]]
 name = "kit_server_sdk"
 version = "0.1.0"
-dependencies = [
- "http",
- "hyper",
- "kit",
- "matchit",
- "pavex",
- "thiserror",
-]
 
 [[package]]
 name = "libc"
 version = "0.2.152"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "13e3bf6590cbc649f4d1a3eefc9d5d6eb746f5200ffb04e5e142700b8faa56e7"
-
-[[package]]
-name = "matchit"
-version = "0.7.3"
-source = "git+https://github.com/ibraheemdev/matchit?branch=master#7766d457ee20826497b5061581fa6cef682d05b7"
 
 [[package]]
 name = "memchr"
@@ -452,7 +439,7 @@ checksum = "de3145af08024dea9fa9914f381a17b8fc6034dfb00f3a84013f7ff43f29ed4c"
 
 [[package]]
 name = "pavex"
-version = "0.1.21"
+version = "0.1.22"
 dependencies = [
  "anyhow",
  "bytes",
@@ -489,7 +476,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_bp_schema"
-version = "0.1.21"
+version = "0.1.22"
 dependencies = [
  "pavex_reflection",
  "serde",
@@ -497,7 +484,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_cli_client"
-version = "0.1.21"
+version = "0.1.22"
 dependencies = [
  "anyhow",
  "pavex",
@@ -506,7 +493,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_macros"
-version = "0.1.21"
+version = "0.1.22"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -521,7 +508,7 @@ checksum = "77b9753b03381fd8856966146c4d626d9a8507901c1bcdfbc41df03deea551fc"
 
 [[package]]
 name = "pavex_reflection"
-version = "0.1.21"
+version = "0.1.22"
 dependencies = [
  "serde",
 ]
@@ -534,7 +521,7 @@ checksum = "e3148f5046208a5d56bcfc03053e3ca6334e51da8dfb19b6cdc8b306fae3283e"
 
 [[package]]
 name = "persist_if_changed"
-version = "0.1.21"
+version = "0.1.22"
 dependencies = [
  "anyhow",
  "fs-err",
@@ -903,4 +890,4 @@ checksum = "ed94fce61571a4006852b7389a063ab983c02eb1bb37b47f8272ce92d06d9538"
 
 [[patch.unused]]
 name = "pavex_tracing"
-version = "0.1.21"
+version = "0.1.22"
