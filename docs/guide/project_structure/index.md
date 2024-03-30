@@ -27,9 +27,13 @@ If you're in a hurry, here's a quick summary of the most important points:
     - a server SDK crate (_library_), conventionally named `server_sdk`
     - a server crate (_binary_), conventionally named `server`
 - The `app` crate contains the [`Blueprint`][Blueprint] for your API. It's where you'll spend most of your time.
-- The server SDK crate is generated from the core crate by `pavex generate`, which is invoked automatically
-  by [`cargo-px`][cargo-px] when building or running the project.
-- The server crate is the entry point for your application. It's also where you'll write your integration tests.
+- The `server_sdk` crate is generated from the core crate by `pavex generate`, which is invoked automatically
+  by [`cargo-px`][cargo-px] when building or running the project.  
+  **You'll never modify `server_sdk` manually**. 
+- The `server` crate is the entrypoint for your application.
+  You'll have to change it whenever the [application state changes](../dependency_injection/core_concepts/application_state.md) 
+  or if you want to tweak the binary entrypoint (e.g. modify the default telemetry setup).
+  Your integration tests live in this crate.
 
 Using the `demo` project as an example, the relationship between the project crates can be visualised as follows:
 
