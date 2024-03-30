@@ -97,21 +97,54 @@ a type that doesn't need to be constructed.
 If a type needs to be constructed, but Pavex can't find a constructor for it,
 [it will report an error](../../../getting_started/quickstart/dependency_injection.md#missing-constructor).
 
-## No mutations
-
-Constructors are not allowed to take mutable references (i.e. `&mut T`) as inputs.
-
-The order in which constructors are called would suddenly matter if they were allowed to mutate
-their dependencies.
-This would in turn require a way to specify that order, therefore increasing the overall complexity of the
-framework.
-
 ## Constructors can fail
 
 Constructors can be fallible: they can return a `Result<T, E>`, where `E` is an error type.  
 If a constructor is fallible, you must specify an [**error handler**](../../errors/error_handlers.md) when registering 
 it with the application [`Blueprint`][Blueprint]. 
 Check out the [error handling guide](../../errors/error_handlers.md) for more details.
+
+## Invocation order
+
+Pavex provides no guarantees on the _relative_ invocation order of constructors.
+
+Consider the following request handler:
+
+--8<-- "doc_examples/guide/dependency_injection/core_concepts/project-handler.snap"
+
+It injects two different types as input parameters, `A` and `B`.  
+The way input parameters are ordered in `handler`'s definition does not influence the invocation order
+of the respective constructors. Pavex may invoke `A`'s constructor before `B`'s constructor,
+or vice versa.
+
+The final invocation order will be primarily determined based on:
+
+- **Dependency constraints**.  
+  If `A`'s constructor takes `C` as input and `C`'s constructor takes `&B` as input,
+  `B`'s constructor will certainly be invoked before `A`'s. There's no other way!
+- **Borrow-checking constraints**.  
+  If `A`'s constructor takes a reference to `C` as input, while `B`'s constructor takes `C` by value,
+  Pavex will invoke `A`'s constructor first to avoid a `.clone()`.
+
+## No mutations
+
+Constructors are not allowed to take mutable references (i.e. `&mut T`) as inputs.  
+It'd be quite difficult to reason about mutations since you can't control the
+[invocation order of constructors](#invocation-order).
+
+On the other hand, invocation order is well-defined for other types of components:
+[request handlers](../../routing/request_handlers.md),
+[pre-processing middlewares](../../middleware/pre_processing.md) and
+[post-processing middlewares](../../middleware/post_processing.md).
+That's why Pavex allows them to inject mutable references as input parameters.
+
+!!! note "Wrapping middlewares"
+
+    Invocation order is well-defined for wrapping middlewares, but Pavex
+    doesn't let them manipulate mutable references.  
+    Check [their guide](../../middleware/wrapping.md#use-with-caution) 
+    to learn more about the rationale for this exception.
+
 
 [Blueprint]: ../../../api_reference/pavex/blueprint/struct.Blueprint.html
 [Blueprint::constructor]: ../../../api_reference/pavex/blueprint/struct.Blueprint.html#method.constructor
