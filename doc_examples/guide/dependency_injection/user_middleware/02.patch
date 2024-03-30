@@ -8,6 +8,6 @@ index 051b47b..9aad912 100644
      let mut bp = Blueprint::new();
 -    bp.constructor(f!(crate::User::extract), Lifecycle::RequestScoped);
 +    bp.request_scoped(f!(crate::User::extract));
-     bp.wrap(f!(crate::authentication::reject_anonymous));
+     bp.pre_process(f!(crate::authentication::reject_anonymous));
      bp.route(GET, "/greet", f!(crate::routes::greet));
      bp
