@@ -5,7 +5,7 @@ repo_url: "https://github.com/LukeMathWalker/pavex"
 repo_name: "LukeMathWalker/pavex"
 edit_uri: "edit/main/docs/"
 plugins:
-  - social
+#  - social
   - search
   - redirects:
       redirect_maps:
