@@ -303,8 +303,12 @@ fn scaffold_project(
 
     client = client.pavexc_cli_path(pavexc_cli_path);
 
-    match client.new_command(path).execute() {
-        Ok(()) => Ok(ExitCode::SUCCESS),
+    shell.status("Creating", format!("the new project in `{}`", path.display()))?;
+    match client.new_command(path.clone()).execute() {
+        Ok(()) => {
+            shell.status("Created", format!("the new project in `{}`", path.display()))?;
+            Ok(ExitCode::SUCCESS)
+        },
         Err(NewError::NonZeroExitCode(e)) => Ok(ExitCode::from(e.code as u8)),
         Err(e) => Err(e.into()),
     }
@@ -363,6 +367,11 @@ fn update(shell: &mut Shell) -> Result<ExitCode, anyhow::Error> {
     download_or_compile(shell, CliKind::Pavex, &latest_version, new_cli_path.path())?;
     self_replace::self_replace(new_cli_path.path())
         .context("Failed to replace the current Pavex CLI with the newly downloaded version")?;
+
+    shell.status(
+        "Updated",
+        format!("to {latest_version}, the most recent version"),
+    )?;
 
     Ok(ExitCode::SUCCESS)
 }
@@ -443,6 +452,16 @@ fn activate(
     state
         .set_activation_key(shell, key)
         .context("Failed to set the activation key")?;
+
+    if use_color_on_stdout(color) {
+        println!(
+            "{} ✅\n{}",
+            "The key is valid".bold().green(),
+            "Enjoy Pavex!".white()
+        )
+    } else {
+        println!("The key is valid. Enjoy Pavex!")
+    }
 
     Ok(ExitCode::SUCCESS)
 }
