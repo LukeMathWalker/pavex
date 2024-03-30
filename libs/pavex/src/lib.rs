@@ -13,6 +13,8 @@
 pub use error::Error;
 
 pub mod blueprint;
+#[cfg(feature = "cookie")]
+pub mod cookie;
 mod error;
 pub mod http;
 pub mod kit;
@@ -25,3 +27,9 @@ pub mod serialization;
 pub mod server;
 pub mod telemetry;
 pub mod unit;
+pub mod time {
+    //! Utilities to work with dates, timestamps and datetimes.
+    //!
+    //! It's a re-export of the [`time@0.3`](https://docs.rs/time/0.3) crate.
+    pub use time::*;
+}
