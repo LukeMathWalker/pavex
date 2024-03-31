@@ -71,7 +71,7 @@ pub mod route_0 {
         let response = handler().await;
         response
     }
-    pub async fn wrapping_0() -> pavex::response::Response {
+    async fn wrapping_0() -> pavex::response::Response {
         let v0 = crate::route_0::Next0 {
             next: stage_1,
         };
@@ -79,11 +79,11 @@ pub mod route_0 {
         let v2 = pavex::middleware::wrap_noop(v1).await;
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
     }
-    pub async fn handler() -> pavex::response::Response {
+    async fn handler() -> pavex::response::Response {
         let v0 = app::root();
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v0)
     }
-    pub struct Next0<T>
+    struct Next0<T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
@@ -113,7 +113,7 @@ pub mod route_1 {
         let response = handler(s_0).await;
         response
     }
-    pub async fn wrapping_0(
+    async fn wrapping_0(
         v0: &pavex::connection::ConnectionInfo,
     ) -> pavex::response::Response {
         let v1 = crate::route_1::Next0 {
@@ -124,13 +124,13 @@ pub mod route_1 {
         let v3 = pavex::middleware::wrap_noop(v2).await;
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
     }
-    pub async fn handler(
+    async fn handler(
         v0: &pavex::connection::ConnectionInfo,
     ) -> pavex::response::Response {
         let v1 = app::get_connection_info(v0);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
     }
-    pub struct Next0<'a, T>
+    struct Next0<'a, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {

@@ -117,7 +117,7 @@ pub mod route_0 {
         let response = post_processing_0(response).await;
         response
     }
-    pub async fn wrapping_0(
+    async fn wrapping_0(
         v0: app::HttpClient,
         v1: pavex::request::RequestHead,
     ) -> pavex::response::Response {
@@ -130,7 +130,7 @@ pub mod route_0 {
         let v4 = pavex::middleware::wrap_noop(v3).await;
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
     }
-    pub async fn wrapping_1(
+    async fn wrapping_1(
         v0: app::HttpClient,
         v1: pavex::request::RequestHead,
     ) -> pavex::response::Response {
@@ -154,7 +154,7 @@ pub mod route_0 {
         };
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v5)
     }
-    pub async fn pre_processing_0() -> pavex::middleware::Processing {
+    async fn pre_processing_0() -> pavex::middleware::Processing {
         let v0 = app::fallible_pre();
         let v1 = match v0 {
             Ok(ok) => ok,
@@ -170,7 +170,7 @@ pub mod route_0 {
         };
         v1
     }
-    pub async fn handler(
+    async fn handler(
         v0: app::HttpClient,
         v1: pavex::request::RequestHead,
     ) -> pavex::response::Response {
@@ -222,7 +222,7 @@ pub mod route_0 {
         };
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
     }
-    pub async fn post_processing_0(
+    async fn post_processing_0(
         v0: pavex::response::Response,
     ) -> pavex::response::Response {
         let v1 = app::fallible_post(v0);
@@ -239,7 +239,7 @@ pub mod route_0 {
         };
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
     }
-    pub struct Next0<T>
+    struct Next0<T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
@@ -257,7 +257,7 @@ pub mod route_0 {
             (self.next)(self.s_0, self.s_1)
         }
     }
-    pub struct Next1<T>
+    struct Next1<T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
@@ -299,7 +299,7 @@ pub mod route_1 {
         let response = post_processing_0(response).await;
         response
     }
-    pub async fn wrapping_0(
+    async fn wrapping_0(
         v0: &pavex::router::AllowedMethods,
     ) -> pavex::response::Response {
         let v1 = crate::route_1::Next0 {
@@ -310,7 +310,7 @@ pub mod route_1 {
         let v3 = pavex::middleware::wrap_noop(v2).await;
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
     }
-    pub async fn wrapping_1(
+    async fn wrapping_1(
         v0: &pavex::router::AllowedMethods,
     ) -> pavex::response::Response {
         let v1 = crate::route_1::Next1 {
@@ -332,7 +332,7 @@ pub mod route_1 {
         };
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
     }
-    pub async fn pre_processing_0() -> pavex::middleware::Processing {
+    async fn pre_processing_0() -> pavex::middleware::Processing {
         let v0 = app::fallible_pre();
         let v1 = match v0 {
             Ok(ok) => ok,
@@ -348,13 +348,11 @@ pub mod route_1 {
         };
         v1
     }
-    pub async fn handler(
-        v0: &pavex::router::AllowedMethods,
-    ) -> pavex::response::Response {
+    async fn handler(v0: &pavex::router::AllowedMethods) -> pavex::response::Response {
         let v1 = pavex::router::default_fallback(v0).await;
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
     }
-    pub async fn post_processing_0(
+    async fn post_processing_0(
         v0: pavex::response::Response,
     ) -> pavex::response::Response {
         let v1 = app::fallible_post(v0);
@@ -371,7 +369,7 @@ pub mod route_1 {
         };
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
     }
-    pub struct Next0<'a, T>
+    struct Next0<'a, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
@@ -388,7 +386,7 @@ pub mod route_1 {
             (self.next)(self.s_0)
         }
     }
-    pub struct Next1<'a, T>
+    struct Next1<'a, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {

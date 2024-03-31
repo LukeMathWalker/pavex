@@ -4,7 +4,7 @@ use indexmap::{IndexMap, IndexSet};
 use itertools::Itertools;
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote, ToTokens};
-use syn::{ItemFn, Token};
+use syn::{ItemFn, Token, Visibility};
 
 use crate::compiler::analyses::components::{ComponentDb, HydratedComponent};
 use crate::compiler::analyses::computations::ComputationDb;
@@ -54,6 +54,7 @@ impl RequestHandlerPipeline {
                         let mut f =
                             call_graph.codegen(package_id2name, component_db, computation_db)?;
                         f.sig.ident = ident;
+                        f.vis = Visibility::Inherited;
                         f
                     },
                     input_parameters: call_graph.required_input_types(),
@@ -226,7 +227,7 @@ impl RequestHandlerPipeline {
                     .collect();
                 let generics = quote! { <#(#state_generics),*> };
                 let def = syn::parse2(quote! {
-                    pub struct #struct_name #generics
+                    struct #struct_name #generics
                     where T: std::future::Future<Output = pavex::response::Response> {
                         #(#fields),*
                     }

@@ -27,9 +27,13 @@ If you're in a hurry, here's a quick summary of the most important points:
     - a server SDK crate (_library_), conventionally named `server_sdk`
     - a server crate (_binary_), conventionally named `server`
 - The `app` crate contains the [`Blueprint`][Blueprint] for your API. It's where you'll spend most of your time.
-- The server SDK crate is generated from the core crate by `pavex generate`, which is invoked automatically
-  by [`cargo-px`][cargo-px] when building or running the project.
-- The server crate is the entry point for your application. It's also where you'll write your integration tests.
+- The `server_sdk` crate is generated from the core crate by `pavex generate`, which is invoked automatically
+  by [`cargo-px`][cargo-px] when building or running the project.  
+  **You'll never modify `server_sdk` manually**. 
+- The `server` crate is the entrypoint for your application.
+  You'll have to change it whenever the [application state changes](../dependency_injection/core_concepts/application_state.md) 
+  or if you want to tweak the binary entrypoint (e.g. modify the default telemetry setup).
+  Your integration tests live in this crate.
 
 Using the `demo` project as an example, the relationship between the project crates can be visualised as follows:
 
@@ -114,22 +118,23 @@ It's right there in your filesystem: you can open it, you can read it, you can u
 to get a deeper understanding of how Pavex works under the hood.
 
 At the same time, you actually don't need to know how it works to use it.  
-As a Pavex user, **you only need to care about** the two public types it exports: **the `run` function and the `ApplicationState`
+As a Pavex user, **you only need to care about** the two public types it exports: **the `run` function and the [`ApplicationState`](#applicationstate)
 struct**.
 
 ### `ApplicationState`
 
-`ApplicationState` holds all the types with a [`Singleton` lifecycle][Lifecycle::Singleton]
-that your application needs to access at runtime when processing a request.
+[`ApplicationState`](../dependency_injection/core_concepts/application_state.md) holds all the types
+with a [`Singleton` lifecycle][Lifecycle::Singleton] that your application needs to access at runtime when processing a request.
 
-To build an instance of `ApplicationState`, the server SDK exposes a function called `build_application_state`.
+To build an instance of [`ApplicationState`](../dependency_injection/core_concepts/application_state.md), 
+the server SDK exposes a function called `build_application_state`.
 
 ### `run`
 
 `run` is the entrypoint of your application.  
 It takes as input:
 
-- an instance of `ApplicationState`
+- an instance of [`ApplicationState`](#applicationstate)
 - a [`pavex::server::Server`][Server] instance
 
 [`pavex::server::Server`][Server] holds the configuration for the HTTP server that will be used to serve your API:
@@ -157,7 +162,7 @@ That's why you need a **server crate**.
 ### The executable binary
 
 The server crate contains the `main` function that you'll be running to start your application.  
-In that `main` function you'll be building an instance of `ApplicationState` and passing it to `run`.
+In that `main` function you'll be building an instance of [`ApplicationState`](#applicationstate) and passing it to `run`.
 You'll be doing a few other things too: initializing your `tracing` subscriber, loading
 configuration, etc.
 

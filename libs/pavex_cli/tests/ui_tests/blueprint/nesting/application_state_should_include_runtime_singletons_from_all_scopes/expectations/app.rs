@@ -100,7 +100,7 @@ pub mod route_0 {
         let response = handler(s_0).await;
         response
     }
-    pub async fn wrapping_0(v0: u64) -> pavex::response::Response {
+    async fn wrapping_0(v0: u64) -> pavex::response::Response {
         let v1 = crate::route_0::Next0 {
             s_0: v0,
             next: stage_1,
@@ -109,11 +109,11 @@ pub mod route_0 {
         let v3 = pavex::middleware::wrap_noop(v2).await;
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
     }
-    pub async fn handler(v0: u64) -> pavex::response::Response {
+    async fn handler(v0: u64) -> pavex::response::Response {
         let v1 = app::parent_handler(v0);
         <http::StatusCode as pavex::response::IntoResponse>::into_response(v1)
     }
-    pub struct Next0<T>
+    struct Next0<T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
@@ -144,7 +144,7 @@ pub mod route_1 {
         let response = handler(s_0).await;
         response
     }
-    pub async fn wrapping_0(
+    async fn wrapping_0(
         v0: &pavex::router::AllowedMethods,
     ) -> pavex::response::Response {
         let v1 = crate::route_1::Next0 {
@@ -155,13 +155,11 @@ pub mod route_1 {
         let v3 = pavex::middleware::wrap_noop(v2).await;
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
     }
-    pub async fn handler(
-        v0: &pavex::router::AllowedMethods,
-    ) -> pavex::response::Response {
+    async fn handler(v0: &pavex::router::AllowedMethods) -> pavex::response::Response {
         let v1 = pavex::router::default_fallback(v0).await;
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
     }
-    pub struct Next0<'a, T>
+    struct Next0<'a, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
@@ -188,7 +186,7 @@ pub mod route_2 {
         let response = handler(s_0).await;
         response
     }
-    pub async fn wrapping_0(v0: u32) -> pavex::response::Response {
+    async fn wrapping_0(v0: u32) -> pavex::response::Response {
         let v1 = crate::route_2::Next0 {
             s_0: v0,
             next: stage_1,
@@ -197,11 +195,11 @@ pub mod route_2 {
         let v3 = pavex::middleware::wrap_noop(v2).await;
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
     }
-    pub async fn handler(v0: u32) -> pavex::response::Response {
+    async fn handler(v0: u32) -> pavex::response::Response {
         let v1 = app::nested_handler(v0);
         <http::StatusCode as pavex::response::IntoResponse>::into_response(v1)
     }
-    pub struct Next0<T>
+    struct Next0<T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {

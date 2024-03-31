@@ -1,6 +1,6 @@
 [package]
 name = "pavex_miette"
-version = "0.1.22"
+version = "0.1.23"
 description = "A custom Miette theme for Pavex errors."
 keywords = ["pavex"]
 edition.workspace = true
