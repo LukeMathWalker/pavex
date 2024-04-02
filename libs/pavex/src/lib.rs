@@ -9,13 +9,12 @@
 //! [quickstart tutorial](https://pavex.dev/docs/getting_started/quickstart/)
 //! to get you up and running with the framework in no time.
 
-// Re-export the dependencies that we use in the generated application code.
-pub use error::Error;
+pub use error::error_::Error;
 
 pub mod blueprint;
 #[cfg(feature = "cookie")]
 pub mod cookie;
-mod error;
+pub mod error;
 pub mod http;
 pub mod kit;
 pub mod middleware;

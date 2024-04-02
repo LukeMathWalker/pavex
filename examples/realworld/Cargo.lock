@@ -232,9 +232,9 @@ checksum = "7e0d60973d9320722cb1206f412740e162a33b8547ea8d6be75d7cff237c7a85"
 
 [[package]]
 name = "biscotti"
-version = "0.2.1"
+version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ac260b0392bba9873665d07367cb71f0298352e7fc2ed154ad4af57c47476a94"
+checksum = "7d3eece11455d5bc07597a9e96995eb119eee01c9083080dfab7e158ba12437c"
 dependencies = [
  "aes-gcm-siv",
  "anyhow",
@@ -2329,6 +2329,7 @@ name = "server_sdk"
 version = "0.1.0"
 dependencies = [
  "app",
+ "biscotti",
  "http 1.0.0",
  "hyper 1.2.0",
  "jsonwebtoken",

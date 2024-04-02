@@ -1,6 +1,6 @@
 use jsonwebtoken::{DecodingKey, EncodingKey};
 use pavex::blueprint::Blueprint;
-use pavex::f;
+use pavex::{cookie, f};
 use secrecy::{ExposeSecret, Secret};
 use serde_aux::field_attributes::deserialize_number_from_string;
 use sqlx::postgres::{PgConnectOptions, PgSslMode};
@@ -11,6 +11,7 @@ use sqlx::postgres::{PgConnectOptions, PgSslMode};
 pub struct ApplicationConfig {
     pub database: DatabaseConfig,
     pub auth: AuthConfig,
+    pub cookie: cookie::config::Config,
 }
 
 impl ApplicationConfig {
@@ -22,9 +23,14 @@ impl ApplicationConfig {
         &self.auth
     }
 
+    pub fn cookie_config(&self) -> cookie::config::Config {
+        self.cookie.clone()
+    }
+
     pub fn register(bp: &mut Blueprint) {
         bp.singleton(f!(self::ApplicationConfig::database_config));
         bp.singleton(f!(self::ApplicationConfig::auth_config));
+        bp.singleton(f!(self::ApplicationConfig::cookie_config));
         bp.singleton(f!(self::DatabaseConfig::get_pool));
         bp.singleton(f!(self::AuthConfig::decoding_key));
     }

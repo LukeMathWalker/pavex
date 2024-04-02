@@ -34,9 +34,9 @@ pub struct CookieKit {
     pub request_cookies: Option<Constructor>,
     /// The constructor for [`ResponseCookies`].
     ///
-    /// By default, it uses [`ResponseCookies::new`].
+    /// By default, it uses [`ResponseCookies::new_static`].
     ///
-    /// [`ResponseCookies::new`]: super::ResponseCookies::new
+    /// [`ResponseCookies::new_static`]: super::ResponseCookies::new_static
     /// [`ResponseCookies`]: super::ResponseCookies
     pub response_cookies: Option<Constructor>,
     /// The constructor for [`Processor`].
@@ -62,7 +62,7 @@ impl CookieKit {
     pub fn new() -> Self {
         let request_cookies = Constructor::new(f!(super::extract_request_cookies), Lifecycle::RequestScoped)
             .error_handler(f!(super::errors::ExtractRequestCookiesError::into_response));
-        let response_cookies = Constructor::new(f!(super::ResponseCookies::new), Lifecycle::RequestScoped);
+        let response_cookies = Constructor::new(f!(biscotti::ResponseCookies::new_static), Lifecycle::RequestScoped);
         let response_cookie_injector = PostProcessingMiddleware::new(f!(super::inject_response_cookies))
             .error_handler(f!(super::errors::InjectResponseCookiesError::into_response));
         let processor = Constructor::new(

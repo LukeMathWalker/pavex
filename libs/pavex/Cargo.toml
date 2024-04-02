@@ -53,7 +53,7 @@ fs-err = "2.7.0"
 ron = "0.8"
 
 # Cookies
-biscotti = { version = "0.2.1", optional = true }
+biscotti = { version = "0.3", optional = true }
 
 # Server request id
 uuid = { version = "1", features = ["v7"], optional = true }

@@ -1,15 +1,51 @@
 //! Errors that can occur when working with cookies.
+use crate::error::UnexpectedError;
 use crate::response::Response;
 pub use biscotti::errors::*;
 use http::header::ToStrError;
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug)]
+#[non_exhaustive]
 /// The error type returned by [`extract_request_cookies`](super::extract_request_cookies).
 pub enum ExtractRequestCookiesError {
-    #[error("Some characters in the `Cookie` header aren't printable ASCII characters.")]
-    InvalidHeaderValue(#[from] ToStrError),
-    #[error("Failed to parse request cookies out of the `Cookie` header.")]
-    ParseError(#[from] ParseError),
+    InvalidHeaderValue(ToStrError),
+    MissingPair(MissingPairError),
+    EmptyName(EmptyNameError),
+    Crypto(CryptoError),
+    Decoding(DecodingError),
+    Unexpected(UnexpectedError),
+}
+
+impl std::fmt::Display for ExtractRequestCookiesError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ExtractRequestCookiesError::InvalidHeaderValue(_) => {
+                write!(
+                    f,
+                    "Some characters in the `Cookie` header aren't printable ASCII characters"
+                )
+            }
+            _ => {
+                write!(
+                    f,
+                    "Failed to parse request cookies out of the `Cookie` header"
+                )
+            }
+        }
+    }
+}
+
+impl std::error::Error for ExtractRequestCookiesError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            ExtractRequestCookiesError::InvalidHeaderValue(e) => Some(e),
+            ExtractRequestCookiesError::MissingPair(e) => Some(e),
+            ExtractRequestCookiesError::EmptyName(e) => Some(e),
+            ExtractRequestCookiesError::Crypto(e) => Some(e),
+            ExtractRequestCookiesError::Decoding(e) => Some(e),
+            ExtractRequestCookiesError::Unexpected(e) => Some(e),
+        }
+    }
 }
 
 impl ExtractRequestCookiesError {
@@ -22,10 +58,18 @@ impl ExtractRequestCookiesError {
 
         let mut body = self.to_string();
         match self {
-            ExtractRequestCookiesError::InvalidHeaderValue(_) => {}
-            ExtractRequestCookiesError::ParseError(e) => {
-                let _ = write!(&mut body, "\n{e}");
+            ExtractRequestCookiesError::MissingPair(e) => {
+                write!(body, ". {e}").ok();
             }
+            ExtractRequestCookiesError::EmptyName(e) => {
+                write!(body, ". {e}").ok();
+            }
+            ExtractRequestCookiesError::Decoding(e) => {
+                write!(body, ". {e}").ok();
+            }
+            ExtractRequestCookiesError::Unexpected(_)
+            | ExtractRequestCookiesError::InvalidHeaderValue(_)
+            | ExtractRequestCookiesError::Crypto(_) => {}
         }
         Response::bad_request().set_typed_body(body)
     }
