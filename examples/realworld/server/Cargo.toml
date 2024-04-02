@@ -16,7 +16,7 @@ app = { path = "../app" }
 
 # Configuration
 figment = { version = "0.10", features = ["env", "yaml"] }
-serde = { version = "1", features = ["derive"]}
+serde = { version = "1", features = ["derive"] }
 
 # Telemetry
 tracing = "0.1"
@@ -25,7 +25,7 @@ tracing-bunyan-formatter = "0.3"
 pavex_tracing = "0.1"
 
 [dev-dependencies]
-reqwest = { version = "0.11", features = ["json"] }
+reqwest = { version = "0.12", features = ["json"] }
 jwt-simple = "0.11"
 secrecy = "0.8"
 serde_json = "1"

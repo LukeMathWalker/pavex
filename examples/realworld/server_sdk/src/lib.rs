@@ -45,7 +45,7 @@ pub async fn build_application_state(
     };
     let v7 = app::configuration::ApplicationConfig::cookie_config(v0);
     let v8 = <pavex::cookie::Processor as std::convert::From<
-        pavex::cookie::config::Config,
+        pavex::cookie::ProcessorConfig,
     >>::from(v7);
     let v9 = crate::ApplicationState {
         s0: v8,
@@ -638,7 +638,7 @@ pub mod route_0 {
         v0: pavex::response::Response,
         v1: &biscotti::Processor,
     ) -> pavex::response::Response {
-        let v2 = biscotti::ResponseCookies::new_static();
+        let v2 = pavex::cookie::ResponseCookies::new();
         let v3 = pavex::cookie::inject_response_cookies(v0, v2, v1);
         let v4 = match v3 {
             Ok(ok) => ok,
@@ -770,7 +770,7 @@ pub mod route_1 {
         v0: pavex::response::Response,
         v1: &biscotti::Processor,
     ) -> pavex::response::Response {
-        let v2 = biscotti::ResponseCookies::new_static();
+        let v2 = pavex::cookie::ResponseCookies::new();
         let v3 = pavex::cookie::inject_response_cookies(v0, v2, v1);
         let v4 = match v3 {
             Ok(ok) => ok,
@@ -909,7 +909,7 @@ pub mod route_2 {
         v0: pavex::response::Response,
         v1: &biscotti::Processor,
     ) -> pavex::response::Response {
-        let v2 = biscotti::ResponseCookies::new_static();
+        let v2 = pavex::cookie::ResponseCookies::new();
         let v3 = pavex::cookie::inject_response_cookies(v0, v2, v1);
         let v4 = match v3 {
             Ok(ok) => ok,
@@ -1123,7 +1123,7 @@ pub mod route_3 {
         v0: pavex::response::Response,
         v1: &biscotti::Processor,
     ) -> pavex::response::Response {
-        let v2 = biscotti::ResponseCookies::new_static();
+        let v2 = pavex::cookie::ResponseCookies::new();
         let v3 = pavex::cookie::inject_response_cookies(v0, v2, v1);
         let v4 = match v3 {
             Ok(ok) => ok,
@@ -1347,7 +1347,7 @@ pub mod route_4 {
         v0: pavex::response::Response,
         v1: &biscotti::Processor,
     ) -> pavex::response::Response {
-        let v2 = biscotti::ResponseCookies::new_static();
+        let v2 = pavex::cookie::ResponseCookies::new();
         let v3 = pavex::cookie::inject_response_cookies(v0, v2, v1);
         let v4 = match v3 {
             Ok(ok) => ok,
@@ -1496,7 +1496,7 @@ pub mod route_5 {
         v0: pavex::response::Response,
         v1: &biscotti::Processor,
     ) -> pavex::response::Response {
-        let v2 = biscotti::ResponseCookies::new_static();
+        let v2 = pavex::cookie::ResponseCookies::new();
         let v3 = pavex::cookie::inject_response_cookies(v0, v2, v1);
         let v4 = match v3 {
             Ok(ok) => ok,
@@ -1674,7 +1674,7 @@ pub mod route_6 {
         v0: pavex::response::Response,
         v1: &biscotti::Processor,
     ) -> pavex::response::Response {
-        let v2 = biscotti::ResponseCookies::new_static();
+        let v2 = pavex::cookie::ResponseCookies::new();
         let v3 = pavex::cookie::inject_response_cookies(v0, v2, v1);
         let v4 = match v3 {
             Ok(ok) => ok,
@@ -1841,7 +1841,7 @@ pub mod route_7 {
         v0: pavex::response::Response,
         v1: &biscotti::Processor,
     ) -> pavex::response::Response {
-        let v2 = biscotti::ResponseCookies::new_static();
+        let v2 = pavex::cookie::ResponseCookies::new();
         let v3 = pavex::cookie::inject_response_cookies(v0, v2, v1);
         let v4 = match v3 {
             Ok(ok) => ok,
@@ -2006,7 +2006,7 @@ pub mod route_8 {
         v0: pavex::response::Response,
         v1: &biscotti::Processor,
     ) -> pavex::response::Response {
-        let v2 = biscotti::ResponseCookies::new_static();
+        let v2 = pavex::cookie::ResponseCookies::new();
         let v3 = pavex::cookie::inject_response_cookies(v0, v2, v1);
         let v4 = match v3 {
             Ok(ok) => ok,
@@ -2171,7 +2171,7 @@ pub mod route_9 {
         v0: pavex::response::Response,
         v1: &biscotti::Processor,
     ) -> pavex::response::Response {
-        let v2 = biscotti::ResponseCookies::new_static();
+        let v2 = pavex::cookie::ResponseCookies::new();
         let v3 = pavex::cookie::inject_response_cookies(v0, v2, v1);
         let v4 = match v3 {
             Ok(ok) => ok,
@@ -2331,7 +2331,7 @@ pub mod route_10 {
         v0: pavex::response::Response,
         v1: &biscotti::Processor,
     ) -> pavex::response::Response {
-        let v2 = biscotti::ResponseCookies::new_static();
+        let v2 = pavex::cookie::ResponseCookies::new();
         let v3 = pavex::cookie::inject_response_cookies(v0, v2, v1);
         let v4 = match v3 {
             Ok(ok) => ok,
@@ -2514,7 +2514,7 @@ pub mod route_11 {
         v0: pavex::response::Response,
         v1: &biscotti::Processor,
     ) -> pavex::response::Response {
-        let v2 = biscotti::ResponseCookies::new_static();
+        let v2 = pavex::cookie::ResponseCookies::new();
         let v3 = pavex::cookie::inject_response_cookies(v0, v2, v1);
         let v4 = match v3 {
             Ok(ok) => ok,
@@ -2676,7 +2676,7 @@ pub mod route_12 {
         v0: pavex::response::Response,
         v1: &biscotti::Processor,
     ) -> pavex::response::Response {
-        let v2 = biscotti::ResponseCookies::new_static();
+        let v2 = pavex::cookie::ResponseCookies::new();
         let v3 = pavex::cookie::inject_response_cookies(v0, v2, v1);
         let v4 = match v3 {
             Ok(ok) => ok,
@@ -2839,7 +2839,7 @@ pub mod route_13 {
         v0: pavex::response::Response,
         v1: &biscotti::Processor,
     ) -> pavex::response::Response {
-        let v2 = biscotti::ResponseCookies::new_static();
+        let v2 = pavex::cookie::ResponseCookies::new();
         let v3 = pavex::cookie::inject_response_cookies(v0, v2, v1);
         let v4 = match v3 {
             Ok(ok) => ok,
@@ -3004,7 +3004,7 @@ pub mod route_14 {
         v0: pavex::response::Response,
         v1: &biscotti::Processor,
     ) -> pavex::response::Response {
-        let v2 = biscotti::ResponseCookies::new_static();
+        let v2 = pavex::cookie::ResponseCookies::new();
         let v3 = pavex::cookie::inject_response_cookies(v0, v2, v1);
         let v4 = match v3 {
             Ok(ok) => ok,
@@ -3213,7 +3213,7 @@ pub mod route_15 {
         v0: pavex::response::Response,
         v1: &biscotti::Processor,
     ) -> pavex::response::Response {
-        let v2 = biscotti::ResponseCookies::new_static();
+        let v2 = pavex::cookie::ResponseCookies::new();
         let v3 = pavex::cookie::inject_response_cookies(v0, v2, v1);
         let v4 = match v3 {
             Ok(ok) => ok,
@@ -3384,7 +3384,7 @@ pub mod route_16 {
         v0: pavex::response::Response,
         v1: &biscotti::Processor,
     ) -> pavex::response::Response {
-        let v2 = biscotti::ResponseCookies::new_static();
+        let v2 = pavex::cookie::ResponseCookies::new();
         let v3 = pavex::cookie::inject_response_cookies(v0, v2, v1);
         let v4 = match v3 {
             Ok(ok) => ok,
@@ -3549,7 +3549,7 @@ pub mod route_17 {
         v0: pavex::response::Response,
         v1: &biscotti::Processor,
     ) -> pavex::response::Response {
-        let v2 = biscotti::ResponseCookies::new_static();
+        let v2 = pavex::cookie::ResponseCookies::new();
         let v3 = pavex::cookie::inject_response_cookies(v0, v2, v1);
         let v4 = match v3 {
             Ok(ok) => ok,
@@ -3714,7 +3714,7 @@ pub mod route_18 {
         v0: pavex::response::Response,
         v1: &biscotti::Processor,
     ) -> pavex::response::Response {
-        let v2 = biscotti::ResponseCookies::new_static();
+        let v2 = pavex::cookie::ResponseCookies::new();
         let v3 = pavex::cookie::inject_response_cookies(v0, v2, v1);
         let v4 = match v3 {
             Ok(ok) => ok,
@@ -3923,7 +3923,7 @@ pub mod route_19 {
         v0: pavex::response::Response,
         v1: &biscotti::Processor,
     ) -> pavex::response::Response {
-        let v2 = biscotti::ResponseCookies::new_static();
+        let v2 = pavex::cookie::ResponseCookies::new();
         let v3 = pavex::cookie::inject_response_cookies(v0, v2, v1);
         let v4 = match v3 {
             Ok(ok) => ok,
@@ -4094,7 +4094,7 @@ pub mod route_20 {
         v0: pavex::response::Response,
         v1: &biscotti::Processor,
     ) -> pavex::response::Response {
-        let v2 = biscotti::ResponseCookies::new_static();
+        let v2 = pavex::cookie::ResponseCookies::new();
         let v3 = pavex::cookie::inject_response_cookies(v0, v2, v1);
         let v4 = match v3 {
             Ok(ok) => ok,

@@ -51,7 +51,7 @@ use crate::cookie::response::ResponseCookiesIter;
 /// Cookies can be retrieved with [`ResponseCookies::get()`].
 /// Check the method's documentation for more information.
 ///
-/// [`RemovalCookie`]: crate::RemovalCookie
+/// [`RemovalCookie`]: super::RemovalCookie
 #[derive(Default, Debug, Clone)]
 pub struct ResponseCookies(biscotti::ResponseCookies<'static>);
 
@@ -192,7 +192,7 @@ impl ResponseCookies {
     /// assert_eq!(set.iter().count(), 0);
     /// ```
     ///
-    /// [`RemovalCookie`]: crate::RemovalCookie
+    /// [`RemovalCookie`]: super::RemovalCookie
     pub fn discard<'map, 'key, Key>(&'map mut self, id: Key)
     where
         Key: Into<ResponseCookieId<'key>>,

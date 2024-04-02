@@ -1,6 +1,7 @@
-use crate::blueprint::Blueprint;
 use crate::blueprint::constructor::{Constructor, Lifecycle};
+use crate::blueprint::linter::Lint;
 use crate::blueprint::middleware::PostProcessingMiddleware;
+use crate::blueprint::Blueprint;
 use crate::f;
 
 #[derive(Clone, Debug)]
@@ -34,9 +35,9 @@ pub struct CookieKit {
     pub request_cookies: Option<Constructor>,
     /// The constructor for [`ResponseCookies`].
     ///
-    /// By default, it uses [`ResponseCookies::new_static`].
+    /// By default, it uses [`ResponseCookies::new`].
     ///
-    /// [`ResponseCookies::new_static`]: super::ResponseCookies::new_static
+    /// [`ResponseCookies::new`]: super::ResponseCookies::new
     /// [`ResponseCookies`]: super::ResponseCookies
     pub response_cookies: Option<Constructor>,
     /// The constructor for [`Processor`].
@@ -60,15 +61,21 @@ pub struct CookieKit {
 impl CookieKit {
     /// Create a new [`CookieKit`] with all the bundled constructors and middlewares.
     pub fn new() -> Self {
-        let request_cookies = Constructor::new(f!(super::extract_request_cookies), Lifecycle::RequestScoped)
-            .error_handler(f!(super::errors::ExtractRequestCookiesError::into_response));
-        let response_cookies = Constructor::new(f!(biscotti::ResponseCookies::new_static), Lifecycle::RequestScoped);
-        let response_cookie_injector = PostProcessingMiddleware::new(f!(super::inject_response_cookies))
-            .error_handler(f!(super::errors::InjectResponseCookiesError::into_response));
+        let request_cookies =
+            Constructor::new(f!(super::extract_request_cookies), Lifecycle::RequestScoped)
+                .error_handler(f!(super::errors::ExtractRequestCookiesError::into_response))
+                .ignore(Lint::Unused);
+        let response_cookies =
+            Constructor::new(f!(super::ResponseCookies::new), Lifecycle::RequestScoped)
+                .ignore(Lint::Unused);
+        let response_cookie_injector =
+            PostProcessingMiddleware::new(f!(super::inject_response_cookies))
+                .error_handler(f!(super::errors::InjectResponseCookiesError::into_response));
         let processor = Constructor::new(
-            f!(<super::Processor as std::convert::From<super::config::Config>>::from),
+            f!(<super::Processor as std::convert::From<super::ProcessorConfig>>::from),
             Lifecycle::Singleton,
-        );
+        )
+        .ignore(Lint::Unused);
         Self {
             request_cookies: Some(request_cookies),
             response_cookies: Some(response_cookies),
