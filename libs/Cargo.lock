@@ -251,16 +251,15 @@ dependencies = [
 
 [[package]]
 name = "biscotti"
-version = "0.3.1"
+version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a5a57956e5d7a91adc693ef7ca9b93380a520b970d03095c39bec553b982e792"
+checksum = "67407395981dac7f26e8a043947941348cf77bfeb8e040fed1dd04adf3b7f507"
 dependencies = [
  "aes-gcm-siv",
  "anyhow",
  "base64 0.22.0",
  "hkdf",
  "hmac",
- "log",
  "percent-encoding",
  "rand",
  "serde",
