@@ -1,4 +1,3 @@
-//! The error type used by Pavex for runtime failures.
 // Most of this module is a direct copy (with, from time to time,
 // minor modifications) of the corresponding `error` module in
 // `axum-core`.
@@ -31,7 +30,7 @@
 use std::fmt;
 
 /// Pavex's error type: an opaque wrapper around the concrete error type
-/// return by your components (e.g. request handlers, constructors, etc.).  
+/// return by your components (e.g. request handlers, constructors, etc.).
 /// It is used as an input parameter by
 /// [error observers](https://pavex.dev/docs/guide/errors/error_observers/) and
 /// [universal error handlers](https://pavex.dev/docs/guide/errors/error_handlers/#universal).
@@ -52,8 +51,8 @@ pub struct Error {
 impl Error {
     /// Create a new [`Error`] from a boxable error.
     pub fn new<E>(error: E) -> Self
-    where
-        E: Into<Box<dyn std::error::Error + Send + Sync>>,
+        where
+            E: Into<Box<dyn std::error::Error + Send + Sync>>,
     {
         Self {
             inner: error.into(),

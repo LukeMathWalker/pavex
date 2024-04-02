@@ -4,6 +4,7 @@ use crate::routes::profiles::profiles_bp;
 use crate::routes::users::users_bp;
 use crate::telemetry;
 use pavex::blueprint::{router::GET, Blueprint};
+use pavex::cookie::CookieKit;
 use pavex::f;
 use pavex::kit::ApiKit;
 
@@ -14,6 +15,7 @@ pub fn blueprint() -> Blueprint {
     ApiKit::new().register(&mut bp);
     telemetry::register(&mut bp);
     ApplicationConfig::register(&mut bp);
+    CookieKit::new().register(&mut bp);
 
     bp.nest_at("/articles", articles_bp());
     bp.nest_at("/profiles", profiles_bp());
