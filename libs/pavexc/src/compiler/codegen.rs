@@ -335,6 +335,7 @@ fn get_request_dispatcher(
         )
     });
 
+    let mut needs_connection_info = false;
     let mut route_dispatch_table = quote! {};
     let server_state_ident = format_ident!("server_state");
 
@@ -391,6 +392,7 @@ fn get_request_dispatcher(
                 };
 
                 let invocation = if request_pipeline.needs_connection_info(framework_items_db) {
+                    needs_connection_info = true;
                     quote! {
                         {
                             let connection_info = connection_info.expect("Required ConnectionInfo is missing");
@@ -447,6 +449,7 @@ fn get_request_dispatcher(
                 &server_state_ident,
             );
             if fallback_codegened_pipeline.needs_connection_info(framework_items_db) {
+                needs_connection_info = true;
                 fallback_invocation = quote! {
                     {
                         let connection_info = connection_info.expect("Required ConnectionInfo is missing");
@@ -502,16 +505,22 @@ fn get_request_dispatcher(
     };
     let unwrap_connection_info =
         if fallback_codegened_pipeline.needs_connection_info(framework_items_db) {
+            needs_connection_info = true;
             quote! {
                 let connection_info = connection_info.expect("Required ConnectionInfo is missing");
             }
         } else {
             quote! {}
         };
+    let connection_info_ident = if needs_connection_info {
+        format_ident!("connection_info")
+    } else {
+        format_ident!("_connection_info")
+    };
     syn::parse2(quote! {
         async fn route_request(
             request: #http::Request<#hyper::body::Incoming>,
-            connection_info: Option<#pavex::connection::ConnectionInfo>,
+            #connection_info_ident: Option<#pavex::connection::ConnectionInfo>,
             #server_state_ident: std::sync::Arc<ServerState>
         ) -> #pavex::response::Response {
             let (request_head, request_body) = request.into_parts();
