@@ -1,2 +1,6 @@
 server:
   port: 8000
+app:
+  cookie:
+    percent_encode: true
+    crypto_rules: [ ]
