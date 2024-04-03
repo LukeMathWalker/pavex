@@ -1,9 +1,14 @@
 //! Extract data concerning the HTTP connection.
 use std::net::SocketAddr;
 
-/// Information relating to the current undelying HTTP connection.
+/// Information relating to the current underlying HTTP connection.
 ///
 /// It includes the [peer address](SocketAddr).
+///
+/// # Guide
+///
+/// Check out [the guide](https://pavex.dev/docs/guide/request_data/connection_info/)
+/// for more details on `ConnectionInfo`.
 #[derive(Clone, Debug)]
 pub struct ConnectionInfo {
     pub(crate) peer_addr: SocketAddr,

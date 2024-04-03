@@ -10,9 +10,11 @@ The framework primitives are:
 - [`RawIncomingBody`][RawIncomingBody]. The raw body of the incoming request.
 - [`RawPathParams`][RawPathParams]. The raw path parameters extracted from the incoming request.
 - [`AllowedMethods`][AllowedMethods]. The HTTP methods allowed for the current request path.
+- [`ConnectionInfo`][ConnectionInfo]. The peer address for the current connection.
 
-They represent raw data from the incoming request ([`RequestHead`][RequestHead], [`RawIncomingBody`][RawIncomingBody])
-or information coming from the routing system ([`AllowedMethods`][AllowedMethods], [`RawPathParams`][RawPathParams]).
+They represent raw data about the underlying connection ([`ConnectionInfo`][ConnectionInfo]),
+from the incoming request ([`RequestHead`][RequestHead], [`RawIncomingBody`][RawIncomingBody])
+or from the routing system ([`AllowedMethods`][AllowedMethods], [`RawPathParams`][RawPathParams]).
 
 ## Convenient, but inflexible
 
@@ -26,6 +28,7 @@ You lose this flexibility with framework primitives: you can't customize how the
 That's why we try to keep their number to a minimum.
 
 [RequestHead]: ../../../api_reference/pavex/request/struct.RequestHead.html
+[ConnectionInfo]: ../../../api_reference/pavex/connection/struct.ConnectionInfo.html
 [RawPathParams]: ../../../api_reference/pavex/request/path/struct.RawPathParams.html
 [AllowedMethods]: ../../../api_reference/pavex/router/enum.AllowedMethods.html
 [RawIncomingBody]: ../../../api_reference/pavex/request/body/struct.RawIncomingBody.html

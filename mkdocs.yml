@@ -87,6 +87,7 @@ nav:
           - guide/request_data/index.md
           - guide/request_data/wire_data.md
           - guide/request_data/request_target.md
+          - "Connection Info": guide/request_data/connection_info.md
           - "Path":
               - guide/request_data/path/index.md
               - guide/request_data/path/path_parameters.md
