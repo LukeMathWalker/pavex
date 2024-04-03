@@ -29,7 +29,7 @@ impl ConnectionInfo {
     ///         "The peer address for this connection is {}",
     ///         conn_info.peer_addr()
     ///     );
-    ///     Response::Ok().set_typed_body(body)
+    ///     Response::ok().set_typed_body(body)
     /// }
     /// ```
     pub fn peer_addr(&self) -> SocketAddr {
