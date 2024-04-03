@@ -10,10 +10,12 @@ license.workspace = true
 readme = "README.md"
 
 [features]
-default = ["server", "server_request_id"]
+default = ["server", "server_request_id", "time", "cookie"]
 
 server = ["dep:hyper", "dep:hyper-util", "dep:socket2"]
+cookie = ["dep:biscotti", "time"]
 server_request_id = ["dep:uuid"]
+time = ["dep:time"]
 
 [dependencies]
 bytes = "1"
@@ -50,8 +52,14 @@ indexmap = { version = "2", features = ["serde"] }
 fs-err = "2.7.0"
 ron = "0.8"
 
+# Cookies
+biscotti = { version = "0.3", optional = true }
+
 # Server request id
 uuid = { version = "1", features = ["v7"], optional = true }
+
+# Time facilities
+time = { version = "0.3", features = ["serde"], optional = true }
 
 tokio = { version = "1.32", features = ["net", "sync", "rt", "time"] }
 hyper = { version = "1", features = ["full"], optional = true }
