@@ -21,10 +21,15 @@ impl ConnectionInfo {
     ///
     /// ```rust
     /// use pavex::connection::ConnectionInfo;
+    /// use pavex::response::Response;
     ///
     /// // The `ConnectionInfo` extractor can be used to access a peer's address within a handler.
-    /// pub fn my_ip(conn_info: &ConnectionInfo) -> String {
-    ///     format!("Your IP is {}", conn_info.peer_addr())
+    /// pub fn echo_ip(conn_info: &ConnectionInfo) -> Response {
+    ///     let body = format!(
+    ///         "The peer address for this connection is {}",
+    ///         conn_info.peer_addr()
+    ///     );
+    ///     Response::Ok().set_typed_body(body)
     /// }
     /// ```
     pub fn peer_addr(&self) -> SocketAddr {
