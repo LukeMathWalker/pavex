@@ -335,6 +335,7 @@ fn get_request_dispatcher(
         )
     });
 
+    let mut needs_connection_info = false;
     let mut route_dispatch_table = quote! {};
     let server_state_ident = format_ident!("server_state");
 
@@ -390,6 +391,18 @@ fn get_request_dispatcher(
                     invocation
                 };
 
+                let invocation = if request_pipeline.needs_connection_info(framework_items_db) {
+                    needs_connection_info = true;
+                    quote! {
+                        {
+                            let connection_info = connection_info.expect("Required ConnectionInfo is missing");
+                            #invocation
+                        }
+                    }
+                } else {
+                    invocation
+                };
+
                 let (well_known_methods, custom_methods) = methods
                     .iter()
                     .partition::<Vec<_>, _>(|m| WELL_KNOWN_METHODS.contains(m.as_str()));
@@ -401,6 +414,7 @@ fn get_request_dispatcher(
                             #pavex::http::Method::#m
                         }
                     });
+
                     sub_router_dispatch_table = quote! {
                         #sub_router_dispatch_table
                         #(&#well_known_methods)|* => #invocation,
@@ -434,6 +448,15 @@ fn get_request_dispatcher(
                 request_scoped_bindings,
                 &server_state_ident,
             );
+            if fallback_codegened_pipeline.needs_connection_info(framework_items_db) {
+                needs_connection_info = true;
+                fallback_invocation = quote! {
+                    {
+                        let connection_info = connection_info.expect("Required ConnectionInfo is missing");
+                        #fallback_invocation
+                    }
+                }
+            }
             if sub_router
                 .catch_all_pipeline
                 .needs_allowed_methods(framework_items_db)
@@ -480,9 +503,24 @@ fn get_request_dispatcher(
     } else {
         quote! {}
     };
+    let unwrap_connection_info =
+        if fallback_codegened_pipeline.needs_connection_info(framework_items_db) {
+            needs_connection_info = true;
+            quote! {
+                let connection_info = connection_info.expect("Required ConnectionInfo is missing");
+            }
+        } else {
+            quote! {}
+        };
+    let connection_info_ident = if needs_connection_info {
+        format_ident!("connection_info")
+    } else {
+        format_ident!("_connection_info")
+    };
     syn::parse2(quote! {
         async fn route_request(
             request: #http::Request<#hyper::body::Incoming>,
+            #connection_info_ident: Option<#pavex::connection::ConnectionInfo>,
             #server_state_ident: std::sync::Arc<ServerState>
         ) -> #pavex::response::Response {
             let (request_head, request_body) = request.into_parts();
@@ -494,6 +532,7 @@ fn get_request_dispatcher(
                 Err(_) => {
                     #allowed_methods
                     #unmatched_route
+                    #unwrap_connection_info
                     return #root_fallback_invocation;
                 }
             };

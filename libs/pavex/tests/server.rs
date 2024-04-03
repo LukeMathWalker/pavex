@@ -4,11 +4,16 @@ use std::time::Duration;
 use http::Request;
 use hyper::body::Incoming;
 
+use pavex::connection::ConnectionInfo;
 use pavex::response::Response;
 use pavex::server::{IncomingStream, Server, ServerConfiguration, ShutdownMode};
 
 // A dummy handler for our server tests.
-async fn test_handler(_request: Request<Incoming>, _state: ()) -> Response {
+async fn test_handler(
+    _request: Request<Incoming>,
+    _connection_info: Option<ConnectionInfo>,
+    _state: (),
+) -> Response {
     Response::ok()
 }
 
@@ -86,7 +91,11 @@ async fn serve() {
     reqwest::get(url).await.unwrap().error_for_status().unwrap();
 }
 
-async fn slow_handler(_req: Request<Incoming>, state: SlowHandlerState) -> Response {
+async fn slow_handler(
+    _req: Request<Incoming>,
+    _connection_info: Option<ConnectionInfo>,
+    state: SlowHandlerState,
+) -> Response {
     // Signal that the connection has been established before starting to
     // sleep.
     state.started.send(()).await.unwrap();

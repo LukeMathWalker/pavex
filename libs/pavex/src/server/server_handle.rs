@@ -10,8 +10,9 @@ use tokio::net::TcpStream;
 use tokio::sync::mpsc::error::TrySendError;
 use tokio::task::{JoinError, JoinSet, LocalSet};
 
+use crate::connection::ConnectionInfo;
 use crate::server::configuration::ServerConfiguration;
-use crate::server::worker::{Worker, WorkerHandle};
+use crate::server::worker::{ConnectionMessage, Worker, WorkerHandle};
 
 use super::{IncomingStream, ShutdownMode};
 
@@ -26,7 +27,7 @@ use super::{IncomingStream, ShutdownMode};
 /// use pavex::server::Server;
 ///
 /// # #[derive(Clone)] struct ApplicationState;
-/// # async fn router(_req: hyper::Request<hyper::body::Incoming>, _state: ApplicationState) -> pavex::response::Response { todo!() }
+/// # async fn router(_req: hyper::Request<hyper::body::Incoming>, _conn_info: Option<pavex::connection::ConnectionInfo>, _state: ApplicationState) -> pavex::response::Response { todo!() }
 /// # async fn t() -> std::io::Result<()> {
 /// # let application_state = ApplicationState;
 /// let addr = SocketAddr::from(([127, 0, 0, 1], 8080));
@@ -49,7 +50,11 @@ impl ServerHandle {
     pub(super) fn new<HandlerFuture, ApplicationState>(
         config: ServerConfiguration,
         incoming: Vec<IncomingStream>,
-        handler: fn(http::Request<hyper::body::Incoming>, ApplicationState) -> HandlerFuture,
+        handler: fn(
+            http::Request<hyper::body::Incoming>,
+            Option<ConnectionInfo>,
+            ApplicationState,
+        ) -> HandlerFuture,
         application_state: ApplicationState,
     ) -> Self
     where
@@ -108,7 +113,11 @@ struct Acceptor<HandlerFuture, ApplicationState> {
     config: ServerConfiguration,
     next_worker: usize,
     max_queue_length: usize,
-    handler: fn(http::Request<hyper::body::Incoming>, ApplicationState) -> HandlerFuture,
+    handler: fn(
+        http::Request<hyper::body::Incoming>,
+        Option<ConnectionInfo>,
+        ApplicationState,
+    ) -> HandlerFuture,
     application_state: ApplicationState,
     // We use a `fn() -> HandlerFuture` instead of a `HandlerFuture` because we need `Acceptor`
     // to be `Send` and `Sync`. That wouldn't work with `PhantomData<HandlerFuture>`.
@@ -129,7 +138,11 @@ where
     fn new(
         config: ServerConfiguration,
         incoming: Vec<IncomingStream>,
-        handler: fn(http::Request<hyper::body::Incoming>, ApplicationState) -> HandlerFuture,
+        handler: fn(
+            http::Request<hyper::body::Incoming>,
+            Option<ConnectionInfo>,
+            ApplicationState,
+        ) -> HandlerFuture,
         application_state: ApplicationState,
         command_inbox: tokio::sync::mpsc::Receiver<ServerCommand>,
     ) -> Self {
@@ -238,7 +251,7 @@ where
                     }
                 },
                 AcceptorInboxMessage::Connection(msg) => {
-                    let (incoming, mut connection, remote_peer) = match msg {
+                    let (incoming, connection, remote_peer) = match msg {
                         Some(Ok((incoming, connection, remote_peer))) => {
                             (incoming, connection, remote_peer)
                         }
@@ -264,16 +277,20 @@ where
 
                     // A flag to track if the connection has been successfully sent to a worker.
                     let mut has_been_handled = false;
-                    // We try to send the connection to a worker.
+                    // We try to send the connection to a worker (`ConnectionMessage`).
                     // If the worker's inbox is full, we try the next worker until we find one that can
                     // accept the connection or we've tried all workers.
+                    let mut connection_message = ConnectionMessage {
+                        connection,
+                        peer_addr: remote_peer,
+                    };
                     for _ in 0..n_workers {
                         // Track if the worker has crashed.
                         let mut has_crashed: Option<usize> = None;
                         let worker_handle = &worker_handles[next_worker];
-                        if let Err(e) = worker_handle.dispatch(connection) {
-                            connection = match e {
-                                TrySendError::Full(conn) => conn,
+                        if let Err(e) = worker_handle.dispatch(connection_message) {
+                            connection_message = match e {
+                                TrySendError::Full(message) => message,
                                 // A closed channel implies that the worker thread is no longer running,
                                 // therefore we need to restart it.
                                 TrySendError::Closed(conn) => {

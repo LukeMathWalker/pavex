@@ -35,6 +35,7 @@ fn build_router() -> pavex_matchit::Router<u32> {
 }
 async fn route_request(
     request: http::Request<hyper::body::Incoming>,
+    _connection_info: Option<pavex::connection::ConnectionInfo>,
     server_state: std::sync::Arc<ServerState>,
 ) -> pavex::response::Response {
     let (request_head, request_body) = request.into_parts();

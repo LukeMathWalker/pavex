@@ -1,6 +1,7 @@
 use std::future::Future;
 use std::net::SocketAddr;
 
+use crate::connection::ConnectionInfo;
 use crate::server::configuration::ServerConfiguration;
 use crate::server::server_handle::ServerHandle;
 
@@ -16,7 +17,7 @@ use super::IncomingStream;
 /// use pavex::server::Server;
 ///
 /// # #[derive(Clone)] struct ApplicationState;
-/// # async fn router(_req: hyper::Request<hyper::body::Incoming>, _state: ApplicationState) -> pavex::response::Response { todo!() }
+/// # async fn router(_req: hyper::Request<hyper::body::Incoming>, _conn_info: Option<pavex::connection::ConnectionInfo>, _state: ApplicationState) -> pavex::response::Response { todo!() }
 /// # async fn t() -> std::io::Result<()> {
 /// # let application_state = ApplicationState;
 /// let addr = SocketAddr::from(([127, 0, 0, 1], 8080));
@@ -250,7 +251,11 @@ impl Server {
     /// i.e. if you did not call [`Server::bind`] or [`Server::listen`] before calling `serve`.
     pub fn serve<HandlerFuture, ApplicationState>(
         self,
-        handler: fn(http::Request<hyper::body::Incoming>, ApplicationState) -> HandlerFuture,
+        handler: fn(
+            http::Request<hyper::body::Incoming>,
+            Option<ConnectionInfo>,
+            ApplicationState,
+        ) -> HandlerFuture,
         application_state: ApplicationState,
     ) -> ServerHandle
     where

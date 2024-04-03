@@ -19,7 +19,7 @@ clippy = { all = "allow" }
 app = { version = "0.1.0", path = "../app", package = "app" }
 http = { version = "1.1.0", package = "http" }
 hyper = { version = "1.2.0", package = "hyper" }
-pavex = { version = "0.1.22", path = "../../../libs/pavex", package = "pavex" }
+pavex = { version = "0.1.23", path = "../../../libs/pavex", package = "pavex" }
 pavex_matchit = { version = "0.7.4", package = "pavex_matchit" }
-pavex_tracing = { version = "0.1.22", path = "../../../libs/pavex_tracing", package = "pavex_tracing" }
+pavex_tracing = { version = "0.1.23", path = "../../../libs/pavex_tracing", package = "pavex_tracing" }
 thiserror = { version = "1.0.58", package = "thiserror" }

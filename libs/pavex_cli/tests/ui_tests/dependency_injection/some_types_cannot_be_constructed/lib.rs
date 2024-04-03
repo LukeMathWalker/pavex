@@ -1,5 +1,6 @@
 use pavex::blueprint::constructor::Lifecycle;
 use pavex::blueprint::Blueprint;
+use pavex::connection::ConnectionInfo;
 use pavex::f;
 use pavex::request::{
     body::RawIncomingBody,
@@ -64,6 +65,10 @@ pub fn raw_path_params_ref(request_head: &RequestHead) -> &RawPathParams {
     todo!()
 }
 
+pub fn connection_info() -> ConnectionInfo {
+    todo!()
+}
+
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.nest({
@@ -75,6 +80,7 @@ pub fn blueprint() -> Blueprint {
         bp.constructor(f!(crate::raw_incoming_body), Lifecycle::RequestScoped);
         bp.constructor(f!(crate::matched_path_pattern), Lifecycle::RequestScoped);
         bp.constructor(f!(crate::raw_path_params), Lifecycle::RequestScoped);
+        bp.constructor(f!(crate::connection_info), Lifecycle::RequestScoped);
         bp
     });
     bp.nest({

@@ -1,4 +1,5 @@
 use std::future::{poll_fn, Future};
+use std::net::SocketAddr;
 use std::task::Poll;
 use std::thread;
 
@@ -7,11 +8,17 @@ use hyper_util::rt::TokioIo;
 use tokio::net::TcpStream;
 use tokio::sync::mpsc::error::TrySendError;
 
+use crate::connection::ConnectionInfo;
 use crate::server::ShutdownMode;
+
+pub(super) struct ConnectionMessage {
+    pub(super) connection: TcpStream,
+    pub(super) peer_addr: SocketAddr,
+}
 
 /// A handle to dispatch incoming connections to a worker thread.
 pub(super) struct WorkerHandle {
-    connection_outbox: tokio::sync::mpsc::Sender<TcpStream>,
+    connection_outbox: tokio::sync::mpsc::Sender<ConnectionMessage>,
     // We use an unbounded channel because we want to be able to send a shutdown command
     // synchronously.
     shutdown_outbox: tokio::sync::mpsc::UnboundedSender<ShutdownWorkerCommand>,
@@ -51,7 +58,10 @@ impl Drop for ConnectionCounterGuard {
 
 impl WorkerHandle {
     /// Dispatch a connection to the worker thread.
-    pub(super) fn dispatch(&self, connection: TcpStream) -> Result<(), TrySendError<TcpStream>> {
+    pub(super) fn dispatch(
+        &self,
+        connection: ConnectionMessage,
+    ) -> Result<(), TrySendError<ConnectionMessage>> {
         self.connection_outbox.try_send(connection)
     }
 
@@ -94,9 +104,13 @@ pub(super) struct ShutdownWorkerCommand {
 #[must_use]
 /// A worker thread that handles incoming connections.
 pub(super) struct Worker<HandlerFuture, ApplicationState> {
-    connection_inbox: tokio::sync::mpsc::Receiver<TcpStream>,
+    connection_inbox: tokio::sync::mpsc::Receiver<ConnectionMessage>,
     shutdown_inbox: tokio::sync::mpsc::UnboundedReceiver<ShutdownWorkerCommand>,
-    handler: fn(http::Request<hyper::body::Incoming>, ApplicationState) -> HandlerFuture,
+    handler: fn(
+        http::Request<hyper::body::Incoming>,
+        Option<ConnectionInfo>,
+        ApplicationState,
+    ) -> HandlerFuture,
     application_state: ApplicationState,
     id: usize,
 }
@@ -113,7 +127,11 @@ where
     pub(super) fn new(
         id: usize,
         max_queue_length: usize,
-        handler: fn(http::Request<hyper::body::Incoming>, ApplicationState) -> HandlerFuture,
+        handler: fn(
+            http::Request<hyper::body::Incoming>,
+            Option<ConnectionInfo>,
+            ApplicationState,
+        ) -> HandlerFuture,
         application_state: ApplicationState,
     ) -> (Self, WorkerHandle) {
         let (connection_outbox, connection_inbox) = tokio::sync::mpsc::channel(max_queue_length);
@@ -217,15 +235,24 @@ where
     }
 
     fn handle_connection(
-        connection: TcpStream,
-        handler: fn(http::Request<hyper::body::Incoming>, ApplicationState) -> HandlerFuture,
+        connection_message: ConnectionMessage,
+        handler: fn(
+            http::Request<hyper::body::Incoming>,
+            Option<ConnectionInfo>,
+            ApplicationState,
+        ) -> HandlerFuture,
         application_state: ApplicationState,
     ) {
+        let ConnectionMessage {
+            connection,
+            peer_addr,
+        } = connection_message;
         // A tiny bit of glue to adapt our handler to hyper's service interface.
         let handler = hyper::service::service_fn(move |request| {
             let state = application_state.clone();
+
             async move {
-                let handler = (handler)(request, state);
+                let handler = (handler)(request, Some(ConnectionInfo { peer_addr }), state);
                 let response = handler.await;
                 let response = hyper::Response::from(response);
                 Ok::<_, hyper::Error>(response)
@@ -251,7 +278,7 @@ where
     fn poll_inboxes(
         cx: &mut std::task::Context<'_>,
         shutdown_inbox: &mut tokio::sync::mpsc::UnboundedReceiver<ShutdownWorkerCommand>,
-        connection_inbox: &mut tokio::sync::mpsc::Receiver<TcpStream>,
+        connection_inbox: &mut tokio::sync::mpsc::Receiver<ConnectionMessage>,
     ) -> Poll<WorkerInboxMessage> {
         // Order matters here: we want to prioritize shutdown messages over incoming connections.
         if let Poll::Ready(Some(message)) = shutdown_inbox.poll_recv(cx) {
@@ -265,12 +292,12 @@ where
 }
 
 enum WorkerInboxMessage {
-    Connection(TcpStream),
+    Connection(ConnectionMessage),
     Shutdown(ShutdownWorkerCommand),
 }
 
-impl From<TcpStream> for WorkerInboxMessage {
-    fn from(connection: TcpStream) -> Self {
+impl From<ConnectionMessage> for WorkerInboxMessage {
+    fn from(connection: ConnectionMessage) -> Self {
         Self::Connection(connection)
     }
 }
