@@ -12,6 +12,7 @@ use sqlx::postgres::{PgConnectOptions, PgSslMode};
 pub struct ApplicationConfig {
     pub database: DatabaseConfig,
     pub auth: AuthConfig,
+    #[serde(default)]
     pub cookie: ProcessorConfig,
 }
 
