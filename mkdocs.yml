@@ -125,7 +125,11 @@ nav:
               - guide/errors/error_handlers.md
               - guide/errors/error_observers.md
       - "Digging deeper":
-          - guide/cookies.md
+          - "Cookies":
+              - guide/cookies/index.md
+              - guide/cookies/installation.md
+              - guide/cookies/request_cookies.md
+              - guide/cookies/response_cookies.md
 
   - "API Reference": api_reference/pavex/
 exclude_docs: |
