@@ -120,11 +120,12 @@ nav:
               - guide/middleware/wrapping.md
               - guide/middleware/scoping.md
               - guide/middleware/execution_order.md
-      - "Digging deeper":
           - "Errors":
               - guide/errors/index.md
               - guide/errors/error_handlers.md
               - guide/errors/error_observers.md
+      - "Digging deeper":
+          - guide/cookies.md
 
   - "API Reference": api_reference/pavex/
 exclude_docs: |
