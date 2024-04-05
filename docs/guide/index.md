@@ -1,4 +1,4 @@
-# Overview
+# Guide
 
 This is the official guide for Pavex.  
 It is organised by topic. Each section focuses on one aspect of the framework
