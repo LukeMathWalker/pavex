@@ -25,7 +25,7 @@ Pavex will change the signature of [`build_application_state`][build_application
 you're then free to build `A` however you want in the [server crate].
 
 [Lifecycle::Singleton]: ../../../api_reference/pavex/blueprint/constructor/enum.Lifecycle.html#variant.Singleton
-[build_application_state]: ../../project_structure/index.md#applicationstate
-[server crate]: ../../project_structure/index.md#the-server-crate
-[ApplicationState]: ../../project_structure/index.md#applicationstate
-[server SDK crate]: ../../project_structure/index.md#the-server-sdk
+[build_application_state]: ../../project_structure.md#applicationstate
+[server crate]: ../../project_structure.md#the-server-crate
+[ApplicationState]: ../../project_structure.md#applicationstate
+[server SDK crate]: ../../project_structure.md#the-server-sdk

@@ -126,7 +126,7 @@ struct**.
 [`ApplicationState`](../dependency_injection/core_concepts/application_state.md) holds all the types
 with a [`Singleton` lifecycle][Lifecycle::Singleton] that your application needs to access at runtime when processing a request.
 
-To build an instance of [`ApplicationState`](../dependency_injection/core_concepts/application_state.md), 
+To build an instance of [`ApplicationState`](dependency_injection/core_concepts/application_state.md), 
 the server SDK exposes a function called `build_application_state`.
 
 ### `run`
