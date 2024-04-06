@@ -70,9 +70,6 @@ impl ServerRequestId {
 
     /// The [default constructor](Self::generate) for [`ServerRequestId`].
     pub fn default_constructor() -> Constructor {
-        Constructor::new(
-            f!(pavex::telemetry::ServerRequestId::generate),
-            Lifecycle::RequestScoped,
-        )
+        Constructor::request_scoped(f!(super::ServerRequestId::generate))
     }
 }

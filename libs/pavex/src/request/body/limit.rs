@@ -27,10 +27,7 @@ impl BodySizeLimit {
 
     /// The [default constructor](Self::default) for [`BodySizeLimit`].
     pub fn default_constructor() -> Constructor {
-        Constructor::new(
-            f!(<super::BodySizeLimit as std::default::Default>::default),
-            Lifecycle::RequestScoped,
-        )
+        Constructor::request_scoped(f!(<super::BodySizeLimit as std::default::Default>::default))
     }
 }
 

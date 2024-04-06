@@ -44,6 +44,30 @@ impl Constructor {
         }
     }
 
+    /// Create a new (unregistered) constructor with a [singleton](Lifecycle::Singleton) lifecycle.
+    ///
+    /// It's a shorthand for [`Constructor::new(callable, Lifecycle::Singleton)`](Constructor::new).
+    #[track_caller]
+    pub fn singleton(callable: RawCallable) -> Self {
+        Constructor::new(callable, Lifecycle::Singleton)
+    }
+
+    /// Create a new (unregistered) constructor with a [request-scoped](Lifecycle::RequestScoped) lifecycle.
+    ///
+    /// It's a shorthand for [`Constructor::new(callable, Lifecycle::RequestScoped)`](Constructor::new).
+    #[track_caller]
+    pub fn request_scoped(callable: RawCallable) -> Self {
+        Constructor::new(callable, Lifecycle::RequestScoped)
+    }
+
+    /// Create a new (unregistered) constructor with a [transient](Lifecycle::Transient) lifecycle.
+    ///
+    /// It's a shorthand for [`Constructor::new(callable, Lifecycle::Transient)`](Constructor::new).
+    #[track_caller]
+    pub fn transient(callable: RawCallable) -> Self {
+        Constructor::new(callable, Lifecycle::Transient)
+    }
+
     /// Register an error handler for this constructor.
     ///
     /// Check out the documentation of [`RegisteredConstructor::error_handler`] for more details.

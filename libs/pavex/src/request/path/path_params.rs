@@ -102,7 +102,7 @@ impl PathParams<()> {
     /// and [error handler](ExtractPathParamsError::into_response)
     /// for [`PathParams`].
     pub fn default_constructor() -> Constructor {
-        Constructor::new(f!(super::PathParams::extract), Lifecycle::RequestScoped)
+        Constructor::request_scoped(f!(super::PathParams::extract))
             .error_handler(f!(super::errors::ExtractPathParamsError::into_response))
     }
 }

@@ -86,7 +86,7 @@ impl BufferedBody {
     /// and [error handler](ExtractBufferedBodyError::into_response)
     /// for [`BufferedBody`].
     pub fn default_constructor() -> Constructor {
-        Constructor::new(f!(super::BufferedBody::extract), Lifecycle::RequestScoped)
+        Constructor::request_scoped(f!(super::BufferedBody::extract))
             .error_handler(f!(super::errors::ExtractBufferedBodyError::into_response))
     }
 
