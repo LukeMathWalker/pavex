@@ -6,7 +6,7 @@ It is organised by topic. Each section focuses on one aspect of the framework
 It's the **best place to build a mental model of the framework** and learn how to wield it effectively.
 
 No time to waste: use the sidebar to jump to whatever topic you're interested in!  
-If you don't know where to start, head over to ["Project structure"](project_structure/index.md) and go from there.
+If you don't know where to start, head over to ["Project structure"](project_structure.md) and go from there.
 
 ## Other resources
 
