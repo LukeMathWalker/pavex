@@ -128,3 +128,4 @@ exclude_docs: |
 extra_css:
   - ansi.css
   - mermaid.css
+  - content_tab.css
