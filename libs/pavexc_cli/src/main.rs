@@ -171,8 +171,6 @@ fn generate(
     color_profile: Color,
     check: bool,
 ) -> Result<ExitCode, Box<dyn std::error::Error>> {
-    let color_on_stderr = use_color_on_stderr(color_profile);
-
     let blueprint = {
         let file = fs_err::OpenOptions::new().read(true).open(blueprint)?;
         ron::de::from_reader(&file)?
@@ -183,21 +181,13 @@ fn generate(
         Ok((a, warnings)) => {
             for e in warnings {
                 assert_eq!(e.severity(), Some(Severity::Warning));
-                if color_on_stderr {
-                    eprintln!("{}: {e:?}", "WARNING".bold().yellow());
-                } else {
-                    eprintln!("WARNING: {e:?}");
-                };
+                print_report(&e, color_profile);
             }
             a
         }
-        Err(errors) => {
-            for e in errors {
-                if color_on_stderr {
-                    eprintln!("{}: {e:?}", "ERROR".bold().red());
-                } else {
-                    eprintln!("ERROR: {e:?}");
-                };
+        Err(issues) => {
+            for e in issues {
+                print_report(&e, color_profile);
             }
             return Ok(ExitCode::FAILURE);
         }
@@ -215,15 +205,34 @@ fn generate(
     generated_app.persist(&output, &mut writer)?;
     if let Err(errors) = writer.verify() {
         for e in errors {
-            if color_on_stderr {
-                eprintln!("{}: {e:?}", "ERROR".bold().red());
-            } else {
-                eprintln!("ERROR: {e:?}");
-            };
+            print_report(&e, color_profile);
         }
         return Ok(ExitCode::FAILURE);
     }
     Ok(ExitCode::SUCCESS)
+}
+
+fn print_report(e: &miette::Report, color_profile: Color) {
+    let use_color = use_color_on_stderr(color_profile);
+    match e.severity() {
+        None | Some(Severity::Error) => {
+            if use_color {
+                eprintln!("{}: {e:?}", "ERROR".bold().red());
+            } else {
+                eprintln!("ERROR: {e:?}");
+            }
+        }
+        Some(Severity::Warning) => {
+            if use_color {
+                eprintln!("{}: {e:?}", "WARNING".bold().yellow());
+            } else {
+                eprintln!("WARNING: {e:?}");
+            }
+        }
+        _ => {
+            unreachable!()
+        }
+    }
 }
 
 fn use_color_on_stderr(color_profile: Color) -> bool {
