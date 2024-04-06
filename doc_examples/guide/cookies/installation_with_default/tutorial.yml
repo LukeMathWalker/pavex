@@ -1,0 +1,9 @@
+starter_project_folder: "project"
+commands:
+  - command: "cargo px c"
+    expected_outcome: "success"
+snippets:
+  - name: "default"
+    source_path: "src/blueprint.rs"
+    ranges: [ "0..8", "9.." ]
+    hl_lines: [ 7 ]

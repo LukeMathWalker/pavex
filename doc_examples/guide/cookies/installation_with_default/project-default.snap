@@ -1,0 +1,12 @@
+```rust title="src/blueprint.rs" hl_lines="7"
+use pavex::blueprint::Blueprint;
+use pavex::cookie::CookieKit;
+
+pub fn blueprint() -> Blueprint {
+    let mut bp = Blueprint::new();
+    CookieKit::new()
+        .with_default_processor_config()
+        .register(&mut bp);
+        // [...]
+}
+```

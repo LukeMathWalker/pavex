@@ -1,4 +1,4 @@
-# Core concepts
+# Routing
 
 All **routes** in Pavex must be registered with the application [`Blueprint`][Blueprint] via
 its [`route`][Blueprint::route] method:

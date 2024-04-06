@@ -39,14 +39,16 @@ theme:
     repo: fontawesome/brands/github
     edit: material/pencil
   features:
-    - navigation.tabs
-    - navigation.tabs.sticky
-    - navigation.footer
-    - navigation.top
-    - toc.follow
     - content.action.edit
     - content.code.copy
     - content.code.annotate
+    - navigation.footer
+    - navigation.indexes
+    - navigation.sections
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.top
+    - toc.follow
   palette:
     # Palette toggle for light mode
     - scheme: default
@@ -61,13 +63,13 @@ theme:
         icon: material/weather-sunny
         name: Switch to light mode
 nav:
-  - "Overview":
+  - "Welcome":
       - overview/index.md
       - overview/why_pavex.md
   - "Getting Started":
       - "Installation": getting_started/index.md
       - getting_started/learning_paths.md
-      - "Quickstart":
+      - "Quickstart tutorial":
           - getting_started/quickstart/index.md
           - getting_started/quickstart/blueprint.md
           - getting_started/quickstart/routing.md
@@ -77,50 +79,58 @@ nav:
           - getting_started/quickstart/going_further.md
   - "Guide":
       - guide/index.md
-      - "Project structure": guide/project_structure/index.md
-      - "Routing":
-          - guide/routing/index.md
-          - guide/routing/method_guards.md
-          - guide/routing/path_patterns.md
-          - guide/routing/request_handlers.md
-      - "Request data":
-          - guide/request_data/index.md
-          - guide/request_data/wire_data.md
-          - guide/request_data/request_target.md
-          - "Connection Info": guide/request_data/connection_info.md
-          - "Path":
-              - guide/request_data/path/index.md
-              - guide/request_data/path/path_parameters.md
-              - guide/request_data/path/raw_path_parameters.md
-          - "Query":
-              - guide/request_data/query/index.md
-              - guide/request_data/query/query_parameters.md
-          - "Body":
-              - guide/request_data/body/index.md
-              - "Deserializers":
-                  - guide/request_data/body/deserializers/index.md
-                  - guide/request_data/body/deserializers/json.md
-              - guide/request_data/body/byte_wrappers.md
-      - "Dependency injection":
-          - guide/dependency_injection/index.md
-          - "Core concepts":
-              - guide/dependency_injection/core_concepts/constructors.md
-              - guide/dependency_injection/core_concepts/application_state.md
-              - guide/dependency_injection/core_concepts/framework_primitives.md
-              - guide/dependency_injection/core_concepts/kits.md
-          - guide/dependency_injection/cookbook.md
-          - guide/dependency_injection/limitations.md
-      - "Middlewares":
-          - guide/middleware/index.md
-          - guide/middleware/pre_processing.md
-          - guide/middleware/post_processing.md
-          - guide/middleware/wrapping.md
-          - guide/middleware/scoping.md
-          - guide/middleware/execution_order.md
-      - "Errors":
-          - guide/errors/index.md
-          - guide/errors/error_handlers.md
-          - guide/errors/error_observers.md
+      - "Fundamentals":
+          - "Project structure": guide/project_structure.md
+          - "Routing":
+              - guide/routing/index.md
+              - guide/routing/method_guards.md
+              - guide/routing/path_patterns.md
+              - guide/routing/request_handlers.md
+          - "Request data":
+              - guide/request_data/index.md
+              - guide/request_data/wire_data.md
+              - guide/request_data/request_target.md
+              - "Connection Info": guide/request_data/connection_info.md
+              - "Path":
+                  - guide/request_data/path/index.md
+                  - guide/request_data/path/path_parameters.md
+                  - guide/request_data/path/raw_path_parameters.md
+              - "Query":
+                  - guide/request_data/query/index.md
+                  - guide/request_data/query/query_parameters.md
+              - "Body":
+                  - guide/request_data/body/index.md
+                  - "Deserializers":
+                      - guide/request_data/body/deserializers/index.md
+                      - guide/request_data/body/deserializers/json.md
+                  - guide/request_data/body/byte_wrappers.md
+          - "Dependency injection":
+              - guide/dependency_injection/index.md
+              - "Core concepts":
+                  - guide/dependency_injection/core_concepts/constructors.md
+                  - guide/dependency_injection/core_concepts/application_state.md
+                  - guide/dependency_injection/core_concepts/framework_primitives.md
+                  - guide/dependency_injection/core_concepts/kits.md
+              - guide/dependency_injection/cookbook.md
+              - guide/dependency_injection/limitations.md
+          - "Middlewares":
+              - guide/middleware/index.md
+              - guide/middleware/pre_processing.md
+              - guide/middleware/post_processing.md
+              - guide/middleware/wrapping.md
+              - guide/middleware/scoping.md
+              - guide/middleware/execution_order.md
+          - "Errors":
+              - guide/errors/index.md
+              - guide/errors/error_handlers.md
+              - guide/errors/error_observers.md
+      - "Digging deeper":
+          - "Cookies":
+              - guide/cookies/index.md
+              - guide/cookies/installation.md
+              - guide/cookies/request_cookies.md
+              - guide/cookies/response_cookies.md
+
   - "API Reference": api_reference/pavex/
 exclude_docs: |
   README.md

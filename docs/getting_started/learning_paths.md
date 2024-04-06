@@ -3,6 +3,11 @@
 Each person has a different background and different goals.  
 To accommodate this diversity, this section provides multiple learning paths for Pavex, each tailored to a specific audience.
 
+## I know some Rust, but I'm new to Pavex
+
+If you're already familiar with Rust, you can start learning about Pavex right away: head over to our
+[Quickstart tutorial](quickstart/index.md) to learn about the core concepts of the framework.
+
 ## I'm new to Rust
 
 If you're new to Rust, you should start by learning the language.  
@@ -23,8 +28,3 @@ Each exercise is self-contained, can be completed in a few minutes and comes wit
 In a similar vein, you can also check out the Rust track on [Exercism](https://exercism.io/tracks/rust).
 
 Once you feel comfortable enough with the language, you can start learning about Pavex: head over to the next section!
-
-## I know some Rust, but I'm new to Pavex
-
-If you're already familiar with Rust, you can start learning about Pavex right away: head over to our 
-[Quickstart tutorial](quickstart/index.md) to learn about the core concepts of the framework.  

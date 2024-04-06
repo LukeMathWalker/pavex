@@ -1,4 +1,4 @@
-# Overview
+# Dependency injection
 
 When working on a Pavex application, you don't have to worry about **wiring**.  
 All the components in your application (request handlers, middlewares, error handlers, etc.) declare,
