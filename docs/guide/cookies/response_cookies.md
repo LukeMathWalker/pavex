@@ -8,7 +8,7 @@ header to the response for each cookie inside [`ResponseCookies`][ResponseCookie
 
 Inject `&mut ResponseCookies` into the component that needs to set a cookie:
 
-// Code example
+--8<-- "doc_examples/guide/cookies/response_cookies/project-insert.snap"
 
 You can use [`ResponseCookie::new`][ResponseCookie::new] to start building a new cookie.
 It exposes multiple `set_*` methods to configure the cookie's properties: `Path`, `Domain`, `Secure`, `HttpOnly`, etc.
@@ -26,7 +26,7 @@ It exposes multiple `set_*` methods to configure the cookie's properties: `Path`
 If you want to tell the client to delete a cookie, you need to insert a [`RemovalCookie`][RemovalCookie]
 into [`ResponseCookies`][ResponseCookies]:
 
-// Code example
+--8<-- "doc_examples/guide/cookies/response_cookies/project-delete.snap"
 
 The client will receive a `Set-Cookie` header with the cookie name and an empty value,
 along with an expiration date in the past.  
