@@ -92,12 +92,18 @@ pub(crate) fn get_f_macro_invocation_span(
                             2
                         }
                         ("Constructor", "new")
+                        | ("Constructor", "request_scoped")
+                        | ("Constructor", "transient")
+                        | ("Constructor", "singleton")
                         | ("WrappingMiddleware", "new")
                         | ("PreProcessingMiddleware", "new")
                         | ("PostProcessingMiddleware", "new")
                         | ("ErrorObserver", "new")
                         | ("Fallback", "new") => {
                             // Constructor::new(constructor, lifecycle)
+                            // Constructor::request_scoped(constructor)
+                            // Constructor::transient(constructor)
+                            // Constructor::singleton(constructor)
                             // WrappingMiddleware::new(mw)
                             // PreProcessingMiddleware::new(mw)
                             // PostProcessingMiddleware::new(mw)

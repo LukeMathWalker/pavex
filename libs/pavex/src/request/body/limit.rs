@@ -1,4 +1,4 @@
-use crate::blueprint::constructor::{Constructor, Lifecycle, RegisteredConstructor};
+use crate::blueprint::constructor::{Constructor, RegisteredConstructor};
 use crate::blueprint::Blueprint;
 use crate::f;
 use crate::unit::ByteUnit;
@@ -27,10 +27,7 @@ impl BodySizeLimit {
 
     /// The [default constructor](Self::default) for [`BodySizeLimit`].
     pub fn default_constructor() -> Constructor {
-        Constructor::new(
-            f!(<super::BodySizeLimit as std::default::Default>::default),
-            Lifecycle::RequestScoped,
-        )
+        Constructor::request_scoped(f!(<super::BodySizeLimit as std::default::Default>::default))
     }
 }
 

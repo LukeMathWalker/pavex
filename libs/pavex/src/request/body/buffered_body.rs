@@ -3,7 +3,7 @@ use http::header::CONTENT_LENGTH;
 use http_body_util::{BodyExt, Limited};
 use ubyte::ByteUnit;
 
-use crate::blueprint::constructor::{Constructor, Lifecycle, RegisteredConstructor};
+use crate::blueprint::constructor::{Constructor, RegisteredConstructor};
 use crate::blueprint::Blueprint;
 use crate::{f, request::body::errors::SizeLimitExceeded, request::RequestHead};
 
@@ -86,7 +86,7 @@ impl BufferedBody {
     /// and [error handler](ExtractBufferedBodyError::into_response)
     /// for [`BufferedBody`].
     pub fn default_constructor() -> Constructor {
-        Constructor::new(f!(super::BufferedBody::extract), Lifecycle::RequestScoped)
+        Constructor::request_scoped(f!(super::BufferedBody::extract))
             .error_handler(f!(super::errors::ExtractBufferedBodyError::into_response))
     }
 

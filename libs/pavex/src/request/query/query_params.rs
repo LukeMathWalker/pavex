@@ -1,4 +1,4 @@
-use crate::blueprint::constructor::{Constructor, Lifecycle, RegisteredConstructor};
+use crate::blueprint::constructor::{Constructor, RegisteredConstructor};
 use crate::blueprint::Blueprint;
 use crate::f;
 use crate::request::RequestHead;
@@ -67,7 +67,7 @@ impl QueryParams<()> {
     /// and [error handler](ExtractQueryParamsError::into_response)
     /// for [`QueryParams`].
     pub fn default_constructor() -> Constructor {
-        Constructor::new(f!(super::QueryParams::extract), Lifecycle::RequestScoped)
+        Constructor::request_scoped(f!(super::QueryParams::extract))
             .error_handler(f!(super::errors::ExtractQueryParamsError::into_response))
     }
 }

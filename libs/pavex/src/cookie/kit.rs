@@ -1,4 +1,4 @@
-use crate::blueprint::constructor::{Constructor, Lifecycle};
+use crate::blueprint::constructor::Constructor;
 use crate::blueprint::linter::Lint;
 use crate::blueprint::middleware::PostProcessingMiddleware;
 use crate::blueprint::Blueprint;
@@ -70,20 +70,17 @@ pub struct CookieKit {
 impl CookieKit {
     /// Create a new [`CookieKit`] with all the bundled constructors and middlewares.
     pub fn new() -> Self {
-        let request_cookies =
-            Constructor::new(f!(super::extract_request_cookies), Lifecycle::RequestScoped)
-                .error_handler(f!(super::errors::ExtractRequestCookiesError::into_response))
-                .ignore(Lint::Unused);
+        let request_cookies = Constructor::request_scoped(f!(super::extract_request_cookies))
+            .error_handler(f!(super::errors::ExtractRequestCookiesError::into_response))
+            .ignore(Lint::Unused);
         let response_cookies =
-            Constructor::new(f!(super::ResponseCookies::new), Lifecycle::RequestScoped)
-                .ignore(Lint::Unused);
+            Constructor::request_scoped(f!(super::ResponseCookies::new)).ignore(Lint::Unused);
         let response_cookie_injector =
             PostProcessingMiddleware::new(f!(super::inject_response_cookies))
                 .error_handler(f!(super::errors::InjectResponseCookiesError::into_response));
-        let processor = Constructor::new(
-            f!(<super::Processor as std::convert::From<super::ProcessorConfig>>::from),
-            Lifecycle::Singleton,
-        )
+        let processor = Constructor::singleton(f!(<super::Processor as std::convert::From<
+            super::ProcessorConfig,
+        >>::from))
         .ignore(Lint::Unused);
         Self {
             request_cookies: Some(request_cookies),
@@ -99,10 +96,9 @@ impl CookieKit {
     /// [`ProcessorConfig`]: super::ProcessorConfig
     /// [`ProcessorConfig::default`]: super::ProcessorConfig::default
     pub fn with_default_processor_config(mut self) -> Self {
-        let constructor = Constructor::new(
-            f!(<super::ProcessorConfig as std::default::Default>::default),
-            Lifecycle::Singleton,
-        )
+        let constructor = Constructor::singleton(f!(
+            <super::ProcessorConfig as std::default::Default>::default
+        ))
         .ignore(Lint::Unused);
         self.processor_config = Some(constructor);
         self

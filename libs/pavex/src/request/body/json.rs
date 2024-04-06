@@ -1,7 +1,7 @@
 use http::HeaderMap;
 use serde::Deserialize;
 
-use crate::blueprint::constructor::{Constructor, Lifecycle, RegisteredConstructor};
+use crate::blueprint::constructor::{Constructor, RegisteredConstructor};
 use crate::blueprint::Blueprint;
 use crate::f;
 use crate::request::RequestHead;
@@ -87,7 +87,7 @@ impl JsonBody<()> {
     /// The [default constructor](JsonBody::extract)
     /// and [error handler](ExtractJsonBodyError::into_response) for [`JsonBody`].
     pub fn default_constructor() -> Constructor {
-        Constructor::new(f!(super::JsonBody::extract), Lifecycle::RequestScoped)
+        Constructor::request_scoped(f!(super::JsonBody::extract))
             .error_handler(f!(super::errors::ExtractJsonBodyError::into_response))
     }
 }
