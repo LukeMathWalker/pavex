@@ -10,8 +10,8 @@ use crate::f;
 ///
 /// # Guide
 ///
-/// Check out the ["Kits"](https://pavex.dev/docs/guide/dependency_injection/core_concepts/kits)
-/// section of Pavex's guide for a thorough introduction to kits and how to
+/// Check out the [cookie installation](https://pavex.dev/guide/cookies/installation/)
+/// section of Pavex's guide for a thorough introduction to cookies and how to
 /// customize them.
 ///
 /// # Example

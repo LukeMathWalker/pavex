@@ -1,5 +1,12 @@
 //! Everything you need to work with HTTP cookies.
 //!
+//! # Guide
+//!
+//! Check out the ["Cookies"](https://pavex.dev/guide/cookies/)
+//! section of Pavex's guide for a thorough introduction to cookies.
+//!
+//! # Implementation details
+//!
 //! Most types and functions are re-exports of the
 //! [`biscotti@0.3`](https://docs.rs/biscotti/0.3) crate.
 // Everything from `biscotti`, except:
