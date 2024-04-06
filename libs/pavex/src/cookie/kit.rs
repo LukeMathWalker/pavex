@@ -47,6 +47,14 @@ pub struct CookieKit {
     /// [`Processor`]: super::Processor
     /// [`Processor::from`]: super::Processor::from
     pub processor: Option<Constructor>,
+    /// The constructor for [`ProcessorConfig`].
+    ///
+    /// By default, it's `None`.
+    /// You can use [`with_default_processor_config`] to set it [`ProcessorConfig::default`].
+    ///
+    /// [`ProcessorConfig`]: super::ProcessorConfig
+    /// [`ProcessorConfig::default`]: super::ProcessorConfig::default
+    pub processor_config: Option<Constructor>,
     /// A post-processing middleware to inject response cookies into the outgoing response
     /// via the `Set-Cookie` header.
     ///
@@ -81,7 +89,19 @@ impl CookieKit {
             response_cookies: Some(response_cookies),
             response_cookie_injector: Some(response_cookie_injector),
             processor: Some(processor),
+            processor_config: None,
         }
+    }
+
+    /// Set the [`ProcessorConfig`] constructor to [`ProcessorConfig::default`].
+    pub fn with_default_processor_config(mut self) -> Self {
+        let constructor = Constructor::new(
+            f!(<super::ProcessorConfig as std::default::Default>::default),
+            Lifecycle::Singleton,
+        )
+        .ignore(Lint::Unused);
+        self.processor_config = Some(constructor);
+        self
     }
 
     /// Register all the bundled constructors and middlewares with a [`Blueprint`].
@@ -99,6 +119,9 @@ impl CookieKit {
         }
         if let Some(processor) = self.processor {
             processor.register(bp);
+        }
+        if let Some(processor_config) = self.processor_config {
+            processor_config.register(bp);
         }
         RegisteredCookieKit {}
     }
