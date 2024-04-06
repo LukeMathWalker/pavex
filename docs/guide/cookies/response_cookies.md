@@ -38,4 +38,4 @@ set on the client-side cookie you want to delete.
 [ResponseCookies]: ../../api_reference/pavex/cookie/struct.ResponseCookies.html
 [ResponseCookies::insert]: ../../api_reference/pavex/cookie/struct.ResponseCookies.html#method.insert
 [RemovalCookie]: ../../api_reference/pavex/cookie/struct.RemovalCookie.html
-[response_cookie_injector]: ../../api_reference/pavex/cookie/struct.CookieKit.html#method.response_cookie_injector
+[response_cookie_injector]: ../../api_reference/pavex/cookie/struct.CookieKit.html#structfield.response_cookie_injector
