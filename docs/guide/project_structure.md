@@ -1,4 +1,4 @@
-As you have seen in the [Quickstart](../../getting_started/quickstart/index.md) tutorial, 
+As you have seen in the [Quickstart](../getting_started/quickstart/index.md) tutorial, 
 `pavex new` is a quick way to scaffold a new project and start working on it. 
 If you execute 
 
