@@ -54,6 +54,7 @@ pub struct CookieKit {
     ///
     /// [`ProcessorConfig`]: super::ProcessorConfig
     /// [`ProcessorConfig::default`]: super::ProcessorConfig::default
+    /// [`with_default_processor_config`]: CookieKit::with_default_processor_config
     pub processor_config: Option<Constructor>,
     /// A post-processing middleware to inject response cookies into the outgoing response
     /// via the `Set-Cookie` header.
@@ -94,6 +95,9 @@ impl CookieKit {
     }
 
     /// Set the [`ProcessorConfig`] constructor to [`ProcessorConfig::default`].
+    ///
+    /// [`ProcessorConfig`]: super::ProcessorConfig
+    /// [`ProcessorConfig::default`]: super::ProcessorConfig::default
     pub fn with_default_processor_config(mut self) -> Self {
         let constructor = Constructor::new(
             f!(<super::ProcessorConfig as std::default::Default>::default),
