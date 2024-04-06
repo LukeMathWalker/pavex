@@ -1,4 +1,4 @@
-use crate::blueprint::constructor::{Constructor, Lifecycle};
+use crate::blueprint::constructor::Constructor;
 use crate::blueprint::linter::Lint;
 use crate::blueprint::middleware::PostProcessingMiddleware;
 use crate::blueprint::Blueprint;
