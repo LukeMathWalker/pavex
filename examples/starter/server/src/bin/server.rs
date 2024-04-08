@@ -45,6 +45,20 @@ async fn _main() -> anyhow::Result<()> {
     let server_builder = Server::new().listen(tcp_listener);
 
     tracing::info!("Starting to listen for incoming requests at {}", address);
-    run(server_builder, application_state).await;
+    let server_handle = run(server_builder, application_state);
+    graceful_shutdown(server_handle.clone()).await;
+    server_handle.await;
     Ok(())
+}
+
+async fn graceful_shutdown(server_handle: ServerHandle) {
+    tokio::spawn(async {
+        tokio::signal::ctrl_c()
+            .await
+            .expect("Failed to listen for the Ctrl+C signal");
+        let timeout = Duration::from_secs(60);
+        server_handle
+            .shutdown(ShutdownMode::Graceful { timeout })
+            .await;
+    });
 }
