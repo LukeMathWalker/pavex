@@ -1,6 +1,6 @@
 [package]
 name = "pavex_macros"
-version = "0.1.24"
+version = "0.1.25"
 description = "Procedural macros for the Pavex framwork."
 keywords = ["pavex"]
 edition.workspace = true
