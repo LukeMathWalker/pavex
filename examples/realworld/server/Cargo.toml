@@ -17,6 +17,7 @@ app = { path = "../app" }
 # Configuration
 figment = { version = "0.10", features = ["env", "yaml"] }
 serde = { version = "1", features = ["derive"] }
+humantime-serde = "1.1"
 
 # Telemetry
 tracing = "0.1"

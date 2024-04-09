@@ -14,6 +14,7 @@ app = { path = "../app" }
 dotenvy = "0.15"
 figment = { version = "0.10", features = ["env", "yaml"] }
 serde = { version = "1", features = ["derive"] }
+humantime-serde = "1.1"
 
 # Telemetry
 pavex_tracing = { version = "0.1.22" }

@@ -1,8 +1,10 @@
 use anyhow::Context;
-use pavex::server::Server;
+use pavex::server::{Server, ServerHandle};
 use pavex_tracing::fields::{error_details, error_message, ERROR_DETAILS, ERROR_MESSAGE};
-use server::configuration::Config;
-use server::telemetry::{get_subscriber, init_telemetry};
+use server::{
+    configuration::{Config, ServerConfig},
+    telemetry::{get_subscriber, init_telemetry},
+};
 use server_sdk::{build_application_state, run};
 
 #[tokio::main]
@@ -43,17 +45,17 @@ async fn _main() -> anyhow::Result<()> {
 
     tracing::info!("Starting to listen for incoming requests at {}", address);
     let server_handle = run(server_builder, application_state);
-    graceful_shutdown(server_handle.clone()).await;
+    graceful_shutdown(server_handle.clone(), config.server).await;
     server_handle.await;
     Ok(())
 }
 
-async fn graceful_shutdown(server_handle: ServerHandle) {
-    tokio::spawn(async {
+async fn graceful_shutdown(server_handle: ServerHandle, server_config: ServerConfig) {
+    let timeout = server_config.graceful_shutdown_timeout;
+    tokio::spawn(async move {
         tokio::signal::ctrl_c()
             .await
             .expect("Failed to listen for the Ctrl+C signal");
-        let timeout = Duration::from_secs(60);
         server_handle
             .shutdown(ShutdownMode::Graceful { timeout })
             .await;
