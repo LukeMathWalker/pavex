@@ -1,5 +1,5 @@
 use anyhow::Context;
-use pavex::server::{Server, ServerHandle};
+use pavex::server::{Server, ServerHandle, ShutdownMode};
 use pavex_tracing::fields::{error_details, error_message, ERROR_DETAILS, ERROR_MESSAGE};
 use server::{
     configuration::{Config, ServerConfig},
