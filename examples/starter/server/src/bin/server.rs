@@ -2,10 +2,11 @@ use anyhow::Context;
 use pavex::server::{Server, ServerHandle, ShutdownMode};
 use pavex_tracing::fields::{error_details, error_message, ERROR_DETAILS, ERROR_MESSAGE};
 use server::{
-    configuration::{Config, ServerConfig},
+    configuration::Config,
     telemetry::{get_subscriber, init_telemetry},
 };
 use server_sdk::{build_application_state, run};
+use std::time::Duration;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -46,13 +47,16 @@ async fn _main() -> anyhow::Result<()> {
 
     tracing::info!("Starting to listen for incoming requests at {}", address);
     let server_handle = run(server_builder, application_state);
-    graceful_shutdown(server_handle.clone(), config.server).await;
+    graceful_shutdown(
+        server_handle.clone(),
+        config.server.graceful_shutdown_timeout,
+    )
+    .await;
     server_handle.await;
     Ok(())
 }
 
-async fn graceful_shutdown(server_handle: ServerHandle, server_config: ServerConfig) {
-    let timeout = server_config.graceful_shutdown_timeout;
+async fn graceful_shutdown(server_handle: ServerHandle, timeout: Duration) {
     tokio::spawn(async move {
         tokio::signal::ctrl_c()
             .await

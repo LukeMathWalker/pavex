@@ -92,18 +92,18 @@ dependencies = [
 
 [[package]]
 name = "anyhow"
-version = "1.0.81"
+version = "1.0.82"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0952808a6c2afd1aa8947271f3a60f1a6763c7b912d210184c5149b5cf147247"
+checksum = "f538837af36e6f6a9be0faa67f9a314f8119e4e4b5867c6ab40ed60360142519"
 
 [[package]]
 name = "app"
 version = "0.1.0"
 dependencies = [
  "cargo_px_env",
- "pavex 0.1.24 (registry+https://github.com/rust-lang/crates.io-index)",
+ "pavex",
  "pavex_cli_client",
- "pavex_tracing 0.1.24 (registry+https://github.com/rust-lang/crates.io-index)",
+ "pavex_tracing",
  "serde",
  "serde-aux",
  "tracing",
@@ -159,9 +159,9 @@ checksum = "9475866fec1451be56a3c2400fd081ff546538961565ccb5b7142cbd22bc7a51"
 
 [[package]]
 name = "biscotti"
-version = "0.3.3"
+version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "67407395981dac7f26e8a043947941348cf77bfeb8e040fed1dd04adf3b7f507"
+checksum = "d0b3298a722061d404d4f0efb3d9dc2d16601649e6032165696e9c7b25f11d41"
 dependencies = [
  "aes-gcm-siv",
  "anyhow",
@@ -202,9 +202,9 @@ dependencies = [
 
 [[package]]
 name = "bumpalo"
-version = "3.15.4"
+version = "3.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7ff69b9dd49fd426c69a0db9fc04dd934cdb6645ff000864d98f7e2af8830eaa"
+checksum = "79296716171880943b8470b5f8d03aa55eb2e645a4874bdbb28adb49162e012c"
 
 [[package]]
 name = "bytemuck"
@@ -226,9 +226,9 @@ checksum = "8b459425e7bfec0783df9538ecc749961f076cc793a09e91f1d082ee0012c925"
 
 [[package]]
 name = "cc"
-version = "1.0.90"
+version = "1.0.92"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8cd6604a82acf3039f1144f54b8eb34e91ffba622051189e71b781822d5ee1f5"
+checksum = "2678b2e3449475e95b0aa6f9b506a28e61b3dc8996592b983695e8ebb58a8b41"
 
 [[package]]
 name = "cfg-if"
@@ -332,9 +332,9 @@ checksum = "1aaf95b3e5c8f23aa320147307562d361db0ae0d51242340f558153b4eb2439b"
 
 [[package]]
 name = "encoding_rs"
-version = "0.8.33"
+version = "0.8.34"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7268b386296a025e474d5140678f75d6de9493ae55a5d709eeb9dd08149945e1"
+checksum = "b45de904aa0b010bce2ab45264d0631681847fa7b6f2eaa7dab7619943bc4f59"
 dependencies = [
  "cfg-if",
 ]
@@ -363,9 +363,9 @@ checksum = "658bd65b1cf4c852a3cc96f18a8ce7b5640f6b703f905c7d74532294c2a63984"
 
 [[package]]
 name = "figment"
-version = "0.10.15"
+version = "0.10.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7270677e7067213e04f323b55084586195f18308cd7546cfac9f873344ccceb6"
+checksum = "fdefe49ed1057d124dc81a0681c30dd07de56ad96e32adc7b64e8f28eaab31c4"
 dependencies = [
  "atomic 0.6.0",
  "pear",
@@ -488,9 +488,9 @@ dependencies = [
 
 [[package]]
 name = "getrandom"
-version = "0.2.12"
+version = "0.2.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "190092ea657667030ac6a35e305e62fc4dd69fd98ac98631e5d3a2b1575a12b5"
+checksum = "94b22e06ecb0110981051723910cbf0b5f5e09a2062dd7663334ee79a9d1286c"
 dependencies = [
  "cfg-if",
  "libc",
@@ -505,9 +505,9 @@ checksum = "4271d37baee1b8c7e4b708028c57d816cf9d2434acb33a549475f78c181f6253"
 
 [[package]]
 name = "h2"
-version = "0.4.3"
+version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "51ee2dd2e4f378392eeff5d51618cd9a63166a2513846bbc55f21cfacd9199d4"
+checksum = "816ec7294445779408f36fe57bc5b7fc1cf59664059096c65f905c1c61f58069"
 dependencies = [
  "bytes",
  "fnv",
@@ -981,7 +981,7 @@ checksum = "de3145af08024dea9fa9914f381a17b8fc6034dfb00f3a84013f7ff43f29ed4c"
 
 [[package]]
 name = "pavex"
-version = "0.1.24"
+version = "0.1.25"
 dependencies = [
  "anyhow",
  "biscotti",
@@ -996,53 +996,12 @@ dependencies = [
  "indexmap",
  "mime",
  "paste",
- "pavex_bp_schema 0.1.24",
- "pavex_macros 0.1.24",
+ "pavex_bp_schema",
+ "pavex_macros",
  "pavex_matchit",
- "pavex_reflection 0.1.24",
+ "pavex_reflection",
  "percent-encoding",
- "persist_if_changed 0.1.24",
- "pin-project-lite",
- "ron",
- "serde",
- "serde_html_form",
- "serde_json",
- "serde_path_to_error",
- "smallvec",
- "socket2",
- "thiserror",
- "time",
- "tokio",
- "tracing",
- "ubyte",
- "uuid",
-]
-
-[[package]]
-name = "pavex"
-version = "0.1.24"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "723a00e6e00705d7aae86b7e97f1a0a629728ad2c5cb6e5271a19e12b2c3b403"
-dependencies = [
- "anyhow",
- "biscotti",
- "bytes",
- "fs-err",
- "futures-util",
- "http",
- "http-body",
- "http-body-util",
- "hyper",
- "hyper-util",
- "indexmap",
- "mime",
- "paste",
- "pavex_bp_schema 0.1.24 (registry+https://github.com/rust-lang/crates.io-index)",
- "pavex_macros 0.1.24 (registry+https://github.com/rust-lang/crates.io-index)",
- "pavex_matchit",
- "pavex_reflection 0.1.24 (registry+https://github.com/rust-lang/crates.io-index)",
- "percent-encoding",
- "persist_if_changed 0.1.24 (registry+https://github.com/rust-lang/crates.io-index)",
+ "persist_if_changed",
  "pin-project-lite",
  "ron",
  "serde",
@@ -1061,47 +1020,24 @@ dependencies = [
 
 [[package]]
 name = "pavex_bp_schema"
-version = "0.1.24"
+version = "0.1.25"
 dependencies = [
- "pavex_reflection 0.1.24",
- "serde",
-]
-
-[[package]]
-name = "pavex_bp_schema"
-version = "0.1.24"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5d26b73af158bdf47dcacdb84f741f7252c215513417d615972374ad90896fb3"
-dependencies = [
- "pavex_reflection 0.1.24 (registry+https://github.com/rust-lang/crates.io-index)",
+ "pavex_reflection",
  "serde",
 ]
 
 [[package]]
 name = "pavex_cli_client"
-version = "0.1.24"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9718acf1294a35b73bea1443d62cddbdcc6f16763c250fd74dddfdf085057972"
+version = "0.1.25"
 dependencies = [
  "anyhow",
- "pavex 0.1.24 (registry+https://github.com/rust-lang/crates.io-index)",
+ "pavex",
  "thiserror",
 ]
 
 [[package]]
 name = "pavex_macros"
-version = "0.1.24"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
-name = "pavex_macros"
-version = "0.1.24"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "717c7112d44ad4aa29585fdf05913ad4d933847602da16f324efcf454f7fd688"
+version = "0.1.25"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1116,35 +1052,16 @@ checksum = "77b9753b03381fd8856966146c4d626d9a8507901c1bcdfbc41df03deea551fc"
 
 [[package]]
 name = "pavex_reflection"
-version = "0.1.24"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pavex_reflection"
-version = "0.1.24"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cffb629ac8ca7853727e9c599c48ea4051eeaffdcf026c2ffb41f9954f532d21"
+version = "0.1.25"
 dependencies = [
  "serde",
 ]
 
 [[package]]
 name = "pavex_tracing"
-version = "0.1.24"
+version = "0.1.25"
 dependencies = [
- "pavex 0.1.24",
- "tracing",
-]
-
-[[package]]
-name = "pavex_tracing"
-version = "0.1.24"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9c71a42abd8de0868f705c0ce4c64f8ca0b9933b8eaa75aa36859639058d2cb6"
-dependencies = [
- "pavex 0.1.24 (registry+https://github.com/rust-lang/crates.io-index)",
+ "pavex",
  "tracing",
 ]
 
@@ -1179,19 +1096,7 @@ checksum = "e3148f5046208a5d56bcfc03053e3ca6334e51da8dfb19b6cdc8b306fae3283e"
 
 [[package]]
 name = "persist_if_changed"
-version = "0.1.24"
-dependencies = [
- "anyhow",
- "fs-err",
- "sha2",
- "tracing",
-]
-
-[[package]]
-name = "persist_if_changed"
-version = "0.1.24"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6f5614775e56a14f55a43adb4eb35d31df5ab8949fb28ad67390ab2a4f8eb522"
+version = "0.1.25"
 dependencies = [
  "anyhow",
  "fs-err",
@@ -1285,9 +1190,9 @@ dependencies = [
 
 [[package]]
 name = "quote"
-version = "1.0.35"
+version = "1.0.36"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "291ec9ab5efd934aaf503a6466c5d5251535d108ee747472c3977cc5acc868ef"
+checksum = "0fa76aaf39101c457836aec0ce2316dbdc3ab723cdda1c6bd4e6ad4208acaca7"
 dependencies = [
  "proc-macro2",
 ]
@@ -1377,11 +1282,11 @@ checksum = "adad44e29e4c806119491a7f06f03de4d1af22c3a680dd47f1e6e179439d1f56"
 
 [[package]]
 name = "reqwest"
-version = "0.12.2"
+version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2d66674f2b6fb864665eea7a3c1ac4e3dfacd2fda83cf6f935a612e01b0e3338"
+checksum = "3e6cc1e89e689536eb5aeede61520e874df5a4707df811cd5da4aa5fbb2aae19"
 dependencies = [
- "base64 0.21.7",
+ "base64 0.22.0",
  "bytes",
  "encoding_rs",
  "futures-core",
@@ -1450,12 +1355,19 @@ dependencies = [
 
 [[package]]
 name = "rustls-pemfile"
-version = "1.0.4"
+version = "2.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1c74cae0a4cf6ccbbf5f359f08efdf8ee7e1dc532573bf0db71968cb56b1448c"
+checksum = "29993a25686778eb88d4189742cd713c9bce943bc54251a33509dc63cbacf73d"
 dependencies = [
- "base64 0.21.7",
+ "base64 0.22.0",
+ "rustls-pki-types",
 ]
+
+[[package]]
+name = "rustls-pki-types"
+version = "1.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ecd36cc4259e3e4514335c4a138c6b43171a8d61d8f5c9348f9fc7529416f247"
 
 [[package]]
 name = "ryu"
@@ -1600,8 +1512,8 @@ dependencies = [
  "dotenvy",
  "figment",
  "humantime-serde",
- "pavex 0.1.24 (registry+https://github.com/rust-lang/crates.io-index)",
- "pavex_tracing 0.1.24 (registry+https://github.com/rust-lang/crates.io-index)",
+ "pavex",
+ "pavex_tracing",
  "reqwest",
  "serde",
  "server_sdk",
@@ -1619,9 +1531,9 @@ dependencies = [
  "app",
  "http",
  "hyper",
- "pavex 0.1.24",
+ "pavex",
  "pavex_matchit",
- "pavex_tracing 0.1.24",
+ "pavex_tracing",
  "thiserror",
 ]
 
@@ -1687,9 +1599,9 @@ checksum = "81cdd64d312baedb58e21336b31bc043b77e01cc99033ce76ef539f78e965ebc"
 
 [[package]]
 name = "syn"
-version = "2.0.57"
+version = "2.0.58"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "11a6ae1e52eb25aab8f3fb9fca13be982a373b8f1157ca14b897a825ba4a2d35"
+checksum = "44cfb93f38070beee36b3fef7d4f5a16f27751d94b187b666a5cc5e9b0d30687"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1767,9 +1679,9 @@ dependencies = [
 
 [[package]]
 name = "time"
-version = "0.3.34"
+version = "0.3.35"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c8248b6521bb14bc45b4067159b9b6ad792e2d6d754d6c41fb50e29fefe38749"
+checksum = "ef89ece63debf11bc32d1ed8d078ac870cbeb44da02afb02a9ff135ae7ca0582"
 dependencies = [
  "deranged",
  "itoa",
@@ -1788,9 +1700,9 @@ checksum = "ef927ca75afb808a4d64dd374f00a2adf8d0fcff8e7b184af886c3c87ec4a3f3"
 
 [[package]]
 name = "time-macros"
-version = "0.2.17"
+version = "0.2.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7ba3a3ef41e6672a2f0f001392bb5dcd3ff0a9992d618ca761a11c3121547774"
+checksum = "3f252a68540fde3a3877aeea552b832b40ab9a69e318efd078774a01ddee1ccf"
 dependencies = [
  "num-conv",
  "time-core",
@@ -2356,9 +2268,9 @@ checksum = "32b752e52a2da0ddfbdbcc6fceadfeede4c939ed16d13e648833a61dfb611ed8"
 
 [[package]]
 name = "winreg"
-version = "0.50.0"
+version = "0.52.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "524e57b2c537c0f9b1e69f1965311ec12182b4122e45035b1508cd24d2adadb1"
+checksum = "a277a57398d4bfa075df44f501a17cfdf8542d224f0d36095a2adc7aee4ef0a5"
 dependencies = [
  "cfg-if",
  "windows-sys 0.48.0",

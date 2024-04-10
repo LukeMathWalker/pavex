@@ -9,9 +9,9 @@ name = "bp"
 
 [dependencies]
 cargo_px_env = "0.1"
-pavex = { version = "0.1.22" }
-pavex_tracing = { version = "0.1.22" }
-pavex_cli_client = { version = "0.1.22" }
+pavex = { version = "0.1.25" }
+pavex_tracing = { version = "0.1.25" }
+pavex_cli_client = { version = "0.1.25" }
 tracing = "0.1"
 
 # Configuration
