@@ -15,6 +15,7 @@ pavex = "0.1"
 app = { path = "../app" }
 
 # Configuration
+dotenvy = "0.15"
 figment = { version = "0.10", features = ["env", "yaml"] }
 serde = { version = "1", features = ["derive"] }
 humantime-serde = "1.1"
