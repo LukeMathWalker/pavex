@@ -93,6 +93,13 @@ pub struct ServerConfig {
     /// E.g. `0.0.0.0` for listening to incoming requests from
     /// all sources.
     pub ip: std::net::IpAddr,
+    /// The timeout for graceful shutdown of the server.
+    ///
+    /// E.g. `1 minute` for a 1 minute timeout.
+    ///
+    /// Set the `APP_SERVER__GRACEFUL_SHUTDOWN_TIMEOUT` environment variable to override its value.
+    #[serde(with = "humantime_serde")]
+    pub graceful_shutdown_timeout: std::time::Duration,
 }
 
 impl ServerConfig {

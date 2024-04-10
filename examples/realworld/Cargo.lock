@@ -970,6 +970,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "df3b46402a9d5adb4c86a0cf463f42e19994e3ee891101b1841f30a545cb49a9"
 
 [[package]]
+name = "humantime"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9a3a5bfb195931eeb336b2a7b4d761daec841b97f947d34394601737a7bba5e4"
+
+[[package]]
+name = "humantime-serde"
+version = "1.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "57a3db5ea5923d99402c94e9feb261dc5ee9b4efa158b0315f788cf549cc200c"
+dependencies = [
+ "humantime",
+ "serde",
+]
+
+[[package]]
 name = "hyper"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1513,7 +1529,7 @@ checksum = "de3145af08024dea9fa9914f381a17b8fc6034dfb00f3a84013f7ff43f29ed4c"
 
 [[package]]
 name = "pavex"
-version = "0.1.23"
+version = "0.1.25"
 dependencies = [
  "anyhow",
  "biscotti",
@@ -1552,7 +1568,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_bp_schema"
-version = "0.1.23"
+version = "0.1.25"
 dependencies = [
  "pavex_reflection",
  "serde",
@@ -1560,7 +1576,9 @@ dependencies = [
 
 [[package]]
 name = "pavex_cli_client"
-version = "0.1.23"
+version = "0.1.24"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9718acf1294a35b73bea1443d62cddbdcc6f16763c250fd74dddfdf085057972"
 dependencies = [
  "anyhow",
  "pavex",
@@ -1569,7 +1587,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_macros"
-version = "0.1.23"
+version = "0.1.25"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1584,14 +1602,14 @@ checksum = "77b9753b03381fd8856966146c4d626d9a8507901c1bcdfbc41df03deea551fc"
 
 [[package]]
 name = "pavex_reflection"
-version = "0.1.23"
+version = "0.1.25"
 dependencies = [
  "serde",
 ]
 
 [[package]]
 name = "pavex_tracing"
-version = "0.1.23"
+version = "0.1.25"
 dependencies = [
  "pavex",
  "tracing",
@@ -1655,7 +1673,7 @@ checksum = "e3148f5046208a5d56bcfc03053e3ca6334e51da8dfb19b6cdc8b306fae3283e"
 
 [[package]]
 name = "persist_if_changed"
-version = "0.1.23"
+version = "0.1.25"
 dependencies = [
  "anyhow",
  "fs-err",
@@ -2249,7 +2267,9 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "app",
+ "dotenvy",
  "figment",
+ "humantime-serde",
  "jwt-simple",
  "pavex",
  "pavex_tracing",
@@ -3429,3 +3449,7 @@ name = "zeroize"
 version = "1.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "525b4ec142c6b68a2d10f01f7bbf6755599ca3f81ea53b8431b7dd348f5fdb2d"
+
+[[patch.unused]]
+name = "pavex_cli_client"
+version = "0.1.25"

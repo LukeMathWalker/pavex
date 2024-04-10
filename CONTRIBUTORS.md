@@ -11,3 +11,4 @@ We contributors to Pavex:
 * Bozhidar Atanasov (@Bobby-Wan)
 * Karl Lindfors (@darkkeh)
 * Harry Barber (@hlbarber)
+* Jan Ehrhardt (@jehrhardt)

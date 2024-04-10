@@ -1,9 +1,12 @@
 use anyhow::Context;
-use pavex::server::Server;
+use pavex::server::{Server, ServerHandle, ShutdownMode};
 use pavex_tracing::fields::{error_details, error_message, ERROR_DETAILS, ERROR_MESSAGE};
-use server::configuration::Config;
-use server::telemetry::{get_subscriber, init_telemetry};
+use server::{
+    configuration::Config,
+    telemetry::{get_subscriber, init_telemetry},
+};
 use server_sdk::{build_application_state, run};
+use std::time::Duration;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -26,6 +29,9 @@ async fn main() -> anyhow::Result<()> {
 }
 
 async fn _main() -> anyhow::Result<()> {
+    // Load environment variables from a .env file, if it exists.
+    let _ = dotenvy::dotenv();
+
     let config = Config::load(None)?;
     let application_state = build_application_state(&config.app)
         .await
@@ -42,6 +48,23 @@ async fn _main() -> anyhow::Result<()> {
     let server_builder = Server::new().listen(tcp_listener);
 
     tracing::info!("Starting to listen for incoming requests at {}", address);
-    run(server_builder, application_state).await;
+    let server_handle = run(server_builder, application_state);
+    graceful_shutdown(
+        server_handle.clone(),
+        config.server.graceful_shutdown_timeout,
+    )
+    .await;
+    server_handle.await;
     Ok(())
+}
+
+async fn graceful_shutdown(server_handle: ServerHandle, timeout: Duration) {
+    tokio::spawn(async move {
+        tokio::signal::ctrl_c()
+            .await
+            .expect("Failed to listen for the Ctrl+C signal");
+        server_handle
+            .shutdown(ShutdownMode::Graceful { timeout })
+            .await;
+    });
 }
