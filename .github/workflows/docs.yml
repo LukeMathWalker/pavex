@@ -31,6 +31,28 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+      - uses: actions/github-script@v6
+        id: create-check-run
+        if: ${{ always() }}
+        env:
+          number: ${{ github.event.client_payload.pull_request.number }}
+          job: ${{ github.job }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { data: pull } = await github.rest.pulls.get({
+              ...context.repo,
+              pull_number: process.env.number
+            });
+            const ref = pull.head.sha;
+            const { data: result } = await github.rest.checks.create({
+              ...context.repo,
+              head_sha: ref,
+              name: process.env.job,
+              status: 'in_progress',
+            });
+            
+            return result;
       - name: Set BINARY_EXTENSION
         if: ${{ matrix.os != 'windows-2022' }}
         run: |
