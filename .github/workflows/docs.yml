@@ -31,7 +31,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - uses: actions/github-script@v6
+      - uses: actions/github-script@v7
         id: create-check-run
         if: ${{ always() }}
         env:
@@ -82,7 +82,7 @@ jobs:
         with:
           name: pavexc_cli-${{ matrix.target }}
           path: libs/target/release/pavexc${{ env.BINARY_EXTENSION }}
-      - uses: actions/github-script@v6
+      - uses: actions/github-script@v7
         id: update-check-run
         if: ${{ always() }}
         env:
