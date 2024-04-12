@@ -2,10 +2,12 @@ name: Build and store docs artifact
 
 on:
   workflow_dispatch:
+  # See https://github.com/imjohnbo/ok-to-test/tree/master for an overview
+  # of how this works.
+  # I officially hate GitHub for forbidding OpenID Connect tokens in forks.
+  repository_dispatch:
+    types: [ ok-to-test-command ]
   push:
-    branches:
-      - main
-  pull_request:
     branches:
       - main
 
@@ -83,6 +85,18 @@ jobs:
   tests:
     name: "Run tests ${{ matrix.target }} (${{ matrix.os }})"
     runs-on: ${{ matrix.os }}
+    permissions:
+      pull-requests: write
+      checks: write
+    # Either run tests because it's a PR from the same repo or a push to `main`
+    if: |
+      (github.event_name == 'repository_dispatch' &&
+      github.event.client_payload.slash_command.args.named.sha != '' &&
+      contains(
+        github.event.client_payload.pull_request.head.sha,
+        github.event.client_payload.slash_command.args.named.sha
+      )) ||
+      (github.event_name == 'push' && github.event.repository.full_name == github.repository)
     strategy:
       fail-fast: false
       matrix:
@@ -100,8 +114,21 @@ jobs:
     needs:
       - build_clis
     steps:
-      - name: Checkout repository
+      - name: Checkout repository from source repo
+        if: |
+          github.event_name == 'push' && github.event.repository.full_name == github.repository
         uses: actions/checkout@v4
+      - name: Checkout repository from fork
+        if: |
+          github.event_name == 'repository_dispatch' &&
+          github.event.client_payload.slash_command.args.named.sha != '' &&
+          contains(
+            github.event.client_payload.pull_request.head.sha,
+            github.event.client_payload.slash_command.args.named.sha
+          )
+        uses: actions/checkout@v4
+        with:
+          ref: 'refs/pull/${{ github.event.client_payload.pull_request.number }}/merge'
       - name: Set BINARY_EXTENSION
         if: ${{ matrix.os != 'windows-2022' }}
         run: |
@@ -182,9 +209,34 @@ jobs:
     needs:
       - build_clis
       - build_tutorial_generator
+    permissions:
+      pull-requests: write
+      checks: write
+    # Either run tests because it's a PR from the same repo, or a push to `main`
+    if: |
+      (github.event_name == 'repository_dispatch' &&
+      github.event.client_payload.slash_command.args.named.sha != '' &&
+      contains(
+        github.event.client_payload.pull_request.head.sha,
+        github.event.client_payload.slash_command.args.named.sha
+      )) ||
+      (github.event_name == 'push' && github.event.repository.full_name == github.repository)
     steps:
-      - name: Checkout repository
+      - name: Checkout repository from source repo
+        if: |
+          (github.event_name == 'push' && github.event.repository.full_name == github.repository)
         uses: actions/checkout@v4
+      - name: Checkout repository from fork
+        if: |
+          github.event_name == 'repository_dispatch' &&
+          github.event.client_payload.slash_command.args.named.sha != '' &&
+          contains(
+            github.event.client_payload.pull_request.head.sha,
+            github.event.client_payload.slash_command.args.named.sha
+          )
+        uses: actions/checkout@v4
+        with:
+          ref: 'refs/pull/${{ github.event.client_payload.pull_request.number }}/merge'
       - name: Set git identity
         run: |
           git config --global user.name "GitHub Actions"
