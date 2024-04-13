@@ -13,6 +13,9 @@ inputs:
   run_id:
     description: 'Id of the run'
     required: true
+  github_token:
+    description: 'GitHub token'
+    required: true
 runs:
   using: "composite"
   steps:
@@ -23,7 +26,7 @@ runs:
         workflow: ${{ inputs.workflow }}
         details_url: "Details [here](https://github.com/LukeMathWalker/pavex/actions/runs/${{ inputs.run_id }})"
       with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
+        github-token: ${{ inputs.GITHUB_TOKEN }}
         script: |
           const { data: pull } = await github.rest.pulls.get({
             ...context.repo,

@@ -10,6 +10,9 @@ inputs:
   conclusion:
     description: 'Final status'
     required: true
+  github_token:
+    description: 'GitHub token'
+    required: true
 runs:
   using: "composite"
   steps:
@@ -21,7 +24,7 @@ runs:
         job: ${{ inputs.job }}
         conclusion: ${{ inputs.conclusion }}
       with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
+        github-token: ${{ inputs.github_token }}
         script: |
           const { data: pull } = await github.rest.pulls.get({
             ...context.repo,
