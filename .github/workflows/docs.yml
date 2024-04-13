@@ -36,7 +36,9 @@ jobs:
         if: ${{ always() }}
         env:
           number: ${{ github.event.client_payload.pull_request.number }}
-          job: ${{ github.job }}
+          job: ${{ github.job.name }}
+          workflow: ${{ github.workflow }}
+          details_url: https://github.com/LukeMathWalker/pavex/actions/runs/${{ github.workflow.run_id }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -50,6 +52,11 @@ jobs:
               head_sha: ref,
               name: process.env.job,
               status: 'in_progress',
+              details_url: process.env.details_url,
+              output: {
+                title: process.env.workflow,
+                summary: 'Testing on all platform'
+              }
             });
             
             return result;
@@ -87,7 +94,7 @@ jobs:
         if: ${{ always() }}
         env:
           number: ${{ github.event.client_payload.pull_request.number }}
-          job: ${{ github.job }}
+          job: ${{ github.job.name }}
           # Conveniently, job.status maps to https://developer.github.com/v3/checks/runs/#update-a-check-run
           conclusion: ${{ job.status }}
         with:
