@@ -32,6 +32,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
       - uses: ./.github/actions/create-check
+        if: ${{ github.event_name != 'push' }}
         with:
           pr_number: ${{ github.event.client_payload.pull_request.number }}
           job: "Build CLIs ${{ matrix.target }} (${{ matrix.os }})"
@@ -68,7 +69,7 @@ jobs:
           name: pavexc_cli-${{ matrix.target }}
           path: libs/target/release/pavexc${{ env.BINARY_EXTENSION }}
       - uses: ./.github/actions/finalize-check
-        if: ${{ always() }}
+        if: ${{ always() && github.event_name != 'push' }}
         with:
           pr_number: ${{ github.event.client_payload.pull_request.number }}
           job: "Build CLIs ${{ matrix.target }} (${{ matrix.os }})"
@@ -81,6 +82,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
       - uses: ./.github/actions/create-check
+        if: ${{ github.event_name != 'push' }}
         with:
           pr_number: ${{ github.event.client_payload.pull_request.number }}
           job: "Build tutorial generator"
@@ -103,7 +105,7 @@ jobs:
           name: tutorial_generator
           path: doc_examples/tutorial_generator/target/debug/tutorial_generator
       - uses: ./.github/actions/finalize-check
-        if: ${{ always() }}
+        if: ${{ always() && github.event_name != 'push' }}
         with:
           pr_number: ${{ github.event.client_payload.pull_request.number }}
           job: "Build tutorial generator"
@@ -158,6 +160,7 @@ jobs:
         with:
           ref: 'refs/pull/${{ github.event.client_payload.pull_request.number }}/merge'
       - uses: ./.github/actions/create-check
+        if: ${{ github.event_name != 'push' }}
         with:
           pr_number: ${{ github.event.client_payload.pull_request.number }}
           job: "Run tests ${{ matrix.target }} (${{ matrix.os }})"
@@ -237,7 +240,7 @@ jobs:
         run: |
           cargo test --package pavex_cli
       - uses: ./.github/actions/finalize-check
-        if: ${{ always() }}
+        if: ${{ always() && github.event_name != 'push' }}
         with:
           pr_number: ${{ github.event.client_payload.pull_request.number }}
           job: "Run tests ${{ matrix.target }} (${{ matrix.os }})"
@@ -280,6 +283,7 @@ jobs:
         with:
           ref: 'refs/pull/${{ github.event.client_payload.pull_request.number }}/merge'
       - uses: ./.github/actions/create-check
+        if: ${{ github.event_name != 'push' }}
         with:
           pr_number: ${{ github.event.client_payload.pull_request.number }}
           job: "Check if up to date"
@@ -337,7 +341,7 @@ jobs:
           cd doc_examples
           RUST_BACKTRACE=0 tutorial_generator --verify
       - uses: ./.github/actions/finalize-check
-        if: ${{ always() }}
+        if: ${{ always() && github.event_name != 'push' }}
         with:
           pr_number: ${{ github.event.client_payload.pull_request.number }}
           job: "Check if up to date"
@@ -350,6 +354,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
       - uses: ./.github/actions/create-check
+        if: ${{ github.event_name != 'push' }}
         with:
           pr_number: ${{ github.event.client_payload.pull_request.number }}
           job: "Build docs"
@@ -412,7 +417,7 @@ jobs:
             --no-progress 
             site
       - uses: ./.github/actions/finalize-check
-        if: ${{ always() }}
+        if: ${{ always() && github.event_name != 'push' }}
         with:
           pr_number: ${{ github.event.client_payload.pull_request.number }}
           job: "Build docs"
