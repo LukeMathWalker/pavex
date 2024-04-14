@@ -114,9 +114,9 @@ impl<T> UrlEncodedBody<T> {
         request_head: &'head RequestHead,
         buffered_body: &'body BufferedBody,
     ) -> Result<Self, ExtractUrlEncodedBodyError>
-    where
-        'head: 'body,
-        T: Deserialize<'body>,
+        where
+            'head: 'body,
+            T: Deserialize<'body>,
     {
         check_urlencoded_content_type(&request_head.headers)?;
 
@@ -160,7 +160,7 @@ fn check_urlencoded_content_type(headers: &HeaderMap) -> Result<(), ExtractUrlEn
         return Err(UrlEncodedContentTypeMismatch {
             actual: content_type.to_string(),
         }
-        .into());
+            .into());
     };
 
     let is_urlencoded_content_type =
@@ -169,7 +169,7 @@ fn check_urlencoded_content_type(headers: &HeaderMap) -> Result<(), ExtractUrlEn
         return Err(UrlEncodedContentTypeMismatch {
             actual: content_type.to_string(),
         }
-        .into());
+            .into());
     };
     Ok(())
 }
@@ -185,7 +185,7 @@ mod tests {
     fn missing_content_type() {
         let headers = http::HeaderMap::new();
         let err = super::check_urlencoded_content_type(&headers).unwrap_err();
-        insta::assert_display_snapshot!(err, @"The `Content-Type` header is missing. This endpoint expects requests with a `Content-Type` header set to `application/x-www-form-urlencoded`");
+        insta::assert_snapshot!(err, @"The `Content-Type` header is missing. This endpoint expects requests with a `Content-Type` header set to `application/x-www-form-urlencoded`");
         insta::assert_debug_snapshot!(err, @r###"
         MissingContentType(
             MissingUrlEncodedContentType,
@@ -199,7 +199,7 @@ mod tests {
         headers.insert(http::header::CONTENT_TYPE, "hello world".parse().unwrap());
 
         let err = super::check_urlencoded_content_type(&headers).unwrap_err();
-        insta::assert_display_snapshot!(err, @"The `Content-Type` header was set to `hello world`. This endpoint expects requests with a `Content-Type` header set to `application/x-www-form-urlencoded`");
+        insta::assert_snapshot!(err, @"The `Content-Type` header was set to `hello world`. This endpoint expects requests with a `Content-Type` header set to `application/x-www-form-urlencoded`");
         insta::assert_debug_snapshot!(err, @r###"
         ContentTypeMismatch(
             UrlEncodedContentTypeMismatch {
@@ -218,7 +218,7 @@ mod tests {
         );
 
         let err = super::check_urlencoded_content_type(&headers).unwrap_err();
-        insta::assert_display_snapshot!(err, @"The `Content-Type` header was set to `application/json`. This endpoint expects requests with a `Content-Type` header set to `application/x-www-form-urlencoded`");
+        insta::assert_snapshot!(err, @"The `Content-Type` header was set to `application/json`. This endpoint expects requests with a `Content-Type` header set to `application/x-www-form-urlencoded`");
         insta::assert_debug_snapshot!(err, @r###"
         ContentTypeMismatch(
             UrlEncodedContentTypeMismatch {
@@ -287,7 +287,7 @@ mod tests {
 
         // Assert
         let err = outcome.unwrap_err();
-        insta::assert_display_snapshot!(err, @r###"
+        insta::assert_snapshot!(err, @r###"
         Failed to deserialize the body as a urlencoded form.
         missing field `surname`
         "###);
@@ -341,7 +341,7 @@ mod tests {
 
         // Assert
         let err = outcome.unwrap_err();
-        insta::assert_display_snapshot!(err, @r###"
+        insta::assert_snapshot!(err, @r###"
         Failed to deserialize the query as a urlencoded form.
         missing field `surname`
         "###);
