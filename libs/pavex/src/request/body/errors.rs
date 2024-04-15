@@ -69,11 +69,8 @@ pub enum ExtractUrlEncodedBodyError {
     /// See [`UrlEncodedContentTypeMismatch`] for details.
     ContentTypeMismatch(#[from] UrlEncodedContentTypeMismatch),
     #[error(transparent)]
-    /// See [`UrlEncodedQueryDeserializationError`] for details.
-    QueryDeserializationError(#[from] UrlEncodedQueryDeserializationError),
-    #[error(transparent)]
     /// See [`UrlEncodedBodyDeserializationError`] for details.
-    BodyDeserializationError(#[from] UrlEncodedBodyDeserializationError),
+    DeserializationError(#[from] UrlEncodedBodyDeserializationError),
 }
 
 impl ExtractUrlEncodedBodyError {
@@ -84,8 +81,7 @@ impl ExtractUrlEncodedBodyError {
             | ExtractUrlEncodedBodyError::ContentTypeMismatch(_) => {
                 Response::unsupported_media_type()
             }
-            ExtractUrlEncodedBodyError::QueryDeserializationError(_)
-            | ExtractUrlEncodedBodyError::BodyDeserializationError(_) => Response::bad_request(),
+            ExtractUrlEncodedBodyError::DeserializationError(_) => Response::bad_request(),
         }
         .set_typed_body(format!("{}", self))
     }
@@ -162,15 +158,6 @@ pub struct MissingUrlEncodedContentType;
 pub struct UrlEncodedContentTypeMismatch {
     /// The actual value of the `Content-Type` header for this request.
     pub actual: String,
-}
-
-#[derive(Debug, thiserror::Error)]
-#[error("Failed to deserialize the query as a urlencoded form.\n{source}")]
-#[non_exhaustive]
-/// Something went wrong when deserializing the request body into the specified type.
-pub struct UrlEncodedQueryDeserializationError {
-    #[source]
-    pub(super) source: serde_path_to_error::Error<serde_html_form::de::Error>,
 }
 
 #[derive(Debug, thiserror::Error)]

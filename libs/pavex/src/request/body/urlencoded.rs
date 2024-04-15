@@ -1,10 +1,10 @@
 use crate::request::body::errors::{
     ExtractUrlEncodedBodyError, MissingUrlEncodedContentType, UrlEncodedBodyDeserializationError,
-    UrlEncodedContentTypeMismatch, UrlEncodedQueryDeserializationError,
+    UrlEncodedContentTypeMismatch,
 };
 use crate::request::body::BufferedBody;
 use crate::request::RequestHead;
-use http::{HeaderMap, Method};
+use http::HeaderMap;
 use serde::Deserialize;
 
 #[doc(alias = "UrlEncoded")]
@@ -114,34 +114,16 @@ impl<T> UrlEncodedBody<T> {
         request_head: &'head RequestHead,
         buffered_body: &'body BufferedBody,
     ) -> Result<Self, ExtractUrlEncodedBodyError>
-        where
-            'head: 'body,
-            T: Deserialize<'body>,
+    where
+        T: Deserialize<'body>,
     {
         check_urlencoded_content_type(&request_head.headers)?;
-
-        if request_head.method == Method::GET || request_head.method == Method::HEAD {
-            let parse = match request_head.target.query() {
-                None => form_urlencoded::parse(&[]),
-                Some(s) => form_urlencoded::parse(s.as_bytes()),
-            };
-            let deserializer = serde_html_form::Deserializer::new(parse);
-            let body = serde_path_to_error::deserialize(deserializer).map_err(|e| {
-                ExtractUrlEncodedBodyError::QueryDeserializationError(
-                    UrlEncodedQueryDeserializationError { source: e },
-                )
-            })?;
-            return Ok(UrlEncodedBody(body));
-        } else {
-            let bytes = buffered_body.bytes.as_ref();
-            let deserializer = serde_html_form::Deserializer::new(form_urlencoded::parse(bytes));
-            let body = serde_path_to_error::deserialize(deserializer).map_err(|e| {
-                ExtractUrlEncodedBodyError::BodyDeserializationError(
-                    UrlEncodedBodyDeserializationError { source: e },
-                )
-            })?;
-            return Ok(UrlEncodedBody(body));
-        }
+        let deserializer = serde_html_form::Deserializer::new(form_urlencoded::parse(
+            buffered_body.bytes.as_ref(),
+        ));
+        let body = serde_path_to_error::deserialize(deserializer)
+            .map_err(|e| UrlEncodedBodyDeserializationError { source: e })?;
+        Ok(UrlEncodedBody(body))
     }
 }
 
@@ -160,7 +142,7 @@ fn check_urlencoded_content_type(headers: &HeaderMap) -> Result<(), ExtractUrlEn
         return Err(UrlEncodedContentTypeMismatch {
             actual: content_type.to_string(),
         }
-            .into());
+        .into());
     };
 
     let is_urlencoded_content_type =
@@ -169,7 +151,7 @@ fn check_urlencoded_content_type(headers: &HeaderMap) -> Result<(), ExtractUrlEn
         return Err(UrlEncodedContentTypeMismatch {
             actual: content_type.to_string(),
         }
-            .into());
+        .into());
     };
     Ok(())
 }
@@ -177,9 +159,6 @@ fn check_urlencoded_content_type(headers: &HeaderMap) -> Result<(), ExtractUrlEn
 #[cfg(test)]
 mod tests {
     use crate::request::body::UrlEncodedBody;
-    use bytes::Bytes;
-    use http::uri::PathAndQuery;
-    use http::Uri;
 
     #[test]
     fn missing_content_type() {
@@ -257,7 +236,7 @@ mod tests {
     #[test]
     /// Let's check the error quality when the request body is missing
     /// a required field.
-    fn missing_form_field_post() {
+    fn missing_form_field() {
         // Arrange
         #[derive(serde::Deserialize, Debug)]
         #[allow(dead_code)]
@@ -292,62 +271,8 @@ mod tests {
         missing field `surname`
         "###);
         insta::assert_debug_snapshot!(err, @r###"
-        BodyDeserializationError(
+        DeserializationError(
             UrlEncodedBodyDeserializationError {
-                source: Error {
-                    path: Path {
-                        segments: [],
-                    },
-                    original: Error(
-                        "missing field `surname`",
-                    ),
-                },
-            },
-        )
-        "###);
-    }
-
-    #[test]
-    /// Let's check the error quality when the request query is missing
-    /// a required field.
-    fn missing_form_field_get() {
-        // Arrange
-        #[derive(serde::Deserialize, Debug)]
-        #[allow(dead_code)]
-        struct BodySchema {
-            name: String,
-            surname: String,
-            age: u8,
-        }
-
-        let mut headers = http::HeaderMap::new();
-        headers.insert(
-            http::header::CONTENT_TYPE,
-            "application/x-www-form-urlencoded".parse().unwrap(),
-        );
-        let request_head = crate::request::RequestHead {
-            headers,
-            method: http::Method::GET,
-            version: http::Version::HTTP_11,
-            target: "/?name=John%20Doe&age=43".parse().unwrap(),
-        };
-
-        // Act
-        let buffered_body = crate::request::body::BufferedBody {
-            bytes: Bytes::default(),
-        };
-        let outcome: Result<UrlEncodedBody<BodySchema>, _> =
-            UrlEncodedBody::extract(&request_head, &buffered_body);
-
-        // Assert
-        let err = outcome.unwrap_err();
-        insta::assert_snapshot!(err, @r###"
-        Failed to deserialize the query as a urlencoded form.
-        missing field `surname`
-        "###);
-        insta::assert_debug_snapshot!(err, @r###"
-        QueryDeserializationError(
-            UrlEncodedQueryDeserializationError {
                 source: Error {
                     path: Path {
                         segments: [],
