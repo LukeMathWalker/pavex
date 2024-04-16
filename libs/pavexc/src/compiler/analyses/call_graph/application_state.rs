@@ -236,8 +236,8 @@ pub(crate) fn application_state_call_graph(
         );
 
         let mut error_variants = IndexMap::new();
+        let mut collision_map = HashMap::<_, usize>::new();
         for (error_type, err_match_ids) in &error_type2err_match_ids {
-            let mut collision_map = HashMap::<_, usize>::new();
             for err_match_id in err_match_ids {
                 let fallible_id = component_db.fallible_id(*err_match_id);
                 let fallible = component_db.hydrated_component(fallible_id, computation_db);
@@ -256,13 +256,24 @@ pub(crate) fn application_state_call_graph(
                         unreachable!()
                     }
                 };
-                let error_type_name = fallible_callable
-                    .path
-                    .segments
-                    .last()
-                    .unwrap()
-                    .ident
-                    .to_case(Case::Pascal);
+                let error_type_name = {
+                    let n_path_segments = fallible_callable.path.segments.len();
+                    let last_segment = &fallible_callable.path.segments[n_path_segments - 1]
+                        .ident
+                        .to_case(Case::Pascal);
+                    if n_path_segments >= 3 {
+                        let second_to_last_segment =
+                            &fallible_callable.path.segments[n_path_segments - 2].ident;
+                        if second_to_last_segment.is_case(Case::Pascal) {
+                            // This is likely to be a method on a struct/enum.
+                            format!("{second_to_last_segment}{last_segment}")
+                        } else {
+                            last_segment.to_owned()
+                        }
+                    } else {
+                        last_segment.to_owned()
+                    }
+                };
                 let n_duplicates = collision_map.entry(error_type_name.clone()).or_insert(1);
                 let error_type_name = if *n_duplicates == 1 {
                     error_type_name
