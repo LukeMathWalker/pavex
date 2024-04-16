@@ -21,6 +21,7 @@ use crate::diagnostic::{
     OptionalSourceSpanExt, SourceSpanExt,
 };
 use crate::rustdoc::CrateCollection;
+use crate::utils::anyhow2miette;
 use crate::{diagnostic, try_source};
 
 /// A database that contains all the user components that have been registered against the
@@ -281,8 +282,7 @@ fn precompute_crate_docs(
         let e = anyhow::anyhow!(e).context(
             "I failed to compute the JSON documentation for one or more crates in the workspace.",
         );
-        // TODO: This throws away the error history, it sucks.
-        diagnostics.push(miette!(e));
+        diagnostics.push(anyhow2miette(e));
     }
 }
 
@@ -512,7 +512,7 @@ impl UserComponentDb {
                 )
             }
             CallableResolutionError::CannotGetCrateData(_) => {
-                diagnostics.push(miette!(e));
+                diagnostics.push(CompilerDiagnostic::builder(e).build().into());
             }
             CallableResolutionError::GenericParameterResolutionError(_) => {
                 let label = source

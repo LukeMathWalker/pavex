@@ -37,6 +37,7 @@ use crate::diagnostic;
 use crate::diagnostic::{CompilerDiagnostic, LocationExt, SourceSpanExt};
 use crate::language::ResolvedType;
 use crate::rustdoc::CrateCollection;
+use crate::utils::anyhow2miette;
 
 pub(crate) const GENERATED_APP_PACKAGE_ID: &str = "crate";
 
@@ -81,7 +82,7 @@ impl App {
         }
 
         let krate_collection =
-            CrateCollection::new(project_fingerprint).map_err(|e| vec![miette!(e)])?;
+            CrateCollection::new(project_fingerprint).map_err(|e| vec![anyhow2miette(e)])?;
         let package_graph = krate_collection.package_graph().to_owned();
         let mut diagnostics = vec![];
         let mut computation_db = ComputationDb::new();
