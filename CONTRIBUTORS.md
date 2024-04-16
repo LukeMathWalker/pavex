@@ -12,3 +12,4 @@ We contributors to Pavex:
 * Karl Lindfors (@darkkeh)
 * Harry Barber (@hlbarber)
 * Jan Ehrhardt (@jehrhardt)
+* Lukas Slanius (@bosukas)
