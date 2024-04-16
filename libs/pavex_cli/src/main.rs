@@ -263,8 +263,7 @@ fn generate(
         // crate used in the current workspace.
         let package_graph = compute_package_graph()
             .context("Failed to compute package graph for the current workspace")?;
-        get_or_install_from_graph(shell, locator, &package_graph)
-            .context("Failed to get or install the `pavexc` binary")?
+        get_or_install_from_graph(shell, locator, &package_graph)?
     };
     client = client.pavexc_cli_path(pavexc_cli_path);
 
@@ -303,12 +302,18 @@ fn scaffold_project(
 
     client = client.pavexc_cli_path(pavexc_cli_path);
 
-    shell.status("Creating", format!("the new project in `{}`", path.display()))?;
+    shell.status(
+        "Creating",
+        format!("the new project in `{}`", path.display()),
+    )?;
     match client.new_command(path.clone()).execute() {
         Ok(()) => {
-            shell.status("Created", format!("the new project in `{}`", path.display()))?;
+            shell.status(
+                "Created",
+                format!("the new project in `{}`", path.display()),
+            )?;
             Ok(ExitCode::SUCCESS)
-        },
+        }
         Err(NewError::NonZeroExitCode(e)) => Ok(ExitCode::from(e.code as u8)),
         Err(e) => Err(e.into()),
     }

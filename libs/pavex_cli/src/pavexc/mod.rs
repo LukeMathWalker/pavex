@@ -23,19 +23,38 @@ pub fn get_or_install_from_graph(
     locator: &PavexLocator,
     package_graph: &PackageGraph,
 ) -> Result<PathBuf, anyhow::Error> {
-    let (version, package_source) = version::pavex_lib_version(package_graph)?;
+    let pavex_cli_version = Version::parse(env!("CARGO_PKG_VERSION")).context(
+        "Failed to parse the version of `pavex` CLI. Are you using a fork of `pavex_cli`?",
+    )?;
+    let (pavex_lib_version, package_source) = version::pavex_lib_version(package_graph).context(
+        "Failed to determine the version of the `pavex` library crate in this workspace.",
+    )?;
+    if pavex_lib_version > &pavex_cli_version {
+        return Err(anyhow::anyhow!(
+            "Your `pavex` CLI is too old: \
+            the current workspace uses version `{}` of the `pavex` library, but you're using version `{}` of the `pavex` CLI.\n\
+            You must update your `pavex` CLI to a version greater or equal than `{}` to build the current workspace. \n\
+            To fix the issue, run:\n\n    pavex self update\n\n\
+            It'll update your `pavex` CLI to the latest released version.",
+            pavex_lib_version,
+            pavex_cli_version,
+            pavex_lib_version,
+        ));
+    }
     let pavexc_cli_path = location::path_from_graph(
         &locator.toolchains(),
         package_graph,
-        version,
+        pavex_lib_version,
         &package_source,
-    )??;
+    )
+    .context("Failed to determine where the `pavexc` binary should be located")??;
     _install(
         shell,
         &pavexc_cli_path,
-        version,
+        pavex_lib_version,
         &package_source.try_into()?,
-    )?;
+    )
+    .context("Failed to get or install the `pavexc` binary")?;
     Ok(pavexc_cli_path)
 }
 
