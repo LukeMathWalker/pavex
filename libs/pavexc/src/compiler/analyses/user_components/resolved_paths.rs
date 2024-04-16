@@ -72,20 +72,30 @@ impl ResolvedPathDb {
         };
         let source_span = diagnostic::get_f_macro_invocation_span(&source, location);
         let (label, help) = match &e {
-            ParseError::InvalidPath(_) => ("The invalid import path was registered here", None),
+            ParseError::InvalidPath(inner) => {
+                let help = if let Some(stripped) =
+                    inner.raw_identifiers.import_path.strip_suffix("()")
+                {
+                    Some(format!("The `f!` macro expects an unambiguous path as input, not a function call. Remove the `()` at the end: `f!({stripped})`"))
+                } else {
+                    None
+                };
+                ("The invalid import path was registered here", help)
+            }
             ParseError::PathMustBeAbsolute(_) => (
                 "The relative import path was registered here",
                 Some(
                     "If it is a local import, the path must start with `crate::`.\n\
                     If it is an import from a dependency, the path must start with \
-                    the dependency name (e.g. `dependency::`).",
+                    the dependency name (e.g. `dependency::`)."
+                        .to_string(),
                 ),
             ),
         };
         let diagnostic = CompilerDiagnostic::builder(e)
             .source(source)
             .optional_label(source_span.labeled(label.into()))
-            .optional_help(help.map(ToOwned::to_owned))
+            .optional_help(help)
             .build();
         diagnostics.push(diagnostic.into());
     }
