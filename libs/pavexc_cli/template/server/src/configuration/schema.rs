@@ -117,6 +117,7 @@ pub struct ServerConfig {
     /// The port that the server must listen on.
     ///
     /// Set the `APP_SERVER__PORT` environment variable to override its value.
+    #[serde(deserialize_with = "serde_aux::field_attributes::deserialize_number_from_string")]
     pub port: u16,
     /// The network interface that the server must be bound to.
     ///
