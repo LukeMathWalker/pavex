@@ -1,7 +1,7 @@
 use ahash::HashMap;
 use guppy::graph::PackageGraph;
 use indexmap::IndexSet;
-use miette::{miette, NamedSource};
+use miette::NamedSource;
 use std::collections::BTreeMap;
 use syn::spanned::Spanned;
 
