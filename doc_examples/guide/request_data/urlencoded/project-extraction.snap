@@ -1,0 +1,14 @@
+```rust title="src/urlencoded/routes.rs" hl_lines="10"
+use pavex::http::StatusCode;
+use pavex::request::body::UrlEncodedBody;
+
+#[derive(serde::Deserialize)]
+pub struct HomeListing {
+    address: String,
+    price: u64,
+}
+
+pub fn handler(params: &UrlEncodedBody<HomeListing>) -> StatusCode {
+// [...]
+}
+```

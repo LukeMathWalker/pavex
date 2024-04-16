@@ -7,6 +7,7 @@ They're the family of extractors you'll use most often in your Pavex application
 Out of the box, Pavex supports the following formats:
 
 * [JSON](json.md)
+* [URL Encoded](urlencoded.md)
 
 ## Tower of abstractions
 

@@ -1,22 +1,23 @@
+use crate::blueprint::constructor::{Constructor, RegisteredConstructor};
+use crate::blueprint::Blueprint;
+use crate::f;
 use crate::request::body::errors::{
-    ExtractUrlEncodedBodyError, MissingUrlEncodedContentType, UrlEncodedBodyDeserializationError,
-    UrlEncodedContentTypeMismatch,
+    ExtractUrlEncodedBodyError, MissingUrlEncodedContentType,
+    UrlEncodedBodyDeserializationError, UrlEncodedContentTypeMismatch,
 };
-use crate::request::body::BufferedBody;
+use crate::request::body::{BufferedBody};
 use crate::request::RequestHead;
 use http::HeaderMap;
 use serde::Deserialize;
 
 #[doc(alias = "UrlEncoded")]
 #[derive(Debug)]
-/// Parse the body of an incoming request as an application/x-www-form-urlencoded form.
+/// Parse the body of an incoming request as an urlencoded form.
 ///
-/// # Sections
+/// # Guide
 ///
-/// - [Example](#example)
-/// - [Installation](#installtion)
-/// - [Avoiding allocations](#avoiding-allocations)
-/// - [Body size limit](#body-size-limit)
+/// Check out the [relevant section](https://pavex.dev/docs/guide/request_data/body/deserializers/urlencoded/)
+/// of Pavex's guide for a thorough introduction to `UrlEncodedBody`.
 ///
 /// # Example
 ///
@@ -41,72 +42,6 @@ use serde::Deserialize;
 ///     )
 /// }
 /// ```
-///
-/// # Installation
-///
-/// First of all, you need the register the default constructor and error handler for
-/// `UrlEncodedBody` in your `Blueprint`:
-///
-/// ```rust
-/// use pavex::f;
-/// use pavex::blueprint::{Blueprint, constructor::Lifecycle};
-///
-/// fn blueprint() -> Blueprint {
-///    let mut bp = Blueprint::new();
-///    // Register the default constructor and error handler for `UrlEncodedBody`.
-///    bp.constructor(
-///         f!(pavex::request::body::UrlEncodedBody::extract),
-///         Lifecycle::RequestScoped,
-///     ).error_handler(
-///         f!(pavex::request::body::errors::ExtractUrlEncodedBodyError::into_response)
-///     );
-///     // [...]
-///     bp
-/// }
-/// ```
-///
-/// You can then use the `UrlEncodedBody` extractor as input to your route handlers and constructors.
-///
-/// # Avoiding allocations
-///
-/// If you want to minimize memory usage, you can try to avoid unnecessary memory allocations when
-/// deserializing string-like fields from the body of the incoming request.
-/// Pavex supports this use case—you can borrow from the request body instead of having to
-/// allocate a brand new string.
-///
-/// It is not always possible to avoid allocations, though.
-/// In particular, Pavex *must* allocate a new `String` if the Form string you are trying to
-/// deserialize contains percent-encoded characters.
-/// Using a `&str` in this case would result in a runtime error when attempting the deserialization.
-///
-/// Given the above, we recommend using `Cow<'_, str>` as field type: it borrows from the request
-/// body if possible, and allocates a new `String` only if strictly necessary.
-///
-/// ```rust
-/// use pavex::request::body::UrlEncodedBody;
-/// use std::borrow::Cow;
-///
-/// #[derive(serde::Deserialize)]
-/// pub struct Payee<'a> {
-///     name: Cow<'a, str>,
-/// }
-///
-/// pub fn get_payee(body: &UrlEncodedBody<Payee<'_>>) -> String {
-///    format!("The payee's name is {}", body.0.name)
-/// }
-/// ```
-///
-/// # Body size limit
-///
-/// The `UrlEncodedBody` extractor buffers the entire body in memory before
-/// attempting to deserialize it.
-///
-/// To prevent denial-of-service attacks, Pavex enforces an upper limit on the body size.
-/// The limit is enforced by the [`BufferedBody`] extractor,
-/// which is injected as one of the inputs of [`FormBody::extract`]. Check out [`BufferedBody`]'s
-/// documentation for more details on the size limit (and how to configure it).
-///
-/// [`BufferedBody`]: super::buffered_body::BufferedBody
 pub struct UrlEncodedBody<T>(pub T);
 
 impl<T> UrlEncodedBody<T> {
@@ -114,8 +49,8 @@ impl<T> UrlEncodedBody<T> {
         request_head: &'head RequestHead,
         buffered_body: &'body BufferedBody,
     ) -> Result<Self, ExtractUrlEncodedBodyError>
-    where
-        T: Deserialize<'body>,
+        where
+            T: Deserialize<'body>,
     {
         check_urlencoded_content_type(&request_head.headers)?;
         let deserializer = serde_html_form::Deserializer::new(form_urlencoded::parse(
@@ -124,6 +59,21 @@ impl<T> UrlEncodedBody<T> {
         let body = serde_path_to_error::deserialize(deserializer)
             .map_err(|e| UrlEncodedBodyDeserializationError { source: e })?;
         Ok(UrlEncodedBody(body))
+    }
+}
+
+impl UrlEncodedBody<()> {
+    /// Register the [default constructor](Self::default_constructor)
+    /// for [`UrlEncodedBody`] with a [`Blueprint`].
+    pub fn register(bp: &mut Blueprint) -> RegisteredConstructor {
+        Self::default_constructor().register(bp)
+    }
+
+    /// The [default constructor](UrlEncodedBody::extract)
+    /// and [error handler](ExtractUrlEncodedBodyError::into_response) for [`UrlEncodedBody`].
+    pub fn default_constructor() -> Constructor {
+        Constructor::request_scoped(f!(super::UrlEncodedBody::extract))
+            .error_handler(f!(super::errors::ExtractUrlEncodedBodyError::into_response))
     }
 }
 
@@ -142,7 +92,7 @@ fn check_urlencoded_content_type(headers: &HeaderMap) -> Result<(), ExtractUrlEn
         return Err(UrlEncodedContentTypeMismatch {
             actual: content_type.to_string(),
         }
-        .into());
+            .into());
     };
 
     let is_urlencoded_content_type =
@@ -151,7 +101,7 @@ fn check_urlencoded_content_type(headers: &HeaderMap) -> Result<(), ExtractUrlEn
         return Err(UrlEncodedContentTypeMismatch {
             actual: content_type.to_string(),
         }
-        .into());
+            .into());
     };
     Ok(())
 }
