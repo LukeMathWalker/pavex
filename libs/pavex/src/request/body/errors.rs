@@ -166,5 +166,5 @@ pub struct UrlEncodedContentTypeMismatch {
 /// Something went wrong when deserializing the request body into the specified type.
 pub struct UrlEncodedBodyDeserializationError {
     #[source]
-    pub(super) source: serde_path_to_error::Error<serde_html_form::de::Error>,
+    pub(super) source: serde_html_form::de::Error,
 }

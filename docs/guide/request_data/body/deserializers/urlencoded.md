@@ -1,6 +1,6 @@
 # UrlEncoded
 
-[`UrlEncodedBody<T>`][UrlEncodedBody] buffers the body in memory and deserializes it as JSON,
+[`UrlEncodedBody<T>`][UrlEncodedBody] buffers the body in memory and deserializes it as URL-encoded,
 according to the type `T` you specify.
 
 ## Registration
@@ -45,7 +45,7 @@ A urlencoded body must comply with the restriction of the URI specification:
 you can only use [a limited set of characters](https://datatracker.ietf.org/doc/html/rfc3986#section-2).  
 If you want to use a character not allowed in a URI, you
 must [percent-encode it](https://developer.mozilla.org/en-US/docs/Glossary/Percent-encoding).  
-For example, if you want to use a space in a query parameter, you must encode it as `%20`.
+For example, if you want to use a space in a field name or a field value, you must encode it as `%20`.
 A string like `John Doe` becomes `John%20Doe` when percent-encoded.
 
 [`UrlEncodedBody<T>`][UrlEncodedBody] automatically decodes percent-encoded strings for you. But that comes at a cost:

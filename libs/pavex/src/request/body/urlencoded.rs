@@ -2,10 +2,10 @@ use crate::blueprint::constructor::{Constructor, RegisteredConstructor};
 use crate::blueprint::Blueprint;
 use crate::f;
 use crate::request::body::errors::{
-    ExtractUrlEncodedBodyError, MissingUrlEncodedContentType,
-    UrlEncodedBodyDeserializationError, UrlEncodedContentTypeMismatch,
+    ExtractUrlEncodedBodyError, MissingUrlEncodedContentType, UrlEncodedBodyDeserializationError,
+    UrlEncodedContentTypeMismatch,
 };
-use crate::request::body::{BufferedBody};
+use crate::request::body::BufferedBody;
 use crate::request::RequestHead;
 use http::HeaderMap;
 use serde::Deserialize;
@@ -49,16 +49,11 @@ impl<T> UrlEncodedBody<T> {
         request_head: &'head RequestHead,
         buffered_body: &'body BufferedBody,
     ) -> Result<Self, ExtractUrlEncodedBodyError>
-        where
-            T: Deserialize<'body>,
+    where
+        T: Deserialize<'body>,
     {
         check_urlencoded_content_type(&request_head.headers)?;
-        let deserializer = serde_html_form::Deserializer::new(form_urlencoded::parse(
-            buffered_body.bytes.as_ref(),
-        ));
-        let body = serde_path_to_error::deserialize(deserializer)
-            .map_err(|e| UrlEncodedBodyDeserializationError { source: e })?;
-        Ok(UrlEncodedBody(body))
+        parse(buffered_body.bytes.as_ref()).map(UrlEncodedBody)
     }
 }
 
@@ -92,7 +87,7 @@ fn check_urlencoded_content_type(headers: &HeaderMap) -> Result<(), ExtractUrlEn
         return Err(UrlEncodedContentTypeMismatch {
             actual: content_type.to_string(),
         }
-            .into());
+        .into());
     };
 
     let is_urlencoded_content_type =
@@ -101,14 +96,44 @@ fn check_urlencoded_content_type(headers: &HeaderMap) -> Result<(), ExtractUrlEn
         return Err(UrlEncodedContentTypeMismatch {
             actual: content_type.to_string(),
         }
-            .into());
+        .into());
     };
     Ok(())
+}
+
+/// Parse bytes into `T`.
+fn parse<'a, T>(bytes: &'a [u8]) -> Result<T, ExtractUrlEncodedBodyError>
+where
+    T: Deserialize<'a>,
+{
+    serde_html_form::from_bytes(bytes)
+        .map_err(|e| UrlEncodedBodyDeserializationError { source: e })
+        .map_err(|e| ExtractUrlEncodedBodyError::DeserializationError(e))
 }
 
 #[cfg(test)]
 mod tests {
     use crate::request::body::UrlEncodedBody;
+    use std::borrow::Cow;
+
+    #[test]
+    fn test_parse() {
+        #[derive(serde::Deserialize, Debug, PartialEq)]
+        struct Home<'a> {
+            home_id: u32,
+            home_price: f64,
+            home_name: Cow<'a, str>,
+        }
+
+        let query = "home_id=1&home_price=0.1&home_name=Hi%20there";
+        let expected = Home {
+            home_id: 1,
+            home_price: 0.1,
+            home_name: Cow::Borrowed("Hi there"),
+        };
+        let actual: Home = crate::request::body::urlencoded::parse(query.as_bytes()).unwrap();
+        assert_eq!(expected, actual);
+    }
 
     #[test]
     fn missing_content_type() {
@@ -223,14 +248,9 @@ mod tests {
         insta::assert_debug_snapshot!(err, @r###"
         DeserializationError(
             UrlEncodedBodyDeserializationError {
-                source: Error {
-                    path: Path {
-                        segments: [],
-                    },
-                    original: Error(
-                        "missing field `surname`",
-                    ),
-                },
+                source: Error(
+                    "missing field `surname`",
+                ),
             },
         )
         "###);
