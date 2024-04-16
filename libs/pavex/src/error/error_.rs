@@ -51,8 +51,8 @@ pub struct Error {
 impl Error {
     /// Create a new [`Error`] from a boxable error.
     pub fn new<E>(error: E) -> Self
-        where
-            E: Into<Box<dyn std::error::Error + Send + Sync>>,
+    where
+        E: Into<Box<dyn std::error::Error + Send + Sync>>,
     {
         Self {
             inner: error.into(),

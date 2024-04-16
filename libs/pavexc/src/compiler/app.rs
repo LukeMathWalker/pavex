@@ -9,7 +9,6 @@ use bimap::BiHashMap;
 use guppy::graph::PackageGraph;
 use indexmap::{IndexMap, IndexSet};
 use itertools::Itertools;
-use miette::miette;
 use proc_macro2::Ident;
 use quote::format_ident;
 
