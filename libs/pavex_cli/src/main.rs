@@ -1,17 +1,19 @@
 use anyhow::Context;
 use cargo_like_utils::shell::Shell;
-use std::fmt::{Display, Formatter};
 use std::io::{ErrorKind, IsTerminal};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
-use std::str::FromStr;
 
-use clap::{Parser, Subcommand};
-use clap_stdin::MaybeStdin;
+use clap::Parser;
 use owo_colors::OwoColorize;
-use pavex_cli::activation::{check_activation, check_activation_key};
+use pavex_cli::activation::{
+    check_activation, check_activation_if_necessary, check_activation_key,
+};
 use pavex_cli::cargo_install::{cargo_install, GitSourceRevision, Source};
 use pavex_cli::cli_kind::CliKind;
+use pavex_cli::command::{Cli, Color, Command, SelfCommands};
+use pavex_cli::dependencies::installers;
+use pavex_cli::dependencies::installers::{CargoPx, NightlyToolchain, RustdocJson, Rustup};
 use pavex_cli::locator::PavexLocator;
 use pavex_cli::package_graph::compute_package_graph;
 use pavex_cli::pavexc::{get_or_install_from_graph, get_or_install_from_version};
@@ -32,168 +34,12 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::EnvFilter;
 
-#[derive(Parser)]
-#[clap(author, version = VERSION, about, long_about = None)]
-struct Cli {
-    /// Pavex will expose the full error chain when reporting diagnostics.
-    ///
-    /// It will also emit tracing output, both to stdout and to disk.
-    /// The file serialized on disk (`trace-[...].json`) can be opened in
-    /// Google Chrome by visiting chrome://tracing for further analysis.
-    #[clap(long, env = "PAVEX_DEBUG")]
-    debug: bool,
-    #[clap(long, env = "PAVEX_COLOR", default_value_t = Color::Auto)]
-    color: Color,
-    #[clap(subcommand)]
-    command: Commands,
-}
-
-// Same structure used by `cargo --version`.
-static VERSION: &str = concat!(env!("CARGO_PKG_VERSION"), " (", env!("VERGEN_GIT_SHA"), ")");
-
-#[derive(Copy, Clone, Debug)]
-enum Color {
-    Auto,
-    Always,
-    Never,
-}
-
-impl Display for Color {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Color::Auto => write!(f, "auto"),
-            Color::Always => write!(f, "always"),
-            Color::Never => write!(f, "never"),
-        }
-    }
-}
-
-impl FromStr for Color {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "auto" => Ok(Color::Auto),
-            "always" => Ok(Color::Always),
-            "never" => Ok(Color::Never),
-            s => Err(anyhow::anyhow!("Invalid color setting: {}", s)),
-        }
-    }
-}
-
-#[derive(Subcommand)]
-enum Commands {
-    /// Generate the server SDK code for an application blueprint.
-    Generate {
-        /// The source path for the serialized application blueprint.
-        #[clap(short, long, value_parser)]
-        blueprint: PathBuf,
-        /// Optional.
-        /// If provided, Pavex will serialize diagnostic information about
-        /// the application to the specified path.
-        #[clap(long, value_parser)]
-        diagnostics: Option<PathBuf>,
-        #[clap(long)]
-        /// Verify that the generated server SDK is up-to-date.  
-        /// If it isn't, `pavex` will return an error without updating
-        /// the server SDK code.
-        check: bool,
-        /// The directory that will contain the newly generated server SDK crate.
-        /// If the directory path is relative,
-        /// it is interpreted as relative to the root of the current workspace.
-        #[clap(short, long, value_parser)]
-        output: PathBuf,
-    },
-    /// Scaffold a new Pavex project at <PATH>.
-    New {
-        /// The directory that will contain the project files.
-        ///
-        /// If any of the intermediate directories in the path don't exist, they'll be created.
-        #[arg(index = 1)]
-        path: PathBuf,
-    },
-    /// Modify the installation of the Pavex CLI.
-    #[command(name = "self")]
-    Self_ {
-        #[clap(subcommand)]
-        command: SelfCommands,
-    },
-}
-
-#[derive(Subcommand)]
-enum SelfCommands {
-    /// Download and install a newer version of Pavex CLI, if available.
-    Update,
-    /// Uninstall Pavex CLI and remove all its dependencies and artifacts.
-    Uninstall {
-        /// Don't ask for confirmation before uninstalling Pavex CLI.
-        #[clap(short, long, value_parser)]
-        y: bool,
-    },
-    Activate {
-        /// The activation key for Pavex.
-        /// You can find the activation key for the beta program in Pavex's Discord server,
-        /// in the #announcements channel.
-        #[arg(index = 1, env = "PAVEX_ACTIVATION_KEY")]
-        key: Option<MaybeStdin<SecretString>>,
-    },
-}
-
-fn init_telemetry() -> FlushGuard {
-    let fmt_layer = tracing_subscriber::fmt::layer()
-        .with_file(false)
-        .with_target(false)
-        .with_span_events(FmtSpan::NEW | FmtSpan::EXIT)
-        .with_timer(tracing_subscriber::fmt::time::uptime());
-    let (chrome_layer, guard) = ChromeLayerBuilder::new().include_args(true).build();
-    let filter_layer = EnvFilter::try_from_default_env()
-        .or_else(|_| EnvFilter::try_new("info,pavexc=trace"))
-        .unwrap();
-
-    tracing_subscriber::registry()
-        .with(filter_layer)
-        .with(fmt_layer)
-        .with(chrome_layer)
-        .init();
-    guard
-}
-
 fn main() -> Result<ExitCode, miette::Error> {
     let cli = Cli::parse();
-    miette::set_hook(Box::new(move |_| {
-        let mut handler = pavex_miette::PavexMietteHandlerOpts::new();
-        if cli.debug {
-            handler = handler.with_cause_chain()
-        } else {
-            handler = handler.without_cause_chain()
-        };
-        if let Some(width) = pavex_cli::env::tty_width() {
-            handler = handler.width(width);
-        }
-        match cli.color {
-            Color::Auto => {}
-            Color::Always => {
-                handler = handler.color(true);
-            }
-            Color::Never => {
-                handler = handler.color(false);
-            }
-        }
-        Box::new(handler.build())
-    }))
-    .unwrap();
-    let _guard = if cli.debug {
-        Some(init_telemetry())
-    } else {
-        None
-    };
+    init_miette_hook(&cli);
+    let _guard = cli.debug.then(init_telemetry);
 
-    let color_profile = match cli.color {
-        Color::Auto => pavexc_cli_client::config::Color::Auto,
-        Color::Always => pavexc_cli_client::config::Color::Always,
-        Color::Never => pavexc_cli_client::config::Color::Never,
-    };
-    let mut client = Client::new().color(color_profile);
+    let mut client = Client::new().color(cli.color.into());
     if cli.debug {
         client = client.debug();
     } else {
@@ -206,32 +52,25 @@ fn main() -> Result<ExitCode, miette::Error> {
     let locator = PavexLocator::new(&system_home_dir);
     let mut shell = Shell::new();
 
+    check_activation_if_necessary(&cli.command, &State::new(&locator), &mut shell)
+        .map_err(utils::anyhow2miette)?;
     match cli.command {
-        Commands::Generate {
+        Command::Generate {
             blueprint,
             diagnostics,
             check,
             output,
-        } => {
-            if !check {
-                check_activation(&State::new(&locator), &mut shell)
-                    .map_err(utils::anyhow2miette)?;
-            }
-            generate(
-                &mut shell,
-                client,
-                &locator,
-                blueprint,
-                diagnostics,
-                output,
-                check,
-            )
-        }
-        Commands::New { path } => {
-            check_activation(&State::new(&locator), &mut shell).map_err(utils::anyhow2miette)?;
-            scaffold_project(client, &locator, &mut shell, path)
-        }
-        Commands::Self_ { command } => {
+        } => generate(
+            &mut shell,
+            client,
+            &locator,
+            blueprint,
+            diagnostics,
+            output,
+            check,
+        ),
+        Command::New { path } => scaffold_project(client, &locator, &mut shell, path),
+        Command::Self_ { command } => {
             // You should always be able to run `self` commands, even if Pavex has
             // not been activated yet.
             match command {
@@ -240,6 +79,7 @@ fn main() -> Result<ExitCode, miette::Error> {
                 SelfCommands::Activate { key } => {
                     activate(&mut shell, cli.color, &locator, key.map(|k| k.into_inner()))
                 }
+                SelfCommands::Setup => setup(cli.debug, &mut shell, cli.color, &locator),
             }
         }
     }
@@ -330,7 +170,7 @@ fn uninstall(
         shell.warn(
             "This process will uninstall Pavex and all its associated data from your system.",
         )?;
-        let continue_ = confirm("\nDo you wish to continue? (y/N)", false)?;
+        let continue_ = confirm("\nDo you wish to continue?", false)?;
         if !continue_ {
             shell.status("Abort", "Uninstalling Pavex CLI")?;
             return Ok(ExitCode::SUCCESS);
@@ -381,7 +221,63 @@ fn update(shell: &mut Shell) -> Result<ExitCode, anyhow::Error> {
     Ok(ExitCode::SUCCESS)
 }
 
-#[tracing::instrument("Activate Pavex", skip(shell, locator, key))]
+#[tracing::instrument("Setup Pavex", skip_all)]
+fn setup(
+    debug: bool,
+    shell: &mut Shell,
+    color: Color,
+    locator: &PavexLocator,
+) -> Result<ExitCode, anyhow::Error> {
+    fn _setup(
+        shell: &mut Shell,
+        color: Color,
+        locator: &PavexLocator,
+    ) -> Result<(), anyhow::Error> {
+        installers::verify_installation::<Rustup>(shell)?;
+        installers::verify_installation::<NightlyToolchain>(shell)?;
+        installers::verify_installation::<RustdocJson>(shell)?;
+        installers::verify_installation::<CargoPx>(shell)?;
+
+        let _ = shell.status("Checking", "if Pavex has been activated");
+        if check_activation(&State::new(locator), shell).is_err() {
+            let _ = shell.status_with_color(
+                "Missing",
+                "Pavex has not been activated yet",
+                &cargo_like_utils::shell::style::ERROR,
+            );
+            if std::io::stdout().is_terminal() {
+                activate(shell, color, locator, None)?;
+            } else {
+                let _ = shell.note(
+                    "Invoke\n\n    \
+                    pavex self activate\n\n\
+                    to activate your Pavex installation.",
+                );
+            }
+        } else {
+            let _ = shell.status("Success", "Pavex has already been activated");
+        }
+
+        Ok(())
+    }
+
+    match _setup(shell, color, locator) {
+        Ok(()) => Ok(ExitCode::SUCCESS),
+        Err(e) => {
+            if debug {
+                Err(e)
+            } else {
+                let _ = shell.note(
+                    "Once you've installed what's missing, re-run `pavex self setup` \
+                    to verify everything is working as expected.",
+                );
+                Ok(ExitCode::FAILURE)
+            }
+        }
+    }
+}
+
+#[tracing::instrument("Activate Pavex", skip_all)]
 fn activate(
     shell: &mut Shell,
     color: Color,
@@ -416,12 +312,11 @@ fn activate(
                             .dimmed()
                     )
                 } else {
-                    format!(
-                        "Welcome to Pavex's beta program! Please enter your activation key.\n\
+                    "Welcome to Pavex's beta program! Please enter your activation key.\n\
                         You can find the activation key for the beta program in the #activation \
                         channel of Pavex's Discord server.\n\
                         You can join the beta program by visiting https://pavex.dev\n"
-                    )
+                        .to_string()
                 };
                 let attempt = Secret::new(
                     mandatory_question(&question).context("Failed to read activation key")?,
@@ -432,9 +327,8 @@ fn activate(
                 }
                 if use_color_on_stderr(color) {
                     eprintln!(
-                        "{}: {}",
-                        "ERROR".bold().red(),
-                        "The activation key you provided is not valid. Please try again."
+                        "{}: The activation key you provided is not valid. Please try again.",
+                        "ERROR".bold().red()
                     );
                 } else {
                     eprintln!(
@@ -532,4 +426,50 @@ fn use_color_on_stderr(color_profile: Color) -> bool {
         Color::Always => true,
         Color::Never => false,
     }
+}
+
+fn init_telemetry() -> FlushGuard {
+    let fmt_layer = tracing_subscriber::fmt::layer()
+        .with_file(false)
+        .with_target(false)
+        .with_span_events(FmtSpan::NEW | FmtSpan::EXIT)
+        .with_timer(tracing_subscriber::fmt::time::uptime());
+    let (chrome_layer, guard) = ChromeLayerBuilder::new().include_args(true).build();
+    let filter_layer = EnvFilter::try_from_default_env()
+        .or_else(|_| EnvFilter::try_new("info,pavexc=trace"))
+        .unwrap();
+
+    tracing_subscriber::registry()
+        .with(filter_layer)
+        .with(fmt_layer)
+        .with(chrome_layer)
+        .init();
+    guard
+}
+
+fn init_miette_hook(cli: &Cli) {
+    let is_debug = cli.debug;
+    let color = cli.color;
+    miette::set_hook(Box::new(move |_| {
+        let handler = pavex_miette::PavexMietteHandlerOpts::new();
+        let mut handler = if is_debug {
+            handler.with_cause_chain()
+        } else {
+            handler.without_cause_chain()
+        };
+        if let Some(width) = pavex_cli::env::tty_width() {
+            handler = handler.width(width);
+        }
+        match color {
+            Color::Auto => {}
+            Color::Always => {
+                handler = handler.color(true);
+            }
+            Color::Never => {
+                handler = handler.color(false);
+            }
+        }
+        Box::new(handler.build())
+    }))
+    .expect("Failed to initialize `miette`'s error hook");
 }

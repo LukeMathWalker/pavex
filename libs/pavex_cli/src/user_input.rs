@@ -3,7 +3,8 @@ use std::io::{BufRead, Write};
 
 /// Prompt the user for confirmation.
 pub fn confirm(question: &str, default: bool) -> Result<bool, anyhow::Error> {
-    write!(std::io::stdout().lock(), "{question} ")?;
+    let hint = if default { "[Y/n]" } else { "[y/N]" };
+    write!(std::io::stdout().lock(), "{question} {hint} ")?;
     let _ = std::io::stdout().flush();
     let input = read_line()?;
 

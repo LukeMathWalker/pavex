@@ -1947,6 +1947,7 @@ dependencies = [
 name = "pavex_cli"
 version = "0.1.26"
 dependencies = [
+ "anstyle",
  "anyhow",
  "bytes",
  "cargo-like-utils",

@@ -53,6 +53,7 @@ hex = "0.4.3"
 secrecy = { version = "0.8.0", features = ["serde"] }
 clap-stdin = "0.4.0"
 owo-colors = "4.0.0"
+anstyle = "1.0.6"
 
 [dev-dependencies]
 pavex_test_runner = { path = "../pavex_test_runner" }
