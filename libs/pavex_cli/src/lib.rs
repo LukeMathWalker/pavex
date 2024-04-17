@@ -7,6 +7,7 @@ pub mod locator;
 pub mod package_graph;
 pub mod pavexc;
 pub mod prebuilt;
+pub mod rustup;
 pub mod state;
 pub mod toolchain;
 pub mod user_input;

@@ -14,6 +14,7 @@ use pavex_cli::locator::PavexLocator;
 use pavex_cli::package_graph::compute_package_graph;
 use pavex_cli::pavexc::{get_or_install_from_graph, get_or_install_from_version};
 use pavex_cli::prebuilt::download_prebuilt;
+use pavex_cli::rustup::is_rustup_installed;
 use pavex_cli::state::State;
 use pavex_cli::user_input::{confirm, mandatory_question};
 use pavex_cli::utils;
@@ -75,6 +76,7 @@ fn main() -> Result<ExitCode, miette::Error> {
                 SelfCommands::Activate { key } => {
                     activate(&mut shell, cli.color, &locator, key.map(|k| k.into_inner()))
                 }
+                SelfCommands::Setup => setup(&mut shell),
             }
         }
     }
@@ -212,6 +214,23 @@ fn update(shell: &mut Shell) -> Result<ExitCode, anyhow::Error> {
         "Updated",
         format!("to {latest_version}, the most recent version"),
     )?;
+
+    Ok(ExitCode::SUCCESS)
+}
+
+#[tracing::instrument("Setup Pavex", skip(shell, locator, key))]
+fn setup(shell: &mut Shell) -> Result<ExitCode, anyhow::Error> {
+    let _ = shell.status("Checking", "if `rustup` is installed");
+    if is_rustup_installed().is_ok() {
+        let _ = shell.status("Success", "`rustup` is installed");
+    } else {
+        let _ = shell.error(
+            "Executing `rustup --version` returns an error.\n\
+          Install `rustup` following the instructions at <URL>.\n\
+          If `rustup` is already installed on your system, make sure to add it to your PATH.",
+        );
+        return Ok(ExitCode::FAILURE);
+    }
 
     Ok(ExitCode::SUCCESS)
 }

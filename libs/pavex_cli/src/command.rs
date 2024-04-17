@@ -118,6 +118,16 @@ impl Command {
 pub enum SelfCommands {
     /// Download and install a newer version of Pavex CLI, if available.
     Update,
+    /// Prepare the system to use Pavex CLI.
+    ///
+    /// Pavex CLI requires other software to be installed on your
+    /// machine to work as expected: `rustup`, `cargo-px`, Rust
+    /// nightly toolchain, the `rustdoc-json` toolchain component.
+    ///
+    /// This command checks that this software is installed and
+    /// located where Pavex CLI expects it to be.
+    /// If it isn't, it offers to install it for you.
+    Setup,
     /// Uninstall Pavex CLI and remove all its dependencies and artifacts.
     Uninstall {
         /// Don't ask for confirmation before uninstalling Pavex CLI.
