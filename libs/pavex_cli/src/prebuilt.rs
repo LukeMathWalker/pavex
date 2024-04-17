@@ -65,7 +65,7 @@ fn extract_binary(
         for i in 0..archive.len() {
             let mut file = archive.by_index(i)?;
             if file.name() == expected_filename {
-                let mut outfile = std::fs::File::create(&destination)?;
+                let mut outfile = std::fs::File::create(destination)?;
                 std::io::copy(&mut file, &mut outfile)?;
                 return Ok(());
             }

@@ -54,7 +54,7 @@ impl State {
         shell: &mut Shell,
     ) -> Result<semver::Version, StateReadError> {
         let (_, current_state) = self.immutable_read(shell)?;
-        let toolchain = current_state.map(|s| s.toolchain).flatten();
+        let toolchain = current_state.and_then(|s| s.toolchain);
         match toolchain {
             Some(toolchain) => Ok(toolchain),
             None => {
@@ -70,7 +70,7 @@ impl State {
         shell: &mut Shell,
     ) -> Result<Option<SecretString>, StateReadError> {
         let (_, current_state) = self.immutable_read(shell)?;
-        Ok(current_state.map(|s| s.activation_key).flatten())
+        Ok(current_state.and_then(|s| s.activation_key))
     }
 
     /// Set the activation key associated with this installation.
@@ -156,7 +156,7 @@ impl State {
             .map_err(|e| StateReadError::ReadError(e, Self::STATE_FILENAME))?;
 
         if contents.is_empty() {
-            return Ok((locked_file, None));
+            Ok((locked_file, None))
         } else {
             let contents = toml::from_str(&contents)
                 .map_err(|e| StateReadError::CannotParse(e, Self::STATE_FILENAME))?;

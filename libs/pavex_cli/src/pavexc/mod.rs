@@ -104,9 +104,9 @@ fn _install(
         fs_err::create_dir_all(parent_dir).context("Failed to create binary cache directory")?;
     }
 
-    install::install(shell, &pavexc_cli_path, version, install_source)?;
+    install::install(shell, pavexc_cli_path, version, install_source)?;
     #[cfg(unix)]
-    executable::make_executable(&pavexc_cli_path)?;
+    executable::make_executable(pavexc_cli_path)?;
     Ok(())
 }
 
@@ -122,7 +122,7 @@ mod executable {
             .permissions();
         // Add the executable permission to the owner of the file
         perms.set_mode(perms.mode() | 0o100);
-        std::fs::set_permissions(&pavexc_cli_path, perms)
+        std::fs::set_permissions(pavexc_cli_path, perms)
             .context("Failed to set permissions for the `pavexc` binary")?;
         Ok(())
     }
