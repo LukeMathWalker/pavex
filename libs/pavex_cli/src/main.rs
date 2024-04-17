@@ -13,7 +13,8 @@ use pavex_cli::cargo_install::{cargo_install, GitSourceRevision, Source};
 use pavex_cli::cli_kind::CliKind;
 use pavex_cli::command::{Cli, Color, Command, SelfCommands};
 use pavex_cli::dependencies::{
-    is_cargo_px_installed, is_nightly_installed, is_rustdoc_json_installed, is_rustup_installed,
+    install_nightly, install_rustdoc_json, is_cargo_px_installed, is_nightly_installed,
+    is_rustdoc_json_installed, is_rustup_installed,
 };
 use pavex_cli::locator::PavexLocator;
 use pavex_cli::package_graph::compute_package_graph;
@@ -171,7 +172,7 @@ fn uninstall(
         shell.warn(
             "This process will uninstall Pavex and all its associated data from your system.",
         )?;
-        let continue_ = confirm("\nDo you wish to continue? (y/N)", false)?;
+        let continue_ = confirm("\nDo you wish to continue?", false)?;
         if !continue_ {
             shell.status("Abort", "Uninstalling Pavex CLI")?;
             return Ok(ExitCode::SUCCESS);
@@ -251,35 +252,74 @@ fn setup(
         }
 
         let _ = shell.status("Checking", "if Rust's nightly toolchain is installed");
-        if let Err(e) = is_nightly_installed() {
+        if let Err(mut e) = is_nightly_installed() {
             let _ = shell.status_with_color(
                 "Missing",
                 "Rust's nightly toolchain is not installed\n",
                 &cargo_like_utils::shell::style::ERROR,
             );
-            let _ = shell.note(
-                "Invoke\n\n    \
+            let mut installed = false;
+            if std::io::stdout().is_terminal() {
+                if let Ok(true) =
+                    confirm("\tShould I install Rust's nightly toolchain for you?", true)
+                {
+                    if let Err(inner) = install_nightly() {
+                        e = inner;
+                        let _ = shell.status_with_color(
+                            "Failed",
+                            "to install Rust's nightly toolchain",
+                            &cargo_like_utils::shell::style::ERROR,
+                        );
+                    } else {
+                        installed = true;
+                    }
+                }
+            }
+            if !installed {
+                let _ = shell.note(
+                    "Invoke\n\n    \
                 rustup toolchain install nightly\n\n\
                 to add the missing toolchain and fix the issue.",
-            );
-            return Err(e);
+                );
+                return Err(e);
+            }
         } else {
             let _ = shell.status("Success", "Rust's nightly toolchain is installed");
         }
 
         let _ = shell.status("Checking", "if the `rust-docs-json` component is installed");
-        if let Err(e) = is_rustdoc_json_installed() {
+        if let Err(mut e) = is_rustdoc_json_installed() {
             let _ = shell.status_with_color(
                 "Missing",
                 "`rust-docs-json` component is not installed\n",
                 &cargo_like_utils::shell::style::ERROR,
             );
-            let _ = shell.note(
-                "Invoke\n\n    \
+            let mut installed = false;
+            if std::io::stdout().is_terminal() {
+                if let Ok(true) = confirm(
+                    "\tShould I install the `rust-docs-json` component for you?",
+                    true,
+                ) {
+                    if let Err(inner) = install_rustdoc_json() {
+                        e = inner;
+                        let _ = shell.status_with_color(
+                            "Failed",
+                            "to install `rust-docs-json` component",
+                            &cargo_like_utils::shell::style::ERROR,
+                        );
+                    } else {
+                        installed = true;
+                    }
+                }
+            }
+            if !installed {
+                let _ = shell.note(
+                    "Invoke\n\n    \
                 rustup component add rust-docs-json --toolchain nightly\n\n\
                 to add the missing component and fix the issue.",
-            );
-            return Err(e);
+                );
+                return Err(e);
+            }
         } else {
             let _ = shell.status("Success", "the `rust-docs-json` component is installed");
         }
@@ -302,8 +342,20 @@ fn setup(
 
         let _ = shell.status("Checking", "if Pavex has been activated");
         if check_activation(&State::new(locator), shell).is_err() {
-            let _ = shell.warn("Pavex has not been activated yet!");
-            activate(shell, color, locator, None)?;
+            let _ = shell.status_with_color(
+                "Missing",
+                "Pavex has not been activated yet",
+                &cargo_like_utils::shell::style::ERROR,
+            );
+            if std::io::stdout().is_terminal() {
+                activate(shell, color, locator, None)?;
+            } else {
+                let _ = shell.note(
+                    "Invoke\n\n    \
+                    pavex self activate\n\n\
+                    to activate your Pavex installation.",
+                );
+            }
         } else {
             let _ = shell.status("Success", "Pavex has already been activated");
         }
