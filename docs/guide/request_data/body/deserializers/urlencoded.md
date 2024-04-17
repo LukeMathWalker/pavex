@@ -32,6 +32,27 @@ You can derive [`serde::Deserialize`][serde::Deserialize] in most cases.
 
 --8<-- "doc_examples/guide/request_data/urlencoded/project-struct_with_attr.snap"
 
+## Unsupported field types
+
+[`UrlEncodedBody<T>`][UrlEncodedBody] doesn't support deserializing nested structures.
+For example, the following can't be deserialized from the wire using [`UrlEncodedBody<T>`][UrlEncodedBody]:
+
+```rust
+#[derive(serde::Deserialize)]
+pub struct UpdateUserBody {
+    address: Address
+}
+
+#[derive(serde::Deserialize)]
+pub struct Address {
+    street: String,
+    city: String,
+}
+```
+
+If you need to deserialize nested structures from an urlencoded body,
+you might want to look into writing your own extractor on top of [`serde_qs`](https://crates.io/crates/serde_qs).
+
 ## Avoiding allocations
 
 If you want to minimize memory usage, you can try to avoid unnecessary heap memory allocations when deserializing
