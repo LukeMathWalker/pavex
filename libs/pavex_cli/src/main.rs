@@ -236,9 +236,13 @@ fn setup(
     ) -> Result<(), anyhow::Error> {
         let _ = shell.status("Checking", "if `rustup` is installed");
         if let Err(e) = is_rustup_installed() {
-            let _ = shell.error(
-                "Executing `rustup --version` returned an error.\n\
-                Install `rustup` following the instructions at https://rust-lang.org/tools/install \
+            let _ = shell.status_with_color(
+                "Missing",
+                "`rustup` is not installed or not in $PATH\n",
+                &cargo_like_utils::shell::style::ERROR,
+            );
+            let _ = shell.note(
+                "Install `rustup` following the instructions at https://rust-lang.org/tools/install \
                 to fix the issue",
             );
             return Err(e);
@@ -248,9 +252,13 @@ fn setup(
 
         let _ = shell.status("Checking", "if Rust's nightly toolchain is installed");
         if let Err(e) = is_nightly_installed() {
-            let _ = shell.error(
-                "Executing `rustup which --toolchain nightly cargo` returned an error.\n\
-                Invoke\n\n    \
+            let _ = shell.status_with_color(
+                "Missing",
+                "Rust's nightly toolchain is not installed\n",
+                &cargo_like_utils::shell::style::ERROR,
+            );
+            let _ = shell.note(
+                "Invoke\n\n    \
                 rustup toolchain install nightly\n\n\
                 to add the missing toolchain and fix the issue.",
             );
@@ -261,9 +269,13 @@ fn setup(
 
         let _ = shell.status("Checking", "if the `rust-docs-json` component is installed");
         if let Err(e) = is_rustdoc_json_installed() {
-            let _ = shell.error(
-                "`rustup component list --installed --toolchain nightly` didn't include `rust-docs-json`.\n\
-                Invoke\n\n    \
+            let _ = shell.status_with_color(
+                "Missing",
+                "`rust-docs-json` component is not installed\n",
+                &cargo_like_utils::shell::style::ERROR,
+            );
+            let _ = shell.note(
+                "Invoke\n\n    \
                 rustup component add rust-docs-json --toolchain nightly\n\n\
                 to add the missing component and fix the issue.",
             );
@@ -274,9 +286,13 @@ fn setup(
 
         let _ = shell.status("Checking", "if `cargo-px` is installed");
         if let Err(e) = is_cargo_px_installed() {
-            let _ = shell.error(
-                "`cargo px -V` returned an error.\n\
-                Follow the instructions at https://lukemathwalker.github.io/cargo-px/ \
+            let _ = shell.status_with_color(
+                "Missing",
+                "`cargo-px` is not installed\n",
+                &cargo_like_utils::shell::style::ERROR,
+            );
+            let _ = shell.note(
+                "Follow the instructions at https://lukemathwalker.github.io/cargo-px/ \
                 to install the missing sub-command and fix the issue.",
             );
             return Err(e);
