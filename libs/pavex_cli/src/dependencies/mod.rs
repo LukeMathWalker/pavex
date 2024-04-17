@@ -1,5 +1,6 @@
 use anyhow::Context;
 use std::process::Stdio;
+pub mod installers;
 
 /// Check if `rustup` is installed and available in the system's $PATH.
 pub fn is_rustup_installed() -> Result<(), anyhow::Error> {

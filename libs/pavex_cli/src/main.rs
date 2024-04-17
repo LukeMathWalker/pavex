@@ -12,8 +12,9 @@ use pavex_cli::activation::{
 use pavex_cli::cargo_install::{cargo_install, GitSourceRevision, Source};
 use pavex_cli::cli_kind::CliKind;
 use pavex_cli::command::{Cli, Color, Command, SelfCommands};
+use pavex_cli::dependencies::installers::RustdocJson;
 use pavex_cli::dependencies::{
-    install_nightly, install_rustdoc_json, is_cargo_px_installed, is_nightly_installed,
+    install_nightly, install_rustdoc_json, installers, is_cargo_px_installed, is_nightly_installed,
     is_rustdoc_json_installed, is_rustup_installed,
 };
 use pavex_cli::locator::PavexLocator;
@@ -287,42 +288,7 @@ fn setup(
             let _ = shell.status("Success", "Rust's nightly toolchain is installed");
         }
 
-        let _ = shell.status("Checking", "if the `rust-docs-json` component is installed");
-        if let Err(mut e) = is_rustdoc_json_installed() {
-            let _ = shell.status_with_color(
-                "Missing",
-                "`rust-docs-json` component is not installed\n",
-                &cargo_like_utils::shell::style::ERROR,
-            );
-            let mut installed = false;
-            if std::io::stdout().is_terminal() {
-                if let Ok(true) = confirm(
-                    "\tShould I install the `rust-docs-json` component for you?",
-                    true,
-                ) {
-                    if let Err(inner) = install_rustdoc_json() {
-                        e = inner;
-                        let _ = shell.status_with_color(
-                            "Failed",
-                            "to install `rust-docs-json` component",
-                            &cargo_like_utils::shell::style::ERROR,
-                        );
-                    } else {
-                        installed = true;
-                    }
-                }
-            }
-            if !installed {
-                let _ = shell.note(
-                    "Invoke\n\n    \
-                rustup component add rust-docs-json --toolchain nightly\n\n\
-                to add the missing component and fix the issue.",
-                );
-                return Err(e);
-            }
-        } else {
-            let _ = shell.status("Success", "the `rust-docs-json` component is installed");
-        }
+        installers::verify_installation(RustdocJson, shell, color, locator)?;
 
         let _ = shell.status("Checking", "if `cargo-px` is installed");
         if let Err(e) = is_cargo_px_installed() {
