@@ -12,7 +12,7 @@ use pavex_cli::activation::{
 use pavex_cli::cargo_install::{cargo_install, GitSourceRevision, Source};
 use pavex_cli::cli_kind::CliKind;
 use pavex_cli::command::{Cli, Color, Command, SelfCommands};
-use pavex_cli::dependencies::installers::{NightlyToolchain, RustdocJson};
+use pavex_cli::dependencies::installers::{CargoPx, NightlyToolchain, RustdocJson, Rustup};
 use pavex_cli::dependencies::{
     install_nightly, install_rustdoc_json, installers, is_cargo_px_installed, is_nightly_installed,
     is_rustdoc_json_installed, is_rustup_installed,
@@ -236,40 +236,10 @@ fn setup(
         color: Color,
         locator: &PavexLocator,
     ) -> Result<(), anyhow::Error> {
-        let _ = shell.status("Checking", "if `rustup` is installed");
-        if let Err(e) = is_rustup_installed() {
-            let _ = shell.status_with_color(
-                "Missing",
-                "`rustup` is not installed or not in $PATH\n",
-                &cargo_like_utils::shell::style::ERROR,
-            );
-            let _ = shell.note(
-                "Install `rustup` following the instructions at https://rust-lang.org/tools/install \
-                to fix the issue",
-            );
-            return Err(e);
-        } else {
-            let _ = shell.status("Success", "`rustup` is installed");
-        }
-
-        installers::verify_installation(NightlyToolchain, shell, color, locator)?;
-        installers::verify_installation(RustdocJson, shell, color, locator)?;
-
-        let _ = shell.status("Checking", "if `cargo-px` is installed");
-        if let Err(e) = is_cargo_px_installed() {
-            let _ = shell.status_with_color(
-                "Missing",
-                "`cargo-px` is not installed\n",
-                &cargo_like_utils::shell::style::ERROR,
-            );
-            let _ = shell.note(
-                "Follow the instructions at https://lukemathwalker.github.io/cargo-px/ \
-                to install the missing sub-command and fix the issue.",
-            );
-            return Err(e);
-        } else {
-            let _ = shell.status("Success", "`cargo-px` is installed");
-        }
+        installers::verify_installation::<Rustup>(shell)?;
+        installers::verify_installation::<NightlyToolchain>(shell)?;
+        installers::verify_installation::<RustdocJson>(shell)?;
+        installers::verify_installation::<CargoPx>(shell)?;
 
         let _ = shell.status("Checking", "if Pavex has been activated");
         if check_activation(&State::new(locator), shell).is_err() {

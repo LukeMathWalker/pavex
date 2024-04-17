@@ -1,7 +1,7 @@
 use crate::command::Color;
 use crate::dependencies::{
-    install_nightly, install_rustdoc_json, is_nightly_installed, is_rustdoc_json_installed,
-    is_rustup_installed,
+    install_nightly, install_rustdoc_json, is_cargo_px_installed, is_nightly_installed,
+    is_rustdoc_json_installed, is_rustup_installed,
 };
 use crate::locator::PavexLocator;
 use crate::user_input::confirm;
@@ -25,12 +25,7 @@ pub trait Dependency {
     fn is_installed() -> Result<(), Error>;
 }
 
-pub fn verify_installation<D: Dependency>(
-    dependency: D,
-    shell: &mut Shell,
-    color: Color,
-    locator: &PavexLocator,
-) -> Result<(), anyhow::Error> {
+pub fn verify_installation<D: Dependency>(shell: &mut Shell) -> Result<(), anyhow::Error> {
     let _ = shell.status("Checking", format!("if {} is installed", D::NAME));
     if let Err(mut e) = is_nightly_installed() {
         let _ = shell.status_with_color(
@@ -96,11 +91,38 @@ impl Dependency for NightlyToolchain {
 to add the missing toolchain and fix the issue."#;
     const AUTO_INSTALLABLE: bool = true;
 
-    fn is_installed() -> Result<(), Error> {
+    fn auto_install() -> Result<(), Error> {
         install_nightly()
     }
 
-    fn auto_install() -> Result<(), Error> {
+    fn is_installed() -> Result<(), Error> {
         install_nightly()
+    }
+}
+
+pub struct Rustup;
+
+impl Dependency for Rustup {
+    const NAME: &'static str = "`rustup`";
+    const INSTALLATION_INSTRUCTIONS: &'static str = "Install `rustup` \
+    following the instructions at https://rust-lang.org/tools/install \
+    to fix the issue";
+    const AUTO_INSTALLABLE: bool = false;
+
+    fn is_installed() -> Result<(), Error> {
+        is_rustup_installed()
+    }
+}
+
+pub struct CargoPx;
+
+impl Dependency for CargoPx {
+    const NAME: &'static str = "`cargo-px`";
+    const INSTALLATION_INSTRUCTIONS: &'static str = "Follow the instructions \
+    at https://lukemathwalker.github.io/cargo-px/ to install the missing sub-command \
+    and fix the issue.";
+
+    fn is_installed() -> Result<(), Error> {
+        is_cargo_px_installed()
     }
 }
