@@ -54,6 +54,16 @@ impl FromStr for Color {
     }
 }
 
+impl From<Color> for pavexc_cli_client::config::Color {
+    fn from(value: Color) -> Self {
+        match value {
+            Color::Auto => pavexc_cli_client::config::Color::Auto,
+            Color::Always => pavexc_cli_client::config::Color::Always,
+            Color::Never => pavexc_cli_client::config::Color::Never,
+        }
+    }
+}
+
 #[derive(Subcommand)]
 pub enum Command {
     /// Generate the server SDK code for an application blueprint.

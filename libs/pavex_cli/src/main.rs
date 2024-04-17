@@ -30,61 +30,12 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::EnvFilter;
 
-fn init_telemetry() -> FlushGuard {
-    let fmt_layer = tracing_subscriber::fmt::layer()
-        .with_file(false)
-        .with_target(false)
-        .with_span_events(FmtSpan::NEW | FmtSpan::EXIT)
-        .with_timer(tracing_subscriber::fmt::time::uptime());
-    let (chrome_layer, guard) = ChromeLayerBuilder::new().include_args(true).build();
-    let filter_layer = EnvFilter::try_from_default_env()
-        .or_else(|_| EnvFilter::try_new("info,pavexc=trace"))
-        .unwrap();
-
-    tracing_subscriber::registry()
-        .with(filter_layer)
-        .with(fmt_layer)
-        .with(chrome_layer)
-        .init();
-    guard
-}
-
 fn main() -> Result<ExitCode, miette::Error> {
     let cli = Cli::parse();
-    miette::set_hook(Box::new(move |_| {
-        let mut handler = pavex_miette::PavexMietteHandlerOpts::new();
-        if cli.debug {
-            handler = handler.with_cause_chain()
-        } else {
-            handler = handler.without_cause_chain()
-        };
-        if let Some(width) = pavex_cli::env::tty_width() {
-            handler = handler.width(width);
-        }
-        match cli.color {
-            Color::Auto => {}
-            Color::Always => {
-                handler = handler.color(true);
-            }
-            Color::Never => {
-                handler = handler.color(false);
-            }
-        }
-        Box::new(handler.build())
-    }))
-    .unwrap();
-    let _guard = if cli.debug {
-        Some(init_telemetry())
-    } else {
-        None
-    };
+    init_miette_hook(&cli);
+    let _guard = cli.debug.then(init_telemetry);
 
-    let color_profile = match cli.color {
-        Color::Auto => pavexc_cli_client::config::Color::Auto,
-        Color::Always => pavexc_cli_client::config::Color::Always,
-        Color::Never => pavexc_cli_client::config::Color::Never,
-    };
-    let mut client = Client::new().color(color_profile);
+    let mut client = Client::new().color(cli.color.into());
     if cli.debug {
         client = client.debug();
     } else {
@@ -300,12 +251,11 @@ fn activate(
                             .dimmed()
                     )
                 } else {
-                    format!(
-                        "Welcome to Pavex's beta program! Please enter your activation key.\n\
+                    "Welcome to Pavex's beta program! Please enter your activation key.\n\
                         You can find the activation key for the beta program in the #activation \
                         channel of Pavex's Discord server.\n\
                         You can join the beta program by visiting https://pavex.dev\n"
-                    )
+                        .to_string()
                 };
                 let attempt = Secret::new(
                     mandatory_question(&question).context("Failed to read activation key")?,
@@ -416,4 +366,50 @@ fn use_color_on_stderr(color_profile: Color) -> bool {
         Color::Always => true,
         Color::Never => false,
     }
+}
+
+fn init_telemetry() -> FlushGuard {
+    let fmt_layer = tracing_subscriber::fmt::layer()
+        .with_file(false)
+        .with_target(false)
+        .with_span_events(FmtSpan::NEW | FmtSpan::EXIT)
+        .with_timer(tracing_subscriber::fmt::time::uptime());
+    let (chrome_layer, guard) = ChromeLayerBuilder::new().include_args(true).build();
+    let filter_layer = EnvFilter::try_from_default_env()
+        .or_else(|_| EnvFilter::try_new("info,pavexc=trace"))
+        .unwrap();
+
+    tracing_subscriber::registry()
+        .with(filter_layer)
+        .with(fmt_layer)
+        .with(chrome_layer)
+        .init();
+    guard
+}
+
+fn init_miette_hook(cli: &Cli) {
+    let is_debug = cli.debug;
+    let color = cli.color;
+    miette::set_hook(Box::new(move |_| {
+        let handler = pavex_miette::PavexMietteHandlerOpts::new();
+        let mut handler = if is_debug {
+            handler.with_cause_chain()
+        } else {
+            handler.without_cause_chain()
+        };
+        if let Some(width) = pavex_cli::env::tty_width() {
+            handler = handler.width(width);
+        }
+        match color {
+            Color::Auto => {}
+            Color::Always => {
+                handler = handler.color(true);
+            }
+            Color::Never => {
+                handler = handler.color(false);
+            }
+        }
+        Box::new(handler.build())
+    }))
+    .expect("Failed to initialize `miette`'s error hook");
 }
