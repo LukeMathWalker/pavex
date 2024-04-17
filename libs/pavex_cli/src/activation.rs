@@ -20,7 +20,7 @@ static BETA_ACTIVATION_KEY_SHA256: &str =
 
 /// If the command requires it, check if Pavex has been correctly activated
 /// on this machine.
-pub fn check_activation(
+pub fn check_activation_if_necessary(
     command: &Command,
     state: &State,
     shell: &mut Shell,
@@ -37,7 +37,7 @@ pub fn check_activation(
 }
 
 /// Verify that Pavex has been correctly activated on this machine.
-pub fn _check_activation(state: &State, shell: &mut Shell) -> Result<(), anyhow::Error> {
+pub fn check_activation(state: &State, shell: &mut Shell) -> Result<(), anyhow::Error> {
     let key = state.get_activation_key(shell)?;
     let Some(key) = key else {
         return Err(PavexMustBeActivated.into());

@@ -6,15 +6,19 @@ use std::process::ExitCode;
 
 use clap::Parser;
 use owo_colors::OwoColorize;
-use pavex_cli::activation::{check_activation, check_activation_key};
+use pavex_cli::activation::{
+    check_activation, check_activation_if_necessary, check_activation_key,
+};
 use pavex_cli::cargo_install::{cargo_install, GitSourceRevision, Source};
 use pavex_cli::cli_kind::CliKind;
 use pavex_cli::command::{Cli, Color, Command, SelfCommands};
+use pavex_cli::dependencies::{
+    is_cargo_px_installed, is_nightly_installed, is_rustdoc_json_installed, is_rustup_installed,
+};
 use pavex_cli::locator::PavexLocator;
 use pavex_cli::package_graph::compute_package_graph;
 use pavex_cli::pavexc::{get_or_install_from_graph, get_or_install_from_version};
 use pavex_cli::prebuilt::download_prebuilt;
-use pavex_cli::rustup::is_rustup_installed;
 use pavex_cli::state::State;
 use pavex_cli::user_input::{confirm, mandatory_question};
 use pavex_cli::utils;
@@ -49,7 +53,7 @@ fn main() -> Result<ExitCode, miette::Error> {
     let locator = PavexLocator::new(&system_home_dir);
     let mut shell = Shell::new();
 
-    check_activation(&cli.command, &State::new(&locator), &mut shell)
+    check_activation_if_necessary(&cli.command, &State::new(&locator), &mut shell)
         .map_err(utils::anyhow2miette)?;
     match cli.command {
         Command::Generate {
@@ -76,7 +80,7 @@ fn main() -> Result<ExitCode, miette::Error> {
                 SelfCommands::Activate { key } => {
                     activate(&mut shell, cli.color, &locator, key.map(|k| k.into_inner()))
                 }
-                SelfCommands::Setup => setup(&mut shell),
+                SelfCommands::Setup => setup(&mut shell, cli.color, &locator),
             }
         }
     }
@@ -218,37 +222,74 @@ fn update(shell: &mut Shell) -> Result<ExitCode, anyhow::Error> {
     Ok(ExitCode::SUCCESS)
 }
 
-#[tracing::instrument("Setup Pavex", skip(shell))]
-fn setup(shell: &mut Shell) -> Result<ExitCode, anyhow::Error> {
+#[tracing::instrument("Setup Pavex", skip_all)]
+fn setup(
+    shell: &mut Shell,
+    color: Color,
+    locator: &PavexLocator,
+) -> Result<ExitCode, anyhow::Error> {
     let _ = shell.status("Checking", "if `rustup` is installed");
     if is_rustup_installed().is_ok() {
         let _ = shell.status("Success", "`rustup` is installed");
     } else {
         let _ = shell.error(
-            "Executing `rustup --version` returns an error.\n\
-          Install `rustup` following the instructions at <URL>.\n\
-          If `rustup` is already installed on your system, make sure to add it to your PATH.",
+            "Executing `rustup --version` returned an error.\n\
+            Install `rustup` following the instructions at https://rust-lang.org/tools/install \
+            to fix the issue",
         );
         return Ok(ExitCode::FAILURE);
     }
 
     let _ = shell.status("Checking", "if Rust's nightly toolchain is installed");
-    if is_rustup_installed().is_ok() {
+    if is_nightly_installed().is_ok() {
         let _ = shell.status("Success", "Rust's nightly toolchain is installed");
     } else {
         let _ = shell.error(
-            "Executing `rustup which --toolchain nightly cargo` returns an error.\n\
+            "Executing `rustup which --toolchain nightly cargo` returned an error.\n\
           Invoke\n\n    \
-          rustup toolchain install nightly\n\n
-          to fix the issue.",
+          rustup toolchain install nightly\n\n\
+          to add the missing toolchain and fix the issue.",
         );
         return Ok(ExitCode::FAILURE);
+    }
+
+    let _ = shell.status("Checking", "if the `rust-docs-json` component is installed");
+    if is_rustdoc_json_installed().is_ok() {
+        let _ = shell.status("Success", "the `rust-docs-json` component is installed");
+    } else {
+        let _ = shell.error(
+            "`rustup component list --installed --toolchain nightly` didn't include `rust-docs-json`.\n\
+          Invoke\n\n    \
+          rustup component add rust-docs-json --toolchain nightly\n\n\
+          to add the missing component and fix the issue.",
+        );
+        return Ok(ExitCode::FAILURE);
+    }
+
+    let _ = shell.status("Checking", "if `cargo-px` is installed");
+    if is_cargo_px_installed().is_ok() {
+        let _ = shell.status("Success", "`cargo-px` is installed");
+    } else {
+        let _ = shell.error(
+            "`cargo px -V` returned an error.\n\
+          Follow the instructions at https://lukemathwalker.github.io/cargo-px/ \
+          to install the missing sub-command and fix the issue.",
+        );
+        return Ok(ExitCode::FAILURE);
+    }
+
+    let _ = shell.status("Checking", "if Pavex has been activated");
+    if check_activation(&State::new(locator), shell).is_err() {
+        let _ = shell.warn("Pavex has not been activated yet!");
+        activate(shell, color, locator, None)?;
+    } else {
+        let _ = shell.status("Success", "Pavex has already been activated");
     }
 
     Ok(ExitCode::SUCCESS)
 }
 
-#[tracing::instrument("Activate Pavex", skip(shell, locator, key))]
+#[tracing::instrument("Activate Pavex", skip_all)]
 fn activate(
     shell: &mut Shell,
     color: Color,
