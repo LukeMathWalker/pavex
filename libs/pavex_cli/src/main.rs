@@ -218,7 +218,7 @@ fn update(shell: &mut Shell) -> Result<ExitCode, anyhow::Error> {
     Ok(ExitCode::SUCCESS)
 }
 
-#[tracing::instrument("Setup Pavex", skip(shell, locator, key))]
+#[tracing::instrument("Setup Pavex", skip(shell))]
 fn setup(shell: &mut Shell) -> Result<ExitCode, anyhow::Error> {
     let _ = shell.status("Checking", "if `rustup` is installed");
     if is_rustup_installed().is_ok() {
@@ -228,6 +228,19 @@ fn setup(shell: &mut Shell) -> Result<ExitCode, anyhow::Error> {
             "Executing `rustup --version` returns an error.\n\
           Install `rustup` following the instructions at <URL>.\n\
           If `rustup` is already installed on your system, make sure to add it to your PATH.",
+        );
+        return Ok(ExitCode::FAILURE);
+    }
+
+    let _ = shell.status("Checking", "if Rust's nightly toolchain is installed");
+    if is_rustup_installed().is_ok() {
+        let _ = shell.status("Success", "Rust's nightly toolchain is installed");
+    } else {
+        let _ = shell.error(
+            "Executing `rustup which --toolchain nightly cargo` returns an error.\n\
+          Invoke\n\n    \
+          rustup toolchain install nightly\n\n
+          to fix the issue.",
         );
         return Ok(ExitCode::FAILURE);
     }
