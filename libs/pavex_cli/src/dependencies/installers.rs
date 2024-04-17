@@ -1,9 +1,7 @@
-use crate::command::Color;
-use crate::dependencies::{
+use crate::dependencies::commands::{
     install_nightly, install_rustdoc_json, is_cargo_px_installed, is_nightly_installed,
     is_rustdoc_json_installed, is_rustup_installed,
 };
-use crate::locator::PavexLocator;
 use crate::user_input::confirm;
 use anyhow::Error;
 use cargo_like_utils::shell::{style, Shell};
@@ -55,7 +53,7 @@ pub fn verify_installation<D: Dependency>(shell: &mut Shell) -> Result<(), anyho
         }
     }
 
-    let _ = shell.status("Success", format!("{} is installed", D::NAME()));
+    let _ = shell.status("Success", format!("{} is installed", D::NAME));
     Ok(())
 }
 

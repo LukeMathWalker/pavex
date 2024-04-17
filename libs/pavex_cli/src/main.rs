@@ -12,11 +12,8 @@ use pavex_cli::activation::{
 use pavex_cli::cargo_install::{cargo_install, GitSourceRevision, Source};
 use pavex_cli::cli_kind::CliKind;
 use pavex_cli::command::{Cli, Color, Command, SelfCommands};
+use pavex_cli::dependencies::installers;
 use pavex_cli::dependencies::installers::{CargoPx, NightlyToolchain, RustdocJson, Rustup};
-use pavex_cli::dependencies::{
-    install_nightly, install_rustdoc_json, installers, is_cargo_px_installed, is_nightly_installed,
-    is_rustdoc_json_installed, is_rustup_installed,
-};
 use pavex_cli::locator::PavexLocator;
 use pavex_cli::package_graph::compute_package_graph;
 use pavex_cli::pavexc::{get_or_install_from_graph, get_or_install_from_version};
