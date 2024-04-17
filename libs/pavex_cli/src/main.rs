@@ -266,9 +266,8 @@ fn activate(
                 }
                 if use_color_on_stderr(color) {
                     eprintln!(
-                        "{}: {}",
-                        "ERROR".bold().red(),
-                        "The activation key you provided is not valid. Please try again."
+                        "{}: The activation key you provided is not valid. Please try again.",
+                        "ERROR".bold().red()
                     );
                 } else {
                     eprintln!(
