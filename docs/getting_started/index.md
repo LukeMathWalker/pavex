@@ -1,49 +1,9 @@
 # Installation
 
-## Prerequisites
-
-To work with Pavex, you'll need:
-
-- [The Rust toolchain](https://www.rust-lang.org/). In particular:
-    - `rustup`, the Rust toolchain manager. Check out its [installation instructions](https://rustup.rs/).
-    - `cargo`, the Rust package manager. It's automatically installed when installing `rustup`.
-- [`cargo-px`](https://github.com/LukeMathWalker/cargo-px), a `cargo` subcommand. Check out its [installation instructions](https://lukemathwalker.github.io/cargo-px/).
-  
-All these tools need to be available in your `PATH`.  
-If you're not sure whether that's the case, you can check by running:
-```bash
-rustup --version && \
-  cargo --version && \
-  cargo px --version
-```
-
-If there are no errors, you're good to go!
-
-### Nightly toolchain
-
-To perform code generation, Pavex relies on an unstable Rust feature:
-[`rustdoc-json`](https://github.com/rust-lang/rust/issues/76578).  
-As a consequence, Pavex requires you to have the Rust `nightly` toolchain installed.
-
-You can add `nightly` to your toolchain by running:
-```bash
-rustup toolchain install nightly
-```
-
-Once `nightly` is installed, add the `rust-docs-json` component:
-
-```bash
-rustup component add --toolchain nightly rust-docs-json
-```
-
-**Pavex will never use `nightly` to compile your application**.  
-All the code you'll be running (in production or otherwise) will be compiled with the stable toolchain. 
-Pavex relies on `nightly` to perform code generation and compile-time reflection—nothing else.
-
 ## Pavex CLI
 
-Pavex provides a command-line interface to scaffold new projects and work with existing ones.  
-To install it, execute the following command:
+To work on a Pavex project you need its command-line interface, `pavex`.  
+Execute the following command to install it:
 
 === "shell"
 
@@ -57,22 +17,39 @@ To install it, execute the following command:
     irm https://pavex.dev/releases/download/latest/pavex_cli-installer.ps1 | iex
     ```
 
-You can check that it's been installed correctly by running:
+## Setup
+
+Pavex relies on a few other tools to work as expected. 
+Invoke:
 
 ```bash
-pavex --version
+pavex self setup
 ```
+
+to verify that you have all the necessary dependencies installed on your system.  
+If some dependencies are missing, `pavex self setup` will provide instructions on how to install them.
+
+If there are no errors, you're ready to [embark on your Pavex journey](learning_paths.md)!
+
+??? "Pavex's dependencies"
+
+    Pavex needs:
+
+    - [`rustup`](https://rustup.rs/), Rust's toolchain manager
+    - `cargo`, Rust's package manager
+    - [`cargo-px`](https://github.com/LukeMathWalker/cargo-px), a `cargo` subcommand
+    - Rust's nightly toolchain and the [`rustdoc-json`](https://github.com/rust-lang/rust/issues/76578) component
+
+    All these tools need to be available in your `PATH`.
+
+    On nightly: **Pavex will never use the nightly toolchain to compile your application**.  
+    All the code you'll be running (in production or otherwise) will be compiled with the stable toolchain.
+    Pavex relies on `nightly` to perform code generation and compile-time reflection—nothing else.
 
 ### Activation
 
-To start using your Pavex installation, you need to activate it. Execute the following command:
-
-```bash
-pavex self activate
-```
-
-It will ask you for an **activation key**.  
+You'll be asked to provide **activation key** by `pavex self setup`.  
 You can find the activation key for the beta program in Pavex's Discord server, in the `#activation` channel. 
-You can join the beta on [pavex.dev](https://pavex.dev).
+You can join the waiting list for the beta program on [pavex.dev](https://pavex.dev).
 
-If there are no errors, you're ready to [embark on your Pavex journey](learning_paths.md)!
+If you need to change your activation key, invoke `pavex self activate`.
