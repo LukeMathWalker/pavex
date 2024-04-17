@@ -1,17 +1,15 @@
 use anyhow::Context;
 use cargo_like_utils::shell::Shell;
-use std::fmt::{Display, Formatter};
 use std::io::{ErrorKind, IsTerminal};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
-use std::str::FromStr;
 
-use clap::{Parser, Subcommand};
-use clap_stdin::MaybeStdin;
+use clap::Parser;
 use owo_colors::OwoColorize;
 use pavex_cli::activation::{check_activation, check_activation_key};
 use pavex_cli::cargo_install::{cargo_install, GitSourceRevision, Source};
 use pavex_cli::cli_kind::CliKind;
+use pavex_cli::command::{Cli, Color, Command, SelfCommands};
 use pavex_cli::locator::PavexLocator;
 use pavex_cli::package_graph::compute_package_graph;
 use pavex_cli::pavexc::{get_or_install_from_graph, get_or_install_from_version};
@@ -31,113 +29,6 @@ use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::EnvFilter;
-
-#[derive(Parser)]
-#[clap(author, version = VERSION, about, long_about = None)]
-struct Cli {
-    /// Pavex will expose the full error chain when reporting diagnostics.
-    ///
-    /// It will also emit tracing output, both to stdout and to disk.
-    /// The file serialized on disk (`trace-[...].json`) can be opened in
-    /// Google Chrome by visiting chrome://tracing for further analysis.
-    #[clap(long, env = "PAVEX_DEBUG")]
-    debug: bool,
-    #[clap(long, env = "PAVEX_COLOR", default_value_t = Color::Auto)]
-    color: Color,
-    #[clap(subcommand)]
-    command: Commands,
-}
-
-// Same structure used by `cargo --version`.
-static VERSION: &str = concat!(env!("CARGO_PKG_VERSION"), " (", env!("VERGEN_GIT_SHA"), ")");
-
-#[derive(Copy, Clone, Debug)]
-enum Color {
-    Auto,
-    Always,
-    Never,
-}
-
-impl Display for Color {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Color::Auto => write!(f, "auto"),
-            Color::Always => write!(f, "always"),
-            Color::Never => write!(f, "never"),
-        }
-    }
-}
-
-impl FromStr for Color {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "auto" => Ok(Color::Auto),
-            "always" => Ok(Color::Always),
-            "never" => Ok(Color::Never),
-            s => Err(anyhow::anyhow!("Invalid color setting: {}", s)),
-        }
-    }
-}
-
-#[derive(Subcommand)]
-enum Commands {
-    /// Generate the server SDK code for an application blueprint.
-    Generate {
-        /// The source path for the serialized application blueprint.
-        #[clap(short, long, value_parser)]
-        blueprint: PathBuf,
-        /// Optional.
-        /// If provided, Pavex will serialize diagnostic information about
-        /// the application to the specified path.
-        #[clap(long, value_parser)]
-        diagnostics: Option<PathBuf>,
-        #[clap(long)]
-        /// Verify that the generated server SDK is up-to-date.  
-        /// If it isn't, `pavex` will return an error without updating
-        /// the server SDK code.
-        check: bool,
-        /// The directory that will contain the newly generated server SDK crate.
-        /// If the directory path is relative,
-        /// it is interpreted as relative to the root of the current workspace.
-        #[clap(short, long, value_parser)]
-        output: PathBuf,
-    },
-    /// Scaffold a new Pavex project at <PATH>.
-    New {
-        /// The directory that will contain the project files.
-        ///
-        /// If any of the intermediate directories in the path don't exist, they'll be created.
-        #[arg(index = 1)]
-        path: PathBuf,
-    },
-    /// Modify the installation of the Pavex CLI.
-    #[command(name = "self")]
-    Self_ {
-        #[clap(subcommand)]
-        command: SelfCommands,
-    },
-}
-
-#[derive(Subcommand)]
-enum SelfCommands {
-    /// Download and install a newer version of Pavex CLI, if available.
-    Update,
-    /// Uninstall Pavex CLI and remove all its dependencies and artifacts.
-    Uninstall {
-        /// Don't ask for confirmation before uninstalling Pavex CLI.
-        #[clap(short, long, value_parser)]
-        y: bool,
-    },
-    Activate {
-        /// The activation key for Pavex.
-        /// You can find the activation key for the beta program in Pavex's Discord server,
-        /// in the #announcements channel.
-        #[arg(index = 1, env = "PAVEX_ACTIVATION_KEY")]
-        key: Option<MaybeStdin<SecretString>>,
-    },
-}
 
 fn init_telemetry() -> FlushGuard {
     let fmt_layer = tracing_subscriber::fmt::layer()
@@ -206,32 +97,25 @@ fn main() -> Result<ExitCode, miette::Error> {
     let locator = PavexLocator::new(&system_home_dir);
     let mut shell = Shell::new();
 
+    check_activation(&cli.command, &State::new(&locator), &mut shell)
+        .map_err(utils::anyhow2miette)?;
     match cli.command {
-        Commands::Generate {
+        Command::Generate {
             blueprint,
             diagnostics,
             check,
             output,
-        } => {
-            if !check {
-                check_activation(&State::new(&locator), &mut shell)
-                    .map_err(utils::anyhow2miette)?;
-            }
-            generate(
-                &mut shell,
-                client,
-                &locator,
-                blueprint,
-                diagnostics,
-                output,
-                check,
-            )
-        }
-        Commands::New { path } => {
-            check_activation(&State::new(&locator), &mut shell).map_err(utils::anyhow2miette)?;
-            scaffold_project(client, &locator, &mut shell, path)
-        }
-        Commands::Self_ { command } => {
+        } => generate(
+            &mut shell,
+            client,
+            &locator,
+            blueprint,
+            diagnostics,
+            output,
+            check,
+        ),
+        Command::New { path } => scaffold_project(client, &locator, &mut shell, path),
+        Command::Self_ { command } => {
             // You should always be able to run `self` commands, even if Pavex has
             // not been activated yet.
             match command {

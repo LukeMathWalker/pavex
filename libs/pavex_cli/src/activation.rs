@@ -9,6 +9,7 @@
 //! validation checks against a server at most once every X hours, etc.
 //! But this will do for now.
 
+use crate::command::Command;
 use crate::state::State;
 use cargo_like_utils::shell::Shell;
 use secrecy::{ExposeSecret, SecretString};
@@ -17,8 +18,26 @@ use sha2::Digest;
 static BETA_ACTIVATION_KEY_SHA256: &str =
     "a0c04ee4345ad0900d29e9c525be9de2be44450e73f9ce2893c62eb96a66e157";
 
+/// If the command requires it, check if Pavex has been correctly activated
+/// on this machine.
+pub fn check_activation(
+    command: &Command,
+    state: &State,
+    shell: &mut Shell,
+) -> Result<(), anyhow::Error> {
+    if !command.needs_activation_key() {
+        return Ok(());
+    }
+    let key = state.get_activation_key(shell)?;
+    let Some(key) = key else {
+        return Err(PavexMustBeActivated.into());
+    };
+    check_activation_key(&key)?;
+    Ok(())
+}
+
 /// Verify that Pavex has been correctly activated on this machine.
-pub fn check_activation(state: &State, shell: &mut Shell) -> Result<(), anyhow::Error> {
+pub fn _check_activation(state: &State, shell: &mut Shell) -> Result<(), anyhow::Error> {
     let key = state.get_activation_key(shell)?;
     let Some(key) = key else {
         return Err(PavexMustBeActivated.into());
