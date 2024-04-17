@@ -12,7 +12,7 @@ use pavex_cli::activation::{
 use pavex_cli::cargo_install::{cargo_install, GitSourceRevision, Source};
 use pavex_cli::cli_kind::CliKind;
 use pavex_cli::command::{Cli, Color, Command, SelfCommands};
-use pavex_cli::dependencies::installers::RustdocJson;
+use pavex_cli::dependencies::installers::{NightlyToolchain, RustdocJson};
 use pavex_cli::dependencies::{
     install_nightly, install_rustdoc_json, installers, is_cargo_px_installed, is_nightly_installed,
     is_rustdoc_json_installed, is_rustup_installed,
@@ -252,42 +252,7 @@ fn setup(
             let _ = shell.status("Success", "`rustup` is installed");
         }
 
-        let _ = shell.status("Checking", "if Rust's nightly toolchain is installed");
-        if let Err(mut e) = is_nightly_installed() {
-            let _ = shell.status_with_color(
-                "Missing",
-                "Rust's nightly toolchain is not installed\n",
-                &cargo_like_utils::shell::style::ERROR,
-            );
-            let mut installed = false;
-            if std::io::stdout().is_terminal() {
-                if let Ok(true) =
-                    confirm("\tShould I install Rust's nightly toolchain for you?", true)
-                {
-                    if let Err(inner) = install_nightly() {
-                        e = inner;
-                        let _ = shell.status_with_color(
-                            "Failed",
-                            "to install Rust's nightly toolchain",
-                            &cargo_like_utils::shell::style::ERROR,
-                        );
-                    } else {
-                        installed = true;
-                    }
-                }
-            }
-            if !installed {
-                let _ = shell.note(
-                    "Invoke\n\n    \
-                rustup toolchain install nightly\n\n\
-                to add the missing toolchain and fix the issue.",
-                );
-                return Err(e);
-            }
-        } else {
-            let _ = shell.status("Success", "Rust's nightly toolchain is installed");
-        }
-
+        installers::verify_installation(NightlyToolchain, shell, color, locator)?;
         installers::verify_installation(RustdocJson, shell, color, locator)?;
 
         let _ = shell.status("Checking", "if `cargo-px` is installed");

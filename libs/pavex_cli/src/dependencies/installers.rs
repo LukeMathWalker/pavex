@@ -84,3 +84,23 @@ to add the missing component and fix the issue."#;
         is_rustdoc_json_installed()
     }
 }
+
+pub struct NightlyToolchain;
+
+impl Dependency for NightlyToolchain {
+    const NAME: &'static str = "Rust's nightly toolchain";
+    const INSTALLATION_INSTRUCTIONS: &'static str = r#"Invoke
+
+    rustup toolchain install nightly
+
+to add the missing toolchain and fix the issue."#;
+    const AUTO_INSTALLABLE: bool = true;
+
+    fn is_installed() -> Result<(), Error> {
+        install_nightly()
+    }
+
+    fn auto_install() -> Result<(), Error> {
+        install_nightly()
+    }
+}
