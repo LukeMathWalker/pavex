@@ -57,6 +57,37 @@ impl ExtractBufferedBodyError {
 }
 
 #[derive(Debug, thiserror::Error)]
+#[non_exhaustive]
+/// The error returned by [`UrlEncodedBody::extract`] when the extraction fails.
+///
+/// [`UrlEncodedBody::extract`]: crate::request::body::urlencoded::UrlEncodedBody::extract
+pub enum ExtractUrlEncodedBodyError {
+    #[error(transparent)]
+    /// See [`MissingUrlEncodedContentType`] for details.
+    MissingContentType(#[from] MissingUrlEncodedContentType),
+    #[error(transparent)]
+    /// See [`UrlEncodedContentTypeMismatch`] for details.
+    ContentTypeMismatch(#[from] UrlEncodedContentTypeMismatch),
+    #[error(transparent)]
+    /// See [`UrlEncodedBodyDeserializationError`] for details.
+    DeserializationError(#[from] UrlEncodedBodyDeserializationError),
+}
+
+impl ExtractUrlEncodedBodyError {
+    /// Convert an [`ExtractUrlEncodedBodyError`] into an HTTP response.
+    pub fn into_response(&self) -> Response {
+        match self {
+            ExtractUrlEncodedBodyError::MissingContentType(_)
+            | ExtractUrlEncodedBodyError::ContentTypeMismatch(_) => {
+                Response::unsupported_media_type()
+            }
+            ExtractUrlEncodedBodyError::DeserializationError(_) => Response::bad_request(),
+        }
+        .set_typed_body(format!("{}", self))
+    }
+}
+
+#[derive(Debug, thiserror::Error)]
 #[error("The request body is larger than the maximum size limit enforced by this server.")]
 #[non_exhaustive]
 /// The request body is larger than the maximum size limit enforced by this server.
@@ -108,4 +139,32 @@ pub struct JsonDeserializationError {
 pub struct JsonContentTypeMismatch {
     /// The actual value of the `Content-Type` header for this request.
     pub actual: String,
+}
+
+#[derive(Debug, thiserror::Error)]
+#[error(
+"The `Content-Type` header is missing. This endpoint expects requests with a `Content-Type` header set to `application/x-www-form-urlencoded`"
+)]
+#[non_exhaustive]
+/// The `Content-Type` header is missing, while we expected it to be set to `application/x-www-form-urlencoded`.
+pub struct MissingUrlEncodedContentType;
+
+#[derive(Debug, thiserror::Error)]
+#[error(
+"The `Content-Type` header was set to `{actual}`. This endpoint expects requests with a `Content-Type` header set to `application/x-www-form-urlencoded`"
+)]
+#[non_exhaustive]
+/// The `Content-Type` header not set to `application/x-www-form-urlencoded`.
+pub struct UrlEncodedContentTypeMismatch {
+    /// The actual value of the `Content-Type` header for this request.
+    pub actual: String,
+}
+
+#[derive(Debug, thiserror::Error)]
+#[error("Failed to deserialize the body as a urlencoded form.\n{source}")]
+#[non_exhaustive]
+/// Something went wrong when deserializing the request body into the specified type.
+pub struct UrlEncodedBodyDeserializationError {
+    #[source]
+    pub(super) source: serde_html_form::de::Error,
 }

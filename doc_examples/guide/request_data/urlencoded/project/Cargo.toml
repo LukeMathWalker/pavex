@@ -1,0 +1,13 @@
+[package]
+name = "urlencoded"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+pavex = { path = "../../../../../libs/pavex" }
+pavex_cli_client = { path = "../../../../../libs/pavex_cli_client" }
+serde = { version = "1", features = ["derive"] }
+cargo_px_env = "0.1"
+
+[workspace]
+members = [".", "server_sdk"]
