@@ -40,7 +40,7 @@ If there are no errors, you're ready to [embark on your Pavex journey](learning_
     - [`cargo-px`](https://github.com/LukeMathWalker/cargo-px), a `cargo` subcommand
     - Rust's nightly toolchain and the [`rustdoc-json`](https://github.com/rust-lang/rust/issues/76578) component
 
-    All these tools need to be available in your `PATH`.
+    `rustup` and `cargo` must be available in your `PATH`.
 
     On nightly: **Pavex will never use the nightly toolchain to compile your application**.  
     All the code you'll be running (in production or otherwise) will be compiled with the stable toolchain.
@@ -48,8 +48,8 @@ If there are no errors, you're ready to [embark on your Pavex journey](learning_
 
 ### Activation
 
-You'll be asked to provide **activation key** by `pavex self setup`.  
-You can find the activation key for the beta program in Pavex's Discord server, in the `#activation` channel. 
+You'll be asked to provide an **activation key** by `pavex self setup`.  
+You can find the activation key for the beta program in the `#activation` channel of Pavex's Discord server.
 You can join the waiting list for the beta program on [pavex.dev](https://pavex.dev).
 
 If you need to change your activation key, invoke `pavex self activate`.
