@@ -1,11 +1,17 @@
 # Json
 
-[`JsonBody<T>`][JsonBody] buffers the body in memory and deserializes it as JSON, 
-according to the type `T` you specify.  
+You can use [`JsonBody<T>`][JsonBody] to work with [JSON-encoded](https://www.json.org/json-en.html) request bodies.  
+[`JsonBody<T>`][JsonBody] parses the raw JSON into an instance of the type `T` you specified.
+
+The request body is buffered in memory before being deserialized.
 
 ## Registration
 
-To use [`JsonBody<T>`][JsonBody] in your application you need to register a constructor for it.  
+If you're using the default [`ApiKit`][ApiKit],
+you don't need to register a constructor for [`JsonBody`][JsonBody]:
+it's already included in the kit.
+
+If you're not using [`ApiKit`][ApiKit], you need to register a constructor for [`JsonBody<T>`][JsonBody].
 You can use [`JsonBody::register`][JsonBody::register] to register the default constructor
 and error handler:
 
@@ -13,10 +19,6 @@ and error handler:
 
 1. You also need to register a constructor for [`BufferedBody`][BufferedBody]!  
    Check out the [BufferedBody guide](../byte_wrappers.md) for more details.
-
-If you're using the default [`ApiKit`](../../../dependency_injection/core_concepts/kits.md),
-you don't need to register a constructor for [`JsonBody`][JsonBody] manually:
-it's already included in the kit.
 
 ## Extraction 
 
@@ -58,3 +60,4 @@ if the field contains escape sequences, but you tried to use `&str` as its field
 [JsonBody::register]: ../../../../api_reference/pavex/request/body/struct.JsonBody.html#method.register
 [serde::Deserialize]: https://docs.rs/serde/latest/serde/trait.Deserialize.html
 [Cow]: https://doc.rust-lang.org/std/borrow/enum.Cow.html
+[ApiKit]: ../../../dependency_injection/core_concepts/kits.md
