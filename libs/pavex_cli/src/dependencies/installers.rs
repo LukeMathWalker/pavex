@@ -25,7 +25,7 @@ pub trait Dependency {
 
 pub fn verify_installation<D: Dependency>(shell: &mut Shell) -> Result<(), anyhow::Error> {
     let _ = shell.status("Checking", format!("if {} is installed", D::NAME));
-    if let Err(mut e) = is_nightly_installed() {
+    if let Err(mut e) = D::is_installed() {
         let _ = shell.status_with_color(
             "Missing",
             format!("{} is not installed\n", D::NAME),
