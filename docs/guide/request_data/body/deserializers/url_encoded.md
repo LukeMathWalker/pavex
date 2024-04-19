@@ -1,11 +1,22 @@
-# UrlEncoded
+# URL encoded
 
-[`UrlEncodedBody<T>`][UrlEncodedBody] buffers the body in memory and deserializes it as URL-encoded,
-according to the type `T` you specify.
+[URL encoding](https://en.wikipedia.org/wiki/Percent-encoding), also known as _percent encoding_, is one 
+of the formats used by browsers to encode the data submitted via a `POST` web form.
+
+You can use [`UrlEncodedBody<T>`][UrlEncodedBody] to work with URL encoded payloads:
+it parses the raw request body into an instance of the type `T` you specified.
+
+--8<-- "doc_examples/guide/request_data/urlencoded/project-whole.snap"
+
+The whole request body is buffered in memory before being deserialized.
 
 ## Registration
 
-To use [`UrlEncodedBody<T>`][UrlEncodedBody] in your application you need to register a constructor for it.  
+If you're using the default [`ApiKit`][ApiKit],
+you don't need to register a constructor for [`UrlEncodedBody<T>`][UrlEncodedBody] manually:
+it's already included in the kit.
+
+If you're not using [`ApiKit`][ApiKit], you need to register a constructor for [`UrlEncodedBody<T>`][UrlEncodedBody].
 You can use [`UrlEncodedBody::register`][UrlEncodedBody::register] to register the default constructor
 and error handler:
 
@@ -13,10 +24,6 @@ and error handler:
 
 1. You also need to register a constructor for [`BufferedBody`][BufferedBody]!  
    Check out the [BufferedBody guide](../byte_wrappers.md) for more details.
-
-If you're using the default [`ApiKit`](../../../dependency_injection/core_concepts/kits.md),
-you don't need to register a constructor for [`BufferedBody`][BufferedBody] manually:
-it's already included in the kit.
 
 ## Extraction
 
@@ -38,20 +45,23 @@ You can derive [`serde::Deserialize`][serde::Deserialize] in most cases.
 For example, the following can't be deserialized from the wire using [`UrlEncodedBody<T>`][UrlEncodedBody]:
 
 ```rust
-#[derive(serde::Deserialize)]
+use serde::Deserialize;
+
+#[derive(Deserialize)]
 pub struct UpdateUserBody {
     address: Address
 }
 
-#[derive(serde::Deserialize)]
+#[derive(Deserialize)]
 pub struct Address {
     street: String,
     city: String,
 }
 ```
 
-If you need to deserialize nested structures from an urlencoded body,
-you might want to look into writing your own extractor on top of [`serde_qs`](https://crates.io/crates/serde_qs).
+If you need to deserialize nested structures from a URL encoded body,
+you might want to look into writing your own extractor on top of a crate like 
+[`serde_qs`](https://crates.io/crates/serde_qs).
 
 ## Avoiding allocations
 
@@ -61,32 +71,28 @@ Pavex supports this use case—**you can borrow from the request body**.
 
 ### Percent-encoding
 
-It is not always possible to avoid allocations when handling an urlencoded body.  
-A urlencoded body must comply with the restriction of the URI specification:
+It is not always possible to avoid allocations when handling a URL encoded body.  
+Fields and values in a URL encoded body must comply with the restriction of the URI specification:
 you can only use [a limited set of characters](https://datatracker.ietf.org/doc/html/rfc3986#section-2).  
-If you want to use a character not allowed in a URI, you
+If you want to use a character that's not URL-safe, you
 must [percent-encode it](https://developer.mozilla.org/en-US/docs/Glossary/Percent-encoding).  
 For example, if you want to use a space in a field name or a field value, you must encode it as `%20`.
 A string like `John Doe` becomes `John%20Doe` when percent-encoded.
 
 [`UrlEncodedBody<T>`][UrlEncodedBody] automatically decodes percent-encoded strings for you. But that comes at a cost:
-Pavex _must_ allocate a new `String` if the route parameter is percent-encoded.
+Pavex _must_ allocate a new `String` if the value is percent-encoded.
 
 ### Cow
 
 We recommend using [`Cow<'_, str>`][Cow] as your field type for string-like parameters.
-It borrows from the request's path if possible, it allocates a new `String` if it can't be avoided.
+It borrows from the buffered request body if possible, it allocates a new `String` if it can't be avoided.
 
 [`Cow<'_, str>`][Cow] strikes a balance between performance and robustness: you don't have to worry about a runtime
-error if the route parameter
-is percent-encoded, but you tried to use `&str` as its field type.
+error if the field is percent-encoded, but you minimise memory usage when it is.
 
+[ApiKit]: ../../../dependency_injection/core_concepts/kits.md
 [BufferedBody]: ../../../../api_reference/pavex/request/body/struct.BufferedBody.html
-
 [UrlEncodedBody]: ../../../../api_reference/pavex/request/body/struct.UrlEncodedBody.html
-
 [UrlEncodedBody::register]: ../../../../api_reference/pavex/request/body/struct.UrlEncodedBody.html#method.register
-
 [serde::Deserialize]: https://docs.rs/serde/latest/serde/trait.Deserialize.html
-
 [Cow]: https://doc.rust-lang.org/std/borrow/enum.Cow.html

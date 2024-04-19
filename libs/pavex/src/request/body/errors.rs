@@ -60,7 +60,7 @@ impl ExtractBufferedBodyError {
 #[non_exhaustive]
 /// The error returned by [`UrlEncodedBody::extract`] when the extraction fails.
 ///
-/// [`UrlEncodedBody::extract`]: crate::request::body::urlencoded::UrlEncodedBody::extract
+/// [`UrlEncodedBody::extract`]: crate::request::body::url_encoded::UrlEncodedBody::extract
 pub enum ExtractUrlEncodedBodyError {
     #[error(transparent)]
     /// See [`MissingUrlEncodedContentType`] for details.

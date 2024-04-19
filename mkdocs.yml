@@ -103,6 +103,7 @@ nav:
                   - "Deserializers":
                       - guide/request_data/body/deserializers/index.md
                       - guide/request_data/body/deserializers/json.md
+                      - guide/request_data/body/deserializers/url_encoded.md
                   - guide/request_data/body/byte_wrappers.md
           - "Dependency injection":
               - guide/dependency_injection/index.md
