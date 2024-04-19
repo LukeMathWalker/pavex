@@ -1,3 +1,4 @@
+```rust title="src/urlencoded/routes.rs"
 use pavex::http::StatusCode;
 use pavex::request::body::UrlEncodedBody;
 
@@ -9,5 +10,6 @@ pub struct HomeListing {
 
 pub fn handler(body: &UrlEncodedBody<HomeListing>) -> StatusCode {
     println!("New home listing at {}, for ${}", body.0.address, body.0.price);
-    StatusCode::OK
+    // [...]
 }
+```

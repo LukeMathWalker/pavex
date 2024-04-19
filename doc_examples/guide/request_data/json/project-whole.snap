@@ -1,3 +1,4 @@
+```rust title="src/json/routes.rs"
 use pavex::http::StatusCode;
 use pavex::request::body::JsonBody;
 
@@ -12,5 +13,6 @@ pub fn handler(body: &JsonBody<HomeListing>) -> StatusCode {
         "The home you are looking for is located in {} and it's being sold for ${}",
         body.0.address, body.0.price
     );
-    StatusCode::OK
+    // [...]
 }
+```

@@ -11,12 +11,16 @@ use http::HeaderMap;
 use serde::Deserialize;
 
 #[doc(alias = "UrlEncoded")]
+#[doc(alias = "Form")]
+#[doc(alias = "FormBody")]
+#[doc(alias = "PercentEncoded")]
+#[doc(alias = "PercentEncodedBody")]
 #[derive(Debug)]
-/// Parse the body of an incoming request as an urlencoded form.
+/// Parse a URL-encoded request body, such as a web form.
 ///
 /// # Guide
 ///
-/// Check out the [relevant section](https://pavex.dev/docs/guide/request_data/body/deserializers/urlencoded/)
+/// Check out the [relevant section](https://pavex.dev/docs/guide/request_data/body/deserializers/url_encoded/)
 /// of Pavex's guide for a thorough introduction to `UrlEncodedBody`.
 ///
 /// # Example
@@ -131,7 +135,7 @@ mod tests {
             home_price: 0.1,
             home_name: Cow::Borrowed("Hi there"),
         };
-        let actual: Home = crate::request::body::urlencoded::parse(query.as_bytes()).unwrap();
+        let actual: Home = crate::request::body::url_encoded::parse(query.as_bytes()).unwrap();
         assert_eq!(expected, actual);
     }
 

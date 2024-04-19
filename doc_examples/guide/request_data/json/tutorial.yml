@@ -9,8 +9,11 @@ snippets:
     hl_lines: [ 6 ]
   - name: "extraction"
     source_path: "src/json/routes.rs"
-    ranges: [ "0..10", "11..12" ]
+    ranges: [ "0..14", "15..16" ]
     hl_lines: [ 10 ]
+  - name: "whole"
+    source_path: "src/json/routes.rs"
+    ranges: [ "0..14", "15..16" ]
   - name: "struct_with_attr"
     source_path: "src/json/routes.rs"
     ranges: [ "3..8" ]

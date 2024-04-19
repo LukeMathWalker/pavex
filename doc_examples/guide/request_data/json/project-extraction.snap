@@ -8,7 +8,11 @@ pub struct HomeListing {
     price: u64,
 }
 
-pub fn handler(params: &JsonBody<HomeListing>) -> StatusCode {
-// [...]
+pub fn handler(body: &JsonBody<HomeListing>) -> StatusCode {
+    println!(
+        "The home you are looking for is located in {} and it's being sold for ${}",
+        body.0.address, body.0.price
+    );
+    // [...]
 }
 ```

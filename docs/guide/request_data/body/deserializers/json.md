@@ -1,9 +1,11 @@
-# Json
+# JSON 
 
 You can use [`JsonBody<T>`][JsonBody] to work with [JSON-encoded](https://www.json.org/json-en.html) request bodies.  
 [`JsonBody<T>`][JsonBody] parses the raw JSON into an instance of the type `T` you specified.
 
-The request body is buffered in memory before being deserialized.
+--8<-- "doc_examples/guide/request_data/json/project-whole.snap"
+
+The whole request body is buffered in memory before being deserialized.
 
 ## Registration
 

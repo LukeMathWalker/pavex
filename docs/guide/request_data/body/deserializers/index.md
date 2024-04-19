@@ -4,10 +4,10 @@ Deserializers transform the raw body into a Rust type.
 They take care of parsing, basic validation and security safeguards.
 They're the family of extractors you'll use most often in your Pavex application.
 
-Out of the box, Pavex supports the following formats:
+Out of the box, Pavex supports the following encoding formats:
 
 * [JSON](json.md)
-* [URL Encoded](urlencoded.md)
+* [URL encoded](url_encoded.md)
 
 ## Tower of abstractions
 
