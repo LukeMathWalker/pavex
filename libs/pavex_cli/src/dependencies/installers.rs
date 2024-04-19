@@ -94,7 +94,7 @@ to add the missing toolchain and fix the issue."#;
     }
 
     fn is_installed() -> Result<(), Error> {
-        install_nightly()
+        is_nightly_installed()
     }
 }
 
