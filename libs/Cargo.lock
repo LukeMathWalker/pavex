@@ -931,6 +931,7 @@ dependencies = [
  "toml",
  "tracing",
  "walkdir",
+ "workspace_hack",
 ]
 
 [[package]]
@@ -1933,6 +1934,7 @@ dependencies = [
  "tracing",
  "ubyte",
  "uuid",
+ "workspace_hack",
 ]
 
 [[package]]
@@ -1941,6 +1943,7 @@ version = "0.1.30"
 dependencies = [
  "pavex_reflection",
  "serde",
+ "workspace_hack",
 ]
 
 [[package]]
@@ -1982,6 +1985,7 @@ dependencies = [
  "ureq",
  "vergen",
  "windows-sys 0.52.0",
+ "workspace_hack",
  "xdg-home",
  "xz2",
  "zip",
@@ -1994,6 +1998,7 @@ dependencies = [
  "anyhow",
  "pavex",
  "thiserror",
+ "workspace_hack",
 ]
 
 [[package]]
@@ -2006,6 +2011,7 @@ dependencies = [
  "serde",
  "syn",
  "trybuild",
+ "workspace_hack",
 ]
 
 [[package]]
@@ -2026,6 +2032,7 @@ dependencies = [
  "terminal_size",
  "textwrap",
  "unicode-width",
+ "workspace_hack",
 ]
 
 [[package]]
@@ -2033,6 +2040,7 @@ name = "pavex_reflection"
 version = "0.1.30"
 dependencies = [
  "serde",
+ "workspace_hack",
 ]
 
 [[package]]
@@ -2060,6 +2068,7 @@ dependencies = [
  "toml",
  "tracing-subscriber",
  "walkdir",
+ "workspace_hack",
 ]
 
 [[package]]
@@ -2068,6 +2077,7 @@ version = "0.1.30"
 dependencies = [
  "pavex",
  "tracing",
+ "workspace_hack",
 ]
 
 [[package]]
@@ -2114,6 +2124,7 @@ dependencies = [
  "toml_edit 0.21.1",
  "tracing",
  "vergen",
+ "workspace_hack",
  "xdg-home",
 ]
 
@@ -2140,6 +2151,7 @@ dependencies = [
  "tracing-chrome",
  "tracing-subscriber",
  "vergen",
+ "workspace_hack",
 ]
 
 [[package]]
@@ -2149,6 +2161,7 @@ dependencies = [
  "anyhow",
  "pavex",
  "thiserror",
+ "workspace_hack",
 ]
 
 [[package]]
@@ -2177,6 +2190,7 @@ dependencies = [
  "fs-err",
  "sha2",
  "tracing",
+ "workspace_hack",
 ]
 
 [[package]]
@@ -3919,6 +3933,50 @@ checksum = "524e57b2c537c0f9b1e69f1965311ec12182b4122e45035b1508cd24d2adadb1"
 dependencies = [
  "cfg-if",
  "windows-sys 0.48.0",
+]
+
+[[package]]
+name = "workspace_hack"
+version = "0.1.0"
+dependencies = [
+ "ahash",
+ "aho-corasick",
+ "bitflags 2.5.0",
+ "cc",
+ "clap",
+ "clap_builder",
+ "console",
+ "crossbeam-utils",
+ "crypto-common",
+ "deranged",
+ "digest",
+ "fixedbitset",
+ "getrandom",
+ "hashbrown 0.14.3",
+ "hmac",
+ "indexmap",
+ "log",
+ "memchr",
+ "miette",
+ "petgraph",
+ "proc-macro2",
+ "quote",
+ "regex",
+ "regex-automata 0.4.6",
+ "regex-syntax 0.8.3",
+ "serde",
+ "serde_json",
+ "sha2",
+ "smallvec",
+ "subtle",
+ "syn",
+ "time",
+ "time-macros",
+ "tokio",
+ "toml",
+ "tracing-core",
+ "uuid",
+ "zeroize",
 ]
 
 [[package]]

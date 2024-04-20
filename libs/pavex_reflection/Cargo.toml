@@ -9,3 +9,4 @@ license.workspace = true
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
+workspace_hack = { version = "0.1", path = "../workspace_hack" }
