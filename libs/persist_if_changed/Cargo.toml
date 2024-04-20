@@ -12,3 +12,4 @@ tracing = "0.1"
 fs-err = "2.7"
 sha2 = "0.10"
 anyhow = "1"
+workspace_hack = { version = "0.1", path = "../workspace_hack" }
