@@ -12,17 +12,33 @@ jobs:
     name: Release-plz
     runs-on: ubuntu-latest
     steps:
+      - name: Generate GitHub token
+        uses: actions/create-github-app-token@v1
+        id: generate-token
+        with:
+          app-id: ${{ secrets.RELEASER_APP_ID }}
+          private-key: ${{ secrets.RELEASER_PRIVATE_KEY }}
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-          token: ${{ secrets.RELEASE_PLZ_TOKEN }}
+          token: ${{ steps.generate-token.outputs.token }}
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
+      - name: Install cargo-hakari
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-hakari
+      - name: Remove workspace hack from Cargo.toml
+        run: |
+          cd libs
+          cargo hakari disable
+          cargo hakari remove-deps
       - name: Run release-plz
         uses: MarcoIeni/release-plz-action@v0.5
         with:
           project_manifest: "libs/Cargo.toml"
+          config: "libs/.release-plz.toml"
         env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
