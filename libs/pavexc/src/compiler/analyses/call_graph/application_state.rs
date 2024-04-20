@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use ahash::{HashMap, HashMapExt, HashSet};
+use ahash::{HashMap, HashMapExt};
 use bimap::BiHashMap;
 use convert_case::{Case, Casing};
 use guppy::graph::PackageGraph;
@@ -122,7 +122,7 @@ pub(crate) fn application_state_call_graph(
 
     // Let's start by collecting the possible error types.
     let error_type2err_match_ids = {
-        let mut map = IndexMap::<_, HashSet<ComponentId>>::new();
+        let mut map = IndexMap::<_, BTreeSet<ComponentId>>::new();
         let mut output_node_indexes = call_graph
             .externals(Direction::Outgoing)
             .collect::<BTreeSet<_>>();
@@ -235,7 +235,7 @@ pub(crate) fn application_state_call_graph(
             computation_db,
         );
 
-        let mut error_variants = IndexMap::new();
+        let mut error_variants = BTreeMap::new();
         let mut collision_map = HashMap::<_, usize>::new();
         for (error_type, err_match_ids) in &error_type2err_match_ids {
             for err_match_id in err_match_ids {
@@ -357,7 +357,7 @@ pub(crate) fn application_state_call_graph(
     )?;
     Ok(ApplicationStateCallGraph {
         call_graph,
-        error_variants,
+        error_variants: error_variants.into_iter().collect(),
     })
 }
 
