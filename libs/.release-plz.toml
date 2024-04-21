@@ -2,6 +2,7 @@
 changelog_update = false
 git_release_enable = false
 git_tag_enable = false
+semver_check = false
 
 [[package]]
 name = "pavex"
