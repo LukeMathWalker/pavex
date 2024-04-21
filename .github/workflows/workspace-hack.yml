@@ -27,10 +27,9 @@ jobs:
       - name: Verify workspace-hack
         run: |
           cd libs
-          if cargo hakari disable --diff ; then
-            # The hack crate has been disabled (probably for a release)
-            # No need to check anything else
-          else 
+          # If the hack crate has been disabled (probably for a release)
+          # we don't check anything else
+          if ! cargo hakari disable --diff ; then
             # Check that workspace_hack's Cargo.toml is up-to-date
             # If this fails, run `cargo hakari generate` to fix it
             cargo hakari generate --diff  
