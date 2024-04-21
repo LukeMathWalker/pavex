@@ -37,4 +37,8 @@ jobs:
           cargo hakari manage-deps --yes
           git add .
           git commit -am "Re-enable workspace hack after a release"
-          git push
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch-suffix: "random"
+          title: "Re-enable workspace hack after a release"
