@@ -1,7 +1,7 @@
 use crate::blueprint::constructor::Constructor;
 use crate::blueprint::linter::Lint;
 use crate::blueprint::Blueprint;
-use crate::request::body::{BodySizeLimit, BufferedBody, JsonBody};
+use crate::request::body::{BodySizeLimit, BufferedBody, JsonBody, UrlEncodedBody};
 use crate::request::path::PathParams;
 use crate::request::query::QueryParams;
 use crate::telemetry::ServerRequestId;
@@ -34,6 +34,8 @@ pub struct ApiKit {
     pub query_params: Option<Constructor>,
     /// The [default constructor](JsonBody::default_constructor) for [`JsonBody`].
     pub json_body: Option<Constructor>,
+    /// The [default constructor](UrlEncodedBody::default_constructor) for [`UrlEncodedBody`].
+    pub url_encoded_body: Option<Constructor>,
     /// The [default constructor](BufferedBody::default_constructor) for [`BufferedBody`].
     pub buffered_body: Option<Constructor>,
     /// The [default constructor](BodySizeLimit::default_constructor) for [`BodySizeLimit`].
@@ -49,6 +51,7 @@ impl ApiKit {
             path_params: Some(PathParams::default_constructor().ignore(Lint::Unused)),
             query_params: Some(QueryParams::default_constructor().ignore(Lint::Unused)),
             json_body: Some(JsonBody::default_constructor().ignore(Lint::Unused)),
+            url_encoded_body: Some(UrlEncodedBody::default_constructor().ignore(Lint::Unused)),
             buffered_body: Some(BufferedBody::default_constructor().ignore(Lint::Unused)),
             body_size_limit: Some(BodySizeLimit::default_constructor().ignore(Lint::Unused)),
             server_request_id: Some(ServerRequestId::default_constructor().ignore(Lint::Unused)),
@@ -67,6 +70,9 @@ impl ApiKit {
         }
         if let Some(json_body) = self.json_body {
             json_body.register(bp);
+        }
+        if let Some(url_encoded_body) = self.url_encoded_body {
+            url_encoded_body.register(bp);
         }
         if let Some(buffered_body) = self.buffered_body {
             buffered_body.register(bp);
