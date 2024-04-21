@@ -1,5 +1,6 @@
 use crate::locator::PavexLocator;
 use crate::pavexc::install::{GitReq, InstallSource};
+use crate::version::latest_released_version;
 use anyhow::Context;
 use cargo_like_utils::shell::Shell;
 use fs_err::PathExt;
@@ -30,7 +31,14 @@ pub fn get_or_install_from_graph(
         "Failed to determine the version of the `pavex` library crate in this workspace.",
     )?;
     if pavex_lib_version > &pavex_cli_version {
-        return Err(anyhow::anyhow!(
+        let latest_pavex_cli_version = latest_released_version()?;
+        // There is a delay between the release of the `pavex` library
+        // and the release of pre-built `pavex` CLI binaries for the same version.
+        //
+        // We don't want to block users from building their workspace just because
+        // the pre-built binary for the new version of `pavex` CLI is not available yet.
+        if &latest_pavex_cli_version >= pavex_lib_version {
+            return Err(anyhow::anyhow!(
             "Your `pavex` CLI is too old: \
             the current workspace uses version `{}` of the `pavex` library, but you're using version `{}` of the `pavex` CLI.\n\
             You must update your `pavex` CLI to a version greater or equal than `{}` to build the current workspace. \n\
@@ -40,6 +48,7 @@ pub fn get_or_install_from_graph(
             pavex_cli_version,
             pavex_lib_version,
         ));
+        }
     }
     let pavexc_cli_path = location::path_from_graph(
         &locator.toolchains(),
