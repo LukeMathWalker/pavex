@@ -16,4 +16,3 @@ supports-hyperlinks = { version = "3.0.0" }
 supports-color = { version = "3.0.0" }
 supports-unicode = { version = "3.0.0" }
 terminal_size = { version = "0.3" }
-workspace_hack = { version = "0.1", path = "../workspace_hack" }

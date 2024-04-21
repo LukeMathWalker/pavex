@@ -1,6 +1,6 @@
 [package]
 name = "pavexc_cli"
-version = "0.1.30"
+version = "0.1.31"
 description = "A CLI interface for the Pavex compiler."
 keywords = ["pavex"]
 edition.workspace = true
@@ -31,7 +31,6 @@ ron = "0.8"
 generate_from_path = { path = "../generate_from_path", version = "0.1.30" }
 tempfile = "3.9.0"
 better-panic = "0.3.0"
-workspace_hack = { version = "0.1", path = "../workspace_hack" }
 
 [build-dependencies]
 vergen = { workspace = true }

@@ -20,4 +20,3 @@ indicatif = "0.17.7"
 walkdir = "2.4.0"
 sanitize-filename = "0.5"
 regex = "1.10.2"
-workspace_hack = { version = "0.1", path = "../workspace_hack" }

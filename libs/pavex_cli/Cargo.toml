@@ -54,7 +54,6 @@ secrecy = { version = "0.8.0", features = ["serde"] }
 clap-stdin = "0.4.0"
 owo-colors = "4.0.0"
 anstyle = "1.0.6"
-workspace_hack = { version = "0.1", path = "../workspace_hack" }
 
 [dev-dependencies]
 pavex_test_runner = { path = "../pavex_test_runner" }
