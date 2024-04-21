@@ -1,6 +1,6 @@
 [package]
 name = "pavex"
-version = "0.1.30"
+version.workspace = true
 description = "A framework for building API services and web applications in Rust."
 categories = ["asynchronous", "network-programming", "web-programming::http-server"]
 keywords = ["http", "web", "framework", "pavex", "rest"]

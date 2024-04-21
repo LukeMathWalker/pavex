@@ -1,6 +1,6 @@
 [package]
 name = "pavexc_cli"
-version = "0.1.30"
+version.workspace = true
 description = "A CLI interface for the Pavex compiler."
 keywords = ["pavex"]
 edition.workspace = true

@@ -1,6 +1,6 @@
 [package]
 name = "pavex_test_runner"
-version = "0.1.30"
+version.workspace = true
 description = "A custom test runner to execute UI tests for Pavex"
 keywords = ["pavex"]
 edition.workspace = true

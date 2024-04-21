@@ -1,6 +1,6 @@
 [package]
 name = "generate_from_path"
-version = "0.1.30"
+version.workspace = true
 edition.workspace = true
 repository.workspace = true
 description = "Generate a Rust project from a local Liquid template. A stripped-down version of cargo-generate."

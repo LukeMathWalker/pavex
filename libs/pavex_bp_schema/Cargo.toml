@@ -1,6 +1,6 @@
 [package]
 name = "pavex_bp_schema"
-version = "0.1.30"
+version.workspace = true
 description = "The schema used to (de)serialize a Pavex Blueprint"
 keywords = ["pavex"]
 edition.workspace = true

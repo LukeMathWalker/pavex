@@ -1,6 +1,6 @@
 [package]
 name = "pavex_cli"
-version = "0.1.30"
+version.workspace = true
 description = "The companion CLI for Pavex, a Rust framework to build API services and web applications."
 keywords = ["pavex"]
 edition.workspace = true

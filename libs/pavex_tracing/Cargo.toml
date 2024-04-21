@@ -1,6 +1,6 @@
 [package]
 name = "pavex_tracing"
-version = "0.1.30"
+version.workspace = true
 edition.workspace = true
 repository.workspace = true
 homepage.workspace = true

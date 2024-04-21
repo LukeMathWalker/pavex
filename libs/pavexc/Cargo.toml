@@ -1,6 +1,6 @@
 [package]
 name = "pavexc"
-version = "0.1.30"
+version.workspace = true
 description = "The compiler powering Pavex"
 keywords = ["pavex"]
 edition.workspace = true
