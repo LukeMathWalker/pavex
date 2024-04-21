@@ -40,7 +40,7 @@ persist_if_changed = { path = "../persist_if_changed", version = "0.1.31" }
 matchit = { version = "0.7", package = "pavex_matchit" }
 percent-encoding = "2"
 
-# Query parameters and forms
+# Query parameters
 serde_html_form = "0.2"
 
 # Json body extractor
