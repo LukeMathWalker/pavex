@@ -151,6 +151,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d301b3b94cb4b2f23d7917810addbbaff90738e0ca2be692bd027e70d7e0330c"
 
 [[package]]
+name = "arrayvec"
+version = "0.7.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "96d30a06541fbafbc7f82ed10c06164cfbd2c401138f6addd8404629c4b16711"
+
+[[package]]
 name = "as-slice"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -931,6 +937,7 @@ dependencies = [
  "toml",
  "tracing",
  "walkdir",
+ "workspace_hack",
 ]
 
 [[package]]
@@ -1931,8 +1938,10 @@ dependencies = [
  "time",
  "tokio",
  "tracing",
+ "type-safe-id",
  "ubyte",
  "uuid",
+ "workspace_hack",
 ]
 
 [[package]]
@@ -1941,6 +1950,7 @@ version = "0.1.32"
 dependencies = [
  "pavex_reflection",
  "serde",
+ "workspace_hack",
 ]
 
 [[package]]
@@ -1982,6 +1992,7 @@ dependencies = [
  "ureq",
  "vergen",
  "windows-sys 0.52.0",
+ "workspace_hack",
  "xdg-home",
  "xz2",
  "zip",
@@ -1994,6 +2005,7 @@ dependencies = [
  "anyhow",
  "pavex",
  "thiserror",
+ "workspace_hack",
 ]
 
 [[package]]
@@ -2006,6 +2018,7 @@ dependencies = [
  "serde",
  "syn",
  "trybuild",
+ "workspace_hack",
 ]
 
 [[package]]
@@ -2026,6 +2039,7 @@ dependencies = [
  "terminal_size",
  "textwrap",
  "unicode-width",
+ "workspace_hack",
 ]
 
 [[package]]
@@ -2033,6 +2047,7 @@ name = "pavex_reflection"
 version = "0.1.32"
 dependencies = [
  "serde",
+ "workspace_hack",
 ]
 
 [[package]]
@@ -2060,6 +2075,7 @@ dependencies = [
  "toml",
  "tracing-subscriber",
  "walkdir",
+ "workspace_hack",
 ]
 
 [[package]]
@@ -2068,6 +2084,7 @@ version = "0.1.32"
 dependencies = [
  "pavex",
  "tracing",
+ "workspace_hack",
 ]
 
 [[package]]
@@ -2114,6 +2131,7 @@ dependencies = [
  "toml_edit 0.21.1",
  "tracing",
  "vergen",
+ "workspace_hack",
  "xdg-home",
 ]
 
@@ -2140,6 +2158,7 @@ dependencies = [
  "tracing-chrome",
  "tracing-subscriber",
  "vergen",
+ "workspace_hack",
 ]
 
 [[package]]
@@ -2149,6 +2168,7 @@ dependencies = [
  "anyhow",
  "pavex",
  "thiserror",
+ "workspace_hack",
 ]
 
 [[package]]
@@ -2177,6 +2197,7 @@ dependencies = [
  "fs-err",
  "sha2",
  "tracing",
+ "workspace_hack",
 ]
 
 [[package]]
@@ -3402,6 +3423,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "type-safe-id"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bb1211a53644c6a5ae26c45bdd520d1533b07dab50dc6af1a15063772f9061ad"
+dependencies = [
+ "arrayvec",
+ "rand",
+ "thiserror",
+ "uuid",
+]
+
+[[package]]
 name = "typenum"
 version = "1.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3924,6 +3957,46 @@ dependencies = [
 [[package]]
 name = "workspace_hack"
 version = "0.1.0"
+dependencies = [
+ "ahash",
+ "aho-corasick",
+ "bitflags 2.5.0",
+ "cc",
+ "clap",
+ "clap_builder",
+ "console",
+ "crossbeam-utils",
+ "crypto-common",
+ "deranged",
+ "digest",
+ "fixedbitset",
+ "getrandom",
+ "hashbrown 0.14.3",
+ "hmac",
+ "indexmap",
+ "log",
+ "memchr",
+ "miette",
+ "petgraph",
+ "proc-macro2",
+ "quote",
+ "regex",
+ "regex-automata 0.4.6",
+ "regex-syntax 0.8.3",
+ "serde",
+ "serde_json",
+ "sha2",
+ "smallvec",
+ "subtle",
+ "syn",
+ "time",
+ "time-macros",
+ "tokio",
+ "toml",
+ "tracing-core",
+ "uuid",
+ "zeroize",
+]
 
 [[package]]
 name = "xattr"
