@@ -26,15 +26,15 @@ futures-util = "0.3"
 mime = "0.3"
 thiserror = "1"
 serde = { version = "1", features = ["derive"] }
-pavex_macros = { path = "../pavex_macros", version = "0.1.30" }
+pavex_macros = { path = "../pavex_macros", version = "0.1.31" }
 paste = "1"
 tracing = "0.1"
 http-body-util = "0.1"
 pin-project-lite = "0.2"
 ubyte = { version = "0.10.4", features = ["serde"] }
-pavex_bp_schema = { path = "../pavex_bp_schema", version = "=0.1.30" }
-pavex_reflection = { path = "../pavex_reflection", version = "=0.1.30" }
-persist_if_changed = { path = "../persist_if_changed", version = "0.1.30" }
+pavex_bp_schema = { path = "../pavex_bp_schema", version = "=0.1.31" }
+pavex_reflection = { path = "../pavex_reflection", version = "=0.1.31" }
+persist_if_changed = { path = "../persist_if_changed", version = "0.1.31" }
 
 # Route parameters
 matchit = { version = "0.7", package = "pavex_matchit" }
@@ -66,7 +66,6 @@ hyper = { version = "1", features = ["full"], optional = true }
 hyper-util = { version = "0.1", features = ["tokio", "server", "server-auto"], optional = true }
 socket2 = { version = "0.5.3", optional = true }
 smallvec = "1"
-workspace_hack = { version = "0.1", path = "../workspace_hack" }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["macros"] }
