@@ -34,6 +34,9 @@ jobs:
           cd libs
           cargo hakari disable
           cargo hakari remove-deps -y
+          cd ..
+          git add .
+          git commit -am "Disable workspace-hack crate"
       - name: Run release-plz
         uses: MarcoIeni/release-plz-action@v0.5
         with:
