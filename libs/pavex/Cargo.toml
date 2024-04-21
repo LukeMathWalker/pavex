@@ -57,6 +57,7 @@ biscotti = { version = "0.3", optional = true }
 
 # Server request id
 uuid = { version = "1", features = ["v7"], optional = true }
+type-safe-id = "0.2.1"
 
 # Time facilities
 time = { version = "0.3", features = ["serde"], optional = true }
