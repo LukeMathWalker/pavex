@@ -27,9 +27,14 @@ jobs:
       - name: Verify workspace-hack
         run: |
           cd libs
-          # Check that my-workspace-hack's Cargo.toml is up-to-date
-          # If this fails, run `cargo hakari generate` to fix it
-          cargo hakari generate --diff  
-          # Check that all workspace crates depend on my-workspace-hack
-          # If this fails, run `cargo hakari manage-deps` to fix it
-          cargo hakari manage-deps --dry-run
+          if cargo hakari disable --diff ; then
+            # The hack crate has been disabled (probably for a release)
+            # No need to check anything else
+          else 
+            # Check that workspace_hack's Cargo.toml is up-to-date
+            # If this fails, run `cargo hakari generate` to fix it
+            cargo hakari generate --diff  
+            # Check that all workspace crates depend on workspace_hack
+            # If this fails, run `cargo hakari manage-deps` to fix it
+            cargo hakari manage-deps --dry-run
+          fi
