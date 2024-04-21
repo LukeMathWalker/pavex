@@ -11,6 +11,7 @@ allow_dirty = true
 [[package]]
 name = "pavex"
 changelog_update = true
+changelog_includ = ["pavex_cli", "pavexc", "pavexc_cli", "pavex_tracing", "pavex_cli_client", "pavexc_cli_client", "pavex_macros", "pavex_reflection", "pavex_miette", "pavex_bp_schema"]
 changelog_path = "../CHANGELOG.md"
 git_tag_name = "{{ version }}"
 git_tag_enable = true
