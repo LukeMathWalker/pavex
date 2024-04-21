@@ -14,8 +14,8 @@ path = "src/main.rs"
 
 [dependencies]
 clap = { version = "4", features = ["derive", "env"] }
-pavexc = { path = "../pavexc", version = "0.1.31" }
-pavex_miette = { path = "../pavex_miette", version = "0.1.31" }
+pavexc = { path = "../pavexc", version = "0.1.32" }
+pavex_miette = { path = "../pavex_miette", version = "0.1.32" }
 miette = { version = "6.0.1" }
 fs-err = "2.7.0"
 tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter"] }
@@ -28,10 +28,9 @@ supports-color = { version = "3.0.0" }
 include_dir = "0.7.3"
 path-absolutize = "3.1.1"
 ron = "0.8"
-generate_from_path = { path = "../generate_from_path", version = "0.1.31" }
+generate_from_path = { path = "../generate_from_path", version = "0.1.32" }
 tempfile = "3.9.0"
 better-panic = "0.3.0"
-workspace_hack = { version = "0.1", path = "../workspace_hack" }
 
 [build-dependencies]
 vergen = { workspace = true }

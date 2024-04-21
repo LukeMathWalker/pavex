@@ -11,5 +11,4 @@ readme = "README.md"
 
 [dependencies]
 tracing = { version = "0.1", default-features = false, features = ["std"] }
-pavex = { version = "0.1.31", path = "../pavex" }
-workspace_hack = { version = "0.1", path = "../workspace_hack" }
+pavex = { version = "0.1.32", path = "../pavex" }
