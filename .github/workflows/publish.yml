@@ -33,7 +33,7 @@ jobs:
         run: |
           cd libs
           cargo hakari disable
-          cargo hakari remove-deps
+          cargo hakari remove-deps -y
       - name: Run release-plz
         uses: MarcoIeni/release-plz-action@v0.5
         with:
