@@ -32,7 +32,7 @@ jobs:
         run: |
           cd libs
           cargo hakari generate
-          cargo hakari manage-deps
+          cargo hakari manage-deps --yes
           git add .
           git commit -am "Re-enable workspace hack after a release"
           git push
