@@ -5,9 +5,10 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 use clap::Parser;
+use jsonwebtoken::jwk::JwkSet;
 use owo_colors::OwoColorize;
 use pavex_cli::activation::{
-    check_activation, check_activation_if_necessary, check_activation_key,
+    check_activation, check_activation_if_necessary, check_activation_with_key, CliTokenError,
 };
 use pavex_cli::cargo_install::{cargo_install, GitSourceRevision, Source};
 use pavex_cli::cli_kind::CliKind;
@@ -25,7 +26,7 @@ use pavex_cli::version::latest_released_version;
 use pavexc_cli_client::commands::generate::{BlueprintArgument, GenerateError};
 use pavexc_cli_client::commands::new::NewError;
 use pavexc_cli_client::Client;
-use secrecy::{Secret, SecretString};
+use redact::Secret;
 use semver::Version;
 use supports_color::Stream;
 use tracing_chrome::{ChromeLayerBuilder, FlushGuard};
@@ -33,6 +34,8 @@ use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::EnvFilter;
+
+static PAVEX_CACHED_KEYSET: &str = include_str!("../jwks.json");
 
 fn main() -> Result<ExitCode, miette::Error> {
     let cli = Cli::parse();
@@ -51,8 +54,10 @@ fn main() -> Result<ExitCode, miette::Error> {
     })?;
     let locator = PavexLocator::new(&system_home_dir);
     let mut shell = Shell::new();
+    let key_set: JwkSet =
+        serde_json::from_str(PAVEX_CACHED_KEYSET).expect("Failed to parse the cached JWKS");
 
-    check_activation_if_necessary(&cli.command, &State::new(&locator), &mut shell)
+    check_activation_if_necessary(&cli.command, &locator, &mut shell, &key_set)
         .map_err(utils::anyhow2miette)?;
     match cli.command {
         Command::Generate {
@@ -76,10 +81,14 @@ fn main() -> Result<ExitCode, miette::Error> {
             match command {
                 SelfCommands::Update => update(&mut shell),
                 SelfCommands::Uninstall { y } => uninstall(&mut shell, !y, locator),
-                SelfCommands::Activate { key } => {
-                    activate(&mut shell, cli.color, &locator, key.map(|k| k.into_inner()))
-                }
-                SelfCommands::Setup => setup(cli.debug, &mut shell, cli.color, &locator),
+                SelfCommands::Activate { key } => activate(
+                    &mut shell,
+                    cli.color,
+                    &locator,
+                    key.map(|k| k.into_inner()),
+                    &key_set,
+                ),
+                SelfCommands::Setup => setup(cli.debug, &mut shell, cli.color, &locator, &key_set),
             }
         }
     }
@@ -227,11 +236,13 @@ fn setup(
     shell: &mut Shell,
     color: Color,
     locator: &PavexLocator,
+    key_set: &JwkSet,
 ) -> Result<ExitCode, anyhow::Error> {
     fn _setup(
         shell: &mut Shell,
         color: Color,
         locator: &PavexLocator,
+        key_set: &JwkSet,
     ) -> Result<(), anyhow::Error> {
         installers::verify_installation::<Rustup>(shell)?;
         installers::verify_installation::<NightlyToolchain>(shell)?;
@@ -239,14 +250,14 @@ fn setup(
         installers::verify_installation::<CargoPx>(shell)?;
 
         let _ = shell.status("Checking", "if Pavex has been activated");
-        if check_activation(&State::new(locator), shell).is_err() {
+        if check_activation(locator, shell, key_set).is_err() {
             let _ = shell.status_with_color(
                 "Missing",
                 "Pavex has not been activated yet",
                 &cargo_like_utils::shell::style::ERROR,
             );
             if std::io::stdout().is_terminal() {
-                activate(shell, color, locator, None)?;
+                activate(shell, color, locator, None, key_set)?;
             } else {
                 let _ = shell.note(
                     "Invoke\n\n    \
@@ -261,7 +272,7 @@ fn setup(
         Ok(())
     }
 
-    match _setup(shell, color, locator) {
+    match _setup(shell, color, locator, key_set) {
         Ok(()) => Ok(ExitCode::SUCCESS),
         Err(e) => {
             if debug {
@@ -282,10 +293,19 @@ fn activate(
     shell: &mut Shell,
     color: Color,
     locator: &PavexLocator,
-    key: Option<SecretString>,
+    activation_key: Option<Secret<String>>,
+    key_set: &JwkSet,
 ) -> Result<ExitCode, anyhow::Error> {
+    fn print_error(msg: &str, color: Color) {
+        if use_color_on_stderr(color) {
+            eprintln!("{}: {msg}", "ERROR".bold().red());
+        } else {
+            eprintln!("ERROR: {msg}");
+        }
+    }
+
     let state = State::new(locator);
-    let key = match key {
+    let key = match activation_key {
         None => {
             let stdout = std::io::stdout();
             if !stdout.is_terminal() {
@@ -300,7 +320,7 @@ fn activate(
             }
 
             println!();
-            let mut k: Option<SecretString> = None;
+            let mut k: Option<Secret<String>> = None;
             'outer: while k.is_none() {
                 let question = if use_color_on_stdout(color) {
                     format!(
@@ -321,26 +341,35 @@ fn activate(
                 let attempt = Secret::new(
                     mandatory_question(&question).context("Failed to read activation key")?,
                 );
-                if check_activation_key(&attempt).is_ok() {
-                    k = Some(attempt);
-                    break 'outer;
-                }
-                if use_color_on_stderr(color) {
-                    eprintln!(
-                        "{}: The activation key you provided is not valid. Please try again.",
-                        "ERROR".bold().red()
-                    );
-                } else {
-                    eprintln!(
-                        "ERROR: The activation key you provided is not valid. Please try again."
-                    );
+                match check_activation_with_key(locator, attempt.clone(), key_set) {
+                    Ok(_) => {
+                        k = Some(attempt);
+                        break 'outer;
+                    }
+                    Err(e) => match e {
+                        CliTokenError::ActivationKey(_) => {
+                            print_error(
+                                "The activation key you provided is not valid. Please try again.",
+                                color,
+                            );
+                        }
+                        CliTokenError::RpcError(e) => {
+                            print_error(
+                                &format!(
+                                "Something went wrong when I tried to verify your activation key against Pavex's API:\n\
+                                {e:?}\n\
+                                Please try again."),
+                                color,
+                            );
+                        }
+                    },
                 }
                 eprintln!();
             }
             k.unwrap()
         }
         Some(k) => {
-            if check_activation_key(&k).is_err() {
+            if check_activation_with_key(locator, k.clone(), key_set).is_err() {
                 return Err(anyhow::anyhow!(
                     "The activation key you provided is not valid"
                 ));

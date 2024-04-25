@@ -24,6 +24,13 @@ impl PavexLocator {
         }
     }
 
+    /// Where CLI tokens are stored.
+    pub fn auth(&self) -> AuthLocator {
+        AuthLocator {
+            dir: self.pavex_dir.join("auth"),
+        }
+    }
+
     pub fn root_dir(&self) -> &Path {
         &self.pavex_dir
     }
@@ -124,5 +131,26 @@ impl ToolchainLocator {
     /// Path to the `pavexc` binary for this toolchain.
     pub fn pavexc(&self) -> PathBuf {
         self.toolchain_dir.join(CliKind::Pavexc.binary_filename())
+    }
+}
+
+/// A unified entrypoint for all files related to CLI authentication.
+pub struct AuthLocator {
+    dir: PathBuf,
+}
+
+impl AuthLocator {
+    pub fn root_dir(&self) -> &Path {
+        &self.dir
+    }
+
+    /// Path to the file used to cache the latest CLI auth token.
+    pub fn token_cache(&self) -> PathBuf {
+        self.dir.join(".cli_token.toml")
+    }
+
+    /// Path to the directory used for temporary files related to auth.
+    pub fn tmp(&self) -> PathBuf {
+        self.dir.join("tmp")
     }
 }

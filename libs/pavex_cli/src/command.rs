@@ -1,6 +1,6 @@
 use clap::{Parser, Subcommand};
 use clap_stdin::MaybeStdin;
-use secrecy::SecretString;
+use redact::Secret;
 use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -139,6 +139,6 @@ pub enum SelfCommands {
         /// You can find the activation key for the beta program in Pavex's Discord server,
         /// in the #announcements channel.
         #[arg(index = 1, env = "PAVEX_ACTIVATION_KEY")]
-        key: Option<MaybeStdin<SecretString>>,
+        key: Option<MaybeStdin<Secret<String>>>,
     },
 }
