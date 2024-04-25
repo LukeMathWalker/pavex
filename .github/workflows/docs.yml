@@ -432,6 +432,7 @@ jobs:
             --base site 
             --exclude-loopback 
             --exclude-path="site/api_reference/pavex/http" 
+            --exclude-path="site/api_reference/pavex/time" 
             --exclude-path="site/api_reference/help.html" 
             --exclude-path="site/api_reference/settings.html" 
             --exclude="https://doc.rust-lang.org/*" 
