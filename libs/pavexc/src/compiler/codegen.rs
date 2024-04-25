@@ -634,10 +634,12 @@ where
             let metadata = package_graph.metadata(package_id).unwrap();
             let version = metadata.version();
             let mut dependency_details = DependencyDetail {
-                package: Some(name.to_string()),
                 version: Some(version.to_string()),
                 ..DependencyDetail::default()
             };
+            if needs_rename {
+                dependency_details.package = Some(name.to_string());
+            }
 
             let source = metadata.source();
             match source {
