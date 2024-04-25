@@ -91,14 +91,21 @@ impl GeneratedApp {
         cargo_toml: &mut GeneratedManifest,
         pkg_directory: &Path,
     ) -> Result<(), anyhow::Error> {
+        use relative_path::PathExt;
+
         for dependency in cargo_toml.dependencies.values_mut() {
             let Dependency::Detailed(detailed) = dependency else {
                 continue;
             };
             if let Some(path) = &mut detailed.path {
                 let parsed_path = PathBuf::from(path.to_owned());
-                let relative_path = pathdiff::diff_paths(parsed_path, pkg_directory).unwrap();
-                *path = relative_path.to_string_lossy().to_string();
+                let relative_path = parsed_path
+                    .relative_to(pkg_directory)
+                    .expect("Failed to compute relative source path for a dependency");
+                // `RelativePathBuf` uses `/` as path separator on all platforms, including Windows.
+                // This ensures that cargo will be able to resolve the path correctly
+                // on all platforms.
+                *path = relative_path.to_string();
             }
         }
         Ok(())
@@ -140,14 +147,16 @@ impl GeneratedApp {
         generated_crate_directory: &Path,
         writer: &mut AppWriter,
     ) -> Result<(), anyhow::Error> {
+        use relative_path::PathExt;
+
         let root_path = workspace.root().as_std_path();
         let root_manifest_path = root_path.join("Cargo.toml");
         let root_manifest = fs_err::read_to_string(&root_manifest_path)?;
         let mut root_manifest = root_manifest.parse::<toml_edit::Document>()?;
 
-        let member_path = pathdiff::diff_paths(generated_crate_directory, root_path)
+        let member_path = generated_crate_directory
+            .relative_to(root_path)
             .unwrap()
-            .to_string_lossy()
             .to_string();
 
         if root_manifest.get("workspace").is_none() {

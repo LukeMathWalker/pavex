@@ -2097,7 +2097,6 @@ dependencies = [
  "miette",
  "num_cpus",
  "once_cell",
- "pathdiff",
  "pavex",
  "pavex_bp_schema",
  "pavex_matchit",
@@ -2109,6 +2108,7 @@ dependencies = [
  "r2d2",
  "r2d2_sqlite",
  "rayon",
+ "relative-path",
  "rusqlite",
  "rustdoc-types",
  "semver",
@@ -2479,6 +2479,12 @@ name = "regex-syntax"
 version = "0.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "adad44e29e4c806119491a7f06f03de4d1af22c3a680dd47f1e6e179439d1f56"
+
+[[package]]
+name = "relative-path"
+version = "1.9.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e898588f33fdd5b9420719948f9f2a32c922a246964576f71ba7f24f80610fbc"
 
 [[package]]
 name = "remove_dir_all"
