@@ -4,11 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-anyhow = "1"
-pavex = { {{pavex_package_spec}} }
-tokio = { version = "1", features = ["full"] }
-server_sdk = { path = "../server_sdk" }
-app = { path = "../app" }
+# Telemetry
+pavex_tracing = { {{pavex_tracing_package_spec}} }
+tracing = "0.1"
+tracing-bunyan-formatter = "0.3"
+tracing-panic = "0.1"
+tracing-subscriber = { version = "0.3", default-features = false, features = ["env-filter", "registry", "smallvec", "std", "tracing-log"] }
 
 # Configuration
 dotenvy = "0.15"
@@ -17,12 +18,11 @@ serde = { version = "1", features = ["derive"] }
 humantime-serde = "1.1"
 serde-aux = "4"
 
-# Telemetry
-pavex_tracing = { {{pavex_tracing_package_spec}} }
-tracing = "0.1"
-tracing-bunyan-formatter = "0.3"
-tracing-panic = "0.1"
-tracing-subscriber = { version = "0.3", default-features = false, features = ["env-filter", "registry", "smallvec", "std", "tracing-log"] }
+anyhow = "1"
+pavex = { {{pavex_package_spec}} }
+tokio = { version = "1", features = ["full"] }
+server_sdk = { path = "../server_sdk" }
+app = { path = "../app" }
 
 [dev-dependencies]
 reqwest = "0.12"
