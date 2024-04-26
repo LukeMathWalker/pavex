@@ -3,7 +3,7 @@
 ## Pavex CLI
 
 To work on a Pavex project you need its command-line interface, `pavex`.  
-Execute the following command to install it:
+Execute one of the following commands to install it:
 
 === "shell"
 
@@ -14,7 +14,7 @@ Execute the following command to install it:
 === "powershell"
 
     ```powershell
-    irm https://pavex.dev/releases/download/latest/pavex_cli-installer.ps1 | iex
+    powershell -c "irm https://pavex.dev/releases/download/latest/pavex_cli-installer.ps1 | iex"
     ```
 
 ## Setup
