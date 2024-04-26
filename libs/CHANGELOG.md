@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.35](https://github.com/LukeMathWalker/pavex/compare/0.1.34...0.1.35) - 2024-04-26
+
+### Fixed
+- Allow &mut references to be held by Next's state. ([#280](https://github.com/LukeMathWalker/pavex/pull/280))
+
 ## [0.1.34](https://github.com/LukeMathWalker/pavex/compare/0.1.33...0.1.34) - 2024-04-25
 
 ### Fixes
