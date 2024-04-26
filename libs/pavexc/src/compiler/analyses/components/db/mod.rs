@@ -1159,6 +1159,27 @@ impl ComponentDb {
         Ok(self.get_or_intern(constructor_component, computation_db))
     }
 
+    /// Raw access, only used for synthetic constructors (in particular, `Next`'s state
+    /// constructors).
+    pub fn get_or_intern_constructor_without_validation(
+        &mut self,
+        callable_id: ComputationId,
+        lifecycle: Lifecycle,
+        scope_id: ScopeId,
+        cloning_strategy: CloningStrategy,
+        computation_db: &mut ComputationDb,
+        derived_from: Option<ComponentId>,
+    ) -> Result<ComponentId, ConstructorValidationError> {
+        let constructor_component = UnregisteredComponent::SyntheticConstructor {
+            lifecycle,
+            computation_id: callable_id,
+            scope_id,
+            cloning_strategy,
+            derived_from,
+        };
+        Ok(self.get_or_intern(constructor_component, computation_db))
+    }
+
     pub fn get_or_intern_wrapping_middleware(
         &mut self,
         callable: Cow<'_, Callable>,

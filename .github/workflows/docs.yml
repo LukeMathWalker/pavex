@@ -445,9 +445,11 @@ jobs:
             --base site 
             --exclude-loopback 
             --exclude-path="site/api_reference/pavex/http" 
+            --exclude-path="site/api_reference/pavex/time" 
             --exclude-path="site/api_reference/help.html" 
             --exclude-path="site/api_reference/settings.html" 
             --exclude="https://doc.rust-lang.org/*" 
+            --exclude="https://stackoverflow.com/*" 
             --exclude="https://github.com/LukeMathWalker/pavex/edit/main/*"
             --exclude="https://docs.rs/**/*" 
             --exclude-path="site/api_reference/static.files" 

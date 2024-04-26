@@ -1,0 +1,4 @@
+description = """The state for `Next` can handle &mut references as fields."""
+
+[expectations]
+codegen = "pass"
