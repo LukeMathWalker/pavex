@@ -2033,6 +2033,7 @@ dependencies = [
  "ureq",
  "vergen",
  "windows-sys 0.52.0",
+ "workspace_hack",
  "xdg-home",
  "xz2",
  "zip",
