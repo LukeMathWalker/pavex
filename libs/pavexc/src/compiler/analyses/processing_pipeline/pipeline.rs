@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use ahash::{HashMap, HashMapExt};
+use ahash::{HashMap, HashMapExt, HashSet};
 use guppy::graph::PackageGraph;
 use guppy::PackageId;
 use indexmap::{IndexMap, IndexSet};
@@ -54,6 +54,7 @@ pub struct Stage {
     pub(crate) pre_processing_ids: Vec<ComponentId>,
 }
 
+#[derive(Debug)]
 struct PipelineIds(Vec<StageIds>);
 
 impl PipelineIds {
@@ -65,6 +66,7 @@ impl PipelineIds {
     }
 }
 
+#[derive(Debug)]
 struct StageIds {
     pre_processing_ids: Vec<ComponentId>,
     /// Either a wrapping middleware or a request handler.
@@ -244,19 +246,16 @@ impl RequestHandlerPipeline {
                 let call_graph = &id2call_graphs[&middleware_id];
 
                 let mut prebuilt_ids = IndexSet::new();
-                let required_scope_ids =
+                let required_scope_ids: HashSet<_> =
                     extract_request_scoped_compute_nodes(&call_graph.call_graph, component_db)
-                        .collect_vec();
-                for &request_scoped_id in &required_scope_ids {
-                    let Some(&built_at) =
-                        request_scoped2built_at_stage_index.get(&request_scoped_id)
-                    else {
-                        continue;
-                    };
+                        .collect();
+                for (request_scoped_id, &built_at) in &request_scoped2built_at_stage_index {
                     if built_at < stage_index {
-                        prebuilt_ids.insert(request_scoped_id);
+                        prebuilt_ids.insert(*request_scoped_id);
                     } else if built_at == stage_index {
-                        assert!(component_db.is_wrapping_middleware(middleware_id));
+                        if required_scope_ids.contains(request_scoped_id) {
+                            assert!(component_db.is_wrapping_middleware(middleware_id));
+                        }
                     }
                 }
                 middleware_id2prebuilt_rs_ids.insert(middleware_id, prebuilt_ids.clone());
@@ -397,13 +396,12 @@ impl RequestHandlerPipeline {
                 let next_state_callable_id = computation_db.get_or_intern(next_state_constructor);
                 let next_state_scope_id = component_db.scope_id(middleware_id);
                 let next_state_constructor_id = component_db
-                    .get_or_intern_constructor(
+                    .get_or_intern_constructor_without_validation(
                         next_state_callable_id,
                         Lifecycle::RequestScoped,
                         next_state_scope_id,
                         CloningStrategy::NeverClone,
                         computation_db,
-                        framework_item_db,
                         None,
                     )
                     .unwrap();

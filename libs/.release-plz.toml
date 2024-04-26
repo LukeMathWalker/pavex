@@ -2,10 +2,16 @@
 changelog_update = false
 git_release_enable = false
 git_tag_enable = false
+semver_check = false
+pr_labels = ["release"]
+# This is necessary since we need to remove the
+# workspace_hack crate in CI before publishing
+allow_dirty = true
 
 [[package]]
 name = "pavex"
 changelog_update = true
-changelog_path = "./CHANGELOG.md"
+changelog_include = ["pavex_cli", "pavexc", "pavexc_cli", "pavex_tracing", "pavex_cli_client", "pavexc_cli_client", "pavex_macros", "pavex_reflection", "pavex_miette", "pavex_bp_schema"]
+changelog_path = "CHANGELOG.md"
 git_tag_name = "{{ version }}"
 git_tag_enable = true

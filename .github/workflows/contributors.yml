@@ -15,6 +15,16 @@ jobs:
       - name: Check PR author in CONTRIBUTORS.md
         run: |
           pr_author=$(jq -r .pull_request.user.login "$GITHUB_EVENT_PATH")
+          
+          if [ "$pr_author" = "dependabot[bot]" ]; then
+            echo "PR author is dependabot[bot]"
+            exit 0
+          fi
+          if [ "$pr_author" = "pavex-releaser[bot]" ]; then
+            echo "PR author is pavex-releaser[bot]"
+            exit 0
+          fi
+          
           pattern="(@$pr_author)"
           contributors=$(grep -Eo "$pattern" CONTRIBUTORS.md || true)
           

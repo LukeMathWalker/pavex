@@ -1,6 +1,6 @@
 [package]
 name = "pavex"
-version = "0.1.30"
+version.workspace = true
 description = "A framework for building API services and web applications in Rust."
 categories = ["asynchronous", "network-programming", "web-programming::http-server"]
 keywords = ["http", "web", "framework", "pavex", "rest"]
@@ -26,15 +26,15 @@ futures-util = "0.3"
 mime = "0.3"
 thiserror = "1"
 serde = { version = "1", features = ["derive"] }
-pavex_macros = { path = "../pavex_macros", version = "0.1.30" }
+pavex_macros = { path = "../pavex_macros", version = "0.1.34" }
 paste = "1"
 tracing = "0.1"
 http-body-util = "0.1"
 pin-project-lite = "0.2"
 ubyte = { version = "0.10.4", features = ["serde"] }
-pavex_bp_schema = { path = "../pavex_bp_schema", version = "=0.1.30" }
-pavex_reflection = { path = "../pavex_reflection", version = "=0.1.30" }
-persist_if_changed = { path = "../persist_if_changed", version = "0.1.30" }
+pavex_bp_schema = { path = "../pavex_bp_schema", version = "=0.1.34" }
+pavex_reflection = { path = "../pavex_reflection", version = "=0.1.34" }
+persist_if_changed = { path = "../persist_if_changed", version = "0.1.34" }
 
 # Route parameters
 matchit = { version = "0.7", package = "pavex_matchit" }
@@ -57,6 +57,7 @@ biscotti = { version = "0.3", optional = true }
 
 # Server request id
 uuid = { version = "1", features = ["v7"], optional = true }
+type-safe-id = "0.2.1"
 
 # Time facilities
 time = { version = "0.3", features = ["serde"], optional = true }
@@ -66,7 +67,6 @@ hyper = { version = "1", features = ["full"], optional = true }
 hyper-util = { version = "0.1", features = ["tokio", "server", "server-auto"], optional = true }
 socket2 = { version = "0.5.3", optional = true }
 smallvec = "1"
-workspace_hack = { version = "0.1", path = "../workspace_hack" }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["macros"] }

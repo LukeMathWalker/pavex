@@ -1,6 +1,6 @@
 [package]
 name = "pavex_reflection"
-version = "0.1.30"
+version.workspace = true
 description = "Utility types when working with compile-time reflection in Rust"
 keywords = ["pavex"]
 edition.workspace = true
@@ -9,4 +9,3 @@ license.workspace = true
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
-workspace_hack = { version = "0.1", path = "../workspace_hack" }

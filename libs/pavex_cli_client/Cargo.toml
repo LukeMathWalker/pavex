@@ -1,6 +1,6 @@
 [package]
 name = "pavex_cli_client"
-version = "0.1.30"
+version.workspace = true
 description = "A convenient Rust interface to execute Pavex CLI commands."
 keywords = ["pavex"]
 edition.workspace = true
@@ -9,6 +9,5 @@ license.workspace = true
 
 [dependencies]
 anyhow = "1"
-pavex = { path = "../pavex", version = "0.1.30" }
+pavex = { path = "../pavex", version = "0.1.34" }
 thiserror = "1.0.56"
-workspace_hack = { version = "0.1", path = "../workspace_hack" }

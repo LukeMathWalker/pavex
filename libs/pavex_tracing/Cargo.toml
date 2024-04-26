@@ -1,6 +1,6 @@
 [package]
 name = "pavex_tracing"
-version = "0.1.30"
+version.workspace = true
 edition.workspace = true
 repository.workspace = true
 homepage.workspace = true
@@ -11,5 +11,4 @@ readme = "README.md"
 
 [dependencies]
 tracing = { version = "0.1", default-features = false, features = ["std"] }
-pavex = { version = "0.1.30", path = "../pavex" }
-workspace_hack = { version = "0.1", path = "../workspace_hack" }
+pavex = { version = "0.1.34", path = "../pavex" }

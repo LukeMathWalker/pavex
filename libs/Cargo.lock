@@ -151,6 +151,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d301b3b94cb4b2f23d7917810addbbaff90738e0ca2be692bd027e70d7e0330c"
 
 [[package]]
+name = "arrayvec"
+version = "0.7.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "96d30a06541fbafbc7f82ed10c06164cfbd2c401138f6addd8404629c4b16711"
+
+[[package]]
 name = "as-slice"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -917,7 +923,7 @@ dependencies = [
 
 [[package]]
 name = "generate_from_path"
-version = "0.1.30"
+version = "0.1.34"
 dependencies = [
  "anyhow",
  "fs-err",
@@ -932,7 +938,6 @@ dependencies = [
  "toml",
  "tracing",
  "walkdir",
- "workspace_hack",
 ]
 
 [[package]]
@@ -1933,7 +1938,7 @@ dependencies = [
 
 [[package]]
 name = "pavex"
-version = "0.1.30"
+version = "0.1.34"
 dependencies = [
  "anyhow",
  "biscotti",
@@ -1970,23 +1975,22 @@ dependencies = [
  "time",
  "tokio",
  "tracing",
+ "type-safe-id",
  "ubyte",
  "uuid",
- "workspace_hack",
 ]
 
 [[package]]
 name = "pavex_bp_schema"
-version = "0.1.30"
+version = "0.1.34"
 dependencies = [
  "pavex_reflection",
  "serde",
- "workspace_hack",
 ]
 
 [[package]]
 name = "pavex_cli"
-version = "0.1.30"
+version = "0.1.34"
 dependencies = [
  "anstyle",
  "anyhow",
@@ -2029,7 +2033,6 @@ dependencies = [
  "ureq",
  "vergen",
  "windows-sys 0.52.0",
- "workspace_hack",
  "xdg-home",
  "xz2",
  "zip",
@@ -2037,17 +2040,16 @@ dependencies = [
 
 [[package]]
 name = "pavex_cli_client"
-version = "0.1.30"
+version = "0.1.34"
 dependencies = [
  "anyhow",
  "pavex",
  "thiserror",
- "workspace_hack",
 ]
 
 [[package]]
 name = "pavex_macros"
-version = "0.1.30"
+version = "0.1.34"
 dependencies = [
  "pavex",
  "proc-macro2",
@@ -2055,7 +2057,6 @@ dependencies = [
  "serde",
  "syn",
  "trybuild",
- "workspace_hack",
 ]
 
 [[package]]
@@ -2066,7 +2067,7 @@ checksum = "77b9753b03381fd8856966146c4d626d9a8507901c1bcdfbc41df03deea551fc"
 
 [[package]]
 name = "pavex_miette"
-version = "0.1.30"
+version = "0.1.34"
 dependencies = [
  "miette",
  "owo-colors 3.5.0",
@@ -2076,20 +2077,18 @@ dependencies = [
  "terminal_size",
  "textwrap",
  "unicode-width",
- "workspace_hack",
 ]
 
 [[package]]
 name = "pavex_reflection"
-version = "0.1.30"
+version = "0.1.34"
 dependencies = [
  "serde",
- "workspace_hack",
 ]
 
 [[package]]
 name = "pavex_test_runner"
-version = "0.1.30"
+version = "0.1.34"
 dependencies = [
  "ahash",
  "anyhow",
@@ -2112,21 +2111,19 @@ dependencies = [
  "toml",
  "tracing-subscriber",
  "walkdir",
- "workspace_hack",
 ]
 
 [[package]]
 name = "pavex_tracing"
-version = "0.1.30"
+version = "0.1.34"
 dependencies = [
  "pavex",
  "tracing",
- "workspace_hack",
 ]
 
 [[package]]
 name = "pavexc"
-version = "0.1.30"
+version = "0.1.34"
 dependencies = [
  "ahash",
  "anyhow",
@@ -2144,7 +2141,6 @@ dependencies = [
  "miette",
  "num_cpus",
  "once_cell",
- "pathdiff",
  "pavex",
  "pavex_bp_schema",
  "pavex_matchit",
@@ -2156,6 +2152,7 @@ dependencies = [
  "r2d2",
  "r2d2_sqlite",
  "rayon",
+ "relative-path",
  "rusqlite",
  "rustdoc-types",
  "semver",
@@ -2168,13 +2165,12 @@ dependencies = [
  "toml_edit 0.21.1",
  "tracing",
  "vergen",
- "workspace_hack",
  "xdg-home",
 ]
 
 [[package]]
 name = "pavexc_cli"
-version = "0.1.30"
+version = "0.1.34"
 dependencies = [
  "anyhow",
  "better-panic",
@@ -2195,17 +2191,15 @@ dependencies = [
  "tracing-chrome",
  "tracing-subscriber",
  "vergen",
- "workspace_hack",
 ]
 
 [[package]]
 name = "pavexc_cli_client"
-version = "0.1.30"
+version = "0.1.34"
 dependencies = [
  "anyhow",
  "pavex",
  "thiserror",
- "workspace_hack",
 ]
 
 [[package]]
@@ -2238,13 +2232,12 @@ checksum = "e3148f5046208a5d56bcfc03053e3ca6334e51da8dfb19b6cdc8b306fae3283e"
 
 [[package]]
 name = "persist_if_changed"
-version = "0.1.30"
+version = "0.1.34"
 dependencies = [
  "anyhow",
  "fs-err",
  "sha2",
  "tracing",
- "workspace_hack",
 ]
 
 [[package]]
@@ -2549,6 +2542,12 @@ name = "regex-syntax"
 version = "0.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "adad44e29e4c806119491a7f06f03de4d1af22c3a680dd47f1e6e179439d1f56"
+
+[[package]]
+name = "relative-path"
+version = "1.9.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e898588f33fdd5b9420719948f9f2a32c922a246964576f71ba7f24f80610fbc"
 
 [[package]]
 name = "remove_dir_all"
@@ -3497,6 +3496,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "type-safe-id"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bb1211a53644c6a5ae26c45bdd520d1533b07dab50dc6af1a15063772f9061ad"
+dependencies = [
+ "arrayvec",
+ "rand",
+ "thiserror",
+ "uuid",
+]
+
+[[package]]
 name = "typenum"
 version = "1.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4026,46 +4037,6 @@ dependencies = [
 [[package]]
 name = "workspace_hack"
 version = "0.1.0"
-dependencies = [
- "ahash",
- "aho-corasick",
- "bitflags 2.5.0",
- "cc",
- "clap",
- "clap_builder",
- "console",
- "crossbeam-utils",
- "crypto-common",
- "deranged",
- "digest",
- "fixedbitset",
- "getrandom",
- "hashbrown 0.14.3",
- "hmac",
- "indexmap",
- "log",
- "memchr",
- "miette",
- "petgraph",
- "proc-macro2",
- "quote",
- "regex",
- "regex-automata 0.4.6",
- "regex-syntax 0.8.3",
- "serde",
- "serde_json",
- "sha2",
- "smallvec",
- "subtle",
- "syn",
- "time",
- "time-macros",
- "tokio",
- "toml",
- "tracing-core",
- "uuid",
- "zeroize",
-]
 
 [[package]]
 name = "xattr"

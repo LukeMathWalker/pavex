@@ -11,7 +11,6 @@ use std::{
 };
 
 /// Only persist the content if it differs from the one already on disk.
-///
 /// It if the file does not exist, it will be created.
 ///
 /// This is useful to avoid unnecessary rebuilds, since `cargo` takes into account
