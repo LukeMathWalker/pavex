@@ -40,7 +40,7 @@ impl CliToken {
             .with(RetryTransientMiddleware::new_with_policy(retry_policy))
             .build();
 
-        let user_agent = format!("pavex-cli/{}", env!("CARGO_PKG_VERSION").replace("+", "-"));
+        let user_agent = format!("pavex-cli/{}", env!("CARGO_PKG_VERSION"));
         let response = client
             .post("https://api.pavex.dev/v1/cli/login")
             .header("User-Agent", user_agent)
