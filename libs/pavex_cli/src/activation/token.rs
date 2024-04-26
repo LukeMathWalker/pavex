@@ -4,6 +4,9 @@ use anyhow::Context;
 use jsonwebtoken::jwk::{JwkSet, KeyAlgorithm};
 use jsonwebtoken::{decode_header, Algorithm, DecodingKey, TokenData};
 use redact::Secret;
+use reqwest_retry::policies::ExponentialBackoff;
+use reqwest_retry::RetryTransientMiddleware;
+use reqwest_tracing::TracingMiddleware;
 use std::collections::HashSet;
 
 /// A token obtained from Pavex's API using a valid activation key.
@@ -31,12 +34,17 @@ impl CliToken {
             jwt: Secret<String>,
         }
 
-        let request = Request { activation_key };
-        // TODO: add retries and logging.
-        let client = reqwest_middleware::ClientBuilder::new(reqwest::Client::new()).build();
+        let retry_policy = ExponentialBackoff::builder().build_with_max_retries(3);
+        let client = reqwest_middleware::ClientBuilder::new(reqwest::Client::new())
+            .with(TracingMiddleware::default())
+            .with(RetryTransientMiddleware::new_with_policy(retry_policy))
+            .build();
+
+        let user_agent = format!("pavex-cli/{}", env!("CARGO_PKG_VERSION").replace("+", "-"));
         let response = client
             .post("https://api.pavex.dev/v1/cli/login")
-            .json(&request)
+            .header("User-Agent", user_agent)
+            .json(&Request { activation_key })
             .send()
             .await
             .map_err(|e| CliTokenError::RpcError(e.into()))?;

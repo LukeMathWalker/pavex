@@ -461,7 +461,7 @@ fn init_telemetry() -> FlushGuard {
     let fmt_layer = tracing_subscriber::fmt::layer()
         .with_file(false)
         .with_target(false)
-        .with_span_events(FmtSpan::NEW | FmtSpan::EXIT)
+        .with_span_events(FmtSpan::NEW | FmtSpan::CLOSE)
         .with_timer(tracing_subscriber::fmt::time::uptime());
     let (chrome_layer, guard) = ChromeLayerBuilder::new().include_args(true).build();
     let filter_layer = EnvFilter::try_from_default_env()

@@ -55,6 +55,8 @@ owo-colors = "4.0.0"
 anstyle = "1.0.6"
 workspace_hack = { version = "0.1", path = "../workspace_hack" }
 reqwest-middleware = { version = "0.3.0", features = ["json"] }
+reqwest-tracing = "0.5.0"
+reqwest-retry = "0.5.0"
 reqwest = "0.12"
 tokio = { version = "1.37.0", features = ["rt"] }
 redact = { version = "0.1.9", features = ["serde"] }
