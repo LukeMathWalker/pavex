@@ -104,7 +104,7 @@ thiserror = "1.0.56"
 time = "0.3.36"
 tokio = "1.37.0"
 toml = "0.8.8"
-toml_edit = "0.21"
+toml_edit = "0.22"
 tracing = { version = "0.1.40", default-features = false }
 tracing-chrome = "0.7"
 tracing-subscriber = "0.3"
