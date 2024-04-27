@@ -166,8 +166,9 @@ pub(super) fn install(
                 return Ok(());
             }
             Err(e) => {
-                let _ =
-                    shell.warn("Download failed: {e}.\nI'll try compiling from source instead.");
+                let _ = shell.warn(format!(
+                    "Download failed: {e}.\nI'll try compiling from source instead."
+                ));
                 tracing::warn!(
                     error.msg = %e,
                     error.cause = ?e,
