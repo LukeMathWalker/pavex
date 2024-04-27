@@ -26,7 +26,7 @@ miette = { workspace = true }
 fs-err = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["fmt", "env-filter"] }
 tracing-chrome = { workspace = true }
-tracing = { workspace = true }
+tracing = { workspace = true, default-features = true }
 anyhow = { workspace = true }
 thiserror = { workspace = true }
 guppy = { workspace = true }

@@ -39,7 +39,7 @@ guppy = { workspace = true }
 itertools = { workspace = true }
 cargo-manifest = { workspace = true }
 elsa = { workspace = true }
-tracing = { workspace = true }
+tracing = { workspace = true, default-features = true }
 fixedbitset = { workspace = true }
 la-arena = { workspace = true }
 ahash = { workspace = true }
