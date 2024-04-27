@@ -8,7 +8,7 @@ repository.workspace = true
 license.workspace = true
 
 [build-dependencies]
-vergen = { version = "8.0.0", features = ["build", "git", "gitcl"] }
+vergen = { workspace = true, features = ["build", "git", "gitcl"] }
 
 [features]
 # Enable additional debug assertions to ensure correctness
@@ -20,43 +20,43 @@ debug_assertions = []
 [dependencies]
 pavex = { path = "../pavex", version = "0.1.35" }
 pavex_bp_schema = { path = "../pavex_bp_schema", version = "0.1.35" }
-syn = { version = "2", features = ["full", "extra-traits", "visit"] }
-rustdoc-types = "0.24.0"
-serde = { version = "1.0.139", features = ["derive"] }
-serde_json = { version = "1", features = ["unbounded_depth"] }
-serde_stacker = "0.1"
-anyhow = "1.0.58"
-fs-err = "2.7.0"
-indexmap = { version = "2", features = ["serde"] }
-petgraph = { version = "0.6.2", default-features = false, features = ["graphmap", "stable_graph"] }
-bimap = "0.6.2"
-prettyplease = "0.2"
-quote = "1.0.20"
-proc-macro2 = { version = "1.0.40", features = ["span-locations"] }
-thiserror = "1.0.32"
-miette = { version = "6.0.1" }
-guppy = "0.17"
-itertools = "0.12"
-cargo-manifest = "0.13.0"
-elsa = "1.4.0"
-tracing = "0.1"
-fixedbitset = "0.4.2"
-la-arena = "0.3"
-ahash = "0.8"
-convert_case = "0.6"
-textwrap = "0.16.0"
-once_cell = "1.17.1"
-toml_edit = { version = "0.21", features = ["serde"] }
-semver = "1.0.17"
+syn = { workspace = true, features = ["full", "extra-traits", "visit"] }
+rustdoc-types = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true, features = ["unbounded_depth"] }
+serde_stacker = { workspace = true }
+anyhow = { workspace = true }
+fs-err = { workspace = true }
+indexmap = { workspace = true, features = ["serde"] }
+petgraph = { workspace = true, features = ["graphmap", "stable_graph"] }
+bimap = { workspace = true }
+prettyplease = { workspace = true }
+quote = { workspace = true }
+proc-macro2 = { workspace = true, features = ["span-locations"] }
+thiserror = { workspace = true }
+miette = { workspace = true }
+guppy = { workspace = true }
+itertools = { workspace = true }
+cargo-manifest = { workspace = true }
+elsa = { workspace = true }
+tracing = { workspace = true }
+fixedbitset = { workspace = true }
+la-arena = { workspace = true }
+ahash = { workspace = true }
+convert_case = { workspace = true }
+textwrap = { workspace = true }
+once_cell = { workspace = true }
+toml_edit = { workspace = true, features = ["serde"] }
+semver = { workspace = true }
 persist_if_changed = { path = "../persist_if_changed", version = "0.1.35" }
 matchit = { version = "0.7", package = "pavex_matchit" }
-relative-path = "1.9"
+relative-path = { workspace = true }
 
 # Sqlite cache
-xdg-home = "1.0.0"
-rusqlite = { version = "0.30", features = ["bundled"] }
-r2d2_sqlite = "0.23.0"
-r2d2 = "0.8"
-bincode = "1"
-rayon = "1.7"
-num_cpus = "1.15.0"
+xdg-home = { workspace = true }
+rusqlite = { workspace = true, features = ["bundled"] }
+r2d2_sqlite = { workspace = true }
+r2d2 = { workspace = true }
+bincode = { workspace = true }
+rayon = { workspace = true }
+num_cpus = { workspace = true }

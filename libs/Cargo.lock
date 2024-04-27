@@ -2170,7 +2170,7 @@ name = "pavex_miette"
 version = "0.1.35"
 dependencies = [
  "miette",
- "owo-colors 3.5.0",
+ "owo-colors 4.0.0",
  "supports-color",
  "supports-hyperlinks",
  "supports-unicode",

@@ -13,24 +13,24 @@ name = "pavexc"
 path = "src/main.rs"
 
 [dependencies]
-clap = { version = "4", features = ["derive", "env"] }
+clap = { workspace = true, features = ["derive", "env"] }
 pavexc = { path = "../pavexc", version = "0.1.35" }
 pavex_miette = { path = "../pavex_miette", version = "0.1.35" }
-miette = { version = "6.0.1" }
-fs-err = "2.7.0"
-tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter"] }
-tracing-chrome = { version = "0.7" }
-tracing = "0.1"
-owo-colors = "4.0.0"
-anyhow = "1"
-guppy = "0.17"
-supports-color = { version = "3.0.0" }
-include_dir = "0.7.3"
-path-absolutize = "3.1.1"
-ron = "0.8"
+miette = { workspace = true }
+fs-err = { workspace = true }
+tracing-subscriber = { workspace = true, features = ["fmt", "env-filter"] }
+tracing-chrome = { workspace = true }
+tracing = { workspace = true }
+owo-colors = { workspace = true }
+anyhow = { workspace = true }
+guppy = { workspace = true }
+supports-color = { workspace = true }
+include_dir = { workspace = true }
+path-absolutize = { workspace = true }
+ron = { workspace = true }
 generate_from_path = { path = "../generate_from_path", version = "0.1.35" }
-tempfile = "3.9.0"
-better-panic = "0.3.0"
+tempfile = { workspace = true }
+better-panic = { workspace = true }
 
 [build-dependencies]
 vergen = { workspace = true }

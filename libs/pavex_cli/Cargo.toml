@@ -20,50 +20,50 @@ vergen = { workspace = true }
 
 [dependencies]
 pavexc_cli_client = { path = "../pavexc_cli_client", version = "0.1.35" }
-clap = { version = "4", features = ["derive", "env"] }
+clap = { workspace = true, features = ["derive", "env"] }
 pavex_miette = { path = "../pavex_miette", version = "0.1.35" }
-miette = { version = "6.0.1" }
-fs-err = "2.7.0"
-tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter"] }
-tracing-chrome = { version = "0.7" }
-tracing = "0.1"
-anyhow = "1"
-thiserror = "1.0.56"
-guppy = "0.17"
-supports-color = { version = "3.0.0" }
-xdg-home = "1.0.0"
-sha2 = "0.10.8"
-zip = "0.6.6"
-xz2 = "0.1.7"
-tar = "0.4.40"
-bytes = "1.5.0"
-tempfile = "3"
-ureq = { version = "2.9.1", features = ["json"] }
-remove_dir_all = "0.8.2"
-config = { version = "0.14.0", features = [] }
-libc = { version = "0.2.152", features = [] }
-windows-sys = { version = "0.52.0", features = [] }
-cargo-like-utils = "0.1.2"
-serde = { version = "1", features = ["derive"] }
-toml = "0.8.8"
-semver = { version = "1.0.21", features = ["serde"] }
-serde_json = "1.0.111"
-self-replace = "1.3.7"
-hex = "0.4.3"
-clap-stdin = "0.4.0"
-owo-colors = "4.0.0"
-anstyle = "1.0.6"
+miette = { workspace = true }
+fs-err = { workspace = true }
+tracing-subscriber = { workspace = true, features = ["fmt", "env-filter"] }
+tracing-chrome = { workspace = true }
+tracing = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+guppy = { workspace = true }
+supports-color = { workspace = true }
+xdg-home = { workspace = true }
+sha2 = { workspace = true }
+zip = { workspace = true }
+xz2 = { workspace = true }
+tar = { workspace = true }
+bytes = { workspace = true }
+tempfile = { workspace = true }
+ureq = { workspace = true, features = ["json"] }
+remove_dir_all = { workspace = true }
+config = { workspace = true, features = [] }
+libc = { workspace = true, features = [] }
+windows-sys = { workspace = true, features = [] }
+cargo-like-utils = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+toml = { workspace = true }
+semver = { workspace = true, features = ["serde"] }
+serde_json = { workspace = true }
+self-replace = { workspace = true }
+hex = { workspace = true }
+clap-stdin = { workspace = true }
+owo-colors = { workspace = true }
+anstyle = { workspace = true }
 workspace_hack = { version = "0.1", path = "../workspace_hack" }
-reqwest-middleware = { version = "0.3.0", features = ["json"] }
-reqwest-tracing = "0.5.0"
-reqwest-retry = "0.5.0"
-reqwest = "0.12"
-tokio = { version = "1.37.0", features = ["rt", "fs"] }
-redact = { version = "0.1.9", features = ["serde"] }
-jsonwebtoken = "9.0.1"
-ring = "0.17.3"
-pem = "3.0.4"
-time = "0.3.36"
+reqwest-middleware = { workspace = true, features = ["json"] }
+reqwest-tracing = { workspace = true }
+reqwest-retry = { workspace = true }
+reqwest = { workspace = true }
+tokio = { workspace = true, features = ["rt", "fs"] }
+redact = { workspace = true, features = ["serde"] }
+jsonwebtoken = { workspace = true }
+ring = { workspace = true }
+pem = { workspace = true }
+time = { workspace = true }
 
 [dev-dependencies]
 pavex_test_runner = { path = "../pavex_test_runner" }

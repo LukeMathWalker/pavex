@@ -8,11 +8,11 @@ repository.workspace = true
 license.workspace = true
 
 [dependencies]
-owo-colors = "3"
-textwrap = "0.16"
-unicode-width = "0.1"
-miette = { version = "6.0.1", features = ["fancy"] }
-supports-hyperlinks = { version = "3.0.0" }
-supports-color = { version = "3.0.0" }
-supports-unicode = { version = "3.0.0" }
-terminal_size = { version = "0.3" }
+owo-colors = { workspace = true }
+textwrap = { workspace = true }
+unicode-width = { workspace = true }
+miette = { workspace = true, features = ["fancy"] }
+supports-hyperlinks = { workspace = true }
+supports-color = { workspace = true }
+supports-unicode = { workspace = true }
+terminal_size = { workspace = true }

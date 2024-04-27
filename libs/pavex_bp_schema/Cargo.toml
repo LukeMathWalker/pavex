@@ -8,5 +8,5 @@ repository.workspace = true
 license.workspace = true
 
 [dependencies]
-serde = { version = "1", features = ["derive"] }
+serde = { workspace = true, features = ["derive"] }
 pavex_reflection = { path = "../pavex_reflection", version = "=0.1.35" }

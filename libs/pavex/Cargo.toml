@@ -18,60 +18,60 @@ server_request_id = ["dep:uuid"]
 time = ["dep:time"]
 
 [dependencies]
-bytes = "1"
-http = "1"
-http-body = "1"
-anyhow = "1"
-futures-util = "0.3"
-mime = "0.3"
-thiserror = "1"
-serde = { version = "1", features = ["derive"] }
+bytes = { workspace = true }
+http = { workspace = true }
+http-body = { workspace = true }
+anyhow = { workspace = true }
+futures-util = { workspace = true }
+mime = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
 pavex_macros = { path = "../pavex_macros", version = "0.1.35" }
-paste = "1"
-tracing = "0.1"
-http-body-util = "0.1"
-pin-project-lite = "0.2"
-ubyte = { version = "0.10.4", features = ["serde"] }
+paste = { workspace = true }
+tracing = { workspace = true }
+http-body-util = { workspace = true }
+pin-project-lite = { workspace = true }
+ubyte = { workspace = true, features = ["serde"] }
 pavex_bp_schema = { path = "../pavex_bp_schema", version = "=0.1.35" }
 pavex_reflection = { path = "../pavex_reflection", version = "=0.1.35" }
 persist_if_changed = { path = "../persist_if_changed", version = "0.1.35" }
 
 # Route parameters
 matchit = { version = "0.7", package = "pavex_matchit" }
-percent-encoding = "2"
+percent-encoding = { workspace = true }
 
 # Query parameters
-serde_html_form = "0.2"
+serde_html_form = { workspace = true }
 
 # Json body extractor
-serde_json = "1"
-serde_path_to_error = "0.1"
+serde_json = { workspace = true }
+serde_path_to_error = { workspace = true }
 
 # Blueprint builder
-indexmap = { version = "2", features = ["serde"] }
-fs-err = "2.7.0"
-ron = "0.8"
+indexmap = { workspace = true, features = ["serde"] }
+fs-err = { workspace = true }
+ron = { workspace = true }
 
 # Cookies
-biscotti = { version = "0.3", optional = true }
+biscotti = { workspace = true, optional = true }
 
 # Server request id
-uuid = { version = "1", features = ["v7"], optional = true }
-type-safe-id = "0.2.1"
+uuid = { workspace = true, features = ["v7"], optional = true }
+type-safe-id = { workspace = true }
 
 # Time facilities
-time = { version = "0.3", features = ["serde"], optional = true }
+time = { workspace = true, features = ["serde"], optional = true }
 
-tokio = { version = "1.32", features = ["net", "sync", "rt", "time"] }
-hyper = { version = "1", features = ["full"], optional = true }
-hyper-util = { version = "0.1", features = ["tokio", "server", "server-auto"], optional = true }
-socket2 = { version = "0.5.3", optional = true }
-smallvec = "1"
+tokio = { workspace = true, features = ["net", "sync", "rt", "time"] }
+hyper = { workspace = true, features = ["full"], optional = true }
+hyper-util = { workspace = true, features = ["tokio", "server", "server-auto"], optional = true }
+socket2 = { workspace = true, optional = true }
+smallvec = { workspace = true }
 
 [dev-dependencies]
-tokio = { version = "1", features = ["macros"] }
-insta = "1.29.0"
-tracing = "0.1"
-reqwest = "0.12"
-itertools = "0.12"
+tokio = { workspace = true, features = ["macros"] }
+insta = { workspace = true }
+tracing = { workspace = true }
+reqwest = { workspace = true }
+itertools = { workspace = true }
 pavex_tracing = { path = "../pavex_tracing" }
