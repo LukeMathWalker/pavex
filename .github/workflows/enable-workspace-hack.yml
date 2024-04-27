@@ -2,6 +2,7 @@ name: Re-enable workspace hack after a release
 
 permissions:
   pull-requests: write
+  contents: write
 
 on:
   push:
