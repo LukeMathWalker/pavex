@@ -2,6 +2,7 @@ use crate::locator::AuthLocator;
 use anyhow::Context;
 use redact::Secret;
 use std::io::Write;
+use tokio::fs;
 
 /// A file-based cache to hold the latest CLI token obtained by Pavex's API.
 pub struct CliTokenDiskCache(AuthLocator);
@@ -17,13 +18,15 @@ impl CliTokenDiskCache {
         Self(locator)
     }
 
-    pub fn get_token(&self) -> Result<Option<Secret<String>>, anyhow::Error> {
-        self.get_cache().map(|data| data.map(|d| d.jwt).flatten())
+    pub async fn get_token(&self) -> Result<Option<Secret<String>>, anyhow::Error> {
+        self.get_cache()
+            .await
+            .map(|data| data.map(|d| d.jwt).flatten())
     }
 
-    fn get_cache(&self) -> Result<Option<CachedToken>, anyhow::Error> {
+    async fn get_cache(&self) -> Result<Option<CachedToken>, anyhow::Error> {
         let cache_path = self.0.token_cache();
-        let data = match fs_err::read(&cache_path) {
+        let data = match fs::read(&cache_path).await {
             Ok(data) => data,
             Err(e) => {
                 return if e.kind() == std::io::ErrorKind::NotFound {
@@ -39,7 +42,7 @@ impl CliTokenDiskCache {
         Ok(data)
     }
 
-    pub fn update_token(&self, new_token: Secret<String>) -> Result<(), anyhow::Error> {
+    pub async fn update_token(&self, new_token: Secret<String>) -> Result<(), anyhow::Error> {
         // Strategy: first write the updated data to a temporary file.
         // Then rename that temporary file to the destination path.
         // On most filesystems, this should ensure that the update is atomic and
@@ -50,7 +53,7 @@ impl CliTokenDiskCache {
         // The update is racy: if multiple instances of Pavex CLI try to update the token,
         // the "last" wins.
         // But that's fine: any token is OK as long as it's fresh.
-        let updated_data = match self.get_cache()? {
+        let updated_data = match self.get_cache().await? {
             None => CachedToken {
                 jwt: Some(new_token),
             },
@@ -61,7 +64,7 @@ impl CliTokenDiskCache {
         };
 
         let tmp_dir = self.0.tmp();
-        fs_err::create_dir_all(&tmp_dir).with_context(|| {
+        fs::create_dir_all(&tmp_dir).await.with_context(|| {
             format!(
                 "Failed to create `{}` to store temporary files.",
                 tmp_dir.display()
@@ -76,7 +79,8 @@ impl CliTokenDiskCache {
             .context("Failed to serialize updated CLI token cache")?;
         tmp_file.write_all(updated_data.as_bytes())?;
 
-        fs_err::rename(tmp_file.path(), &self.0.token_cache())
+        fs::rename(tmp_file.path(), &self.0.token_cache())
+            .await
             .context("Failed to swap the existing CLI cache file with the updated one")
     }
 }

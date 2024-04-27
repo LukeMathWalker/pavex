@@ -58,11 +58,12 @@ reqwest-middleware = { version = "0.3.0", features = ["json"] }
 reqwest-tracing = "0.5.0"
 reqwest-retry = "0.5.0"
 reqwest = "0.12"
-tokio = { version = "1.37.0", features = ["rt"] }
+tokio = { version = "1.37.0", features = ["rt", "fs"] }
 redact = { version = "0.1.9", features = ["serde"] }
 jsonwebtoken = "9.0.1"
 ring = "0.17.3"
 pem = "3.0.4"
+time = "0.3.36"
 
 [dev-dependencies]
 pavex_test_runner = { path = "../pavex_test_runner" }

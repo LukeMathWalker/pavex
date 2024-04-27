@@ -8,7 +8,8 @@ use clap::Parser;
 use jsonwebtoken::jwk::JwkSet;
 use owo_colors::OwoColorize;
 use pavex_cli::activation::{
-    check_activation, check_activation_if_necessary, check_activation_with_key, CliTokenError,
+    background_token_refresh, check_activation, get_activation_key,
+    get_activation_key_if_necessary, CliTokenError,
 };
 use pavex_cli::cargo_install::{cargo_install, GitSourceRevision, Source};
 use pavex_cli::cli_kind::CliKind;
@@ -57,8 +58,15 @@ fn main() -> Result<ExitCode, miette::Error> {
     let key_set: JwkSet =
         serde_json::from_str(PAVEX_CACHED_KEYSET).expect("Failed to parse the cached JWKS");
 
-    check_activation_if_necessary(&cli.command, &locator, &mut shell, &key_set)
-        .map_err(utils::anyhow2miette)?;
+    if let Some(activation_key) =
+        get_activation_key_if_necessary(&cli.command, &locator, &mut shell)
+            .map_err(utils::anyhow2miette)?
+    {
+        let claims = check_activation(&locator, activation_key.clone(), &key_set)
+            .context("Failed to check Pavex activation")
+            .map_err(utils::anyhow2miette)?;
+        background_token_refresh(&claims, &key_set, activation_key, &locator);
+    }
     match cli.command {
         Command::Generate {
             blueprint,
@@ -250,9 +258,13 @@ fn setup(
         installers::verify_installation::<CargoPx>(shell)?;
 
         let _ = shell.status("Checking", "if Pavex has been activated");
-        if check_activation(locator, shell, key_set).is_err() {
+        let must_activate = match get_activation_key(locator, shell) {
+            Ok(key) => check_activation(locator, key.clone(), key_set).is_err(),
+            Err(_) => true,
+        };
+        if must_activate {
             let _ = shell.status_with_color(
-                "Missing",
+                "Inactive",
                 "Pavex has not been activated yet",
                 &cargo_like_utils::shell::style::ERROR,
             );
@@ -341,7 +353,7 @@ fn activate(
                 let attempt = Secret::new(
                     mandatory_question(&question).context("Failed to read activation key")?,
                 );
-                match check_activation_with_key(locator, attempt.clone(), key_set) {
+                match check_activation(locator, attempt.clone(), key_set) {
                     Ok(_) => {
                         k = Some(attempt);
                         break 'outer;
@@ -369,7 +381,7 @@ fn activate(
             k.unwrap()
         }
         Some(k) => {
-            if check_activation_with_key(locator, k.clone(), key_set).is_err() {
+            if check_activation(locator, k.clone(), key_set).is_err() {
                 return Err(anyhow::anyhow!(
                     "The activation key you provided is not valid"
                 ));

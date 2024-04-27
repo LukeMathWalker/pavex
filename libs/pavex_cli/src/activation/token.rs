@@ -17,8 +17,8 @@ pub struct CliToken(Secret<String>);
 
 impl CliToken {
     /// Retrieve a CLI token from the disk cache if it contains one.
-    pub fn from_cache(cache: &CliTokenDiskCache) -> Result<Option<Self>, anyhow::Error> {
-        cache.get_token().map(|t| t.map(CliToken))
+    pub async fn from_cache(cache: &CliTokenDiskCache) -> Result<Option<Self>, anyhow::Error> {
+        cache.get_token().await.map(|t| t.map(CliToken))
     }
 
     /// Get a fresh CLI token from Pavex's API.
@@ -67,7 +67,7 @@ impl CliToken {
         }
     }
 
-    pub fn validate(&self, jwks: &JwkSet) -> Result<ActivationProof, anyhow::Error> {
+    pub fn validate(&self, jwks: &JwkSet) -> Result<ValidatedClaims, anyhow::Error> {
         let header = decode_header(&self.0.expose_secret())
             .context("Failed to decode the JOSE header of the CLI token")?;
         let kid = header.kid.ok_or_else(|| {
@@ -86,10 +86,14 @@ impl CliToken {
         validation.aud = Some(HashSet::from_iter(["pavex_cli".to_string()]));
         validation.iss = Some(HashSet::from_iter(["https://api.pavex.dev".to_string()]));
 
-        let _token: TokenData<serde_json::Value> =
+        let token: TokenData<ValidatedClaims> =
             jsonwebtoken::decode(&self.0.expose_secret(), &decoding_key, &validation)
                 .context("Failed to validate the signature of the CLI token")?;
-        Ok(ActivationProof)
+        Ok(token.claims)
+    }
+
+    pub fn raw(&self) -> &Secret<String> {
+        &self.0
     }
 }
 
@@ -114,7 +118,17 @@ fn key_algo2algo(key_algorithm: KeyAlgorithm) -> Result<Algorithm, anyhow::Error
     }
 }
 
-#[non_exhaustive]
-/// `ValidationProof` can't be constructed outside of this module.
+#[derive(serde::Deserialize)]
+/// `ValidationClaims` can't be constructed outside of this module.
 /// The only way to obtain one is via [`CliToken::validate`].
-pub struct ActivationProof;
+pub struct ValidatedClaims {
+    #[serde(with = "time::serde::timestamp", rename = "iat")]
+    issued_at: time::OffsetDateTime,
+}
+
+impl ValidatedClaims {
+    /// Get the time at which the token was issued.
+    pub fn issued_at(&self) -> &time::OffsetDateTime {
+        &self.issued_at
+    }
+}

@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 
 /// A unified entrypoint to locate Pavex-related files and directories
 /// on a user system.
+#[derive(Debug, Clone)]
 pub struct PavexLocator {
     pavex_dir: PathBuf,
 }
