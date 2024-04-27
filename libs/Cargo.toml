@@ -109,7 +109,7 @@ tracing = { version = "0.1.40", default-features = false }
 tracing-chrome = "0.7"
 tracing-subscriber = "0.3"
 trybuild = "1.0"
-type-safe-id = "0.2.1"
+type-safe-id = "0.3"
 ubyte = "0.10.4"
 unicode-width = "0.1"
 ureq = "2.9.1"

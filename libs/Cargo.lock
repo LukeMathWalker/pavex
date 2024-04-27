@@ -3708,9 +3708,9 @@ dependencies = [
 
 [[package]]
 name = "type-safe-id"
-version = "0.2.1"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bb1211a53644c6a5ae26c45bdd520d1533b07dab50dc6af1a15063772f9061ad"
+checksum = "e2145079685621738e4e02fef4d5882d64498e8fcc90c8eee8dfcb9e62317ae2"
 dependencies = [
  "arrayvec",
  "rand",
