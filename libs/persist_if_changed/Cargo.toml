@@ -8,7 +8,7 @@ repository.workspace = true
 license.workspace = true
 
 [dependencies]
-tracing = "0.1"
-fs-err = "2.7"
-sha2 = "0.10"
-anyhow = "1"
+tracing = { workspace = true, default-features = true }
+fs-err = { workspace = true }
+sha2 = { workspace = true }
+anyhow = { workspace = true }

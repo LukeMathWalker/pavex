@@ -10,5 +10,5 @@ keywords = ["pavex", "tracing", "telemetry", "logging"]
 readme = "README.md"
 
 [dependencies]
-tracing = { version = "0.1", default-features = false, features = ["std"] }
+tracing = { workspace = true, features = ["std"] }
 pavex = { version = "0.1.35", path = "../pavex" }

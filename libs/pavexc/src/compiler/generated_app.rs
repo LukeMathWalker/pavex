@@ -29,7 +29,7 @@ pub struct GeneratedManifest {
 }
 
 impl GeneratedManifest {
-    fn overwrite(&self, existing_manifest: &mut toml_edit::Document) {
+    fn overwrite(&self, existing_manifest: &mut toml_edit::DocumentMut) {
         // Set dependencies
         existing_manifest["dependencies"] = toml_edit::Item::Table(
             self.dependencies
@@ -119,11 +119,11 @@ impl GeneratedApp {
         let cargo_toml_path = pkg_directory.join("Cargo.toml");
         // If the manifest already exists, we need to modify it in place.
         let mut manifest = match fs_err::read_to_string(&cargo_toml_path) {
-            Ok(manifest) => manifest.parse::<toml_edit::Document>()?,
+            Ok(manifest) => manifest.parse::<toml_edit::DocumentMut>()?,
             // Otherwise, we create a new one with the minimum required fields.
             Err(e) => {
                 if e.kind() == std::io::ErrorKind::NotFound {
-                    let mut manifest = toml_edit::Document::new();
+                    let mut manifest = toml_edit::DocumentMut::new();
                     let mut pkg_table = toml_edit::table();
                     pkg_table["name"] = toml_edit::value("application");
                     pkg_table["version"] = toml_edit::value("0.1.0");
@@ -152,7 +152,7 @@ impl GeneratedApp {
         let root_path = workspace.root().as_std_path();
         let root_manifest_path = root_path.join("Cargo.toml");
         let root_manifest = fs_err::read_to_string(&root_manifest_path)?;
-        let mut root_manifest = root_manifest.parse::<toml_edit::Document>()?;
+        let mut root_manifest = root_manifest.parse::<toml_edit::DocumentMut>()?;
 
         let member_path = generated_crate_directory
             .relative_to(root_path)

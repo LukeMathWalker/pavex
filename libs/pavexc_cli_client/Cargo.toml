@@ -8,6 +8,6 @@ repository.workspace = true
 license.workspace = true
 
 [dependencies]
-anyhow = "1"
+anyhow = { workspace = true }
 pavex = { path = "../pavex", version = "0.1.35" }
-thiserror = "1.0.56"
+thiserror = { workspace = true }
