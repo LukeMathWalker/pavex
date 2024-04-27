@@ -3,6 +3,7 @@ use anyhow::Context;
 use redact::Secret;
 use std::io::Write;
 use tokio::fs;
+use tracing::instrument;
 
 /// A file-based cache to hold the latest CLI token obtained by Pavex's API.
 pub struct CliTokenDiskCache(AuthLocator);
@@ -42,6 +43,7 @@ impl CliTokenDiskCache {
         Ok(data)
     }
 
+    #[instrument(skip_all, "Updating the CLI token cache")]
     pub async fn upsert_token(&self, new_token: Secret<String>) -> Result<(), anyhow::Error> {
         // Strategy: first write the updated data to a temporary file.
         // Then rename that temporary file to the destination path.

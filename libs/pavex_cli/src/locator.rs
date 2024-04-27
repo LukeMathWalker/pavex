@@ -147,11 +147,11 @@ impl AuthLocator {
 
     /// Path to the file used to cache the latest CLI auth token.
     pub fn token_cache(&self) -> PathBuf {
-        self.dir.join(".cli_token.toml")
+        self.dir.join("cli_token.toml")
     }
 
     /// Path to the directory used for temporary files related to auth.
     pub fn tmp(&self) -> PathBuf {
-        self.dir.join("tmp")
+        self.dir.join(".tmp")
     }
 }

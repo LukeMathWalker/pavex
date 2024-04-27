@@ -44,7 +44,7 @@ pub fn background_token_refresh(
     locator: &PavexLocator,
 ) {
     if time::OffsetDateTime::now_utc() - latest_claims.issued_at().to_owned()
-        < Duration::minutes(10)
+        < Duration::seconds(10)
     {
         // The token is super fresh, no need to refresh it.
         return;
@@ -147,7 +147,12 @@ async fn _check_activation_with_key(
 
             claims
         }
-        Some(claims) => claims,
+        Some(claims) => {
+            tracing::info!(
+                "The cached CLI token is still valid. Using it rather than fetching a new one."
+            );
+            claims
+        }
     };
     Ok(claims)
 }
