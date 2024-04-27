@@ -10,9 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Use the correct name for package names that contain hyphens in the (generated) server SDK Cargo.toml ([#287](https://github.com/LukeMathWalker/pavex/pull/287))
+  For example, `sqlx-query` used to be renamed to `sqlx_query` in the generated `Cargo.toml`, causing a `cargo` error.
 
 ### Other
 - Update dependencies ([#285](https://github.com/LukeMathWalker/pavex/pull/285))
+- Activation keys are now validated server-side ([#283](https://github.com/LukeMathWalker/pavex/pull/283))
 
 ## [0.1.35](https://github.com/LukeMathWalker/pavex/compare/0.1.34...0.1.35) - 2024-04-26
 
