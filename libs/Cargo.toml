@@ -72,7 +72,7 @@ redact = "0.1.9"
 regex = "1.10.2"
 relative-path = "1.9"
 remove_dir_all = "0.8.2"
-reqwest = "0.12"
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
 reqwest-middleware = "0.3.0"
 reqwest-retry = "0.5.0"
 reqwest-tracing = "0.5.0"

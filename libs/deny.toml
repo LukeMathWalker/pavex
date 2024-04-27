@@ -1,6 +1,9 @@
 all-features = true
 no-default-features = false
 
+[bans]
+deny = ["openssl", "openssl-sys"]
+
 [advisories]
 db-urls = ["https://github.com/rustsec/advisory-db"]
 vulnerability = "deny"
