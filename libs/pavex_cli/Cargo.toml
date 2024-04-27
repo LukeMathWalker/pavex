@@ -63,6 +63,7 @@ jsonwebtoken = { workspace = true }
 ring = { workspace = true }
 pem = { workspace = true }
 time = { workspace = true }
+workspace_hack = { version = "0.1", path = "../workspace_hack" }
 
 [dev-dependencies]
 pavex_test_runner = { path = "../pavex_test_runner" }

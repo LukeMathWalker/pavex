@@ -1013,6 +1013,7 @@ dependencies = [
  "toml",
  "tracing",
  "walkdir",
+ "workspace_hack",
 ]
 
 [[package]]
@@ -2028,6 +2029,7 @@ dependencies = [
  "type-safe-id",
  "ubyte",
  "uuid",
+ "workspace_hack",
 ]
 
 [[package]]
@@ -2036,6 +2038,7 @@ version = "0.1.37"
 dependencies = [
  "pavex_reflection",
  "serde",
+ "workspace_hack",
 ]
 
 [[package]]
@@ -2086,6 +2089,7 @@ dependencies = [
  "ureq",
  "vergen",
  "windows-sys 0.52.0",
+ "workspace_hack",
  "xdg-home",
  "xz2",
  "zip",
@@ -2098,6 +2102,7 @@ dependencies = [
  "anyhow",
  "pavex",
  "thiserror",
+ "workspace_hack",
 ]
 
 [[package]]
@@ -2110,6 +2115,7 @@ dependencies = [
  "serde",
  "syn",
  "trybuild",
+ "workspace_hack",
 ]
 
 [[package]]
@@ -2130,6 +2136,7 @@ dependencies = [
  "terminal_size",
  "textwrap",
  "unicode-width",
+ "workspace_hack",
 ]
 
 [[package]]
@@ -2137,6 +2144,7 @@ name = "pavex_reflection"
 version = "0.1.37"
 dependencies = [
  "serde",
+ "workspace_hack",
 ]
 
 [[package]]
@@ -2164,6 +2172,7 @@ dependencies = [
  "toml",
  "tracing-subscriber",
  "walkdir",
+ "workspace_hack",
 ]
 
 [[package]]
@@ -2172,6 +2181,7 @@ version = "0.1.37"
 dependencies = [
  "pavex",
  "tracing",
+ "workspace_hack",
 ]
 
 [[package]]
@@ -2218,6 +2228,7 @@ dependencies = [
  "toml_edit",
  "tracing",
  "vergen",
+ "workspace_hack",
  "xdg-home",
 ]
 
@@ -2244,6 +2255,7 @@ dependencies = [
  "tracing-chrome",
  "tracing-subscriber",
  "vergen",
+ "workspace_hack",
 ]
 
 [[package]]
@@ -2253,6 +2265,7 @@ dependencies = [
  "anyhow",
  "pavex",
  "thiserror",
+ "workspace_hack",
 ]
 
 [[package]]
@@ -2289,6 +2302,7 @@ dependencies = [
  "fs-err",
  "sha2",
  "tracing",
+ "workspace_hack",
 ]
 
 [[package]]
@@ -4107,6 +4121,53 @@ dependencies = [
 [[package]]
 name = "workspace_hack"
 version = "0.1.0"
+dependencies = [
+ "ahash",
+ "aho-corasick",
+ "bitflags 2.5.0",
+ "cc",
+ "clap",
+ "clap_builder",
+ "console",
+ "crossbeam-utils",
+ "crypto-common",
+ "deranged",
+ "digest",
+ "fixedbitset",
+ "futures-channel",
+ "futures-core",
+ "futures-sink",
+ "futures-util",
+ "getrandom",
+ "hashbrown 0.14.3",
+ "hmac",
+ "indexmap",
+ "log",
+ "miette",
+ "num-traits",
+ "petgraph",
+ "proc-macro2",
+ "quote",
+ "regex",
+ "regex-automata 0.4.6",
+ "regex-syntax 0.8.3",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "sha2",
+ "smallvec",
+ "subtle",
+ "syn",
+ "time",
+ "time-macros",
+ "tokio",
+ "toml",
+ "toml_edit",
+ "tracing",
+ "tracing-core",
+ "uuid",
+ "zeroize",
+]
 
 [[package]]
 name = "xattr"
