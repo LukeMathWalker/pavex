@@ -697,14 +697,12 @@ where
                 )
             } else {
                 name.to_string()
-            }
-            .replace('-', "_");
+            };
+            let dependency = Dependency::Detailed(dependency_details).simplify();
 
-            dependencies.insert(
-                dependency_name.clone(),
-                Dependency::Detailed(dependency_details),
-            );
-            package_ids2dependency_name.insert(package_id.to_owned(), dependency_name);
+            dependencies.insert(dependency_name.clone(), dependency);
+            package_ids2dependency_name
+                .insert(package_id.to_owned(), dependency_name.replace("-", "_"));
         }
     }
     (dependencies, package_ids2dependency_name)
