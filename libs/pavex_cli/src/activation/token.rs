@@ -43,7 +43,9 @@ impl CliToken {
         let user_agent = format!("pavex-cli/{}", env!("CARGO_PKG_VERSION"));
         let response = client
             .post("https://api.pavex.dev/v1/cli/login")
-            .header("User-Agent", user_agent)
+            .header("User-Agent", &user_agent)
+            // Workaround for https://github.com/TrueLayer/reqwest-middleware/pull/148
+            .header("User_Agent", &user_agent)
             .json(&Request { activation_key })
             .send()
             .await
