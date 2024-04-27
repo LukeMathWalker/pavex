@@ -44,7 +44,7 @@ pub fn background_token_refresh(
     locator: &PavexLocator,
 ) {
     if time::OffsetDateTime::now_utc() - latest_claims.issued_at().to_owned()
-        < Duration::seconds(10)
+        < Duration::minutes(10)
     {
         // The token is super fresh, no need to refresh it.
         return;
