@@ -118,7 +118,7 @@ walkdir = "2.4.0"
 windows-sys = "0.52.0"
 xdg-home = "1.0.0"
 xz2 = "0.1.7"
-zip = "0.6.6"
+zip = "1"
 owo-colors = "4.0.0"
 
 # Config for 'cargo release'
