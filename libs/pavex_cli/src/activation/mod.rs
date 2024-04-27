@@ -75,7 +75,7 @@ async fn _token_refresh(
         .context("The token retrieved from Pavex's API is invalid.")
         .map_err(CliTokenError::RpcError)?;
     CliTokenDiskCache::new(locator.auth())
-        .update_token(jwt.raw().clone())
+        .upsert_token(jwt.raw().clone())
         .await?;
     Ok(claims)
 }
@@ -137,7 +137,7 @@ async fn _check_activation_with_key(
 
             // We have a fresh token. Let's cache it to disk to avoid hitting the API
             // the next time Pavex CLI is invoked.
-            if let Err(e) = cache.update_token(jwt.raw().clone()).await {
+            if let Err(e) = cache.upsert_token(jwt.raw().clone()).await {
                 tracing::warn!(
                     error.msg = %e,
                     error.details = ?e,

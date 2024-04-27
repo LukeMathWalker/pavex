@@ -42,7 +42,7 @@ impl CliTokenDiskCache {
         Ok(data)
     }
 
-    pub async fn update_token(&self, new_token: Secret<String>) -> Result<(), anyhow::Error> {
+    pub async fn upsert_token(&self, new_token: Secret<String>) -> Result<(), anyhow::Error> {
         // Strategy: first write the updated data to a temporary file.
         // Then rename that temporary file to the destination path.
         // On most filesystems, this should ensure that the update is atomic and
