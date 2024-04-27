@@ -19,9 +19,9 @@ harness = false
 vergen = { workspace = true }
 
 [dependencies]
-pavexc_cli_client = { path = "../pavexc_cli_client", version = "0.1.35" }
+pavexc_cli_client = { path = "../pavexc_cli_client", version = "0.1.36" }
 clap = { workspace = true, features = ["derive", "env"] }
-pavex_miette = { path = "../pavex_miette", version = "0.1.35" }
+pavex_miette = { path = "../pavex_miette", version = "0.1.36" }
 miette = { workspace = true }
 fs-err = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["fmt", "env-filter"] }
@@ -53,7 +53,6 @@ hex = { workspace = true }
 clap-stdin = { workspace = true }
 owo-colors = { workspace = true }
 anstyle = { workspace = true }
-workspace_hack = { version = "0.1", path = "../workspace_hack" }
 reqwest-middleware = { workspace = true, features = ["json"] }
 reqwest-tracing = { workspace = true }
 reqwest-retry = { workspace = true }

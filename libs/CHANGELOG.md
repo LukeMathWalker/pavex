@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.36](https://github.com/LukeMathWalker/pavex/compare/0.1.35...0.1.36) - 2024-04-27
+
+### Fixed
+- Use the correct name for package names that contain hyphens in the (generated) server SDK Cargo.toml ([#287](https://github.com/LukeMathWalker/pavex/pull/287))
+
+### Other
+- Update dependencies ([#285](https://github.com/LukeMathWalker/pavex/pull/285))
+
 ## [0.1.35](https://github.com/LukeMathWalker/pavex/compare/0.1.34...0.1.35) - 2024-04-26
 
 ### Fixed
