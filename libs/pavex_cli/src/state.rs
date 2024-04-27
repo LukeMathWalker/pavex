@@ -3,7 +3,7 @@ use crate::locator::PavexLocator;
 use anyhow::Context;
 use cargo_like_utils::flock::{FileLock, Filesystem};
 use cargo_like_utils::shell::Shell;
-use secrecy::{ExposeSecret, SecretString};
+use redact::Secret;
 use std::io::{Read, Write};
 
 /// The current "state" of Pavex on this machine.
@@ -21,11 +21,11 @@ struct StateInner {
     /// The activation key associated with this installation of Pavex.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(serialize_with = "serialize_activation_key")]
-    activation_key: Option<SecretString>,
+    activation_key: Option<Secret<String>>,
 }
 
 fn serialize_activation_key<S>(
-    activation_key: &Option<SecretString>,
+    activation_key: &Option<Secret<String>>,
     serializer: S,
 ) -> Result<S::Ok, S::Error>
 where
@@ -68,7 +68,7 @@ impl State {
     pub fn get_activation_key(
         &self,
         shell: &mut Shell,
-    ) -> Result<Option<SecretString>, StateReadError> {
+    ) -> Result<Option<Secret<String>>, StateReadError> {
         let (_, current_state) = self.immutable_read(shell)?;
         Ok(current_state.and_then(|s| s.activation_key))
     }
@@ -77,7 +77,7 @@ impl State {
     pub fn set_activation_key(
         &self,
         shell: &mut Shell,
-        activation_key: SecretString,
+        activation_key: Secret<String>,
     ) -> Result<(), anyhow::Error> {
         let (mut locked_file, state) = self.read_for_update(shell)?;
         let mut state = state.unwrap_or_default();

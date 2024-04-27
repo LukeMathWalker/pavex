@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 
 /// A unified entrypoint to locate Pavex-related files and directories
 /// on a user system.
+#[derive(Debug, Clone)]
 pub struct PavexLocator {
     pavex_dir: PathBuf,
 }
@@ -21,6 +22,13 @@ impl PavexLocator {
     pub fn toolchains(&self) -> ToolchainsLocator {
         ToolchainsLocator {
             toolchain_dir: self.pavex_dir.join("toolchains"),
+        }
+    }
+
+    /// Where CLI tokens are stored.
+    pub fn auth(&self) -> AuthLocator {
+        AuthLocator {
+            dir: self.pavex_dir.join("auth"),
         }
     }
 
@@ -124,5 +132,26 @@ impl ToolchainLocator {
     /// Path to the `pavexc` binary for this toolchain.
     pub fn pavexc(&self) -> PathBuf {
         self.toolchain_dir.join(CliKind::Pavexc.binary_filename())
+    }
+}
+
+/// A unified entrypoint for all files related to CLI authentication.
+pub struct AuthLocator {
+    dir: PathBuf,
+}
+
+impl AuthLocator {
+    pub fn root_dir(&self) -> &Path {
+        &self.dir
+    }
+
+    /// Path to the file used to cache the latest CLI auth token.
+    pub fn token_cache(&self) -> PathBuf {
+        self.dir.join("cli_token.toml")
+    }
+
+    /// Path to the directory used for temporary files related to auth.
+    pub fn tmp(&self) -> PathBuf {
+        self.dir.join(".tmp")
     }
 }
