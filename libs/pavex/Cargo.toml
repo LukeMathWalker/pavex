@@ -26,15 +26,15 @@ futures-util = { workspace = true }
 mime = { workspace = true }
 thiserror = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
-pavex_macros = { path = "../pavex_macros", version = "0.1.36" }
+pavex_macros = { path = "../pavex_macros", version = "0.1.37" }
 paste = { workspace = true }
 tracing = { workspace = true }
 http-body-util = { workspace = true }
 pin-project-lite = { workspace = true }
 ubyte = { workspace = true, features = ["serde"] }
-pavex_bp_schema = { path = "../pavex_bp_schema", version = "=0.1.36" }
-pavex_reflection = { path = "../pavex_reflection", version = "=0.1.36" }
-persist_if_changed = { path = "../persist_if_changed", version = "0.1.36" }
+pavex_bp_schema = { path = "../pavex_bp_schema", version = "=0.1.37" }
+pavex_reflection = { path = "../pavex_reflection", version = "=0.1.37" }
+persist_if_changed = { path = "../persist_if_changed", version = "0.1.37" }
 
 # Route parameters
 matchit = { version = "0.7", package = "pavex_matchit" }
