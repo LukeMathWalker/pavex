@@ -148,7 +148,7 @@ impl Client {
     /// Set the log filter.
     ///
     /// Control which logs are emitted if `--log` or `--perf-profile` are enabled.
-    /// If no filter is specified, Pavex will default to `info,pavex=trace`.
+    /// If no filter is specified, Pavex will default to `info,pavexc=trace`.
     pub fn log_filter(mut self, filter: String) -> Self {
         self.log_filter = Some(filter);
         self

@@ -128,7 +128,7 @@ impl Client {
 
     /// Enable logging.
     ///
-    /// `pavexc` will emit internal log messages to the console.
+    /// `pavex` will emit internal log messages to the console.
     pub fn log(mut self) -> Self {
         self.log = true;
         self
@@ -136,7 +136,7 @@ impl Client {
 
     /// Disable logging.
     ///
-    /// `pavexc` will not emit internal log messages to the console.
+    /// `pavex` will not emit internal log messages to the console.
     /// This is the default behaviour.
     pub fn no_log(mut self) -> Self {
         self.log = false;
@@ -154,7 +154,7 @@ impl Client {
 
     /// Enable performance profiling.
     ///
-    /// `pavexc` will serialize to disk tracing information to profile command execution.
+    /// `pavex` will serialize to disk tracing information to profile command execution.
     pub fn perf_profile(mut self) -> Self {
         self.perf_profile = true;
         self
@@ -162,7 +162,7 @@ impl Client {
 
     /// Disable performance profiling.
     ///
-    /// `pavexc` will not serialize to disk tracing information to profile command execution.
+    /// `pavex` will not serialize to disk tracing information to profile command execution.
     /// This is the default behaviour.
     pub fn no_perf_profile(mut self) -> Self {
         self.perf_profile = false;
