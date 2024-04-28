@@ -41,7 +41,7 @@ static PAVEX_CACHED_KEYSET: &str = include_str!("../jwks.json");
 fn main() -> Result<ExitCode, miette::Error> {
     let cli = Cli::parse();
     init_miette_hook(&cli);
-    let _guard = init_telemetry(cli.log_filter, cli.log, cli.perf_profile);
+    let _guard = init_telemetry(cli.log_filter.clone(), cli.log, cli.perf_profile);
 
     let client = pavexc_client(&cli);
     let system_home_dir = xdg_home::home_dir().ok_or_else(|| {
@@ -501,6 +501,13 @@ fn init_telemetry(
         });
     let base = tracing_subscriber::registry().with(filter_layer);
     let mut chrome_guard = None;
+    let trace_filename = format!(
+        "./trace-pavex-{}.json",
+        std::time::SystemTime::UNIX_EPOCH
+            .elapsed()
+            .unwrap()
+            .as_millis()
+    );
 
     match console_logging {
         true => {
@@ -510,7 +517,10 @@ fn init_telemetry(
                 .with_span_events(FmtSpan::NEW | FmtSpan::CLOSE)
                 .with_timer(tracing_subscriber::fmt::time::uptime());
             if profiling {
-                let (chrome_layer, guard) = ChromeLayerBuilder::new().include_args(true).build();
+                let (chrome_layer, guard) = ChromeLayerBuilder::new()
+                    .file(trace_filename)
+                    .include_args(true)
+                    .build();
                 chrome_guard = Some(guard);
                 base.with(fmt_layer).with(chrome_layer).init();
             } else {
@@ -519,7 +529,10 @@ fn init_telemetry(
         }
         false => {
             if profiling {
-                let (chrome_layer, guard) = ChromeLayerBuilder::new().include_args(true).build();
+                let (chrome_layer, guard) = ChromeLayerBuilder::new()
+                    .file(trace_filename)
+                    .include_args(true)
+                    .build();
                 chrome_guard = Some(guard);
                 base.with(chrome_layer).init()
             }

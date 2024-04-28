@@ -138,6 +138,13 @@ fn init_telemetry(
         });
     let base = tracing_subscriber::registry().with(filter_layer);
     let mut chrome_guard = None;
+    let trace_filename = format!(
+        "./trace-pavexc-{}.json",
+        std::time::SystemTime::UNIX_EPOCH
+            .elapsed()
+            .unwrap()
+            .as_millis()
+    );
 
     match console_logging {
         true => {
@@ -147,7 +154,10 @@ fn init_telemetry(
                 .with_span_events(FmtSpan::NEW | FmtSpan::CLOSE)
                 .with_timer(tracing_subscriber::fmt::time::uptime());
             if profiling {
-                let (chrome_layer, guard) = ChromeLayerBuilder::new().include_args(true).build();
+                let (chrome_layer, guard) = ChromeLayerBuilder::new()
+                    .file(trace_filename)
+                    .include_args(true)
+                    .build();
                 chrome_guard = Some(guard);
                 base.with(fmt_layer).with(chrome_layer).init();
             } else {
@@ -156,7 +166,10 @@ fn init_telemetry(
         }
         false => {
             if profiling {
-                let (chrome_layer, guard) = ChromeLayerBuilder::new().include_args(true).build();
+                let (chrome_layer, guard) = ChromeLayerBuilder::new()
+                    .file(trace_filename)
+                    .include_args(true)
+                    .build();
                 chrome_guard = Some(guard);
                 base.with(chrome_layer).init()
             }
