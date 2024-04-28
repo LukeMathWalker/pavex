@@ -43,13 +43,7 @@ fn main() -> Result<ExitCode, miette::Error> {
     init_miette_hook(&cli);
     let _guard = init_telemetry(cli.log_filter, cli.log, cli.perf_profile);
 
-    let mut client = Client::new().color(cli.color.into());
-    if cli.debug {
-        client = client.debug();
-    } else {
-        client = client.no_debug();
-    }
-
+    let client = pavexc_client(&cli);
     let system_home_dir = xdg_home::home_dir().ok_or_else(|| {
         miette::miette!("Failed to get the system home directory from the environment")
     })?;
@@ -101,6 +95,30 @@ fn main() -> Result<ExitCode, miette::Error> {
         }
     }
     .map_err(utils::anyhow2miette)
+}
+
+/// Propagate introspection options from `pavex` to pavexc`.
+fn pavexc_client(cli: &Cli) -> Client {
+    let mut client = Client::new().color(cli.color.into());
+    if cli.debug {
+        client = client.debug();
+    } else {
+        client = client.no_debug();
+    }
+    if cli.log {
+        client = client.log();
+    } else {
+        client = client.no_log();
+    }
+    if cli.perf_profile {
+        client = client.perf_profile();
+    } else {
+        client = client.no_perf_profile();
+    }
+    if let Some(log_filter) = &cli.log_filter {
+        client = client.log_filter(log_filter.to_owned());
+    }
+    client
 }
 
 #[tracing::instrument("Generate server sdk", skip(client, locator, shell))]
