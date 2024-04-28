@@ -19,9 +19,9 @@ harness = false
 vergen = { workspace = true }
 
 [dependencies]
-pavexc_cli_client = { path = "../pavexc_cli_client", version = "0.1.37" }
+pavexc_cli_client = { path = "../pavexc_cli_client", version = "0.1.38" }
 clap = { workspace = true, features = ["derive", "env"] }
-pavex_miette = { path = "../pavex_miette", version = "0.1.37" }
+pavex_miette = { path = "../pavex_miette", version = "0.1.38" }
 miette = { workspace = true }
 fs-err = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["fmt", "env-filter"] }
@@ -63,7 +63,6 @@ jsonwebtoken = { workspace = true }
 ring = { workspace = true }
 pem = { workspace = true }
 time = { workspace = true }
-workspace_hack = { version = "0.1", path = "../workspace_hack" }
 
 [dev-dependencies]
 pavex_test_runner = { path = "../pavex_test_runner" }
