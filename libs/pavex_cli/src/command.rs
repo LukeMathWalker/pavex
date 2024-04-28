@@ -5,20 +5,55 @@ use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
 use std::str::FromStr;
 
+const INTROSPECTION_HEADING: &str = "Introspection";
+
 #[derive(Parser)]
-#[clap(author, version = VERSION, about, long_about = None)]
+#[clap(
+    author,
+    version = VERSION, about,
+    long_about = None,
+    after_long_help = "Use `pavex -h` rather than `pavex --help` for a more concise summary of the available options."
+)]
 pub struct Cli {
-    /// Pavex will expose the full error chain when reporting diagnostics.
-    ///
-    /// It will also emit tracing output, both to stdout and to disk.
-    /// The file serialized on disk (`trace-[...].json`) can be opened in
-    /// Google Chrome by visiting chrome://tracing for further analysis.
-    #[clap(long, env = "PAVEX_DEBUG")]
-    pub debug: bool,
     #[clap(long, env = "PAVEX_COLOR", default_value_t = Color::Auto)]
+    /// Color settings for the CLI output: auto, always, never.
     pub color: Color,
     #[clap(subcommand)]
     pub command: Command,
+    #[clap(
+        long,
+        env = "PAVEX_DEBUG",
+        help = "Pavex will expose the full error chain when reporting diagnostics.",
+        long_help = "Pavex will expose the full error chain when reporting diagnostics.\nSet `PAVEX_DEBUG=1` to enable this option."
+    )]
+    pub debug: bool,
+    #[clap(
+        long,
+        env = "PAVEX_LOG",
+        help_heading = Some(INTROSPECTION_HEADING),
+        hide_short_help = true,
+        hide_env = true,
+        long_help = "Pavex will emit internal logs to the console.\nSet `PAVEX_LOG=true` to enable this option using an environment variable."
+    )]
+    pub log: bool,
+    #[clap(
+        long,
+        env = "PAVEX_LOG_FILTER",
+        help_heading = Some(INTROSPECTION_HEADING),
+        hide_short_help = true,
+        hide_env = true,
+        long_help = "Control which logs are emitted if `--log` or `--perf-profile` are enabled.\nIf no filter is specified, Pavex will default to `info,pavex=trace`."
+    )]
+    pub log_filter: Option<String>,
+    #[clap(
+        long,
+        env = "PAVEX_PERF_PROFILE",
+        help_heading = Some(INTROSPECTION_HEADING),
+        hide_short_help = true,
+        hide_env = true,
+        long_help = "Pavex will serialize to disk tracing information to profile command execution.\nThe file (`trace-[...].json`) can be opened using https://ui.perfetto.dev/ or in Google Chrome by visiting chrome://tracing.\nSet `PAVEX_PERF_PROFILE=true` to enable this option using an environment variable."
+    )]
+    pub perf_profile: bool,
 }
 
 // Same structure used by `cargo --version`.

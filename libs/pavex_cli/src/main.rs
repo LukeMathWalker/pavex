@@ -41,7 +41,7 @@ static PAVEX_CACHED_KEYSET: &str = include_str!("../jwks.json");
 fn main() -> Result<ExitCode, miette::Error> {
     let cli = Cli::parse();
     init_miette_hook(&cli);
-    let _guard = cli.debug.then(init_telemetry);
+    let _guard = init_telemetry(cli.log, cli.perf_profile);
 
     let mut client = Client::new().color(cli.color.into());
     if cli.debug {
@@ -471,23 +471,37 @@ fn use_color_on_stderr(color_profile: Color) -> bool {
     }
 }
 
-fn init_telemetry() -> FlushGuard {
-    let fmt_layer = tracing_subscriber::fmt::layer()
-        .with_file(false)
-        .with_target(false)
-        .with_span_events(FmtSpan::NEW | FmtSpan::CLOSE)
-        .with_timer(tracing_subscriber::fmt::time::uptime());
-    let (chrome_layer, guard) = ChromeLayerBuilder::new().include_args(true).build();
-    let filter_layer = EnvFilter::try_from_default_env()
-        .or_else(|_| EnvFilter::try_new("info,pavexc=trace"))
-        .unwrap();
+fn init_telemetry(console_logging: bool, profiling: bool) -> Option<FlushGuard> {
+    let filter_layer = EnvFilter::try_from_env("PAVEX_LOG_FILTER")
+        .or_else(|_| EnvFilter::try_new("info,pavex=trace"))
+        .expect("Invalid log filter configuration");
+    let base = tracing_subscriber::registry().with(filter_layer);
+    let mut chrome_guard = None;
 
-    tracing_subscriber::registry()
-        .with(filter_layer)
-        .with(fmt_layer)
-        .with(chrome_layer)
-        .init();
-    guard
+    match console_logging {
+        true => {
+            let fmt_layer = tracing_subscriber::fmt::layer()
+                .with_file(false)
+                .with_target(false)
+                .with_span_events(FmtSpan::NEW | FmtSpan::CLOSE)
+                .with_timer(tracing_subscriber::fmt::time::uptime());
+            if profiling {
+                let (chrome_layer, guard) = ChromeLayerBuilder::new().include_args(true).build();
+                chrome_guard = Some(guard);
+                base.with(fmt_layer).with(chrome_layer).init();
+            } else {
+                base.with(fmt_layer).init();
+            }
+        }
+        false => {
+            if profiling {
+                let (chrome_layer, guard) = ChromeLayerBuilder::new().include_args(true).build();
+                chrome_guard = Some(guard);
+                base.with(chrome_layer).init()
+            }
+        }
+    }
+    chrome_guard
 }
 
 fn init_miette_hook(cli: &Cli) {
