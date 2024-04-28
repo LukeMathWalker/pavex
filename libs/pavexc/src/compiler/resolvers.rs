@@ -48,7 +48,7 @@ pub(crate) fn resolve_type(
             let type_item = krate_collection.get_type_by_global_type_id(&global_type_id);
             // We want to remove any indirections (e.g. `type Foo = Bar;`) and get the actual type.
             if let ItemEnum::TypeAlias(type_alias) = &type_item.inner {
-                let mut generic_bindings = HashMap::new();
+                let mut alias_generic_bindings = HashMap::new();
                 // The generic arguments that have been passed to the type alias.
                 // E.g. `u32` in `Foo<u32>` for `type Foo<T=u64> = Bar<T>;`
                 let generic_args = if let Some(args) = args {
@@ -91,7 +91,7 @@ pub(crate) fn resolve_type(
                                     name: generic_param_def.name.clone(),
                                 })
                             };
-                            generic_bindings
+                            alias_generic_bindings
                                 .insert(generic_param_def.name.to_string(), generic_type);
                         }
                         GenericParamDefKind::Const { .. }
@@ -104,7 +104,7 @@ pub(crate) fn resolve_type(
                     &type_alias.type_,
                     &global_type_id.package_id,
                     krate_collection,
-                    &generic_bindings,
+                    &alias_generic_bindings,
                 )?;
                 Ok(type_)
             } else {
@@ -307,7 +307,6 @@ pub(crate) fn resolve_callable(
             }
         }
     }
-
     let fn_generic_args = &callable_path.segments.last().unwrap().generic_arguments;
     for (generic_arg, generic_def) in fn_generic_args.iter().zip(&fn_generics_defs.params) {
         let generic_name = &generic_def.name;
