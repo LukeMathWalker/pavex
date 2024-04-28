@@ -41,7 +41,7 @@ static PAVEX_CACHED_KEYSET: &str = include_str!("../jwks.json");
 fn main() -> Result<ExitCode, miette::Error> {
     let cli = Cli::parse();
     init_miette_hook(&cli);
-    let _guard = init_telemetry(cli.log, cli.perf_profile);
+    let _guard = init_telemetry(cli.log_filter, cli.log, cli.perf_profile);
 
     let mut client = Client::new().color(cli.color.into());
     if cli.debug {
@@ -471,10 +471,16 @@ fn use_color_on_stderr(color_profile: Color) -> bool {
     }
 }
 
-fn init_telemetry(console_logging: bool, profiling: bool) -> Option<FlushGuard> {
-    let filter_layer = EnvFilter::try_from_env("PAVEX_LOG_FILTER")
-        .or_else(|_| EnvFilter::try_new("info,pavex=trace"))
-        .expect("Invalid log filter configuration");
+fn init_telemetry(
+    log_filter: Option<String>,
+    console_logging: bool,
+    profiling: bool,
+) -> Option<FlushGuard> {
+    let filter_layer = log_filter
+        .map(|f| EnvFilter::try_new(f).expect("Invalid log filter configuration"))
+        .unwrap_or_else(|| {
+            EnvFilter::try_new("info,pavex=trace").expect("Invalid log filter configuration")
+        });
     let base = tracing_subscriber::registry().with(filter_layer);
     let mut chrome_guard = None;
 
