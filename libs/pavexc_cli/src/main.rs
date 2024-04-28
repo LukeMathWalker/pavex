@@ -17,20 +17,49 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::EnvFilter;
 
+const INTROSPECTION_HEADING: &str = "Introspection";
+
 #[derive(Parser)]
 #[clap(author, version = VERSION, about, long_about = None)]
 struct Cli {
-    /// Pavex will expose the full error chain when reporting diagnostics.
-    ///
-    /// It will also emit tracing output, both to stdout and to disk.
-    /// The file serialized on disk (`trace-[...].json`) can be opened in
-    /// Google Chrome by visiting chrome://tracing for further analysis.
-    #[clap(long, env = "PAVEXC_DEBUG")]
-    debug: bool,
     #[clap(long, env = "PAVEXC_COLOR", default_value_t = Color::Auto)]
     color: Color,
     #[clap(subcommand)]
     command: Commands,
+    #[clap(
+        long,
+        env = "PAVEXC_DEBUG",
+        help = "Pavexc will expose the full error chain when reporting diagnostics.",
+        long_help = "Pavexc will expose the full error chain when reporting diagnostics.\nSet `PAVEXC_DEBUG=1` to enable this option."
+    )]
+    pub debug: bool,
+    #[clap(
+        long,
+        env = "PAVEXC_LOG",
+        help_heading = Some(INTROSPECTION_HEADING),
+        hide_short_help = true,
+        hide_env = true,
+        long_help = "Pavexc will emit internal logs to the console.\nSet `PAVEXC_LOG=true` to enable this option using an environment variable."
+    )]
+    pub log: bool,
+    #[clap(
+        long,
+        env = "PAVEXC_LOG_FILTER",
+        help_heading = Some(INTROSPECTION_HEADING),
+        hide_short_help = true,
+        hide_env = true,
+        long_help = "Control which logs are emitted if `--log` or `--perf-profile` are enabled.\nIf no filter is specified, Pavexc will default to `info,pavexc=trace`."
+    )]
+    pub log_filter: Option<String>,
+    #[clap(
+        long,
+        env = "PAVEXC_PERF_PROFILE",
+        help_heading = Some(INTROSPECTION_HEADING),
+        hide_short_help = true,
+        hide_env = true,
+        long_help = "Pavexc will serialize to disk tracing information to profile command execution.\nThe file (`trace-[...].json`) can be opened using https://ui.perfetto.dev/ or in Google Chrome by visiting chrome://tracing.\nSet `PAVEXC_PERF_PROFILE=true` to enable this option using an environment variable."
+    )]
+    pub perf_profile: bool,
 }
 
 // Same structure used by `cargo --version`.
@@ -97,23 +126,56 @@ enum Commands {
     },
 }
 
-fn init_telemetry() -> FlushGuard {
-    let fmt_layer = tracing_subscriber::fmt::layer()
-        .with_file(false)
-        .with_target(false)
-        .with_span_events(FmtSpan::NEW | FmtSpan::CLOSE)
-        .with_timer(tracing_subscriber::fmt::time::uptime());
-    let (chrome_layer, guard) = ChromeLayerBuilder::new().include_args(true).build();
-    let filter_layer = EnvFilter::try_from_default_env()
-        .or_else(|_| EnvFilter::try_new("info,pavexc=trace"))
-        .unwrap();
+fn init_telemetry(
+    log_filter: Option<String>,
+    console_logging: bool,
+    profiling: bool,
+) -> Option<FlushGuard> {
+    let filter_layer = log_filter
+        .map(|f| EnvFilter::try_new(f).expect("Invalid log filter configuration"))
+        .unwrap_or_else(|| {
+            EnvFilter::try_new("info,pavexc=trace").expect("Invalid log filter configuration")
+        });
+    let base = tracing_subscriber::registry().with(filter_layer);
+    let mut chrome_guard = None;
+    let trace_filename = format!(
+        "./trace-pavexc-{}.json",
+        std::time::SystemTime::UNIX_EPOCH
+            .elapsed()
+            .unwrap()
+            .as_millis()
+    );
 
-    tracing_subscriber::registry()
-        .with(filter_layer)
-        .with(fmt_layer)
-        .with(chrome_layer)
-        .init();
-    guard
+    match console_logging {
+        true => {
+            let fmt_layer = tracing_subscriber::fmt::layer()
+                .with_file(false)
+                .with_target(false)
+                .with_span_events(FmtSpan::NEW | FmtSpan::CLOSE)
+                .with_timer(tracing_subscriber::fmt::time::uptime());
+            if profiling {
+                let (chrome_layer, guard) = ChromeLayerBuilder::new()
+                    .file(trace_filename)
+                    .include_args(true)
+                    .build();
+                chrome_guard = Some(guard);
+                base.with(fmt_layer).with(chrome_layer).init();
+            } else {
+                base.with(fmt_layer).init();
+            }
+        }
+        false => {
+            if profiling {
+                let (chrome_layer, guard) = ChromeLayerBuilder::new()
+                    .file(trace_filename)
+                    .include_args(true)
+                    .build();
+                chrome_guard = Some(guard);
+                base.with(chrome_layer).init()
+            }
+        }
+    }
+    chrome_guard
 }
 
 fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
@@ -147,11 +209,7 @@ fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
     .unwrap();
 
     better_panic::install();
-    let _guard = if cli.debug {
-        Some(init_telemetry())
-    } else {
-        None
-    };
+    let _guard = init_telemetry(cli.log_filter, cli.log, cli.perf_profile);
     match cli.command {
         Commands::Generate {
             blueprint,

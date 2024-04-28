@@ -12,6 +12,9 @@ pub struct Client {
     pavex_cli_path: Option<PathBuf>,
     color: Color,
     debug: bool,
+    log: bool,
+    log_filter: Option<String>,
+    perf_profile: bool,
 }
 
 impl Default for Client {
@@ -20,6 +23,9 @@ impl Default for Client {
             pavex_cli_path: None,
             color: Color::Auto,
             debug: false,
+            log: false,
+            log_filter: None,
+            perf_profile: false,
         }
     }
 }
@@ -48,6 +54,18 @@ impl Client {
 
         if self.debug {
             cmd.arg("--debug");
+        }
+
+        if self.log {
+            cmd.arg("--log");
+        }
+
+        if let Some(filter) = self.log_filter {
+            cmd.arg("--log-filter").arg(filter);
+        }
+
+        if self.perf_profile {
+            cmd.arg("--perf-profile");
         }
 
         cmd
@@ -106,5 +124,48 @@ impl Client {
     pub fn new_command(self, path: PathBuf) -> NewBuilder {
         let cmd = self.command();
         NewBuilder::new(cmd, path)
+    }
+
+    /// Enable logging.
+    ///
+    /// `pavex` will emit internal log messages to the console.
+    pub fn log(mut self) -> Self {
+        self.log = true;
+        self
+    }
+
+    /// Disable logging.
+    ///
+    /// `pavex` will not emit internal log messages to the console.
+    /// This is the default behaviour.
+    pub fn no_log(mut self) -> Self {
+        self.log = false;
+        self
+    }
+
+    /// Set the log filter.
+    ///
+    /// Control which logs are emitted if `--log` or `--perf-profile` are enabled.
+    /// If no filter is specified, Pavex will default to `info,pavex=trace`.
+    pub fn log_filter(mut self, filter: String) -> Self {
+        self.log_filter = Some(filter);
+        self
+    }
+
+    /// Enable performance profiling.
+    ///
+    /// `pavex` will serialize to disk tracing information to profile command execution.
+    pub fn perf_profile(mut self) -> Self {
+        self.perf_profile = true;
+        self
+    }
+
+    /// Disable performance profiling.
+    ///
+    /// `pavex` will not serialize to disk tracing information to profile command execution.
+    /// This is the default behaviour.
+    pub fn no_perf_profile(mut self) -> Self {
+        self.perf_profile = false;
+        self
     }
 }

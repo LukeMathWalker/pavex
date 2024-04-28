@@ -10,6 +10,9 @@ pub struct Client {
     pavexc_cli_path: Option<PathBuf>,
     color: Color,
     debug: bool,
+    log: bool,
+    log_filter: Option<String>,
+    perf_profile: bool,
 }
 
 impl Default for Client {
@@ -18,6 +21,9 @@ impl Default for Client {
             pavexc_cli_path: None,
             color: Color::Auto,
             debug: false,
+            log: false,
+            log_filter: None,
+            perf_profile: false,
         }
     }
 }
@@ -46,6 +52,18 @@ impl Client {
 
         if self.debug {
             cmd.arg("--debug");
+        }
+
+        if self.log {
+            cmd.arg("--log");
+        }
+
+        if let Some(filter) = self.log_filter {
+            cmd.arg("--log-filter").arg(filter);
+        }
+
+        if self.perf_profile {
+            cmd.arg("--perf-profile");
         }
 
         cmd
@@ -95,7 +113,7 @@ impl Client {
 
     /// Enable debug mode.
     ///
-    /// This will print additional debug information when running `pavexc` commands.
+    /// `pavexc` will expose the full error chain when reporting diagnostics.
     pub fn debug(mut self) -> Self {
         self.debug = true;
         self
@@ -103,10 +121,53 @@ impl Client {
 
     /// Disable debug mode.
     ///
-    /// `pavexc` will not print additional debug information when running commands.
+    /// `pavexc` will not expose the full error chain when reporting diagnostics.
     /// This is the default behaviour.
     pub fn no_debug(mut self) -> Self {
         self.debug = false;
+        self
+    }
+
+    /// Enable logging.
+    ///
+    /// `pavexc` will emit internal log messages to the console.
+    pub fn log(mut self) -> Self {
+        self.log = true;
+        self
+    }
+
+    /// Disable logging.
+    ///
+    /// `pavexc` will not emit internal log messages to the console.
+    /// This is the default behaviour.
+    pub fn no_log(mut self) -> Self {
+        self.log = false;
+        self
+    }
+
+    /// Set the log filter.
+    ///
+    /// Control which logs are emitted if `--log` or `--perf-profile` are enabled.
+    /// If no filter is specified, Pavex will default to `info,pavexc=trace`.
+    pub fn log_filter(mut self, filter: String) -> Self {
+        self.log_filter = Some(filter);
+        self
+    }
+
+    /// Enable performance profiling.
+    ///
+    /// `pavexc` will serialize to disk tracing information to profile command execution.
+    pub fn perf_profile(mut self) -> Self {
+        self.perf_profile = true;
+        self
+    }
+
+    /// Disable performance profiling.
+    ///
+    /// `pavexc` will not serialize to disk tracing information to profile command execution.
+    /// This is the default behaviour.
+    pub fn no_perf_profile(mut self) -> Self {
+        self.perf_profile = false;
         self
     }
 }

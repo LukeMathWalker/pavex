@@ -68,7 +68,7 @@ impl GenerateBuilder {
     ///
     /// This method can be useful if you need to customize the command before running it.  
     /// If that's not your usecase, consider using [`GenerateBuilder::execute`] instead.
-    pub fn command(mut self) -> Result<std::process::Command, BlueprintPersistenceError> {
+    pub fn command(mut self) -> Result<Command, BlueprintPersistenceError> {
         // TODO: Pass the blueprint via `stdin` instead of writing it to a file.
         let bp_path = self.output_directory.join("blueprint.ron");
         self.blueprint
