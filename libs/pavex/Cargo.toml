@@ -26,15 +26,15 @@ futures-util = { workspace = true }
 mime = { workspace = true }
 thiserror = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
-pavex_macros = { path = "../pavex_macros", version = "0.1.37" }
+pavex_macros = { path = "../pavex_macros", version = "0.1.38" }
 paste = { workspace = true }
 tracing = { workspace = true }
 http-body-util = { workspace = true }
 pin-project-lite = { workspace = true }
 ubyte = { workspace = true, features = ["serde"] }
-pavex_bp_schema = { path = "../pavex_bp_schema", version = "=0.1.37" }
-pavex_reflection = { path = "../pavex_reflection", version = "=0.1.37" }
-persist_if_changed = { path = "../persist_if_changed", version = "0.1.37" }
+pavex_bp_schema = { path = "../pavex_bp_schema", version = "=0.1.38" }
+pavex_reflection = { path = "../pavex_reflection", version = "=0.1.38" }
+persist_if_changed = { path = "../persist_if_changed", version = "0.1.38" }
 
 # Route parameters
 matchit = { version = "0.7", package = "pavex_matchit" }
@@ -67,7 +67,6 @@ hyper = { workspace = true, features = ["full"], optional = true }
 hyper-util = { workspace = true, features = ["tokio", "server", "server-auto"], optional = true }
 socket2 = { workspace = true, optional = true }
 smallvec = { workspace = true }
-workspace_hack = { version = "0.1", path = "../workspace_hack" }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros"] }

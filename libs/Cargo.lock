@@ -998,7 +998,7 @@ dependencies = [
 
 [[package]]
 name = "generate_from_path"
-version = "0.1.37"
+version = "0.1.38"
 dependencies = [
  "anyhow",
  "fs-err",
@@ -1013,7 +1013,6 @@ dependencies = [
  "toml",
  "tracing",
  "walkdir",
- "workspace_hack",
 ]
 
 [[package]]
@@ -1989,7 +1988,7 @@ dependencies = [
 
 [[package]]
 name = "pavex"
-version = "0.1.37"
+version = "0.1.38"
 dependencies = [
  "anyhow",
  "biscotti",
@@ -2029,21 +2028,19 @@ dependencies = [
  "type-safe-id",
  "ubyte",
  "uuid",
- "workspace_hack",
 ]
 
 [[package]]
 name = "pavex_bp_schema"
-version = "0.1.37"
+version = "0.1.38"
 dependencies = [
  "pavex_reflection",
  "serde",
- "workspace_hack",
 ]
 
 [[package]]
 name = "pavex_cli"
-version = "0.1.37"
+version = "0.1.38"
 dependencies = [
  "anstyle",
  "anyhow",
@@ -2089,7 +2086,6 @@ dependencies = [
  "ureq",
  "vergen",
  "windows-sys 0.52.0",
- "workspace_hack",
  "xdg-home",
  "xz2",
  "zip",
@@ -2097,17 +2093,16 @@ dependencies = [
 
 [[package]]
 name = "pavex_cli_client"
-version = "0.1.37"
+version = "0.1.38"
 dependencies = [
  "anyhow",
  "pavex",
  "thiserror",
- "workspace_hack",
 ]
 
 [[package]]
 name = "pavex_macros"
-version = "0.1.37"
+version = "0.1.38"
 dependencies = [
  "pavex",
  "proc-macro2",
@@ -2115,7 +2110,6 @@ dependencies = [
  "serde",
  "syn",
  "trybuild",
- "workspace_hack",
 ]
 
 [[package]]
@@ -2126,7 +2120,7 @@ checksum = "77b9753b03381fd8856966146c4d626d9a8507901c1bcdfbc41df03deea551fc"
 
 [[package]]
 name = "pavex_miette"
-version = "0.1.37"
+version = "0.1.38"
 dependencies = [
  "miette",
  "owo-colors",
@@ -2136,20 +2130,18 @@ dependencies = [
  "terminal_size",
  "textwrap",
  "unicode-width",
- "workspace_hack",
 ]
 
 [[package]]
 name = "pavex_reflection"
-version = "0.1.37"
+version = "0.1.38"
 dependencies = [
  "serde",
- "workspace_hack",
 ]
 
 [[package]]
 name = "pavex_test_runner"
-version = "0.1.37"
+version = "0.1.38"
 dependencies = [
  "ahash",
  "anyhow",
@@ -2172,21 +2164,19 @@ dependencies = [
  "toml",
  "tracing-subscriber",
  "walkdir",
- "workspace_hack",
 ]
 
 [[package]]
 name = "pavex_tracing"
-version = "0.1.37"
+version = "0.1.38"
 dependencies = [
  "pavex",
  "tracing",
- "workspace_hack",
 ]
 
 [[package]]
 name = "pavexc"
-version = "0.1.37"
+version = "0.1.38"
 dependencies = [
  "ahash",
  "anyhow",
@@ -2228,13 +2218,12 @@ dependencies = [
  "toml_edit",
  "tracing",
  "vergen",
- "workspace_hack",
  "xdg-home",
 ]
 
 [[package]]
 name = "pavexc_cli"
-version = "0.1.37"
+version = "0.1.38"
 dependencies = [
  "anyhow",
  "better-panic",
@@ -2255,17 +2244,15 @@ dependencies = [
  "tracing-chrome",
  "tracing-subscriber",
  "vergen",
- "workspace_hack",
 ]
 
 [[package]]
 name = "pavexc_cli_client"
-version = "0.1.37"
+version = "0.1.38"
 dependencies = [
  "anyhow",
  "pavex",
  "thiserror",
- "workspace_hack",
 ]
 
 [[package]]
@@ -2296,13 +2283,12 @@ checksum = "e3148f5046208a5d56bcfc03053e3ca6334e51da8dfb19b6cdc8b306fae3283e"
 
 [[package]]
 name = "persist_if_changed"
-version = "0.1.37"
+version = "0.1.38"
 dependencies = [
  "anyhow",
  "fs-err",
  "sha2",
  "tracing",
- "workspace_hack",
 ]
 
 [[package]]
@@ -4121,53 +4107,6 @@ dependencies = [
 [[package]]
 name = "workspace_hack"
 version = "0.1.0"
-dependencies = [
- "ahash",
- "aho-corasick",
- "bitflags 2.5.0",
- "cc",
- "clap",
- "clap_builder",
- "console",
- "crossbeam-utils",
- "crypto-common",
- "deranged",
- "digest",
- "fixedbitset",
- "futures-channel",
- "futures-core",
- "futures-sink",
- "futures-util",
- "getrandom",
- "hashbrown 0.14.3",
- "hmac",
- "indexmap",
- "log",
- "miette",
- "num-traits",
- "petgraph",
- "proc-macro2",
- "quote",
- "regex",
- "regex-automata 0.4.6",
- "regex-syntax 0.8.3",
- "reqwest",
- "serde",
- "serde_json",
- "sha2",
- "smallvec",
- "subtle",
- "syn",
- "time",
- "time-macros",
- "tokio",
- "toml",
- "toml_edit",
- "tracing",
- "tracing-core",
- "uuid",
- "zeroize",
-]
 
 [[package]]
 name = "xattr"

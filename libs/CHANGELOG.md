@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.38](https://github.com/LukeMathWalker/pavex/compare/0.1.37...0.1.38) - 2024-04-28
+
+### Added
+- Rework CLI introspections ([#292](https://github.com/LukeMathWalker/pavex/pull/292))
+
+### Fixed
+- anyhow::Result<Self> can be returned from constructors and other fallible components ([#293](https://github.com/LukeMathWalker/pavex/pull/293))
+
 ## [0.1.37](https://github.com/LukeMathWalker/pavex/compare/0.1.36...0.1.37) - 2024-04-27
 
 ### Fixed
