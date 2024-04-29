@@ -85,7 +85,7 @@ impl ResolvedPathDb {
             ParseError::PathMustBeAbsolute(_) => (
                 "The relative import path was registered here",
                 Some(
-                    "If it is a local import, the path must start with `crate::`.\n\
+                    "If it is a local import, the path must start with `crate::`, `self::` or `super::`.\n\
                     If it is an import from a dependency, the path must start with \
                     the dependency name (e.g. `dependency::`)."
                         .to_string(),
