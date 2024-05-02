@@ -78,6 +78,12 @@ pub(crate) fn codegen_app(
 
     let application_state_def =
         define_application_state(runtime_singleton_bindings, package_id2name);
+    if tracing::event_enabled!(tracing::Level::TRACE) {
+        eprintln!(
+            "Application state definition:\n{:#?}",
+            application_state_def
+        );
+    }
     let define_application_state_error = define_application_state_error(
         &application_state_call_graph.error_variants,
         package_id2name,

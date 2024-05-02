@@ -98,11 +98,17 @@ impl RequestHandlerPipeline {
                                 match input_bindings
                                     .get_expr_for_type(input_type) {
                                     None => {
+                                        let bindings = input_bindings
+                                            .0
+                                            .iter()
+                                            .fold(String::new(), |acc, binding| {
+                                                let mutable = binding.mutable.then(|| "mut ").unwrap_or("");
+                                                format!("{}\n- {}: {mutable}{:?}, ", acc, binding.ident, binding.type_)
+                                            });
                                         panic!(
                                             "Could not find a binding for input type `{:?}` in the input bindings.\n\
-                                            Input bindings: {:?}",
-                                            input_type,
-                                            input_bindings)
+                                            Input bindings: {bindings}",
+                                            input_type)
                                     }
                                     Some(i) => i,
                                 }
@@ -364,13 +370,21 @@ impl CodegenedRequestHandlerPipeline {
                 }
             } else {
                 let Some(field_name) = request_scoped_bindings.get_by_right(inner_type) else {
+                    let rs_bindings = request_scoped_bindings
+                        .iter()
+                        .fold(String::new(), |acc, (ident, type_)| {
+                            format!("{}\n- {}: {:?}, ", acc, ident, type_)
+                        });
+                    let st_bindings = server_state_bindings
+                        .iter()
+                        .fold(String::new(), |acc, (ident, type_)| {
+                            format!("{}\n- {}: {:?}, ", acc, ident, type_)
+                        });
                     panic!(
                         "Could not find a binding for input type `{:?}` in the application state or request-scoped bindings.\n\
-                        Request-scoped bindings: {:?}\n\
-                        Application state: {:?}",
+                        Request-scoped bindings: {rs_bindings}\n\
+                        Application state: {st_bindings}",
                         type_,
-                        request_scoped_bindings,
-                        server_state_bindings
                     );
                 };
                 if is_shared_reference {
