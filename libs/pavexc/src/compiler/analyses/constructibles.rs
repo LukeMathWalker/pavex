@@ -446,8 +446,8 @@ impl ConstructibleDb {
                 if let Some((input_constructor_id, _)) =
                     self.get(component_scope, input_type, component_db.scope_graph())
                 {
-                    if component_db.lifecycle(input_constructor_id) != Lifecycle::Singleton {
-                        Self::singleton_must_depend_on_singletons(
+                    if component_db.lifecycle(input_constructor_id) == Lifecycle::RequestScoped {
+                        Self::singleton_must_not_depend_on_request_scoped(
                             component_id,
                             input_constructor_id,
                             package_graph,
@@ -852,7 +852,7 @@ impl ConstructibleDb {
         diagnostics.push(diagnostic.into());
     }
 
-    fn singleton_must_depend_on_singletons(
+    fn singleton_must_not_depend_on_request_scoped(
         singleton_id: ComponentId,
         dependency_id: ComponentId,
         package_graph: &PackageGraph,
@@ -873,7 +873,7 @@ impl ConstructibleDb {
         let dependency_lifecycle = component_db.lifecycle(dependency_id);
 
         let e = anyhow::anyhow!(
-            "Singletons can't depend on request-scoped or transient components.\n\
+            "Singletons can't depend on request-scoped components.\n\
             They are constructed before the application starts, outside of the request-response lifecycle.\n\
             But your singleton `{singleton_type:?}` depends on `{dependency_type:?}`, which has a {dependency_lifecycle} lifecycle.",
         );
