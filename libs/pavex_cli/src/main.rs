@@ -41,7 +41,7 @@ static PAVEX_CACHED_KEYSET: &str = include_str!("../jwks.json");
 fn main() -> Result<ExitCode, miette::Error> {
     let cli = Cli::parse();
     init_miette_hook(&cli);
-    let _guard = init_telemetry(cli.log_filter.clone(), cli.log, cli.perf_profile);
+    let _guard = init_telemetry(cli.log_filter.clone(), cli.color, cli.log, cli.perf_profile);
 
     let client = pavexc_client(&cli);
     let system_home_dir = xdg_home::home_dir().ok_or_else(|| {
@@ -491,6 +491,7 @@ fn use_color_on_stderr(color_profile: Color) -> bool {
 
 fn init_telemetry(
     log_filter: Option<String>,
+    color: Color,
     console_logging: bool,
     profiling: bool,
 ) -> Option<FlushGuard> {
@@ -513,6 +514,7 @@ fn init_telemetry(
         true => {
             let fmt_layer = tracing_subscriber::fmt::layer()
                 .with_file(false)
+                .with_ansi(use_color_on_stderr(color))
                 .with_target(false)
                 .with_span_events(FmtSpan::NEW | FmtSpan::CLOSE)
                 .with_timer(tracing_subscriber::fmt::time::uptime());

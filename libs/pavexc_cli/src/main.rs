@@ -128,6 +128,7 @@ enum Commands {
 
 fn init_telemetry(
     log_filter: Option<String>,
+    color: Color,
     console_logging: bool,
     profiling: bool,
 ) -> Option<FlushGuard> {
@@ -149,6 +150,7 @@ fn init_telemetry(
     match console_logging {
         true => {
             let fmt_layer = tracing_subscriber::fmt::layer()
+                .with_ansi(use_color_on_stderr(color))
                 .with_file(false)
                 .with_target(false)
                 .with_span_events(FmtSpan::NEW | FmtSpan::CLOSE)
@@ -209,7 +211,7 @@ fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
     .unwrap();
 
     better_panic::install();
-    let _guard = init_telemetry(cli.log_filter, cli.log, cli.perf_profile);
+    let _guard = init_telemetry(cli.log_filter, cli.color, cli.log, cli.perf_profile);
     match cli.command {
         Commands::Generate {
             blueprint,
