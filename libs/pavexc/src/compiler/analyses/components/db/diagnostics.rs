@@ -1092,4 +1092,36 @@ impl ComponentDb {
             .build();
         diagnostics.push(diagnostic.into());
     }
+
+    pub(super) fn non_static_reference_in_singleton(
+        output_type: &ResolvedType,
+        user_component_id: UserComponentId,
+        user_component_db: &UserComponentDb,
+        package_graph: &PackageGraph,
+        diagnostics: &mut Vec<miette::Error>,
+    ) {
+        let location = user_component_db.get_location(user_component_id);
+        let source = try_source!(location, package_graph, diagnostics);
+        let label = source
+            .as_ref()
+            .map(|source| {
+                diagnostic::get_f_macro_invocation_span(&source, location)
+                    .labeled("The singleton was registered here".into())
+            })
+            .flatten();
+        let error = anyhow::anyhow!(
+            "`{output_type:?}` can't be a singleton because its lifetime isn't `'static`.\n\
+            Singletons must be available for as long as the application is running, \
+            therefore they their lifetime must be `'static`.",
+        );
+        let d = CompilerDiagnostic::builder(error)
+            .optional_source(source)
+            .optional_label(label)
+            .help(
+                "If you are returning a reference to data that's owned by another singleton component, \
+                register the constructor as transient rather than singleton.".into(),
+            )
+            .build();
+        diagnostics.push(d.into());
+    }
 }

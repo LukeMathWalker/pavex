@@ -552,6 +552,22 @@ impl ComponentDb {
                         computation_db,
                     );
 
+                    if self.lifecycle(constructor_id) == Lifecycle::Singleton {
+                        let output_type = c.output_type();
+                        // We can't use references as singletons, unless they are `'static.`
+                        if let ResolvedType::Reference(ref_type) = output_type {
+                            if ref_type.lifetime != Lifetime::Static {
+                                Self::non_static_reference_in_singleton(
+                                    output_type,
+                                    user_component_id,
+                                    &self.user_component_db,
+                                    package_graph,
+                                    diagnostics,
+                                );
+                            }
+                        }
+                    }
+
                     if c.is_fallible() && self.lifecycle(constructor_id) != Lifecycle::Singleton {
                         // We'll try to match all fallible constructors with an error handler later.
                         // We skip singletons since we don't "handle" errors when constructing them.
