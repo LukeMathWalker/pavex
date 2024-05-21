@@ -865,6 +865,7 @@ pub(crate) type RawCallGraph = StableDiGraph<CallGraphNode, CallGraphEdgeMetadat
 /// Methods for [`RawCallGraph`].
 ///
 /// We use an extension trait since [`RawCallGraph`] is a type alias that points to a foreign type.
+#[allow(unused)]
 pub(crate) trait RawCallGraphExt {
     /// Return the set of types that must be provided as input to (recursively) build the handler's
     /// input parameters and invoke it.

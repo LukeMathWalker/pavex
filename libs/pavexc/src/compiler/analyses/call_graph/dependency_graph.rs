@@ -401,6 +401,7 @@ fn find_cycles(graph: &RawDependencyGraph) -> Vec<Vec<NodeIndex>> {
 
 pub(super) type RawDependencyGraph = StableDiGraph<DependencyGraphNode, ()>;
 
+#[allow(unused)]
 pub(super) trait RawDependencyGraphExt {
     fn print_debug_dot(&self, component_db: &ComponentDb, computation_db: &ComputationDb);
 

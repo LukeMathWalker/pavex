@@ -8,7 +8,8 @@ pub trait SourceSpanExt {
     fn shift(self, offset: usize) -> SourceSpan;
 }
 
-/// Helper methods to reduce boilerplate when working with an optional [`miette::SourceSpan`].  
+/// Helper methods to reduce boilerplate when working with an optional [`miette::SourceSpan`].
+#[allow(unused)]
 pub trait OptionalSourceSpanExt {
     fn labeled(self, label_msg: String) -> Option<LabeledSpan>;
     fn unlabeled(self) -> Option<LabeledSpan>;

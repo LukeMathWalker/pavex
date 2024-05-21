@@ -1065,15 +1065,6 @@ impl std::fmt::Display for UnknownItemPath {
     }
 }
 
-trait RustdocCrateExt {
-    /// Given a crate id, return the corresponding external crate object.
-    /// We try to guess the crate version by parsing it out of the root URL for the HTML documentation.
-    /// The extracted version is not guaranteed to be correct: crates can set an arbitrary root URL
-    /// via `#[doc(html_root_url)]`—e.g. pointing at an outdated version of their docs (see
-    /// <https://github.com/tokio-rs/tracing/pull/2384> as an example).
-    fn get_external_crate_name(&self, crate_id: u32) -> Option<(&ExternalCrate, Option<Version>)>;
-}
-
 pub trait RustdocKindExt {
     /// Return a string representation of this item's kind (e.g. `a function`).
     fn kind(&self) -> &'static str;
@@ -1105,26 +1096,6 @@ impl RustdocKindExt for ItemEnum {
             ItemEnum::Primitive(_) => "a primitive type",
             ItemEnum::AssocConst { .. } => "an associated constant",
             ItemEnum::AssocType { .. } => "an associated type",
-        }
-    }
-}
-
-impl RustdocCrateExt for rustdoc_types::Crate {
-    fn get_external_crate_name(&self, crate_id: u32) -> Option<(&ExternalCrate, Option<Version>)> {
-        let external_crate = self.external_crates.get(&crate_id);
-        if let Some(external_crate) = external_crate {
-            let version = if let Some(url) = &external_crate.html_root_url {
-                url.trim_end_matches('/')
-                    .split('/')
-                    .last()
-                    .map(Version::parse)
-                    .and_then(|x| x.ok())
-            } else {
-                None
-            };
-            Some((external_crate, version))
-        } else {
-            None
         }
     }
 }
