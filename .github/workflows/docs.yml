@@ -61,12 +61,9 @@ jobs:
         run: |
           Add-Content $env:GITHUB_ENV "BINARY_EXTENSION=.exe" -Encoding utf8
       - name: Install Rust
-        uses: actions-rust-lang/setup-rust-toolchain@v1.6.0
-      - name: Cache dependencies
-        uses: Swatinem/rust-cache@v2
+        uses: actions-rust-lang/setup-rust-toolchain@v1.8.0
         with:
-          workspaces: "./libs -> ./target"
-          key: "build-pavex-cli"
+          cache-workspaces: "./libs -> ./target"
       - name: Build CLI
         run: |
           cd libs
@@ -116,11 +113,10 @@ jobs:
           run_id: ${{ github.run_id }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install Rust
-        uses: actions-rust-lang/setup-rust-toolchain@v1.6.0
-      - name: Cache dependencies
-        uses: Swatinem/rust-cache@v2
+        uses: actions-rust-lang/setup-rust-toolchain@v1.8.0
         with:
-          workspaces: "./doc_examples/tutorial_generator -> ./target"
+          rustflags: ""
+          cache-workspaces: "./doc_examples/tutorial_generator -> ./target"
       - name: Build CLI
         run: |
           cd doc_examples/tutorial_generator
@@ -222,16 +218,13 @@ jobs:
           toolchain: nightly
           components: rust-docs-json, rustfmt
           rustflags: ""
+          cache: false
       - name: Install Rust stable toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v1.6.0
+        uses: actions-rust-lang/setup-rust-toolchain@v1.8.0
         with:
           components: rustfmt
           rustflags: ""
-      - name: Cache dependencies
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: "./libs -> ./target"
-          key: "tests"
+          cache-workspaces: "./libs -> ./target"
       - name: Download pavex CLI artifact
         uses: actions/download-artifact@v4
         with:
@@ -326,11 +319,13 @@ jobs:
           toolchain: nightly
           components: rust-docs-json, rustfmt
           rustflags: ""
+          cache: false
       - name: Install Rust stable toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v1.6.0
+        uses: actions-rust-lang/setup-rust-toolchain@v1.8.0
         with:
           rustflags: ""
           components: rustfmt
+          cache-workspaces: "./libs -> ./target"
       - name: Download pavex CLI artifact
         uses: actions/download-artifact@v4
         with:
@@ -401,12 +396,9 @@ jobs:
           run_id: ${{ github.run_id }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install Rust stable toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v1.6.0
-      - name: Cache dependencies
-        uses: Swatinem/rust-cache@v2
+        uses: actions-rust-lang/setup-rust-toolchain@v1.8.0
         with:
-          workspaces: "./libs -> ./target"
-          key: "build-pavex-docs"
+          cache-workspaces: "./libs -> ./target"
       - name: Build API reference
         run: |
           cd libs
