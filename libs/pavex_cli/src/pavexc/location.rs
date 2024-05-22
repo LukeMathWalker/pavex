@@ -62,11 +62,9 @@ pub(super) fn path_from_graph(
                     .git()
                     .toolchain_dir(repository, resolved)
                     .pavexc())),
-                _ => {
-                    Ok(Err(UnsupportedSourceError {
-                        package_source: package_source.to_string(),
-                    }))
-                }
+                _ => Ok(Err(UnsupportedSourceError {
+                    package_source: package_source.to_string(),
+                })),
             }
         }
     }
