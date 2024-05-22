@@ -1,7 +1,7 @@
 use crate::blueprint::constructor::CloningStrategy;
-use crate::blueprint::conversions::{cloning2cloning, lint2lint, raw_callable2registered_callable};
+use crate::blueprint::conversions::{cloning2cloning, lint2lint, raw_identifiers2callable};
 use crate::blueprint::linter::Lint;
-use crate::blueprint::reflection::RawCallable;
+use crate::blueprint::reflection::RawIdentifiers;
 use pavex_bp_schema::{Blueprint as BlueprintSchema, LintSetting};
 use pavex_bp_schema::{Component, Constructor};
 
@@ -12,7 +12,7 @@ use pavex_bp_schema::{Component, Constructor};
 /// [`Blueprint::constructor`]: crate::blueprint::Blueprint::constructor
 pub struct RegisteredConstructor<'a> {
     pub(crate) blueprint: &'a mut BlueprintSchema,
-    /// The index of the registered middleware in the blueprint's `constructors` vector.
+    /// The index of the registered constructor in the blueprint's `components` vector.
     pub(crate) component_id: usize,
 }
 
@@ -56,8 +56,8 @@ impl<'a> RegisteredConstructor<'a> {
     ///     .error_handler(f!(crate::error_to_response));
     /// # }
     /// ```
-    pub fn error_handler(mut self, error_handler: RawCallable) -> Self {
-        let callable = raw_callable2registered_callable(error_handler);
+    pub fn error_handler(mut self, error_handler: RawIdentifiers) -> Self {
+        let callable = raw_identifiers2callable(error_handler);
         self.constructor().error_handler = Some(callable);
         self
     }

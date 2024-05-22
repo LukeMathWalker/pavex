@@ -1,19 +1,34 @@
 //! Conversions between `pavex_bp_schema` and `pavex_bp` types.
 use crate::blueprint::constructor::{CloningStrategy, Lifecycle};
 use crate::blueprint::linter::Lint;
-use crate::blueprint::reflection::RawCallable;
+use crate::blueprint::reflection::RawIdentifiers;
 use crate::router::AllowedMethods;
-use pavex_bp_schema::{Callable, Location};
+use pavex_bp_schema::{Callable, Location, Type};
 use pavex_reflection::RegisteredAt;
 
 #[track_caller]
-pub(super) fn raw_callable2registered_callable(callable: RawCallable) -> Callable {
+pub(super) fn raw_identifiers2callable(callable: RawIdentifiers) -> Callable {
     let registered_at = RegisteredAt {
         crate_name: callable.crate_name.to_owned(),
         module_path: callable.module_path.to_owned(),
     };
     Callable {
-        callable: pavex_bp_schema::RawCallableIdentifiers {
+        callable: pavex_bp_schema::RawIdentifiers {
+            registered_at,
+            import_path: callable.import_path.to_owned(),
+        },
+        location: Location::caller(),
+    }
+}
+
+#[track_caller]
+pub(super) fn raw_identifiers2type(callable: RawIdentifiers) -> Type {
+    let registered_at = RegisteredAt {
+        crate_name: callable.crate_name.to_owned(),
+        module_path: callable.module_path.to_owned(),
+    };
+    Type {
+        type_: pavex_bp_schema::RawIdentifiers {
             registered_at,
             import_path: callable.import_path.to_owned(),
         },

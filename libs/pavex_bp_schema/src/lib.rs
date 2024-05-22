@@ -2,7 +2,7 @@
 //!
 //! There are no guarantees that this schema will remain stable across Pavex versions:
 //! it is considered (for the time being) an internal implementation detail of Pavex's reflection system.
-pub use pavex_reflection::{Location, RawCallableIdentifiers, RegisteredAt};
+pub use pavex_reflection::{Location, RawIdentifiers, RegisteredAt};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 use std::fmt::Formatter;
@@ -25,6 +25,13 @@ pub enum Component {
     FallbackRequestHandler(Fallback),
     NestedBlueprint(NestedBlueprint),
     ErrorObserver(ErrorObserver),
+    StateInput(StateInput),
+}
+
+impl From<StateInput> for Component {
+    fn from(i: StateInput) -> Self {
+        Self::StateInput(i)
+    }
 }
 
 impl From<Constructor> for Component {
@@ -107,6 +114,14 @@ pub struct ErrorObserver {
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+/// A type registered against a `Blueprint` via `Blueprint::state_input` to
+/// be added as an input parameter to `build_application_state`.
+pub struct StateInput {
+    /// The type.
+    pub input: Type,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 /// A constructor registered against a `Blueprint` via `Blueprint::constructor`.
 pub struct Constructor {
     /// The callable in charge of constructing the desired type.
@@ -153,8 +168,17 @@ pub struct PreProcessingMiddleware {
 /// used as a request handler, error handler or constructor.
 pub struct Callable {
     /// Metadata that uniquely identifies the callable.
-    pub callable: RawCallableIdentifiers,
+    pub callable: RawIdentifiers,
     /// The location where the callable was registered against the `Blueprint`.
+    pub location: Location,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+/// A type (enum or struct) registered against a `Blueprint`.
+pub struct Type {
+    /// Metadata that uniquely identifies the type.
+    pub type_: RawIdentifiers,
+    /// The location where the type was registered against the `Blueprint`.
     pub location: Location,
 }
 

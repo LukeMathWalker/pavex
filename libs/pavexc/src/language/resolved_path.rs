@@ -11,7 +11,7 @@ use indexmap::IndexSet;
 use itertools::Itertools;
 use quote::format_ident;
 
-use pavex_bp_schema::RawCallableIdentifiers;
+use pavex_bp_schema::RawIdentifiers;
 
 use crate::language::callable_path::{
     CallPathGenericArgument, CallPathLifetime, CallPathSegment, CallPathType,
@@ -344,12 +344,12 @@ impl Hash for ResolvedPath {
 
 impl ResolvedPath {
     pub fn parse(
-        identifiers: &RawCallableIdentifiers,
+        identifiers: &RawIdentifiers,
         graph: &guppy::graph::PackageGraph,
     ) -> Result<Self, ParseError> {
         fn replace_crate_in_path_with_registration_crate(
             p: &mut CallPath,
-            identifiers: &RawCallableIdentifiers,
+            identifiers: &RawIdentifiers,
         ) {
             if p.leading_path_segment() == "crate" {
                 let first_segment = p
@@ -432,7 +432,7 @@ impl ResolvedPath {
 
         fn replace_crate_in_type_with_registration_crate(
             t: &mut CallPathType,
-            identifiers: &RawCallableIdentifiers,
+            identifiers: &RawIdentifiers,
         ) {
             match t {
                 CallPathType::ResolvedPath(p) => {
@@ -465,7 +465,7 @@ impl ResolvedPath {
 
     fn parse_call_path_generic_argument(
         arg: &CallPathGenericArgument,
-        identifiers: &RawCallableIdentifiers,
+        identifiers: &RawIdentifiers,
         graph: &guppy::graph::PackageGraph,
     ) -> Result<ResolvedPathGenericArgument, ParseError> {
         match arg {
@@ -484,7 +484,7 @@ impl ResolvedPath {
 
     fn parse_call_path_type(
         type_: &CallPathType,
-        identifiers: &RawCallableIdentifiers,
+        identifiers: &RawIdentifiers,
         graph: &guppy::graph::PackageGraph,
     ) -> Result<ResolvedPathType, ParseError> {
         match type_ {
@@ -524,7 +524,7 @@ impl ResolvedPath {
 
     fn parse_call_path(
         path: &CallPath,
-        identifiers: &RawCallableIdentifiers,
+        identifiers: &RawIdentifiers,
         graph: &guppy::graph::PackageGraph,
     ) -> Result<Self, ParseError> {
         // Keeping track of who returns a normalized crate name vs a "raw" crate name is a mess,

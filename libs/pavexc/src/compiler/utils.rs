@@ -1,6 +1,6 @@
 use guppy::graph::PackageGraph;
 
-use pavex_bp_schema::{RawCallableIdentifiers, RegisteredAt};
+use pavex_bp_schema::{RawIdentifiers, RegisteredAt};
 
 use crate::compiler::resolvers::{resolve_callable, resolve_type_path};
 use crate::language::{Callable, GenericArgument, ResolvedPath, ResolvedType};
@@ -34,7 +34,7 @@ pub(crate) fn process_framework_path(
     package_graph: &PackageGraph,
     krate_collection: &CrateCollection,
 ) -> ResolvedType {
-    let identifiers = RawCallableIdentifiers::from_raw_parts(
+    let identifiers = RawIdentifiers::from_raw_parts(
         raw_path.into(),
         RegisteredAt {
             // We are relying on a little hack to anchor our search:
@@ -55,7 +55,7 @@ pub(crate) fn process_framework_callable_path(
     package_graph: &PackageGraph,
     krate_collection: &CrateCollection,
 ) -> Callable {
-    let identifiers = RawCallableIdentifiers::from_raw_parts(
+    let identifiers = RawIdentifiers::from_raw_parts(
         raw_path.into(),
         RegisteredAt {
             // We are relying on a little hack to anchor our search:

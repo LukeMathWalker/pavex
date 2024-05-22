@@ -6,7 +6,7 @@ use std::collections::BTreeMap;
 use syn::spanned::Spanned;
 
 use pavex_bp_schema::{
-    Blueprint, CloningStrategy, Lifecycle, Lint, LintSetting, Location, RawCallableIdentifiers,
+    Blueprint, CloningStrategy, Lifecycle, Lint, LintSetting, Location, RawIdentifiers,
 };
 
 use crate::compiler::analyses::computations::ComputationDb;
@@ -39,7 +39,7 @@ use crate::{diagnostic, try_source};
 #[derive(Debug)]
 pub struct UserComponentDb {
     component_interner: Interner<UserComponent>,
-    identifiers_interner: Interner<RawCallableIdentifiers>,
+    identifiers_interner: Interner<RawIdentifiers>,
     /// Associate each user-registered component with the location it was
     /// registered at against the `Blueprint` in the user's source code.
     ///
@@ -238,7 +238,7 @@ impl UserComponentDb {
     ///
     /// This can be used to recover the original import path passed by the user when registering
     /// this component, primarily for error reporting purposes.
-    pub fn get_raw_callable_identifiers(&self, id: UserComponentId) -> &RawCallableIdentifiers {
+    pub fn get_raw_callable_identifiers(&self, id: UserComponentId) -> &RawIdentifiers {
         let raw_id = self.component_interner[id].raw_callable_identifiers_id();
         &self.identifiers_interner[raw_id]
     }

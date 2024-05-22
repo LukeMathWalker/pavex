@@ -6,7 +6,7 @@ use std::collections::BTreeMap;
 use pavex_bp_schema::{
     Blueprint, Callable, CloningStrategy, Component, Constructor, ErrorObserver, Fallback,
     Lifecycle, Lint, LintSetting, Location, NestedBlueprint, PostProcessingMiddleware,
-    PreProcessingMiddleware, RawCallableIdentifiers, RegisteredAt, Route, WrappingMiddleware,
+    PreProcessingMiddleware, RawIdentifiers, RegisteredAt, Route, WrappingMiddleware,
 };
 
 use crate::compiler::analyses::user_components::router_key::RouterKey;
@@ -137,13 +137,13 @@ impl UserComponent {
     pub(super) fn raw_callable_identifiers<'b>(
         &self,
         db: &'b RawUserComponentDb,
-    ) -> &'b RawCallableIdentifiers {
+    ) -> &'b RawIdentifiers {
         &db.identifiers_interner[self.raw_callable_identifiers_id()]
     }
 }
 
 /// A unique identifier for a `RawCallableIdentifiers`.
-pub type RawCallableIdentifierId = la_arena::Idx<RawCallableIdentifiers>;
+pub type RawCallableIdentifierId = la_arena::Idx<RawIdentifiers>;
 
 /// A unique identifier for a [`UserComponent`].
 pub type UserComponentId = la_arena::Idx<UserComponent>;
@@ -163,7 +163,7 @@ pub type UserComponentId = la_arena::Idx<UserComponent>;
 /// return a type or unit?).
 pub(super) struct RawUserComponentDb {
     pub(super) component_interner: Interner<UserComponent>,
-    pub(super) identifiers_interner: Interner<RawCallableIdentifiers>,
+    pub(super) identifiers_interner: Interner<RawIdentifiers>,
     /// Associate each user-registered component with the location it was
     /// registered at against the `Blueprint` in the user's source code.
     ///
@@ -390,7 +390,7 @@ impl RawUserComponentDb {
             // We need to have a top-level fallback handler.
             // If the user hasn't registered one against the top-level blueprint,
             // we must provide a framework default.
-            let raw_callable_identifiers = RawCallableIdentifiers::from_raw_parts(
+            let raw_callable_identifiers = RawIdentifiers::from_raw_parts(
                 "pavex::router::default_fallback".to_owned(),
                 RegisteredAt {
                     crate_name: "pavex".to_owned(),

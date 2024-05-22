@@ -5,8 +5,8 @@
 //! Check out the ["Error observers"](https://pavex.dev/docs/guide/errors/error_observers)
 //! section of Pavex's guide for a thorough introduction to error observers
 //! in Pavex applications.
-use crate::blueprint::conversions::raw_callable2registered_callable;
-use crate::blueprint::reflection::RawCallable;
+use crate::blueprint::conversions::raw_identifiers2callable;
+use crate::blueprint::reflection::RawIdentifiers;
 use crate::blueprint::Blueprint;
 use pavex_bp_schema::{Blueprint as BlueprintSchema, Callable};
 
@@ -41,9 +41,9 @@ impl ErrorObserver {
     /// Check out the documentation of [`Blueprint::error_observer`] for more details
     /// on observers.
     #[track_caller]
-    pub fn new(callable: RawCallable) -> Self {
+    pub fn new(callable: RawIdentifiers) -> Self {
         Self {
-            callable: raw_callable2registered_callable(callable),
+            callable: raw_identifiers2callable(callable),
         }
     }
 

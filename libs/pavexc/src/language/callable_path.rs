@@ -2,7 +2,7 @@ use std::fmt::{Display, Formatter};
 
 use syn::{ExprPath, GenericArgument, PathArguments, Type};
 
-use pavex_bp_schema::RawCallableIdentifiers;
+use pavex_bp_schema::RawIdentifiers;
 
 use super::Lifetime;
 
@@ -78,7 +78,7 @@ impl CallPathLifetime {
 }
 
 impl CallPath {
-    pub fn parse(callable_identifiers: &RawCallableIdentifiers) -> Result<Self, InvalidCallPath> {
+    pub fn parse(callable_identifiers: &RawIdentifiers) -> Result<Self, InvalidCallPath> {
         let callable_path: ExprPath =
             syn::parse_str(callable_identifiers.raw_path()).map_err(|e| InvalidCallPath {
                 raw_identifiers: callable_identifiers.to_owned(),
@@ -311,7 +311,7 @@ impl Display for CallPathLifetime {
 
 #[derive(Debug, thiserror::Error, Clone)]
 pub struct InvalidCallPath {
-    pub(crate) raw_identifiers: RawCallableIdentifiers,
+    pub(crate) raw_identifiers: RawIdentifiers,
     #[source]
     pub(crate) parsing_error: syn::Error,
 }
