@@ -110,12 +110,6 @@ impl ConstructibleDb {
                     continue;
                 }
 
-                if let HydratedComponent::Constructor(_) = &resolved_component {
-                    if component_db.lifecycle(component_id) == Lifecycle::Singleton {
-                        continue;
-                    }
-                }
-
                 let input_types = {
                     let mut input_types: Vec<Option<ResolvedType>> = resolved_component
                         .input_types()
@@ -657,10 +651,10 @@ impl ConstructibleDb {
 
         let callable = &computation_db[user_component_id];
         let e = anyhow::anyhow!(
-                "I can't invoke your {component_kind}, `{}`, because it needs an instance \
-                of `{unconstructible_type:?}` as input, but I can't find a constructor for that type.",
-                callable.path
-            );
+            "I can't find a constructor for `{unconstructible_type:?}`.\n\
+            I need an instance of `{unconstructible_type:?}` to invoke your {component_kind}, `{}`.",
+            callable.path
+        );
         let definition_info = get_definition_info(
             callable,
             unconstructible_type_index,
@@ -671,8 +665,13 @@ impl ConstructibleDb {
             .optional_source(source)
             .optional_label(label)
             .optional_additional_annotated_snippet(definition_info)
+            .help_with_snippet(HelpWithSnippet::new(
+                format!("Register a constructor for `{unconstructible_type:?}`."),
+                AnnotatedSnippet::empty(),
+            ))
             .help(format!(
-                "Register a constructor for `{unconstructible_type:?}`"
+                "Alternatively, use `Blueprint::state_input` to add `{unconstructible_type:?}` \
+                as an input parameter to the (generated) `build_application_state`.",
             ))
             .build();
         diagnostics.push(diagnostic.into());
