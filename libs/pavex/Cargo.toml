@@ -9,6 +9,9 @@ repository.workspace = true
 license.workspace = true
 readme = "README.md"
 
+[lints.rust]
+unexpected_cfgs = { level = "allow", check-cfg = ['cfg(pavex_ide_hint)'] }
+
 [features]
 default = ["server", "server_request_id", "time", "cookie"]
 

@@ -256,6 +256,9 @@ impl TestData {
                 version = "0.1.0"
                 edition = "2021"
 
+                [lints.rust]
+                unexpected_cfgs = { level = "allow", check-cfg = ["cfg(pavex_ide_hint)"] }
+
                 [dependencies]
                 pavex ={ path = "../../../../../../libs/pavex" }
             };
@@ -354,6 +357,9 @@ impl TestData {
             name = "app"
             version = "0.1.0"
             edition = "2021"
+
+            [lints.rust]
+            unexpected_cfgs = { level = "allow", check-cfg = ["cfg(pavex_ide_hint)"] }
 
             [dependencies]
             pavex ={ path = "../../../../../libs/pavex" }
