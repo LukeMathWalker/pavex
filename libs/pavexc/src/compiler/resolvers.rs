@@ -297,7 +297,7 @@ pub(crate) fn resolve_callable(
                 tracing::trace!(error.msg = %e, error.details = ?e, "Error getting trait generic bindings");
             }
         } else {
-            match resolve_type_path(&parent_path, parent, krate_collection) {
+            match resolve_type_path_with_item(&parent_path, parent, krate_collection) {
                 Ok(parent_type) => {
                     generic_bindings.insert("Self".to_string(), parent_type);
                 }
@@ -423,6 +423,24 @@ fn get_trait_generic_bindings(
 
 pub(crate) fn resolve_type_path(
     path: &ResolvedPath,
+    krate_collection: &CrateCollection,
+) -> Result<ResolvedType, TypeResolutionError> {
+    fn _resolve_type_path(
+        path: &ResolvedPath,
+        krate_collection: &CrateCollection,
+    ) -> Result<ResolvedType, anyhow::Error> {
+        let (item, _) = path.find_rustdoc_items(krate_collection)?;
+        resolve_type_path_with_item(&path, &item.item, krate_collection)
+    }
+
+    _resolve_type_path(path, krate_collection).map_err(|source| TypeResolutionError {
+        path: path.clone(),
+        source,
+    })
+}
+
+pub(crate) fn resolve_type_path_with_item(
+    path: &ResolvedPath,
     resolved_item: &ResolvedItem,
     krate_collection: &CrateCollection,
 ) -> Result<ResolvedType, anyhow::Error> {
@@ -520,6 +538,14 @@ pub(crate) enum CallableResolutionError {
     OutputTypeResolutionError(#[from] OutputTypeResolutionError),
     #[error(transparent)]
     CannotGetCrateData(#[from] CannotGetCrateData),
+}
+
+#[derive(Debug, thiserror::Error)]
+#[error("I can't resolve `{path}` to a type.")]
+pub(crate) struct TypeResolutionError {
+    path: ResolvedPath,
+    #[source]
+    pub source: anyhow::Error,
 }
 
 #[derive(Debug, thiserror::Error, Clone)]

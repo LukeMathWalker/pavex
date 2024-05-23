@@ -298,8 +298,12 @@ impl UserComponentDb {
         krate_collection: &CrateCollection,
         diagnostics: &mut Vec<miette::Error>,
     ) {
-        for (raw_id, _) in raw_db.iter() {
+        for (raw_id, user_component) in raw_db.iter() {
             let resolved_path = &resolved_path_db[raw_id];
+            if let UserComponent::StateInput { .. } = &user_component {
+                // State inputs are not callable, so we don't resolve them here.
+                continue;
+            }
             if let Err(e) =
                 computation_db.resolve_and_intern(krate_collection, resolved_path, Some(raw_id))
             {

@@ -25,8 +25,8 @@ impl ResolvedPathDb {
         let mut interner = Interner::new();
         let mut component_id2path_id = HashMap::new();
         for (component_id, component) in component_db.iter() {
-            let raw_callable_identifiers = component.raw_identifiers(component_db);
-            match ResolvedPath::parse(raw_callable_identifiers, package_graph) {
+            let raw_identifiers = component.raw_identifiers(component_db);
+            match ResolvedPath::parse(raw_identifiers, package_graph) {
                 Ok(path) => {
                     let path_id = interner.get_or_intern(path);
                     component_id2path_id.insert(component_id, path_id);

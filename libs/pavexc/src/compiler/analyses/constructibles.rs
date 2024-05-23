@@ -420,8 +420,7 @@ impl ConstructibleDb {
 
     /// Singletons are built before the application starts, outside of the request-response cycle.
     ///
-    /// Therefore they cannot depend on types which have a shorter lifecycle—i.e. request-scoped
-    /// or transient.
+    /// Therefore they cannot depend on types which have a request-scoped lifecycle.
     /// It's the responsibility of this method to enforce this constraint.
     fn verify_lifecycle_of_singleton_dependencies(
         &self,
