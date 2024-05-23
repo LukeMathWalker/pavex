@@ -154,7 +154,7 @@ impl Router {
                 // as a request handler for the same path+method multiple times.
                 let unique_handlers = relevant_handler_ids
                     .iter()
-                    .unique_by(|id| raw_user_component_db[**id].raw_callable_identifiers_id())
+                    .unique_by(|id| raw_user_component_db[**id].raw_identifiers_id())
                     .collect::<Vec<_>>();
                 if unique_handlers.len() > 1 {
                     push_router_conflict_diagnostic(

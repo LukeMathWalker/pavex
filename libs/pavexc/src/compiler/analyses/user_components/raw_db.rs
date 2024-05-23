@@ -26,41 +26,41 @@ use crate::{diagnostic, try_source};
 /// [`UserComponentDb`]: crate::compiler::analyses::user_components::UserComponentDb
 pub enum UserComponent {
     RequestHandler {
-        raw_callable_identifiers_id: RawCallableIdentifierId,
+        raw_callable_identifiers_id: RawIdentifierId,
         router_key: RouterKey,
         scope_id: ScopeId,
     },
     Fallback {
-        raw_callable_identifiers_id: RawCallableIdentifierId,
+        raw_callable_identifiers_id: RawIdentifierId,
         scope_id: ScopeId,
     },
     ErrorHandler {
-        raw_callable_identifiers_id: RawCallableIdentifierId,
+        raw_callable_identifiers_id: RawIdentifierId,
         fallible_callable_identifiers_id: UserComponentId,
         scope_id: ScopeId,
     },
     Constructor {
-        raw_callable_identifiers_id: RawCallableIdentifierId,
+        raw_callable_identifiers_id: RawIdentifierId,
         scope_id: ScopeId,
     },
     StateInput {
-        raw_identifiers_id: RawCallableIdentifierId,
+        raw_identifiers_id: RawIdentifierId,
         scope_id: ScopeId,
     },
     WrappingMiddleware {
-        raw_callable_identifiers_id: RawCallableIdentifierId,
+        raw_callable_identifiers_id: RawIdentifierId,
         scope_id: ScopeId,
     },
     PostProcessingMiddleware {
-        raw_callable_identifiers_id: RawCallableIdentifierId,
+        raw_callable_identifiers_id: RawIdentifierId,
         scope_id: ScopeId,
     },
     PreProcessingMiddleware {
-        raw_callable_identifiers_id: RawCallableIdentifierId,
+        raw_callable_identifiers_id: RawIdentifierId,
         scope_id: ScopeId,
     },
     ErrorObserver {
-        raw_callable_identifiers_id: RawCallableIdentifierId,
+        raw_callable_identifiers_id: RawIdentifierId,
         scope_id: ScopeId,
     },
 }
@@ -87,7 +87,7 @@ impl UserComponent {
 
     /// Returns an id that points at the raw identifiers for the callable that
     /// this [`UserComponent`] is associated with.
-    pub fn raw_callable_identifiers_id(&self) -> RawCallableIdentifierId {
+    pub fn raw_identifiers_id(&self) -> RawIdentifierId {
         match self {
             UserComponent::PostProcessingMiddleware {
                 raw_callable_identifiers_id,
@@ -144,16 +144,13 @@ impl UserComponent {
     }
 
     /// Returns the raw identifiers for the callable that this `UserComponent` is associated with.
-    pub(super) fn raw_callable_identifiers<'b>(
-        &self,
-        db: &'b RawUserComponentDb,
-    ) -> &'b RawIdentifiers {
-        &db.identifiers_interner[self.raw_callable_identifiers_id()]
+    pub(super) fn raw_identifiers<'b>(&self, db: &'b RawUserComponentDb) -> &'b RawIdentifiers {
+        &db.identifiers_interner[self.raw_identifiers_id()]
     }
 }
 
 /// A unique identifier for a `RawCallableIdentifiers`.
-pub type RawCallableIdentifierId = la_arena::Idx<RawIdentifiers>;
+pub type RawIdentifierId = la_arena::Idx<RawIdentifiers>;
 
 /// A unique identifier for a [`UserComponent`].
 pub type UserComponentId = la_arena::Idx<UserComponent>;

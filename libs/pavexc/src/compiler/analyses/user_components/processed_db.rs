@@ -239,7 +239,7 @@ impl UserComponentDb {
     /// This can be used to recover the original import path passed by the user when registering
     /// this component, primarily for error reporting purposes.
     pub fn get_raw_callable_identifiers(&self, id: UserComponentId) -> &RawIdentifiers {
-        let raw_id = self.component_interner[id].raw_callable_identifiers_id();
+        let raw_id = self.component_interner[id].raw_identifiers_id();
         &self.identifiers_interner[raw_id]
     }
 
