@@ -6,7 +6,7 @@ use std::collections::BTreeMap;
 use pavex_bp_schema::{
     Blueprint, Callable, CloningStrategy, Component, Constructor, ErrorObserver, Fallback,
     Lifecycle, Lint, LintSetting, Location, NestedBlueprint, PostProcessingMiddleware,
-    PreProcessingMiddleware, RawIdentifiers, RegisteredAt, Route, WrappingMiddleware,
+    PreProcessingMiddleware, RawIdentifiers, RegisteredAt, Route, StateInput, WrappingMiddleware,
 };
 
 use crate::compiler::analyses::user_components::router_key::RouterKey;
@@ -43,6 +43,10 @@ pub enum UserComponent {
         raw_callable_identifiers_id: RawCallableIdentifierId,
         scope_id: ScopeId,
     },
+    StateInput {
+        raw_identifiers_id: RawCallableIdentifierId,
+        scope_id: ScopeId,
+    },
     WrappingMiddleware {
         raw_callable_identifiers_id: RawCallableIdentifierId,
         scope_id: ScopeId,
@@ -70,6 +74,7 @@ impl UserComponent {
             UserComponent::RequestHandler { .. } => CallableType::RequestHandler,
             UserComponent::ErrorHandler { .. } => CallableType::ErrorHandler,
             UserComponent::Constructor { .. } => CallableType::Constructor,
+            UserComponent::StateInput { .. } => CallableType::StateInput,
             UserComponent::WrappingMiddleware { .. } => CallableType::WrappingMiddleware,
             UserComponent::Fallback { .. } => CallableType::RequestHandler,
             UserComponent::ErrorObserver { .. } => CallableType::ErrorObserver,
@@ -90,6 +95,10 @@ impl UserComponent {
             }
             | UserComponent::PreProcessingMiddleware {
                 raw_callable_identifiers_id,
+                ..
+            }
+            | UserComponent::StateInput {
+                raw_identifiers_id: raw_callable_identifiers_id,
                 ..
             }
             | UserComponent::WrappingMiddleware {
@@ -128,6 +137,7 @@ impl UserComponent {
             | UserComponent::ErrorHandler { scope_id, .. }
             | UserComponent::WrappingMiddleware { scope_id, .. }
             | UserComponent::PostProcessingMiddleware { scope_id, .. }
+            | UserComponent::StateInput { scope_id, .. }
             | UserComponent::PreProcessingMiddleware { scope_id, .. }
             | UserComponent::Constructor { scope_id, .. } => *scope_id,
         }
@@ -375,6 +385,9 @@ impl RawUserComponentDb {
                 Component::ErrorObserver(eo) => {
                     self.process_error_observer(&eo, current_scope_id, &mut current_observer_chain);
                 }
+                Component::StateInput(si) => {
+                    self.process_state_input(&si, current_scope_id);
+                }
             }
         }
         if let Some(fallback) = &fallback {
@@ -481,7 +494,7 @@ impl RawUserComponentDb {
 
     /// Register with [`RawUserComponentDb`] the fallback that has been
     /// registered against the provided `Blueprint`, including its error handler
-    /// (if present).  
+    /// (if present).
     fn process_fallback(
         &mut self,
         fallback: &Fallback,
@@ -686,6 +699,22 @@ impl RawUserComponentDb {
         current_observer_chain.push(id);
     }
 
+    /// Register with [`RawUserComponentDb`] a state input that has been
+    /// registered against the provided `Blueprint`.
+    /// It is associated with or nested under the provided `current_scope_id`.
+    fn process_state_input(&mut self, si: &StateInput, current_scope_id: ScopeId) {
+        const LIFECYCLE: Lifecycle = Lifecycle::Singleton;
+
+        let raw_callable_identifiers_id = self
+            .identifiers_interner
+            .get_or_intern(si.input.type_.clone());
+        let component = UserComponent::StateInput {
+            raw_identifiers_id: raw_callable_identifiers_id,
+            scope_id: current_scope_id,
+        };
+        self.intern_component(component, LIFECYCLE, si.input.location.clone());
+    }
+
     /// A helper function to intern a component without forgetting to do the necessary
     /// bookeeping for the metadata (location and lifecycle) that are common to all
     /// components.
@@ -801,6 +830,7 @@ impl RawUserComponentDb {
                     );
                 }
                 UserComponent::ErrorHandler { .. }
+                | UserComponent::StateInput { .. }
                 | UserComponent::WrappingMiddleware { .. }
                 | UserComponent::PostProcessingMiddleware { .. }
                 | UserComponent::PreProcessingMiddleware { .. }

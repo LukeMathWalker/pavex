@@ -34,6 +34,7 @@ pub enum CallableType {
     PostProcessingMiddleware,
     PreProcessingMiddleware,
     ErrorObserver,
+    StateInput,
 }
 
 impl Display for CallableType {
@@ -46,6 +47,7 @@ impl Display for CallableType {
             CallableType::PostProcessingMiddleware => "post-processing middleware",
             CallableType::PreProcessingMiddleware => "pre-processing middleware",
             CallableType::ErrorObserver => "error observer",
+            CallableType::StateInput => "state input",
         };
         write!(f, "{s}")
     }

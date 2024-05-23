@@ -95,7 +95,7 @@ pub(crate) struct ComponentDb {
     /// It's memoised here to avoid re-resolving it multiple times while analysing a single
     /// blueprint.
     pub(crate) pavex_response: ResolvedType,
-    /// The resolved type for `pavex::middleware::Processing`.  
+    /// The resolved type for `pavex::middleware::Processing`.
     /// It's memoised here to avoid re-resolving it multiple times while analysing a single
     /// blueprint.
     pub(crate) pavex_processing: ResolvedType,
@@ -819,6 +819,7 @@ impl ComponentDb {
                     } => Some((id, *fallible_callable_identifiers_id)),
                     ErrorObserver { .. }
                     | Fallback { .. }
+                    | StateInput { .. }
                     | RequestHandler { .. }
                     | Constructor { .. }
                     | PostProcessingMiddleware { .. }
@@ -1303,7 +1304,7 @@ impl ComponentDb {
     }
 
     /// If the component is a request handler, return the ids of the error observers that must be
-    /// invoked when something goes wrong in the request processing pipeline.  
+    /// invoked when something goes wrong in the request processing pipeline.
     /// Otherwise, return `None`.
     pub fn error_observers(&self, handler_id: ComponentId) -> Option<&[ComponentId]> {
         self.handler_id2error_observer_ids
