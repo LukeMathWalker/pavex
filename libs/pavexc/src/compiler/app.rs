@@ -33,10 +33,11 @@ use crate::compiler::resolvers::CallableResolutionError;
 use crate::compiler::traits::{assert_trait_is_implemented, MissingTraitImplementationError};
 use crate::compiler::utils::process_framework_path;
 use crate::compiler::{codegen, path_parameter_validation};
-use crate::diagnostic;
-use crate::diagnostic::{CompilerDiagnostic, LocationExt, SourceSpanExt};
+use crate::diagnostic::CompilerDiagnostic;
+use crate::diagnostic::{self, CallableType, OptionalSourceSpanExt};
 use crate::language::ResolvedType;
 use crate::rustdoc::CrateCollection;
+use crate::try_source;
 use crate::utils::anyhow2miette;
 
 pub(crate) const GENERATED_APP_PACKAGE_ID: &str = "crate";
@@ -501,28 +502,34 @@ fn verify_singletons(
         let component_id = match c.0 {
             Computation::Callable(_) => component_id,
             Computation::MatchResult(_) => component_db.fallible_id(component_id),
-            Computation::PrebuiltType(_) => unreachable!(),
+            Computation::PrebuiltType(_) => component_db.derived_from(&component_id).unwrap(),
         };
         let user_component_id = component_db.user_component_id(component_id).unwrap();
         let user_component_db = &component_db.user_component_db();
         let user_component = &user_component_db[user_component_id];
         let component_kind = user_component.callable_type();
         let location = user_component_db.get_location(user_component_id);
-        let source = match location.source_file(package_graph) {
-            Ok(s) => s,
-            Err(e) => {
-                diagnostics.push(e.into());
-                return;
-            }
+        let source = try_source!(location, package_graph, diagnostics);
+        let label = source
+            .as_ref()
+            .map(|source| {
+                diagnostic::get_f_macro_invocation_span(&source, location)
+                    .labeled(format!("The {component_kind} was registered here"))
+            })
+            .flatten();
+        let help = if component_kind == CallableType::StateInput {
+            "All state inputs that are needed at runtime must implement the `Send`, `Sync` and `Clone` traits.\n\
+            Pavex runs on a multi-threaded HTTP server and the application state is shared \
+            across all worker threads."
+                 .into()
+        } else {
+            "All singletons must implement the `Send`, `Sync` and `Clone` traits.\n\
+            Pavex runs on a multi-threaded HTTP server and the application state is shared \
+            across all worker threads."
+                .into()
         };
-        let label = diagnostic::get_f_macro_invocation_span(&source, location)
-            .map(|s| s.labeled(format!("The {component_kind} was registered here")));
-        let help = "All singletons must implement the `Send`, `Sync` and `Clone` traits.\n\
-                Pavex runs on a multi-threaded HTTP server and singletons must be shared \
-                 across all worker threads."
-            .into();
         let diagnostic = CompilerDiagnostic::builder(e)
-            .source(source)
+            .optional_source(source)
             .optional_label(label)
             .help(help)
             .build();
