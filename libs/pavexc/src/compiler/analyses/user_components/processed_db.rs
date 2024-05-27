@@ -317,7 +317,7 @@ impl UserComponentDb {
                 match resolve_type_path(resolved_path, krate_collection) {
                     Ok(ty) => match StateInput::new(ty) {
                         Ok(state_input) => {
-                            state_input_db.get_or_intern(state_input);
+                            state_input_db.get_or_intern(state_input, raw_id);
                         }
                         Err(e) => {
                             Self::invalid_state_input(e, raw_id, raw_db, package_graph, diagnostics)

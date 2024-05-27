@@ -32,8 +32,10 @@ impl StateInputDb {
     }
 
     /// Retrieve the id for an input from the interner, or insert it if it doesn't exist.
-    pub(crate) fn get_or_intern(&mut self, ty: StateInput) -> StateInputId {
-        self.interner.get_or_intern(ty.into())
+    pub(crate) fn get_or_intern(&mut self, ty: StateInput, id: UserComponentId) -> StateInputId {
+        let input_id = self.interner.get_or_intern(ty.into());
+        self.component_id2type_id.insert(id, input_id);
+        input_id
     }
 }
 
