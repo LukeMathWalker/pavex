@@ -127,7 +127,7 @@ impl OrderedCallGraph {
                                 Computation::Callable(c) => {
                                     format!("label = \"{position}| {c:?}\"")
                                 }
-                                Computation::FrameworkItem(i) => {
+                                Computation::PrebuiltType(i) => {
                                     format!("label = \"{position}| {i:?}\"")
                                 }
                             }

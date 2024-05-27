@@ -81,9 +81,6 @@ impl ConstructibleDb {
 
     /// Check if any component is asking for a type as input parameter for which there is no
     /// constructor.
-    ///
-    /// This check skips singletons, since they are going to be provided by the user as part
-    /// of the application state if there have no registered constructor.
     fn detect_missing_constructors(
         &mut self,
         component_db: &mut ComponentDb,
@@ -105,11 +102,6 @@ impl ConstructibleDb {
                 let scope_id = component_db.scope_id(component_id);
                 let resolved_component =
                     component_db.hydrated_component(component_id, computation_db);
-                // We don't support dependency injection for transformers (yet).
-                if let HydratedComponent::Transformer(..) = &resolved_component {
-                    continue;
-                }
-
                 let input_types = {
                     let mut input_types: Vec<Option<ResolvedType>> = resolved_component
                         .input_types()
@@ -137,6 +129,7 @@ impl ConstructibleDb {
                             input_types[info.input_index] = None;
                         }
                         HydratedComponent::Constructor(_)
+                        | HydratedComponent::StateInput(_)
                         | HydratedComponent::PreProcessingMiddleware(_)
                         | HydratedComponent::RequestHandler(_) => {}
                     }
@@ -150,6 +143,7 @@ impl ConstructibleDb {
                             continue;
                         }
                     };
+                    // TODO: do we need this?
                     if let Some(id) = framework_items_db.get_id(input) {
                         if let Lifecycle::RequestScoped = framework_items_db.lifecycle(id) {
                             continue;
@@ -669,8 +663,8 @@ impl ConstructibleDb {
                 AnnotatedSnippet::empty(),
             ))
             .help(format!(
-                "Alternatively, use `Blueprint::state_input` to add `{unconstructible_type:?}` \
-                as an input parameter to the (generated) `build_application_state`.",
+                "Alternatively, use `Blueprint::state_input` to add a new input parameter of type `{unconstructible_type:?}` \
+                to the (generated) `build_application_state`."
             ))
             .build();
         diagnostics.push(diagnostic.into());

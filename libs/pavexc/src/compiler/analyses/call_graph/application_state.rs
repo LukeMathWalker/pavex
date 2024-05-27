@@ -253,7 +253,9 @@ pub(crate) fn application_state_call_graph(
                     HydratedComponent::RequestHandler(r) => &r.callable,
                     HydratedComponent::PostProcessingMiddleware(pp) => &pp.callable,
                     HydratedComponent::PreProcessingMiddleware(pp) => &pp.callable,
-                    HydratedComponent::ErrorObserver(_) | HydratedComponent::Transformer(..) => {
+                    HydratedComponent::ErrorObserver(_)
+                    | HydratedComponent::Transformer(..)
+                    | HydratedComponent::StateInput(..) => {
                         unreachable!()
                     }
                 };

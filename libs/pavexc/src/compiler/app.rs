@@ -24,6 +24,7 @@ use crate::compiler::analyses::constructibles::ConstructibleDb;
 use crate::compiler::analyses::framework_items::FrameworkItemDb;
 use crate::compiler::analyses::processing_pipeline::RequestHandlerPipeline;
 use crate::compiler::analyses::router::Router;
+use crate::compiler::analyses::state_inputs::StateInputDb;
 use crate::compiler::analyses::unused::detect_unused;
 use crate::compiler::analyses::user_components::UserComponentDb;
 use crate::compiler::computation::Computation;
@@ -85,9 +86,11 @@ impl App {
         let package_graph = krate_collection.package_graph().to_owned();
         let mut diagnostics = vec![];
         let mut computation_db = ComputationDb::new();
+        let mut state_input_db = StateInputDb::new();
         let Ok((router, user_component_db)) = UserComponentDb::build(
             &bp,
             &mut computation_db,
+            &mut state_input_db,
             &package_graph,
             &krate_collection,
             &mut diagnostics,
@@ -99,6 +102,7 @@ impl App {
             user_component_db,
             &framework_item_db,
             &mut computation_db,
+            state_input_db,
             &package_graph,
             &krate_collection,
             &mut diagnostics,
@@ -497,7 +501,7 @@ fn verify_singletons(
         let component_id = match c.0 {
             Computation::Callable(_) => component_id,
             Computation::MatchResult(_) => component_db.fallible_id(component_id),
-            Computation::FrameworkItem(_) => unreachable!(),
+            Computation::PrebuiltType(_) => unreachable!(),
         };
         let user_component_id = component_db.user_component_id(component_id).unwrap();
         let user_component_db = &component_db.user_component_db();

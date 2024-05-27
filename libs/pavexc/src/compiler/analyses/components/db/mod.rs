@@ -6,6 +6,7 @@ use crate::compiler::analyses::components::{
 use crate::compiler::analyses::computations::{ComputationDb, ComputationId};
 use crate::compiler::analyses::framework_items::FrameworkItemDb;
 use crate::compiler::analyses::into_error::register_error_new_transformer;
+use crate::compiler::analyses::state_inputs::StateInputDb;
 use crate::compiler::analyses::user_components::{
     ScopeGraph, ScopeId, UserComponent, UserComponentDb, UserComponentId,
 };
@@ -41,6 +42,7 @@ pub(crate) type ComponentId = la_arena::Idx<Component>;
 #[derive(Debug)]
 pub(crate) struct ComponentDb {
     user_component_db: UserComponentDb,
+    state_input_db: StateInputDb,
     interner: Interner<Component>,
     match_err_id2error_handler_id: HashMap<ComponentId, ComponentId>,
     fallible_id2match_ids: HashMap<ComponentId, (ComponentId, ComponentId)>,
@@ -126,6 +128,7 @@ impl ComponentDb {
         user_component_db: UserComponentDb,
         framework_item_db: &FrameworkItemDb,
         computation_db: &mut ComputationDb,
+        state_input_db: StateInputDb,
         package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
         diagnostics: &mut Vec<miette::Error>,
@@ -159,6 +162,7 @@ impl ComponentDb {
 
         let mut self_ = Self {
             user_component_db,
+            state_input_db,
             interner: Interner::new(),
             match_err_id2error_handler_id: Default::default(),
             fallible_id2match_ids: Default::default(),
@@ -252,6 +256,8 @@ impl ComponentDb {
                 diagnostics,
             );
 
+            self_.process_state_inputs(computation_db);
+
             for fallible_id in needs_error_handler {
                 Self::missing_error_handler(
                     fallible_id,
@@ -273,7 +279,7 @@ impl ComponentDb {
             let component_id = self_.get_or_intern(
                 UnregisteredComponent::SyntheticConstructor {
                     computation_id: computation_db.get_or_intern(Constructor(
-                        Computation::FrameworkItem(Cow::Owned(type_.clone())),
+                        Computation::PrebuiltType(Cow::Owned(type_.clone())),
                     )),
                     scope_id: self_.scope_graph().root_scope_id(),
                     lifecycle: framework_item_db.lifecycle(id),
@@ -442,6 +448,22 @@ impl ComponentDb {
                         );
                     }
                 }
+                UserStateInput { user_component_id } => {
+                    let user_component = &self.user_component_db[user_component_id];
+                    let ty_ = &self.state_input_db[user_component_id];
+                    self.get_or_intern(
+                        UnregisteredComponent::SyntheticConstructor {
+                            computation_id: computation_db.get_or_intern(Constructor(
+                                Computation::PrebuiltType(Cow::Owned(ty_.to_owned())),
+                            )),
+                            scope_id: user_component.scope_id(),
+                            lifecycle: self.user_component_db.get_lifecycle(user_component_id),
+                            cloning_strategy: CloningStrategy::NeverClone,
+                            derived_from: Some(id),
+                        },
+                        computation_db,
+                    );
+                }
                 _ => {}
             }
         }
@@ -577,6 +599,22 @@ impl ComponentDb {
                     }
                 }
             }
+        }
+    }
+
+    /// Validate all user-registered state inputs.
+    /// We add their information to the relevant metadata stores.
+    fn process_state_inputs(&mut self, computation_db: &mut ComputationDb) {
+        let ids = self
+            .user_component_db
+            .state_inputs()
+            .map(|(id, _)| id)
+            .collect::<Vec<_>>();
+        for user_component_id in ids {
+            self.get_or_intern(
+                UnregisteredComponent::UserStateInput { user_component_id },
+                computation_db,
+            );
         }
     }
 
@@ -1039,9 +1077,10 @@ impl ComponentDb {
                             None
                         }
                     }
-                    PreProcessingMiddleware { .. } | Constructor { .. } | ErrorObserver { .. } => {
-                        None
-                    }
+                    StateInput { .. }
+                    | PreProcessingMiddleware { .. }
+                    | Constructor { .. }
+                    | ErrorObserver { .. } => None,
                 }
             })
             .collect();
@@ -1417,6 +1456,7 @@ impl ComponentDb {
                 source_id: SourceId::UserComponentId(user_component_id),
             }
             | Component::ErrorObserver { user_component_id }
+            | Component::StateInput { user_component_id }
             | Component::RequestHandler { user_component_id } => Some(*user_component_id),
             Component::Constructor {
                 source_id: SourceId::ComputationId(..),
@@ -1504,6 +1544,10 @@ impl ComponentDb {
                 };
                 HydratedComponent::ErrorObserver(error_observer)
             }
+            Component::StateInput { user_component_id } => {
+                let ty = &self.state_input_db[*user_component_id];
+                HydratedComponent::StateInput(Cow::Borrowed(&ty))
+            }
         }
     }
 
@@ -1521,6 +1565,7 @@ impl ComponentDb {
     pub fn scope_id(&self, component_id: ComponentId) -> ScopeId {
         match &self[component_id] {
             Component::RequestHandler { user_component_id }
+            | Component::StateInput { user_component_id }
             | Component::ErrorObserver { user_component_id } => {
                 self.user_component_db[*user_component_id].scope_id()
             }
@@ -1626,7 +1671,7 @@ impl ComponentDb {
                 // by the user), not a derived one. If not, we might have resolution issues when computing
                 // the call graph for handlers where these derived components are used.
                 HydratedComponent::Constructor(constructor) => match &constructor.0 {
-                    Computation::FrameworkItem(..) | Computation::Callable(..) => component_id,
+                    Computation::PrebuiltType(..) | Computation::Callable(..) => component_id,
                     Computation::MatchResult(..) => _get_root_component_id(
                         component_db.fallible_id(component_id),
                         component_db,
@@ -1637,6 +1682,7 @@ impl ComponentDb {
                 | HydratedComponent::PostProcessingMiddleware(..)
                 | HydratedComponent::PreProcessingMiddleware(..)
                 | HydratedComponent::ErrorObserver(..)
+                | HydratedComponent::StateInput(..)
                 | HydratedComponent::Transformer(..) => {
                     todo!()
                 }
@@ -1680,6 +1726,7 @@ impl ComponentDb {
             | HydratedComponent::ErrorObserver(_)
             | HydratedComponent::PostProcessingMiddleware(_)
             | HydratedComponent::PreProcessingMiddleware(_)
+            | HydratedComponent::StateInput(_)
             | HydratedComponent::Transformer(..) => {
                 todo!()
             }

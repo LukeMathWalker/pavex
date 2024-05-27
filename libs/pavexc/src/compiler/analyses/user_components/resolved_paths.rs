@@ -10,6 +10,7 @@ use crate::language::{ParseError, ResolvedPath};
 
 pub(super) type ResolvedPathId = la_arena::Idx<ResolvedPath>;
 
+#[derive(Debug)]
 pub(super) struct ResolvedPathDb {
     interner: Interner<ResolvedPath>,
     component_id2path_id: HashMap<UserComponentId, ResolvedPathId>,

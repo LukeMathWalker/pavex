@@ -10,12 +10,14 @@ use pavex_bp_schema::{
 };
 
 use crate::compiler::analyses::computations::ComputationDb;
+use crate::compiler::analyses::state_inputs::StateInputDb;
 use crate::compiler::analyses::user_components::raw_db::RawUserComponentDb;
 use crate::compiler::analyses::user_components::resolved_paths::ResolvedPathDb;
 use crate::compiler::analyses::user_components::router::Router;
 use crate::compiler::analyses::user_components::{ScopeGraph, UserComponent, UserComponentId};
+use crate::compiler::component::{StateInput, StateInputValidationError};
 use crate::compiler::interner::Interner;
-use crate::compiler::resolvers::CallableResolutionError;
+use crate::compiler::resolvers::{resolve_type_path, CallableResolutionError, TypeResolutionError};
 use crate::diagnostic::{
     convert_proc_macro_span, convert_rustdoc_span, AnnotatedSnippet, CompilerDiagnostic,
     OptionalSourceSpanExt, SourceSpanExt,
@@ -78,6 +80,7 @@ impl UserComponentDb {
     pub(crate) fn build(
         bp: &Blueprint,
         computation_db: &mut ComputationDb,
+        state_input_db: &mut StateInputDb,
         package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
         diagnostics: &mut Vec<miette::Error>,
@@ -103,6 +106,7 @@ impl UserComponentDb {
             &resolved_path_db,
             &raw_db,
             computation_db,
+            state_input_db,
             package_graph,
             krate_collection,
             diagnostics,
@@ -154,6 +158,14 @@ impl UserComponentDb {
         self.component_interner
             .iter()
             .filter(|(_, c)| matches!(c, UserComponent::Constructor { .. }))
+    }
+
+    pub fn state_inputs(
+        &self,
+    ) -> impl Iterator<Item = (UserComponentId, &UserComponent)> + DoubleEndedIterator {
+        self.component_interner
+            .iter()
+            .filter(|(_, c)| matches!(c, UserComponent::StateInput { .. }))
     }
 
     /// Iterate over all the request handler components in the database, returning their id and the
@@ -294,6 +306,7 @@ impl UserComponentDb {
         resolved_path_db: &ResolvedPathDb,
         raw_db: &RawUserComponentDb,
         computation_db: &mut ComputationDb,
+        state_input_db: &mut StateInputDb,
         package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
         diagnostics: &mut Vec<miette::Error>,
@@ -301,18 +314,87 @@ impl UserComponentDb {
         for (raw_id, user_component) in raw_db.iter() {
             let resolved_path = &resolved_path_db[raw_id];
             if let UserComponent::StateInput { .. } = &user_component {
-                // State inputs are not callable, so we don't resolve them here.
-                continue;
-            }
-            if let Err(e) =
-                computation_db.resolve_and_intern(krate_collection, resolved_path, Some(raw_id))
-            {
-                Self::cannot_resolve_path(e, raw_id, raw_db, package_graph, diagnostics);
+                match resolve_type_path(resolved_path, krate_collection) {
+                    Ok(ty) => match StateInput::new(ty) {
+                        Ok(state_input) => {
+                            state_input_db.get_or_intern(state_input);
+                        }
+                        Err(e) => {
+                            Self::invalid_state_input(e, raw_id, raw_db, package_graph, diagnostics)
+                        }
+                    },
+                    Err(e) => Self::cannot_resolve_type_path(
+                        e,
+                        raw_id,
+                        raw_db,
+                        package_graph,
+                        diagnostics,
+                    ),
+                };
+            } else {
+                if let Err(e) =
+                    computation_db.resolve_and_intern(krate_collection, resolved_path, Some(raw_id))
+                {
+                    Self::cannot_resolve_callable_path(
+                        e,
+                        raw_id,
+                        raw_db,
+                        package_graph,
+                        diagnostics,
+                    );
+                }
             }
         }
     }
 
-    fn cannot_resolve_path(
+    fn invalid_state_input(
+        e: StateInputValidationError,
+        component_id: UserComponentId,
+        component_db: &RawUserComponentDb,
+        package_graph: &PackageGraph,
+        diagnostics: &mut Vec<miette::Error>,
+    ) {
+        let location = component_db.get_location(component_id);
+        let source = try_source!(location, package_graph, diagnostics);
+        let label = source
+            .as_ref()
+            .map(|source| {
+                diagnostic::get_f_macro_invocation_span(&source, location)
+                    .labeled(format!("The state input was registered here"))
+            })
+            .flatten();
+        let diagnostic = CompilerDiagnostic::builder(e)
+            .optional_source(source)
+            .optional_label(label)
+            .build();
+        diagnostics.push(diagnostic.into());
+    }
+
+    fn cannot_resolve_type_path(
+        e: TypeResolutionError,
+        component_id: UserComponentId,
+        component_db: &RawUserComponentDb,
+        package_graph: &PackageGraph,
+        diagnostics: &mut Vec<miette::Error>,
+    ) {
+        let location = component_db.get_location(component_id);
+        let source = try_source!(location, package_graph, diagnostics);
+        let label = source
+            .as_ref()
+            .map(|source| {
+                diagnostic::get_f_macro_invocation_span(&source, location)
+                    .labeled(format!("The type that we can't resolve"))
+            })
+            .flatten();
+        let diagnostic = CompilerDiagnostic::builder(e)
+            .optional_source(source)
+            .optional_label(label)
+            .help("Check that the path is spelled correctly and that the type is public.".into())
+            .build();
+        diagnostics.push(diagnostic.into());
+    }
+
+    fn cannot_resolve_callable_path(
         e: CallableResolutionError,
         component_id: UserComponentId,
         component_db: &RawUserComponentDb,

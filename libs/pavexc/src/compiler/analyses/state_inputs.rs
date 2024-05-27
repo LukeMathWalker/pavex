@@ -1,10 +1,9 @@
 use ahash::HashMap;
 
 use crate::compiler::analyses::user_components::UserComponentId;
+use crate::compiler::component::StateInput;
 use crate::compiler::interner::Interner;
-use crate::compiler::resolvers::{resolve_type_path, TypeResolutionError};
-use crate::language::{ResolvedPath, ResolvedType};
-use crate::rustdoc::CrateCollection;
+use crate::language::ResolvedType;
 
 pub(crate) type StateInputId = la_arena::Idx<ResolvedType>;
 
@@ -32,24 +31,8 @@ impl StateInputDb {
         }
     }
 
-    /// Try to resolve a type from a resolved path.
-    /// Returns the type's id in the interner if it succeeds, an error otherwise.
-    pub(crate) fn resolve_and_intern(
-        &mut self,
-        krate_collection: &CrateCollection,
-        resolved_path: &ResolvedPath,
-        user_component_id: Option<UserComponentId>,
-    ) -> Result<StateInputId, TypeResolutionError> {
-        let ty = resolve_type_path(resolved_path, krate_collection)?;
-        let ty_id = self.interner.get_or_intern(ty);
-        if let Some(raw_user_id) = user_component_id {
-            self.component_id2type_id.insert(raw_user_id, ty_id);
-        }
-        Ok(ty_id)
-    }
-
-    /// Retrieve the id for a computation from the interner, or insert it if it doesn't exist.
-    pub(crate) fn get_or_intern(&mut self, ty: impl Into<ResolvedType>) -> StateInputId {
+    /// Retrieve the id for an input from the interner, or insert it if it doesn't exist.
+    pub(crate) fn get_or_intern(&mut self, ty: StateInput) -> StateInputId {
         self.interner.get_or_intern(ty.into())
     }
 }

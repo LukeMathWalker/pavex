@@ -769,7 +769,7 @@ fn collect_call_graph_package_ids<'a>(
                         collect_type_package_ids(package_ids, &m.input);
                         collect_type_package_ids(package_ids, &m.output);
                     }
-                    Computation::FrameworkItem(i) => {
+                    Computation::PrebuiltType(i) => {
                         collect_type_package_ids(package_ids, &i);
                     }
                 }
