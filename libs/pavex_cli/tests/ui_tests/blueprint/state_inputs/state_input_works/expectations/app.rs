@@ -8,9 +8,19 @@ struct ServerState {
 }
 pub struct ApplicationState {
     s0: app::A,
+    s1: app::C<'static>,
+    s2: app::B<alloc::string::String>,
 }
-pub async fn build_application_state(v0: app::A) -> crate::ApplicationState {
-    crate::ApplicationState { s0: v0 }
+pub async fn build_application_state(
+    v0: app::A,
+    v1: app::C<'static>,
+    v2: app::B<alloc::string::String>,
+) -> crate::ApplicationState {
+    crate::ApplicationState {
+        s0: v0,
+        s1: v1,
+        s2: v2,
+    }
 }
 pub fn run(
     server_builder: pavex::server::Server,
@@ -55,7 +65,12 @@ async fn route_request(
         0u32 => {
             match &request_head.method {
                 &pavex::http::Method::GET => {
-                    route_0::entrypoint(&server_state.application_state.s0).await
+                    route_0::entrypoint(
+                            &server_state.application_state.s0,
+                            server_state.application_state.s1.clone(),
+                            &server_state.application_state.s2,
+                        )
+                        .await
                 }
                 _ => {
                     let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
@@ -70,42 +85,62 @@ async fn route_request(
     }
 }
 pub mod route_0 {
-    pub async fn entrypoint<'a>(s_0: &'a app::A) -> pavex::response::Response {
-        let response = wrapping_0(s_0).await;
+    pub async fn entrypoint<'a, 'b>(
+        s_0: &'a app::A,
+        s_1: app::C<'static>,
+        s_2: &'b app::B<alloc::string::String>,
+    ) -> pavex::response::Response {
+        let response = wrapping_0(s_0, s_1, s_2).await;
         response
     }
-    async fn stage_1<'a>(s_0: &'a app::A) -> pavex::response::Response {
-        let response = handler(s_0).await;
+    async fn stage_1<'a, 'b>(
+        s_0: &'a app::B<alloc::string::String>,
+        s_1: app::C<'static>,
+        s_2: &'b app::A,
+    ) -> pavex::response::Response {
+        let response = handler(s_0, s_1, s_2).await;
         response
     }
-    async fn wrapping_0(v0: &app::A) -> pavex::response::Response {
-        let v1 = crate::route_0::Next0 {
-            s_0: v0,
+    async fn wrapping_0(
+        v0: &app::A,
+        v1: app::C<'static>,
+        v2: &app::B<alloc::string::String>,
+    ) -> pavex::response::Response {
+        let v3 = crate::route_0::Next0 {
+            s_0: v2,
+            s_1: v1,
+            s_2: v0,
             next: stage_1,
         };
-        let v2 = pavex::middleware::Next::new(v1);
-        let v3 = pavex::middleware::wrap_noop(v2).await;
+        let v4 = pavex::middleware::Next::new(v3);
+        let v5 = pavex::middleware::wrap_noop(v4).await;
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v5)
+    }
+    async fn handler(
+        v0: &app::B<alloc::string::String>,
+        v1: app::C<'static>,
+        v2: &app::A,
+    ) -> pavex::response::Response {
+        let v3 = app::handler(v2, v0, v1);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
     }
-    async fn handler(v0: &app::A) -> pavex::response::Response {
-        let v1 = app::handler(v0);
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
-    }
-    struct Next0<'a, T>
+    struct Next0<'a, 'b, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
-        s_0: &'a app::A,
-        next: fn(&'a app::A) -> T,
+        s_0: &'a app::B<alloc::string::String>,
+        s_1: app::C<'static>,
+        s_2: &'b app::A,
+        next: fn(&'a app::B<alloc::string::String>, app::C<'static>, &'b app::A) -> T,
     }
-    impl<'a, T> std::future::IntoFuture for Next0<'a, T>
+    impl<'a, 'b, T> std::future::IntoFuture for Next0<'a, 'b, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
         type Output = pavex::response::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            (self.next)(self.s_0)
+            (self.next)(self.s_0, self.s_1, self.s_2)
         }
     }
 }

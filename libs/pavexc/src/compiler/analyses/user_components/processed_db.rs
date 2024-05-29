@@ -22,8 +22,9 @@ use crate::diagnostic::{
     convert_proc_macro_span, convert_rustdoc_span, AnnotatedSnippet, CompilerDiagnostic,
     OptionalSourceSpanExt, SourceSpanExt,
 };
+use crate::language::ResolvedPath;
 use crate::rustdoc::CrateCollection;
-use crate::utils::anyhow2miette;
+use crate::utils::{anyhow2miette, comma_separated_list};
 use crate::{diagnostic, try_source};
 
 /// A database that contains all the user components that have been registered against the
@@ -319,9 +320,14 @@ impl UserComponentDb {
                         Ok(state_input) => {
                             state_input_db.get_or_intern(state_input, raw_id);
                         }
-                        Err(e) => {
-                            Self::invalid_state_input(e, raw_id, raw_db, package_graph, diagnostics)
-                        }
+                        Err(e) => Self::invalid_state_input(
+                            e,
+                            resolved_path,
+                            raw_id,
+                            raw_db,
+                            package_graph,
+                            diagnostics,
+                        ),
                     },
                     Err(e) => Self::cannot_resolve_type_path(
                         e,
@@ -349,11 +355,14 @@ impl UserComponentDb {
 
     fn invalid_state_input(
         e: StateInputValidationError,
+        resolved_path: &ResolvedPath,
         component_id: UserComponentId,
         component_db: &RawUserComponentDb,
         package_graph: &PackageGraph,
         diagnostics: &mut Vec<miette::Error>,
     ) {
+        use std::fmt::Write as _;
+        
         let location = component_db.get_location(component_id);
         let source = try_source!(location, package_graph, diagnostics);
         let label = source
@@ -363,9 +372,60 @@ impl UserComponentDb {
                     .labeled(format!("The state input was registered here"))
             })
             .flatten();
+        let mut error_msg = e.to_string();
+        let help: String;
+        match &e {
+            StateInputValidationError::CannotHaveLifetimeParameters { ty } => {
+                if ty.has_implicit_lifetime_parameters() {
+                    writeln!(
+                        &mut error_msg, 
+                        "\n`{resolved_path}` has elided lifetime parameters, which might be non-'static."
+                    ).unwrap();
+                } else {
+                    let named_lifetimes = ty.named_lifetime_parameters();
+                    if named_lifetimes.len() == 1 {
+                        write!(
+                            &mut error_msg, 
+                            "\n`{resolved_path}` has a named lifetime parameter, `'{}`, that you haven't constrained to be 'static.",
+                            named_lifetimes[0]
+                        ).unwrap();
+                    } else {
+                        write!(
+                            &mut error_msg, 
+                            "\n`{resolved_path}` has {} named lifetime parameters that you haven't constrained to be 'static: ",
+                            named_lifetimes.len(),
+                        ).unwrap();
+                        comma_separated_list(&mut error_msg, named_lifetimes.iter(), |s| format!("`'{s}`"), "and").unwrap();
+                        write!(&mut error_msg, ".").unwrap();
+                    }
+                };
+                help = format!("Set the lifetime parameters to `'static` when registering the type as a state input. E.g. `bp.state_input(f!(crate::MyType<'static>))` for `struct MyType<'a>(&'a str)`.")
+            }
+            StateInputValidationError::CannotHaveUnassignedGenericTypeParameters { ty } => {
+                let generic_type_parameters = ty.unassigned_generic_type_parameters();
+                if generic_type_parameters.len() == 1 {
+                    write!(
+                        &mut error_msg, 
+                        "\n`{resolved_path}` has a generic type parameter, `{}`, that you haven't assigned a concrete type to.",
+                        generic_type_parameters[0]
+                    ).unwrap();
+                } else {
+                    write!(
+                        &mut error_msg, 
+                        "\n`{resolved_path}` has {} generic type parameters that you haven't assigned concrete types to: ",
+                        generic_type_parameters.len(),
+                    ).unwrap();
+                    comma_separated_list(&mut error_msg, generic_type_parameters.iter(), |s| format!("`{s}`"), "and").unwrap();
+                    write!(&mut error_msg, ".").unwrap();
+                }
+                help = format!("Set the generic parameters to concrete types when registering the type as a state input. E.g. `bp.state_input(f!(crate::MyType<std::string::String>))` for `struct MyType<T>(T)`.")
+            }, 
+        }
+        let e = anyhow::anyhow!(e).context(error_msg);
         let diagnostic = CompilerDiagnostic::builder(e)
             .optional_source(source)
             .optional_label(label)
+            .help(help)
             .build();
         diagnostics.push(diagnostic.into());
     }

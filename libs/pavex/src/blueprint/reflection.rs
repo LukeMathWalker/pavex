@@ -45,6 +45,21 @@ pub struct RawIdentifiers {
 ///
 /// [`Blueprint`]: crate::blueprint::Blueprint
 macro_rules! f {
+    // This branch is used by `Blueprint::state_input`, where you need to specifically
+    // pass a type path to the macro.
+    // The `ty` designator is more restrictive than the `expr` designator, so it's
+    // the first one we try to match.
+    ($t:ty) => {{
+        #[cfg(pavex_ide_hint)]
+        const P:$t = ();
+        $crate::blueprint::reflection::RawIdentifiers {
+            import_path: stringify!($t),
+            crate_name: ::std::env!("CARGO_PKG_NAME", "Failed to load the CARGO_PKG_NAME environment variable. Are you using a custom build system?"),
+            module_path: module_path!()
+        }
+    }};
+    // This branch is used in most cases, where you are instead specifying the path
+    // to a callable.
     ($p:expr) => {{
         #[cfg(pavex_ide_hint)]
         const P:() = $p;
