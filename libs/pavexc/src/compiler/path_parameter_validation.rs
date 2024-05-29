@@ -13,7 +13,6 @@ use crate::compiler::analyses::components::{ComponentDb, ComponentId};
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::processing_pipeline::RequestHandlerPipeline;
 use crate::compiler::analyses::router::Router;
-use crate::compiler::analyses::user_components::UserComponentId;
 use crate::compiler::component::Constructor;
 use crate::compiler::computation::{Computation, MatchResultVariant};
 use crate::compiler::utils::process_framework_path;
@@ -97,6 +96,7 @@ pub(crate) fn verify_path_parameters(
 
             let Ok(struct_item) = must_be_a_plain_struct(
                 component_db,
+                computation_db,
                 package_graph,
                 krate_collection,
                 diagnostics,
@@ -158,6 +158,7 @@ pub(crate) fn verify_path_parameters(
             if !non_existing_path_parameters.is_empty() {
                 report_non_existing_path_parameters(
                     component_db,
+                    computation_db,
                     package_graph,
                     diagnostics,
                     path,
@@ -177,6 +178,7 @@ pub(crate) fn verify_path_parameters(
 /// the respective path pattern.
 fn report_non_existing_path_parameters(
     component_db: &ComponentDb,
+    computation_db: &ComputationDb,
     package_graph: &PackageGraph,
     diagnostics: &mut Vec<Report>,
     path: &str,
@@ -189,8 +191,12 @@ fn report_non_existing_path_parameters(
     assert!(!non_existing_path_parameters.is_empty());
     // Find the compute nodes that consume the `PathParams` extractor and report
     // an error on each of them.
-    let consuming_ids = path_params_consumer_ids(component_db, call_graph, ok_path_params_node_id);
-    for user_component_id in consuming_ids {
+    let consuming_ids = path_params_consumer_ids(call_graph, ok_path_params_node_id);
+    for component_id in consuming_ids {
+        let Some(user_component_id) = component_db.user_component_id(component_id) else {
+            continue;
+        };
+        let callable = &computation_db[user_component_id];
         let raw_identifiers = component_db
             .user_component_db()
             .get_raw_callable_identifiers(user_component_id);
@@ -210,7 +216,7 @@ fn report_non_existing_path_parameters(
             let error = anyhow!(
                     "`{}` is trying to extract path parameters using `PathParams<{extracted_type:?}>`.\n\
                     But there are no path parameters in `{path}`, the corresponding path pattern!",
-                    raw_identifiers.fully_qualified_path().join("::"),
+                    callable.path
                 );
             let d = CompilerDiagnostic::builder(error)
                 .source(source)
@@ -279,6 +285,7 @@ fn report_non_existing_path_parameters(
 /// `PathParams` extractor.
 fn must_be_a_plain_struct(
     component_db: &ComponentDb,
+    computation_db: &ComputationDb,
     package_graph: &PackageGraph,
     krate_collection: &CrateCollection,
     diagnostics: &mut Vec<Report>,
@@ -319,12 +326,13 @@ fn must_be_a_plain_struct(
 
     // Find the compute nodes that consume the `PathParams` extractor and report
     // an error on each of them.
-    let consuming_ids = path_params_consumer_ids(component_db, call_graph, ok_path_params_node_id);
+    let consuming_ids = path_params_consumer_ids(call_graph, ok_path_params_node_id);
 
-    for user_component_id in consuming_ids {
-        let raw_identifiers = component_db
-            .user_component_db()
-            .get_raw_callable_identifiers(user_component_id);
+    for component_id in consuming_ids {
+        let Some(user_component_id) = component_db.user_component_id(component_id) else {
+            continue;
+        };
+        let callable = &computation_db[user_component_id];
         let callable_type = component_db.user_component_db()[user_component_id].callable_type();
         let location = component_db
             .user_component_db()
@@ -344,7 +352,7 @@ fn must_be_a_plain_struct(
             `{}` is trying to extract `PathParams<{extracted_type:?}>`, but \
             {error_suffix}, not a plain struct type. I don't support this: the extraction would \
             fail at runtime, when trying to process an incoming request.",
-            raw_identifiers.fully_qualified_path().join("::")
+            callable.path
         );
         let d = CompilerDiagnostic::builder(error)
             .source(source)
@@ -365,10 +373,9 @@ fn must_be_a_plain_struct(
 /// Return the set of user component ids that consume a certain instance of the `PathParams` extractor
 /// as input parameter.
 fn path_params_consumer_ids(
-    component_db: &ComponentDb,
     call_graph: &RawCallGraph,
     ok_path_params_node_id: NodeIndex,
-) -> IndexSet<UserComponentId> {
+) -> IndexSet<ComponentId> {
     let mut consumer_ids = IndexSet::new();
     let mut descendant_ids = call_graph
         .neighbors_directed(ok_path_params_node_id, Direction::Outgoing)
@@ -376,9 +383,7 @@ fn path_params_consumer_ids(
     while let Some(descendant_id) = descendant_ids.pop() {
         let descendant_node = &call_graph[descendant_id];
         if let CallGraphNode::Compute { component_id, .. } = descendant_node {
-            if let Some(user_component_id) = component_db.user_component_id(*component_id) {
-                consumer_ids.insert(user_component_id);
-            }
+            consumer_ids.insert(*component_id);
         }
     }
     consumer_ids

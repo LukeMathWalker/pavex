@@ -11,9 +11,9 @@ use std::path::PathBuf;
 /// parsed from the source file where it was defined.
 pub struct CallableDefinition {
     pub attrs: Vec<syn::Attribute>,
-    pub vis: syn::Visibility,
+    pub vis: Option<syn::Visibility>,
     pub sig: syn::Signature,
-    pub block: Box<syn::Block>,
+    pub block: Option<Box<syn::Block>>,
     pub span_contents: String,
     pub span_offset: usize,
     pub source_contents: String,
@@ -21,13 +21,10 @@ pub struct CallableDefinition {
 }
 
 impl CallableDefinition {
-    pub fn compute(
-        callable: &Callable,
-        krate_collection: &CrateCollection,
+    pub fn compute_from_item(
+        item: &rustdoc_types::Item,
         package_graph: &PackageGraph,
     ) -> Option<CallableDefinition> {
-        let global_item_id = callable.source_coordinates.as_ref()?;
-        let item = krate_collection.get_type_by_global_type_id(global_item_id);
         let definition_span = item.span.as_ref()?;
         let source_contents =
             diagnostic::read_source_file(&definition_span.filename, &package_graph.workspace())
@@ -39,9 +36,16 @@ impl CallableDefinition {
         let (attrs, vis, sig, block) = match &item.inner {
             ItemEnum::Function(_) => {
                 if let Ok(item) = syn::parse_str::<syn::ItemFn>(&span_contents) {
-                    (item.attrs, item.vis, item.sig, item.block)
+                    (item.attrs, Some(item.vis), item.sig, Some(item.block))
                 } else if let Ok(item) = syn::parse_str::<syn::ImplItemFn>(&span_contents) {
-                    (item.attrs, item.vis, item.sig, Box::new(item.block))
+                    (
+                        item.attrs,
+                        Some(item.vis),
+                        item.sig,
+                        Some(Box::new(item.block)),
+                    )
+                } else if let Ok(item) = syn::parse_str::<syn::TraitItemFn>(&span_contents) {
+                    (item.attrs, None, item.sig, None)
                 } else {
                     // This can happen with components defined by macros.
                     tracing::debug!("Could not parse as a function or method:\n{span_contents}");
@@ -60,6 +64,16 @@ impl CallableDefinition {
             source_contents,
             source_file: definition_span.filename.clone(),
         })
+    }
+
+    pub fn compute(
+        callable: &Callable,
+        krate_collection: &CrateCollection,
+        package_graph: &PackageGraph,
+    ) -> Option<CallableDefinition> {
+        let global_item_id = callable.source_coordinates.as_ref()?;
+        let item = krate_collection.get_type_by_global_type_id(global_item_id);
+        Self::compute_from_item(&item, package_graph)
     }
 
     pub fn named_source(&self) -> NamedSource<String> {

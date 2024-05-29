@@ -1,10 +1,10 @@
-use pavex::blueprint::{reflection::RawCallable, router::POST, Blueprint};
+use pavex::blueprint::{reflection::RawIdentifiers, router::POST, Blueprint};
 
 pub fn my_f() {}
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    let callable = RawCallable {
+    let callable = RawIdentifiers {
         import_path: "my_f,",
         crate_name: "app",
         module_path: "app",

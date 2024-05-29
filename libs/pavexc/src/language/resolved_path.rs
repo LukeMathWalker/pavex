@@ -342,10 +342,17 @@ impl Hash for ResolvedPath {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum PathKind {
+    Callable,
+    Type,
+}
+
 impl ResolvedPath {
     pub fn parse(
         identifiers: &RawIdentifiers,
         graph: &guppy::graph::PackageGraph,
+        kind: PathKind,
     ) -> Result<Self, ParseError> {
         fn replace_crate_in_path_with_registration_crate(
             p: &mut CallPath,
@@ -455,7 +462,10 @@ impl ResolvedPath {
             }
         }
 
-        let mut path = CallPath::parse(identifiers)?;
+        let mut path = match kind {
+            PathKind::Callable => CallPath::parse_callable_path(identifiers),
+            PathKind::Type => CallPath::parse_type_path(identifiers),
+        }?;
         replace_crate_in_path_with_registration_crate(&mut path, identifiers);
         if let Some(qself) = &mut path.qualified_self {
             replace_crate_in_type_with_registration_crate(&mut qself.type_, identifiers);

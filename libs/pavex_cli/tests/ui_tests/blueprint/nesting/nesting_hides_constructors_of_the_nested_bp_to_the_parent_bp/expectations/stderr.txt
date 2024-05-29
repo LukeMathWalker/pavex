@@ -1,6 +1,7 @@
 [31m[1mERROR[0m[39m: 
-  [31m×[0m I can't invoke your request handler, `app::handler`, because it needs an
-  [31m│[0m instance of `u64` as input, but I can't find a constructor for that type.
+  [31m×[0m I can't find a constructor for `u64`.
+  [31m│[0m I need an instance of `u64` to invoke your request handler,
+  [31m│[0m `app::handler`.
   [31m│[0m
   [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:9:1]
   [31m│[0m  [2m 9[0m │     bp.nest(sub_blueprint());
@@ -16,11 +17,15 @@
   [31m│[0m     ·     [35;1mI don't know how to construct an instance of this input parameter[0m
   [31m│[0m  [2m27[0m │     todo!()
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mRegister a constructor for `u64`
+  [31m│[0m   [36mhelp:[0m Register a constructor for `u64`.
+  [31m│[0m [36m  help: [0mAlternatively, use `Blueprint::state_input` to add a
+  [31m│[0m         new input parameter of type `u64` to the (generated)
+  [31m│[0m         `build_application_state`.
 
 [31m[1mERROR[0m[39m: 
-  [31m×[0m I can't invoke your request handler, `app::handler`, because it needs an
-  [31m│[0m instance of `u32` as input, but I can't find a constructor for that type.
+  [31m×[0m I can't find a constructor for `u32`.
+  [31m│[0m I need an instance of `u32` to invoke your request handler,
+  [31m│[0m `app::handler`.
   [31m│[0m
   [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:9:1]
   [31m│[0m  [2m 9[0m │     bp.nest(sub_blueprint());
@@ -36,11 +41,15 @@
   [31m│[0m     ·     [35;1mI don't know how to construct an instance of this input parameter[0m
   [31m│[0m  [2m27[0m │     todo!()
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mRegister a constructor for `u32`
+  [31m│[0m   [36mhelp:[0m Register a constructor for `u32`.
+  [31m│[0m [36m  help: [0mAlternatively, use `Blueprint::state_input` to add a
+  [31m│[0m         new input parameter of type `u32` to the (generated)
+  [31m│[0m         `build_application_state`.
 
 [31m[1mERROR[0m[39m: 
-  [31m×[0m I can't invoke your request handler, `app::handler`, because it needs an
-  [31m│[0m instance of `u16` as input, but I can't find a constructor for that type.
+  [31m×[0m I can't find a constructor for `u16`.
+  [31m│[0m I need an instance of `u16` to invoke your request handler,
+  [31m│[0m `app::handler`.
   [31m│[0m
   [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:9:1]
   [31m│[0m  [2m 9[0m │     bp.nest(sub_blueprint());
@@ -56,4 +65,7 @@
   [31m│[0m     ·     [35;1mI don't know how to construct an instance of this input parameter[0m
   [31m│[0m  [2m27[0m │     todo!()
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mRegister a constructor for `u16`
+  [31m│[0m   [36mhelp:[0m Register a constructor for `u16`.
+  [31m│[0m [36m  help: [0mAlternatively, use `Blueprint::state_input` to add a
+  [31m│[0m         new input parameter of type `u16` to the (generated)
+  [31m│[0m         `build_application_state`.

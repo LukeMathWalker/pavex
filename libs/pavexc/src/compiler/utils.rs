@@ -3,7 +3,7 @@ use guppy::graph::PackageGraph;
 use pavex_bp_schema::{RawIdentifiers, RegisteredAt};
 
 use crate::compiler::resolvers::resolve_callable;
-use crate::language::{Callable, GenericArgument, ResolvedPath, ResolvedType};
+use crate::language::{Callable, GenericArgument, PathKind, ResolvedPath, ResolvedType};
 use crate::rustdoc::CrateCollection;
 
 use super::resolvers::resolve_type_path;
@@ -46,7 +46,7 @@ pub(crate) fn process_framework_path(
             module_path: "pavex".to_owned(),
         },
     );
-    let path = ResolvedPath::parse(&identifiers, package_graph).unwrap();
+    let path = ResolvedPath::parse(&identifiers, package_graph, PathKind::Type).unwrap();
     resolve_type_path(&path, krate_collection).unwrap()
 }
 
@@ -66,7 +66,7 @@ pub(crate) fn process_framework_callable_path(
             module_path: "pavex".to_owned(),
         },
     );
-    let path = ResolvedPath::parse(&identifiers, package_graph).unwrap();
+    let path = ResolvedPath::parse(&identifiers, package_graph, PathKind::Callable).unwrap();
     resolve_callable(krate_collection, &path).unwrap()
 }
 

@@ -1,7 +1,6 @@
 use ahash::HashMap;
 use guppy::graph::PackageGraph;
 use indexmap::IndexSet;
-use miette::NamedSource;
 use std::collections::BTreeMap;
 use syn::spanned::Spanned;
 
@@ -19,8 +18,7 @@ use crate::compiler::component::{StateInput, StateInputValidationError};
 use crate::compiler::interner::Interner;
 use crate::compiler::resolvers::{resolve_type_path, CallableResolutionError, TypeResolutionError};
 use crate::diagnostic::{
-    convert_proc_macro_span, convert_rustdoc_span, AnnotatedSnippet, CompilerDiagnostic,
-    OptionalSourceSpanExt, SourceSpanExt,
+    AnnotatedSnippet, CallableDefinition, CompilerDiagnostic, OptionalSourceSpanExt, SourceSpanExt
 };
 use crate::language::ResolvedPath;
 use crate::rustdoc::CrateCollection;
@@ -481,68 +479,22 @@ impl UserComponentDb {
                 diagnostics.push(diagnostic.into());
             }
             CallableResolutionError::InputParameterResolutionError(ref inner_error) => {
-                let definition_snippet = {
-                    if let Some(definition_span) = &inner_error.callable_item.span {
-                        match diagnostic::read_source_file(
-                            &definition_span.filename,
-                            &package_graph.workspace(),
-                        ) {
-                            Ok(source_contents) => {
-                                let span = convert_rustdoc_span(
-                                    &source_contents,
-                                    definition_span.to_owned(),
-                                );
-                                let span_contents =
-                                    &source_contents[span.offset()..(span.offset() + span.len())];
-                                let input = match &inner_error.callable_item.inner {
-                                    rustdoc_types::ItemEnum::Function(_) => {
-                                        if let Ok(item) = syn::parse_str::<syn::ItemFn>(span_contents) {
-                                            let mut inputs = item.sig.inputs.iter();
-                                            inputs.nth(inner_error.parameter_index).cloned()
-                                        } else if let Ok(item) =
-                                            syn::parse_str::<syn::ImplItemFn>(span_contents)
-                                        {
-                                            let mut inputs = item.sig.inputs.iter();
-                                            inputs.nth(inner_error.parameter_index).cloned()
-                                        } else {
-                                            panic!(
-                                                "Could not parse as a function or method:\n{span_contents}"
-                                            )
-                                        }
-                                    }
-                                    _ => unreachable!(),
-                                }
-                                    .unwrap();
-                                let s = convert_proc_macro_span(
-                                    span_contents,
-                                    match input {
-                                        syn::FnArg::Typed(typed) => typed.ty.span(),
-                                        syn::FnArg::Receiver(r) => r.span(),
-                                    },
-                                );
-                                let label = miette::SourceSpan::new(
-                                    // We must shift the offset forward because it's the
-                                    // offset from the beginning of the file slice that
-                                    // we deserialized, instead of the entire file
-                                    (s.offset() + span.offset()).into(),
-                                    s.len().into(),
-                                )
-                                .labeled("I don't know how handle this parameter".into());
-                                let source_path = definition_span.filename.to_str().unwrap();
-                                Some(AnnotatedSnippet::new(
-                                    NamedSource::new(source_path, source_contents),
-                                    label,
-                                ))
-                            }
-                            Err(e) => {
-                                tracing::warn!("Could not read source file: {:?}", e);
-                                None
-                            }
-                        }
+                let definition_snippet = 
+                    if let Some(def) = CallableDefinition::compute_from_item(&inner_error.callable_item, package_graph) {
+                        let mut inputs = def.sig.inputs.iter();
+                        let input = inputs.nth(inner_error.parameter_index).cloned().unwrap();
+                        let local_span =  match input {
+                            syn::FnArg::Typed(typed) => typed.ty.span(),
+                            syn::FnArg::Receiver(r) => r.span(),
+                        };
+                            let label = def.convert_local_span(local_span).labeled("I don't know how handle this parameter".into());
+                            Some(AnnotatedSnippet::new(
+                                def.named_source(),
+                                label,
+                            ))
                     } else {
                         None
-                    }
-                };
+                    };
                 let label = source
                     .as_ref()
                     .map(|source| {
@@ -577,65 +529,18 @@ impl UserComponentDb {
             }
             CallableResolutionError::OutputTypeResolutionError(ref inner_error) => {
                 let annotated_snippet = {
-                    if let Some(definition_span) = &inner_error.callable_item.span {
-                        match diagnostic::read_source_file(
-                            &definition_span.filename,
-                            &package_graph.workspace(),
-                        ) {
-                            Ok(source_contents) => {
-                                let span = convert_rustdoc_span(
-                                    &source_contents,
-                                    definition_span.to_owned(),
-                                );
-                                let span_contents = source_contents
-                                    [span.offset()..(span.offset() + span.len())]
-                                    .to_string();
-                                let output = match &inner_error.callable_item.inner {
-                                    rustdoc_types::ItemEnum::Function(_) => {
-                                        if let Ok(item) =
-                                            syn::parse_str::<syn::ItemFn>(&span_contents)
-                                        {
-                                            item.sig.output
-                                        } else if let Ok(item) =
-                                            syn::parse_str::<syn::ImplItemFn>(&span_contents)
-                                        {
-                                            item.sig.output
-                                        } else {
-                                            panic!(
-                                                "Could not parse as a function or method:\n{span_contents}"
-                                            )
-                                        }
-                                    }
-                                    _ => unreachable!(),
-                                };
-                                match output {
-                                    syn::ReturnType::Default => None,
-                                    syn::ReturnType::Type(_, type_) => Some(type_.span()),
-                                }
-                                .map(|s| {
-                                    let s = convert_proc_macro_span(&span_contents, s);
-                                    let label = miette::SourceSpan::new(
-                                        // We must shift the offset forward because it's the
-                                        // offset from the beginning of the file slice that
-                                        // we deserialized, instead of the entire file
-                                        (s.offset() + span.offset()).into(),
-                                        s.len().into(),
-                                    )
-                                    .labeled("The output type that I can't handle".into());
-                                    AnnotatedSnippet::new(
-                                        NamedSource::new(
-                                            definition_span.filename.to_str().unwrap(),
-                                            source_contents,
-                                        ),
-                                        label,
-                                    )
-                                })
-                            }
-                            Err(e) => {
-                                tracing::warn!("Could not read source file: {:?}", e);
-                                None
-                            }
+                    if let Some(def) = CallableDefinition::compute_from_item(&inner_error.callable_item, package_graph) {
+                        match &def.sig.output {
+                            syn::ReturnType::Default => None,
+                            syn::ReturnType::Type(_, type_) => Some(type_.span()),
                         }
+                        .map(|s| {
+                            let label = def.convert_local_span(s).labeled("The output type that I can't handle".into());
+                            AnnotatedSnippet::new(
+                                def.named_source(),
+                                label,
+                            )
+                        })
                     } else {
                         None
                     }

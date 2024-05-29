@@ -17,6 +17,8 @@ pub struct RawIdentifiers {
     pub crate_name: &'static str,
     #[doc(hidden)]
     pub module_path: &'static str,
+    #[doc(hidden)]
+    pub macro_name: &'static str,
 }
 
 // The `pavex_ide_hint`-let binding is a hack to "nudge"
@@ -33,40 +35,65 @@ pub struct RawIdentifiers {
 // compile if the callable is generic, because the compiler would
 // demand to know the type of each generic parameter without a default.
 #[macro_export]
-/// A macro to convert an [unambiguous path](https://pavex.dev/docs/guide/dependency_injection/cookbook/#unambiguous-paths)
-/// into [`RawIdentifiers`].
+/// Convert an [unambiguous callable path](https://pavex.dev/docs/guide/dependency_injection/cookbook/#unambiguous-paths)
+/// into [`RawIdentifiers`].  
+///
+/// `f!` is a short-hand for "function-like". It's the macro used to specify a function or a method
+/// to be used as a constructor, request handler, etc.  
+/// Use [`t!`](crate::t), instead, to specify a type when invoking [`Blueprint::state_input`].
 ///
 /// # Guide
 ///
 /// In the ["Cookbook"](https://pavex.dev/docs/guide/dependency_injection/cookbook/)
 /// section of Pavex's guide on [dependency injection](https://pavex.dev/docs/guide/dependency_injection/)
 /// you can find a collection of reference examples on how to use `f!` macro to register different kinds of
-/// callables (functions, methods, trait methods, etc.) and types with a [`Blueprint`].
+/// callables (functions, methods, trait methods, etc.) with a [`Blueprint`].
 ///
 /// [`Blueprint`]: crate::blueprint::Blueprint
+/// [`Blueprint::state_input`]: crate::blueprint::Blueprint::state_input
 macro_rules! f {
+    ($p:expr) => {{
+        #[cfg(pavex_ide_hint)]
+        let x = $p();
+
+        $crate::blueprint::reflection::RawIdentifiers {
+            import_path: stringify!($p),
+            crate_name: ::std::env!("CARGO_PKG_NAME", "Failed to load the CARGO_PKG_NAME environment variable. Are you using a custom build system?"),
+            module_path: module_path!(),
+            macro_name: "f",
+        }
+    }};
+}
+
+#[macro_export]
+/// Convert an [unambiguous type path](https://pavex.dev/docs/guide/dependency_injection/cookbook/#unambiguous-paths)
+/// into [`RawIdentifiers`].  
+///
+/// `t!` is a short-hand for "type". It's the macro used by [`Blueprint::state_input`].  
+/// You should use [`f!`](f) if you're invoking other methods on [`Blueprint`].
+///
+/// # Guide
+///
+/// In the ["Cookbook"](https://pavex.dev/docs/guide/dependency_injection/cookbook/)
+/// section of Pavex's guide on [dependency injection](https://pavex.dev/docs/guide/dependency_injection/)
+/// you can find a collection of reference examples on how to use `t!` macro to register different kinds of
+/// types (generic, with lifetimes, etc.) as state inputs with a [`Blueprint`].
+///
+/// [`Blueprint`]: crate::blueprint::Blueprint
+/// [`Blueprint::state_input`]: crate::blueprint::Blueprint::state_input
+macro_rules! t {
     // This branch is used by `Blueprint::state_input`, where you need to specifically
     // pass a type path to the macro.
     // The `ty` designator is more restrictive than the `expr` designator, so it's
     // the first one we try to match.
     ($t:ty) => {{
         #[cfg(pavex_ide_hint)]
-        const P:$t = ();
+        const P: $t;
         $crate::blueprint::reflection::RawIdentifiers {
             import_path: stringify!($t),
             crate_name: ::std::env!("CARGO_PKG_NAME", "Failed to load the CARGO_PKG_NAME environment variable. Are you using a custom build system?"),
-            module_path: module_path!()
-        }
-    }};
-    // This branch is used in most cases, where you are instead specifying the path
-    // to a callable.
-    ($p:expr) => {{
-        #[cfg(pavex_ide_hint)]
-        const P:() = $p;
-        $crate::blueprint::reflection::RawIdentifiers {
-            import_path: stringify!($p),
-            crate_name: ::std::env!("CARGO_PKG_NAME", "Failed to load the CARGO_PKG_NAME environment variable. Are you using a custom build system?"),
-            module_path: module_path!()
+            module_path: module_path!(),
+            macro_name: "t",
         }
     }};
 }

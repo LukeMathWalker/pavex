@@ -85,6 +85,8 @@ impl<'a> Constructor<'a> {
             });
         }
 
+        dbg!(&c);
+
         let output_unassigned_generic_parameters = output_type.unassigned_generic_type_parameters();
         let mut free_parameters = IndexSet::new();
         for input in c.input_types().as_ref() {

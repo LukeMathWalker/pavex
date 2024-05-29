@@ -78,16 +78,22 @@ impl CallPathLifetime {
 }
 
 impl CallPath {
-    pub fn parse(callable_identifiers: &RawIdentifiers) -> Result<Self, InvalidCallPath> {
-        if let Ok(callable_path) = syn::parse_str::<ExprPath>(callable_identifiers.raw_path()) {
-            return Self::parse_from_path(callable_path.path, callable_path.qself);
-        }
+    pub fn parse_type_path(identifiers: &RawIdentifiers) -> Result<Self, InvalidCallPath> {
         let callable_path: TypePath =
-            syn::parse_str(callable_identifiers.raw_path()).map_err(|e| InvalidCallPath {
-                raw_identifiers: callable_identifiers.to_owned(),
+            syn::parse_str(identifiers.raw_path()).map_err(|e| InvalidCallPath {
+                raw_identifiers: identifiers.to_owned(),
                 parsing_error: e,
             })?;
         Self::parse_from_path(callable_path.path, None)
+    }
+
+    pub fn parse_callable_path(identifiers: &RawIdentifiers) -> Result<Self, InvalidCallPath> {
+        let expr =
+            syn::parse_str::<ExprPath>(identifiers.raw_path()).map_err(|e| InvalidCallPath {
+                raw_identifiers: identifiers.to_owned(),
+                parsing_error: e,
+            })?;
+        Self::parse_from_path(expr.path, expr.qself)
     }
 
     fn parse_qself(qself: syn::QSelf) -> Result<CallPathQualifiedSelf, InvalidCallPath> {
