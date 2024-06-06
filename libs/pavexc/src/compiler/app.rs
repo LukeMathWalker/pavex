@@ -17,27 +17,24 @@ use pavex_bp_schema::{Blueprint, Lifecycle};
 use crate::compiler::analyses::call_graph::{
     application_state_call_graph, ApplicationStateCallGraph, RawCallGraphExt,
 };
-use crate::compiler::analyses::components::HydratedComponent;
+use crate::compiler::analyses::cloning::clonables_can_be_cloned;
 use crate::compiler::analyses::components::{ComponentDb, ComponentId};
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::constructibles::ConstructibleDb;
 use crate::compiler::analyses::framework_items::FrameworkItemDb;
 use crate::compiler::analyses::processing_pipeline::RequestHandlerPipeline;
 use crate::compiler::analyses::router::Router;
+use crate::compiler::analyses::singletons::{
+    runtime_singletons_are_thread_safe, runtime_singletons_can_be_cloned_if_needed,
+};
 use crate::compiler::analyses::state_inputs::StateInputDb;
 use crate::compiler::analyses::unused::detect_unused;
 use crate::compiler::analyses::user_components::UserComponentDb;
-use crate::compiler::computation::Computation;
 use crate::compiler::generated_app::GeneratedApp;
 use crate::compiler::resolvers::CallableResolutionError;
-use crate::compiler::traits::{assert_trait_is_implemented, MissingTraitImplementationError};
-use crate::compiler::utils::process_framework_path;
 use crate::compiler::{codegen, path_parameter_validation};
-use crate::diagnostic::CompilerDiagnostic;
-use crate::diagnostic::{self, CallableType, OptionalSourceSpanExt};
 use crate::language::ResolvedType;
 use crate::rustdoc::CrateCollection;
-use crate::try_source;
 use crate::utils::anyhow2miette;
 
 pub(crate) const GENERATED_APP_PACKAGE_ID: &str = "crate";
@@ -118,6 +115,13 @@ impl App {
             &framework_item_db,
             &mut diagnostics,
         );
+        clonables_can_be_cloned(
+            &component_db,
+            &computation_db,
+            &package_graph,
+            &krate_collection,
+            &mut diagnostics,
+        );
         exit_on_errors!(diagnostics);
         let handler_id2pipeline = {
             let handler_ids: BTreeSet<_> = router
@@ -164,7 +168,7 @@ impl App {
                 &component_db,
             );
 
-        verify_singletons(
+        runtime_singletons_are_thread_safe(
             &runtime_singletons,
             &component_db,
             &computation_db,
@@ -172,6 +176,15 @@ impl App {
             &krate_collection,
             &mut diagnostics,
         );
+        runtime_singletons_can_be_cloned_if_needed(
+            handler_id2pipeline.values(),
+            &component_db,
+            &computation_db,
+            &package_graph,
+            &krate_collection,
+            &mut diagnostics,
+        );
+
         let runtime_singleton_bindings = runtime_singletons
             .iter()
             .enumerate()
@@ -473,87 +486,4 @@ fn codegen_deps(package_graph: &PackageGraph) -> HashMap<String, guppy::PackageI
     name2id.insert("pavex".to_string(), pavex.clone());
     name2id.insert("thiserror".to_string(), thiserror.clone());
     name2id
-}
-
-/// Verify that all singletons needed at runtime implement `Send`, `Sync` and `Clone`.
-/// This is required since Pavex runs on a multi-threaded `tokio` runtime.
-#[tracing::instrument(name = "Verify trait implementations for singletons", skip_all)]
-fn verify_singletons(
-    runtime_singletons: &IndexSet<(ResolvedType, ComponentId)>,
-    component_db: &ComponentDb,
-    computation_db: &ComputationDb,
-    package_graph: &PackageGraph,
-    krate_collection: &CrateCollection,
-    diagnostics: &mut Vec<miette::Error>,
-) {
-    fn missing_trait_implementation(
-        e: MissingTraitImplementationError,
-        component_id: ComponentId,
-        package_graph: &PackageGraph,
-        component_db: &ComponentDb,
-        computation_db: &ComputationDb,
-        diagnostics: &mut Vec<miette::Error>,
-    ) {
-        let HydratedComponent::Constructor(c) =
-            component_db.hydrated_component(component_id, computation_db)
-        else {
-            unreachable!()
-        };
-        let component_id = match c.0 {
-            Computation::Callable(_) => component_id,
-            Computation::MatchResult(_) => component_db.fallible_id(component_id),
-            Computation::PrebuiltType(_) => component_db.derived_from(&component_id).unwrap(),
-        };
-        let user_component_id = component_db.user_component_id(component_id).unwrap();
-        let user_component_db = &component_db.user_component_db();
-        let user_component = &user_component_db[user_component_id];
-        let component_kind = user_component.callable_type();
-        let location = user_component_db.get_location(user_component_id);
-        let source = try_source!(location, package_graph, diagnostics);
-        let label = source
-            .as_ref()
-            .map(|source| {
-                diagnostic::get_f_macro_invocation_span(&source, location)
-                    .labeled(format!("The {component_kind} was registered here"))
-            })
-            .flatten();
-        let help = if component_kind == CallableType::StateInput {
-            "All state inputs that are needed at runtime must implement the `Send`, `Sync` and `Clone` traits.\n\
-            Pavex runs on a multi-threaded HTTP server and the application state is shared \
-            across all worker threads."
-                 .into()
-        } else {
-            "All singletons must implement the `Send`, `Sync` and `Clone` traits.\n\
-            Pavex runs on a multi-threaded HTTP server and the application state is shared \
-            across all worker threads."
-                .into()
-        };
-        let diagnostic = CompilerDiagnostic::builder(e)
-            .optional_source(source)
-            .optional_label(label)
-            .help(help)
-            .build();
-        diagnostics.push(diagnostic.into());
-    }
-
-    let send = process_framework_path("core::marker::Send", package_graph, krate_collection);
-    let sync = process_framework_path("core::marker::Sync", package_graph, krate_collection);
-    let clone = process_framework_path("core::clone::Clone", package_graph, krate_collection);
-    for (singleton_type, component_id) in runtime_singletons {
-        for trait_ in [&send, &sync, &clone] {
-            let ResolvedType::ResolvedPath(trait_) = trait_ else {
-                unreachable!()
-            };
-            if let Err(e) = assert_trait_is_implemented(krate_collection, singleton_type, trait_) {
-                missing_trait_implementation(
-                    e,
-                    *component_id,
-                    package_graph,
-                    component_db,
-                    computation_db,
-                    diagnostics,
-                );
-            }
-        }
-    }
 }

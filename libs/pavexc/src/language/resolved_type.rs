@@ -441,6 +441,81 @@ impl ResolvedType {
             ResolvedType::ScalarPrimitive(_) | ResolvedType::Generic(_) => {}
         }
     }
+
+    pub(crate) fn display_for_error(&self) -> String {
+        let mut s = String::new();
+        self._display_for_error(&mut s);
+        s
+    }
+
+    fn _display_for_error<W: std::fmt::Write>(&self, buffer: &mut W) {
+        match self {
+            ResolvedType::ResolvedPath(t) => {
+                write!(buffer, "{}", t.base_type.join("::")).unwrap();
+                if !t.generic_arguments.is_empty() {
+                    write!(buffer, "<").unwrap();
+                    let mut arguments = t.generic_arguments.iter().peekable();
+                    while let Some(argument) = arguments.next() {
+                        match argument {
+                            GenericArgument::TypeParameter(t) => {
+                                t._display_for_error(buffer);
+                            }
+                            GenericArgument::Lifetime(l) => match l {
+                                GenericLifetimeParameter::Static => {
+                                    write!(buffer, "'static").unwrap();
+                                }
+                                GenericLifetimeParameter::Named(l) => {
+                                    write!(buffer, "'{l}").unwrap();
+                                }
+                            },
+                        }
+                        if arguments.peek().is_some() {
+                            write!(buffer, ", ").unwrap();
+                        }
+                    }
+                    write!(buffer, ">").unwrap();
+                }
+            }
+            ResolvedType::Reference(r) => {
+                write!(buffer, "&").unwrap();
+                match &r.lifetime {
+                    Lifetime::Static => {
+                        write!(buffer, "'static ").unwrap();
+                    }
+                    Lifetime::Named(l) => {
+                        write!(buffer, "'{l} ").unwrap();
+                    }
+                    Lifetime::Elided => {}
+                }
+                if r.is_mutable {
+                    write!(buffer, "mut ").unwrap();
+                }
+                r.inner._display_for_error(buffer);
+            }
+            ResolvedType::Tuple(t) => {
+                write!(buffer, "(").unwrap();
+                let mut elements = t.elements.iter().peekable();
+                while let Some(element) = elements.next() {
+                    element._display_for_error(buffer);
+                    if elements.peek().is_some() {
+                        write!(buffer, ", ").unwrap();
+                    }
+                }
+                write!(buffer, ")").unwrap();
+            }
+            ResolvedType::ScalarPrimitive(s) => {
+                write!(buffer, "{s}").unwrap();
+            }
+            ResolvedType::Slice(s) => {
+                write!(buffer, "[").unwrap();
+                s.element_type._display_for_error(buffer);
+                write!(buffer, "]").unwrap();
+            }
+            ResolvedType::Generic(t) => {
+                write!(buffer, "{}", t.name).unwrap();
+            }
+        }
+    }
 }
 
 impl PathType {

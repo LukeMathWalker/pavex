@@ -73,10 +73,7 @@ async fn route_request(
         0u32 => {
             match &request_head.method {
                 &pavex::http::Method::GET => {
-                    route_0::entrypoint(
-                            server_state.application_state.s0.clone(),
-                            request_head,
-                        )
+                    route_0::entrypoint(request_head, &server_state.application_state.s0)
                         .await
                 }
                 _ => {
@@ -92,23 +89,23 @@ async fn route_request(
     }
 }
 pub mod route_0 {
-    pub async fn entrypoint(
-        s_0: app::HttpClient,
-        s_1: pavex::request::RequestHead,
+    pub async fn entrypoint<'a>(
+        s_0: pavex::request::RequestHead,
+        s_1: &'a app::HttpClient,
     ) -> pavex::response::Response {
         let response = wrapping_0(s_0, s_1).await;
         response
     }
-    async fn stage_1(
-        s_0: app::HttpClient,
-        s_1: pavex::request::RequestHead,
+    async fn stage_1<'a>(
+        s_0: pavex::request::RequestHead,
+        s_1: &'a app::HttpClient,
     ) -> pavex::response::Response {
         let response = wrapping_1(s_0, s_1).await;
         response
     }
-    async fn stage_2(
-        s_0: app::HttpClient,
-        s_1: pavex::request::RequestHead,
+    async fn stage_2<'a>(
+        s_0: pavex::request::RequestHead,
+        s_1: &'a app::HttpClient,
     ) -> pavex::response::Response {
         if let Some(response) = pre_processing_0().await.into_response() {
             return response;
@@ -118,8 +115,8 @@ pub mod route_0 {
         response
     }
     async fn wrapping_0(
-        v0: app::HttpClient,
-        v1: pavex::request::RequestHead,
+        v0: pavex::request::RequestHead,
+        v1: &app::HttpClient,
     ) -> pavex::response::Response {
         let v2 = crate::route_0::Next0 {
             s_0: v0,
@@ -131,8 +128,8 @@ pub mod route_0 {
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
     }
     async fn wrapping_1(
-        v0: app::HttpClient,
-        v1: pavex::request::RequestHead,
+        v0: pavex::request::RequestHead,
+        v1: &app::HttpClient,
     ) -> pavex::response::Response {
         let v2 = crate::route_0::Next1 {
             s_0: v0,
@@ -171,8 +168,8 @@ pub mod route_0 {
         v1
     }
     async fn handler(
-        v0: app::HttpClient,
-        v1: pavex::request::RequestHead,
+        v0: pavex::request::RequestHead,
+        v1: &app::HttpClient,
     ) -> pavex::response::Response {
         let v2 = match app::logger() {
             Ok(ok) => ok,
@@ -185,7 +182,7 @@ pub mod route_0 {
                 };
             }
         };
-        let v3 = app::extract_path(v1);
+        let v3 = app::extract_path(v0);
         let v4 = match v3 {
             Ok(ok) => ok,
             Err(v4) => {
@@ -208,7 +205,7 @@ pub mod route_0 {
                 };
             }
         };
-        let v5 = app::request_handler(v4, v2, v0);
+        let v5 = app::request_handler(v4, v2, v1);
         let v6 = match v5 {
             Ok(ok) => ok,
             Err(v6) => {
@@ -239,15 +236,15 @@ pub mod route_0 {
         };
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
     }
-    struct Next0<T>
+    struct Next0<'a, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
-        s_0: app::HttpClient,
-        s_1: pavex::request::RequestHead,
-        next: fn(app::HttpClient, pavex::request::RequestHead) -> T,
+        s_0: pavex::request::RequestHead,
+        s_1: &'a app::HttpClient,
+        next: fn(pavex::request::RequestHead, &'a app::HttpClient) -> T,
     }
-    impl<T> std::future::IntoFuture for Next0<T>
+    impl<'a, T> std::future::IntoFuture for Next0<'a, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
@@ -257,15 +254,15 @@ pub mod route_0 {
             (self.next)(self.s_0, self.s_1)
         }
     }
-    struct Next1<T>
+    struct Next1<'a, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
-        s_0: app::HttpClient,
-        s_1: pavex::request::RequestHead,
-        next: fn(app::HttpClient, pavex::request::RequestHead) -> T,
+        s_0: pavex::request::RequestHead,
+        s_1: &'a app::HttpClient,
+        next: fn(pavex::request::RequestHead, &'a app::HttpClient) -> T,
     }
-    impl<T> std::future::IntoFuture for Next1<T>
+    impl<'a, T> std::future::IntoFuture for Next1<'a, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {

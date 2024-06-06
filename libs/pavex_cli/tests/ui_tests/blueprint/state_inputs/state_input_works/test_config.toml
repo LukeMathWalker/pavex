@@ -1,4 +1,4 @@
 description = """You can inject a missing type as a state input."""
 
 [expectations]
-codegen = "fail"
+codegen = "pass"

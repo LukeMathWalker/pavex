@@ -138,6 +138,7 @@ impl Blueprint {
     pub fn state_input(&mut self, type_: RawIdentifiers) -> RegisteredStateInput {
         let registered = StateInput {
             input: raw_identifiers2type(type_),
+            cloning_strategy: None,
         };
         let component_id = self.push_component(registered);
         RegisteredStateInput {
@@ -150,7 +151,10 @@ impl Blueprint {
         &mut self,
         i: super::state::StateInput,
     ) -> RegisteredStateInput {
-        let i = StateInput { input: i.type_ };
+        let i = StateInput {
+            input: i.type_,
+            cloning_strategy: None,
+        };
         let component_id = self.push_component(i);
         RegisteredStateInput {
             component_id,

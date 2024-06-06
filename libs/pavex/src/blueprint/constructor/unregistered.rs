@@ -79,7 +79,7 @@ impl Constructor {
 
     /// Set the cloning strategy for the output type returned by this constructor.
     ///
-    /// Check out the documentation of [`RegisteredConstructor::cloning`] for more details.
+    /// Check out the documentation of [`CloningStrategy`] for more details.
     pub fn cloning(mut self, cloning_strategy: CloningStrategy) -> Self {
         self.cloning_strategy = Some(cloning_strategy);
         self

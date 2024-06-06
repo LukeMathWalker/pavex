@@ -363,8 +363,6 @@ digraph "* /top_level - 1" {
 
 digraph app_state {
     0 [ label = "crate::ApplicationState(app::Spy) -> crate::ApplicationState"]
-    1 [ label = "app::Spy::new(app::SpyState) -> app::Spy"]
-    2 [ label = "app::SpyState"]
+    1 [ label = "app::Spy"]
     1 -> 0 [ ]
-    2 -> 1 [ ]
 }

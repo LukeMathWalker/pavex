@@ -17,14 +17,6 @@ impl NonSendSingleton {
     }
 }
 
-pub struct NonCloneSingleton;
-
-impl NonCloneSingleton {
-    pub fn new() -> NonCloneSingleton {
-        todo!()
-    }
-}
-
 pub struct NonSyncSingleton(std::cell::Cell<()>);
 
 impl Clone for NonSyncSingleton {
@@ -39,19 +31,14 @@ impl NonSyncSingleton {
     }
 }
 
-pub fn handler(
-    _s: NonSendSingleton,
-    _a: NonSyncSingleton,
-    _c: NonCloneSingleton,
-) -> pavex::response::Response {
+pub fn handler(_s: &NonSendSingleton, _a: &NonSyncSingleton) -> pavex::response::Response {
     todo!()
 }
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.constructor(f!(crate::NonSendSingleton::new), Lifecycle::Singleton);
-    bp.constructor(f!(crate::NonCloneSingleton::new), Lifecycle::Singleton);
-    bp.constructor(f!(crate::NonSyncSingleton::new), Lifecycle::Singleton);
+    bp.singleton(f!(crate::NonSendSingleton::new));
+    bp.singleton(f!(crate::NonSyncSingleton::new));
     // The handler is needed because bounds are only checked for singletons
     // that are used at runtime
     bp.route(GET, "/home", f!(crate::handler));

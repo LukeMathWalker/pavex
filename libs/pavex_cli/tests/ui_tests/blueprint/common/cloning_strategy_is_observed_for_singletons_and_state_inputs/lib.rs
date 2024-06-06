@@ -6,21 +6,28 @@ use pavex::{f, t};
 pub struct A;
 
 #[derive(Clone)]
-pub struct B<T>(T);
+pub struct B;
 
 #[derive(Clone)]
-pub struct C<'a>(&'a str);
+pub struct C;
 
-pub fn handler(a: &A, b: &B<String>, c: C<'static>) -> Response {
+pub fn singleton() -> A {
+    todo!()
+}
+
+pub fn singleton2(b: B) -> C {
+    todo!()
+}
+
+pub fn handler(a: A, b: B, c: C) -> Response {
     todo!()
 }
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.state_input(t!(crate::A));
-    bp.state_input(t!(crate::B<std::string::String>));
-    bp.state_input(t!(crate::C<'static>))
-        .cloning(CloningStrategy::CloneIfNecessary);
+    bp.state_input(t!(crate::B));
+    bp.singleton(f!(crate::singleton));
+    bp.singleton(f!(crate::singleton2));
     bp.route(GET, "/", f!(crate::handler));
     bp
 }

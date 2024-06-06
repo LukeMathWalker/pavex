@@ -49,10 +49,10 @@ pub(crate) struct ComponentDb {
     match_id2fallible_id: HashMap<ComponentId, ComponentId>,
     id2transformer_ids: HashMap<ComponentId, IndexSet<ComponentId>>,
     id2lifecycle: HashMap<ComponentId, Lifecycle>,
-    /// For each constructor component, determine if it can be cloned or not.
+    /// For each constructible component, determine if it can be cloned or not.
     ///
-    /// Invariants: there is an entry for every constructor.
-    constructor_id2cloning_strategy: HashMap<ComponentId, CloningStrategy>,
+    /// Invariants: there is an entry for every constructor and state input.
+    id2cloning_strategy: HashMap<ComponentId, CloningStrategy>,
     /// Associate each request handler with the ordered list of middlewares that wrap around it.
     ///
     /// Invariants: there is an entry for every single request handler.
@@ -169,7 +169,7 @@ impl ComponentDb {
             match_id2fallible_id: Default::default(),
             id2transformer_ids: Default::default(),
             id2lifecycle: Default::default(),
-            constructor_id2cloning_strategy: Default::default(),
+            id2cloning_strategy: Default::default(),
             handler_id2middleware_ids: Default::default(),
             handler_id2error_observer_ids: Default::default(),
             transformer_id2info: Default::default(),
@@ -391,7 +391,7 @@ impl ComponentDb {
                         .user_component_db
                         .get_cloning_strategy(user_component_id)
                         .unwrap();
-                    self.constructor_id2cloning_strategy
+                    self.id2cloning_strategy
                         .insert(id, cloning_strategy.to_owned());
                 }
                 SyntheticConstructor {
@@ -399,8 +399,7 @@ impl ComponentDb {
                     derived_from,
                     ..
                 } => {
-                    self.constructor_id2cloning_strategy
-                        .insert(id, cloning_strategy);
+                    self.id2cloning_strategy.insert(id, cloning_strategy);
                     if let Some(derived_from) = derived_from {
                         self.derived2user_registered.insert(
                             id,
@@ -451,6 +450,12 @@ impl ComponentDb {
                 UserStateInput { user_component_id } => {
                     let user_component = &self.user_component_db[user_component_id];
                     let ty_ = &self.state_input_db[user_component_id];
+                    let cloning_strategy = self
+                        .user_component_db
+                        .get_cloning_strategy(user_component_id)
+                        .unwrap();
+                    self.id2cloning_strategy
+                        .insert(id, cloning_strategy.to_owned());
                     self.get_or_intern(
                         UnregisteredComponent::SyntheticConstructor {
                             computation_id: computation_db.get_or_intern(Constructor(
@@ -458,7 +463,7 @@ impl ComponentDb {
                             )),
                             scope_id: user_component.scope_id(),
                             lifecycle: self.user_component_db.get_lifecycle(user_component_id),
-                            cloning_strategy: CloningStrategy::NeverClone,
+                            cloning_strategy: cloning_strategy.to_owned(),
                             derived_from: Some(id),
                         },
                         computation_db,
@@ -498,7 +503,7 @@ impl ComponentDb {
                         computation_id: ok_computation_id,
                         scope_id: self.scope_id(id),
                         lifecycle: self.lifecycle(id),
-                        cloning_strategy: self.constructor_id2cloning_strategy[&id],
+                        cloning_strategy: self.id2cloning_strategy[&id],
                         derived_from: Some(id),
                     },
                     computation_db,
@@ -1411,7 +1416,7 @@ impl ComponentDb {
     /// Given the id of a component, return the corresponding [`CloningStrategy`].
     /// It panics if called for a non-constructor component.
     pub fn cloning_strategy(&self, component_id: ComponentId) -> CloningStrategy {
-        self.constructor_id2cloning_strategy[&component_id]
+        self.id2cloning_strategy[&component_id]
     }
 
     /// Iterate over all constructors in the component database, either user-provided or synthetic.
@@ -1696,7 +1701,7 @@ impl ComponentDb {
             .into_owned()
         {
             HydratedComponent::Constructor(constructor) => {
-                let cloning_strategy = self.constructor_id2cloning_strategy[&unbound_root_id];
+                let cloning_strategy = self.id2cloning_strategy[&unbound_root_id];
                 let bound_computation = constructor
                     .0
                     .bind_generic_type_parameters(bindings)

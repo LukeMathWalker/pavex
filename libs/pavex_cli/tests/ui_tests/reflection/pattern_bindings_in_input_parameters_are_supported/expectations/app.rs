@@ -56,7 +56,7 @@ async fn route_request(
         0u32 => {
             match &request_head.method {
                 &pavex::http::Method::GET => {
-                    route_0::entrypoint(server_state.application_state.s0.clone()).await
+                    route_0::entrypoint(&server_state.application_state.s0).await
                 }
                 _ => {
                     let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
@@ -71,15 +71,15 @@ async fn route_request(
     }
 }
 pub mod route_0 {
-    pub async fn entrypoint(s_0: app::Streamer) -> pavex::response::Response {
+    pub async fn entrypoint<'a>(s_0: &'a app::Streamer) -> pavex::response::Response {
         let response = wrapping_0(s_0).await;
         response
     }
-    async fn stage_1(s_0: app::Streamer) -> pavex::response::Response {
+    async fn stage_1<'a>(s_0: &'a app::Streamer) -> pavex::response::Response {
         let response = handler(s_0).await;
         response
     }
-    async fn wrapping_0(v0: app::Streamer) -> pavex::response::Response {
+    async fn wrapping_0(v0: &app::Streamer) -> pavex::response::Response {
         let v1 = crate::route_0::Next0 {
             s_0: v0,
             next: stage_1,
@@ -88,18 +88,18 @@ pub mod route_0 {
         let v3 = pavex::middleware::wrap_noop(v2).await;
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
     }
-    async fn handler(v0: app::Streamer) -> pavex::response::Response {
+    async fn handler(v0: &app::Streamer) -> pavex::response::Response {
         let v1 = app::stream_file(v0);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
     }
-    struct Next0<T>
+    struct Next0<'a, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
-        s_0: app::Streamer,
-        next: fn(app::Streamer) -> T,
+        s_0: &'a app::Streamer,
+        next: fn(&'a app::Streamer) -> T,
     }
-    impl<T> std::future::IntoFuture for Next0<T>
+    impl<'a, T> std::future::IntoFuture for Next0<'a, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {

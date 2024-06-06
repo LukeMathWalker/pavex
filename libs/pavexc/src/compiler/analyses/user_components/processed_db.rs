@@ -53,10 +53,10 @@ pub struct UserComponentDb {
     /// Associate each user-registered component with its lint overrides, if any.
     /// If there is no entry for a component, there are no overrides.
     id2lints: HashMap<UserComponentId, BTreeMap<Lint, LintSetting>>,
-    /// For each constructor component, determine if it can be cloned or not.
+    /// For each constructible component, determine if it can be cloned or not.
     ///
-    /// Invariants: there is an entry for every constructor.
-    constructor_id2cloning_strategy: HashMap<UserComponentId, CloningStrategy>,
+    /// Invariants: there is an entry for every constructor and state input.
+    id2cloning_strategy: HashMap<UserComponentId, CloningStrategy>,
     /// Associate each request handler with the ordered list of middlewares that wrap around it.
     ///
     /// Invariants: there is an entry for every single request handler.
@@ -116,7 +116,7 @@ impl UserComponentDb {
             component_interner,
             id2locations,
             id2lints,
-            constructor_id2cloning_strategy,
+            id2cloning_strategy,
             id2lifecycle,
             identifiers_interner,
             handler_id2middleware_ids,
@@ -130,7 +130,7 @@ impl UserComponentDb {
                 component_interner,
                 identifiers_interner,
                 id2locations,
-                constructor_id2cloning_strategy,
+                id2cloning_strategy,
                 id2lifecycle,
                 handler_id2middleware_ids,
                 handler_id2error_observer_ids,
@@ -235,9 +235,10 @@ impl UserComponentDb {
     }
 
     /// Return the cloning strategy of the component with the given id.
-    /// This is going to be `Some(..)` for constructor components, and `None` for all other components.
+    /// This is going to be `Some(..)` for constructor and state input components, 
+    /// and `None` for all other components.
     pub fn get_cloning_strategy(&self, id: UserComponentId) -> Option<&CloningStrategy> {
-        self.constructor_id2cloning_strategy.get(&id)
+        self.id2cloning_strategy.get(&id)
     }
 
     /// Return the scope tree that was built from the application blueprint.

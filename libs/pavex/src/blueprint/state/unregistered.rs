@@ -1,5 +1,6 @@
 use pavex_bp_schema::Type;
 
+use crate::blueprint::constructor::CloningStrategy;
 use crate::blueprint::conversions::raw_identifiers2type;
 use crate::blueprint::reflection::RawIdentifiers;
 use crate::blueprint::state::RegisteredStateInput;
@@ -20,6 +21,7 @@ use crate::blueprint::Blueprint;
 #[derive(Clone, Debug)]
 pub struct StateInput {
     pub(in crate::blueprint) type_: Type,
+    pub(in crate::blueprint) cloning_strategy: Option<CloningStrategy>,
 }
 
 impl StateInput {
@@ -31,7 +33,16 @@ impl StateInput {
     pub fn new(type_: RawIdentifiers) -> Self {
         Self {
             type_: raw_identifiers2type(type_),
+            cloning_strategy: None,
         }
+    }
+
+    /// Set the cloning strategy for the state input type.
+    ///
+    /// Check out the documentation of [`CloningStrategy`] for more details.
+    pub fn cloning(mut self, cloning_strategy: CloningStrategy) -> Self {
+        self.cloning_strategy = Some(cloning_strategy);
+        self
     }
 
     /// Register this state input with a [`Blueprint`].

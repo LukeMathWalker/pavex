@@ -66,7 +66,7 @@ impl<'a> RegisteredConstructor<'a> {
     ///
     /// By default,
     /// Pavex will **never** try to clone the output type returned by a constructor.  
-    /// If the output type implements [`Clone`], you change the default by setting the cloning strategy
+    /// If the output type implements [`Clone`], you can change the default by setting the cloning strategy
     /// to [`CloningStrategy::CloneIfNecessary`]: Pavex will clone the output type if
     /// it's necessary to generate code that satisfies Rust's borrow checker.
     pub fn cloning(mut self, strategy: CloningStrategy) -> Self {

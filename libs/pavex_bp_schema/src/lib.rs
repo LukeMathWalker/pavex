@@ -119,6 +119,8 @@ pub struct ErrorObserver {
 pub struct StateInput {
     /// The type.
     pub input: Type,
+    /// The strategy dictating when the state input type can be cloned.
+    pub cloning_strategy: Option<CloningStrategy>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]

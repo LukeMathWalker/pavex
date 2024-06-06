@@ -183,10 +183,10 @@ pub(super) struct RawUserComponentDb {
     /// Associate each user-registered component with its lint overrides, if any.
     /// If there is no entry for a component, there are no overrides.
     pub(super) id2lints: HashMap<UserComponentId, BTreeMap<Lint, LintSetting>>,
-    /// For each constructor component, determine if it can be cloned or not.
+    /// For each constructor and state input, determine if it can be cloned or not.
     ///
-    /// Invariants: there is an entry for every constructor.
-    pub(super) constructor_id2cloning_strategy: HashMap<UserComponentId, CloningStrategy>,
+    /// Invariants: there is an entry for every constructor and state input.
+    pub(super) id2cloning_strategy: HashMap<UserComponentId, CloningStrategy>,
     /// Associate each request handler with the ordered list of middlewares that wrap around it.
     ///
     /// Invariants: there is an entry for every single request handler.
@@ -230,7 +230,7 @@ impl RawUserComponentDb {
             id2locations: HashMap::new(),
             id2lifecycle: HashMap::new(),
             id2lints: HashMap::new(),
-            constructor_id2cloning_strategy: HashMap::new(),
+            id2cloning_strategy: HashMap::new(),
             handler_id2middleware_ids: HashMap::new(),
             handler_id2error_observer_ids: HashMap::new(),
             fallback_id2path_prefix: HashMap::new(),
@@ -655,7 +655,7 @@ impl RawUserComponentDb {
             lifecycle,
             constructor.constructor.location.clone(),
         );
-        self.constructor_id2cloning_strategy.insert(
+        self.id2cloning_strategy.insert(
             constructor_id,
             constructor
                 .cloning_strategy
@@ -709,7 +709,11 @@ impl RawUserComponentDb {
             raw_identifiers_id: raw_callable_identifiers_id,
             scope_id: current_scope_id,
         };
-        self.intern_component(component, LIFECYCLE, si.input.location.clone());
+        let id = self.intern_component(component, LIFECYCLE, si.input.location.clone());
+        self.id2cloning_strategy.insert(
+            id,
+            si.cloning_strategy.unwrap_or(CloningStrategy::NeverClone),
+        );
     }
 
     /// A helper function to intern a component without forgetting to do the necessary
@@ -809,8 +813,15 @@ impl RawUserComponentDb {
             match component {
                 UserComponent::Constructor { .. } => {
                     assert!(
-                        self.constructor_id2cloning_strategy.get(&id).is_some(),
+                        self.id2cloning_strategy.get(&id).is_some(),
                         "There is no cloning strategy registered for the user-registered constructor #{:?}",
+                        id
+                    );
+                }
+                UserComponent::StateInput { .. } => {
+                    assert!(
+                        self.id2cloning_strategy.get(&id).is_some(),
+                        "There is no cloning strategy registered for the user-registered state input #{:?}",
                         id
                     );
                 }
@@ -827,7 +838,6 @@ impl RawUserComponentDb {
                     );
                 }
                 UserComponent::ErrorHandler { .. }
-                | UserComponent::StateInput { .. }
                 | UserComponent::WrappingMiddleware { .. }
                 | UserComponent::PostProcessingMiddleware { .. }
                 | UserComponent::PreProcessingMiddleware { .. }

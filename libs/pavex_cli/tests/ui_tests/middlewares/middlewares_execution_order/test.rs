@@ -1,10 +1,10 @@
 use std::future::IntoFuture;
 use std::net::TcpListener;
 
-use app::SpyState;
+use app::Spy;
 use application::{build_application_state, run};
 
-async fn spawn_test_server(spy_state: SpyState) -> u16 {
+async fn spawn_test_server(spy: Spy) -> u16 {
     static TELEMETRY: std::sync::Once = std::sync::Once::new();
     TELEMETRY.call_once(|| {
         tracing_subscriber::fmt()
@@ -21,14 +21,14 @@ async fn spawn_test_server(spy_state: SpyState) -> u16 {
     let incoming_stream: pavex::server::IncomingStream =
         listener.try_into().expect("Failed to convert listener");
     let server = pavex::server::Server::new().listen(incoming_stream);
-    let application_state = build_application_state(spy_state).await;
+    let application_state = build_application_state(spy).await;
     tokio::task::spawn(run(server, application_state).into_future());
     port
 }
 
 #[tokio::test]
 async fn top_level_mw_execute_in_order() {
-    let state = SpyState::new();
+    let state = Spy::new();
     let port = spawn_test_server(state.clone()).await;
 
     reqwest::get(&format!("http://localhost:{}/top_level", port))
@@ -56,7 +56,7 @@ async fn top_level_mw_execute_in_order() {
 
 #[tokio::test]
 async fn mw_registered_after_handler_does_not_wrap_handler() {
-    let state = SpyState::new();
+    let state = Spy::new();
     let port = spawn_test_server(state.clone()).await;
 
     reqwest::get(&format!("http://localhost:{}/after_handler", port))
@@ -80,7 +80,7 @@ async fn mw_registered_after_handler_does_not_wrap_handler() {
 
 #[tokio::test]
 async fn order_is_preserved_with_nesting() {
-    let state = SpyState::new();
+    let state = Spy::new();
     let port = spawn_test_server(state.clone()).await;
 
     reqwest::get(&format!("http://localhost:{}/nested", port))
@@ -108,7 +108,7 @@ async fn order_is_preserved_with_nesting() {
 
 #[tokio::test]
 async fn pre_processing_mw_can_early_return() {
-    let state = SpyState::new();
+    let state = Spy::new();
     let port = spawn_test_server(state.clone()).await;
 
     reqwest::get(&format!("http://localhost:{}/early_return", port))

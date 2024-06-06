@@ -8,6 +8,7 @@ pub fn blueprint() -> Blueprint {
         import_path: "my_f,",
         crate_name: "app",
         module_path: "app",
+        macro_name: "f",
     };
     bp.route(POST, "/home", callable);
     bp
