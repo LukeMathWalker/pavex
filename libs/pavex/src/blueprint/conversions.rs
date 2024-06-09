@@ -8,6 +8,12 @@ use pavex_reflection::RegisteredAt;
 
 #[track_caller]
 pub(super) fn raw_identifiers2callable(callable: RawIdentifiers) -> Callable {
+    if callable.macro_name != "f" {
+        panic!(
+            "You need to use the `f!` macro to register function-like components (e.g. a constructor).\n\
+            Here you used the `t!` macro, which is reserved type-like components, like state inputs."
+        )
+    }
     let registered_at = RegisteredAt {
         crate_name: callable.crate_name.to_owned(),
         module_path: callable.module_path.to_owned(),
@@ -23,6 +29,13 @@ pub(super) fn raw_identifiers2callable(callable: RawIdentifiers) -> Callable {
 
 #[track_caller]
 pub(super) fn raw_identifiers2type(callable: RawIdentifiers) -> Type {
+    if callable.macro_name != "t" {
+        panic!(
+            "You need to use the `t!` macro to register type-like components (e.g. a state input).\n\
+            Here you used the `f!` macro, which is reserved for function-like components, \
+            like constructors or request handlers."
+        )
+    }
     let registered_at = RegisteredAt {
         crate_name: callable.crate_name.to_owned(),
         module_path: callable.module_path.to_owned(),
