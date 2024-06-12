@@ -1,8 +1,9 @@
 use pavex::blueprint::constructor::CloningStrategy;
 use pavex::blueprint::{linter::Lint, Blueprint};
-use pavex::f;
+use pavex::{f, t};
 
 pub fn register(bp: &mut Blueprint) {
+    bp.prebuilt(t!(self::AppConfig));
     // How do you add your own configuration?
     // The starter template includes a "dummy" configuration option as
     // a reference example.
@@ -25,7 +26,7 @@ pub fn register(bp: &mut Blueprint) {
     //    See `Config::load` for more details on how configuration is assembled.
     //
     // Feel free to delete `DummyConfig` once you get started working on your own app!
-    bp.singleton(f!(self::AppConfig::dummy_config))
+    bp.transient(f!(self::AppConfig::dummy_config))
         .cloning(CloningStrategy::CloneIfNecessary)
         .ignore(Lint::Unused);
 }

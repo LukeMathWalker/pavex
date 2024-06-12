@@ -2782,7 +2782,6 @@ dependencies = [
  "crypto-common",
  "deranged",
  "digest",
- "fixedbitset",
  "futures-channel",
  "futures-core",
  "futures-sink",

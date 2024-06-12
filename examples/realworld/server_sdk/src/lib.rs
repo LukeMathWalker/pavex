@@ -14,31 +14,35 @@ pub struct ApplicationState {
 #[derive(Debug, thiserror::Error)]
 pub enum ApplicationStateError {
     #[error(transparent)]
-    EncodingKey(jsonwebtoken::errors::Error),
+    AuthConfigEncodingKey(jsonwebtoken::errors::Error),
     #[error(transparent)]
-    GetPool(sqlx_core::Error),
+    DatabaseConfigGetPool(sqlx_core::Error),
 }
 pub async fn build_application_state(
     v0: &app::configuration::ApplicationConfig,
 ) -> Result<crate::ApplicationState, crate::ApplicationStateError> {
-    let v1 = app::configuration::ApplicationConfig::auth_config(v0);
-    let v2 = app::configuration::AuthConfig::encoding_key(v1);
+    let v2 = {
+        let v1 = app::configuration::ApplicationConfig::auth_config(v0);
+        app::configuration::AuthConfig::encoding_key(v1)
+    };
     let v3 = match v2 {
         Ok(ok) => ok,
         Err(v3) => {
             return {
-                let v4 = crate::ApplicationStateError::EncodingKey(v3);
+                let v4 = crate::ApplicationStateError::AuthConfigEncodingKey(v3);
                 core::result::Result::Err(v4)
             };
         }
     };
-    let v4 = app::configuration::ApplicationConfig::database_config(v0);
-    let v5 = app::configuration::DatabaseConfig::get_pool(v4).await;
+    let v5 = {
+        let v4 = app::configuration::ApplicationConfig::database_config(v0);
+        app::configuration::DatabaseConfig::get_pool(v4).await
+    };
     let v6 = match v5 {
         Ok(ok) => ok,
         Err(v6) => {
             return {
-                let v7 = crate::ApplicationStateError::GetPool(v6);
+                let v7 = crate::ApplicationStateError::DatabaseConfigGetPool(v6);
                 core::result::Result::Err(v7)
             };
         }
