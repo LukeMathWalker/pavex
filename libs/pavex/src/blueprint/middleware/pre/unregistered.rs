@@ -13,7 +13,7 @@ use pavex_bp_schema::Callable;
 /// # Use cases
 ///
 /// [`PreProcessingMiddleware`] is primarily used by
-/// [kits](https://pavex.dev/docs/guide/dependency_injection/core_concepts/kits)
+/// [kits](https://pavex.dev/docs/guide/dependency_injection/kits)
 /// to allow users to customize (or disable!)
 /// the bundled middlewares **before** registering them with a [`Blueprint`].
 #[derive(Clone, Debug)]

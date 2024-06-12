@@ -1,6 +1,6 @@
 # Kits
 
-Pavex provides a [rich set of first-party constructors](../../request_data/index.md).  
+Pavex provides a [rich set of first-party constructors](../request_data/index.md).  
 To leverage them, you must register them with your application's [`Blueprint`][Blueprint]: after a while,
 it gets tedious. 
 To make your life easier, Pavex provides **kits**: collections of commonly used constructors, 
@@ -50,10 +50,10 @@ You can also replace one of the constructors provided by the kit with a custom o
    you configure the constructor _without_ registering it directly with the blueprint.  
    The kit takes care of the registration for you when its `register` method is invoked.
 
-[PathParams]: ../../request_data/path/path_parameters.md
-[QueryParams]: ../../request_data/query/query_parameters.md
-[BufferedBody]: ../../request_data/body/byte_wrappers.md
-[BodySizeLimit]: ../../request_data/body/byte_wrappers.md#body-size-limit
-[JsonBody]: ../../request_data/body/deserializers/json.md
-[ApiKit]: ../../../../api_reference/pavex/kit/struct.ApiKit.html
-[Blueprint]: ../../../../api_reference/pavex/blueprint/struct.Blueprint.html
+[PathParams]: ../request_data/path/path_parameters.md
+[QueryParams]: ../request_data/query/query_parameters.md
+[BufferedBody]: ../request_data/body/byte_wrappers.md
+[BodySizeLimit]: ../request_data/body/byte_wrappers.md#body-size-limit
+[JsonBody]: ../request_data/body/deserializers/json.md
+[ApiKit]: ../../api_reference/pavex/kit/struct.ApiKit.html
+[Blueprint]: ../../api_reference/pavex/blueprint/struct.Blueprint.html

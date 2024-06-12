@@ -12,8 +12,8 @@ Inside the [server SDK crate], you'll also find a function named [`build_applica
 as [prebuilt](prebuilt_types.md). 
 Inside its body, it'll invoke the constructors for all your [singletons][Lifecycle::Singleton] in order to build an instance of `ApplicationState`.
 
-[Lifecycle::Singleton]: ../../../api_reference/pavex/blueprint/constructor/enum.Lifecycle.html#variant.Singleton
-[build_application_state]: ../../project_structure.md#applicationstate
-[server crate]: ../../project_structure.md#the-server-crate
-[ApplicationState]: ../../project_structure.md#applicationstate
-[server SDK crate]: ../../project_structure.md#the-server-sdk
+[Lifecycle::Singleton]: ../../api_reference/pavex/blueprint/constructor/enum.Lifecycle.html#variant.Singleton
+[build_application_state]: ../project_structure.md#applicationstate
+[server crate]: ../project_structure.md#the-server-crate
+[ApplicationState]: ../project_structure.md#applicationstate
+[server SDK crate]: ../project_structure.md#the-server-sdk

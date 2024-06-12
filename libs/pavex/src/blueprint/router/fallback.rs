@@ -82,7 +82,7 @@ impl<'a> RegisteredFallback<'a> {
 /// # Use cases
 ///
 /// [`Fallback`] is primarily used by
-/// [kits](https://pavex.dev/docs/guide/dependency_injection/core_concepts/kits)
+/// [kits](https://pavex.dev/docs/guide/dependency_injection/kits)
 /// to allow users to customize (or disable!)
 /// the bundled fallbacks **before** registering them with a [`Blueprint`].
 #[derive(Clone, Debug)]

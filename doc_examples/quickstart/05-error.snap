@@ -1,7 +1,7 @@
 [31m[1mERROR[0m[39m: 
-  [31m×[0m I can't invoke your request handler, `app::routes::greet::get`, because
-  [31m│[0m it needs an instance of `app::user_agent::UserAgent` as input, but I can't
-  [31m│[0m find a constructor for that type.
+  [31m×[0m I can't find a constructor for `app::user_agent::UserAgent`.
+  [31m│[0m I need an instance of `app::user_agent::UserAgent` to invoke your request
+  [31m│[0m handler, `app::routes::greet::get`.
   [31m│[0m
   [31m│[0m     ╭─[[36;1;4mapp/src/routes/mod.rs[0m:8:1]
   [31m│[0m  [2m 8[0m │     bp.route(GET, "/api/ping", f!(self::ping::get));
@@ -17,7 +17,10 @@
   [31m│[0m     ·        [35;1mI don't know how to construct an instance of this input parameter[0m
   [31m│[0m  [2m12[0m │     if let UserAgent::Unknown = user_agent {
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mRegister a constructor for `app::user_agent::UserAgent`
+  [31m│[0m   [36mhelp:[0m Register a constructor for `app::user_agent::UserAgent`.
+  [31m│[0m [36m  help: [0mAlternatively, use `Blueprint::prebuilt` to add a new input
+  [31m│[0m         parameter of type `app::user_agent::UserAgent` to the (generated)
+  [31m│[0m         `build_application_state`.
 
 The invocation of `pavex [...] generate [...]` exited with a non-zero status code: 1
 error: Failed to run `bp`, the code generator for package `server_sdk`

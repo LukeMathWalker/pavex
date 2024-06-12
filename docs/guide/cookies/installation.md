@@ -19,9 +19,13 @@ section for reference examples.
 [`ProcessorConfig`][ProcessorConfig] determines how cookies (both incoming and outgoing) are processed by your application.
 Do they need to be percent-encoded? Should they be signed or encrypted? Using what key?
 
-Once you register [`CookieKit`][CookieKit] against your [`Blueprint`][Blueprint], you'll be asked to provide an instance of
-[`ProcessorConfig`][ProcessorConfig] as an input to your [`build_application_state`][build_application_state] function.
+Once you register [`CookieKit`][CookieKit] against your [`Blueprint`][Blueprint], you'll get an error:
 
+```ansi-color
+--8<-- "doc_examples/guide/cookies/installation/missing_process_config.snap"
+```
+
+To fix it, you need to give Pavex a way to work with a [`ProcessorConfig`][ProcessorConfig] instance.
 You have two options:
 
 1. Add [`ProcessorConfig`][ProcessorConfig] as a field on your application's `AppConfig` struct, usually located
