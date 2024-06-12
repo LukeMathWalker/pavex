@@ -37,11 +37,11 @@ body parsing, logging, authorization, etc.
 ## Guide structure 
 
 There are three different sources for injectable dependencies: 
-[**framework primitives**](core_concepts/framework_primitives.md), 
-[**constructors**](core_concepts/constructors.md) and
-[**prebuilt types**](core_concepts/prebuilt_types.md). 
+[**framework primitives**](framework_primitives.md), 
+[**constructors**](constructors.md) and
+[**prebuilt types**](prebuilt_types.md). 
 Check out the respective sections for guidance on how to use each source.  
 
 We recommend going through the [cookbook](cookbook.md) as well. It contains a collection of reference examples for common use cases: how to 
-inject a function as a constructor, how to inject a non-static method, how to inject a trait object, generics, etc.  
+inject a function as a constructor, how to inject a non-static method, how to inject a trait object, generics, etc. 
 Use it a reference in your day-to-day Pavex development if you're not sure of the syntax for a particular use case.

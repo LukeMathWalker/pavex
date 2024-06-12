@@ -13,7 +13,7 @@ invokes your code.
 
 ### Injection
 
-[`RequestHead`][RequestHead] is a [framework primitive](../dependency_injection/core_concepts/framework_primitives.md), 
+[`RequestHead`][RequestHead] is a [framework primitive](../dependency_injection/framework_primitives.md), 
 you don't have to register a constructor to inject it.  
 
 --8<-- "doc_examples/guide/request_data/wire_data/project-head.snap"
@@ -35,7 +35,7 @@ higher-level body abstractions](body/index.md) provided by Pavex.
 
 ### Injection
 
-[`RawIncomingBody`][RawIncomingBody] is a [framework primitive](../dependency_injection/core_concepts/framework_primitives.md),
+[`RawIncomingBody`][RawIncomingBody] is a [framework primitive](../dependency_injection/framework_primitives.md),
 you don't have to register a constructor to inject it.
 
 --8<-- "doc_examples/guide/request_data/wire_data/project-body.snap"

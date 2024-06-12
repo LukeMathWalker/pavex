@@ -107,11 +107,11 @@ nav:
                   - guide/request_data/body/byte_wrappers.md
           - "Dependency injection":
               - guide/dependency_injection/index.md
-              - guide/dependency_injection/core_concepts/framework_primitives.md
-              - guide/dependency_injection/core_concepts/constructors.md
-              - guide/dependency_injection/core_concepts/prebuilt_types.md
-              - guide/dependency_injection/core_concepts/application_state.md
-              - guide/dependency_injection/core_concepts/kits.md
+              - guide/dependency_injection/framework_primitives.md
+              - guide/dependency_injection/constructors.md
+              - guide/dependency_injection/prebuilt_types.md
+              - guide/dependency_injection/application_state.md
+              - guide/dependency_injection/kits.md
               - guide/dependency_injection/cookbook.md
               - guide/dependency_injection/limitations.md
           - "Middlewares":

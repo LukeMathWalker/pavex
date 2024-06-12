@@ -62,4 +62,4 @@ if the field contains escape sequences, but you tried to use `&str` as its field
 [JsonBody::register]: ../../../../api_reference/pavex/request/body/struct.JsonBody.html#method.register
 [serde::Deserialize]: https://docs.rs/serde/latest/serde/trait.Deserialize.html
 [Cow]: https://doc.rust-lang.org/std/borrow/enum.Cow.html
-[ApiKit]: ../../../dependency_injection/core_concepts/kits.md
+[ApiKit]: ../../../dependency_injection/kits.md

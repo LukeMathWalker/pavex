@@ -18,7 +18,7 @@ It exposes multiple `set_*` methods to configure the cookie's properties: `Path`
     You can only inject mutable references into [request handlers](../routing/request_handlers.md),
     [pre-processing middlewares](../middleware/pre_processing.md), and [post-processing middlewares](../middleware/post_processing.md). 
     As a result, you can only set cookies in those components.
-    Check out ["No mutations"](../dependency_injection/core_concepts/constructors.md#no-mutations) for more information
+    Check out ["No mutations"](../dependency_injection/constructors.md#no-mutations) for more information
     on the rationale.
 
 ## Remove a client-side cookie

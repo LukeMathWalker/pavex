@@ -15,8 +15,8 @@ You need to go back to the [`Blueprint`][Blueprint] to find out:
 
 --8<-- "doc_examples/quickstart/04-register_common_invocation.snap"
 
-[`ApiKit`][ApiKit] is one of Pavex's [kits](../../guide/dependency_injection/core_concepts/kits.md): it
-bundles together [constructors](../../guide/dependency_injection/core_concepts/constructors.md) for types
+[`ApiKit`][ApiKit] is one of Pavex's [kits](../../guide/dependency_injection/kits.md): it
+bundles together [constructors](../../guide/dependency_injection/constructors.md) for types
 that are commonly used when building APIs with Pavex.  
 In particular, it includes a constructor for [`PathParams`][PathParams].  
 
@@ -103,5 +103,5 @@ multiple times for the same request.
 [f!]: ../../api_reference/pavex/macro.f!.html
 [PathParams]: ../../api_reference/pavex/request/path/struct.PathParams.html
 [ApiKit]: ../../api_reference/pavex/kit/struct.ApiKit.html
-[lifecycle]: ../../guide/dependency_injection/core_concepts/constructors.md#lifecycles
+[lifecycle]: ../../guide/dependency_injection/constructors.md#lifecycles
 [RequestHead]: ../../api_reference/pavex/request/struct.RequestHead.html

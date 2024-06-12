@@ -11,7 +11,7 @@ Register it with your [`Blueprint`][Blueprint] to get started:
 --8<-- "doc_examples/guide/cookies/installation/project-kit.snap"
 
 You can customize each component inside [`CookieKit`][CookieKit] to suit your needs.
-Check out the ["Kits"](../dependency_injection/core_concepts/kits.md#customization)
+Check out the ["Kits"](../dependency_injection/kits.md#customization)
 section for reference examples.
 
 ## `ProcessorConfig`
