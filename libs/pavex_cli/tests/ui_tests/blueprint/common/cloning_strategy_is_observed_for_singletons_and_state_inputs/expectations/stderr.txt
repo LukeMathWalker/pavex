@@ -7,7 +7,7 @@
   [31m│[0m `NeverClone`.
   [31m│[0m
   [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:28:1]
-  [31m│[0m  [2m28[0m │     bp.state_input(t!(crate::B));
+  [31m│[0m  [2m28[0m │     bp.prebuilt(t!(crate::B));
   [31m│[0m  [2m29[0m │     bp.singleton(f!(crate::singleton));
   [31m│[0m     · [35;1m                 ──────────┬─────────[0m
   [31m│[0m     ·                            [35;1m╰── It was registered here[0m
@@ -27,9 +27,9 @@
   [31m│[0m
   [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:27:1]
   [31m│[0m  [2m27[0m │     let mut bp = Blueprint::new();
-  [31m│[0m  [2m28[0m │     bp.state_input(t!(crate::B));
-  [31m│[0m     · [35;1m                   ──────┬─────[0m
-  [31m│[0m     ·                          [35;1m╰── It was registered here[0m
+  [31m│[0m  [2m28[0m │     bp.prebuilt(t!(crate::B));
+  [31m│[0m     · [35;1m                ──────┬─────[0m
+  [31m│[0m     ·                       [35;1m╰── It was registered here[0m
   [31m│[0m  [2m29[0m │     bp.singleton(f!(crate::singleton));
   [31m│[0m     ╰────
   [31m│[0m   [36mhelp:[0m Can `app::handler` take a reference to `app::B`, rather than consuming

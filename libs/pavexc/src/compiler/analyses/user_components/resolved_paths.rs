@@ -29,7 +29,7 @@ impl ResolvedPathDb {
         let mut component_id2path_id = HashMap::new();
         for (component_id, component) in component_db.iter() {
             let raw_identifiers = component.raw_identifiers(component_db);
-            let kind = if let UserComponent::StateInput { .. } = component {
+            let kind = if let UserComponent::PrebuiltType { .. } = component {
                 PathKind::Type
             } else {
                 PathKind::Callable

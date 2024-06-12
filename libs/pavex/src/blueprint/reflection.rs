@@ -40,7 +40,7 @@ pub struct RawIdentifiers {
 ///
 /// `f!` is a short-hand for "function-like". It's the macro used to specify a function or a method
 /// to be used as a constructor, request handler, etc.  
-/// Use [`t!`](crate::t), instead, to specify a type when invoking [`Blueprint::state_input`].
+/// Use [`t!`](crate::t), instead, to specify a type when invoking [`Blueprint::prebuilt`].
 ///
 /// # Guide
 ///
@@ -50,7 +50,7 @@ pub struct RawIdentifiers {
 /// callables (functions, methods, trait methods, etc.) with a [`Blueprint`].
 ///
 /// [`Blueprint`]: crate::blueprint::Blueprint
-/// [`Blueprint::state_input`]: crate::blueprint::Blueprint::state_input
+/// [`Blueprint::prebuilt`]: crate::blueprint::Blueprint::prebuilt
 macro_rules! f {
     ($p:expr) => {{
         #[cfg(pavex_ide_hint)]
@@ -69,7 +69,7 @@ macro_rules! f {
 /// Convert an [unambiguous type path](https://pavex.dev/docs/guide/dependency_injection/cookbook/#unambiguous-paths)
 /// into [`RawIdentifiers`].  
 ///
-/// `t!` is a short-hand for "type". It's the macro used by [`Blueprint::state_input`].  
+/// `t!` is a short-hand for "type". It's the macro used by [`Blueprint::prebuilt`].  
 /// You should use [`f!`](f) if you're invoking other methods on [`Blueprint`].
 ///
 /// # Guide
@@ -80,9 +80,9 @@ macro_rules! f {
 /// types (generic, with lifetimes, etc.) as state inputs with a [`Blueprint`].
 ///
 /// [`Blueprint`]: crate::blueprint::Blueprint
-/// [`Blueprint::state_input`]: crate::blueprint::Blueprint::state_input
+/// [`Blueprint::prebuilt`]: crate::blueprint::Blueprint::prebuilt
 macro_rules! t {
-    // This branch is used by `Blueprint::state_input`, where you need to specifically
+    // This branch is used by `Blueprint::prebuilt`, where you need to specifically
     // pass a type path to the macro.
     // The `ty` designator is more restrictive than the `expr` designator, so it's
     // the first one we try to match.

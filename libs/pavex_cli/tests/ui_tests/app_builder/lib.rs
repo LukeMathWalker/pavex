@@ -42,7 +42,7 @@ pub fn http_client(_config: Config) -> HttpClient {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.state_input(t!(crate::Config))
+    bp.prebuilt(t!(crate::Config))
         .cloning(CloningStrategy::CloneIfNecessary);
     bp.singleton(f!(crate::http_client))
         .cloning(CloningStrategy::CloneIfNecessary);

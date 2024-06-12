@@ -1,6 +1,6 @@
 use pavex::blueprint::{router::GET, Blueprint};
-use pavex::f;
 use pavex::response::Response;
+use pavex::{f, t};
 
 #[derive(Clone)]
 pub struct B<T>(T);
@@ -26,10 +26,10 @@ pub fn handler(a: A, b: B<String>, c: C, d: D<String, u16, u64>) -> Response {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.state_input(f!(crate::A));
-    bp.state_input(f!(crate::B));
-    bp.state_input(f!(crate::C));
-    bp.state_input(f!(crate::D));
+    bp.prebuilt(t!(crate::A));
+    bp.prebuilt(t!(crate::B));
+    bp.prebuilt(t!(crate::C));
+    bp.prebuilt(t!(crate::D));
     bp.route(GET, "/", f!(crate::handler));
     bp
 }

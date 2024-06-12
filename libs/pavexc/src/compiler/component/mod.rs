@@ -3,8 +3,8 @@ mod error_handler;
 mod error_observer;
 mod post_processing_middleware;
 mod pre_processing_middleware;
+mod prebuilt_type;
 mod request_handler;
-mod state_input;
 mod wrapping_middleware;
 
 use crate::compiler::analyses::computations::ComputationDb;
@@ -28,8 +28,8 @@ pub(crate) use post_processing_middleware::{
 pub(crate) use pre_processing_middleware::{
     PreProcessingMiddleware, PreProcessingMiddlewareValidationError,
 };
+pub(crate) use prebuilt_type::{PrebuiltType, PrebuiltTypeValidationError};
 pub(crate) use request_handler::{RequestHandler, RequestHandlerValidationError};
-pub(crate) use state_input::{StateInput, StateInputValidationError};
 pub(crate) use wrapping_middleware::{WrappingMiddleware, WrappingMiddlewareValidationError};
 
 #[derive(thiserror::Error, Debug, Clone)]

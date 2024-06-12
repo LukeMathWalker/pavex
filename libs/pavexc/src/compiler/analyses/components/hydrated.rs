@@ -17,7 +17,7 @@ pub(crate) enum HydratedComponent<'a> {
     PostProcessingMiddleware(PostProcessingMiddleware<'a>),
     Transformer(Computation<'a>, TransformerInfo),
     ErrorObserver(ErrorObserver<'a>),
-    StateInput(Cow<'a, ResolvedType>),
+    PrebuiltType(Cow<'a, ResolvedType>),
 }
 
 impl<'a> HydratedComponent<'a> {
@@ -30,7 +30,7 @@ impl<'a> HydratedComponent<'a> {
             HydratedComponent::PostProcessingMiddleware(p) => Cow::Borrowed(p.input_types()),
             HydratedComponent::PreProcessingMiddleware(p) => Cow::Borrowed(p.input_types()),
             HydratedComponent::ErrorObserver(eo) => Cow::Borrowed(eo.input_types()),
-            HydratedComponent::StateInput(_) => Cow::Owned(vec![]),
+            HydratedComponent::PrebuiltType(_) => Cow::Owned(vec![]),
         }
     }
 
@@ -41,7 +41,7 @@ impl<'a> HydratedComponent<'a> {
             HydratedComponent::WrappingMiddleware(e) => Some(e.output_type()),
             HydratedComponent::PostProcessingMiddleware(p) => Some(p.output_type()),
             HydratedComponent::PreProcessingMiddleware(p) => Some(p.output_type()),
-            HydratedComponent::StateInput(t) => Some(t),
+            HydratedComponent::PrebuiltType(t) => Some(t),
             // TODO: we are not enforcing that the output type of a transformer is not
             //  the unit type. In particular, you can successfully register a `Result<T, ()>`
             //  type, which will result into a `MatchResult` with output `()` for the error.
@@ -64,9 +64,9 @@ impl<'a> HydratedComponent<'a> {
             HydratedComponent::PreProcessingMiddleware(p) => p.callable.clone().into(),
             HydratedComponent::Transformer(t, ..) => t.clone(),
             HydratedComponent::ErrorObserver(eo) => eo.callable.clone().into(),
-            HydratedComponent::StateInput(si) => {
+            HydratedComponent::PrebuiltType(si) => {
                 unreachable!(
-                    "State inputs (such as {:?}) do not have a computation associated with them",
+                    "Prebuilt types (such as {:?}) do not have a computation associated with them",
                     si
                 )
             }
@@ -94,8 +94,8 @@ impl<'a> HydratedComponent<'a> {
             HydratedComponent::PreProcessingMiddleware(p) => {
                 HydratedComponent::PreProcessingMiddleware(p.into_owned())
             }
-            HydratedComponent::StateInput(t) => {
-                HydratedComponent::StateInput(Cow::Owned(t.into_owned()))
+            HydratedComponent::PrebuiltType(t) => {
+                HydratedComponent::PrebuiltType(Cow::Owned(t.into_owned()))
             }
         }
     }

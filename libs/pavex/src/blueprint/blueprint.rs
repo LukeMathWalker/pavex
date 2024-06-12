@@ -3,11 +3,11 @@ use crate::blueprint::conversions::{
     raw_identifiers2type,
 };
 use crate::blueprint::error_observer::RegisteredErrorObserver;
+use crate::blueprint::prebuilt::RegisteredPrebuiltType;
 use crate::blueprint::router::RegisteredFallback;
-use crate::blueprint::state::RegisteredStateInput;
 use pavex_bp_schema::{
     Blueprint as BlueprintSchema, Constructor, Fallback, NestedBlueprint, PostProcessingMiddleware,
-    PreProcessingMiddleware, Route, StateInput, WrappingMiddleware,
+    PreProcessingMiddleware, PrebuiltType, Route, WrappingMiddleware,
 };
 use pavex_reflection::Location;
 
@@ -135,28 +135,28 @@ impl Blueprint {
     /// Check out the ["Dependency injection"](https://pavex.dev/docs/guide/dependency_injection)
     /// section of Pavex's guide for a thorough introduction to dependency injection
     /// in Pavex applications.
-    pub fn state_input(&mut self, type_: RawIdentifiers) -> RegisteredStateInput {
-        let registered = StateInput {
+    pub fn prebuilt(&mut self, type_: RawIdentifiers) -> RegisteredPrebuiltType {
+        let registered = PrebuiltType {
             input: raw_identifiers2type(type_),
             cloning_strategy: None,
         };
         let component_id = self.push_component(registered);
-        RegisteredStateInput {
+        RegisteredPrebuiltType {
             blueprint: &mut self.schema,
             component_id,
         }
     }
 
-    pub(super) fn register_state_input(
+    pub(super) fn register_prebuilt_type(
         &mut self,
-        i: super::state::StateInput,
-    ) -> RegisteredStateInput {
-        let i = StateInput {
+        i: super::prebuilt::PrebuiltType,
+    ) -> RegisteredPrebuiltType {
+        let i = PrebuiltType {
             input: i.type_,
             cloning_strategy: None,
         };
         let component_id = self.push_component(i);
-        RegisteredStateInput {
+        RegisteredPrebuiltType {
             component_id,
             blueprint: &mut self.schema,
         }

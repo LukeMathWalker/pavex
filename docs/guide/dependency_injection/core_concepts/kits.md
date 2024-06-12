@@ -2,7 +2,7 @@
 
 Pavex provides a [rich set of first-party constructors](../../request_data/index.md).  
 To leverage them, you must register them with your application's [`Blueprint`][Blueprint]: after a while,
-it gets tedious.  
+it gets tedious. 
 To make your life easier, Pavex provides **kits**: collections of commonly used constructors, 
 organized by application type.  
 

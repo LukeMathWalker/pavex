@@ -9,12 +9,12 @@ use pavex_bp_schema::{
 };
 
 use crate::compiler::analyses::computations::ComputationDb;
-use crate::compiler::analyses::state_inputs::StateInputDb;
+use crate::compiler::analyses::prebuilt_types::PrebuiltTypeDb;
 use crate::compiler::analyses::user_components::raw_db::RawUserComponentDb;
 use crate::compiler::analyses::user_components::resolved_paths::ResolvedPathDb;
 use crate::compiler::analyses::user_components::router::Router;
 use crate::compiler::analyses::user_components::{ScopeGraph, UserComponent, UserComponentId};
-use crate::compiler::component::{StateInput, StateInputValidationError};
+use crate::compiler::component::{PrebuiltType, PrebuiltTypeValidationError};
 use crate::compiler::interner::Interner;
 use crate::compiler::resolvers::{resolve_type_path, CallableResolutionError, TypeResolutionError};
 use crate::diagnostic::{
@@ -55,7 +55,7 @@ pub struct UserComponentDb {
     id2lints: HashMap<UserComponentId, BTreeMap<Lint, LintSetting>>,
     /// For each constructible component, determine if it can be cloned or not.
     ///
-    /// Invariants: there is an entry for every constructor and state input.
+    /// Invariants: there is an entry for every constructor and prebuilt type.
     id2cloning_strategy: HashMap<UserComponentId, CloningStrategy>,
     /// Associate each request handler with the ordered list of middlewares that wrap around it.
     ///
@@ -79,7 +79,7 @@ impl UserComponentDb {
     pub(crate) fn build(
         bp: &Blueprint,
         computation_db: &mut ComputationDb,
-        state_input_db: &mut StateInputDb,
+        prebuilt_type_db: &mut PrebuiltTypeDb,
         package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
         diagnostics: &mut Vec<miette::Error>,
@@ -105,7 +105,7 @@ impl UserComponentDb {
             &resolved_path_db,
             &raw_db,
             computation_db,
-            state_input_db,
+            prebuilt_type_db,
             package_graph,
             krate_collection,
             diagnostics,
@@ -159,12 +159,12 @@ impl UserComponentDb {
             .filter(|(_, c)| matches!(c, UserComponent::Constructor { .. }))
     }
 
-    pub fn state_inputs(
+    pub fn prebuilt_types(
         &self,
     ) -> impl Iterator<Item = (UserComponentId, &UserComponent)> + DoubleEndedIterator {
         self.component_interner
             .iter()
-            .filter(|(_, c)| matches!(c, UserComponent::StateInput { .. }))
+            .filter(|(_, c)| matches!(c, UserComponent::PrebuiltType { .. }))
     }
 
     /// Iterate over all the request handler components in the database, returning their id and the
@@ -235,7 +235,7 @@ impl UserComponentDb {
     }
 
     /// Return the cloning strategy of the component with the given id.
-    /// This is going to be `Some(..)` for constructor and state input components, 
+    /// This is going to be `Some(..)` for constructor and prebuilt type components, 
     /// and `None` for all other components.
     pub fn get_cloning_strategy(&self, id: UserComponentId) -> Option<&CloningStrategy> {
         self.id2cloning_strategy.get(&id)
@@ -306,20 +306,20 @@ impl UserComponentDb {
         resolved_path_db: &ResolvedPathDb,
         raw_db: &RawUserComponentDb,
         computation_db: &mut ComputationDb,
-        state_input_db: &mut StateInputDb,
+        prebuilt_type_db: &mut PrebuiltTypeDb,
         package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
         diagnostics: &mut Vec<miette::Error>,
     ) {
         for (raw_id, user_component) in raw_db.iter() {
             let resolved_path = &resolved_path_db[raw_id];
-            if let UserComponent::StateInput { .. } = &user_component {
+            if let UserComponent::PrebuiltType { .. } = &user_component {
                 match resolve_type_path(resolved_path, krate_collection) {
-                    Ok(ty) => match StateInput::new(ty) {
-                        Ok(state_input) => {
-                            state_input_db.get_or_intern(state_input, raw_id);
+                    Ok(ty) => match PrebuiltType::new(ty) {
+                        Ok(prebuilt) => {
+                            prebuilt_type_db.get_or_intern(prebuilt, raw_id);
                         }
-                        Err(e) => Self::invalid_state_input(
+                        Err(e) => Self::invalid_prebuilt_type(
                             e,
                             resolved_path,
                             raw_id,
@@ -352,8 +352,8 @@ impl UserComponentDb {
         }
     }
 
-    fn invalid_state_input(
-        e: StateInputValidationError,
+    fn invalid_prebuilt_type(
+        e: PrebuiltTypeValidationError,
         resolved_path: &ResolvedPath,
         component_id: UserComponentId,
         component_db: &RawUserComponentDb,
@@ -368,13 +368,13 @@ impl UserComponentDb {
             .as_ref()
             .map(|source| {
                 diagnostic::get_f_macro_invocation_span(&source, location)
-                    .labeled(format!("The state input was registered here"))
+                    .labeled(format!("The prebuilt type was registered here"))
             })
             .flatten();
         let mut error_msg = e.to_string();
         let help: String;
         match &e {
-            StateInputValidationError::CannotHaveLifetimeParameters { ty } => {
+            PrebuiltTypeValidationError::CannotHaveLifetimeParameters { ty } => {
                 if ty.has_implicit_lifetime_parameters() {
                     writeln!(
                         &mut error_msg, 
@@ -398,9 +398,9 @@ impl UserComponentDb {
                         write!(&mut error_msg, ".").unwrap();
                     }
                 };
-                help = format!("Set the lifetime parameters to `'static` when registering the type as a state input. E.g. `bp.state_input(f!(crate::MyType<'static>))` for `struct MyType<'a>(&'a str)`.")
+                help = format!("Set the lifetime parameters to `'static` when registering the type as prebuilt. E.g. `bp.prebuilt(f!(crate::MyType<'static>))` for `struct MyType<'a>(&'a str)`.")
             }
-            StateInputValidationError::CannotHaveUnassignedGenericTypeParameters { ty } => {
+            PrebuiltTypeValidationError::CannotHaveUnassignedGenericTypeParameters { ty } => {
                 let generic_type_parameters = ty.unassigned_generic_type_parameters();
                 if generic_type_parameters.len() == 1 {
                     write!(
@@ -417,7 +417,7 @@ impl UserComponentDb {
                     comma_separated_list(&mut error_msg, generic_type_parameters.iter(), |s| format!("`{s}`"), "and").unwrap();
                     write!(&mut error_msg, ".").unwrap();
                 }
-                help = format!("Set the generic parameters to concrete types when registering the type as a state input. E.g. `bp.state_input(f!(crate::MyType<std::string::String>))` for `struct MyType<T>(T)`.")
+                help = format!("Set the generic parameters to concrete types when registering the type as prebuilt. E.g. `bp.prebuilt(f!(crate::MyType<std::string::String>))` for `struct MyType<T>(T)`.")
             }, 
         }
         let e = anyhow::anyhow!(e).context(error_msg);

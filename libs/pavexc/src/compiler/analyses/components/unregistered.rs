@@ -25,7 +25,7 @@ pub(crate) enum UnregisteredComponent {
     UserPreProcessingMiddleware {
         user_component_id: UserComponentId,
     },
-    UserStateInput {
+    UserPrebuiltType {
         user_component_id: UserComponentId,
     },
     SyntheticWrappingMiddleware {
@@ -145,9 +145,11 @@ impl UnregisteredComponent {
                     source_id: SourceId::UserComponentId(user_component_id.to_owned()),
                 }
             }
-            UnregisteredComponent::UserStateInput { user_component_id } => Component::StateInput {
-                user_component_id: *user_component_id,
-            },
+            UnregisteredComponent::UserPrebuiltType { user_component_id } => {
+                Component::PrebuiltType {
+                    user_component_id: *user_component_id,
+                }
+            }
         }
     }
 
@@ -160,7 +162,7 @@ impl UnregisteredComponent {
             | SyntheticWrappingMiddleware { .. }
             | RequestHandler { .. } => Lifecycle::RequestScoped,
             ErrorObserver { .. } => Lifecycle::Transient,
-            UserStateInput { .. } => Lifecycle::Singleton,
+            UserPrebuiltType { .. } => Lifecycle::Singleton,
             SyntheticConstructor { lifecycle, .. } => lifecycle.to_owned(),
             ErrorHandler {
                 error_matcher_id: id,

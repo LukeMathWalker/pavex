@@ -80,8 +80,8 @@ fn missing_trait_implementation(
                 .labeled(format!("The {component_kind} was registered here"))
         })
         .flatten();
-    let help = if component_kind == CallableType::StateInput {
-        "All state inputs that are needed at runtime must implement the `Send` and `Sync` traits.\n\
+    let help = if component_kind == CallableType::PrebuiltType {
+        "All prebuilt types that are needed at runtime must implement the `Send` and `Sync` traits.\n\
         Pavex runs on a multi-threaded HTTP server and the application state is shared \
         across all worker threads."
             .into()

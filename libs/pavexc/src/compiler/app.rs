@@ -22,12 +22,12 @@ use crate::compiler::analyses::components::{ComponentDb, ComponentId};
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::constructibles::ConstructibleDb;
 use crate::compiler::analyses::framework_items::FrameworkItemDb;
+use crate::compiler::analyses::prebuilt_types::PrebuiltTypeDb;
 use crate::compiler::analyses::processing_pipeline::RequestHandlerPipeline;
 use crate::compiler::analyses::router::Router;
 use crate::compiler::analyses::singletons::{
     runtime_singletons_are_thread_safe, runtime_singletons_can_be_cloned_if_needed,
 };
-use crate::compiler::analyses::state_inputs::StateInputDb;
 use crate::compiler::analyses::unused::detect_unused;
 use crate::compiler::analyses::user_components::UserComponentDb;
 use crate::compiler::generated_app::GeneratedApp;
@@ -84,11 +84,11 @@ impl App {
         let package_graph = krate_collection.package_graph().to_owned();
         let mut diagnostics = vec![];
         let mut computation_db = ComputationDb::new();
-        let mut state_input_db = StateInputDb::new();
+        let mut prebuilt_type_db = PrebuiltTypeDb::new();
         let Ok((router, user_component_db)) = UserComponentDb::build(
             &bp,
             &mut computation_db,
-            &mut state_input_db,
+            &mut prebuilt_type_db,
             &package_graph,
             &krate_collection,
             &mut diagnostics,
@@ -100,7 +100,7 @@ impl App {
             user_component_db,
             &framework_item_db,
             &mut computation_db,
-            state_input_db,
+            prebuilt_type_db,
             &package_graph,
             &krate_collection,
             &mut diagnostics,

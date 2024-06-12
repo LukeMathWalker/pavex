@@ -1,11 +1,11 @@
 use ahash::HashMap;
 
 use crate::compiler::analyses::user_components::UserComponentId;
-use crate::compiler::component::StateInput;
+use crate::compiler::component::PrebuiltType;
 use crate::compiler::interner::Interner;
 use crate::language::ResolvedType;
 
-pub(crate) type StateInputId = la_arena::Idx<ResolvedType>;
+pub(crate) type PrebuiltTypeId = la_arena::Idx<ResolvedType>;
 
 #[derive(Debug)]
 /// A database of all the types that might be used as inputs to the generated constructor for
@@ -17,12 +17,12 @@ pub(crate) type StateInputId = la_arena::Idx<ResolvedType>;
 ///   duplicating them everywhere.
 ///
 /// This database is a "data bag"—it doesn't have any special logic, it just stores data.
-pub struct StateInputDb {
+pub struct PrebuiltTypeDb {
     interner: Interner<ResolvedType>,
-    component_id2type_id: HashMap<UserComponentId, StateInputId>,
+    component_id2type_id: HashMap<UserComponentId, PrebuiltTypeId>,
 }
 
-impl StateInputDb {
+impl PrebuiltTypeDb {
     /// Initialize a new (empty) computation database.
     pub fn new() -> Self {
         Self {
@@ -32,22 +32,26 @@ impl StateInputDb {
     }
 
     /// Retrieve the id for an input from the interner, or insert it if it doesn't exist.
-    pub(crate) fn get_or_intern(&mut self, ty: StateInput, id: UserComponentId) -> StateInputId {
+    pub(crate) fn get_or_intern(
+        &mut self,
+        ty: PrebuiltType,
+        id: UserComponentId,
+    ) -> PrebuiltTypeId {
         let input_id = self.interner.get_or_intern(ty.into());
         self.component_id2type_id.insert(id, input_id);
         input_id
     }
 }
 
-impl std::ops::Index<StateInputId> for StateInputDb {
+impl std::ops::Index<PrebuiltTypeId> for PrebuiltTypeDb {
     type Output = ResolvedType;
 
-    fn index(&self, index: StateInputId) -> &Self::Output {
+    fn index(&self, index: PrebuiltTypeId) -> &Self::Output {
         &self.interner[index]
     }
 }
 
-impl std::ops::Index<UserComponentId> for StateInputDb {
+impl std::ops::Index<UserComponentId> for PrebuiltTypeDb {
     type Output = ResolvedType;
 
     fn index(&self, index: UserComponentId) -> &Self::Output {

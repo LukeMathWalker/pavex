@@ -20,7 +20,7 @@ pub fn handler() -> Response {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.state_input(t!(crate::C))
+    bp.prebuilt(t!(crate::C))
         .cloning(CloningStrategy::CloneIfNecessary);
     bp.singleton(f!(crate::singleton))
         .cloning(CloningStrategy::CloneIfNecessary);

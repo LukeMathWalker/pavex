@@ -129,7 +129,7 @@ impl ConstructibleDb {
                             input_types[info.input_index] = None;
                         }
                         HydratedComponent::Constructor(_)
-                        | HydratedComponent::StateInput(_)
+                        | HydratedComponent::PrebuiltType(_)
                         | HydratedComponent::PreProcessingMiddleware(_)
                         | HydratedComponent::RequestHandler(_) => {}
                     }
@@ -663,7 +663,7 @@ impl ConstructibleDb {
                 AnnotatedSnippet::empty(),
             ))
             .help(format!(
-                "Alternatively, use `Blueprint::state_input` to add a new input parameter of type `{unconstructible_type:?}` \
+                "Alternatively, use `Blueprint::prebuilt` to add a new input parameter of type `{unconstructible_type:?}` \
                 to the (generated) `build_application_state`."
             ))
             .build();

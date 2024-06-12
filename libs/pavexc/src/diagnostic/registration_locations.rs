@@ -41,7 +41,7 @@ pub(crate) fn get_f_macro_invocation_span(
             let argument = match node.method.to_string().as_str() {
                 "error_handler" | "error_observer" | "constructor" | "wrap" | "pre_process"
                 | "post_process" | "fallback" | "singleton" | "request_scoped" | "transient"
-                | "state_input" => node.args.first(),
+                | "prebuilt" => node.args.first(),
                 "route" => node.args.iter().nth(2),
                 s => {
                     tracing::trace!(
@@ -69,7 +69,7 @@ pub(crate) fn get_f_macro_invocation_span(
                         | ("Blueprint", "wrap")
                         | ("Blueprint", "pre_process")
                         | ("Blueprint", "post_process")
-                        | ("Blueprint", "state_input")
+                        | ("Blueprint", "prebuilt")
                         | ("Blueprint", "fallback") => {
                             // Blueprint::error_handler(bp, handler)
                             // Blueprint::error_observer(bp, observer)
@@ -99,7 +99,7 @@ pub(crate) fn get_f_macro_invocation_span(
                         | ("PreProcessingMiddleware", "new")
                         | ("PostProcessingMiddleware", "new")
                         | ("ErrorObserver", "new")
-                        | ("StateInput", "new")
+                        | ("PrebuiltType", "new")
                         | ("Fallback", "new") => {
                             // Constructor::new(constructor, lifecycle)
                             // Constructor::request_scoped(constructor)

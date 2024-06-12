@@ -28,7 +28,7 @@ pub async fn handler(spy: &Spy) -> Response {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.state_input(t!(self::Spy));
+    bp.prebuilt(t!(self::Spy));
     bp.nest(top_level());
     bp.nest(after_handler());
     bp.nest(early_return());

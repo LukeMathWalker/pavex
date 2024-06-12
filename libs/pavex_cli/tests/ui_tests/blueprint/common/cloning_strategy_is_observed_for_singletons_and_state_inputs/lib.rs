@@ -25,7 +25,7 @@ pub fn handler(a: A, b: B, c: C) -> Response {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.state_input(t!(crate::B));
+    bp.prebuilt(t!(crate::B));
     bp.singleton(f!(crate::singleton));
     bp.singleton(f!(crate::singleton2));
     bp.route(GET, "/", f!(crate::handler));

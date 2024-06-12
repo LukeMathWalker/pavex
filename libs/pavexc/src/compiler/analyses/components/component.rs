@@ -8,7 +8,7 @@ pub(crate) enum Component {
     RequestHandler {
         user_component_id: UserComponentId,
     },
-    StateInput {
+    PrebuiltType {
         user_component_id: UserComponentId,
     },
     WrappingMiddleware {
@@ -36,7 +36,7 @@ impl Component {
     /// Get the source id of this component.
     pub(crate) fn source_id(&self) -> SourceId {
         match self {
-            Component::StateInput { user_component_id }
+            Component::PrebuiltType { user_component_id }
             | Component::RequestHandler { user_component_id } => user_component_id.clone().into(),
             Component::WrappingMiddleware { source_id }
             | Component::PostProcessingMiddleware { source_id }

@@ -17,9 +17,9 @@ pub fn handler(a: &A, b: &B<String>, c: C<'static>) -> Response {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.state_input(t!(crate::A));
-    bp.state_input(t!(crate::B<std::string::String>));
-    bp.state_input(t!(crate::C<'static>))
+    bp.prebuilt(t!(crate::A));
+    bp.prebuilt(t!(crate::B<std::string::String>));
+    bp.prebuilt(t!(crate::C<'static>))
         .cloning(CloningStrategy::CloneIfNecessary);
     bp.route(GET, "/", f!(crate::handler));
     bp

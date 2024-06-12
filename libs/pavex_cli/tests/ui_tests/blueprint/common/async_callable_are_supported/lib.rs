@@ -36,7 +36,7 @@ pub fn blueprint() -> Blueprint {
     bp.singleton(f!(crate::http_client));
     bp.request_scoped(f!(crate::extract_path));
     bp.transient(f!(crate::logger));
-    bp.state_input(t!(crate::Config));
+    bp.prebuilt(t!(crate::Config));
     bp.route(GET, "/home", f!(crate::stream_file));
     bp
 }

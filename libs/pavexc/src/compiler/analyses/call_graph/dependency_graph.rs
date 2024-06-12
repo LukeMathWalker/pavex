@@ -128,7 +128,7 @@ impl DependencyGraph {
                         HydratedComponent::Constructor(constructor) => {
                             constructor.input_types().to_vec()
                         }
-                        HydratedComponent::StateInput(..) => vec![],
+                        HydratedComponent::PrebuiltType(..) => vec![],
                         HydratedComponent::RequestHandler(r) => r.input_types().to_vec(),
                         HydratedComponent::PostProcessingMiddleware(pp) => {
                             let mut input_types = pp.input_types().to_vec();

@@ -1,6 +1,9 @@
 # Constructors
 
-To make a type injectable, you need to **register a constructor** for it.
+To make a type injectable, you can **register a constructor** for it.  
+Pavex will then invoke your constructor to create instances of that type when needed.
+
+## Requirements
 
 A constructor must satisfy a few requirements:
 
@@ -70,7 +73,7 @@ Let's look at a few common scenarios to build some intuition around lifecycles:
 
 ## Recursive dependencies
 
-Dependency injection wouldn't be very useful if all constructors were required to take no input parameters.  
+Dependency injection wouldn't be very useful if all constructors were required to take no input parameters. 
 The dependency injection framework is **recursive**: constructors can take advantage of dependency injection
 to request the data they need to do their job.
 

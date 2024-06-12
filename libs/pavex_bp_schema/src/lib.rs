@@ -25,12 +25,12 @@ pub enum Component {
     FallbackRequestHandler(Fallback),
     NestedBlueprint(NestedBlueprint),
     ErrorObserver(ErrorObserver),
-    StateInput(StateInput),
+    PrebuiltType(PrebuiltType),
 }
 
-impl From<StateInput> for Component {
-    fn from(i: StateInput) -> Self {
-        Self::StateInput(i)
+impl From<PrebuiltType> for Component {
+    fn from(i: PrebuiltType) -> Self {
+        Self::PrebuiltType(i)
     }
 }
 
@@ -114,12 +114,12 @@ pub struct ErrorObserver {
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
-/// A type registered against a `Blueprint` via `Blueprint::state_input` to
+/// A type registered against a `Blueprint` via `Blueprint::prebuilt` to
 /// be added as an input parameter to `build_application_state`.
-pub struct StateInput {
+pub struct PrebuiltType {
     /// The type.
     pub input: Type,
-    /// The strategy dictating when the state input type can be cloned.
+    /// The strategy dictating when the prebuilt type can be cloned.
     pub cloning_strategy: Option<CloningStrategy>,
 }
 

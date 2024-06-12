@@ -1,9 +1,6 @@
 # Framework primitives
 
-You don't have to register a constructor for every type you want to inject.  
-Pavex provides a few types, called **framework primitives**, that you can inject
-without having to register a constructor for them.
-
+Pavex provides a few types, called **framework primitives**, that just work™️. They are always available to your components as input parameters—you don't have to register a constructor for them, nor mark them as prebuilt.  
 The framework primitives are:
 
 - [`RequestHead`][RequestHead]. The incoming request data, minus the body.

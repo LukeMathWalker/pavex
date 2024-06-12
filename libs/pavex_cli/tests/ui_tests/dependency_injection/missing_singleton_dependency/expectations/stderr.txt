@@ -17,6 +17,6 @@
   [31m│[0m  [2m12[0m │     todo!()
   [31m│[0m     ╰────
   [31m│[0m   [36mhelp:[0m Register a constructor for `&app::A`.
-  [31m│[0m [36m  help: [0mAlternatively, use `Blueprint::state_input` to add a
-  [31m│[0m         new input parameter of type `&app::A` to the (generated)
+  [31m│[0m [36m  help: [0mAlternatively, use `Blueprint::prebuilt` to add a new
+  [31m│[0m         input parameter of type `&app::A` to the (generated)
   [31m│[0m         `build_application_state`.

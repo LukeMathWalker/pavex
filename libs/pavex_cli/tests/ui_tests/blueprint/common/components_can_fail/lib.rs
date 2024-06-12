@@ -100,7 +100,7 @@ pub fn fallible_pre() -> Result<Processing, PreError> {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.state_input(t!(crate::Config));
+    bp.prebuilt(t!(crate::Config));
     bp.singleton(f!(crate::http_client));
     bp.request_scoped(f!(crate::extract_path))
         .error_handler(f!(crate::handle_extract_path_error));

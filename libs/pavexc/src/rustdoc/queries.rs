@@ -1088,7 +1088,7 @@ impl RustdocKindExt for ItemEnum {
             ItemEnum::Impl(_) => "an impl block",
             ItemEnum::TypeAlias(_) => "a type alias",
             ItemEnum::OpaqueTy(_) => "an opaque type",
-            ItemEnum::Constant(_) => "a constant",
+            ItemEnum::Constant { .. } => "a constant",
             ItemEnum::Static(_) => "a static",
             ItemEnum::ForeignType => "a foreign type",
             ItemEnum::Macro(_) => "a macro",

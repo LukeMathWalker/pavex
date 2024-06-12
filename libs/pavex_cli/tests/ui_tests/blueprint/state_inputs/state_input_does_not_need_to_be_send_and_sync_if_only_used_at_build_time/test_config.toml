@@ -1,4 +1,4 @@
-description = """State inputs can be !Send or !Sync if they are only used in
+description = """prebuilt typePrebuilt types can be !Send or !Sync if they are only used in
 build_application_state"""
 
 [expectations]

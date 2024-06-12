@@ -88,10 +88,10 @@ fn must_be_clonable(
                     type_.display_for_error(),
                 )
         }
-        CallableType::StateInput => {
+        CallableType::PrebuiltType => {
             format!(
                     "A type must be clonable if you set its cloning strategy to `CloneIfNecessary`.\n\
-                    The cloning strategy for `{}`, a state input, is `CloneIfNecessary`, but it doesn't implement the `Clone` trait.",
+                    The cloning strategy for `{}`, a prebuilt type, is `CloneIfNecessary`, but it doesn't implement the `Clone` trait.",
                     type_.display_for_error(),
                 )
         }
