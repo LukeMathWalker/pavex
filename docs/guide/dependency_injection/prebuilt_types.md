@@ -2,7 +2,7 @@
 
 A **prebuilt type** is a type that Pavex expects **you** to provide.  
 Whenever your mark a type as prebuilt, you're telling Pavex: "I'll build 
-this type on my own, and then pass an instance over to you".  
+this type on my own, and then pass an instance over to you". 
 In particular, you'll be passing that instance to [`build_application_state`](application_state.md), the function that Pavex generates to build the [`ApplicationState`](application_state.md) type.
 
 ## Registration
@@ -11,7 +11,7 @@ To mark a type as prebuilt, you must invoke the [`prebuilt`][Blueprint::prebuilt
 
 // TODO: code snippet
 
-You must provide an [unambiguous path](../cookbook.md) to the type, wrapped in the [`t!`][t] macro.
+You must provide an [unambiguous path](cookbook.md) to the type, wrapped in the [`t!`][t] macro.
 
 !!! warning "t! vs f!"
 
@@ -23,14 +23,14 @@ You must provide an [unambiguous path](../cookbook.md) to the type, wrapped in t
 
 Whenever you mark a type as prebuilt, the signature of the code-generated
 [`build_application_state`](application_state.md) function will change to include that type as an input parameter.  
-You'll have to adjust the calling code in [your server crate](../../project_structure.md#the-server-crate) accordingly. 
-This may be surprising at first, since you don't often touch the code inside [the server crate](../../project_structure.md#the-server-crate), but it's entirely expected. Don't worry: you just have to follow the compiler's suggestions to get back
+You'll have to adjust the calling code in [your server crate](../project_structure.md#the-server-crate) accordingly. 
+This may be surprising at first, since you don't often touch the code inside [the server crate](../project_structure.md#the-server-crate), but it's entirely expected. Don't worry: you just have to follow the compiler's suggestions to get back
 on track.
 
 !!! info "Immutability"
 
-    The only crate you're **never** supposed to modify is the [server SDK crate](../../project_structure.md#the-server-sdk), the one that Pavex generates for you. 
-    The [server crate](../../project_structure.md#the-server-crate), on the other hand, is yours to modify as you see fit.
+    The only crate you're **never** supposed to modify is the [server SDK crate](../project_structure.md#the-server-sdk), the one that Pavex generates for you. 
+    The [server crate](../project_structure.md#the-server-crate), on the other hand, is yours to modify as you see fit.
     
 ## Lifecycle
 
