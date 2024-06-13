@@ -9,7 +9,7 @@ In particular, you'll be passing that instance to [`build_application_state`](ap
 
 To mark a type as prebuilt, you must invoke the [`prebuilt`][Blueprint::prebuilt] method on your [`Blueprint`][Blueprint]:
 
-// TODO: code snippet
+--8<-- "doc_examples/guide/dependency_injection/prebuilt/project-registration.snap"
 
 You must provide an [unambiguous path](cookbook.md) to the type, wrapped in the [`t!`][t] macro.
 
@@ -23,7 +23,11 @@ You must provide an [unambiguous path](cookbook.md) to the type, wrapped in the 
 
 Whenever you mark a type as prebuilt, the signature of the code-generated
 [`build_application_state`](application_state.md) function will change to include that type as an input parameter.  
-You'll have to adjust the calling code in [your server crate](../project_structure.md#the-server-crate) accordingly. 
+In the generated server SDK for the example in the previous section, the signature of `build_application_state` will change to:
+
+--8<-- "doc_examples/guide/dependency_injection/prebuilt/01-build_state.snap"
+
+Since the signature of `build_application_state` changes, the calling code in [your server crate](../project_structure.md#the-server-crate) will have to change accordingly. 
 This may be surprising at first, since you don't often touch the code inside [the server crate](../project_structure.md#the-server-crate), but it's entirely expected. Don't worry: you just have to follow the compiler's suggestions to get back
 on track.
 

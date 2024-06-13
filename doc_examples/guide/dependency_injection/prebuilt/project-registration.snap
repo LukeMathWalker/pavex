@@ -1,0 +1,8 @@
+```rust title="src/base/blueprint.rs" hl_lines="4"
+// [...]
+pub fn blueprint() -> Blueprint {
+    let mut bp = Blueprint::new();
+    bp.prebuilt(t!(super::A));
+    // [...]
+}
+```

@@ -1,0 +1,6 @@
+```rust title="server_sdk/src/lib.rs" hl_lines="2"
+// [...]
+pub async fn build_application_state(v0: di_prebuilt::base::A) -> crate::ApplicationState {
+// [...]
+}
+```
