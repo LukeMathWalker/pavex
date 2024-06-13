@@ -9,6 +9,7 @@ use std::path::PathBuf;
 
 /// A callable (function or method) definition,
 /// parsed from the source file where it was defined.
+#[allow(dead_code)]
 pub struct CallableDefinition {
     pub attrs: Vec<syn::Attribute>,
     pub vis: Option<syn::Visibility>,
