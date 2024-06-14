@@ -42,10 +42,8 @@ pub fn http_client(_config: Config) -> HttpClient {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.prebuilt(t!(crate::Config))
-        .cloning(CloningStrategy::CloneIfNecessary);
-    bp.singleton(f!(crate::http_client))
-        .cloning(CloningStrategy::CloneIfNecessary);
+    bp.prebuilt(t!(crate::Config)).clone_if_necessary();
+    bp.singleton(f!(crate::http_client)).clone_if_necessary();
     bp.request_scoped(f!(crate::extract_path))
         .error_handler(f!(crate::handle_extract_path_error));
     bp.transient(f!(crate::logger));

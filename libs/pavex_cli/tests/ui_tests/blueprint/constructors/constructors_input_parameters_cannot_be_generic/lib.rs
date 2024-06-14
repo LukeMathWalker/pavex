@@ -25,15 +25,9 @@ pub fn handler(i: u8, j: u16, k: u32) -> pavex::response::Response {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.constructor(f!(crate::generic_constructor), Lifecycle::RequestScoped);
-    bp.constructor(
-        f!(crate::doubly_generic_constructor),
-        Lifecycle::RequestScoped,
-    );
-    bp.constructor(
-        f!(crate::triply_generic_constructor),
-        Lifecycle::RequestScoped,
-    );
+    bp.request_scoped(f!(crate::generic_constructor));
+    bp.request_scoped(f!(crate::doubly_generic_constructor));
+    bp.request_scoped(f!(crate::triply_generic_constructor));
     bp.route(GET, "/home", f!(crate::handler));
     bp
 }

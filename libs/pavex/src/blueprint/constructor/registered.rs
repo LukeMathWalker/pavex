@@ -74,6 +74,18 @@ impl<'a> RegisteredConstructor<'a> {
         self
     }
 
+    /// Set the cloning strategy to [`CloningStrategy::CloneIfNecessary`].  
+    /// Check out [`RegisteredConstructor::cloning`] for more details.
+    pub fn clone_if_necessary(self) -> Self {
+        self.cloning(CloningStrategy::CloneIfNecessary)
+    }
+
+    /// Set the cloning strategy to [`CloningStrategy::NeverClone`].  
+    /// Check out [`RegisteredConstructor::cloning`] for more details.
+    pub fn never_clone(self) -> Self {
+        self.cloning(CloningStrategy::NeverClone)
+    }
+
     /// Tell Pavex to ignore a specific [`Lint`] when analysing
     /// this constructor and the way it's used.
     pub fn ignore(mut self, lint: Lint) -> Self {

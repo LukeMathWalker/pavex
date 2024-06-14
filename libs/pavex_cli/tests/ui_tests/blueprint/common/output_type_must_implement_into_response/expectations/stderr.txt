@@ -68,7 +68,7 @@
   [31m│[0m  [2m41[0m │         .error_handler(f!(crate::error_handler));
   [31m│[0m     · [35;1m                       ────────────┬───────────[0m
   [31m│[0m     ·                   [35;1mThe error handler was registered here[0m
-  [31m│[0m  [2m42[0m │     bp.constructor(f!(crate::request_scoped), Lifecycle::RequestScoped)
+  [31m│[0m  [2m42[0m │     bp.request_scoped(f!(crate::request_scoped))
   [31m│[0m     ╰────
   [31m│[0m [36m  help: [0mImplement `pavex::response::IntoResponse` for
   [31m│[0m         `app::MyCustomOutputType`.
@@ -79,7 +79,7 @@
   [31m│[0m It doesn't implement `pavex::response::IntoResponse`.
   [31m│[0m
   [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:42:1]
-  [31m│[0m  [2m42[0m │     bp.constructor(f!(crate::request_scoped), Lifecycle::RequestScoped)
+  [31m│[0m  [2m42[0m │     bp.request_scoped(f!(crate::request_scoped))
   [31m│[0m  [2m43[0m │         .error_handler(f!(crate::error_handler));
   [31m│[0m     · [35;1m                       ────────────┬───────────[0m
   [31m│[0m     ·                   [35;1mThe error handler was registered here[0m

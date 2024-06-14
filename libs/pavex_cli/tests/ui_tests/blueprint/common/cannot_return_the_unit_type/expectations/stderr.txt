@@ -32,9 +32,9 @@
   [31m│[0m
   [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:61:1]
   [31m│[0m  [2m61[0m │     let mut bp = Blueprint::new();
-  [31m│[0m  [2m62[0m │     bp.constructor(f!(crate::constructor), Lifecycle::Singleton);
-  [31m│[0m     · [35;1m                   ───────────┬──────────[0m
-  [31m│[0m     ·                               [35;1m╰── The constructor was registered here[0m
+  [31m│[0m  [2m62[0m │     bp.singleton(f!(crate::constructor));
+  [31m│[0m     · [35;1m                 ───────────┬──────────[0m
+  [31m│[0m     ·                             [35;1m╰── The constructor was registered here[0m
   [31m│[0m  [2m63[0m │     bp.request_scoped(f!(crate::fallible_unit_constructor));
   [31m│[0m     ╰────
 
@@ -44,7 +44,7 @@
   [31m│[0m successful, `Ok(())`.
   [31m│[0m
   [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:62:1]
-  [31m│[0m  [2m62[0m │     bp.constructor(f!(crate::constructor), Lifecycle::Singleton);
+  [31m│[0m  [2m62[0m │     bp.singleton(f!(crate::constructor));
   [31m│[0m  [2m63[0m │     bp.request_scoped(f!(crate::fallible_unit_constructor));
   [31m│[0m     · [35;1m                      ──────────────────┬─────────────────[0m
   [31m│[0m     ·   [35;1mThe constructor was registered here ──╯[0m

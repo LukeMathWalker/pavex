@@ -19,8 +19,7 @@ pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.prebuilt(t!(crate::A));
     bp.prebuilt(t!(crate::B<std::string::String>));
-    bp.prebuilt(t!(crate::C<'static>))
-        .cloning(CloningStrategy::CloneIfNecessary);
+    bp.prebuilt(t!(crate::C<'static>)).clone_if_necessary();
     bp.route(GET, "/", f!(crate::handler));
     bp
 }

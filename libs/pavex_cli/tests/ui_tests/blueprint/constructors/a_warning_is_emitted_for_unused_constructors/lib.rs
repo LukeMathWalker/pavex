@@ -11,6 +11,6 @@ impl Unused {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.constructor(f!(crate::Unused::new), Lifecycle::RequestScoped);
+    bp.request_scoped(f!(crate::Unused::new));
     bp
 }

@@ -32,7 +32,7 @@ pub fn handler(s: Singleton) -> pavex::response::Response {
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.constructor(f!(crate::Singleton::new), Lifecycle::Singleton)
-        .cloning(CloningStrategy::CloneIfNecessary);
+        .clone_if_necessary();
     bp.wrap(f!(crate::mw));
     bp.route(GET, "/", f!(crate::handler));
     bp

@@ -5,17 +5,17 @@ commands:
 snippets:
   - name: "default_kit"
     source_path: "src/base/blueprint.rs"
-    ranges: [ "0..6", "7..9" ]
-    hl_lines: [ 6 ]
+    ranges: ["0..6", "7..9"]
+    hl_lines: [6]
   - name: "skip"
     source_path: "src/skip/blueprint.rs"
-    ranges: [ "0..9", "10..11" ]
-    hl_lines: [ 8 ]
+    ranges: ["0..9", "10..11"]
+    hl_lines: [8]
   - name: "tweak"
     source_path: "src/tweak/blueprint.rs"
-    ranges: [ "0..11", "12..13" ]
-    hl_lines: [ 8, 9, 10 ]
+    ranges: ["0..8", "9..10"]
+    hl_lines: [6, 7, 8]
   - name: "replace"
     source_path: "src/replace/blueprint.rs"
-    ranges: [ "0..11", "12..13" ]
-    hl_lines: [ 9, 10 ]
+    ranges: ["0..11", "12..13"]
+    hl_lines: [9, 10]

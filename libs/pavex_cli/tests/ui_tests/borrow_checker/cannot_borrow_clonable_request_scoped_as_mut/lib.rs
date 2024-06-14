@@ -15,8 +15,7 @@ pub fn handler(_a: &mut A) -> Response {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.request_scoped(f!(self::build))
-        .cloning(CloningStrategy::CloneIfNecessary);
+    bp.request_scoped(f!(self::build)).clone_if_necessary();
     bp.route(GET, "/", f!(self::handler));
     bp
 }
