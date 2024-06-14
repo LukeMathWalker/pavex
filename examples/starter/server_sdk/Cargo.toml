@@ -18,8 +18,8 @@ clippy = { all = "allow" }
 [dependencies]
 app = { version = "0.1.0", path = "../app" }
 http = "1.1.0"
-hyper = "1.3.0"
+hyper = "1.3.1"
 pavex = { version = "0.1.38", path = "../../../libs/pavex" }
 pavex_matchit = "0.7.4"
 pavex_tracing = { version = "0.1.38", path = "../../../libs/pavex_tracing" }
-thiserror = "1.0.58"
+thiserror = "1.0.61"
