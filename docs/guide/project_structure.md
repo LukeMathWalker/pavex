@@ -31,7 +31,7 @@ If you're in a hurry, here's a quick summary of the most important points:
   by [`cargo-px`][cargo-px] when building or running the project.  
   **You'll never modify `server_sdk` manually**. 
 - The `server` crate is the entrypoint for your application.
-  You'll have to change it whenever the [application state changes](dependency_injection/core_concepts/application_state.md) 
+  You'll have to change it whenever the [application state changes](dependency_injection/application_state.md) 
   or if you want to tweak the binary entrypoint (e.g. modify the default telemetry setup).
   Your integration tests live in this crate.
 
@@ -123,10 +123,10 @@ struct**.
 
 ### `ApplicationState`
 
-[`ApplicationState`](dependency_injection/core_concepts/application_state.md) holds all the types
+[`ApplicationState`](dependency_injection/application_state.md) holds all the types
 with a [`Singleton` lifecycle][Lifecycle::Singleton] that your application needs to access at runtime when processing a request.
 
-To build an instance of [`ApplicationState`](dependency_injection/core_concepts/application_state.md), 
+To build an instance of [`ApplicationState`](dependency_injection/application_state.md), 
 the server SDK exposes a function called `build_application_state`.
 
 ### `run`

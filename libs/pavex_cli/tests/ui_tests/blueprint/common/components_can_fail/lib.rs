@@ -2,8 +2,8 @@ use std::future::IntoFuture;
 use std::path::PathBuf;
 
 use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
-use pavex::f;
 use pavex::middleware::{Next, Processing};
+use pavex::{f, t};
 use pavex::{request::RequestHead, response::Response};
 
 pub struct Logger;
@@ -36,7 +36,7 @@ pub fn handle_logger_error(_e: &LoggerError) -> Response {
 pub fn request_handler(
     _inner: PathBuf,
     _logger: Logger,
-    _http_client: HttpClient,
+    _http_client: &HttpClient,
 ) -> Result<Response, HandlerError> {
     todo!()
 }
@@ -50,10 +50,6 @@ pub fn handle_handler_error(_e: &HandlerError) -> Response {
 
 #[derive(Clone)]
 pub struct Config;
-
-pub fn config() -> Config {
-    todo!()
-}
 
 #[derive(Clone)]
 pub struct HttpClient;
@@ -104,10 +100,11 @@ pub fn fallible_pre() -> Result<Processing, PreError> {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.constructor(f!(crate::http_client), Lifecycle::Singleton);
-    bp.constructor(f!(crate::extract_path), Lifecycle::RequestScoped)
+    bp.prebuilt(t!(crate::Config));
+    bp.singleton(f!(crate::http_client));
+    bp.request_scoped(f!(crate::extract_path))
         .error_handler(f!(crate::handle_extract_path_error));
-    bp.constructor(f!(crate::logger), Lifecycle::Transient)
+    bp.transient(f!(crate::logger))
         .error_handler(f!(crate::handle_logger_error));
     bp.wrap(f!(crate::fallible_wrapping_middleware))
         .error_handler(f!(crate::handle_middleware_error));

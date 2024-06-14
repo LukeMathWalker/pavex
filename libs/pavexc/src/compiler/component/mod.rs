@@ -3,6 +3,7 @@ mod error_handler;
 mod error_observer;
 mod post_processing_middleware;
 mod pre_processing_middleware;
+mod prebuilt_type;
 mod request_handler;
 mod wrapping_middleware;
 
@@ -27,6 +28,7 @@ pub(crate) use post_processing_middleware::{
 pub(crate) use pre_processing_middleware::{
     PreProcessingMiddleware, PreProcessingMiddlewareValidationError,
 };
+pub(crate) use prebuilt_type::{PrebuiltType, PrebuiltTypeValidationError};
 pub(crate) use request_handler::{RequestHandler, RequestHandlerValidationError};
 pub(crate) use wrapping_middleware::{WrappingMiddleware, WrappingMiddlewareValidationError};
 

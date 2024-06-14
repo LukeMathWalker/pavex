@@ -1,27 +1,28 @@
 use ahash::HashMap;
 use guppy::graph::PackageGraph;
 use indexmap::IndexSet;
-use miette::NamedSource;
 use std::collections::BTreeMap;
 use syn::spanned::Spanned;
 
 use pavex_bp_schema::{
-    Blueprint, CloningStrategy, Lifecycle, Lint, LintSetting, Location, RawCallableIdentifiers,
+    Blueprint, CloningStrategy, Lifecycle, Lint, LintSetting, Location, RawIdentifiers,
 };
 
 use crate::compiler::analyses::computations::ComputationDb;
+use crate::compiler::analyses::prebuilt_types::PrebuiltTypeDb;
 use crate::compiler::analyses::user_components::raw_db::RawUserComponentDb;
 use crate::compiler::analyses::user_components::resolved_paths::ResolvedPathDb;
 use crate::compiler::analyses::user_components::router::Router;
 use crate::compiler::analyses::user_components::{ScopeGraph, UserComponent, UserComponentId};
+use crate::compiler::component::{PrebuiltType, PrebuiltTypeValidationError};
 use crate::compiler::interner::Interner;
-use crate::compiler::resolvers::CallableResolutionError;
+use crate::compiler::resolvers::{resolve_type_path, CallableResolutionError, TypeResolutionError};
 use crate::diagnostic::{
-    convert_proc_macro_span, convert_rustdoc_span, AnnotatedSnippet, CompilerDiagnostic,
-    OptionalSourceSpanExt, SourceSpanExt,
+    AnnotatedSnippet, CallableDefinition, CompilerDiagnostic, OptionalSourceSpanExt, SourceSpanExt
 };
+use crate::language::ResolvedPath;
 use crate::rustdoc::CrateCollection;
-use crate::utils::anyhow2miette;
+use crate::utils::{anyhow2miette, comma_separated_list};
 use crate::{diagnostic, try_source};
 
 /// A database that contains all the user components that have been registered against the
@@ -39,7 +40,7 @@ use crate::{diagnostic, try_source};
 #[derive(Debug)]
 pub struct UserComponentDb {
     component_interner: Interner<UserComponent>,
-    identifiers_interner: Interner<RawCallableIdentifiers>,
+    identifiers_interner: Interner<RawIdentifiers>,
     /// Associate each user-registered component with the location it was
     /// registered at against the `Blueprint` in the user's source code.
     ///
@@ -52,10 +53,10 @@ pub struct UserComponentDb {
     /// Associate each user-registered component with its lint overrides, if any.
     /// If there is no entry for a component, there are no overrides.
     id2lints: HashMap<UserComponentId, BTreeMap<Lint, LintSetting>>,
-    /// For each constructor component, determine if it can be cloned or not.
+    /// For each constructible component, determine if it can be cloned or not.
     ///
-    /// Invariants: there is an entry for every constructor.
-    constructor_id2cloning_strategy: HashMap<UserComponentId, CloningStrategy>,
+    /// Invariants: there is an entry for every constructor and prebuilt type.
+    id2cloning_strategy: HashMap<UserComponentId, CloningStrategy>,
     /// Associate each request handler with the ordered list of middlewares that wrap around it.
     ///
     /// Invariants: there is an entry for every single request handler.
@@ -78,6 +79,7 @@ impl UserComponentDb {
     pub(crate) fn build(
         bp: &Blueprint,
         computation_db: &mut ComputationDb,
+        prebuilt_type_db: &mut PrebuiltTypeDb,
         package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
         diagnostics: &mut Vec<miette::Error>,
@@ -103,6 +105,7 @@ impl UserComponentDb {
             &resolved_path_db,
             &raw_db,
             computation_db,
+            prebuilt_type_db,
             package_graph,
             krate_collection,
             diagnostics,
@@ -113,7 +116,7 @@ impl UserComponentDb {
             component_interner,
             id2locations,
             id2lints,
-            constructor_id2cloning_strategy,
+            id2cloning_strategy,
             id2lifecycle,
             identifiers_interner,
             handler_id2middleware_ids,
@@ -127,7 +130,7 @@ impl UserComponentDb {
                 component_interner,
                 identifiers_interner,
                 id2locations,
-                constructor_id2cloning_strategy,
+                id2cloning_strategy,
                 id2lifecycle,
                 handler_id2middleware_ids,
                 handler_id2error_observer_ids,
@@ -154,6 +157,14 @@ impl UserComponentDb {
         self.component_interner
             .iter()
             .filter(|(_, c)| matches!(c, UserComponent::Constructor { .. }))
+    }
+
+    pub fn prebuilt_types(
+        &self,
+    ) -> impl Iterator<Item = (UserComponentId, &UserComponent)> + DoubleEndedIterator {
+        self.component_interner
+            .iter()
+            .filter(|(_, c)| matches!(c, UserComponent::PrebuiltType { .. }))
     }
 
     /// Iterate over all the request handler components in the database, returning their id and the
@@ -224,9 +235,10 @@ impl UserComponentDb {
     }
 
     /// Return the cloning strategy of the component with the given id.
-    /// This is going to be `Some(..)` for constructor components, and `None` for all other components.
+    /// This is going to be `Some(..)` for constructor and prebuilt type components, 
+    /// and `None` for all other components.
     pub fn get_cloning_strategy(&self, id: UserComponentId) -> Option<&CloningStrategy> {
-        self.constructor_id2cloning_strategy.get(&id)
+        self.id2cloning_strategy.get(&id)
     }
 
     /// Return the scope tree that was built from the application blueprint.
@@ -238,8 +250,8 @@ impl UserComponentDb {
     ///
     /// This can be used to recover the original import path passed by the user when registering
     /// this component, primarily for error reporting purposes.
-    pub fn get_raw_callable_identifiers(&self, id: UserComponentId) -> &RawCallableIdentifiers {
-        let raw_id = self.component_interner[id].raw_callable_identifiers_id();
+    pub fn get_raw_callable_identifiers(&self, id: UserComponentId) -> &RawIdentifiers {
+        let raw_id = self.component_interner[id].raw_identifiers_id();
         &self.identifiers_interner[raw_id]
     }
 
@@ -294,21 +306,154 @@ impl UserComponentDb {
         resolved_path_db: &ResolvedPathDb,
         raw_db: &RawUserComponentDb,
         computation_db: &mut ComputationDb,
+        prebuilt_type_db: &mut PrebuiltTypeDb,
         package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
         diagnostics: &mut Vec<miette::Error>,
     ) {
-        for (raw_id, _) in raw_db.iter() {
+        for (raw_id, user_component) in raw_db.iter() {
             let resolved_path = &resolved_path_db[raw_id];
-            if let Err(e) =
-                computation_db.resolve_and_intern(krate_collection, resolved_path, Some(raw_id))
-            {
-                Self::cannot_resolve_path(e, raw_id, raw_db, package_graph, diagnostics);
+            if let UserComponent::PrebuiltType { .. } = &user_component {
+                match resolve_type_path(resolved_path, krate_collection) {
+                    Ok(ty) => match PrebuiltType::new(ty) {
+                        Ok(prebuilt) => {
+                            prebuilt_type_db.get_or_intern(prebuilt, raw_id);
+                        }
+                        Err(e) => Self::invalid_prebuilt_type(
+                            e,
+                            resolved_path,
+                            raw_id,
+                            raw_db,
+                            package_graph,
+                            diagnostics,
+                        ),
+                    },
+                    Err(e) => Self::cannot_resolve_type_path(
+                        e,
+                        raw_id,
+                        raw_db,
+                        package_graph,
+                        diagnostics,
+                    ),
+                };
+            } else {
+                if let Err(e) =
+                    computation_db.resolve_and_intern(krate_collection, resolved_path, Some(raw_id))
+                {
+                    Self::cannot_resolve_callable_path(
+                        e,
+                        raw_id,
+                        raw_db,
+                        package_graph,
+                        diagnostics,
+                    );
+                }
             }
         }
     }
 
-    fn cannot_resolve_path(
+    fn invalid_prebuilt_type(
+        e: PrebuiltTypeValidationError,
+        resolved_path: &ResolvedPath,
+        component_id: UserComponentId,
+        component_db: &RawUserComponentDb,
+        package_graph: &PackageGraph,
+        diagnostics: &mut Vec<miette::Error>,
+    ) {
+        use std::fmt::Write as _;
+        
+        let location = component_db.get_location(component_id);
+        let source = try_source!(location, package_graph, diagnostics);
+        let label = source
+            .as_ref()
+            .map(|source| {
+                diagnostic::get_f_macro_invocation_span(&source, location)
+                    .labeled(format!("The prebuilt type was registered here"))
+            })
+            .flatten();
+        let mut error_msg = e.to_string();
+        let help: String;
+        match &e {
+            PrebuiltTypeValidationError::CannotHaveLifetimeParameters { ty } => {
+                if ty.has_implicit_lifetime_parameters() {
+                    writeln!(
+                        &mut error_msg, 
+                        "\n`{resolved_path}` has elided lifetime parameters, which might be non-'static."
+                    ).unwrap();
+                } else {
+                    let named_lifetimes = ty.named_lifetime_parameters();
+                    if named_lifetimes.len() == 1 {
+                        write!(
+                            &mut error_msg, 
+                            "\n`{resolved_path}` has a named lifetime parameter, `'{}`, that you haven't constrained to be 'static.",
+                            named_lifetimes[0]
+                        ).unwrap();
+                    } else {
+                        write!(
+                            &mut error_msg, 
+                            "\n`{resolved_path}` has {} named lifetime parameters that you haven't constrained to be 'static: ",
+                            named_lifetimes.len(),
+                        ).unwrap();
+                        comma_separated_list(&mut error_msg, named_lifetimes.iter(), |s| format!("`'{s}`"), "and").unwrap();
+                        write!(&mut error_msg, ".").unwrap();
+                    }
+                };
+                help = format!("Set the lifetime parameters to `'static` when registering the type as prebuilt. E.g. `bp.prebuilt(f!(crate::MyType<'static>))` for `struct MyType<'a>(&'a str)`.")
+            }
+            PrebuiltTypeValidationError::CannotHaveUnassignedGenericTypeParameters { ty } => {
+                let generic_type_parameters = ty.unassigned_generic_type_parameters();
+                if generic_type_parameters.len() == 1 {
+                    write!(
+                        &mut error_msg, 
+                        "\n`{resolved_path}` has a generic type parameter, `{}`, that you haven't assigned a concrete type to.",
+                        generic_type_parameters[0]
+                    ).unwrap();
+                } else {
+                    write!(
+                        &mut error_msg, 
+                        "\n`{resolved_path}` has {} generic type parameters that you haven't assigned concrete types to: ",
+                        generic_type_parameters.len(),
+                    ).unwrap();
+                    comma_separated_list(&mut error_msg, generic_type_parameters.iter(), |s| format!("`{s}`"), "and").unwrap();
+                    write!(&mut error_msg, ".").unwrap();
+                }
+                help = format!("Set the generic parameters to concrete types when registering the type as prebuilt. E.g. `bp.prebuilt(f!(crate::MyType<std::string::String>))` for `struct MyType<T>(T)`.")
+            }, 
+        }
+        let e = anyhow::anyhow!(e).context(error_msg);
+        let diagnostic = CompilerDiagnostic::builder(e)
+            .optional_source(source)
+            .optional_label(label)
+            .help(help)
+            .build();
+        diagnostics.push(diagnostic.into());
+    }
+
+    fn cannot_resolve_type_path(
+        e: TypeResolutionError,
+        component_id: UserComponentId,
+        component_db: &RawUserComponentDb,
+        package_graph: &PackageGraph,
+        diagnostics: &mut Vec<miette::Error>,
+    ) {
+        let location = component_db.get_location(component_id);
+        let source = try_source!(location, package_graph, diagnostics);
+        let label = source
+            .as_ref()
+            .map(|source| {
+                diagnostic::get_f_macro_invocation_span(&source, location)
+                    .labeled(format!("The type that we can't resolve"))
+            })
+            .flatten();
+        let diagnostic = CompilerDiagnostic::builder(e)
+            .optional_source(source)
+            .optional_label(label)
+            .help("Check that the path is spelled correctly and that the type is public.".into())
+            .build();
+        diagnostics.push(diagnostic.into());
+    }
+
+    fn cannot_resolve_callable_path(
         e: CallableResolutionError,
         component_id: UserComponentId,
         component_db: &RawUserComponentDb,
@@ -335,68 +480,22 @@ impl UserComponentDb {
                 diagnostics.push(diagnostic.into());
             }
             CallableResolutionError::InputParameterResolutionError(ref inner_error) => {
-                let definition_snippet = {
-                    if let Some(definition_span) = &inner_error.callable_item.span {
-                        match diagnostic::read_source_file(
-                            &definition_span.filename,
-                            &package_graph.workspace(),
-                        ) {
-                            Ok(source_contents) => {
-                                let span = convert_rustdoc_span(
-                                    &source_contents,
-                                    definition_span.to_owned(),
-                                );
-                                let span_contents =
-                                    &source_contents[span.offset()..(span.offset() + span.len())];
-                                let input = match &inner_error.callable_item.inner {
-                                    rustdoc_types::ItemEnum::Function(_) => {
-                                        if let Ok(item) = syn::parse_str::<syn::ItemFn>(span_contents) {
-                                            let mut inputs = item.sig.inputs.iter();
-                                            inputs.nth(inner_error.parameter_index).cloned()
-                                        } else if let Ok(item) =
-                                            syn::parse_str::<syn::ImplItemFn>(span_contents)
-                                        {
-                                            let mut inputs = item.sig.inputs.iter();
-                                            inputs.nth(inner_error.parameter_index).cloned()
-                                        } else {
-                                            panic!(
-                                                "Could not parse as a function or method:\n{span_contents}"
-                                            )
-                                        }
-                                    }
-                                    _ => unreachable!(),
-                                }
-                                    .unwrap();
-                                let s = convert_proc_macro_span(
-                                    span_contents,
-                                    match input {
-                                        syn::FnArg::Typed(typed) => typed.ty.span(),
-                                        syn::FnArg::Receiver(r) => r.span(),
-                                    },
-                                );
-                                let label = miette::SourceSpan::new(
-                                    // We must shift the offset forward because it's the
-                                    // offset from the beginning of the file slice that
-                                    // we deserialized, instead of the entire file
-                                    (s.offset() + span.offset()).into(),
-                                    s.len().into(),
-                                )
-                                .labeled("I don't know how handle this parameter".into());
-                                let source_path = definition_span.filename.to_str().unwrap();
-                                Some(AnnotatedSnippet::new(
-                                    NamedSource::new(source_path, source_contents),
-                                    label,
-                                ))
-                            }
-                            Err(e) => {
-                                tracing::warn!("Could not read source file: {:?}", e);
-                                None
-                            }
-                        }
+                let definition_snippet = 
+                    if let Some(def) = CallableDefinition::compute_from_item(&inner_error.callable_item, package_graph) {
+                        let mut inputs = def.sig.inputs.iter();
+                        let input = inputs.nth(inner_error.parameter_index).cloned().unwrap();
+                        let local_span =  match input {
+                            syn::FnArg::Typed(typed) => typed.ty.span(),
+                            syn::FnArg::Receiver(r) => r.span(),
+                        };
+                            let label = def.convert_local_span(local_span).labeled("I don't know how handle this parameter".into());
+                            Some(AnnotatedSnippet::new(
+                                def.named_source(),
+                                label,
+                            ))
                     } else {
                         None
-                    }
-                };
+                    };
                 let label = source
                     .as_ref()
                     .map(|source| {
@@ -431,65 +530,18 @@ impl UserComponentDb {
             }
             CallableResolutionError::OutputTypeResolutionError(ref inner_error) => {
                 let annotated_snippet = {
-                    if let Some(definition_span) = &inner_error.callable_item.span {
-                        match diagnostic::read_source_file(
-                            &definition_span.filename,
-                            &package_graph.workspace(),
-                        ) {
-                            Ok(source_contents) => {
-                                let span = convert_rustdoc_span(
-                                    &source_contents,
-                                    definition_span.to_owned(),
-                                );
-                                let span_contents = source_contents
-                                    [span.offset()..(span.offset() + span.len())]
-                                    .to_string();
-                                let output = match &inner_error.callable_item.inner {
-                                    rustdoc_types::ItemEnum::Function(_) => {
-                                        if let Ok(item) =
-                                            syn::parse_str::<syn::ItemFn>(&span_contents)
-                                        {
-                                            item.sig.output
-                                        } else if let Ok(item) =
-                                            syn::parse_str::<syn::ImplItemFn>(&span_contents)
-                                        {
-                                            item.sig.output
-                                        } else {
-                                            panic!(
-                                                "Could not parse as a function or method:\n{span_contents}"
-                                            )
-                                        }
-                                    }
-                                    _ => unreachable!(),
-                                };
-                                match output {
-                                    syn::ReturnType::Default => None,
-                                    syn::ReturnType::Type(_, type_) => Some(type_.span()),
-                                }
-                                .map(|s| {
-                                    let s = convert_proc_macro_span(&span_contents, s);
-                                    let label = miette::SourceSpan::new(
-                                        // We must shift the offset forward because it's the
-                                        // offset from the beginning of the file slice that
-                                        // we deserialized, instead of the entire file
-                                        (s.offset() + span.offset()).into(),
-                                        s.len().into(),
-                                    )
-                                    .labeled("The output type that I can't handle".into());
-                                    AnnotatedSnippet::new(
-                                        NamedSource::new(
-                                            definition_span.filename.to_str().unwrap(),
-                                            source_contents,
-                                        ),
-                                        label,
-                                    )
-                                })
-                            }
-                            Err(e) => {
-                                tracing::warn!("Could not read source file: {:?}", e);
-                                None
-                            }
+                    if let Some(def) = CallableDefinition::compute_from_item(&inner_error.callable_item, package_graph) {
+                        match &def.sig.output {
+                            syn::ReturnType::Default => None,
+                            syn::ReturnType::Type(_, type_) => Some(type_.span()),
                         }
+                        .map(|s| {
+                            let label = def.convert_local_span(s).labeled("The output type that I can't handle".into());
+                            AnnotatedSnippet::new(
+                                def.named_source(),
+                                label,
+                            )
+                        })
                     } else {
                         None
                     }

@@ -12,7 +12,7 @@ use super::{
     BodySizeLimit, RawIncomingBody,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[non_exhaustive]
 /// Buffer the entire body of an incoming request in memory.
 ///

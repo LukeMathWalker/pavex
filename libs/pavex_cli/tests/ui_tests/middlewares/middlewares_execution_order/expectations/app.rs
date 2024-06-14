@@ -9,9 +9,8 @@ struct ServerState {
 pub struct ApplicationState {
     s0: app::Spy,
 }
-pub async fn build_application_state(v0: app::SpyState) -> crate::ApplicationState {
-    let v1 = app::Spy::new(v0);
-    crate::ApplicationState { s0: v1 }
+pub async fn build_application_state(v0: app::Spy) -> crate::ApplicationState {
+    crate::ApplicationState { s0: v0 }
 }
 pub fn run(
     server_builder: pavex::server::Server,

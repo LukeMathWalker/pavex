@@ -1,6 +1,6 @@
 # Cookbook
 
-This cookbook contains a collection of reference examples for Pavex's dependency injection framework.  
+This cookbook contains a collection of reference examples for Pavex's dependency injection framework. 
 It covers the registration syntax for common use cases (free functions, methods) as well as more advanced ones
 (trait methods, generics, etc.).
 

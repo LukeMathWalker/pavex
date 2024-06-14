@@ -1,7 +1,7 @@
 # Errors
 
 [Request handlers](../routing/request_handlers.md), 
-[constructors](../dependency_injection/core_concepts/constructors.md), [middlewares](../middleware/index.md): 
+[constructors](../dependency_injection/constructors.md), [middlewares](../middleware/index.md): 
 they can all be **fallible**.  
 
 --8<-- "doc_examples/guide/errors/error_handlers/project-fallible.snap"

@@ -1,32 +1,31 @@
 digraph "GET /home - 0" {
-    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_0::Next0>) -> pavex::response::Response"]
-    1 [ label = "pavex::middleware::Next::new(crate::route_0::Next0) -> pavex::middleware::Next<crate::route_0::Next0>"]
-    2 [ label = "crate::route_0::Next0(app::HttpClient, pavex::request::RequestHead) -> crate::route_0::Next0"]
-    3 [ label = "app::HttpClient"]
-    4 [ label = "pavex::request::RequestHead"]
+    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_0::Next0<'a>>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_0::Next0<'a>) -> pavex::middleware::Next<crate::route_0::Next0<'a>>"]
+    2 [ label = "crate::route_0::Next0(pavex::request::RequestHead, &'a app::HttpClient) -> crate::route_0::Next0<'a>"]
+    3 [ label = "pavex::request::RequestHead"]
     5 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    6 [ label = "&app::HttpClient"]
     1 -> 0 [ ]
     2 -> 1 [ ]
-    4 -> 2 [ ]
     3 -> 2 [ ]
     0 -> 5 [ ]
+    6 -> 2 [ ]
 }
 
 digraph "GET /home - 1" {
-    0 [ label = "app::fallible_wrapping_middleware(pavex::middleware::Next<crate::route_0::Next1>) -> core::prelude::rust_2015::Result<pavex::response::Response, app::MiddlewareError>"]
-    1 [ label = "pavex::middleware::Next::new(crate::route_0::Next1) -> pavex::middleware::Next<crate::route_0::Next1>"]
-    2 [ label = "crate::route_0::Next1(app::HttpClient, pavex::request::RequestHead) -> crate::route_0::Next1"]
-    3 [ label = "app::HttpClient"]
-    4 [ label = "pavex::request::RequestHead"]
+    0 [ label = "app::fallible_wrapping_middleware(pavex::middleware::Next<crate::route_0::Next1<'a>>) -> core::prelude::rust_2015::Result<pavex::response::Response, app::MiddlewareError>"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_0::Next1<'a>) -> pavex::middleware::Next<crate::route_0::Next1<'a>>"]
+    2 [ label = "crate::route_0::Next1(pavex::request::RequestHead, &'a app::HttpClient) -> crate::route_0::Next1<'a>"]
+    3 [ label = "pavex::request::RequestHead"]
     5 [ label = "core::prelude::rust_2015::Result<pavex::response::Response, app::MiddlewareError> -> pavex::response::Response"]
     6 [ label = "core::prelude::rust_2015::Result<pavex::response::Response, app::MiddlewareError> -> app::MiddlewareError"]
     7 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     8 [ label = "app::handle_middleware_error(&app::MiddlewareError) -> pavex::response::Response"]
     9 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     10 [ label = "`match`"]
+    11 [ label = "&app::HttpClient"]
     1 -> 0 [ ]
     2 -> 1 [ ]
-    4 -> 2 [ ]
     3 -> 2 [ ]
     10 -> 5 [ ]
     10 -> 6 [ ]
@@ -34,6 +33,7 @@ digraph "GET /home - 1" {
     5 -> 7 [ ]
     8 -> 9 [ ]
     0 -> 10 [ ]
+    11 -> 2 [ ]
 }
 
 digraph "GET /home - 2" {
@@ -53,10 +53,9 @@ digraph "GET /home - 2" {
 }
 
 digraph "GET /home - 3" {
-    0 [ label = "app::request_handler(std::path::PathBuf, app::Logger, app::HttpClient) -> core::prelude::rust_2015::Result<pavex::response::Response, app::HandlerError>"]
+    0 [ label = "app::request_handler(std::path::PathBuf, app::Logger, &app::HttpClient) -> core::prelude::rust_2015::Result<pavex::response::Response, app::HandlerError>"]
     1 [ label = "core::prelude::rust_2015::Result<std::path::PathBuf, app::ExtractPathError<alloc::string::String>> -> std::path::PathBuf"]
     2 [ label = "core::prelude::rust_2015::Result<app::Logger, app::LoggerError> -> app::Logger"]
-    3 [ label = "app::HttpClient"]
     4 [ label = "app::logger() -> core::prelude::rust_2015::Result<app::Logger, app::LoggerError>"]
     5 [ label = "app::extract_path(pavex::request::RequestHead) -> core::prelude::rust_2015::Result<std::path::PathBuf, app::ExtractPathError<alloc::string::String>>"]
     6 [ label = "pavex::request::RequestHead"]
@@ -80,7 +79,7 @@ digraph "GET /home - 3" {
     24 [ label = "`match`"]
     25 [ label = "`match`"]
     26 [ label = "`match`"]
-    3 -> 0 [ ]
+    27 [ label = "&app::HttpClient"]
     2 -> 0 [ ]
     24 -> 9 [ ]
     1 -> 0 [ ]
@@ -106,6 +105,7 @@ digraph "GET /home - 3" {
     4 -> 24 [ ]
     5 -> 25 [ ]
     16 -> 26 [ ]
+    27 -> 0 [ ]
 }
 
 digraph "GET /home - 4" {

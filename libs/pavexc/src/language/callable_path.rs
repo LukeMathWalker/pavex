@@ -1,8 +1,8 @@
 use std::fmt::{Display, Formatter};
 
-use syn::{ExprPath, GenericArgument, PathArguments, Type};
+use syn::{ExprPath, GenericArgument, PathArguments, Type, TypePath};
 
-use pavex_bp_schema::RawCallableIdentifiers;
+use pavex_bp_schema::RawIdentifiers;
 
 use super::Lifetime;
 
@@ -78,13 +78,22 @@ impl CallPathLifetime {
 }
 
 impl CallPath {
-    pub fn parse(callable_identifiers: &RawCallableIdentifiers) -> Result<Self, InvalidCallPath> {
-        let callable_path: ExprPath =
-            syn::parse_str(callable_identifiers.raw_path()).map_err(|e| InvalidCallPath {
-                raw_identifiers: callable_identifiers.to_owned(),
+    pub fn parse_type_path(identifiers: &RawIdentifiers) -> Result<Self, InvalidCallPath> {
+        let callable_path: TypePath =
+            syn::parse_str(identifiers.raw_path()).map_err(|e| InvalidCallPath {
+                raw_identifiers: identifiers.to_owned(),
                 parsing_error: e,
             })?;
-        Self::parse_from_path(callable_path.path, callable_path.qself)
+        Self::parse_from_path(callable_path.path, None)
+    }
+
+    pub fn parse_callable_path(identifiers: &RawIdentifiers) -> Result<Self, InvalidCallPath> {
+        let expr =
+            syn::parse_str::<ExprPath>(identifiers.raw_path()).map_err(|e| InvalidCallPath {
+                raw_identifiers: identifiers.to_owned(),
+                parsing_error: e,
+            })?;
+        Self::parse_from_path(expr.path, expr.qself)
     }
 
     fn parse_qself(qself: syn::QSelf) -> Result<CallPathQualifiedSelf, InvalidCallPath> {
@@ -311,7 +320,7 @@ impl Display for CallPathLifetime {
 
 #[derive(Debug, thiserror::Error, Clone)]
 pub struct InvalidCallPath {
-    pub(crate) raw_identifiers: RawCallableIdentifiers,
+    pub(crate) raw_identifiers: RawIdentifiers,
     #[source]
     pub(crate) parsing_error: syn::Error,
 }

@@ -12,7 +12,7 @@ use crate::telemetry::ServerRequestId;
 ///
 /// # Guide
 ///
-/// Check out the ["Kits"](https://pavex.dev/docs/guide/dependency_injection/core_concepts/kits)
+/// Check out the ["Kits"](https://pavex.dev/docs/guide/dependency_injection/kits)
 /// section of Pavex's guide for a thorough introduction to kits and how to
 /// customize them.
 ///

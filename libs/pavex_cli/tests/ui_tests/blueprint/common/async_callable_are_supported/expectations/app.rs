@@ -56,10 +56,7 @@ async fn route_request(
         0u32 => {
             match &request_head.method {
                 &pavex::http::Method::GET => {
-                    route_0::entrypoint(
-                            server_state.application_state.s0.clone(),
-                            request_head,
-                        )
+                    route_0::entrypoint(request_head, &server_state.application_state.s0)
                         .await
                 }
                 _ => {
@@ -75,23 +72,23 @@ async fn route_request(
     }
 }
 pub mod route_0 {
-    pub async fn entrypoint(
-        s_0: app::HttpClient,
-        s_1: pavex::request::RequestHead,
+    pub async fn entrypoint<'a>(
+        s_0: pavex::request::RequestHead,
+        s_1: &'a app::HttpClient,
     ) -> pavex::response::Response {
         let response = wrapping_0(s_0, s_1).await;
         response
     }
-    async fn stage_1(
-        s_0: app::HttpClient,
-        s_1: pavex::request::RequestHead,
+    async fn stage_1<'a>(
+        s_0: pavex::request::RequestHead,
+        s_1: &'a app::HttpClient,
     ) -> pavex::response::Response {
         let response = handler(s_0, s_1).await;
         response
     }
     async fn wrapping_0(
-        v0: app::HttpClient,
-        v1: pavex::request::RequestHead,
+        v0: pavex::request::RequestHead,
+        v1: &app::HttpClient,
     ) -> pavex::response::Response {
         let v2 = crate::route_0::Next0 {
             s_0: v0,
@@ -103,25 +100,25 @@ pub mod route_0 {
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
     }
     async fn handler(
-        v0: app::HttpClient,
-        v1: pavex::request::RequestHead,
+        v0: pavex::request::RequestHead,
+        v1: &app::HttpClient,
     ) -> pavex::response::Response {
-        let v2 = app::extract_path(v1).await;
+        let v2 = app::extract_path(v0).await;
         let v4 = {
             let v3 = app::logger().await;
-            app::stream_file(v2, v3, v0).await
+            app::stream_file(v2, v3, v1).await
         };
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
     }
-    struct Next0<T>
+    struct Next0<'a, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
-        s_0: app::HttpClient,
-        s_1: pavex::request::RequestHead,
-        next: fn(app::HttpClient, pavex::request::RequestHead) -> T,
+        s_0: pavex::request::RequestHead,
+        s_1: &'a app::HttpClient,
+        next: fn(pavex::request::RequestHead, &'a app::HttpClient) -> T,
     }
-    impl<T> std::future::IntoFuture for Next0<T>
+    impl<'a, T> std::future::IntoFuture for Next0<'a, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {

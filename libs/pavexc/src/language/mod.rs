@@ -1,7 +1,7 @@
 pub(crate) use callable::{Callable, InvocationStyle};
 pub(crate) use callable_path::{CallPath, InvalidCallPath};
 pub(crate) use resolved_path::{
-    ParseError, ResolvedPath, ResolvedPathGenericArgument, ResolvedPathLifetime,
+    ParseError, PathKind, ResolvedPath, ResolvedPathGenericArgument, ResolvedPathLifetime,
     ResolvedPathQualifiedSelf, ResolvedPathSegment, ResolvedPathType, UnknownPath,
 };
 pub(crate) use resolved_type::{

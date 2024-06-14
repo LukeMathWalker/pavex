@@ -1,0 +1,4 @@
+description = """You can inject a missing type as a prebuilt type."""
+
+[expectations]
+codegen = "pass"

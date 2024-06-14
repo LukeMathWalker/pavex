@@ -90,7 +90,7 @@ It borrows from the buffered request body if possible, it allocates a new `Strin
 [`Cow<'_, str>`][Cow] strikes a balance between performance and robustness: you don't have to worry about a runtime
 error if the field is percent-encoded, but you minimise memory usage when it is.
 
-[ApiKit]: ../../../dependency_injection/core_concepts/kits.md
+[ApiKit]: ../../../dependency_injection/kits.md
 [BufferedBody]: ../../../../api_reference/pavex/request/body/struct.BufferedBody.html
 [UrlEncodedBody]: ../../../../api_reference/pavex/request/body/struct.UrlEncodedBody.html
 [UrlEncodedBody::register]: ../../../../api_reference/pavex/request/body/struct.UrlEncodedBody.html#method.register

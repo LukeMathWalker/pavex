@@ -44,27 +44,27 @@ impl Location {
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
-/// All the information required to identify a callable registered against a [`Blueprint`].
+/// All the information required to identify a component registered against a [`Blueprint`].
 ///
 /// It is an implementation detail of the builder.
 ///
 /// [`Blueprint`]: crate::blueprint::Blueprint
-pub struct RawCallableIdentifiers {
-    /// Information on the callsite where the callable was registered with the [`Blueprint`].
+pub struct RawIdentifiers {
+    /// Information on the callsite where the component was registered with the [`Blueprint`].
     pub registered_at: RegisteredAt,
-    /// A fully-qualified path pointing at a callable.
+    /// An unambiguous path to the type/callable.
     pub import_path: String,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash, serde::Serialize, serde::Deserialize)]
-/// Information on the callsite where a callable was registered.
+/// Information on the callsite where the component was registered.
 pub struct RegisteredAt {
-    /// The name of the crate that registered the callable against the blueprint builder,
+    /// The name of the crate that registered the component against the blueprint builder,
     /// as it appears in the `package` section of its `Cargo.toml`.  
     /// In particular,
     /// it has *not* been normalised—e.g. hyphens are not replaced with underscores.  
     ///
-    /// This information is needed to resolve the callable import path unambiguously.
+    /// This information is needed to resolve the import path unambiguously.
     ///
     /// E.g. `my_crate::module_1::type_2`—which crate is `my_crate`?
     /// This is not obvious due to the possibility of [renaming dependencies in `Cargo.toml`](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html?highlight=rename,depende#renaming-dependencies-in-cargotoml):
@@ -78,11 +78,11 @@ pub struct RegisteredAt {
     /// my_crate = { version = "0.1", registry = "custom", package = "their_crate" }
     /// ```
     pub crate_name: String,
-    /// The path to the module where the callable was registered, obtained via [`module_path!`].
+    /// The path to the module where the component was registered, obtained via [`module_path!`].
     pub module_path: String,
 }
 
-impl RawCallableIdentifiers {
+impl RawIdentifiers {
     #[track_caller]
     pub fn from_raw_parts(import_path: String, registered_at: RegisteredAt) -> Self {
         Self {

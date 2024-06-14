@@ -4,10 +4,11 @@ use guppy::graph::PackageGraph;
 use miette::{MietteError, NamedSource};
 
 use pavex_bp_schema::Location;
+use relative_path::PathExt;
 
 #[derive(Debug, Clone)]
 pub struct ParsedSourceFile {
-    pub(crate) path: std::path::PathBuf,
+    pub(crate) display_path: String,
     pub(crate) contents: String,
     pub(crate) parsed: syn::File,
 }
@@ -17,10 +18,19 @@ impl ParsedSourceFile {
         path: std::path::PathBuf,
         workspace: &guppy::graph::Workspace,
     ) -> Result<Self, std::io::Error> {
+        let display_path = if path.is_absolute() {
+            if let Ok(relative) = path.relative_to(workspace.root()) {
+                relative.to_string()
+            } else {
+                path.display().to_string()
+            }
+        } else {
+            path.display().to_string()
+        };
         let source = read_source_file(&path, workspace)?;
         let parsed = syn::parse_str(&source).unwrap();
         Ok(Self {
-            path,
+            display_path,
             contents: source,
             parsed,
         })
@@ -29,8 +39,7 @@ impl ParsedSourceFile {
 
 impl From<ParsedSourceFile> for NamedSource<String> {
     fn from(f: ParsedSourceFile) -> Self {
-        let file_name = f.path.to_string_lossy();
-        NamedSource::new(file_name, f.contents)
+        NamedSource::new(f.display_path, f.contents)
     }
 }
 

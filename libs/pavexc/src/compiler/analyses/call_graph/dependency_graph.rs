@@ -50,7 +50,7 @@ impl DependencyGraph {
             lifecycle2n_allowed_invocations(component_db.lifecycle(component_id))
         };
         let component_id2node = |id: ComponentId| {
-            if let Computation::FrameworkItem(i) = component_db
+            if let Computation::PrebuiltType(i) = component_db
                 .hydrated_component(id, computation_db)
                 .computation()
             {
@@ -128,6 +128,7 @@ impl DependencyGraph {
                         HydratedComponent::Constructor(constructor) => {
                             constructor.input_types().to_vec()
                         }
+                        HydratedComponent::PrebuiltType(..) => vec![],
                         HydratedComponent::RequestHandler(r) => r.input_types().to_vec(),
                         HydratedComponent::PostProcessingMiddleware(pp) => {
                             let mut input_types = pp.input_types().to_vec();
@@ -330,7 +331,7 @@ fn cycle_error(
         {
             Computation::Callable(c) => c.path.clone(),
             Computation::MatchResult(_) => unreachable!(),
-            Computation::FrameworkItem(_) => unreachable!(
+            Computation::PrebuiltType(_) => unreachable!(
                 "Framework items do not have dependencies, so they can't be part of a cycle"
             ),
         };
@@ -338,7 +339,7 @@ fn cycle_error(
         let dependent_path = match dependent_component.computation() {
             Computation::Callable(c) => c.path.clone(),
             Computation::MatchResult(_) => unreachable!(),
-            Computation::FrameworkItem(_) => unreachable!(
+            Computation::PrebuiltType(_) => unreachable!(
                 "Framework items do not have dependencies, so they can't be part of a cycle"
             ),
         };
@@ -439,7 +440,7 @@ impl RawDependencyGraphExt for RawDependencyGraph {
                                 Computation::Callable(c) => {
                                     format!("label = \"{c:?}\"")
                                 }
-                                Computation::FrameworkItem(i) => {
+                                Computation::PrebuiltType(i) => {
                                     format!("label = \"{i:?}\"")
                                 }
                             }

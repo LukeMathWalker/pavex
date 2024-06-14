@@ -14,7 +14,7 @@ and error handler:
 
 --8<-- "doc_examples/guide/request_data/query_params/project-installation.snap"
 
-If you're using the default [`ApiKit`](../../dependency_injection/core_concepts/kits.md), 
+If you're using the default [`ApiKit`](../../dependency_injection/kits.md), 
 you don't need to register a constructor for [`QueryParams<T>`][QueryParams] manually:
 it's already included in the kit.
 

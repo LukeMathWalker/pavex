@@ -1,0 +1,5 @@
+description = """Prebuilt types can be cloned in build_application_state
+as well as in a request handler pipeline."""
+
+[expectations]
+codegen = "pass"

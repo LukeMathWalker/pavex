@@ -22,8 +22,7 @@ pub fn without_bound<T>(input: T) -> Output<T> {
 }
 ```
 
-From Pavex's perspective, `with_bound` and `without_bound` are equivalent: they take `T` 
-as input parameter and return `Output<T>`.  
+From Pavex's perspective, `with_bound` and `without_bound` are equivalent: they take `T` as input parameter and return `Output<T>`.  
 
 As a consequence, Pavex won't detect any errors related to trait bounds in the code-generation phase.
 Those errors will be picked up by the Rust compiler when it tries to compile the generated code.
@@ -39,7 +38,7 @@ pub fn naked_output<T>(/* ... */) -> T {
 }
 ```
 
-From Pavex's perspective, `naked_output` is a universal constructor: it can build any type.  
+From Pavex's perspective, `naked_output` is a universal constructor: it can build any type. 
 It will therefore reject the constructor with an error message at compile time.
 
 You can have a naked generic input parameter,

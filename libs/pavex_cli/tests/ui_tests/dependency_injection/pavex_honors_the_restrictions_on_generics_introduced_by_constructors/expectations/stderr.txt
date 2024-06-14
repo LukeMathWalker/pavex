@@ -1,7 +1,7 @@
 [31m[1mERROR[0m[39m: 
-  [31m×[0m I can't invoke your request handler, `app::handler`, because it needs an
-  [31m│[0m instance of `app::Tied<u8, char>` as input, but I can't find a constructor
-  [31m│[0m for that type.
+  [31m×[0m I can't find a constructor for `app::Tied<u8, char>`.
+  [31m│[0m I need an instance of `app::Tied<u8, char>` to invoke your request
+  [31m│[0m handler, `app::handler`.
   [31m│[0m
   [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:19:1]
   [31m│[0m  [2m19[0m │     bp.constructor(f!(crate::tied), Lifecycle::RequestScoped);
@@ -17,4 +17,7 @@
   [31m│[0m     ·     [35;1mI don't know how to construct an instance of this input parameter[0m
   [31m│[0m  [2m13[0m │ ) -> pavex::response::Response {
   [31m│[0m     ╰────
-  [31m│[0m [36m  help: [0mRegister a constructor for `app::Tied<u8, char>`
+  [31m│[0m   [36mhelp:[0m Register a constructor for `app::Tied<u8, char>`.
+  [31m│[0m [36m  help: [0mAlternatively, use `Blueprint::prebuilt` to add a new input
+  [31m│[0m         parameter of type `app::Tied<u8, char>` to the (generated)
+  [31m│[0m         `build_application_state`.

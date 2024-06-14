@@ -1,13 +1,13 @@
 use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
-use pavex::f;
+use pavex::{f, t};
 use pavex::{request::path::PathParams, response::Response};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
 #[derive(Clone, Debug)]
-pub struct SpyState(Arc<Mutex<Vec<String>>>);
+pub struct Spy(Arc<Mutex<Vec<String>>>);
 
-impl SpyState {
+impl Spy {
     pub fn new() -> Self {
         Self(Arc::new(Mutex::new(Vec::new())))
     }
@@ -21,25 +21,6 @@ impl SpyState {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct Spy {
-    state: SpyState,
-}
-
-impl Spy {
-    pub fn new(state: SpyState) -> Self {
-        Self { state }
-    }
-
-    pub async fn push(&self, s: String) {
-        self.state.push(s).await
-    }
-
-    pub async fn get(&self) -> Vec<String> {
-        self.state.get().await
-    }
-}
-
 pub async fn handler(spy: &Spy) -> Response {
     spy.push("handler".to_string()).await;
     Response::ok()
@@ -47,7 +28,7 @@ pub async fn handler(spy: &Spy) -> Response {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.constructor(f!(crate::Spy::new), Lifecycle::Singleton);
+    bp.prebuilt(t!(self::Spy));
     bp.nest(top_level());
     bp.nest(after_handler());
     bp.nest(early_return());

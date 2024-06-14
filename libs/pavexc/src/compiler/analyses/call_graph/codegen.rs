@@ -275,7 +275,7 @@ fn _codegen_callable_closure_body(
                         // We already bound the match result to a variable name when handling
                         // its parent `MatchBranching` node.
                     }
-                    Computation::FrameworkItem(_) => {
+                    Computation::PrebuiltType(_) => {
                         unreachable!("Framework items should only appear as input parameters.")
                     }
                 }

@@ -1,10 +1,9 @@
 # Dependency injection
 
 When working on a Pavex application, you don't have to worry about **wiring**.  
-All the components in your application (request handlers, middlewares, error handlers, etc.) declare,
-as input parameters, the data they need to do their job.
-We refer to those input parameters as their **dependencies**.  
-Pavex takes care of **constructing** those dependencies and **injecting** them where they're needed.
+All the components in your application (request handlers, middlewares, error handlers, etc.) use their input parameters to declare the data they need to do their job.
+We refer to those input parameters as their **dependencies**. 
+Pavex takes care of **injecting** (and sometimes **building**) those dependencies when and where they're needed.
 
 We refer to this system as Pavex's **dependency injection framework**.
 
@@ -35,14 +34,14 @@ The middleware doesn't care about _how_ the `User` is computed, it only cares ab
 This is a simple example, but the same principle applies to a vast collection of use cases:
 body parsing, logging, authorization, etc.
 
-## Guide structure
+## Guide structure 
 
-"[Core concepts](core_concepts/constructors.md)" explains the key mechanics of Pavex's dependency injection framework.
-It's a must-read if you're going to use Pavex for more than a toy project.
+There are three different sources for injectable dependencies: 
+[**framework primitives**](framework_primitives.md), 
+[**constructors**](constructors.md) and
+[**prebuilt types**](prebuilt_types.md). 
+Check out the respective sections for guidance on how to use each source.  
 
-"[Cookbook](cookbook.md)" contains a collection of reference examples for common use cases: how to 
-inject a function as a constructor, how to inject a non-static method, how to inject a trait object, generics, etc.  
+We recommend going through the [cookbook](cookbook.md) as well. It contains a collection of reference examples for common use cases: how to 
+inject a function as a constructor, how to inject a non-static method, how to inject a trait object, generics, etc. 
 Use it a reference in your day-to-day Pavex development if you're not sure of the syntax for a particular use case.
-
-Pavex's dependency injection framework is a powerful tool, but it has its sharp edges.
-"[Limitations](limitations.md)" covers the issues you're most likely to encounter and how to work around them.

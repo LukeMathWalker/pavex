@@ -6,6 +6,7 @@ use crate::compiler::analyses::components::{
 use crate::compiler::analyses::computations::{ComputationDb, ComputationId};
 use crate::compiler::analyses::framework_items::FrameworkItemDb;
 use crate::compiler::analyses::into_error::register_error_new_transformer;
+use crate::compiler::analyses::prebuilt_types::PrebuiltTypeDb;
 use crate::compiler::analyses::user_components::{
     ScopeGraph, ScopeId, UserComponent, UserComponentDb, UserComponentId,
 };
@@ -41,16 +42,17 @@ pub(crate) type ComponentId = la_arena::Idx<Component>;
 #[derive(Debug)]
 pub(crate) struct ComponentDb {
     user_component_db: UserComponentDb,
+    prebuilt_type_db: PrebuiltTypeDb,
     interner: Interner<Component>,
     match_err_id2error_handler_id: HashMap<ComponentId, ComponentId>,
     fallible_id2match_ids: HashMap<ComponentId, (ComponentId, ComponentId)>,
     match_id2fallible_id: HashMap<ComponentId, ComponentId>,
     id2transformer_ids: HashMap<ComponentId, IndexSet<ComponentId>>,
     id2lifecycle: HashMap<ComponentId, Lifecycle>,
-    /// For each constructor component, determine if it can be cloned or not.
+    /// For each constructible component, determine if it can be cloned or not.
     ///
-    /// Invariants: there is an entry for every constructor.
-    constructor_id2cloning_strategy: HashMap<ComponentId, CloningStrategy>,
+    /// Invariants: there is an entry for every constructor and prebuilt type.
+    id2cloning_strategy: HashMap<ComponentId, CloningStrategy>,
     /// Associate each request handler with the ordered list of middlewares that wrap around it.
     ///
     /// Invariants: there is an entry for every single request handler.
@@ -95,7 +97,7 @@ pub(crate) struct ComponentDb {
     /// It's memoised here to avoid re-resolving it multiple times while analysing a single
     /// blueprint.
     pub(crate) pavex_response: ResolvedType,
-    /// The resolved type for `pavex::middleware::Processing`.  
+    /// The resolved type for `pavex::middleware::Processing`.
     /// It's memoised here to avoid re-resolving it multiple times while analysing a single
     /// blueprint.
     pub(crate) pavex_processing: ResolvedType,
@@ -126,6 +128,7 @@ impl ComponentDb {
         user_component_db: UserComponentDb,
         framework_item_db: &FrameworkItemDb,
         computation_db: &mut ComputationDb,
+        prebuilt_type_db: PrebuiltTypeDb,
         package_graph: &PackageGraph,
         krate_collection: &CrateCollection,
         diagnostics: &mut Vec<miette::Error>,
@@ -159,13 +162,14 @@ impl ComponentDb {
 
         let mut self_ = Self {
             user_component_db,
+            prebuilt_type_db,
             interner: Interner::new(),
             match_err_id2error_handler_id: Default::default(),
             fallible_id2match_ids: Default::default(),
             match_id2fallible_id: Default::default(),
             id2transformer_ids: Default::default(),
             id2lifecycle: Default::default(),
-            constructor_id2cloning_strategy: Default::default(),
+            id2cloning_strategy: Default::default(),
             handler_id2middleware_ids: Default::default(),
             handler_id2error_observer_ids: Default::default(),
             transformer_id2info: Default::default(),
@@ -252,6 +256,8 @@ impl ComponentDb {
                 diagnostics,
             );
 
+            self_.process_prebuilt_types(computation_db);
+
             for fallible_id in needs_error_handler {
                 Self::missing_error_handler(
                     fallible_id,
@@ -273,7 +279,7 @@ impl ComponentDb {
             let component_id = self_.get_or_intern(
                 UnregisteredComponent::SyntheticConstructor {
                     computation_id: computation_db.get_or_intern(Constructor(
-                        Computation::FrameworkItem(Cow::Owned(type_.clone())),
+                        Computation::PrebuiltType(Cow::Owned(type_.clone())),
                     )),
                     scope_id: self_.scope_graph().root_scope_id(),
                     lifecycle: framework_item_db.lifecycle(id),
@@ -385,7 +391,7 @@ impl ComponentDb {
                         .user_component_db
                         .get_cloning_strategy(user_component_id)
                         .unwrap();
-                    self.constructor_id2cloning_strategy
+                    self.id2cloning_strategy
                         .insert(id, cloning_strategy.to_owned());
                 }
                 SyntheticConstructor {
@@ -393,8 +399,7 @@ impl ComponentDb {
                     derived_from,
                     ..
                 } => {
-                    self.constructor_id2cloning_strategy
-                        .insert(id, cloning_strategy);
+                    self.id2cloning_strategy.insert(id, cloning_strategy);
                     if let Some(derived_from) = derived_from {
                         self.derived2user_registered.insert(
                             id,
@@ -442,6 +447,28 @@ impl ComponentDb {
                         );
                     }
                 }
+                UserPrebuiltType { user_component_id } => {
+                    let user_component = &self.user_component_db[user_component_id];
+                    let ty_ = &self.prebuilt_type_db[user_component_id];
+                    let cloning_strategy = self
+                        .user_component_db
+                        .get_cloning_strategy(user_component_id)
+                        .unwrap();
+                    self.id2cloning_strategy
+                        .insert(id, cloning_strategy.to_owned());
+                    self.get_or_intern(
+                        UnregisteredComponent::SyntheticConstructor {
+                            computation_id: computation_db.get_or_intern(Constructor(
+                                Computation::PrebuiltType(Cow::Owned(ty_.to_owned())),
+                            )),
+                            scope_id: user_component.scope_id(),
+                            lifecycle: self.user_component_db.get_lifecycle(user_component_id),
+                            cloning_strategy: cloning_strategy.to_owned(),
+                            derived_from: Some(id),
+                        },
+                        computation_db,
+                    );
+                }
                 _ => {}
             }
         }
@@ -476,7 +503,7 @@ impl ComponentDb {
                         computation_id: ok_computation_id,
                         scope_id: self.scope_id(id),
                         lifecycle: self.lifecycle(id),
-                        cloning_strategy: self.constructor_id2cloning_strategy[&id],
+                        cloning_strategy: self.id2cloning_strategy[&id],
                         derived_from: Some(id),
                     },
                     computation_db,
@@ -577,6 +604,22 @@ impl ComponentDb {
                     }
                 }
             }
+        }
+    }
+
+    /// Validate all user-registered prebuilt types.
+    /// We add their information to the relevant metadata stores.
+    fn process_prebuilt_types(&mut self, computation_db: &mut ComputationDb) {
+        let ids = self
+            .user_component_db
+            .prebuilt_types()
+            .map(|(id, _)| id)
+            .collect::<Vec<_>>();
+        for user_component_id in ids {
+            self.get_or_intern(
+                UnregisteredComponent::UserPrebuiltType { user_component_id },
+                computation_db,
+            );
         }
     }
 
@@ -819,6 +862,7 @@ impl ComponentDb {
                     } => Some((id, *fallible_callable_identifiers_id)),
                     ErrorObserver { .. }
                     | Fallback { .. }
+                    | PrebuiltType { .. }
                     | RequestHandler { .. }
                     | Constructor { .. }
                     | PostProcessingMiddleware { .. }
@@ -1038,9 +1082,10 @@ impl ComponentDb {
                             None
                         }
                     }
-                    PreProcessingMiddleware { .. } | Constructor { .. } | ErrorObserver { .. } => {
-                        None
-                    }
+                    PrebuiltType { .. }
+                    | PreProcessingMiddleware { .. }
+                    | Constructor { .. }
+                    | ErrorObserver { .. } => None,
                 }
             })
             .collect();
@@ -1303,7 +1348,7 @@ impl ComponentDb {
     }
 
     /// If the component is a request handler, return the ids of the error observers that must be
-    /// invoked when something goes wrong in the request processing pipeline.  
+    /// invoked when something goes wrong in the request processing pipeline.
     /// Otherwise, return `None`.
     pub fn error_observers(&self, handler_id: ComponentId) -> Option<&[ComponentId]> {
         self.handler_id2error_observer_ids
@@ -1371,7 +1416,7 @@ impl ComponentDb {
     /// Given the id of a component, return the corresponding [`CloningStrategy`].
     /// It panics if called for a non-constructor component.
     pub fn cloning_strategy(&self, component_id: ComponentId) -> CloningStrategy {
-        self.constructor_id2cloning_strategy[&component_id]
+        self.id2cloning_strategy[&component_id]
     }
 
     /// Iterate over all constructors in the component database, either user-provided or synthetic.
@@ -1416,6 +1461,7 @@ impl ComponentDb {
                 source_id: SourceId::UserComponentId(user_component_id),
             }
             | Component::ErrorObserver { user_component_id }
+            | Component::PrebuiltType { user_component_id }
             | Component::RequestHandler { user_component_id } => Some(*user_component_id),
             Component::Constructor {
                 source_id: SourceId::ComputationId(..),
@@ -1503,6 +1549,10 @@ impl ComponentDb {
                 };
                 HydratedComponent::ErrorObserver(error_observer)
             }
+            Component::PrebuiltType { user_component_id } => {
+                let ty = &self.prebuilt_type_db[*user_component_id];
+                HydratedComponent::PrebuiltType(Cow::Borrowed(&ty))
+            }
         }
     }
 
@@ -1520,6 +1570,7 @@ impl ComponentDb {
     pub fn scope_id(&self, component_id: ComponentId) -> ScopeId {
         match &self[component_id] {
             Component::RequestHandler { user_component_id }
+            | Component::PrebuiltType { user_component_id }
             | Component::ErrorObserver { user_component_id } => {
                 self.user_component_db[*user_component_id].scope_id()
             }
@@ -1625,7 +1676,7 @@ impl ComponentDb {
                 // by the user), not a derived one. If not, we might have resolution issues when computing
                 // the call graph for handlers where these derived components are used.
                 HydratedComponent::Constructor(constructor) => match &constructor.0 {
-                    Computation::FrameworkItem(..) | Computation::Callable(..) => component_id,
+                    Computation::PrebuiltType(..) | Computation::Callable(..) => component_id,
                     Computation::MatchResult(..) => _get_root_component_id(
                         component_db.fallible_id(component_id),
                         component_db,
@@ -1636,6 +1687,7 @@ impl ComponentDb {
                 | HydratedComponent::PostProcessingMiddleware(..)
                 | HydratedComponent::PreProcessingMiddleware(..)
                 | HydratedComponent::ErrorObserver(..)
+                | HydratedComponent::PrebuiltType(..)
                 | HydratedComponent::Transformer(..) => {
                     todo!()
                 }
@@ -1649,7 +1701,7 @@ impl ComponentDb {
             .into_owned()
         {
             HydratedComponent::Constructor(constructor) => {
-                let cloning_strategy = self.constructor_id2cloning_strategy[&unbound_root_id];
+                let cloning_strategy = self.id2cloning_strategy[&unbound_root_id];
                 let bound_computation = constructor
                     .0
                     .bind_generic_type_parameters(bindings)
@@ -1679,6 +1731,7 @@ impl ComponentDb {
             | HydratedComponent::ErrorObserver(_)
             | HydratedComponent::PostProcessingMiddleware(_)
             | HydratedComponent::PreProcessingMiddleware(_)
+            | HydratedComponent::PrebuiltType(_)
             | HydratedComponent::Transformer(..) => {
                 todo!()
             }

@@ -11,13 +11,13 @@ pub fn streamer() -> Streamer {
     todo!()
 }
 
-pub fn stream_file(Streamer { a, b }: Streamer) -> pavex::response::Response {
+pub fn stream_file(Streamer { a, b }: &Streamer) -> pavex::response::Response {
     todo!()
 }
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.constructor(f!(crate::streamer), Lifecycle::Singleton);
+    bp.singleton(f!(crate::streamer));
     bp.route(GET, "/home", f!(crate::stream_file));
     bp
 }

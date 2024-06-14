@@ -1,10 +1,13 @@
 pub(crate) mod call_graph;
+pub(crate) mod cloning;
 pub(crate) mod components;
 pub(crate) mod computations;
 pub(crate) mod constructibles;
 pub(crate) mod framework_items;
 pub(crate) mod into_error;
+pub(crate) mod prebuilt_types;
 pub(crate) mod processing_pipeline;
 pub(crate) mod router;
+pub(crate) mod singletons;
 pub(crate) mod unused;
 pub(crate) mod user_components;

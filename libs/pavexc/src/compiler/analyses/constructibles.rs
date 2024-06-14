@@ -81,9 +81,6 @@ impl ConstructibleDb {
 
     /// Check if any component is asking for a type as input parameter for which there is no
     /// constructor.
-    ///
-    /// This check skips singletons, since they are going to be provided by the user as part
-    /// of the application state if there have no registered constructor.
     fn detect_missing_constructors(
         &mut self,
         component_db: &mut ComponentDb,
@@ -105,17 +102,6 @@ impl ConstructibleDb {
                 let scope_id = component_db.scope_id(component_id);
                 let resolved_component =
                     component_db.hydrated_component(component_id, computation_db);
-                // We don't support dependency injection for transformers (yet).
-                if let HydratedComponent::Transformer(..) = &resolved_component {
-                    continue;
-                }
-
-                if let HydratedComponent::Constructor(_) = &resolved_component {
-                    if component_db.lifecycle(component_id) == Lifecycle::Singleton {
-                        continue;
-                    }
-                }
-
                 let input_types = {
                     let mut input_types: Vec<Option<ResolvedType>> = resolved_component
                         .input_types()
@@ -143,6 +129,7 @@ impl ConstructibleDb {
                             input_types[info.input_index] = None;
                         }
                         HydratedComponent::Constructor(_)
+                        | HydratedComponent::PrebuiltType(_)
                         | HydratedComponent::PreProcessingMiddleware(_)
                         | HydratedComponent::RequestHandler(_) => {}
                     }
@@ -156,6 +143,7 @@ impl ConstructibleDb {
                             continue;
                         }
                     };
+                    // TODO: do we need this?
                     if let Some(id) = framework_items_db.get_id(input) {
                         if let Lifecycle::RequestScoped = framework_items_db.lifecycle(id) {
                             continue;
@@ -426,8 +414,7 @@ impl ConstructibleDb {
 
     /// Singletons are built before the application starts, outside of the request-response cycle.
     ///
-    /// Therefore they cannot depend on types which have a shorter lifecycle—i.e. request-scoped
-    /// or transient.
+    /// Therefore they cannot depend on types which have a request-scoped lifecycle.
     /// It's the responsibility of this method to enforce this constraint.
     fn verify_lifecycle_of_singleton_dependencies(
         &self,
@@ -446,8 +433,8 @@ impl ConstructibleDb {
                 if let Some((input_constructor_id, _)) =
                     self.get(component_scope, input_type, component_db.scope_graph())
                 {
-                    if component_db.lifecycle(input_constructor_id) != Lifecycle::Singleton {
-                        Self::singleton_must_depend_on_singletons(
+                    if component_db.lifecycle(input_constructor_id) == Lifecycle::RequestScoped {
+                        Self::singleton_must_not_depend_on_request_scoped(
                             component_id,
                             input_constructor_id,
                             package_graph,
@@ -657,10 +644,10 @@ impl ConstructibleDb {
 
         let callable = &computation_db[user_component_id];
         let e = anyhow::anyhow!(
-                "I can't invoke your {component_kind}, `{}`, because it needs an instance \
-                of `{unconstructible_type:?}` as input, but I can't find a constructor for that type.",
-                callable.path
-            );
+            "I can't find a constructor for `{unconstructible_type:?}`.\n\
+            I need an instance of `{unconstructible_type:?}` to invoke your {component_kind}, `{}`.",
+            callable.path
+        );
         let definition_info = get_definition_info(
             callable,
             unconstructible_type_index,
@@ -671,8 +658,13 @@ impl ConstructibleDb {
             .optional_source(source)
             .optional_label(label)
             .optional_additional_annotated_snippet(definition_info)
+            .help_with_snippet(HelpWithSnippet::new(
+                format!("Register a constructor for `{unconstructible_type:?}`."),
+                AnnotatedSnippet::empty(),
+            ))
             .help(format!(
-                "Register a constructor for `{unconstructible_type:?}`"
+                "Alternatively, use `Blueprint::prebuilt` to add a new input parameter of type `{unconstructible_type:?}` \
+                to the (generated) `build_application_state`."
             ))
             .build();
         diagnostics.push(diagnostic.into());
@@ -852,7 +844,7 @@ impl ConstructibleDb {
         diagnostics.push(diagnostic.into());
     }
 
-    fn singleton_must_depend_on_singletons(
+    fn singleton_must_not_depend_on_request_scoped(
         singleton_id: ComponentId,
         dependency_id: ComponentId,
         package_graph: &PackageGraph,
@@ -873,7 +865,7 @@ impl ConstructibleDb {
         let dependency_lifecycle = component_db.lifecycle(dependency_id);
 
         let e = anyhow::anyhow!(
-            "Singletons can't depend on request-scoped or transient components.\n\
+            "Singletons can't depend on request-scoped components.\n\
             They are constructed before the application starts, outside of the request-response lifecycle.\n\
             But your singleton `{singleton_type:?}` depends on `{dependency_type:?}`, which has a {dependency_lifecycle} lifecycle.",
         );

@@ -1,0 +1,4 @@
+description = "If a type is marked as `CloneIfNecessary` it must implement `Clone`"
+
+[expectations]
+codegen = "fail"

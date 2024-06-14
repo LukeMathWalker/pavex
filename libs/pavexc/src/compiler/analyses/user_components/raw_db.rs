@@ -6,7 +6,7 @@ use std::collections::BTreeMap;
 use pavex_bp_schema::{
     Blueprint, Callable, CloningStrategy, Component, Constructor, ErrorObserver, Fallback,
     Lifecycle, Lint, LintSetting, Location, NestedBlueprint, PostProcessingMiddleware,
-    PreProcessingMiddleware, RawCallableIdentifiers, RegisteredAt, Route, WrappingMiddleware,
+    PreProcessingMiddleware, PrebuiltType, RawIdentifiers, RegisteredAt, Route, WrappingMiddleware,
 };
 
 use crate::compiler::analyses::user_components::router_key::RouterKey;
@@ -26,37 +26,41 @@ use crate::{diagnostic, try_source};
 /// [`UserComponentDb`]: crate::compiler::analyses::user_components::UserComponentDb
 pub enum UserComponent {
     RequestHandler {
-        raw_callable_identifiers_id: RawCallableIdentifierId,
+        raw_callable_identifiers_id: RawIdentifierId,
         router_key: RouterKey,
         scope_id: ScopeId,
     },
     Fallback {
-        raw_callable_identifiers_id: RawCallableIdentifierId,
+        raw_callable_identifiers_id: RawIdentifierId,
         scope_id: ScopeId,
     },
     ErrorHandler {
-        raw_callable_identifiers_id: RawCallableIdentifierId,
+        raw_callable_identifiers_id: RawIdentifierId,
         fallible_callable_identifiers_id: UserComponentId,
         scope_id: ScopeId,
     },
     Constructor {
-        raw_callable_identifiers_id: RawCallableIdentifierId,
+        raw_callable_identifiers_id: RawIdentifierId,
+        scope_id: ScopeId,
+    },
+    PrebuiltType {
+        raw_identifiers_id: RawIdentifierId,
         scope_id: ScopeId,
     },
     WrappingMiddleware {
-        raw_callable_identifiers_id: RawCallableIdentifierId,
+        raw_callable_identifiers_id: RawIdentifierId,
         scope_id: ScopeId,
     },
     PostProcessingMiddleware {
-        raw_callable_identifiers_id: RawCallableIdentifierId,
+        raw_callable_identifiers_id: RawIdentifierId,
         scope_id: ScopeId,
     },
     PreProcessingMiddleware {
-        raw_callable_identifiers_id: RawCallableIdentifierId,
+        raw_callable_identifiers_id: RawIdentifierId,
         scope_id: ScopeId,
     },
     ErrorObserver {
-        raw_callable_identifiers_id: RawCallableIdentifierId,
+        raw_callable_identifiers_id: RawIdentifierId,
         scope_id: ScopeId,
     },
 }
@@ -70,6 +74,7 @@ impl UserComponent {
             UserComponent::RequestHandler { .. } => CallableType::RequestHandler,
             UserComponent::ErrorHandler { .. } => CallableType::ErrorHandler,
             UserComponent::Constructor { .. } => CallableType::Constructor,
+            UserComponent::PrebuiltType { .. } => CallableType::PrebuiltType,
             UserComponent::WrappingMiddleware { .. } => CallableType::WrappingMiddleware,
             UserComponent::Fallback { .. } => CallableType::RequestHandler,
             UserComponent::ErrorObserver { .. } => CallableType::ErrorObserver,
@@ -82,7 +87,7 @@ impl UserComponent {
 
     /// Returns an id that points at the raw identifiers for the callable that
     /// this [`UserComponent`] is associated with.
-    pub fn raw_callable_identifiers_id(&self) -> RawCallableIdentifierId {
+    pub fn raw_identifiers_id(&self) -> RawIdentifierId {
         match self {
             UserComponent::PostProcessingMiddleware {
                 raw_callable_identifiers_id,
@@ -90,6 +95,10 @@ impl UserComponent {
             }
             | UserComponent::PreProcessingMiddleware {
                 raw_callable_identifiers_id,
+                ..
+            }
+            | UserComponent::PrebuiltType {
+                raw_identifiers_id: raw_callable_identifiers_id,
                 ..
             }
             | UserComponent::WrappingMiddleware {
@@ -128,22 +137,20 @@ impl UserComponent {
             | UserComponent::ErrorHandler { scope_id, .. }
             | UserComponent::WrappingMiddleware { scope_id, .. }
             | UserComponent::PostProcessingMiddleware { scope_id, .. }
+            | UserComponent::PrebuiltType { scope_id, .. }
             | UserComponent::PreProcessingMiddleware { scope_id, .. }
             | UserComponent::Constructor { scope_id, .. } => *scope_id,
         }
     }
 
     /// Returns the raw identifiers for the callable that this `UserComponent` is associated with.
-    pub(super) fn raw_callable_identifiers<'b>(
-        &self,
-        db: &'b RawUserComponentDb,
-    ) -> &'b RawCallableIdentifiers {
-        &db.identifiers_interner[self.raw_callable_identifiers_id()]
+    pub(super) fn raw_identifiers<'b>(&self, db: &'b RawUserComponentDb) -> &'b RawIdentifiers {
+        &db.identifiers_interner[self.raw_identifiers_id()]
     }
 }
 
 /// A unique identifier for a `RawCallableIdentifiers`.
-pub type RawCallableIdentifierId = la_arena::Idx<RawCallableIdentifiers>;
+pub type RawIdentifierId = la_arena::Idx<RawIdentifiers>;
 
 /// A unique identifier for a [`UserComponent`].
 pub type UserComponentId = la_arena::Idx<UserComponent>;
@@ -163,7 +170,7 @@ pub type UserComponentId = la_arena::Idx<UserComponent>;
 /// return a type or unit?).
 pub(super) struct RawUserComponentDb {
     pub(super) component_interner: Interner<UserComponent>,
-    pub(super) identifiers_interner: Interner<RawCallableIdentifiers>,
+    pub(super) identifiers_interner: Interner<RawIdentifiers>,
     /// Associate each user-registered component with the location it was
     /// registered at against the `Blueprint` in the user's source code.
     ///
@@ -176,10 +183,10 @@ pub(super) struct RawUserComponentDb {
     /// Associate each user-registered component with its lint overrides, if any.
     /// If there is no entry for a component, there are no overrides.
     pub(super) id2lints: HashMap<UserComponentId, BTreeMap<Lint, LintSetting>>,
-    /// For each constructor component, determine if it can be cloned or not.
+    /// For each constructor and prebuilt type, determine if it can be cloned or not.
     ///
-    /// Invariants: there is an entry for every constructor.
-    pub(super) constructor_id2cloning_strategy: HashMap<UserComponentId, CloningStrategy>,
+    /// Invariants: there is an entry for every constructor and prebuilt type.
+    pub(super) id2cloning_strategy: HashMap<UserComponentId, CloningStrategy>,
     /// Associate each request handler with the ordered list of middlewares that wrap around it.
     ///
     /// Invariants: there is an entry for every single request handler.
@@ -223,7 +230,7 @@ impl RawUserComponentDb {
             id2locations: HashMap::new(),
             id2lifecycle: HashMap::new(),
             id2lints: HashMap::new(),
-            constructor_id2cloning_strategy: HashMap::new(),
+            id2cloning_strategy: HashMap::new(),
             handler_id2middleware_ids: HashMap::new(),
             handler_id2error_observer_ids: HashMap::new(),
             fallback_id2path_prefix: HashMap::new(),
@@ -375,6 +382,9 @@ impl RawUserComponentDb {
                 Component::ErrorObserver(eo) => {
                     self.process_error_observer(&eo, current_scope_id, &mut current_observer_chain);
                 }
+                Component::PrebuiltType(si) => {
+                    self.process_prebuilt_type(&si, current_scope_id);
+                }
             }
         }
         if let Some(fallback) = &fallback {
@@ -390,7 +400,7 @@ impl RawUserComponentDb {
             // We need to have a top-level fallback handler.
             // If the user hasn't registered one against the top-level blueprint,
             // we must provide a framework default.
-            let raw_callable_identifiers = RawCallableIdentifiers::from_raw_parts(
+            let raw_callable_identifiers = RawIdentifiers::from_raw_parts(
                 "pavex::router::default_fallback".to_owned(),
                 RegisteredAt {
                     crate_name: "pavex".to_owned(),
@@ -481,7 +491,7 @@ impl RawUserComponentDb {
 
     /// Register with [`RawUserComponentDb`] the fallback that has been
     /// registered against the provided `Blueprint`, including its error handler
-    /// (if present).  
+    /// (if present).
     fn process_fallback(
         &mut self,
         fallback: &Fallback,
@@ -645,7 +655,7 @@ impl RawUserComponentDb {
             lifecycle,
             constructor.constructor.location.clone(),
         );
-        self.constructor_id2cloning_strategy.insert(
+        self.id2cloning_strategy.insert(
             constructor_id,
             constructor
                 .cloning_strategy
@@ -684,6 +694,26 @@ impl RawUserComponentDb {
         };
         let id = self.intern_component(component, LIFECYCLE, eo.error_observer.location.clone());
         current_observer_chain.push(id);
+    }
+
+    /// Register with [`RawUserComponentDb`] a prebuilt type that has been
+    /// registered against the provided `Blueprint`.
+    /// It is associated with or nested under the provided `current_scope_id`.
+    fn process_prebuilt_type(&mut self, si: &PrebuiltType, current_scope_id: ScopeId) {
+        const LIFECYCLE: Lifecycle = Lifecycle::Singleton;
+
+        let raw_callable_identifiers_id = self
+            .identifiers_interner
+            .get_or_intern(si.input.type_.clone());
+        let component = UserComponent::PrebuiltType {
+            raw_identifiers_id: raw_callable_identifiers_id,
+            scope_id: current_scope_id,
+        };
+        let id = self.intern_component(component, LIFECYCLE, si.input.location.clone());
+        self.id2cloning_strategy.insert(
+            id,
+            si.cloning_strategy.unwrap_or(CloningStrategy::NeverClone),
+        );
     }
 
     /// A helper function to intern a component without forgetting to do the necessary
@@ -783,8 +813,15 @@ impl RawUserComponentDb {
             match component {
                 UserComponent::Constructor { .. } => {
                     assert!(
-                        self.constructor_id2cloning_strategy.get(&id).is_some(),
+                        self.id2cloning_strategy.get(&id).is_some(),
                         "There is no cloning strategy registered for the user-registered constructor #{:?}",
+                        id
+                    );
+                }
+                UserComponent::PrebuiltType { .. } => {
+                    assert!(
+                        self.id2cloning_strategy.get(&id).is_some(),
+                        "There is no cloning strategy registered for the user-registered prebuilt type #{:?}",
                         id
                     );
                 }

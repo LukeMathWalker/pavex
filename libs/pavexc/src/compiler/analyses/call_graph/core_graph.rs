@@ -92,7 +92,7 @@ where
         lifecycle2n_allowed_invocations(component_db.lifecycle(component_id))
     };
     let component_id2node = |id: ComponentId| {
-        if let Computation::FrameworkItem(i) = component_db
+        if let Computation::PrebuiltType(i) = component_db
             .hydrated_component(id, computation_db)
             .computation()
         {
@@ -185,6 +185,9 @@ where
                 let input_types = match component {
                     HydratedComponent::Constructor(constructor) => {
                         constructor.input_types().to_vec()
+                    }
+                    HydratedComponent::PrebuiltType(..) => {
+                        vec![]
                     }
                     HydratedComponent::RequestHandler(r) => r.input_types().to_vec(),
                     HydratedComponent::PostProcessingMiddleware(pp) => pp.input_types().to_vec(),
@@ -546,7 +549,7 @@ impl CallGraph {
                                 Computation::Callable(c) => {
                                     format!("label = \"{c:?}\"")
                                 }
-                                Computation::FrameworkItem(i) => {
+                                Computation::PrebuiltType(i) => {
                                     format!("label = \"{i:?}\"")
                                 }
                             }
@@ -938,7 +941,7 @@ impl RawCallGraphExt for RawCallGraph {
                                     m.output.render_type(package_ids2names)
                                 )
                             }
-                            Computation::FrameworkItem(i) => {
+                            Computation::PrebuiltType(i) => {
                                 format!("label = \"{}\"", i.render_type(package_ids2names))
                             }
                         },
@@ -988,7 +991,7 @@ impl RawCallGraphExt for RawCallGraph {
                                 Computation::Callable(c) => {
                                     format!("{c:?}")
                                 }
-                                Computation::FrameworkItem(i) => {
+                                Computation::PrebuiltType(i) => {
                                     format!("{i:?}")
                                 }
                             };

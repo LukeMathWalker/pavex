@@ -1,0 +1,16 @@
+starter_project_folder: "project"
+commands:
+  - command: "cargo px c"
+    expected_outcome: "success"
+snippets:
+  - name: "registration"
+    source_path: "src/base/blueprint.rs"
+    ranges: ["4..7", "9..10"]
+    hl_lines: [4]
+steps:
+  - patch: "01.patch"
+    snippets:
+      - name: "build_state"
+        source_path: "server_sdk/src/lib.rs"
+        ranges: ["11..12", "13..14"]
+        hl_lines: [2]

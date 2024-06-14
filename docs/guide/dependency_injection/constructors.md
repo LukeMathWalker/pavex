@@ -1,6 +1,9 @@
 # Constructors
 
-To make a type injectable, you need to **register a constructor** for it.
+To make a type injectable, you can **register a constructor** for it.  
+Pavex will then invoke your constructor to create instances of that type when needed.
+
+## Requirements
 
 A constructor must satisfy a few requirements:
 
@@ -25,7 +28,7 @@ Going back to our `User` example, this would be a valid signature for a construc
 
     Constructors can be either sync or async.  
     Check out 
-    [the "Sync or async" section](../../routing/request_handlers.md#sync-or-async) in the guide on request handlers
+    [the "Sync or async" section](../routing/request_handlers.md#sync-or-async) in the guide on request handlers
     to learn when to use one or the other.
 
 ## Registration
@@ -36,7 +39,7 @@ Once you have defined a constructor, you need to register it with the applicatio
 
 [`Blueprint::constructor`][Blueprint::constructor] takes two arguments:
 
-- An [unambiguous path](../cookbook.md) to the constructor, wrapped in the [`f!`][f] macro.
+- An [unambiguous path](cookbook.md) to the constructor, wrapped in the [`f!`][f] macro.
 - The [constructor's lifecycle](#lifecycles).
 
 Alternatively, you could use [`Blueprint::request_scoped`][Blueprint::request_scoped] as 
@@ -70,7 +73,7 @@ Let's look at a few common scenarios to build some intuition around lifecycles:
 
 ## Recursive dependencies
 
-Dependency injection wouldn't be very useful if all constructors were required to take no input parameters.  
+Dependency injection wouldn't be very useful if all constructors were required to take no input parameters. 
 The dependency injection framework is **recursive**: constructors can take advantage of dependency injection
 to request the data they need to do their job.
 
@@ -95,14 +98,14 @@ When Pavex examines your application [`Blueprint`][Blueprint], the following hap
 The recursion continues until Pavex finds a constructor that doesn't have any input parameters or
 a type that doesn't need to be constructed.  
 If a type needs to be constructed, but Pavex can't find a constructor for it,
-[it will report an error](../../../getting_started/quickstart/dependency_injection.md#missing-constructor).
+[it will report an error](../../getting_started/quickstart/dependency_injection.md#missing-constructor).
 
 ## Constructors can fail
 
 Constructors can be fallible: they can return a `Result<T, E>`, where `E` is an error type.  
-If a constructor is fallible, you must specify an [**error handler**](../../errors/error_handlers.md) when registering 
+If a constructor is fallible, you must specify an [**error handler**](../errors/error_handlers.md) when registering 
 it with the application [`Blueprint`][Blueprint]. 
-Check out the [error handling guide](../../errors/error_handlers.md) for more details.
+Check out the [error handling guide](../errors/error_handlers.md) for more details.
 
 ## Invocation order
 
@@ -133,26 +136,26 @@ It'd be quite difficult to reason about mutations since you can't control the
 [invocation order of constructors](#invocation-order).
 
 On the other hand, invocation order is well-defined for other types of components:
-[request handlers](../../routing/request_handlers.md),
-[pre-processing middlewares](../../middleware/pre_processing.md) and
-[post-processing middlewares](../../middleware/post_processing.md).
+[request handlers](../routing/request_handlers.md),
+[pre-processing middlewares](../middleware/pre_processing.md) and
+[post-processing middlewares](../middleware/post_processing.md).
 That's why Pavex allows them to inject mutable references as input parameters.
 
 !!! note "Wrapping middlewares"
 
     Invocation order is well-defined for wrapping middlewares, but Pavex
     doesn't let them manipulate mutable references.  
-    Check [their guide](../../middleware/wrapping.md#use-with-caution) 
+    Check [their guide](../middleware/wrapping.md#use-with-caution) 
     to learn more about the rationale for this exception.
 
 
-[Blueprint]: ../../../api_reference/pavex/blueprint/struct.Blueprint.html
-[Blueprint::constructor]: ../../../api_reference/pavex/blueprint/struct.Blueprint.html#method.constructor
-[Blueprint::singleton]: ../../../api_reference/pavex/blueprint/struct.Blueprint.html#method.singleton
-[Blueprint::request_scoped]: ../../../api_reference/pavex/blueprint/struct.Blueprint.html#method.request_scoped
-[Blueprint::transient]: ../../../api_reference/pavex/blueprint/struct.Blueprint.html#method.transient
-[f]: ../../../api_reference/pavex/macro.f.html
-[Lifecycle::Singleton]: ../../../api_reference/pavex/blueprint/constructor/enum.Lifecycle.html#variant.Singleton
-[Lifecycle::RequestScoped]: ../../../api_reference/pavex/blueprint/constructor/enum.Lifecycle.html#variant.RequestScoped
-[Lifecycle::Transient]: ../../../api_reference/pavex/blueprint/constructor/enum.Lifecycle.html#variant.Transient
-[RequestHead]: ../../../api_reference/pavex/request/struct.RequestHead.html
+[Blueprint]: ../../api_reference/pavex/blueprint/struct.Blueprint.html
+[Blueprint::constructor]: ../../api_reference/pavex/blueprint/struct.Blueprint.html#method.constructor
+[Blueprint::singleton]: ../../api_reference/pavex/blueprint/struct.Blueprint.html#method.singleton
+[Blueprint::request_scoped]: ../../api_reference/pavex/blueprint/struct.Blueprint.html#method.request_scoped
+[Blueprint::transient]: ../../api_reference/pavex/blueprint/struct.Blueprint.html#method.transient
+[f]: ../../api_reference/pavex/macro.f.html
+[Lifecycle::Singleton]: ../../api_reference/pavex/blueprint/constructor/enum.Lifecycle.html#variant.Singleton
+[Lifecycle::RequestScoped]: ../../api_reference/pavex/blueprint/constructor/enum.Lifecycle.html#variant.RequestScoped
+[Lifecycle::Transient]: ../../api_reference/pavex/blueprint/constructor/enum.Lifecycle.html#variant.Transient
+[RequestHead]: ../../api_reference/pavex/request/struct.RequestHead.html

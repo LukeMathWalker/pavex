@@ -72,60 +72,37 @@ impl ComponentDb {
                     krate_collection: &CrateCollection,
                     package_graph: &PackageGraph,
                 ) -> Option<AnnotatedSnippet> {
-                    let global_item_id = callable.source_coordinates.as_ref()?;
-                    let item = krate_collection.get_type_by_global_type_id(global_item_id);
-                    let definition_span = item.span.as_ref()?;
-                    let source_contents = diagnostic::read_source_file(
-                        &definition_span.filename,
-                        &package_graph.workspace(),
-                    )
-                    .ok()?;
-                    let span = convert_rustdoc_span(&source_contents, definition_span.to_owned());
-                    let span_contents =
-                        source_contents[span.offset()..(span.offset() + span.len())].to_string();
-                    let (generic_params, output) = match &item.inner {
-                        ItemEnum::Function(_) => {
-                            if let Ok(item) = syn::parse_str::<syn::ItemFn>(&span_contents) {
-                                (item.sig.generics.params, item.sig.output)
-                            } else if let Ok(item) =
-                                syn::parse_str::<syn::ImplItemFn>(&span_contents)
-                            {
-                                (item.sig.generics.params, item.sig.output)
-                            } else {
-                                panic!("Could not parse as a function or method:\n{span_contents}")
-                            }
-                        }
-                        _ => unreachable!(),
-                    };
+                    let def =
+                        CallableDefinition::compute(callable, krate_collection, package_graph)?;
 
                     let mut labels = vec![];
-                    let subject_verb = if generic_params.len() == 1 {
+                    let subject_verb = if def.sig.generics.params.len() == 1 {
                         "it is"
                     } else {
                         "they are"
                     };
-                    for param in generic_params {
+                    for param in &def.sig.generics.params {
                         if let syn::GenericParam::Type(ty) = param {
                             if free_parameters.contains(ty.ident.to_string().as_str()) {
                                 labels.push(
-                                    convert_proc_macro_span(&span_contents, ty.span())
+                                    def.convert_local_span(ty.span())
                                         .labeled("I can't infer this..".into()),
                                 );
                             }
                         }
                     }
-                    let output_span = if let syn::ReturnType::Type(_, output_type) = &output {
+                    let output_span = if let syn::ReturnType::Type(_, output_type) = &def.sig.output
+                    {
                         output_type.span()
                     } else {
-                        output.span()
+                        def.sig.output.span()
                     };
                     labels.push(
-                        convert_proc_macro_span(&span_contents, output_span)
+                        def.convert_local_span(output_span)
                             .labeled(format!("..because {subject_verb} not used here")),
                     );
-                    let source_path = definition_span.filename.to_str().unwrap();
                     Some(AnnotatedSnippet::new_with_labels(
-                        NamedSource::new(source_path, span_contents),
+                        def.named_source(),
                         labels,
                     ))
                 }

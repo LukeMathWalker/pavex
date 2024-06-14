@@ -16,7 +16,7 @@ and error handler:
 
 1. You also need to register a constructor for [`BodySizeLimit`][BodySizeLimit]!
 
-If you're using the default [`ApiKit`](../../dependency_injection/core_concepts/kits.md),
+If you're using the default [`ApiKit`](../../dependency_injection/kits.md),
 you don't need to register a constructor for [`BufferedBody`][BufferedBody] manually:
 it's already included in the kit.
 

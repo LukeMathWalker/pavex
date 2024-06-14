@@ -58,7 +58,7 @@
   [31m×[0m Path parameters must be extracted using a plain struct with named fields,
   [31m│[0m where the name of each field matches one of the path parameters specified
   [31m│[0m in the route for the respective request handler.
-  [31m│[0m `app::reference::<crate::MyStruct>` is trying to extract
+  [31m│[0m `app::reference::<app::MyStruct>` is trying to extract
   [31m│[0m `PathParams<&app::MyStruct>`, but `&app::MyStruct` is a reference, not
   [31m│[0m a plain struct type. I don't support this: the extraction would fail at
   [31m│[0m runtime, when trying to process an incoming request.

@@ -1,5 +1,5 @@
-use crate::blueprint::conversions::raw_callable2registered_callable;
-use crate::blueprint::reflection::RawCallable;
+use crate::blueprint::conversions::raw_identifiers2callable;
+use crate::blueprint::reflection::RawIdentifiers;
 use pavex_bp_schema::{Blueprint as BlueprintSchema, Component, PostProcessingMiddleware};
 
 /// The type returned by [`Blueprint::post_process`].
@@ -52,8 +52,8 @@ impl<'a> RegisteredPostProcessingMiddleware<'a> {
     ///     .error_handler(f!(crate::error_to_response));
     /// # }
     /// ```
-    pub fn error_handler(mut self, error_handler: RawCallable) -> Self {
-        let callable = raw_callable2registered_callable(error_handler);
+    pub fn error_handler(mut self, error_handler: RawIdentifiers) -> Self {
+        let callable = raw_identifiers2callable(error_handler);
         self.post_processing_middleware().error_handler = Some(callable);
         self
     }

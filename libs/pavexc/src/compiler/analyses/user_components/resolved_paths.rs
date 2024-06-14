@@ -6,10 +6,13 @@ use crate::compiler::analyses::user_components::UserComponentId;
 use crate::compiler::interner::Interner;
 use crate::diagnostic;
 use crate::diagnostic::{CompilerDiagnostic, LocationExt, OptionalSourceSpanExt};
-use crate::language::{ParseError, ResolvedPath};
+use crate::language::{ParseError, PathKind, ResolvedPath};
+
+use super::UserComponent;
 
 pub(super) type ResolvedPathId = la_arena::Idx<ResolvedPath>;
 
+#[derive(Debug)]
 pub(super) struct ResolvedPathDb {
     interner: Interner<ResolvedPath>,
     component_id2path_id: HashMap<UserComponentId, ResolvedPathId>,
@@ -25,8 +28,13 @@ impl ResolvedPathDb {
         let mut interner = Interner::new();
         let mut component_id2path_id = HashMap::new();
         for (component_id, component) in component_db.iter() {
-            let raw_callable_identifiers = component.raw_callable_identifiers(component_db);
-            match ResolvedPath::parse(raw_callable_identifiers, package_graph) {
+            let raw_identifiers = component.raw_identifiers(component_db);
+            let kind = if let UserComponent::PrebuiltType { .. } = component {
+                PathKind::Type
+            } else {
+                PathKind::Callable
+            };
+            match ResolvedPath::parse(raw_identifiers, package_graph, kind) {
                 Ok(path) => {
                     let path_id = interner.get_or_intern(path);
                     component_id2path_id.insert(component_id, path_id);

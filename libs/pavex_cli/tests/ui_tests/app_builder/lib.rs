@@ -1,8 +1,12 @@
 use std::path::PathBuf;
 
-use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
-use pavex::f;
+use pavex::blueprint::{
+    constructor::{CloningStrategy, Lifecycle},
+    router::GET,
+    Blueprint,
+};
 use pavex::response::Response;
+use pavex::{f, t};
 
 pub struct Logger;
 
@@ -29,10 +33,6 @@ pub fn stream_file(_inner: PathBuf, _logger: Logger, _http_client: HttpClient) -
 #[derive(Clone)]
 pub struct Config;
 
-pub fn config() -> Config {
-    todo!()
-}
-
 #[derive(Clone)]
 pub struct HttpClient;
 
@@ -42,10 +42,13 @@ pub fn http_client(_config: Config) -> HttpClient {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.constructor(f!(crate::http_client), Lifecycle::Singleton);
-    bp.constructor(f!(crate::extract_path), Lifecycle::RequestScoped)
+    bp.prebuilt(t!(crate::Config))
+        .cloning(CloningStrategy::CloneIfNecessary);
+    bp.singleton(f!(crate::http_client))
+        .cloning(CloningStrategy::CloneIfNecessary);
+    bp.request_scoped(f!(crate::extract_path))
         .error_handler(f!(crate::handle_extract_path_error));
-    bp.constructor(f!(crate::logger), Lifecycle::Transient);
+    bp.transient(f!(crate::logger));
     bp.route(GET, "/home", f!(crate::stream_file));
     bp
 }

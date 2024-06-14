@@ -1,5 +1,5 @@
-use crate::blueprint::conversions::raw_callable2registered_callable;
-use crate::blueprint::reflection::RawCallable;
+use crate::blueprint::conversions::raw_identifiers2callable;
+use crate::blueprint::reflection::RawIdentifiers;
 use crate::blueprint::router::MethodGuard;
 use crate::blueprint::Blueprint;
 use pavex_bp_schema::{Blueprint as BlueprintSchema, Callable, Component};
@@ -55,8 +55,8 @@ impl<'a> RegisteredRoute<'a> {
     ///     .error_handler(f!(crate::error_to_response));
     /// # }
     /// ```
-    pub fn error_handler(mut self, error_handler: RawCallable) -> Self {
-        let callable = raw_callable2registered_callable(error_handler);
+    pub fn error_handler(mut self, error_handler: RawIdentifiers) -> Self {
+        let callable = raw_identifiers2callable(error_handler);
         self.route().error_handler = Some(callable);
         self
     }
@@ -80,7 +80,7 @@ impl<'a> RegisteredRoute<'a> {
 /// # Use cases
 ///
 /// [`Route`] is primarily used by
-/// [kits](https://pavex.dev/docs/guide/dependency_injection/core_concepts/kits)
+/// [kits](https://pavex.dev/docs/guide/dependency_injection/kits)
 /// to allow users to customize (or disable!)
 /// the bundled routes **before** registering them with a [`Blueprint`].
 #[derive(Clone, Debug)]
@@ -97,9 +97,9 @@ impl Route {
     /// Check out the documentation of [`Blueprint::route`] for more details
     /// on routes.
     #[track_caller]
-    pub fn new(method_guard: MethodGuard, path: &str, callable: RawCallable) -> Self {
+    pub fn new(method_guard: MethodGuard, path: &str, callable: RawIdentifiers) -> Self {
         Self {
-            callable: raw_callable2registered_callable(callable),
+            callable: raw_identifiers2callable(callable),
             error_handler: None,
             method_guard,
             path: path.to_owned(),
@@ -110,8 +110,8 @@ impl Route {
     ///
     /// Check out the documentation of [`RegisteredRoute::error_handler`] for more details.
     #[track_caller]
-    pub fn error_handler(mut self, error_handler: RawCallable) -> Self {
-        self.error_handler = Some(raw_callable2registered_callable(error_handler));
+    pub fn error_handler(mut self, error_handler: RawIdentifiers) -> Self {
+        self.error_handler = Some(raw_identifiers2callable(error_handler));
         self
     }
 
