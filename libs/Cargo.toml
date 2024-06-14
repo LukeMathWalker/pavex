@@ -1,5 +1,5 @@
 [workspace]
-members = ["./pavex*", "generate_from_path", "persist_if_changed", "workspace_hack"]
+members = ["./pavex*", "generate_from_path", "persist_if_changed", "px_workspace_hack"]
 resolver = "2"
 
 [workspace.package]

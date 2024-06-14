@@ -65,6 +65,7 @@ jobs:
           name: "Coverage report"
           path: coverage/
 
+  # Verify that the `server_sdk` crate is up-to-date.
   is-up-to-date:
     name: Freshness
     runs-on: ubuntu-latest

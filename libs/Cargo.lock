@@ -1006,13 +1006,13 @@ dependencies = [
  "liquid",
  "liquid-core",
  "path-absolutize",
+ "px_workspace_hack",
  "regex",
  "sanitize-filename",
  "tempfile",
  "toml",
  "tracing",
  "walkdir",
- "workspace_hack",
 ]
 
 [[package]]
@@ -2004,6 +2004,7 @@ dependencies = [
  "percent-encoding",
  "persist_if_changed",
  "pin-project-lite",
+ "px_workspace_hack",
  "reqwest",
  "ron",
  "serde",
@@ -2019,7 +2020,6 @@ dependencies = [
  "type-safe-id",
  "ubyte",
  "uuid",
- "workspace_hack",
 ]
 
 [[package]]
@@ -2027,8 +2027,8 @@ name = "pavex_bp_schema"
 version = "0.1.38"
 dependencies = [
  "pavex_reflection",
+ "px_workspace_hack",
  "serde",
- "workspace_hack",
 ]
 
 [[package]]
@@ -2054,6 +2054,7 @@ dependencies = [
  "pavexc",
  "pavexc_cli_client",
  "pem",
+ "px_workspace_hack",
  "redact",
  "remove_dir_all",
  "reqwest",
@@ -2079,7 +2080,6 @@ dependencies = [
  "ureq",
  "vergen",
  "windows-sys 0.52.0",
- "workspace_hack",
  "xdg-home",
  "xz2",
  "zip",
@@ -2091,8 +2091,8 @@ version = "0.1.38"
 dependencies = [
  "anyhow",
  "pavex",
+ "px_workspace_hack",
  "thiserror",
- "workspace_hack",
 ]
 
 [[package]]
@@ -2101,11 +2101,11 @@ version = "0.1.38"
 dependencies = [
  "pavex",
  "proc-macro2",
+ "px_workspace_hack",
  "quote",
  "serde",
  "syn",
  "trybuild",
- "workspace_hack",
 ]
 
 [[package]]
@@ -2120,21 +2120,21 @@ version = "0.1.38"
 dependencies = [
  "miette",
  "owo-colors",
+ "px_workspace_hack",
  "supports-color",
  "supports-hyperlinks",
  "supports-unicode",
  "terminal_size",
  "textwrap",
  "unicode-width",
- "workspace_hack",
 ]
 
 [[package]]
 name = "pavex_reflection"
 version = "0.1.38"
 dependencies = [
+ "px_workspace_hack",
  "serde",
- "workspace_hack",
 ]
 
 [[package]]
@@ -2153,6 +2153,7 @@ dependencies = [
  "object-pool",
  "once_cell",
  "persist_if_changed",
+ "px_workspace_hack",
  "regex",
  "serde",
  "serde_json",
@@ -2162,7 +2163,6 @@ dependencies = [
  "toml",
  "tracing-subscriber",
  "walkdir",
- "workspace_hack",
 ]
 
 [[package]]
@@ -2170,8 +2170,8 @@ name = "pavex_tracing"
 version = "0.1.38"
 dependencies = [
  "pavex",
+ "px_workspace_hack",
  "tracing",
- "workspace_hack",
 ]
 
 [[package]]
@@ -2201,6 +2201,7 @@ dependencies = [
  "petgraph",
  "prettyplease",
  "proc-macro2",
+ "px_workspace_hack",
  "quote",
  "r2d2",
  "r2d2_sqlite",
@@ -2218,7 +2219,6 @@ dependencies = [
  "toml_edit",
  "tracing",
  "vergen",
- "workspace_hack",
  "xdg-home",
 ]
 
@@ -2238,6 +2238,7 @@ dependencies = [
  "path-absolutize",
  "pavex_miette",
  "pavexc",
+ "px_workspace_hack",
  "ron",
  "supports-color",
  "tempfile",
@@ -2245,7 +2246,6 @@ dependencies = [
  "tracing-chrome",
  "tracing-subscriber",
  "vergen",
- "workspace_hack",
 ]
 
 [[package]]
@@ -2254,8 +2254,8 @@ version = "0.1.38"
 dependencies = [
  "anyhow",
  "pavex",
+ "px_workspace_hack",
  "thiserror",
- "workspace_hack",
 ]
 
 [[package]]
@@ -2290,9 +2290,9 @@ version = "0.1.38"
 dependencies = [
  "anyhow",
  "fs-err",
+ "px_workspace_hack",
  "sha2",
  "tracing",
- "workspace_hack",
 ]
 
 [[package]]
@@ -2444,6 +2444,57 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5787f7cda34e3033a72192c018bc5883100330f362ef279a8cbccfce8bb4e874"
 dependencies = [
  "cc",
+]
+
+[[package]]
+name = "px_workspace_hack"
+version = "0.1.0"
+dependencies = [
+ "ahash",
+ "aho-corasick",
+ "bitflags 2.5.0",
+ "cc",
+ "clap",
+ "clap_builder",
+ "console",
+ "crossbeam-utils",
+ "crypto-common",
+ "deranged",
+ "digest",
+ "fixedbitset",
+ "futures-channel",
+ "futures-core",
+ "futures-sink",
+ "futures-util",
+ "getrandom",
+ "hashbrown 0.14.5",
+ "hmac",
+ "indexmap",
+ "log",
+ "miette",
+ "num-traits",
+ "petgraph",
+ "proc-macro2",
+ "quote",
+ "regex",
+ "regex-automata 0.4.7",
+ "regex-syntax 0.8.4",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "sha2",
+ "smallvec",
+ "subtle",
+ "syn",
+ "time",
+ "time-macros",
+ "tokio",
+ "toml",
+ "toml_edit",
+ "tracing",
+ "tracing-core",
+ "uuid",
+ "zeroize",
 ]
 
 [[package]]
@@ -4096,57 +4147,6 @@ checksum = "a277a57398d4bfa075df44f501a17cfdf8542d224f0d36095a2adc7aee4ef0a5"
 dependencies = [
  "cfg-if",
  "windows-sys 0.48.0",
-]
-
-[[package]]
-name = "workspace_hack"
-version = "0.1.0"
-dependencies = [
- "ahash",
- "aho-corasick",
- "bitflags 2.5.0",
- "cc",
- "clap",
- "clap_builder",
- "console",
- "crossbeam-utils",
- "crypto-common",
- "deranged",
- "digest",
- "fixedbitset",
- "futures-channel",
- "futures-core",
- "futures-sink",
- "futures-util",
- "getrandom",
- "hashbrown 0.14.5",
- "hmac",
- "indexmap",
- "log",
- "miette",
- "num-traits",
- "petgraph",
- "proc-macro2",
- "quote",
- "regex",
- "regex-automata 0.4.7",
- "regex-syntax 0.8.4",
- "reqwest",
- "serde",
- "serde_json",
- "sha2",
- "smallvec",
- "subtle",
- "syn",
- "time",
- "time-macros",
- "tokio",
- "toml",
- "toml_edit",
- "tracing",
- "tracing-core",
- "uuid",
- "zeroize",
 ]
 
 [[package]]

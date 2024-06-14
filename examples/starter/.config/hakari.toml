@@ -1,7 +1,7 @@
 # This file contains settings for `cargo hakari`.
 # See https://docs.rs/cargo-hakari/latest/cargo_hakari/config for a full list of options.
 
-hakari-package = "px_workspace_hack"
+hakari-package = "workspace_hack"
 
 # Format version for hakari's output. Version 4 requires cargo-hakari 0.9.22 or above.
 dep-format-version = "4"
@@ -21,5 +21,5 @@ platforms = [
     # "x86_64-pc-windows-msvc",
 ]
 
-# Write out exact versions rather than a semver range. (Defaults to false.)
-# exact-versions = true
+[final-excludes]
+workspace-members = ["server_sdk"]

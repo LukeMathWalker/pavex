@@ -7,6 +7,7 @@
 - [Rust](https://www.rust-lang.org/tools/install)
 - [Pavex]
 - [`cargo-px`]
+- _(Optional but recommended)_ [`cargo-hakari`](https://docs.rs/cargo-hakari/0.9.29/cargo_hakari/index.html#installation)
 
 ## Useful commands
 
@@ -47,6 +48,17 @@ cargo px test
 ## Configuration
 
 The configuration system used by this application is detailed in [CONFIGURATION.md].
+
+## `workspace_hack`
+
+The project includes a "utility" crate named `workspace_hack`. It is used
+to speed up project builds by forcing eager feature unification.  
+To understand how it works, check out [`cargo-hakari`'s documentation](https://docs.rs/cargo-hakari/0.9.29/cargo_hakari/about/index.html).  
+To keep `workspace_hack` up to date, install `cargo-hakari` and run:
+
+```bash
+cargo hakari generate && cargo hakari manage-deps -y
+```
 
 [Pavex]: https://pavex.dev
 [`cargo-px`]: https://lukemathwalker.github.io/cargo-px/
