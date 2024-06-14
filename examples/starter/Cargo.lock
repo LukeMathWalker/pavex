@@ -155,6 +155,7 @@ dependencies = [
  "pavex_tracing",
  "serde",
  "tracing",
+ "workspace_hack",
 ]
 
 [[package]]
@@ -1394,6 +1395,7 @@ dependencies = [
  "percent-encoding",
  "persist_if_changed",
  "pin-project-lite",
+ "px_workspace_hack",
  "ron",
  "serde",
  "serde_html_form",
@@ -1408,7 +1410,6 @@ dependencies = [
  "type-safe-id",
  "ubyte",
  "uuid",
- "workspace_hack",
 ]
 
 [[package]]
@@ -1416,8 +1417,8 @@ name = "pavex_bp_schema"
 version = "0.1.38"
 dependencies = [
  "pavex_reflection",
+ "px_workspace_hack",
  "serde",
- "workspace_hack",
 ]
 
 [[package]]
@@ -1426,8 +1427,8 @@ version = "0.1.38"
 dependencies = [
  "anyhow",
  "pavex",
+ "px_workspace_hack",
  "thiserror",
- "workspace_hack",
 ]
 
 [[package]]
@@ -1435,9 +1436,9 @@ name = "pavex_macros"
 version = "0.1.38"
 dependencies = [
  "proc-macro2",
+ "px_workspace_hack",
  "quote",
  "syn",
- "workspace_hack",
 ]
 
 [[package]]
@@ -1450,8 +1451,8 @@ checksum = "77b9753b03381fd8856966146c4d626d9a8507901c1bcdfbc41df03deea551fc"
 name = "pavex_reflection"
 version = "0.1.38"
 dependencies = [
+ "px_workspace_hack",
  "serde",
- "workspace_hack",
 ]
 
 [[package]]
@@ -1459,8 +1460,8 @@ name = "pavex_tracing"
 version = "0.1.38"
 dependencies = [
  "pavex",
+ "px_workspace_hack",
  "tracing",
- "workspace_hack",
 ]
 
 [[package]]
@@ -1498,9 +1499,9 @@ version = "0.1.38"
 dependencies = [
  "anyhow",
  "fs-err",
+ "px_workspace_hack",
  "sha2",
  "tracing",
- "workspace_hack",
 ]
 
 [[package]]
@@ -1598,6 +1599,57 @@ dependencies = [
 ]
 
 [[package]]
+name = "px_workspace_hack"
+version = "0.1.0"
+dependencies = [
+ "ahash",
+ "aho-corasick",
+ "bitflags 2.5.0",
+ "cc",
+ "clap",
+ "clap_builder",
+ "console",
+ "crossbeam-utils",
+ "crypto-common",
+ "deranged",
+ "digest",
+ "fixedbitset",
+ "futures-channel",
+ "futures-core",
+ "futures-sink",
+ "futures-util",
+ "getrandom",
+ "hashbrown",
+ "hmac",
+ "indexmap",
+ "log",
+ "miette",
+ "num-traits",
+ "petgraph",
+ "proc-macro2",
+ "quote",
+ "regex",
+ "regex-automata 0.4.7",
+ "regex-syntax 0.8.4",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "sha2",
+ "smallvec",
+ "subtle",
+ "syn",
+ "time",
+ "time-macros",
+ "tokio",
+ "toml",
+ "toml_edit",
+ "tracing",
+ "tracing-core",
+ "uuid",
+ "zeroize",
+]
+
+[[package]]
 name = "quote"
 version = "1.0.36"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1638,9 +1690,9 @@ dependencies = [
 
 [[package]]
 name = "redox_syscall"
-version = "0.5.1"
+version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "469052894dcb553421e483e4209ee581a45100d31b4018de03e5a7ad86374a7e"
+checksum = "c82cf8cff14456045f55ec4241383baeff27af886adb72ffb2162f99911de0fd"
 dependencies = [
  "bitflags 2.5.0",
 ]
@@ -1986,6 +2038,7 @@ dependencies = [
  "tracing-bunyan-formatter",
  "tracing-panic",
  "tracing-subscriber",
+ "workspace_hack",
 ]
 
 [[package]]
@@ -2921,51 +2974,22 @@ dependencies = [
 name = "workspace_hack"
 version = "0.1.0"
 dependencies = [
- "ahash",
- "aho-corasick",
- "bitflags 2.5.0",
- "cc",
- "clap",
- "clap_builder",
- "console",
- "crossbeam-utils",
- "crypto-common",
- "deranged",
- "digest",
- "fixedbitset",
  "futures-channel",
  "futures-core",
  "futures-sink",
+ "futures-task",
  "futures-util",
- "getrandom",
- "hashbrown",
- "hmac",
- "indexmap",
  "log",
- "miette",
- "num-traits",
- "petgraph",
  "proc-macro2",
  "quote",
- "regex",
- "regex-automata 0.4.7",
- "regex-syntax 0.8.4",
  "reqwest",
  "serde",
  "serde_json",
- "sha2",
  "smallvec",
- "subtle",
  "syn",
- "time",
- "time-macros",
  "tokio",
- "toml",
- "toml_edit",
  "tracing",
  "tracing-core",
- "uuid",
- "zeroize",
 ]
 
 [[package]]
