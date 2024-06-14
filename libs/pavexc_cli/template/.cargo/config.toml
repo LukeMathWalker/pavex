@@ -1,0 +1,2 @@
+[env]
+APP_PROFILE = { value = "dev" }

@@ -63,7 +63,22 @@ APP_PROFILE=prod cargo px run
 
 for running the application with the `prod` profile.
 
-By default, the `dev` profile is used since `APP_PROFILE` is set to `dev` in the `.env` file at the root of the project.
-The `.env` file should not be committed to version control: it is meant to be used for local development only,
-so that each developer can specify their own environment variables for secret values (e.g. database credentials)
-that shouldn't be stored in configuration files (given their sensitive nature).
+### Local env variables
+
+By default, `cargo run` uses `dev` profile.  
+This happens because `APP_PROFILE` is set to `dev` in the `[env]` section of [.cargo/config.toml](.cargo/config.toml).  
+You can use the `[env]` section to specify additional environment variables that you want to set when running the application locally.  
+
+## Sensitive local env variables
+
+Be careful, though! `.cargo/config.toml` is committed to version control, so you should avoid storing sensitive information there.  
+If you need local environment variables that shouldn't be shared with other developers, you can use a `.env` file at the root of the repository. For example:
+
+```bash
+# .env
+# This file is used to store sensitive local environment variables
+DATABASE_PASSWORD=super_secret_password
+```
+
+The application will automatically load values from the `.env` file, if one exists, and `.gitignore` is already set up to ignore it, thus
+preventing secret information from being committed to version control.
