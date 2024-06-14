@@ -65,19 +65,13 @@ pub fn handler(
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.constructor(f!(crate::json), Lifecycle::RequestScoped);
-    bp.constructor(f!(crate::fallible), Lifecycle::RequestScoped)
+    bp.request_scoped(f!(crate::json));
+    bp.request_scoped(f!(crate::fallible))
         .error_handler(f!(crate::error_handler));
-    bp.constructor(
-        f!(crate::fallible_with_generic_error),
-        Lifecycle::RequestScoped,
-    )
-    .error_handler(f!(crate::generic_error_handler));
-    bp.constructor(
-        f!(crate::fallible_with_generic_error2),
-        Lifecycle::RequestScoped,
-    )
-    .error_handler(f!(crate::doubly_generic_error_handler));
+    bp.request_scoped(f!(crate::fallible_with_generic_error))
+        .error_handler(f!(crate::generic_error_handler));
+    bp.request_scoped(f!(crate::fallible_with_generic_error2))
+        .error_handler(f!(crate::doubly_generic_error_handler));
     bp.route(GET, "/home", f!(crate::handler));
     bp
 }

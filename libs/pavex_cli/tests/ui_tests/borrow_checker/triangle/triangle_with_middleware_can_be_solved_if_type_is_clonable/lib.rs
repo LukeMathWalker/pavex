@@ -42,7 +42,7 @@ pub fn handler(_a: &A) -> Response {
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.constructor(f!(crate::a), Lifecycle::RequestScoped)
-        .cloning(CloningStrategy::CloneIfNecessary);
+        .clone_if_necessary();
     bp.wrap(f!(crate::mw));
     bp.route(GET, "/home", f!(crate::handler));
     bp

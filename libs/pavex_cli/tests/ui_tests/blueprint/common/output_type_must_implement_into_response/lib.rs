@@ -39,7 +39,7 @@ pub fn blueprint() -> Blueprint {
         .error_handler(f!(crate::error_handler));
     bp.post_process(f!(crate::pp_middleware))
         .error_handler(f!(crate::error_handler));
-    bp.constructor(f!(crate::request_scoped), Lifecycle::RequestScoped)
+    bp.request_scoped(f!(crate::request_scoped))
         .error_handler(f!(crate::error_handler));
     bp.route(GET, "/home", f!(crate::handler))
         .error_handler(f!(crate::error_handler));

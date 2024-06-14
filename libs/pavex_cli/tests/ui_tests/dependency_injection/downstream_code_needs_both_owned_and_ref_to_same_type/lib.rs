@@ -39,7 +39,7 @@ pub fn handler(s: Scoped) -> pavex::response::Response {
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.constructor(f!(crate::Scoped::new), Lifecycle::RequestScoped)
-        .cloning(CloningStrategy::CloneIfNecessary);
+        .clone_if_necessary();
     bp.wrap(f!(crate::mw));
     bp.wrap(f!(crate::mw2));
     bp.route(GET, "/", f!(crate::handler));

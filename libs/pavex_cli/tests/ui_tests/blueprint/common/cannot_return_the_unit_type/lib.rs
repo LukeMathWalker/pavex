@@ -59,7 +59,7 @@ pub fn fallible_unit_handler() -> Result<(), Error> {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.constructor(f!(crate::constructor), Lifecycle::Singleton);
+    bp.singleton(f!(crate::constructor));
     bp.request_scoped(f!(crate::fallible_unit_constructor));
     bp.request_scoped(f!(crate::fallible_constructor))
         .error_handler(f!(crate::error_handler));

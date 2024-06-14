@@ -11,7 +11,7 @@ pub fn handler(_x: &'static str) -> pavex::response::Response {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.constructor(f!(crate::static_str), Lifecycle::Singleton);
+    bp.singleton(f!(crate::static_str));
     bp.route(GET, "/handler", f!(crate::handler));
     bp
 }

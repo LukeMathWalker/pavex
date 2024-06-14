@@ -20,12 +20,10 @@ pub fn handler() -> Response {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.prebuilt(t!(crate::C))
-        .cloning(CloningStrategy::CloneIfNecessary);
-    bp.singleton(f!(crate::singleton))
-        .cloning(CloningStrategy::CloneIfNecessary);
+    bp.prebuilt(t!(crate::C)).clone_if_necessary();
+    bp.singleton(f!(crate::singleton)).clone_if_necessary();
     bp.request_scoped(f!(crate::request_scoped))
-        .cloning(CloningStrategy::CloneIfNecessary);
+        .clone_if_necessary();
     bp.route(GET, "/home", f!(crate::handler));
     bp
 }

@@ -45,6 +45,18 @@ impl PrebuiltType {
         self
     }
 
+    /// Set the cloning strategy to [`CloningStrategy::CloneIfNecessary`].  
+    /// Check out [`PrebuiltType::cloning`] for more details.
+    pub fn clone_if_necessary(self) -> Self {
+        self.cloning(CloningStrategy::CloneIfNecessary)
+    }
+
+    /// Set the cloning strategy to [`CloningStrategy::NeverClone`].  
+    /// Check out [`PrebuiltType::cloning`] for more details.
+    pub fn never_clone(self) -> Self {
+        self.cloning(CloningStrategy::NeverClone)
+    }
+
     /// Register this state input with a [`Blueprint`].
     ///
     /// Check out the documentation of [`Blueprint::prebuilt`] for more details.

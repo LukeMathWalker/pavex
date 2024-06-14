@@ -28,6 +28,18 @@ impl<'a> RegisteredPrebuiltType<'a> {
         self
     }
 
+    /// Set the cloning strategy to [`CloningStrategy::CloneIfNecessary`].  
+    /// Check out [`RegisteredPrebuiltType::cloning`] for more details.
+    pub fn clone_if_necessary(self) -> Self {
+        self.cloning(CloningStrategy::CloneIfNecessary)
+    }
+
+    /// Set the cloning strategy to [`CloningStrategy::NeverClone`].  
+    /// Check out [`RegisteredPrebuiltType::cloning`] for more details.
+    pub fn never_clone(self) -> Self {
+        self.cloning(CloningStrategy::NeverClone)
+    }
+
     fn prebuilt(&mut self) -> &mut PrebuiltType {
         let component = &mut self.blueprint.components[self.component_id];
         let Component::PrebuiltType(s) = component else {

@@ -1,11 +1,11 @@
 use std::path::PathBuf;
 
-use pavex::f;
 use pavex::blueprint::{
     constructor::{CloningStrategy, Lifecycle},
     router::GET,
     Blueprint,
 };
+use pavex::f;
 use pavex::response::Response;
 
 // The call graph looks like this:
@@ -45,7 +45,7 @@ pub fn handler(_b: B, _c: C) -> Response {
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.constructor(f!(crate::a), Lifecycle::RequestScoped)
-        .cloning(CloningStrategy::CloneIfNecessary);
+        .clone_if_necessary();
     bp.constructor(f!(crate::b), Lifecycle::RequestScoped);
     bp.constructor(f!(crate::c), Lifecycle::RequestScoped);
     bp.route(GET, "/home", f!(crate::handler));

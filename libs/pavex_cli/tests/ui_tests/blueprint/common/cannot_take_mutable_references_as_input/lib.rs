@@ -29,7 +29,7 @@ pub fn handler(s: &String) -> Result<Response, pavex::Error> {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.constructor(f!(crate::constructor), Lifecycle::RequestScoped);
+    bp.request_scoped(f!(crate::constructor));
     bp.wrap(f!(crate::wrapping));
     bp.error_observer(f!(crate::observer));
     bp.route(GET, "/home", f!(crate::handler))
