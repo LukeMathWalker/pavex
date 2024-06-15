@@ -1,5 +1,44 @@
 use crate::commands::errors::{InvocationError, NonZeroExitCode, SignalTermination};
-use std::{path::PathBuf, process::Command};
+use std::{path::PathBuf, process::Command, str::FromStr};
+
+/// The name of a template to use when creating a new Pavex project.
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum TemplateName {
+    /// A minimal API template.
+    Api,
+    /// The project template used by the Pavex quickstart guide.
+    Quickstart,
+}
+
+impl TemplateName {
+    pub fn as_str(&self) -> &str {
+        match self {
+            TemplateName::Api => "api",
+            TemplateName::Quickstart => "quickstart",
+        }
+    }
+}
+
+impl FromStr for TemplateName {
+    type Err = InvalidTemplateName;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "api" => Ok(TemplateName::Api),
+            "quickstart" => Ok(TemplateName::Quickstart),
+            s => Err(InvalidTemplateName {
+                name: s.to_string(),
+            }),
+        }
+    }
+}
+
+#[derive(Debug, thiserror::Error)]
+#[error("`{name}` is not a valid template name. Use either `api` or `quickstart`.")]
+pub struct InvalidTemplateName {
+    pub(crate) name: String,
+}
 
 /// The configuration for `pavex`'s `new` command.
 ///
@@ -9,6 +48,7 @@ use std::{path::PathBuf, process::Command};
 pub struct NewBuilder {
     cmd: Command,
     path: PathBuf,
+    template: TemplateName,
 }
 
 /// The representation of this command used in error messages.
@@ -16,7 +56,17 @@ static NEW_DEBUG_COMMAND: &str = "pavex [...] new [...]";
 
 impl NewBuilder {
     pub(crate) fn new(cmd: Command, path: PathBuf) -> Self {
-        Self { cmd, path }
+        Self {
+            cmd,
+            path,
+            template: TemplateName::Api,
+        }
+    }
+
+    /// Set the template to use when creating a new Pavex project.
+    pub fn template(mut self, template: TemplateName) -> Self {
+        self.template = template;
+        self
     }
 
     /// Scaffold a new Pavex project.
@@ -58,6 +108,8 @@ impl NewBuilder {
         self.cmd
             .arg("new")
             .arg(self.path)
+            .arg("--template")
+            .arg(self.template.as_str())
             .stdout(std::process::Stdio::inherit())
             .stderr(std::process::Stdio::inherit());
         self.cmd

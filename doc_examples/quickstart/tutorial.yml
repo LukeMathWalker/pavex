@@ -1,29 +1,29 @@
 bootstrap: |
-  pavex new demo && cd demo && cargo fmt && git add . && git commit -m "Initial commit"
+  pavex new --template="quickstart" demo && cd demo && cargo fmt && git add . && git commit -m "Initial commit"
 starter_project_folder: demo
 snippets:
   - name: "blueprint_definition"
     source_path: "app/src/blueprint.rs"
-    ranges: [ "6..16" ]
+    ranges: ["6..16"]
   - name: "route_registration"
     source_path: "app/src/routes/mod.rs"
-    ranges: [ "2.." ]
-    hl_lines: [ 6 ]
+    ranges: ["2.."]
+    hl_lines: [6]
   - name: "ping_handler"
     source_path: "app/src/routes/ping.rs"
-    ranges: [ ".." ]
+    ranges: [".."]
   - name: "cargo_px_in_manifest"
     source_path: "server_sdk/Cargo.toml"
-    ranges: [ "5..9" ]
+    ranges: ["5..9"]
   - name: "bp_binary"
     source_path: "app/src/bin/bp.rs"
-    ranges: [ ".." ]
+    ranges: [".."]
   - name: "bp_server_binary"
     source_path: "server/src/bin/server.rs"
-    ranges: [ ".." ]
+    ranges: [".."]
   - name: "ping_test"
     source_path: "server/tests/integration/ping.rs"
-    ranges: [ ".." ]
+    ranges: [".."]
 commands:
   - command: "exa --oneline -F --group-directories-first"
     expected_outcome: "success"
@@ -35,15 +35,15 @@ steps:
     snippets:
       - name: "new_submodule"
         source_path: "app/src/routes/mod.rs"
-        ranges: [ "0..2" ]
-        hl_lines: [ 1 ]
+        ranges: ["0..2"]
+        hl_lines: [1]
       - name: "route_def"
         source_path: "app/src/routes/greet.rs"
-        ranges: [ ".." ]
+        ranges: [".."]
       - name: "register_new_route"
         source_path: "app/src/routes/mod.rs"
-        ranges: [ "6..10" ]
-        hl_lines: [ 4 ]
+        ranges: ["6..10"]
+        hl_lines: [4]
     commands:
       - command: "cargo px c"
         expected_outcome: "success"
@@ -51,7 +51,7 @@ steps:
     snippets:
       - name: "route_def"
         source_path: "app/src/routes/greet.rs"
-        ranges: [ ".." ]
+        ranges: [".."]
     commands:
       - command: "cargo px c"
         expected_outcome: "success"
@@ -59,11 +59,11 @@ steps:
     snippets:
       - name: "route_def"
         source_path: "app/src/routes/greet.rs"
-        ranges: [ ".." ]
+        ranges: [".."]
       - name: "register_common_invocation"
         source_path: "app/src/blueprint.rs"
-        ranges: [ "6..10", "14..15" ]
-        hl_lines: [ 4 ]
+        ranges: ["6..10", "14..15"]
+        hl_lines: [4]
     commands:
       - command: "cargo px c"
         expected_outcome: "success"
@@ -71,15 +71,15 @@ steps:
     snippets:
       - name: "new_submodule"
         source_path: "app/src/lib.rs"
-        ranges: [ ".." ]
-        hl_lines: [ 7 ]
+        ranges: [".."]
+        hl_lines: [7]
       - name: "user_agent"
         source_path: "app/src/user_agent.rs"
-        ranges: [ ".." ]
+        ranges: [".."]
       - name: "inject"
         source_path: "app/src/routes/greet.rs"
-        ranges: [ "3..4", "10..14", "16..17" ]
-        hl_lines: [ 4 ]
+        ranges: ["3..4", "10..14", "16..17"]
+        hl_lines: [4]
     commands:
       - command: "cargo px c"
         expected_outcome: "failure"
@@ -92,11 +92,11 @@ steps:
     snippets:
       - name: "extract"
         source_path: "app/src/user_agent.rs"
-        ranges: [ "0..2", "10..23" ]
+        ranges: ["0..2", "10..23"]
       - name: "register"
         source_path: "app/src/blueprint.rs"
-        ranges: [ "2..3", "7..8", "12..13", "16..17" ]
-        hl_lines: [ 6 ]
+        ranges: ["2..3", "7..8", "12..13", "16..17"]
+        hl_lines: [6]
     commands:
       - command: "cargo px c"
         expected_outcome: "success"
@@ -104,7 +104,7 @@ steps:
     snippets:
       - name: "extract"
         source_path: "app/src/user_agent.rs"
-        ranges: [ "0..2", "10..19" ]
+        ranges: ["0..2", "10..19"]
     commands:
       - command: "cargo px c -q"
         expected_outcome: "failure"
@@ -113,11 +113,11 @@ steps:
     snippets:
       - name: "error_handler"
         source_path: "app/src/user_agent.rs"
-        ranges: [ "21..25" ]
+        ranges: ["21..25"]
       - name: "register"
         source_path: "app/src/blueprint.rs"
-        ranges: [ "7..8", "12..14", "17..18" ]
-        hl_lines: [ 5 ]
+        ranges: ["7..8", "12..14", "17..18"]
+        hl_lines: [5]
     commands:
       - command: "cargo px c"
         expected_outcome: "success"
@@ -125,14 +125,14 @@ steps:
     snippets:
       - name: "ping_test"
         source_path: "server/tests/integration/ping.rs"
-        ranges: [ ".." ]
+        ranges: [".."]
       - name: "new_test_module"
         source_path: "server/tests/integration/main.rs"
-        ranges: [ ".." ]
-        hl_lines: [ 1 ]
+        ranges: [".."]
+        hl_lines: [1]
       - name: "greet_test"
         source_path: "server/tests/integration/greet.rs"
-        ranges: [ ".." ]
+        ranges: [".."]
     commands:
       - command: "cargo px t"
         expected_outcome: "success"
@@ -140,7 +140,7 @@ steps:
     snippets:
       - name: "greet_test"
         source_path: "server/tests/integration/greet.rs"
-        ranges: [ "21.." ]
+        ranges: ["21.."]
     commands:
       - command: "cargo px t"
         expected_outcome: "success"

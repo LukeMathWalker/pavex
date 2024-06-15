@@ -1,7 +1,9 @@
 app/
 server/
 server_sdk/
+workspace_hack/
 Cargo.toml
+CONFIGURATION.md
 deny.toml
 Dockerfile
 README.md

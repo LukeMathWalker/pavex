@@ -33,7 +33,11 @@ async fn _main() -> anyhow::Result<()> {
     let _ = dotenvy::dotenv();
 
     let config = Config::load(None)?;
+    {%- if greet_route -%}   
     let application_state = build_application_state(config.app).await;
+    {%- else -%}   
+    let application_state = build_application_state().await;
+    {%- endif -%}   
 
     let tcp_listener = config
         .server

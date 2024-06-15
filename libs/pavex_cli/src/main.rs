@@ -26,6 +26,7 @@ use pavex_cli::utils;
 use pavex_cli::version::latest_released_version;
 use pavexc_cli_client::commands::generate::{BlueprintArgument, GenerateError};
 use pavexc_cli_client::commands::new::NewError;
+use pavexc_cli_client::commands::new::TemplateName;
 use pavexc_cli_client::Client;
 use redact::Secret;
 use semver::Version;
@@ -76,7 +77,9 @@ fn main() -> Result<ExitCode, miette::Error> {
             output,
             check,
         ),
-        Command::New { path } => scaffold_project(client, &locator, &mut shell, path),
+        Command::New { path, template } => {
+            scaffold_project(client, &locator, &mut shell, path, template)
+        }
         Command::Self_ { command } => {
             // You should always be able to run `self` commands, even if Pavex has
             // not been activated yet.
@@ -164,6 +167,7 @@ fn scaffold_project(
     locator: &PavexLocator,
     shell: &mut Shell,
     path: PathBuf,
+    template: TemplateName,
 ) -> Result<ExitCode, anyhow::Error> {
     let pavexc_cli_path = if let Some(pavexc_override) = pavex_cli::env::pavexc_override() {
         pavexc_override
@@ -181,7 +185,11 @@ fn scaffold_project(
         "Creating",
         format!("the new project in `{}`", path.display()),
     )?;
-    match client.new_command(path.clone()).execute() {
+    match client
+        .new_command(path.clone())
+        .template(template)
+        .execute()
+    {
         Ok(()) => {
             shell.status(
                 "Created",

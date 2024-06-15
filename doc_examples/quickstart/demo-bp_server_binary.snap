@@ -35,7 +35,6 @@ async fn _main() -> anyhow::Result<()> {
 
     let config = Config::load(None)?;
     let application_state = build_application_state().await;
-
     let tcp_listener = config
         .server
         .listener()
