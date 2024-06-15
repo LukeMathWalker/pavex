@@ -33,6 +33,7 @@ ron = { workspace = true }
 generate_from_path = { path = "../generate_from_path", version = "0.1.39" }
 tempfile = { workspace = true }
 better-panic = { workspace = true }
+px_workspace_hack = { version = "0.1", path = "../px_workspace_hack" }
 
 [build-dependencies]
 vergen = { workspace = true }
