@@ -10,24 +10,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Add a workspace-hack crate to the generated starter project to minimise (re)build times
-- Reshape singleton dependencies ([#298](https://github.com/LukeMathWalker/pavex/pull/298))
+- Introduce prebuilt types ([#298](https://github.com/LukeMathWalker/pavex/pull/298))
 - Add a new '--template' option to 'pavex new' and 'pavexc new'. It includes a dedicated 'quickstart' template as well as the 'api' template, the default.
 - In the starter project, use a meaningful example to showcase how the configuration system works, rather than a dummy with no usage
+- Shorthand methods (`.clone_if_necessary()` and `.never_clone()`) to tweak the default cloning strategy on constructors and prebuilt types
 
 ### Fixed
 - Set new Cargo lint to allow 'cfg(pavex_ide_hint)' in Pavex, its snapshot tests and its scaffolded projects
-- Reject non-static references if they are registered as singletons.
+- Use the [env] section of .cargo/config.toml to store non-sensitive env variables used for local development. It fixes configuration for newly generated projects.
 - Don't use colored logs if color is not enabled.
-- Include `super` and `self` as valid prefixes for relative paths ([#296](https://github.com/LukeMathWalker/pavex/pull/296))
-
-### Other
-- Disable workspace hack before a release
-- Add shorthand methods to tweak the default cloning strategy on constructors and prebuilt types
-- Re-enable workspace hack after a release ([#295](https://github.com/LukeMathWalker/pavex/pull/295))
-- Update test expectations.
-- Handle "unused" warnings
-- Improve debug output on panics
-- Use the [env] section of .cargo/config.toml as the go-to place for storing non-sensitive env variables used for local development
+- Include `super` and `self` as valid prefixes for relative paths in error messages ([#296](https://github.com/LukeMathWalker/pavex/pull/296))
+- You can no longer register a type with a non-`'static` lifetime parameter (implicit or explicit) as a singleton. ([#298](https://github.com/LukeMathWalker/pavex/pull/298))
 
 ## [0.1.38](https://github.com/LukeMathWalker/pavex/compare/0.1.37...0.1.38) - 2024-04-28
 
