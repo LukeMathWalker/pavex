@@ -50,8 +50,9 @@ serde = { version = "1", features = ["alloc", "derive"] }
 serde_json = { version = "1", features = ["unbounded_depth"] }
 sha2 = { version = "0.10" }
 smallvec = { version = "1", default-features = false, features = ["const_new"] }
+stable_deref_trait = { version = "1" }
 subtle = { version = "2" }
-syn = { version = "2", features = ["extra-traits", "full", "visit", "visit-mut"] }
+syn = { version = "2", features = ["extra-traits", "fold", "full", "visit", "visit-mut"] }
 time = { version = "0.3", features = ["formatting", "local-offset", "macros", "parsing", "serde"] }
 tokio = { version = "1", features = ["fs", "io-util", "macros", "net", "rt", "sync", "time"] }
 toml = { version = "0.8", features = ["preserve_order"] }
@@ -96,8 +97,9 @@ serde = { version = "1", features = ["alloc", "derive"] }
 serde_json = { version = "1", features = ["unbounded_depth"] }
 sha2 = { version = "0.10" }
 smallvec = { version = "1", default-features = false, features = ["const_new"] }
+stable_deref_trait = { version = "1" }
 subtle = { version = "2" }
-syn = { version = "2", features = ["extra-traits", "full", "visit", "visit-mut"] }
+syn = { version = "2", features = ["extra-traits", "fold", "full", "visit", "visit-mut"] }
 time = { version = "0.3", features = ["formatting", "local-offset", "macros", "parsing", "serde"] }
 time-macros = { version = "0.2", default-features = false, features = ["formatting", "parsing", "serde"] }
 tokio = { version = "1", features = ["fs", "io-util", "macros", "net", "rt", "sync", "time"] }
