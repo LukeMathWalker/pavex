@@ -39,7 +39,7 @@ jobs:
           cargo hakari disable
           cargo hakari remove-deps -y
           git add .
-          git commit -am "Disable workspace hack before a release"
+          git commit -am "Disable workspace hack before a release" || echo "No changes to commit"
       - name: Run release-plz
         uses: MarcoIeni/release-plz-action@v0.5
         with:
