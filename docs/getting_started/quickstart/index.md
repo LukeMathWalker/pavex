@@ -7,11 +7,11 @@
 
 ## Create a new Pavex project
 
-The `pavex` CLI provides a `new` subcommand to scaffold a new Pavex project.
-Let's use it to create a new project called `demo`:
+The `pavex` CLI provides a `new` subcommand to scaffold a new Pavex project.  
+You can choose between different templates, each one tailored for a specific use case. We'll use the `quickstart` template for this tutorial:
 
 ```bash
-pavex new demo && cd demo
+pavex new --template="quickstart" demo && cd demo
 ```
 
 ## Commands
