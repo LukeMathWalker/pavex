@@ -1,9 +1,12 @@
 use pavex::blueprint::Blueprint;
-use pavex::{f, t};
+{%- if greet_route -%}
+use pavex::f;
+{%- endif -%}
+use pavex::t;
 
 pub fn register(bp: &mut Blueprint) {
     bp.prebuilt(t!(self::AppConfig));
-    // How do you add your own configuration?
+    {% if greet_route -%}// How do you add your own configuration?
     // The starter template includes `GreetConfig` as a reference example.
     //
     // Steps:
@@ -25,15 +28,19 @@ pub fn register(bp: &mut Blueprint) {
     //
     // Feel free to delete `DummyConfig` once you get started working on your own app!
     bp.transient(f!(self::AppConfig::greet_config));
+    {%- endif -%}
 }
 
 #[derive(serde::Deserialize, Debug, Clone)]
 /// The configuration object holding all the values required
 /// to configure the application.
 pub struct AppConfig {
+    {%- if greet_route -%}
     pub greet: GreetConfig,
+    {%- endif -%}
 }
 
+{% if greet_route -%}
 impl AppConfig {
     pub fn greet_config(&self) -> &GreetConfig {
         &self.greet
@@ -49,3 +56,4 @@ pub struct GreetConfig {
     /// The message that's appended after the "Hello" line.
     pub greeting_message: String,
 }
+{%- endif -%}

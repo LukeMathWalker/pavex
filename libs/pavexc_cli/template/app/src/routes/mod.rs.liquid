@@ -1,4 +1,6 @@
-pub mod hello;
+{%- if greet_route -%}   
+pub mod greet;
+{%- endif -%}
 pub mod ping;
 
 use pavex::blueprint::{router::GET, Blueprint};
@@ -6,5 +8,7 @@ use pavex::f;
 
 pub fn register(bp: &mut Blueprint) {
     bp.route(GET, "/api/ping", f!(self::ping::get));
-    bp.route(GET, "/api/hello/:name", f!(self::hello::get));
+    {%- if greet_route -%}   
+    bp.route(GET, "/api/greet/:name", f!(self::greet::get));
+    {%- endif -%}
 }

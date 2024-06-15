@@ -1,5 +1,6 @@
 use clap::{Parser, Subcommand};
 use clap_stdin::MaybeStdin;
+use pavexc_cli_client::commands::new::TemplateName;
 use redact::Secret;
 use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
@@ -129,6 +130,12 @@ pub enum Command {
         /// If any of the intermediate directories in the path don't exist, they'll be created.
         #[arg(index = 1)]
         path: PathBuf,
+        /// The template that should be used to scaffold the project.
+        /// It must be one of the following: `api`, `quickstart`.
+        ///
+        /// If not provided, Pavex will use the `api` template.
+        #[clap(short, long, value_parser, default_value = "api")]
+        template: TemplateName,
     },
     /// Modify the installation of the Pavex CLI.
     #[command(name = "self")]

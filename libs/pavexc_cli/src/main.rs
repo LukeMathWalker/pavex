@@ -1,15 +1,17 @@
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::str::FromStr;
 
 use anyhow::Context;
 use clap::{Parser, Subcommand};
 use generate_from_path::GenerateArgs;
+use liquid_core::Value;
 use miette::Severity;
 use owo_colors::OwoColorize;
 use pavexc::{App, AppWriter};
+use pavexc_cli_client::commands::new::TemplateName;
 use supports_color::Stream;
 use tracing_chrome::{ChromeLayerBuilder, FlushGuard};
 use tracing_subscriber::fmt::format::FmtSpan;
@@ -123,6 +125,12 @@ enum Commands {
         /// If any of the intermediate directories in the path don't exist, they'll be created.
         #[arg(index = 1)]
         path: PathBuf,
+        /// The template that should be used to scaffold the project.
+        /// It must be one of the following: `api`, `quickstart`.
+        ///
+        /// If not provided, Pavex will use the `api` template.
+        #[clap(short, long, value_parser, default_value = "api")]
+        template: TemplateName,
     },
 }
 
@@ -219,7 +227,7 @@ fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
             output,
             check,
         } => generate(blueprint, diagnostics, output, cli.color, check),
-        Commands::New { path } => scaffold_project(path),
+        Commands::New { path, template } => scaffold_project(path, template),
     }
 }
 
@@ -305,7 +313,10 @@ fn use_color_on_stderr(color_profile: Color) -> bool {
 
 static TEMPLATE_DIR: include_dir::Dir = include_dir::include_dir!("$CARGO_MANIFEST_DIR/template");
 
-fn scaffold_project(destination: PathBuf) -> Result<ExitCode, Box<dyn std::error::Error>> {
+fn scaffold_project(
+    destination: PathBuf,
+    template: TemplateName,
+) -> Result<ExitCode, Box<dyn std::error::Error>> {
     let name = destination
         .file_name()
         .ok_or_else(|| {
@@ -334,16 +345,22 @@ fn scaffold_project(destination: PathBuf) -> Result<ExitCode, Box<dyn std::error
         std::env::var("CARGO_GENERATE_VALUE_PAVEX_CLI_CLIENT_PACKAGE_SPEC")
             .unwrap_or_else(|_| format!("version = \"{}\"", env!("CARGO_PKG_VERSION")));
 
+    let add_greet_route = template == TemplateName::Api;
+
     let mut define = HashMap::new();
-    define.insert("pavex_package_spec".to_string(), pavex_package_spec.clone());
+    define.insert(
+        "pavex_package_spec".to_string(),
+        Value::scalar(pavex_package_spec.clone()),
+    );
     define.insert(
         "pavex_cli_client_package_spec".to_string(),
-        pavex_cli_client_package_spec.clone(),
+        Value::scalar(pavex_cli_client_package_spec.clone()),
     );
     define.insert(
         "pavex_tracing_package_spec".to_string(),
-        pavex_tracing_package_spec.clone(),
+        Value::scalar(pavex_tracing_package_spec.clone()),
     );
+    define.insert("greet_route".to_string(), Value::scalar(add_greet_route));
 
     let destination = {
         use path_absolutize::Absolutize;
@@ -355,16 +372,39 @@ fn scaffold_project(destination: PathBuf) -> Result<ExitCode, Box<dyn std::error
             .map(|p| p.to_path_buf())
             .context("Failed to convert destination path to an absolute path")?
     };
+    let mut ignore = vec!["target/".into(), "Cargo.lock".into(), ".idea".into()];
+    if !add_greet_route {
+        ignore.push("app/src/routes/greet.rs".into());
+    }
+
     let generate_args = GenerateArgs {
         template_dir: template_dir.path().to_path_buf(),
-        destination,
-        name,
+        destination: destination.clone(),
+        name: name.clone(),
         define,
-        ignore: Some(vec!["target/".into(), "Cargo.lock".into(), ".idea".into()]),
+        ignore: Some(ignore),
         overwrite: false,
         verbose: false,
     };
     generate_from_path::generate(generate_args)
         .context("Failed to scaffold the project from Pavex's default template")?;
-    return Ok(ExitCode::SUCCESS);
+    // We don't care if this fails, as it's just a nice-to-have.
+    let _ = cargo_fmt(&destination.join(name)).unwrap();
+    Ok(ExitCode::SUCCESS)
+}
+
+/// Use `cargo` to format the generated project.
+fn cargo_fmt(project_dir: &Path) -> anyhow::Result<()> {
+    let output = std::process::Command::new("cargo")
+        .arg("fmt")
+        .current_dir(project_dir)
+        .output()?;
+    if !output.status.success() {
+        anyhow::bail!(
+            "Failed to format the generated project at {}: {}",
+            project_dir.display(),
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+    Ok(())
 }

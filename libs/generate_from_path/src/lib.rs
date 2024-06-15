@@ -27,7 +27,7 @@
 //! OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
 //! IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 //! DEALINGS IN THE SOFTWARE.
-use crate::template::{create_liquid_object, LiquidObjectResource};
+use crate::template::create_liquid_object;
 use crate::template_variables::{
     set_project_name_variables, CrateName, ProjectDir, ProjectName, ProjectNameInput,
 };
@@ -49,7 +49,7 @@ pub struct GenerateArgs {
     pub name: String,
     pub template_dir: PathBuf,
     pub destination: PathBuf,
-    pub define: HashMap<String, String>,
+    pub define: HashMap<String, liquid_core::Value>,
     pub ignore: Option<Vec<String>>,
     pub overwrite: bool,
     pub verbose: bool,
@@ -75,7 +75,9 @@ fn expand_template(template_dir: &Path, args: &GenerateArgs) -> anyhow::Result<P
     info!("project-name: {project_name}");
     info!("Generating template");
 
-    add_defined_values(&mut liquid_object, &args);
+    for (key, value) in &args.define {
+        liquid_object.insert(key.into(), value.to_owned());
+    }
 
     ignore_me::remove_unneeded_files(template_dir, &args.ignore, args.verbose)?;
     let mut pbar = progressbar::new();
@@ -121,15 +123,6 @@ fn git_init(project_dir: &Path) -> anyhow::Result<()> {
         );
     }
     Ok(())
-}
-
-fn add_defined_values(liquid_object: &mut LiquidObjectResource, generate_args: &GenerateArgs) {
-    for (key, value) in &generate_args.define {
-        liquid_object.insert(
-            key.into(),
-            liquid_core::Value::Scalar(value.to_owned().into()),
-        );
-    }
 }
 
 fn get_source_template_into_temp(template_dir: &Path) -> anyhow::Result<TempDir> {
