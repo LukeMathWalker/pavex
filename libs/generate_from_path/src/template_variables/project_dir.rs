@@ -1,6 +1,5 @@
 use crate::GenerateArgs;
 use anyhow::bail;
-use heck::ToKebabCase;
 use std::{
     fmt::Display,
     path::{Path, PathBuf},
@@ -26,14 +25,7 @@ impl TryFrom<&GenerateArgs> for ProjectDir {
     type Error = anyhow::Error;
 
     fn try_from(args: &GenerateArgs) -> Result<Self, Self::Error> {
-        let name = &args.name;
-
-        let dir_name = name.to_kebab_case();
-        if &dir_name != name {
-            tracing::warn!("Renaming project called {name} to {dir_name}");
-        }
-
-        let project_dir = args.destination.join(dir_name);
+        let project_dir = args.destination.join(&args.name);
 
         if project_dir.exists() {
             bail!("Target directory already exists, aborting!");
