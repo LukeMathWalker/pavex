@@ -14,9 +14,9 @@ path = "src/main.rs"
 
 [dependencies]
 clap = { workspace = true, features = ["derive", "env"] }
-pavexc = { path = "../pavexc", version = "0.1.40" }
-pavexc_cli_client = { path = "../pavexc_cli_client", version = "0.1.40" }
-pavex_miette = { path = "../pavex_miette", version = "0.1.40" }
+pavexc = { path = "../pavexc", version = "0.1.41" }
+pavexc_cli_client = { path = "../pavexc_cli_client", version = "0.1.41" }
+pavex_miette = { path = "../pavex_miette", version = "0.1.41" }
 liquid-core = { workspace = true }
 miette = { workspace = true }
 fs-err = { workspace = true }
@@ -30,7 +30,7 @@ supports-color = { workspace = true }
 include_dir = { workspace = true }
 path-absolutize = { workspace = true }
 ron = { workspace = true }
-generate_from_path = { path = "../generate_from_path", version = "0.1.40" }
+generate_from_path = { path = "../generate_from_path", version = "0.1.41" }
 tempfile = { workspace = true }
 better-panic = { workspace = true }
 
