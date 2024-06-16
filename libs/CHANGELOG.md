@@ -8,11 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.41](https://github.com/LukeMathWalker/pavex/compare/0.1.40...0.1.41) - 2024-06-16
 
-### Added
-- reject singletons with non-'static lifetime parameters
-
-### Other
-- use consistent naming in prebuilt tests
+### Fixed
+- Pavex will reject singleton constructors if they return a type with non-`'static` lifetime parameters. Singletons must be shared across worker threads, therefore they must be `'static`.
 
 ## [0.1.40](https://github.com/LukeMathWalker/pavex/compare/0.1.39...0.1.40) - 2024-06-16
 
