@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.41](https://github.com/LukeMathWalker/pavex/compare/0.1.40...0.1.41) - 2024-06-16
+
+### Added
+- reject singletons with non-'static lifetime parameters
+
+### Other
+- use consistent naming in prebuilt tests
+
 ## [0.1.40](https://github.com/LukeMathWalker/pavex/compare/0.1.39...0.1.40) - 2024-06-16
 
 ### Fixed
