@@ -365,13 +365,14 @@ fn scaffold_project(
     let destination = {
         use path_absolutize::Absolutize;
 
-        let path = destination
-            .parent()
-            .context("Failed to derive the parent directory of the provided path")?;
-        path.absolutize()
+        destination
+            .absolutize()
             .map(|p| p.to_path_buf())
-            .context("Failed to convert destination path to an absolute path")?
+            .context("Failed to convert the provided path to an absolute path")?
     };
+    let destination_parent = destination
+        .parent()
+        .context("Failed to derive the parent directory of the provided path")?;
     let mut ignore = vec!["target/".into(), "Cargo.lock".into(), ".idea".into()];
     if !add_greet_route {
         ignore.push("app/src/routes/greet.rs".into());
@@ -379,17 +380,23 @@ fn scaffold_project(
 
     let generate_args = GenerateArgs {
         template_dir: template_dir.path().to_path_buf(),
-        destination: destination.clone(),
+        destination: destination_parent.to_path_buf(),
         name: name.clone(),
         define,
         ignore: Some(ignore),
         overwrite: false,
         verbose: false,
     };
+    eprintln!(
+        "Generating a new Pavex project in {} with {name}",
+        destination.display()
+    );
     generate_from_path::generate(generate_args)
         .context("Failed to scaffold the project from Pavex's default template")?;
     // We don't care if this fails, as it's just a nice-to-have.
-    let _ = cargo_fmt(&destination.join(name)).unwrap();
+    if let Err(e) = cargo_fmt(&destination) {
+        tracing::warn!(error.msg = %e, error.details = ?e, "Failed to format the generated project");
+    }
     Ok(ExitCode::SUCCESS)
 }
 
