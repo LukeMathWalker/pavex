@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.40](https://github.com/LukeMathWalker/pavex/compare/0.1.39...0.1.40) - 2024-06-16
+
+### Fixed
+- 'pavex new' no longer panics if 'cargo fmt' fails.  ([#303](https://github.com/LukeMathWalker/pavex/pull/303))
+
 ## [0.1.39](https://github.com/LukeMathWalker/pavex/compare/0.1.38...0.1.39) - 2024-06-15
 
 ### Added
