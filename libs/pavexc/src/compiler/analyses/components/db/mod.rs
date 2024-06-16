@@ -592,6 +592,18 @@ impl ComponentDb {
                                     diagnostics,
                                 );
                             }
+                        } else {
+                            if output_type.has_implicit_lifetime_parameters()
+                                || !output_type.named_lifetime_parameters().is_empty()
+                            {
+                                Self::non_static_lifetime_parameter_in_singleton(
+                                    output_type,
+                                    user_component_id,
+                                    &self.user_component_db,
+                                    package_graph,
+                                    diagnostics,
+                                );
+                            }
                         }
                     }
 
