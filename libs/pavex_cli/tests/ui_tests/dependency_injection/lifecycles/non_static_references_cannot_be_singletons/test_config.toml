@@ -1,5 +1,4 @@
-description = """Singletons can only depend on other singletons, they can't depend on 
-request-scoped or transient components"""
+description = """Singletons cannot be non-'static references"""
 
 [expectations]
 codegen = "fail"
