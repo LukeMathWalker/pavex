@@ -11,6 +11,8 @@ mod computation;
 mod generated_app;
 mod interner;
 mod path_parameter_validation;
-mod resolvers;
+// HACK: breaking encapsulation because resolver logic is split across this module
+// and `resolved_path` in `language`.
+pub mod resolvers;
 mod traits;
 mod utils;

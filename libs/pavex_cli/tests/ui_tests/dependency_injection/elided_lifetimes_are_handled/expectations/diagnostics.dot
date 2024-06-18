@@ -1,0 +1,47 @@
+digraph "GET / - 0" {
+    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_0::Next0<'a>>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_0::Next0<'a>) -> pavex::middleware::Next<crate::route_0::Next0<'a>>"]
+    2 [ label = "crate::route_0::Next0(&'a app::A) -> crate::route_0::Next0<'a>"]
+    4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    5 [ label = "&app::A"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 4 [ ]
+    5 -> 2 [ ]
+}
+
+digraph "GET / - 1" {
+    0 [ label = "app::handler::<app::Generic>(app::Generic<''a>) -> http::StatusCode"]
+    1 [ label = "app::Generic::new(&''a app::A) -> app::Generic<'a>"]
+    3 [ label = "<http::StatusCode as pavex::response::IntoResponse>::into_response(http::StatusCode) -> pavex::response::Response"]
+    4 [ label = "&app::A"]
+    1 -> 0 [ ]
+    0 -> 3 [ ]
+    4 -> 1 [ ]
+}
+
+digraph "* / - 0" {
+    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_1::Next0<'a>>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_1::Next0<'a>) -> pavex::middleware::Next<crate::route_1::Next0<'a>>"]
+    2 [ label = "crate::route_1::Next0(&'a pavex::router::AllowedMethods) -> crate::route_1::Next0<'a>"]
+    4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    5 [ label = "&pavex::router::AllowedMethods"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 4 [ ]
+    5 -> 2 [ ]
+}
+
+digraph "* / - 1" {
+    0 [ label = "pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
+    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "&pavex::router::AllowedMethods"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
+}
+
+digraph app_state {
+    0 [ label = "crate::ApplicationState(app::A) -> crate::ApplicationState"]
+    1 [ label = "app::A::new() -> app::A"]
+    1 -> 0 [ ]
+}

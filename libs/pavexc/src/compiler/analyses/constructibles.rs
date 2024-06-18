@@ -137,11 +137,8 @@ impl ConstructibleDb {
                 };
 
                 for (input_index, input) in input_types.into_iter().enumerate() {
-                    let input = match input.as_ref() {
-                        Some(i) => i,
-                        None => {
-                            continue;
-                        }
+                    let Some(input) = input.as_ref() else {
+                        continue;
                     };
                     // TODO: do we need this?
                     if let Some(id) = framework_items_db.get_id(input) {
