@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.42](https://github.com/LukeMathWalker/pavex/compare/0.1.41...0.1.42) - 2024-06-18
+
+### Fixed
+- elided lifetime parameters in generic structs are handled correctly ([#310](https://github.com/LukeMathWalker/pavex/pull/310))
+
 ## [0.1.41](https://github.com/LukeMathWalker/pavex/compare/0.1.40...0.1.41) - 2024-06-16
 
 ### Fixed
