@@ -4,6 +4,7 @@ use std::hash::{Hash, Hasher};
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 
+use ahash::{HashMap, HashMapExt};
 use anyhow::Context;
 use bimap::BiHashMap;
 use guppy::PackageId;
@@ -12,13 +13,15 @@ use itertools::Itertools;
 use quote::format_ident;
 
 use pavex_bp_schema::RawIdentifiers;
+use rustdoc_types::ItemEnum;
 
+use crate::compiler::resolvers::resolve_type;
 use crate::language::callable_path::{
     CallPathGenericArgument, CallPathLifetime, CallPathSegment, CallPathType,
 };
 use crate::language::resolved_type::{GenericArgument, Lifetime, ScalarPrimitive, Slice};
 use crate::language::{CallPath, InvalidCallPath, ResolvedType, Tuple, TypeReference};
-use crate::rustdoc::{CrateCollection, CORE_PACKAGE_ID};
+use crate::rustdoc::{CrateCollection, RustdocKindExt, CORE_PACKAGE_ID};
 use crate::rustdoc::{ResolvedItemWithParent, TOOLCHAIN_CRATES};
 
 use super::resolved_type::GenericLifetimeParameter;
@@ -122,9 +125,27 @@ impl ResolvedPathType {
                 let (global_type_id, base_type) = krate_collection
                     .get_canonical_path_by_local_type_id(used_by_package_id, &item.id, None)?;
                 let mut generic_arguments = vec![];
-                for segment in &p.path.segments {
-                    for generic_path in &segment.generic_arguments {
-                        let generic_arg = match generic_path {
+                let generic_param_def = match &item.inner {
+                    ItemEnum::Enum(e) => &e.generics.params,
+                    ItemEnum::Struct(s) => &s.generics.params,
+                    other => {
+                        anyhow::bail!(
+                            "Generic parameters can either be set to structs or enums, \
+                            but I found `{}`, {}.",
+                            base_type.join("::"),
+                            other.kind()
+                        );
+                    }
+                };
+
+                let last_segment = &p
+                    .path
+                    .segments
+                    .last()
+                    .expect("Type with an empty path, impossible!");
+                for (i, param_def) in generic_param_def.iter().enumerate() {
+                    let arg = if let Some(arg) = last_segment.generic_arguments.get(i) {
+                        match arg {
                             ResolvedPathGenericArgument::Type(t) => {
                                 GenericArgument::TypeParameter(t.resolve(krate_collection)?)
                             }
@@ -136,10 +157,35 @@ impl ResolvedPathType {
                                     GenericLifetimeParameter::Named(name.clone()),
                                 ),
                             },
-                        };
-                        generic_arguments.push(generic_arg);
-                    }
+                        }
+                    } else {
+                        match &param_def.kind {
+                            rustdoc_types::GenericParamDefKind::Lifetime { .. } => {
+                                GenericArgument::Lifetime(GenericLifetimeParameter::Named(
+                                    param_def.name.clone(),
+                                ))
+                            }
+                            rustdoc_types::GenericParamDefKind::Type { default, .. } => {
+                                let Some(default) = default else {
+                                    anyhow::bail!("Every generic parameter must either be explicitly assigned or have a default. \
+                                        `{}` in `{}` is unassigned and without a default.", param_def.name, base_type.join("::"))
+                                };
+                                let ty = resolve_type(
+                                    default,
+                                    &resolved_item.item_id.package_id,
+                                    krate_collection,
+                                    &HashMap::new(),
+                                )?;
+                                GenericArgument::TypeParameter(ty)
+                            }
+                            rustdoc_types::GenericParamDefKind::Const { .. } => {
+                                anyhow::bail!("Const generics are not supported yet. I can't process `{}` in `{}`", param_def.name, base_type.join("::"))
+                            }
+                        }
+                    };
+                    generic_arguments.push(arg);
                 }
+
                 Ok(crate::language::resolved_type::PathType {
                     package_id: global_type_id.package_id().to_owned(),
                     rustdoc_id: Some(global_type_id.rustdoc_item_id),
