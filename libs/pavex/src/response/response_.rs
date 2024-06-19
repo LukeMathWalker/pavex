@@ -130,7 +130,6 @@ impl Response {
     /// *status = StatusCode::NOT_FOUND;
     ///
     /// assert_eq!(response.status(), StatusCode::NOT_FOUND);
-    ///
     /// ```
     pub fn status_mut(&mut self) -> &mut StatusCode {
         self.inner.status_mut()
