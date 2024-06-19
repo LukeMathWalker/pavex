@@ -110,6 +110,31 @@ impl Response {
         self
     }
 
+    /// Get a mutable reference to the [`Response`] status.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use pavex::http::StatusCode;
+    /// use pavex::response::Response;
+    /// use pavex::http::header::CONTENT_TYPE;
+    ///
+    /// let mut response = Response::ok();
+    ///
+    /// assert_eq!(response.status(), StatusCode::OK);
+    ///
+    /// // Get a mutable reference to the status.
+    /// let status = response.status_mut();
+    ///
+    /// // Change the Status
+    /// *status = StatusCode::NOT_FOUND;
+    ///
+    /// assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    /// ```
+    pub fn status_mut(&mut self) -> &mut StatusCode {
+        self.inner.status_mut()
+    }
+
     /// Change the HTTP version of the [`Response`].
     ///
     /// # Example
