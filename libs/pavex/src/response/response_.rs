@@ -119,7 +119,7 @@ impl Response {
     /// use pavex::response::Response;
     /// use pavex::http::header::CONTENT_TYPE;
     ///
-    /// let mut response = Response::ok();    ///
+    /// let mut response = Response::ok();
     ///
     /// assert_eq!(response.status(), StatusCode::OK);
     ///
