@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.43](https://github.com/LukeMathWalker/pavex/compare/0.1.42...0.1.43) - 2024-06-19
+
+### Added
+- Add status_mut() function to Response ([#313](https://github.com/LukeMathWalker/pavex/pull/313))
+
 ## [0.1.42](https://github.com/LukeMathWalker/pavex/compare/0.1.41...0.1.42) - 2024-06-18
 
 ### Fixed
