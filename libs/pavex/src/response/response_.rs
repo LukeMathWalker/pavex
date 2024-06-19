@@ -118,24 +118,18 @@ impl Response {
     /// use pavex::http::StatusCode;
     /// use pavex::response::Response;
     /// use pavex::http::header::CONTENT_TYPE;
-    /// 
-    /// let mut response = Response::ok();
     ///
-    /// // We're doing this trick with the brackets to tell Rust to drop the reference
-    /// // since you can't hold an immutable and mutable ref at the same time
-    /// {
-    ///     assert!(response.status() == StatusCode::OK);
-    /// }
-    /// {
+    /// let mut response = Response::ok();    ///
+    ///
+    /// assert_eq!(response.status(), StatusCode::OK);
+    ///
     /// // Get a mutable reference to the status.
     /// let status = response.status_mut();
-    /// 
+    ///
     /// // Change the Status
     /// *status = StatusCode::NOT_FOUND;
-    /// }
     ///
-    /// 
-    /// assert!(response.status() == StatusCode::NOT_FOUND);
+    /// assert_eq!(response.status(), StatusCode::NOT_FOUND);
     ///
     /// ```
     pub fn status_mut(&mut self) -> &mut StatusCode {
