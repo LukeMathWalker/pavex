@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.44](https://github.com/LukeMathWalker/pavex/compare/0.1.43...0.1.44) - 2024-06-22
+
+### Fixed
+- Don't use public items via paths that include private modules ([#316](https://github.com/LukeMathWalker/pavex/pull/316))
+
 ## [0.1.43](https://github.com/LukeMathWalker/pavex/compare/0.1.42...0.1.43) - 2024-06-19
 
 ### Added
