@@ -95,6 +95,7 @@ impl App {
         ) else {
             return Err(diagnostics);
         };
+
         let framework_item_db = FrameworkItemDb::new(&package_graph, &krate_collection);
         let mut component_db = ComponentDb::build(
             user_component_db,

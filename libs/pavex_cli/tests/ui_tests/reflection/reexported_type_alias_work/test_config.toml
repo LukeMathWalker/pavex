@@ -1,0 +1,7 @@
+description = "Reproduction of a reported bug"
+
+[expectations]
+codegen = "pass"
+
+[ephemeral_dependencies]
+dep = { path = "dep.rs" }

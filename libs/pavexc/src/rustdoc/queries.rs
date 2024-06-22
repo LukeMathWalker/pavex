@@ -698,6 +698,7 @@ impl Crate {
             &mut id2private_import_paths,
             &mut re_exports,
             &krate.root,
+            true,
         )?;
 
         import_path2id.reserve(id2public_import_paths.len());
@@ -870,6 +871,7 @@ fn index_local_types<'a>(
     private_path_index: &mut HashMap<rustdoc_types::Id, BTreeSet<Vec<String>>>,
     re_exports: &mut HashMap<Vec<String>, (Vec<String>, u32)>,
     current_item_id: &rustdoc_types::Id,
+    is_public: bool,
 ) -> Result<(), anyhow::Error> {
     // TODO: the way we handle `current_path` is extremely wasteful,
     //       we can likely reuse the same buffer throughout.
@@ -890,6 +892,8 @@ fn index_local_types<'a>(
         Some(i) => i,
     };
 
+    let is_public = is_public && current_item.visibility == Visibility::Public;
+
     match &current_item.inner {
         ItemEnum::Module(m) => {
             let current_path_segment = current_item
@@ -906,6 +910,7 @@ fn index_local_types<'a>(
                     private_path_index,
                     re_exports,
                     item_id,
+                    is_public,
                 )?;
             }
         }
@@ -949,6 +954,7 @@ fn index_local_types<'a>(
                                     private_path_index,
                                     re_exports,
                                     re_exported_item_id,
+                                    is_public,
                                 )?;
                             }
                         } else {
@@ -960,6 +966,7 @@ fn index_local_types<'a>(
                                 private_path_index,
                                 re_exports,
                                 imported_id,
+                                is_public,
                             )?;
                         }
                     }
@@ -977,7 +984,7 @@ fn index_local_types<'a>(
             current_path.push(name);
             let path = current_path.into_iter().map(|s| s.to_string()).collect();
 
-            let index = if current_item.visibility == Visibility::Public {
+            let index = if is_public {
                 public_path_index
             } else {
                 private_path_index
