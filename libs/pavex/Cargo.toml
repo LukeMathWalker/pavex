@@ -63,7 +63,7 @@ uuid = { workspace = true, features = ["v7"], optional = true }
 type-safe-id = { workspace = true }
 
 # Time facilities
-time = { workspace = true, features = ["serde"], optional = true }
+time = { workspace = true, features = ["serde", "std"], optional = true }
 
 tokio = { workspace = true, features = ["net", "sync", "rt", "time"] }
 hyper = { workspace = true, features = ["full"], optional = true }
