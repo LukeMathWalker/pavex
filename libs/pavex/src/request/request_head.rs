@@ -1,6 +1,5 @@
 use http::{HeaderMap, Method, Uri, Version};
 
-#[non_exhaustive]
 #[derive(Debug)]
 /// All the information that is transmitted as part of an HTTP request ahead of the body.
 ///
@@ -20,13 +19,6 @@ pub struct RequestHead {
     pub version: Version,
     /// The headers attached to the request.
     pub headers: HeaderMap,
-}
-
-impl RequestHead{
-    /// Since RequestHead is non-exhaustive, it needs to be constructed with a constructor defined in this crate
-    pub fn new(method: Method, target: Uri, version: Version, headers: HeaderMap) -> Self{
-        Self { method, target,version, headers  }
-    }
 }
 
 impl From<http::request::Parts> for RequestHead {
