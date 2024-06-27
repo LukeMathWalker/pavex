@@ -22,6 +22,13 @@ pub struct RequestHead {
     pub headers: HeaderMap,
 }
 
+impl RequestHead{
+    /// Since RequestHead is non-exhaustive, it needs to be constructed with a constructor defined in this crate
+    pub fn new(method: Method, target: Uri, version: Version, headers: HeaderMap) -> Self{
+        Self { method, target,version, headers  }
+    }
+}
+
 impl From<http::request::Parts> for RequestHead {
     fn from(parts: http::request::Parts) -> Self {
         Self {
