@@ -1,29 +1,33 @@
 digraph "GET / - 0" {
     0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_0::Next0<'a, 'b>>) -> pavex::response::Response"]
     1 [ label = "pavex::middleware::Next::new(crate::route_0::Next0<'a, 'b>) -> pavex::middleware::Next<crate::route_0::Next0<'a, 'b>>"]
-    2 [ label = "crate::route_0::Next0(&'a app::B<alloc::string::String>, app::C<'static>, &'b app::A) -> crate::route_0::Next0<'a, 'b>"]
+    2 [ label = "crate::route_0::Next0(&'a app::B<alloc::string::String>, app::C<'static>, alloc::vec::Vec<alloc::string::String>, &'b app::A) -> crate::route_0::Next0<'a, 'b>"]
     3 [ label = "&app::A"]
     4 [ label = "app::C<'static>"]
-    6 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    7 [ label = "&app::B<alloc::string::String>"]
+    5 [ label = "alloc::vec::Vec<alloc::string::String>"]
+    7 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    8 [ label = "&app::B<alloc::string::String>"]
     1 -> 0 [ ]
     2 -> 1 [ ]
+    5 -> 2 [ ]
     4 -> 2 [ ]
     3 -> 2 [ ]
-    0 -> 6 [ ]
-    7 -> 2 [ ]
+    0 -> 7 [ ]
+    8 -> 2 [ ]
 }
 
 digraph "GET / - 1" {
-    0 [ label = "app::handler(&app::A, &app::B<alloc::string::String>, app::C<'static>) -> pavex::response::Response"]
+    0 [ label = "app::handler(&app::A, &app::B<alloc::string::String>, app::C<'static>, alloc::vec::Vec<alloc::string::String>) -> pavex::response::Response"]
     1 [ label = "&app::B<alloc::string::String>"]
     3 [ label = "app::C<'static>"]
-    4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    5 [ label = "&app::A"]
+    4 [ label = "alloc::vec::Vec<alloc::string::String>"]
+    5 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    6 [ label = "&app::A"]
+    4 -> 0 [ ]
     3 -> 0 [ ]
     1 -> 0 [ ]
-    0 -> 4 [ ]
-    5 -> 0 [ ]
+    0 -> 5 [ ]
+    6 -> 0 [ ]
 }
 
 digraph "* / - 0" {
@@ -47,10 +51,12 @@ digraph "* / - 1" {
 }
 
 digraph app_state {
-    0 [ label = "crate::ApplicationState(app::A, app::C<'static>, app::B<alloc::string::String>) -> crate::ApplicationState"]
+    0 [ label = "crate::ApplicationState(app::A, app::C<'static>, alloc::vec::Vec<alloc::string::String>, app::B<alloc::string::String>) -> crate::ApplicationState"]
     1 [ label = "app::A"]
     2 [ label = "app::C<'static>"]
-    3 [ label = "app::B<alloc::string::String>"]
+    3 [ label = "alloc::vec::Vec<alloc::string::String>"]
+    4 [ label = "app::B<alloc::string::String>"]
+    4 -> 0 [ ]
     3 -> 0 [ ]
     2 -> 0 [ ]
     1 -> 0 [ ]

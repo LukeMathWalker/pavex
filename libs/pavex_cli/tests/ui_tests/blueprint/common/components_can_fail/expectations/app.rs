@@ -151,7 +151,9 @@ pub mod route_0 {
         };
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v5)
     }
-    async fn pre_processing_0() -> pavex::middleware::Processing {
+    async fn pre_processing_0() -> pavex::middleware::Processing<
+        pavex::response::Response,
+    > {
         let v0 = app::fallible_pre();
         let v1 = match v0 {
             Ok(ok) => ok,
@@ -329,7 +331,9 @@ pub mod route_1 {
         };
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
     }
-    async fn pre_processing_0() -> pavex::middleware::Processing {
+    async fn pre_processing_0() -> pavex::middleware::Processing<
+        pavex::response::Response,
+    > {
         let v0 = app::fallible_pre();
         let v1 = match v0 {
             Ok(ok) => ok,
