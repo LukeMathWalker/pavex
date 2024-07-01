@@ -1,6 +1,5 @@
 use http::{HeaderMap, Method, Uri, Version};
 
-#[non_exhaustive]
 #[derive(Debug)]
 /// All the information that is transmitted as part of an HTTP request ahead of the body.
 ///

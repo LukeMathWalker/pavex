@@ -14,3 +14,4 @@
 trace-*.json
 /.cache/
 /docs/api_reference/
+.direnv/
