@@ -7,6 +7,7 @@ use std::sync::Arc;
 use ahash::{HashMap, HashMapExt};
 use anyhow::anyhow;
 use guppy::PackageId;
+use once_cell::sync::OnceCell;
 use rustdoc_types::{GenericArg, GenericArgs, GenericParamDefKind, ItemEnum, Type};
 
 use crate::language::{
@@ -16,6 +17,8 @@ use crate::language::{
 };
 use crate::rustdoc::{CannotGetCrateData, RustdocKindExt};
 use crate::rustdoc::{CrateCollection, ResolvedItem};
+
+use super::utils::process_framework_path;
 
 pub(crate) fn resolve_type(
     type_: &Type,
@@ -80,12 +83,16 @@ pub(crate) fn resolve_type(
                                     anyhow::bail!("Expected `{:?}` to be a generic _type_ parameter, but it wasn't!", provided_arg)
                                 }
                             } else if let Some(default) = default {
-                                resolve_type(
+                                let default = resolve_type(
                                     default,
                                     &global_type_id.package_id,
                                     krate_collection,
                                     &generic_bindings,
-                                )?
+                                )?;
+                                if skip_default(krate_collection, &default) {
+                                    continue;
+                                }
+                                default
                             } else {
                                 ResolvedType::Generic(Generic {
                                     name: generic_param_def.name.clone(),
@@ -127,17 +134,22 @@ pub(crate) fn resolve_type(
                                 _ => unreachable!(),
                             }
                             .params
-                            .iter()
-                            .map(|p| p.name.trim_start_matches('\'').to_string());
-                            for (arg, _) in args.iter().zip(generic_arg_defs) {
-                                let generic_argument = match arg {
-                                    GenericArg::Lifetime(l) => {
-                                        if l == "'static" {
+                            .as_slice();
+                            for (i, arg_def) in generic_arg_defs.iter().enumerate() {
+                                let generic_argument = match &arg_def.kind {
+                                    GenericParamDefKind::Lifetime { .. } => {
+                                        let mut lifetime_name = arg_def.name.clone();
+                                        if let Some(arg) = args.get(i) {
+                                            if let GenericArg::Lifetime(l) = &arg {
+                                                lifetime_name = l.clone();
+                                            }
+                                        }
+                                        if lifetime_name == "'static" {
                                             GenericArgument::Lifetime(
                                                 GenericLifetimeParameter::Static,
                                             )
                                         } else {
-                                            let name = l.trim_start_matches('\'');
+                                            let name = lifetime_name.trim_start_matches('\'');
                                             let lifetime = if name == "_" {
                                                 GenericLifetimeParameter::Named("_".into())
                                             } else {
@@ -146,37 +158,53 @@ pub(crate) fn resolve_type(
                                             GenericArgument::Lifetime(lifetime)
                                         }
                                     }
-                                    GenericArg::Type(generic_type) => {
-                                        if let Type::Generic(generic) = generic_type {
-                                            if let Some(resolved_type) =
-                                                generic_bindings.get(generic)
-                                            {
-                                                GenericArgument::TypeParameter(
-                                                    resolved_type.to_owned(),
-                                                )
+                                    GenericParamDefKind::Type { default, .. } => {
+                                        if let Some(GenericArg::Type(generic_type)) = args.get(i) {
+                                            if let Type::Generic(generic) = generic_type {
+                                                if let Some(resolved_type) =
+                                                    generic_bindings.get(generic)
+                                                {
+                                                    GenericArgument::TypeParameter(
+                                                        resolved_type.to_owned(),
+                                                    )
+                                                } else {
+                                                    GenericArgument::TypeParameter(
+                                                        ResolvedType::Generic(Generic {
+                                                            name: generic.to_owned(),
+                                                        }),
+                                                    )
+                                                }
                                             } else {
-                                                GenericArgument::TypeParameter(
-                                                    ResolvedType::Generic(Generic {
-                                                        name: generic.to_owned(),
-                                                    }),
-                                                )
+                                                GenericArgument::TypeParameter(resolve_type(
+                                                    generic_type,
+                                                    used_by_package_id,
+                                                    krate_collection,
+                                                    generic_bindings,
+                                                )?)
                                             }
-                                        } else {
-                                            GenericArgument::TypeParameter(resolve_type(
-                                                generic_type,
-                                                used_by_package_id,
+                                        } else if let Some(default) = default {
+                                            let default = resolve_type(
+                                                &default,
+                                                &global_type_id.package_id,
                                                 krate_collection,
-                                                generic_bindings,
-                                            )?)
+                                                &generic_bindings,
+                                            )?;
+                                            if skip_default(krate_collection, &default) {
+                                                continue;
+                                            }
+                                            GenericArgument::TypeParameter(default)
+                                        } else {
+                                            GenericArgument::TypeParameter(ResolvedType::Generic(
+                                                Generic {
+                                                    name: arg_def.name.clone(),
+                                                },
+                                            ))
                                         }
                                     }
-                                    GenericArg::Const(_) => {
+                                    GenericParamDefKind::Const { .. } => {
                                         return Err(anyhow!(
                                             "I don't support const generics in types yet. Sorry!"
                                         ));
-                                    }
-                                    GenericArg::Infer => {
-                                        return Err(anyhow!("I don't support inferred generic arguments in types yet. Sorry!"));
                                     }
                                 };
                                 generics.push(generic_argument);
@@ -492,7 +520,7 @@ pub(crate) fn resolve_type_path_with_item(
                 },
             }
         } else {
-            match generic_def.kind {
+            match &generic_def.kind {
                 GenericParamDefKind::Lifetime { .. } => {
                     let lifetime_name = generic_def.name.trim_start_matches('\'');
                     if lifetime_name == "static" {
@@ -503,10 +531,23 @@ pub(crate) fn resolve_type_path_with_item(
                         ))
                     }
                 }
-                GenericParamDefKind::Type { .. } => {
-                    GenericArgument::TypeParameter(ResolvedType::Generic(Generic {
-                        name: generic_def.name.clone(),
-                    }))
+                GenericParamDefKind::Type { default, .. } => {
+                    if let Some(default) = default {
+                        let default = resolve_type(
+                            default,
+                            used_by_package_id,
+                            krate_collection,
+                            &HashMap::new(),
+                        )?;
+                        if skip_default(krate_collection, &default) {
+                            continue;
+                        }
+                        GenericArgument::TypeParameter(default)
+                    } else {
+                        GenericArgument::TypeParameter(ResolvedType::Generic(Generic {
+                            name: generic_def.name.clone(),
+                        }))
+                    }
                 }
                 GenericParamDefKind::Const { .. } => {
                     unimplemented!("const generic parameters are not supported yet")
@@ -584,4 +625,22 @@ pub(crate) struct OutputTypeResolutionError {
     pub output_type: Type,
     #[source]
     pub source: Arc<anyhow::Error>,
+}
+
+/// This is a gigantic hack to work around an issue with `std`'s collections:
+/// they are all generic over the allocator type, but the default (`alloc::alloc::Global`)
+/// is a nightly-only type.
+/// If you spell it out, the code won't compile on stable, even though it does
+/// exactly the same thing as omitting the parameter.
+fn skip_default(krate_collection: &CrateCollection, default: &ResolvedType) -> bool {
+    static GLOBAL_ALLOCATOR: OnceCell<ResolvedType> = OnceCell::new();
+
+    let alloc = GLOBAL_ALLOCATOR.get_or_init(|| {
+        process_framework_path(
+            "alloc::alloc::Global",
+            krate_collection.package_graph(),
+            krate_collection,
+        )
+    });
+    alloc == default
 }

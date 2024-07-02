@@ -37,12 +37,12 @@ digraph "GET /home - 1" {
 }
 
 digraph "GET /home - 2" {
-    0 [ label = "app::fallible_pre() -> core::prelude::rust_2015::Result<pavex::middleware::Processing, app::PreError>"]
-    1 [ label = "core::prelude::rust_2015::Result<pavex::middleware::Processing, app::PreError> -> pavex::middleware::Processing"]
-    2 [ label = "core::prelude::rust_2015::Result<pavex::middleware::Processing, app::PreError> -> app::PreError"]
+    0 [ label = "app::fallible_pre() -> core::prelude::rust_2015::Result<pavex::middleware::Processing<pavex::response::Response>, app::PreError>"]
+    1 [ label = "core::prelude::rust_2015::Result<pavex::middleware::Processing<pavex::response::Response>, app::PreError> -> pavex::middleware::Processing<pavex::response::Response>"]
+    2 [ label = "core::prelude::rust_2015::Result<pavex::middleware::Processing<pavex::response::Response>, app::PreError> -> app::PreError"]
     3 [ label = "app::pre_error(&app::PreError) -> pavex::response::Response"]
     4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    5 [ label = "pavex::middleware::Processing::EarlyReturn(pavex::response::Response) -> pavex::middleware::Processing<T>"]
+    5 [ label = "pavex::middleware::Processing::EarlyReturn(pavex::response::Response) -> pavex::middleware::Processing<pavex::response::Response>"]
     6 [ label = "`match`"]
     6 -> 1 [ ]
     6 -> 2 [ ]
@@ -161,12 +161,12 @@ digraph "* /home - 1" {
 }
 
 digraph "* /home - 2" {
-    0 [ label = "app::fallible_pre() -> core::prelude::rust_2015::Result<pavex::middleware::Processing, app::PreError>"]
-    1 [ label = "core::prelude::rust_2015::Result<pavex::middleware::Processing, app::PreError> -> pavex::middleware::Processing"]
-    2 [ label = "core::prelude::rust_2015::Result<pavex::middleware::Processing, app::PreError> -> app::PreError"]
+    0 [ label = "app::fallible_pre() -> core::prelude::rust_2015::Result<pavex::middleware::Processing<pavex::response::Response>, app::PreError>"]
+    1 [ label = "core::prelude::rust_2015::Result<pavex::middleware::Processing<pavex::response::Response>, app::PreError> -> pavex::middleware::Processing<pavex::response::Response>"]
+    2 [ label = "core::prelude::rust_2015::Result<pavex::middleware::Processing<pavex::response::Response>, app::PreError> -> app::PreError"]
     3 [ label = "app::pre_error(&app::PreError) -> pavex::response::Response"]
     4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    5 [ label = "pavex::middleware::Processing::EarlyReturn(pavex::response::Response) -> pavex::middleware::Processing<T>"]
+    5 [ label = "pavex::middleware::Processing::EarlyReturn(pavex::response::Response) -> pavex::middleware::Processing<pavex::response::Response>"]
     6 [ label = "`match`"]
     6 -> 1 [ ]
     6 -> 2 [ ]

@@ -9,7 +9,7 @@ digraph "GET /home - 0" {
 }
 
 digraph "GET /home - 1" {
-    0 [ label = "app::pre() -> pavex::middleware::Processing"]
+    0 [ label = "app::pre() -> pavex::middleware::Processing<pavex::response::Response>"]
 }
 
 digraph "GET /home - 2" {
@@ -31,7 +31,7 @@ digraph "* /home - 0" {
 }
 
 digraph "* /home - 1" {
-    0 [ label = "app::pre() -> pavex::middleware::Processing"]
+    0 [ label = "app::pre() -> pavex::middleware::Processing<pavex::response::Response>"]
 }
 
 digraph "* /home - 2" {

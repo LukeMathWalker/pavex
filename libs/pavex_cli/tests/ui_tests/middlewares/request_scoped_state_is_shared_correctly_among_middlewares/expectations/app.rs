@@ -93,7 +93,9 @@ pub mod route_0 {
         let v3 = pavex::middleware::wrap_noop(v2).await;
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
     }
-    async fn pre_processing_0(v0: &app::A) -> pavex::middleware::Processing {
+    async fn pre_processing_0(
+        v0: &app::A,
+    ) -> pavex::middleware::Processing<pavex::response::Response> {
         app::pre(v0)
     }
     async fn wrapping_1(v0: &app::A) -> pavex::response::Response {
@@ -186,7 +188,9 @@ pub mod route_1 {
         let v4 = pavex::middleware::wrap_noop(v3).await;
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
     }
-    async fn pre_processing_0(v0: &app::A) -> pavex::middleware::Processing {
+    async fn pre_processing_0(
+        v0: &app::A,
+    ) -> pavex::middleware::Processing<pavex::response::Response> {
         app::pre(v0)
     }
     async fn wrapping_1(
