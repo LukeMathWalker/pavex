@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.45](https://github.com/LukeMathWalker/pavex/compare/0.1.44...0.1.45) - 2024-07-02
+
+### Added
+- enable 'std' feature on the 'time' crate in 'pavex'
+
+### Fixed
+- std's collections can be used as prebuilt types ([#321](https://github.com/LukeMathWalker/pavex/pull/321))
+
+### Other
+- Add constructor for RequestHead ([#319](https://github.com/LukeMathWalker/pavex/pull/319))
+
 ## [0.1.44](https://github.com/LukeMathWalker/pavex/compare/0.1.43...0.1.44) - 2024-06-22
 
 ### Fixed
