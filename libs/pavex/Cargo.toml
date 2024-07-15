@@ -15,7 +15,7 @@ unexpected_cfgs = { level = "allow", check-cfg = ['cfg(pavex_ide_hint)'] }
 [features]
 default = ["server", "server_request_id", "time", "cookie"]
 
-server = ["dep:hyper", "dep:hyper-util", "dep:socket2"]
+server = ["dep:hyper", "dep:hyper-util", "dep:socket2", "tokio/net"]
 cookie = ["dep:biscotti", "time"]
 server_request_id = ["dep:uuid"]
 time = ["dep:time"]
@@ -65,7 +65,7 @@ type-safe-id = { workspace = true }
 # Time facilities
 time = { workspace = true, features = ["serde", "std"], optional = true }
 
-tokio = { workspace = true, features = ["net", "sync", "rt", "time"] }
+tokio = { workspace = true, features = [ "sync", "rt", "time"] }
 hyper = { workspace = true, features = ["full"], optional = true }
 hyper-util = { workspace = true, features = ["tokio", "server", "server-auto"], optional = true }
 socket2 = { workspace = true, optional = true }
