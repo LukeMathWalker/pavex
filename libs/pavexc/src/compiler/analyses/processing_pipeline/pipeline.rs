@@ -587,7 +587,7 @@ impl RequestHandlerPipeline {
                     path, n_invocations
                 );
                 for call_graph in self.id2call_graph.values() {
-                    call_graph.print_debug_dot(component_db, computation_db);
+                    call_graph.print_debug_dot(&path, component_db, computation_db);
                 }
                 panic!("{}", message);
             }
@@ -612,8 +612,8 @@ impl RequestHandlerPipeline {
         component_db: &ComponentDb,
         computation_db: &ComputationDb,
     ) {
-        for graph in self.graph_iter() {
-            graph.print_debug_dot(component_db, computation_db)
+        for (i, graph) in self.graph_iter().enumerate() {
+            graph.print_debug_dot(&i.to_string(), component_db, computation_db)
         }
     }
 }

@@ -47,7 +47,7 @@ impl RequestHandlerPipeline {
                     _ => unreachable!(),
                 };
                 if tracing::event_enabled!(tracing::Level::TRACE) {
-                    call_graph.print_debug_dot(component_db, computation_db);
+                    call_graph.print_debug_dot(&ident.to_string(), component_db, computation_db);
                 }
                 let fn_ = CodegenedFn {
                     fn_: {
@@ -105,8 +105,10 @@ impl RequestHandlerPipeline {
                                                 let mutable = binding.mutable.then(|| "mut ").unwrap_or("");
                                                 format!("{}\n- {}: {mutable}{:?}, ", acc, binding.ident, binding.type_)
                                             });
+                                        let fn_name = fn_.sig.ident.to_string();
                                         panic!(
-                                            "Could not find a binding for input type `{:?}` in the input bindings.\n\
+                                            "Could not find a binding for input type `{:?}` in the input bindings \
+                                            available to `{fn_name}`.\n\
                                             Input bindings: {bindings}",
                                             input_type)
                                     }

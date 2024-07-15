@@ -80,10 +80,16 @@ impl OrderedCallGraph {
     #[allow(unused)]
     pub(crate) fn print_debug_dot(
         &self,
+        title: &str,
         component_db: &ComponentDb,
         computation_db: &ComputationDb,
     ) {
-        eprintln!("{}", self.debug_dot(component_db, computation_db));
+        let replacement = format!("digraph \"{}\" {{", title);
+        eprintln!(
+            "{}",
+            self.debug_dot(component_db, computation_db)
+                .replace("digraph {", &replacement)
+        );
     }
 
     /// Return a representation of the [`OrderedCallGraph`] in graphviz's .DOT format, geared towards
