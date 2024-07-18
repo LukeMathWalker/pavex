@@ -222,15 +222,17 @@ impl RequestHandlerPipeline {
             }
         }
 
-        let request_scoped2built_at_stage_index = {
-            let mut request_scoped2built_at_stage_index = HashMap::new();
-            for (request_scoped_id, (stage_index, n_users)) in request_scoped_id2state_stage_index {
-                if n_users > 1 {
-                    request_scoped2built_at_stage_index.insert(request_scoped_id, stage_index);
-                }
-            }
-            request_scoped2built_at_stage_index
-        };
+        let request_scoped2built_at_stage_index: HashMap<ComponentId, usize> =
+            request_scoped_id2state_stage_index
+                .into_iter()
+                .filter_map(|(request_scoped_id, (stage_index, n_users))| {
+                    if n_users > 1 {
+                        Some((request_scoped_id, stage_index))
+                    } else {
+                        None
+                    }
+                })
+                .collect();
 
         // Step 3: Combine the call graphs together.
         // For each wrapping middleware, determine which request-scoped and singleton components
@@ -245,7 +247,7 @@ impl RequestHandlerPipeline {
             for middleware_id in stage_ids.invocation_order().into_iter().rev() {
                 let call_graph = &id2call_graphs[&middleware_id];
 
-                let mut prebuilt_ids = IndexSet::new();
+                let mut prebuilt_ids: IndexSet<ComponentId> = IndexSet::new();
                 let required_scope_ids: HashSet<_> =
                     extract_request_scoped_compute_nodes(&call_graph.call_graph, component_db)
                         .collect();
@@ -289,7 +291,6 @@ impl RequestHandlerPipeline {
             for middleware_id in stage_ids.invocation_order() {
                 let call_graph = &id2call_graphs[&middleware_id];
                 extract_long_lived_inputs(&call_graph.call_graph, component_db, state_accumulator);
-
                 state_accumulator.shift_remove(&component_db.pavex_response);
             }
             if stage_index > 1 {
