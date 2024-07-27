@@ -79,6 +79,32 @@ impl RequestHandlerPipeline {
                 .chain(stage.post_processing_ids.iter().copied())
                 .collect_vec();
 
+            {
+                let bindings = input_bindings.0.iter().fold(String::new(), |acc, binding| {
+                    let mutable = binding.mutable.then(|| "mut ").unwrap_or("");
+                    format!(
+                        "{}\n- {}: {mutable}{:?}, ",
+                        acc, binding.ident, binding.type_
+                    )
+                });
+                let mut msg = format!("Available input bindings: {bindings}",);
+                ordered_by_invocation.iter().for_each(|id| {
+                    use std::fmt::Write as _;
+
+                    let fn_ = &id2codegened_fn[id].fn_;
+                    let fn_name = &fn_.sig.ident;
+                    let _ = writeln!(&mut msg, "\nInput required by {fn_name}:");
+                    id2codegened_fn[id]
+                        .input_parameters
+                        .iter()
+                        .fold(&mut msg, |acc, t| {
+                            let _ = writeln!(acc, "- {t:?}");
+                            acc
+                        });
+                });
+                tracing::debug!("{msg}");
+            }
+
             let invocations = {
                 let mut invocations = vec![];
                 for id in &ordered_by_invocation {

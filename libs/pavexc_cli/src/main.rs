@@ -1,8 +1,11 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::fmt::{Display, Formatter};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::str::FromStr;
+
+mod formatter;
+mod telemetry;
 
 use anyhow::Context;
 use clap::{Parser, Subcommand};
@@ -13,6 +16,7 @@ use owo_colors::OwoColorize;
 use pavexc::{App, AppWriter};
 use pavexc_cli_client::commands::new::TemplateName;
 use supports_color::Stream;
+use telemetry::Filtered;
 use tracing_chrome::{ChromeLayerBuilder, FlushGuard};
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::layer::SubscriberExt;
@@ -143,9 +147,9 @@ fn init_telemetry(
     let filter_layer = log_filter
         .map(|f| EnvFilter::try_new(f).expect("Invalid log filter configuration"))
         .unwrap_or_else(|| {
-            EnvFilter::try_new("info,pavexc=trace").expect("Invalid log filter configuration")
+            EnvFilter::try_new("info,pavexc=debug").expect("Invalid log filter configuration")
         });
-    let base = tracing_subscriber::registry().with(filter_layer);
+    let base = tracing_subscriber::registry();
     let mut chrome_guard = None;
     let trace_filename = format!(
         "./trace-pavexc-{}.json",
@@ -163,6 +167,15 @@ fn init_telemetry(
                 .with_target(false)
                 .with_span_events(FmtSpan::NEW | FmtSpan::CLOSE)
                 .with_timer(tracing_subscriber::fmt::time::uptime());
+            let fmt_layer = Filtered {
+                base: filter_layer,
+                fields: {
+                    let mut m = BTreeMap::new();
+                    m.insert("route_info".to_string(), "GET /console/".to_string());
+                    m
+                },
+                layer: fmt_layer,
+            };
             if profiling {
                 let (chrome_layer, guard) = ChromeLayerBuilder::new()
                     .file(trace_filename)

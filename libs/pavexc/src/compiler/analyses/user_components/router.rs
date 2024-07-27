@@ -127,7 +127,21 @@ impl Router {
                         "Each handler ID is uniquely associated with a route."
                     )
                 }
+                handler_id2route_info.insert(
+                    sub_router.fallback_id,
+                    RouteInfo {
+                        methods: Default::default(),
+                        path: path.to_owned(),
+                    },
+                );
             }
+            handler_id2route_info.insert(
+                root_fallback_id,
+                RouteInfo {
+                    methods: Default::default(),
+                    path: "*".into(),
+                },
+            );
             handler_id2route_info
         };
 
