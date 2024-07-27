@@ -991,7 +991,7 @@ dependencies = [
 
 [[package]]
 name = "generate_from_path"
-version = "0.1.45"
+version = "0.1.46"
 dependencies = [
  "anyhow",
  "fs-err",
@@ -1000,7 +1000,6 @@ dependencies = [
  "liquid",
  "liquid-core",
  "path-absolutize",
- "px_workspace_hack",
  "regex",
  "sanitize-filename",
  "tempfile",
@@ -1974,7 +1973,7 @@ dependencies = [
 
 [[package]]
 name = "pavex"
-version = "0.1.45"
+version = "0.1.46"
 dependencies = [
  "anyhow",
  "biscotti",
@@ -1999,7 +1998,6 @@ dependencies = [
  "percent-encoding",
  "persist_if_changed",
  "pin-project-lite",
- "px_workspace_hack",
  "reqwest",
  "ron",
  "serde",
@@ -2019,16 +2017,15 @@ dependencies = [
 
 [[package]]
 name = "pavex_bp_schema"
-version = "0.1.45"
+version = "0.1.46"
 dependencies = [
  "pavex_reflection",
- "px_workspace_hack",
  "serde",
 ]
 
 [[package]]
 name = "pavex_cli"
-version = "0.1.45"
+version = "0.1.46"
 dependencies = [
  "anstyle",
  "anyhow",
@@ -2049,7 +2046,6 @@ dependencies = [
  "pavexc",
  "pavexc_cli_client",
  "pem",
- "px_workspace_hack",
  "redact",
  "remove_dir_all",
  "reqwest",
@@ -2082,21 +2078,19 @@ dependencies = [
 
 [[package]]
 name = "pavex_cli_client"
-version = "0.1.45"
+version = "0.1.46"
 dependencies = [
  "anyhow",
  "pavex",
- "px_workspace_hack",
  "thiserror",
 ]
 
 [[package]]
 name = "pavex_macros"
-version = "0.1.45"
+version = "0.1.46"
 dependencies = [
  "pavex",
  "proc-macro2",
- "px_workspace_hack",
  "quote",
  "serde",
  "syn",
@@ -2111,11 +2105,10 @@ checksum = "77b9753b03381fd8856966146c4d626d9a8507901c1bcdfbc41df03deea551fc"
 
 [[package]]
 name = "pavex_miette"
-version = "0.1.45"
+version = "0.1.46"
 dependencies = [
  "miette",
  "owo-colors",
- "px_workspace_hack",
  "supports-color",
  "supports-hyperlinks",
  "supports-unicode",
@@ -2126,15 +2119,14 @@ dependencies = [
 
 [[package]]
 name = "pavex_reflection"
-version = "0.1.45"
+version = "0.1.46"
 dependencies = [
- "px_workspace_hack",
  "serde",
 ]
 
 [[package]]
 name = "pavex_test_runner"
-version = "0.1.45"
+version = "0.1.46"
 dependencies = [
  "ahash",
  "anyhow",
@@ -2148,7 +2140,6 @@ dependencies = [
  "object-pool",
  "once_cell",
  "persist_if_changed",
- "px_workspace_hack",
  "regex",
  "serde",
  "serde_json",
@@ -2162,16 +2153,15 @@ dependencies = [
 
 [[package]]
 name = "pavex_tracing"
-version = "0.1.45"
+version = "0.1.46"
 dependencies = [
  "pavex",
- "px_workspace_hack",
  "tracing",
 ]
 
 [[package]]
 name = "pavexc"
-version = "0.1.45"
+version = "0.1.46"
 dependencies = [
  "ahash",
  "anyhow",
@@ -2196,7 +2186,6 @@ dependencies = [
  "petgraph",
  "prettyplease",
  "proc-macro2",
- "px_workspace_hack",
  "quote",
  "r2d2",
  "r2d2_sqlite",
@@ -2219,7 +2208,7 @@ dependencies = [
 
 [[package]]
 name = "pavexc_cli"
-version = "0.1.45"
+version = "0.1.46"
 dependencies = [
  "anyhow",
  "better-panic",
@@ -2235,7 +2224,6 @@ dependencies = [
  "pavex_miette",
  "pavexc",
  "pavexc_cli_client",
- "px_workspace_hack",
  "ron",
  "supports-color",
  "tempfile",
@@ -2247,11 +2235,10 @@ dependencies = [
 
 [[package]]
 name = "pavexc_cli_client"
-version = "0.1.45"
+version = "0.1.46"
 dependencies = [
  "anyhow",
  "pavex",
- "px_workspace_hack",
  "thiserror",
 ]
 
@@ -2283,11 +2270,10 @@ checksum = "e3148f5046208a5d56bcfc03053e3ca6334e51da8dfb19b6cdc8b306fae3283e"
 
 [[package]]
 name = "persist_if_changed"
-version = "0.1.45"
+version = "0.1.46"
 dependencies = [
  "anyhow",
  "fs-err",
- "px_workspace_hack",
  "sha2",
  "tracing",
 ]
@@ -2446,53 +2432,6 @@ dependencies = [
 [[package]]
 name = "px_workspace_hack"
 version = "0.1.0"
-dependencies = [
- "ahash",
- "aho-corasick",
- "bitflags 2.6.0",
- "cc",
- "clap",
- "clap_builder",
- "console",
- "crossbeam-utils",
- "crypto-common",
- "deranged",
- "digest",
- "fixedbitset",
- "futures-channel",
- "futures-core",
- "futures-sink",
- "futures-util",
- "getrandom",
- "hashbrown 0.14.5",
- "hmac",
- "indexmap",
- "log",
- "miette",
- "num-traits",
- "petgraph",
- "proc-macro2",
- "quote",
- "regex",
- "regex-automata 0.4.7",
- "regex-syntax 0.8.4",
- "reqwest",
- "serde",
- "serde_json",
- "sha2",
- "smallvec",
- "subtle",
- "syn",
- "time",
- "time-macros",
- "tokio",
- "toml",
- "toml_edit",
- "tracing",
- "tracing-core",
- "uuid",
- "zeroize",
-]
 
 [[package]]
 name = "quinn"

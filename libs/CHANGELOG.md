@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.46](https://github.com/LukeMathWalker/pavex/compare/0.1.45...0.1.46) - 2024-07-27
+
+### Other
+- Disable workspace hack before a release
+- Re-enable workspace hack after a release ([#323](https://github.com/LukeMathWalker/pavex/pull/323))
+- Feature gate tokio net feature for pavex behind server feature ([#324](https://github.com/LukeMathWalker/pavex/pull/324))
+- update Cargo.toml dependencies
+
 ## [0.1.45](https://github.com/LukeMathWalker/pavex/compare/0.1.44...0.1.45) - 2024-07-02
 
 ### Added

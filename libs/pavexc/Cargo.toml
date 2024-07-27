@@ -18,8 +18,8 @@ vergen = { workspace = true, features = ["build", "git", "gitcl"] }
 debug_assertions = []
 
 [dependencies]
-pavex = { path = "../pavex", version = "0.1.45" }
-pavex_bp_schema = { path = "../pavex_bp_schema", version = "0.1.45" }
+pavex = { path = "../pavex", version = "0.1.46" }
+pavex_bp_schema = { path = "../pavex_bp_schema", version = "0.1.46" }
 syn = { workspace = true, features = ["full", "extra-traits", "visit"] }
 rustdoc-types = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
@@ -48,7 +48,7 @@ textwrap = { workspace = true }
 once_cell = { workspace = true }
 toml_edit = { workspace = true, features = ["serde"] }
 semver = { workspace = true }
-persist_if_changed = { path = "../persist_if_changed", version = "0.1.45" }
+persist_if_changed = { path = "../persist_if_changed", version = "0.1.46" }
 matchit = { version = "0.7", package = "pavex_matchit" }
 relative-path = { workspace = true }
 
@@ -60,4 +60,3 @@ r2d2 = { workspace = true }
 bincode = { workspace = true }
 rayon = { workspace = true }
 num_cpus = { workspace = true }
-px_workspace_hack = { version = "0.1", path = "../px_workspace_hack" }
