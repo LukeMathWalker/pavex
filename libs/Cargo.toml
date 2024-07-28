@@ -1,5 +1,10 @@
 [workspace]
-members = ["./pavex*", "generate_from_path", "persist_if_changed", "px_workspace_hack"]
+members = [
+    "./pavex*",
+    "generate_from_path",
+    "persist_if_changed",
+    "px_workspace_hack",
+]
 resolver = "2"
 
 [workspace.package]
@@ -7,7 +12,7 @@ edition = "2021"
 repository = "https://github.com/LukeMathWalker/pavex"
 homepage = "https://pavex.dev"
 license = "Apache-2.0"
-version = "0.1.45"
+version = "0.1.46"
 
 [workspace.dependencies]
 vergen = { version = "8.0.0", features = ["build", "git", "gitcl"] }
@@ -72,14 +77,16 @@ redact = "0.1.9"
 regex = "1.10.2"
 relative-path = "1.9"
 remove_dir_all = "0.8.2"
-reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
+reqwest = { version = "0.12", default-features = false, features = [
+    "rustls-tls",
+] }
 reqwest-middleware = "0.3.0"
 reqwest-retry = "0.5.0"
 reqwest-tracing = "0.5.0"
 ring = "0.17.3"
 ron = "0.8"
 rusqlite = "0.31"
-rustdoc-types = "0.26.0"
+rustdoc-types = "0.28.0"
 sanitize-filename = "0.5"
 self-replace = "1.3.7"
 semver = "1.0.21"
@@ -136,7 +143,13 @@ ci = ["github"]
 # The installers to generate for each app
 installers = ["shell", "powershell"]
 # Target platforms to build apps for (Rust target-triple syntax)
-targets = ["aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-unknown-linux-gnu", "x86_64-unknown-linux-musl", "x86_64-pc-windows-msvc"]
+targets = [
+    "aarch64-apple-darwin",
+    "x86_64-apple-darwin",
+    "x86_64-unknown-linux-gnu",
+    "x86_64-unknown-linux-musl",
+    "x86_64-pc-windows-msvc",
+]
 # Publish jobs to run in CI
 pr-run-mode = "plan"
 # Skip checking whether the specified configuration files are up to date

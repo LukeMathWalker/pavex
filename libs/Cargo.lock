@@ -991,7 +991,7 @@ dependencies = [
 
 [[package]]
 name = "generate_from_path"
-version = "0.1.45"
+version = "0.1.46"
 dependencies = [
  "anyhow",
  "fs-err",
@@ -1974,7 +1974,7 @@ dependencies = [
 
 [[package]]
 name = "pavex"
-version = "0.1.45"
+version = "0.1.46"
 dependencies = [
  "anyhow",
  "biscotti",
@@ -2019,7 +2019,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_bp_schema"
-version = "0.1.45"
+version = "0.1.46"
 dependencies = [
  "pavex_reflection",
  "px_workspace_hack",
@@ -2028,7 +2028,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_cli"
-version = "0.1.45"
+version = "0.1.46"
 dependencies = [
  "anstyle",
  "anyhow",
@@ -2082,7 +2082,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_cli_client"
-version = "0.1.45"
+version = "0.1.46"
 dependencies = [
  "anyhow",
  "pavex",
@@ -2092,7 +2092,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_macros"
-version = "0.1.45"
+version = "0.1.46"
 dependencies = [
  "pavex",
  "proc-macro2",
@@ -2111,7 +2111,7 @@ checksum = "77b9753b03381fd8856966146c4d626d9a8507901c1bcdfbc41df03deea551fc"
 
 [[package]]
 name = "pavex_miette"
-version = "0.1.45"
+version = "0.1.46"
 dependencies = [
  "miette",
  "owo-colors",
@@ -2126,7 +2126,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_reflection"
-version = "0.1.45"
+version = "0.1.46"
 dependencies = [
  "px_workspace_hack",
  "serde",
@@ -2134,7 +2134,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_test_runner"
-version = "0.1.45"
+version = "0.1.46"
 dependencies = [
  "ahash",
  "anyhow",
@@ -2162,7 +2162,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_tracing"
-version = "0.1.45"
+version = "0.1.46"
 dependencies = [
  "pavex",
  "px_workspace_hack",
@@ -2171,7 +2171,7 @@ dependencies = [
 
 [[package]]
 name = "pavexc"
-version = "0.1.45"
+version = "0.1.46"
 dependencies = [
  "ahash",
  "anyhow",
@@ -2219,7 +2219,7 @@ dependencies = [
 
 [[package]]
 name = "pavexc_cli"
-version = "0.1.45"
+version = "0.1.46"
 dependencies = [
  "anyhow",
  "better-panic",
@@ -2247,7 +2247,7 @@ dependencies = [
 
 [[package]]
 name = "pavexc_cli_client"
-version = "0.1.45"
+version = "0.1.46"
 dependencies = [
  "anyhow",
  "pavex",
@@ -2283,7 +2283,7 @@ checksum = "e3148f5046208a5d56bcfc03053e3ca6334e51da8dfb19b6cdc8b306fae3283e"
 
 [[package]]
 name = "persist_if_changed"
-version = "0.1.45"
+version = "0.1.46"
 dependencies = [
  "anyhow",
  "fs-err",
@@ -2895,9 +2895,9 @@ checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
 
 [[package]]
 name = "rustdoc-types"
-version = "0.26.0"
+version = "0.28.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0b9be1bc4a0ec3445cfa2e4ba112827544890d43d68b7d1eda5359a9c09d2cd8"
+checksum = "92b1b819622d1b7f20e0bd80d548cb0eb3bb157748411afc83335573a2de1f50"
 dependencies = [
  "serde",
 ]
