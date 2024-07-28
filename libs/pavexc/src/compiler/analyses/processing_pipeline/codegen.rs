@@ -79,7 +79,7 @@ impl RequestHandlerPipeline {
                 .chain(stage.post_processing_ids.iter().copied())
                 .collect_vec();
 
-            {
+            if tracing::event_enabled!(tracing::Level::DEBUG) {
                 let bindings = input_bindings.0.iter().fold(String::new(), |acc, binding| {
                     let mutable = binding.mutable.then(|| "mut ").unwrap_or("");
                     format!(

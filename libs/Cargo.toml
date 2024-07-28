@@ -113,6 +113,7 @@ tokio = "1.37.0"
 toml = "0.8.8"
 toml_edit = "0.22"
 tracing = { version = "0.1.40", default-features = false }
+tracing-log = "0.2"
 tracing-chrome = "0.7"
 tracing-subscriber = "0.3"
 trybuild = "1.0"

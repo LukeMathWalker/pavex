@@ -8,6 +8,7 @@ use itertools::Itertools;
 use quote::quote;
 
 use pavex_bp_schema::{CloningStrategy, Lifecycle};
+use tracing::Level;
 
 use crate::compiler::analyses::call_graph::{
     request_scoped_call_graph, request_scoped_ordered_call_graph, CallGraphNode,
@@ -226,6 +227,10 @@ impl RequestHandlerPipeline {
             request_scoped_id2state_stage_index
                 .into_iter()
                 .filter_map(|(request_scoped_id, (stage_index, n_users))| {
+                    // If a request-scoped component is used by more than one middleware, it must be
+                    // built at (or before) the stage where it is first used.
+                    // If a request-scoped component is used by only one middleware, it can be built
+                    // directly in the "closure" of that middleware. No need to pass it down the pipeline.
                     if n_users > 1 {
                         Some((request_scoped_id, stage_index))
                     } else {
@@ -260,7 +265,7 @@ impl RequestHandlerPipeline {
                         }
                     }
                 }
-                middleware_id2prebuilt_rs_ids.insert(middleware_id, prebuilt_ids.clone());
+                middleware_id2prebuilt_rs_ids.insert(middleware_id, prebuilt_ids);
 
                 // We recompute the call graph for the middleware,
                 // this time with the right set of prebuilt
@@ -268,7 +273,7 @@ impl RequestHandlerPipeline {
                 // This is necessary because the required long-lived inputs may change based on what's already prebuilt!
                 let call_graph = request_scoped_call_graph(
                     middleware_id,
-                    &prebuilt_ids,
+                    &middleware_id2prebuilt_rs_ids[&middleware_id],
                     &error_observer_ids,
                     computation_db,
                     component_db,
@@ -292,6 +297,17 @@ impl RequestHandlerPipeline {
                 let call_graph = &id2call_graphs[&middleware_id];
                 extract_long_lived_inputs(&call_graph.call_graph, component_db, state_accumulator);
                 state_accumulator.shift_remove(&component_db.pavex_response);
+            }
+            if tracing::event_enabled!(Level::DEBUG) {
+                let mut buffer = String::new();
+                state_accumulator.iter().for_each(|t| {
+                    use std::fmt::Write as _;
+                    writeln!(&mut buffer, "- {:?}", t).unwrap();
+                });
+                tracing::debug!(
+                    "The `Next` state parameter for {} must be able to generate:\n{buffer}",
+                    stage_names[stage_index - 1]
+                );
             }
             if stage_index > 1 {
                 let mut tmp = state_accumulator.clone();
@@ -337,7 +353,19 @@ impl RequestHandlerPipeline {
                         }
                         _ => true,
                     });
-                Some((stage_ids.middle_id, InputParameters::from_iter(inputs)))
+                let inputs = InputParameters::from_iter(inputs);
+                if tracing::event_enabled!(Level::DEBUG) {
+                    let mut buffer = String::new();
+                    inputs.bindings.0.iter().map(|b| &b.type_).for_each(|t| {
+                        use std::fmt::Write as _;
+                        writeln!(&mut buffer, "- {:?}", t).unwrap();
+                    });
+                    tracing::debug!(
+                        "The `Next` state parameter for {} can contain:\n{buffer}",
+                        stage_names[stage_index],
+                    );
+                }
+                Some((stage_ids.middle_id, inputs))
             })
             .collect();
 
@@ -350,6 +378,21 @@ impl RequestHandlerPipeline {
         let mut wrapping_id = 0;
         let mut id2ordered_call_graphs = IndexMap::new();
         for middleware_id in pipeline_ids.iter() {
+            let mut middleware_name = String::new();
+            if tracing::enabled!(Level::DEBUG) {
+                let component = component_db.hydrated_component(middleware_id, computation_db);
+                if let Computation::Callable(c) = component.computation() {
+                    middleware_name = c.path.to_string();
+                }
+            }
+            if tracing::event_enabled!(Level::DEBUG) {
+                tracing::debug!(
+                    middleware_name = %middleware_name,
+                    "Original middleware call graph:\n{}",
+                    id2call_graphs[&middleware_id].debug_dot(component_db, computation_db)
+                );
+            }
+
             let new_middleware_id = if let HydratedComponent::WrappingMiddleware(_) =
                 component_db.hydrated_component(middleware_id, computation_db)
             {
@@ -482,6 +525,14 @@ impl RequestHandlerPipeline {
                 krate_collection,
                 diagnostics,
             )?;
+
+            if tracing::event_enabled!(Level::DEBUG) {
+                tracing::debug!(
+                    middleware_name = %middleware_name,
+                    "Updated middleware call graph:\n{}",
+                    middleware_call_graph.debug_dot(component_db, computation_db)
+                );
+            }
 
             id2ordered_call_graphs.insert(new_middleware_id, middleware_call_graph);
         }

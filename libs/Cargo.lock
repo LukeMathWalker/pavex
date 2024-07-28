@@ -2239,8 +2239,10 @@ dependencies = [
  "ron",
  "supports-color",
  "tempfile",
+ "textwrap",
  "tracing",
  "tracing-chrome",
+ "tracing-log",
  "tracing-subscriber",
  "vergen",
 ]

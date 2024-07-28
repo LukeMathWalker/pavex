@@ -2,6 +2,7 @@ use guppy::graph::PackageGraph;
 use indexmap::IndexSet;
 use petgraph::Direction;
 use std::collections::BTreeSet;
+use tracing::Level;
 
 use pavex_bp_schema::Lifecycle;
 
@@ -78,14 +79,17 @@ pub(crate) fn request_scoped_call_graph(
     constructible_db: &ConstructibleDb,
     diagnostics: &mut Vec<miette::Error>,
 ) -> Result<CallGraph, ()> {
+    let mut graph_root = String::new();
+    if tracing::enabled!(Level::DEBUG) {
+        let component = component_db.hydrated_component(root_component_id, computation_db);
+        if let Computation::Callable(c) = component.computation() {
+            graph_root = c.path.to_string();
+        }
+    }
     let span = tracing::debug_span!(
         "Compute request-scoped call graph",
-        graph_root = tracing::field::Empty
+        graph_root = %graph_root,
     );
-    let component = component_db.hydrated_component(root_component_id, computation_db);
-    if let Computation::Callable(c) = component.computation() {
-        span.record("graph_root", tracing::field::display(&c.path));
-    }
     let _guard = span.enter();
 
     let call_graph = _request_scoped_call_graph(

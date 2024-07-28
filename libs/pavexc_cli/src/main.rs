@@ -9,6 +9,7 @@ mod telemetry;
 
 use anyhow::Context;
 use clap::{Parser, Subcommand};
+use formatter::ReversedFull;
 use generate_from_path::GenerateArgs;
 use liquid_core::Value;
 use miette::Severity;
@@ -166,14 +167,11 @@ fn init_telemetry(
                 .with_file(false)
                 .with_target(false)
                 .with_span_events(FmtSpan::NEW | FmtSpan::CLOSE)
-                .with_timer(tracing_subscriber::fmt::time::uptime());
+                .with_timer(tracing_subscriber::fmt::time::uptime())
+                .event_format(ReversedFull);
             let fmt_layer = Filtered {
                 base: filter_layer,
-                fields: {
-                    let mut m = BTreeMap::new();
-                    m.insert("route_info".to_string(), "GET /console/".to_string());
-                    m
-                },
+                fields: BTreeMap::new(),
                 layer: fmt_layer,
             };
             if profiling {
