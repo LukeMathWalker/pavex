@@ -4,7 +4,6 @@ use ahash::{HashMap, HashMapExt, HashSet};
 use guppy::graph::PackageGraph;
 use guppy::PackageId;
 use indexmap::{IndexMap, IndexSet};
-use itertools::Itertools;
 use quote::quote;
 
 use pavex_bp_schema::{CloningStrategy, Lifecycle};
@@ -57,15 +56,6 @@ pub struct Stage {
 
 #[derive(Debug)]
 struct PipelineIds(Vec<StageIds>);
-
-impl PipelineIds {
-    fn iter(&self) -> impl Iterator<Item = ComponentId> + '_ {
-        self.0
-            .iter()
-            .map(|stage_ids| stage_ids.invocation_order().into_iter())
-            .flatten()
-    }
-}
 
 #[derive(Debug)]
 struct StageIds {
@@ -246,10 +236,15 @@ impl RequestHandlerPipeline {
         //
         // In order to pull this off, we walk the chain in reverse order and accumulate the set of
         // request-scoped and singleton components that are expected as input.
-        let mut middleware_id2prebuilt_rs_ids: IndexMap<ComponentId, IndexSet<ComponentId>> =
-            IndexMap::new();
+        let mut previous_next_state = None;
+        let mut wrapping_id = stage_names.len() - 2;
+        let mut wrapping_id2bound_id = HashMap::new();
+        let mut wrapping_id2next_state = HashMap::new();
+        let mut id2ordered_call_graphs = IndexMap::new();
+        let mut state_accumulator = IndexSet::new();
+
         for (stage_index, stage_ids) in pipeline_ids.0.iter().enumerate().rev() {
-            for middleware_id in stage_ids.invocation_order().into_iter().rev() {
+            for mut middleware_id in stage_ids.invocation_order().into_iter().rev() {
                 let call_graph = &id2call_graphs[&middleware_id];
 
                 let mut prebuilt_ids: IndexSet<ComponentId> = IndexSet::new();
@@ -265,94 +260,64 @@ impl RequestHandlerPipeline {
                         }
                     }
                 }
-                middleware_id2prebuilt_rs_ids.insert(middleware_id, prebuilt_ids);
+
+                if let Some(next_state_parameters) = &previous_next_state {
+                    if let Some(bound_middleware_id) = Self::bind_next(
+                        module_name.clone(),
+                        middleware_id,
+                        &next_state_parameters,
+                        wrapping_id,
+                        &stage_names,
+                        &mut wrapping_id2next_state,
+                        computation_db,
+                        component_db,
+                        constructible_db,
+                        framework_item_db,
+                    ) {
+                        if stage_index != 0 {
+                            wrapping_id -= 1;
+                        }
+                        wrapping_id2bound_id.insert(middleware_id, bound_middleware_id);
+                        middleware_id = bound_middleware_id;
+                    }
+                }
 
                 // We recompute the call graph for the middleware,
                 // this time with the right set of prebuilt
                 // request-scoped components.
                 // This is necessary because the required long-lived inputs may change based on what's already prebuilt!
-                let call_graph = request_scoped_call_graph(
+                let middleware_call_graph = request_scoped_ordered_call_graph(
                     middleware_id,
-                    &middleware_id2prebuilt_rs_ids[&middleware_id],
+                    &prebuilt_ids,
                     &error_observer_ids,
                     computation_db,
                     component_db,
                     constructible_db,
+                    package_graph,
+                    krate_collection,
                     diagnostics,
                 )?;
-                id2call_graphs.insert(middleware_id, call_graph);
-            }
-        }
-
-        let mut state_accumulators = std::iter::repeat(IndexSet::new())
-            .take(pipeline_ids.0.len() - 1)
-            .collect_vec();
-
-        for (stage_index, stage_ids) in pipeline_ids.0.iter().enumerate().rev() {
-            if stage_index == 0 {
-                break;
-            }
-            let state_accumulator = &mut state_accumulators[stage_index - 1];
-            for middleware_id in stage_ids.invocation_order() {
-                let call_graph = &id2call_graphs[&middleware_id];
-                extract_long_lived_inputs(&call_graph.call_graph, component_db, state_accumulator);
-                state_accumulator.shift_remove(&component_db.pavex_response);
-            }
-            if tracing::event_enabled!(Level::DEBUG) {
-                let mut buffer = String::new();
-                state_accumulator.iter().for_each(|t| {
-                    use std::fmt::Write as _;
-                    writeln!(&mut buffer, "- {:?}", t).unwrap();
-                });
-                tracing::debug!(
-                    "The `Next` state parameter for {} must be able to generate:\n{buffer}",
-                    stage_names[stage_index - 1]
+                extract_long_lived_inputs(
+                    &middleware_call_graph.call_graph,
+                    component_db,
+                    &mut state_accumulator,
                 );
+                id2ordered_call_graphs.insert(middleware_id, middleware_call_graph);
             }
-            if stage_index > 1 {
-                let mut tmp = state_accumulator.clone();
-                for (id, built_at) in &request_scoped2built_at_stage_index {
-                    if *built_at == stage_index - 1 {
-                        let output = component_db
-                            .hydrated_component(*id, computation_db)
-                            .output_type()
-                            .cloned()
-                            .unwrap();
-                        let to_be_removed: Vec<_> = tmp
-                            .iter()
-                            .filter(|ty| match ty {
-                                ResolvedType::ResolvedPath(_) => *ty == &output,
-                                ResolvedType::Reference(ref_) => ref_.inner.as_ref() == &output,
-                                _ => false,
-                            })
-                            .cloned()
-                            .collect();
-                        for ty in to_be_removed {
-                            tmp.shift_remove(&ty);
-                        }
-                    }
-                }
-                state_accumulators[stage_index - 2] = tmp;
-            }
-        }
 
-        let wrapping_id2next_field_types: HashMap<ComponentId, InputParameters> = pipeline_ids
-            .0
-            .iter()
-            .enumerate()
-            .filter_map(|(stage_index, stage_ids)| {
-                if component_db.is_request_handler(stage_ids.middle_id) {
-                    return None;
-                }
-                let inputs = state_accumulators[stage_index]
-                    .iter()
-                    .filter(|ty| match ty {
-                        ResolvedType::ResolvedPath(_) => *ty != &component_db.pavex_response,
-                        ResolvedType::Reference(ref_) => {
-                            ref_.inner.as_ref() != &component_db.pavex_response
-                        }
-                        _ => true,
-                    });
+            state_accumulator.shift_remove(&component_db.pavex_response);
+
+            if stage_index == 0 {
+                continue;
+            }
+            previous_next_state = {
+                let inputs = state_accumulator.iter().filter(|ty| match ty {
+                    ResolvedType::ResolvedPath(_) => *ty != &component_db.pavex_response,
+                    ResolvedType::Reference(ref_) => {
+                        ref_.inner.as_ref() != &component_db.pavex_response
+                    }
+                    _ => true,
+                });
                 let inputs = InputParameters::from_iter(inputs);
                 if tracing::event_enabled!(Level::DEBUG) {
                     let mut buffer = String::new();
@@ -361,180 +326,34 @@ impl RequestHandlerPipeline {
                         writeln!(&mut buffer, "- {:?}", t).unwrap();
                     });
                     tracing::debug!(
-                        "The `Next` state parameter for {} can contain:\n{buffer}",
+                        "The `Next` state parameter for {} contains:\n{buffer}",
                         stage_names[stage_index],
                     );
                 }
-                Some((stage_ids.middle_id, inputs))
-            })
-            .collect();
-
-        // Since we now know which request-scoped components are prebuilt for each middleware, we can
-        // compute the final call graph for each of them.
-        // In particular, we can determine the concrete type of the generic parameter of the
-        // `Next<_>` parameter (that we will codegen later on).
-        let mut wrapping_id2next_state = HashMap::new();
-        let mut wrapping_id2bound_id = HashMap::new();
-        let mut wrapping_id = 0;
-        let mut id2ordered_call_graphs = IndexMap::new();
-        for middleware_id in pipeline_ids.iter() {
-            let mut middleware_name = String::new();
-            if tracing::enabled!(Level::DEBUG) {
-                let component = component_db.hydrated_component(middleware_id, computation_db);
-                if let Computation::Callable(c) = component.computation() {
-                    middleware_name = c.path.to_string();
-                }
-            }
-            if tracing::event_enabled!(Level::DEBUG) {
-                tracing::debug!(
-                    middleware_name = %middleware_name,
-                    "Original middleware call graph:\n{}",
-                    id2call_graphs[&middleware_id].debug_dot(component_db, computation_db)
-                );
-            }
-
-            let new_middleware_id = if let HydratedComponent::WrappingMiddleware(_) =
-                component_db.hydrated_component(middleware_id, computation_db)
-            {
-                let next_state_parameters = &wrapping_id2next_field_types[&middleware_id];
-                let next_state_type = PathType {
-                    package_id: PackageId::new(GENERATED_APP_PACKAGE_ID),
-                    rustdoc_id: None,
-                    base_type: vec![
-                        "crate".into(),
-                        module_name.clone(),
-                        format!("Next{wrapping_id}"),
-                    ],
-                    generic_arguments: next_state_parameters
-                        .lifetimes
-                        .iter()
-                        .map(|s| {
-                            GenericArgument::Lifetime(GenericLifetimeParameter::Named(s.to_owned()))
-                        })
-                        .collect(),
-                };
-
-                // We register a constructor, in order to make it possible to build an instance of
-                // `next_type`.
-                let next_state_constructor = Callable {
-                    is_async: false,
-                    takes_self_as_ref: false,
-                    path: next_state_type.resolved_path(),
-                    output: Some(next_state_type.clone().into()),
-                    inputs: next_state_parameters
-                        .iter()
-                        .map(|input| input.type_.clone())
-                        .collect(),
-                    invocation_style: InvocationStyle::StructLiteral {
-                        field_names: next_state_parameters
-                            .iter()
-                            .map(|input| (input.ident.clone(), input.type_.clone()))
-                            .collect::<BTreeMap<_, _>>(),
-                        // TODO: remove when TAIT stabilises
-                        extra_field2default_value: {
-                            BTreeMap::from([("next".into(), stage_names[wrapping_id + 1].clone())])
-                        },
-                    },
-                    source_coordinates: None,
-                };
-                let next_state_callable_id = computation_db.get_or_intern(next_state_constructor);
-                let next_state_scope_id = component_db.scope_id(middleware_id);
-                let next_state_constructor_id = component_db
-                    .get_or_intern_constructor_without_validation(
-                        next_state_callable_id,
-                        Lifecycle::RequestScoped,
-                        next_state_scope_id,
-                        CloningStrategy::NeverClone,
-                        computation_db,
-                        None,
-                    )
-                    .unwrap();
-                constructible_db.insert(next_state_constructor_id, component_db, computation_db);
-
-                // Since we now have the concrete type of the generic in `Next<_>`, we can bind
-                // the generic type parameter of the middleware to that concrete type.
-                let HydratedComponent::WrappingMiddleware(mw) =
-                    component_db.hydrated_component(middleware_id, computation_db)
-                else {
-                    unreachable!()
-                };
-                let next_input = &mw.input_types()[mw.next_input_index()];
-                let next_generic_parameters = next_input.unassigned_generic_type_parameters();
-
-                #[cfg(debug_assertions)]
-                assert_eq!(
-                    next_generic_parameters.len(),
-                    1,
-                    "Next<_> should have exactly one unassigned generic type parameter"
-                );
-
-                let next_generic_parameter =
-                    next_generic_parameters.iter().next().unwrap().to_owned();
-
-                let mut bindings = HashMap::with_capacity(1);
-                bindings.insert(next_generic_parameter, next_state_type.clone().into());
-                let bound_middleware_id = component_db.bind_generic_type_parameters(
-                    middleware_id,
-                    &bindings,
-                    computation_db,
-                    framework_item_db,
-                );
-
-                let HydratedComponent::WrappingMiddleware(bound_mw) =
-                    component_db.hydrated_component(bound_middleware_id, computation_db)
-                else {
-                    unreachable!()
-                };
-                // Force the constructibles database to bind a constructor for `Next<{NextState}>`.
-                // Really ugly, but alas.
-                assert!(constructible_db
-                    .get_or_try_bind(
-                        next_state_scope_id,
-                        &bound_mw.next_input_type().to_owned(),
-                        component_db,
-                        computation_db,
-                        framework_item_db,
-                    )
-                    .is_some());
-
-                wrapping_id += 1;
-                wrapping_id2next_state.insert(
-                    bound_middleware_id,
-                    NextState {
-                        type_: next_state_type,
-                        field_bindings: next_state_parameters.bindings.clone(),
-                    },
-                );
-                wrapping_id2bound_id.insert(middleware_id, bound_middleware_id);
-                bound_middleware_id
-            } else {
-                // Nothing to do for other middlewares/handlers.
-                middleware_id
+                Some(inputs)
             };
 
-            let prebuilt_request_scoped_ids = &middleware_id2prebuilt_rs_ids[&middleware_id];
-
-            let middleware_call_graph = request_scoped_ordered_call_graph(
-                new_middleware_id,
-                prebuilt_request_scoped_ids,
-                &error_observer_ids,
-                computation_db,
-                component_db,
-                constructible_db,
-                package_graph,
-                krate_collection,
-                diagnostics,
-            )?;
-
-            if tracing::event_enabled!(Level::DEBUG) {
-                tracing::debug!(
-                    middleware_name = %middleware_name,
-                    "Updated middleware call graph:\n{}",
-                    middleware_call_graph.debug_dot(component_db, computation_db)
-                );
+            for (id, built_at) in &request_scoped2built_at_stage_index {
+                if *built_at == stage_index - 1 {
+                    let output = component_db
+                        .hydrated_component(*id, computation_db)
+                        .output_type()
+                        .cloned()
+                        .unwrap();
+                    let to_be_removed: Vec<_> = state_accumulator
+                        .iter()
+                        .filter(|ty| match ty {
+                            ResolvedType::ResolvedPath(_) => *ty == &output,
+                            ResolvedType::Reference(ref_) => ref_.inner.as_ref() == &output,
+                            _ => false,
+                        })
+                        .cloned()
+                        .collect();
+                    for ty in to_be_removed {
+                        state_accumulator.shift_remove(&ty);
+                    }
+                }
             }
-
-            id2ordered_call_graphs.insert(new_middleware_id, middleware_call_graph);
         }
 
         let stages = {
@@ -596,6 +415,135 @@ impl RequestHandlerPipeline {
         self_.enforce_invariants(component_db, computation_db);
 
         Ok(self_)
+    }
+
+    /// Bind the generic parameter of `Next` to the concrete type of the next state.
+    /// Return `None` if the middleware is not a wrapping middleware.
+    fn bind_next(
+        module_name: String,
+        middleware_id: ComponentId,
+        next_state_parameters: &InputParameters,
+        wrapping_id: usize,
+        stage_names: &[String],
+        wrapping_id2next_state: &mut HashMap<ComponentId, NextState>,
+        computation_db: &mut ComputationDb,
+        component_db: &mut ComponentDb,
+        constructible_db: &mut ConstructibleDb,
+        framework_item_db: &FrameworkItemDb,
+    ) -> Option<ComponentId> {
+        if !matches!(
+            component_db.hydrated_component(middleware_id, computation_db),
+            HydratedComponent::WrappingMiddleware(_)
+        ) {
+            return None;
+        }
+
+        let next_state_type = PathType {
+            package_id: PackageId::new(GENERATED_APP_PACKAGE_ID),
+            rustdoc_id: None,
+            base_type: vec![
+                "crate".into(),
+                module_name.clone(),
+                format!("Next{wrapping_id}"),
+            ],
+            generic_arguments: next_state_parameters
+                .lifetimes
+                .iter()
+                .map(|s| GenericArgument::Lifetime(GenericLifetimeParameter::Named(s.to_owned())))
+                .collect(),
+        };
+
+        // We register a constructor, in order to make it possible to build an instance of
+        // `next_type`.
+        let next_state_constructor = Callable {
+            is_async: false,
+            takes_self_as_ref: false,
+            path: next_state_type.resolved_path(),
+            output: Some(next_state_type.clone().into()),
+            inputs: next_state_parameters
+                .iter()
+                .map(|input| input.type_.clone())
+                .collect(),
+            invocation_style: InvocationStyle::StructLiteral {
+                field_names: next_state_parameters
+                    .iter()
+                    .map(|input| (input.ident.clone(), input.type_.clone()))
+                    .collect::<BTreeMap<_, _>>(),
+                // TODO: remove when TAIT stabilises
+                extra_field2default_value: {
+                    BTreeMap::from([("next".into(), stage_names[wrapping_id + 1].clone())])
+                },
+            },
+            source_coordinates: None,
+        };
+        let next_state_callable_id = computation_db.get_or_intern(next_state_constructor);
+        let next_state_scope_id = component_db.scope_id(middleware_id);
+        let next_state_constructor_id = component_db
+            .get_or_intern_constructor_without_validation(
+                next_state_callable_id,
+                Lifecycle::RequestScoped,
+                next_state_scope_id,
+                CloningStrategy::NeverClone,
+                computation_db,
+                None,
+            )
+            .unwrap();
+        constructible_db.insert(next_state_constructor_id, component_db, computation_db);
+
+        // Since we now have the concrete type of the generic in `Next<_>`, we can bind
+        // the generic type parameter of the middleware to that concrete type.
+        let HydratedComponent::WrappingMiddleware(mw) =
+            component_db.hydrated_component(middleware_id, computation_db)
+        else {
+            unreachable!()
+        };
+        let next_input = &mw.input_types()[mw.next_input_index()];
+        let next_generic_parameters = next_input.unassigned_generic_type_parameters();
+
+        #[cfg(debug_assertions)]
+        assert_eq!(
+            next_generic_parameters.len(),
+            1,
+            "Next<_> should have exactly one unassigned generic type parameter"
+        );
+
+        let next_generic_parameter = next_generic_parameters.iter().next().unwrap().to_owned();
+
+        let mut bindings = HashMap::with_capacity(1);
+        bindings.insert(next_generic_parameter, next_state_type.clone().into());
+        let bound_middleware_id = component_db.bind_generic_type_parameters(
+            middleware_id,
+            &bindings,
+            computation_db,
+            framework_item_db,
+        );
+
+        let HydratedComponent::WrappingMiddleware(bound_mw) =
+            component_db.hydrated_component(bound_middleware_id, computation_db)
+        else {
+            unreachable!()
+        };
+        // Force the constructibles database to bind a constructor for `Next<{NextState}>`.
+        // Really ugly, but alas.
+        assert!(constructible_db
+            .get_or_try_bind(
+                next_state_scope_id,
+                &bound_mw.next_input_type().to_owned(),
+                component_db,
+                computation_db,
+                framework_item_db,
+            )
+            .is_some());
+
+        wrapping_id2next_state.insert(
+            bound_middleware_id,
+            NextState {
+                type_: next_state_type,
+                field_bindings: next_state_parameters.bindings.clone(),
+            },
+        );
+
+        Some(bound_middleware_id)
     }
 
     fn enforce_invariants(&self, component_db: &ComponentDb, computation_db: &ComputationDb) {
