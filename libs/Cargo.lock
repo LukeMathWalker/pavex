@@ -2471,6 +2471,7 @@ dependencies = [
  "ahash",
  "aho-corasick",
  "bitflags 2.6.0",
+ "byteorder",
  "cc",
  "clap",
  "clap_builder",
@@ -2489,6 +2490,7 @@ dependencies = [
  "hmac",
  "indexmap",
  "log",
+ "memchr",
  "miette",
  "num-traits",
  "petgraph",
@@ -2511,7 +2513,9 @@ dependencies = [
  "toml_edit",
  "tracing",
  "tracing-core",
+ "tracing-log",
  "uuid",
+ "zerocopy",
  "zeroize",
 ]
 
