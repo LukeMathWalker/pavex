@@ -1345,11 +1345,6 @@ impl ComponentDb {
         matches!(self[id], Component::PostProcessingMiddleware { .. })
     }
 
-    /// Returns `true` if the component is a request handler, `false` otherwise.
-    pub fn is_request_handler(&self, id: ComponentId) -> bool {
-        matches!(self[id], Component::RequestHandler { .. })
-    }
-
     /// If the component is a request handler, return the ids of the middlewares that wrap around
     /// it.
     /// Otherwise, return `None`.

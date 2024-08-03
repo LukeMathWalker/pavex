@@ -1,0 +1,5 @@
+description = """pavex will correctly determine which types must be held as part of Next's state, even if they are transitive
+dependencies of the types that are explicitly injected"""
+
+[expectations]
+codegen = "pass"

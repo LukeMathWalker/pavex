@@ -2,6 +2,7 @@ use guppy::graph::PackageGraph;
 use indexmap::IndexSet;
 use petgraph::Direction;
 use std::collections::BTreeSet;
+use tracing::Level;
 
 use pavex_bp_schema::Lifecycle;
 
@@ -14,6 +15,7 @@ use crate::compiler::analyses::components::{
 };
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::constructibles::ConstructibleDb;
+use crate::compiler::computation::Computation;
 use crate::language::{Callable, InvocationStyle, ResolvedPath, ResolvedPathSegment, ResolvedType};
 use crate::rustdoc::CrateCollection;
 
@@ -66,7 +68,6 @@ pub(crate) fn request_scoped_ordered_call_graph(
 
 /// Build an [`CallGraph`] for a computation that gets trigger on a per-request basis
 /// (e.g. a request handler or a middleware).
-#[tracing::instrument(name = "Compute request-scoped call graph", skip_all)]
 pub(crate) fn request_scoped_call_graph(
     root_component_id: ComponentId,
     // The set of request-scoped components that have already been initialised in the upstream
@@ -78,6 +79,19 @@ pub(crate) fn request_scoped_call_graph(
     constructible_db: &ConstructibleDb,
     diagnostics: &mut Vec<miette::Error>,
 ) -> Result<CallGraph, ()> {
+    let mut graph_root = String::new();
+    if tracing::enabled!(Level::DEBUG) {
+        let component = component_db.hydrated_component(root_component_id, computation_db);
+        if let Computation::Callable(c) = component.computation() {
+            graph_root = c.path.to_string();
+        }
+    }
+    let span = tracing::debug_span!(
+        "Compute request-scoped call graph",
+        graph_root = %graph_root,
+    );
+    let _guard = span.enter();
+
     let call_graph = _request_scoped_call_graph(
         root_component_id,
         request_scoped_prebuilt_ids,

@@ -133,6 +133,9 @@ impl App {
                 .collect();
             let mut handler_pipelines = IndexMap::new();
             for (i, handler_id) in handler_ids.into_iter().enumerate() {
+                let route_info = &router.handler_id2route_info[handler_id];
+                let span = tracing::info_span!("Compute request processing pipeline", route_info = %route_info);
+                let _guard = span.enter();
                 let Ok(processing_pipeline) = RequestHandlerPipeline::new(
                     *handler_id,
                     format!("route_{i}"),

@@ -23,6 +23,8 @@ fs-err = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["fmt", "env-filter"] }
 tracing-chrome = { workspace = true }
 tracing = { workspace = true, default-features = true }
+tracing-log = { workspace = true }
+textwrap = { workspace = true }
 owo-colors = { workspace = true }
 anyhow = { workspace = true }
 guppy = { workspace = true }
