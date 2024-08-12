@@ -101,6 +101,8 @@ pub(crate) fn codegen_app(
     let handler_id2codegened_pipeline = handler_id2pipeline
         .iter()
         .map(|(id, p)| {
+            let span = tracing::info_span!("Codegen request handler pipeline", route_info = %router.handler_id2route_info[id]);
+            let _guard = span.enter();
             p.codegen(
                 &pavex_import_name,
                 package_id2name,

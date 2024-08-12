@@ -112,7 +112,21 @@ digraph "GET /early_return - 3" {
 }
 
 digraph "GET /early_return - 4" {
-    0 [ label = "app::first_post(&app::Spy, pavex::response::Response) -> pavex::response::Response"]
+    0 [ label = "app::second_pre(&app::Spy) -> pavex::middleware::Processing<pavex::response::Response>"]
+    2 [ label = "&app::Spy"]
+    2 -> 0 [ ]
+}
+
+digraph "GET /early_return - 5" {
+    0 [ label = "app::handler(&app::Spy) -> pavex::response::Response"]
+    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "&app::Spy"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
+}
+
+digraph "GET /early_return - 6" {
+    0 [ label = "app::second_post(&app::Spy, pavex::response::Response) -> pavex::response::Response"]
     2 [ label = "pavex::response::Response"]
     3 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     4 [ label = "&app::Spy"]
@@ -121,22 +135,8 @@ digraph "GET /early_return - 4" {
     4 -> 0 [ ]
 }
 
-digraph "GET /early_return - 5" {
-    0 [ label = "app::second_pre(&app::Spy) -> pavex::middleware::Processing<pavex::response::Response>"]
-    2 [ label = "&app::Spy"]
-    2 -> 0 [ ]
-}
-
-digraph "GET /early_return - 6" {
-    0 [ label = "app::handler(&app::Spy) -> pavex::response::Response"]
-    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    3 [ label = "&app::Spy"]
-    0 -> 2 [ ]
-    3 -> 0 [ ]
-}
-
 digraph "GET /early_return - 7" {
-    0 [ label = "app::second_post(&app::Spy, pavex::response::Response) -> pavex::response::Response"]
+    0 [ label = "app::first_post(&app::Spy, pavex::response::Response) -> pavex::response::Response"]
     2 [ label = "pavex::response::Response"]
     3 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     4 [ label = "&app::Spy"]
@@ -210,7 +210,21 @@ digraph "GET /nested - 3" {
 }
 
 digraph "GET /nested - 4" {
-    0 [ label = "app::first_post(&app::Spy, pavex::response::Response) -> pavex::response::Response"]
+    0 [ label = "app::second_pre(&app::Spy) -> pavex::middleware::Processing<pavex::response::Response>"]
+    2 [ label = "&app::Spy"]
+    2 -> 0 [ ]
+}
+
+digraph "GET /nested - 5" {
+    0 [ label = "app::handler(&app::Spy) -> pavex::response::Response"]
+    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "&app::Spy"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
+}
+
+digraph "GET /nested - 6" {
+    0 [ label = "app::second_post(&app::Spy, pavex::response::Response) -> pavex::response::Response"]
     2 [ label = "pavex::response::Response"]
     3 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     4 [ label = "&app::Spy"]
@@ -219,22 +233,8 @@ digraph "GET /nested - 4" {
     4 -> 0 [ ]
 }
 
-digraph "GET /nested - 5" {
-    0 [ label = "app::second_pre(&app::Spy) -> pavex::middleware::Processing<pavex::response::Response>"]
-    2 [ label = "&app::Spy"]
-    2 -> 0 [ ]
-}
-
-digraph "GET /nested - 6" {
-    0 [ label = "app::handler(&app::Spy) -> pavex::response::Response"]
-    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    3 [ label = "&app::Spy"]
-    0 -> 2 [ ]
-    3 -> 0 [ ]
-}
-
 digraph "GET /nested - 7" {
-    0 [ label = "app::second_post(&app::Spy, pavex::response::Response) -> pavex::response::Response"]
+    0 [ label = "app::first_post(&app::Spy, pavex::response::Response) -> pavex::response::Response"]
     2 [ label = "pavex::response::Response"]
     3 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     4 [ label = "&app::Spy"]

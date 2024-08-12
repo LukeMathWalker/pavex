@@ -106,16 +106,16 @@ pub mod route_0 {
         let v3 = app::wrap(v2, v0);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
     }
+    async fn handler() -> pavex::response::Response {
+        let v0 = app::handler();
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v0)
+    }
     async fn post_processing_0(
         v0: pavex::response::Response,
         v1: app::A,
     ) -> pavex::response::Response {
         let v2 = app::post(v0, v1);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
-    }
-    async fn handler() -> pavex::response::Response {
-        let v0 = app::handler();
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v0)
     }
     struct Next0<T>
     where
@@ -205,16 +205,16 @@ pub mod route_1 {
         let v4 = app::wrap(v3, v1);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
     }
+    async fn handler(v0: &pavex::router::AllowedMethods) -> pavex::response::Response {
+        let v1 = pavex::router::default_fallback(v0).await;
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
+    }
     async fn post_processing_0(
         v0: pavex::response::Response,
         v1: app::A,
     ) -> pavex::response::Response {
         let v2 = app::post(v0, v1);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
-    }
-    async fn handler(v0: &pavex::router::AllowedMethods) -> pavex::response::Response {
-        let v1 = pavex::router::default_fallback(v0).await;
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
     }
     struct Next0<'a, T>
     where

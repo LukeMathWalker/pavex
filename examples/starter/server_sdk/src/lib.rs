@@ -227,10 +227,10 @@ pub mod route_1 {
     async fn stage_1<'a, 'b, 'c, 'd>(
         s_0: pavex::request::path::RawPathParams<'a, 'b>,
         s_1: &'c app::configuration::AppConfig,
-        s_2: pavex::request::path::MatchedPathPattern,
-        s_3: &'d pavex::request::RequestHead,
+        s_2: &'d pavex::request::RequestHead,
+        s_3: pavex::request::path::MatchedPathPattern,
     ) -> pavex::response::Response {
-        let response = wrapping_1(s_0, s_3, s_2, s_1).await;
+        let response = wrapping_1(s_0, s_2, s_3, s_1).await;
         response
     }
     async fn stage_2<'a, 'b, 'c, 'd>(
@@ -251,8 +251,8 @@ pub mod route_1 {
         let v4 = crate::route_1::Next0 {
             s_0: v0,
             s_1: v3,
-            s_2: v2,
-            s_3: v1,
+            s_2: v1,
+            s_3: v2,
             next: stage_1,
         };
         let v5 = pavex::middleware::Next::new(v4);
@@ -318,13 +318,13 @@ pub mod route_1 {
     {
         s_0: pavex::request::path::RawPathParams<'a, 'b>,
         s_1: &'c app::configuration::AppConfig,
-        s_2: pavex::request::path::MatchedPathPattern,
-        s_3: &'d pavex::request::RequestHead,
+        s_2: &'d pavex::request::RequestHead,
+        s_3: pavex::request::path::MatchedPathPattern,
         next: fn(
             pavex::request::path::RawPathParams<'a, 'b>,
             &'c app::configuration::AppConfig,
-            pavex::request::path::MatchedPathPattern,
             &'d pavex::request::RequestHead,
+            pavex::request::path::MatchedPathPattern,
         ) -> T,
     }
     impl<'a, 'b, 'c, 'd, T> std::future::IntoFuture for Next0<'a, 'b, 'c, 'd, T>
@@ -372,18 +372,18 @@ pub mod route_2 {
     }
     async fn stage_1<'a, 'b>(
         s_0: &'a pavex::router::AllowedMethods,
-        s_1: pavex::request::path::MatchedPathPattern,
-        s_2: &'b pavex::request::RequestHead,
+        s_1: &'b pavex::request::RequestHead,
+        s_2: pavex::request::path::MatchedPathPattern,
     ) -> pavex::response::Response {
-        let response = wrapping_1(s_2, s_1, s_0).await;
+        let response = wrapping_1(s_1, s_2, s_0).await;
         response
     }
     async fn stage_2<'a, 'b>(
-        s_0: &'a pavex::router::AllowedMethods,
-        s_1: &'b pavex_tracing::RootSpan,
+        s_0: &'a pavex_tracing::RootSpan,
+        s_1: &'b pavex::router::AllowedMethods,
     ) -> pavex::response::Response {
-        let response = handler(s_0).await;
-        let response = post_processing_0(response, s_1).await;
+        let response = handler(s_1).await;
+        let response = post_processing_0(response, s_0).await;
         response
     }
     async fn wrapping_0(
@@ -393,8 +393,8 @@ pub mod route_2 {
     ) -> pavex::response::Response {
         let v3 = crate::route_2::Next0 {
             s_0: v2,
-            s_1: v1,
-            s_2: v0,
+            s_1: v0,
+            s_2: v1,
             next: stage_1,
         };
         let v4 = pavex::middleware::Next::new(v3);
@@ -409,8 +409,8 @@ pub mod route_2 {
         let v3 = pavex::telemetry::ServerRequestId::generate();
         let v4 = app::telemetry::root_span(v0, v1, v3);
         let v5 = crate::route_2::Next1 {
-            s_0: v2,
-            s_1: &v4,
+            s_0: &v4,
+            s_1: v2,
             next: stage_2,
         };
         let v6 = pavex::middleware::Next::new(v5);
@@ -434,12 +434,12 @@ pub mod route_2 {
         T: std::future::Future<Output = pavex::response::Response>,
     {
         s_0: &'a pavex::router::AllowedMethods,
-        s_1: pavex::request::path::MatchedPathPattern,
-        s_2: &'b pavex::request::RequestHead,
+        s_1: &'b pavex::request::RequestHead,
+        s_2: pavex::request::path::MatchedPathPattern,
         next: fn(
             &'a pavex::router::AllowedMethods,
-            pavex::request::path::MatchedPathPattern,
             &'b pavex::request::RequestHead,
+            pavex::request::path::MatchedPathPattern,
         ) -> T,
     }
     impl<'a, 'b, T> std::future::IntoFuture for Next0<'a, 'b, T>
@@ -456,9 +456,9 @@ pub mod route_2 {
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
-        s_0: &'a pavex::router::AllowedMethods,
-        s_1: &'b pavex_tracing::RootSpan,
-        next: fn(&'a pavex::router::AllowedMethods, &'b pavex_tracing::RootSpan) -> T,
+        s_0: &'a pavex_tracing::RootSpan,
+        s_1: &'b pavex::router::AllowedMethods,
+        next: fn(&'a pavex_tracing::RootSpan, &'b pavex::router::AllowedMethods) -> T,
     }
     impl<'a, 'b, T> std::future::IntoFuture for Next1<'a, 'b, T>
     where

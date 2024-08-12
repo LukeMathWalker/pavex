@@ -7,9 +7,41 @@ use crate::compiler::analyses::user_components::UserComponentId;
 
 #[derive(Debug)]
 pub(crate) struct Router {
+    /// For each route path (e.g. `/home`), return the method-based
+    /// router that will dispatch the request to the appropriate handler.
+    ///
+    /// The sub-router will distinguish between `GET /home` and `POST /home`, for example.
     pub(crate) route_path2sub_router: BTreeMap<String, LeafRouter>,
     /// The fallback to use if no route matches the incoming request.
     pub(crate) root_fallback_id: ComponentId,
+    /// A map from handler IDs to the route info for that handler.
+    /// Primarily used for diagnostics.
+    pub(crate) handler_id2route_info: BTreeMap<ComponentId, RouteInfo>,
+}
+
+#[derive(Debug)]
+pub(crate) struct RouteInfo {
+    pub(crate) methods: BTreeSet<String>,
+    pub(crate) path: String,
+}
+
+impl std::fmt::Display for RouteInfo {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.methods.is_empty() {
+            write!(f, "{} (fallback)", self.path)
+        } else {
+            write!(
+                f,
+                "{} {}",
+                self.methods
+                    .iter()
+                    .map(|m| m.as_str())
+                    .collect::<Vec<_>>()
+                    .join("/"),
+                self.path
+            )
+        }
+    }
 }
 
 /// A router to dispatch a request to a handler based on its method, after having matched its path.
@@ -61,9 +93,19 @@ impl Router {
             })
             .collect();
         let root_fallback_id = user_component_id2component_id[&router.root_fallback_id];
+        let handler_id2route_info = router
+            .handler_id2route_info
+            .into_iter()
+            .filter_map(|(user_component_id, route_info)| {
+                user_component_id2component_id
+                    .get(&user_component_id)
+                    .map(|&component_id| (component_id, route_info))
+            })
+            .collect();
         Self {
             route_path2sub_router,
             root_fallback_id,
+            handler_id2route_info,
         }
     }
 }

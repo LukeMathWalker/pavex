@@ -6,7 +6,7 @@ use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote, ToTokens};
 use syn::{ItemFn, Token, Visibility};
 
-use crate::compiler::analyses::components::{ComponentDb, HydratedComponent};
+use crate::compiler::analyses::components::ComponentDb;
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::framework_items::FrameworkItemDb;
 use crate::compiler::analyses::processing_pipeline::pipeline::Binding;
@@ -23,37 +23,16 @@ impl RequestHandlerPipeline {
     ) -> Result<CodegenedRequestHandlerPipeline, anyhow::Error> {
         let id2codegened_fn = {
             let mut id2codegened_fn = IndexMap::new();
-            let mut wrapping_index = 0u32;
-            let mut pre_processing_index = 0u32;
-            let mut post_processing_index = 0u32;
             for (&id, call_graph) in self.id2call_graph.iter() {
-                let ident = match component_db.hydrated_component(id, computation_db) {
-                    HydratedComponent::WrappingMiddleware(_) => {
-                        let ident = format_ident!("wrapping_{}", wrapping_index);
-                        wrapping_index += 1;
-                        ident
-                    }
-                    HydratedComponent::PostProcessingMiddleware(_) => {
-                        let ident = format_ident!("post_processing_{}", post_processing_index);
-                        post_processing_index += 1;
-                        ident
-                    }
-                    HydratedComponent::PreProcessingMiddleware(_) => {
-                        let ident = format_ident!("pre_processing_{}", pre_processing_index);
-                        pre_processing_index += 1;
-                        ident
-                    }
-                    HydratedComponent::RequestHandler(_) => format_ident!("handler"),
-                    _ => unreachable!(),
-                };
+                let ident = &self.id2name[&id];
                 if tracing::event_enabled!(tracing::Level::TRACE) {
-                    call_graph.print_debug_dot(component_db, computation_db);
+                    call_graph.print_debug_dot(&ident, component_db, computation_db);
                 }
                 let fn_ = CodegenedFn {
                     fn_: {
                         let mut f =
                             call_graph.codegen(package_id2name, component_db, computation_db)?;
-                        f.sig.ident = ident;
+                        f.sig.ident = format_ident!("{}", ident);
                         f.vis = Visibility::Inherited;
                         f
                     },
@@ -78,6 +57,32 @@ impl RequestHandlerPipeline {
                 .chain(std::iter::once(stage.wrapping_id))
                 .chain(stage.post_processing_ids.iter().copied())
                 .collect_vec();
+
+            if tracing::event_enabled!(tracing::Level::DEBUG) {
+                let bindings = input_bindings.0.iter().fold(String::new(), |acc, binding| {
+                    let mutable = binding.mutable.then(|| "mut ").unwrap_or("");
+                    format!(
+                        "{}\n- {}: {mutable}{:?}, ",
+                        acc, binding.ident, binding.type_
+                    )
+                });
+                let mut msg = format!("Available input bindings: {bindings}",);
+                ordered_by_invocation.iter().for_each(|id| {
+                    use std::fmt::Write as _;
+
+                    let fn_ = &id2codegened_fn[id].fn_;
+                    let fn_name = &fn_.sig.ident;
+                    let _ = writeln!(&mut msg, "\nInput required by {fn_name}:");
+                    id2codegened_fn[id]
+                        .input_parameters
+                        .iter()
+                        .fold(&mut msg, |acc, t| {
+                            let _ = writeln!(acc, "- {t:?}");
+                            acc
+                        });
+                });
+                tracing::debug!("{msg}");
+            }
 
             let invocations = {
                 let mut invocations = vec![];
@@ -105,8 +110,10 @@ impl RequestHandlerPipeline {
                                                 let mutable = binding.mutable.then(|| "mut ").unwrap_or("");
                                                 format!("{}\n- {}: {mutable}{:?}, ", acc, binding.ident, binding.type_)
                                             });
+                                        let fn_name = fn_.sig.ident.to_string();
                                         panic!(
-                                            "Could not find a binding for input type `{:?}` in the input bindings.\n\
+                                            "Could not find a binding for input type `{:?}` in the input bindings \
+                                            available to `{fn_name}`.\n\
                                             Input bindings: {bindings}",
                                             input_type)
                                     }

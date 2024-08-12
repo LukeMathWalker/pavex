@@ -8,6 +8,7 @@ use itertools::Itertools;
 use matchit::InsertError;
 use pavex_bp_schema::MethodGuard;
 
+use crate::compiler::analyses::router::RouteInfo;
 use crate::compiler::analyses::user_components::raw_db::RawUserComponentDb;
 use crate::compiler::analyses::user_components::{
     ScopeGraph, ScopeId, UserComponent, UserComponentId,
@@ -23,6 +24,9 @@ pub(crate) struct Router {
     pub(crate) route_path2sub_router: BTreeMap<String, LeafRouter>,
     /// The fallback to use if no route matches the incoming request.
     pub(crate) root_fallback_id: UserComponentId,
+    /// A map from handler IDs to the route info for that handler.
+    /// Primarily used for diagnostics.
+    pub(crate) handler_id2route_info: BTreeMap<UserComponentId, RouteInfo>,
 }
 
 /// A router to dispatch a request to a handler based on its method, after having matched its path.
@@ -109,9 +113,42 @@ impl Router {
                 .or_insert_with(|| LeafRouter::new(fallback_id));
         }
 
+        let handler_id2route_info = {
+            let mut handler_id2route_info = BTreeMap::new();
+            for (path, sub_router) in route_path2sub_router.iter() {
+                for (handler_id, methods) in sub_router.handler_id2methods.iter() {
+                    let router_info = RouteInfo {
+                        methods: methods.to_owned(),
+                        path: path.to_owned(),
+                    };
+                    let previous = handler_id2route_info.insert(*handler_id, router_info);
+                    assert!(
+                        previous.is_none(),
+                        "Each handler ID is uniquely associated with a route."
+                    )
+                }
+                handler_id2route_info.insert(
+                    sub_router.fallback_id,
+                    RouteInfo {
+                        methods: Default::default(),
+                        path: path.to_owned(),
+                    },
+                );
+            }
+            handler_id2route_info.insert(
+                root_fallback_id,
+                RouteInfo {
+                    methods: Default::default(),
+                    path: "*".into(),
+                },
+            );
+            handler_id2route_info
+        };
+
         Ok(Self {
             route_path2sub_router,
             root_fallback_id,
+            handler_id2route_info,
         })
     }
 
