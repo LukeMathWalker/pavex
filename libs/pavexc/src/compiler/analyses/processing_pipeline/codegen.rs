@@ -6,7 +6,7 @@ use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote, ToTokens};
 use syn::{ItemFn, Token, Visibility};
 
-use crate::compiler::analyses::components::{ComponentDb, HydratedComponent};
+use crate::compiler::analyses::components::ComponentDb;
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::framework_items::FrameworkItemDb;
 use crate::compiler::analyses::processing_pipeline::pipeline::Binding;
@@ -23,37 +23,16 @@ impl RequestHandlerPipeline {
     ) -> Result<CodegenedRequestHandlerPipeline, anyhow::Error> {
         let id2codegened_fn = {
             let mut id2codegened_fn = IndexMap::new();
-            let mut wrapping_index = 0u32;
-            let mut pre_processing_index = 0u32;
-            let mut post_processing_index = 0u32;
             for (&id, call_graph) in self.id2call_graph.iter() {
-                let ident = match component_db.hydrated_component(id, computation_db) {
-                    HydratedComponent::WrappingMiddleware(_) => {
-                        let ident = format_ident!("wrapping_{}", wrapping_index);
-                        wrapping_index += 1;
-                        ident
-                    }
-                    HydratedComponent::PostProcessingMiddleware(_) => {
-                        let ident = format_ident!("post_processing_{}", post_processing_index);
-                        post_processing_index += 1;
-                        ident
-                    }
-                    HydratedComponent::PreProcessingMiddleware(_) => {
-                        let ident = format_ident!("pre_processing_{}", pre_processing_index);
-                        pre_processing_index += 1;
-                        ident
-                    }
-                    HydratedComponent::RequestHandler(_) => format_ident!("handler"),
-                    _ => unreachable!(),
-                };
+                let ident = &self.id2name[&id];
                 if tracing::event_enabled!(tracing::Level::TRACE) {
-                    call_graph.print_debug_dot(&ident.to_string(), component_db, computation_db);
+                    call_graph.print_debug_dot(&ident, component_db, computation_db);
                 }
                 let fn_ = CodegenedFn {
                     fn_: {
                         let mut f =
                             call_graph.codegen(package_id2name, component_db, computation_db)?;
-                        f.sig.ident = ident;
+                        f.sig.ident = format_ident!("{}", ident);
                         f.vis = Visibility::Inherited;
                         f
                     },

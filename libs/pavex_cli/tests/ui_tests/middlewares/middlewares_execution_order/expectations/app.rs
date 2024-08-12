@@ -174,7 +174,7 @@ pub mod route_1 {
             return response;
         }
         let response = wrapping_2(s_0).await;
-        let response = post_processing_0(response, s_0).await;
+        let response = post_processing_1(response, s_0).await;
         response
     }
     async fn stage_3<'a>(s_0: &'a app::Spy) -> pavex::response::Response {
@@ -182,7 +182,7 @@ pub mod route_1 {
             return response;
         }
         let response = handler(s_0).await;
-        let response = post_processing_1(response, s_0).await;
+        let response = post_processing_0(response, s_0).await;
         response
     }
     async fn wrapping_0(v0: &app::Spy) -> pavex::response::Response {
@@ -217,13 +217,6 @@ pub mod route_1 {
         let v3 = app::second(v0, v2).await;
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
     }
-    async fn post_processing_0(
-        v0: pavex::response::Response,
-        v1: &app::Spy,
-    ) -> pavex::response::Response {
-        let v2 = app::first_post(v1, v0).await;
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
-    }
     async fn pre_processing_1(
         v0: &app::Spy,
     ) -> pavex::middleware::Processing<pavex::response::Response> {
@@ -233,11 +226,18 @@ pub mod route_1 {
         let v1 = app::handler(v0).await;
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
     }
-    async fn post_processing_1(
+    async fn post_processing_0(
         v0: pavex::response::Response,
         v1: &app::Spy,
     ) -> pavex::response::Response {
         let v2 = app::second_post(v1, v0).await;
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
+    }
+    async fn post_processing_1(
+        v0: pavex::response::Response,
+        v1: &app::Spy,
+    ) -> pavex::response::Response {
+        let v2 = app::first_post(v1, v0).await;
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
     }
     struct Next0<'a, T>
@@ -306,7 +306,7 @@ pub mod route_2 {
             return response;
         }
         let response = wrapping_2(s_0).await;
-        let response = post_processing_0(response, s_0).await;
+        let response = post_processing_1(response, s_0).await;
         response
     }
     async fn stage_3<'a>(s_0: &'a app::Spy) -> pavex::response::Response {
@@ -314,7 +314,7 @@ pub mod route_2 {
             return response;
         }
         let response = handler(s_0).await;
-        let response = post_processing_1(response, s_0).await;
+        let response = post_processing_0(response, s_0).await;
         response
     }
     async fn wrapping_0(v0: &app::Spy) -> pavex::response::Response {
@@ -349,13 +349,6 @@ pub mod route_2 {
         let v3 = app::second(v0, v2).await;
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
     }
-    async fn post_processing_0(
-        v0: pavex::response::Response,
-        v1: &app::Spy,
-    ) -> pavex::response::Response {
-        let v2 = app::first_post(v1, v0).await;
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
-    }
     async fn pre_processing_1(
         v0: &app::Spy,
     ) -> pavex::middleware::Processing<pavex::response::Response> {
@@ -365,11 +358,18 @@ pub mod route_2 {
         let v1 = app::handler(v0).await;
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
     }
-    async fn post_processing_1(
+    async fn post_processing_0(
         v0: pavex::response::Response,
         v1: &app::Spy,
     ) -> pavex::response::Response {
         let v2 = app::second_post(v1, v0).await;
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
+    }
+    async fn post_processing_1(
+        v0: pavex::response::Response,
+        v1: &app::Spy,
+    ) -> pavex::response::Response {
+        let v2 = app::first_post(v1, v0).await;
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
     }
     struct Next0<'a, T>

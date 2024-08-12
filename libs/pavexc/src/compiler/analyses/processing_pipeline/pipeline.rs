@@ -33,8 +33,15 @@ use crate::rustdoc::CrateCollection;
 pub(crate) struct RequestHandlerPipeline {
     /// The name of the module where the pipeline is defined.
     pub(crate) module_name: String,
+    /// Associate each component id with the call graph for that component.
+    /// It is guaranteed to be in invocation order.
     pub(crate) id2call_graph: IndexMap<ComponentId, OrderedCallGraph>,
+    /// The different stages of the pipeline, in invocation order.
     pub(crate) stages: Vec<Stage>,
+    /// Associate each component id with the name of the generated function that wraps around
+    /// it to build its dependencies.
+    /// It is guaranteed to be in invocation order.
+    pub(crate) id2name: IndexMap<ComponentId, String>,
 }
 
 #[derive(Clone, Debug)]
@@ -56,6 +63,22 @@ pub struct Stage {
 
 #[derive(Debug)]
 struct PipelineIds(Vec<StageIds>);
+
+impl PipelineIds {
+    fn invocation_order(&self) -> Vec<ComponentId> {
+        let mut ordered = Vec::new();
+        // First add all pre-processing middlewares and wrapping middlewares.
+        for stage_ids in &self.0 {
+            ordered.extend(stage_ids.pre_processing_ids.iter().cloned());
+            ordered.push(stage_ids.middle_id);
+        }
+        // Then add all post-processing middlewares, in reverse order.
+        for stage_ids in self.0.iter().rev() {
+            ordered.extend(stage_ids.post_processing_ids.iter().cloned());
+        }
+        ordered
+    }
+}
 
 #[derive(Debug)]
 struct StageIds {
@@ -406,10 +429,52 @@ impl RequestHandlerPipeline {
             stages
         };
 
+        let id2name: IndexMap<_, _> = {
+            let mut wrapping_index = 0u32;
+            let mut pre_processing_index = 0u32;
+            let mut post_processing_index = 0u32;
+            let mut get_ident = |id| match component_db.hydrated_component(id, computation_db) {
+                HydratedComponent::WrappingMiddleware(_) => {
+                    let ident = format!("wrapping_{}", wrapping_index);
+                    wrapping_index += 1;
+                    ident
+                }
+                HydratedComponent::PostProcessingMiddleware(_) => {
+                    let ident = format!("post_processing_{}", post_processing_index);
+                    post_processing_index += 1;
+                    ident
+                }
+                HydratedComponent::PreProcessingMiddleware(_) => {
+                    let ident = format!("pre_processing_{}", pre_processing_index);
+                    pre_processing_index += 1;
+                    ident
+                }
+                HydratedComponent::RequestHandler(_) => "handler".to_string(),
+                _ => unreachable!(),
+            };
+
+            pipeline_ids
+                .invocation_order()
+                .into_iter()
+                .map(|id| {
+                    let id = *wrapping_id2bound_id.get(&id).unwrap_or(&id);
+                    (id, get_ident(id))
+                })
+                .collect()
+        };
+
+        // We re-order id2ordered_call_graph to be in invocation order, re-using the fact that
+        // id2names is already in invocation order.
+        let id2ordered_call_graphs = id2name
+            .iter()
+            .map(|(id, _)| (*id, id2ordered_call_graphs.shift_remove(id).unwrap()))
+            .collect();
+
         let self_ = Self {
             module_name,
             id2call_graph: id2ordered_call_graphs,
             stages,
+            id2name,
         };
 
         self_.enforce_invariants(component_db, computation_db);
