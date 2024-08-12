@@ -18,9 +18,9 @@ biscotti = "0.3.4"
 http = "1.1.0"
 hyper = "1.2.0"
 jsonwebtoken = "8.3.0"
-pavex = { version = "0.1.38", path = "../../../libs/pavex" }
+pavex = { version = "0.1.46", path = "../../../libs/pavex" }
 pavex_matchit = "0.7.4"
-pavex_tracing = { version = "0.1.38", path = "../../../libs/pavex_tracing" }
+pavex_tracing = { version = "0.1.46", path = "../../../libs/pavex_tracing" }
 sqlx-core = "0.7.4"
 sqlx-postgres = "0.7.4"
 thiserror = "1.0.58"

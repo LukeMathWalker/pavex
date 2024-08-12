@@ -283,6 +283,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "78834c15cb5d5efe3452d58b1e8ba890dd62d21907f867f383358198e56ebca5"
 
 [[package]]
+name = "byteorder"
+version = "1.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1fd0f2584146f6f2ef48085050886acf353beff7305ebd1ae69500e27c67f64b"
+
+[[package]]
 name = "bytes"
 version = "1.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1373,7 +1379,7 @@ checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 
 [[package]]
 name = "pavex"
-version = "0.1.38"
+version = "0.1.46"
 dependencies = [
  "anyhow",
  "biscotti",
@@ -1414,7 +1420,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_bp_schema"
-version = "0.1.38"
+version = "0.1.46"
 dependencies = [
  "pavex_reflection",
  "px_workspace_hack",
@@ -1423,7 +1429,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_cli_client"
-version = "0.1.38"
+version = "0.1.46"
 dependencies = [
  "anyhow",
  "pavex",
@@ -1433,7 +1439,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_macros"
-version = "0.1.38"
+version = "0.1.46"
 dependencies = [
  "proc-macro2",
  "px_workspace_hack",
@@ -1449,7 +1455,7 @@ checksum = "77b9753b03381fd8856966146c4d626d9a8507901c1bcdfbc41df03deea551fc"
 
 [[package]]
 name = "pavex_reflection"
-version = "0.1.38"
+version = "0.1.46"
 dependencies = [
  "px_workspace_hack",
  "serde",
@@ -1457,7 +1463,7 @@ dependencies = [
 
 [[package]]
 name = "pavex_tracing"
-version = "0.1.38"
+version = "0.1.46"
 dependencies = [
  "pavex",
  "px_workspace_hack",
@@ -1495,7 +1501,7 @@ checksum = "e3148f5046208a5d56bcfc03053e3ca6334e51da8dfb19b6cdc8b306fae3283e"
 
 [[package]]
 name = "persist_if_changed"
-version = "0.1.38"
+version = "0.1.46"
 dependencies = [
  "anyhow",
  "fs-err",
@@ -1605,6 +1611,7 @@ dependencies = [
  "ahash",
  "aho-corasick",
  "bitflags 2.5.0",
+ "byteorder",
  "cc",
  "clap",
  "clap_builder",
@@ -1623,6 +1630,7 @@ dependencies = [
  "hmac",
  "indexmap",
  "log",
+ "memchr",
  "miette",
  "num-traits",
  "petgraph",
@@ -1645,7 +1653,9 @@ dependencies = [
  "toml_edit",
  "tracing",
  "tracing-core",
+ "tracing-log 0.2.0",
  "uuid",
+ "zerocopy",
  "zeroize",
 ]
 
@@ -3040,6 +3050,7 @@ version = "0.7.34"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ae87e3fcd617500e5d106f0380cf7b77f3c6092aae37191433159dda23cfb087"
 dependencies = [
+ "byteorder",
  "zerocopy-derive",
 ]
 
