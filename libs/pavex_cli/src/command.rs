@@ -176,6 +176,7 @@ pub enum SelfCommands {
         #[clap(short, long, value_parser)]
         y: bool,
     },
+    /// Activate your Pavex installation.
     Activate {
         /// The activation key for Pavex.
         /// You can find the activation key for the beta program in Pavex's Discord server,
