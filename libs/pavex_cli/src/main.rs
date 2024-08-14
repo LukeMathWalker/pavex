@@ -281,13 +281,6 @@ fn setup(
     ) -> Result<(), anyhow::Error> {
         let options = IfAutoinstallable::PromptForConfirmation;
         verify_installation(shell, Rustup, options)?;
-        let rustup_toolchain = RustupToolchain {
-            name: "nightly".into(),
-        };
-        verify_installation(shell, rustup_toolchain, options)?;
-        let rust_docs_json = RustdocJson {
-            toolchain: "nightly".into(),
-        };
         verify_installation(shell, rust_docs_json, options)?;
         verify_installation(shell, CargoPx, options)?;
 

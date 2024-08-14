@@ -66,7 +66,7 @@ pub(super) fn compute_crate_docs(
         // documentation on the fly. We assume that their JSON docs have been pre-computed and are
         // available for us to look at.
         if TOOLCHAIN_CRATES.contains(&package_id.repr()) {
-            get_toolchain_crate_docs(package_id.repr())
+            get_toolchain_crate_docs(package_id.repr(), toolchain_name)
         } else {
             let package_spec = PackageIdSpecification::from_package_id(package_id, package_graph)
                 .map_err(|e| CannotGetCrateData {
@@ -111,7 +111,7 @@ where
     let mut results = HashMap::new();
     for package_id in package_ids {
         if TOOLCHAIN_CRATES.contains(&package_id.repr()) {
-            let krate = get_toolchain_crate_docs(package_id.repr())?;
+            let krate = get_toolchain_crate_docs(package_id.repr(), toolchain_name)?;
             results.insert(package_id, krate);
             continue;
         }
