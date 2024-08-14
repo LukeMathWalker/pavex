@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.47](https://github.com/LukeMathWalker/pavex/compare/0.1.46...0.1.47) - 2024-08-14
+
+### Fixed
+- always use the specified toolchain, remove yet another location where nightly was hard-coded
+
+### Other
+- Disable workspace hack before a release
+- Fix CI error
+- Toolchain management ([#331](https://github.com/LukeMathWalker/pavex/pull/331))
+- [Fix] Dependency injection won't panic ([#329](https://github.com/LukeMathWalker/pavex/pull/329))
+- Re-enable workspace hack after a release ([#328](https://github.com/LukeMathWalker/pavex/pull/328))
+
 ## [0.1.46](https://github.com/LukeMathWalker/pavex/compare/0.1.45...0.1.46) - 2024-07-27
 
 ### Other
