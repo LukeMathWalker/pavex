@@ -1,5 +1,6 @@
 [package]
 name = "pavex_cli_deps"
+description = "An internal crate to share some dependency management logic between Pavex's CLIs, `pavex` and `pavexc`."
 edition.workspace = true
 repository.workspace = true
 homepage.workspace = true
