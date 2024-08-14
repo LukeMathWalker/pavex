@@ -6,11 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.47](https://github.com/LukeMathWalker/pavex/compare/0.1.46...0.1.47) - 2024-08-14
+
+### Fixed
+- always use the specified toolchain, remove yet another location where nightly was hard-coded
+
+### Other
+- Pin a specific `nightly` version for each version of `pavexc`, ensuring they are compatible ([#331](https://github.com/LukeMathWalker/pavex/pull/331))
+- Allow overriding the `nightly` toolchain used to generate JSON docs via `PAVEXC_DOCS_TOOLCHAIN` ([#331](https://github.com/LukeMathWalker/pavex/pull/331))
+- Fix panics when performing dependency injection for complex call graphs ([#329](https://github.com/LukeMathWalker/pavex/pull/329))
+
 ## [0.1.46](https://github.com/LukeMathWalker/pavex/compare/0.1.45...0.1.46) - 2024-07-27
 
 ### Other
-- Disable workspace hack before a release
-- Re-enable workspace hack after a release ([#323](https://github.com/LukeMathWalker/pavex/pull/323))
 - Feature gate tokio net feature for pavex behind server feature ([#324](https://github.com/LukeMathWalker/pavex/pull/324))
 - update Cargo.toml dependencies
 

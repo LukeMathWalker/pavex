@@ -12,7 +12,7 @@ edition = "2021"
 repository = "https://github.com/LukeMathWalker/pavex"
 homepage = "https://pavex.dev"
 license = "Apache-2.0"
-version = "0.1.46"
+version = "0.1.47"
 
 [workspace.dependencies]
 vergen = { version = "8.0.0", features = ["build", "git", "gitcl"] }
