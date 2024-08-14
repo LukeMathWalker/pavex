@@ -56,11 +56,15 @@ pub fn verify_installation<D: Dependency>(
             &style::ERROR,
         );
         let mut installed = false;
-        if std::io::stdout().is_terminal() && dep.is_auto_installable() {
+        if dep.is_auto_installable() {
             let auto_install = match if_autoinstallable {
                 IfAutoinstallable::PromptForConfirmation => {
-                    let prompt = format!("\tShould I install {name} for you?");
-                    matches!(confirm(&prompt, true), Ok(true))
+                    if std::io::stdout().is_terminal() {
+                        let prompt = format!("\tShould I install {name} for you?");
+                        matches!(confirm(&prompt, true), Ok(true))
+                    } else {
+                        false
+                    }
                 }
                 IfAutoinstallable::Autoinstall => {
                     let _ = shell.status("Installing", format!("{name}"));
