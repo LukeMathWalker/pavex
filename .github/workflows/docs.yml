@@ -346,6 +346,8 @@ jobs:
       - name: Install exa
         run: cargo binstall -y --github-token=${{ secrets.GITHUB_TOKEN }} exa@0.10
       - name: Verify tutorials
+        env:
+          PAVEX_DEBUG: "true"
         run: |
           cd doc_examples
           RUST_BACKTRACE=0 tutorial_generator --verify
