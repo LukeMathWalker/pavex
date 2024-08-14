@@ -10,6 +10,7 @@ use std::path::{Path, PathBuf};
 
 mod install;
 mod location;
+mod setup;
 mod version;
 
 static PAVEX_GITHUB_URL: &str = "https://github.com/LukeMathWalker/pavex";
@@ -116,6 +117,8 @@ fn _install(
     install::install(shell, pavexc_cli_path, version, install_source)?;
     #[cfg(unix)]
     executable::make_executable(pavexc_cli_path)?;
+    setup::pavexc_setup(pavexc_cli_path)
+        .context("Failed to install the nightly Rust toolchain required by `pavexc`")?;
     Ok(())
 }
 

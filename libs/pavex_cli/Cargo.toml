@@ -20,6 +20,7 @@ vergen = { workspace = true }
 
 [dependencies]
 pavexc_cli_client = { path = "../pavexc_cli_client", version = "0.1.46" }
+pavex_cli_deps = { path = "../pavex_cli_deps", version = "0.1.46" }
 clap = { workspace = true, features = ["derive", "env"] }
 pavex_miette = { path = "../pavex_miette", version = "0.1.46" }
 miette = { workspace = true }

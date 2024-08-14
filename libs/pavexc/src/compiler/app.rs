@@ -64,6 +64,7 @@ impl App {
     pub fn build(
         bp: Blueprint,
         project_fingerprint: String,
+        docs_toolchain_name: String,
     ) -> Result<(Self, Vec<miette::Error>), Vec<miette::Error>> {
         /// Exit early if there is at least one error.
         macro_rules! exit_on_errors {
@@ -79,8 +80,8 @@ impl App {
             };
         }
 
-        let krate_collection =
-            CrateCollection::new(project_fingerprint).map_err(|e| vec![anyhow2miette(e)])?;
+        let krate_collection = CrateCollection::new(project_fingerprint, docs_toolchain_name)
+            .map_err(|e| vec![anyhow2miette(e)])?;
         let package_graph = krate_collection.package_graph().to_owned();
         let mut diagnostics = vec![];
         let mut computation_db = ComputationDb::new();

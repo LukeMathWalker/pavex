@@ -45,8 +45,8 @@ impl<'a> RustdocCacheKey<'a> {
 impl RustdocGlobalFsCache {
     /// Initialize a new instance of the cache.
     #[tracing::instrument(name = "Initialize on-disk rustdoc cache", skip_all)]
-    pub(crate) fn new() -> Result<Self, anyhow::Error> {
-        let cargo_fingerprint = cargo_fingerprint()?;
+    pub(crate) fn new(toolchain_name: &str) -> Result<Self, anyhow::Error> {
+        let cargo_fingerprint = cargo_fingerprint(toolchain_name)?;
         let pool = Self::setup_database()?;
 
         let connection = pool.get()?;
@@ -682,15 +682,17 @@ impl<'a> ThirdPartyCrateCacheKey<'a> {
 
 /// Return the output of `cargo --verbose --version` for the nightly toolchain,
 /// which can be used to fingerprint the toolchain used by Pavex.
-pub fn cargo_fingerprint() -> Result<String, anyhow::Error> {
+pub fn cargo_fingerprint(toolchain_name: &str) -> Result<String, anyhow::Error> {
     let err_msg = || {
-        "Failed to run `cargo --verbose --version` on `nightly`.\n
-        Is the `nightly` toolchain installed?\n
-        If not, invoke `rustup toolchain install nightly` to fix it."
+        format!(
+            "Failed to run `cargo --verbose --version` on `{toolchain_name}`.\n\
+            Is the `{toolchain_name}` toolchain installed?\n\
+            If not, invoke `rustup toolchain install {toolchain_name}` to fix it.",
+        )
     };
     let mut cmd = std::process::Command::new("rustup");
     cmd.arg("run")
-        .arg("nightly")
+        .arg(toolchain_name)
         .arg("cargo")
         .arg("--verbose")
         .arg("--version");
@@ -699,7 +701,7 @@ pub fn cargo_fingerprint() -> Result<String, anyhow::Error> {
         anyhow::bail!(err_msg());
     }
     let output = String::from_utf8(output.stdout).with_context(|| {
-        "An invocation of `cargo --verbose --version` for the nightly toolchain returned non-UTF8 data as output."
+        format!("An invocation of `cargo --verbose --version` for the `{toolchain_name}` toolchain returned non-UTF8 data as output.")
     })?;
     Ok(output)
 }

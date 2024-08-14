@@ -1,6 +1,8 @@
 use anyhow::Context;
 use std::process::Stdio;
 
+use crate::RustupToolchain;
+
 /// Check if `rustup` is installed and available in the system's $PATH.
 pub fn is_rustup_installed() -> Result<(), anyhow::Error> {
     let mut cmd = std::process::Command::new("rustup");
@@ -15,12 +17,12 @@ pub fn is_rustup_installed() -> Result<(), anyhow::Error> {
     Ok(())
 }
 
-/// Check if the nightly toolchain is installed via `rustup`.
-pub fn is_nightly_installed() -> Result<(), anyhow::Error> {
+/// Check if a Rust toolchain is installed via `rustup`.
+pub fn is_rustup_toolchain_installed(toolchain: &RustupToolchain) -> Result<(), anyhow::Error> {
     let mut cmd = std::process::Command::new("rustup");
     cmd.arg("which")
         .arg("--toolchain")
-        .arg("nightly")
+        .arg(&toolchain.name)
         .arg("cargo");
     let cmd_debug = format!("{:?}", &cmd);
     let output = cmd
@@ -32,10 +34,10 @@ pub fn is_nightly_installed() -> Result<(), anyhow::Error> {
     Ok(())
 }
 
-/// Install the nightly toolchain via `rustup`.
-pub fn install_nightly() -> Result<(), anyhow::Error> {
+/// Install a Rust toolchain via `rustup`.
+pub fn install_rustup_toolchain(toolchain: &RustupToolchain) -> Result<(), anyhow::Error> {
     let mut cmd = std::process::Command::new("rustup");
-    cmd.arg("toolchain").arg("install").arg("nightly");
+    cmd.arg("toolchain").arg("install").arg(&toolchain.name);
     let cmd_debug = format!("{:?}", &cmd);
     let output = cmd
         .stdout(Stdio::inherit())
@@ -48,14 +50,14 @@ pub fn install_nightly() -> Result<(), anyhow::Error> {
     Ok(())
 }
 
-/// Check if the nightly toolchain is installed via `rustup`.
-pub fn is_rustdoc_json_installed() -> Result<(), anyhow::Error> {
+/// Check if the `rust-docs-json` component is installed for a certain Rust toolchain.
+pub fn is_rustdoc_json_installed(toolchain_name: &str) -> Result<(), anyhow::Error> {
     let mut cmd = std::process::Command::new("rustup");
     cmd.arg("component")
         .arg("list")
         .arg("--installed")
         .arg("--toolchain")
-        .arg("nightly");
+        .arg(toolchain_name);
     let cmd_debug = format!("{:?}", &cmd);
     let output = cmd
         .output()
@@ -72,19 +74,20 @@ pub fn is_rustdoc_json_installed() -> Result<(), anyhow::Error> {
         Ok(())
     } else {
         Err(anyhow::anyhow!(
-            "`rust-docs-json` component is not installed for the nightly toolchain"
+            "`rust-docs-json` component is not installed for the `{}` toolchain",
+            toolchain_name
         ))
     }
 }
 
-/// Install the `rust-docs-json` component for the nightly toolchain via `rustup`.
-pub fn install_rustdoc_json() -> Result<(), anyhow::Error> {
+/// Install the `rust-docs-json` component for a Rust toolchain via `rustup`.
+pub fn install_rustdoc_json(toolchain_name: &str) -> Result<(), anyhow::Error> {
     let mut cmd = std::process::Command::new("rustup");
     cmd.arg("component")
         .arg("add")
         .arg("rust-docs-json")
         .arg("--toolchain")
-        .arg("nightly");
+        .arg(toolchain_name);
     let cmd_debug = format!("{:?}", &cmd);
     let output = cmd
         .stdout(Stdio::inherit())
