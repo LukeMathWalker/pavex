@@ -2124,6 +2124,7 @@ version = "0.1.46"
 dependencies = [
  "anyhow",
  "cargo-like-utils",
+ "px_workspace_hack",
 ]
 
 [[package]]
