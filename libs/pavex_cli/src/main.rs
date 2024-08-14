@@ -22,9 +22,7 @@ use pavex_cli::state::State;
 use pavex_cli::user_input::{confirm, mandatory_question};
 use pavex_cli::utils;
 use pavex_cli::version::latest_released_version;
-use pavex_cli_deps::{
-    verify_installation, CargoPx, IfAutoinstallable, RustdocJson, Rustup, RustupToolchain,
-};
+use pavex_cli_deps::{verify_installation, CargoPx, IfAutoinstallable, Rustup};
 use pavexc_cli_client::commands::generate::{BlueprintArgument, GenerateError};
 use pavexc_cli_client::commands::new::NewError;
 use pavexc_cli_client::commands::new::TemplateName;
@@ -281,7 +279,6 @@ fn setup(
     ) -> Result<(), anyhow::Error> {
         let options = IfAutoinstallable::PromptForConfirmation;
         verify_installation(shell, Rustup, options)?;
-        verify_installation(shell, rust_docs_json, options)?;
         verify_installation(shell, CargoPx, options)?;
 
         let _ = shell.status("Checking", "if Pavex has been activated");
