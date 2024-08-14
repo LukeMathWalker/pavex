@@ -8,13 +8,15 @@ mod formatter;
 mod telemetry;
 
 use anyhow::Context;
+use cargo_like_utils::shell::Shell;
 use clap::{Parser, Subcommand};
 use formatter::ReversedFull;
 use generate_from_path::GenerateArgs;
 use liquid_core::Value;
 use miette::Severity;
 use owo_colors::OwoColorize;
-use pavexc::{App, AppWriter};
+use pavex_cli_deps::{verify_installation, IfAutoinstallable, RustdocJson, RustupToolchain};
+use pavexc::{App, AppWriter, DEFAULT_DOCS_TOOLCHAIN};
 use pavexc_cli_client::commands::new::TemplateName;
 use supports_color::Stream;
 use telemetry::Filtered;
@@ -122,6 +124,10 @@ enum Commands {
         /// If it isn't, `pavexc` will return an error without updating
         /// the server SDK code.
         check: bool,
+        #[clap(long, env = "PAVEXC_DOCS_TOOLCHAIN", default_value = DEFAULT_DOCS_TOOLCHAIN)]
+        /// The name of the `rustup` toolchain that `pavexc` will use to generate the JSON documentation
+        /// for the crates in the dependency graph of this project.
+        docs_toolchain: String,
     },
     /// Scaffold a new Pavex project at <PATH>.
     New {
@@ -136,6 +142,24 @@ enum Commands {
         /// If not provided, Pavex will use the `api` template.
         #[clap(short, long, value_parser, default_value = "api")]
         template: TemplateName,
+    },
+    /// Information about this version of `pavexc`.
+    #[command(name = "self")]
+    Self_ {
+        #[clap(subcommand)]
+        command: SelfCommands,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum SelfCommands {
+    Setup {
+        #[clap(long, env = "PAVEXC_DOCS_TOOLCHAIN", default_value = DEFAULT_DOCS_TOOLCHAIN)]
+        /// The name of the `rustup` toolchain that `pavexc` will use to generate the JSON documentation
+        /// for the crates in the dependency graph of this project.
+        ///
+        /// It overrides the default toolchain associated with this version of `pavexc`.
+        docs_toolchain: String,
     },
 }
 
@@ -237,14 +261,54 @@ fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
             diagnostics,
             output,
             check,
-        } => generate(blueprint, diagnostics, output, cli.color, check),
+            docs_toolchain,
+        } => generate(
+            blueprint,
+            docs_toolchain,
+            diagnostics,
+            output,
+            cli.color,
+            check,
+        ),
         Commands::New { path, template } => scaffold_project(path, template),
+        Commands::Self_ {
+            command: SelfCommands::Setup { docs_toolchain },
+        } => {
+            let mut shell = Shell::new();
+            let options = IfAutoinstallable::Autoinstall;
+            let toolchain = RustupToolchain {
+                name: docs_toolchain.clone(),
+            };
+            verify_installation(&mut shell, toolchain, options)?;
+            let rustdoc_json = RustdocJson {
+                toolchain: docs_toolchain,
+            };
+            verify_installation(&mut shell, rustdoc_json, options)?;
+            Ok(ExitCode::SUCCESS)
+        }
     }
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+/// The dependencies of this version of `pavexc`.
+struct Deps {
+    /// The toolchain that `pavexc` will use to generate the JSON docs for crates in the
+    /// dependency tree of the current project.
+    docs_toolchain: ToolchainInfo,
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+struct ToolchainInfo {
+    /// The name of the toolchain.
+    ///
+    /// This must be a valid identifier for `rustup toolchain install`.
+    name: String,
 }
 
 #[tracing::instrument("Generate server sdk")]
 fn generate(
     blueprint: PathBuf,
+    docs_toolchain: String,
     diagnostics: Option<PathBuf>,
     output: PathBuf,
     color_profile: Color,
@@ -256,7 +320,7 @@ fn generate(
     };
     // We use the path to the generated application crate as a fingerprint for the project.
     let project_fingerprint = output.to_string_lossy().into_owned();
-    let app = match App::build(blueprint, project_fingerprint) {
+    let app = match App::build(blueprint, project_fingerprint, docs_toolchain) {
         Ok((a, warnings)) => {
             for e in warnings {
                 assert_eq!(e.severity(), Some(Severity::Warning));

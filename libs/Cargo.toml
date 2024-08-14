@@ -1,7 +1,7 @@
 [workspace]
 members = [
     "./pavex*",
-    "generate_from_path",
+    "generate_from_path", "pavex_cli_deps",
     "persist_if_changed",
     "px_workspace_hack",
 ]

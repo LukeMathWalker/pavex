@@ -6,7 +6,7 @@ on:
   # of how this works.
   # I officially hate GitHub for forbidding OpenID Connect tokens in forks.
   repository_dispatch:
-    types: [ ok-to-test-command ]
+    types: [ok-to-test-command]
   push:
     branches:
       - main
@@ -43,7 +43,7 @@ jobs:
           )
         uses: actions/checkout@v4
         with:
-          ref: 'refs/pull/${{ github.event.client_payload.pull_request.number }}/merge'
+          ref: "refs/pull/${{ github.event.client_payload.pull_request.number }}/merge"
       - uses: ./.github/actions/create-check
         if: ${{ github.event_name != 'push' }}
         with:
@@ -103,7 +103,7 @@ jobs:
           )
         uses: actions/checkout@v4
         with:
-          ref: 'refs/pull/${{ github.event.client_payload.pull_request.number }}/merge'
+          ref: "refs/pull/${{ github.event.client_payload.pull_request.number }}/merge"
       - uses: ./.github/actions/create-check
         if: ${{ github.event_name != 'push' }}
         with:
@@ -180,7 +180,7 @@ jobs:
           )
         uses: actions/checkout@v4
         with:
-          ref: 'refs/pull/${{ github.event.client_payload.pull_request.number }}/merge'
+          ref: "refs/pull/${{ github.event.client_payload.pull_request.number }}/merge"
       - uses: ./.github/actions/create-check
         if: ${{ github.event_name != 'push' }}
         with:
@@ -212,13 +212,6 @@ jobs:
         run: |
           Add-Content $env:GITHUB_ENV "PAVEX=C:\Users\runneradmin\.cargo\bin\pavex${BINARY_EXTENSION}" -Encoding utf8
           Add-Content $env:GITHUB_ENV "PAVEXC=C:\Users\runneradmin\.cargo\bin\pavexc${BINARY_EXTENSION}" -Encoding utf8
-      - name: Install Rust nightly toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          toolchain: nightly
-          components: rust-docs-json, rustfmt
-          rustflags: ""
-          cache: false
       - name: Install Rust stable toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1.8.0
         with:
@@ -243,6 +236,7 @@ jobs:
           PAVEX_ACTIVATION_KEY: ${{ secrets.pavex_activation_key }}
         run: |
           pavex self activate
+          pavexc self setup
       - name: Mark pavexc as executable
         if: ${{ matrix.os != 'windows-2022' }}
         run: chmod +x ${{ env.PAVEXC }}
@@ -300,7 +294,7 @@ jobs:
           )
         uses: actions/checkout@v4
         with:
-          ref: 'refs/pull/${{ github.event.client_payload.pull_request.number }}/merge'
+          ref: "refs/pull/${{ github.event.client_payload.pull_request.number }}/merge"
       - uses: ./.github/actions/create-check
         if: ${{ github.event_name != 'push' }}
         with:
@@ -313,13 +307,6 @@ jobs:
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "ci@pavex.dev"
-      - name: Install Rust nightly toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          toolchain: nightly
-          components: rust-docs-json, rustfmt
-          rustflags: ""
-          cache: false
       - name: Install Rust stable toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1.8.0
         with:
@@ -343,6 +330,7 @@ jobs:
           PAVEX_ACTIVATION_KEY: ${{ secrets.pavex_activation_key }}
         run: |
           pavex self activate
+          pavexc self setup
       - name: Mark pavexc as executable
         run: chmod +x ~/.cargo/bin/pavexc
       - name: Download tutorial_generator CLI artifact
@@ -386,7 +374,7 @@ jobs:
           )
         uses: actions/checkout@v4
         with:
-          ref: 'refs/pull/${{ github.event.client_payload.pull_request.number }}/merge'
+          ref: "refs/pull/${{ github.event.client_payload.pull_request.number }}/merge"
       - uses: ./.github/actions/create-check
         if: ${{ github.event_name != 'push' }}
         with:

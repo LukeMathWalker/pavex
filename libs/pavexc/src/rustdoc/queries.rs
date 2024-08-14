@@ -42,6 +42,9 @@ pub struct CrateCollection {
     /// `elsa` doesn't expose a frozen BTreeSet yet, so we use a map with empty values
     /// to emulate it.
     access_log: FrozenMap<PackageId, Box<()>>,
+    /// The name of the toolchain used to generate the JSON documentation of a crate.
+    /// It is assumed to be a toolchain available via `rustup`.
+    toolchain_name: String,
 }
 
 impl std::fmt::Debug for CrateCollection {
@@ -66,13 +69,13 @@ fn compute_package_graph() -> Result<PackageGraph, anyhow::Error> {
 
 impl CrateCollection {
     /// Initialise the collection for a `PackageGraph`.
-    pub fn new(project_fingerprint: String) -> Result<Self, anyhow::Error> {
+    pub fn new(project_fingerprint: String, toolchain_name: String) -> Result<Self, anyhow::Error> {
         let span = Span::current();
         let thread_handle = thread::spawn(move || {
             let _guard = span.enter();
             compute_package_graph()
         });
-        let cache = RustdocGlobalFsCache::new()?;
+        let cache = RustdocGlobalFsCache::new(&toolchain_name)?;
 
         let package_graph = thread_handle
             .join()
@@ -85,6 +88,7 @@ impl CrateCollection {
             disk_cache: cache,
             access_log: FrozenMap::new(),
             project_fingerprint,
+            toolchain_name,
         })
     }
 
@@ -193,7 +197,11 @@ impl CrateCollection {
         }
 
         // The ones that are still missing need to be computed.
-        let results = batch_compute_crate_docs(&self.package_graph, to_be_computed.into_iter())?;
+        let results = batch_compute_crate_docs(
+            &self.toolchain_name,
+            &self.package_graph,
+            to_be_computed.into_iter(),
+        )?;
 
         for (package_id, krate) in results {
             let krate =
@@ -253,7 +261,7 @@ impl CrateCollection {
         }
 
         // If we don't have them in the on-disk cache, we need to compute them.
-        let krate = compute_crate_docs(&self.package_graph, package_id)?;
+        let krate = compute_crate_docs(&self.toolchain_name, &self.package_graph, package_id)?;
         let krate = Crate::new(krate, package_id.to_owned()).map_err(|e| CannotGetCrateData {
             package_spec: package_id.to_string(),
             source: Arc::new(e),

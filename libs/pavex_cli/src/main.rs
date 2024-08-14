@@ -14,8 +14,6 @@ use pavex_cli::activation::{
 use pavex_cli::cargo_install::{cargo_install, GitSourceRevision, Source};
 use pavex_cli::cli_kind::CliKind;
 use pavex_cli::command::{Cli, Color, Command, SelfCommands};
-use pavex_cli::dependencies::installers;
-use pavex_cli::dependencies::installers::{CargoPx, NightlyToolchain, RustdocJson, Rustup};
 use pavex_cli::locator::PavexLocator;
 use pavex_cli::package_graph::compute_package_graph;
 use pavex_cli::pavexc::{get_or_install_from_graph, get_or_install_from_version};
@@ -24,6 +22,9 @@ use pavex_cli::state::State;
 use pavex_cli::user_input::{confirm, mandatory_question};
 use pavex_cli::utils;
 use pavex_cli::version::latest_released_version;
+use pavex_cli_deps::{
+    verify_installation, CargoPx, IfAutoinstallable, RustdocJson, Rustup, RustupToolchain,
+};
 use pavexc_cli_client::commands::generate::{BlueprintArgument, GenerateError};
 use pavexc_cli_client::commands::new::NewError;
 use pavexc_cli_client::commands::new::TemplateName;
@@ -278,10 +279,17 @@ fn setup(
         locator: &PavexLocator,
         key_set: &JwkSet,
     ) -> Result<(), anyhow::Error> {
-        installers::verify_installation::<Rustup>(shell)?;
-        installers::verify_installation::<NightlyToolchain>(shell)?;
-        installers::verify_installation::<RustdocJson>(shell)?;
-        installers::verify_installation::<CargoPx>(shell)?;
+        let options = IfAutoinstallable::PromptForConfirmation;
+        verify_installation(shell, Rustup, options)?;
+        let rustup_toolchain = RustupToolchain {
+            name: "nightly".into(),
+        };
+        verify_installation(shell, rustup_toolchain, options)?;
+        let rust_docs_json = RustdocJson {
+            toolchain: "nightly".into(),
+        };
+        verify_installation(shell, rust_docs_json, options)?;
+        verify_installation(shell, CargoPx, options)?;
 
         let _ = shell.status("Checking", "if Pavex has been activated");
         let must_activate = match get_activation_key(locator, shell) {
