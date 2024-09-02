@@ -70,11 +70,11 @@ pub(super) fn move_while_borrowed(
         visited_nodes.insert(node_index);
         let node = &call_graph[node_index];
 
-        let mut directly_borrows_from = IndexSet::new();
-        let mut transitively_borrows_from = IndexSet::new();
+        let mut directly_borrowed = IndexSet::new();
+        let mut captured = IndexSet::new();
         if let Some(hydrated_component) = node.as_hydrated_component(component_db, computation_db) {
             if let Computation::Callable(callable) = hydrated_component.computation() {
-                directly_borrows_from = callable
+                directly_borrowed = callable
                     .inputs_that_output_borrows_immutably_from()
                     .iter()
                     .map(|&i| {
@@ -86,7 +86,7 @@ pub(super) fn move_while_borrowed(
                         }
                     })
                     .collect();
-                transitively_borrows_from = callable
+                captured = callable
                     .inputs_with_lifetime_tied_with_output()
                     .iter()
                     .map(|&i| {
@@ -100,7 +100,7 @@ pub(super) fn move_while_borrowed(
                     .collect();
                 #[cfg(debug_assertions)]
                 {
-                    assert!(directly_borrows_from.is_subset(&transitively_borrows_from));
+                    assert!(directly_borrowed.is_subset(&captured));
                 }
             }
         }
@@ -132,7 +132,10 @@ pub(super) fn move_while_borrowed(
             let Some(dependency_type) = dependency_type else {
                 continue 'inner;
             };
-            if transitively_borrows_from.contains(&dependency_type) {
+            if captured.contains(&dependency_type) {
+                // The capture relationship is transitive:
+                // if `A` captures `B` and `B` captures `C`, then `A` also captures `C`.
+                // We update `node2captured_nodes` to reflect this.
                 let transitively_captured = node2captured_nodes
                     .get(&dependency_index)
                     .cloned()
@@ -142,7 +145,7 @@ pub(super) fn move_while_borrowed(
                     .or_default()
                     .extend(transitively_captured);
             }
-            if directly_borrows_from.contains(&dependency_type) {
+            if directly_borrowed.contains(&dependency_type) {
                 node2captured_nodes
                     .entry(node_index)
                     .or_default()
@@ -192,18 +195,16 @@ pub(super) fn move_while_borrowed(
             let edge_metadata = call_graph.edge_weight(*edge_id).unwrap();
             let dependency_index = call_graph.edge_endpoints(*edge_id).unwrap().0;
 
-            if let Some(held) = node2captured_nodes.get(&dependency_index) {
-                borrowed_immutably_now.extend(held);
+            if let Some(captured) = node2captured_nodes.get(&dependency_index) {
+                borrowed_immutably_now.extend(captured);
             }
             match edge_metadata {
                 CallGraphEdgeMetadata::HappensBefore | CallGraphEdgeMetadata::Move => {}
                 CallGraphEdgeMetadata::ExclusiveBorrow => {
                     borrowed_mutably_now.insert(dependency_index);
-                    return;
                 }
                 CallGraphEdgeMetadata::SharedBorrow => {
                     borrowed_immutably_now.insert(dependency_index);
-                    return;
                 }
             }
         });
@@ -256,6 +257,18 @@ pub(super) fn move_while_borrowed(
         borrowed.extend(&borrowed_later);
         node2borrows.insert(node_index, borrowed);
         visited_nodes.insert(node_index);
+
+        // Why is this necessary?
+        // We use `StableGraph` for our call graphs. For `StableGraph`, `DfsPostOrder` relies
+        // on `FixedBitSet` as the storage data structure for both discovered and finished
+        // nodes. The bit set is initialized with a fixed capacity equal to the number of nodes in
+        // the graph _at the time of its creation_. If we add new nodes to the graph after the
+        // bit set has been initialized, `petgraph` doesn't automatically grow the bit set capacity,
+        // causing a panic when we inevitably go past the initial capacity.
+        // To avoid this, we manually resize the bit set here, at the end of each
+        // iteration of the loop, before calling `dfs.next()`.
+        dfs.discovered.grow(call_graph.node_count());
+        dfs.finished.grow(call_graph.node_count());
     }
 
     CallGraph {
