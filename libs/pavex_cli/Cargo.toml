@@ -19,10 +19,10 @@ harness = false
 vergen = { workspace = true }
 
 [dependencies]
-pavexc_cli_client = { path = "../pavexc_cli_client", version = "0.1.47" }
-pavex_cli_deps = { path = "../pavex_cli_deps", version = "0.1.47" }
+pavexc_cli_client = { path = "../pavexc_cli_client", version = "0.1.48" }
+pavex_cli_deps = { path = "../pavex_cli_deps", version = "0.1.48" }
 clap = { workspace = true, features = ["derive", "env"] }
-pavex_miette = { path = "../pavex_miette", version = "0.1.47" }
+pavex_miette = { path = "../pavex_miette", version = "0.1.48" }
 miette = { workspace = true }
 fs-err = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["fmt", "env-filter"] }

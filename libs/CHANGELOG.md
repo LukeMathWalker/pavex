@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.48](https://github.com/LukeMathWalker/pavex/compare/0.1.47...0.1.48) - 2024-09-02
+
+### Fixed
+- Avoid panic petgraph-related panic when inserting clone nodes to fix borrow checking errors ([#334](https://github.com/LukeMathWalker/pavex/pull/334))
+
+### Other
+- Disable workspace hack before a release
+- Re-enable workspace hack after a release ([#333](https://github.com/LukeMathWalker/pavex/pull/333))
+
 ## [0.1.47](https://github.com/LukeMathWalker/pavex/compare/0.1.46...0.1.47) - 2024-08-14
 
 ### Fixed
