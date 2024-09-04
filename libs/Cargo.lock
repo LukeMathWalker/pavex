@@ -1005,6 +1005,7 @@ dependencies = [
  "liquid",
  "liquid-core",
  "path-absolutize",
+ "px_workspace_hack",
  "regex",
  "sanitize-filename",
  "tempfile",
@@ -1229,6 +1230,22 @@ name = "httpdate"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "df3b46402a9d5adb4c86a0cf463f42e19994e3ee891101b1841f30a545cb49a9"
+
+[[package]]
+name = "humantime"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9a3a5bfb195931eeb336b2a7b4d761daec841b97f947d34394601737a7bba5e4"
+
+[[package]]
+name = "humantime-serde"
+version = "1.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "57a3db5ea5923d99402c94e9feb261dc5ee9b4efa158b0315f788cf549cc200c"
+dependencies = [
+ "humantime",
+ "serde",
+]
 
 [[package]]
 name = "hyper"
@@ -2025,6 +2042,7 @@ dependencies = [
  "percent-encoding",
  "persist_if_changed",
  "pin-project-lite",
+ "px_workspace_hack",
  "reqwest",
  "ron",
  "serde",
@@ -2047,6 +2065,7 @@ name = "pavex_bp_schema"
 version = "0.1.48"
 dependencies = [
  "pavex_reflection",
+ "px_workspace_hack",
  "serde",
 ]
 
@@ -2074,6 +2093,7 @@ dependencies = [
  "pavexc",
  "pavexc_cli_client",
  "pem",
+ "px_workspace_hack",
  "redact",
  "remove_dir_all",
  "reqwest",
@@ -2110,6 +2130,7 @@ version = "0.1.48"
 dependencies = [
  "anyhow",
  "pavex",
+ "px_workspace_hack",
  "thiserror",
 ]
 
@@ -2119,6 +2140,7 @@ version = "0.1.48"
 dependencies = [
  "anyhow",
  "cargo-like-utils",
+ "px_workspace_hack",
 ]
 
 [[package]]
@@ -2127,6 +2149,7 @@ version = "0.1.48"
 dependencies = [
  "pavex",
  "proc-macro2",
+ "px_workspace_hack",
  "quote",
  "serde",
  "syn",
@@ -2145,6 +2168,7 @@ version = "0.1.48"
 dependencies = [
  "miette",
  "owo-colors",
+ "px_workspace_hack",
  "supports-color",
  "supports-hyperlinks",
  "supports-unicode",
@@ -2157,7 +2181,39 @@ dependencies = [
 name = "pavex_reflection"
 version = "0.1.48"
 dependencies = [
+ "px_workspace_hack",
  "serde",
+]
+
+[[package]]
+name = "pavex_session"
+version = "0.1.48"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "humantime-serde",
+ "pavex",
+ "pavex_tracing",
+ "px_workspace_hack",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "time",
+ "tokio",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "pavex_session_memory_store"
+version = "0.1.48"
+dependencies = [
+ "async-trait",
+ "pavex_session",
+ "px_workspace_hack",
+ "serde_json",
+ "time",
+ "tokio",
 ]
 
 [[package]]
@@ -2176,6 +2232,7 @@ dependencies = [
  "object-pool",
  "once_cell",
  "persist_if_changed",
+ "px_workspace_hack",
  "regex",
  "serde",
  "serde_json",
@@ -2192,6 +2249,7 @@ name = "pavex_tracing"
 version = "0.1.48"
 dependencies = [
  "pavex",
+ "px_workspace_hack",
  "tracing",
 ]
 
@@ -2222,6 +2280,7 @@ dependencies = [
  "petgraph",
  "prettyplease",
  "proc-macro2",
+ "px_workspace_hack",
  "quote",
  "r2d2",
  "r2d2_sqlite",
@@ -2262,6 +2321,7 @@ dependencies = [
  "pavex_miette",
  "pavexc",
  "pavexc_cli_client",
+ "px_workspace_hack",
  "ron",
  "serde",
  "serde_json",
@@ -2281,6 +2341,7 @@ version = "0.1.48"
 dependencies = [
  "anyhow",
  "pavex",
+ "px_workspace_hack",
  "thiserror",
 ]
 
@@ -2316,6 +2377,7 @@ version = "0.1.48"
 dependencies = [
  "anyhow",
  "fs-err",
+ "px_workspace_hack",
  "sha2",
  "tracing",
 ]
@@ -2477,6 +2539,57 @@ dependencies = [
 [[package]]
 name = "px_workspace_hack"
 version = "0.1.0"
+dependencies = [
+ "ahash",
+ "aho-corasick",
+ "bitflags 2.6.0",
+ "byteorder",
+ "cc",
+ "clap",
+ "clap_builder",
+ "console",
+ "crossbeam-utils",
+ "crypto-common",
+ "deranged",
+ "digest",
+ "fixedbitset",
+ "futures-channel",
+ "futures-core",
+ "futures-sink",
+ "futures-util",
+ "getrandom",
+ "hashbrown 0.14.5",
+ "hmac",
+ "indexmap",
+ "log",
+ "memchr",
+ "miette",
+ "num-traits",
+ "petgraph",
+ "proc-macro2",
+ "quote",
+ "regex",
+ "regex-automata 0.4.7",
+ "regex-syntax 0.8.4",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "sha2",
+ "smallvec",
+ "subtle",
+ "syn",
+ "time",
+ "time-macros",
+ "tokio",
+ "toml",
+ "toml_edit",
+ "tracing",
+ "tracing-core",
+ "tracing-log",
+ "uuid",
+ "zerocopy",
+ "zeroize",
+]
 
 [[package]]
 name = "quinn"
@@ -3754,6 +3867,7 @@ checksum = "81dfa00651efa65069b0b6b651f4aaa31ba9e3c3ce0137aaad053604ee7e0314"
 dependencies = [
  "getrandom",
  "rand",
+ "serde",
 ]
 
 [[package]]
