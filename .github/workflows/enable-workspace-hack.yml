@@ -39,7 +39,7 @@ jobs:
           git add .
           git commit -am "Re-enable workspace hack after a release"
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v7
         with:
           branch-suffix: "random"
           title: "Re-enable workspace hack after a release"
