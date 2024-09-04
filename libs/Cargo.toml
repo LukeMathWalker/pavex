@@ -128,6 +128,8 @@ xdg-home = "1.0.0"
 xz2 = "0.1.7"
 zip = "2"
 owo-colors = "4.0.0"
+async-trait = "0.1"
+humantime-serde = "1"
 
 # Config for 'cargo release'
 [workspace.metadata.release]
