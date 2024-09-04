@@ -8,7 +8,8 @@ repository.workspace = true
 license.workspace = true
 
 [build-dependencies]
-vergen = { workspace = true, features = ["build", "git", "gitcl"] }
+vergen-gitcl = { workspace = true }
+anyhow = { workspace = true }
 
 [features]
 # Enable additional debug assertions to ensure correctness

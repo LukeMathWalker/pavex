@@ -1,10 +1,11 @@
-use std::error::Error;
-use vergen::EmitBuilder;
+use anyhow::Result;
+use vergen_gitcl::{
+    Emitter, GitclBuilder,
+};
 
-fn main() -> Result<(), Box<dyn Error>> {
-    EmitBuilder::builder()
-        // Emit VERGEN_GIT_DESCRIBE
-        .git_describe(true, false, None)
+pub fn main() -> Result<()> {
+    Emitter::default()
+        .add_instructions(&GitclBuilder::default().describe(true, false, None).build()?)?
         .emit()?;
     Ok(())
 }

@@ -16,7 +16,8 @@ name = "ui_tests"
 harness = false
 
 [build-dependencies]
-vergen = { workspace = true }
+vergen-gitcl = { workspace = true }
+anyhow = { workspace = true }
 
 [dependencies]
 pavexc_cli_client = { path = "../pavexc_cli_client", version = "0.1.48" }

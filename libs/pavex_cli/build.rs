@@ -1,11 +1,11 @@
-use std::error::Error;
+use anyhow::Result;
+use vergen_gitcl::{
+    Emitter, GitclBuilder,
+};
 
-use vergen::EmitBuilder;
-
-fn main() -> Result<(), Box<dyn Error>> {
-    EmitBuilder::builder()
-        // Emit VERGEN_GIT_SHA
-        .git_sha(true)
+pub fn main() -> Result<()> {
+    Emitter::default()
+        .add_instructions(&GitclBuilder::default().sha(true).build()?)?
         .emit()?;
     Ok(())
 }

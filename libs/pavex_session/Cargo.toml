@@ -1,7 +1,11 @@
 [package]
 name = "pavex_session"
-version = "0.1.48"
-edition = "2021"
+version.workspace = true
+description = "HTTP sessions support for Pavex"
+keywords = ["pavex", "sessions", "HTTP", "auth"]
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
 
 [dependencies]
 pavex = { version = "0.1.48", path = "../pavex", default-features = false, features = [
