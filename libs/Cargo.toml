@@ -1,7 +1,8 @@
 [workspace]
 members = [
     "./pavex*",
-    "generate_from_path", "pavex_cli_deps",
+    "generate_from_path",
+    "pavex_cli_deps",
     "persist_if_changed",
     "px_workspace_hack",
 ]
@@ -15,7 +16,7 @@ license = "Apache-2.0"
 version = "0.1.48"
 
 [workspace.dependencies]
-vergen = { version = "8.0.0", features = ["build", "git", "gitcl"] }
+vergen-gitcl = { version = "1.0.0", features = ["build"] }
 ahash = "0.8"
 anstyle = "1.0.6"
 anyhow = "1.0.79"
