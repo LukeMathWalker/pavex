@@ -2352,6 +2352,7 @@ dependencies = [
  "anyhow",
  "bimap",
  "bincode",
+ "camino",
  "cargo-manifest",
  "convert_case",
  "elsa",
@@ -2390,6 +2391,7 @@ dependencies = [
  "tracing",
  "vergen-gitcl",
  "xdg-home",
+ "xxhash-rust",
 ]
 
 [[package]]
@@ -4435,6 +4437,12 @@ dependencies = [
  "libc",
  "windows-sys 0.59.0",
 ]
+
+[[package]]
+name = "xxhash-rust"
+version = "0.8.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6a5cbf750400958819fb6178eaa83bee5cd9c29a26a40cc241df8c70fdd46984"
 
 [[package]]
 name = "xz2"

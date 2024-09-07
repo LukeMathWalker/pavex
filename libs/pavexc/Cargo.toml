@@ -52,6 +52,8 @@ semver = { workspace = true }
 persist_if_changed = { path = "../persist_if_changed", version = "0.1.48" }
 matchit = { version = "0.7", package = "pavex_matchit" }
 relative-path = { workspace = true }
+camino = { workspace = true }
+xxhash-rust = { workspace = true, features = ["xxh64"] }
 
 # Sqlite cache
 xdg-home = { workspace = true }
