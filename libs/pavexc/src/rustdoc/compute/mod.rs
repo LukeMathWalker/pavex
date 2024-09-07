@@ -3,6 +3,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 mod cache;
+mod checksum;
 mod toolchain;
 
 use ahash::{HashMap, HashMapExt};
