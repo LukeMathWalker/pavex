@@ -47,6 +47,15 @@ where
         }
 
         if !keep {
+            // Check if the env filter matches
+            if let Some(metadata) = ctx.metadata(id) {
+                keep = <EnvFilter as tracing_subscriber::layer::Filter<S>>::enabled(
+                    &self.base, metadata, &ctx,
+                );
+            }
+        }
+
+        if !keep {
             let mut visitor = FieldVisitor {
                 filters: &self.fields,
                 matched: false,
