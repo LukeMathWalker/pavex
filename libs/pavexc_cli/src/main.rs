@@ -28,7 +28,7 @@ use tracing_subscriber::EnvFilter;
 
 const INTROSPECTION_HEADING: &str = "Introspection";
 
-#[derive(Parser)]
+#[derive(Parser, Debug)]
 #[clap(author, version = VERSION, about, long_about = None)]
 struct Cli {
     #[clap(long, env = "PAVEXC_COLOR", default_value_t = Color::Auto)]
@@ -104,7 +104,7 @@ impl FromStr for Color {
     }
 }
 
-#[derive(Subcommand)]
+#[derive(Subcommand, Debug)]
 enum Commands {
     /// Generate a server SDK crate according to an application blueprint.
     Generate {
@@ -151,7 +151,7 @@ enum Commands {
     },
 }
 
-#[derive(Subcommand)]
+#[derive(Subcommand, Debug)]
 pub enum SelfCommands {
     Setup {
         #[clap(long, env = "PAVEXC_DOCS_TOOLCHAIN", default_value = DEFAULT_DOCS_TOOLCHAIN)]
@@ -254,7 +254,9 @@ fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
     .unwrap();
 
     better_panic::install();
-    let _guard = init_telemetry(cli.log_filter, cli.color, cli.log, cli.perf_profile);
+    let _guard = init_telemetry(cli.log_filter.clone(), cli.color, cli.log, cli.perf_profile);
+
+    tracing::trace!(cli = ?cli, "`pavexc` CLI options and flags");
     match cli.command {
         Commands::Generate {
             blueprint,
