@@ -410,7 +410,7 @@ impl TestData {
             [target.x86_64-apple-darwin]
             rustflags = ["-C", "link-arg=-fuse-ld=lld"]
             [target.aarch64-apple-darwin]
-            linker = "/opt/homebrew/opt/llvm/bin/ld64.lld"
+            rustflags = ["-C", "link-arg=-fuse-ld=/opt/homebrew/opt/llvm/bin/ld64.lld"]
         };
         cargo_config["build"]
             .as_table_mut()

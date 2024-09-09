@@ -16,6 +16,7 @@ jobs:
     name: "Build CLIs ${{ matrix.target }} (${{ matrix.os }})"
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         include:
           - target: aarch64-pc-windows-msvc
