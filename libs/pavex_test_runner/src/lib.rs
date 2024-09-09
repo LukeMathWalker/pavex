@@ -400,9 +400,17 @@ impl TestData {
         let mut cargo_config = toml! {
             [build]
             incremental = false
-
-            [registries.crates-io]
-            protocol = "sparse"
+            
+            [target.x86_64-pc-windows-msvc]
+            linker = "rust-lld"
+            [target.x86_64-pc-windows-gnu]
+            linker = "rust-lld"
+            [target.x86_64-unknown-linux-gnu]
+            linker = "rust-lld"
+            [target.x86_64-apple-darwin]
+            linker = "rust-lld"
+            [target.aarch64-apple-darwin]
+            linker = "rust-lld"
         };
         cargo_config["build"]
             .as_table_mut()

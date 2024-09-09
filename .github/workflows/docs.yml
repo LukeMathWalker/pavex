@@ -64,6 +64,21 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1.8.0
         with:
           cache-workspaces: "./libs -> ./target"
+          components: llvm-tools-preview
+      - name: Install linker (Windows)
+        if: ${{ matrix.os == 'windows-2022' }}
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-binutils
+      - name: Install linker (Linux)
+        if: ${{ matrix.os == 'ubuntu-22.04' }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install lld clang
+      - name: Install linker (MacOS)
+        if: ${{ matrix.os == 'macos-12' || matrix.os == 'macos-14' }}
+        run: |
+          brew install llvm
       - name: Build CLI
         run: |
           cd libs
@@ -215,9 +230,23 @@ jobs:
       - name: Install Rust stable toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1.8.0
         with:
-          components: rustfmt
+          components: rustfmt, llvm-tools-preview
           rustflags: ""
           cache-workspaces: "./libs -> ./target"
+      - name: Install linker (Windows)
+        if: ${{ matrix.os == 'windows-2022' }}
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-binutils
+      - name: Install linker (Linux)
+        if: ${{ matrix.os == 'ubuntu-22.04' }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install lld clang
+      - name: Install linker (MacOS)
+        if: ${{ matrix.os == 'macos-12' || matrix.os == 'macos-14' }}
+        run: |
+          brew install llvm
       - name: Download pavex CLI artifact
         uses: actions/download-artifact@v4
         with:
