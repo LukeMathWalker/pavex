@@ -408,7 +408,7 @@ impl TestData {
             [target.x86_64-unknown-linux-gnu]
             rustflags = ["-C", "linker=clang", "-C", "link-arg=-fuse-ld=lld"]
             [target.x86_64-apple-darwin]
-            rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+            rustflags = ["-C", "link-arg=-fuse-ld=/usr/local/opt/llvm/bin/ld64.lld"]
             [target.aarch64-apple-darwin]
             rustflags = ["-C", "link-arg=-fuse-ld=/opt/homebrew/opt/llvm/bin/ld64.lld"]
         };
