@@ -7,7 +7,7 @@ mod compiler;
 mod diagnostic;
 pub(crate) mod language;
 mod persistence;
-mod rustdoc;
+pub mod rustdoc;
 mod utils;
 
 /// The Rust toolchain used by `pavexc` to generate JSON docs, unless

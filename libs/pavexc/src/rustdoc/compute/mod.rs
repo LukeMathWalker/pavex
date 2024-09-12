@@ -52,11 +52,13 @@ pub(super) fn compute_crate_docs(
     toolchain_name: &str,
     package_graph: &PackageGraph,
     package_id: &PackageId,
+    current_dir: &Path,
 ) -> Result<rustdoc_types::Crate, CannotGetCrateData> {
     fn inner(
         package_graph: &PackageGraph,
         package_id: &PackageId,
         toolchain_name: &str,
+        current_dir: &Path,
     ) -> Result<rustdoc_types::Crate, anyhow::Error> {
         // Some crates are not compiled as part of the dependency tree of the current workspace.
         // They are instead bundled as part of Rust's toolchain and automatically available for import
@@ -74,7 +76,7 @@ pub(super) fn compute_crate_docs(
                 package_spec: package_id.to_string(),
                 source: Arc::new(e),
             })?;
-            _compute_crate_docs(toolchain_name, std::iter::once(&package_spec))?;
+            _compute_crate_docs(toolchain_name, std::iter::once(&package_spec), current_dir)?;
 
             let target_directory = package_graph.workspace().target_directory().as_std_path();
             load_json_docs(target_directory, &package_spec)
@@ -85,7 +87,7 @@ pub(super) fn compute_crate_docs(
     // error.
     // It's easier to do that here, rather than in the `inner` function, because we would need to
     // map the error of _every single fallible operation_.
-    inner(package_graph, package_id, toolchain_name).map_err(|e| CannotGetCrateData {
+    inner(package_graph, package_id, toolchain_name, current_dir).map_err(|e| CannotGetCrateData {
         package_spec: package_id.repr().to_owned(),
         source: Arc::new(e),
     })
@@ -104,6 +106,7 @@ pub(super) fn batch_compute_crate_docs<I>(
     toolchain_name: &str,
     package_graph: &PackageGraph,
     package_ids: I,
+    current_dir: &Path,
 ) -> Result<HashMap<PackageId, rustdoc_types::Crate>, anyhow::Error>
 where
     I: Iterator<Item = PackageId>,
@@ -155,7 +158,11 @@ where
     };
 
     for chunk in chunks {
-        _compute_crate_docs(toolchain_name, chunk.iter().map(|(_, spec)| spec))?;
+        _compute_crate_docs(
+            toolchain_name,
+            chunk.iter().map(|(_, spec)| spec),
+            current_dir,
+        )?;
         let target_directory = package_graph.workspace().target_directory().as_std_path();
 
         // It takes a while to deserialize the JSON output of `cargo rustdoc`, so we parallelize
@@ -194,6 +201,7 @@ pub(super) fn rustdoc_options() -> [&'static str; 4] {
 fn _compute_crate_docs<'a, I>(
     toolchain_name: &str,
     package_id_specs: I,
+    current_dir: &Path,
 ) -> Result<(), anyhow::Error>
 where
     I: Iterator<Item = &'a PackageIdSpecification>,
@@ -202,6 +210,7 @@ where
     // a good error.
     let mut cmd = std::process::Command::new("rustup");
     cmd.arg("run")
+        .current_dir(current_dir)
         .arg(toolchain_name)
         .arg("cargo")
         .arg("doc")

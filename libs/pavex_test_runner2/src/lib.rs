@@ -3,11 +3,14 @@ use std::fmt::Write;
 use std::path::{Component, Path, PathBuf};
 use std::process::{Command, Output};
 
-use ahash::HashMap;
+use ahash::{HashMap, HashSet};
 use anyhow::Context;
 use console::style;
+use guppy::PackageId;
 use itertools::Itertools;
 use libtest_mimic::{Conclusion, Failed};
+use pavexc::rustdoc::CrateCollection;
+use pavexc::DEFAULT_DOCS_TOOLCHAIN;
 use sha2::Digest;
 use toml::toml;
 use walkdir::WalkDir;
@@ -72,7 +75,7 @@ pub fn run_tests(
     create_tests_dir(&runtime_directory, &test_name2test_data, &pavex_cli)?;
 
     if !arguments.list {
-        warm_up_target_dir(&runtime_directory)?;
+        warm_up_target_dir(&runtime_directory, &test_name2test_data)?;
     }
 
     let mut tests = Vec::new();
@@ -91,26 +94,29 @@ pub fn run_tests(
 /// Compile all binary targets of the type `app_*`.
 /// This ensures that all dependencies have been compiled, speeding up further operations,
 /// as well as preparing the binaries that each test will invoke.
-fn warm_up_target_dir(runtime_directory: &Path) -> Result<(), anyhow::Error> {
+fn warm_up_target_dir(
+    runtime_directory: &Path,
+    test_name2test_data: &BTreeMap<String, TestData>,
+) -> Result<(), anyhow::Error> {
     println!("Creating a workspace-hack crate to unify dependencies");
 
     // Clean up pre-existing workspace_hack, since `cargo hakari init` will fail
     // if it already exists.
-    let _ = fs_err::remove_dir_all(runtime_directory.join("workspace_hack"));
-    let _ = fs_err::remove_file(runtime_directory.join(".config").join("hakari.toml"));
+    // let _ = fs_err::remove_dir_all(runtime_directory.join("workspace_hack"));
+    // let _ = fs_err::remove_file(runtime_directory.join(".config").join("hakari.toml"));
 
-    let mut cmd = Command::new("cargo");
-    cmd.arg("hakari")
-        .arg("init")
-        .arg("-y")
-        .arg("workspace_hack")
-        .current_dir(runtime_directory)
-        .stdout(std::process::Stdio::inherit())
-        .stderr(std::process::Stdio::inherit());
-    let status = cmd.status()?;
-    if !status.success() {
-        anyhow::bail!("Failed to create workspace_hack crate");
-    }
+    // let mut cmd = Command::new("cargo");
+    // cmd.arg("hakari")
+    //     .arg("init")
+    //     .arg("-y")
+    //     .arg("workspace_hack")
+    //     .current_dir(runtime_directory)
+    //     .stdout(std::process::Stdio::inherit())
+    //     .stderr(std::process::Stdio::inherit());
+    // let status = cmd.status()?;
+    // if !status.success() {
+    //     anyhow::bail!("Failed to create workspace_hack crate");
+    // }
 
     let mut cmd = Command::new("cargo");
     cmd.arg("hakari")
@@ -123,18 +129,19 @@ fn warm_up_target_dir(runtime_directory: &Path) -> Result<(), anyhow::Error> {
         anyhow::bail!("Failed to generate workspace_hack crate");
     }
 
-    let mut cmd = Command::new("cargo");
-    cmd.arg("hakari")
-        .arg("manage-deps")
-        .arg("-y")
-        .current_dir(runtime_directory)
-        .stdout(std::process::Stdio::inherit())
-        .stderr(std::process::Stdio::inherit());
-    let status = cmd.status()?;
-    if !status.success() {
-        anyhow::bail!("Failed to manage workspace_hack dependencies");
-    }
+    // let mut cmd = Command::new("cargo");
+    // cmd.arg("hakari")
+    //     .arg("manage-deps")
+    //     .arg("-y")
+    //     .current_dir(runtime_directory)
+    //     .stdout(std::process::Stdio::inherit())
+    //     .stderr(std::process::Stdio::inherit());
+    // let status = cmd.status()?;
+    // if !status.success() {
+    //     anyhow::bail!("Failed to manage workspace_hack dependencies");
+    // }
 
+    let timer = std::time::Instant::now();
     println!("Warming up the target directory");
     let mut cmd = Command::new("cargo");
     cmd.arg("build")
@@ -146,6 +153,41 @@ fn warm_up_target_dir(runtime_directory: &Path) -> Result<(), anyhow::Error> {
     if !status.success() {
         anyhow::bail!("Failed to compile the test binaries");
     }
+    println!(
+        "Warmed up the target directory in {} seconds",
+        timer.elapsed().as_secs()
+    );
+
+    let timer = std::time::Instant::now();
+    println!("Pre-computing JSON documentation for relevant crates");
+    let crate_collection = CrateCollection::new(
+        runtime_directory.to_string_lossy().into_owned(),
+        DEFAULT_DOCS_TOOLCHAIN.to_owned(),
+        runtime_directory.to_path_buf(),
+    )?;
+    let mut crates = test_name2test_data
+        .values()
+        .map(|data| format!("app_{}", data.name_hash))
+        .collect::<HashSet<_>>();
+    crates.insert("pavex".into());
+    crates.insert("tracing".into());
+    crates.insert("equivalent".into());
+    crates.insert("ppv-lite86".into());
+    crates.insert("hashbrown".into());
+    crates.insert("typenum".into());
+    let package_ids = crate_collection
+        .package_graph()
+        .packages()
+        .filter(|p| crates.contains(p.name()))
+        .map(|p| p.id().to_owned());
+    crate_collection
+        .batch_compute_crates(package_ids)
+        .context("Failed to warm rustdoc JSON cache")?;
+    println!(
+        "Pre-computed JSON documentation in {} seconds",
+        timer.elapsed().as_secs()
+    );
+
     Ok(())
 }
 
@@ -177,6 +219,11 @@ fn create_tests_dir(
     writeln!(
         &mut cargo_toml,
         "pavex_cli_client = {{ path = \"../pavex_cli_client\" }}"
+    )
+    .unwrap();
+    writeln!(
+        &mut cargo_toml,
+        "workspace_hack = {{ path = \"workspace_hack\" }}"
     )
     .unwrap();
     writeln!(&mut cargo_toml, "tokio = \"1\"").unwrap();
@@ -527,6 +574,7 @@ impl TestData {
             [dependencies]
             pavex = { workspace = true }
             pavex_cli_client = { workspace = true }
+            workspace_hack = { workspace = true }
         };
         cargo_toml["package"]["name"] = format!("app_{}", self.name_hash).into();
         let deps = cargo_toml
@@ -660,10 +708,7 @@ fn _run_test(
         .join(&binary_name);
     let output = std::process::Command::new(binary)
         .env("PAVEX_PAVEXC", pavexc_cli)
-        .env("PAVEXC_LOG", "true")
         .current_dir(&test.runtime_directory)
-        .stderr(std::process::Stdio::inherit())
-        .stdout(std::process::Stdio::inherit())
         .output()
         .context("Failed to perform code generation")?;
     println!("Ran {binary_name} in {} seconds", timer.elapsed().as_secs());
@@ -742,7 +787,7 @@ fn _run_test(
         .arg("--jobs")
         .arg("1")
         .arg("-p")
-        .arg("application")
+        .arg(format!("application_{}", test.name_hash))
         .arg("--quiet")
         .current_dir(&test.runtime_directory)
         .output()
@@ -787,7 +832,7 @@ fn _run_test(
             .arg("--jobs")
             .arg("1")
             .arg("-p")
-            .arg("integration")
+            .arg(format!("integration_{}", test.name_hash))
             .current_dir(&test.runtime_directory)
             .output()
             .unwrap();

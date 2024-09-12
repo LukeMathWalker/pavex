@@ -40,7 +40,7 @@ impl PackageIdSpecification {
                     } else {
                         source.to_string()
                     };
-                    format!("file:///{source}")
+                    format!("file://{source}")
                 }
             }
             PackageSource::External(source) => {

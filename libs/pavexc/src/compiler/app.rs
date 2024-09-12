@@ -80,8 +80,12 @@ impl App {
             };
         }
 
-        let krate_collection = CrateCollection::new(project_fingerprint, docs_toolchain_name)
-            .map_err(|e| vec![anyhow2miette(e)])?;
+        let krate_collection = CrateCollection::new(
+            project_fingerprint,
+            docs_toolchain_name,
+            std::env::current_dir().expect("Failed to determine the current directory"),
+        )
+        .map_err(|e| vec![anyhow2miette(e)])?;
         let package_graph = krate_collection.package_graph().to_owned();
         let mut diagnostics = vec![];
         let mut computation_db = ComputationDb::new();
