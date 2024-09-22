@@ -621,6 +621,28 @@ impl TestData {
             toml::to_string(&cargo_toml)?.as_bytes(),
         )?;
 
+        let cargo_config = toml! {
+            [build]
+            incremental = false
+
+            [target.x86_64-pc-windows-msvc]
+            rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+            [target.x86_64-pc-windows-gnu]
+            rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+            [target.x86_64-unknown-linux-gnu]
+            rustflags = ["-C", "linker=clang", "-C", "link-arg=-fuse-ld=lld"]
+            [target.x86_64-apple-darwin]
+            rustflags = ["-C", "link-arg=-fuse-ld=/usr/local/opt/llvm/bin/ld64.lld"]
+            [target.aarch64-apple-darwin]
+            rustflags = ["-C", "link-arg=-fuse-ld=/opt/homebrew/opt/llvm/bin/ld64.lld"]
+        };
+        let dot_cargo_folder = self.runtime_directory.join(".cargo");
+        fs_err::create_dir_all(&dot_cargo_folder)?;
+        persist_if_changed(
+            &dot_cargo_folder.join("config.toml"),
+            toml::to_string(&cargo_config)?.as_bytes(),
+        )?;
+
         let main_rs = format!(
             r##"use app_{}::blueprint;
 use pavex_cli_client::{{Client, config::Color}};
