@@ -9,8 +9,8 @@ digraph "GET /home - 0" {
 }
 
 digraph "GET /home - 1" {
-    0 [ label = "app::handler() -> dep::Custom<app::BodyType>"]
-    1 [ label = "<dep::Custom::<app::BodyType> as pavex::response::IntoResponse>::into_response(dep::Custom<app::BodyType>) -> pavex::response::Response"]
+    0 [ label = "app::handler() -> dep_dcb9931d::Custom<app::BodyType>"]
+    1 [ label = "<dep_dcb9931d::Custom::<app::BodyType> as pavex::response::IntoResponse>::into_response(dep_dcb9931d::Custom<app::BodyType>) -> pavex::response::Response"]
     0 -> 1 [ ]
 }
 

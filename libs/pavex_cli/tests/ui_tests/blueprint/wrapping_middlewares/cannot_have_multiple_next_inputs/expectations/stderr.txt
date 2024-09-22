@@ -3,7 +3,7 @@
   [31m│[0m `pavex::middleware::Next<_>` as input parameter.
   [31m│[0m This middleware does.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:20:1]
+  [31m│[0m     ╭─[[36;1;4mblueprint/wrapping_middlewares/cannot_have_multiple_next_inputs/src/lib.rs[0m:20:1]
   [31m│[0m  [2m20[0m │     let mut bp = Blueprint::new();
   [31m│[0m  [2m21[0m │     bp.wrap(f!(crate::mw));
   [31m│[0m     · [35;1m            ──────┬──────[0m

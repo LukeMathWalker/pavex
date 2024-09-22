@@ -103,7 +103,10 @@ pub mod route_0 {
         let v5 = app::mw(v4, v2);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v5)
     }
-    async fn handler(v0: &app::C, v1: &app::A) -> pavex::response::Response {
+    async fn handler(
+        v0: &app::C,
+        v1: &app::A,
+    ) -> pavex::response::Response {
         let v2 = app::handler(v1, v0);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
     }

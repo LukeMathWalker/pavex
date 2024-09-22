@@ -1,10 +1,10 @@
 [31m[1mERROR[0m[39m: 
-  [31m×[0m `app::B<'a>` can't be a singleton because at least one of its lifetime
-  [31m│[0m parameters isn't `'static`.
+  [31m×[0m `app::B<'a>` can't be a singleton because at least one of its
+  [31m│[0m lifetime parameters isn't `'static`.
   [31m│[0m Singletons must be available for as long as the application is running,
   [31m│[0m therefore their lifetime must be `'static`.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:26:1]
+  [31m│[0m     ╭─[[36;1;4mdependency_injection/lifecycles/singletons_cannot_have_non_static_lifetime_parameters/src/lib.rs[0m:26:1]
   [31m│[0m  [2m26[0m │     bp.singleton(f!(self::a));
   [31m│[0m  [2m27[0m │     bp.singleton(f!(self::B::new)).clone_if_necessary();
   [31m│[0m     · [35;1m                 ────────┬───────[0m

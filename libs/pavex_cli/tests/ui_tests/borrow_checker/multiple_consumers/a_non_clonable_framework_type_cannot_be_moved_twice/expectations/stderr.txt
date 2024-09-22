@@ -13,7 +13,7 @@
   [31m│[0m         `pavex::request::RequestHead` by value.
   [31m│[0m         Would a shared reference, `&pavex::request::RequestHead`, be enough?
   [31m│[0m        ☞
-  [31m│[0m           ╭─[[36;1;4msrc/lib.rs[0m:39:1]
+  [31m│[0m           ╭─[[36;1;4mborrow_checker/multiple_consumers/a_non_clonable_framework_type_cannot_be_moved_twice/src/lib.rs[0m:39:1]
   [31m│[0m        [2m39[0m │     let mut bp = Blueprint::new();
   [31m│[0m        [2m40[0m │     bp.constructor(f!(crate::b), Lifecycle::RequestScoped);
   [31m│[0m           · [35;1m                   ──────┬─────[0m
@@ -21,7 +21,7 @@
   [31m│[0m        [2m41[0m │     bp.constructor(f!(crate::c), Lifecycle::RequestScoped);
   [31m│[0m           ╰────
   [31m│[0m        ☞
-  [31m│[0m           ╭─[[36;1;4msrc/lib.rs[0m:40:1]
+  [31m│[0m           ╭─[[36;1;4mborrow_checker/multiple_consumers/a_non_clonable_framework_type_cannot_be_moved_twice/src/lib.rs[0m:40:1]
   [31m│[0m        [2m40[0m │     bp.constructor(f!(crate::b), Lifecycle::RequestScoped);
   [31m│[0m        [2m41[0m │     bp.constructor(f!(crate::c), Lifecycle::RequestScoped);
   [31m│[0m           · [35;1m                   ──────┬─────[0m

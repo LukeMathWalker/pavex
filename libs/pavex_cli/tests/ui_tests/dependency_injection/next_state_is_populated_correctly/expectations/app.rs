@@ -79,7 +79,9 @@ async fn route_request(
     }
 }
 pub mod route_0 {
-    pub async fn entrypoint<'a>(s_0: &'a app::Singleton) -> pavex::response::Response {
+    pub async fn entrypoint<'a>(
+        s_0: &'a app::Singleton,
+    ) -> pavex::response::Response {
         let response = wrapping_0(s_0).await;
         response
     }
@@ -87,7 +89,9 @@ pub mod route_0 {
         let response = wrapping_1(s_0).await;
         response
     }
-    async fn stage_2<'a>(s_0: &'a app::RequestScoped) -> pavex::response::Response {
+    async fn stage_2<'a>(
+        s_0: &'a app::RequestScoped,
+    ) -> pavex::response::Response {
         let response = handler(s_0).await;
         let response = post_processing_0(response, s_0).await;
         response

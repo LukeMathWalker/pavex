@@ -94,7 +94,9 @@ pub mod route_0 {
         let v3 = pavex::middleware::wrap_noop(v2).await;
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
     }
-    async fn handler(v0: &alloc::sync::Arc<app::Custom>) -> pavex::response::Response {
+    async fn handler(
+        v0: &alloc::sync::Arc<app::Custom>,
+    ) -> pavex::response::Response {
         let v1 = app::handler(v0);
         <http::StatusCode as pavex::response::IntoResponse>::into_response(v1)
     }

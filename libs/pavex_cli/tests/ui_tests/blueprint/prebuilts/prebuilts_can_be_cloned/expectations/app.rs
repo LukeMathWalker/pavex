@@ -87,11 +87,17 @@ pub mod route_0 {
         let response = wrapping_0(s_0, s_1).await;
         response
     }
-    async fn stage_1<'a>(s_0: app::A, s_1: &'a app::B) -> pavex::response::Response {
+    async fn stage_1<'a>(
+        s_0: app::A,
+        s_1: &'a app::B,
+    ) -> pavex::response::Response {
         let response = handler(s_0, s_1).await;
         response
     }
-    async fn wrapping_0(v0: app::A, v1: &app::B) -> pavex::response::Response {
+    async fn wrapping_0(
+        v0: app::A,
+        v1: &app::B,
+    ) -> pavex::response::Response {
         let v2 = crate::route_0::Next0 {
             s_0: v0,
             s_1: v1,
@@ -101,7 +107,10 @@ pub mod route_0 {
         let v4 = pavex::middleware::wrap_noop(v3).await;
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
     }
-    async fn handler(v0: app::A, v1: &app::B) -> pavex::response::Response {
+    async fn handler(
+        v0: app::A,
+        v1: &app::B,
+    ) -> pavex::response::Response {
         let v2 = app::handler(v0, v1);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
     }

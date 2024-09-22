@@ -1,7 +1,8 @@
 [31m[1mERROR[0m[39m: 
-  [31m×[0m `app::NonSendSingleton` doesn't implement the `core::marker::Send` trait.
+  [31m×[0m `app::NonSendSingleton` doesn't implement the
+  [31m│[0m `core::marker::Send` trait.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:39:1]
+  [31m│[0m     ╭─[[36;1;4mblueprint/constructors/trait_constraints_on_runtime_singletons/src/lib.rs[0m:39:1]
   [31m│[0m  [2m39[0m │     let mut bp = Blueprint::new();
   [31m│[0m  [2m40[0m │     bp.singleton(f!(crate::NonSendSingleton::new));
   [31m│[0m     · [35;1m                 ────────────────┬───────────────[0m
@@ -13,9 +14,10 @@
   [31m│[0m         is shared across all worker threads.
 
 [31m[1mERROR[0m[39m: 
-  [31m×[0m `app::NonSendSingleton` doesn't implement the `core::marker::Sync` trait.
+  [31m×[0m `app::NonSendSingleton` doesn't implement the
+  [31m│[0m `core::marker::Sync` trait.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:39:1]
+  [31m│[0m     ╭─[[36;1;4mblueprint/constructors/trait_constraints_on_runtime_singletons/src/lib.rs[0m:39:1]
   [31m│[0m  [2m39[0m │     let mut bp = Blueprint::new();
   [31m│[0m  [2m40[0m │     bp.singleton(f!(crate::NonSendSingleton::new));
   [31m│[0m     · [35;1m                 ────────────────┬───────────────[0m
@@ -27,9 +29,10 @@
   [31m│[0m         is shared across all worker threads.
 
 [31m[1mERROR[0m[39m: 
-  [31m×[0m `app::NonSyncSingleton` doesn't implement the `core::marker::Sync` trait.
+  [31m×[0m `app::NonSyncSingleton` doesn't implement the
+  [31m│[0m `core::marker::Sync` trait.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:40:1]
+  [31m│[0m     ╭─[[36;1;4mblueprint/constructors/trait_constraints_on_runtime_singletons/src/lib.rs[0m:40:1]
   [31m│[0m  [2m40[0m │     bp.singleton(f!(crate::NonSendSingleton::new));
   [31m│[0m  [2m41[0m │     bp.singleton(f!(crate::NonSyncSingleton::new));
   [31m│[0m     · [35;1m                 ────────────────┬───────────────[0m

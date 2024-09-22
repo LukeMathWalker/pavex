@@ -8,7 +8,7 @@ struct ServerState {
 }
 pub struct ApplicationState {
     s0: (bool, char, u8),
-    s1: dep::ActualType,
+    s1: dep_f8f62968::ActualType,
 }
 pub async fn build_application_state() -> crate::ApplicationState {
     let v0 = app::RemoteAlias::new();
@@ -82,21 +82,21 @@ async fn route_request(
 pub mod route_0 {
     pub async fn entrypoint<'a>(
         s_0: (bool, char, u8),
-        s_1: &'a dep::ActualType,
+        s_1: &'a dep_f8f62968::ActualType,
     ) -> pavex::response::Response {
         let response = wrapping_0(s_0, s_1).await;
         response
     }
     async fn stage_1<'a>(
         s_0: (bool, char, u8),
-        s_1: &'a dep::ActualType,
+        s_1: &'a dep_f8f62968::ActualType,
     ) -> pavex::response::Response {
         let response = handler(s_0, s_1).await;
         response
     }
     async fn wrapping_0(
         v0: (bool, char, u8),
-        v1: &dep::ActualType,
+        v1: &dep_f8f62968::ActualType,
     ) -> pavex::response::Response {
         let v2 = crate::route_0::Next0 {
             s_0: v0,
@@ -109,7 +109,7 @@ pub mod route_0 {
     }
     async fn handler(
         v0: (bool, char, u8),
-        v1: &dep::ActualType,
+        v1: &dep_f8f62968::ActualType,
     ) -> pavex::response::Response {
         let v2 = app::handler_with_input_tuple(v0, v1);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
@@ -119,8 +119,8 @@ pub mod route_0 {
         T: std::future::Future<Output = pavex::response::Response>,
     {
         s_0: (bool, char, u8),
-        s_1: &'a dep::ActualType,
-        next: fn((bool, char, u8), &'a dep::ActualType) -> T,
+        s_1: &'a dep_f8f62968::ActualType,
+        next: fn((bool, char, u8), &'a dep_f8f62968::ActualType) -> T,
     }
     impl<'a, T> std::future::IntoFuture for Next0<'a, T>
     where

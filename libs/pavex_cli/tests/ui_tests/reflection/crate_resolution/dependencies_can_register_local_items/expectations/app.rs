@@ -85,7 +85,7 @@ pub mod route_0 {
     }
     async fn handler() -> pavex::response::Response {
         let v1 = {
-            let v0 = dep::new_logger();
+            let v0 = dep_39415e2f::new_logger();
             app::handler(v0)
         };
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)

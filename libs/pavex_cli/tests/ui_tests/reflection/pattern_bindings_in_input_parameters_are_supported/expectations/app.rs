@@ -71,7 +71,9 @@ async fn route_request(
     }
 }
 pub mod route_0 {
-    pub async fn entrypoint<'a>(s_0: &'a app::Streamer) -> pavex::response::Response {
+    pub async fn entrypoint<'a>(
+        s_0: &'a app::Streamer,
+    ) -> pavex::response::Response {
         let response = wrapping_0(s_0).await;
         response
     }

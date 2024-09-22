@@ -85,9 +85,15 @@ pub mod route_0 {
     }
     async fn handler() -> pavex::response::Response {
         let v0 = <app::A as app::MyTrait>::a_method_that_returns_self();
-        let v1 = <app::A as app::MyTrait>::a_method_that_borrows_self(&v0);
-        let v2 = <app::B as app::AnotherTrait>::a_method_that_consumes_self(v1);
-        let v3 = <app::C as app::GenericTrait<std::string::String>>::a_method(&v2);
+        let v1 = <app::A as app::MyTrait>::a_method_that_borrows_self(
+            &v0,
+        );
+        let v2 = <app::B as app::AnotherTrait>::a_method_that_consumes_self(
+            v1,
+        );
+        let v3 = <app::C as app::GenericTrait<
+            std::string::String,
+        >>::a_method(&v2);
         let v4 = <app::A as app::MyTrait>::a_method_with_a_generic::<
             std::string::String,
         >(&v0);

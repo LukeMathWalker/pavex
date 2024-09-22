@@ -77,7 +77,9 @@ pub mod route_0 {
         let response = wrapping_0(s_0).await;
         response
     }
-    async fn stage_1<'a>(s_0: &'a app::LoggerFactory) -> pavex::response::Response {
+    async fn stage_1<'a>(
+        s_0: &'a app::LoggerFactory,
+    ) -> pavex::response::Response {
         let response = handler(s_0).await;
         response
     }

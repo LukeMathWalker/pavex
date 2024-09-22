@@ -161,7 +161,9 @@ pub mod route_0 {
     }
 }
 pub mod route_1 {
-    pub async fn entrypoint<'a>(s_0: &'a app::Spy) -> pavex::response::Response {
+    pub async fn entrypoint<'a>(
+        s_0: &'a app::Spy,
+    ) -> pavex::response::Response {
         let response = wrapping_0(s_0).await;
         response
     }
@@ -293,7 +295,9 @@ pub mod route_1 {
     }
 }
 pub mod route_2 {
-    pub async fn entrypoint<'a>(s_0: &'a app::Spy) -> pavex::response::Response {
+    pub async fn entrypoint<'a>(
+        s_0: &'a app::Spy,
+    ) -> pavex::response::Response {
         let response = wrapping_0(s_0).await;
         response
     }
@@ -425,7 +429,9 @@ pub mod route_2 {
     }
 }
 pub mod route_3 {
-    pub async fn entrypoint<'a>(s_0: &'a app::Spy) -> pavex::response::Response {
+    pub async fn entrypoint<'a>(
+        s_0: &'a app::Spy,
+    ) -> pavex::response::Response {
         let response = wrapping_0(s_0).await;
         response
     }
@@ -511,7 +517,9 @@ pub mod route_3 {
     }
 }
 pub mod route_4 {
-    pub async fn entrypoint<'a>(s_0: &'a app::Spy) -> pavex::response::Response {
+    pub async fn entrypoint<'a>(
+        s_0: &'a app::Spy,
+    ) -> pavex::response::Response {
         let response = wrapping_0(s_0).await;
         response
     }

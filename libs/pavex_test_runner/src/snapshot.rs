@@ -12,14 +12,22 @@ fn term_width() -> usize {
 
 pub(crate) struct SnapshotTest {
     expectation_path: PathBuf,
+    app_name_with_hash: String,
 }
 
 impl SnapshotTest {
-    pub fn new(expectation_path: PathBuf) -> Self {
-        Self { expectation_path }
+    pub fn new(expectation_path: PathBuf, app_name_with_hash: String) -> Self {
+        Self {
+            expectation_path,
+            app_name_with_hash,
+        }
     }
 
     pub fn verify(&self, actual: &str) -> Result<(), ()> {
+        // All test crates have a hash suffix in their name to avoid name collisions.
+        // We remove this hash to make the snapshots more stable and readable.
+        let actual = actual.replace(&self.app_name_with_hash, "app");
+
         let expected = match fs_err::read_to_string(&self.expectation_path) {
             Ok(s) => s,
             Err(e) if e.kind() == ErrorKind::NotFound => "".into(),

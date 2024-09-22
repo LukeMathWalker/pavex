@@ -68,6 +68,6 @@ time = { workspace = true }
 px_workspace_hack = { version = "0.1", path = "../px_workspace_hack" }
 
 [dev-dependencies]
-pavex_test_runner = { path = "../pavex_test_runner2", package = "pavex_test_runner2" }
+pavex_test_runner = { path = "../pavex_test_runner" }
 # Enable more expensive debug assertions when building for testing purposes
 pavexc = { path = "../pavexc", features = ["debug_assertions"] }

@@ -2165,7 +2165,7 @@ dependencies = [
  "owo-colors",
  "pavex_cli_deps",
  "pavex_miette",
- "pavex_test_runner2",
+ "pavex_test_runner",
  "pavexc",
  "pavexc_cli_client",
  "pem",
@@ -2294,34 +2294,6 @@ dependencies = [
 
 [[package]]
 name = "pavex_test_runner"
-version = "0.1.48"
-dependencies = [
- "ahash",
- "anyhow",
- "console",
- "fs-err",
- "globwalk",
- "itertools 0.12.1",
- "libtest-mimic",
- "miette",
- "num_cpus",
- "object-pool",
- "once_cell",
- "persist_if_changed",
- "px_workspace_hack",
- "regex",
- "serde",
- "serde_json",
- "sha2",
- "similar",
- "textwrap",
- "toml",
- "tracing-subscriber",
- "walkdir",
-]
-
-[[package]]
-name = "pavex_test_runner2"
 version = "0.1.48"
 dependencies = [
  "ahash",

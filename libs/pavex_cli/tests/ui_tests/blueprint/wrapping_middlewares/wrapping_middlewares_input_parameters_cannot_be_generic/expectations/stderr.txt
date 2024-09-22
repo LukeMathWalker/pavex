@@ -5,14 +5,14 @@
   [31m│[0m apart from the one in `Next<_>`, but `T` does not seem to have been
   [31m│[0m assigned a concrete type.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:45:1]
+  [31m│[0m     ╭─[[36;1;4mblueprint/wrapping_middlewares/wrapping_middlewares_input_parameters_cannot_be_generic/src/lib.rs[0m:45:1]
   [31m│[0m  [2m45[0m │     let mut bp = Blueprint::new();
   [31m│[0m  [2m46[0m │     bp.wrap(f!(crate::generic_wrapping_middleware));
   [31m│[0m     · [35;1m            ───────────────────┬──────────────────[0m
   [31m│[0m     ·                [35;1mThe wrapping middleware was registered here[0m
   [31m│[0m  [2m47[0m │     bp.wrap(f!(crate::doubly_generic_wrapping_middleware));
   [31m│[0m     ╰────
-  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:9:1]
+  [31m│[0m     ╭─[[36;1;4mblueprint/wrapping_middlewares/wrapping_middlewares_input_parameters_cannot_be_generic/src/lib.rs[0m:9:1]
   [31m│[0m  [2m 9[0m │ 
   [31m│[0m  [2m10[0m │ pub fn generic_wrapping_middleware<A, T>(_next: Next<A>, generic_input: GenericType<T>) -> Response
   [31m│[0m     · [35;1m                                      ┬[0m
@@ -32,14 +32,14 @@
   [31m│[0m apart from the one in `Next<_>`, but `T` and `S` do not seem to have been
   [31m│[0m assigned a concrete type.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:46:1]
+  [31m│[0m     ╭─[[36;1;4mblueprint/wrapping_middlewares/wrapping_middlewares_input_parameters_cannot_be_generic/src/lib.rs[0m:46:1]
   [31m│[0m  [2m46[0m │     bp.wrap(f!(crate::generic_wrapping_middleware));
   [31m│[0m  [2m47[0m │     bp.wrap(f!(crate::doubly_generic_wrapping_middleware));
   [31m│[0m     · [35;1m            ──────────────────────┬──────────────────────[0m
   [31m│[0m     ·                [35;1mThe wrapping middleware was registered here[0m
   [31m│[0m  [2m48[0m │     bp.wrap(f!(crate::triply_generic_wrapping_middleware));
   [31m│[0m     ╰────
-  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:16:1]
+  [31m│[0m     ╭─[[36;1;4mblueprint/wrapping_middlewares/wrapping_middlewares_input_parameters_cannot_be_generic/src/lib.rs[0m:16:1]
   [31m│[0m  [2m16[0m │ 
   [31m│[0m  [2m17[0m │ pub fn doubly_generic_wrapping_middleware<A, T, S>(
   [31m│[0m     · [35;1m                                             ┬[0m[33;1m  ┬[0m
@@ -61,14 +61,14 @@
   [31m│[0m apart from the one in `Next<_>`, but `T`, `S` and `U` do not seem to have
   [31m│[0m been assigned a concrete type.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:47:1]
+  [31m│[0m     ╭─[[36;1;4mblueprint/wrapping_middlewares/wrapping_middlewares_input_parameters_cannot_be_generic/src/lib.rs[0m:47:1]
   [31m│[0m  [2m47[0m │     bp.wrap(f!(crate::doubly_generic_wrapping_middleware));
   [31m│[0m  [2m48[0m │     bp.wrap(f!(crate::triply_generic_wrapping_middleware));
   [31m│[0m     · [35;1m            ──────────────────────┬──────────────────────[0m
   [31m│[0m     ·                [35;1mThe wrapping middleware was registered here[0m
   [31m│[0m  [2m49[0m │     bp.route(GET, "/home", f!(crate::handler));
   [31m│[0m     ╰────
-  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:27:1]
+  [31m│[0m     ╭─[[36;1;4mblueprint/wrapping_middlewares/wrapping_middlewares_input_parameters_cannot_be_generic/src/lib.rs[0m:27:1]
   [31m│[0m  [2m27[0m │ 
   [31m│[0m  [2m28[0m │ pub fn triply_generic_wrapping_middleware<A, T, S, U>(
   [31m│[0m     · [35;1m                                             ┬[0m[33;1m  ┬[0m[32;1m  ┬[0m

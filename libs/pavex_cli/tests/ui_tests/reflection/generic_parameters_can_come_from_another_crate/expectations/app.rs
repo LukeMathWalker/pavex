@@ -85,7 +85,9 @@ pub mod route_0 {
     }
     async fn handler() -> pavex::response::Response {
         let v0 = app::handler();
-        <dep::Custom<app::BodyType> as pavex::response::IntoResponse>::into_response(v0)
+        <dep_dcb9931d::Custom<
+            app::BodyType,
+        > as pavex::response::IntoResponse>::into_response(v0)
     }
     struct Next0<T>
     where

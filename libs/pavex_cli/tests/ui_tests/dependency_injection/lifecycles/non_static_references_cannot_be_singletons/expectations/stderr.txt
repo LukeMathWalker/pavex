@@ -1,9 +1,10 @@
 [31m[1mERROR[0m[39m: 
-  [31m×[0m `&app::B` can't be a singleton because its lifetime isn't `'static`.
+  [31m×[0m `&app::B` can't be a singleton because its lifetime isn't
+  [31m│[0m `'static`.
   [31m│[0m Singletons must be available for as long as the application is running,
   [31m│[0m therefore their lifetime must be `'static`.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4msrc/lib.rs[0m:25:1]
+  [31m│[0m     ╭─[[36;1;4mdependency_injection/lifecycles/non_static_references_cannot_be_singletons/src/lib.rs[0m:25:1]
   [31m│[0m  [2m25[0m │     bp.constructor(f!(crate::a), Lifecycle::Singleton);
   [31m│[0m  [2m26[0m │     bp.constructor(f!(crate::b), Lifecycle::Singleton);
   [31m│[0m     · [35;1m                   ──────┬─────[0m

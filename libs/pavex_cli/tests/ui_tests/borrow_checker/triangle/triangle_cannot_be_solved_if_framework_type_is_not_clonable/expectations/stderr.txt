@@ -2,8 +2,8 @@
   [31m×[0m I can't generate code that will pass the borrow checker *and* match the
   [31m│[0m instructions in your blueprint:
   [31m│[0m - `app::handler` wants to borrow `pavex::request::RequestHead`
-  [31m│[0m - But, earlier on, `app::b` consumed `pavex::request::RequestHead` by
-  [31m│[0m value
+  [31m│[0m - But, earlier on, `app::b` consumed
+  [31m│[0m `pavex::request::RequestHead` by value
   [31m│[0m 
   [31m│[0m Since I'm not allowed to clone `pavex::request::RequestHead`, I can't
   [31m│[0m resolve this conflict.

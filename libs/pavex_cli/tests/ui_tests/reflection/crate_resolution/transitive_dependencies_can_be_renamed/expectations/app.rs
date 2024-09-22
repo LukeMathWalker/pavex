@@ -84,9 +84,9 @@ pub mod route_0 {
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
     }
     async fn handler() -> pavex::response::Response {
-        let v0 = dep::header2();
-        let v1 = dep::header1();
-        let v2 = dep::handler(v1, v0);
+        let v0 = dep_a0f4586a::header2();
+        let v1 = dep_a0f4586a::header1();
+        let v2 = dep_a0f4586a::handler(v1, v0);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
     }
     struct Next0<T>

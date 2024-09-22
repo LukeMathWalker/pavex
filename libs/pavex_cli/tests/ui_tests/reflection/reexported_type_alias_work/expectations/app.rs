@@ -7,7 +7,7 @@ struct ServerState {
     application_state: ApplicationState,
 }
 pub struct ApplicationState {
-    s0: dep::Surreal<dep::engine::Any>,
+    s0: dep_065fd341::Surreal<dep_065fd341::engine::Any>,
 }
 pub async fn build_application_state() -> crate::ApplicationState {
     let v0 = app::constructor();
@@ -72,19 +72,19 @@ async fn route_request(
 }
 pub mod route_0 {
     pub async fn entrypoint<'a>(
-        s_0: &'a dep::Surreal<dep::engine::Any>,
+        s_0: &'a dep_065fd341::Surreal<dep_065fd341::engine::Any>,
     ) -> pavex::response::Response {
         let response = wrapping_0(s_0).await;
         response
     }
     async fn stage_1<'a>(
-        s_0: &'a dep::Surreal<dep::engine::Any>,
+        s_0: &'a dep_065fd341::Surreal<dep_065fd341::engine::Any>,
     ) -> pavex::response::Response {
         let response = handler(s_0).await;
         response
     }
     async fn wrapping_0(
-        v0: &dep::Surreal<dep::engine::Any>,
+        v0: &dep_065fd341::Surreal<dep_065fd341::engine::Any>,
     ) -> pavex::response::Response {
         let v1 = crate::route_0::Next0 {
             s_0: v0,
@@ -94,7 +94,9 @@ pub mod route_0 {
         let v3 = pavex::middleware::wrap_noop(v2).await;
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
     }
-    async fn handler(v0: &dep::Surreal<dep::engine::Any>) -> pavex::response::Response {
+    async fn handler(
+        v0: &dep_065fd341::Surreal<dep_065fd341::engine::Any>,
+    ) -> pavex::response::Response {
         let v1 = app::handler(v0);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v1)
     }
@@ -102,8 +104,8 @@ pub mod route_0 {
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
-        s_0: &'a dep::Surreal<dep::engine::Any>,
-        next: fn(&'a dep::Surreal<dep::engine::Any>) -> T,
+        s_0: &'a dep_065fd341::Surreal<dep_065fd341::engine::Any>,
+        next: fn(&'a dep_065fd341::Surreal<dep_065fd341::engine::Any>) -> T,
     }
     impl<'a, T> std::future::IntoFuture for Next0<'a, T>
     where
