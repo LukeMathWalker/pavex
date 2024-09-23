@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 use std::collections::BTreeMap;
 use std::fmt::Write;
 use std::path::{Component, Path, PathBuf};
@@ -8,7 +7,7 @@ use ahash::{HashMap, HashSet};
 use anyhow::Context;
 use console::style;
 use itertools::Itertools;
-use libtest_mimic::{Conclusion, Failed};
+use libtest_mimic::{Arguments, Conclusion, Failed, Trial};
 use pavexc::rustdoc::CrateCollection;
 use pavexc::DEFAULT_DOCS_TOOLCHAIN;
 use sha2::Digest;
@@ -21,7 +20,6 @@ pub use snapshot::print_changeset;
 use crate::snapshot::SnapshotTest;
 
 mod snapshot;
-mod target_directory;
 
 /// Return an iterator over the directories containing a UI test.
 pub fn get_ui_test_directories(test_folder: &Path) -> impl Iterator<Item = PathBuf> {
@@ -74,35 +72,111 @@ pub fn run_tests(
             entry.clone(),
             runtime_directory.join(relative_path),
         )?;
+        if is_filtered_out(&arguments, &test_name) || test_data.configuration.ignore {
+            continue;
+        }
         test_name2test_data.insert(test_name, test_data);
     }
 
     create_tests_dir(&runtime_directory, &test_name2test_data, &pavex_cli)?;
 
+    let mut trials = Vec::new();
     if !arguments.list {
-        warm_up_target_dir(&runtime_directory, &test_name2test_data)?;
+        warm_up_target_dir(&runtime_directory)?;
+        warm_up_rustdoc_cache(&runtime_directory, &test_name2test_data)?;
+
+        // TODO: We need to run them in parallel.
+        for (name, data) in test_name2test_data {
+            let (codegen_output, outcome) =
+                code_generation_test(&runtime_directory, &data, &pavexc_cli);
+            let is_success = outcome == CodegenTestOutcome::Success;
+            let trial = outcome.into_trial(&name, &data.configuration, codegen_output.as_ref());
+            trials.push(trial);
+
+            // If the code generation test failed, we skip the follow-up tests.
+            if !is_success {
+                continue;
+            }
+
+            if let Some(codegen_output) = codegen_output {
+                if let Some(trial) = code_generation_lints_test(&data, &name, &codegen_output) {
+                    trials.push(trial);
+                }
+            };
+
+            if data.configuration.expectations.codegen == ExpectedOutcome::Fail {
+                continue;
+            }
+
+            let trial = code_generation_diagnostics_test(&name, &data);
+            trials.push(trial);
+
+            let trial = application_code_test(&name, &data);
+            trials.push(trial);
+
+            let trial_name = format!("{}::app_code_compiles", name);
+            match application_code_compilation_test(&data) {
+                Ok(_) => {
+                    let trial = Trial::test(trial_name, || Ok(()));
+                    trials.push(trial);
+                }
+                Err(err) => {
+                    let msg = format!("{err:?}");
+                    let trial = Trial::test(trial_name, move || Err(Failed::from(msg)));
+                    trials.push(trial);
+
+                    // We skip the follow-up tests if the application code compilation test failed.
+                    continue;
+                }
+            }
+
+            if data.should_run_tests() {
+                let trial_name = format!("{}::app_integration_tests", name);
+                match application_integration_test(&data) {
+                    Ok(_) => {
+                        let trial = Trial::test(trial_name, || Ok(()));
+                        trials.push(trial);
+                    }
+                    Err(err) => {
+                        let msg = format!("{err:?}");
+                        let trial = Trial::test(trial_name, move || Err(Failed::from(msg)));
+                        trials.push(trial);
+                    }
+                }
+            }
+        }
+    }
+    Ok(libtest_mimic::run(&arguments, trials))
+}
+
+// Inlined from `libtest_mimic` to further control the test execution.
+// We ignore test kind since we don't have benches in our UI test suite.
+fn is_filtered_out(args: &Arguments, test_name: &str) -> bool {
+    // If a filter was specified, apply this
+    if let Some(filter) = &args.filter {
+        match args.exact {
+            true if test_name != filter => return true,
+            false if !test_name.contains(filter) => return true,
+            _ => {}
+        };
     }
 
-    let mut tests = Vec::new();
-    for (name, data) in test_name2test_data {
-        let pavexc_cli = pavexc_cli.clone();
-        let runtime_directory = runtime_directory.clone();
-        let ignored = data.configuration.ignore;
-        let test =
-            libtest_mimic::Trial::test(name, move || run_test(runtime_directory, data, pavexc_cli))
-                .with_ignored_flag(ignored);
-        tests.push(test);
+    // If any skip pattern were specified, test for all patterns.
+    for skip_filter in &args.skip {
+        match args.exact {
+            true if test_name == skip_filter => return true,
+            false if test_name.contains(skip_filter) => return true,
+            _ => {}
+        }
     }
-    Ok(libtest_mimic::run(&arguments, tests))
+
+    false
 }
 
 /// Compile all binary targets of the type `app_*`.
 /// This ensures that all dependencies have been compiled, speeding up further operations,
 /// as well as preparing the binaries that each test will invoke.
-fn warm_up_target_dir(
-    runtime_directory: &Path,
-    test_name2test_data: &BTreeMap<String, TestData>,
-) -> Result<(), anyhow::Error> {
+fn warm_up_target_dir(runtime_directory: &Path) -> Result<(), anyhow::Error> {
     println!("Creating a workspace-hack crate to unify dependencies");
 
     // Clean up pre-existing workspace_hack, since `cargo hakari init` will fail
@@ -110,41 +184,41 @@ fn warm_up_target_dir(
     // let _ = fs_err::remove_dir_all(runtime_directory.join("workspace_hack"));
     // let _ = fs_err::remove_file(runtime_directory.join(".config").join("hakari.toml"));
 
-    let mut cmd = Command::new("cargo");
-    cmd.arg("hakari")
-        .arg("init")
-        .arg("-y")
-        .arg("workspace_hack")
-        .current_dir(runtime_directory)
-        .stdout(std::process::Stdio::inherit())
-        .stderr(std::process::Stdio::inherit());
-    let status = cmd.status()?;
-    if !status.success() {
-        anyhow::bail!("Failed to create workspace_hack crate");
-    }
+    // let mut cmd = Command::new("cargo");
+    // cmd.arg("hakari")
+    //     .arg("init")
+    //     .arg("-y")
+    //     .arg("workspace_hack")
+    //     .current_dir(runtime_directory)
+    //     .stdout(std::process::Stdio::inherit())
+    //     .stderr(std::process::Stdio::inherit());
+    // let status = cmd.status()?;
+    // if !status.success() {
+    //     anyhow::bail!("Failed to create workspace_hack crate");
+    // }
 
-    let mut cmd = Command::new("cargo");
-    cmd.arg("hakari")
-        .arg("generate")
-        .current_dir(runtime_directory)
-        .stdout(std::process::Stdio::inherit())
-        .stderr(std::process::Stdio::inherit());
-    let status = cmd.status()?;
-    if !status.success() {
-        anyhow::bail!("Failed to generate workspace_hack crate");
-    }
+    // let mut cmd = Command::new("cargo");
+    // cmd.arg("hakari")
+    //     .arg("generate")
+    //     .current_dir(runtime_directory)
+    //     .stdout(std::process::Stdio::inherit())
+    //     .stderr(std::process::Stdio::inherit());
+    // let status = cmd.status()?;
+    // if !status.success() {
+    //     anyhow::bail!("Failed to generate workspace_hack crate");
+    // }
 
-    let mut cmd = Command::new("cargo");
-    cmd.arg("hakari")
-        .arg("manage-deps")
-        .arg("-y")
-        .current_dir(runtime_directory)
-        .stdout(std::process::Stdio::inherit())
-        .stderr(std::process::Stdio::inherit());
-    let status = cmd.status()?;
-    if !status.success() {
-        anyhow::bail!("Failed to manage workspace_hack dependencies");
-    }
+    // let mut cmd = Command::new("cargo");
+    // cmd.arg("hakari")
+    //     .arg("manage-deps")
+    //     .arg("-y")
+    //     .current_dir(runtime_directory)
+    //     .stdout(std::process::Stdio::inherit())
+    //     .stderr(std::process::Stdio::inherit());
+    // let status = cmd.status()?;
+    // if !status.success() {
+    //     anyhow::bail!("Failed to manage workspace_hack dependencies");
+    // }
 
     let timer = std::time::Instant::now();
     println!("Warming up the target directory");
@@ -163,6 +237,15 @@ fn warm_up_target_dir(
         timer.elapsed().as_secs()
     );
 
+    Ok(())
+}
+
+/// Ensure all code generators won't have to invoke `rustdoc` to generate JSON documentation
+/// by pre-computing the JSON documentation for all relevant crates.
+fn warm_up_rustdoc_cache(
+    runtime_directory: &Path,
+    test_name2test_data: &BTreeMap<String, TestData>,
+) -> Result<(), anyhow::Error> {
     let timer = std::time::Instant::now();
     // We want to ensure that all invocations of `pavexc generate` hit the cache
     // thus avoiding the need to invoke `rustdoc` and acquire a contentious
@@ -176,6 +259,7 @@ fn warm_up_target_dir(
     let mut crates = test_name2test_data
         .values()
         .map(|data| format!("app_{}", data.name_hash))
+        // TODO: we need to include locally-defined dependency crates as well
         .collect::<HashSet<_>>();
     // Hand-picked crates that we know we're going to build docs for.
     crates.insert("pavex".into());
@@ -415,6 +499,10 @@ impl TestData {
 
     fn blueprint_directory(&self) -> &Path {
         &self.runtime_directory
+    }
+
+    fn expectations_directory(&self) -> PathBuf {
+        self.definition_directory.join("expectations")
     }
 
     fn generated_app_directory(&self) -> PathBuf {
@@ -674,160 +762,190 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {{
         Ok(())
     }
 
-    pub fn should_run_tests(&self) -> ShouldRunTests {
-        if self.has_tests {
-            ShouldRunTests::Yes
-        } else {
-            ShouldRunTests::No
+    pub fn should_run_tests(&self) -> bool {
+        self.has_tests
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+enum CodegenTestOutcome {
+    Success,
+    Failure { msg: String },
+}
+
+impl CodegenTestOutcome {
+    fn into_trial(
+        self,
+        test_name: &str,
+        test_config: &TestConfig,
+        codegen_output: Option<&CommandOutput>,
+    ) -> Trial {
+        let codegen_test_name = format!("{test_name}::codegen");
+        match self {
+            CodegenTestOutcome::Success => Trial::test(codegen_test_name, || Ok(())),
+            CodegenTestOutcome::Failure { msg } => {
+                let msg = if let Some(codegen_output) = codegen_output {
+                    enrich_codegen_failure_message(codegen_output, test_config, &msg)
+                } else {
+                    msg
+                };
+                let msg = enrich_failure_message(test_config, msg);
+                Trial::test(codegen_test_name, move || Err(Failed::from(msg)))
+            }
         }
     }
 }
 
-enum ShouldRunTests {
-    Yes,
-    No,
-}
-
-fn run_test(runtime_directory: PathBuf, test: TestData, pavexc_cli: PathBuf) -> Result<(), Failed> {
-    match _run_test(&runtime_directory, &test, &pavexc_cli) {
-        Ok(TestOutcome {
-            outcome: Err(mut msg),
-            codegen_output,
-            compilation_output,
-            test_output,
-        }) => Err(Failed::from({
-            write!(
-                &mut msg,
-                "\n\nCODEGEN:\n\t--- STDOUT:\n{}\n\t--- STDERR:\n{}",
-                codegen_output.stdout, codegen_output.stderr
-            )
-            .unwrap();
-            if let Some(compilation_output) = compilation_output {
-                write!(
-                    &mut msg,
-                    "\n\nCARGO CHECK:\n\t--- STDOUT:\n{}\n\t--- STDERR:\n{}",
-                    compilation_output.stdout, compilation_output.stderr
-                )
-                .unwrap();
-            }
-            if let Some(test_output) = test_output {
-                write!(
-                    &mut msg,
-                    "\n\nCARGO TEST:\n\t--- STDOUT:\n{}\n\t--- STDERR:\n{}",
-                    test_output.stdout, test_output.stderr
-                )
-                .unwrap();
-            }
-            enrich_failure_message(&test.configuration, msg)
-        })),
-        Err(e) => Err(Failed::from(enrich_failure_message(
-            &test.configuration,
-            unexpected_failure_message(&e),
-        ))),
-        Ok(TestOutcome {
-            outcome: Ok(()), ..
-        }) => Ok(()),
-    }
-}
-
-fn _run_test(
+fn code_generation_test(
     runtime_directory: &Path,
     test: &TestData,
     pavexc_cli: &Path,
-) -> Result<TestOutcome, anyhow::Error> {
+) -> (Option<CommandOutput>, CodegenTestOutcome) {
     let binary_name = format!("app_{}", test.name_hash);
-    let timer = std::time::Instant::now();
-    println!("Running {binary_name}");
     let binary = runtime_directory
         .join("target")
         .join("debug")
         .join(&binary_name);
-    let output = std::process::Command::new(binary)
+    let output = match std::process::Command::new(binary)
         .env("PAVEX_PAVEXC", pavexc_cli)
         .current_dir(&test.runtime_directory)
         .output()
-        .context("Failed to perform code generation")?;
-    println!("Ran {binary_name} in {} seconds", timer.elapsed().as_secs());
+    {
+        Ok(o) => o,
+        Err(e) => {
+            let msg = format!("Failed to invoke the code generator.\n{:?}", e);
+            return (None, CodegenTestOutcome::Failure { msg });
+        }
+    };
+    let codegen_output = match CommandOutput::try_from(&output) {
+        Ok(o) => o,
+        Err(e) => {
+            let msg = format!("Failed to convert the code generator output.\n{:?}", e);
+            return (None, CodegenTestOutcome::Failure { msg });
+        }
+    };
 
-    let codegen_output: CommandOutput = (&output).try_into()?;
-
-    let expectations_directory = test.definition_directory.join("expectations");
-
-    if !output.status.success() {
-        return match test.configuration.expectations.codegen {
-            ExpectedOutcome::Pass => Ok(TestOutcome {
-                outcome: Err("We failed to generate the application code.".to_string()),
-                codegen_output,
-                compilation_output: None,
-                test_output: None,
-            }),
+    let expectations_directory = test.expectations_directory();
+    let outcome = if !output.status.success() {
+        match test.configuration.expectations.codegen {
+            ExpectedOutcome::Pass => CodegenTestOutcome::Failure {
+                msg: "We failed to generate the application code.".into(),
+            },
             ExpectedOutcome::Fail => {
                 let stderr_snapshot = SnapshotTest::new(
                     expectations_directory.join("stderr.txt"),
                     test.blueprint_crate_name(),
                 );
                 if stderr_snapshot.verify(&codegen_output.stderr).is_err() {
-                    return Ok(TestOutcome {
-                        outcome: Err("The failure message returned by code generation doesn't match what we expected".into()),
-                        codegen_output,
-                        compilation_output: None,
-                        test_output: None,
-                    });
+                    CodegenTestOutcome::Failure { msg: "The failure message returned by code generation doesn't match what we expected".into() }
+                } else {
+                    CodegenTestOutcome::Success
                 }
-                Ok(TestOutcome {
-                    outcome: Ok(()),
-                    codegen_output,
-                    compilation_output: None,
-                    test_output: None,
-                })
             }
-        };
+        }
     } else if ExpectedOutcome::Fail == test.configuration.expectations.codegen {
-        return Ok(TestOutcome {
-            outcome: Err("We expected code generation to fail, but it succeeded!".into()),
-            codegen_output,
-            compilation_output: None,
-            test_output: None,
-        });
+        CodegenTestOutcome::Failure {
+            msg: "We expected code generation to fail, but it succeeded!".into(),
+        }
+    } else {
+        CodegenTestOutcome::Success
+    };
+    (Some(codegen_output), outcome)
+}
+
+fn code_generation_lints_test(
+    data: &TestData,
+    test_name: &str,
+    codegen_output: &CommandOutput,
+) -> Option<Trial> {
+    let ExpectedOutcome::Fail = data.configuration.expectations.lints else {
+        return None;
     };
 
-    if let ExpectedOutcome::Fail = test.configuration.expectations.lints {
-        let stderr_snapshot = SnapshotTest::new(
-            expectations_directory.join("stderr.txt"),
-            test.blueprint_crate_name(),
+    let stderr_snapshot = SnapshotTest::new(
+        data.expectations_directory().join("stderr.txt"),
+        data.blueprint_crate_name(),
+    );
+    let lints_test_name = format!("{test_name}::codegen_lints");
+    let trial = if stderr_snapshot.verify(&codegen_output.stderr).is_err() {
+        let msg = enrich_codegen_failure_message(
+            &codegen_output,
+            &data.configuration,
+            "The warnings returned by code generation don't match what we expected",
         );
-        if stderr_snapshot.verify(&codegen_output.stderr).is_err() {
-            return Ok(TestOutcome {
-                outcome: Err(
-                    "The warnings returned by code generation don't match what we expected".into(),
-                ),
-                codegen_output,
-                compilation_output: None,
-                test_output: None,
-            });
-        }
-    }
+        Trial::test(lints_test_name, move || Err(Failed::from(msg)))
+    } else {
+        Trial::test(lints_test_name, || Ok(()))
+    };
+    Some(trial)
+}
 
+fn enrich_codegen_failure_message(
+    codegen_output: &CommandOutput,
+    configuration: &TestConfig,
+    msg: &str,
+) -> String {
+    let msg = format!(
+        "{msg}\n\nCODEGEN:\n\t--- STDOUT:\n{}\n\t--- STDERR:\n{}",
+        codegen_output.stdout, codegen_output.stderr
+    );
+    enrich_failure_message(configuration, msg)
+}
+
+fn code_generation_diagnostics_test(test_name: &str, test: &TestData) -> Trial {
+    let test_name = format!("{test_name}::codegen_diagnostics");
+    let expectations_directory = test.expectations_directory();
     let diagnostics_snapshot = SnapshotTest::new(
         expectations_directory.join("diagnostics.dot"),
         test.blueprint_crate_name(),
     );
     let actual_diagnostics =
-        fs_err::read_to_string(test.runtime_directory.join("diagnostics.dot"))?;
-    // We don't exit early here to get the generated code snapshot as well.
-    // This allows to update both code snapshot and diagnostics snapshot in one go via
-    // `cargo r --bin snaps` for a failing test instead of having to do them one at a time,
-    // with a test run in the middle.
-    let diagnostics_outcome = diagnostics_snapshot.verify(&actual_diagnostics);
+        match fs_err::read_to_string(test.runtime_directory.join("diagnostics.dot")) {
+            Ok(d) => d,
+            Err(e) => {
+                let msg = format!(
+                "Code generation didn't produce a diagnostic file in the expected location.\n{:?}",
+                e
+            );
+                return Trial::test(test_name, move || Err(Failed::from(msg)));
+            }
+        };
+    if diagnostics_snapshot.verify(&actual_diagnostics).is_err() {
+        let msg =
+            "The diagnostics returned by code generation don't match what we expected.".to_string();
+        Trial::test(test_name, move || Err(Failed::from(msg)))
+    } else {
+        Trial::test(test_name, || Ok(()))
+    }
+}
 
+fn application_code_test(test_name: &str, test: &TestData) -> Trial {
+    let test_name = format!("{test_name}::app_code");
+    let expectations_directory = test.expectations_directory();
     let app_code_snapshot = SnapshotTest::new(
         expectations_directory.join("app.rs"),
         test.blueprint_crate_name(),
     );
     let generated_code_path = test.generated_app_directory().join("src").join("lib.rs");
-    let actual_app_code = fs_err::read_to_string(generated_code_path).unwrap();
-    let codegen_outcome = app_code_snapshot.verify(&actual_app_code);
+    let actual_app_code = match fs_err::read_to_string(generated_code_path) {
+        Ok(d) => d,
+        Err(e) => {
+            let msg = format!(
+                "Code generation didn't produce a `lib.rs` file in the expected location.\n{:?}",
+                e
+            );
+            return Trial::test(test_name, move || Err(Failed::from(msg)));
+        }
+    };
+    if app_code_snapshot.verify(&actual_app_code).is_err() {
+        let msg = "The generated application code doesn't match what we expected.".to_string();
+        Trial::test(test_name, move || Err(Failed::from(msg)))
+    } else {
+        Trial::test(test_name, || Ok(()))
+    }
+}
 
+fn application_code_compilation_test(test: &TestData) -> Result<(), anyhow::Error> {
     // Check that the generated code compiles
     let output = std::process::Command::new("cargo")
         // .env("RUSTFLAGS", "-Awarnings")
@@ -839,75 +957,42 @@ fn _run_test(
         .arg("--quiet")
         .current_dir(&test.runtime_directory)
         .output()
-        .unwrap();
+        .context("Failed to invoke `cargo check` on the generated application code")?;
     let compilation_output: Result<CommandOutput, _> = (&output).try_into();
-
-    if diagnostics_outcome.is_err() {
-        return Ok(TestOutcome {
-            outcome: Err(
-                "Diagnostics for the generated application don't match what we expected".into(),
-            ),
-            codegen_output,
-            compilation_output: None,
-            test_output: None,
-        });
-    }
-
-    if codegen_outcome.is_err() {
-        return Ok(TestOutcome {
-            outcome: Err("The generated application code doesn't match what we expected".into()),
-            codegen_output,
-            compilation_output: None,
-            test_output: None,
-        });
-    }
-
-    let compilation_output = compilation_output?;
+    let compilation_output =
+        compilation_output.context("The output of `cargo check` contains non-UTF8 characters")?;
     if !output.status.success() {
-        return Ok(TestOutcome {
-            outcome: Err("The generated application code doesn't compile.".into()),
-            codegen_output,
-            compilation_output: Some(compilation_output),
-            test_output: None,
-        });
+        anyhow::bail!(
+            "The generated application code doesn't compile.\n\nCARGO CHECK:\n\t--- STDOUT:\n{}\n\t--- STDERR:\n{}",
+                compilation_output.stdout, compilation_output.stderr
+        )
+    } else {
+        Ok(())
     }
-
-    // Run integration tests, if we have any,
-    if let ShouldRunTests::Yes = test.should_run_tests() {
-        let output = std::process::Command::new("cargo")
-            // .env("RUSTFLAGS", "-Awarnings")
-            .arg("t")
-            .arg("--jobs")
-            .arg("1")
-            .arg("-p")
-            .arg(format!("integration_{}", test.name_hash))
-            .current_dir(&test.runtime_directory)
-            .output()
-            .unwrap();
-        let test_output: CommandOutput = (&output).try_into()?;
-        if !output.status.success() {
-            return Ok(TestOutcome {
-                outcome: Err("Integration tests failed.".into()),
-                codegen_output,
-                test_output: Some(test_output),
-                compilation_output: Some(compilation_output),
-            });
-        }
-    }
-
-    Ok(TestOutcome {
-        outcome: Ok(()),
-        codegen_output,
-        compilation_output: Some(compilation_output),
-        test_output: None,
-    })
 }
 
-struct TestOutcome {
-    outcome: Result<(), String>,
-    codegen_output: CommandOutput,
-    compilation_output: Option<CommandOutput>,
-    test_output: Option<CommandOutput>,
+fn application_integration_test(test: &TestData) -> Result<(), anyhow::Error> {
+    let output = std::process::Command::new("cargo")
+        // .env("RUSTFLAGS", "-Awarnings")
+        .arg("t")
+        .arg("--jobs")
+        .arg("1")
+        .arg("-p")
+        .arg(format!("integration_{}", test.name_hash))
+        .current_dir(&test.runtime_directory)
+        .output()
+        .context("Failed to invoke `cargo test` on the app integration tests")?;
+    let test_output: CommandOutput = (&output)
+        .try_into()
+        .context("The output of `cargo test` contains non-UTF8 characters")?;
+    if !output.status.success() {
+        anyhow::bail!(
+                "Integration tests didn't succeed.\n\nCARGO TEST:\n\t--- STDOUT:\n{}\n\t--- STDERR:\n{}",
+                test_output.stdout, test_output.stderr
+            )
+    } else {
+        Ok(())
+    }
 }
 
 /// A refined `std::process::Output` that assumes that both stderr and stdout are valid UTF8.
@@ -929,13 +1014,6 @@ impl TryFrom<&Output> for CommandOutput {
             stderr: stderr.to_string(),
         })
     }
-}
-
-fn unexpected_failure_message(e: &anyhow::Error) -> String {
-    format!(
-        "An unexpected error was encountered when running a test.\n\n{}\n---\n{:?}",
-        &e, &e
-    )
 }
 
 fn enrich_failure_message(config: &TestConfig, error: impl AsRef<str>) -> String {
