@@ -15,6 +15,7 @@ dist = false
 anyhow = { workspace = true }
 ahash = { workspace = true }
 console = { workspace = true }
+cargo_metadata = { workspace = true }
 fs-err = { workspace = true }
 libtest-mimic = { workspace = true }
 serde = { workspace = true, features = ["derive"] }

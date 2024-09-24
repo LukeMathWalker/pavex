@@ -1,10 +1,11 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write;
 use std::path::{Component, Path, PathBuf};
 use std::process::{Command, Output};
 
 use ahash::{HashMap, HashSet};
 use anyhow::Context;
+use cargo_metadata::diagnostic::DiagnosticLevel;
 use console::style;
 use itertools::Itertools;
 use libtest_mimic::{Arguments, Conclusion, Failed, Trial};
@@ -83,14 +84,17 @@ pub fn run_tests(
 
     let mut trials = Vec::with_capacity(test_name2test_data.len() * 4);
     if !arguments.list {
-        warm_up_target_dir(&runtime_directory)?;
         warm_up_rustdoc_cache(&runtime_directory, &test_name2test_data)?;
+        warm_up_target_dir(&runtime_directory, &test_name2test_data)?;
 
         // First battery of the UI tests.
         // For each UI test, we run code generation and then generate a different
         // "test case" for each assertion that's relevant to the code generation process.
         // If all assertions pass, we return a `bool` set to `true` which indicates
         // that we want to run the second battery of assertions on that UI test.
+        let n_codegen_tests = test_name2test_data.len();
+        let timer = std::time::Instant::now();
+        println!("Performing code generation for {n_codegen_tests} tests");
         let intermediate: BTreeMap<String, (Vec<Trial>, bool)> = test_name2test_data
             .par_iter()
             .map(|(name, data)| {
@@ -124,6 +128,10 @@ pub fn run_tests(
                 (name.to_owned(), (trials, true))
             })
             .collect();
+        println!(
+            "Performed code generation for {n_codegen_tests} tests in {} seconds",
+            timer.elapsed().as_secs()
+        );
 
         let test_name2test_data: BTreeMap<_, _> = test_name2test_data
             .into_iter()
@@ -135,10 +143,22 @@ pub fn run_tests(
             trials.extend(partial);
         });
 
+        let (cases, test_name2test_data) =
+            compile_generated_apps(&runtime_directory, test_name2test_data)?;
+
+        trials.extend(cases);
+
         // TODO: We need to run them in parallel.
+        let test_name2test_data: BTreeMap<_, _> = test_name2test_data
+            .into_iter()
+            .filter(|(_, data)| data.should_run_tests())
+            .collect();
+        let n_integration_cases = test_name2test_data.len();
+        println!("Running integration tests for {n_integration_cases} test cases");
+        let timer = std::time::Instant::now();
         for (name, data) in test_name2test_data {
-            let trial_name = format!("{}::app_code_compiles", name);
-            match application_code_compilation_test(&data) {
+            let trial_name = format!("{}::app_integration_tests", name);
+            match application_integration_test(&data) {
                 Ok(_) => {
                     let trial = Trial::test(trial_name, || Ok(()));
                     trials.push(trial);
@@ -147,29 +167,99 @@ pub fn run_tests(
                     let msg = format!("{err:?}");
                     let trial = Trial::test(trial_name, move || Err(Failed::from(msg)));
                     trials.push(trial);
-
-                    // We skip the follow-up tests if the application code compilation test failed.
-                    continue;
-                }
-            }
-
-            if data.should_run_tests() {
-                let trial_name = format!("{}::app_integration_tests", name);
-                match application_integration_test(&data) {
-                    Ok(_) => {
-                        let trial = Trial::test(trial_name, || Ok(()));
-                        trials.push(trial);
-                    }
-                    Err(err) => {
-                        let msg = format!("{err:?}");
-                        let trial = Trial::test(trial_name, move || Err(Failed::from(msg)));
-                        trials.push(trial);
-                    }
                 }
             }
         }
+        println!(
+            "Ran integration tests for {n_integration_cases} test cases in {} seconds",
+            timer.elapsed().as_secs()
+        );
     }
     Ok(libtest_mimic::run(&arguments, trials))
+}
+
+fn compile_generated_apps(
+    runtime_directory: &Path,
+    test_name2test_data: BTreeMap<String, TestData>,
+) -> Result<(Vec<Trial>, BTreeMap<String, TestData>), anyhow::Error> {
+    let generated_crate_names = test_name2test_data
+        .values()
+        .map(|data| data.generated_crate_name())
+        .collect::<BTreeSet<_>>();
+    let timer = std::time::Instant::now();
+    println!("Compiling {} generated crates", generated_crate_names.len());
+    let mut cmd = Command::new("cargo");
+    cmd.arg("check").arg("--message-format").arg("json");
+    for name in &generated_crate_names {
+        cmd.arg("-p").arg(name);
+    }
+    let output = cmd
+        .arg("--all-targets")
+        .current_dir(runtime_directory)
+        .output()
+        .context("Failed to invoke `cargo build` on the generated crates")?;
+    let build_output = CommandOutput::try_from(&output).context("Failed to parse build output")?;
+    let mut crate_names2error = BTreeMap::<_, String>::new();
+    for line in build_output.stderr.lines() {
+        let Ok(json) = serde_json::from_str::<cargo_metadata::Message>(line) else {
+            // Not all output lines are JSON, so we ignore the ones that aren't.
+            continue;
+        };
+        // We are primarily looking for errors here.
+        let cargo_metadata::Message::CompilerMessage(msg) = json else {
+            continue;
+        };
+        if msg.message.level == DiagnosticLevel::Error
+            || msg.message.level == DiagnosticLevel::FailureNote
+        {
+            let package_name_and_version = msg
+                .package_id
+                .repr
+                .split_once('#')
+                .expect("Missing package name")
+                .1;
+            let package_name = package_name_and_version
+                .split_once('@')
+                .expect("Missing version")
+                .0;
+            assert!(
+                generated_crate_names.contains(package_name),
+                "Error compiling a crate that's not one of ours, {}",
+                msg.package_id.repr
+            );
+            let errors = crate_names2error
+                .entry(package_name.to_owned())
+                .or_default();
+            writeln!(
+                errors,
+                "{}",
+                msg.message.rendered.unwrap_or(msg.message.message)
+            )
+            .unwrap();
+        }
+    }
+    let mut trials = Vec::new();
+    let mut further = BTreeMap::new();
+    for (test_name, data) in test_name2test_data {
+        let error = crate_names2error.get(&data.generated_crate_name()).cloned();
+        let case_name = format!("{test_name}::app_code_compiles");
+        let trial = if let Some(error) = error {
+            Trial::test(case_name, move || Err(Failed::from(error)))
+        } else {
+            further.insert(test_name, data);
+            Trial::test(case_name, || Ok(()))
+        };
+        trials.push(trial);
+    }
+    if !output.status.success() && crate_names2error.is_empty() {
+        panic!("Something went wrong when compiling the generated crates, but we failed to capture what or where.")
+    }
+    println!(
+        "Compiled {} generated crates in {} seconds",
+        generated_crate_names.len(),
+        timer.elapsed().as_secs(),
+    );
+    Ok((trials, further))
 }
 
 // Inlined from `libtest_mimic` to further control the test execution.
@@ -199,7 +289,10 @@ fn is_filtered_out(args: &Arguments, test_name: &str) -> bool {
 /// Compile all binary targets of the type `app_*`.
 /// This ensures that all dependencies have been compiled, speeding up further operations,
 /// as well as preparing the binaries that each test will invoke.
-fn warm_up_target_dir(runtime_directory: &Path) -> Result<(), anyhow::Error> {
+fn warm_up_target_dir(
+    runtime_directory: &Path,
+    test_name2test_data: &BTreeMap<String, TestData>,
+) -> Result<(), anyhow::Error> {
     println!("Creating a workspace-hack crate to unify dependencies");
 
     // Clean up pre-existing workspace_hack, since `cargo hakari init` will fail
@@ -246,8 +339,11 @@ fn warm_up_target_dir(runtime_directory: &Path) -> Result<(), anyhow::Error> {
     let timer = std::time::Instant::now();
     println!("Warming up the target directory");
     let mut cmd = Command::new("cargo");
-    cmd.arg("build")
-        .arg("--bins")
+    cmd.arg("build");
+    for data in test_name2test_data.values() {
+        cmd.arg("-p").arg(data.blueprint_crate_name());
+    }
+    cmd.arg("--all-targets")
         .stdout(std::process::Stdio::inherit())
         .stderr(std::process::Stdio::inherit())
         .current_dir(runtime_directory);
@@ -541,6 +637,10 @@ impl TestData {
         format!("app_{}", self.name_hash)
     }
 
+    fn generated_crate_name(&self) -> String {
+        format!("application_{}", self.name_hash)
+    }
+
     fn integration_test_directory(&self) -> Option<PathBuf> {
         self.has_tests
             .then(|| self.runtime_directory.join("integration"))
@@ -741,17 +841,6 @@ impl TestData {
         let cargo_config = toml! {
             [build]
             incremental = false
-
-            [target.x86_64-pc-windows-msvc]
-            rustflags = ["-C", "link-arg=-fuse-ld=lld"]
-            [target.x86_64-pc-windows-gnu]
-            rustflags = ["-C", "link-arg=-fuse-ld=lld"]
-            [target.x86_64-unknown-linux-gnu]
-            rustflags = ["-C", "linker=clang", "-C", "link-arg=-fuse-ld=lld"]
-            [target.x86_64-apple-darwin]
-            rustflags = ["-C", "link-arg=-fuse-ld=/usr/local/opt/llvm/bin/ld64.lld"]
-            [target.aarch64-apple-darwin]
-            rustflags = ["-C", "link-arg=-fuse-ld=/opt/homebrew/opt/llvm/bin/ld64.lld"]
         };
         let dot_cargo_folder = self.runtime_directory.join(".cargo");
         fs_err::create_dir_all(&dot_cargo_folder)?;
@@ -974,41 +1063,17 @@ fn application_code_test(test_name: &str, test: &TestData) -> Trial {
     }
 }
 
-fn application_code_compilation_test(test: &TestData) -> Result<(), anyhow::Error> {
-    // Check that the generated code compiles
-    let output = std::process::Command::new("cargo")
-        // .env("RUSTFLAGS", "-Awarnings")
-        .arg("check")
-        .arg("--jobs")
-        .arg("1")
-        .arg("-p")
-        .arg(format!("application_{}", test.name_hash))
-        .arg("--quiet")
-        .current_dir(&test.runtime_directory)
-        .output()
-        .context("Failed to invoke `cargo check` on the generated application code")?;
-    let compilation_output: Result<CommandOutput, _> = (&output).try_into();
-    let compilation_output =
-        compilation_output.context("The output of `cargo check` contains non-UTF8 characters")?;
-    if !output.status.success() {
-        anyhow::bail!(
-            "The generated application code doesn't compile.\n\nCARGO CHECK:\n\t--- STDOUT:\n{}\n\t--- STDERR:\n{}",
-                compilation_output.stdout, compilation_output.stderr
-        )
-    } else {
-        Ok(())
-    }
-}
-
 fn application_integration_test(test: &TestData) -> Result<(), anyhow::Error> {
     let output = std::process::Command::new("cargo")
         // .env("RUSTFLAGS", "-Awarnings")
         .arg("t")
-        .arg("--jobs")
-        .arg("1")
+        // .arg("--jobs")
+        // .arg("1")
         .arg("-p")
         .arg(format!("integration_{}", test.name_hash))
         .current_dir(&test.runtime_directory)
+        .stdout(std::process::Stdio::inherit())
+        .stderr(std::process::Stdio::inherit())
         .output()
         .context("Failed to invoke `cargo test` on the app integration tests")?;
     let test_output: CommandOutput = (&output)
