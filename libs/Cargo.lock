@@ -2311,6 +2311,7 @@ dependencies = [
  "pavexc",
  "persist_if_changed",
  "px_workspace_hack",
+ "rayon",
  "regex",
  "serde",
  "serde_json",

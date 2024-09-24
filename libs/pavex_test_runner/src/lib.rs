@@ -10,6 +10,7 @@ use itertools::Itertools;
 use libtest_mimic::{Arguments, Conclusion, Failed, Trial};
 use pavexc::rustdoc::CrateCollection;
 use pavexc::DEFAULT_DOCS_TOOLCHAIN;
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use sha2::Digest;
 use toml::toml;
 use walkdir::WalkDir;
@@ -80,40 +81,62 @@ pub fn run_tests(
 
     create_tests_dir(&runtime_directory, &test_name2test_data, &pavex_cli)?;
 
-    let mut trials = Vec::new();
+    let mut trials = Vec::with_capacity(test_name2test_data.len() * 4);
     if !arguments.list {
         warm_up_target_dir(&runtime_directory)?;
         warm_up_rustdoc_cache(&runtime_directory, &test_name2test_data)?;
 
+        // First battery of the UI tests.
+        // For each UI test, we run code generation and then generate a different
+        // "test case" for each assertion that's relevant to the code generation process.
+        // If all assertions pass, we return a `bool` set to `true` which indicates
+        // that we want to run the second battery of assertions on that UI test.
+        let intermediate: BTreeMap<String, (Vec<Trial>, bool)> = test_name2test_data
+            .par_iter()
+            .map(|(name, data)| {
+                let mut trials = Vec::new();
+                let (codegen_output, outcome) =
+                    code_generation_test(&runtime_directory, &data, &pavexc_cli);
+                let is_success = outcome == CodegenTestOutcome::Success;
+                let trial = outcome.into_trial(&name, &data.configuration, codegen_output.as_ref());
+                trials.push(trial);
+
+                // If the code generation test failed, we skip the follow-up tests.
+                if !is_success {
+                    return (name.to_owned(), (trials, false));
+                }
+
+                if let Some(codegen_output) = codegen_output {
+                    if let Some(trial) = code_generation_lints_test(&data, &name, &codegen_output) {
+                        trials.push(trial);
+                    }
+                };
+
+                if data.configuration.expectations.codegen == ExpectedOutcome::Fail {
+                    return (name.to_owned(), (trials, false));
+                }
+
+                let trial = code_generation_diagnostics_test(&name, &data);
+                trials.push(trial);
+
+                let trial = application_code_test(&name, &data);
+                trials.push(trial);
+                (name.to_owned(), (trials, true))
+            })
+            .collect();
+
+        let test_name2test_data: BTreeMap<_, _> = test_name2test_data
+            .into_iter()
+            .filter(|(k, _)| intermediate[k].1)
+            .collect();
+
+        // Save the results of the first battery of tests.
+        intermediate.into_values().for_each(|(partial, _)| {
+            trials.extend(partial);
+        });
+
         // TODO: We need to run them in parallel.
         for (name, data) in test_name2test_data {
-            let (codegen_output, outcome) =
-                code_generation_test(&runtime_directory, &data, &pavexc_cli);
-            let is_success = outcome == CodegenTestOutcome::Success;
-            let trial = outcome.into_trial(&name, &data.configuration, codegen_output.as_ref());
-            trials.push(trial);
-
-            // If the code generation test failed, we skip the follow-up tests.
-            if !is_success {
-                continue;
-            }
-
-            if let Some(codegen_output) = codegen_output {
-                if let Some(trial) = code_generation_lints_test(&data, &name, &codegen_output) {
-                    trials.push(trial);
-                }
-            };
-
-            if data.configuration.expectations.codegen == ExpectedOutcome::Fail {
-                continue;
-            }
-
-            let trial = code_generation_diagnostics_test(&name, &data);
-            trials.push(trial);
-
-            let trial = application_code_test(&name, &data);
-            trials.push(trial);
-
             let trial_name = format!("{}::app_code_compiles", name);
             match application_code_compilation_test(&data) {
                 Ok(_) => {
@@ -258,8 +281,13 @@ fn warm_up_rustdoc_cache(
     )?;
     let mut crates = test_name2test_data
         .values()
-        .map(|data| format!("app_{}", data.name_hash))
-        // TODO: we need to include locally-defined dependency crates as well
+        .flat_map(|data| {
+            data.configuration
+                .ephemeral_dependencies
+                .keys()
+                .map(|name| format!("{name}_{}", data.name_hash))
+                .chain(std::iter::once(format!("app_{}", data.name_hash)))
+        })
         .collect::<HashSet<_>>();
     // Hand-picked crates that we know we're going to build docs for.
     crates.insert("pavex".into());
@@ -561,6 +589,7 @@ impl TestData {
 
                 [lints.rust]
                 unexpected_cfgs = { level = "allow", check-cfg = ["cfg(pavex_ide_hint)"] }
+                unused = { level = "allow" }
 
                 [dependencies]
                 pavex = { workspace = true }
