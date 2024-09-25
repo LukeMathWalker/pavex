@@ -19,12 +19,10 @@ license.workspace = true
 [dependencies]
 ahash = { version = "0.8" }
 aho-corasick = { version = "1" }
-bitflags = { version = "2", default-features = false, features = ["serde"] }
 byteorder = { version = "1" }
 clap = { version = "4", features = ["derive", "env"] }
 clap_builder = { version = "4", default-features = false, features = ["color", "env", "help", "std", "suggestions", "usage"] }
 console = { version = "0.15" }
-crossbeam-utils = { version = "0.8" }
 crypto-common = { version = "0.1", default-features = false, features = ["getrandom", "std"] }
 deranged = { version = "0.3", default-features = false, features = ["powerfmt", "serde", "std"] }
 digest = { version = "0.10", features = ["mac", "std"] }
@@ -62,19 +60,16 @@ tracing = { version = "0.1" }
 tracing-core = { version = "0.1" }
 tracing-log = { version = "0.2" }
 uuid = { version = "1", features = ["fast-rng", "serde", "v4", "v7"] }
-zerocopy = { version = "0.7", features = ["derive", "simd"] }
 zeroize = { version = "1", features = ["zeroize_derive"] }
 
 [build-dependencies]
 ahash = { version = "0.8" }
 aho-corasick = { version = "1" }
-bitflags = { version = "2", default-features = false, features = ["serde"] }
 byteorder = { version = "1" }
 cc = { version = "1", default-features = false, features = ["parallel"] }
 clap = { version = "4", features = ["derive", "env"] }
 clap_builder = { version = "4", default-features = false, features = ["color", "env", "help", "std", "suggestions", "usage"] }
 console = { version = "0.15" }
-crossbeam-utils = { version = "0.8" }
 crypto-common = { version = "0.1", default-features = false, features = ["getrandom", "std"] }
 deranged = { version = "0.3", default-features = false, features = ["powerfmt", "serde", "std"] }
 digest = { version = "0.10", features = ["mac", "std"] }
@@ -113,7 +108,6 @@ tracing = { version = "0.1" }
 tracing-core = { version = "0.1" }
 tracing-log = { version = "0.2" }
 uuid = { version = "1", features = ["fast-rng", "serde", "v4", "v7"] }
-zerocopy = { version = "0.7", features = ["derive", "simd"] }
 zeroize = { version = "1", features = ["zeroize_derive"] }
 
 ### END HAKARI SECTION

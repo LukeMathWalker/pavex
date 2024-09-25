@@ -2648,13 +2648,11 @@ version = "0.1.0"
 dependencies = [
  "ahash",
  "aho-corasick",
- "bitflags 2.6.0",
  "byteorder",
  "cc",
  "clap",
  "clap_builder",
  "console",
- "crossbeam-utils",
  "crypto-common",
  "deranged",
  "digest",
@@ -2693,7 +2691,6 @@ dependencies = [
  "tracing-core",
  "tracing-log",
  "uuid",
- "zerocopy",
  "zeroize",
 ]
 
