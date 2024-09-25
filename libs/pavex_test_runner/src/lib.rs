@@ -3,7 +3,7 @@ use std::fmt::Write;
 use std::path::{Component, Path, PathBuf};
 use std::process::{Command, Output};
 
-use ahash::{HashMap, HashSet};
+use ahash::HashSet;
 use anyhow::Context;
 use cargo_metadata::diagnostic::DiagnosticLevel;
 use console::style;
@@ -68,20 +68,33 @@ pub fn run_tests(
     for entry in get_ui_test_directories(&tests_directory) {
         let test_name = get_test_name(&tests_directory, &entry);
         let test_data = TestData::new(&test_name, entry.clone())?;
-        if is_filtered_out(&arguments, &test_name) || test_data.configuration.ignore {
-            continue;
-        }
         test_name2test_data.insert(test_name, test_data);
     }
 
     create_tests_dir(&tests_directory, &test_name2test_data)?;
 
+    let test_name2test_data = test_name2test_data
+        .into_iter()
+        .filter(|(test_name, test_data)| {
+            // Skip tests that are filtered out (e.g. by name or by tag)
+            // We only do this *after* we've created the test directories, so that we don't
+            // change the test directory structure based on the filters, which would cause
+            // cache invalidation issues for `cargo`.
+            !is_filtered_out(&arguments, &test_name) && !test_data.configuration.ignore
+        })
+        .collect::<BTreeMap<_, _>>();
+
     let mut trials = Vec::with_capacity(test_name2test_data.len() * 4);
     if !arguments.list {
-        warm_up_rustdoc_cache(&tests_directory, &test_name2test_data)?;
         warm_up_target_dir(&tests_directory, &test_name2test_data)?;
+        // We warm up Pavex's `rustdoc` cache to avoid cross-test contention.
+        // In case of a cache miss, a UI test will try to run `rustdoc` and
+        // acquire the global target directory lock. If multiple tests end up
+        // doing this at the same time, their execution will be serialized,
+        // which would have a major impact on the overall test suite runtime.
+        warm_up_rustdoc_cache(&tests_directory, &test_name2test_data)?;
 
-        // First battery of the UI tests.
+        // First battery of UI tests.
         // For each UI test, we run code generation and then generate a different
         // "test case" for each assertion that's relevant to the code generation process.
         // If all assertions pass, we return a `bool` set to `true` which indicates
@@ -90,6 +103,8 @@ pub fn run_tests(
         let timer = std::time::Instant::now();
         println!("Performing code generation for {n_codegen_tests} tests");
         let intermediate: BTreeMap<String, (Vec<Trial>, bool)> = test_name2test_data
+            // This defaults to the number of logical cores on the machine.
+            // TODO: honor the `--jobs` flag from `cargo test`.
             .par_iter()
             .map(|(name, data)| {
                 let mut trials = Vec::new();
@@ -142,11 +157,11 @@ pub fn run_tests(
 
         trials.extend(cases);
 
-        // TODO: We need to run them in parallel.
         let test_name2test_data: BTreeMap<_, _> = test_name2test_data
             .into_iter()
             .filter(|(_, data)| data.should_run_tests())
             .collect();
+        build_integration_tests(&tests_directory, &test_name2test_data);
         let n_integration_cases = test_name2test_data.len();
         println!("Running integration tests for {n_integration_cases} test cases");
         let timer = std::time::Instant::now();
@@ -195,42 +210,45 @@ fn compile_generated_apps(
     let build_output = CommandOutput::try_from(&output).context("Failed to parse build output")?;
     let mut crate_names2error = BTreeMap::<_, String>::new();
     for line in build_output.stderr.lines() {
-        let Ok(json) = serde_json::from_str::<cargo_metadata::Message>(line) else {
+        let Ok(cargo_metadata::Message::CompilerMessage(msg)) =
+            serde_json::from_str::<cargo_metadata::Message>(line)
+        else {
             // Not all output lines are JSON, so we ignore the ones that aren't.
+            // We also ignore other types of messages (e.g. build scripts notifications
+            // and artifact information).
             continue;
         };
-        // We are primarily looking for errors here.
-        let cargo_metadata::Message::CompilerMessage(msg) = json else {
-            continue;
-        };
-        if msg.message.level == DiagnosticLevel::Error
-            || msg.message.level == DiagnosticLevel::FailureNote
+        // We are only looking at errors here.
+        if !(msg.message.level == DiagnosticLevel::Error
+            || msg.message.level == DiagnosticLevel::FailureNote)
         {
-            let package_name_and_version = msg
-                .package_id
-                .repr
-                .split_once('#')
-                .expect("Missing package name")
-                .1;
-            let package_name = package_name_and_version
-                .split_once('@')
-                .expect("Missing version")
-                .0;
-            assert!(
-                generated_crate_names.contains(package_name),
-                "Error compiling a crate that's not one of ours, {}",
-                msg.package_id.repr
-            );
-            let errors = crate_names2error
-                .entry(package_name.to_owned())
-                .or_default();
-            writeln!(
-                errors,
-                "{}",
-                msg.message.rendered.unwrap_or(msg.message.message)
-            )
-            .unwrap();
+            continue;
         }
+
+        let package_name_and_version = msg
+            .package_id
+            .repr
+            .split_once('#')
+            .expect("Missing package name")
+            .1;
+        let package_name = package_name_and_version
+            .split_once('@')
+            .expect("Missing version")
+            .0;
+        assert!(
+            generated_crate_names.contains(package_name),
+            "Error compiling a crate that's not one of ours, {}",
+            msg.package_id.repr
+        );
+        let errors = crate_names2error
+            .entry(package_name.to_owned())
+            .or_default();
+        writeln!(
+            errors,
+            "{}",
+            msg.message.rendered.unwrap_or(msg.message.message)
+        )
+        .unwrap();
     }
     let mut trials = Vec::new();
     let mut further = BTreeMap::new();
@@ -287,49 +305,6 @@ fn warm_up_target_dir(
     runtime_directory: &Path,
     test_name2test_data: &BTreeMap<String, TestData>,
 ) -> Result<(), anyhow::Error> {
-    println!("Creating a workspace-hack crate to unify dependencies");
-
-    // Clean up pre-existing workspace_hack, since `cargo hakari init` will fail
-    // if it already exists.
-    // let _ = fs_err::remove_dir_all(runtime_directory.join("workspace_hack"));
-    // let _ = fs_err::remove_file(runtime_directory.join(".config").join("hakari.toml"));
-
-    // let mut cmd = Command::new("cargo");
-    // cmd.arg("hakari")
-    //     .arg("init")
-    //     .arg("-y")
-    //     .arg("workspace_hack")
-    //     .current_dir(runtime_directory)
-    //     .stdout(std::process::Stdio::inherit())
-    //     .stderr(std::process::Stdio::inherit());
-    // let status = cmd.status()?;
-    // if !status.success() {
-    //     anyhow::bail!("Failed to create workspace_hack crate");
-    // }
-
-    // let mut cmd = Command::new("cargo");
-    // cmd.arg("hakari")
-    //     .arg("generate")
-    //     .current_dir(runtime_directory)
-    //     .stdout(std::process::Stdio::inherit())
-    //     .stderr(std::process::Stdio::inherit());
-    // let status = cmd.status()?;
-    // if !status.success() {
-    //     anyhow::bail!("Failed to generate workspace_hack crate");
-    // }
-
-    // let mut cmd = Command::new("cargo");
-    // cmd.arg("hakari")
-    //     .arg("manage-deps")
-    //     .arg("-y")
-    //     .current_dir(runtime_directory)
-    //     .stdout(std::process::Stdio::inherit())
-    //     .stderr(std::process::Stdio::inherit());
-    // let status = cmd.status()?;
-    // if !status.success() {
-    //     anyhow::bail!("Failed to manage workspace_hack dependencies");
-    // }
-
     let timer = std::time::Instant::now();
     println!("Warming up the target directory");
     let mut cmd = Command::new("cargo");
@@ -369,16 +344,23 @@ fn warm_up_rustdoc_cache(
         DEFAULT_DOCS_TOOLCHAIN.to_owned(),
         runtime_directory.to_path_buf(),
     )?;
-    let mut crates = test_name2test_data
+    let app_names = test_name2test_data
         .values()
-        .flat_map(|data| {
-            data.configuration
-                .ephemeral_dependencies
-                .keys()
-                .map(|name| format!("{name}_{}", data.name_hash))
-                .chain(std::iter::once(format!("app_{}", data.name_hash)))
-        })
+        .map(|data| data.blueprint_crate_name())
         .collect::<HashSet<_>>();
+    let mut crates: HashSet<_> = crate_collection
+        .package_graph()
+        .workspace()
+        .iter()
+        .filter(|p| {
+            !(p.name().starts_with("application_")
+                || p.name().starts_with("integration_")
+                || p.name() == "workspace_hack"
+                || (p.name().starts_with("app_") && !app_names.contains(p.name())))
+        })
+        .map(|p| p.name().to_owned())
+        .collect();
+    crates.remove("workspace_hack");
     // Hand-picked crates that we know we're going to build docs for.
     crates.insert("pavex".into());
     crates.insert("tracing".into());
@@ -414,8 +396,10 @@ fn create_tests_dir(
     // Create a `Cargo.toml` to define a workspace,
     // where each UI test is a workspace member
     let cargo_toml_path = runtime_directory.join("Cargo.toml");
-    let mut cargo_toml = String::new();
-    writeln!(&mut cargo_toml, "[workspace]\nmembers = [").unwrap();
+    let mut cargo_toml = r##"# Generated by `pavex_test_runner`.
+# Do NOT modify it manually."##
+        .to_string();
+    writeln!(&mut cargo_toml, "\n[workspace]\nmembers = [").unwrap();
     for test_data in test_name2test_data.values() {
         for member in test_data.workspace_members() {
             let relative_path = member.strip_prefix(&runtime_directory).unwrap();
@@ -477,42 +461,9 @@ struct TestConfig {
     /// Define what we expect to see when running the tests (e.g. should code generation succeed or fail?).
     #[serde(default)]
     expectations: TestExpectations,
-    /// Ephemeral crates that should be generated as part of the test setup in order to be
-    /// used as dependencies of the main crate under test.
-    #[serde(default)]
-    ephemeral_dependencies: HashMap<String, EphemeralDependency>,
-    /// Crates that should be listed as dependencies of the package under the test, in addition to
-    /// Pavex itself.
-    #[serde(default)]
-    dependencies: toml::value::Table,
-    /// Crates that should be listed as dev dependencies of the test package.
-    #[serde(default, rename = "dev-dependencies")]
-    dev_dependencies: toml::value::Table,
     /// Ignore the test if set to `true`.
     #[serde(default)]
     ignore: bool,
-}
-
-#[derive(serde::Deserialize)]
-#[serde(rename_all = "snake_case")]
-struct EphemeralDependency {
-    #[serde(default)]
-    /// The name of the package in the generated `Cargo.toml`.
-    /// If not specified, the corresponding key in [`TestConfig::ephemeral_dependencies`] will be used.
-    package: Option<String>,
-    /// The path to the file that should be used as `lib.rs` in the generated library crate.
-    path: PathBuf,
-    /// Crates that should be listed as dependencies of generated library crate.
-    #[serde(default)]
-    dependencies: toml::value::Table,
-    #[serde(default = "default_ephemeral_version")]
-    /// The version of the package in the generated `Cargo.toml`.
-    /// If not specified, it defaults to `0.1.0`.
-    version: String,
-}
-
-fn default_ephemeral_version() -> String {
-    "0.1.0".to_string()
 }
 
 #[derive(serde::Deserialize)]
@@ -606,15 +557,6 @@ impl TestData {
                 &path
             )
         })
-    }
-
-    /// The directory containing the source code of all ephemeral dependencies.
-    ///
-    /// We don't want to list ephemeral dependencies as members of the workspace of the project under test
-    /// in order to be able to have multiple versions of the same crate as dependencies of the project under test.
-    /// That would be forbidden by `cargo` if they were listed as members of the same workspace.
-    fn ephemeral_deps_directory(&self) -> PathBuf {
-        self.definition_directory.join("ephemeral_deps")
     }
 
     fn blueprint_directory(&self) -> &Path {
@@ -894,12 +836,33 @@ fn application_code_test(test_name: &str, test: &TestData) -> Trial {
     }
 }
 
+fn build_integration_tests(test_dir: &Path, test_name2test_data: &BTreeMap<String, TestData>) {
+    let n_integration_tests = test_name2test_data.len();
+    let timer = std::time::Instant::now();
+    println!("Building {n_integration_tests} integration tests, without running them");
+    let mut cmd = std::process::Command::new("cargo");
+    cmd.arg("test").arg("--no-run");
+    for test in test_name2test_data.values() {
+        cmd.arg("-p").arg(format!("integration_{}", test.name_hash));
+    }
+
+    // We don't care if it fails, since we are going to capture failures
+    // one test at a time when we run them.
+    let _ = cmd
+        .current_dir(test_dir)
+        .stdout(std::process::Stdio::inherit())
+        .stderr(std::process::Stdio::inherit())
+        .output();
+    println!(
+        "Built {n_integration_tests} integration tests in {} seconds",
+        timer.elapsed().as_secs()
+    );
+}
+
 fn application_integration_test(test: &TestData) -> Result<(), anyhow::Error> {
     let output = std::process::Command::new("cargo")
         // .env("RUSTFLAGS", "-Awarnings")
         .arg("t")
-        // .arg("--jobs")
-        // .arg("1")
         .arg("-p")
         .arg(format!("integration_{}", test.name_hash))
         .current_dir(&test.definition_directory)

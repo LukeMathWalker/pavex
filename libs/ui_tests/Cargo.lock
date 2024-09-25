@@ -126,9 +126,382 @@ dependencies = [
 
 [[package]]
 name = "anyhow"
-version = "1.0.87"
+version = "1.0.89"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "10f00e1f6e58a40e807377c75c6a7f97bf9044fab57816f2414e6f5f4499d7b8"
+checksum = "86fdf8605db99b54d3cd748a44c6d04df638eb5dafb219b135d0149bd0db01f6"
+
+[[package]]
+name = "app_00ed62be"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_01492b3d"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_01bbcc3d"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_028e5d85"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_05806dea"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_065fd341"
+version = "0.1.0"
+dependencies = [
+ "dep_065fd341",
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_0ca8edfa"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_0cb36ccc"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_11354b55"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_18d45c43"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_1bd0738c"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_23e2eec5"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_24452d94"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_2480aa2b"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_24d12820"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_2546f91e"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_30248169"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_309371bf"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_335ca652"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_33cee83d"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_366b29bf"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_381916a7"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_39415e2f"
+version = "0.1.0"
+dependencies = [
+ "dep_39415e2f",
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_3acfbc8e"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_3e2693d0"
+version = "0.1.0"
+dependencies = [
+ "dep_3e2693d0",
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_3e90eeee"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_3fac62e4"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_40a0f751"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_40ab089d"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_40e90d31"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_41064ffa"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_466ed127"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_46ab7f5d"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_46e3d1f1"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_4a62f10c"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_4b6f5359"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_4bcfa44d"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_4c9069e8"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_51ea2925"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_53427e7d"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_53b2f5d8"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "serde",
+ "workspace_hack",
+]
 
 [[package]]
 name = "app_55dca802"
@@ -141,17 +514,1463 @@ dependencies = [
 ]
 
 [[package]]
-name = "application_55dca802"
+name = "app_56692d2c"
 version = "0.1.0"
 dependencies = [
- "app_55dca802",
- "dep_55dca802",
- "http",
- "hyper",
  "pavex",
- "pavex_matchit",
- "thiserror",
+ "pavex_cli_client",
+ "workspace_hack",
 ]
+
+[[package]]
+name = "app_56967fe8"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_59d05850"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_5f6d02ba"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_603d81dd"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_621e9d53"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_67306117"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_698936eb"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_6b4ffaf2"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_6c44cec0"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_6e40e01f"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_700defb2"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_7321b637"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_7479eeb2"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_74f21254"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_75542b02"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_776ff188"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_78452ff2"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_7c78acb2"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_802eb683"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_812a13f2"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_821d919e"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_835fd2b1"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_88bca0dc"
+version = "0.1.0"
+dependencies = [
+ "bytes 1.7.2",
+ "http 1.1.0",
+ "http-body 1.0.1",
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_8ac65a81"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_8b5f0867"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_8b77b4be"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_8ce66b53"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_8e8ba674"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_8ee91948"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_900c9672"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_90734139"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_91e1ac20"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_933292bd"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_951b7f8d"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_9717f587"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_9adade88"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_9b6ffdef"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_9d0a5748"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_9fbe7a0c"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_a0da5eb4"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_a0f4586a"
+version = "0.1.0"
+dependencies = [
+ "dep_a0f4586a",
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_a1f930e1"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_a442c90a"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_a6a2e116"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_a7783cd8"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_a7fd6a2c"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_ae32f1c9"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_af31d59e"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_b02b0728"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_b3516518"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_ba0e5d33"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_c1ac8ad4"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "serde",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_c266691d"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_c2e83ed5"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_c3c254cf"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_c51a0844"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "serde",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_c5885cdb"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_c62eca9e"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_c7a5ef25"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_c8000fe9"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_ca08c5dd"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_ca963e92"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "reqwest 0.11.27",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_cb7427d1"
+version = "0.1.0"
+dependencies = [
+ "http 0.1.21",
+ "http 0.2.12",
+ "hyper 0.14.30",
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_ce0a2170"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_d0f81bc0"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_d1b695a6"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_d238c5d8"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_d24e80c4"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_d2e8db7a"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_d408236b"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_d50c6d0c"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_d56c0f9d"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_d89d2d61"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_db1cbdff"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_dc1710a5"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_dcb9931d"
+version = "0.1.0"
+dependencies = [
+ "bytes 1.7.2",
+ "dep_dcb9931d",
+ "hyper 1.4.1",
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_ddc3d7f1"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_de592621"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_e1c9a48c"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_e31b3bf3"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_e4a8214b"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_e501823b"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "thiserror",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_e5e761b9"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_e628417e"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "tokio",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_e6a3fe43"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_e8f51606"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_ea86e18a"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_ea979460"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_ebc534c7"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_ec0f16d1"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_ecefbcb0"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_ee506b88"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_f10df8fa"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_f1383503"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_f6a54ba5"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_f8f62968"
+version = "0.1.0"
+dependencies = [
+ "dep_f8f62968",
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "app_fc852cc3"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+ "pavex_cli_client",
+ "workspace_hack",
+]
+
+[[package]]
+name = "application_00ed62be"
+version = "0.1.0"
+
+[[package]]
+name = "application_01492b3d"
+version = "0.1.0"
+
+[[package]]
+name = "application_01bbcc3d"
+version = "0.1.0"
+
+[[package]]
+name = "application_028e5d85"
+version = "0.1.0"
+
+[[package]]
+name = "application_05806dea"
+version = "0.1.0"
+
+[[package]]
+name = "application_065fd341"
+version = "0.1.0"
+
+[[package]]
+name = "application_0ca8edfa"
+version = "0.1.0"
+
+[[package]]
+name = "application_0cb36ccc"
+version = "0.1.0"
+
+[[package]]
+name = "application_11354b55"
+version = "0.1.0"
+
+[[package]]
+name = "application_18d45c43"
+version = "0.1.0"
+
+[[package]]
+name = "application_1bd0738c"
+version = "0.1.0"
+
+[[package]]
+name = "application_23e2eec5"
+version = "0.1.0"
+
+[[package]]
+name = "application_24452d94"
+version = "0.1.0"
+
+[[package]]
+name = "application_2480aa2b"
+version = "0.1.0"
+
+[[package]]
+name = "application_24d12820"
+version = "0.1.0"
+
+[[package]]
+name = "application_2546f91e"
+version = "0.1.0"
+
+[[package]]
+name = "application_30248169"
+version = "0.1.0"
+
+[[package]]
+name = "application_309371bf"
+version = "0.1.0"
+
+[[package]]
+name = "application_335ca652"
+version = "0.1.0"
+
+[[package]]
+name = "application_33cee83d"
+version = "0.1.0"
+
+[[package]]
+name = "application_366b29bf"
+version = "0.1.0"
+
+[[package]]
+name = "application_381916a7"
+version = "0.1.0"
+
+[[package]]
+name = "application_39415e2f"
+version = "0.1.0"
+
+[[package]]
+name = "application_3acfbc8e"
+version = "0.1.0"
+
+[[package]]
+name = "application_3e2693d0"
+version = "0.1.0"
+
+[[package]]
+name = "application_3e90eeee"
+version = "0.1.0"
+
+[[package]]
+name = "application_3fac62e4"
+version = "0.1.0"
+
+[[package]]
+name = "application_40a0f751"
+version = "0.1.0"
+
+[[package]]
+name = "application_40ab089d"
+version = "0.1.0"
+
+[[package]]
+name = "application_40e90d31"
+version = "0.1.0"
+
+[[package]]
+name = "application_41064ffa"
+version = "0.1.0"
+
+[[package]]
+name = "application_466ed127"
+version = "0.1.0"
+
+[[package]]
+name = "application_46ab7f5d"
+version = "0.1.0"
+
+[[package]]
+name = "application_46e3d1f1"
+version = "0.1.0"
+
+[[package]]
+name = "application_4a62f10c"
+version = "0.1.0"
+
+[[package]]
+name = "application_4b6f5359"
+version = "0.1.0"
+
+[[package]]
+name = "application_4bcfa44d"
+version = "0.1.0"
+
+[[package]]
+name = "application_4c9069e8"
+version = "0.1.0"
+
+[[package]]
+name = "application_51ea2925"
+version = "0.1.0"
+
+[[package]]
+name = "application_53427e7d"
+version = "0.1.0"
+
+[[package]]
+name = "application_53b2f5d8"
+version = "0.1.0"
+
+[[package]]
+name = "application_55dca802"
+version = "0.1.0"
+
+[[package]]
+name = "application_56692d2c"
+version = "0.1.0"
+
+[[package]]
+name = "application_56967fe8"
+version = "0.1.0"
+
+[[package]]
+name = "application_59d05850"
+version = "0.1.0"
+
+[[package]]
+name = "application_5f6d02ba"
+version = "0.1.0"
+
+[[package]]
+name = "application_603d81dd"
+version = "0.1.0"
+
+[[package]]
+name = "application_621e9d53"
+version = "0.1.0"
+
+[[package]]
+name = "application_67306117"
+version = "0.1.0"
+
+[[package]]
+name = "application_698936eb"
+version = "0.1.0"
+
+[[package]]
+name = "application_6b4ffaf2"
+version = "0.1.0"
+
+[[package]]
+name = "application_6c44cec0"
+version = "0.1.0"
+
+[[package]]
+name = "application_6e40e01f"
+version = "0.1.0"
+
+[[package]]
+name = "application_700defb2"
+version = "0.1.0"
+
+[[package]]
+name = "application_7321b637"
+version = "0.1.0"
+
+[[package]]
+name = "application_7479eeb2"
+version = "0.1.0"
+
+[[package]]
+name = "application_74f21254"
+version = "0.1.0"
+
+[[package]]
+name = "application_75542b02"
+version = "0.1.0"
+
+[[package]]
+name = "application_776ff188"
+version = "0.1.0"
+
+[[package]]
+name = "application_78452ff2"
+version = "0.1.0"
+
+[[package]]
+name = "application_7c78acb2"
+version = "0.1.0"
+
+[[package]]
+name = "application_802eb683"
+version = "0.1.0"
+
+[[package]]
+name = "application_812a13f2"
+version = "0.1.0"
+
+[[package]]
+name = "application_821d919e"
+version = "0.1.0"
+
+[[package]]
+name = "application_835fd2b1"
+version = "0.1.0"
+
+[[package]]
+name = "application_88bca0dc"
+version = "0.1.0"
+
+[[package]]
+name = "application_8ac65a81"
+version = "0.1.0"
+
+[[package]]
+name = "application_8b5f0867"
+version = "0.1.0"
+
+[[package]]
+name = "application_8b77b4be"
+version = "0.1.0"
+
+[[package]]
+name = "application_8ce66b53"
+version = "0.1.0"
+
+[[package]]
+name = "application_8e8ba674"
+version = "0.1.0"
+
+[[package]]
+name = "application_8ee91948"
+version = "0.1.0"
+
+[[package]]
+name = "application_900c9672"
+version = "0.1.0"
+
+[[package]]
+name = "application_90734139"
+version = "0.1.0"
+
+[[package]]
+name = "application_91e1ac20"
+version = "0.1.0"
+
+[[package]]
+name = "application_933292bd"
+version = "0.1.0"
+
+[[package]]
+name = "application_951b7f8d"
+version = "0.1.0"
+
+[[package]]
+name = "application_9717f587"
+version = "0.1.0"
+
+[[package]]
+name = "application_9adade88"
+version = "0.1.0"
+
+[[package]]
+name = "application_9b6ffdef"
+version = "0.1.0"
+
+[[package]]
+name = "application_9d0a5748"
+version = "0.1.0"
+
+[[package]]
+name = "application_9fbe7a0c"
+version = "0.1.0"
+
+[[package]]
+name = "application_a0da5eb4"
+version = "0.1.0"
+
+[[package]]
+name = "application_a0f4586a"
+version = "0.1.0"
+
+[[package]]
+name = "application_a1f930e1"
+version = "0.1.0"
+
+[[package]]
+name = "application_a442c90a"
+version = "0.1.0"
+
+[[package]]
+name = "application_a6a2e116"
+version = "0.1.0"
+
+[[package]]
+name = "application_a7783cd8"
+version = "0.1.0"
+
+[[package]]
+name = "application_a7fd6a2c"
+version = "0.1.0"
+
+[[package]]
+name = "application_ae32f1c9"
+version = "0.1.0"
+
+[[package]]
+name = "application_af31d59e"
+version = "0.1.0"
+
+[[package]]
+name = "application_b02b0728"
+version = "0.1.0"
+
+[[package]]
+name = "application_b3516518"
+version = "0.1.0"
+
+[[package]]
+name = "application_ba0e5d33"
+version = "0.1.0"
+
+[[package]]
+name = "application_c1ac8ad4"
+version = "0.1.0"
+
+[[package]]
+name = "application_c266691d"
+version = "0.1.0"
+
+[[package]]
+name = "application_c2e83ed5"
+version = "0.1.0"
+
+[[package]]
+name = "application_c3c254cf"
+version = "0.1.0"
+
+[[package]]
+name = "application_c51a0844"
+version = "0.1.0"
+
+[[package]]
+name = "application_c5885cdb"
+version = "0.1.0"
+
+[[package]]
+name = "application_c62eca9e"
+version = "0.1.0"
+
+[[package]]
+name = "application_c7a5ef25"
+version = "0.1.0"
+
+[[package]]
+name = "application_c8000fe9"
+version = "0.1.0"
+
+[[package]]
+name = "application_ca08c5dd"
+version = "0.1.0"
+
+[[package]]
+name = "application_ca963e92"
+version = "0.1.0"
+
+[[package]]
+name = "application_cb7427d1"
+version = "0.1.0"
+
+[[package]]
+name = "application_ce0a2170"
+version = "0.1.0"
+
+[[package]]
+name = "application_d0f81bc0"
+version = "0.1.0"
+
+[[package]]
+name = "application_d1b695a6"
+version = "0.1.0"
+
+[[package]]
+name = "application_d238c5d8"
+version = "0.1.0"
+
+[[package]]
+name = "application_d24e80c4"
+version = "0.1.0"
+
+[[package]]
+name = "application_d2e8db7a"
+version = "0.1.0"
+
+[[package]]
+name = "application_d408236b"
+version = "0.1.0"
+
+[[package]]
+name = "application_d50c6d0c"
+version = "0.1.0"
+
+[[package]]
+name = "application_d56c0f9d"
+version = "0.1.0"
+
+[[package]]
+name = "application_d89d2d61"
+version = "0.1.0"
+
+[[package]]
+name = "application_db1cbdff"
+version = "0.1.0"
+
+[[package]]
+name = "application_dc1710a5"
+version = "0.1.0"
+
+[[package]]
+name = "application_dcb9931d"
+version = "0.1.0"
+
+[[package]]
+name = "application_ddc3d7f1"
+version = "0.1.0"
+
+[[package]]
+name = "application_de592621"
+version = "0.1.0"
+
+[[package]]
+name = "application_e1c9a48c"
+version = "0.1.0"
+
+[[package]]
+name = "application_e31b3bf3"
+version = "0.1.0"
+
+[[package]]
+name = "application_e4a8214b"
+version = "0.1.0"
+
+[[package]]
+name = "application_e501823b"
+version = "0.1.0"
+
+[[package]]
+name = "application_e5e761b9"
+version = "0.1.0"
+
+[[package]]
+name = "application_e628417e"
+version = "0.1.0"
+
+[[package]]
+name = "application_e6a3fe43"
+version = "0.1.0"
+
+[[package]]
+name = "application_e8f51606"
+version = "0.1.0"
+
+[[package]]
+name = "application_ea86e18a"
+version = "0.1.0"
+
+[[package]]
+name = "application_ea979460"
+version = "0.1.0"
+
+[[package]]
+name = "application_ebc534c7"
+version = "0.1.0"
+
+[[package]]
+name = "application_ec0f16d1"
+version = "0.1.0"
+
+[[package]]
+name = "application_ecefbcb0"
+version = "0.1.0"
+
+[[package]]
+name = "application_ee506b88"
+version = "0.1.0"
+
+[[package]]
+name = "application_f10df8fa"
+version = "0.1.0"
+
+[[package]]
+name = "application_f1383503"
+version = "0.1.0"
+
+[[package]]
+name = "application_f6a54ba5"
+version = "0.1.0"
+
+[[package]]
+name = "application_f8f62968"
+version = "0.1.0"
+
+[[package]]
+name = "application_fc852cc3"
+version = "0.1.0"
 
 [[package]]
 name = "arrayvec"
@@ -228,6 +2047,12 @@ dependencies = [
 
 [[package]]
 name = "bitflags"
+version = "1.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bef38d45163c2f1dde094a7dfd33ccf595c92905c8f8f4fdc18d06fb1037718a"
+
+[[package]]
+name = "bitflags"
 version = "2.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b048fb63fd8b5923fc5aa7b340d8e156aec7ec02f0c78fa8a6ddc2613f6f71de"
@@ -258,15 +2083,25 @@ checksum = "1fd0f2584146f6f2ef48085050886acf353beff7305ebd1ae69500e27c67f64b"
 
 [[package]]
 name = "bytes"
-version = "1.7.1"
+version = "0.4.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8318a53db07bb3f8dca91a600466bdb3f2eaadeedfdbcf02e1accbad9271ba50"
+checksum = "206fdffcfa2df7cbe15601ef46c813fce0965eb3286db6b56c583b814b51c81c"
+dependencies = [
+ "byteorder",
+ "iovec",
+]
+
+[[package]]
+name = "bytes"
+version = "1.7.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "428d9aa8fbc0670b7b8d6030a7fadd0f86151cae55e4dbbece15f3780a3dfaf3"
 
 [[package]]
 name = "cc"
-version = "1.1.18"
+version = "1.1.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b62ac837cdb5cb22e10a256099b4fc502b1dfe560cb282963a974d7abd80e476"
+checksum = "07b1695e2c7e8fc85310cde85aeaab7e3097f593c91d209d3f9df76c928100f0"
 dependencies = [
  "jobserver",
  "libc",
@@ -291,9 +2126,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "4.5.17"
+version = "4.5.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3e5a21b8495e732f1b3c364c9949b201ca7bae518c502c80256c96ad79eaf6ac"
+checksum = "b0956a43b323ac1afaffc053ed5c4b7c1f1800bacd1683c353aabbb752515dd3"
 dependencies = [
  "clap_builder",
  "clap_derive",
@@ -301,9 +2136,9 @@ dependencies = [
 
 [[package]]
 name = "clap_builder"
-version = "4.5.17"
+version = "4.5.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8cf2dd12af7a047ad9d6da2b6b249759a22a7abc0f474c1dae1777afa4b21a73"
+checksum = "4d72166dd41634086d5803a47eb71ae740e61d84709c36f3c34110173db3961b"
 dependencies = [
  "anstream",
  "anstyle",
@@ -313,9 +2148,9 @@ dependencies = [
 
 [[package]]
 name = "clap_derive"
-version = "4.5.13"
+version = "4.5.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "501d359d5f3dcaf6ecdeee48833ae73ec6e42723a1e52419c79abf9507eec0a0"
+checksum = "4ac6a0c7b1a9e9a5186361f67dfa1b88213572f427fb9ab038efb2bd8c582dab"
 dependencies = [
  "heck",
  "proc-macro2",
@@ -400,7 +2235,52 @@ dependencies = [
 ]
 
 [[package]]
+name = "dep_065fd341"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+]
+
+[[package]]
+name = "dep_39415e2f"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+]
+
+[[package]]
+name = "dep_3e2693d0"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+]
+
+[[package]]
 name = "dep_55dca802"
+version = "0.1.0"
+dependencies = [
+ "pavex",
+]
+
+[[package]]
+name = "dep_a0f4586a"
+version = "0.1.0"
+dependencies = [
+ "http 0.1.21",
+ "http 0.2.12",
+ "hyper 0.14.30",
+ "pavex",
+]
+
+[[package]]
+name = "dep_dcb9931d"
+version = "1.0.0"
+dependencies = [
+ "pavex",
+]
+
+[[package]]
+name = "dep_f8f62968"
 version = "0.1.0"
 dependencies = [
  "pavex",
@@ -601,16 +2481,35 @@ checksum = "32085ea23f3234fc7846555e85283ba4de91e21016dc0455a16286d87a292d64"
 
 [[package]]
 name = "h2"
+version = "0.3.26"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "81fe527a889e1532da5c525686d96d4c2e74cdd345badf8dfef9f6b39dd5f5e8"
+dependencies = [
+ "bytes 1.7.2",
+ "fnv",
+ "futures-core",
+ "futures-sink",
+ "futures-util",
+ "http 0.2.12",
+ "indexmap",
+ "slab",
+ "tokio",
+ "tokio-util",
+ "tracing",
+]
+
+[[package]]
+name = "h2"
 version = "0.4.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "524e8ac6999421f49a846c2d4411f337e53497d8ec55d67753beffa43c5d9205"
 dependencies = [
  "atomic-waker",
- "bytes",
+ "bytes 1.7.2",
  "fnv",
  "futures-core",
  "futures-sink",
- "http",
+ "http 1.1.0",
  "indexmap",
  "slab",
  "tokio",
@@ -659,13 +2558,46 @@ dependencies = [
 
 [[package]]
 name = "http"
+version = "0.1.21"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d6ccf5ede3a895d8856620237b2f02972c1bbc78d2965ad7fe8838d4a0ed41f0"
+dependencies = [
+ "bytes 0.4.12",
+ "fnv",
+ "itoa 0.4.8",
+]
+
+[[package]]
+name = "http"
+version = "0.2.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "601cbb57e577e2f5ef5be8e7b83f0f63994f25aa94d673e54a92d5c516d101f1"
+dependencies = [
+ "bytes 1.7.2",
+ "fnv",
+ "itoa 1.0.11",
+]
+
+[[package]]
+name = "http"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "21b9ddb458710bc376481b842f5da65cdf31522de232c1ca8146abce2a358258"
 dependencies = [
- "bytes",
+ "bytes 1.7.2",
  "fnv",
- "itoa",
+ "itoa 1.0.11",
+]
+
+[[package]]
+name = "http-body"
+version = "0.4.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7ceab25649e9960c0311ea418d17bee82c0dcec1bd053b5f9a66e265a693bed2"
+dependencies = [
+ "bytes 1.7.2",
+ "http 0.2.12",
+ "pin-project-lite",
 ]
 
 [[package]]
@@ -674,8 +2606,8 @@ version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1efedce1fb8e6913f23e0c92de8e62cd5b772a67e7b3946df930a62566c93184"
 dependencies = [
- "bytes",
- "http",
+ "bytes 1.7.2",
+ "http 1.1.0",
 ]
 
 [[package]]
@@ -684,10 +2616,10 @@ version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "793429d76616a256bcb62c2a2ec2bed781c8307e797e2598c50010f2bee2544f"
 dependencies = [
- "bytes",
+ "bytes 1.7.2",
  "futures-util",
- "http",
- "http-body",
+ "http 1.1.0",
+ "http-body 1.0.1",
  "pin-project-lite",
 ]
 
@@ -705,19 +2637,43 @@ checksum = "df3b46402a9d5adb4c86a0cf463f42e19994e3ee891101b1841f30a545cb49a9"
 
 [[package]]
 name = "hyper"
+version = "0.14.30"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a152ddd61dfaec7273fe8419ab357f33aee0d914c5f4efbf0d96fa749eea5ec9"
+dependencies = [
+ "bytes 1.7.2",
+ "futures-channel",
+ "futures-core",
+ "futures-util",
+ "h2 0.3.26",
+ "http 0.2.12",
+ "http-body 0.4.6",
+ "httparse",
+ "httpdate",
+ "itoa 1.0.11",
+ "pin-project-lite",
+ "socket2",
+ "tokio",
+ "tower-service",
+ "tracing",
+ "want",
+]
+
+[[package]]
+name = "hyper"
 version = "1.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "50dfd22e0e76d0f662d429a5f80fcaf3855009297eab6a0a9f8543834744ba05"
 dependencies = [
- "bytes",
+ "bytes 1.7.2",
  "futures-channel",
  "futures-util",
- "h2",
- "http",
- "http-body",
+ "h2 0.4.6",
+ "http 1.1.0",
+ "http-body 1.0.1",
  "httparse",
  "httpdate",
- "itoa",
+ "itoa 1.0.11",
  "pin-project-lite",
  "smallvec",
  "tokio",
@@ -731,8 +2687,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "08afdbb5c31130e3034af566421053ab03787c640246a446327f550d11bcb333"
 dependencies = [
  "futures-util",
- "http",
- "hyper",
+ "http 1.1.0",
+ "hyper 1.4.1",
  "hyper-util",
  "rustls",
  "rustls-pki-types",
@@ -744,13 +2700,26 @@ dependencies = [
 
 [[package]]
 name = "hyper-tls"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d6183ddfa99b85da61a140bea0efc93fdf56ceaa041b37d553518030827f9905"
+dependencies = [
+ "bytes 1.7.2",
+ "hyper 0.14.30",
+ "native-tls",
+ "tokio",
+ "tokio-native-tls",
+]
+
+[[package]]
+name = "hyper-tls"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "70206fc6890eaca9fde8a0bf71caa2ddfc9fe045ac9e5c70df101a7dbde866e0"
 dependencies = [
- "bytes",
+ "bytes 1.7.2",
  "http-body-util",
- "hyper",
+ "hyper 1.4.1",
  "hyper-util",
  "native-tls",
  "tokio",
@@ -760,20 +2729,19 @@ dependencies = [
 
 [[package]]
 name = "hyper-util"
-version = "0.1.8"
+version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "da62f120a8a37763efb0cf8fdf264b884c7b8b9ac8660b900c8661030c00e6ba"
+checksum = "41296eb09f183ac68eec06e03cdbea2e759633d4067b2f6552fc2e009bcad08b"
 dependencies = [
- "bytes",
+ "bytes 1.7.2",
  "futures-channel",
  "futures-util",
- "http",
- "http-body",
- "hyper",
+ "http 1.1.0",
+ "http-body 1.0.1",
+ "hyper 1.4.1",
  "pin-project-lite",
  "socket2",
  "tokio",
- "tower",
  "tower-service",
  "tracing",
 ]
@@ -809,6 +2777,78 @@ dependencies = [
 ]
 
 [[package]]
+name = "integration_56967fe8"
+version = "0.1.0"
+dependencies = [
+ "app_56967fe8",
+ "application_56967fe8",
+ "http-body-util",
+ "hyper 1.4.1",
+ "hyper-util",
+ "pavex",
+ "reqwest 0.12.7",
+ "tokio",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "integration_78452ff2"
+version = "0.1.0"
+dependencies = [
+ "app_78452ff2",
+ "application_78452ff2",
+ "pavex",
+ "reqwest 0.12.7",
+ "tokio",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "integration_a1f930e1"
+version = "0.1.0"
+dependencies = [
+ "app_a1f930e1",
+ "application_a1f930e1",
+ "pavex",
+ "reqwest 0.12.7",
+ "tokio",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "integration_c1ac8ad4"
+version = "0.1.0"
+dependencies = [
+ "app_c1ac8ad4",
+ "application_c1ac8ad4",
+ "pavex",
+ "reqwest 0.12.7",
+ "tokio",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "integration_e628417e"
+version = "0.1.0"
+dependencies = [
+ "app_e628417e",
+ "application_e628417e",
+ "pavex",
+ "reqwest 0.12.7",
+ "tokio",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "iovec"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b2b3ea6ff95e175473f8ffe6a7eb7c00d054240321b84c57051175fe3c1e075e"
+dependencies = [
+ "libc",
+]
+
+[[package]]
 name = "ipnet"
 version = "2.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -825,6 +2865,12 @@ name = "is_terminal_polyfill"
 version = "1.70.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7943c866cc5cd64cbc25b2e01621d07fa8eb2a1a23160ee81ce38704e97b8ecf"
+
+[[package]]
+name = "itoa"
+version = "0.4.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b71991ff56294aa922b450139ee08b3bfc70982c6b2c7562771375cf73542dd4"
 
 [[package]]
 name = "itoa"
@@ -858,9 +2904,9 @@ checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 
 [[package]]
 name = "libc"
-version = "0.2.158"
+version = "0.2.159"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d8adc4bb1803a324070e64a98ae98f38934d91957a99cfb3a43dcbc01bc56439"
+checksum = "561d97a539a36e26a9a5fad1ea11a3039a67714694aaa379433e580854bc3dc5"
 
 [[package]]
 name = "linux-raw-sys"
@@ -883,6 +2929,15 @@ name = "log"
 version = "0.4.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a7a70ba024b9dc04c27ea2f0c0548feb474ec5c54bba33a7f72f873a39d07b24"
+
+[[package]]
+name = "matchers"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8263075bb86c5a1b1427b5ae862e8889656f126e9f77c484496e8b47cf5c5558"
+dependencies = [
+ "regex-automata 0.1.10",
+]
 
 [[package]]
 name = "memchr"
@@ -966,6 +3021,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "nu-ansi-term"
+version = "0.46.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "77a8165726e8236064dbb45459242600304b42a5ea24ee2948e18e023bf7ba84"
+dependencies = [
+ "overload",
+ "winapi",
+]
+
+[[package]]
 name = "num-conv"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1016,7 +3081,7 @@ version = "0.10.66"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9529f4786b70a3e8c61e11179af17ab6188ad8d0ded78c5529441ed39d4bd9c1"
 dependencies = [
- "bitflags",
+ "bitflags 2.6.0",
  "cfg-if",
  "foreign-types",
  "libc",
@@ -1053,6 +3118,12 @@ dependencies = [
  "pkg-config",
  "vcpkg",
 ]
+
+[[package]]
+name = "overload"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b15813163c1d831bf4a13c3610c05c0d03b39feb07f7e09fa234dac9b15aaf39"
 
 [[package]]
 name = "owo-colors"
@@ -1095,13 +3166,13 @@ version = "0.1.48"
 dependencies = [
  "anyhow",
  "biscotti",
- "bytes",
+ "bytes 1.7.2",
  "fs-err",
  "futures-util",
- "http",
- "http-body",
+ "http 1.1.0",
+ "http-body 1.0.1",
  "http-body-util",
- "hyper",
+ "hyper 1.4.1",
  "hyper-util",
  "indexmap",
  "mime",
@@ -1201,26 +3272,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pin-project"
-version = "1.1.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b6bf43b791c5b9e34c3d182969b4abb522f9343702850a2e57f460d00d09b4b3"
-dependencies = [
- "pin-project-internal",
-]
-
-[[package]]
-name = "pin-project-internal"
-version = "1.1.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2f38a4412a78282e09a2cf38d195ea5420d15ba0602cb375210efbc877243965"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "pin-project-lite"
 version = "0.2.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1234,9 +3285,9 @@ checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
 
 [[package]]
 name = "pkg-config"
-version = "0.3.30"
+version = "0.3.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d231b230927b5e4ad203db57bbcbee2802f6bce620b1e4a9024a07d94e2907ec"
+checksum = "953ec861398dccce10c670dfeaf3ec4911ca479e9c02154b3a215178c5f566f2"
 
 [[package]]
 name = "polyval"
@@ -1280,7 +3331,7 @@ version = "0.1.0"
 dependencies = [
  "ahash",
  "aho-corasick",
- "bitflags",
+ "bitflags 2.6.0",
  "byteorder",
  "cc",
  "clap",
@@ -1307,9 +3358,9 @@ dependencies = [
  "proc-macro2",
  "quote",
  "regex",
- "regex-automata",
- "regex-syntax",
- "reqwest",
+ "regex-automata 0.4.7",
+ "regex-syntax 0.8.4",
+ "reqwest 0.12.7",
  "serde",
  "serde_json",
  "sha2",
@@ -1335,7 +3386,7 @@ version = "0.11.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8c7c5fdde3cdae7203427dc4f0a68fe0ed09833edc525a03456b153b79828684"
 dependencies = [
- "bytes",
+ "bytes 1.7.2",
  "pin-project-lite",
  "quinn-proto",
  "quinn-udp",
@@ -1353,7 +3404,7 @@ version = "0.11.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fadfaed2cd7f389d0161bb73eeb07b7b78f8691047a6f3e73caaeae55310a4a6"
 dependencies = [
- "bytes",
+ "bytes 1.7.2",
  "rand",
  "ring",
  "rustc-hash",
@@ -1418,11 +3469,11 @@ dependencies = [
 
 [[package]]
 name = "redox_syscall"
-version = "0.5.3"
+version = "0.5.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2a908a6e00f1fdd0dfd9c0eb08ce85126f6d8bbda50017e74bc4a4b7d4a926a4"
+checksum = "62871f2d65009c0256aed1b9cfeeb8ac272833c404e13d53d400cd0dad7a2ac0"
 dependencies = [
- "bitflags",
+ "bitflags 2.6.0",
 ]
 
 [[package]]
@@ -1433,8 +3484,17 @@ checksum = "4219d74c6b67a3654a9fbebc4b419e22126d13d2f3c4a07ee0cb61ff79a79619"
 dependencies = [
  "aho-corasick",
  "memchr",
- "regex-automata",
- "regex-syntax",
+ "regex-automata 0.4.7",
+ "regex-syntax 0.8.4",
+]
+
+[[package]]
+name = "regex-automata"
+version = "0.1.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6c230d73fb8d8c1b9c0b3135c5142a8acee3a0558fb8db5cf1cb65f8d7862132"
+dependencies = [
+ "regex-syntax 0.6.29",
 ]
 
 [[package]]
@@ -1445,8 +3505,14 @@ checksum = "38caf58cc5ef2fed281f89292ef23f6365465ed9a41b7a7754eb4e26496c92df"
 dependencies = [
  "aho-corasick",
  "memchr",
- "regex-syntax",
+ "regex-syntax 0.8.4",
 ]
+
+[[package]]
+name = "regex-syntax"
+version = "0.6.29"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f162c6dd7b008981e4d40210aca20b4bd0f9b60ca9271061b07f78537722f2e1"
 
 [[package]]
 name = "regex-syntax"
@@ -1456,22 +3522,62 @@ checksum = "7a66a03ae7c801facd77a29370b4faec201768915ac14a721ba36f20bc9c209b"
 
 [[package]]
 name = "reqwest"
+version = "0.11.27"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dd67538700a17451e7cba03ac727fb961abb7607553461627b97de0b89cf4a62"
+dependencies = [
+ "base64 0.21.7",
+ "bytes 1.7.2",
+ "encoding_rs",
+ "futures-core",
+ "futures-util",
+ "h2 0.3.26",
+ "http 0.2.12",
+ "http-body 0.4.6",
+ "hyper 0.14.30",
+ "hyper-tls 0.5.0",
+ "ipnet",
+ "js-sys",
+ "log",
+ "mime",
+ "native-tls",
+ "once_cell",
+ "percent-encoding",
+ "pin-project-lite",
+ "rustls-pemfile 1.0.4",
+ "serde",
+ "serde_json",
+ "serde_urlencoded",
+ "sync_wrapper 0.1.2",
+ "system-configuration 0.5.1",
+ "tokio",
+ "tokio-native-tls",
+ "tower-service",
+ "url",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+ "winreg",
+]
+
+[[package]]
+name = "reqwest"
 version = "0.12.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f8f4955649ef5c38cc7f9e8aa41761d48fb9677197daea9984dc54f56aad5e63"
 dependencies = [
  "base64 0.22.1",
- "bytes",
+ "bytes 1.7.2",
  "encoding_rs",
  "futures-core",
  "futures-util",
- "h2",
- "http",
- "http-body",
+ "h2 0.4.6",
+ "http 1.1.0",
+ "http-body 1.0.1",
  "http-body-util",
- "hyper",
+ "hyper 1.4.1",
  "hyper-rustls",
- "hyper-tls",
+ "hyper-tls 0.6.0",
  "hyper-util",
  "ipnet",
  "js-sys",
@@ -1483,13 +3589,13 @@ dependencies = [
  "pin-project-lite",
  "quinn",
  "rustls",
- "rustls-pemfile",
+ "rustls-pemfile 2.1.3",
  "rustls-pki-types",
  "serde",
  "serde_json",
  "serde_urlencoded",
- "sync_wrapper",
- "system-configuration",
+ "sync_wrapper 1.0.1",
+ "system-configuration 0.6.1",
  "tokio",
  "tokio-native-tls",
  "tokio-rustls",
@@ -1524,7 +3630,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b91f7eff05f748767f183df4320a63d6936e9c6107d97c9e6bdd9784f4289c94"
 dependencies = [
  "base64 0.21.7",
- "bitflags",
+ "bitflags 2.6.0",
  "serde",
  "serde_derive",
 ]
@@ -1543,11 +3649,11 @@ checksum = "583034fd73374156e66797ed8e5b0d5690409c9226b22d87cb7f19821c05d152"
 
 [[package]]
 name = "rustix"
-version = "0.38.36"
+version = "0.38.37"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3f55e80d50763938498dd5ebb18647174e0c76dc38c5505294bb224624f30f36"
+checksum = "8acb788b847c24f28525660c4d7758620a7210875711f79e7f663cc152726811"
 dependencies = [
- "bitflags",
+ "bitflags 2.6.0",
  "errno",
  "libc",
  "linux-raw-sys",
@@ -1566,6 +3672,15 @@ dependencies = [
  "rustls-webpki",
  "subtle",
  "zeroize",
+]
+
+[[package]]
+name = "rustls-pemfile"
+version = "1.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1c74cae0a4cf6ccbbf5f359f08efdf8ee7e1dc532573bf0db71968cb56b1448c"
+dependencies = [
+ "base64 0.21.7",
 ]
 
 [[package]]
@@ -1622,7 +3737,7 @@ version = "2.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "897b2245f0b511c87893af39b033e5ca9cce68824c4d7e7630b5a1d339658d02"
 dependencies = [
- "bitflags",
+ "bitflags 2.6.0",
  "core-foundation",
  "core-foundation-sys",
  "libc",
@@ -1631,9 +3746,9 @@ dependencies = [
 
 [[package]]
 name = "security-framework-sys"
-version = "2.11.1"
+version = "2.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "75da29fe9b9b08fe9d6b22b5b4bcbc75d8db3aa31e639aa56bb62e9d46bfceaf"
+checksum = "ea4a292869320c0272d7bc55a5a6aafaff59b4f63404a003887b679a2e05b4b6"
 dependencies = [
  "core-foundation-sys",
  "libc",
@@ -1667,7 +3782,7 @@ checksum = "8de514ef58196f1fc96dcaef80fe6170a1ce6215df9687a93fe8300e773fefc5"
 dependencies = [
  "form_urlencoded",
  "indexmap",
- "itoa",
+ "itoa 1.0.11",
  "ryu",
  "serde",
 ]
@@ -1678,7 +3793,7 @@ version = "1.0.128"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6ff5456707a1de34e7e37f2a6fd3d3f808c318259cbd01ab6377795054b483d8"
 dependencies = [
- "itoa",
+ "itoa 1.0.11",
  "memchr",
  "ryu",
  "serde",
@@ -1690,7 +3805,7 @@ version = "0.1.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "af99884400da37c88f5e9146b7f1fd0fbcae8f6eec4e9da38b67d05486f814a6"
 dependencies = [
- "itoa",
+ "itoa 1.0.11",
  "serde",
 ]
 
@@ -1710,7 +3825,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d3491c14715ca2294c4d6a88f15e84739788c1d030eed8c110436aafdaa2f3fd"
 dependencies = [
  "form_urlencoded",
- "itoa",
+ "itoa 1.0.11",
  "ryu",
  "serde",
 ]
@@ -1724,6 +3839,15 @@ dependencies = [
  "cfg-if",
  "cpufeatures",
  "digest",
+]
+
+[[package]]
+name = "sharded-slab"
+version = "0.1.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f40ca3c46823713e0d4209592e8d6e826aa57e928f09752619fc696c499637f6"
+dependencies = [
+ "lazy_static",
 ]
 
 [[package]]
@@ -1824,6 +3948,12 @@ dependencies = [
 
 [[package]]
 name = "sync_wrapper"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2047c6ded9c721764247e62cd3b03c09ffc529b2ba5b10ec482ae507a4a70160"
+
+[[package]]
+name = "sync_wrapper"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a7065abeca94b6a8a577f9bd45aa0867a2238b74e8eb67cf10d492bc39351394"
@@ -1833,13 +3963,34 @@ dependencies = [
 
 [[package]]
 name = "system-configuration"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ba3a3adc5c275d719af8cb4272ea1c4a6d668a777f37e115f6d11ddbc1c8e0e7"
+dependencies = [
+ "bitflags 1.3.2",
+ "core-foundation",
+ "system-configuration-sys 0.5.0",
+]
+
+[[package]]
+name = "system-configuration"
 version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3c879d448e9d986b661742763247d3693ed13609438cf3d006f51f5368a5ba6b"
 dependencies = [
- "bitflags",
+ "bitflags 2.6.0",
  "core-foundation",
- "system-configuration-sys",
+ "system-configuration-sys 0.6.0",
+]
+
+[[package]]
+name = "system-configuration-sys"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a75fb188eb626b924683e3b95e3a48e63551fcfb51949de2f06a9d91dbee93c9"
+dependencies = [
+ "core-foundation-sys",
+ "libc",
 ]
 
 [[package]]
@@ -1888,22 +4039,32 @@ dependencies = [
 
 [[package]]
 name = "thiserror"
-version = "1.0.63"
+version = "1.0.64"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c0342370b38b6a11b6cc11d6a805569958d54cfa061a29969c3b5ce2ea405724"
+checksum = "d50af8abc119fb8bb6dbabcfa89656f46f84aa0ac7688088608076ad2b459a84"
 dependencies = [
  "thiserror-impl",
 ]
 
 [[package]]
 name = "thiserror-impl"
-version = "1.0.63"
+version = "1.0.64"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a4558b58466b9ad7ca0f102865eccc95938dca1a74a856f2b57b6629050da261"
+checksum = "08904e7672f5eb876eaaf87e0ce17857500934f4981c4a0ab2b4aa98baac7fc3"
 dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "thread_local"
+version = "1.1.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8b9ef9bad013ada3808854ceac7b46812a6465ba368859a37e2100283d2d719c"
+dependencies = [
+ "cfg-if",
+ "once_cell",
 ]
 
 [[package]]
@@ -1913,7 +4074,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5dfd88e563464686c916c7e46e623e520ddc6d79fa6641390f2e3fa86e83e885"
 dependencies = [
  "deranged",
- "itoa",
+ "itoa 1.0.11",
  "libc",
  "num-conv",
  "num_threads",
@@ -1961,7 +4122,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e2b070231665d27ad9ec9b8df639893f46727666c6767db40317fbe920a5d998"
 dependencies = [
  "backtrace",
- "bytes",
+ "bytes 1.7.2",
  "libc",
  "mio",
  "parking_lot",
@@ -2010,7 +4171,7 @@ version = "0.7.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "61e7c3654c13bcd040d4a03abee2c75b1d14a37b423cf5a813ceae1cc903ec6a"
 dependencies = [
- "bytes",
+ "bytes 1.7.2",
  "futures-core",
  "futures-sink",
  "pin-project-lite",
@@ -2041,9 +4202,9 @@ dependencies = [
 
 [[package]]
 name = "toml_edit"
-version = "0.22.20"
+version = "0.22.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "583c44c02ad26b0c3f3066fe629275e50627026c51ac2e595cca4c230ce1ce1d"
+checksum = "4ae48d6208a266e853d946088ed816055e556cc6028c5e8e2b84d9fa5dd7c7f5"
 dependencies = [
  "indexmap",
  "serde",
@@ -2051,27 +4212,6 @@ dependencies = [
  "toml_datetime",
  "winnow",
 ]
-
-[[package]]
-name = "tower"
-version = "0.4.13"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b8fa9be0de6cf49e536ce1851f987bd21a43b771b09473c3549a6c853db37c1c"
-dependencies = [
- "futures-core",
- "futures-util",
- "pin-project",
- "pin-project-lite",
- "tokio",
- "tower-layer",
- "tower-service",
-]
-
-[[package]]
-name = "tower-layer"
-version = "0.3.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "121c2a6cda46980bb0fcd1647ffaf6cd3fc79a013de288782836f6df9c48780e"
 
 [[package]]
 name = "tower-service"
@@ -2120,6 +4260,24 @@ dependencies = [
  "log",
  "once_cell",
  "tracing-core",
+]
+
+[[package]]
+name = "tracing-subscriber"
+version = "0.3.18"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ad0f048c97dbd9faa9b7df56362b8ebcaa52adb06b498c050d2f4e32f90a7a8b"
+dependencies = [
+ "matchers",
+ "nu-ansi-term",
+ "once_cell",
+ "regex",
+ "sharded-slab",
+ "smallvec",
+ "thread_local",
+ "tracing",
+ "tracing-core",
+ "tracing-log",
 ]
 
 [[package]]
@@ -2175,18 +4333,18 @@ checksum = "3b09c83c3c29d37506a3e260c08c03743a6bb66a9cd432c6934ab501a190571f"
 
 [[package]]
 name = "unicode-normalization"
-version = "0.1.23"
+version = "0.1.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a56d1686db2308d901306f92a263857ef59ea39678a5458e7cb17f01415101f5"
+checksum = "5033c97c4262335cded6d6fc3e5c18ab755e1a3dc96376350f3d8e9f009ad956"
 dependencies = [
  "tinyvec",
 ]
 
 [[package]]
 name = "unicode-width"
-version = "0.1.13"
+version = "0.1.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0336d538f7abc86d282a4189614dfaa90810dfc2c6f6427eaf88e16311dd225d"
+checksum = "7dd6e30e90baa6f72411720665d41d89b9a3d039dc45b8faea1ddd07f617f6af"
 
 [[package]]
 name = "universal-hash"
@@ -2344,12 +4502,34 @@ dependencies = [
 
 [[package]]
 name = "webpki-roots"
-version = "0.26.5"
+version = "0.26.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0bd24728e5af82c6c4ec1b66ac4844bdf8156257fccda846ec58b42cd0cdbe6a"
+checksum = "841c67bff177718f1d4dfefde8d8f0e78f9b6589319ba88312f567fc5841a958"
 dependencies = [
  "rustls-pki-types",
 ]
+
+[[package]]
+name = "winapi"
+version = "0.3.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5c839a674fcd7a98952e593242ea400abe93992746761e38641405d28b00f419"
+dependencies = [
+ "winapi-i686-pc-windows-gnu",
+ "winapi-x86_64-pc-windows-gnu",
+]
+
+[[package]]
+name = "winapi-i686-pc-windows-gnu"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ac3b87c63620426dd9b991e5ce0329eff545bccbbb34f3be09ff6fb6ab51b7b6"
+
+[[package]]
+name = "winapi-x86_64-pc-windows-gnu"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
 
 [[package]]
 name = "windows-registry"
@@ -2531,11 +4711,21 @@ checksum = "589f6da84c646204747d1270a2a5661ea66ed1cced2631d546fdfb155959f9ec"
 
 [[package]]
 name = "winnow"
-version = "0.6.18"
+version = "0.6.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "68a9bda4691f099d435ad181000724da8e5899daa10713c2d432552b9ccd3a6f"
+checksum = "c52ac009d615e79296318c1bcce2d422aaca15ad08515e344feeda07df67a587"
 dependencies = [
  "memchr",
+]
+
+[[package]]
+name = "winreg"
+version = "0.50.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "524e57b2c537c0f9b1e69f1965311ec12182b4122e45035b1508cd24d2adadb1"
+dependencies = [
+ "cfg-if",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
@@ -2550,7 +4740,7 @@ dependencies = [
  "memchr",
  "proc-macro2",
  "quote",
- "reqwest",
+ "reqwest 0.12.7",
  "serde",
  "serde_json",
  "smallvec",
