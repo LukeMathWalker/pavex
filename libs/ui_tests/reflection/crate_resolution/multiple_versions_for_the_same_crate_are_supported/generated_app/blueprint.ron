@@ -1,0 +1,70 @@
+(
+    creation_location: (
+        line: 20,
+        column: 18,
+        file: "reflection/crate_resolution/multiple_versions_for_the_same_crate_are_supported/src/lib.rs",
+    ),
+    components: [
+        Constructor((
+            constructor: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_cb7427d1",
+                        module_path: "app_cb7427d1",
+                    ),
+                    import_path: "crate::header1",
+                ),
+                location: (
+                    line: 21,
+                    column: 8,
+                    file: "reflection/crate_resolution/multiple_versions_for_the_same_crate_are_supported/src/lib.rs",
+                ),
+            ),
+            lifecycle: RequestScoped,
+            cloning_strategy: None,
+            error_handler: None,
+            lints: {},
+        )),
+        Constructor((
+            constructor: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_cb7427d1",
+                        module_path: "app_cb7427d1",
+                    ),
+                    import_path: "crate::header2",
+                ),
+                location: (
+                    line: 22,
+                    column: 8,
+                    file: "reflection/crate_resolution/multiple_versions_for_the_same_crate_are_supported/src/lib.rs",
+                ),
+            ),
+            lifecycle: RequestScoped,
+            cloning_strategy: None,
+            error_handler: None,
+            lints: {},
+        )),
+        Route((
+            path: "/home",
+            method_guard: Some([
+                "GET",
+            ]),
+            request_handler: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_cb7427d1",
+                        module_path: "app_cb7427d1",
+                    ),
+                    import_path: "crate::stream_file",
+                ),
+                location: (
+                    line: 23,
+                    column: 8,
+                    file: "reflection/crate_resolution/multiple_versions_for_the_same_crate_are_supported/src/lib.rs",
+                ),
+            ),
+            error_handler: None,
+        )),
+    ],
+)

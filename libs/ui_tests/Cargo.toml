@@ -1,0 +1,12 @@
+[workspace]
+members = [
+  "blueprint/constructors/the_latest_registered_constructor_takes_precedence",
+  "blueprint/constructors/the_latest_registered_constructor_takes_precedence/generated_app",
+]
+resolver = "2"
+[workspace.dependencies]
+pavex = { path = "../pavex" }
+pavex_cli_client = { path = "../pavex_cli_client" }
+workspace_hack = { path = "workspace_hack" }
+tokio = "1"
+reqwest = "0.12"

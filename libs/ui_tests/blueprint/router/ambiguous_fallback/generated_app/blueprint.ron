@@ -1,0 +1,85 @@
+(
+    creation_location: (
+        line: 20,
+        column: 18,
+        file: "blueprint/router/ambiguous_fallback/src/lib.rs",
+    ),
+    components: [
+        NestedBlueprint((
+            blueprint: (
+                creation_location: (
+                    line: 22,
+                    column: 22,
+                    file: "blueprint/router/ambiguous_fallback/src/lib.rs",
+                ),
+                components: [
+                    Route((
+                        path: "/id",
+                        method_guard: Some([
+                            "GET",
+                        ]),
+                        request_handler: (
+                            callable: (
+                                registered_at: (
+                                    crate_name: "app_9fbe7a0c",
+                                    module_path: "app_9fbe7a0c",
+                                ),
+                                import_path: "crate::handler",
+                            ),
+                            location: (
+                                line: 23,
+                                column: 12,
+                                file: "blueprint/router/ambiguous_fallback/src/lib.rs",
+                            ),
+                        ),
+                        error_handler: None,
+                    )),
+                    FallbackRequestHandler((
+                        request_handler: (
+                            callable: (
+                                registered_at: (
+                                    crate_name: "app_9fbe7a0c",
+                                    module_path: "app_9fbe7a0c",
+                                ),
+                                import_path: "crate::fallback1",
+                            ),
+                            location: (
+                                line: 24,
+                                column: 12,
+                                file: "blueprint/router/ambiguous_fallback/src/lib.rs",
+                            ),
+                        ),
+                        error_handler: None,
+                    )),
+                ],
+            ),
+            path_prefix: Some("/users"),
+            nesting_location: (
+                line: 21,
+                column: 8,
+                file: "blueprint/router/ambiguous_fallback/src/lib.rs",
+            ),
+        )),
+        Route((
+            path: "/users/yo",
+            method_guard: Some([
+                "POST",
+            ]),
+            request_handler: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_9fbe7a0c",
+                        module_path: "app_9fbe7a0c",
+                    ),
+                    import_path: "crate::handler",
+                ),
+                location: (
+                    line: 27,
+                    column: 8,
+                    file: "blueprint/router/ambiguous_fallback/src/lib.rs",
+                ),
+            ),
+            error_handler: None,
+        )),
+    ],
+)

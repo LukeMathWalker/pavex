@@ -16,7 +16,7 @@ use sha2::Digest;
 use toml::toml;
 use walkdir::WalkDir;
 
-use persist_if_changed::{copy_if_changed, persist_if_changed};
+use persist_if_changed::persist_if_changed;
 pub use snapshot::print_changeset;
 
 use crate::snapshot::SnapshotTest;
@@ -60,32 +60,26 @@ pub fn get_test_name(tests_parent_folder: &Path, test_folder: &Path) -> String {
 pub fn run_tests(
     pavex_cli: PathBuf,
     pavexc_cli: PathBuf,
-    definition_directory: PathBuf,
-    runtime_directory: PathBuf,
+    tests_directory: PathBuf,
 ) -> Result<Conclusion, anyhow::Error> {
     let arguments = libtest_mimic::Arguments::from_args();
 
     let mut test_name2test_data = BTreeMap::new();
-    for entry in get_ui_test_directories(&definition_directory) {
-        let test_name = get_test_name(&definition_directory, &entry);
-        let relative_path = entry.strip_prefix(&definition_directory).unwrap();
-        let test_data = TestData::new(
-            &test_name,
-            entry.clone(),
-            runtime_directory.join(relative_path),
-        )?;
+    for entry in get_ui_test_directories(&tests_directory) {
+        let test_name = get_test_name(&tests_directory, &entry);
+        let test_data = TestData::new(&test_name, entry.clone())?;
         if is_filtered_out(&arguments, &test_name) || test_data.configuration.ignore {
             continue;
         }
         test_name2test_data.insert(test_name, test_data);
     }
 
-    create_tests_dir(&runtime_directory, &test_name2test_data, &pavex_cli)?;
+    create_tests_dir(&tests_directory, &test_name2test_data)?;
 
     let mut trials = Vec::with_capacity(test_name2test_data.len() * 4);
     if !arguments.list {
-        warm_up_rustdoc_cache(&runtime_directory, &test_name2test_data)?;
-        warm_up_target_dir(&runtime_directory, &test_name2test_data)?;
+        warm_up_rustdoc_cache(&tests_directory, &test_name2test_data)?;
+        warm_up_target_dir(&tests_directory, &test_name2test_data)?;
 
         // First battery of the UI tests.
         // For each UI test, we run code generation and then generate a different
@@ -100,7 +94,7 @@ pub fn run_tests(
             .map(|(name, data)| {
                 let mut trials = Vec::new();
                 let (codegen_output, outcome) =
-                    code_generation_test(&runtime_directory, &data, &pavexc_cli);
+                    code_generation_test(&tests_directory, &data, &pavexc_cli, &pavex_cli);
                 let is_success = outcome == CodegenTestOutcome::Success;
                 let trial = outcome.into_trial(&name, &data.configuration, codegen_output.as_ref());
                 trials.push(trial);
@@ -144,7 +138,7 @@ pub fn run_tests(
         });
 
         let (cases, test_name2test_data) =
-            compile_generated_apps(&runtime_directory, test_name2test_data)?;
+            compile_generated_apps(&tests_directory, test_name2test_data)?;
 
         trials.extend(cases);
 
@@ -411,7 +405,6 @@ fn warm_up_rustdoc_cache(
 fn create_tests_dir(
     runtime_directory: &Path,
     test_name2test_data: &BTreeMap<String, TestData>,
-    pavex_cli: &Path,
 ) -> Result<(), anyhow::Error> {
     let timer = std::time::Instant::now();
     println!("Seeding the filesystem");
@@ -453,7 +446,7 @@ fn create_tests_dir(
     // everything under a test-specific directory to avoid name
     // clashes and confusion across tests
     for test_data in test_name2test_data.values() {
-        test_data.seed_test_filesystem(pavex_cli)?;
+        test_data.reset_test_filesystem()?;
     }
 
     println!(
@@ -552,17 +545,12 @@ impl ExpectedOutcome {
 struct TestData {
     name_hash: String,
     definition_directory: PathBuf,
-    runtime_directory: PathBuf,
     configuration: TestConfig,
     has_tests: bool,
 }
 
 impl TestData {
-    fn new(
-        test_name: &str,
-        definition_directory: PathBuf,
-        runtime_directory: PathBuf,
-    ) -> Result<Self, anyhow::Error> {
+    fn new(test_name: &str, definition_directory: PathBuf) -> Result<Self, anyhow::Error> {
         let name_hash = {
             let mut hasher = sha2::Sha256::default();
             <_ as sha2::Digest>::update(&mut hasher, test_name.as_bytes());
@@ -575,13 +563,12 @@ impl TestData {
             hash
         };
         let configuration = Self::load_configuration(&definition_directory)?;
-        let integration_test_file = definition_directory.join("test.rs");
+        let integration_test_file = definition_directory.join("integration");
         let has_tests = integration_test_file.exists();
         Ok(Self {
             name_hash,
             definition_directory,
             configuration,
-            runtime_directory,
             has_tests,
         })
     }
@@ -617,12 +604,12 @@ impl TestData {
     /// We don't want to list ephemeral dependencies as members of the workspace of the project under test
     /// in order to be able to have multiple versions of the same crate as dependencies of the project under test.
     /// That would be forbidden by `cargo` if they were listed as members of the same workspace.
-    fn ephemeral_deps_runtime_directory(&self) -> PathBuf {
-        self.runtime_directory.join("ephemeral_deps")
+    fn ephemeral_deps_directory(&self) -> PathBuf {
+        self.definition_directory.join("ephemeral_deps")
     }
 
     fn blueprint_directory(&self) -> &Path {
-        &self.runtime_directory
+        &self.definition_directory
     }
 
     fn expectations_directory(&self) -> PathBuf {
@@ -630,7 +617,7 @@ impl TestData {
     }
 
     fn generated_app_directory(&self) -> PathBuf {
-        self.runtime_directory.join("generated_app")
+        self.definition_directory.join("generated_app")
     }
 
     fn blueprint_crate_name(&self) -> String {
@@ -643,130 +630,11 @@ impl TestData {
 
     fn integration_test_directory(&self) -> Option<PathBuf> {
         self.has_tests
-            .then(|| self.runtime_directory.join("integration"))
+            .then(|| self.definition_directory.join("integration"))
     }
 
-    /// Populate the runtime test folder using the directives and the files in the test
-    /// definition folder.
-    fn seed_test_filesystem(&self, pavex_cli: &Path) -> Result<(), anyhow::Error> {
-        fs_err::create_dir_all(&self.runtime_directory)
-            .context("Failed to create runtime directory for UI test")?;
-        let source_directory = self.runtime_directory.join("src");
-        fs_err::create_dir_all(&source_directory).context(
-            "Failed to create the runtime directory for the project under test when setting up the test runtime environment",
-        )?;
-        copy_if_changed(
-            &self.definition_directory.join("lib.rs"),
-            &source_directory.join("lib.rs"),
-        )?;
-
-        let deps_subdir = self.ephemeral_deps_runtime_directory();
-        fs_err::create_dir_all(&source_directory).context(
-            "Failed to create the runtime directory for ephemeral dependencies when setting up the test runtime environment",
-        )?;
-
-        for (dependency_name, dependency_config) in &self.configuration.ephemeral_dependencies {
-            let dep_runtime_directory = deps_subdir.join(dependency_name);
-            let package_name = dependency_config
-                .package
-                .clone()
-                .unwrap_or(dependency_name.to_owned());
-            let dep_source_directory = dep_runtime_directory.join("src");
-            fs_err::create_dir_all(&dep_source_directory).context(
-                "Failed to create the source directory for an ephemeral dependency when setting up the test runtime environment",
-            )?;
-
-            copy_if_changed(
-                &self.definition_directory.join(&dependency_config.path),
-                &dep_source_directory.join("lib.rs"),
-            )?;
-
-            let mut cargo_toml = toml! {
-                [package]
-                name = "dummy"
-                version = "0.1.0"
-                edition = "2021"
-
-                [lints.rust]
-                unexpected_cfgs = { level = "allow", check-cfg = ["cfg(pavex_ide_hint)"] }
-                unused = { level = "allow" }
-
-                [dependencies]
-                pavex = { workspace = true }
-            };
-            cargo_toml["package"]["name"] = format!("{package_name}_{}", self.name_hash).into();
-            cargo_toml["package"]["version"] = dependency_config.version.clone().into();
-            let deps = cargo_toml
-                .get_mut("dependencies")
-                .unwrap()
-                .as_table_mut()
-                .unwrap();
-            deps.extend(dependency_config.dependencies.clone());
-
-            persist_if_changed(
-                &dep_runtime_directory.join("Cargo.toml"),
-                toml::to_string(&cargo_toml)?.as_bytes(),
-            )?;
-        }
-
-        if let Some(integration_test_directory) = self.integration_test_directory() {
-            let integration_test_file = self.definition_directory.join("test.rs");
-            let integration_test_src_directory = integration_test_directory.join("src");
-            let integration_test_test_directory = integration_test_directory.join("tests");
-            fs_err::create_dir_all(&integration_test_src_directory).context(
-                "Failed to create the runtime directory for integration tests when setting up the test runtime environment",
-            )?;
-            fs_err::create_dir_all(&integration_test_test_directory).context(
-                "Failed to create the runtime directory for integration tests when setting up the test runtime environment",
-            )?;
-            copy_if_changed(
-                &integration_test_file,
-                &integration_test_test_directory.join("run.rs"),
-            )?;
-            persist_if_changed(&integration_test_src_directory.join("lib.rs"), b"")?;
-
-            let mut cargo_toml = toml! {
-                [package]
-                name = "dummy"
-                version = "0.1.0"
-                edition = "2021"
-
-                [dependencies]
-                application = { path = "../generated_app" }
-                app = { path = ".." }
-
-                [dev-dependencies]
-                tokio = { workspace = true, features = ["full"] }
-                reqwest = { workspace = true }
-                pavex = { workspace = true }
-            };
-            cargo_toml["package"]["name"] = format!("integration_{}", self.name_hash).into();
-            cargo_toml["dependencies"]["application"]
-                .as_table_mut()
-                .unwrap()
-                .insert(
-                    "package".into(),
-                    format!("application_{}", self.name_hash).into(),
-                );
-            cargo_toml["dependencies"]["app"]
-                .as_table_mut()
-                .unwrap()
-                .insert("package".into(), format!("app_{}", self.name_hash).into());
-
-            let dev_deps = cargo_toml
-                .get_mut("dev-dependencies")
-                .unwrap()
-                .as_table_mut()
-                .unwrap();
-            dev_deps.extend(self.configuration.dev_dependencies.clone());
-
-            persist_if_changed(
-                &integration_test_directory.join("Cargo.toml"),
-                toml::to_string(&cargo_toml)?.as_bytes(),
-            )?;
-        }
-
-        // Generated application crate, ahead of code generation.
+    fn reset_test_filesystem(&self) -> Result<(), anyhow::Error> {
+        // Empty application crate, ahead of code generation.
         {
             let application_dir = self.generated_app_directory();
             let application_src_dir = application_dir.join("src");
@@ -792,73 +660,22 @@ impl TestData {
             )?;
         }
 
-        let mut cargo_toml = toml! {
-            [package]
-            name = "dummy"
-            version = "0.1.0"
-            edition = "2021"
-
-            [lints.rust]
-            unexpected_cfgs = { level = "allow", check-cfg = ["cfg(pavex_ide_hint)"] }
-
-            [dependencies]
-            pavex = { workspace = true }
-            pavex_cli_client = { workspace = true }
-            workspace_hack = { workspace = true }
-        };
-        cargo_toml["package"]["name"] = format!("app_{}", self.name_hash).into();
-        let deps = cargo_toml
-            .get_mut("dependencies")
-            .unwrap()
-            .as_table_mut()
-            .unwrap();
-        deps.extend(self.configuration.dependencies.clone());
-        let ephemeral_dependencies =
-            self.configuration
-                .ephemeral_dependencies
-                .iter()
-                .map(|(key, config)| {
-                    let mut value = toml::value::Table::new();
-                    value.insert("path".into(), format!("ephemeral_deps/{key}").into());
-                    let package_name = if let Some(package_name) = config.package.as_ref() {
-                        package_name.to_owned()
-                    } else {
-                        key.to_owned()
-                    };
-                    value.insert(
-                        "package".into(),
-                        format!("{package_name}_{}", self.name_hash).into(),
-                    );
-                    (key.to_owned(), toml::Value::Table(value))
-                });
-        deps.extend(ephemeral_dependencies);
-
-        persist_if_changed(
-            &self.runtime_directory.join("Cargo.toml"),
-            toml::to_string(&cargo_toml)?.as_bytes(),
-        )?;
-
-        let cargo_config = toml! {
-            [build]
-            incremental = false
-        };
-        let dot_cargo_folder = self.runtime_directory.join(".cargo");
-        fs_err::create_dir_all(&dot_cargo_folder)?;
-        persist_if_changed(
-            &dot_cargo_folder.join("config.toml"),
-            toml::to_string(&cargo_config)?.as_bytes(),
-        )?;
-
-        let main_rs = format!(
-            r##"use app_{}::blueprint;
+        // We manage here the code generator binary for each UI test
+        // to avoid code drifting
+        {
+            let main_rs = format!(
+                r##"//! This code is generated by `pavex_test_runner`,
+//! Do NOT modify it manually.
+use app_{}::blueprint;
 use pavex_cli_client::{{Client, config::Color}};
 use pavex_cli_client::commands::generate::GenerateError;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {{
+    let ui_test_dir: std::path::PathBuf = std::env::var("UI_TEST_DIR").unwrap().into();
     let outcome = Client::new()
         .color(Color::Always)
-        .pavex_cli_path(r#"{}"#.into())
-        .generate(blueprint(), "{}".into())
+        .pavex_cli_path(std::env::var("PAVEX_TEST_CLI_PATH").unwrap().into())
+        .generate(blueprint(), ui_test_dir.join("generated_app"))
         .diagnostics_path("diagnostics.dot".into())
         .execute();
     match outcome {{
@@ -872,11 +689,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {{
     Ok(())
 }}
 "##,
-            self.name_hash,
-            pavex_cli.to_str().unwrap(),
-            self.runtime_directory.join("generated_app").display(),
-        );
-        persist_if_changed(&source_directory.join("main.rs"), main_rs.as_bytes())?;
+                self.name_hash
+            );
+            persist_if_changed(
+                &self.blueprint_directory().join("src").join("main.rs"),
+                main_rs.as_bytes(),
+            )?;
+        }
         Ok(())
     }
 
@@ -918,6 +737,7 @@ fn code_generation_test(
     runtime_directory: &Path,
     test: &TestData,
     pavexc_cli: &Path,
+    pavex_cli: &Path,
 ) -> (Option<CommandOutput>, CodegenTestOutcome) {
     let binary_name = format!("app_{}", test.name_hash);
     let binary = runtime_directory
@@ -925,8 +745,10 @@ fn code_generation_test(
         .join("debug")
         .join(&binary_name);
     let output = match std::process::Command::new(binary)
+        .env("PAVEX_TEST_CLI_PATH", pavex_cli)
+        .env("UI_TEST_DIR", &test.definition_directory)
         .env("PAVEX_PAVEXC", pavexc_cli)
-        .current_dir(&test.runtime_directory)
+        .current_dir(&test.definition_directory)
         .output()
     {
         Ok(o) => o,
@@ -1018,7 +840,7 @@ fn code_generation_diagnostics_test(test_name: &str, test: &TestData) -> Trial {
         test.blueprint_crate_name(),
     );
     let actual_diagnostics =
-        match fs_err::read_to_string(test.runtime_directory.join("diagnostics.dot")) {
+        match fs_err::read_to_string(test.definition_directory.join("diagnostics.dot")) {
             Ok(d) => d,
             Err(e) => {
                 let msg = format!(
@@ -1071,7 +893,7 @@ fn application_integration_test(test: &TestData) -> Result<(), anyhow::Error> {
         // .arg("1")
         .arg("-p")
         .arg(format!("integration_{}", test.name_hash))
-        .current_dir(&test.runtime_directory)
+        .current_dir(&test.definition_directory)
         .stdout(std::process::Stdio::inherit())
         .stderr(std::process::Stdio::inherit())
         .output()

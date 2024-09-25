@@ -1,0 +1,67 @@
+digraph "GET /home - 0" {
+    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_0::Next0>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_0::Next0) -> pavex::middleware::Next<crate::route_0::Next0>"]
+    2 [ label = "crate::route_0::Next0(app_f10df8fa::HttpClient, pavex::request::RequestHead) -> crate::route_0::Next0"]
+    3 [ label = "app_f10df8fa::HttpClient"]
+    4 [ label = "pavex::request::RequestHead"]
+    5 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    4 -> 2 [ ]
+    3 -> 2 [ ]
+    0 -> 5 [ ]
+}
+
+digraph "GET /home - 1" {
+    0 [ label = "app_f10df8fa::stream_file(std::path::PathBuf, app_f10df8fa::Logger, app_f10df8fa::HttpClient) -> pavex::response::Response"]
+    1 [ label = "core::prelude::rust_2015::Result<std::path::PathBuf, app_f10df8fa::ExtractPathError<alloc::string::String>> -> std::path::PathBuf"]
+    2 [ label = "app_f10df8fa::logger() -> app_f10df8fa::Logger"]
+    3 [ label = "app_f10df8fa::HttpClient"]
+    4 [ label = "app_f10df8fa::extract_path(pavex::request::RequestHead) -> core::prelude::rust_2015::Result<std::path::PathBuf, app_f10df8fa::ExtractPathError<alloc::string::String>>"]
+    5 [ label = "pavex::request::RequestHead"]
+    6 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    7 [ label = "core::prelude::rust_2015::Result<std::path::PathBuf, app_f10df8fa::ExtractPathError<alloc::string::String>> -> app_f10df8fa::ExtractPathError<alloc::string::String>"]
+    8 [ label = "app_f10df8fa::handle_extract_path_error(&app_f10df8fa::ExtractPathError<alloc::string::String>, app_f10df8fa::Logger) -> pavex::response::Response"]
+    9 [ label = "app_f10df8fa::logger() -> app_f10df8fa::Logger"]
+    10 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    11 [ label = "`match`"]
+    3 -> 0 [ ]
+    2 -> 0 [ ]
+    1 -> 0 [ ]
+    11 -> 7 [ ]
+    5 -> 4 [ ]
+    11 -> 1 [ ]
+    0 -> 6 [ ]
+    7 -> 8 [ label = "&"]
+    9 -> 8 [ ]
+    8 -> 10 [ ]
+    4 -> 11 [ ]
+}
+
+digraph "* /home - 0" {
+    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_1::Next0<'a>>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_1::Next0<'a>) -> pavex::middleware::Next<crate::route_1::Next0<'a>>"]
+    2 [ label = "crate::route_1::Next0(&'a pavex::router::AllowedMethods) -> crate::route_1::Next0<'a>"]
+    4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    5 [ label = "&pavex::router::AllowedMethods"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 4 [ ]
+    5 -> 2 [ ]
+}
+
+digraph "* /home - 1" {
+    0 [ label = "pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
+    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "&pavex::router::AllowedMethods"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
+}
+
+digraph app_state {
+    0 [ label = "crate::ApplicationState(app_f10df8fa::HttpClient) -> crate::ApplicationState"]
+    1 [ label = "app_f10df8fa::http_client(app_f10df8fa::Config) -> app_f10df8fa::HttpClient"]
+    2 [ label = "app_f10df8fa::Config"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+}

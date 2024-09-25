@@ -1,0 +1,90 @@
+(
+    creation_location: (
+        line: 47,
+        column: 18,
+        file: "dependency_injection/cycles/request_scoped_cycles/src/lib.rs",
+    ),
+    components: [
+        Constructor((
+            constructor: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_2480aa2b",
+                        module_path: "app_2480aa2b",
+                    ),
+                    import_path: "crate::a",
+                ),
+                location: (
+                    line: 48,
+                    column: 8,
+                    file: "dependency_injection/cycles/request_scoped_cycles/src/lib.rs",
+                ),
+            ),
+            lifecycle: RequestScoped,
+            cloning_strategy: None,
+            error_handler: None,
+            lints: {},
+        )),
+        Constructor((
+            constructor: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_2480aa2b",
+                        module_path: "app_2480aa2b",
+                    ),
+                    import_path: "crate::b",
+                ),
+                location: (
+                    line: 49,
+                    column: 8,
+                    file: "dependency_injection/cycles/request_scoped_cycles/src/lib.rs",
+                ),
+            ),
+            lifecycle: RequestScoped,
+            cloning_strategy: None,
+            error_handler: None,
+            lints: {},
+        )),
+        Constructor((
+            constructor: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_2480aa2b",
+                        module_path: "app_2480aa2b",
+                    ),
+                    import_path: "crate::c",
+                ),
+                location: (
+                    line: 50,
+                    column: 8,
+                    file: "dependency_injection/cycles/request_scoped_cycles/src/lib.rs",
+                ),
+            ),
+            lifecycle: RequestScoped,
+            cloning_strategy: None,
+            error_handler: None,
+            lints: {},
+        )),
+        Route((
+            path: "/",
+            method_guard: Some([
+                "GET",
+            ]),
+            request_handler: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_2480aa2b",
+                        module_path: "app_2480aa2b",
+                    ),
+                    import_path: "crate::handler",
+                ),
+                location: (
+                    line: 51,
+                    column: 8,
+                    file: "dependency_injection/cycles/request_scoped_cycles/src/lib.rs",
+                ),
+            ),
+            error_handler: None,
+        )),
+    ],
+)

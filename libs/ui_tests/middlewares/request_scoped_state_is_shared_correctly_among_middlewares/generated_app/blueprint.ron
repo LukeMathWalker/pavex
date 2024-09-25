@@ -1,0 +1,101 @@
+(
+    creation_location: (
+        line: 30,
+        column: 18,
+        file: "middlewares/request_scoped_state_is_shared_correctly_among_middlewares/src/lib.rs",
+    ),
+    components: [
+        Constructor((
+            constructor: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_4b6f5359",
+                        module_path: "app_4b6f5359",
+                    ),
+                    import_path: "crate::a",
+                ),
+                location: (
+                    line: 31,
+                    column: 8,
+                    file: "middlewares/request_scoped_state_is_shared_correctly_among_middlewares/src/lib.rs",
+                ),
+            ),
+            lifecycle: RequestScoped,
+            cloning_strategy: None,
+            error_handler: None,
+            lints: {},
+        )),
+        PreProcessingMiddleware((
+            middleware: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_4b6f5359",
+                        module_path: "app_4b6f5359",
+                    ),
+                    import_path: "crate::pre",
+                ),
+                location: (
+                    line: 32,
+                    column: 8,
+                    file: "middlewares/request_scoped_state_is_shared_correctly_among_middlewares/src/lib.rs",
+                ),
+            ),
+            error_handler: None,
+        )),
+        PostProcessingMiddleware((
+            middleware: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_4b6f5359",
+                        module_path: "app_4b6f5359",
+                    ),
+                    import_path: "crate::post",
+                ),
+                location: (
+                    line: 33,
+                    column: 8,
+                    file: "middlewares/request_scoped_state_is_shared_correctly_among_middlewares/src/lib.rs",
+                ),
+            ),
+            error_handler: None,
+        )),
+        WrappingMiddleware((
+            middleware: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_4b6f5359",
+                        module_path: "app_4b6f5359",
+                    ),
+                    import_path: "crate::wrap",
+                ),
+                location: (
+                    line: 34,
+                    column: 8,
+                    file: "middlewares/request_scoped_state_is_shared_correctly_among_middlewares/src/lib.rs",
+                ),
+            ),
+            error_handler: None,
+        )),
+        Route((
+            path: "/home",
+            method_guard: Some([
+                "GET",
+            ]),
+            request_handler: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_4b6f5359",
+                        module_path: "app_4b6f5359",
+                    ),
+                    import_path: "crate::handler",
+                ),
+                location: (
+                    line: 35,
+                    column: 8,
+                    file: "middlewares/request_scoped_state_is_shared_correctly_among_middlewares/src/lib.rs",
+                ),
+            ),
+            error_handler: None,
+        )),
+    ],
+)

@@ -1,0 +1,50 @@
+(
+    creation_location: (
+        line: 15,
+        column: 18,
+        file: "reflection/the_path_for_generic_arguments_must_be_absolute/src/lib.rs",
+    ),
+    components: [
+        Constructor((
+            constructor: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_9adade88",
+                        module_path: "app_9adade88",
+                    ),
+                    import_path: "crate::new_logger::<String>",
+                ),
+                location: (
+                    line: 16,
+                    column: 8,
+                    file: "reflection/the_path_for_generic_arguments_must_be_absolute/src/lib.rs",
+                ),
+            ),
+            lifecycle: Singleton,
+            cloning_strategy: None,
+            error_handler: None,
+            lints: {},
+        )),
+        Route((
+            path: "/home",
+            method_guard: Some([
+                "GET",
+            ]),
+            request_handler: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_9adade88",
+                        module_path: "app_9adade88",
+                    ),
+                    import_path: "crate::handler::<std::string::String>",
+                ),
+                location: (
+                    line: 17,
+                    column: 8,
+                    file: "reflection/the_path_for_generic_arguments_must_be_absolute/src/lib.rs",
+                ),
+            ),
+            error_handler: None,
+        )),
+    ],
+)

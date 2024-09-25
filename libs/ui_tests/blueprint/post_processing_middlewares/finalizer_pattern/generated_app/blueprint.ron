@@ -1,0 +1,101 @@
+(
+    creation_location: (
+        line: 28,
+        column: 18,
+        file: "blueprint/post_processing_middlewares/finalizer_pattern/src/lib.rs",
+    ),
+    components: [
+        Constructor((
+            constructor: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_41064ffa",
+                        module_path: "app_41064ffa",
+                    ),
+                    import_path: "crate::a",
+                ),
+                location: (
+                    line: 29,
+                    column: 8,
+                    file: "blueprint/post_processing_middlewares/finalizer_pattern/src/lib.rs",
+                ),
+            ),
+            lifecycle: RequestScoped,
+            cloning_strategy: None,
+            error_handler: None,
+            lints: {},
+        )),
+        PostProcessingMiddleware((
+            middleware: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_41064ffa",
+                        module_path: "app_41064ffa",
+                    ),
+                    import_path: "crate::first",
+                ),
+                location: (
+                    line: 30,
+                    column: 8,
+                    file: "blueprint/post_processing_middlewares/finalizer_pattern/src/lib.rs",
+                ),
+            ),
+            error_handler: None,
+        )),
+        PostProcessingMiddleware((
+            middleware: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_41064ffa",
+                        module_path: "app_41064ffa",
+                    ),
+                    import_path: "crate::second",
+                ),
+                location: (
+                    line: 31,
+                    column: 8,
+                    file: "blueprint/post_processing_middlewares/finalizer_pattern/src/lib.rs",
+                ),
+            ),
+            error_handler: None,
+        )),
+        PostProcessingMiddleware((
+            middleware: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_41064ffa",
+                        module_path: "app_41064ffa",
+                    ),
+                    import_path: "crate::third",
+                ),
+                location: (
+                    line: 32,
+                    column: 8,
+                    file: "blueprint/post_processing_middlewares/finalizer_pattern/src/lib.rs",
+                ),
+            ),
+            error_handler: None,
+        )),
+        Route((
+            path: "/home",
+            method_guard: Some([
+                "GET",
+            ]),
+            request_handler: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_41064ffa",
+                        module_path: "app_41064ffa",
+                    ),
+                    import_path: "crate::handler",
+                ),
+                location: (
+                    line: 33,
+                    column: 8,
+                    file: "blueprint/post_processing_middlewares/finalizer_pattern/src/lib.rs",
+                ),
+            ),
+            error_handler: None,
+        )),
+    ],
+)

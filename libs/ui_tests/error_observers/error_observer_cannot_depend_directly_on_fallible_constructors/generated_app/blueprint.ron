@@ -1,0 +1,112 @@
+(
+    creation_location: (
+        line: 41,
+        column: 18,
+        file: "error_observers/error_observer_cannot_depend_directly_on_fallible_constructors/src/lib.rs",
+    ),
+    components: [
+        Constructor((
+            constructor: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_f6a54ba5",
+                        module_path: "app_f6a54ba5",
+                    ),
+                    import_path: "crate::a",
+                ),
+                location: (
+                    line: 42,
+                    column: 8,
+                    file: "error_observers/error_observer_cannot_depend_directly_on_fallible_constructors/src/lib.rs",
+                ),
+            ),
+            lifecycle: RequestScoped,
+            cloning_strategy: None,
+            error_handler: Some((
+                callable: (
+                    registered_at: (
+                        crate_name: "app_f6a54ba5",
+                        module_path: "app_f6a54ba5",
+                    ),
+                    import_path: "crate::error_handler",
+                ),
+                location: (
+                    line: 43,
+                    column: 10,
+                    file: "error_observers/error_observer_cannot_depend_directly_on_fallible_constructors/src/lib.rs",
+                ),
+            )),
+            lints: {},
+        )),
+        Constructor((
+            constructor: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_f6a54ba5",
+                        module_path: "app_f6a54ba5",
+                    ),
+                    import_path: "crate::b",
+                ),
+                location: (
+                    line: 44,
+                    column: 8,
+                    file: "error_observers/error_observer_cannot_depend_directly_on_fallible_constructors/src/lib.rs",
+                ),
+            ),
+            lifecycle: RequestScoped,
+            cloning_strategy: None,
+            error_handler: Some((
+                callable: (
+                    registered_at: (
+                        crate_name: "app_f6a54ba5",
+                        module_path: "app_f6a54ba5",
+                    ),
+                    import_path: "crate::error_handler",
+                ),
+                location: (
+                    line: 45,
+                    column: 10,
+                    file: "error_observers/error_observer_cannot_depend_directly_on_fallible_constructors/src/lib.rs",
+                ),
+            )),
+            lints: {},
+        )),
+        ErrorObserver((
+            error_observer: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_f6a54ba5",
+                        module_path: "app_f6a54ba5",
+                    ),
+                    import_path: "crate::error_observer",
+                ),
+                location: (
+                    line: 46,
+                    column: 8,
+                    file: "error_observers/error_observer_cannot_depend_directly_on_fallible_constructors/src/lib.rs",
+                ),
+            ),
+        )),
+        Route((
+            path: "/home",
+            method_guard: Some([
+                "GET",
+            ]),
+            request_handler: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_f6a54ba5",
+                        module_path: "app_f6a54ba5",
+                    ),
+                    import_path: "crate::handler",
+                ),
+                location: (
+                    line: 47,
+                    column: 8,
+                    file: "error_observers/error_observer_cannot_depend_directly_on_fallible_constructors/src/lib.rs",
+                ),
+            ),
+            error_handler: None,
+        )),
+    ],
+)

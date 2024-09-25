@@ -1,0 +1,236 @@
+(
+    creation_location: (
+        line: 102,
+        column: 18,
+        file: "blueprint/common/components_can_fail/src/lib.rs",
+    ),
+    components: [
+        PrebuiltType((
+            input: (
+                type_: (
+                    registered_at: (
+                        crate_name: "app_e501823b",
+                        module_path: "app_e501823b",
+                    ),
+                    import_path: "crate::Config",
+                ),
+                location: (
+                    line: 103,
+                    column: 8,
+                    file: "blueprint/common/components_can_fail/src/lib.rs",
+                ),
+            ),
+            cloning_strategy: None,
+        )),
+        Constructor((
+            constructor: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_e501823b",
+                        module_path: "app_e501823b",
+                    ),
+                    import_path: "crate::http_client",
+                ),
+                location: (
+                    line: 104,
+                    column: 8,
+                    file: "blueprint/common/components_can_fail/src/lib.rs",
+                ),
+            ),
+            lifecycle: Singleton,
+            cloning_strategy: None,
+            error_handler: None,
+            lints: {},
+        )),
+        Constructor((
+            constructor: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_e501823b",
+                        module_path: "app_e501823b",
+                    ),
+                    import_path: "crate::extract_path",
+                ),
+                location: (
+                    line: 105,
+                    column: 8,
+                    file: "blueprint/common/components_can_fail/src/lib.rs",
+                ),
+            ),
+            lifecycle: RequestScoped,
+            cloning_strategy: None,
+            error_handler: Some((
+                callable: (
+                    registered_at: (
+                        crate_name: "app_e501823b",
+                        module_path: "app_e501823b",
+                    ),
+                    import_path: "crate::handle_extract_path_error",
+                ),
+                location: (
+                    line: 106,
+                    column: 10,
+                    file: "blueprint/common/components_can_fail/src/lib.rs",
+                ),
+            )),
+            lints: {},
+        )),
+        Constructor((
+            constructor: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_e501823b",
+                        module_path: "app_e501823b",
+                    ),
+                    import_path: "crate::logger",
+                ),
+                location: (
+                    line: 107,
+                    column: 8,
+                    file: "blueprint/common/components_can_fail/src/lib.rs",
+                ),
+            ),
+            lifecycle: Transient,
+            cloning_strategy: None,
+            error_handler: Some((
+                callable: (
+                    registered_at: (
+                        crate_name: "app_e501823b",
+                        module_path: "app_e501823b",
+                    ),
+                    import_path: "crate::handle_logger_error",
+                ),
+                location: (
+                    line: 108,
+                    column: 10,
+                    file: "blueprint/common/components_can_fail/src/lib.rs",
+                ),
+            )),
+            lints: {},
+        )),
+        WrappingMiddleware((
+            middleware: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_e501823b",
+                        module_path: "app_e501823b",
+                    ),
+                    import_path: "crate::fallible_wrapping_middleware",
+                ),
+                location: (
+                    line: 109,
+                    column: 8,
+                    file: "blueprint/common/components_can_fail/src/lib.rs",
+                ),
+            ),
+            error_handler: Some((
+                callable: (
+                    registered_at: (
+                        crate_name: "app_e501823b",
+                        module_path: "app_e501823b",
+                    ),
+                    import_path: "crate::handle_middleware_error",
+                ),
+                location: (
+                    line: 110,
+                    column: 10,
+                    file: "blueprint/common/components_can_fail/src/lib.rs",
+                ),
+            )),
+        )),
+        PreProcessingMiddleware((
+            middleware: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_e501823b",
+                        module_path: "app_e501823b",
+                    ),
+                    import_path: "crate::fallible_pre",
+                ),
+                location: (
+                    line: 111,
+                    column: 8,
+                    file: "blueprint/common/components_can_fail/src/lib.rs",
+                ),
+            ),
+            error_handler: Some((
+                callable: (
+                    registered_at: (
+                        crate_name: "app_e501823b",
+                        module_path: "app_e501823b",
+                    ),
+                    import_path: "crate::pre_error",
+                ),
+                location: (
+                    line: 112,
+                    column: 10,
+                    file: "blueprint/common/components_can_fail/src/lib.rs",
+                ),
+            )),
+        )),
+        PostProcessingMiddleware((
+            middleware: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_e501823b",
+                        module_path: "app_e501823b",
+                    ),
+                    import_path: "crate::fallible_post",
+                ),
+                location: (
+                    line: 113,
+                    column: 8,
+                    file: "blueprint/common/components_can_fail/src/lib.rs",
+                ),
+            ),
+            error_handler: Some((
+                callable: (
+                    registered_at: (
+                        crate_name: "app_e501823b",
+                        module_path: "app_e501823b",
+                    ),
+                    import_path: "crate::post_error",
+                ),
+                location: (
+                    line: 114,
+                    column: 10,
+                    file: "blueprint/common/components_can_fail/src/lib.rs",
+                ),
+            )),
+        )),
+        Route((
+            path: "/home",
+            method_guard: Some([
+                "GET",
+            ]),
+            request_handler: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_e501823b",
+                        module_path: "app_e501823b",
+                    ),
+                    import_path: "crate::request_handler",
+                ),
+                location: (
+                    line: 115,
+                    column: 8,
+                    file: "blueprint/common/components_can_fail/src/lib.rs",
+                ),
+            ),
+            error_handler: Some((
+                callable: (
+                    registered_at: (
+                        crate_name: "app_e501823b",
+                        module_path: "app_e501823b",
+                    ),
+                    import_path: "crate::handle_handler_error",
+                ),
+                location: (
+                    line: 116,
+                    column: 10,
+                    file: "blueprint/common/components_can_fail/src/lib.rs",
+                ),
+            )),
+        )),
+    ],
+)

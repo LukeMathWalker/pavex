@@ -1,0 +1,26 @@
+[package]
+name = "dep_a0f4586a"
+version = "0.1.0"
+edition = "2021"
+
+[lints.rust.unexpected_cfgs]
+level = "allow"
+check-cfg = ["cfg(pavex_ide_hint)"]
+
+[lints.rust.unused]
+level = "allow"
+
+[dependencies.pavex]
+workspace = true
+
+[dependencies.http_01]
+package = "http"
+version = "0.1"
+
+[dependencies.http_02]
+package = "http"
+version = "0.2"
+
+[dependencies.hyper]
+version = "0.14"
+features = ["server", "http1", "http2"]

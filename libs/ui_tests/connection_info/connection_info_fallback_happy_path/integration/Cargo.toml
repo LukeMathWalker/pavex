@@ -1,0 +1,31 @@
+[package]
+name = "integration_56967fe8"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies.application]
+path = "../generated_app"
+package = "application_56967fe8"
+
+[dependencies.app]
+path = ".."
+package = "app_56967fe8"
+
+[dev-dependencies]
+http-body-util = "0.1.1"
+hyper = "1.2.0"
+hyper-util = "0.1.3"
+
+[dev-dependencies.tokio]
+workspace = true
+features = ["full"]
+
+[dev-dependencies.reqwest]
+workspace = true
+
+[dev-dependencies.pavex]
+workspace = true
+
+[dev-dependencies.tracing-subscriber]
+version = "0.3"
+features = ["env-filter", "fmt"]

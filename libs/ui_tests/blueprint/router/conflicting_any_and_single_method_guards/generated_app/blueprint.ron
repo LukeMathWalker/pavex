@@ -1,0 +1,59 @@
+(
+    creation_location: (
+        line: 16,
+        column: 18,
+        file: "blueprint/router/conflicting_any_and_single_method_guards/src/lib.rs",
+    ),
+    components: [
+        Route((
+            path: "/home",
+            method_guard: Some([
+                "CONNECT",
+                "DELETE",
+                "GET",
+                "HEAD",
+                "OPTIONS",
+                "PATCH",
+                "POST",
+                "PUT",
+                "TRACE",
+            ]),
+            request_handler: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_6b4ffaf2",
+                        module_path: "app_6b4ffaf2",
+                    ),
+                    import_path: "crate::handler_1",
+                ),
+                location: (
+                    line: 17,
+                    column: 8,
+                    file: "blueprint/router/conflicting_any_and_single_method_guards/src/lib.rs",
+                ),
+            ),
+            error_handler: None,
+        )),
+        Route((
+            path: "/home",
+            method_guard: Some([
+                "GET",
+            ]),
+            request_handler: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_6b4ffaf2",
+                        module_path: "app_6b4ffaf2",
+                    ),
+                    import_path: "crate::handler_2",
+                ),
+                location: (
+                    line: 18,
+                    column: 8,
+                    file: "blueprint/router/conflicting_any_and_single_method_guards/src/lib.rs",
+                ),
+            ),
+            error_handler: None,
+        )),
+    ],
+)

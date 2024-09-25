@@ -1,0 +1,81 @@
+(
+    creation_location: (
+        line: 29,
+        column: 18,
+        file: "blueprint/pre_processing_middlewares/pre_processing_middlewares_input_parameters_cannot_be_generic/src/lib.rs",
+    ),
+    components: [
+        PreProcessingMiddleware((
+            middleware: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_b3516518",
+                        module_path: "app_b3516518",
+                    ),
+                    import_path: "crate::generic",
+                ),
+                location: (
+                    line: 30,
+                    column: 8,
+                    file: "blueprint/pre_processing_middlewares/pre_processing_middlewares_input_parameters_cannot_be_generic/src/lib.rs",
+                ),
+            ),
+            error_handler: None,
+        )),
+        PreProcessingMiddleware((
+            middleware: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_b3516518",
+                        module_path: "app_b3516518",
+                    ),
+                    import_path: "crate::doubly_generic",
+                ),
+                location: (
+                    line: 31,
+                    column: 8,
+                    file: "blueprint/pre_processing_middlewares/pre_processing_middlewares_input_parameters_cannot_be_generic/src/lib.rs",
+                ),
+            ),
+            error_handler: None,
+        )),
+        PreProcessingMiddleware((
+            middleware: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_b3516518",
+                        module_path: "app_b3516518",
+                    ),
+                    import_path: "crate::triply_generic",
+                ),
+                location: (
+                    line: 32,
+                    column: 8,
+                    file: "blueprint/pre_processing_middlewares/pre_processing_middlewares_input_parameters_cannot_be_generic/src/lib.rs",
+                ),
+            ),
+            error_handler: None,
+        )),
+        Route((
+            path: "/home",
+            method_guard: Some([
+                "GET",
+            ]),
+            request_handler: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_b3516518",
+                        module_path: "app_b3516518",
+                    ),
+                    import_path: "crate::handler",
+                ),
+                location: (
+                    line: 33,
+                    column: 8,
+                    file: "blueprint/pre_processing_middlewares/pre_processing_middlewares_input_parameters_cannot_be_generic/src/lib.rs",
+                ),
+            ),
+            error_handler: None,
+        )),
+    ],
+)

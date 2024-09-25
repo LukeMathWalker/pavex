@@ -1,0 +1,70 @@
+(
+    creation_location: (
+        line: 19,
+        column: 18,
+        file: "blueprint/constructors/the_same_constructor_can_be_registered_multiple_times_using_the_same_lifecycle/src/lib.rs",
+    ),
+    components: [
+        Constructor((
+            constructor: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_621e9d53",
+                        module_path: "app_621e9d53",
+                    ),
+                    import_path: "crate::new_logger",
+                ),
+                location: (
+                    line: 20,
+                    column: 8,
+                    file: "blueprint/constructors/the_same_constructor_can_be_registered_multiple_times_using_the_same_lifecycle/src/lib.rs",
+                ),
+            ),
+            lifecycle: Singleton,
+            cloning_strategy: None,
+            error_handler: None,
+            lints: {},
+        )),
+        Constructor((
+            constructor: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_621e9d53",
+                        module_path: "app_621e9d53",
+                    ),
+                    import_path: "crate::new_logger",
+                ),
+                location: (
+                    line: 21,
+                    column: 8,
+                    file: "blueprint/constructors/the_same_constructor_can_be_registered_multiple_times_using_the_same_lifecycle/src/lib.rs",
+                ),
+            ),
+            lifecycle: RequestScoped,
+            cloning_strategy: None,
+            error_handler: None,
+            lints: {},
+        )),
+        Route((
+            path: "/home",
+            method_guard: Some([
+                "GET",
+            ]),
+            request_handler: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_621e9d53",
+                        module_path: "app_621e9d53",
+                    ),
+                    import_path: "crate::Streamer::stream_file",
+                ),
+                location: (
+                    line: 22,
+                    column: 8,
+                    file: "blueprint/constructors/the_same_constructor_can_be_registered_multiple_times_using_the_same_lifecycle/src/lib.rs",
+                ),
+            ),
+            error_handler: None,
+        )),
+    ],
+)

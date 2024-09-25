@@ -1,0 +1,108 @@
+(
+    creation_location: (
+        line: 8,
+        column: 18,
+        file: "blueprint/nesting/nesting_fails_if_the_same_singleton_constructor_is_registered_in_different_scopes/src/lib.rs",
+    ),
+    components: [
+        Constructor((
+            constructor: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_de592621",
+                        module_path: "app_de592621",
+                    ),
+                    import_path: "crate::singleton",
+                ),
+                location: (
+                    line: 9,
+                    column: 8,
+                    file: "blueprint/nesting/nesting_fails_if_the_same_singleton_constructor_is_registered_in_different_scopes/src/lib.rs",
+                ),
+            ),
+            lifecycle: Singleton,
+            cloning_strategy: None,
+            error_handler: None,
+            lints: {},
+        )),
+        Route((
+            path: "/parent",
+            method_guard: Some([
+                "GET",
+            ]),
+            request_handler: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_de592621",
+                        module_path: "app_de592621",
+                    ),
+                    import_path: "crate::handler",
+                ),
+                location: (
+                    line: 10,
+                    column: 8,
+                    file: "blueprint/nesting/nesting_fails_if_the_same_singleton_constructor_is_registered_in_different_scopes/src/lib.rs",
+                ),
+            ),
+            error_handler: None,
+        )),
+        NestedBlueprint((
+            blueprint: (
+                creation_location: (
+                    line: 24,
+                    column: 18,
+                    file: "blueprint/nesting/nesting_fails_if_the_same_singleton_constructor_is_registered_in_different_scopes/src/lib.rs",
+                ),
+                components: [
+                    Constructor((
+                        constructor: (
+                            callable: (
+                                registered_at: (
+                                    crate_name: "app_de592621",
+                                    module_path: "app_de592621",
+                                ),
+                                import_path: "crate::singleton",
+                            ),
+                            location: (
+                                line: 25,
+                                column: 8,
+                                file: "blueprint/nesting/nesting_fails_if_the_same_singleton_constructor_is_registered_in_different_scopes/src/lib.rs",
+                            ),
+                        ),
+                        lifecycle: Singleton,
+                        cloning_strategy: None,
+                        error_handler: None,
+                        lints: {},
+                    )),
+                    Route((
+                        path: "/child",
+                        method_guard: Some([
+                            "GET",
+                        ]),
+                        request_handler: (
+                            callable: (
+                                registered_at: (
+                                    crate_name: "app_de592621",
+                                    module_path: "app_de592621",
+                                ),
+                                import_path: "crate::handler",
+                            ),
+                            location: (
+                                line: 26,
+                                column: 8,
+                                file: "blueprint/nesting/nesting_fails_if_the_same_singleton_constructor_is_registered_in_different_scopes/src/lib.rs",
+                            ),
+                        ),
+                        error_handler: None,
+                    )),
+                ],
+            ),
+            path_prefix: None,
+            nesting_location: (
+                line: 11,
+                column: 8,
+                file: "blueprint/nesting/nesting_fails_if_the_same_singleton_constructor_is_registered_in_different_scopes/src/lib.rs",
+            ),
+        )),
+    ],
+)

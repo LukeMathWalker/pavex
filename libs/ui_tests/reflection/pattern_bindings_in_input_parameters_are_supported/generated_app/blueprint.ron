@@ -1,0 +1,50 @@
+(
+    creation_location: (
+        line: 19,
+        column: 18,
+        file: "reflection/pattern_bindings_in_input_parameters_are_supported/src/lib.rs",
+    ),
+    components: [
+        Constructor((
+            constructor: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_d1b695a6",
+                        module_path: "app_d1b695a6",
+                    ),
+                    import_path: "crate::streamer",
+                ),
+                location: (
+                    line: 20,
+                    column: 8,
+                    file: "reflection/pattern_bindings_in_input_parameters_are_supported/src/lib.rs",
+                ),
+            ),
+            lifecycle: Singleton,
+            cloning_strategy: None,
+            error_handler: None,
+            lints: {},
+        )),
+        Route((
+            path: "/home",
+            method_guard: Some([
+                "GET",
+            ]),
+            request_handler: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_d1b695a6",
+                        module_path: "app_d1b695a6",
+                    ),
+                    import_path: "crate::stream_file",
+                ),
+                location: (
+                    line: 21,
+                    column: 8,
+                    file: "reflection/pattern_bindings_in_input_parameters_are_supported/src/lib.rs",
+                ),
+            ),
+            error_handler: None,
+        )),
+    ],
+)

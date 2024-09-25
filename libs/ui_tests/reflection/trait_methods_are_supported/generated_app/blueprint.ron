@@ -1,0 +1,130 @@
+(
+    creation_location: (
+        line: 57,
+        column: 18,
+        file: "reflection/trait_methods_are_supported/src/lib.rs",
+    ),
+    components: [
+        Constructor((
+            constructor: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_a7fd6a2c",
+                        module_path: "app_a7fd6a2c",
+                    ),
+                    import_path: "<crate::A as crate::MyTrait>::a_method_that_returns_self",
+                ),
+                location: (
+                    line: 58,
+                    column: 8,
+                    file: "reflection/trait_methods_are_supported/src/lib.rs",
+                ),
+            ),
+            lifecycle: RequestScoped,
+            cloning_strategy: None,
+            error_handler: None,
+            lints: {},
+        )),
+        Constructor((
+            constructor: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_a7fd6a2c",
+                        module_path: "app_a7fd6a2c",
+                    ),
+                    import_path: "<crate::A as crate::MyTrait>::a_method_that_borrows_self",
+                ),
+                location: (
+                    line: 62,
+                    column: 8,
+                    file: "reflection/trait_methods_are_supported/src/lib.rs",
+                ),
+            ),
+            lifecycle: RequestScoped,
+            cloning_strategy: None,
+            error_handler: None,
+            lints: {},
+        )),
+        Constructor((
+            constructor: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_a7fd6a2c",
+                        module_path: "app_a7fd6a2c",
+                    ),
+                    import_path: "<crate::A as crate::MyTrait>::a_method_with_a_generic::<std::string::String>",
+                ),
+                location: (
+                    line: 66,
+                    column: 8,
+                    file: "reflection/trait_methods_are_supported/src/lib.rs",
+                ),
+            ),
+            lifecycle: RequestScoped,
+            cloning_strategy: None,
+            error_handler: None,
+            lints: {},
+        )),
+        Constructor((
+            constructor: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_a7fd6a2c",
+                        module_path: "app_a7fd6a2c",
+                    ),
+                    import_path: "<crate::B as crate::AnotherTrait>::a_method_that_consumes_self",
+                ),
+                location: (
+                    line: 70,
+                    column: 8,
+                    file: "reflection/trait_methods_are_supported/src/lib.rs",
+                ),
+            ),
+            lifecycle: RequestScoped,
+            cloning_strategy: None,
+            error_handler: None,
+            lints: {},
+        )),
+        Constructor((
+            constructor: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_a7fd6a2c",
+                        module_path: "app_a7fd6a2c",
+                    ),
+                    import_path: "<crate::C as crate::GenericTrait<std::string::String>>::a_method",
+                ),
+                location: (
+                    line: 74,
+                    column: 8,
+                    file: "reflection/trait_methods_are_supported/src/lib.rs",
+                ),
+            ),
+            lifecycle: RequestScoped,
+            cloning_strategy: None,
+            error_handler: None,
+            lints: {},
+        )),
+        Route((
+            path: "/home",
+            method_guard: Some([
+                "GET",
+            ]),
+            request_handler: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_a7fd6a2c",
+                        module_path: "app_a7fd6a2c",
+                    ),
+                    import_path: "crate::handler",
+                ),
+                location: (
+                    line: 78,
+                    column: 8,
+                    file: "reflection/trait_methods_are_supported/src/lib.rs",
+                ),
+            ),
+            error_handler: None,
+        )),
+    ],
+)

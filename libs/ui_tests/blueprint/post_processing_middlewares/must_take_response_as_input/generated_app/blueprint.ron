@@ -1,0 +1,47 @@
+(
+    creation_location: (
+        line: 14,
+        column: 18,
+        file: "blueprint/post_processing_middlewares/must_take_response_as_input/src/lib.rs",
+    ),
+    components: [
+        PostProcessingMiddleware((
+            middleware: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_4a62f10c",
+                        module_path: "app_4a62f10c",
+                    ),
+                    import_path: "crate::mw",
+                ),
+                location: (
+                    line: 15,
+                    column: 8,
+                    file: "blueprint/post_processing_middlewares/must_take_response_as_input/src/lib.rs",
+                ),
+            ),
+            error_handler: None,
+        )),
+        Route((
+            path: "/home",
+            method_guard: Some([
+                "GET",
+            ]),
+            request_handler: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_4a62f10c",
+                        module_path: "app_4a62f10c",
+                    ),
+                    import_path: "crate::handler",
+                ),
+                location: (
+                    line: 16,
+                    column: 8,
+                    file: "blueprint/post_processing_middlewares/must_take_response_as_input/src/lib.rs",
+                ),
+            ),
+            error_handler: None,
+        )),
+    ],
+)

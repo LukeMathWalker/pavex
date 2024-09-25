@@ -1,0 +1,50 @@
+(
+    creation_location: (
+        line: 10,
+        column: 18,
+        file: "reflection/crate_resolution/remote_callable_paths_must_be_absolute/src/lib.rs",
+    ),
+    components: [
+        Constructor((
+            constructor: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_3e2693d0",
+                        module_path: "app_3e2693d0",
+                    ),
+                    import_path: "new_logger",
+                ),
+                location: (
+                    line: 11,
+                    column: 8,
+                    file: "reflection/crate_resolution/remote_callable_paths_must_be_absolute/src/lib.rs",
+                ),
+            ),
+            lifecycle: Singleton,
+            cloning_strategy: None,
+            error_handler: None,
+            lints: {},
+        )),
+        Route((
+            path: "/home",
+            method_guard: Some([
+                "GET",
+            ]),
+            request_handler: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_3e2693d0",
+                        module_path: "app_3e2693d0",
+                    ),
+                    import_path: "crate::handler",
+                ),
+                location: (
+                    line: 12,
+                    column: 8,
+                    file: "reflection/crate_resolution/remote_callable_paths_must_be_absolute/src/lib.rs",
+                ),
+            ),
+            error_handler: None,
+        )),
+    ],
+)

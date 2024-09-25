@@ -1,0 +1,45 @@
+digraph "GET /first/second/third/home - 0" {
+    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_1::Next0>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_1::Next0) -> pavex::middleware::Next<crate::route_1::Next0>"]
+    2 [ label = "crate::route_1::Next0() -> crate::route_1::Next0"]
+    3 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 3 [ ]
+}
+
+digraph "GET /first/second/third/home - 1" {
+    0 [ label = "app_91e1ac20::handler(alloc::string::String) -> http::StatusCode"]
+    1 [ label = "app_91e1ac20::third(u32) -> alloc::string::String"]
+    2 [ label = "app_91e1ac20::second(u16) -> u32"]
+    3 [ label = "app_91e1ac20::first() -> u16"]
+    4 [ label = "<http::StatusCode as pavex::response::IntoResponse>::into_response(http::StatusCode) -> pavex::response::Response"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    3 -> 2 [ ]
+    0 -> 4 [ ]
+}
+
+digraph "* /first/second/third/home - 0" {
+    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_0::Next0<'a>>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_0::Next0<'a>) -> pavex::middleware::Next<crate::route_0::Next0<'a>>"]
+    2 [ label = "crate::route_0::Next0(&'a pavex::router::AllowedMethods) -> crate::route_0::Next0<'a>"]
+    4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    5 [ label = "&pavex::router::AllowedMethods"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 4 [ ]
+    5 -> 2 [ ]
+}
+
+digraph "* /first/second/third/home - 1" {
+    0 [ label = "pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
+    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "&pavex::router::AllowedMethods"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
+}
+
+digraph app_state {
+    0 [ label = "crate::ApplicationState() -> crate::ApplicationState"]
+}

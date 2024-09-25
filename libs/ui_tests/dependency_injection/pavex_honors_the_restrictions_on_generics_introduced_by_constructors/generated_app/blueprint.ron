@@ -1,0 +1,50 @@
+(
+    creation_location: (
+        line: 18,
+        column: 18,
+        file: "dependency_injection/pavex_honors_the_restrictions_on_generics_introduced_by_constructors/src/lib.rs",
+    ),
+    components: [
+        Constructor((
+            constructor: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_f1383503",
+                        module_path: "app_f1383503",
+                    ),
+                    import_path: "crate::tied",
+                ),
+                location: (
+                    line: 19,
+                    column: 8,
+                    file: "dependency_injection/pavex_honors_the_restrictions_on_generics_introduced_by_constructors/src/lib.rs",
+                ),
+            ),
+            lifecycle: RequestScoped,
+            cloning_strategy: None,
+            error_handler: None,
+            lints: {},
+        )),
+        Route((
+            path: "/home",
+            method_guard: Some([
+                "GET",
+            ]),
+            request_handler: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_f1383503",
+                        module_path: "app_f1383503",
+                    ),
+                    import_path: "crate::handler",
+                ),
+                location: (
+                    line: 20,
+                    column: 8,
+                    file: "dependency_injection/pavex_honors_the_restrictions_on_generics_introduced_by_constructors/src/lib.rs",
+                ),
+            ),
+            error_handler: None,
+        )),
+    ],
+)

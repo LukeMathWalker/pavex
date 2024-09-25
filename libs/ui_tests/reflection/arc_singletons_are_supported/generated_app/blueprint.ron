@@ -1,0 +1,50 @@
+(
+    creation_location: (
+        line: 18,
+        column: 18,
+        file: "reflection/arc_singletons_are_supported/src/lib.rs",
+    ),
+    components: [
+        Constructor((
+            constructor: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_933292bd",
+                        module_path: "app_933292bd",
+                    ),
+                    import_path: "crate::constructor",
+                ),
+                location: (
+                    line: 19,
+                    column: 8,
+                    file: "reflection/arc_singletons_are_supported/src/lib.rs",
+                ),
+            ),
+            lifecycle: Singleton,
+            cloning_strategy: None,
+            error_handler: None,
+            lints: {},
+        )),
+        Route((
+            path: "/",
+            method_guard: Some([
+                "GET",
+            ]),
+            request_handler: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_933292bd",
+                        module_path: "app_933292bd",
+                    ),
+                    import_path: "crate::handler",
+                ),
+                location: (
+                    line: 20,
+                    column: 8,
+                    file: "reflection/arc_singletons_are_supported/src/lib.rs",
+                ),
+            ),
+            error_handler: None,
+        )),
+    ],
+)

@@ -1,0 +1,14 @@
+[workspace]
+members = ["."]
+
+[package]
+name = "dep_11a9a819"
+version = "1.0.0"
+edition = "2021"
+
+[lints.rust.unexpected_cfgs]
+level = "allow"
+check-cfg = ["cfg(pavex_ide_hint)"]
+
+[dependencies]
+pavex = "1"

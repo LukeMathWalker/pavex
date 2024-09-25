@@ -1,0 +1,103 @@
+(
+    creation_location: (
+        line: 63,
+        column: 18,
+        file: "borrow_checker/control_flow/multiple_consumers_pass_takes_control_flow_into_account_for_errors/src/lib.rs",
+    ),
+    components: [
+        Constructor((
+            constructor: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_23e2eec5",
+                        module_path: "app_23e2eec5",
+                    ),
+                    import_path: "crate::a",
+                ),
+                location: (
+                    line: 64,
+                    column: 8,
+                    file: "borrow_checker/control_flow/multiple_consumers_pass_takes_control_flow_into_account_for_errors/src/lib.rs",
+                ),
+            ),
+            lifecycle: RequestScoped,
+            cloning_strategy: None,
+            error_handler: Some((
+                callable: (
+                    registered_at: (
+                        crate_name: "app_23e2eec5",
+                        module_path: "app_23e2eec5",
+                    ),
+                    import_path: "crate::error_handler",
+                ),
+                location: (
+                    line: 65,
+                    column: 10,
+                    file: "borrow_checker/control_flow/multiple_consumers_pass_takes_control_flow_into_account_for_errors/src/lib.rs",
+                ),
+            )),
+            lints: {},
+        )),
+        Constructor((
+            constructor: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_23e2eec5",
+                        module_path: "app_23e2eec5",
+                    ),
+                    import_path: "crate::b",
+                ),
+                location: (
+                    line: 66,
+                    column: 8,
+                    file: "borrow_checker/control_flow/multiple_consumers_pass_takes_control_flow_into_account_for_errors/src/lib.rs",
+                ),
+            ),
+            lifecycle: RequestScoped,
+            cloning_strategy: None,
+            error_handler: None,
+            lints: {},
+        )),
+        Constructor((
+            constructor: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_23e2eec5",
+                        module_path: "app_23e2eec5",
+                    ),
+                    import_path: "crate::c",
+                ),
+                location: (
+                    line: 67,
+                    column: 8,
+                    file: "borrow_checker/control_flow/multiple_consumers_pass_takes_control_flow_into_account_for_errors/src/lib.rs",
+                ),
+            ),
+            lifecycle: RequestScoped,
+            cloning_strategy: None,
+            error_handler: None,
+            lints: {},
+        )),
+        Route((
+            path: "/home",
+            method_guard: Some([
+                "GET",
+            ]),
+            request_handler: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_23e2eec5",
+                        module_path: "app_23e2eec5",
+                    ),
+                    import_path: "crate::handler",
+                ),
+                location: (
+                    line: 68,
+                    column: 8,
+                    file: "borrow_checker/control_flow/multiple_consumers_pass_takes_control_flow_into_account_for_errors/src/lib.rs",
+                ),
+            ),
+            error_handler: None,
+        )),
+    ],
+)

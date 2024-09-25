@@ -1,0 +1,30 @@
+(
+    creation_location: (
+        line: 7,
+        column: 18,
+        file: "reflection/a_fix_is_suggested_for_function_invocations/src/lib.rs",
+    ),
+    components: [
+        Route((
+            path: "/home",
+            method_guard: Some([
+                "POST",
+            ]),
+            request_handler: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_700defb2",
+                        module_path: "app_700defb2",
+                    ),
+                    import_path: "self::my_f()",
+                ),
+                location: (
+                    line: 8,
+                    column: 8,
+                    file: "reflection/a_fix_is_suggested_for_function_invocations/src/lib.rs",
+                ),
+            ),
+            error_handler: None,
+        )),
+    ],
+)

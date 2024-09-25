@@ -1,0 +1,119 @@
+(
+    creation_location: (
+        line: 21,
+        column: 18,
+        file: "blueprint/router/fallback_priority/src/lib.rs",
+    ),
+    components: [
+        NestedBlueprint((
+            blueprint: (
+                creation_location: (
+                    line: 23,
+                    column: 22,
+                    file: "blueprint/router/fallback_priority/src/lib.rs",
+                ),
+                components: [
+                    Route((
+                        path: "/",
+                        method_guard: Some([
+                            "GET",
+                        ]),
+                        request_handler: (
+                            callable: (
+                                registered_at: (
+                                    crate_name: "app_78452ff2",
+                                    module_path: "app_78452ff2",
+                                ),
+                                import_path: "crate::handler",
+                            ),
+                            location: (
+                                line: 24,
+                                column: 12,
+                                file: "blueprint/router/fallback_priority/src/lib.rs",
+                            ),
+                        ),
+                        error_handler: None,
+                    )),
+                    NestedBlueprint((
+                        blueprint: (
+                            creation_location: (
+                                line: 26,
+                                column: 26,
+                                file: "blueprint/router/fallback_priority/src/lib.rs",
+                            ),
+                            components: [
+                                Route((
+                                    path: "/id",
+                                    method_guard: Some([
+                                        "GET",
+                                    ]),
+                                    request_handler: (
+                                        callable: (
+                                            registered_at: (
+                                                crate_name: "app_78452ff2",
+                                                module_path: "app_78452ff2",
+                                            ),
+                                            import_path: "crate::handler",
+                                        ),
+                                        location: (
+                                            line: 27,
+                                            column: 16,
+                                            file: "blueprint/router/fallback_priority/src/lib.rs",
+                                        ),
+                                    ),
+                                    error_handler: None,
+                                )),
+                                FallbackRequestHandler((
+                                    request_handler: (
+                                        callable: (
+                                            registered_at: (
+                                                crate_name: "app_78452ff2",
+                                                module_path: "app_78452ff2",
+                                            ),
+                                            import_path: "crate::forbidden",
+                                        ),
+                                        location: (
+                                            line: 28,
+                                            column: 16,
+                                            file: "blueprint/router/fallback_priority/src/lib.rs",
+                                        ),
+                                    ),
+                                    error_handler: None,
+                                )),
+                            ],
+                        ),
+                        path_prefix: None,
+                        nesting_location: (
+                            line: 25,
+                            column: 12,
+                            file: "blueprint/router/fallback_priority/src/lib.rs",
+                        ),
+                    )),
+                    FallbackRequestHandler((
+                        request_handler: (
+                            callable: (
+                                registered_at: (
+                                    crate_name: "app_78452ff2",
+                                    module_path: "app_78452ff2",
+                                ),
+                                import_path: "crate::unauthorized",
+                            ),
+                            location: (
+                                line: 31,
+                                column: 12,
+                                file: "blueprint/router/fallback_priority/src/lib.rs",
+                            ),
+                        ),
+                        error_handler: None,
+                    )),
+                ],
+            ),
+            path_prefix: Some("/users"),
+            nesting_location: (
+                line: 22,
+                column: 8,
+                file: "blueprint/router/fallback_priority/src/lib.rs",
+            ),
+        )),
+    ],
+)

@@ -1,0 +1,50 @@
+(
+    creation_location: (
+        line: 17,
+        column: 18,
+        file: "reflection/relative_paths_prefixed_with_super_are_supported/src/lib.rs",
+    ),
+    components: [
+        Constructor((
+            constructor: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_ec0f16d1",
+                        module_path: "app_ec0f16d1::my_mod",
+                    ),
+                    import_path: "super::A::<super::B>::new",
+                ),
+                location: (
+                    line: 27,
+                    column: 12,
+                    file: "reflection/relative_paths_prefixed_with_super_are_supported/src/lib.rs",
+                ),
+            ),
+            lifecycle: RequestScoped,
+            cloning_strategy: None,
+            error_handler: None,
+            lints: {},
+        )),
+        Route((
+            path: "/home",
+            method_guard: Some([
+                "GET",
+            ]),
+            request_handler: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_ec0f16d1",
+                        module_path: "app_ec0f16d1::my_mod",
+                    ),
+                    import_path: "super::handler",
+                ),
+                location: (
+                    line: 28,
+                    column: 12,
+                    file: "reflection/relative_paths_prefixed_with_super_are_supported/src/lib.rs",
+                ),
+            ),
+            error_handler: None,
+        )),
+    ],
+)

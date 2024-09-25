@@ -1,0 +1,17 @@
+[package]
+name = "app_a1f930e1"
+version = "0.1.0"
+edition = "2021"
+
+[lints.rust.unexpected_cfgs]
+level = "allow"
+check-cfg = ["cfg(pavex_ide_hint)"]
+
+[dependencies.pavex]
+workspace = true
+
+[dependencies.pavex_cli_client]
+workspace = true
+
+[dependencies.workspace_hack]
+workspace = true

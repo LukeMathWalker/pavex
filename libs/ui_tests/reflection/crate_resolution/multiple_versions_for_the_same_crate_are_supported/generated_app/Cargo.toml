@@ -1,0 +1,18 @@
+[package]
+name = "application_cb7427d1"
+version = "0.1.0"
+edition = "2021"
+
+[package.metadata.px.generate]
+generator_type = "cargo_workspace_binary"
+generator_name = "app"
+
+[dependencies]
+app_cb7427d1 = { version = "0.1.0", path = ".." }
+http_0_1_21 = { version = "0.1.21", package = "http" }
+http_0_2_12 = { version = "0.2.12", package = "http" }
+http_1_1_0 = { version = "1.1.0", package = "http" }
+hyper = "1.4.1"
+pavex = { version = "0.1.48", path = "../../../../../pavex" }
+pavex_matchit = "0.7.4"
+thiserror = "1.0.63"

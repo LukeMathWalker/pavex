@@ -1,0 +1,50 @@
+(
+    creation_location: (
+        line: 13,
+        column: 18,
+        file: "blueprint/constructors/static_references_are_valid_singletons/src/lib.rs",
+    ),
+    components: [
+        Constructor((
+            constructor: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_d0f81bc0",
+                        module_path: "app_d0f81bc0",
+                    ),
+                    import_path: "crate::static_str",
+                ),
+                location: (
+                    line: 14,
+                    column: 8,
+                    file: "blueprint/constructors/static_references_are_valid_singletons/src/lib.rs",
+                ),
+            ),
+            lifecycle: Singleton,
+            cloning_strategy: None,
+            error_handler: None,
+            lints: {},
+        )),
+        Route((
+            path: "/handler",
+            method_guard: Some([
+                "GET",
+            ]),
+            request_handler: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_d0f81bc0",
+                        module_path: "app_d0f81bc0",
+                    ),
+                    import_path: "crate::handler",
+                ),
+                location: (
+                    line: 15,
+                    column: 8,
+                    file: "blueprint/constructors/static_references_are_valid_singletons/src/lib.rs",
+                ),
+            ),
+            error_handler: None,
+        )),
+    ],
+)

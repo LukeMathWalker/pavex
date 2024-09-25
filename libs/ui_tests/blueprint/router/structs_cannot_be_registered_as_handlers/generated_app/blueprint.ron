@@ -1,0 +1,30 @@
+(
+    creation_location: (
+        line: 7,
+        column: 18,
+        file: "blueprint/router/structs_cannot_be_registered_as_handlers/src/lib.rs",
+    ),
+    components: [
+        Route((
+            path: "/home",
+            method_guard: Some([
+                "GET",
+            ]),
+            request_handler: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_812a13f2",
+                        module_path: "app_812a13f2",
+                    ),
+                    import_path: "crate::Streamer",
+                ),
+                location: (
+                    line: 8,
+                    column: 8,
+                    file: "blueprint/router/structs_cannot_be_registered_as_handlers/src/lib.rs",
+                ),
+            ),
+            error_handler: None,
+        )),
+    ],
+)

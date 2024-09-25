@@ -1,0 +1,50 @@
+(
+    creation_location: (
+        line: 20,
+        column: 18,
+        file: "dependency_injection/missing_singleton_dependency/src/lib.rs",
+    ),
+    components: [
+        Constructor((
+            constructor: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_67306117",
+                        module_path: "app_67306117",
+                    ),
+                    import_path: "crate::b",
+                ),
+                location: (
+                    line: 21,
+                    column: 8,
+                    file: "dependency_injection/missing_singleton_dependency/src/lib.rs",
+                ),
+            ),
+            lifecycle: Singleton,
+            cloning_strategy: None,
+            error_handler: None,
+            lints: {},
+        )),
+        Route((
+            path: "/",
+            method_guard: Some([
+                "GET",
+            ]),
+            request_handler: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_67306117",
+                        module_path: "app_67306117",
+                    ),
+                    import_path: "crate::handler",
+                ),
+                location: (
+                    line: 22,
+                    column: 8,
+                    file: "dependency_injection/missing_singleton_dependency/src/lib.rs",
+                ),
+            ),
+            error_handler: None,
+        )),
+    ],
+)

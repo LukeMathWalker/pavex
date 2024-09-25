@@ -1,0 +1,128 @@
+(
+    creation_location: (
+        line: 8,
+        column: 18,
+        file: "blueprint/nesting/nesting_hides_constructors_of_the_nested_bp_to_the_parent_bp/src/lib.rs",
+    ),
+    components: [
+        NestedBlueprint((
+            blueprint: (
+                creation_location: (
+                    line: 31,
+                    column: 18,
+                    file: "blueprint/nesting/nesting_hides_constructors_of_the_nested_bp_to_the_parent_bp/src/lib.rs",
+                ),
+                components: [
+                    Constructor((
+                        constructor: (
+                            callable: (
+                                registered_at: (
+                                    crate_name: "app_ae32f1c9",
+                                    module_path: "app_ae32f1c9",
+                                ),
+                                import_path: "crate::singleton",
+                            ),
+                            location: (
+                                line: 32,
+                                column: 8,
+                                file: "blueprint/nesting/nesting_hides_constructors_of_the_nested_bp_to_the_parent_bp/src/lib.rs",
+                            ),
+                        ),
+                        lifecycle: Singleton,
+                        cloning_strategy: None,
+                        error_handler: None,
+                        lints: {},
+                    )),
+                    Constructor((
+                        constructor: (
+                            callable: (
+                                registered_at: (
+                                    crate_name: "app_ae32f1c9",
+                                    module_path: "app_ae32f1c9",
+                                ),
+                                import_path: "crate::scoped",
+                            ),
+                            location: (
+                                line: 33,
+                                column: 8,
+                                file: "blueprint/nesting/nesting_hides_constructors_of_the_nested_bp_to_the_parent_bp/src/lib.rs",
+                            ),
+                        ),
+                        lifecycle: RequestScoped,
+                        cloning_strategy: None,
+                        error_handler: None,
+                        lints: {},
+                    )),
+                    Constructor((
+                        constructor: (
+                            callable: (
+                                registered_at: (
+                                    crate_name: "app_ae32f1c9",
+                                    module_path: "app_ae32f1c9",
+                                ),
+                                import_path: "crate::transient",
+                            ),
+                            location: (
+                                line: 34,
+                                column: 8,
+                                file: "blueprint/nesting/nesting_hides_constructors_of_the_nested_bp_to_the_parent_bp/src/lib.rs",
+                            ),
+                        ),
+                        lifecycle: Transient,
+                        cloning_strategy: None,
+                        error_handler: None,
+                        lints: {},
+                    )),
+                    Route((
+                        path: "/child",
+                        method_guard: Some([
+                            "GET",
+                        ]),
+                        request_handler: (
+                            callable: (
+                                registered_at: (
+                                    crate_name: "app_ae32f1c9",
+                                    module_path: "app_ae32f1c9",
+                                ),
+                                import_path: "crate::handler",
+                            ),
+                            location: (
+                                line: 35,
+                                column: 8,
+                                file: "blueprint/nesting/nesting_hides_constructors_of_the_nested_bp_to_the_parent_bp/src/lib.rs",
+                            ),
+                        ),
+                        error_handler: None,
+                    )),
+                ],
+            ),
+            path_prefix: None,
+            nesting_location: (
+                line: 9,
+                column: 8,
+                file: "blueprint/nesting/nesting_hides_constructors_of_the_nested_bp_to_the_parent_bp/src/lib.rs",
+            ),
+        )),
+        Route((
+            path: "/parent",
+            method_guard: Some([
+                "GET",
+            ]),
+            request_handler: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_ae32f1c9",
+                        module_path: "app_ae32f1c9",
+                    ),
+                    import_path: "crate::handler",
+                ),
+                location: (
+                    line: 10,
+                    column: 8,
+                    file: "blueprint/nesting/nesting_hides_constructors_of_the_nested_bp_to_the_parent_bp/src/lib.rs",
+                ),
+            ),
+            error_handler: None,
+        )),
+    ],
+)

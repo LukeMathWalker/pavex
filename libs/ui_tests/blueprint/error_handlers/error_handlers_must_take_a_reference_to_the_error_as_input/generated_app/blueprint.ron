@@ -1,0 +1,63 @@
+(
+    creation_location: (
+        line: 21,
+        column: 18,
+        file: "blueprint/error_handlers/error_handlers_must_take_a_reference_to_the_error_as_input/src/lib.rs",
+    ),
+    components: [
+        Constructor((
+            constructor: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_3fac62e4",
+                        module_path: "app_3fac62e4",
+                    ),
+                    import_path: "crate::fallible_constructor",
+                ),
+                location: (
+                    line: 22,
+                    column: 8,
+                    file: "blueprint/error_handlers/error_handlers_must_take_a_reference_to_the_error_as_input/src/lib.rs",
+                ),
+            ),
+            lifecycle: RequestScoped,
+            cloning_strategy: None,
+            error_handler: Some((
+                callable: (
+                    registered_at: (
+                        crate_name: "app_3fac62e4",
+                        module_path: "app_3fac62e4",
+                    ),
+                    import_path: "crate::error_handler",
+                ),
+                location: (
+                    line: 23,
+                    column: 10,
+                    file: "blueprint/error_handlers/error_handlers_must_take_a_reference_to_the_error_as_input/src/lib.rs",
+                ),
+            )),
+            lints: {},
+        )),
+        Route((
+            path: "/home",
+            method_guard: Some([
+                "GET",
+            ]),
+            request_handler: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_3fac62e4",
+                        module_path: "app_3fac62e4",
+                    ),
+                    import_path: "crate::handler",
+                ),
+                location: (
+                    line: 24,
+                    column: 8,
+                    file: "blueprint/error_handlers/error_handlers_must_take_a_reference_to_the_error_as_input/src/lib.rs",
+                ),
+            ),
+            error_handler: None,
+        )),
+    ],
+)

@@ -1,0 +1,98 @@
+(
+    creation_location: (
+        line: 19,
+        column: 18,
+        file: "blueprint/prebuilts/prebuilt_works/src/lib.rs",
+    ),
+    components: [
+        PrebuiltType((
+            input: (
+                type_: (
+                    registered_at: (
+                        crate_name: "app_e4a8214b",
+                        module_path: "app_e4a8214b",
+                    ),
+                    import_path: "crate::A",
+                ),
+                location: (
+                    line: 20,
+                    column: 8,
+                    file: "blueprint/prebuilts/prebuilt_works/src/lib.rs",
+                ),
+            ),
+            cloning_strategy: None,
+        )),
+        PrebuiltType((
+            input: (
+                type_: (
+                    registered_at: (
+                        crate_name: "app_e4a8214b",
+                        module_path: "app_e4a8214b",
+                    ),
+                    import_path: "crate::B<std::string::String>",
+                ),
+                location: (
+                    line: 21,
+                    column: 8,
+                    file: "blueprint/prebuilts/prebuilt_works/src/lib.rs",
+                ),
+            ),
+            cloning_strategy: None,
+        )),
+        PrebuiltType((
+            input: (
+                type_: (
+                    registered_at: (
+                        crate_name: "app_e4a8214b",
+                        module_path: "app_e4a8214b",
+                    ),
+                    import_path: "crate::C<\'static>",
+                ),
+                location: (
+                    line: 22,
+                    column: 8,
+                    file: "blueprint/prebuilts/prebuilt_works/src/lib.rs",
+                ),
+            ),
+            cloning_strategy: Some(CloneIfNecessary),
+        )),
+        PrebuiltType((
+            input: (
+                type_: (
+                    registered_at: (
+                        crate_name: "app_e4a8214b",
+                        module_path: "app_e4a8214b",
+                    ),
+                    import_path: "std::vec::Vec<std::string::String>",
+                ),
+                location: (
+                    line: 23,
+                    column: 8,
+                    file: "blueprint/prebuilts/prebuilt_works/src/lib.rs",
+                ),
+            ),
+            cloning_strategy: Some(CloneIfNecessary),
+        )),
+        Route((
+            path: "/",
+            method_guard: Some([
+                "GET",
+            ]),
+            request_handler: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_e4a8214b",
+                        module_path: "app_e4a8214b",
+                    ),
+                    import_path: "crate::handler",
+                ),
+                location: (
+                    line: 25,
+                    column: 8,
+                    file: "blueprint/prebuilts/prebuilt_works/src/lib.rs",
+                ),
+            ),
+            error_handler: None,
+        )),
+    ],
+)

@@ -1,0 +1,90 @@
+(
+    creation_location: (
+        line: 29,
+        column: 18,
+        file: "dependency_injection/lifecycles/singletons_cannot_depend_on_request_scoped/src/lib.rs",
+    ),
+    components: [
+        Constructor((
+            constructor: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_7c78acb2",
+                        module_path: "app_7c78acb2",
+                    ),
+                    import_path: "crate::a",
+                ),
+                location: (
+                    line: 30,
+                    column: 8,
+                    file: "dependency_injection/lifecycles/singletons_cannot_depend_on_request_scoped/src/lib.rs",
+                ),
+            ),
+            lifecycle: Singleton,
+            cloning_strategy: None,
+            error_handler: None,
+            lints: {},
+        )),
+        Constructor((
+            constructor: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_7c78acb2",
+                        module_path: "app_7c78acb2",
+                    ),
+                    import_path: "crate::b",
+                ),
+                location: (
+                    line: 31,
+                    column: 8,
+                    file: "dependency_injection/lifecycles/singletons_cannot_depend_on_request_scoped/src/lib.rs",
+                ),
+            ),
+            lifecycle: RequestScoped,
+            cloning_strategy: None,
+            error_handler: None,
+            lints: {},
+        )),
+        Constructor((
+            constructor: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_7c78acb2",
+                        module_path: "app_7c78acb2",
+                    ),
+                    import_path: "crate::c",
+                ),
+                location: (
+                    line: 32,
+                    column: 8,
+                    file: "dependency_injection/lifecycles/singletons_cannot_depend_on_request_scoped/src/lib.rs",
+                ),
+            ),
+            lifecycle: Transient,
+            cloning_strategy: None,
+            error_handler: None,
+            lints: {},
+        )),
+        Route((
+            path: "/",
+            method_guard: Some([
+                "GET",
+            ]),
+            request_handler: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_7c78acb2",
+                        module_path: "app_7c78acb2",
+                    ),
+                    import_path: "crate::handler",
+                ),
+                location: (
+                    line: 33,
+                    column: 8,
+                    file: "dependency_injection/lifecycles/singletons_cannot_depend_on_request_scoped/src/lib.rs",
+                ),
+            ),
+            error_handler: None,
+        )),
+    ],
+)

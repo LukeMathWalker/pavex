@@ -1,0 +1,31 @@
+(
+    creation_location: (
+        line: 13,
+        column: 18,
+        file: "blueprint/constructors/unused_constructor_warning_can_be_ignored/src/lib.rs",
+    ),
+    components: [
+        Constructor((
+            constructor: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_46e3d1f1",
+                        module_path: "app_46e3d1f1",
+                    ),
+                    import_path: "crate::Unused::new",
+                ),
+                location: (
+                    line: 14,
+                    column: 8,
+                    file: "blueprint/constructors/unused_constructor_warning_can_be_ignored/src/lib.rs",
+                ),
+            ),
+            lifecycle: RequestScoped,
+            cloning_strategy: None,
+            error_handler: None,
+            lints: {
+                Unused: Ignore,
+            },
+        )),
+    ],
+)

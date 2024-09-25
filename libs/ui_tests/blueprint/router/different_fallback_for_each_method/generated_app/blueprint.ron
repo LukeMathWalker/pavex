@@ -1,0 +1,119 @@
+(
+    creation_location: (
+        line: 20,
+        column: 18,
+        file: "blueprint/router/different_fallback_for_each_method/src/lib.rs",
+    ),
+    components: [
+        NestedBlueprint((
+            blueprint: (
+                creation_location: (
+                    line: 22,
+                    column: 22,
+                    file: "blueprint/router/different_fallback_for_each_method/src/lib.rs",
+                ),
+                components: [
+                    Route((
+                        path: "/id",
+                        method_guard: Some([
+                            "GET",
+                        ]),
+                        request_handler: (
+                            callable: (
+                                registered_at: (
+                                    crate_name: "app_951b7f8d",
+                                    module_path: "app_951b7f8d",
+                                ),
+                                import_path: "crate::handler",
+                            ),
+                            location: (
+                                line: 23,
+                                column: 12,
+                                file: "blueprint/router/different_fallback_for_each_method/src/lib.rs",
+                            ),
+                        ),
+                        error_handler: None,
+                    )),
+                    FallbackRequestHandler((
+                        request_handler: (
+                            callable: (
+                                registered_at: (
+                                    crate_name: "app_951b7f8d",
+                                    module_path: "app_951b7f8d",
+                                ),
+                                import_path: "crate::fallback1",
+                            ),
+                            location: (
+                                line: 24,
+                                column: 12,
+                                file: "blueprint/router/different_fallback_for_each_method/src/lib.rs",
+                            ),
+                        ),
+                        error_handler: None,
+                    )),
+                ],
+            ),
+            path_prefix: None,
+            nesting_location: (
+                line: 21,
+                column: 8,
+                file: "blueprint/router/different_fallback_for_each_method/src/lib.rs",
+            ),
+        )),
+        NestedBlueprint((
+            blueprint: (
+                creation_location: (
+                    line: 28,
+                    column: 22,
+                    file: "blueprint/router/different_fallback_for_each_method/src/lib.rs",
+                ),
+                components: [
+                    Route((
+                        path: "/id",
+                        method_guard: Some([
+                            "POST",
+                        ]),
+                        request_handler: (
+                            callable: (
+                                registered_at: (
+                                    crate_name: "app_951b7f8d",
+                                    module_path: "app_951b7f8d",
+                                ),
+                                import_path: "crate::handler",
+                            ),
+                            location: (
+                                line: 29,
+                                column: 12,
+                                file: "blueprint/router/different_fallback_for_each_method/src/lib.rs",
+                            ),
+                        ),
+                        error_handler: None,
+                    )),
+                    FallbackRequestHandler((
+                        request_handler: (
+                            callable: (
+                                registered_at: (
+                                    crate_name: "app_951b7f8d",
+                                    module_path: "app_951b7f8d",
+                                ),
+                                import_path: "crate::fallback2",
+                            ),
+                            location: (
+                                line: 30,
+                                column: 12,
+                                file: "blueprint/router/different_fallback_for_each_method/src/lib.rs",
+                            ),
+                        ),
+                        error_handler: None,
+                    )),
+                ],
+            ),
+            path_prefix: None,
+            nesting_location: (
+                line: 27,
+                column: 8,
+                file: "blueprint/router/different_fallback_for_each_method/src/lib.rs",
+            ),
+        )),
+    ],
+)

@@ -1,0 +1,47 @@
+(
+    creation_location: (
+        line: 19,
+        column: 18,
+        file: "reflection/lifetime_restrictions_are_handled/src/lib.rs",
+    ),
+    components: [
+        WrappingMiddleware((
+            middleware: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_d56c0f9d",
+                        module_path: "app_d56c0f9d",
+                    ),
+                    import_path: "crate::mw",
+                ),
+                location: (
+                    line: 20,
+                    column: 8,
+                    file: "reflection/lifetime_restrictions_are_handled/src/lib.rs",
+                ),
+            ),
+            error_handler: None,
+        )),
+        Route((
+            path: "/",
+            method_guard: Some([
+                "GET",
+            ]),
+            request_handler: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_d56c0f9d",
+                        module_path: "app_d56c0f9d",
+                    ),
+                    import_path: "crate::handler",
+                ),
+                location: (
+                    line: 21,
+                    column: 8,
+                    file: "reflection/lifetime_restrictions_are_handled/src/lib.rs",
+                ),
+            ),
+            error_handler: None,
+        )),
+    ],
+)

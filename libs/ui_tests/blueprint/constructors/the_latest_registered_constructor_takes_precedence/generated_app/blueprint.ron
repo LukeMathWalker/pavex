@@ -1,0 +1,70 @@
+(
+    creation_location: (
+        line: 13,
+        column: 18,
+        file: "blueprint/constructors/the_latest_registered_constructor_takes_precedence/src/lib.rs",
+    ),
+    components: [
+        Constructor((
+            constructor: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_55dca802",
+                        module_path: "app_55dca802",
+                    ),
+                    import_path: "dep_55dca802::new_logger",
+                ),
+                location: (
+                    line: 14,
+                    column: 8,
+                    file: "blueprint/constructors/the_latest_registered_constructor_takes_precedence/src/lib.rs",
+                ),
+            ),
+            lifecycle: Singleton,
+            cloning_strategy: None,
+            error_handler: None,
+            lints: {},
+        )),
+        Constructor((
+            constructor: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_55dca802",
+                        module_path: "app_55dca802",
+                    ),
+                    import_path: "::dep_55dca802::new_logger",
+                ),
+                location: (
+                    line: 15,
+                    column: 8,
+                    file: "blueprint/constructors/the_latest_registered_constructor_takes_precedence/src/lib.rs",
+                ),
+            ),
+            lifecycle: RequestScoped,
+            cloning_strategy: None,
+            error_handler: None,
+            lints: {},
+        )),
+        Route((
+            path: "/home",
+            method_guard: Some([
+                "GET",
+            ]),
+            request_handler: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_55dca802",
+                        module_path: "app_55dca802",
+                    ),
+                    import_path: "crate::Streamer::stream_file",
+                ),
+                location: (
+                    line: 16,
+                    column: 8,
+                    file: "blueprint/constructors/the_latest_registered_constructor_takes_precedence/src/lib.rs",
+                ),
+            ),
+            error_handler: None,
+        )),
+    ],
+)

@@ -1,0 +1,26 @@
+(
+    creation_location: (
+        line: 7,
+        column: 18,
+        file: "blueprint/prebuilts/unused_prebuilt/src/lib.rs",
+    ),
+    components: [
+        PrebuiltType((
+            input: (
+                type_: (
+                    registered_at: (
+                        crate_name: "app_ee506b88",
+                        module_path: "app_ee506b88",
+                    ),
+                    import_path: "crate::Unused",
+                ),
+                location: (
+                    line: 8,
+                    column: 8,
+                    file: "blueprint/prebuilts/unused_prebuilt/src/lib.rs",
+                ),
+            ),
+            cloning_strategy: None,
+        )),
+    ],
+)

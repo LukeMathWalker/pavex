@@ -1,0 +1,70 @@
+(
+    creation_location: (
+        line: 19,
+        column: 18,
+        file: "reflection/type_alias_are_supported/src/lib.rs",
+    ),
+    components: [
+        Constructor((
+            constructor: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_f8f62968",
+                        module_path: "app_f8f62968",
+                    ),
+                    import_path: "crate::constructor_with_output_tuple",
+                ),
+                location: (
+                    line: 20,
+                    column: 8,
+                    file: "reflection/type_alias_are_supported/src/lib.rs",
+                ),
+            ),
+            lifecycle: Singleton,
+            cloning_strategy: None,
+            error_handler: None,
+            lints: {},
+        )),
+        Constructor((
+            constructor: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_f8f62968",
+                        module_path: "app_f8f62968",
+                    ),
+                    import_path: "crate::RemoteAlias::new",
+                ),
+                location: (
+                    line: 24,
+                    column: 8,
+                    file: "reflection/type_alias_are_supported/src/lib.rs",
+                ),
+            ),
+            lifecycle: Singleton,
+            cloning_strategy: None,
+            error_handler: None,
+            lints: {},
+        )),
+        Route((
+            path: "/home",
+            method_guard: Some([
+                "GET",
+            ]),
+            request_handler: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_f8f62968",
+                        module_path: "app_f8f62968",
+                    ),
+                    import_path: "crate::handler_with_input_tuple",
+                ),
+                location: (
+                    line: 25,
+                    column: 8,
+                    file: "reflection/type_alias_are_supported/src/lib.rs",
+                ),
+            ),
+            error_handler: None,
+        )),
+    ],
+)

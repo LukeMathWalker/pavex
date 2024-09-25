@@ -1,0 +1,117 @@
+(
+    creation_location: (
+        line: 33,
+        column: 18,
+        file: "blueprint/error_handlers/error_handlers_can_take_pavex_error_rather_than_specific_error_type/src/lib.rs",
+    ),
+    components: [
+        Constructor((
+            constructor: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_40a0f751",
+                        module_path: "app_40a0f751",
+                    ),
+                    import_path: "crate::fallible_constructor",
+                ),
+                location: (
+                    line: 34,
+                    column: 8,
+                    file: "blueprint/error_handlers/error_handlers_can_take_pavex_error_rather_than_specific_error_type/src/lib.rs",
+                ),
+            ),
+            lifecycle: RequestScoped,
+            cloning_strategy: None,
+            error_handler: Some((
+                callable: (
+                    registered_at: (
+                        crate_name: "app_40a0f751",
+                        module_path: "app_40a0f751",
+                    ),
+                    import_path: "crate::error_handler",
+                ),
+                location: (
+                    line: 35,
+                    column: 10,
+                    file: "blueprint/error_handlers/error_handlers_can_take_pavex_error_rather_than_specific_error_type/src/lib.rs",
+                ),
+            )),
+            lints: {},
+        )),
+        Route((
+            path: "/without_observer",
+            method_guard: Some([
+                "GET",
+            ]),
+            request_handler: (
+                callable: (
+                    registered_at: (
+                        crate_name: "app_40a0f751",
+                        module_path: "app_40a0f751",
+                    ),
+                    import_path: "crate::handler",
+                ),
+                location: (
+                    line: 38,
+                    column: 8,
+                    file: "blueprint/error_handlers/error_handlers_can_take_pavex_error_rather_than_specific_error_type/src/lib.rs",
+                ),
+            ),
+            error_handler: None,
+        )),
+        NestedBlueprint((
+            blueprint: (
+                creation_location: (
+                    line: 41,
+                    column: 22,
+                    file: "blueprint/error_handlers/error_handlers_can_take_pavex_error_rather_than_specific_error_type/src/lib.rs",
+                ),
+                components: [
+                    ErrorObserver((
+                        error_observer: (
+                            callable: (
+                                registered_at: (
+                                    crate_name: "app_40a0f751",
+                                    module_path: "app_40a0f751",
+                                ),
+                                import_path: "crate::error_observer",
+                            ),
+                            location: (
+                                line: 42,
+                                column: 12,
+                                file: "blueprint/error_handlers/error_handlers_can_take_pavex_error_rather_than_specific_error_type/src/lib.rs",
+                            ),
+                        ),
+                    )),
+                    Route((
+                        path: "/with_observer",
+                        method_guard: Some([
+                            "GET",
+                        ]),
+                        request_handler: (
+                            callable: (
+                                registered_at: (
+                                    crate_name: "app_40a0f751",
+                                    module_path: "app_40a0f751",
+                                ),
+                                import_path: "crate::handler",
+                            ),
+                            location: (
+                                line: 43,
+                                column: 12,
+                                file: "blueprint/error_handlers/error_handlers_can_take_pavex_error_rather_than_specific_error_type/src/lib.rs",
+                            ),
+                        ),
+                        error_handler: None,
+                    )),
+                ],
+            ),
+            path_prefix: None,
+            nesting_location: (
+                line: 40,
+                column: 8,
+                file: "blueprint/error_handlers/error_handlers_can_take_pavex_error_rather_than_specific_error_type/src/lib.rs",
+            ),
+        )),
+    ],
+)
