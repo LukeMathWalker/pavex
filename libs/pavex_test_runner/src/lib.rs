@@ -419,7 +419,16 @@ fn create_tests_dir(
     for test_data in test_name2test_data.values() {
         for member in test_data.workspace_members() {
             let relative_path = member.strip_prefix(&runtime_directory).unwrap();
-            writeln!(cargo_toml, "  \"{}\",", relative_path.display()).unwrap();
+            // We use the Unix path separator, since that's what `cargo` expects
+            // in `Cargo.toml` files.
+            let p = relative_path
+                .components()
+                .map(|c| match c {
+                    std::path::Component::Normal(s) => s.to_string_lossy(),
+                    _ => unreachable!(),
+                })
+                .join("/");
+            writeln!(cargo_toml, "  \"{p}\",").unwrap();
         }
     }
     writeln!(&mut cargo_toml, "]").unwrap();
