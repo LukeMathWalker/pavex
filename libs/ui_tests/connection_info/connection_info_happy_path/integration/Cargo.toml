@@ -1,0 +1,26 @@
+[package]
+name = "integration_a1f930e1"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies.application]
+path = "../generated_app"
+package = "application_a1f930e1"
+
+[dependencies.app]
+path = ".."
+package = "app_a1f930e1"
+
+[dev-dependencies.tokio]
+workspace = true
+features = ["full"]
+
+[dev-dependencies.reqwest]
+workspace = true
+
+[dev-dependencies.pavex]
+workspace = true
+
+[dev-dependencies.tracing-subscriber]
+version = "0.3"
+features = ["env-filter", "fmt"]

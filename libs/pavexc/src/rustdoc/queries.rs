@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 use std::collections::BTreeSet;
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::thread;
 
@@ -57,10 +58,11 @@ impl std::fmt::Debug for CrateCollection {
 }
 
 #[tracing::instrument]
-fn compute_package_graph() -> Result<PackageGraph, anyhow::Error> {
+fn compute_package_graph(current_directory: PathBuf) -> Result<PackageGraph, anyhow::Error> {
     // `cargo metadata` seems to be the only reliable way of retrieving the path to
     // the root manifest of the current workspace for a Rust project.
     guppy::MetadataCommand::new()
+        .current_dir(current_directory)
         .exec()
         .map_err(|e| anyhow!(e))?
         .build_graph()
@@ -69,11 +71,15 @@ fn compute_package_graph() -> Result<PackageGraph, anyhow::Error> {
 
 impl CrateCollection {
     /// Initialise the collection for a `PackageGraph`.
-    pub fn new(project_fingerprint: String, toolchain_name: String) -> Result<Self, anyhow::Error> {
+    pub fn new(
+        project_fingerprint: String,
+        toolchain_name: String,
+        workspace_directory: PathBuf,
+    ) -> Result<Self, anyhow::Error> {
         let span = Span::current();
         let thread_handle = thread::spawn(move || {
             let _guard = span.enter();
-            compute_package_graph()
+            compute_package_graph(workspace_directory)
         });
         let cache = RustdocGlobalFsCache::new(&toolchain_name)?;
 
@@ -157,7 +163,7 @@ impl CrateCollection {
             cache: RustdocGlobalFsCache,
         ) -> (PackageId, Option<Crate>) {
             let cache_key = RustdocCacheKey::new(&package_id, &package_graph);
-            match cache.get(&cache_key) {
+            match cache.get(&cache_key, &package_graph) {
                 Ok(o) => (package_id, o),
                 Err(e) => {
                     tracing::warn!(
@@ -201,6 +207,7 @@ impl CrateCollection {
             &self.toolchain_name,
             &self.package_graph,
             to_be_computed.into_iter(),
+            self.package_graph.workspace().root().as_std_path(),
         )?;
 
         for (package_id, krate) in results {
@@ -212,7 +219,10 @@ impl CrateCollection {
 
             // Let's make sure to store them in the on-disk cache for next time.
             let cache_key = RustdocCacheKey::new(&package_id, &self.package_graph);
-            if let Err(e) = self.disk_cache.insert(&cache_key, &krate) {
+            if let Err(e) = self
+                .disk_cache
+                .insert(&cache_key, &krate, &self.package_graph)
+            {
                 tracing::warn!(
                     error.msg = tracing::field::display(&e),
                     error.error_chain = tracing::field::debug(&e),
@@ -243,7 +253,7 @@ impl CrateCollection {
 
         // If not, let's try to retrieve them from the on-disk cache.
         let cache_key = RustdocCacheKey::new(package_id, &self.package_graph);
-        match self.disk_cache.get(&cache_key) {
+        match self.disk_cache.get(&cache_key, &self.package_graph) {
             Ok(Some(krate)) => {
                 self.package_id2krate
                     .insert(package_id.to_owned(), Box::new(krate));
@@ -261,14 +271,22 @@ impl CrateCollection {
         }
 
         // If we don't have them in the on-disk cache, we need to compute them.
-        let krate = compute_crate_docs(&self.toolchain_name, &self.package_graph, package_id)?;
+        let krate = compute_crate_docs(
+            &self.toolchain_name,
+            &self.package_graph,
+            package_id,
+            self.package_graph.workspace().root().as_std_path(),
+        )?;
         let krate = Crate::new(krate, package_id.to_owned()).map_err(|e| CannotGetCrateData {
             package_spec: package_id.to_string(),
             source: Arc::new(e),
         })?;
 
         // Let's make sure to store them in the on-disk cache for next time.
-        if let Err(e) = self.disk_cache.insert(&cache_key, &krate) {
+        if let Err(e) = self
+            .disk_cache
+            .insert(&cache_key, &krate, &self.package_graph)
+        {
             tracing::warn!(
                 error.msg = tracing::field::display(&e),
                 error.error_chain = tracing::field::debug(&e),

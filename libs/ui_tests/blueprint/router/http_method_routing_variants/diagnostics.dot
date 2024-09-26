@@ -1,0 +1,487 @@
+digraph "CONNECT | DELETE | GET | HEAD | OPTIONS | PATCH | POST | PUT | TRACE /any - 0" {
+    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_9::Next0>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_9::Next0) -> pavex::middleware::Next<crate::route_9::Next0>"]
+    2 [ label = "crate::route_9::Next0() -> crate::route_9::Next0"]
+    3 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 3 [ ]
+}
+
+digraph "CONNECT | DELETE | GET | HEAD | OPTIONS | PATCH | POST | PUT | TRACE /any - 1" {
+    0 [ label = "app_a6a2e116::handler() -> pavex::response::Response"]
+    1 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    0 -> 1 [ ]
+}
+
+digraph "* /any - 0" {
+    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_14::Next0<'a>>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_14::Next0<'a>) -> pavex::middleware::Next<crate::route_14::Next0<'a>>"]
+    2 [ label = "crate::route_14::Next0(&'a pavex::router::AllowedMethods) -> crate::route_14::Next0<'a>"]
+    4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    5 [ label = "&pavex::router::AllowedMethods"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 4 [ ]
+    5 -> 2 [ ]
+}
+
+digraph "* /any - 1" {
+    0 [ label = "pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
+    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "&pavex::router::AllowedMethods"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
+}
+
+digraph "* /any_w_extensions - 0" {
+    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_10::Next0>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_10::Next0) -> pavex::middleware::Next<crate::route_10::Next0>"]
+    2 [ label = "crate::route_10::Next0() -> crate::route_10::Next0"]
+    3 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 3 [ ]
+}
+
+digraph "* /any_w_extensions - 1" {
+    0 [ label = "app_a6a2e116::handler() -> pavex::response::Response"]
+    1 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    0 -> 1 [ ]
+}
+
+digraph "CONNECT /connect - 0" {
+    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_0::Next0>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_0::Next0) -> pavex::middleware::Next<crate::route_0::Next0>"]
+    2 [ label = "crate::route_0::Next0() -> crate::route_0::Next0"]
+    3 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 3 [ ]
+}
+
+digraph "CONNECT /connect - 1" {
+    0 [ label = "app_a6a2e116::handler() -> pavex::response::Response"]
+    1 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    0 -> 1 [ ]
+}
+
+digraph "* /connect - 0" {
+    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_14::Next0<'a>>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_14::Next0<'a>) -> pavex::middleware::Next<crate::route_14::Next0<'a>>"]
+    2 [ label = "crate::route_14::Next0(&'a pavex::router::AllowedMethods) -> crate::route_14::Next0<'a>"]
+    4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    5 [ label = "&pavex::router::AllowedMethods"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 4 [ ]
+    5 -> 2 [ ]
+}
+
+digraph "* /connect - 1" {
+    0 [ label = "pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
+    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "&pavex::router::AllowedMethods"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
+}
+
+digraph "CUSTOM /custom - 0" {
+    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_12::Next0>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_12::Next0) -> pavex::middleware::Next<crate::route_12::Next0>"]
+    2 [ label = "crate::route_12::Next0() -> crate::route_12::Next0"]
+    3 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 3 [ ]
+}
+
+digraph "CUSTOM /custom - 1" {
+    0 [ label = "app_a6a2e116::handler() -> pavex::response::Response"]
+    1 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    0 -> 1 [ ]
+}
+
+digraph "* /custom - 0" {
+    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_14::Next0<'a>>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_14::Next0<'a>) -> pavex::middleware::Next<crate::route_14::Next0<'a>>"]
+    2 [ label = "crate::route_14::Next0(&'a pavex::router::AllowedMethods) -> crate::route_14::Next0<'a>"]
+    4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    5 [ label = "&pavex::router::AllowedMethods"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 4 [ ]
+    5 -> 2 [ ]
+}
+
+digraph "* /custom - 1" {
+    0 [ label = "pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
+    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "&pavex::router::AllowedMethods"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
+}
+
+digraph "DELETE /delete - 0" {
+    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_1::Next0>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_1::Next0) -> pavex::middleware::Next<crate::route_1::Next0>"]
+    2 [ label = "crate::route_1::Next0() -> crate::route_1::Next0"]
+    3 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 3 [ ]
+}
+
+digraph "DELETE /delete - 1" {
+    0 [ label = "app_a6a2e116::handler() -> pavex::response::Response"]
+    1 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    0 -> 1 [ ]
+}
+
+digraph "* /delete - 0" {
+    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_14::Next0<'a>>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_14::Next0<'a>) -> pavex::middleware::Next<crate::route_14::Next0<'a>>"]
+    2 [ label = "crate::route_14::Next0(&'a pavex::router::AllowedMethods) -> crate::route_14::Next0<'a>"]
+    4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    5 [ label = "&pavex::router::AllowedMethods"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 4 [ ]
+    5 -> 2 [ ]
+}
+
+digraph "* /delete - 1" {
+    0 [ label = "pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
+    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "&pavex::router::AllowedMethods"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
+}
+
+digraph "GET /get - 0" {
+    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_2::Next0>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_2::Next0) -> pavex::middleware::Next<crate::route_2::Next0>"]
+    2 [ label = "crate::route_2::Next0() -> crate::route_2::Next0"]
+    3 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 3 [ ]
+}
+
+digraph "GET /get - 1" {
+    0 [ label = "app_a6a2e116::handler() -> pavex::response::Response"]
+    1 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    0 -> 1 [ ]
+}
+
+digraph "* /get - 0" {
+    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_14::Next0<'a>>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_14::Next0<'a>) -> pavex::middleware::Next<crate::route_14::Next0<'a>>"]
+    2 [ label = "crate::route_14::Next0(&'a pavex::router::AllowedMethods) -> crate::route_14::Next0<'a>"]
+    4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    5 [ label = "&pavex::router::AllowedMethods"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 4 [ ]
+    5 -> 2 [ ]
+}
+
+digraph "* /get - 1" {
+    0 [ label = "pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
+    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "&pavex::router::AllowedMethods"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
+}
+
+digraph "HEAD /head - 0" {
+    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_3::Next0>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_3::Next0) -> pavex::middleware::Next<crate::route_3::Next0>"]
+    2 [ label = "crate::route_3::Next0() -> crate::route_3::Next0"]
+    3 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 3 [ ]
+}
+
+digraph "HEAD /head - 1" {
+    0 [ label = "app_a6a2e116::handler() -> pavex::response::Response"]
+    1 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    0 -> 1 [ ]
+}
+
+digraph "* /head - 0" {
+    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_14::Next0<'a>>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_14::Next0<'a>) -> pavex::middleware::Next<crate::route_14::Next0<'a>>"]
+    2 [ label = "crate::route_14::Next0(&'a pavex::router::AllowedMethods) -> crate::route_14::Next0<'a>"]
+    4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    5 [ label = "&pavex::router::AllowedMethods"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 4 [ ]
+    5 -> 2 [ ]
+}
+
+digraph "* /head - 1" {
+    0 [ label = "pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
+    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "&pavex::router::AllowedMethods"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
+}
+
+digraph "PATCH | POST /mixed - 0" {
+    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_11::Next0>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_11::Next0) -> pavex::middleware::Next<crate::route_11::Next0>"]
+    2 [ label = "crate::route_11::Next0() -> crate::route_11::Next0"]
+    3 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 3 [ ]
+}
+
+digraph "PATCH | POST /mixed - 1" {
+    0 [ label = "app_a6a2e116::handler() -> pavex::response::Response"]
+    1 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    0 -> 1 [ ]
+}
+
+digraph "* /mixed - 0" {
+    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_14::Next0<'a>>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_14::Next0<'a>) -> pavex::middleware::Next<crate::route_14::Next0<'a>>"]
+    2 [ label = "crate::route_14::Next0(&'a pavex::router::AllowedMethods) -> crate::route_14::Next0<'a>"]
+    4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    5 [ label = "&pavex::router::AllowedMethods"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 4 [ ]
+    5 -> 2 [ ]
+}
+
+digraph "* /mixed - 1" {
+    0 [ label = "pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
+    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "&pavex::router::AllowedMethods"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
+}
+
+digraph "CUSTOM | GET | HEY /mixed_with_custom - 0" {
+    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_13::Next0>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_13::Next0) -> pavex::middleware::Next<crate::route_13::Next0>"]
+    2 [ label = "crate::route_13::Next0() -> crate::route_13::Next0"]
+    3 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 3 [ ]
+}
+
+digraph "CUSTOM | GET | HEY /mixed_with_custom - 1" {
+    0 [ label = "app_a6a2e116::handler() -> pavex::response::Response"]
+    1 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    0 -> 1 [ ]
+}
+
+digraph "* /mixed_with_custom - 0" {
+    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_14::Next0<'a>>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_14::Next0<'a>) -> pavex::middleware::Next<crate::route_14::Next0<'a>>"]
+    2 [ label = "crate::route_14::Next0(&'a pavex::router::AllowedMethods) -> crate::route_14::Next0<'a>"]
+    4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    5 [ label = "&pavex::router::AllowedMethods"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 4 [ ]
+    5 -> 2 [ ]
+}
+
+digraph "* /mixed_with_custom - 1" {
+    0 [ label = "pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
+    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "&pavex::router::AllowedMethods"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
+}
+
+digraph "OPTIONS /options - 0" {
+    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_4::Next0>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_4::Next0) -> pavex::middleware::Next<crate::route_4::Next0>"]
+    2 [ label = "crate::route_4::Next0() -> crate::route_4::Next0"]
+    3 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 3 [ ]
+}
+
+digraph "OPTIONS /options - 1" {
+    0 [ label = "app_a6a2e116::handler() -> pavex::response::Response"]
+    1 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    0 -> 1 [ ]
+}
+
+digraph "* /options - 0" {
+    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_14::Next0<'a>>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_14::Next0<'a>) -> pavex::middleware::Next<crate::route_14::Next0<'a>>"]
+    2 [ label = "crate::route_14::Next0(&'a pavex::router::AllowedMethods) -> crate::route_14::Next0<'a>"]
+    4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    5 [ label = "&pavex::router::AllowedMethods"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 4 [ ]
+    5 -> 2 [ ]
+}
+
+digraph "* /options - 1" {
+    0 [ label = "pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
+    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "&pavex::router::AllowedMethods"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
+}
+
+digraph "PATCH /patch - 0" {
+    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_5::Next0>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_5::Next0) -> pavex::middleware::Next<crate::route_5::Next0>"]
+    2 [ label = "crate::route_5::Next0() -> crate::route_5::Next0"]
+    3 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 3 [ ]
+}
+
+digraph "PATCH /patch - 1" {
+    0 [ label = "app_a6a2e116::handler() -> pavex::response::Response"]
+    1 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    0 -> 1 [ ]
+}
+
+digraph "* /patch - 0" {
+    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_14::Next0<'a>>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_14::Next0<'a>) -> pavex::middleware::Next<crate::route_14::Next0<'a>>"]
+    2 [ label = "crate::route_14::Next0(&'a pavex::router::AllowedMethods) -> crate::route_14::Next0<'a>"]
+    4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    5 [ label = "&pavex::router::AllowedMethods"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 4 [ ]
+    5 -> 2 [ ]
+}
+
+digraph "* /patch - 1" {
+    0 [ label = "pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
+    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "&pavex::router::AllowedMethods"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
+}
+
+digraph "POST /post - 0" {
+    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_6::Next0>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_6::Next0) -> pavex::middleware::Next<crate::route_6::Next0>"]
+    2 [ label = "crate::route_6::Next0() -> crate::route_6::Next0"]
+    3 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 3 [ ]
+}
+
+digraph "POST /post - 1" {
+    0 [ label = "app_a6a2e116::handler() -> pavex::response::Response"]
+    1 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    0 -> 1 [ ]
+}
+
+digraph "* /post - 0" {
+    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_14::Next0<'a>>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_14::Next0<'a>) -> pavex::middleware::Next<crate::route_14::Next0<'a>>"]
+    2 [ label = "crate::route_14::Next0(&'a pavex::router::AllowedMethods) -> crate::route_14::Next0<'a>"]
+    4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    5 [ label = "&pavex::router::AllowedMethods"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 4 [ ]
+    5 -> 2 [ ]
+}
+
+digraph "* /post - 1" {
+    0 [ label = "pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
+    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "&pavex::router::AllowedMethods"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
+}
+
+digraph "PUT /put - 0" {
+    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_7::Next0>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_7::Next0) -> pavex::middleware::Next<crate::route_7::Next0>"]
+    2 [ label = "crate::route_7::Next0() -> crate::route_7::Next0"]
+    3 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 3 [ ]
+}
+
+digraph "PUT /put - 1" {
+    0 [ label = "app_a6a2e116::handler() -> pavex::response::Response"]
+    1 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    0 -> 1 [ ]
+}
+
+digraph "* /put - 0" {
+    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_14::Next0<'a>>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_14::Next0<'a>) -> pavex::middleware::Next<crate::route_14::Next0<'a>>"]
+    2 [ label = "crate::route_14::Next0(&'a pavex::router::AllowedMethods) -> crate::route_14::Next0<'a>"]
+    4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    5 [ label = "&pavex::router::AllowedMethods"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 4 [ ]
+    5 -> 2 [ ]
+}
+
+digraph "* /put - 1" {
+    0 [ label = "pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
+    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "&pavex::router::AllowedMethods"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
+}
+
+digraph "TRACE /trace - 0" {
+    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_8::Next0>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_8::Next0) -> pavex::middleware::Next<crate::route_8::Next0>"]
+    2 [ label = "crate::route_8::Next0() -> crate::route_8::Next0"]
+    3 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 3 [ ]
+}
+
+digraph "TRACE /trace - 1" {
+    0 [ label = "app_a6a2e116::handler() -> pavex::response::Response"]
+    1 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    0 -> 1 [ ]
+}
+
+digraph "* /trace - 0" {
+    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_14::Next0<'a>>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_14::Next0<'a>) -> pavex::middleware::Next<crate::route_14::Next0<'a>>"]
+    2 [ label = "crate::route_14::Next0(&'a pavex::router::AllowedMethods) -> crate::route_14::Next0<'a>"]
+    4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    5 [ label = "&pavex::router::AllowedMethods"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 4 [ ]
+    5 -> 2 [ ]
+}
+
+digraph "* /trace - 1" {
+    0 [ label = "pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
+    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "&pavex::router::AllowedMethods"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
+}
+
+digraph app_state {
+    0 [ label = "crate::ApplicationState() -> crate::ApplicationState"]
+}

@@ -1,0 +1,14 @@
+[31m[1mERROR[0m[39m: 
+  [31m×[0m Error handlers associated with a fallible operation must take a reference
+  [31m│[0m to the operation's error type as input.
+  [31m│[0m This error handler is associated with
+  [31m│[0m `app::fallible_constructor`, therefore I expect
+  [31m│[0m `&app::Error` to be one of its input parameters.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/error_handlers/error_handlers_must_take_a_reference_to_the_error_as_input/src/lib.rs[0m:22:1]
+  [31m│[0m  [2m22[0m │     bp.constructor(f!(crate::fallible_constructor), Lifecycle::RequestScoped)
+  [31m│[0m  [2m23[0m │         .error_handler(f!(crate::error_handler));
+  [31m│[0m     · [35;1m                       ────────────┬───────────[0m
+  [31m│[0m     ·                   [35;1mThe error handler was registered here[0m
+  [31m│[0m  [2m24[0m │     bp.route(GET, "/home", f!(crate::handler));
+  [31m│[0m     ╰────

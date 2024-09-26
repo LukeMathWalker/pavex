@@ -1,0 +1,35 @@
+[31m[1mERROR[0m[39m: 
+  [31m×[0m The constructor for a singleton must be registered once.
+  [31m│[0m You registered the same constructor for `u64` against 2 different nested
+  [31m│[0m blueprints.
+  [31m│[0m I don't know how to proceed: do you want to share the same singleton
+  [31m│[0m instance across all those nested blueprints, or do you want to create a
+  [31m│[0m new instance for each nested blueprint?
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/nesting/nesting_fails_if_the_same_singleton_constructor_is_registered_in_different_scopes/src/lib.rs[0m:8:1]
+  [31m│[0m  [2m 8[0m │     let mut bp = Blueprint::new();
+  [31m│[0m  [2m 9[0m │     bp.constructor(f!(crate::singleton), Lifecycle::Singleton);
+  [31m│[0m     · [35;1m                   ──────────┬─────────[0m
+  [31m│[0m     ·                              [35;1m╰── A constructor was registered here[0m
+  [31m│[0m  [2m10[0m │     bp.route(GET, "/parent", f!(crate::handler));
+  [31m│[0m     ╰────
+  [31m│[0m     ╭─[[36;1;4mblueprint/nesting/nesting_fails_if_the_same_singleton_constructor_is_registered_in_different_scopes/src/lib.rs[0m:24:1]
+  [31m│[0m  [2m24[0m │     let mut bp = Blueprint::new();
+  [31m│[0m  [2m25[0m │     bp.constructor(f!(crate::singleton), Lifecycle::Singleton);
+  [31m│[0m     · [35;1m                   ──────────┬─────────[0m
+  [31m│[0m     ·                              [35;1m╰── A constructor was registered here[0m
+  [31m│[0m  [2m26[0m │     bp.route(GET, "/child", f!(crate::handler));
+  [31m│[0m     ╰────
+  [31m│[0m   [36mhelp:[0m If you want to share a single instance of `u64`, remove constructors
+  [31m│[0m         for `u64` until there is only one left. It should be attached to a
+  [31m│[0m         blueprint that is a parent of all the nested ones that need to use it.
+  [31m│[0m        ☞
+  [31m│[0m          ╭─[[36;1;4mblueprint/nesting/nesting_fails_if_the_same_singleton_constructor_is_registered_in_different_scopes/src/lib.rs[0m:7:1]
+  [31m│[0m        [2m7[0m │ pub fn blueprint() -> Blueprint {
+  [31m│[0m        [2m8[0m │     let mut bp = Blueprint::new();
+  [31m│[0m          · [35;1m                 ────────┬───────[0m
+  [31m│[0m          ·              [35;1mRegister your constructor against this blueprint[0m
+  [31m│[0m        [2m9[0m │     bp.constructor(f!(crate::singleton), Lifecycle::Singleton);
+  [31m│[0m          ╰────
+  [31m│[0m [36m  help: [0mIf you want different instances, consider creating separate newtypes
+  [31m│[0m         that wrap a `u64`.

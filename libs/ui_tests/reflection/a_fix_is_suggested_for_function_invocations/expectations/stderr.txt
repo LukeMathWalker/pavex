@@ -1,0 +1,12 @@
+[31m[1mERROR[0m[39m: 
+  [31m×[0m `self::my_f()` is not a valid import path.
+  [31m│[0m
+  [31m│[0m    ╭─[[36;1;4mreflection/a_fix_is_suggested_for_function_invocations/src/lib.rs[0m:7:1]
+  [31m│[0m  [2m7[0m │     let mut bp = Blueprint::new();
+  [31m│[0m  [2m8[0m │     bp.route(POST, "/home", f!(self::my_f()));
+  [31m│[0m    · [35;1m                            ────────┬───────[0m
+  [31m│[0m    ·                 [35;1mThe invalid import path was registered here[0m
+  [31m│[0m  [2m9[0m │     bp
+  [31m│[0m    ╰────
+  [31m│[0m [36m  help: [0mThe `f!` macro expects an unambiguous path as input, not a function
+  [31m│[0m         call. Remove the `()` at the end: `f!(self::my_f)`

@@ -1,0 +1,20 @@
+[31m[1mERROR[0m[39m: 
+  [31m×[0m I don't know how to route incoming `GET /home` requests: you have
+  [31m│[0m registered 2 different request handlers for this path+method combination.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/router/conflicting_any_and_single_method_guards/src/lib.rs[0m:16:1]
+  [31m│[0m  [2m16[0m │     let mut bp = Blueprint::new();
+  [31m│[0m  [2m17[0m │     bp.route(ANY, "/home", f!(crate::handler_1));
+  [31m│[0m     · [35;1m                           ──────────┬─────────[0m
+  [31m│[0m     ·                                      [35;1m╰── The first conflicting handler[0m
+  [31m│[0m  [2m18[0m │     bp.route(GET, "/home", f!(crate::handler_2));
+  [31m│[0m     ╰────
+  [31m│[0m     ╭─[[36;1;4mblueprint/router/conflicting_any_and_single_method_guards/src/lib.rs[0m:17:1]
+  [31m│[0m  [2m17[0m │     bp.route(ANY, "/home", f!(crate::handler_1));
+  [31m│[0m  [2m18[0m │     bp.route(GET, "/home", f!(crate::handler_2));
+  [31m│[0m     · [35;1m                           ──────────┬─────────[0m
+  [31m│[0m     ·                                      [35;1m╰── The second conflicting handler[0m
+  [31m│[0m  [2m19[0m │     bp
+  [31m│[0m     ╰────
+  [31m│[0m [36m  help: [0mYou can only register one request handler for each path+method
+  [31m│[0m         combination. Remove all but one of the conflicting request handlers.

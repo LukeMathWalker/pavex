@@ -64,12 +64,13 @@ impl RustdocGlobalFsCache {
     pub(crate) fn get(
         &self,
         cache_key: &RustdocCacheKey,
+        package_graph: &PackageGraph,
     ) -> Result<Option<crate::rustdoc::Crate>, anyhow::Error> {
         let connection = self.connection_pool.get()?;
         match cache_key {
             RustdocCacheKey::ThirdPartyCrate(metadata) => {
                 self.third_party_cache
-                    .get(metadata, &self.cargo_fingerprint, &connection)
+                    .get(metadata, &self.cargo_fingerprint, &connection, package_graph)
             }
             RustdocCacheKey::ToolchainCrate(name) => {
                 self.toolchain_cache
@@ -83,12 +84,13 @@ impl RustdocGlobalFsCache {
         &self,
         cache_key: &RustdocCacheKey,
         krate: &crate::rustdoc::Crate,
+        package_graph: &PackageGraph
     ) -> Result<(), anyhow::Error> {
         let connection = self.connection_pool.get()?;
         match cache_key {
             RustdocCacheKey::ThirdPartyCrate(metadata) => {
                 self.third_party_cache
-                    .insert(metadata, krate, &self.cargo_fingerprint, &connection)
+                    .insert(metadata, krate, &self.cargo_fingerprint, &connection, package_graph)
             }
             RustdocCacheKey::ToolchainCrate(name) => {
                 self.toolchain_cache
@@ -354,14 +356,16 @@ impl ThirdPartyCrateCache {
         package_metadata: &PackageMetadata,
         cargo_fingerprint: &str,
         connection: &rusqlite::Connection,
+        package_graph: &PackageGraph,
     ) -> Result<Option<crate::rustdoc::Crate>, anyhow::Error> {
         fn _get(
             package_metadata: &PackageMetadata,
             cargo_fingerprint: &str,
             connection: &rusqlite::Connection,
+            package_graph: &PackageGraph,
         ) -> Result<Option<crate::rustdoc::Crate>, anyhow::Error> {
             let Some(cache_key) =
-                ThirdPartyCrateCacheKey::build(package_metadata, cargo_fingerprint)
+                ThirdPartyCrateCacheKey::build(package_graph, package_metadata, cargo_fingerprint)
             else {
                 return Ok(None);
             };
@@ -442,7 +446,7 @@ impl ThirdPartyCrateCache {
 
             Ok(Some(krate))
         }
-        let outcome = _get(package_metadata, cargo_fingerprint, connection);
+        let outcome = _get(package_metadata, cargo_fingerprint, connection, package_graph);
         match &outcome {
             Ok(Some(_)) => {
                 tracing::Span::current().record("hit", true);
@@ -468,8 +472,9 @@ impl ThirdPartyCrateCache {
         krate: &crate::rustdoc::Crate,
         cargo_fingerprint: &str,
         connection: &rusqlite::Connection,
+        package_graph: &PackageGraph
     ) -> Result<(), anyhow::Error> {
-        let Some(cache_key) = ThirdPartyCrateCacheKey::build(package_metadata, cargo_fingerprint)
+        let Some(cache_key) = ThirdPartyCrateCacheKey::build(package_graph, package_metadata, cargo_fingerprint)
         else {
             return Ok(());
         };
@@ -688,6 +693,7 @@ pub(super) struct ThirdPartyCrateCacheKey<'a> {
 impl<'a> ThirdPartyCrateCacheKey<'a> {
     /// Compute the cache key for a given package.
     pub(super) fn build(
+        package_graph: &PackageGraph,
         package_metadata: &'a PackageMetadata<'a>,
         cargo_fingerprint: &'a str,
     ) -> Option<ThirdPartyCrateCacheKey<'a>> {
@@ -701,18 +707,28 @@ impl<'a> ThirdPartyCrateCacheKey<'a> {
         };
         let crate_hash =
             if let guppy::graph::PackageSource::Path(package_path) = package_metadata.source() {
+                let package_path = if package_path.is_relative() {
+                    package_graph.workspace().root().join(package_path)
+                } else {
+                    package_path.to_owned()
+                };
                 // We need to compute the hash of the package's contents,
                 // to invalidate the cache when the package changes.
                 // This is only relevant for path dependencies.
                 // We don't need to do this for external dependencies,
                 // since they are assumed to be immutable.
-                let Ok(hash) = checksum_crate(package_path) else {
+                let hash = match checksum_crate(&package_path) {
+                    Ok(hash) => hash,
+                    Err(e) => {
                     tracing::warn!(
-                        "Failed to compute the hash of the package at {:?}.
+                        error.message = %e,
+                        error.details = ?e,
+                        "Failed to compute the hash of the package at {}.
                         I won't cache its JSON documentation to avoid serving stale data.",
-                        package_metadata.id()
+                        package_metadata.id().repr()
                     );
                     return None;
+                }
                 };
                 Some(hash.to_string())
             } else {

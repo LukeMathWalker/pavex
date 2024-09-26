@@ -1,0 +1,15 @@
+[31m[1mERROR[0m[39m: 
+  [31m×[0m The generic parameter in `pavex::middleware::Next<_>` must a naked type
+  [31m│[0m parameter—i.e. `T` in `Next<T>`.
+  [31m│[0m This wrapping middleware, instead, uses `app::Custom<T>` as
+  [31m│[0m generic parameter for `Next`.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/wrapping_middlewares/next_must_take_a_naked_generic_parameter/src/lib.rs[0m:31:1]
+  [31m│[0m  [2m31[0m │     let mut bp = Blueprint::new();
+  [31m│[0m  [2m32[0m │     bp.wrap(f!(crate::mw));
+  [31m│[0m     · [35;1m            ──────┬──────[0m
+  [31m│[0m     ·                   [35;1m╰── The wrapping middleware was registered here[0m
+  [31m│[0m  [2m33[0m │     bp.route(GET, "/home", f!(crate::handler));
+  [31m│[0m     ╰────
+  [31m│[0m [36m  help: [0mTake `Next<T>` rather than `Next<app::Custom<T>>` as input
+  [31m│[0m         parameter in your middleware.

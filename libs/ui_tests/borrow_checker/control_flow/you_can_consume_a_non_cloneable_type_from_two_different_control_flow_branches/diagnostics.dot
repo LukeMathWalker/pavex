@@ -1,0 +1,54 @@
+digraph "GET /home - 0" {
+    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_0::Next0>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_0::Next0) -> pavex::middleware::Next<crate::route_0::Next0>"]
+    2 [ label = "crate::route_0::Next0() -> crate::route_0::Next0"]
+    3 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 3 [ ]
+}
+
+digraph "GET /home - 1" {
+    0 [ label = "app_9717f587::handler(app_9717f587::A, app_9717f587::B) -> pavex::response::Response"]
+    1 [ label = "core::prelude::rust_2015::Result<app_9717f587::A, app_9717f587::Error> -> app_9717f587::A"]
+    2 [ label = "app_9717f587::b() -> app_9717f587::B"]
+    3 [ label = "app_9717f587::a() -> core::prelude::rust_2015::Result<app_9717f587::A, app_9717f587::Error>"]
+    4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    5 [ label = "core::prelude::rust_2015::Result<app_9717f587::A, app_9717f587::Error> -> app_9717f587::Error"]
+    6 [ label = "app_9717f587::error_handler(&app_9717f587::Error, app_9717f587::B) -> pavex::response::Response"]
+    7 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    8 [ label = "`match`"]
+    2 -> 0 [ ]
+    1 -> 0 [ ]
+    8 -> 5 [ ]
+    8 -> 1 [ ]
+    0 -> 4 [ ]
+    5 -> 6 [ label = "&"]
+    2 -> 6 [ ]
+    6 -> 7 [ ]
+    3 -> 8 [ ]
+}
+
+digraph "* /home - 0" {
+    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_1::Next0<'a>>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_1::Next0<'a>) -> pavex::middleware::Next<crate::route_1::Next0<'a>>"]
+    2 [ label = "crate::route_1::Next0(&'a pavex::router::AllowedMethods) -> crate::route_1::Next0<'a>"]
+    4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    5 [ label = "&pavex::router::AllowedMethods"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 4 [ ]
+    5 -> 2 [ ]
+}
+
+digraph "* /home - 1" {
+    0 [ label = "pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
+    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "&pavex::router::AllowedMethods"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
+}
+
+digraph app_state {
+    0 [ label = "crate::ApplicationState() -> crate::ApplicationState"]
+}

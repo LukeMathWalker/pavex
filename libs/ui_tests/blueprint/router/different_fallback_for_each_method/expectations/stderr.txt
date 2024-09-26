@@ -1,0 +1,29 @@
+[31m[1mERROR[0m[39m: 
+  [31m×[0m Routing logic can't be ambiguous.
+  [31m│[0m You registered:
+  [31m│[0m - `app::fallback2` as the fallback handler for your `POST /id`
+  [31m│[0m route.
+  [31m│[0m - `app::fallback1` as the fallback handler for your `GET /id`
+  [31m│[0m route.
+  [31m│[0m 
+  [31m│[0m I don't know which fallback handler to invoke for incoming `/id` requests
+  [31m│[0m that use a different HTTP method (CONNECT, DELETE, HEAD, OPTIONS, PATCH,
+  [31m│[0m PUT or TRACE)!
+  [31m│[0m 
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/router/different_fallback_for_each_method/src/lib.rs[0m:29:1]
+  [31m│[0m  [2m29[0m │         bp.route(POST, "/id", f!(crate::handler));
+  [31m│[0m  [2m30[0m │         bp.fallback(f!(crate::fallback2));
+  [31m│[0m     · [35;1m                    ──────────┬─────────[0m
+  [31m│[0m     ·                               [35;1m╰── The first fallback[0m
+  [31m│[0m  [2m31[0m │         bp
+  [31m│[0m     ╰────
+  [31m│[0m     ╭─[[36;1;4mblueprint/router/different_fallback_for_each_method/src/lib.rs[0m:23:1]
+  [31m│[0m  [2m23[0m │         bp.route(GET, "/id", f!(crate::handler));
+  [31m│[0m  [2m24[0m │         bp.fallback(f!(crate::fallback1));
+  [31m│[0m     · [35;1m                    ──────────┬─────────[0m
+  [31m│[0m     ·                               [35;1m╰── The second fallback[0m
+  [31m│[0m  [2m25[0m │         bp
+  [31m│[0m     ╰────
+  [31m│[0m [36m  help: [0mAdjust your blueprint to have the same fallback handler for all `/
+  [31m│[0m         id` routes.

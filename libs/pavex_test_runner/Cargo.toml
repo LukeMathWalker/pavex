@@ -19,6 +19,7 @@ name = "snaps"
 anyhow = { workspace = true }
 ahash = { workspace = true }
 console = { workspace = true }
+cargo_metadata = { workspace = true }
 fs-err = { workspace = true }
 libtest-mimic = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
@@ -38,3 +39,6 @@ tracing-subscriber = { workspace = true, features = ["env-filter", "fmt"] }
 regex = { workspace = true }
 once_cell = { workspace = true }
 px_workspace_hack = { version = "0.1", path = "../px_workspace_hack" }
+pavexc = { path = "../pavexc" }
+guppy = { workspace = true }
+rayon = { workspace = true }

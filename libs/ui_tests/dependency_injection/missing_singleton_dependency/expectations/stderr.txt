@@ -1,0 +1,23 @@
+[31m[1mERROR[0m[39m: 
+  [31m×[0m I can't find a constructor for `&app::A`.
+  [31m│[0m I need an instance of `&app::A` to invoke your constructor,
+  [31m│[0m `app::b`.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mdependency_injection/missing_singleton_dependency/src/lib.rs[0m:20:1]
+  [31m│[0m  [2m20[0m │     let mut bp = Blueprint::new();
+  [31m│[0m  [2m21[0m │     bp.singleton(f!(crate::b));
+  [31m│[0m     · [35;1m                 ──────┬─────[0m
+  [31m│[0m     ·                        [35;1m╰── The constructor was registered here[0m
+  [31m│[0m  [2m22[0m │     bp.route(GET, "/", f!(crate::handler));
+  [31m│[0m     ╰────
+  [31m│[0m     ╭─[[36;1;4mdependency_injection/missing_singleton_dependency/src/lib.rs[0m:10:1]
+  [31m│[0m  [2m10[0m │ 
+  [31m│[0m  [2m11[0m │ pub fn b(a: &A) -> B {
+  [31m│[0m     · [35;1m         ──┬──[0m
+  [31m│[0m     ·     [35;1mI don't know how to construct an instance of this input parameter[0m
+  [31m│[0m  [2m12[0m │     todo!()
+  [31m│[0m     ╰────
+  [31m│[0m   [36mhelp:[0m Register a constructor for `&app::A`.
+  [31m│[0m [36m  help: [0mAlternatively, use `Blueprint::prebuilt` to add a new input
+  [31m│[0m         parameter of type `&app::A` to the (generated)
+  [31m│[0m         `build_application_state`.

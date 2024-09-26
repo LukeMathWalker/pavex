@@ -1,0 +1,45 @@
+[31m[1mERROR[0m[39m: 
+  [31m×[0m The path prefix passed to `nest_at` can't end with a trailing slash, `/`.
+  [31m│[0m `/api/` does.
+  [31m│[0m Trailing slashes in path prefixes increase the likelihood of having
+  [31m│[0m consecutive slashes in the final route path, which is rarely desireable.
+  [31m│[0m If you want consecutive slashes in the final route path, you can add
+  [31m│[0m them explicitly in the paths of the routes registered against the nested
+  [31m│[0m blueprint.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/nesting/nest_at_prefix_is_validated/src/lib.rs[0m:12:1]
+  [31m│[0m  [2m12[0m │     // If the prefix is not empty, it **cannot** end with a `/`
+  [31m│[0m  [2m13[0m │     bp.nest_at("/api/", sub_blueprint());
+  [31m│[0m     · [35;1m               ───┬───[0m
+  [31m│[0m     ·                   [35;1m╰── The prefix ending with a trailing '/'[0m
+  [31m│[0m  [2m14[0m │     bp
+  [31m│[0m     ╰────
+  [31m│[0m [36m  help: [0mRemove the '/' at the end of the path prefix to fix this error: use
+  [31m│[0m         `/api` instead of `/api/`.
+
+[31m[1mERROR[0m[39m: 
+  [31m×[0m The path prefix passed to `nest_at` must begin with a forward slash, `/`.
+  [31m│[0m `api` doesn't.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/nesting/nest_at_prefix_is_validated/src/lib.rs[0m:10:1]
+  [31m│[0m  [2m10[0m │     // If the prefix is not empty, it **must** start with a `/`
+  [31m│[0m  [2m11[0m │     bp.nest_at("api", sub_blueprint());
+  [31m│[0m     · [35;1m               ──┬──[0m
+  [31m│[0m     ·                  [35;1m╰── The prefix missing a leading '/'[0m
+  [31m│[0m  [2m12[0m │     // If the prefix is not empty, it **cannot** end with a `/`
+  [31m│[0m     ╰────
+  [31m│[0m [36m  help: [0mAdd a '/' at the beginning of the path prefix to fix this error: use
+  [31m│[0m         `/api` instead of `api`.
+
+[31m[1mERROR[0m[39m: 
+  [31m×[0m The path prefix passed to `nest_at` cannot be empty.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/nesting/nest_at_prefix_is_validated/src/lib.rs[0m:8:1]
+  [31m│[0m  [2m 8[0m │     // The prefix cannot be empty
+  [31m│[0m  [2m 9[0m │     bp.nest_at("", sub_blueprint());
+  [31m│[0m     · [35;1m               ─┬[0m
+  [31m│[0m     ·                 [35;1m╰── The empty prefix[0m
+  [31m│[0m  [2m10[0m │     // If the prefix is not empty, it **must** start with a `/`
+  [31m│[0m     ╰────
+  [31m│[0m [36m  help: [0mIf you don't want to add a common prefix to all routes in the nested
+  [31m│[0m         blueprint, use the `nest` method instead of `nest_at`.

@@ -1,0 +1,77 @@
+[31m[1mERROR[0m[39m: 
+  [31m×[0m There must be no unassigned generic parameters in pre-processing
+  [31m│[0m middlewares, but `T` does not seem to have been assigned a concrete type
+  [31m│[0m in `app::generic`.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/pre_processing_middlewares/pre_processing_middlewares_input_parameters_cannot_be_generic/src/lib.rs[0m:29:1]
+  [31m│[0m  [2m29[0m │     let mut bp = Blueprint::new();
+  [31m│[0m  [2m30[0m │     bp.pre_process(f!(crate::generic));
+  [31m│[0m     · [35;1m                   ─────────┬────────[0m
+  [31m│[0m     ·             [35;1mThe pre-processing middleware was registered here[0m
+  [31m│[0m  [2m31[0m │     bp.pre_process(f!(crate::doubly_generic));
+  [31m│[0m     ╰────
+  [31m│[0m    ╭─[[36;1;4mblueprint/pre_processing_middlewares/pre_processing_middlewares_input_parameters_cannot_be_generic/src/lib.rs[0m:7:1]
+  [31m│[0m  [2m7[0m │ 
+  [31m│[0m  [2m8[0m │ pub fn generic<T>(generic_input: GenericType<T>) -> Processing {
+  [31m│[0m    · [35;1m               ┬[0m
+  [31m│[0m    ·                [35;1m╰── The generic parameter without a concrete type[0m
+  [31m│[0m  [2m9[0m │     todo!()
+  [31m│[0m    ╰────
+  [31m│[0m [36m  help: [0mSpecify the concrete type for `T` when registering the pre-
+  [31m│[0m         processing middleware against the blueprint:
+  [31m│[0m         |  bp.pre_process(
+  [31m│[0m         |    f!(my_crate::my_middleware::<ConcreteType>),
+  [31m│[0m         |  )
+
+[31m[1mERROR[0m[39m: 
+  [31m×[0m There must be no unassigned generic parameters in pre-processing
+  [31m│[0m middlewares, but `T` and `S` do not seem to have been assigned a concrete
+  [31m│[0m type in `app::doubly_generic`.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/pre_processing_middlewares/pre_processing_middlewares_input_parameters_cannot_be_generic/src/lib.rs[0m:30:1]
+  [31m│[0m  [2m30[0m │     bp.pre_process(f!(crate::generic));
+  [31m│[0m  [2m31[0m │     bp.pre_process(f!(crate::doubly_generic));
+  [31m│[0m     · [35;1m                   ────────────┬────────────[0m
+  [31m│[0m     ·             [35;1mThe pre-processing middleware was registered here[0m
+  [31m│[0m  [2m32[0m │     bp.pre_process(f!(crate::triply_generic));
+  [31m│[0m     ╰────
+  [31m│[0m     ╭─[[36;1;4mblueprint/pre_processing_middlewares/pre_processing_middlewares_input_parameters_cannot_be_generic/src/lib.rs[0m:11:1]
+  [31m│[0m  [2m11[0m │ 
+  [31m│[0m  [2m12[0m │ pub fn doubly_generic<T, S>(i1: GenericType<T>, i2: GenericType<S>) -> Processing {
+  [31m│[0m     · [35;1m                      ┬[0m[33;1m  ┬[0m
+  [31m│[0m     ·                       [35;1m│[0m  [33;1m╰── The generic parameter without a concrete type[0m
+  [31m│[0m     ·                       [35;1m╰── The generic parameter without a concrete type[0m
+  [31m│[0m  [2m13[0m │     todo!()
+  [31m│[0m     ╰────
+  [31m│[0m [36m  help: [0mSpecify the concrete types for `T` and `S` when registering the pre-
+  [31m│[0m         processing middleware against the blueprint:
+  [31m│[0m         |  bp.pre_process(
+  [31m│[0m         |    f!(my_crate::my_middleware::<ConcreteType>),
+  [31m│[0m         |  )
+
+[31m[1mERROR[0m[39m: 
+  [31m×[0m There must be no unassigned generic parameters in pre-processing
+  [31m│[0m middlewares, but `T`, `S` and `U` do not seem to have been assigned a
+  [31m│[0m concrete type in `app::triply_generic`.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/pre_processing_middlewares/pre_processing_middlewares_input_parameters_cannot_be_generic/src/lib.rs[0m:31:1]
+  [31m│[0m  [2m31[0m │     bp.pre_process(f!(crate::doubly_generic));
+  [31m│[0m  [2m32[0m │     bp.pre_process(f!(crate::triply_generic));
+  [31m│[0m     · [35;1m                   ────────────┬────────────[0m
+  [31m│[0m     ·             [35;1mThe pre-processing middleware was registered here[0m
+  [31m│[0m  [2m33[0m │     bp.route(GET, "/home", f!(crate::handler));
+  [31m│[0m     ╰────
+  [31m│[0m     ╭─[[36;1;4mblueprint/pre_processing_middlewares/pre_processing_middlewares_input_parameters_cannot_be_generic/src/lib.rs[0m:15:1]
+  [31m│[0m  [2m15[0m │ 
+  [31m│[0m  [2m16[0m │ pub fn triply_generic<T, S, U>(
+  [31m│[0m     · [35;1m                      ┬[0m[33;1m  ┬[0m[32;1m  ┬[0m
+  [31m│[0m     ·                       [35;1m│[0m  [33;1m│[0m  [32;1mThe generic parameter without a concrete type[0m
+  [31m│[0m     ·                       [35;1m│[0m  [33;1m╰── The generic parameter without a concrete type[0m
+  [31m│[0m     ·                       [35;1m╰── The generic parameter without a concrete type[0m
+  [31m│[0m  [2m17[0m │     i1: GenericType<T>,
+  [31m│[0m     ╰────
+  [31m│[0m [36m  help: [0mSpecify the concrete types for `T`, `S` and `U` when registering the
+  [31m│[0m         pre-processing middleware against the blueprint:
+  [31m│[0m         |  bp.pre_process(
+  [31m│[0m         |    f!(my_crate::my_middleware::<ConcreteType>),
+  [31m│[0m         |  )

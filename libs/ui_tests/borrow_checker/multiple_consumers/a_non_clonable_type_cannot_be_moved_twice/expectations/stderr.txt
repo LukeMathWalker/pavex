@@ -1,0 +1,44 @@
+[31m[1mERROR[0m[39m: 
+  [31m×[0m I can't generate code that will pass the borrow checker *and* match the
+  [31m│[0m instructions in your blueprint.
+  [31m│[0m There are 2 components that take `app::A` as an input parameter,
+  [31m│[0m consuming it by value:
+  [31m│[0m - `app::b`, a constructor
+  [31m│[0m - `app::c`, a constructor
+  [31m│[0m Since I'm not allowed to clone `app::A`, I can't resolve this
+  [31m│[0m conflict.
+  [31m│[0m 
+  [31m│[0m
+  [31m│[0m   [36mhelp:[0m Allow me to clone `app::A` in order to satisfy the borrow
+  [31m│[0m         checker.
+  [31m│[0m         You can do so by invoking `.cloning(CloningStrategy::CloneIfNecessary)`
+  [31m│[0m         on the type returned by `.constructor`.
+  [31m│[0m        ☞
+  [31m│[0m           ╭─[[36;1;4mborrow_checker/multiple_consumers/a_non_clonable_type_cannot_be_moved_twice/src/lib.rs[0m:41:1]
+  [31m│[0m        [2m41[0m │     let mut bp = Blueprint::new();
+  [31m│[0m        [2m42[0m │     bp.constructor(f!(crate::a), Lifecycle::RequestScoped);
+  [31m│[0m           · [35;1m                   ──────┬─────[0m
+  [31m│[0m           ·                          [35;1m╰── The constructor was registered here[0m
+  [31m│[0m        [2m43[0m │     bp.constructor(f!(crate::b), Lifecycle::RequestScoped);
+  [31m│[0m           ╰────
+  [31m│[0m   [36mhelp:[0m Considering changing the signature of the components that consume
+  [31m│[0m         `app::A` by value.
+  [31m│[0m         Would a shared reference, `&app::A`, be enough?
+  [31m│[0m        ☞
+  [31m│[0m           ╭─[[36;1;4mborrow_checker/multiple_consumers/a_non_clonable_type_cannot_be_moved_twice/src/lib.rs[0m:42:1]
+  [31m│[0m        [2m42[0m │     bp.constructor(f!(crate::a), Lifecycle::RequestScoped);
+  [31m│[0m        [2m43[0m │     bp.constructor(f!(crate::b), Lifecycle::RequestScoped);
+  [31m│[0m           · [35;1m                   ──────┬─────[0m
+  [31m│[0m           ·                          [35;1m╰── One of the consuming constructors[0m
+  [31m│[0m        [2m44[0m │     bp.constructor(f!(crate::c), Lifecycle::RequestScoped);
+  [31m│[0m           ╰────
+  [31m│[0m        ☞
+  [31m│[0m           ╭─[[36;1;4mborrow_checker/multiple_consumers/a_non_clonable_type_cannot_be_moved_twice/src/lib.rs[0m:43:1]
+  [31m│[0m        [2m43[0m │     bp.constructor(f!(crate::b), Lifecycle::RequestScoped);
+  [31m│[0m        [2m44[0m │     bp.constructor(f!(crate::c), Lifecycle::RequestScoped);
+  [31m│[0m           · [35;1m                   ──────┬─────[0m
+  [31m│[0m           ·                          [35;1m╰── One of the consuming constructors[0m
+  [31m│[0m        [2m45[0m │     bp.route(GET, "/home", f!(crate::handler));
+  [31m│[0m           ╰────
+  [31m│[0m   [36mhelp:[0m If `app::A` itself cannot implement `Clone`, consider
+  [31m│[0m         wrapping it in an `std::sync::Rc` or `std::sync::Arc`.

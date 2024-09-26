@@ -1,0 +1,11 @@
+[31m[1mERROR[0m[39m: 
+  [31m×[0m Error observers must have no return type.
+  [31m│[0m `app::error_observer` returns `alloc::string::String`.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/error_observers/error_observers_must_return_the_unit_type/src/lib.rs[0m:9:1]
+  [31m│[0m  [2m 9[0m │     let mut bp = Blueprint::new();
+  [31m│[0m  [2m10[0m │     bp.error_observer(f!(crate::error_observer));
+  [31m│[0m     · [35;1m                      ────────────┬────────────[0m
+  [31m│[0m     ·                   [35;1mThe error observer was registered here[0m
+  [31m│[0m  [2m11[0m │     bp
+  [31m│[0m     ╰────

@@ -1,0 +1,102 @@
+digraph "GET / - 0" {
+    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_0::Next0>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_0::Next0) -> pavex::middleware::Next<crate::route_0::Next0>"]
+    2 [ label = "crate::route_0::Next0() -> crate::route_0::Next0"]
+    3 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 3 [ ]
+}
+
+digraph "GET / - 1" {
+    0 [ label = "app_40ab089d::mw(app_40ab089d::Scoped, pavex::middleware::Next<crate::route_0::Next1>) -> pavex::response::Response"]
+    1 [ label = "app_40ab089d::Scoped::new() -> app_40ab089d::Scoped"]
+    2 [ label = "pavex::middleware::Next::new(crate::route_0::Next1) -> pavex::middleware::Next<crate::route_0::Next1>"]
+    3 [ label = "crate::route_0::Next1(app_40ab089d::Scoped) -> crate::route_0::Next1"]
+    4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    5 [ label = "<app_40ab089d::Scoped as core::clone::Clone>::clone(&app_40ab089d::Scoped) -> app_40ab089d::Scoped"]
+    2 -> 0 [ ]
+    3 -> 2 [ ]
+    1 -> 3 [ ]
+    0 -> 4 [ ]
+    1 -> 5 [ label = "&"]
+    5 -> 0 [ ]
+}
+
+digraph "GET / - 2" {
+    0 [ label = "app_40ab089d::mw2(&app_40ab089d::Scoped, pavex::middleware::Next<crate::route_0::Next2>) -> pavex::response::Response"]
+    1 [ label = "app_40ab089d::Scoped"]
+    2 [ label = "pavex::middleware::Next::new(crate::route_0::Next2) -> pavex::middleware::Next<crate::route_0::Next2>"]
+    3 [ label = "crate::route_0::Next2(app_40ab089d::Scoped) -> crate::route_0::Next2"]
+    4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    5 [ label = "<app_40ab089d::Scoped as core::clone::Clone>::clone(&app_40ab089d::Scoped) -> app_40ab089d::Scoped"]
+    2 -> 0 [ ]
+    3 -> 2 [ ]
+    1 -> 0 [ label = "&"]
+    0 -> 4 [ ]
+    1 -> 5 [ label = "&"]
+    5 -> 3 [ ]
+}
+
+digraph "GET / - 3" {
+    0 [ label = "app_40ab089d::handler(app_40ab089d::Scoped) -> pavex::response::Response"]
+    1 [ label = "app_40ab089d::Scoped"]
+    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    1 -> 0 [ ]
+    0 -> 2 [ ]
+}
+
+digraph "* / - 0" {
+    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_1::Next0<'a>>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_1::Next0<'a>) -> pavex::middleware::Next<crate::route_1::Next0<'a>>"]
+    2 [ label = "crate::route_1::Next0(&'a pavex::router::AllowedMethods) -> crate::route_1::Next0<'a>"]
+    4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    5 [ label = "&pavex::router::AllowedMethods"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 4 [ ]
+    5 -> 2 [ ]
+}
+
+digraph "* / - 1" {
+    0 [ label = "app_40ab089d::mw(app_40ab089d::Scoped, pavex::middleware::Next<crate::route_1::Next1<'a, 'b>>) -> pavex::response::Response"]
+    1 [ label = "app_40ab089d::Scoped::new() -> app_40ab089d::Scoped"]
+    2 [ label = "pavex::middleware::Next::new(crate::route_1::Next1<'a, 'b>) -> pavex::middleware::Next<crate::route_1::Next1<'a, 'b>>"]
+    3 [ label = "crate::route_1::Next1(&'a pavex::router::AllowedMethods, &'b app_40ab089d::Scoped) -> crate::route_1::Next1<'a, 'b>"]
+    4 [ label = "<app_40ab089d::Scoped as core::clone::Clone>::clone(&app_40ab089d::Scoped) -> app_40ab089d::Scoped"]
+    5 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    6 [ label = "&pavex::router::AllowedMethods"]
+    2 -> 0 [ ]
+    3 -> 2 [ ]
+    1 -> 3 [ label = "&"]
+    1 -> 4 [ label = "&"]
+    0 -> 5 [ ]
+    6 -> 3 [ ]
+    4 -> 0 [ ]
+}
+
+digraph "* / - 2" {
+    0 [ label = "app_40ab089d::mw2(&app_40ab089d::Scoped, pavex::middleware::Next<crate::route_1::Next2<'a>>) -> pavex::response::Response"]
+    1 [ label = "&pavex::router::AllowedMethods"]
+    2 [ label = "pavex::middleware::Next::new(crate::route_1::Next2<'a>) -> pavex::middleware::Next<crate::route_1::Next2<'a>>"]
+    3 [ label = "crate::route_1::Next2(&'a pavex::router::AllowedMethods) -> crate::route_1::Next2<'a>"]
+    5 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    6 [ label = "&app_40ab089d::Scoped"]
+    2 -> 0 [ ]
+    3 -> 2 [ ]
+    1 -> 3 [ ]
+    0 -> 5 [ ]
+    6 -> 0 [ ]
+}
+
+digraph "* / - 3" {
+    0 [ label = "pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
+    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "&pavex::router::AllowedMethods"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
+}
+
+digraph app_state {
+    0 [ label = "crate::ApplicationState() -> crate::ApplicationState"]
+}

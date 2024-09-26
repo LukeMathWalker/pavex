@@ -1,0 +1,71 @@
+[31m[1mERROR[0m[39m: 
+  [31m×[0m All generic parameters must be assigned to a concrete type when you
+  [31m│[0m register an error observer, I can't infer them.
+  [31m│[0m `app::generic` has 1 unassigned generic parameters.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/error_observers/error_observers_input_parameters_cannot_be_generic/src/lib.rs[0m:20:1]
+  [31m│[0m  [2m20[0m │     let mut bp = Blueprint::new();
+  [31m│[0m  [2m21[0m │     bp.error_observer(f!(crate::generic));
+  [31m│[0m     · [35;1m                      ─────────┬────────[0m
+  [31m│[0m     ·                                [35;1m╰── The error observer was registered here[0m
+  [31m│[0m  [2m22[0m │     bp.error_observer(f!(crate::generic2));
+  [31m│[0m     ╰────
+  [31m│[0m    ╭─[[36;1;4mblueprint/error_observers/error_observers_input_parameters_cannot_be_generic/src/lib.rs[0m:6:1]
+  [31m│[0m  [2m6[0m │ 
+  [31m│[0m  [2m7[0m │ pub fn generic<T>(generic_input: GenericType<T>, e: &Error) {
+  [31m│[0m    · [35;1m               ┬[0m
+  [31m│[0m    ·                [35;1m╰── I can't infer this[0m
+  [31m│[0m  [2m8[0m │     todo!()
+  [31m│[0m    ╰────
+  [31m│[0m [36m  help: [0mSpecify the concrete type(s) for the problematic generic
+  [31m│[0m         parameter(s) when registering the error observer against the
+  [31m│[0m         blueprint: `f!(my_crate::my_observer::<ConcreteType>)`
+
+[31m[1mERROR[0m[39m: 
+  [31m×[0m All generic parameters must be assigned to a concrete type when you
+  [31m│[0m register an error observer, I can't infer them.
+  [31m│[0m `app::generic2` has 2 unassigned generic parameters.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/error_observers/error_observers_input_parameters_cannot_be_generic/src/lib.rs[0m:21:1]
+  [31m│[0m  [2m21[0m │     bp.error_observer(f!(crate::generic));
+  [31m│[0m  [2m22[0m │     bp.error_observer(f!(crate::generic2));
+  [31m│[0m     · [35;1m                      ─────────┬─────────[0m
+  [31m│[0m     ·                                [35;1m╰── The error observer was registered here[0m
+  [31m│[0m  [2m23[0m │     bp.error_observer(f!(crate::generic3));
+  [31m│[0m     ╰────
+  [31m│[0m     ╭─[[36;1;4mblueprint/error_observers/error_observers_input_parameters_cannot_be_generic/src/lib.rs[0m:10:1]
+  [31m│[0m  [2m10[0m │ 
+  [31m│[0m  [2m11[0m │ pub fn generic2<T, S>(i1: GenericType<T>, i2: GenericType<S>, e: &Error) {
+  [31m│[0m     · [35;1m                ┬[0m[33;1m  ┬[0m
+  [31m│[0m     ·                 [35;1m│[0m  [33;1m╰── I can't infer this[0m
+  [31m│[0m     ·                 [35;1m╰── I can't infer this[0m
+  [31m│[0m  [2m12[0m │     todo!()
+  [31m│[0m     ╰────
+  [31m│[0m [36m  help: [0mSpecify the concrete type(s) for the problematic generic
+  [31m│[0m         parameter(s) when registering the error observer against the
+  [31m│[0m         blueprint: `f!(my_crate::my_observer::<ConcreteType>)`
+
+[31m[1mERROR[0m[39m: 
+  [31m×[0m All generic parameters must be assigned to a concrete type when you
+  [31m│[0m register an error observer, I can't infer them.
+  [31m│[0m `app::generic3` has 3 unassigned generic parameters.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/error_observers/error_observers_input_parameters_cannot_be_generic/src/lib.rs[0m:22:1]
+  [31m│[0m  [2m22[0m │     bp.error_observer(f!(crate::generic2));
+  [31m│[0m  [2m23[0m │     bp.error_observer(f!(crate::generic3));
+  [31m│[0m     · [35;1m                      ─────────┬─────────[0m
+  [31m│[0m     ·                                [35;1m╰── The error observer was registered here[0m
+  [31m│[0m  [2m24[0m │     bp
+  [31m│[0m     ╰────
+  [31m│[0m     ╭─[[36;1;4mblueprint/error_observers/error_observers_input_parameters_cannot_be_generic/src/lib.rs[0m:14:1]
+  [31m│[0m  [2m14[0m │ 
+  [31m│[0m  [2m15[0m │ pub fn generic3<T, S, U>(i1: GenericType<T>, i2: GenericType<S>, i3: GenericType<U>, e: &Error) {
+  [31m│[0m     · [35;1m                ┬[0m[33;1m  ┬[0m[32;1m  ┬[0m
+  [31m│[0m     ·                 [35;1m│[0m  [33;1m│[0m  [32;1m╰── I can't infer this[0m
+  [31m│[0m     ·                 [35;1m│[0m  [33;1m╰── I can't infer this[0m
+  [31m│[0m     ·                 [35;1m╰── I can't infer this[0m
+  [31m│[0m  [2m16[0m │     todo!()
+  [31m│[0m     ╰────
+  [31m│[0m [36m  help: [0mSpecify the concrete type(s) for the problematic generic
+  [31m│[0m         parameter(s) when registering the error observer against the
+  [31m│[0m         blueprint: `f!(my_crate::my_observer::<ConcreteType>)`

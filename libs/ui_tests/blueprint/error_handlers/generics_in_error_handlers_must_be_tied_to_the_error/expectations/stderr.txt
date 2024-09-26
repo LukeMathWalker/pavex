@@ -1,0 +1,93 @@
+[31m[1mERROR[0m[39m: 
+  [31m×[0m I am not smart enough to figure out the concrete type for all the generic
+  [31m│[0m parameters in `app::generic_error_handler`.
+  [31m│[0m I can only infer the type of an unassigned generic parameter if it appears
+  [31m│[0m in the error type processed by this error handler. This is not the case
+  [31m│[0m for `T`, since it isn't used by the error type.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/error_handlers/generics_in_error_handlers_must_be_tied_to_the_error/src/lib.rs[0m:53:1]
+  [31m│[0m  [2m53[0m │     bp.constructor(f!(crate::constructor1), Lifecycle::RequestScoped)
+  [31m│[0m  [2m54[0m │         .error_handler(f!(crate::generic_error_handler));
+  [31m│[0m     · [35;1m                       ────────────────┬───────────────[0m
+  [31m│[0m     ·                   [35;1mThe error handler was registered here[0m
+  [31m│[0m  [2m55[0m │     bp.constructor(f!(crate::constructor2), Lifecycle::RequestScoped)
+  [31m│[0m     ╰────
+  [31m│[0m     ╭─[[36;1;4mblueprint/error_handlers/generics_in_error_handlers_must_be_tied_to_the_error/src/lib.rs[0m:24:1]
+  [31m│[0m  [2m24[0m │ 
+  [31m│[0m  [2m25[0m │ pub fn generic_error_handler<T>(error: &Error, generic_input: GenericType<T>) -> Response {
+  [31m│[0m     · [35;1m                             ┬[0m[33;1m  ──────┬──────[0m
+  [31m│[0m     ·                              [35;1m│[0m        [33;1m╰── ..because it is not used here[0m
+  [31m│[0m     ·                              [35;1m╰── I can't infer this..[0m
+  [31m│[0m  [2m26[0m │     todo!()
+  [31m│[0m     ╰────
+  [31m│[0m [36m  help: [0mSpecify the concrete type(s) for the problematic generic
+  [31m│[0m         parameter(s) when registering the error handler against the
+  [31m│[0m         blueprint:
+  [31m│[0m         |  .error_handler(
+  [31m│[0m         |    f!(my_crate::my_error_handler::<ConcreteType>)
+  [31m│[0m         |  )
+
+[31m[1mERROR[0m[39m: 
+  [31m×[0m I am not smart enough to figure out the concrete type for all the generic
+  [31m│[0m parameters in `app::doubly_generic_error_handler`.
+  [31m│[0m I can only infer the type of an unassigned generic parameter if it appears
+  [31m│[0m in the error type processed by this error handler. This is not the case
+  [31m│[0m for `T` and `S`, since they aren't used by the error type.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/error_handlers/generics_in_error_handlers_must_be_tied_to_the_error/src/lib.rs[0m:55:1]
+  [31m│[0m  [2m55[0m │     bp.constructor(f!(crate::constructor2), Lifecycle::RequestScoped)
+  [31m│[0m  [2m56[0m │         .error_handler(f!(crate::doubly_generic_error_handler));
+  [31m│[0m     · [35;1m                       ───────────────────┬───────────────────[0m
+  [31m│[0m     ·   [35;1mThe error handler was registered here ──╯[0m
+  [31m│[0m  [2m57[0m │     bp.constructor(f!(crate::constructor3), Lifecycle::Transient)
+  [31m│[0m     ╰────
+  [31m│[0m     ╭─[[36;1;4mblueprint/error_handlers/generics_in_error_handlers_must_be_tied_to_the_error/src/lib.rs[0m:28:1]
+  [31m│[0m  [2m28[0m │ 
+  [31m│[0m  [2m29[0m │ pub fn doubly_generic_error_handler<T, S>(
+  [31m│[0m     · [35;1m                                    ┬[0m[33;1m  ┬[0m
+  [31m│[0m     ·                                     [35;1m│[0m  [33;1m╰── I can't infer this..[0m
+  [31m│[0m     ·                                     [35;1m╰── I can't infer this..[0m
+  [31m│[0m  [2m30[0m │     error: &Error,
+  [31m│[0m     · [32;1m    ──────┬──────[0m
+  [31m│[0m     ·           [32;1m╰── ..because they are not used here[0m
+  [31m│[0m  [2m31[0m │     i1: GenericType<T>,
+  [31m│[0m     ╰────
+  [31m│[0m [36m  help: [0mSpecify the concrete type(s) for the problematic generic
+  [31m│[0m         parameter(s) when registering the error handler against the
+  [31m│[0m         blueprint:
+  [31m│[0m         |  .error_handler(
+  [31m│[0m         |    f!(my_crate::my_error_handler::<ConcreteType>)
+  [31m│[0m         |  )
+
+[31m[1mERROR[0m[39m: 
+  [31m×[0m I am not smart enough to figure out the concrete type for all the generic
+  [31m│[0m parameters in `app::triply_generic_error_handler`.
+  [31m│[0m I can only infer the type of an unassigned generic parameter if it appears
+  [31m│[0m in the error type processed by this error handler. This is not the case
+  [31m│[0m for `T`, `S` and `U`, since they aren't used by the error type.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/error_handlers/generics_in_error_handlers_must_be_tied_to_the_error/src/lib.rs[0m:57:1]
+  [31m│[0m  [2m57[0m │     bp.constructor(f!(crate::constructor3), Lifecycle::Transient)
+  [31m│[0m  [2m58[0m │         .error_handler(f!(crate::triply_generic_error_handler));
+  [31m│[0m     · [35;1m                       ───────────────────┬───────────────────[0m
+  [31m│[0m     ·   [35;1mThe error handler was registered here ──╯[0m
+  [31m│[0m  [2m59[0m │     bp.route(GET, "/home", f!(crate::handler));
+  [31m│[0m     ╰────
+  [31m│[0m     ╭─[[36;1;4mblueprint/error_handlers/generics_in_error_handlers_must_be_tied_to_the_error/src/lib.rs[0m:36:1]
+  [31m│[0m  [2m36[0m │ 
+  [31m│[0m  [2m37[0m │ pub fn triply_generic_error_handler<T, S, U>(
+  [31m│[0m     · [35;1m                                    ┬[0m[33;1m  ┬[0m[32;1m  ┬[0m
+  [31m│[0m     ·                                     [35;1m│[0m  [33;1m│[0m  [32;1m╰── I can't infer this..[0m
+  [31m│[0m     ·                                     [35;1m│[0m  [33;1m╰── I can't infer this..[0m
+  [31m│[0m     ·                                     [35;1m╰── I can't infer this..[0m
+  [31m│[0m  [2m38[0m │     error: &Error,
+  [31m│[0m     · [35;1m    ──────┬──────[0m
+  [31m│[0m     ·           [35;1m╰── ..because they are not used here[0m
+  [31m│[0m  [2m39[0m │     i1: GenericType<T>,
+  [31m│[0m     ╰────
+  [31m│[0m [36m  help: [0mSpecify the concrete type(s) for the problematic generic
+  [31m│[0m         parameter(s) when registering the error handler against the
+  [31m│[0m         blueprint:
+  [31m│[0m         |  .error_handler(
+  [31m│[0m         |    f!(my_crate::my_error_handler::<ConcreteType>)
+  [31m│[0m         |  )

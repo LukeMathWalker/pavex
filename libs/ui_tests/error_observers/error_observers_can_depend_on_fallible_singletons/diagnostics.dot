@@ -1,0 +1,76 @@
+digraph "GET /home - 0" {
+    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_0::Next0<'a>>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_0::Next0<'a>) -> pavex::middleware::Next<crate::route_0::Next0<'a>>"]
+    2 [ label = "crate::route_0::Next0(&'a app_028e5d85::A) -> crate::route_0::Next0<'a>"]
+    4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    5 [ label = "&app_028e5d85::A"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 4 [ ]
+    5 -> 2 [ ]
+}
+
+digraph "GET /home - 1" {
+    0 [ label = "app_028e5d85::handler(&app_028e5d85::B) -> pavex::response::Response"]
+    1 [ label = "core::prelude::rust_2015::Result<app_028e5d85::B, app_028e5d85::AnError> -> app_028e5d85::B"]
+    2 [ label = "app_028e5d85::b(&app_028e5d85::A) -> core::prelude::rust_2015::Result<app_028e5d85::B, app_028e5d85::AnError>"]
+    4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    5 [ label = "core::prelude::rust_2015::Result<app_028e5d85::B, app_028e5d85::AnError> -> app_028e5d85::AnError"]
+    6 [ label = "pavex::Error::new(app_028e5d85::AnError) -> pavex::Error"]
+    7 [ label = "app_028e5d85::error_handler(&app_028e5d85::A, &app_028e5d85::AnError) -> pavex::response::Response"]
+    8 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    9 [ label = "app_028e5d85::error_observer(&app_028e5d85::A, &pavex::Error)"]
+    10 [ label = "`match`"]
+    11 [ label = "&app_028e5d85::A"]
+    1 -> 0 [ label = "&"]
+    10 -> 5 [ ]
+    10 -> 1 [ ]
+    0 -> 4 [ ]
+    5 -> 7 [ label = "&"]
+    5 -> 6 [ ]
+    7 -> 8 [ ]
+    6 -> 9 [ label = "&"]
+    9 -> 8 [ label = "happens before"]
+    2 -> 10 [ ]
+    11 -> 9 [ ]
+    11 -> 7 [ ]
+    11 -> 2 [ ]
+}
+
+digraph "* /home - 0" {
+    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_1::Next0<'a>>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_1::Next0<'a>) -> pavex::middleware::Next<crate::route_1::Next0<'a>>"]
+    2 [ label = "crate::route_1::Next0(&'a pavex::router::AllowedMethods) -> crate::route_1::Next0<'a>"]
+    4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    5 [ label = "&pavex::router::AllowedMethods"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 4 [ ]
+    5 -> 2 [ ]
+}
+
+digraph "* /home - 1" {
+    0 [ label = "pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
+    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "&pavex::router::AllowedMethods"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
+}
+
+digraph app_state {
+    0 [ label = "crate::ApplicationState(app_028e5d85::A) -> crate::ApplicationState"]
+    1 [ label = "core::prelude::rust_2015::Result<app_028e5d85::A, app_028e5d85::AnError> -> app_028e5d85::A"]
+    2 [ label = "app_028e5d85::a() -> core::prelude::rust_2015::Result<app_028e5d85::A, app_028e5d85::AnError>"]
+    3 [ label = "core::result::Result::Ok(crate::ApplicationState) -> core::result::Result<crate::ApplicationState, crate::ApplicationStateError>"]
+    4 [ label = "core::prelude::rust_2015::Result<app_028e5d85::A, app_028e5d85::AnError> -> app_028e5d85::AnError"]
+    5 [ label = "crate::ApplicationStateError::A(app_028e5d85::AnError) -> crate::ApplicationStateError"]
+    6 [ label = "core::result::Result::Err(crate::ApplicationStateError) -> core::result::Result<crate::ApplicationState, crate::ApplicationStateError>"]
+    7 [ label = "`match`"]
+    1 -> 0 [ ]
+    7 -> 4 [ ]
+    7 -> 1 [ ]
+    0 -> 3 [ ]
+    4 -> 5 [ ]
+    5 -> 6 [ ]
+    2 -> 7 [ ]
+}

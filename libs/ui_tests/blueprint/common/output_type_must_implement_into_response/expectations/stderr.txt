@@ -1,0 +1,104 @@
+[31m[1mERROR[0m[39m: 
+  [31m×[0m I can't use the type returned by this request handler to create an HTTP
+  [31m│[0m response.
+  [31m│[0m It doesn't implement `pavex::response::IntoResponse`.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/common/output_type_must_implement_into_response/src/lib.rs[0m:43:1]
+  [31m│[0m  [2m43[0m │         .error_handler(f!(crate::error_handler));
+  [31m│[0m  [2m44[0m │     bp.route(GET, "/home", f!(crate::handler))
+  [31m│[0m     · [35;1m                           ─────────┬────────[0m
+  [31m│[0m     ·                  [35;1mThe request handler was registered here[0m
+  [31m│[0m  [2m45[0m │         .error_handler(f!(crate::error_handler));
+  [31m│[0m     ╰────
+  [31m│[0m [36m  help: [0mImplement `pavex::response::IntoResponse` for
+  [31m│[0m         `app::MyCustomOutputType`.
+
+[31m[1mERROR[0m[39m: 
+  [31m×[0m I can't use the type returned by this wrapping middleware to create an
+  [31m│[0m HTTP response.
+  [31m│[0m It doesn't implement `pavex::response::IntoResponse`.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/common/output_type_must_implement_into_response/src/lib.rs[0m:37:1]
+  [31m│[0m  [2m37[0m │     let mut bp = Blueprint::new();
+  [31m│[0m  [2m38[0m │     bp.wrap(f!(crate::wrapping_middleware))
+  [31m│[0m     · [35;1m            ───────────────┬──────────────[0m
+  [31m│[0m     ·                            [35;1m╰── The wrapping middleware was registered here[0m
+  [31m│[0m  [2m39[0m │         .error_handler(f!(crate::error_handler));
+  [31m│[0m     ╰────
+  [31m│[0m [36m  help: [0mImplement `pavex::response::IntoResponse` for
+  [31m│[0m         `app::MyCustomOutputType`.
+
+[31m[1mERROR[0m[39m: 
+  [31m×[0m I can't use the type returned by this post-processing middleware to create
+  [31m│[0m an HTTP response.
+  [31m│[0m It doesn't implement `pavex::response::IntoResponse`.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/common/output_type_must_implement_into_response/src/lib.rs[0m:39:1]
+  [31m│[0m  [2m39[0m │         .error_handler(f!(crate::error_handler));
+  [31m│[0m  [2m40[0m │     bp.post_process(f!(crate::pp_middleware))
+  [31m│[0m     · [35;1m                    ────────────┬───────────[0m
+  [31m│[0m     ·             [35;1mThe post-processing middleware was registered here[0m
+  [31m│[0m  [2m41[0m │         .error_handler(f!(crate::error_handler));
+  [31m│[0m     ╰────
+  [31m│[0m [36m  help: [0mImplement `pavex::response::IntoResponse` for
+  [31m│[0m         `app::MyCustomOutputType`.
+
+[31m[1mERROR[0m[39m: 
+  [31m×[0m I can't use the type returned by this error handler to create an HTTP
+  [31m│[0m response.
+  [31m│[0m It doesn't implement `pavex::response::IntoResponse`.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/common/output_type_must_implement_into_response/src/lib.rs[0m:38:1]
+  [31m│[0m  [2m38[0m │     bp.wrap(f!(crate::wrapping_middleware))
+  [31m│[0m  [2m39[0m │         .error_handler(f!(crate::error_handler));
+  [31m│[0m     · [35;1m                       ────────────┬───────────[0m
+  [31m│[0m     ·                   [35;1mThe error handler was registered here[0m
+  [31m│[0m  [2m40[0m │     bp.post_process(f!(crate::pp_middleware))
+  [31m│[0m     ╰────
+  [31m│[0m [36m  help: [0mImplement `pavex::response::IntoResponse` for
+  [31m│[0m         `app::MyCustomOutputType`.
+
+[31m[1mERROR[0m[39m: 
+  [31m×[0m I can't use the type returned by this error handler to create an HTTP
+  [31m│[0m response.
+  [31m│[0m It doesn't implement `pavex::response::IntoResponse`.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/common/output_type_must_implement_into_response/src/lib.rs[0m:40:1]
+  [31m│[0m  [2m40[0m │     bp.post_process(f!(crate::pp_middleware))
+  [31m│[0m  [2m41[0m │         .error_handler(f!(crate::error_handler));
+  [31m│[0m     · [35;1m                       ────────────┬───────────[0m
+  [31m│[0m     ·                   [35;1mThe error handler was registered here[0m
+  [31m│[0m  [2m42[0m │     bp.request_scoped(f!(crate::request_scoped))
+  [31m│[0m     ╰────
+  [31m│[0m [36m  help: [0mImplement `pavex::response::IntoResponse` for
+  [31m│[0m         `app::MyCustomOutputType`.
+
+[31m[1mERROR[0m[39m: 
+  [31m×[0m I can't use the type returned by this error handler to create an HTTP
+  [31m│[0m response.
+  [31m│[0m It doesn't implement `pavex::response::IntoResponse`.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/common/output_type_must_implement_into_response/src/lib.rs[0m:42:1]
+  [31m│[0m  [2m42[0m │     bp.request_scoped(f!(crate::request_scoped))
+  [31m│[0m  [2m43[0m │         .error_handler(f!(crate::error_handler));
+  [31m│[0m     · [35;1m                       ────────────┬───────────[0m
+  [31m│[0m     ·                   [35;1mThe error handler was registered here[0m
+  [31m│[0m  [2m44[0m │     bp.route(GET, "/home", f!(crate::handler))
+  [31m│[0m     ╰────
+  [31m│[0m [36m  help: [0mImplement `pavex::response::IntoResponse` for
+  [31m│[0m         `app::MyCustomOutputType`.
+
+[31m[1mERROR[0m[39m: 
+  [31m×[0m I can't use the type returned by this error handler to create an HTTP
+  [31m│[0m response.
+  [31m│[0m It doesn't implement `pavex::response::IntoResponse`.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/common/output_type_must_implement_into_response/src/lib.rs[0m:44:1]
+  [31m│[0m  [2m44[0m │     bp.route(GET, "/home", f!(crate::handler))
+  [31m│[0m  [2m45[0m │         .error_handler(f!(crate::error_handler));
+  [31m│[0m     · [35;1m                       ────────────┬───────────[0m
+  [31m│[0m     ·                   [35;1mThe error handler was registered here[0m
+  [31m│[0m  [2m46[0m │     bp
+  [31m│[0m     ╰────
+  [31m│[0m [36m  help: [0mImplement `pavex::response::IntoResponse` for
+  [31m│[0m         `app::MyCustomOutputType`.

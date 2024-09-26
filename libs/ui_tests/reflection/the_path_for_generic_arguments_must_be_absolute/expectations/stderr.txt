@@ -1,0 +1,14 @@
+[31m[1mERROR[0m[39m: 
+  [31m×[0m `String` is not a fully-qualified import path.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mreflection/the_path_for_generic_arguments_must_be_absolute/src/lib.rs[0m:15:1]
+  [31m│[0m  [2m15[0m │     let mut bp = Blueprint::new();
+  [31m│[0m  [2m16[0m │     bp.constructor(f!(crate::new_logger::<String>), Lifecycle::Singleton);
+  [31m│[0m     · [35;1m                   ───────────────┬───────────────[0m
+  [31m│[0m     ·                [35;1mThe relative import path was registered here[0m
+  [31m│[0m  [2m17[0m │     bp.route(GET, "/home", f!(crate::handler::<std::string::String>));
+  [31m│[0m     ╰────
+  [31m│[0m [36m  help: [0mIf it is a local import, the path must start with `crate::`,
+  [31m│[0m         `self::` or `super::`.
+  [31m│[0m         If it is an import from a dependency, the path must start with the
+  [31m│[0m         dependency name (e.g. `dependency::`).

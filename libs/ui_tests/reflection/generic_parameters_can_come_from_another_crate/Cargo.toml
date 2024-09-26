@@ -1,0 +1,25 @@
+[package]
+name = "app_dcb9931d"
+version = "0.1.0"
+edition = "2021"
+
+[lints.rust.unexpected_cfgs]
+level = "allow"
+check-cfg = ["cfg(pavex_ide_hint)"]
+
+[dependencies]
+hyper = "1.0.0-rc.4"
+bytes = "1"
+
+[dependencies.pavex]
+workspace = true
+
+[dependencies.pavex_cli_client]
+workspace = true
+
+[dependencies.workspace_hack]
+workspace = true
+
+[dependencies.dep_1]
+path = "ephemeral_deps/dep_1"
+package = "dep_dcb9931d"

@@ -1,0 +1,106 @@
+digraph "GET /with_observer - 0" {
+    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_2::Next0>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_2::Next0) -> pavex::middleware::Next<crate::route_2::Next0>"]
+    2 [ label = "crate::route_2::Next0() -> crate::route_2::Next0"]
+    3 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 3 [ ]
+}
+
+digraph "GET /with_observer - 1" {
+    0 [ label = "app_40a0f751::handler(alloc::string::String) -> pavex::response::Response"]
+    1 [ label = "core::prelude::rust_2015::Result<alloc::string::String, app_40a0f751::CustomError> -> alloc::string::String"]
+    2 [ label = "app_40a0f751::fallible_constructor() -> core::prelude::rust_2015::Result<alloc::string::String, app_40a0f751::CustomError>"]
+    3 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    4 [ label = "core::prelude::rust_2015::Result<alloc::string::String, app_40a0f751::CustomError> -> app_40a0f751::CustomError"]
+    5 [ label = "pavex::Error::new(app_40a0f751::CustomError) -> pavex::Error"]
+    6 [ label = "app_40a0f751::error_handler(&pavex::Error) -> pavex::response::Response"]
+    7 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    8 [ label = "app_40a0f751::error_observer(&pavex::Error)"]
+    9 [ label = "`match`"]
+    1 -> 0 [ ]
+    9 -> 4 [ ]
+    9 -> 1 [ ]
+    0 -> 3 [ ]
+    4 -> 5 [ ]
+    5 -> 6 [ label = "&"]
+    6 -> 7 [ ]
+    5 -> 8 [ label = "&"]
+    8 -> 7 [ label = "happens before"]
+    2 -> 9 [ ]
+}
+
+digraph "* /with_observer - 0" {
+    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_1::Next0<'a>>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_1::Next0<'a>) -> pavex::middleware::Next<crate::route_1::Next0<'a>>"]
+    2 [ label = "crate::route_1::Next0(&'a pavex::router::AllowedMethods) -> crate::route_1::Next0<'a>"]
+    4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    5 [ label = "&pavex::router::AllowedMethods"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 4 [ ]
+    5 -> 2 [ ]
+}
+
+digraph "* /with_observer - 1" {
+    0 [ label = "pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
+    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "&pavex::router::AllowedMethods"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
+}
+
+digraph "GET /without_observer - 0" {
+    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_0::Next0>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_0::Next0) -> pavex::middleware::Next<crate::route_0::Next0>"]
+    2 [ label = "crate::route_0::Next0() -> crate::route_0::Next0"]
+    3 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 3 [ ]
+}
+
+digraph "GET /without_observer - 1" {
+    0 [ label = "app_40a0f751::handler(alloc::string::String) -> pavex::response::Response"]
+    1 [ label = "core::prelude::rust_2015::Result<alloc::string::String, app_40a0f751::CustomError> -> alloc::string::String"]
+    2 [ label = "app_40a0f751::fallible_constructor() -> core::prelude::rust_2015::Result<alloc::string::String, app_40a0f751::CustomError>"]
+    3 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    4 [ label = "core::prelude::rust_2015::Result<alloc::string::String, app_40a0f751::CustomError> -> app_40a0f751::CustomError"]
+    5 [ label = "pavex::Error::new(app_40a0f751::CustomError) -> pavex::Error"]
+    6 [ label = "app_40a0f751::error_handler(&pavex::Error) -> pavex::response::Response"]
+    7 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    8 [ label = "`match`"]
+    1 -> 0 [ ]
+    8 -> 4 [ ]
+    8 -> 1 [ ]
+    0 -> 3 [ ]
+    4 -> 5 [ ]
+    5 -> 6 [ label = "&"]
+    6 -> 7 [ ]
+    2 -> 8 [ ]
+}
+
+digraph "* /without_observer - 0" {
+    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_1::Next0<'a>>) -> pavex::response::Response"]
+    1 [ label = "pavex::middleware::Next::new(crate::route_1::Next0<'a>) -> pavex::middleware::Next<crate::route_1::Next0<'a>>"]
+    2 [ label = "crate::route_1::Next0(&'a pavex::router::AllowedMethods) -> crate::route_1::Next0<'a>"]
+    4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    5 [ label = "&pavex::router::AllowedMethods"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 4 [ ]
+    5 -> 2 [ ]
+}
+
+digraph "* /without_observer - 1" {
+    0 [ label = "pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
+    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "&pavex::router::AllowedMethods"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
+}
+
+digraph app_state {
+    0 [ label = "crate::ApplicationState() -> crate::ApplicationState"]
+}

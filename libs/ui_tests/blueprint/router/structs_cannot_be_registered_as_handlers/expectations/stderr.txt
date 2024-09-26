@@ -1,0 +1,12 @@
+[31m[1mERROR[0m[39m: 
+  [31m×[0m I can work with functions and methods, but `app::Streamer` is
+  [31m│[0m neither.
+  [31m│[0m It is a struct and I don't know how to use it as a request handler.
+  [31m│[0m
+  [31m│[0m    ╭─[[36;1;4mblueprint/router/structs_cannot_be_registered_as_handlers/src/lib.rs[0m:7:1]
+  [31m│[0m  [2m7[0m │     let mut bp = Blueprint::new();
+  [31m│[0m  [2m8[0m │     bp.route(GET, "/home", f!(crate::Streamer));
+  [31m│[0m    · [35;1m                           ─────────┬─────────[0m
+  [31m│[0m    ·                 [35;1mIt was registered as a request handler here[0m
+  [31m│[0m  [2m9[0m │     bp
+  [31m│[0m    ╰────

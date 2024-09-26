@@ -1,0 +1,134 @@
+[31m[1mERROR[0m[39m: 
+  [31m×[0m Path parameters must be extracted using a plain struct with named fields,
+  [31m│[0m where the name of each field matches one of the path parameters specified
+  [31m│[0m in the route for the respective request handler.
+  [31m│[0m `app::primitive` is trying to extract `PathParams<u32>`, but
+  [31m│[0m `u32` is a primitive, not a plain struct type. I don't support this:
+  [31m│[0m the extraction would fail at runtime, when trying to process an incoming
+  [31m│[0m request.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mpath_parameters/path_parameters_unsupported_types/src/lib.rs[0m:61:1]
+  [31m│[0m  [2m61[0m │     ));
+  [31m│[0m  [2m62[0m │     bp.route(GET, "/a/:x", f!(crate::primitive));
+  [31m│[0m     · [35;1m                           ──────────┬─────────[0m
+  [31m│[0m     ·              [35;1mThe request handler asking for `PathParams<u32>`[0m
+  [31m│[0m  [2m63[0m │     bp.route(GET, "/b/:x/:y", f!(crate::tuple));
+  [31m│[0m     ╰────
+  [31m│[0m [36m  help: [0mUse a plain struct with named fields to extract path parameters.
+  [31m│[0m         Check out `PathParams`' documentation for all the details!
+
+[31m[1mERROR[0m[39m: 
+  [31m×[0m Path parameters must be extracted using a plain struct with named fields,
+  [31m│[0m where the name of each field matches one of the path parameters specified
+  [31m│[0m in the route for the respective request handler.
+  [31m│[0m `app::tuple` is trying to extract `PathParams<(u32, u32)>`, but
+  [31m│[0m `(u32, u32)` is a tuple, not a plain struct type. I don't support this:
+  [31m│[0m the extraction would fail at runtime, when trying to process an incoming
+  [31m│[0m request.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mpath_parameters/path_parameters_unsupported_types/src/lib.rs[0m:62:1]
+  [31m│[0m  [2m62[0m │     bp.route(GET, "/a/:x", f!(crate::primitive));
+  [31m│[0m  [2m63[0m │     bp.route(GET, "/b/:x/:y", f!(crate::tuple));
+  [31m│[0m     · [35;1m                              ────────┬───────[0m
+  [31m│[0m     ·          [35;1mThe request handler asking for `PathParams<(u32, u32)>`[0m
+  [31m│[0m  [2m64[0m │     bp.route(GET, "/c/:x/:z", f!(crate::slice_ref));
+  [31m│[0m     ╰────
+  [31m│[0m [36m  help: [0mUse a plain struct with named fields to extract path parameters.
+  [31m│[0m         Check out `PathParams`' documentation for all the details!
+
+[31m[1mERROR[0m[39m: 
+  [31m×[0m Path parameters must be extracted using a plain struct with named fields,
+  [31m│[0m where the name of each field matches one of the path parameters specified
+  [31m│[0m in the route for the respective request handler.
+  [31m│[0m `app::slice_ref` is trying to extract `PathParams<&[u32]>`, but
+  [31m│[0m `&[u32]` is a reference, not a plain struct type. I don't support this:
+  [31m│[0m the extraction would fail at runtime, when trying to process an incoming
+  [31m│[0m request.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mpath_parameters/path_parameters_unsupported_types/src/lib.rs[0m:63:1]
+  [31m│[0m  [2m63[0m │     bp.route(GET, "/b/:x/:y", f!(crate::tuple));
+  [31m│[0m  [2m64[0m │     bp.route(GET, "/c/:x/:z", f!(crate::slice_ref));
+  [31m│[0m     · [35;1m                              ──────────┬─────────[0m
+  [31m│[0m     ·            [35;1mThe request handler asking for `PathParams<&[u32]>`[0m
+  [31m│[0m  [2m65[0m │     bp.route(GET, "/d/:x/:y", f!(crate::reference::<crate::MyStruct>));
+  [31m│[0m     ╰────
+  [31m│[0m [36m  help: [0mUse a plain struct with named fields to extract path parameters.
+  [31m│[0m         Check out `PathParams`' documentation for all the details!
+
+[31m[1mERROR[0m[39m: 
+  [31m×[0m Path parameters must be extracted using a plain struct with named fields,
+  [31m│[0m where the name of each field matches one of the path parameters specified
+  [31m│[0m in the route for the respective request handler.
+  [31m│[0m `app::reference::<app::MyStruct>` is trying to extract
+  [31m│[0m `PathParams<&app::MyStruct>`, but `&app::MyStruct` is a
+  [31m│[0m reference, not a plain struct type. I don't support this: the extraction
+  [31m│[0m would fail at runtime, when trying to process an incoming request.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mpath_parameters/path_parameters_unsupported_types/src/lib.rs[0m:64:1]
+  [31m│[0m  [2m64[0m │     bp.route(GET, "/c/:x/:z", f!(crate::slice_ref));
+  [31m│[0m  [2m65[0m │     bp.route(GET, "/d/:x/:y", f!(crate::reference::<crate::MyStruct>));
+  [31m│[0m     · [35;1m                              ───────────────────┬───────────────────[0m
+  [31m│[0m     ·    [35;1mThe request handler asking for `PathParams<&app::MyStruct>`[0m
+  [31m│[0m  [2m66[0m │     bp.route(GET, "/e/:x/:y", f!(crate::enum_));
+  [31m│[0m     ╰────
+  [31m│[0m [36m  help: [0mUse a plain struct with named fields to extract path parameters.
+  [31m│[0m         Check out `PathParams`' documentation for all the details!
+
+[31m[1mERROR[0m[39m: 
+  [31m×[0m Path parameters must be extracted using a plain struct with named fields,
+  [31m│[0m where the name of each field matches one of the path parameters specified
+  [31m│[0m in the route for the respective request handler.
+  [31m│[0m `app::enum_` is trying to extract
+  [31m│[0m `PathParams<app::MyEnum>`, but `app::MyEnum` is an enum,
+  [31m│[0m not a plain struct type. I don't support this: the extraction would fail
+  [31m│[0m at runtime, when trying to process an incoming request.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mpath_parameters/path_parameters_unsupported_types/src/lib.rs[0m:65:1]
+  [31m│[0m  [2m65[0m │     bp.route(GET, "/d/:x/:y", f!(crate::reference::<crate::MyStruct>));
+  [31m│[0m  [2m66[0m │     bp.route(GET, "/e/:x/:y", f!(crate::enum_));
+  [31m│[0m     · [35;1m                              ────────┬───────[0m
+  [31m│[0m     ·     [35;1mThe request handler asking for `PathParams<app::MyEnum>`[0m
+  [31m│[0m  [2m67[0m │     bp.route(GET, "/f/:x/:y", f!(crate::tuple_struct));
+  [31m│[0m     ╰────
+  [31m│[0m [36m  help: [0mUse a plain struct with named fields to extract path parameters.
+  [31m│[0m         Check out `PathParams`' documentation for all the details!
+
+[31m[1mERROR[0m[39m: 
+  [31m×[0m Path parameters must be extracted using a plain struct with named fields,
+  [31m│[0m where the name of each field matches one of the path parameters specified
+  [31m│[0m in the route for the respective request handler.
+  [31m│[0m `app::tuple_struct` is trying to extract
+  [31m│[0m `PathParams<app::TupleStruct>`, but `app::TupleStruct`
+  [31m│[0m is a tuple struct, not a plain struct type. I don't support this: the
+  [31m│[0m extraction would fail at runtime, when trying to process an incoming
+  [31m│[0m request.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mpath_parameters/path_parameters_unsupported_types/src/lib.rs[0m:66:1]
+  [31m│[0m  [2m66[0m │     bp.route(GET, "/e/:x/:y", f!(crate::enum_));
+  [31m│[0m  [2m67[0m │     bp.route(GET, "/f/:x/:y", f!(crate::tuple_struct));
+  [31m│[0m     · [35;1m                              ───────────┬───────────[0m
+  [31m│[0m     ·   [35;1mThe request handler asking for `PathParams<app::TupleStruct>`[0m
+  [31m│[0m  [2m68[0m │     bp.route(GET, "/g/:x/:y", f!(crate::unit_struct));
+  [31m│[0m     ╰────
+  [31m│[0m [36m  help: [0mUse a plain struct with named fields to extract path parameters.
+  [31m│[0m         Check out `PathParams`' documentation for all the details!
+
+[31m[1mERROR[0m[39m: 
+  [31m×[0m Path parameters must be extracted using a plain struct with named fields,
+  [31m│[0m where the name of each field matches one of the path parameters specified
+  [31m│[0m in the route for the respective request handler.
+  [31m│[0m `app::unit_struct` is trying to extract
+  [31m│[0m `PathParams<app::UnitStruct>`, but `app::UnitStruct` is
+  [31m│[0m a struct with no fields (a.k.a. unit struct), not a plain struct type. I
+  [31m│[0m don't support this: the extraction would fail at runtime, when trying to
+  [31m│[0m process an incoming request.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mpath_parameters/path_parameters_unsupported_types/src/lib.rs[0m:67:1]
+  [31m│[0m  [2m67[0m │     bp.route(GET, "/f/:x/:y", f!(crate::tuple_struct));
+  [31m│[0m  [2m68[0m │     bp.route(GET, "/g/:x/:y", f!(crate::unit_struct));
+  [31m│[0m     · [35;1m                              ───────────┬──────────[0m
+  [31m│[0m     ·   [35;1mThe request handler asking for `PathParams<app::UnitStruct>`[0m
+  [31m│[0m  [2m69[0m │     bp
+  [31m│[0m     ╰────
+  [31m│[0m [36m  help: [0mUse a plain struct with named fields to extract path parameters.
+  [31m│[0m         Check out `PathParams`' documentation for all the details!

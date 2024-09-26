@@ -1,0 +1,28 @@
+[31m[1mERROR[0m[39m: 
+  [31m×[0m I am not smart enough to figure out the concrete type for all the generic
+  [31m│[0m parameters in `app::generic_constructor`.
+  [31m│[0m I can only infer the type of an unassigned generic parameter if it appears
+  [31m│[0m in the output type returned by the constructor. This is not the case for
+  [31m│[0m `T`, since it is only used by the input parameters.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/constructors/constructor_error_spans_are_correct_for_prebuilt_constructors/src/lib.rs[0m:19:1]
+  [31m│[0m  [2m19[0m │     let mut bp = Blueprint::new();
+  [31m│[0m  [2m20[0m │     Constructor::new(f!(crate::generic_constructor), Lifecycle::RequestScoped).register(&mut bp);
+  [31m│[0m     · [35;1m                     ───────────────┬──────────────[0m
+  [31m│[0m     ·                                     [35;1m╰── The constructor was registered here[0m
+  [31m│[0m  [2m21[0m │     bp.route(GET, "/home", f!(crate::handler));
+  [31m│[0m     ╰────
+  [31m│[0m     ╭─[[36;1;4mblueprint/constructors/constructor_error_spans_are_correct_for_prebuilt_constructors/src/lib.rs[0m:9:1]
+  [31m│[0m  [2m 9[0m │ 
+  [31m│[0m  [2m10[0m │ pub fn generic_constructor<T>(generic_input: GenericType<T>) -> u8 {
+  [31m│[0m     · [35;1m                           ┬[0m[33;1m                                    ─┬[0m
+  [31m│[0m     ·                            [35;1m│[0m     [33;1m..because it is not used here ──╯[0m
+  [31m│[0m     ·                            [35;1m╰── I can't infer this..[0m
+  [31m│[0m  [2m11[0m │     todo!()
+  [31m│[0m     ╰────
+  [31m│[0m [36m  help: [0mSpecify the concrete type(s) for the problematic generic
+  [31m│[0m         parameter(s) when registering the constructor against the blueprint:
+  [31m│[0m         |  bp.constructor(
+  [31m│[0m         |    f!(my_crate::my_constructor::<ConcreteType>),
+  [31m│[0m         |    ..
+  [31m│[0m         |  )

@@ -1,0 +1,20 @@
+[package]
+name = "app_11a9a819"
+version = "0.1.0"
+edition = "2021"
+
+[lints.rust.unexpected_cfgs]
+level = "allow"
+check-cfg = ["cfg(pavex_ide_hint)"]
+
+[dependencies]
+pavex = "1"
+pavex_cli_client = "1"
+
+[dependencies.dep_1]
+path = "ephemeral_deps/dep_1"
+package = "dep"
+
+[dependencies.dep_2]
+path = "ephemeral_deps/dep_2"
+package = "dep"
