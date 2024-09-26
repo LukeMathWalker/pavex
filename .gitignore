@@ -1,6 +1,6 @@
 /libs/ui_tests/target
 /libs/ui_tests/**/generated_app/
-/libs/ui_tests/**/blueprint.ron
+/libs/ui_tests/Cargo.lock
 /libs/target
 /libs/vendor
 /doc_examples/tutorial_envs/
