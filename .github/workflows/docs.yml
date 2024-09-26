@@ -13,22 +13,15 @@ on:
 
 jobs:
   build_clis:
-    name: "Build CLIs ${{ matrix.target }} (${{ matrix.os }})"
+    name: "Build CLIs (${{ matrix.os }})"
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - target: aarch64-pc-windows-msvc
-            os: windows-2022
-          - target: x86_64-unknown-linux-gnu
-            os: ubuntu-22.04
-          - target: x86_64-apple-darwin
-            os: macos-12
-          - target: aarch64-apple-darwin
-            os: macos-14
-          - target: x86_64-pc-windows-msvc
-            os: windows-2022
+          - os: ubuntu-22.04
+          - os: macos-14
+          - os: windows-2022
     steps:
       - name: Checkout repository from source repo
         if: |
@@ -49,7 +42,7 @@ jobs:
         if: ${{ github.event_name != 'push' }}
         with:
           pr_number: ${{ github.event.client_payload.pull_request.number }}
-          job: "Build CLIs ${{ matrix.target }} (${{ matrix.os }})"
+          job: "Build CLIs (${{ matrix.os }})"
           workflow: "Build and store docs artifacts"
           run_id: ${{ github.run_id }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -65,21 +58,6 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1.8.0
         with:
           cache-workspaces: "./libs -> ./target"
-          components: llvm-tools-preview
-      - name: Install linker (Windows)
-        if: ${{ matrix.os == 'windows-2022' }}
-        uses: taiki-e/install-action@v2
-        with:
-          tool: cargo-binutils
-      - name: Install linker (Linux)
-        if: ${{ matrix.os == 'ubuntu-22.04' }}
-        run: |
-          sudo apt-get update
-          sudo apt-get install lld clang
-      - name: Install linker (MacOS)
-        if: ${{ matrix.os == 'macos-12' || matrix.os == 'macos-14' }}
-        run: |
-          brew install llvm
       - name: Build CLI
         run: |
           cd libs
@@ -87,18 +65,18 @@ jobs:
       - name: Store pavex CLI artifact
         uses: actions/upload-artifact@v4
         with:
-          name: pavex_cli-${{ matrix.target }}
+          name: pavex_cli-${{ matrix.os }}
           path: libs/target/release/pavex${{ env.BINARY_EXTENSION }}
       - name: Store pavexc CLI artifact
         uses: actions/upload-artifact@v4
         with:
-          name: pavexc_cli-${{ matrix.target }}
+          name: pavexc_cli-${{ matrix.os }}
           path: libs/target/release/pavexc${{ env.BINARY_EXTENSION }}
       - uses: ./.github/actions/finalize-check
         if: ${{ always() && github.event_name != 'push' }}
         with:
           pr_number: ${{ github.event.client_payload.pull_request.number }}
-          job: "Build CLIs ${{ matrix.target }} (${{ matrix.os }})"
+          job: "Build CLIs (${{ matrix.os }})"
           conclusion: ${{ job.status }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -151,7 +129,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
   tests:
-    name: "Run tests ${{ matrix.target }} (${{ matrix.os }})"
+    name: "Run tests (${{ matrix.os }})"
     runs-on: ${{ matrix.os }}
     permissions:
       pull-requests: write
@@ -169,16 +147,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - target: aarch64-pc-windows-msvc
-            os: windows-2022
-          - target: x86_64-unknown-linux-gnu
-            os: ubuntu-22.04
-          - target: x86_64-apple-darwin
-            os: macos-12
-          - target: aarch64-apple-darwin
-            os: macos-14
-          - target: x86_64-pc-windows-msvc
-            os: windows-2022
+          - os: windows-2022
+          - os: ubuntu-22.04
+          - os: macos-14
     needs:
       - build_clis
     steps:
@@ -201,7 +172,7 @@ jobs:
         if: ${{ github.event_name != 'push' }}
         with:
           pr_number: ${{ github.event.client_payload.pull_request.number }}
-          job: "Run tests ${{ matrix.target }} (${{ matrix.os }})"
+          job: "Run tests (${{ matrix.os }})"
           workflow: "Build and store docs artifacts"
           run_id: ${{ github.run_id }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -214,7 +185,7 @@ jobs:
         run: |
           Add-Content $env:GITHUB_ENV "BINARY_EXTENSION=.exe" -Encoding utf8
       - name: Set PAVEX
-        if: ${{ matrix.os == 'macos-12' || matrix.os == 'macos-14' }}
+        if: ${{ matrix.os == 'macos-14' }}
         run: |
           echo "PAVEX=/Users/runner/.cargo/bin/pavex${BINARY_EXTENSION}" >> $GITHUB_ENV
           echo "PAVEXC=/Users/runner/.cargo/bin/pavexc${BINARY_EXTENSION}" >> $GITHUB_ENV
@@ -231,32 +202,18 @@ jobs:
       - name: Install Rust stable toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1.8.0
         with:
-          components: rustfmt, llvm-tools-preview
+          components: rustfmt
           rustflags: ""
           cache-workspaces: "./libs -> ./target"
-      - name: Install linker (Windows)
-        if: ${{ matrix.os == 'windows-2022' }}
-        uses: taiki-e/install-action@v2
-        with:
-          tool: cargo-binutils
-      - name: Install linker (Linux)
-        if: ${{ matrix.os == 'ubuntu-22.04' }}
-        run: |
-          sudo apt-get update
-          sudo apt-get install lld clang
-      - name: Install linker (MacOS)
-        if: ${{ matrix.os == 'macos-12' || matrix.os == 'macos-14' }}
-        run: |
-          brew install llvm
       - name: Download pavex CLI artifact
         uses: actions/download-artifact@v4
         with:
-          name: pavex_cli-${{ matrix.target }}
+          name: pavex_cli-${{ matrix.os }}
           path: ~/.cargo/bin
       - name: Download pavexc CLI artifact
         uses: actions/download-artifact@v4
         with:
-          name: pavexc_cli-${{ matrix.target }}
+          name: pavexc_cli-${{ matrix.os }}
           path: ~/.cargo/bin
       - name: Mark pavex as executable
         if: ${{ matrix.os != 'windows-2022' }}
@@ -286,7 +243,7 @@ jobs:
         if: ${{ always() && github.event_name != 'push' }}
         with:
           pr_number: ${{ github.event.client_payload.pull_request.number }}
-          job: "Run tests ${{ matrix.target }} (${{ matrix.os }})"
+          job: "Run tests (${{ matrix.os }})"
           conclusion: ${{ job.status }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
