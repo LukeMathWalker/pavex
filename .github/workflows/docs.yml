@@ -303,12 +303,12 @@ jobs:
       - name: Download pavex CLI artifact
         uses: actions/download-artifact@v4
         with:
-          name: pavex_cli-x86_64-unknown-linux-gnu
+          name: pavex_cli-ubuntu-22.04
           path: ~/.cargo/bin
       - name: Download pavexc CLI artifact
         uses: actions/download-artifact@v4
         with:
-          name: pavexc_cli-x86_64-unknown-linux-gnu
+          name: pavexc_cli-ubuntu-22.04
           path: ~/.cargo/bin
       - name: Mark pavex as executable
         run: chmod +x ~/.cargo/bin/pavex
