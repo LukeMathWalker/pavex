@@ -1,4 +1,4 @@
-name: Verify dependencies
+name: CI freshness
 
 on:
   push:
@@ -25,4 +25,4 @@ jobs:
       - name: Fail if anything changed
         run: |
           git add .
-          git diff --quiet --exit-code --cache || (echo "Please regenerate the docs.yml CI script" && exit 1)
+          git diff --quiet --exit-code --cached || (echo "Please regenerate the docs.yml CI script" && exit 1)
