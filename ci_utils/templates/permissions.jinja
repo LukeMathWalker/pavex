@@ -1,0 +1,12 @@
+permissions:
+  pull-requests: write
+  checks: write
+# Run if it's a PR on the official repo or a push to `main`
+if: |
+  (github.event_name == 'repository_dispatch' &&
+  github.event.client_payload.slash_command.args.named.sha != '' &&
+  contains(
+    github.event.client_payload.pull_request.head.sha,
+    github.event.client_payload.slash_command.args.named.sha
+  )) ||
+  (github.event_name == 'push' && github.event.repository.full_name == github.repository)

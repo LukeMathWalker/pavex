@@ -1,0 +1,28 @@
+name: Verify dependencies
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  ci-freshness:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1.8.0
+        with:
+          cache-workspaces: "./libs -> ./target"
+      - name: Generate docs.yml
+        run: |
+          cd ci_utils
+          cargo run > docs.yml
+          mv docs.yml ../.github/workflows
+      - name: Fail if anything changed
+        run: |
+          git add .
+          git diff --quiet --exit-code --cache || (echo "Please regenerate the docs.yml CI script" && exit 1)

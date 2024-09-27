@@ -3,6 +3,7 @@
 /libs/ui_tests/Cargo.lock
 /libs/target
 /libs/vendor
+/ci_utils/target
 /doc_examples/tutorial_envs/
 /doc_examples/**/target
 /examples/**/vendor

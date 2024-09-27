@@ -1,0 +1,64 @@
+<% extends 'steps' %>
+<% block inner_steps %>
+<%- set pavex -%>
+    <%- if target == 'linux' -%>
+        /home/runner/.cargo/bin/pavex
+    <%- elif target == 'windows' -%>
+        C:\Users\runneradmin\.cargo\bin\pavex.exe
+    <%- else -%>
+        /Users/runner/.cargo/bin/pavex
+    <%- endif -%>
+<%- endset -%>
+<%- set pavexc -%>
+    <%- if target == 'linux' -%>
+        /home/runner/.cargo/bin/pavexc
+    <%- elif target == 'windows' -%>
+        C:\Users\runneradmin\.cargo\bin\pavexc.exe
+    <%- else -%>
+        /Users/runner/.cargo/bin/pavexc
+    <%- endif -%>
+<%- endset %>
+- name: Install Rust stable toolchain
+  uses: actions-rust-lang/setup-rust-toolchain@v1.8.0
+  with:
+    components: rustfmt
+    rustflags: ""
+    cache-workspaces: "./libs -> ./target"
+- name: Download pavex CLI artifact
+  uses: actions/download-artifact@v4
+  with:
+    name: pavex_cli_<< target >>
+    path: ~/.cargo/bin
+- name: Download pavexc CLI artifact
+  uses: actions/download-artifact@v4
+  with:
+    name: pavexc_cli_<< target >>
+    path: ~/.cargo/bin
+<% if target != 'windows' -%>
+- name: Mark pavex as executable
+  env:
+    PAVEX: << pavex >>
+    PAVEXC: << pavexc >>
+  run: |
+    chmod +x ${{ env.PAVEX }}
+    chmod +x ${{ env.PAVEXC }}
+<%- endif %>
+- name: Activate pavex
+  env:
+    PAVEX_ACTIVATION_KEY: ${{ secrets.pavex_activation_key }}
+  run: |
+    pavex self activate
+    pavexc self setup
+- name: Run tests
+  working-directory: libs
+  run: |
+    cargo test --no-run
+    cargo test --workspace --exclude="pavex_cli"
+- name: Run UI tests
+  env:
+    PAVEX_TEST_CLI_PATH: << pavex >>
+    PAVEXC_TEST_CLI_PATH: << pavexc >>
+  working-directory: libs
+  run: |
+    cargo test --package pavex_cli
+<%- endblock %>

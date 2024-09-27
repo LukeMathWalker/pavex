@@ -1,0 +1,21 @@
+<% extends 'steps' %>
+<% block inner_steps %>
+- name: Install Rust
+  uses: actions-rust-lang/setup-rust-toolchain@v1.8.0
+  with:
+    cache-workspaces: "./libs -> ./target"
+- name: Build CLI
+  run: |
+    cd libs
+    cargo build --bin pavex --bin pavexc --release
+- name: Store pavex CLI artifact
+  uses: actions/upload-artifact@v4
+  with:
+    name: pavex_cli_<< target >>
+    path: libs/target/release/pavex<< binary_extension >>
+- name: Store pavexc CLI artifact
+  uses: actions/upload-artifact@v4
+  with:
+    name: pavexc_cli_<< target >>
+    path: libs/target/release/pavexc<< binary_extension >>
+<%- endblock %>
