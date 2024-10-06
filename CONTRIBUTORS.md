@@ -14,3 +14,4 @@ We contributors to Pavex:
 * Jan Ehrhardt (@jehrhardt)
 * Lukas Slanius (@bosukas)
 * Ben Wishovich (@benwis)
+* Donmai (@donmai-me)
