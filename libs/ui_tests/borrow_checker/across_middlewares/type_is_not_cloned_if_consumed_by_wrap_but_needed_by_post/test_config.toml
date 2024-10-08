@@ -1,0 +1,5 @@
+description = """Pavex refuses to clones a type if it was marked as `NeverClone`,
+even if cloning is required to fix a borrow checker across middlewares"""
+
+[expectations]
+codegen = "fail"

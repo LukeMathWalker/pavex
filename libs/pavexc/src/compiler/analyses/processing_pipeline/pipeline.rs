@@ -1,9 +1,10 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use ahash::{HashMap, HashMapExt, HashSet};
 use guppy::graph::PackageGraph;
 use guppy::PackageId;
 use indexmap::{IndexMap, IndexSet};
+use itertools::Itertools;
 use quote::quote;
 
 use pavex_bp_schema::{CloningStrategy, Lifecycle};
@@ -22,6 +23,9 @@ use crate::compiler::analyses::framework_items::FrameworkItemDb;
 use crate::compiler::app::GENERATED_APP_PACKAGE_ID;
 use crate::compiler::computation::Computation;
 use crate::compiler::utils::LifetimeGenerator;
+use crate::diagnostic::{
+    self, AnnotatedSnippet, CompilerDiagnostic, HelpWithSnippet, LocationExt, OptionalSourceSpanExt,
+};
 use crate::language::{
     Callable, GenericArgument, GenericLifetimeParameter, InvocationStyle, Lifetime, PathType,
     ResolvedType, TypeReference,
@@ -59,6 +63,11 @@ pub struct Stage {
     pub(crate) post_processing_ids: Vec<ComponentId>,
     /// Pre-processing middlewares to be invoked before `wrapping_id` has completed.
     pub(crate) pre_processing_ids: Vec<ComponentId>,
+    /// Where to insert `.clone()` invocations for inputs ahead of invoking a
+    /// middleware within this stage.
+    /// Middlewares are indexed based on their position in the invocation order for
+    /// this stage.
+    pub(crate) type2cloning_indexes: IndexMap<ResolvedType, BTreeSet<usize>>,
 }
 
 #[derive(Debug)]
@@ -128,7 +137,7 @@ impl RequestHandlerPipeline {
     ) -> Result<Self, ()> {
         let error_observer_ids = component_db.error_observers(handler_id).unwrap().to_owned();
 
-        // Step 1: Determine the sequence of middlewares that the request handler is wrapped in.
+        // Step 1a: Determine the sequence of middlewares that the request handler is wrapped in.
         let ordered_by_registration = {
             let mut v = component_db
                 .middleware_chain(handler_id)
@@ -138,6 +147,8 @@ impl RequestHandlerPipeline {
             v
         };
 
+        // Step 1b: Assign a unique name to each stage, with a suffix based on their
+        // execution order.
         let stage_names = {
             let mut stage_names = vec![];
             let mut current_stage_id = 0;
@@ -161,6 +172,12 @@ impl RequestHandlerPipeline {
             stage_names
         };
 
+        // Step 1c: Group middlewares around in stages. Each stage corresponds to a wrapping
+        // middleware (or the request handler) alongside the pre- and post- middlewares
+        // that execute immediately before/after it.
+        //
+        // Invariant: all middlewares in stage N are wrapped by the wrapping
+        // middleware from stage N-1.
         let pipeline_ids = {
             let first = component_db
                 .hydrated_component(*ordered_by_registration.first().unwrap(), computation_db);
@@ -379,7 +396,7 @@ impl RequestHandlerPipeline {
             }
         }
 
-        let stages = {
+        let mut stages = {
             let mut stages = vec![];
             let mut post_processing_ids = vec![];
             let mut pre_processing_ids = vec![];
@@ -414,6 +431,8 @@ impl RequestHandlerPipeline {
                             next_state: wrapping_id2next_state.remove(middleware_id),
                             post_processing_ids: std::mem::take(&mut post_processing_ids),
                             pre_processing_ids: std::mem::take(&mut pre_processing_ids),
+                            // This will be populated later on.
+                            type2cloning_indexes: Default::default(),
                         });
                     }
                     HydratedComponent::PostProcessingMiddleware(_) => {
@@ -428,6 +447,156 @@ impl RequestHandlerPipeline {
             assert!(post_processing_ids.is_empty());
             stages
         };
+
+        // Step 4: at this stage, each call graph *in isolation* satisfies
+        // the constraints of the borrow checker.
+        // That's not enough though: different middlewares from the same stage
+        // might be trying to take the same type value using move semantics.
+        // We don't know if that's allowed since we haven't done any cross-graph
+        // analysis up to this stage.
+        // Now it's the moment!
+
+        // We iterate in reverse order because closer to the request handler
+        // we are less likely to encounter borrowing issues that relate to some of
+        // our synthetic types.
+        'stage_iter: for stage in stages.iter_mut().rev() {
+            let ids: Vec<_> = stage
+                .pre_processing_ids
+                .iter()
+                .chain(std::iter::once(&stage.wrapping_id))
+                .chain(stage.post_processing_ids.iter())
+                .collect();
+
+            #[derive(Debug)]
+            struct CloningInfo {
+                /// The indexes of the middlewares that take the type as input by value.
+                consumed_by: Vec<ConsumerInfo>,
+                /// The indexes of the middlewares that take a reference (mutable or not)
+                /// to the type *after* it has been consumed at least once by another
+                /// middleware.
+                ref_by: Vec<usize>,
+            }
+
+            #[derive(Clone, Copy, Debug)]
+            struct ConsumerInfo {
+                middleware_index: usize,
+                /// The id of the component for this input type within
+                /// the context of this middleware.
+                /// Yes, it can change across middlewares!
+                component_id: ComponentId,
+            }
+
+            let mut type2info = HashMap::<ResolvedType, CloningInfo>::new();
+
+            for (index, &id) in ids.iter().enumerate() {
+                let call_graph = &id2ordered_call_graphs[id];
+                let input_types =
+                    call_graph
+                        .call_graph
+                        .node_weights()
+                        .filter_map(|node| match node {
+                            CallGraphNode::Compute { .. } | CallGraphNode::MatchBranching => None,
+                            CallGraphNode::InputParameter { type_, source } => match source {
+                                InputParameterSource::Component(id) => Some((type_.clone(), *id)),
+                                InputParameterSource::External => None,
+                            },
+                        });
+
+                for (ty, component_id) in input_types {
+                    match ty {
+                        ResolvedType::Reference(ref_) => {
+                            // We recurse through multi-references (e.g. &&&T).
+                            let mut inner = ref_.inner.as_ref();
+                            while let ResolvedType::Reference(ref_) = inner.as_ref() {
+                                inner = ref_.inner.as_ref();
+                            }
+                            if let Some(info) = type2info.get_mut(inner.as_ref()) {
+                                info.ref_by.push(index);
+                            }
+                        }
+                        ResolvedType::ResolvedPath(_) |
+                        ResolvedType::Tuple(_) => {
+                            let info = type2info.entry(ty.clone()).or_insert(
+                                CloningInfo { consumed_by: Vec::new(), ref_by: Vec::new() }
+                            );
+                            info.consumed_by.push(ConsumerInfo { middleware_index: index, component_id });
+                        }
+                        // Scalars are trivially `Copy`, this analysis doesn't concern them.
+                        ResolvedType::ScalarPrimitive(_) => {
+                            continue;
+                        }
+                        // We'd never encounter a raw slice as input type.
+                        ResolvedType::Slice(_) |
+                        // All types are concrete at this stage.
+                        ResolvedType::Generic(_) => unreachable!(),
+                    }
+                }
+            }
+
+            let mut type2cloning_indexes = IndexMap::with_capacity(type2info.len());
+            for (ty_, cloning_info) in type2info.into_iter() {
+                let mut indexes = cloning_info.consumed_by;
+
+                // The type is never borrowed after the last move,
+                // thus we don't need a `.clone()` on the invocation
+                // for the last consumer
+                match cloning_info.ref_by.last() {
+                    Some(&last_ref_index) => {
+                        if last_ref_index < indexes.last().unwrap().middleware_index {
+                            indexes.pop();
+                        }
+                    }
+                    None => {
+                        indexes.pop();
+                    }
+                }
+
+                if indexes.is_empty() {
+                    continue;
+                }
+
+                let issue = indexes.iter().find_position(|info| {
+                    let cannot_clone = component_db.cloning_strategy(info.component_id)
+                        == CloningStrategy::NeverClone;
+                    cannot_clone
+                });
+                if let Some((issue_index, info)) = issue {
+                    let next_ref = cloning_info
+                        .ref_by
+                        .iter()
+                        .find(|&ix| *ix > info.middleware_index);
+                    let next_move = indexes
+                        .get(issue_index + 1)
+                        .map(|info| &info.middleware_index);
+                    let next_index = match (next_ref, next_move) {
+                        (None, None) => unreachable!(),
+                        (None, Some(ix)) | (Some(ix), None) => ix,
+                        (Some(m), Some(r)) => m.min(r),
+                    };
+                    let moved_by = *ids[info.middleware_index];
+                    let later_used_by = *ids[*next_index];
+                    emit_cloning_error(
+                        &ty_,
+                        moved_by,
+                        later_used_by,
+                        info.component_id,
+                        component_db,
+                        computation_db,
+                        package_graph,
+                        diagnostics,
+                    );
+                    // We emit at most one error to minimise the likelihood of
+                    // duplicates/error cascades that stem from the same underlying
+                    // issue.
+                    break 'stage_iter;
+                }
+
+                let indexes: BTreeSet<_> =
+                    indexes.into_iter().map(|v| v.middleware_index).collect();
+                type2cloning_indexes.insert(ty_, indexes);
+            }
+            stage.type2cloning_indexes = type2cloning_indexes;
+        }
 
         let id2name: IndexMap<_, _> = {
             let mut wrapping_index = 0u32;
@@ -911,4 +1080,73 @@ fn extract_request_scoped_compute_nodes<'a>(
             None
         }
     })
+}
+
+fn emit_cloning_error(
+    ty_: &ResolvedType,
+    moved_by: ComponentId,
+    later_used_by: ComponentId,
+    component_id: ComponentId,
+    component_db: &ComponentDb,
+    computation_db: &ComputationDb,
+    package_graph: &PackageGraph,
+    diagnostics: &mut Vec<miette::Error>,
+) {
+    let Computation::Callable(moved_by_callable) = component_db
+        .hydrated_component(moved_by, computation_db)
+        .computation()
+    else {
+        unreachable!()
+    };
+    let moved_by_path = &moved_by_callable.path;
+
+    let Computation::Callable(later_used_by_callable) = component_db
+        .hydrated_component(later_used_by, computation_db)
+        .computation()
+    else {
+        unreachable!()
+    };
+    let later_used_by_path = &later_used_by_callable.path;
+
+    // TODO(diagnostics): improve the error message pointing at the specific components that require
+    //  the contested type.
+    let error_msg = format!(
+        "I can't generate code that will pass the borrow checker *and* match the instructions \
+        in your blueprint:\n\
+        - One of the components in the call graph for `{moved_by_path}` consumes `{ty_:?}` by value\n\
+        - But, later on, the same type is used in the call graph of `{later_used_by_path}`.\n\
+        You forbid cloning of `{ty_:?}`, therefore I can't resolve this conflict."
+    );
+
+    let mut diagnostic = CompilerDiagnostic::builder(anyhow::anyhow!(error_msg));
+    if let Some(user_component_id) = component_db.user_component_id(component_id) {
+        let help_msg = format!(
+                "Allow me to clone `{ty_:?}` in order to satisfy the borrow checker.\n\
+                You can do so by invoking `.clone_if_necessary()` after having registered your constructor.",
+            );
+        let location = component_db
+            .user_component_db()
+            .get_location(user_component_id);
+        let source = match location.source_file(package_graph) {
+            Ok(s) => Some(s),
+            Err(e) => {
+                diagnostics.push(e.into());
+                None
+            }
+        };
+        let help = match source {
+            None => HelpWithSnippet::new(help_msg, AnnotatedSnippet::empty()),
+            Some(source) => {
+                let labeled_span = diagnostic::get_f_macro_invocation_span(&source, location)
+                    .labeled("The constructor was registered here".into());
+                HelpWithSnippet::new(
+                    help_msg,
+                    AnnotatedSnippet::new_optional(source, labeled_span),
+                )
+            }
+        };
+        diagnostic = diagnostic.help_with_snippet(help);
+    }
+
+    diagnostics.push(diagnostic.build().into());
 }
