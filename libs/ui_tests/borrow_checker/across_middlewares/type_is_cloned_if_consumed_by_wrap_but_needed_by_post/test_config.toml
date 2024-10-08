@@ -1,0 +1,5 @@
+description = """Pavex correctly clones a type if it is consumed by a wrapping middleware
+but it is later needed by a post-processing middleware outside of the wrapping scope"""
+
+[expectations]
+codegen = "pass"

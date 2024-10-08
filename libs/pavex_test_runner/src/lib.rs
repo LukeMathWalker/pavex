@@ -208,7 +208,11 @@ fn compile_generated_apps(
         .context("Failed to invoke `cargo build` on the generated crates")?;
     let build_output = CommandOutput::try_from(&output).context("Failed to parse build output")?;
     let mut crate_names2error = BTreeMap::<_, String>::new();
-    for line in build_output.stderr.lines() {
+    for line in build_output
+        .stderr
+        .lines()
+        .chain(build_output.stdout.lines())
+    {
         let Ok(cargo_metadata::Message::CompilerMessage(msg)) =
             serde_json::from_str::<cargo_metadata::Message>(line)
         else {

@@ -1,0 +1,45 @@
+[31m[1mERROR[0m[39m: 
+  [31m×[0m I can't generate code that will pass the borrow checker *and* match the
+  [31m│[0m instructions in your blueprint:
+  [31m│[0m - One of the components in the call graph for `app::wrap`
+  [31m│[0m consumes `app::A` by value
+  [31m│[0m - But, later on, the same type is used in the call graph of
+  [31m│[0m `app::post`.
+  [31m│[0m You forbid cloning of `app::A`, therefore I can't resolve this
+  [31m│[0m conflict.
+  [31m│[0m
+  [31m│[0m   [36mhelp:[0m Allow me to clone `app::A` in order to satisfy the borrow
+  [31m│[0m         checker.
+  [31m│[0m         You can do so by invoking `.clone_if_necessary()` after having
+  [31m│[0m         registered your constructor.
+  [31m│[0m        ☞
+  [31m│[0m           ╭─[[36;1;4mborrow_checker/across_middlewares/type_is_not_cloned_if_consumed_by_wrap_but_needed_by_post/src/lib.rs[0m:30:1]
+  [31m│[0m        [2m30[0m │     let mut bp = Blueprint::new();
+  [31m│[0m        [2m31[0m │     bp.request_scoped(f!(crate::a)).never_clone();
+  [31m│[0m           · [35;1m                      ──────┬─────[0m
+  [31m│[0m           ·                             [35;1m╰── The constructor was registered here[0m
+  [31m│[0m        [2m32[0m │     bp.post_process(f!(crate::post));
+  [31m│[0m           ╰────
+
+[31m[1mERROR[0m[39m: 
+  [31m×[0m I can't generate code that will pass the borrow checker *and* match the
+  [31m│[0m instructions in your blueprint:
+  [31m│[0m - One of the components in the call graph for `app::wrap`
+  [31m│[0m consumes `app::A` by value
+  [31m│[0m - But, later on, the same type is used in the call graph of
+  [31m│[0m `app::post`.
+  [31m│[0m You forbid cloning of `app::A`, therefore I can't resolve this
+  [31m│[0m conflict.
+  [31m│[0m
+  [31m│[0m   [36mhelp:[0m Allow me to clone `app::A` in order to satisfy the borrow
+  [31m│[0m         checker.
+  [31m│[0m         You can do so by invoking `.clone_if_necessary()` after having
+  [31m│[0m         registered your constructor.
+  [31m│[0m        ☞
+  [31m│[0m           ╭─[[36;1;4mborrow_checker/across_middlewares/type_is_not_cloned_if_consumed_by_wrap_but_needed_by_post/src/lib.rs[0m:30:1]
+  [31m│[0m        [2m30[0m │     let mut bp = Blueprint::new();
+  [31m│[0m        [2m31[0m │     bp.request_scoped(f!(crate::a)).never_clone();
+  [31m│[0m           · [35;1m                      ──────┬─────[0m
+  [31m│[0m           ·                             [35;1m╰── The constructor was registered here[0m
+  [31m│[0m        [2m32[0m │     bp.post_process(f!(crate::post));
+  [31m│[0m           ╰────

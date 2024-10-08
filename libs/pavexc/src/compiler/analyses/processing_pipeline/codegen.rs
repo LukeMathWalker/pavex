@@ -86,7 +86,7 @@ impl RequestHandlerPipeline {
 
             let invocations = {
                 let mut invocations = vec![];
-                for id in &ordered_by_invocation {
+                for (index, id) in ordered_by_invocation.iter().enumerate() {
                     let fn_ = &id2codegened_fn[id].fn_;
                     if component_db.is_post_processing_middleware(*id) {
                         input_bindings.0.push(Binding {
@@ -117,7 +117,14 @@ impl RequestHandlerPipeline {
                                             Input bindings: {bindings}",
                                             input_type)
                                     }
-                                    Some(i) => i,
+                                    Some(i) => {
+                                        let mut output = i.to_token_stream();
+                                        if let Some(cloning_indexes) = stage.type2cloning_indexes.get(input_type) {
+                                            if cloning_indexes.contains(&index) {
+                                                output = quote! { #i.clone() };
+                                            }                                        }
+                                        output
+                                    },
                                 }
                             });
                     let await_ = fn_.sig.asyncness.and_then(|_| Some(quote! { .await }));
