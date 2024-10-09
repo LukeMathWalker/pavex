@@ -35,7 +35,7 @@
     sudo find . -type f -exec sed -i "s#https://pavex.dev/docs/#file:///${PWD}/site/#g" {} +
     sudo find . -type f -exec sed -i "s#https://pavex.dev/#file:///${PWD}/site/#g" {} +
 - name: Link Checker
-  uses: lycheeverse/lychee-action@v1
+  uses: lycheeverse/lychee-action@v2
   with:
     fail: true
     args: |
