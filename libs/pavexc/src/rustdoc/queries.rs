@@ -1114,8 +1114,16 @@ impl RustdocKindExt for ItemEnum {
             ItemEnum::StructField(_) => "a struct field",
             ItemEnum::Enum(_) => "an enum",
             ItemEnum::Variant(_) => "an enum variant",
-            // TODO: this could also be a method! How do we find out?
-            ItemEnum::Function(_) => "a function",
+            ItemEnum::Function(func) => {
+                let mut func_kind = "a function";
+                if let Some((param, _)) = func.decl.inputs.first() {
+                    if param == "self" {
+                        func_kind = "a method";
+                    }
+                }
+
+                func_kind
+            }
             ItemEnum::Trait(_) => "a trait",
             ItemEnum::TraitAlias(_) => "a trait alias",
             ItemEnum::Impl(_) => "an impl block",
