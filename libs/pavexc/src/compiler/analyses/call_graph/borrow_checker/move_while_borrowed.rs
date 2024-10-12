@@ -439,7 +439,7 @@ fn emit_ancestor_descendant_borrow_error(
         if let Some(user_component_id) = component_db.user_component_id(component_id) {
             let help_msg = format!(
                 "Allow me to clone `{contended_type:?}` in order to satisfy the borrow checker.\n\
-                You can do so by invoking `.cloning(CloningStrategy::CloneIfNecessary)` on the type returned by `.constructor`.",
+                You can do so by invoking `.clone_if_necessary()` after having registered your constructor.",
             );
             let location = component_db
                 .user_component_db()

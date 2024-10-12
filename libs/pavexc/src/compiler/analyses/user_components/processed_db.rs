@@ -18,7 +18,7 @@ use crate::compiler::component::{PrebuiltType, PrebuiltTypeValidationError};
 use crate::compiler::interner::Interner;
 use crate::compiler::resolvers::{resolve_type_path, CallableResolutionError, TypeResolutionError};
 use crate::diagnostic::{
-    AnnotatedSnippet, CallableDefinition, CompilerDiagnostic, OptionalSourceSpanExt, SourceSpanExt
+    AnnotatedSnippet, CallableDefinition, CompilerDiagnostic, OptionalSourceSpanExt, SourceSpanExt,
 };
 use crate::language::ResolvedPath;
 use crate::rustdoc::CrateCollection;
@@ -235,7 +235,7 @@ impl UserComponentDb {
     }
 
     /// Return the cloning strategy of the component with the given id.
-    /// This is going to be `Some(..)` for constructor and prebuilt type components, 
+    /// This is going to be `Some(..)` for constructor and prebuilt type components,
     /// and `None` for all other components.
     pub fn get_cloning_strategy(&self, id: UserComponentId) -> Option<&CloningStrategy> {
         self.id2cloning_strategy.get(&id)
@@ -361,7 +361,7 @@ impl UserComponentDb {
         diagnostics: &mut Vec<miette::Error>,
     ) {
         use std::fmt::Write as _;
-        
+
         let location = component_db.get_location(component_id);
         let source = try_source!(location, package_graph, diagnostics);
         let label = source
@@ -377,24 +377,30 @@ impl UserComponentDb {
             PrebuiltTypeValidationError::CannotHaveLifetimeParameters { ty } => {
                 if ty.has_implicit_lifetime_parameters() {
                     writeln!(
-                        &mut error_msg, 
+                        &mut error_msg,
                         "\n`{resolved_path}` has elided lifetime parameters, which might be non-'static."
                     ).unwrap();
                 } else {
                     let named_lifetimes = ty.named_lifetime_parameters();
                     if named_lifetimes.len() == 1 {
                         write!(
-                            &mut error_msg, 
+                            &mut error_msg,
                             "\n`{resolved_path}` has a named lifetime parameter, `'{}`, that you haven't constrained to be 'static.",
                             named_lifetimes[0]
                         ).unwrap();
                     } else {
                         write!(
-                            &mut error_msg, 
+                            &mut error_msg,
                             "\n`{resolved_path}` has {} named lifetime parameters that you haven't constrained to be 'static: ",
                             named_lifetimes.len(),
                         ).unwrap();
-                        comma_separated_list(&mut error_msg, named_lifetimes.iter(), |s| format!("`'{s}`"), "and").unwrap();
+                        comma_separated_list(
+                            &mut error_msg,
+                            named_lifetimes.iter(),
+                            |s| format!("`'{s}`"),
+                            "and",
+                        )
+                        .unwrap();
                         write!(&mut error_msg, ".").unwrap();
                     }
                 };
@@ -404,21 +410,27 @@ impl UserComponentDb {
                 let generic_type_parameters = ty.unassigned_generic_type_parameters();
                 if generic_type_parameters.len() == 1 {
                     write!(
-                        &mut error_msg, 
+                        &mut error_msg,
                         "\n`{resolved_path}` has a generic type parameter, `{}`, that you haven't assigned a concrete type to.",
                         generic_type_parameters[0]
                     ).unwrap();
                 } else {
                     write!(
-                        &mut error_msg, 
+                        &mut error_msg,
                         "\n`{resolved_path}` has {} generic type parameters that you haven't assigned concrete types to: ",
                         generic_type_parameters.len(),
                     ).unwrap();
-                    comma_separated_list(&mut error_msg, generic_type_parameters.iter(), |s| format!("`{s}`"), "and").unwrap();
+                    comma_separated_list(
+                        &mut error_msg,
+                        generic_type_parameters.iter(),
+                        |s| format!("`{s}`"),
+                        "and",
+                    )
+                    .unwrap();
                     write!(&mut error_msg, ".").unwrap();
                 }
                 help = format!("Set the generic parameters to concrete types when registering the type as prebuilt. E.g. `bp.prebuilt(f!(crate::MyType<std::string::String>))` for `struct MyType<T>(T)`.")
-            }, 
+            }
         }
         let e = anyhow::anyhow!(e).context(error_msg);
         let diagnostic = CompilerDiagnostic::builder(e)
@@ -480,22 +492,22 @@ impl UserComponentDb {
                 diagnostics.push(diagnostic.into());
             }
             CallableResolutionError::InputParameterResolutionError(ref inner_error) => {
-                let definition_snippet = 
-                    if let Some(def) = CallableDefinition::compute_from_item(&inner_error.callable_item, package_graph) {
-                        let mut inputs = def.sig.inputs.iter();
-                        let input = inputs.nth(inner_error.parameter_index).cloned().unwrap();
-                        let local_span =  match input {
-                            syn::FnArg::Typed(typed) => typed.ty.span(),
-                            syn::FnArg::Receiver(r) => r.span(),
-                        };
-                            let label = def.convert_local_span(local_span).labeled("I don't know how handle this parameter".into());
-                            Some(AnnotatedSnippet::new(
-                                def.named_source(),
-                                label,
-                            ))
-                    } else {
-                        None
+                let definition_snippet = if let Some(def) =
+                    CallableDefinition::compute_from_item(&inner_error.callable_item, package_graph)
+                {
+                    let mut inputs = def.sig.inputs.iter();
+                    let input = inputs.nth(inner_error.parameter_index).cloned().unwrap();
+                    let local_span = match input {
+                        syn::FnArg::Typed(typed) => typed.ty.span(),
+                        syn::FnArg::Receiver(r) => r.span(),
                     };
+                    let label = def
+                        .convert_local_span(local_span)
+                        .labeled("I don't know how handle this parameter".into());
+                    Some(AnnotatedSnippet::new(def.named_source(), label))
+                } else {
+                    None
+                };
                 let label = source
                     .as_ref()
                     .map(|source| {
@@ -530,17 +542,19 @@ impl UserComponentDb {
             }
             CallableResolutionError::OutputTypeResolutionError(ref inner_error) => {
                 let annotated_snippet = {
-                    if let Some(def) = CallableDefinition::compute_from_item(&inner_error.callable_item, package_graph) {
+                    if let Some(def) = CallableDefinition::compute_from_item(
+                        &inner_error.callable_item,
+                        package_graph,
+                    ) {
                         match &def.sig.output {
                             syn::ReturnType::Default => None,
                             syn::ReturnType::Type(_, type_) => Some(type_.span()),
                         }
                         .map(|s| {
-                            let label = def.convert_local_span(s).labeled("The output type that I can't handle".into());
-                            AnnotatedSnippet::new(
-                                def.named_source(),
-                                label,
-                            )
+                            let label = def
+                                .convert_local_span(s)
+                                .labeled("The output type that I can't handle".into());
+                            AnnotatedSnippet::new(def.named_source(), label)
                         })
                     } else {
                         None
