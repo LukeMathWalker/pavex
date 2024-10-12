@@ -602,9 +602,11 @@ impl TestData {
 
                 [package.metadata.px.generate]
                 generator_type = "cargo_workspace_binary"
-                generator_name = "app"
+                generator_name = "dummy"
             };
             cargo_toml["package"]["name"] = format!("application_{}", self.name_hash).into();
+            cargo_toml["package"]["metadata"]["px"]["generate"]["generator_name"] =
+                format!("app_{}", self.name_hash).into();
             persist_if_changed(
                 &application_dir.join("Cargo.toml"),
                 toml::to_string(&cargo_toml)?.as_bytes(),
