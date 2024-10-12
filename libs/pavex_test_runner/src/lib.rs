@@ -203,7 +203,6 @@ fn compile_generated_apps(
         cmd.arg("-p").arg(name);
     }
     let output = cmd
-        .arg("--all-targets")
         .current_dir(runtime_directory)
         .output()
         .context("Failed to invoke `cargo build` on the generated crates")?;
@@ -840,6 +839,10 @@ fn application_code_test(test_name: &str, test: &TestData) -> Trial {
 
 fn build_integration_tests(test_dir: &Path, test_name2test_data: &BTreeMap<String, TestData>) {
     let n_integration_tests = test_name2test_data.len();
+    if n_integration_tests == 0 {
+        return;
+    }
+
     let timer = std::time::Instant::now();
     println!("Building {n_integration_tests} integration tests, without running them");
     let mut cmd = std::process::Command::new("cargo");
