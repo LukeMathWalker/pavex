@@ -9,8 +9,8 @@
   [31m│[0m
   [31m│[0m   [36mhelp:[0m Allow me to clone `app::A` in order to satisfy the borrow
   [31m│[0m         checker.
-  [31m│[0m         You can do so by invoking `.cloning(CloningStrategy::CloneIfNecessary)`
-  [31m│[0m         on the type returned by `.constructor`.
+  [31m│[0m         You can do so by invoking `.clone_if_necessary()` after having
+  [31m│[0m         registered your constructor.
   [31m│[0m        ☞
   [31m│[0m           ╭─[[36;1;4mborrow_checker/triangle/triangle_cannot_be_solved_if_input_type_is_not_clonable/src/lib.rs[0m:37:1]
   [31m│[0m        [2m37[0m │     // A is a singleton, so it will be an input parameter of the dependency closure for `handler`
