@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fmt::{Display, Formatter};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -320,22 +320,25 @@ fn generate(
         let file = fs_err::OpenOptions::new().read(true).open(blueprint)?;
         ron::de::from_reader(&file)?
     };
+    let mut reporter = DiagnosticReporter::new(color_profile);
     // We use the path to the generated application crate as a fingerprint for the project.
     let project_fingerprint = output.to_string_lossy().into_owned();
-    let app = match App::build(blueprint, project_fingerprint, docs_toolchain) {
-        Ok((a, warnings)) => {
-            for e in warnings {
+    let (app, issues) = match App::build(blueprint, project_fingerprint, docs_toolchain) {
+        Ok((a, issues)) => {
+            for e in &issues {
                 assert_eq!(e.severity(), Some(Severity::Warning));
-                print_report(&e, color_profile);
             }
-            a
+            (Some(a), issues)
         }
-        Err(issues) => {
-            for e in issues {
-                print_report(&e, color_profile);
-            }
-            return Ok(ExitCode::FAILURE);
-        }
+        Err(issues) => (None, issues),
+    };
+
+    for e in issues {
+        reporter.print_report(&e);
+    }
+
+    let Some(app) = app else {
+        return Ok(ExitCode::FAILURE);
     };
     if let Some(diagnostic_path) = diagnostics {
         app.diagnostic_representation()
@@ -350,33 +353,53 @@ fn generate(
     generated_app.persist(&output, &mut writer)?;
     if let Err(errors) = writer.verify() {
         for e in errors {
-            print_report(&e, color_profile);
+            reporter.print_report(&e);
         }
         return Ok(ExitCode::FAILURE);
     }
     Ok(ExitCode::SUCCESS)
 }
 
-fn print_report(e: &miette::Report, color_profile: Color) {
-    let use_color = use_color_on_stderr(color_profile);
-    match e.severity() {
-        None | Some(Severity::Error) => {
-            if use_color {
-                eprintln!("{}: {e:?}", "ERROR".bold().red());
-            } else {
-                eprintln!("ERROR: {e:?}");
+/// The compiler may emit the same diagnostic more than once
+/// (for a variety of reasons). We use this helper to dedup them.
+struct DiagnosticReporter {
+    already_emitted: HashSet<String>,
+    use_color: bool,
+}
+
+impl DiagnosticReporter {
+    fn new(color_profile: Color) -> Self {
+        let use_color = use_color_on_stderr(color_profile);
+        Self {
+            already_emitted: Default::default(),
+            use_color,
+        }
+    }
+    fn print_report(&mut self, e: &miette::Report) {
+        let formatted = format!("{e:?}");
+        if self.already_emitted.contains(&formatted) {
+            // Avoid printing the same diagnostic multiple times.
+            return;
+        }
+        let prefix = match e.severity() {
+            None | Some(Severity::Error) => {
+                let mut p = "ERROR".to_string();
+                if self.use_color {
+                    p = p.bold().red().to_string();
+                }
+                p
             }
-        }
-        Some(Severity::Warning) => {
-            if use_color {
-                eprintln!("{}: {e:?}", "WARNING".bold().yellow());
-            } else {
-                eprintln!("WARNING: {e:?}");
+            Some(Severity::Warning) => {
+                let mut p = "WARNING".to_string();
+                if self.use_color {
+                    p = p.bold().yellow().to_string();
+                }
+                p
             }
-        }
-        _ => {
-            unreachable!()
-        }
+            _ => unreachable!(),
+        };
+        eprintln!("{prefix}: {formatted}");
+        self.already_emitted.insert(formatted);
     }
 }
 
