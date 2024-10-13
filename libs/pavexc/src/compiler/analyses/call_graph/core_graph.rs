@@ -251,7 +251,6 @@ where
         let graph_size_before_transformations = indexes.len();
 
         // For each node, we add the respective transformers, if they have been registered.
-        let indexes = call_graph.node_indices().collect::<Vec<_>>();
         for node_index in indexes {
             if transformed_node_indexes.contains(&node_index) {
                 continue;
@@ -336,7 +335,7 @@ where
                     };
 
                     // There are two topologies for error handlers:
-                    // - Directly downstream of an error matcher, which in turn has `pavex::Error::new` as a child
+                    // - Directly downstream of the `Err` branch of match, which in turn has `pavex::Error::new` as a child
                     // - Directly downstream of a `pavex::Error::new` invocations
                     // We want to find the `pavex::Error::new` node index for this error.
                     let pavex_error_new_node_index = match call_graph
@@ -494,11 +493,45 @@ where
         assert_eq!(downstream_sources.len(), 1);
         downstream_sources[0]
     };
-    Ok(CallGraph {
+    enforce_invariants(
+        &call_graph,
+        error_observer_ids.len(),
+        component_db,
+        computation_db,
+    );
+
+    let call_graph = CallGraph {
         call_graph,
         root_node_index: new_root_index,
         root_scope_id,
-    })
+    };
+    Ok(call_graph)
+}
+
+fn enforce_invariants(
+    call_graph: &RawCallGraph,
+    n_unique_error_observers: usize,
+    component_db: &ComponentDb,
+    computation_db: &ComputationDb,
+) {
+    let mut n_error_observers = 0;
+    let mut n_errors = 0;
+    for node in call_graph.node_weights() {
+        if let CallGraphNode::MatchBranching { .. } = node {
+            n_errors += 1;
+            continue;
+        }
+        if let Some(HydratedComponent::ErrorObserver(_)) =
+            node.as_hydrated_component(component_db, computation_db)
+        {
+            n_error_observers += 1;
+        };
+    }
+    let expected_error_observers = n_errors * n_unique_error_observers;
+    assert_eq!(
+        expected_error_observers, n_error_observers,
+        "There should be {expected_error_observers} error observers in the graph, but we found {n_error_observers}."
+    )
 }
 
 impl CallGraph {

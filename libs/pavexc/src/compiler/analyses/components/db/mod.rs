@@ -197,9 +197,32 @@ impl ComponentDb {
                 krate_collection,
                 diagnostics,
             );
+            self_.process_wrapping_middlewares(
+                &mut needs_error_handler,
+                computation_db,
+                package_graph,
+                krate_collection,
+                diagnostics,
+            );
+            self_.process_pre_processing_middlewares(
+                &mut needs_error_handler,
+                computation_db,
+                package_graph,
+                krate_collection,
+                diagnostics,
+            );
+            self_.process_post_processing_middlewares(
+                &mut needs_error_handler,
+                computation_db,
+                package_graph,
+                krate_collection,
+                diagnostics,
+            );
+            self_.compute_request2middleware_chain(pavex_noop_wrap_id, computation_db);
 
-            // This **must** be invoked after `process_request_handlers` because it relies on
-            // all request handlers being registered to determine which scopes have error observers.
+            // This **must** be invoked after request handlers and middlewares have been
+            // processed, since it needs to determine which scopes have error observers
+            // attached to them.
             self_.process_error_observers(
                 &pavex_error_ref,
                 computation_db,
@@ -225,29 +248,6 @@ impl ComponentDb {
                 diagnostics,
             );
 
-            self_.process_wrapping_middlewares(
-                &mut needs_error_handler,
-                computation_db,
-                package_graph,
-                krate_collection,
-                diagnostics,
-            );
-            self_.process_pre_processing_middlewares(
-                &mut needs_error_handler,
-                computation_db,
-                package_graph,
-                krate_collection,
-                diagnostics,
-            );
-            self_.process_post_processing_middlewares(
-                &mut needs_error_handler,
-                computation_db,
-                package_graph,
-                krate_collection,
-                diagnostics,
-            );
-
-            self_.compute_request2middleware_chain(pavex_noop_wrap_id, computation_db);
             self_.process_error_handlers(
                 &mut needs_error_handler,
                 computation_db,
@@ -850,6 +850,11 @@ impl ComponentDb {
                 continue;
             }
             v.push(self.scope_id(component_id));
+            if let Some(middleware_ids) = self.handler_id2middleware_ids.get(&component_id) {
+                for middleware_id in middleware_ids {
+                    v.push(self.scope_id(*middleware_id));
+                }
+            }
         }
         self.scope_ids_with_observers = v;
     }
