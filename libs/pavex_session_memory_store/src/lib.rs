@@ -74,6 +74,7 @@ impl SessionMemoryStore {
 #[async_trait::async_trait(?Send)]
 impl SessionStorageBackend for SessionMemoryStore {
     /// Creates a new session record in the store using the provided ID.
+    #[tracing::instrument(name = "Create server-side session record", level = tracing::Level::TRACE, skip_all)]
     async fn create(
         &self,
         id: &SessionId,
@@ -97,6 +98,7 @@ impl SessionStorageBackend for SessionMemoryStore {
     /// Update the state of an existing session in the store.
     ///
     /// It overwrites the existing record with the provided one.
+    #[tracing::instrument(name = "Update server-side session record", level = tracing::Level::TRACE, skip_all)]
     async fn update(
         &self,
         id: &SessionId,
@@ -114,6 +116,7 @@ impl SessionStorageBackend for SessionMemoryStore {
     /// Update the TTL of an existing session record in the store.
     ///
     /// It leaves the session state unchanged.
+    #[tracing::instrument(name = "Update TTL for server-side session record", level = tracing::Level::TRACE, skip_all)]
     async fn update_ttl(
         &self,
         id: &SessionId,
@@ -130,6 +133,7 @@ impl SessionStorageBackend for SessionMemoryStore {
     /// If a session with the given ID exists, it is returned. If the session
     /// does not exist or has been invalidated (e.g., expired), `None` is
     /// returned.
+    #[tracing::instrument(name = "Load server-side session record", level = tracing::Level::TRACE, skip_all)]
     async fn load(&self, session_id: &SessionId) -> Result<Option<SessionRecord>, LoadError> {
         let mut guard = self.0.lock().await;
         let outcome = match Self::get_mut_if_fresh(&mut guard, session_id) {
@@ -147,6 +151,7 @@ impl SessionStorageBackend for SessionMemoryStore {
     /// Deletes a session record from the store using the provided ID.
     ///
     /// If the session exists, it is removed from the store.
+    #[tracing::instrument(name = "Delete server-side session record", level = tracing::Level::TRACE, skip_all)]
     async fn delete(&self, id: &SessionId) -> Result<(), DeleteError> {
         let mut guard = self.0.lock().await;
         Self::_delete(&mut guard, id)?;
@@ -156,6 +161,7 @@ impl SessionStorageBackend for SessionMemoryStore {
     /// Change the session id associated with an existing session record.
     ///
     /// The server-side state is left unchanged.
+    #[tracing::instrument(name = "Change id for server-side session record", level = tracing::Level::TRACE, skip_all)]
     async fn change_id(&self, old_id: &SessionId, new_id: &SessionId) -> Result<(), ChangeIdError> {
         let mut guard = self.0.lock().await;
         if Self::get_mut_if_fresh(&mut guard, old_id).is_ok() {

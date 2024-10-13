@@ -5,6 +5,7 @@ use crate::{state::errors::FinalizeError, Session};
 /// A post-processing middleware to attach a session cookie to the outgoing response, if needed.
 ///
 /// It will also sync the session server-side state with the chosen storage backend.
+#[tracing::instrument(name = "Finalize session", level = tracing::Level::DEBUG, skip_all)]
 pub async fn finalize_session<'store>(
     response: Response,
     response_cookies: &mut ResponseCookies,
