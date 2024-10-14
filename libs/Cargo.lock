@@ -2596,7 +2596,6 @@ dependencies = [
 name = "px_workspace_hack"
 version = "0.1.0"
 dependencies = [
- "ahash",
  "aho-corasick",
  "byteorder",
  "cc",
@@ -2612,7 +2611,6 @@ dependencies = [
  "futures-sink",
  "futures-util",
  "getrandom",
- "hashbrown 0.14.5",
  "hmac",
  "indexmap",
  "log",

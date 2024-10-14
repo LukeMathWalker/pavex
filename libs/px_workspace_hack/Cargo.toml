@@ -17,7 +17,6 @@ license.workspace = true
 
 ### BEGIN HAKARI SECTION
 [dependencies]
-ahash = { version = "0.8" }
 aho-corasick = { version = "1" }
 byteorder = { version = "1" }
 clap = { version = "4", features = ["derive", "env"] }
@@ -32,7 +31,6 @@ futures-core = { version = "0.3" }
 futures-sink = { version = "0.3" }
 futures-util = { version = "0.3", features = ["channel", "io", "sink"] }
 getrandom = { version = "0.2", default-features = false, features = ["std"] }
-hashbrown = { version = "0.14", default-features = false, features = ["ahash", "inline-more", "raw"] }
 hmac = { version = "0.12", default-features = false, features = ["reset"] }
 indexmap = { version = "2", features = ["serde"] }
 log = { version = "0.4", default-features = false, features = ["std"] }
@@ -63,7 +61,6 @@ uuid = { version = "1", features = ["fast-rng", "serde", "v4", "v7"] }
 zeroize = { version = "1", features = ["zeroize_derive"] }
 
 [build-dependencies]
-ahash = { version = "0.8" }
 aho-corasick = { version = "1" }
 byteorder = { version = "1" }
 cc = { version = "1", default-features = false, features = ["parallel"] }
@@ -79,7 +76,6 @@ futures-core = { version = "0.3" }
 futures-sink = { version = "0.3" }
 futures-util = { version = "0.3", features = ["channel", "io", "sink"] }
 getrandom = { version = "0.2", default-features = false, features = ["std"] }
-hashbrown = { version = "0.14", default-features = false, features = ["ahash", "inline-more", "raw"] }
 hmac = { version = "0.12", default-features = false, features = ["reset"] }
 indexmap = { version = "2", features = ["serde"] }
 log = { version = "0.4", default-features = false, features = ["std"] }
