@@ -27,31 +27,6 @@
   [31m│[0m     ╰────
 
 [31m[1mERROR[0m[39m: 
-  [31m×[0m All constructors must return *something*.
-  [31m│[0m This constructor doesn't: it returns the unit type, `()`.
-  [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/common/cannot_return_the_unit_type/src/lib.rs[0m:61:1]
-  [31m│[0m  [2m61[0m │     let mut bp = Blueprint::new();
-  [31m│[0m  [2m62[0m │     bp.singleton(f!(crate::constructor));
-  [31m│[0m     · [35;1m                 ───────────┬──────────[0m
-  [31m│[0m     ·                             [35;1m╰── The constructor was registered here[0m
-  [31m│[0m  [2m63[0m │     bp.request_scoped(f!(crate::fallible_unit_constructor));
-  [31m│[0m     ╰────
-
-[31m[1mERROR[0m[39m: 
-  [31m×[0m All fallible constructors must return *something* when successful.
-  [31m│[0m This fallible constructor doesn't: it returns the unit type when
-  [31m│[0m successful, `Ok(())`.
-  [31m│[0m
-  [31m│[0m     ╭─[[36;1;4mblueprint/common/cannot_return_the_unit_type/src/lib.rs[0m:62:1]
-  [31m│[0m  [2m62[0m │     bp.singleton(f!(crate::constructor));
-  [31m│[0m  [2m63[0m │     bp.request_scoped(f!(crate::fallible_unit_constructor));
-  [31m│[0m     · [35;1m                      ──────────────────┬─────────────────[0m
-  [31m│[0m     ·   [35;1mThe constructor was registered here ──╯[0m
-  [31m│[0m  [2m64[0m │     bp.request_scoped(f!(crate::fallible_constructor))
-  [31m│[0m     ╰────
-
-[31m[1mERROR[0m[39m: 
   [31m×[0m Wrapping middlewares must return a type that can be converted into a
   [31m│[0m `pavex::response::Response`.
   [31m│[0m This middleware doesn't: it returns the unit type, `()`. I can't convert
@@ -130,6 +105,31 @@
   [31m│[0m     · [35;1m                    ──────────────┬──────────────[0m
   [31m│[0m     ·             [35;1mThe post-processing middleware was registered here[0m
   [31m│[0m  [2m77[0m │         .error_handler(f!(crate::error_handler));
+  [31m│[0m     ╰────
+
+[31m[1mERROR[0m[39m: 
+  [31m×[0m All constructors must return *something*.
+  [31m│[0m This constructor doesn't: it returns the unit type, `()`.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/common/cannot_return_the_unit_type/src/lib.rs[0m:61:1]
+  [31m│[0m  [2m61[0m │     let mut bp = Blueprint::new();
+  [31m│[0m  [2m62[0m │     bp.singleton(f!(crate::constructor));
+  [31m│[0m     · [35;1m                 ───────────┬──────────[0m
+  [31m│[0m     ·                             [35;1m╰── The constructor was registered here[0m
+  [31m│[0m  [2m63[0m │     bp.request_scoped(f!(crate::fallible_unit_constructor));
+  [31m│[0m     ╰────
+
+[31m[1mERROR[0m[39m: 
+  [31m×[0m All fallible constructors must return *something* when successful.
+  [31m│[0m This fallible constructor doesn't: it returns the unit type when
+  [31m│[0m successful, `Ok(())`.
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/common/cannot_return_the_unit_type/src/lib.rs[0m:62:1]
+  [31m│[0m  [2m62[0m │     bp.singleton(f!(crate::constructor));
+  [31m│[0m  [2m63[0m │     bp.request_scoped(f!(crate::fallible_unit_constructor));
+  [31m│[0m     · [35;1m                      ──────────────────┬─────────────────[0m
+  [31m│[0m     ·   [35;1mThe constructor was registered here ──╯[0m
+  [31m│[0m  [2m64[0m │     bp.request_scoped(f!(crate::fallible_constructor))
   [31m│[0m     ╰────
 
 [31m[1mERROR[0m[39m: 
