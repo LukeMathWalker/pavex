@@ -14,23 +14,23 @@
   [31m│[0m         You can do so by invoking `.cloning(CloningStrategy::CloneIfNecessary)`
   [31m│[0m         on the type returned by `.constructor`.
   [31m│[0m        ☞
-  [31m│[0m           ╭─[[36;1;4mborrow_checker/multiple_consumers/a_non_clonable_type_cannot_be_moved_twice_across_stages/src/lib.rs[0m:29:1]
-  [31m│[0m        [2m29[0m │     let mut bp = Blueprint::new();
-  [31m│[0m        [2m30[0m │     bp.constructor(f!(crate::a), Lifecycle::RequestScoped);
-  [31m│[0m           · [35;1m                   ──────┬─────[0m
-  [31m│[0m           ·                          [35;1m╰── The constructor was registered here[0m
-  [31m│[0m        [2m31[0m │     bp.wrap(f!(crate::mw));
+  [31m│[0m           ╭─[[36;1;4mborrow_checker/multiple_consumers/a_non_clonable_type_cannot_be_moved_twice_across_stages/src/lib.rs[0m:23:1]
+  [31m│[0m        [2m23[0m │     let mut bp = Blueprint::new();
+  [31m│[0m        [2m24[0m │     bp.request_scoped(f!(crate::a));
+  [31m│[0m           · [35;1m                      ──────┬─────[0m
+  [31m│[0m           ·                             [35;1m╰── The constructor was registered here[0m
+  [31m│[0m        [2m25[0m │     bp.wrap(f!(crate::mw));
   [31m│[0m           ╰────
   [31m│[0m   [36mhelp:[0m Considering changing the signature of the components that consume
   [31m│[0m         `app::A` by value.
   [31m│[0m         Would a shared reference, `&app::A`, be enough?
   [31m│[0m        ☞
-  [31m│[0m           ╭─[[36;1;4mborrow_checker/multiple_consumers/a_non_clonable_type_cannot_be_moved_twice_across_stages/src/lib.rs[0m:30:1]
-  [31m│[0m        [2m30[0m │     bp.constructor(f!(crate::a), Lifecycle::RequestScoped);
-  [31m│[0m        [2m31[0m │     bp.wrap(f!(crate::mw));
+  [31m│[0m           ╭─[[36;1;4mborrow_checker/multiple_consumers/a_non_clonable_type_cannot_be_moved_twice_across_stages/src/lib.rs[0m:24:1]
+  [31m│[0m        [2m24[0m │     bp.request_scoped(f!(crate::a));
+  [31m│[0m        [2m25[0m │     bp.wrap(f!(crate::mw));
   [31m│[0m           · [35;1m            ──────┬──────[0m
   [31m│[0m           ·                   [35;1m╰── One of the consuming wrapping middlewares[0m
-  [31m│[0m        [2m32[0m │     bp.route(GET, "/home", f!(crate::handler));
+  [31m│[0m        [2m26[0m │     bp.route(GET, "/home", f!(crate::handler));
   [31m│[0m           ╰────
   [31m│[0m   [36mhelp:[0m If `app::A` itself cannot implement `Clone`, consider
   [31m│[0m         wrapping it in an `std::sync::Rc` or `std::sync::Arc`.

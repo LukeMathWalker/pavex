@@ -12,12 +12,12 @@
   [31m│[0m         You can do so by invoking `.clone_if_necessary()` after having
   [31m│[0m         registered your constructor.
   [31m│[0m        ☞
-  [31m│[0m           ╭─[[36;1;4mborrow_checker/triangle/triangle_cannot_be_solved_if_input_type_is_not_clonable/src/lib.rs[0m:37:1]
-  [31m│[0m        [2m37[0m │     // A is a singleton, so it will be an input parameter of the dependency closure for `handler`
-  [31m│[0m        [2m38[0m │     bp.constructor(f!(crate::a), Lifecycle::Singleton);
-  [31m│[0m           · [35;1m                   ──────┬─────[0m
-  [31m│[0m           ·                          [35;1m╰── The constructor was registered here[0m
-  [31m│[0m        [2m39[0m │     bp.constructor(f!(crate::b), Lifecycle::RequestScoped);
+  [31m│[0m           ╭─[[36;1;4mborrow_checker/triangle/triangle_cannot_be_solved_if_input_type_is_not_clonable/src/lib.rs[0m:35:1]
+  [31m│[0m        [2m35[0m │     // A is a singleton, so it will be an input parameter of the dependency closure for `handler`
+  [31m│[0m        [2m36[0m │     bp.singleton(f!(crate::a));
+  [31m│[0m           · [35;1m                 ──────┬─────[0m
+  [31m│[0m           ·                        [35;1m╰── The constructor was registered here[0m
+  [31m│[0m        [2m37[0m │     bp.request_scoped(f!(crate::b));
   [31m│[0m           ╰────
   [31m│[0m   [36mhelp:[0m Consider changing the signature of `app::b`.
   [31m│[0m         It takes `app::A` by value. Would a shared reference,
