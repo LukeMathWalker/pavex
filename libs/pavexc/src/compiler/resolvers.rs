@@ -30,17 +30,26 @@ pub(crate) fn resolve_type(
 ) -> Result<ResolvedType, anyhow::Error> {
     match type_ {
         Type::ResolvedPath(rustdoc_types::Path { id, args, name }) => {
-            let re_exporter_crate_name = if id.0.starts_with("0:") {
-                // 0 is the crate index of local types.
-                None
-            } else {
-                // It is not guaranteed that this type will be from a direct dependency of `used_by_package_id`.
-                // It might be a re-export from a transitive dependency, done by a direct dependency.
-                // Unfortunately, `rustdoc` does not provide the package id of the crate where the type
-                // was re-exported from, creating a "missing link".
-                // We try to infer it from the `name` property, which is usually the fully qualified
-                // name of the type, e.g. `std::collections::HashMap`.
-                name.split("::").next()
+            let re_exporter_crate_name = {
+                let mut re_exporter = None;
+                if let Some(krate) = krate_collection.get_crate_by_package_id(used_by_package_id) {
+                    if let Some(item) = krate.maybe_get_type_by_local_type_id(id) {
+                        // 0 is the crate index of local types.
+                        if item.crate_id == 0 {
+                            re_exporter = Some(None);
+                        }
+                    }
+                }
+                if re_exporter.is_none() {
+                    // It is not guaranteed that this type will be from a direct dependency of `used_by_package_id`.
+                    // It might be a re-export from a transitive dependency, done by a direct dependency.
+                    // Unfortunately, `rustdoc` does not provide the package id of the crate where the type
+                    // was re-exported from, creating a "missing link".
+                    // We try to infer it from the `name` property, which is usually the fully qualified
+                    // name of the type, e.g. `std::collections::HashMap`.
+                    re_exporter = Some(name.split("::").next());
+                }
+                re_exporter.unwrap()
             };
             let (global_type_id, base_type) = krate_collection
                 .get_canonical_path_by_local_type_id(
@@ -226,8 +235,8 @@ pub(crate) fn resolve_type(
         }
         Type::BorrowedRef {
             lifetime,
-            mutable,
             type_,
+            is_mutable,
         } => {
             let resolved_type = resolve_type(
                 type_,
@@ -236,7 +245,7 @@ pub(crate) fn resolve_type(
                 generic_bindings,
             )?;
             let t = TypeReference {
-                is_mutable: *mutable,
+                is_mutable: *is_mutable,
                 lifetime: lifetime.to_owned().into(),
                 inner: Box::new(resolved_type),
             };
@@ -290,7 +299,7 @@ pub(crate) fn resolve_callable(
     let (header, decl, fn_generics_defs, invocation_style) = match &callable_type.item.item.inner {
         ItemEnum::Function(f) => (
             &f.header,
-            &f.decl,
+            &f.sig,
             &f.generics,
             InvocationStyle::FunctionCall,
         ),
@@ -413,7 +422,7 @@ pub(crate) fn resolve_callable(
         }
     };
     let callable = Callable {
-        is_async: header.async_,
+        is_async: header.is_async,
         takes_self_as_ref,
         output: output_type_path,
         path: callable_path.to_owned(),

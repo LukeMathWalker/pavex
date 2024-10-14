@@ -321,9 +321,7 @@ fn generate(
         ron::de::from_reader(&file)?
     };
     let mut reporter = DiagnosticReporter::new(color_profile);
-    // We use the path to the generated application crate as a fingerprint for the project.
-    let project_fingerprint = output.to_string_lossy().into_owned();
-    let (app, issues) = match App::build(blueprint, project_fingerprint, docs_toolchain) {
+    let (app, issues) = match App::build(blueprint, docs_toolchain) {
         Ok((a, issues)) => {
             for e in &issues {
                 assert_eq!(e.severity(), Some(Severity::Warning));

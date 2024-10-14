@@ -135,7 +135,7 @@ pub(crate) fn implements_trait(
                 let item = type_definition_crate.get_type_by_local_type_id(impl_id);
                 let (trait_id, implementer_type) = match &item.inner {
                     ItemEnum::Impl(impl_) => {
-                        if impl_.negative {
+                        if impl_.is_negative {
                             continue;
                         }
                         (impl_.trait_.as_ref().map(|p| &p.id), &impl_.for_)
@@ -244,7 +244,7 @@ pub(crate) fn implements_trait(
         let impl_item = trait_definition_crate.get_type_by_local_type_id(impl_id);
         let implementer = match &impl_item.inner {
             ItemEnum::Impl(impl_) => {
-                if impl_.negative {
+                if impl_.is_negative {
                     continue;
                 }
                 &impl_.for_
@@ -308,12 +308,12 @@ fn is_equivalent(
             }
         }
         Type::BorrowedRef {
-            mutable,
+            is_mutable,
             type_: inner_type,
             ..
         } => {
             if let ResolvedType::Reference(type_) = our_type {
-                return type_.is_mutable == *mutable
+                return type_.is_mutable == *is_mutable
                     && is_equivalent(
                         inner_type,
                         &type_.inner,
