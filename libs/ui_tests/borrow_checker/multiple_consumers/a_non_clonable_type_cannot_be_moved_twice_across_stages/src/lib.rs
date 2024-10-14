@@ -1,10 +1,4 @@
-use std::path::PathBuf;
-
-use pavex::blueprint::{
-    constructor::{CloningStrategy, Lifecycle},
-    router::GET,
-    Blueprint,
-};
+use pavex::blueprint::{router::GET, Blueprint};
 use pavex::f;
 use pavex::middleware::Next;
 use pavex::response::Response;
@@ -27,7 +21,7 @@ where
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.constructor(f!(crate::a), Lifecycle::RequestScoped);
+    bp.request_scoped(f!(crate::a));
     bp.wrap(f!(crate::mw));
     bp.route(GET, "/home", f!(crate::handler));
     bp

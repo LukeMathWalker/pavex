@@ -1,8 +1,4 @@
-use pavex::blueprint::{
-    constructor::{CloningStrategy, Lifecycle},
-    router::GET,
-    Blueprint,
-};
+use pavex::blueprint::{router::GET, Blueprint};
 use pavex::f;
 use pavex::request::RequestHead;
 use pavex::response::Response;
@@ -37,8 +33,8 @@ pub fn handler(_b: B, _c: C) -> Response {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.constructor(f!(crate::b), Lifecycle::RequestScoped);
-    bp.constructor(f!(crate::c), Lifecycle::RequestScoped);
+    bp.request_scoped(f!(crate::b));
+    bp.request_scoped(f!(crate::c));
     bp.route(GET, "/home", f!(crate::handler));
     bp
 }

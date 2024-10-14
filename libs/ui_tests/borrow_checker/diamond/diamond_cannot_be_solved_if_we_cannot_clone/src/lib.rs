@@ -1,6 +1,4 @@
-use std::path::PathBuf;
-
-use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
+use pavex::blueprint::{router::GET, Blueprint};
 use pavex::f;
 use pavex::response::Response;
 
@@ -49,11 +47,11 @@ pub fn handler(_c: C, _d: D) -> Response {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.constructor(f!(crate::a), Lifecycle::RequestScoped);
+    bp.request_scoped(f!(crate::a));
     // Being a singleton, this will be an input type of the dependency closure for the request handler
-    bp.constructor(f!(crate::b), Lifecycle::Singleton);
-    bp.constructor(f!(crate::c), Lifecycle::RequestScoped);
-    bp.constructor(f!(crate::d), Lifecycle::RequestScoped);
+    bp.singleton(f!(crate::b));
+    bp.request_scoped(f!(crate::c));
+    bp.request_scoped(f!(crate::d));
     bp.route(GET, "/home", f!(crate::handler));
     bp
 }
