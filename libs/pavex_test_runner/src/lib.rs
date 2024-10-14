@@ -343,7 +343,6 @@ fn warm_up_rustdoc_cache(
     // lock over the target directory.
     println!("Pre-computing JSON documentation for relevant crates");
     let crate_collection = CrateCollection::new(
-        runtime_directory.to_string_lossy().into_owned(),
         DEFAULT_DOCS_TOOLCHAIN.to_owned(),
         runtime_directory.to_path_buf(),
     )?;

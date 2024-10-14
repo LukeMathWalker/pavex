@@ -241,7 +241,7 @@ impl ToolchainCache {
         };
         drop(guard);
 
-        let root_item_id = row.get_ref_unwrap(0).as_str()?;
+        let root_item_id = row.get_ref_unwrap(0).as_i64()?.try_into()?;
         let external_crates = row.get_ref_unwrap(1).as_bytes()?;
         let paths = row.get_ref_unwrap(2).as_bytes()?;
         let format_version = row.get_ref_unwrap(3).as_i64()?;
@@ -322,7 +322,7 @@ impl ToolchainCache {
             "CREATE TABLE IF NOT EXISTS rustdoc_toolchain_crates_cache (
                 name TEXT NOT NULL,
                 cargo_fingerprint TEXT NOT NULL,
-                root_item_id TEXT NOT NULL,
+                root_item_id INTEGER NOT NULL,
                 external_crates BLOB NOT NULL,
                 paths BLOB NOT NULL,
                 format_version INTEGER NOT NULL,
@@ -413,12 +413,12 @@ impl ThirdPartyCrateCache {
                 cache_key.default_feature_is_enabled,
                 cache_key.active_named_features
             ])?;
-            let Some(row) = rows.next()? else {
+            let Some(row) = rows.next().context("Failed to fetch next row")? else {
                 return Ok(None);
             };
             drop(guard);
 
-            let root_item_id = row.get_ref_unwrap(0).as_str()?;
+            let root_item_id = row.get_ref_unwrap(0).as_i64()?.try_into()?;
             let external_crates = row.get_ref_unwrap(1).as_bytes()?;
             let paths = row.get_ref_unwrap(2).as_bytes()?;
             let format_version = row.get_ref_unwrap(3).as_i64()?;
@@ -550,7 +550,7 @@ impl ThirdPartyCrateCache {
                 rustdoc_options TEXT NOT NULL,
                 default_feature_is_enabled INTEGER NOT NULL,
                 active_named_features TEXT NOT NULL,
-                root_item_id TEXT NOT NULL,
+                root_item_id INTEGER NOT NULL,
                 external_crates BLOB NOT NULL,
                 paths BLOB NOT NULL,
                 format_version INTEGER NOT NULL,
@@ -571,7 +571,7 @@ impl ThirdPartyCrateCache {
 #[derive(Debug)]
 /// The serialized form of a crate's documentation, as stored in the cache.
 pub(super) struct CachedData<'a> {
-    root_item_id: &'a str,
+    root_item_id: u32,
     external_crates: Cow<'a, [u8]>,
     paths: Cow<'a, [u8]>,
     format_version: i64,
@@ -598,7 +598,7 @@ impl<'a> CachedData<'a> {
             let start = items.len();
             serde_json::to_writer(&mut items, item)?;
             let end = items.len();
-            item_id2delimiters.insert(item_id.0.as_str(), (start, end));
+            item_id2delimiters.insert(item_id.0, (start, end));
         }
 
         let id2public_import_paths = bincode::serialize(&krate.id2public_import_paths)?;
@@ -609,7 +609,7 @@ impl<'a> CachedData<'a> {
         let paths = bincode::serialize(&crate_data.paths)?;
 
         Ok(CachedData {
-            root_item_id: crate_data.root_item_id.0.as_str(),
+            root_item_id: crate_data.root_item_id.0,
             external_crates: Cow::Owned(external_crates),
             paths: Cow::Owned(paths),
             format_version: crate_data.format_version as i64,

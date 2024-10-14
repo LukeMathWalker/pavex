@@ -63,7 +63,6 @@ impl App {
     /// report all errors to the user, but it may not be able to do so in all cases.
     pub fn build(
         bp: Blueprint,
-        project_fingerprint: String,
         docs_toolchain_name: String,
     ) -> Result<(Self, Vec<miette::Error>), Vec<miette::Error>> {
         /// Exit early if there is at least one error.
@@ -81,7 +80,6 @@ impl App {
         }
 
         let krate_collection = CrateCollection::new(
-            project_fingerprint,
             docs_toolchain_name,
             std::env::current_dir().expect("Failed to determine the current directory"),
         )

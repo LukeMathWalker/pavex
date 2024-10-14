@@ -72,7 +72,6 @@ fn compute_package_graph(current_directory: PathBuf) -> Result<PackageGraph, any
 impl CrateCollection {
     /// Initialise the collection for a `PackageGraph`.
     pub fn new(
-        project_fingerprint: String,
         toolchain_name: String,
         workspace_directory: PathBuf,
     ) -> Result<Self, anyhow::Error> {
@@ -88,6 +87,8 @@ impl CrateCollection {
             .map_err(|_| anyhow!("The thread computing the package graph panicked"))?
             .context("Failed to compute the package graph for the current workspace")?;
 
+        // We use the path to the root manifest as a unique identifier for the project.
+        let project_fingerprint = package_graph.workspace().root().to_string();
         Ok(Self {
             package_id2krate: FrozenMap::new(),
             package_graph,
@@ -858,7 +859,7 @@ impl Crate {
     }
 
     pub fn get_type_by_local_type_id(&self, id: &rustdoc_types::Id) -> Cow<'_, Item> {
-        let type_ = self.core.krate.index.get(id);
+        let type_ = self.maybe_get_type_by_local_type_id(id);
         if type_.is_none() {
             panic!(
                 "Failed to look up the type id `{}` in the rustdoc's index for package `{}`.",
@@ -867,6 +868,12 @@ impl Crate {
             )
         }
         type_.unwrap()
+    }
+
+    /// Same as `get_type_by_local_type_id`, but returns `None` instead of panicking
+    /// if the type is not found.
+    pub fn maybe_get_type_by_local_type_id(&self, id: &rustdoc_types::Id) -> Option<Cow<'_, Item>> {
+        self.core.krate.index.get(id)
     }
 
     /// Types can be exposed under multiple paths.
@@ -940,7 +947,7 @@ fn index_local_types<'a>(
                 )?;
             }
         }
-        ItemEnum::Import(i) => {
+        ItemEnum::Use(i) => {
             if let Some(imported_id) = &i.id {
                 match krate.index.get(imported_id) {
                     None => {
@@ -968,7 +975,7 @@ fn index_local_types<'a>(
                     }
                     Some(imported_item) => {
                         if let ItemEnum::Module(re_exported_module) = &imported_item.inner {
-                            if !i.glob {
+                            if !i.is_glob {
                                 current_path.push(&i.name);
                             }
                             for re_exported_item_id in &re_exported_module.items {
@@ -1108,7 +1115,7 @@ impl RustdocKindExt for ItemEnum {
         match self {
             ItemEnum::Module(_) => "a module",
             ItemEnum::ExternCrate { .. } => "an external crate",
-            ItemEnum::Import(_) => "an import",
+            ItemEnum::Use(_) => "an import",
             ItemEnum::Union(_) => "a union",
             ItemEnum::Struct(_) => "a struct",
             ItemEnum::StructField(_) => "a struct field",
@@ -1116,7 +1123,7 @@ impl RustdocKindExt for ItemEnum {
             ItemEnum::Variant(_) => "an enum variant",
             ItemEnum::Function(func) => {
                 let mut func_kind = "a function";
-                if let Some((param, _)) = func.decl.inputs.first() {
+                if let Some((param, _)) = func.sig.inputs.first() {
                     if param == "self" {
                         func_kind = "a method";
                     }
@@ -1128,10 +1135,9 @@ impl RustdocKindExt for ItemEnum {
             ItemEnum::TraitAlias(_) => "a trait alias",
             ItemEnum::Impl(_) => "an impl block",
             ItemEnum::TypeAlias(_) => "a type alias",
-            ItemEnum::OpaqueTy(_) => "an opaque type",
             ItemEnum::Constant { .. } => "a constant",
             ItemEnum::Static(_) => "a static",
-            ItemEnum::ForeignType => "a foreign type",
+            ItemEnum::ExternType => "a foreign type",
             ItemEnum::Macro(_) => "a macro",
             ItemEnum::ProcMacro(_) => "a procedural macro",
             ItemEnum::Primitive(_) => "a primitive type",
