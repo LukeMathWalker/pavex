@@ -9,7 +9,7 @@ use std::collections::HashMap;
 
 use crate::config::{ServerStateCreation, SessionCookieKind, TtlExtensionTrigger};
 use crate::incoming::IncomingSession;
-use crate::store::errors::LoadError;
+use crate::store::errors::{DeleteError, LoadError};
 use crate::store::SessionRecordRef;
 use crate::wire::WireClientState;
 use crate::SessionConfig;
@@ -537,6 +537,7 @@ impl<'session, 'store> ServerSessionState<'session, 'store> {
                     }
                     CurrentSessionId::ToBeRenamed { old, new } => {
                         if old != new {
+                            // TODO: introduce a faster rename operation
                             self.0.store.delete(&old).await?;
                             let record = SessionRecordRef {
                                 state: Cow::Borrowed(state),
@@ -564,7 +565,14 @@ impl<'session, 'store> ServerSessionState<'session, 'store> {
             }
             ServerState::MarkedForDeletion => match self.0.id.old_id() {
                 Some(id) => {
-                    self.0.store.delete(&id).await?;
+                    if let Err(e) = self.0.store.delete(&id).await {
+                        match e {
+                            // We're good as long as we made sure that no server-side
+                            // state is stored against this id, we're good.
+                            DeleteError::UnknownId(_) => {}
+                            _ => return Err(e.into()),
+                        }
+                    }
                 }
                 None => {
                     tracing::trace!("The server session state was marked for deletion, but there was no session to delete. This is a no-op.")
@@ -581,7 +589,21 @@ impl<'session, 'store> ServerSessionState<'session, 'store> {
                     }
                     CurrentSessionId::ToBeRenamed { old, new } => {
                         if old != new {
-                            self.0.store.delete(&old).await?;
+                            if let Err(e) = self.0.store.delete(&old).await {
+                                match e {
+                                    DeleteError::UnknownId(_) => {
+                                        // The record may have expired between this
+                                        // delete operation and the first (successful)
+                                        // load we performed at the beginning of this
+                                        // request processing task.
+                                        // Since we already have the value in memory,
+                                        // this is not an issue.
+                                    }
+                                    _ => {
+                                        return Err(e.into());
+                                    }
+                                }
+                            }
                             self.0.store.create(&new, record).await?;
                         } else {
                             self.0.store.update(&old, record).await?;
