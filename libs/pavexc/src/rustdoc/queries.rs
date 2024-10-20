@@ -720,6 +720,7 @@ impl Crate {
         index_local_types(
             &krate,
             &package_id,
+            IndexSet::new(),
             vec![],
             &mut id2public_import_paths,
             &mut id2private_import_paths,
@@ -899,6 +900,9 @@ impl Crate {
 fn index_local_types<'a>(
     krate: &'a rustdoc_types::Crate,
     package_id: &'a PackageId,
+    // The ordered set of modules we navigated to reach this item.
+    // It used to detect infinite loops.
+    mut navigation_history: IndexSet<rustdoc_types::Id>,
     mut current_path: Vec<&'a str>,
     public_path_index: &mut HashMap<rustdoc_types::Id, BTreeSet<Vec<String>>>,
     private_path_index: &mut HashMap<rustdoc_types::Id, BTreeSet<Vec<String>>>,
@@ -934,10 +938,12 @@ fn index_local_types<'a>(
                 .as_deref()
                 .expect("All 'module' items have a 'name' property");
             current_path.push(current_path_segment);
+            navigation_history.insert(*current_item_id);
             for item_id in &m.items {
                 index_local_types(
                     krate,
                     package_id,
+                    navigation_history.clone(),
                     current_path.clone(),
                     public_path_index,
                     private_path_index,
@@ -978,22 +984,41 @@ fn index_local_types<'a>(
                             if !i.is_glob {
                                 current_path.push(&i.name);
                             }
-                            for re_exported_item_id in &re_exported_module.items {
-                                index_local_types(
-                                    krate,
-                                    package_id,
-                                    current_path.clone(),
-                                    public_path_index,
-                                    private_path_index,
-                                    re_exports,
-                                    re_exported_item_id,
-                                    is_public,
-                                )?;
+                            // In Rust it is possible to create infinite loops with local modules!
+                            // Minimal example:
+                            // ```rust
+                            // pub struct A;
+                            // mod inner {
+                            //   pub use crate as b;
+                            // }
+                            // ```
+                            // We use this check to detect if we're about to get stuck in an infinite
+                            // loop, so that we can break early.
+                            // It does mean that some paths that _would_ be valid won't be recognised,
+                            // but this pattern is rarely used and for the time being we don't want to
+                            // take the complexity hit of making visible paths lazily evaluated.
+                            let infinite_loop = !navigation_history.insert(*imported_id);
+                            if !infinite_loop {
+                                for re_exported_item_id in &re_exported_module.items {
+                                    index_local_types(
+                                        krate,
+                                        package_id,
+                                        navigation_history.clone(),
+                                        current_path.clone(),
+                                        public_path_index,
+                                        private_path_index,
+                                        re_exports,
+                                        re_exported_item_id,
+                                        is_public,
+                                    )?;
+                                }
                             }
                         } else {
+                            navigation_history.insert(*imported_id);
                             index_local_types(
                                 krate,
                                 package_id,
+                                navigation_history,
                                 current_path.clone(),
                                 public_path_index,
                                 private_path_index,
