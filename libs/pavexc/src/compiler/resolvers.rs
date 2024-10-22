@@ -12,8 +12,8 @@ use rustdoc_types::{GenericArg, GenericArgs, GenericParamDefKind, ItemEnum, Type
 
 use crate::language::{
     Callable, Generic, GenericArgument, GenericLifetimeParameter, InvocationStyle, PathType,
-    ResolvedPath, ResolvedPathGenericArgument, ResolvedPathLifetime, ResolvedPathType,
-    ResolvedType, Slice, Tuple, TypeReference, UnknownPath,
+    ResolvedPath, ResolvedPathGenericArgument, ResolvedPathLifetime, ResolvedPathSegment,
+    ResolvedPathType, ResolvedType, Slice, Tuple, TypeReference, UnknownPath,
 };
 use crate::rustdoc::{CannotGetCrateData, RustdocKindExt};
 use crate::rustdoc::{CrateCollection, ResolvedItem};
@@ -421,11 +421,52 @@ pub(crate) fn resolve_callable(
             }
         }
     };
+
+    // We need to make sure that we always refer to user-registered types using a public path, even though they
+    // might have been registered using a private path (e.g. `self::...` where `self` is a private module).
+    // For this reason, we fall back to the canonical path—i.e. the shortest public path for the given item.
+    // TODO: We should do the same for qualified self, if it's populated.
+    let canonical_path =
+        match krate_collection.get_canonical_path_by_global_type_id(&callable_type.item.item_id) {
+            Ok(p) => {
+                let segments = p.into_iter().skip(1).map(|s| ResolvedPathSegment {
+                    ident: s.into(),
+                    generic_arguments: vec![],
+                });
+                // We use the first segment from the original callable path, since that's been resolved to the defining crate
+                // and we want to keep that information.
+                let mut segments: Vec<_> = std::iter::once(callable_path.segments[0].clone())
+                    .chain(segments)
+                    .collect();
+                // The canonical path doesn't include the (populated or omitted) generic arguments from the user-provided callable path,
+                // so we need to add them back in.
+                segments.last_mut().unwrap().generic_arguments = callable_path
+                    .segments
+                    .last()
+                    .unwrap()
+                    .generic_arguments
+                    .clone();
+                ResolvedPath {
+                    segments,
+                    qualified_self: callable_path.qualified_self.clone(),
+                    package_id: callable_type.item.item_id.package_id.clone(),
+                }
+            }
+            Err(e) => {
+                tracing::warn!(
+                    package_id = ?callable_type.item.item_id.package_id,
+                    item_id = ?callable_type.item.item_id.rustdoc_item_id,
+                    "Failed to find canonical path: {e:?}"
+                );
+                callable_path.to_owned()
+            }
+        };
+
     let callable = Callable {
         is_async: header.is_async,
         takes_self_as_ref,
         output: output_type_path,
-        path: callable_path.to_owned(),
+        path: canonical_path,
         inputs: resolved_parameter_types,
         invocation_style,
         source_coordinates: Some(callable_type.item.item_id),

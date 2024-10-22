@@ -239,6 +239,8 @@ members = [
   "path_parameters/path_parameters_unsupported_types/generated_app",
   "reflection/a_fix_is_suggested_for_function_invocations",
   "reflection/a_fix_is_suggested_for_function_invocations/generated_app",
+  "reflection/always_use_public_path",
+  "reflection/always_use_public_path/generated_app",
   "reflection/ambiguous_dependency_version_is_handled",
   "reflection/ambiguous_dependency_version_is_handled/generated_app",
   "reflection/arc_singletons_are_supported",
