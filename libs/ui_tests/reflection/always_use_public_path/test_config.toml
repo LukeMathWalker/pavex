@@ -1,0 +1,4 @@
+description = "When an item is available via multiple paths, some private and some public, Pavex will always use one of the public ones"
+
+[expectations]
+codegen = "pass"
