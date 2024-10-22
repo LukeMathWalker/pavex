@@ -617,7 +617,7 @@ impl<'session, 'store> ServerSessionState<'session, 'store> {
         };
 
         let new_self = Session {
-            id: CurrentSessionId::Existing(self.0.id.new_id()),
+            id: self.0.id.clone(),
             server_state: {
                 // The value we use here as replacement doesn't matter, because we're going to throw away
                 // the old `self` anyway. We use `MarkedForDeletion` because it's free to create.
