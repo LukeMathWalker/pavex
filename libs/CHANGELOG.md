@@ -6,6 +6,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.49](https://github.com/LukeMathWalker/pavex/compare/0.1.48...0.1.49) - 2024-10-23
+
+### Added
+
+- First release of Pavex's HTTP sessions toolkit 🎉 ([#338](https://github.com/LukeMathWalker/pavex/pull/338))
+- Distinguish between methods and functions in error messages ([#344](https://github.com/LukeMathWalker/pavex/pull/344))
+- Start caching the JSON documentation of path dependencies. We rely on the hash of their contents to avoid serving stale data
+- Pavex will no longer emit duplicated diagnostics, thus reducing visual noise when code generation fails
+
+### Fixed
+
+- Pavex always uses a public path to refer to public items, even if they are defined in a private module
+- Detect infinite paths and break early to avoid stalls when generating server SDK crates
+- Ensure error observers are correctly added when dealing with errors in the call graph of a middleware of any kind
+- Perform cross-call-graph analysis to determine if additional `.clone()` statements are needed before invoking a middleware.
+- Don't discard spans if they match the provided log filter in pavexc
+
+### Other
+
+- Update dependencies to latest possible version. In particular, update 'rustdoc-types' and the nightly version used by 'pavexc'
+
 ## [0.1.48](https://github.com/LukeMathWalker/pavex/compare/0.1.47...0.1.48) - 2024-09-02
 
 ### Fixed
