@@ -19,8 +19,8 @@ anyhow = { workspace = true }
 debug_assertions = []
 
 [dependencies]
-pavex = { path = "../pavex", version = "0.1.49" }
-pavex_bp_schema = { path = "../pavex_bp_schema", version = "0.1.49" }
+pavex = { path = "../pavex", version = "0.1.50" }
+pavex_bp_schema = { path = "../pavex_bp_schema", version = "0.1.50" }
 syn = { workspace = true, features = ["full", "extra-traits", "visit"] }
 rustdoc-types = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
@@ -49,7 +49,7 @@ textwrap = { workspace = true }
 once_cell = { workspace = true }
 toml_edit = { workspace = true, features = ["serde"] }
 semver = { workspace = true }
-persist_if_changed = { path = "../persist_if_changed", version = "0.1.49" }
+persist_if_changed = { path = "../persist_if_changed", version = "0.1.50" }
 matchit = { version = "0.7", package = "pavex_matchit" }
 relative-path = { workspace = true }
 camino = { workspace = true }
