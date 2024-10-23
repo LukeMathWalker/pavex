@@ -4,7 +4,7 @@ use pavex::response::Response;
 
 pub use private::*;
 
-pub fn handler(_a: A) -> Response {
+pub fn handler(_a: A, _b: B) -> Response {
     todo!()
 }
 
@@ -21,11 +21,20 @@ mod private {
 
     pub struct A;
 
-    pub fn register(bp: &mut Blueprint) {
-        bp.request_scoped(f!(self::a));
-    }
-
     pub fn a() -> A {
         todo!()
+    }
+
+    pub struct B;
+
+    impl B {
+        pub fn new() -> B {
+            todo!()
+        }
+    }
+
+    pub fn register(bp: &mut Blueprint) {
+        bp.request_scoped(f!(self::a));
+        bp.request_scoped(f!(self::B::new));
     }
 }
