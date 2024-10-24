@@ -441,18 +441,12 @@ pub(crate) fn resolve_callable(
             Some((parent, parent_path)) => {
                 match krate_collection.get_canonical_path_by_global_type_id(&parent.item_id) {
                     Ok(canonical_segments) => {
-                        let segments =
-                            canonical_segments
-                                .into_iter()
-                                .skip(1)
-                                .map(|s| ResolvedPathSegment {
-                                    ident: s.into(),
-                                    generic_arguments: vec![],
-                                });
-                        // We use the first segment from the original path, since that's been resolved to the name of the defining crate
-                        // and we want to keep that information.
-                        let mut segments: Vec<_> = std::iter::once(parent_path.segments[0].clone())
-                            .chain(segments)
+                        let mut segments: Vec<_> = canonical_segments
+                            .into_iter()
+                            .map(|s| ResolvedPathSegment {
+                                ident: s.into(),
+                                generic_arguments: vec![],
+                            })
                             .collect();
                         // The canonical path doesn't include the (populated or omitted) generic arguments from the user-provided path,
                         // so we need to add them back in.
@@ -490,7 +484,7 @@ pub(crate) fn resolve_callable(
                 ResolvedPath {
                     segments,
                     qualified_self: callable_path.qualified_self.clone(),
-                    package_id: callable_path.package_id.clone(),
+                    package_id: p.package_id.clone(),
                 }
             }
             None => {
@@ -498,16 +492,13 @@ pub(crate) fn resolve_callable(
                 // we applied for the parent.
                 match krate_collection.get_canonical_path_by_global_type_id(&callable.item_id) {
                     Ok(p) => {
-                        let segments = p.into_iter().skip(1).map(|s| ResolvedPathSegment {
-                            ident: s.into(),
-                            generic_arguments: vec![],
-                        });
-                        // We use the first segment from the original callable path, since that's been resolved to the defining crate
-                        // and we want to keep that information.
-                        let mut segments: Vec<_> =
-                            std::iter::once(callable_path.segments[0].clone())
-                                .chain(segments)
-                                .collect();
+                        let mut segments: Vec<_> = p
+                            .into_iter()
+                            .map(|s| ResolvedPathSegment {
+                                ident: s.into(),
+                                generic_arguments: vec![],
+                            })
+                            .collect();
                         // The canonical path doesn't include the (populated or omitted) generic arguments from the user-provided callable path,
                         // so we need to add them back in.
                         segments.last_mut().unwrap().generic_arguments = callable_path
