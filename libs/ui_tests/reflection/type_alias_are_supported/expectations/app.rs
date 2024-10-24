@@ -11,7 +11,7 @@ pub struct ApplicationState {
     s1: dep_f8f62968::ActualType,
 }
 pub async fn build_application_state() -> crate::ApplicationState {
-    let v0 = app::RemoteAlias::new();
+    let v0 = dep_f8f62968::ActualType::new();
     let v1 = app::constructor_with_output_tuple();
     crate::ApplicationState {
         s0: v1,
