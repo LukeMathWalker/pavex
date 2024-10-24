@@ -720,6 +720,14 @@ fn code_generation_test(
         }
     };
 
+    if std::env::var("PAVEX_LOG").as_deref() == Ok("true") {
+        eprintln!(
+            "Code generation stderr:\n{}Code generation stdout:\n{}",
+            textwrap::indent(&codegen_output.stderr, "    "),
+            textwrap::indent(&codegen_output.stdout, "    "),
+        )
+    }
+
     let expectations_directory = test.expectations_directory();
     let outcome = if !output.status.success() {
         match test.configuration.expectations.codegen {
