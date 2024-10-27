@@ -1,5 +1,6 @@
 use anyhow::Context;
 use once_cell::sync::OnceCell;
+use rustdoc_types::ItemKind;
 use std::path::PathBuf;
 
 #[tracing::instrument(
@@ -16,9 +17,21 @@ pub(crate) fn get_toolchain_crate_docs(
     let json_path = root_folder.join(format!("{}.json", name));
     let json = fs_err::read_to_string(json_path)
         .with_context(|| format!("Failed to retrieve the JSON docs for {}", name))?;
-    serde_json::from_str::<rustdoc_types::Crate>(&json)
-        .with_context(|| format!("Failed to deserialize the JSON docs for {}", name))
-        .map_err(Into::into)
+    let mut krate = serde_json::from_str::<rustdoc_types::Crate>(&json)
+        .with_context(|| format!("Failed to deserialize the JSON docs for {}", name))?;
+
+    // Primitives, if using their fully qualified names, must be imported as `std::primitive::*`.
+    // Unfortunately, that `primitive` module doesn't exist in the JSON docs, so we have to
+    // manually add it.
+    if name == "std" || name == "core" {
+        krate.paths.values_mut().for_each(|summary| {
+            if summary.kind == ItemKind::Primitive {
+                summary.path.insert(1, "primitive".into());
+            }
+        })
+    }
+
+    Ok(krate)
 }
 
 fn get_json_docs_root_folder_via_rustup(toolchain_name: &str) -> Result<PathBuf, anyhow::Error> {

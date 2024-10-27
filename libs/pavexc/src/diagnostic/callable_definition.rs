@@ -73,7 +73,7 @@ impl CallableDefinition {
         package_graph: &PackageGraph,
     ) -> Option<CallableDefinition> {
         let global_item_id = callable.source_coordinates.as_ref()?;
-        let item = krate_collection.get_type_by_global_type_id(global_item_id);
+        let item = krate_collection.get_item_by_global_type_id(global_item_id);
         Self::compute_from_item(&item, package_graph)
     }
 

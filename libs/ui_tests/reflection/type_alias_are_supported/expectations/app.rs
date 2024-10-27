@@ -9,13 +9,19 @@ struct ServerState {
 pub struct ApplicationState {
     s0: (bool, char, u8),
     s1: dep_f8f62968::ActualType,
+    s2: dep_f8f62968::GenericType<bool, bool>,
 }
 pub async fn build_application_state() -> crate::ApplicationState {
-    let v0 = dep_f8f62968::ActualType::new();
-    let v1 = app::constructor_with_output_tuple();
+    let v0 = dep_f8f62968::GenericType::<
+        std::primitive::bool,
+        std::primitive::bool,
+    >::new();
+    let v1 = dep_f8f62968::ActualType::new();
+    let v2 = app::constructor_with_output_tuple();
     crate::ApplicationState {
-        s0: v1,
-        s1: v0,
+        s0: v2,
+        s1: v1,
+        s2: v0,
     }
 }
 pub fn run(
@@ -64,6 +70,7 @@ async fn route_request(
                     route_0::entrypoint(
                             server_state.application_state.s0.clone(),
                             &server_state.application_state.s1,
+                            &server_state.application_state.s2,
                         )
                         .await
                 }
@@ -80,56 +87,66 @@ async fn route_request(
     }
 }
 pub mod route_0 {
-    pub async fn entrypoint<'a>(
+    pub async fn entrypoint<'a, 'b>(
         s_0: (bool, char, u8),
         s_1: &'a dep_f8f62968::ActualType,
+        s_2: &'b dep_f8f62968::GenericType<bool, bool>,
     ) -> pavex::response::Response {
-        let response = wrapping_0(s_0, s_1).await;
+        let response = wrapping_0(s_0, s_1, s_2).await;
         response
     }
-    async fn stage_1<'a>(
+    async fn stage_1<'a, 'b>(
         s_0: (bool, char, u8),
-        s_1: &'a dep_f8f62968::ActualType,
+        s_1: &'a dep_f8f62968::GenericType<bool, bool>,
+        s_2: &'b dep_f8f62968::ActualType,
     ) -> pavex::response::Response {
-        let response = handler(s_0, s_1).await;
+        let response = handler(s_0, s_1, s_2).await;
         response
     }
     async fn wrapping_0(
         v0: (bool, char, u8),
         v1: &dep_f8f62968::ActualType,
+        v2: &dep_f8f62968::GenericType<bool, bool>,
     ) -> pavex::response::Response {
-        let v2 = crate::route_0::Next0 {
+        let v3 = crate::route_0::Next0 {
             s_0: v0,
-            s_1: v1,
+            s_1: v2,
+            s_2: v1,
             next: stage_1,
         };
-        let v3 = pavex::middleware::Next::new(v2);
-        let v4 = pavex::middleware::wrap_noop(v3).await;
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
+        let v4 = pavex::middleware::Next::new(v3);
+        let v5 = pavex::middleware::wrap_noop(v4).await;
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v5)
     }
     async fn handler(
         v0: (bool, char, u8),
-        v1: &dep_f8f62968::ActualType,
+        v1: &dep_f8f62968::GenericType<bool, bool>,
+        v2: &dep_f8f62968::ActualType,
     ) -> pavex::response::Response {
-        let v2 = app::handler_with_input_tuple(v0, v1);
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
+        let v3 = app::handler_with_input_tuple(v0, v2, v1);
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
     }
-    struct Next0<'a, T>
+    struct Next0<'a, 'b, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
         s_0: (bool, char, u8),
-        s_1: &'a dep_f8f62968::ActualType,
-        next: fn((bool, char, u8), &'a dep_f8f62968::ActualType) -> T,
+        s_1: &'a dep_f8f62968::GenericType<bool, bool>,
+        s_2: &'b dep_f8f62968::ActualType,
+        next: fn(
+            (bool, char, u8),
+            &'a dep_f8f62968::GenericType<bool, bool>,
+            &'b dep_f8f62968::ActualType,
+        ) -> T,
     }
-    impl<'a, T> std::future::IntoFuture for Next0<'a, T>
+    impl<'a, 'b, T> std::future::IntoFuture for Next0<'a, 'b, T>
     where
         T: std::future::Future<Output = pavex::response::Response>,
     {
         type Output = pavex::response::Response;
         type IntoFuture = T;
         fn into_future(self) -> Self::IntoFuture {
-            (self.next)(self.s_0, self.s_1)
+            (self.next)(self.s_0, self.s_1, self.s_2)
         }
     }
 }

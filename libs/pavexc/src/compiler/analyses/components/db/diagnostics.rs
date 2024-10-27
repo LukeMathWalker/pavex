@@ -159,7 +159,7 @@ impl ComponentDb {
                     package_graph: &PackageGraph,
                 ) -> Option<AnnotatedSnippet> {
                     let global_item_id = callable.source_coordinates.as_ref()?;
-                    let item = krate_collection.get_type_by_global_type_id(global_item_id);
+                    let item = krate_collection.get_item_by_global_type_id(global_item_id);
                     let definition_span = item.span.as_ref()?;
                     let source_contents = diagnostic::read_source_file(
                         &definition_span.filename,
@@ -175,6 +175,10 @@ impl ComponentDb {
                                 item.sig.output
                             } else if let Ok(item) =
                                 syn::parse_str::<syn::ImplItemFn>(&span_contents)
+                            {
+                                item.sig.output
+                            } else if let Ok(item) =
+                                syn::parse_str::<syn::TraitItemFn>(&span_contents)
                             {
                                 item.sig.output
                             } else {
@@ -271,7 +275,7 @@ impl ComponentDb {
                     package_graph: &PackageGraph,
                 ) -> Option<AnnotatedSnippet> {
                     let global_item_id = callable.source_coordinates.as_ref()?;
-                    let item = krate_collection.get_type_by_global_type_id(global_item_id);
+                    let item = krate_collection.get_item_by_global_type_id(global_item_id);
                     let definition_span = item.span.as_ref()?;
                     let source_contents = diagnostic::read_source_file(
                         &definition_span.filename,
@@ -287,6 +291,10 @@ impl ComponentDb {
                                 item.sig.generics.params
                             } else if let Ok(item) =
                                 syn::parse_str::<syn::ImplItemFn>(&span_contents)
+                            {
+                                item.sig.generics.params
+                            } else if let Ok(item) =
+                                syn::parse_str::<syn::TraitItemFn>(&span_contents)
                             {
                                 item.sig.generics.params
                             } else {

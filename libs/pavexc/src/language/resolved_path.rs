@@ -21,8 +21,11 @@ use crate::language::callable_path::{
 };
 use crate::language::resolved_type::{GenericArgument, Lifetime, ScalarPrimitive, Slice};
 use crate::language::{CallPath, InvalidCallPath, ResolvedType, Tuple, TypeReference};
-use crate::rustdoc::{CrateCollection, RustdocKindExt, CORE_PACKAGE_ID};
-use crate::rustdoc::{ResolvedItemWithParent, TOOLCHAIN_CRATES};
+use crate::rustdoc::TOOLCHAIN_CRATES;
+use crate::rustdoc::{
+    CannotGetCrateData, CrateCollection, GlobalItemId, ResolvedItem, RustdocKindExt,
+    CORE_PACKAGE_ID,
+};
 
 use super::resolved_type::GenericLifetimeParameter;
 
@@ -50,6 +53,9 @@ use super::resolved_type::GenericLifetimeParameter;
 #[derive(Clone, Debug, Eq)]
 pub struct ResolvedPath {
     pub segments: Vec<ResolvedPathSegment>,
+    /// The qualified self of the path, if any.
+    ///
+    /// E.g. `Type` in `<Type as Trait>::Method`.
     pub qualified_self: Option<ResolvedPathQualifiedSelf>,
     /// The package id of the crate that this path belongs to.
     pub package_id: PackageId,
@@ -119,7 +125,7 @@ impl ResolvedPathType {
     ) -> Result<ResolvedType, anyhow::Error> {
         match self {
             ResolvedPathType::ResolvedPath(p) => {
-                let resolved_item = p.path.find_rustdoc_items(krate_collection)?.0.item;
+                let resolved_item = p.path.find_rustdoc_item_type(krate_collection)?.1;
                 let item = &resolved_item.item;
                 let used_by_package_id = resolved_item.item_id.package_id();
                 let (global_type_id, base_type) = krate_collection
@@ -128,6 +134,7 @@ impl ResolvedPathType {
                 let generic_param_def = match &item.inner {
                     ItemEnum::Enum(e) => &e.generics.params,
                     ItemEnum::Struct(s) => &s.generics.params,
+                    ItemEnum::Primitive(_) => &Vec::new(),
                     other => {
                         anyhow::bail!(
                             "Generic parameters can either be set to structs or enums, \
@@ -650,35 +657,168 @@ impl ResolvedPath {
         &self.segments.first().unwrap().ident
     }
 
-    /// Find information about the type that this path points at.
-    /// It also returns the type of the qualified self, if it is present.
-    ///
-    /// E.g. `MyType` will return `(MyType, None)`.
-    /// `<MyType as MyTrait>::trait_method` will return `(MyType, Some(MyTrait::trait_method))`.
-    pub fn find_rustdoc_items<'a>(
+    /// Find the `rustdoc` items requied to analyze the callable that `self` points to.
+    pub fn find_rustdoc_callable_items<'a>(
         &self,
         krate_collection: &'a CrateCollection,
-    ) -> Result<(ResolvedItemWithParent<'a>, Option<ResolvedType>), UnknownPath> {
-        let path: Vec<_> = self
+    ) -> Result<Result<CallableItem<'a>, UnknownPath>, CannotGetCrateData> {
+        let krate = krate_collection.get_or_compute_crate_by_package_id(&self.package_id)?;
+
+        let path_without_generics: Vec<_> = self
             .segments
             .iter()
             .map(|path_segment| path_segment.ident.to_string())
             .collect();
-        let ty = krate_collection
-            .get_item_by_resolved_path(&path, &self.package_id)
-            .map_err(|e| UnknownPath(self.to_owned(), Arc::new(e.into())))?
-            .map_err(|e| UnknownPath(self.to_owned(), Arc::new(e.into())))?;
-        let qself_ty = self
+        if let Ok(type_id) = krate.get_item_id_by_path(&path_without_generics, krate_collection)? {
+            let i = krate_collection.get_item_by_global_type_id(&type_id);
+            return Ok(Ok(CallableItem::Function(
+                ResolvedItem {
+                    item: i,
+                    item_id: type_id,
+                },
+                self.clone(),
+            )));
+        }
+
+        // The path might be pointing to a method, which is not a type.
+        // We drop the last segment to see if we can get a hit on the struct/enum type
+        // to which the method belongs.
+        if self.segments.len() < 3 {
+            // It has to be at least three segments—crate name, type name, method name.
+            // If it's shorter than three, it's just an unknown path.
+            return Ok(Err(UnknownPath(
+                self.clone(),
+                Arc::new(anyhow::anyhow!(
+                    "Path is too short to be a method path, but there is no function at that path"
+                )),
+            )));
+        }
+
+        let qself = match self
             .qualified_self
             .as_ref()
             .map(|qself| {
-                qself
-                    .type_
-                    .resolve(krate_collection)
-                    .map_err(|e| UnknownPath(self.to_owned(), Arc::new(e)))
+                if let ResolvedPathType::ResolvedPath(p) = &qself.type_ {
+                    p.path
+                        .find_rustdoc_item_type(krate_collection)
+                        .map_err(|e| UnknownPath(self.to_owned(), Arc::new(e.into())))
+                } else {
+                    Err(UnknownPath(
+                        self.clone(),
+                        Arc::new(anyhow::anyhow!("Qualified self type is not a path")),
+                    ))
+                }
             })
-            .transpose()?;
-        Ok((ty, qself_ty))
+            .transpose()
+        {
+            Ok(x) => x.map(|(item, path)| (path, item)),
+            Err(e) => return Ok(Err(e)),
+        };
+
+        let (method_name_segment, type_path_segments) = self.segments.split_last().unwrap();
+
+        // Let's first try to see if the parent path points to a type.
+        let method_owner_path = ResolvedPath {
+            segments: type_path_segments.to_vec(),
+            qualified_self: None,
+            package_id: self.package_id.clone(),
+        };
+        let (method_owner_path, method_owner_item) =
+            match krate_collection.get_type_by_resolved_path(method_owner_path)? {
+                Ok(p) => p,
+                Err(e) => {
+                    return Ok(Err(UnknownPath(self.clone(), Arc::new(e.into()))));
+                }
+            };
+
+        let children_ids = match &method_owner_item.item.inner {
+            ItemEnum::Struct(s) => &s.impls,
+            ItemEnum::Enum(enum_) => &enum_.impls,
+            ItemEnum::Trait(trait_) => &trait_.items,
+            _ => {
+                unreachable!()
+            }
+        };
+        let method_owner_krate =
+            krate_collection.get_or_compute_crate_by_package_id(&method_owner_path.package_id)?;
+        let mut method = None;
+        for child_id in children_ids {
+            let child = method_owner_krate.get_item_by_local_type_id(child_id);
+            match &child.inner {
+                ItemEnum::Impl(impl_block) => {
+                    // We are completely ignoring the bounds attached to the implementation block.
+                    // This can lead to issues: the same method can be defined multiple
+                    // times in different implementation blocks with non-overlapping constraints.
+                    for impl_item_id in &impl_block.items {
+                        let impl_item = method_owner_krate.get_item_by_local_type_id(impl_item_id);
+                        if impl_item.name.as_ref() == Some(&method_name_segment.ident) {
+                            if let ItemEnum::Function(_) = &impl_item.inner {
+                                method = Some(ResolvedItem {
+                                    item: impl_item,
+                                    item_id: GlobalItemId {
+                                        package_id: krate.core.package_id.clone(),
+                                        rustdoc_item_id: child_id.to_owned(),
+                                    },
+                                });
+                            }
+                        }
+                    }
+                }
+                ItemEnum::Function(_) => {
+                    if child.name.as_ref() == Some(&method_name_segment.ident) {
+                        method = Some(ResolvedItem {
+                            item: child,
+                            item_id: GlobalItemId {
+                                package_id: krate.core.package_id.clone(),
+                                rustdoc_item_id: child_id.to_owned(),
+                            },
+                        });
+                    }
+                }
+                i => {
+                    dbg!(i);
+                    unreachable!()
+                }
+            }
+        }
+
+        let method_path = ResolvedPath {
+            segments: method_owner_path
+                .segments
+                .iter()
+                .chain(std::iter::once(method_name_segment))
+                .cloned()
+                .collect(),
+            qualified_self: self.qualified_self.clone(),
+            package_id: method_owner_path.package_id.clone(),
+        };
+        if let Some(method) = method {
+            Ok(Ok(CallableItem::Method {
+                method_owner: (method_owner_item, method_owner_path),
+                method: (method, method_path),
+                qualified_self: qself,
+            }))
+        } else {
+            Ok(Err(UnknownPath(
+                self.clone(),
+                Arc::new(anyhow::anyhow!(
+                    "Path is too short to be a method path, but there is no function at that path"
+                )),
+            )))
+        }
+    }
+
+    /// Find information about the type that this path points at.
+    /// It only works if the path points at a type (i.e. struct or enum).
+    /// It will return an error if the path points at a function or a method instead.
+    pub fn find_rustdoc_item_type<'a>(
+        &self,
+        krate_collection: &'a CrateCollection,
+    ) -> Result<(ResolvedPath, ResolvedItem<'a>), UnknownPath> {
+        krate_collection
+            .get_type_by_resolved_path(self.clone())
+            .map_err(|e| UnknownPath(self.to_owned(), Arc::new(e.into())))?
+            .map_err(|e| UnknownPath(self.to_owned(), Arc::new(e.into())))
     }
 
     pub fn render_path(&self, id2name: &BiHashMap<PackageId, String>, buffer: &mut String) {
@@ -718,6 +858,25 @@ impl ResolvedPath {
             }
         }
     }
+}
+
+/// There are two key callables in Rust: functions and methods.
+pub enum CallableItem<'a> {
+    /// Functions are free-standing and map to a single `rustdoc` item.
+    Function(ResolvedItem<'a>, ResolvedPath),
+    /// Methods are associated with a type.
+    /// They can either be inherent or trait methods.
+    /// In the latter case, the `qualified_self` field will be populated with
+    /// the `Self` type of the method.
+    Method {
+        /// The item to which the method belongs.
+        /// This can be a trait, for a trait method, or a struct/enum for an inherent method.
+        method_owner: (ResolvedItem<'a>, ResolvedPath),
+        method: (ResolvedItem<'a>, ResolvedPath),
+        /// The `self` type of the method.
+        /// It's only populated when working with trait methods.
+        qualified_self: Option<(ResolvedItem<'a>, ResolvedPath)>,
+    },
 }
 
 impl ResolvedPathType {

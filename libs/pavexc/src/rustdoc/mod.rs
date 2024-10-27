@@ -6,9 +6,7 @@ use guppy::PackageId;
 use once_cell::sync::Lazy;
 
 pub use compute::CannotGetCrateData;
-pub use queries::{
-    Crate, CrateCollection, GlobalItemId, ResolvedItem, ResolvedItemWithParent, RustdocKindExt,
-};
+pub use queries::{Crate, CrateCollection, GlobalItemId, ResolvedItem, RustdocKindExt};
 
 mod compute;
 mod package_id_spec;

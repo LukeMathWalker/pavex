@@ -13,6 +13,8 @@ use indexmap::IndexSet;
 use rustdoc_types::{ExternalCrate, Item, ItemEnum, ItemKind, ItemSummary, Visibility};
 use tracing::Span;
 
+use crate::compiler::resolvers::resolve_type;
+use crate::language::{ResolvedPathGenericArgument, ResolvedPathType};
 use crate::rustdoc::version_matcher::VersionMatcher;
 use crate::rustdoc::{compute::compute_crate_docs, utils, CannotGetCrateData, TOOLCHAIN_CRATES};
 use crate::rustdoc::{ALLOC_PACKAGE_ID, CORE_PACKAGE_ID, STD_PACKAGE_ID};
@@ -311,152 +313,127 @@ impl CrateCollection {
     /// Retrieve type information given its [`GlobalItemId`].
     ///
     /// It panics if no item is found for the specified [`GlobalItemId`].
-    pub fn get_type_by_global_type_id(&self, type_id: &GlobalItemId) -> Cow<'_, Item> {
+    pub fn get_item_by_global_type_id(&self, type_id: &GlobalItemId) -> Cow<'_, Item> {
         // Safe to unwrap since the package id is coming from a GlobalItemId.
         let krate = self.get_crate_by_package_id(&type_id.package_id).unwrap();
-        krate.get_type_by_local_type_id(&type_id.rustdoc_item_id)
+        krate.get_item_by_local_type_id(&type_id.rustdoc_item_id)
     }
 
-    /// Retrieve information about an item given its path and the id of the package where
-    /// it was defined.
-    pub fn get_item_by_resolved_path(
+    pub fn get_type_by_resolved_path(
         &self,
-        path: &[String],
-        package_id: &PackageId,
-    ) -> Result<Result<ResolvedItemWithParent<'_>, GetItemByResolvedPathError>, CannotGetCrateData>
-    {
-        let krate = self.get_or_compute_crate_by_package_id(package_id)?;
-        if let Ok(type_id) = krate.get_type_id_by_path(path, self)? {
-            let i = self.get_type_by_global_type_id(&type_id);
-            return Ok(Ok(ResolvedItemWithParent {
-                item: ResolvedItem {
-                    item: i,
-                    item_id: type_id.to_owned(),
-                },
-                parent: None,
-            }));
-        }
-        // The path might be pointing to a method, which is not a type.
-        // We drop the last segment to see if we can get a hit on the struct/enum type
-        // to which the method belongs.
-        if path.len() < 3 {
-            // It has to be at least three segments—crate name, type name, method name.
-            // If it's shorter than three, it's just an unknown path.
+        mut resolved_path: crate::language::ResolvedPath,
+    ) -> Result<
+        Result<(crate::language::ResolvedPath, ResolvedItem<'_>), GetItemByResolvedPathError>,
+        CannotGetCrateData,
+    > {
+        let path_without_generics = resolved_path
+            .segments
+            .iter()
+            .map(|p| p.ident.clone())
+            .collect::<Vec<_>>();
+        let krate = self.get_or_compute_crate_by_package_id(&resolved_path.package_id)?;
+
+        let Ok(mut type_id) = krate.get_item_id_by_path(&path_without_generics, self)? else {
             return Ok(Err(UnknownItemPath {
-                path: path.to_vec(),
+                path: path_without_generics,
             }
             .into()));
+        };
+
+        let mut item = self.get_item_by_global_type_id(&type_id);
+
+        if !matches!(
+            item.inner,
+            ItemEnum::Struct(_)
+                | ItemEnum::Enum(_)
+                | ItemEnum::TypeAlias(_)
+                | ItemEnum::Trait(_)
+                | ItemEnum::Primitive(_)
+        ) {
+            return Ok(Err(GetItemByResolvedPathError::UnsupportedItemKind(
+                UnsupportedItemKind {
+                    path: path_without_generics,
+                    kind: item.inner.kind().into(),
+                },
+            )));
         }
-        let (method_name, type_path_segments) = path.split_last().unwrap();
 
-        if let Ok(mut parent_type_id) = krate.get_type_id_by_path(type_path_segments, self)? {
-            let mut parent = self.get_type_by_global_type_id(&parent_type_id);
-            // The parent trait/struct might have been a re-export, so we need to make sure that we
-            // are looking at the crate where it was originally defined when we start
-            // following the local type ids that are encoded in the parent.
-            let mut krate = self.get_or_compute_crate_by_package_id(&parent_type_id.package_id)?;
-
-            // We eagerly check if the parent item is an alias, and if so we follow it
-            // to the original type.
-            // This might take multiple iterations, since the alias might point to another
-            // alias.
-            loop {
-                let ItemEnum::TypeAlias(type_alias) = &parent.inner else {
-                    break;
-                };
-                let rustdoc_types::Type::ResolvedPath(p) = &type_alias.type_ else {
-                    break;
-                };
-                // The aliased type might be a re-export of a foreign type,
-                // therefore we go through the summary here rather than
-                // going straight for a local id lookup.
-                let summary = krate.get_type_summary_by_local_type_id(&p.id).unwrap();
-                let source_package_id = krate
-                    .compute_package_id_for_crate_id(summary.crate_id, self)
-                    .map_err(|e| CannotGetCrateData {
-                        package_spec: summary.crate_id.to_string(),
-                        source: Arc::new(e),
-                    })?;
-                krate = self.get_or_compute_crate_by_package_id(&source_package_id)?;
-                if let Ok(type_id) = krate.get_type_id_by_path(&summary.path, self)? {
-                    parent_type_id = type_id;
-                } else {
-                    return Ok(Err(UnknownItemPath {
-                        path: summary.path.clone(),
-                    }
-                    .into()));
-                }
-                parent = self.get_type_by_global_type_id(&parent_type_id);
-            }
-
-            let children_ids = match &parent.inner {
-                ItemEnum::Struct(s) => &s.impls,
-                ItemEnum::Enum(enum_) => &enum_.impls,
-                ItemEnum::Trait(trait_) => &trait_.items,
-                item => {
-                    return Ok(Err(UnsupportedItemKind {
-                        path: path.to_owned(),
-                        kind: item.kind().to_owned(),
-                    }
-                    .into()));
-                }
+        // We eagerly check if the item is an alias, and if so we follow it
+        // to the original type.
+        // This process might take multiple iterations, since the alias might point to another
+        // alias, recursively.
+        let mut krate = self.get_or_compute_crate_by_package_id(&type_id.package_id)?;
+        loop {
+            let ItemEnum::TypeAlias(type_alias) = &item.inner else {
+                break;
             };
-            for child_id in children_ids {
-                let child = krate.get_type_by_local_type_id(child_id);
-                match &child.inner {
-                    ItemEnum::Impl(impl_block) => {
-                        // We are completely ignoring the bounds attached to the implementation block.
-                        // This can lead to issues: the same method can be defined multiple
-                        // times in different implementation blocks with non-overlapping constraints.
-                        for impl_item_id in &impl_block.items {
-                            let impl_item = krate.get_type_by_local_type_id(impl_item_id);
-                            if impl_item.name.as_ref() == Some(method_name) {
-                                if let ItemEnum::Function(_) = &impl_item.inner {
-                                    return Ok(Ok(ResolvedItemWithParent {
-                                        item: ResolvedItem {
-                                            item: impl_item,
-                                            item_id: GlobalItemId {
-                                                package_id: krate.core.package_id.clone(),
-                                                rustdoc_item_id: impl_item_id.to_owned(),
-                                            },
-                                        },
-                                        parent: Some(ResolvedItem {
-                                            item: parent,
-                                            item_id: parent_type_id.to_owned(),
-                                        }),
-                                    }));
-                                }
-                            }
+            let rustdoc_types::Type::ResolvedPath(aliased_path) = &type_alias.type_ else {
+                break;
+            };
+
+            // The aliased type might be a re-export of a foreign type,
+            // therefore we go through the summary here rather than
+            // going straight for a local id lookup.
+            let aliased_summary = krate
+                .get_summary_by_local_type_id(&aliased_path.id)
+                .unwrap();
+            let aliased_package_id = krate
+                .compute_package_id_for_crate_id(aliased_summary.crate_id, self)
+                .map_err(|e| CannotGetCrateData {
+                    package_spec: aliased_summary.crate_id.to_string(),
+                    source: Arc::new(e),
+                })?;
+            let aliased_krate = self.get_or_compute_crate_by_package_id(&aliased_package_id)?;
+            let Ok(aliased_type_id) =
+                aliased_krate.get_item_id_by_path(&aliased_summary.path, self)?
+            else {
+                return Ok(Err(UnknownItemPath {
+                    path: aliased_summary.path.clone(),
+                }
+                .into()));
+            };
+            let aliased_item = self.get_item_by_global_type_id(&aliased_type_id);
+
+            let new_path = {
+                let path_args = &resolved_path.segments.last().unwrap().generic_arguments;
+                let alias_generics = &type_alias.generics.params;
+                let mut name2path_arg = HashMap::new();
+                for (path_arg, alias_generic) in path_args.iter().zip(alias_generics.iter()) {
+                    match path_arg {
+                        ResolvedPathGenericArgument::Type(t) => {
+                            let t = t.resolve(self).unwrap();
+                            name2path_arg.insert(alias_generic.name.clone(), t);
                         }
-                    }
-                    ItemEnum::Function(_) => {
-                        if child.name.as_ref() == Some(method_name) {
-                            return Ok(Ok(ResolvedItemWithParent {
-                                item: ResolvedItem {
-                                    item: child,
-                                    item_id: GlobalItemId {
-                                        package_id: krate.core.package_id.clone(),
-                                        rustdoc_item_id: child_id.to_owned(),
-                                    },
-                                },
-                                parent: Some(ResolvedItem {
-                                    item: parent,
-                                    item_id: parent_type_id.to_owned(),
-                                }),
-                            }));
-                        }
-                    }
-                    i => {
-                        dbg!(i);
-                        unreachable!()
+                        ResolvedPathGenericArgument::Lifetime(_) => unimplemented!(),
                     }
                 }
-            }
+
+                let aliased = resolve_type(
+                    &type_alias.type_,
+                    type_id.package_id(),
+                    self,
+                    &name2path_arg,
+                )
+                .unwrap();
+                let aliased: ResolvedPathType = aliased.into();
+                let ResolvedPathType::ResolvedPath(aliased_path) = aliased else {
+                    unreachable!();
+                };
+                (*aliased_path.path).clone()
+            };
+
+            // Update the loop variables to reflect alias resolution.
+            type_id = aliased_type_id;
+            item = aliased_item;
+            krate = aliased_krate;
+            resolved_path = new_path;
         }
-        Ok(Err(UnknownItemPath {
-            path: path.to_owned(),
-        }
-        .into()))
+
+        let resolved_item = ResolvedItem {
+            item,
+            item_id: type_id,
+        };
+        Ok(Ok((resolved_path, resolved_item)))
     }
 
     /// Retrieve the canonical path for a struct, enum or function given its [`GlobalItemId`].
@@ -485,7 +462,7 @@ impl CrateCollection {
     ) -> Result<(GlobalItemId, &[String]), anyhow::Error> {
         let (definition_package_id, path) = {
             let used_by_krate = self.get_or_compute_crate_by_package_id(used_by_package_id)?;
-            let local_type_summary = used_by_krate.get_type_summary_by_local_type_id(item_id)?;
+            let local_type_summary = used_by_krate.get_summary_by_local_type_id(item_id)?;
             (
                 used_by_krate.compute_package_id_for_crate_id_with_hint(
                     local_type_summary.crate_id,
@@ -505,7 +482,7 @@ impl CrateCollection {
             )
         };
         let definition_krate = self.get_or_compute_crate_by_package_id(&definition_package_id)?;
-        let type_id = definition_krate.get_type_id_by_path(&path, self)??;
+        let type_id = definition_krate.get_item_id_by_path(&path, self)??;
         let canonical_path = self.get_canonical_path_by_global_type_id(&type_id)?;
         Ok((type_id.clone(), canonical_path))
     }
@@ -526,20 +503,6 @@ impl Drop for CrateCollection {
             );
         }
     }
-}
-
-/// The output of [`CrateCollection::get_item_by_resolved_path`].
-///
-/// If the path points to a "free-standing" item, `parent` is set to `None`.
-/// Examples: a function, a struct, an enum.
-///
-/// If the item is "attached" to another parent item, `parent` is set to `Some`.
-/// Examples: a trait method and the respective trait definition, a method and the struct it is
-/// defined on, etc.
-#[derive(Debug, Clone)]
-pub struct ResolvedItemWithParent<'a> {
-    pub item: ResolvedItem<'a>,
-    pub parent: Option<ResolvedItem<'a>>,
 }
 
 #[derive(Debug, Clone)]
@@ -797,7 +760,7 @@ impl Crate {
             .compute_package_id_for_crate_id(crate_id, collection, maybe_dependent_crate_name)
     }
 
-    pub fn get_type_id_by_path(
+    pub fn get_item_id_by_path(
         &self,
         path: &[String],
         krate_collection: &CrateCollection,
@@ -829,7 +792,7 @@ impl Crate {
                     .get_or_compute_crate_by_package_id(&source_package_id)
                     .unwrap();
                 if let Ok(source_id) =
-                    source_krate.get_type_id_by_path(&original_source_path, krate_collection)
+                    source_krate.get_item_id_by_path(&original_source_path, krate_collection)
                 {
                     return Ok(source_id);
                 }
@@ -845,7 +808,7 @@ impl Crate {
     ///
     /// It only works for structs, enums and functions.
     /// It **will** fail if the id points to a method!
-    fn get_type_summary_by_local_type_id(
+    fn get_summary_by_local_type_id(
         &self,
         id: &rustdoc_types::Id,
     ) -> Result<&rustdoc_types::ItemSummary, anyhow::Error> {
@@ -859,8 +822,8 @@ impl Crate {
         })
     }
 
-    pub fn get_type_by_local_type_id(&self, id: &rustdoc_types::Id) -> Cow<'_, Item> {
-        let type_ = self.maybe_get_type_by_local_type_id(id);
+    pub fn get_item_by_local_type_id(&self, id: &rustdoc_types::Id) -> Cow<'_, Item> {
+        let type_ = self.maybe_get_item_by_local_type_id(id);
         if type_.is_none() {
             panic!(
                 "Failed to look up the type id `{}` in the rustdoc's index for package `{}`.",
@@ -873,7 +836,7 @@ impl Crate {
 
     /// Same as `get_type_by_local_type_id`, but returns `None` instead of panicking
     /// if the type is not found.
-    pub fn maybe_get_type_by_local_type_id(&self, id: &rustdoc_types::Id) -> Option<Cow<'_, Item>> {
+    pub fn maybe_get_item_by_local_type_id(&self, id: &rustdoc_types::Id) -> Option<Cow<'_, Item>> {
         self.core.krate.index.get(id)
     }
 
@@ -1032,13 +995,20 @@ fn index_local_types<'a>(
             }
         }
         ItemEnum::Trait(_)
+        | ItemEnum::Primitive(_)
         | ItemEnum::Function(_)
         | ItemEnum::Enum(_)
         | ItemEnum::Struct(_)
         | ItemEnum::TypeAlias(_) => {
             let name = current_item.name.as_deref().expect(
-                "All 'struct', 'function', 'enum', 'type_alias' and 'trait' items have a 'name' property",
+                "All 'struct', 'function', 'enum', 'type_alias', 'primitive' and 'trait' items have a 'name' property",
             );
+            if matches!(current_item.inner, ItemEnum::Primitive(_)) {
+                // E.g. `std::bool` won't work, `std::primitive::bool` does work but the `primitive` module
+                // is not visible in the JSON docs for `std`/`core`.
+                // A hacky workaround, but it works.
+                current_path.push("primitive");
+            }
             current_path.push(name);
             let path = current_path.into_iter().map(|s| s.to_string()).collect();
 
