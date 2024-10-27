@@ -3,7 +3,7 @@ use crate::language::ResolvedType;
 pub struct PrebuiltType(ResolvedType);
 
 impl PrebuiltType {
-    pub fn new(ty: ResolvedType) -> Result<Self, PrebuiltTypeValidationError> {
+    pub(crate) fn new(ty: ResolvedType) -> Result<Self, PrebuiltTypeValidationError> {
         if ty.has_implicit_lifetime_parameters() || !ty.named_lifetime_parameters().is_empty() {
             return Err(PrebuiltTypeValidationError::CannotHaveLifetimeParameters { ty });
         }

@@ -141,7 +141,7 @@ pub(crate) fn verify_path_parameters(
                     unreachable!()
                 };
                 for field_id in field_ids {
-                    let field_item = krate_collection.get_type_by_global_type_id(&GlobalItemId {
+                    let field_item = krate_collection.get_item_by_global_type_id(&GlobalItemId {
                         rustdoc_item_id: field_id.clone(),
                         package_id: extracted_path_type.package_id.clone(),
                     });
@@ -298,7 +298,7 @@ fn must_be_a_plain_struct(
             let Some(item_id) = t.rustdoc_id.clone() else {
                 unreachable!()
             };
-            let item = krate_collection.get_type_by_global_type_id(&GlobalItemId {
+            let item = krate_collection.get_item_by_global_type_id(&GlobalItemId {
                 rustdoc_item_id: item_id,
                 package_id: t.package_id.clone(),
             });

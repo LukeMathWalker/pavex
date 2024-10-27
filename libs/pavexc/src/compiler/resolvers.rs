@@ -11,11 +11,11 @@ use once_cell::sync::OnceCell;
 use rustdoc_types::{GenericArg, GenericArgs, GenericParamDefKind, ItemEnum, Type};
 
 use crate::language::{
-    Callable, Generic, GenericArgument, GenericLifetimeParameter, InvocationStyle, PathType,
-    ResolvedPath, ResolvedPathGenericArgument, ResolvedPathLifetime, ResolvedPathSegment,
+    Callable, CallableItem, Generic, GenericArgument, GenericLifetimeParameter, InvocationStyle,
+    PathType, ResolvedPath, ResolvedPathGenericArgument, ResolvedPathLifetime, ResolvedPathSegment,
     ResolvedPathType, ResolvedType, Slice, Tuple, TypeReference, UnknownPath,
 };
-use crate::rustdoc::{CannotGetCrateData, ResolvedItemWithParent, RustdocKindExt};
+use crate::rustdoc::{CannotGetCrateData, RustdocKindExt};
 use crate::rustdoc::{CrateCollection, ResolvedItem};
 
 use super::utils::process_framework_path;
@@ -33,7 +33,7 @@ pub(crate) fn resolve_type(
             let re_exporter_crate_name = {
                 let mut re_exporter = None;
                 if let Some(krate) = krate_collection.get_crate_by_package_id(used_by_package_id) {
-                    if let Some(item) = krate.maybe_get_type_by_local_type_id(id) {
+                    if let Some(item) = krate.maybe_get_item_by_local_type_id(id) {
                         // 0 is the crate index of local types.
                         if item.crate_id == 0 {
                             re_exporter = Some(None);
@@ -57,7 +57,7 @@ pub(crate) fn resolve_type(
                     id,
                     re_exporter_crate_name,
                 )?;
-            let type_item = krate_collection.get_type_by_global_type_id(&global_type_id);
+            let type_item = krate_collection.get_item_by_global_type_id(&global_type_id);
             // We want to remove any indirections (e.g. `type Foo = Bar;`) and get the actual type.
             if let ItemEnum::TypeAlias(type_alias) = &type_item.inner {
                 let mut alias_generic_bindings = HashMap::new();
@@ -293,15 +293,14 @@ pub(crate) fn resolve_callable(
     krate_collection: &CrateCollection,
     callable_path: &ResolvedPath,
 ) -> Result<Callable, CallableResolutionError> {
-    let (
-        ResolvedItemWithParent {
-            item: callable,
-            parent,
-        },
-        qualified_self_type,
-    ) = callable_path.find_rustdoc_items(krate_collection)?;
-    let used_by_package_id = &callable_path.package_id;
-    let (header, decl, fn_generics_defs, invocation_style) = match &callable.item.inner {
+    let callable_items = callable_path.find_rustdoc_callable_items(krate_collection)??;
+    let (callable_item, new_callable_path) = match &callable_items {
+        CallableItem::Function(item, p) => (item, p),
+        CallableItem::Method { method, .. } => (&method.0, &method.1),
+    };
+    let used_by_package_id = &new_callable_path.package_id;
+
+    let (header, decl, fn_generics_defs, invocation_style) = match &callable_item.item.inner {
         ItemEnum::Function(f) => (
             &f.header,
             &f.sig,
@@ -319,40 +318,45 @@ pub(crate) fn resolve_callable(
     };
 
     let mut generic_bindings = HashMap::new();
-    if let Some(qself) = qualified_self_type {
-        generic_bindings.insert("Self".to_string(), qself);
-    }
-    let parent_info = parent.map(|p| {
-        let parent_segments = callable_path.segments[..callable_path.segments.len() - 1].to_vec();
-        let parent_path = ResolvedPath {
-            segments: parent_segments,
-            qualified_self: callable_path.qualified_self.clone(),
-            package_id: callable_path.package_id.clone(),
-        };
-        (p, parent_path)
-    });
-    if let Some((parent, parent_path)) = &parent_info {
-        if matches!(parent.item.inner, ItemEnum::Trait(_)) {
+    if let CallableItem::Method {
+        method_owner,
+        qualified_self,
+        ..
+    } = &callable_items
+    {
+        if matches!(&method_owner.0.item.inner, ItemEnum::Trait(_)) {
             if let Err(e) = get_trait_generic_bindings(
-                parent,
-                &parent_path,
+                &method_owner.0,
+                &method_owner.1,
                 krate_collection,
                 &mut generic_bindings,
             ) {
-                tracing::trace!(error.msg = %e, error.details = ?e, "Error getting trait generic bindings");
-            }
-        } else {
-            match resolve_type_path_with_item(parent_path, parent, krate_collection) {
-                Ok(parent_type) => {
-                    generic_bindings.insert("Self".to_string(), parent_type);
-                }
-                Err(e) => {
-                    tracing::trace!(error.msg = %e, error.details = ?e, "Error resolving the parent type");
-                }
+                tracing::warn!(error.msg = %e, error.details = ?e, "Error getting trait generic bindings");
             }
         }
+
+        let self_ = match qualified_self {
+            Some(q) => q,
+            None => method_owner,
+        };
+
+        let self_generic_ty = match resolve_type_path_with_item(
+            &self_.1,
+            &self_.0,
+            krate_collection,
+        ) {
+            Ok(ty) => Some(ty),
+            Err(e) => {
+                tracing::warn!(error.msg = %e, error.details = ?e, "Error resolving the `Self` type");
+                None
+            }
+        };
+        if let Some(ty) = self_generic_ty {
+            generic_bindings.insert("Self".to_string(), ty);
+        }
     }
-    let fn_generic_args = &callable_path.segments.last().unwrap().generic_arguments;
+
+    let fn_generic_args = &new_callable_path.segments.last().unwrap().generic_arguments;
     for (generic_arg, generic_def) in fn_generic_args.iter().zip(&fn_generics_defs.params) {
         let generic_name = &generic_def.name;
         let generic_type = match generic_arg {
@@ -364,8 +368,8 @@ pub(crate) fn resolve_callable(
         let resolved_type = generic_type.resolve(krate_collection).map_err(|e| {
             GenericParameterResolutionError {
                 generic_type: generic_type.to_owned(),
-                callable_path: callable_path.to_owned(),
-                callable_item: callable.item.clone().into_owned(),
+                callable_path: new_callable_path.to_owned(),
+                callable_item: callable_item.item.clone().into_owned(),
                 source: Arc::new(e),
             }
         })?;
@@ -397,8 +401,8 @@ pub(crate) fn resolve_callable(
             Err(e) => {
                 return Err(InputParameterResolutionError {
                     parameter_type: parameter_type.to_owned(),
-                    callable_path: callable_path.to_owned(),
-                    callable_item: callable.item.into_owned(),
+                    callable_path: new_callable_path.to_owned(),
+                    callable_item: callable_item.item.clone().into_owned(),
                     source: Arc::new(e),
                     parameter_index,
                 }
@@ -420,8 +424,8 @@ pub(crate) fn resolve_callable(
                 Err(e) => {
                     return Err(OutputTypeResolutionError {
                         output_type: output_type.to_owned(),
-                        callable_path: callable_path.to_owned(),
-                        callable_item: callable.item.into_owned(),
+                        callable_path: new_callable_path.to_owned(),
+                        callable_item: callable_item.item.clone().into_owned(),
                         source: Arc::new(e),
                     }
                     .into());
@@ -437,9 +441,12 @@ pub(crate) fn resolve_callable(
     let canonical_path = {
         // If the item is a method, we start by finding the canonical path to its parent—i.e. the struct/enum/trait
         // to which the method is attached.
-        let parent_canonical_path = match parent_info {
-            Some((parent, parent_path)) => {
-                match krate_collection.get_canonical_path_by_global_type_id(&parent.item_id) {
+        let parent_canonical_path = match &callable_items {
+            CallableItem::Method {
+                method_owner: self_,
+                ..
+            } => {
+                match krate_collection.get_canonical_path_by_global_type_id(&self_.0.item_id) {
                     Ok(canonical_segments) => {
                         let mut segments: Vec<_> = canonical_segments
                             .into_iter()
@@ -450,26 +457,22 @@ pub(crate) fn resolve_callable(
                             .collect();
                         // The canonical path doesn't include the (populated or omitted) generic arguments from the user-provided path,
                         // so we need to add them back in.
-                        segments.last_mut().unwrap().generic_arguments = parent_path
-                            .segments
-                            .last()
-                            .unwrap()
-                            .generic_arguments
-                            .clone();
+                        segments.last_mut().unwrap().generic_arguments =
+                            self_.1.segments.last().unwrap().generic_arguments.clone();
                         Some(ResolvedPath {
                             segments,
-                            qualified_self: parent_path.qualified_self.clone(),
-                            package_id: parent.item_id.package_id.clone(),
+                            qualified_self: self_.1.qualified_self.clone(),
+                            package_id: self_.0.item_id.package_id.clone(),
                         })
                     }
                     Err(_) => {
                         tracing::warn!(
-                            package_id = parent.item_id.package_id.repr(),
-                            item_id = ?parent.item_id.rustdoc_item_id,
+                            package_id = self_.0.item_id.package_id.repr(),
+                            item_id = ?self_.0.item_id.rustdoc_item_id,
                             "Failed to find canonical path for {:?}",
-                            parent_path
+                            self_.1
                         );
-                        Some(parent_path)
+                        Some(self_.1.clone())
                     }
                 }
             }
@@ -490,7 +493,8 @@ pub(crate) fn resolve_callable(
             None => {
                 // There was no parent, it's a free function or a straight struct/enum. We need to go through the same process
                 // we applied for the parent.
-                match krate_collection.get_canonical_path_by_global_type_id(&callable.item_id) {
+                match krate_collection.get_canonical_path_by_global_type_id(&callable_item.item_id)
+                {
                     Ok(p) => {
                         let mut segments: Vec<_> = p
                             .into_iter()
@@ -510,13 +514,13 @@ pub(crate) fn resolve_callable(
                         ResolvedPath {
                             segments,
                             qualified_self: callable_path.qualified_self.clone(),
-                            package_id: callable.item_id.package_id.clone(),
+                            package_id: callable_item.item_id.package_id.clone(),
                         }
                     }
                     Err(_) => {
                         tracing::warn!(
-                            package_id = callable.item_id.package_id.repr(),
-                            item_id = ?callable.item_id.rustdoc_item_id,
+                            package_id = callable_item.item_id.package_id.repr(),
+                            item_id = ?callable_item.item_id.rustdoc_item_id,
                             "Failed to find canonical path for {:?}",
                             callable_path
                         );
@@ -535,7 +539,7 @@ pub(crate) fn resolve_callable(
         path: canonical_path,
         inputs: resolved_parameter_types,
         invocation_style,
-        source_coordinates: Some(callable.item_id),
+        source_coordinates: Some(callable_item.item_id.clone()),
     };
     Ok(callable)
 }
@@ -573,8 +577,8 @@ pub(crate) fn resolve_type_path(
         path: &ResolvedPath,
         krate_collection: &CrateCollection,
     ) -> Result<ResolvedType, anyhow::Error> {
-        let (item, _) = path.find_rustdoc_items(krate_collection)?;
-        resolve_type_path_with_item(&path, &item.item, krate_collection)
+        let item = path.find_rustdoc_item_type(krate_collection)?.1;
+        resolve_type_path_with_item(&path, &item, krate_collection)
     }
 
     _resolve_type_path(path, krate_collection).map_err(|source| TypeResolutionError {
