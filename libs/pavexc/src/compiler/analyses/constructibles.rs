@@ -23,10 +23,24 @@ use crate::try_source;
 
 use super::framework_items::FrameworkItemDb;
 
-#[derive(Debug)]
 /// The set of types that can be injected into request handlers, error handlers and (other) constructors.
 pub(crate) struct ConstructibleDb {
     scope_id2constructibles: IndexMap<ScopeId, ConstructiblesInScope>,
+}
+
+impl std::fmt::Debug for ConstructibleDb {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Available constructibles:\n")?;
+        for (scope_id, constructibles) in &self.scope_id2constructibles {
+            writeln!(
+                f,
+                "- {scope_id}:\n{}",
+                // TODO: Use a PadAdapter down here to avoid allocating an intermediate string
+                textwrap::indent(&format!("{:?}", constructibles), "    ")
+            )?;
+        }
+        Ok(())
+    }
 }
 
 impl ConstructibleDb {
@@ -935,7 +949,6 @@ impl ConstructibleDb {
     }
 }
 
-#[derive(Debug)]
 /// The set of constructibles that have been registered in a given scope.
 ///
 /// Be careful! This is not the set of all types that can be constructed in the given scope!
@@ -1088,5 +1101,15 @@ impl ConstructiblesInScope {
                     .insert(c.output_type().clone(), derived_component_id);
             }
         }
+    }
+}
+
+impl std::fmt::Debug for ConstructiblesInScope {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Constructibles:")?;
+        for (type_, component_id) in &self.type2constructor_id {
+            writeln!(f, "- {} -> {:?}", type_.display_for_error(), component_id)?;
+        }
+        Ok(())
     }
 }
