@@ -688,7 +688,8 @@ impl ResolvedPath {
             return Ok(Err(UnknownPath(
                 self.clone(),
                 Arc::new(anyhow::anyhow!(
-                    "Path is too short to be a method path, but there is no function at that path"
+                    "{} is too short to be a method path, but there is no function at that path",
+                    self
                 )),
             )));
         }
