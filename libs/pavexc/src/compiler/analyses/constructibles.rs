@@ -161,6 +161,20 @@ impl ConstructibleDb {
                         }
                     }
 
+                    // Both `T` and `&T` are always constructibles, when looking at generic constructors that take them
+                    // as input. The actual check will happen when they are bound to a specific type.
+                    match input {
+                        ResolvedType::Reference(ref_) => {
+                            if let ResolvedType::Generic(_) = ref_.inner.as_ref() {
+                                continue;
+                            }
+                        }
+                        ResolvedType::Generic(_) => {
+                            continue;
+                        }
+                        _ => {}
+                    }
+
                     if let Some((input_component_id, mode)) = self.get_or_try_bind(
                         scope_id,
                         input,
