@@ -1,4 +1,4 @@
-use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
+use pavex::blueprint::{router::GET, Blueprint};
 use pavex::f;
 
 pub struct A;
@@ -10,6 +10,9 @@ pub struct C;
 pub struct D;
 
 pub struct E;
+
+#[derive(Default)]
+pub struct F;
 
 pub trait MyTrait {
     fn a_method_that_returns_self() -> Self;
@@ -49,32 +52,25 @@ impl<T> GenericTrait<T> for C {
     }
 }
 
-pub fn handler(_a: A, _c: C, _d: D, _e: E) -> pavex::response::Response {
+pub fn handler(_a: A, _c: C, _d: D, _e: E, _f: F) -> pavex::response::Response {
     todo!()
 }
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.constructor(
-        f!(<crate::A as crate::MyTrait>::a_method_that_returns_self),
-        Lifecycle::RequestScoped,
-    );
-    bp.constructor(
-        f!(<crate::A as crate::MyTrait>::a_method_that_borrows_self),
-        Lifecycle::RequestScoped,
-    );
-    bp.constructor(
-        f!(<crate::A as crate::MyTrait>::a_method_with_a_generic::<std::string::String>),
-        Lifecycle::RequestScoped,
-    );
-    bp.constructor(
-        f!(<crate::B as crate::AnotherTrait>::a_method_that_consumes_self),
-        Lifecycle::RequestScoped,
-    );
-    bp.constructor(
-        f!(<crate::C as crate::GenericTrait<std::string::String>>::a_method),
-        Lifecycle::RequestScoped,
-    );
-    bp.route(GET, "/home", f!(crate::handler));
+    // A foreign trait, from `std`.
+    bp.request_scoped(f!(<crate::F as std::default::Default>::default));
+    bp.request_scoped(f!(<crate::A as crate::MyTrait>::a_method_that_returns_self));
+    bp.request_scoped(f!(<crate::A as crate::MyTrait>::a_method_that_borrows_self));
+    bp.request_scoped(f!(<crate::A as crate::MyTrait>::a_method_with_a_generic::<
+        std::string::String,
+    >));
+    bp.request_scoped(f!(
+        <crate::B as crate::AnotherTrait>::a_method_that_consumes_self
+    ));
+    bp.request_scoped(f!(
+        <crate::C as crate::GenericTrait<std::string::String>>::a_method
+    ));
+    bp.route(GET, "/", f!(crate::handler));
     bp
 }
