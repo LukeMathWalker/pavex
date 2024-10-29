@@ -1019,7 +1019,8 @@ impl ConstructiblesInScope {
         }
         for templated_constructible_type in &self.templated_constructors {
             if let Some(bindings) = templated_constructible_type.is_a_template_for(type_) {
-                let (templated_component_id, _) = self.get(templated_constructible_type).unwrap();
+                let template = templated_constructible_type.clone();
+                let (templated_component_id, _) = self.get(&template).unwrap();
                 self.bind_and_register_constructor(
                     templated_component_id,
                     component_db,
@@ -1027,7 +1028,13 @@ impl ConstructiblesInScope {
                     framework_item_db,
                     &bindings,
                 );
-                return self.get(type_);
+                let bound = self.get(type_);
+                assert!(bound.is_some(), "I used {} as a templated constructor to build {} but the binding process didn't succeed as expected.\nBindings:\n{}", 
+                    template.display_for_error(),
+                    type_.display_for_error(),
+                    bindings.into_iter().map(|(k, v)| format!("- {k} -> {}", v.display_for_error())).collect::<Vec<_>>().join("\n")
+                );
+                return bound;
             }
         }
 
