@@ -13,7 +13,7 @@ use indexmap::IndexSet;
 use rustdoc_types::{ExternalCrate, Item, ItemEnum, ItemKind, ItemSummary, Visibility};
 use tracing::Span;
 
-use crate::compiler::resolvers::resolve_type;
+use crate::compiler::resolvers::{resolve_type, GenericBindings};
 use crate::language::{ResolvedPathGenericArgument, ResolvedPathType};
 use crate::rustdoc::version_matcher::VersionMatcher;
 use crate::rustdoc::{compute::compute_crate_docs, utils, CannotGetCrateData, TOOLCHAIN_CRATES};
@@ -397,14 +397,23 @@ impl CrateCollection {
             let new_path = {
                 let path_args = &resolved_path.segments.last().unwrap().generic_arguments;
                 let alias_generics = &type_alias.generics.params;
-                let mut name2path_arg = HashMap::new();
+                let mut name2path_arg = GenericBindings::default();
                 for (path_arg, alias_generic) in path_args.iter().zip(alias_generics.iter()) {
                     match path_arg {
                         ResolvedPathGenericArgument::Type(t) => {
                             let t = t.resolve(self).unwrap();
-                            name2path_arg.insert(alias_generic.name.clone(), t);
+                            name2path_arg.types.insert(alias_generic.name.clone(), t);
                         }
-                        ResolvedPathGenericArgument::Lifetime(_) => unimplemented!(),
+                        ResolvedPathGenericArgument::Lifetime(l) => {
+                            let l = match l {
+                                crate::language::ResolvedPathLifetime::Named(n) => n,
+                                crate::language::ResolvedPathLifetime::Static => "static",
+                            }
+                            .to_owned();
+                            name2path_arg
+                                .lifetimes
+                                .insert(alias_generic.name.clone(), l);
+                        }
                     }
                 }
 

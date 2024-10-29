@@ -67,6 +67,12 @@ pub struct ScopeGraphBuilder {
 /// See [`ScopeGraph`] for more information.
 pub struct ScopeId(usize);
 
+impl std::fmt::Display for ScopeId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Scope {}", self.0)
+    }
+}
+
 impl PartialEq<ScopeId> for &ScopeId {
     fn eq(&self, other: &ScopeId) -> bool {
         self.0 == other.0

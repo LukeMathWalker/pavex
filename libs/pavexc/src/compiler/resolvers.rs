@@ -4,7 +4,7 @@
 use std::ops::Deref;
 use std::sync::Arc;
 
-use ahash::{HashMap, HashMapExt};
+use ahash::HashMap;
 use anyhow::anyhow;
 use guppy::PackageId;
 use once_cell::sync::OnceCell;
@@ -20,13 +20,40 @@ use crate::rustdoc::{CrateCollection, ResolvedItem};
 
 use super::utils::process_framework_path;
 
+#[derive(Default)]
+pub(crate) struct GenericBindings {
+    pub lifetimes: HashMap<String, String>,
+    pub types: HashMap<String, ResolvedType>,
+}
+
+impl std::fmt::Debug for GenericBindings {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "GenericBindings {{ ")?;
+        if !self.lifetimes.is_empty() {
+            write!(f, "lifetimes: {{ ")?;
+            for (name, value) in &self.lifetimes {
+                writeln!(f, "{} -> {}, ", name, value)?;
+            }
+            write!(f, "}}, ")?;
+        }
+        if !self.types.is_empty() {
+            write!(f, "types: {{ ")?;
+            for (name, value) in &self.types {
+                writeln!(f, "{} -> {}, ", name, value.display_for_error())?;
+            }
+            write!(f, "}}, ")?;
+        }
+        write!(f, "}}")
+    }
+}
+
 pub(crate) fn resolve_type(
     type_: &Type,
     // The package id where the type we are trying to process has been referenced (e.g. as an
     // input/output parameter).
     used_by_package_id: &PackageId,
     krate_collection: &CrateCollection,
-    generic_bindings: &HashMap<String, ResolvedType>,
+    generic_bindings: &GenericBindings,
 ) -> Result<ResolvedType, anyhow::Error> {
     match type_ {
         Type::ResolvedPath(rustdoc_types::Path { id, args, name }) => {
@@ -60,7 +87,7 @@ pub(crate) fn resolve_type(
             let type_item = krate_collection.get_item_by_global_type_id(&global_type_id);
             // We want to remove any indirections (e.g. `type Foo = Bar;`) and get the actual type.
             if let ItemEnum::TypeAlias(type_alias) = &type_item.inner {
-                let mut alias_generic_bindings = HashMap::new();
+                let mut alias_generic_bindings = GenericBindings::default();
                 // The generic arguments that have been passed to the type alias.
                 // E.g. `u32` in `Foo<u32>` for `type Foo<T=u64> = Bar<T>;`
                 let generic_args = if let Some(args) = args {
@@ -76,7 +103,6 @@ pub(crate) fn resolve_type(
                 // E.g. `T` in `type Foo<T> = Bar<T, u64>;`
                 let generic_param_defs = &type_alias.generics.params;
                 for (i, generic_param_def) in generic_param_defs.iter().enumerate() {
-                    // We also try to handle generic parameters, as long as they have a default value.
                     match &generic_param_def.kind {
                         GenericParamDefKind::Type { default, .. } => {
                             let provided_arg = generic_args.and_then(|v| v.get(i));
@@ -108,10 +134,25 @@ pub(crate) fn resolve_type(
                                 })
                             };
                             alias_generic_bindings
+                                .types
                                 .insert(generic_param_def.name.to_string(), generic_type);
                         }
-                        GenericParamDefKind::Const { .. }
-                        | GenericParamDefKind::Lifetime { .. } => {
+                        GenericParamDefKind::Lifetime { .. } => {
+                            let provided_arg = generic_args.and_then(|v| v.get(i));
+                            let lifetime = if let Some(provided_arg) = provided_arg {
+                                if let GenericArg::Lifetime(provided_arg) = provided_arg {
+                                    provided_arg
+                                } else {
+                                    anyhow::bail!("Expected `{:?}` to be a generic _lifetime_ parameter, but it wasn't!", provided_arg)
+                                }
+                            } else {
+                                &generic_param_def.name
+                            }.to_owned();
+                            alias_generic_bindings
+                                .lifetimes
+                                .insert(generic_param_def.name.to_string(), lifetime);
+                        }
+                        GenericParamDefKind::Const { .. } => {
                             anyhow::bail!("I can only work with generic type parameters when working with type aliases. I can't handle a `{:?}` yet, sorry!", generic_param_def)
                         }
                     }
@@ -171,7 +212,7 @@ pub(crate) fn resolve_type(
                                         if let Some(GenericArg::Type(generic_type)) = args.get(i) {
                                             if let Type::Generic(generic) = generic_type {
                                                 if let Some(resolved_type) =
-                                                    generic_bindings.get(generic)
+                                                    generic_bindings.types.get(generic)
                                                 {
                                                     GenericArgument::TypeParameter(
                                                         resolved_type.to_owned(),
@@ -252,7 +293,7 @@ pub(crate) fn resolve_type(
             Ok(t.into())
         }
         Type::Generic(s) => {
-            if let Some(resolved_type) = generic_bindings.get(s) {
+            if let Some(resolved_type) = generic_bindings.types.get(s) {
                 Ok(resolved_type.to_owned())
             } else {
                 Ok(ResolvedType::Generic(Generic { name: s.to_owned() }))
@@ -317,7 +358,7 @@ pub(crate) fn resolve_callable(
         }
     };
 
-    let mut generic_bindings = HashMap::new();
+    let mut generic_bindings = GenericBindings::default();
     if let CallableItem::Method {
         method_owner,
         qualified_self,
@@ -352,28 +393,34 @@ pub(crate) fn resolve_callable(
             }
         };
         if let Some(ty) = self_generic_ty {
-            generic_bindings.insert("Self".to_string(), ty);
+            generic_bindings.types.insert("Self".to_string(), ty);
         }
     }
 
     let fn_generic_args = &new_callable_path.segments.last().unwrap().generic_arguments;
     for (generic_arg, generic_def) in fn_generic_args.iter().zip(&fn_generics_defs.params) {
         let generic_name = &generic_def.name;
-        let generic_type = match generic_arg {
-            ResolvedPathGenericArgument::Type(t) => t,
-            _ => {
-                continue;
+        match generic_arg {
+            ResolvedPathGenericArgument::Type(t) => {
+                let resolved_type =
+                    t.resolve(krate_collection)
+                        .map_err(|e| GenericParameterResolutionError {
+                            generic_type: t.to_owned(),
+                            callable_path: new_callable_path.to_owned(),
+                            callable_item: callable_item.item.clone().into_owned(),
+                            source: Arc::new(e),
+                        })?;
+                generic_bindings
+                    .types
+                    .insert(generic_name.to_owned(), resolved_type);
             }
-        };
-        let resolved_type = generic_type.resolve(krate_collection).map_err(|e| {
-            GenericParameterResolutionError {
-                generic_type: generic_type.to_owned(),
-                callable_path: new_callable_path.to_owned(),
-                callable_item: callable_item.item.clone().into_owned(),
-                source: Arc::new(e),
+            ResolvedPathGenericArgument::Lifetime(l) => {
+                let resolved_lifetime = l.to_string();
+                generic_bindings
+                    .lifetimes
+                    .insert(generic_name.to_owned(), resolved_lifetime);
             }
-        })?;
-        generic_bindings.insert(generic_name.to_owned(), resolved_type);
+        }
     }
 
     let mut resolved_parameter_types = Vec::with_capacity(decl.inputs.len());
@@ -548,7 +595,7 @@ fn get_trait_generic_bindings(
     resolved_item: &ResolvedItem,
     path: &ResolvedPath,
     krate_collection: &CrateCollection,
-    generic_bindings: &mut HashMap<String, ResolvedType>,
+    generic_bindings: &mut GenericBindings,
 ) -> Result<(), anyhow::Error> {
     let inner = &resolved_item.item.inner;
     let ItemEnum::Trait(trait_item) = inner else {
@@ -563,7 +610,9 @@ fn get_trait_generic_bindings(
     {
         if let ResolvedPathGenericArgument::Type(t) = assigned_parameter {
             // TODO: handle conflicts
-            generic_bindings.insert(generic_slot.name.clone(), t.resolve(krate_collection)?);
+            generic_bindings
+                .types
+                .insert(generic_slot.name.clone(), t.resolve(krate_collection)?);
         }
     }
     Ok(())
@@ -657,7 +706,7 @@ pub(crate) fn resolve_type_path_with_item(
                             default,
                             used_by_package_id,
                             krate_collection,
-                            &HashMap::new(),
+                            &GenericBindings::default(),
                         )?;
                         if skip_default(krate_collection, &default) {
                             continue;

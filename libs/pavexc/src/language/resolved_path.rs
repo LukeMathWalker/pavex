@@ -4,7 +4,6 @@ use std::hash::{Hash, Hasher};
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 
-use ahash::{HashMap, HashMapExt};
 use anyhow::Context;
 use bimap::BiHashMap;
 use guppy::PackageId;
@@ -15,7 +14,7 @@ use quote::format_ident;
 use pavex_bp_schema::RawIdentifiers;
 use rustdoc_types::ItemEnum;
 
-use crate::compiler::resolvers::resolve_type;
+use crate::compiler::resolvers::{resolve_type, GenericBindings};
 use crate::language::callable_path::{
     CallPathGenericArgument, CallPathLifetime, CallPathSegment, CallPathType,
 };
@@ -181,7 +180,7 @@ impl ResolvedPathType {
                                     default,
                                     &resolved_item.item_id.package_id,
                                     krate_collection,
-                                    &HashMap::new(),
+                                    &GenericBindings::default(),
                                 )?;
                                 GenericArgument::TypeParameter(ty)
                             }
