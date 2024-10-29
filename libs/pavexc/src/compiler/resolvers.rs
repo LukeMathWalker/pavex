@@ -181,7 +181,12 @@ pub(crate) fn resolve_type(
                             let generic_arg_defs = match &type_item.inner {
                                 ItemEnum::Struct(s) => &s.generics,
                                 ItemEnum::Enum(e) => &e.generics,
-                                _ => unreachable!(),
+                                i => {
+                                    unimplemented!(
+                                        "I don't know how to handle a `{:?}` yet, sorry!",
+                                        i
+                                    )
+                                }
                             }
                             .params
                             .as_slice();
