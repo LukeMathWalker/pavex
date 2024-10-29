@@ -23,7 +23,7 @@ pub fn run(
 }
 fn build_router() -> pavex_matchit::Router<u32> {
     let mut router = pavex_matchit::Router::new();
-    router.insert("/home", 0u32).unwrap();
+    router.insert("/", 0u32).unwrap();
     router
 }
 async fn route_request(
@@ -84,21 +84,22 @@ pub mod route_0 {
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
     }
     async fn handler() -> pavex::response::Response {
-        let v0 = <app::A as app::MyTrait>::a_method_that_returns_self();
-        let v1 = <app::A as app::MyTrait>::a_method_that_borrows_self(
-            &v0,
+        let v0 = <app::F as core::default::Default>::default();
+        let v1 = <app::A as app::MyTrait>::a_method_that_returns_self();
+        let v2 = <app::A as app::MyTrait>::a_method_that_borrows_self(
+            &v1,
         );
-        let v2 = <app::B as app::AnotherTrait>::a_method_that_consumes_self(
-            v1,
+        let v3 = <app::B as app::AnotherTrait>::a_method_that_consumes_self(
+            v2,
         );
-        let v3 = <app::C as app::GenericTrait<
+        let v4 = <app::C as app::GenericTrait<
             std::string::String,
-        >>::a_method(&v2);
-        let v4 = <app::A as app::MyTrait>::a_method_with_a_generic::<
+        >>::a_method(&v3);
+        let v5 = <app::A as app::MyTrait>::a_method_with_a_generic::<
             std::string::String,
-        >(&v0);
-        let v5 = app::handler(v0, v2, v4, v3);
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v5)
+        >(&v1);
+        let v6 = app::handler(v1, v3, v5, v4, v0);
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
     }
     struct Next0<T>
     where
