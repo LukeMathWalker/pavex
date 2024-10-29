@@ -212,7 +212,10 @@ impl ResolvedType {
             (ScalarPrimitive(concrete_primitive), ScalarPrimitive(templated_primitive)) => {
                 concrete_primitive == templated_primitive
             }
-            (_, Generic(_)) => true,
+            (_, Generic(parameter)) => {
+                bindings.insert(parameter.name.clone(), concrete_type.clone());
+                true
+            }
             (_, _) => false,
         }
     }
