@@ -272,6 +272,19 @@ pub struct ClientSessionStateMut<'session>(&'session mut ClientState);
 impl<'session> ClientSessionStateMut<'session> {
     /// Set a value in the client-side state for the given key.
     ///
+    /// If the key already exists, the value is updated and the old raw value is returned.
+    /// If the value cannot be serialized, an error is returned.
+    pub fn set<T: Serialize>(
+        &mut self,
+        key: String,
+        value: T
+    ) -> Result<Option<Value>, serde_json::Error> {
+        let value = serde_json::to_value(value)?;
+        Ok(self.set_value(key, value))
+    }
+
+    /// Set a value in the client-side state for the given key.
+    ///
     /// If the key already exists, the value is updated and the old value is returned.
     pub fn set_value(&mut self, key: String, value: Value) -> Option<Value> {
         match &mut self.0 {
