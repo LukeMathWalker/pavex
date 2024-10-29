@@ -1118,7 +1118,7 @@ impl Display for UnknownPath {
         let krate = path.crate_name().to_string();
         write!(
             f,
-            "I could not find '{path}' in the auto-generated documentation for '{krate}'"
+            "I could not find '{path}' in the auto-generated documentation for '{krate}'."
         )
     }
 }

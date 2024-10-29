@@ -1104,7 +1104,7 @@ impl std::fmt::Display for UnknownItemPath {
         let krate = self.path.first().unwrap();
         write!(
             f,
-            "I could not find '{path}' in the auto-generated documentation for '{krate}'"
+            "I could not find '{path}' in the auto-generated documentation for '{krate}'."
         )
     }
 }
