@@ -308,6 +308,16 @@ impl<'session> ClientSessionStateMut<'session> {
     /// Remove the value associated with `key` from the client-side state.
     ///
     /// If the key exists, the removed value is returned.
+    /// If the removed value cannot be serialized, an error is returned.
+    pub fn remove<T: DeserializeOwned>(&mut self, key: &str) -> Result<Option<T>, serde_json::Error> {
+        self.remove_value(key)
+            .map(|value| serde_json::from_value(value))
+            .transpose()
+    }
+
+    /// Remove the value associated with `key` from the client-side state.
+    ///
+    /// If the key exists, the removed value is returned.
     pub fn remove_value(&mut self, key: &str) -> Option<Value> {
         match &mut self.0 {
             ClientState::MarkedForDeletion => None,
@@ -430,6 +440,17 @@ impl<'session, 'store> ServerSessionState<'session, 'store> {
             state: existing_state,
         };
         Ok(old_value)
+    }
+
+    /// Remove the value associated with `key` from the server-side state.
+    ///
+    /// If the key exists, the removed value is returned.
+    /// If the removed value cannot be serialized, an error is returned.
+    pub async fn remove<T: DeserializeOwned>(&mut self, key: &str) -> Result<Option<T>, LoadError> {
+        self.remove_value(key).await?
+            .map(serde_json::from_value)
+            .transpose()
+            .map_err(LoadError::DeserializationError)
     }
 
     /// Remove the value associated with `key` from the server-side state.
