@@ -717,7 +717,7 @@ impl ResolvedPath {
 
         let (method_name_segment, type_path_segments) = self.segments.split_last().unwrap();
 
-        // Let's first try to see if the parent path points to a type.
+        // Let's first try to see if the parent path points to a type, that we'll consider to be `Self`
         let method_owner_path = ResolvedPath {
             segments: type_path_segments.to_vec(),
             qualified_self: None,
@@ -731,54 +731,72 @@ impl ResolvedPath {
                 }
             };
 
-        let children_ids = match &method_owner_item.item.inner {
-            ItemEnum::Struct(s) => &s.impls,
-            ItemEnum::Enum(enum_) => &enum_.impls,
-            ItemEnum::Trait(trait_) => &trait_.items,
-            _ => {
-                unreachable!()
-            }
+        // If we're dealing with a trait method, we want to search in the docs of the trait itself
+        // as well as the docs of the implementing type.
+        let mut parent_items = match &qself {
+            Some((item, _)) => vec![item, &method_owner_item],
+            None => vec![&method_owner_item],
         };
-        let method_owner_krate =
-            krate_collection.get_or_compute_crate_by_package_id(&method_owner_path.package_id)?;
-        let mut method = None;
-        for child_id in children_ids {
-            let child = method_owner_krate.get_item_by_local_type_id(child_id);
-            match &child.inner {
-                ItemEnum::Impl(impl_block) => {
-                    // We are completely ignoring the bounds attached to the implementation block.
-                    // This can lead to issues: the same method can be defined multiple
-                    // times in different implementation blocks with non-overlapping constraints.
-                    for impl_item_id in &impl_block.items {
-                        let impl_item = method_owner_krate.get_item_by_local_type_id(impl_item_id);
-                        if impl_item.name.as_ref() == Some(&method_name_segment.ident) {
-                            if let ItemEnum::Function(_) = &impl_item.inner {
-                                method = Some(ResolvedItem {
-                                    item: impl_item,
-                                    item_id: GlobalItemId {
-                                        package_id: krate.core.package_id.clone(),
-                                        rustdoc_item_id: child_id.to_owned(),
-                                    },
-                                });
+        let method;
+        let mut parent_item = parent_items.pop().unwrap();
+        'outer: loop {
+            let children_ids = match &parent_item.item.inner {
+                ItemEnum::Struct(s) => &s.impls,
+                ItemEnum::Enum(enum_) => &enum_.impls,
+                ItemEnum::Trait(trait_) => &trait_.items,
+                _ => {
+                    unreachable!()
+                }
+            };
+            let search_krate = krate_collection
+                .get_or_compute_crate_by_package_id(&parent_item.item_id.package_id)?;
+            for child_id in children_ids {
+                let child = search_krate.get_item_by_local_type_id(child_id);
+                match &child.inner {
+                    ItemEnum::Impl(impl_block) => {
+                        // We are completely ignoring the bounds attached to the implementation block.
+                        // This can lead to issues: the same method can be defined multiple
+                        // times in different implementation blocks with non-overlapping constraints.
+                        for impl_item_id in &impl_block.items {
+                            let impl_item = search_krate.get_item_by_local_type_id(impl_item_id);
+                            if impl_item.name.as_ref() == Some(&method_name_segment.ident) {
+                                if let ItemEnum::Function(_) = &impl_item.inner {
+                                    method = Some(ResolvedItem {
+                                        item: impl_item,
+                                        item_id: GlobalItemId {
+                                            package_id: search_krate.core.package_id.clone(),
+                                            rustdoc_item_id: child_id.to_owned(),
+                                        },
+                                    });
+                                    break 'outer;
+                                }
                             }
                         }
                     }
-                }
-                ItemEnum::Function(_) => {
-                    if child.name.as_ref() == Some(&method_name_segment.ident) {
-                        method = Some(ResolvedItem {
-                            item: child,
-                            item_id: GlobalItemId {
-                                package_id: krate.core.package_id.clone(),
-                                rustdoc_item_id: child_id.to_owned(),
-                            },
-                        });
+                    ItemEnum::Function(_) => {
+                        if child.name.as_ref() == Some(&method_name_segment.ident) {
+                            method = Some(ResolvedItem {
+                                item: child,
+                                item_id: GlobalItemId {
+                                    package_id: search_krate.core.package_id.clone(),
+                                    rustdoc_item_id: child_id.to_owned(),
+                                },
+                            });
+                            break 'outer;
+                        }
+                    }
+                    i => {
+                        dbg!(i);
+                        unreachable!()
                     }
                 }
-                i => {
-                    dbg!(i);
-                    unreachable!()
-                }
+            }
+
+            if let Some(next_parent) = parent_items.pop() {
+                parent_item = next_parent;
+            } else {
+                method = None;
+                break;
             }
         }
 
@@ -790,7 +808,7 @@ impl ResolvedPath {
                 .cloned()
                 .collect(),
             qualified_self: self.qualified_self.clone(),
-            package_id: method_owner_path.package_id.clone(),
+            package_id: parent_item.item_id.package_id.clone(),
         };
         if let Some(method) = method {
             Ok(Ok(CallableItem::Method {
