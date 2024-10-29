@@ -246,7 +246,7 @@ impl ConstructibleDb {
                         continue;
                     }
                     if let Some(user_component_id) = component_db.user_component_id(component_id) {
-                        Self::missing_constructor(
+                        self.missing_constructor(
                             user_component_id,
                             component_db.user_component_db(),
                             input,
@@ -619,6 +619,7 @@ impl ConstructibleDb {
     }
 
     fn missing_constructor(
+        &self,
         user_component_id: UserComponentId,
         user_component_db: &UserComponentDb,
         unconstructible_type: &ResolvedType,
@@ -654,10 +655,12 @@ impl ConstructibleDb {
             .flatten();
 
         let callable = &computation_db[user_component_id];
-        let e = anyhow::anyhow!(
-            "I can't find a constructor for `{unconstructible_type:?}`.\n\
-            I need an instance of `{unconstructible_type:?}` to invoke your {component_kind}, `{}`.",
-            callable.path
+        let e = anyhow::anyhow!("I can't find a constructor for `{}`.\n{self:?}", unconstructible_type.display_for_error()).context(
+            format!(
+                "I can't find a constructor for `{unconstructible_type:?}`.\n\
+                I need an instance of `{unconstructible_type:?}` to invoke your {component_kind}, `{}`.",
+                callable.path
+            )
         );
         let definition_info = get_definition_info(
             callable,
