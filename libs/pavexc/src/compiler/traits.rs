@@ -1,12 +1,13 @@
 use std::fmt::Formatter;
 
-use ahash::{HashMap, HashMapExt};
 use guppy::PackageId;
 use rustdoc_types::{GenericParamDefKind, ItemEnum, Type};
 
 use crate::compiler::resolvers::resolve_type;
 use crate::language::{PathType, ResolvedType};
 use crate::rustdoc::{Crate, CrateCollection};
+
+use super::resolvers::GenericBindings;
 
 /// It returns an error if `type_` doesn't implement the specified trait.
 ///
@@ -90,7 +91,7 @@ pub(crate) fn implements_trait(
             let type_item = krate_collection.get_item_by_global_type_id(&type_id);
             // We want to see through type aliases here.
             if let ItemEnum::TypeAlias(type_alias) = &type_item.inner {
-                let mut generic_bindings = HashMap::new();
+                let mut generic_bindings = GenericBindings::default();
                 for generic in &type_alias.generics.params {
                     // We also try to handle generic parameters, as long as they have a default value.
                     match &generic.kind {
@@ -104,7 +105,9 @@ pub(crate) fn implements_trait(
                                 krate_collection,
                                 &generic_bindings,
                             )?;
-                            generic_bindings.insert(generic.name.to_string(), default);
+                            generic_bindings
+                                .types
+                                .insert(generic.name.to_string(), default);
                         }
                         GenericParamDefKind::Type { default: None, .. }
                         | GenericParamDefKind::Const { .. }
