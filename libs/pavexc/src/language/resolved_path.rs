@@ -820,7 +820,9 @@ impl ResolvedPath {
             Ok(Err(UnknownPath(
                 self.clone(),
                 Arc::new(anyhow::anyhow!(
-                    "Path is too short to be a method path, but there is no function at that path"
+                    "There was no method named `{}` attached to `{}`",
+                    method_name_segment.ident,
+                    method_owner_path
                 )),
             )))
         }
