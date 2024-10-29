@@ -351,7 +351,13 @@ fn cycle_error(
         .unwrap();
     }
 
-    let diagnostic_builder = CompilerDiagnostic::builder(anyhow::anyhow!(error_msg));
+    let error = anyhow::anyhow!(
+        "There is a cycle in this dependency graph. Graph:\n{}",
+        // TODO: Use a PadAdapter to indent the graph, avoiding the need for an intermediate stringa allocation.
+        textwrap::indent(&graph.debug_dot(component_db, computation_db), "  ")
+    )
+    .context(error_msg);
+    let diagnostic_builder = CompilerDiagnostic::builder(error);
 
     diagnostic_builder.help(
             "Break the cycle! Remove one of the 'depends-on' relationship by changing the signature of \
