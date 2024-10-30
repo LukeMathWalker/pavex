@@ -272,6 +272,19 @@ pub struct ClientSessionStateMut<'session>(&'session mut ClientState);
 impl<'session> ClientSessionStateMut<'session> {
     /// Set a value in the client-side state for the given key.
     ///
+    /// If the key already exists, the value is updated and the old raw value is returned.
+    /// If the value cannot be serialized, an error is returned.
+    pub fn set<T: Serialize>(
+        &mut self,
+        key: String,
+        value: T
+    ) -> Result<Option<Value>, serde_json::Error> {
+        let value = serde_json::to_value(value)?;
+        Ok(self.set_value(key, value))
+    }
+
+    /// Set a value in the client-side state for the given key.
+    ///
     /// If the key already exists, the value is updated and the old value is returned.
     pub fn set_value(&mut self, key: String, value: Value) -> Option<Value> {
         match &mut self.0 {
@@ -290,6 +303,16 @@ impl<'session> ClientSessionStateMut<'session> {
                 value
             }
         }
+    }
+
+    /// Remove the value associated with `key` from the client-side state.
+    ///
+    /// If the key exists, the removed value is returned.
+    /// If the removed value cannot be serialized, an error is returned.
+    pub fn remove<T: DeserializeOwned>(&mut self, key: &str) -> Result<Option<T>, serde_json::Error> {
+        self.remove_value(key)
+            .map(|value| serde_json::from_value(value))
+            .transpose()
     }
 
     /// Remove the value associated with `key` from the client-side state.
@@ -417,6 +440,17 @@ impl<'session, 'store> ServerSessionState<'session, 'store> {
             state: existing_state,
         };
         Ok(old_value)
+    }
+
+    /// Remove the value associated with `key` from the server-side state.
+    ///
+    /// If the key exists, the removed value is returned.
+    /// If the removed value cannot be serialized, an error is returned.
+    pub async fn remove<T: DeserializeOwned>(&mut self, key: &str) -> Result<Option<T>, LoadError> {
+        self.remove_value(key).await?
+            .map(serde_json::from_value)
+            .transpose()
+            .map_err(LoadError::DeserializationError)
     }
 
     /// Remove the value associated with `key` from the server-side state.
