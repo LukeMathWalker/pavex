@@ -2162,9 +2162,9 @@ dependencies = [
 
 [[package]]
 name = "pavex_matchit"
-version = "0.7.4"
+version = "0.7.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "77b9753b03381fd8856966146c4d626d9a8507901c1bcdfbc41df03deea551fc"
+checksum = "d673cfe628f1698f1e6c2e7a35ff15d23b5085e7017fd5ccada3711560e70a5c"
 
 [[package]]
 name = "pavex_miette"

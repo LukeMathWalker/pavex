@@ -36,6 +36,12 @@ use crate::request::path::errors::DecodeError;
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct RawPathParams<'server, 'request>(Params<'server, 'request>);
 
+impl Default for RawPathParams<'_, '_> {
+    fn default() -> Self {
+        Self(Params::new())
+    }
+}
+
 impl<'server, 'request> RawPathParams<'server, 'request> {
     /// Returns the number of extracted path parameters.
     pub fn len(&self) -> usize {

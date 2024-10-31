@@ -511,6 +511,13 @@ fn get_request_dispatcher(
     } else {
         quote! {}
     };
+    let url_params = if fallback_codegened_pipeline.needs_url_params(framework_items_db) {
+        quote! {
+            let url_params: #pavex::router::AllowedMethods = #pavex::request::path::RawPathParams::default();;
+        }
+    } else {
+        quote! {}
+    };
     let unwrap_connection_info =
         if fallback_codegened_pipeline.needs_connection_info(framework_items_db) {
             needs_connection_info = true;
@@ -538,6 +545,7 @@ fn get_request_dispatcher(
             let matched_route = match server_state.router.at(&request_head.target.path()) {
                 Ok(m) => m,
                 Err(_) => {
+                    #url_params
                     #allowed_methods
                     #unmatched_route
                     #unwrap_connection_info

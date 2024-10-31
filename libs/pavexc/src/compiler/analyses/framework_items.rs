@@ -67,9 +67,9 @@ impl FrameworkItemDb {
             package_graph,
             krate_collection,
         );
-        items.insert(raw_path_parameters, 2);
+        items.insert(raw_path_parameters, Self::url_params_id());
         id2metadata.insert(
-            2,
+            Self::url_params_id(),
             FrameworkItemMetadata {
                 lifecycle: Lifecycle::RequestScoped,
                 cloning_strategy: CloningStrategy::CloneIfNecessary,
@@ -121,6 +121,11 @@ impl FrameworkItemDb {
             },
         );
         Self { items, id2metadata }
+    }
+
+    /// Return the id for the `MatchedPathPattern` type.
+    pub(crate) fn url_params_id() -> FrameworkItemId {
+        2
     }
 
     /// Return the id for the `MatchedPathPattern` type.
