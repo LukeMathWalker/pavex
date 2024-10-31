@@ -8,7 +8,7 @@ use syn::{ItemFn, Token, Visibility};
 
 use crate::compiler::analyses::components::ComponentDb;
 use crate::compiler::analyses::computations::ComputationDb;
-use crate::compiler::analyses::framework_items::FrameworkItemDb;
+use crate::compiler::analyses::framework_items::{FrameworkItemDb, FrameworkItemId};
 use crate::compiler::analyses::processing_pipeline::pipeline::Binding;
 use crate::compiler::analyses::processing_pipeline::RequestHandlerPipeline;
 use crate::language::{GenericArgument, GenericLifetimeParameter, ResolvedType};
@@ -437,24 +437,31 @@ impl CodegenedRequestHandlerPipeline {
     }
 
     pub(crate) fn needs_allowed_methods(&self, framework_item_db: &FrameworkItemDb) -> bool {
-        let allowed_methods_type = framework_item_db
-            .get_type(FrameworkItemDb::allowed_methods_id())
-            .unwrap();
-        self.needs_input_type(allowed_methods_type)
+        self.needs_framework_item(framework_item_db, FrameworkItemDb::allowed_methods_id())
+    }
+
+    pub(crate) fn needs_url_params(&self, framework_item_db: &FrameworkItemDb) -> bool {
+        self.needs_framework_item(framework_item_db, FrameworkItemDb::url_params_id())
     }
 
     pub(crate) fn needs_connection_info(&self, framework_item_db: &FrameworkItemDb) -> bool {
-        let connection_info_type = framework_item_db
-            .get_type(FrameworkItemDb::connection_info())
-            .unwrap();
-        self.needs_input_type(connection_info_type)
+        self.needs_framework_item(framework_item_db, FrameworkItemDb::connection_info())
     }
 
     pub(crate) fn needs_matched_route(&self, framework_item_db: &FrameworkItemDb) -> bool {
-        let matched_route_type = framework_item_db
-            .get_type(FrameworkItemDb::matched_route_template_id())
-            .unwrap();
-        self.needs_input_type(matched_route_type)
+        self.needs_framework_item(
+            framework_item_db,
+            FrameworkItemDb::matched_route_template_id(),
+        )
+    }
+
+    fn needs_framework_item(
+        &self,
+        framework_item_db: &FrameworkItemDb,
+        id: FrameworkItemId,
+    ) -> bool {
+        let ty = framework_item_db.get_type(id).unwrap();
+        self.needs_input_type(ty)
     }
 }
 

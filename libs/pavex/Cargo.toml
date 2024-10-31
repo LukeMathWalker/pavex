@@ -2,7 +2,11 @@
 name = "pavex"
 version.workspace = true
 description = "A framework for building API services and web applications in Rust."
-categories = ["asynchronous", "network-programming", "web-programming::http-server"]
+categories = [
+    "asynchronous",
+    "network-programming",
+    "web-programming::http-server",
+]
 keywords = ["http", "web", "framework", "pavex", "rest"]
 edition.workspace = true
 repository.workspace = true
@@ -40,7 +44,7 @@ pavex_reflection = { path = "../pavex_reflection", version = "=0.1.49" }
 persist_if_changed = { path = "../persist_if_changed", version = "0.1.49" }
 
 # Route parameters
-matchit = { version = "0.7", package = "pavex_matchit" }
+matchit = { version = "0.7.5", package = "pavex_matchit" }
 percent-encoding = { workspace = true }
 
 # Query parameters
@@ -65,9 +69,13 @@ type-safe-id = { workspace = true }
 # Time facilities
 time = { workspace = true, features = ["serde", "std"], optional = true }
 
-tokio = { workspace = true, features = [ "sync", "rt", "time"] }
+tokio = { workspace = true, features = ["sync", "rt", "time"] }
 hyper = { workspace = true, features = ["full"], optional = true }
-hyper-util = { workspace = true, features = ["tokio", "server", "server-auto"], optional = true }
+hyper-util = { workspace = true, features = [
+    "tokio",
+    "server",
+    "server-auto",
+], optional = true }
 socket2 = { workspace = true, optional = true }
 smallvec = { workspace = true }
 px_workspace_hack = { version = "0.1", path = "../px_workspace_hack" }
