@@ -53,7 +53,10 @@ impl CallableDefinition {
                     return None;
                 }
             }
-            _ => unreachable!(),
+            _ => {
+                tracing::warn!("Expected a function or method, got: {:#?}", item.inner);
+                return None;
+            }
         };
         Some(CallableDefinition {
             attrs,
