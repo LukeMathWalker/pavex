@@ -765,7 +765,7 @@ impl ResolvedPath {
                                         item: impl_item,
                                         item_id: GlobalItemId {
                                             package_id: search_krate.core.package_id.clone(),
-                                            rustdoc_item_id: child_id.to_owned(),
+                                            rustdoc_item_id: impl_item_id.to_owned(),
                                         },
                                     });
                                     break 'outer;
