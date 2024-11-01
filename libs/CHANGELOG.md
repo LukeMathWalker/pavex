@@ -15,8 +15,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Supply an (empty) instance of `UrlParams` to the root fallback handler, if it needs it.
-- Associate the correct function item with resolved methods, rather than the parent impl block.
-- Improve error message
 - Look for the 'impl' block in the crate that define the type, rather than the trait, when resolving trait methods
 - Improve error message when we fail to find a method item in the JSON docs
 - Don't complain about missing constructors when looking at a naked generic input parameter
@@ -28,10 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Other
 
-- Disable workspace hack before a release
-- Re-enable workspace hack after a release ([#354](https://github.com/LukeMathWalker/pavex/pull/354))
-- Punctuation in error messages.
-- Improve panic message with details about the item we couldn't handle
+- Improve panic message with details about the `rustdoc` item we couldn't handle
 - Display the available constructibles when PAVEX_DEBUG is set and we incur into a 'missing constructor' error
 - Display the cyclic dependency graph when PAVEX_DEBUG is set
 - Provide an easy-to-examine representation for the set of constructibles in a given scope tree
