@@ -6,6 +6,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.50](https://github.com/LukeMathWalker/pavex/compare/0.1.49...0.1.50) - 2024-11-01
+
+### Added
+
+- Support lifetime parameters in type aliases
+
+### Fixed
+
+- Supply an (empty) instance of `UrlParams` to the root fallback handler, if it needs it.
+- Associate the correct function item with resolved methods, rather than the parent impl block.
+- Improve error message
+- Look for the 'impl' block in the crate that define the type, rather than the trait, when resolving trait methods
+- Improve error message when we fail to find a method item in the JSON docs
+- Don't complain about missing constructors when looking at a naked generic input parameter
+- Bind generic parameters correctly in all instances
+- Panic eagerly if internal invariants are not upheld when binding generic parameters
+- Pavex correctly handles type alises with generic parameters that differ from the target type
+- Pavex will correctly set the name of the defining crate when resolving local type aliases that refer to remote types
+- Pavex will never use private modules in the paths used to refer to methods in the generated server SDK code. ([#355](https://github.com/LukeMathWalker/pavex/pull/355))
+
+### Other
+
+- Disable workspace hack before a release
+- Re-enable workspace hack after a release ([#354](https://github.com/LukeMathWalker/pavex/pull/354))
+- Punctuation in error messages.
+- Improve panic message with details about the item we couldn't handle
+- Display the available constructibles when PAVEX_DEBUG is set and we incur into a 'missing constructor' error
+- Display the cyclic dependency graph when PAVEX_DEBUG is set
+- Provide an easy-to-examine representation for the set of constructibles in a given scope tree
+
 ## [0.1.49](https://github.com/LukeMathWalker/pavex/compare/0.1.48...0.1.49) - 2024-10-23
 
 ### Added
