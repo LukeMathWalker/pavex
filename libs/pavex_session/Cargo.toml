@@ -22,3 +22,4 @@ time = { workspace = true, features = ["std"] }
 tokio = { workspace = true, features = ["rt"] }
 async-trait = { workspace = true }
 thiserror = { workspace = true }
+px_workspace_hack = { version = "0.1", path = "../px_workspace_hack" }
