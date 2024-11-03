@@ -71,8 +71,62 @@ impl OrderedCallGraph {
         component_db: &ComponentDb,
         computation_db: &ComputationDb,
     ) -> String {
-        self.call_graph
-            .dot(package_ids2names, component_db, computation_db)
+        let config = [
+            petgraph::dot::Config::EdgeNoLabel,
+            petgraph::dot::Config::NodeNoLabel,
+        ];
+        format!(
+            "{:?}",
+            petgraph::dot::Dot::with_attr_getters(
+                &self.call_graph,
+                &config,
+                &|_, edge| match edge.weight() {
+                    CallGraphEdgeMetadata::Move => "".to_string(),
+                    CallGraphEdgeMetadata::SharedBorrow => "label = \"&\"".to_string(),
+                    CallGraphEdgeMetadata::ExclusiveBorrow => "label = \"&mut \"".to_string(),
+                    CallGraphEdgeMetadata::HappensBefore =>
+                        "label = \"happens before\"".to_string(),
+                },
+                &|_, (id, node)| {
+                    let position = self.node2position[&id];
+                    match node {
+                        CallGraphNode::Compute { component_id, .. } => match component_db
+                            .hydrated_component(*component_id, computation_db)
+                            .computation()
+                        {
+                            Computation::Callable(c) => {
+                                format!(
+                                    "label = \"{position}| {}\"",
+                                    c.render_signature(package_ids2names)
+                                )
+                            }
+                            Computation::MatchResult(m) => {
+                                format!(
+                                    "label = \"{position}| {} -> {}\"",
+                                    m.input.render_type(package_ids2names),
+                                    m.output.render_type(package_ids2names)
+                                )
+                            }
+                            Computation::PrebuiltType(i) => {
+                                format!(
+                                    "label = \"{position}| {}\"",
+                                    i.render_type(package_ids2names)
+                                )
+                            }
+                        },
+                        CallGraphNode::InputParameter { type_, .. } => {
+                            format!(
+                                "label = \"{position}| {}\"",
+                                type_.render_type(package_ids2names)
+                            )
+                        }
+                        CallGraphNode::MatchBranching => {
+                            format!("label = \"{position}| `match`\"")
+                        }
+                    }
+                },
+            )
+        )
     }
 
     /// Print a representation of the [`OrderedCallGraph`] in graphviz's .DOT format, geared towards
