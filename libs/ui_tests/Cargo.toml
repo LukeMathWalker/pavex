@@ -145,6 +145,8 @@ members = [
   "borrow_checker/multiple_consumers/a_clonable_input_type_can_be_moved_twice/generated_app",
   "borrow_checker/multiple_consumers/a_clonable_type_can_be_moved_twice",
   "borrow_checker/multiple_consumers/a_clonable_type_can_be_moved_twice/generated_app",
+  "borrow_checker/multiple_consumers/a_clonable_type_can_be_moved_twice_when_building_app_state",
+  "borrow_checker/multiple_consumers/a_clonable_type_can_be_moved_twice_when_building_app_state/generated_app",
   "borrow_checker/multiple_consumers/a_copy_type_can_be_moved_twice",
   "borrow_checker/multiple_consumers/a_copy_type_can_be_moved_twice/generated_app",
   "borrow_checker/multiple_consumers/a_non_clonable_framework_type_cannot_be_moved_twice",

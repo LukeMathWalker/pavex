@@ -66,8 +66,8 @@ where
         };
     }
 
-    let mut block = quote! {};
     let mut dependency_bindings: HashMap<ResolvedType, Box<dyn ToTokens>> = HashMap::new();
+    let mut dependency_blocks = Vec::new();
     for (dependency_index, dependency_type, consumption_mode) in dependencies {
         let type_ = match consumption_mode {
             CallGraphEdgeMetadata::Move => dependency_type.to_owned(),
@@ -85,7 +85,9 @@ where
                 unreachable!()
             }
         };
-        let fragment = &blocks[&dependency_index];
+        let Some(fragment) = &blocks.get(&dependency_index) else {
+            panic!("Failed to find the code fragment for {dependency_index:?}, the node that builds `{dependency_type:?}`");
+        };
         let mut to_be_removed = false;
         let tokens = match fragment {
             Fragment::VariableReference(v) => match consumption_mode {
@@ -97,10 +99,9 @@ where
             Fragment::Block(_) | Fragment::Statement(_) => {
                 let parameter_name = variable_generator.generate();
                 to_be_removed = true;
-                block = quote! {
-                    #block
+                dependency_blocks.push(quote! {
                     let #parameter_name = #fragment;
-                };
+                });
                 match consumption_mode {
                     CallGraphEdgeMetadata::Move => Box::new(quote! { #parameter_name }),
                     CallGraphEdgeMetadata::SharedBorrow => Box::new(quote! { &#parameter_name }),
@@ -123,7 +124,7 @@ where
     let block: syn::Block = syn::parse2(quote! {
         {
             #before_block
-            #block
+            #(#dependency_blocks)*
             #constructor_invocation
         }
     })
