@@ -1,6 +1,7 @@
 use std::cmp::Reverse;
+use std::collections::BinaryHeap;
 
-use ahash::{HashMap, HashMapExt};
+use ahash::{HashMap, HashMapExt, HashSet};
 use bimap::BiHashMap;
 use fixedbitset::FixedBitSet;
 use guppy::PackageId;
@@ -8,7 +9,7 @@ use indexmap::IndexMap;
 use itertools::Itertools;
 use petgraph::graph::NodeIndex;
 use petgraph::prelude::{DfsPostOrder, EdgeRef};
-use petgraph::visit::{GraphRef, IntoNeighbors, Reversed, VisitMap, Visitable};
+use petgraph::visit::{Dfs, IntoNeighborsDirected, Reversed, VisitMap, Visitable};
 use petgraph::Direction;
 use proc_macro2::{Ident, TokenStream};
 use quote::{quote, ToTokens};
@@ -92,71 +93,116 @@ pub(crate) fn codegen_callable_closure(
 }
 
 #[derive(Clone, Debug)]
-/// An adapted version of [`DfsPostOrder`] that takes into account our custom position when
-/// determining the order in which neighbours of a discovered node are visited.
-pub struct PositionAwareVisitor<'a> {
-    /// The stack of nodes to visit
-    pub stack: Vec<NodeIndex>,
+/// A visitor that traverses a portion of the call graph, starting from a particular node.
+/// In particular:
+///
+/// - it yields nodes according to the total order established by the `node_id2position` map.
+///   Nodes with a lower position are yielded first.
+/// - it only visits nodes:
+///   - connected to the starting node, disregarding the directionality of the edges.
+///   - that can reach at least one sink node that's also reachable from the starting node,
+///     taking into account the directionality of the edges.
+///
+/// These rules are meant to identify a section of the call graph that can be executed
+/// with no branching—i.e. a "basic block", adopting the terminology of
+/// [control flow graphs](https://en.wikipedia.org/wiki/Control-flow_graph).
+/// We don't actually build a CFG, but we try to approximate the concept using this
+/// visitor.
+struct BasicBlockVisitor<'a> {
+    /// The start node must either be:
+    /// - a branching node
+    /// - a sink node
+    start: NodeIndex,
+    /// The nodes yet to be visited, ordered according to their position.
+    /// The nodes with the lowest position are visited first, hence the "reversal".
+    to_be_visited: BinaryHeap<Reverse<UnvisitedNode>>,
     /// The map of discovered nodes
-    pub discovered: FixedBitSet,
+    discovered: FixedBitSet,
     /// The map of finished nodes
-    pub finished: FixedBitSet,
+    finished: FixedBitSet,
     /// The map that assigns each node to its position, establishing a total order
     /// on the graph nodes.
-    pub node_id2position: &'a HashMap<NodeIndex, u16>,
+    node_id2position: &'a HashMap<NodeIndex, u16>,
+    /// The map that assigns to each node the set of sinks reachable from it.
+    reachability_map: HashMap<NodeIndex, HashSet<NodeIndex>>,
 }
 
-impl<'a> PositionAwareVisitor<'a> {
+#[derive(Debug, Eq, PartialEq, Ord, Clone)]
+struct UnvisitedNode {
+    node: NodeIndex,
+    position: u16,
+}
+
+impl PartialOrd for UnvisitedNode {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.position.cmp(&other.position))
+    }
+}
+
+impl<'a> BasicBlockVisitor<'a> {
     /// Create a new [`PositionAwareVisitor`] using the graph's visitor map, and put
     /// `start` in the stack of nodes to visit.
-    pub(crate) fn new(ordered_call_graph: &'a OrderedCallGraph) -> Self {
+    pub(crate) fn new(ordered_call_graph: &'a OrderedCallGraph, start_node: NodeIndex) -> Self {
+        let reachability_map = compute_reachability_map(&ordered_call_graph.call_graph);
         let graph = Reversed(&ordered_call_graph.call_graph);
-        let mut dfs = Self::empty(graph, &ordered_call_graph.node2position);
-        dfs.move_to(ordered_call_graph.root_node_index);
-        dfs
-    }
-
-    /// Create a new [`PositionAwareVisitor`] using the graph's visitor map, and no stack.
-    pub fn empty<G>(graph: G, node_id2position: &'a HashMap<NodeIndex, u16>) -> Self
-    where
-        G: GraphRef + Visitable<NodeId = NodeIndex, Map = FixedBitSet>,
-    {
-        PositionAwareVisitor {
-            stack: Vec::new(),
+        let mut to_be_visited = BinaryHeap::new();
+        to_be_visited.push(Reverse(UnvisitedNode {
+            node: start_node,
+            position: ordered_call_graph.node2position[&start_node],
+        }));
+        Self {
+            start: start_node,
+            to_be_visited,
             discovered: graph.visit_map(),
             finished: graph.visit_map(),
-            node_id2position,
+            node_id2position: &ordered_call_graph.node2position,
+            reachability_map,
         }
     }
 
     /// Keep the discovered and finished map, but clear the visit stack and restart
     /// the dfs from a particular node.
     pub fn move_to(&mut self, start: NodeIndex) {
-        self.stack.clear();
-        self.stack.push(start);
+        self.start = start;
+        self.to_be_visited.clear();
+        self.to_be_visited.push(Reverse(UnvisitedNode {
+            node: start,
+            position: self.node_id2position[&start],
+        }));
     }
 
     /// Return the next node in the traversal, or `None` if the traversal is done.
     pub fn next<G>(&mut self, graph: G) -> Option<NodeIndex>
     where
-        G: IntoNeighbors<NodeId = NodeIndex>,
+        G: IntoNeighborsDirected<NodeId = NodeIndex>,
     {
-        while let Some(&nx) = self.stack.last() {
+        while let Some(nx) = self.to_be_visited.peek() {
+            let nx = nx.0.node;
             if self.discovered.visit(nx) {
+                let max_position = self.node_id2position[&self.start];
+                let interesting_terminals = &self.reachability_map[&self.start];
                 // First time visiting `nx`: Push neighbors, don't pop `nx`
-                let mut neighbors = graph.neighbors(nx).collect::<Vec<_>>();
-                // We are using a stack, therefore the node that gets pushed last is the first one
-                // that gets popped.
-                // Given the above, to enforce our position-based ordering we need to sort the
-                // neighbors in *descending* order.
-                neighbors.sort_by_key(|n| Reverse(self.node_id2position[n]));
+                let neighbors = graph
+                    .neighbors_directed(nx, Direction::Incoming)
+                    .chain(graph.neighbors_directed(nx, Direction::Outgoing))
+                    .filter(|&succ| {
+                        let succ_position = self.node_id2position[&succ];
+                        succ_position <= max_position
+                            && !self.discovered.is_visited(&succ)
+                            && interesting_terminals
+                                .intersection(&self.reachability_map[&succ])
+                                .next()
+                                .is_some()
+                    });
                 for succ in neighbors {
-                    if !self.discovered.is_visited(&succ) {
-                        self.stack.push(succ);
-                    }
+                    let succ = UnvisitedNode {
+                        node: succ,
+                        position: self.node_id2position[&succ],
+                    };
+                    self.to_be_visited.push(Reverse(succ));
                 }
             } else {
-                self.stack.pop();
+                self.to_be_visited.pop();
                 if self.finished.visit(nx) {
                     // Second time: All reachable nodes must have been finished
                     return Some(nx);
@@ -182,7 +228,7 @@ fn codegen_callable_closure_body(
 ) -> Result<TokenStream, anyhow::Error> {
     let mut at_most_once_constructor_blocks = IndexMap::<NodeIndex, TokenStream>::new();
     let mut blocks = HashMap::<NodeIndex, Fragment>::new();
-    let mut dfs = PositionAwareVisitor::new(ordered_call_graph);
+    let mut dfs = BasicBlockVisitor::new(ordered_call_graph, ordered_call_graph.root_node_index);
     _codegen_callable_closure_body(
         ordered_call_graph.root_node_index,
         &ordered_call_graph.call_graph,
@@ -198,6 +244,22 @@ fn codegen_callable_closure_body(
     )
 }
 
+/// Assign to each node in the graph the set of terminal nodes that are reachable from it.
+fn compute_reachability_map(graph: &RawCallGraph) -> HashMap<NodeIndex, HashSet<NodeIndex>> {
+    let mut reachability_map = HashMap::<NodeIndex, HashSet<NodeIndex>>::new();
+    let terminal_nodes = graph.externals(Direction::Outgoing);
+    for terminal_node in terminal_nodes {
+        let mut dfs = Dfs::new(&Reversed(graph), terminal_node);
+        while let Some(node) = dfs.next(&Reversed(graph)) {
+            reachability_map
+                .entry(node)
+                .or_default()
+                .insert(terminal_node);
+        }
+    }
+    reachability_map
+}
+
 fn _codegen_callable_closure_body(
     node_index: NodeIndex,
     call_graph: &RawCallGraph,
@@ -209,7 +271,7 @@ fn _codegen_callable_closure_body(
     variable_name_generator: &mut VariableNameGenerator,
     at_most_once_constructor_blocks: &mut IndexMap<NodeIndex, TokenStream>,
     blocks: &mut HashMap<NodeIndex, Fragment>,
-    dfs: &mut PositionAwareVisitor,
+    dfs: &mut BasicBlockVisitor,
 ) -> Result<TokenStream, anyhow::Error> {
     let terminal_index = find_terminal_descendant(node_index, call_graph);
     // We want to start the code-generation process from a `MatchBranching` node with
@@ -376,7 +438,11 @@ fn _codegen_callable_closure_body(
         }
     }
     let body = {
-        let at_most_once_constructors = at_most_once_constructor_blocks.values();
+        let at_most_once_constructors = at_most_once_constructor_blocks
+            .iter()
+            .sorted_by_key(|(k, _)| node_id2position[k])
+            .map(|(_, v)| v);
+        let at_most_once_constructors = at_most_once_constructors.collect::<Vec<_>>();
         // Remove the wrapping block, if there is one
         let b = match &blocks[&traversal_start_index] {
             Fragment::Block(b) => {
@@ -433,6 +499,10 @@ fn find_match_branching_ancestor(
     None
 }
 
+/// Return the direct dependencies of a node in the call graph.
+///
+/// Dependencies are **ordered with respect to their `position`**—i.e.
+/// the dependency with the lowest `position` is the first element in the returned iterator.
 fn get_node_type_inputs<'a, 'b: 'a>(
     node_index: NodeIndex,
     call_graph: &'a RawCallGraph,
