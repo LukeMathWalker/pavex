@@ -6,6 +6,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.52](https://github.com/LukeMathWalker/pavex/compare/0.1.51...0.1.52) - 2024-11-05
+
+### Fixed
+
+- Don't allows the basic block visitor to engage with multiple branching nodes at once. It fixes a panic for more complex call graphs.
+
+### Other
+
+- Disable workspace hack before a release
+- Add a span around the generation of the application state initializer function
+- Print the call graph for the application state initializer if the log level is set to 'trace'
+- improve formatting
+- Re-enable workspace hack after a release ([#364](https://github.com/LukeMathWalker/pavex/pull/364))
+
 ## [0.1.51](https://github.com/LukeMathWalker/pavex/compare/0.1.50...0.1.51) - 2024-11-05
 
 ### Added
