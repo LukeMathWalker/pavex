@@ -14,12 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Respect the order identified by the borrow-checking phase when generating code
-
-### Other
-
-- Disable workspace hack before a release
-- Re-enable workspace hack after a release ([#361](https://github.com/LukeMathWalker/pavex/pull/361))
+- Respect the order identified by the borrow-checking analysis phase when generating code
 
 ## [0.1.50](https://github.com/LukeMathWalker/pavex/compare/0.1.49...0.1.50) - 2024-11-01
 
