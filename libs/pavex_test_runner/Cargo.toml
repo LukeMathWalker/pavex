@@ -31,7 +31,7 @@ walkdir = { workspace = true }
 serde_json = { workspace = true }
 itertools = { workspace = true }
 sha2 = { workspace = true }
-persist_if_changed = { path = "../persist_if_changed", version = "0.1.50" }
+persist_if_changed = { path = "../persist_if_changed", version = "0.1.51" }
 object-pool = { workspace = true }
 num_cpus = { workspace = true }
 globwalk = { workspace = true }
@@ -41,4 +41,3 @@ once_cell = { workspace = true }
 pavexc = { path = "../pavexc" }
 guppy = { workspace = true }
 rayon = { workspace = true }
-px_workspace_hack = { version = "0.1", path = "../px_workspace_hack" }
