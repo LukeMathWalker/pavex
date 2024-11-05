@@ -172,10 +172,7 @@ impl<'a> BasicBlockVisitor<'a> {
     }
 
     /// Return the next node in the traversal, or `None` if the traversal is done.
-    pub fn next<G>(&mut self, graph: G) -> Option<NodeIndex>
-    where
-        G: IntoNeighborsDirected<NodeId = NodeIndex>,
-    {
+    pub fn next(&mut self, graph: Reversed<&RawCallGraph>) -> Option<NodeIndex> {
         while let Some(nx) = self.to_be_visited.peek() {
             let nx = nx.0.node;
             if self.discovered.visit(nx) {
@@ -189,6 +186,14 @@ impl<'a> BasicBlockVisitor<'a> {
                         let succ_position = self.node_id2position[&succ];
                         succ_position <= max_position
                             && !self.discovered.is_visited(&succ)
+                            && {
+                                // Don't start visiting new branching nodes.
+                                if let CallGraphNode::MatchBranching = graph.0[succ] {
+                                    succ == self.start
+                                } else {
+                                    true
+                                }
+                            }
                             && interesting_terminals
                                 .intersection(&self.reachability_map[&succ])
                                 .next()
@@ -353,7 +358,7 @@ fn _codegen_callable_closure_body(
                     .neighbors_directed(current_index, Direction::Outgoing)
                     .collect::<Vec<_>>();
                 assert_eq!(2, variants.len());
-                assert_eq!(current_index, traversal_start_index);
+                assert_eq!(current_index, dfs.start);
                 let mut ok_arm = None;
                 let mut ok_binding_variable = None;
                 let mut err_arm = None;
