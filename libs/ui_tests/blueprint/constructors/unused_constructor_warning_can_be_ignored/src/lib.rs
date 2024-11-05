@@ -3,6 +3,12 @@ use pavex::f;
 
 pub struct Unused;
 
+impl Default for Unused {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Unused {
     pub fn new() -> Self {
         Self

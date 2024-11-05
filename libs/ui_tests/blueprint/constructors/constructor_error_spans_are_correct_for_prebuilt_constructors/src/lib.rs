@@ -7,11 +7,11 @@ use pavex::f;
 
 pub struct GenericType<V>(V);
 
-pub fn generic_constructor<T>(generic_input: GenericType<T>) -> u8 {
+pub fn generic_constructor<T>(_generic_input: GenericType<T>) -> u8 {
     todo!()
 }
 
-pub fn handler(i: u8) -> pavex::response::Response {
+pub fn handler(_i: u8) -> pavex::response::Response {
     todo!()
 }
 

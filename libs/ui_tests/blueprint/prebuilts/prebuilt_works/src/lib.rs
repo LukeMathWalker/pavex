@@ -1,4 +1,4 @@
-use pavex::blueprint::{constructor::CloningStrategy, router::GET, Blueprint};
+use pavex::blueprint::{router::GET, Blueprint};
 use pavex::response::Response;
 use pavex::{f, t};
 
@@ -6,12 +6,12 @@ use pavex::{f, t};
 pub struct A;
 
 #[derive(Clone)]
-pub struct B<T>(T);
+pub struct B<T>(pub T);
 
 #[derive(Clone)]
-pub struct C<'a>(&'a str);
+pub struct C<'a>(pub &'a str);
 
-pub fn handler(a: &A, b: &B<String>, c: C<'static>, d: Vec<String>) -> Response {
+pub fn handler(_a: &A, _b: &B<String>, _c: C<'static>, _d: Vec<String>) -> Response {
     todo!()
 }
 

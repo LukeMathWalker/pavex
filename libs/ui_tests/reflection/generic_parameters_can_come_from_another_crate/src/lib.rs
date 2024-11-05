@@ -1,8 +1,6 @@
 use dep_1::Custom;
 use pavex::blueprint::{router::GET, Blueprint};
 use pavex::f;
-use pavex::response::IntoResponse;
-use pavex::response::Response;
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();

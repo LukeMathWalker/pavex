@@ -8,7 +8,7 @@ pub struct MissingOne {
     y: u32,
 }
 
-pub fn missing_one(params: PathParams<MissingOne>) -> StatusCode {
+pub fn missing_one(_params: PathParams<MissingOne>) -> StatusCode {
     todo!()
 }
 
@@ -19,7 +19,7 @@ pub struct MissingTwo {
     z: u32,
 }
 
-pub fn missing_two(params: PathParams<MissingTwo>) -> StatusCode {
+pub fn missing_two(_params: PathParams<MissingTwo>) -> StatusCode {
     todo!()
 }
 
@@ -29,7 +29,7 @@ pub struct NoPathParams {
     y: u32,
 }
 
-pub fn no_path_params(params: PathParams<NoPathParams>) -> StatusCode {
+pub fn no_path_params(_params: PathParams<NoPathParams>) -> StatusCode {
     todo!()
 }
 

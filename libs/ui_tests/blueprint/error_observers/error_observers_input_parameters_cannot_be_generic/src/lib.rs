@@ -4,15 +4,20 @@ use pavex::Error;
 
 pub struct GenericType<V>(V);
 
-pub fn generic<T>(generic_input: GenericType<T>, e: &Error) {
+pub fn generic<T>(_generic_input: GenericType<T>, _e: &Error) {
     todo!()
 }
 
-pub fn generic2<T, S>(i1: GenericType<T>, i2: GenericType<S>, e: &Error) {
+pub fn generic2<T, S>(_i1: GenericType<T>, _i2: GenericType<S>, _e: &Error) {
     todo!()
 }
 
-pub fn generic3<T, S, U>(i1: GenericType<T>, i2: GenericType<S>, i3: GenericType<U>, e: &Error) {
+pub fn generic3<T, S, U>(
+    _i1: GenericType<T>,
+    _i2: GenericType<S>,
+    _i3: GenericType<U>,
+    _e: &Error,
+) {
     todo!()
 }
 

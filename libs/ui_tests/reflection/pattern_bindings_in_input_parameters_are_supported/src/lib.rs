@@ -1,4 +1,4 @@
-use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
+use pavex::blueprint::{router::GET, Blueprint};
 use pavex::f;
 
 #[derive(Clone)]
@@ -11,7 +11,7 @@ pub fn streamer() -> Streamer {
     todo!()
 }
 
-pub fn stream_file(Streamer { a, b }: &Streamer) -> pavex::response::Response {
+pub fn stream_file(Streamer { a: _a, b: _b }: &Streamer) -> pavex::response::Response {
     todo!()
 }
 

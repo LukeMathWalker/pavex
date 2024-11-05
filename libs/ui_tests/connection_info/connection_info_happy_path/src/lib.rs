@@ -1,10 +1,10 @@
-use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
+use pavex::blueprint::{router::GET, Blueprint};
 use pavex::f;
 use pavex::{connection::ConnectionInfo, response::Response};
 
 pub fn get_connection_info(conn_info: &ConnectionInfo) -> Response {
-    let peer_addr = conn_info.peer_addr();
-    Response::ok().set_typed_body(format!("Success"))
+    let _peer_addr = conn_info.peer_addr();
+    Response::ok().set_typed_body("Success".to_string())
 }
 
 pub fn blueprint() -> Blueprint {

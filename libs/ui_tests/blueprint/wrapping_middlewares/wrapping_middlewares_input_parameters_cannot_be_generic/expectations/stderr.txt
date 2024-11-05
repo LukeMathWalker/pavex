@@ -14,7 +14,7 @@
   [31m│[0m     ╰────
   [31m│[0m     ╭─[[36;1;4mblueprint/wrapping_middlewares/wrapping_middlewares_input_parameters_cannot_be_generic/src/lib.rs[0m:9:1]
   [31m│[0m  [2m 9[0m │ 
-  [31m│[0m  [2m10[0m │ pub fn generic_wrapping_middleware<A, T>(_next: Next<A>, generic_input: GenericType<T>) -> Response
+  [31m│[0m  [2m10[0m │ pub fn generic_wrapping_middleware<A, T>(_next: Next<A>, _generic_input: GenericType<T>) -> Response
   [31m│[0m     · [35;1m                                      ┬[0m
   [31m│[0m     ·                                       [35;1m╰── The generic parameter without a concrete type[0m
   [31m│[0m  [2m11[0m │ where

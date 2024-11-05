@@ -1,5 +1,5 @@
 use pavex::blueprint::{
-    router::{GET, POST},
+    router::GET,
     Blueprint,
 };
 use pavex::f;

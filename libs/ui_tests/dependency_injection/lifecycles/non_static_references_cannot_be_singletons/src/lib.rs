@@ -1,4 +1,4 @@
-use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
+use pavex::blueprint::{router::GET, Blueprint};
 use pavex::f;
 use pavex::http::StatusCode;
 
@@ -12,7 +12,7 @@ pub fn a() -> A {
     todo!()
 }
 
-pub fn b(a: &A) -> &B {
+pub fn b(_a: &A) -> &B {
     todo!()
 }
 
@@ -22,8 +22,8 @@ pub fn handler(_b: &B) -> StatusCode {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.constructor(f!(crate::a), Lifecycle::Singleton);
-    bp.constructor(f!(crate::b), Lifecycle::Singleton);
+    bp.singleton(f!(crate::a));
+    bp.singleton(f!(crate::b));
     bp.route(GET, "/", f!(crate::handler));
     bp
 }

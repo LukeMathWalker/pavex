@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
+use pavex::blueprint::{router::GET, Blueprint};
 use pavex::f;
 
 pub struct NonSendSingleton(Rc<()>);
@@ -8,6 +8,12 @@ pub struct NonSendSingleton(Rc<()>);
 impl Clone for NonSendSingleton {
     fn clone(&self) -> NonSendSingleton {
         Self(Rc::clone(&self.0))
+    }
+}
+
+impl Default for NonSendSingleton {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -22,6 +28,12 @@ pub struct NonSyncSingleton(std::cell::Cell<()>);
 impl Clone for NonSyncSingleton {
     fn clone(&self) -> NonSyncSingleton {
         Self(self.0.clone())
+    }
+}
+
+impl Default for NonSyncSingleton {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

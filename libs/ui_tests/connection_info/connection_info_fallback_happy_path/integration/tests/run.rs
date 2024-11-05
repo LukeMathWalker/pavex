@@ -58,7 +58,7 @@ async fn connection_info_extraction_works() {
     while let Some(next) = res.frame().await {
         let frame = next.expect("Failed to get frame");
         if let Some(chunk) = frame.data_ref() {
-            body.write_all(&chunk).await.expect("Failed to write chunk");
+            body.write_all(chunk).await.expect("Failed to write chunk");
         }
     }
     let body = String::from_utf8(body).expect("Body is not UTF8");

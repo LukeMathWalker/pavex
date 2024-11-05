@@ -1,4 +1,4 @@
-use pavex::blueprint::{constructor::CloningStrategy, router::GET, Blueprint};
+use pavex::blueprint::{router::GET, Blueprint};
 use pavex::response::Response;
 use pavex::{f, t};
 

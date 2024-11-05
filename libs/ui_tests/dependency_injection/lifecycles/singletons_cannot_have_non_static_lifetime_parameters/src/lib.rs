@@ -5,7 +5,7 @@ use pavex::http::StatusCode;
 pub struct A;
 
 #[derive(Clone)]
-pub struct B<'a>(&'a A);
+pub struct B<'a>(pub &'a A);
 
 impl<'a> B<'a> {
     pub fn new(a: &'a A) -> Self {
@@ -17,7 +17,7 @@ pub fn a() -> A {
     todo!()
 }
 
-pub fn handler<'a>(_b: B<'a>) -> StatusCode {
+pub fn handler(_b: B<'_>) -> StatusCode {
     todo!()
 }
 

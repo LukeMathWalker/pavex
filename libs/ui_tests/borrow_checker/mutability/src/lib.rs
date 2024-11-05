@@ -22,7 +22,7 @@ use pavex::response::Response;
 pub struct A;
 
 pub struct B<'a> {
-    a: &'a A,
+    pub a: &'a A,
 }
 
 pub fn a() -> A {

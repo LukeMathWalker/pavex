@@ -9,7 +9,7 @@ pub struct A;
 
 pub struct C;
 
-pub struct B<'a>(&'a A);
+pub struct B<'a>(pub &'a A);
 
 pub fn a() -> A {
     todo!()
@@ -23,7 +23,7 @@ pub fn b<'a>(_a: &'a A, _c: &'a C) -> B<'a> {
     todo!()
 }
 
-pub fn mw<'l, T>(_next: Next<T>, _b: B<'l>) -> Response
+pub fn mw<T>(_next: Next<T>, _b: B<'_>) -> Response
 where
     T: IntoFuture<Output = Response>,
 {

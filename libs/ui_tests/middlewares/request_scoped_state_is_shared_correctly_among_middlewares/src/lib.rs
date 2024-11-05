@@ -14,7 +14,7 @@ pub fn pre(_a: &A) -> Processing {
     todo!()
 }
 
-pub fn wrap<T: IntoFuture<Output = Response>>(next: Next<T>, _a: &A) -> Response {
+pub fn wrap<T: IntoFuture<Output = Response>>(_next: Next<T>, _a: &A) -> Response {
     todo!()
 }
 

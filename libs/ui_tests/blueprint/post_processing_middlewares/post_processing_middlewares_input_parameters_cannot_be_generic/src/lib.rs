@@ -1,27 +1,26 @@
-use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
+use pavex::blueprint::{router::GET, Blueprint};
 use pavex::f;
-use pavex::middleware::Next;
 use pavex::response::Response;
 
 pub struct GenericType<V>(V);
 
-pub fn generic<T>(_response: Response, generic_input: GenericType<T>) -> Response {
+pub fn generic<T>(_response: Response, _generic_input: GenericType<T>) -> Response {
     todo!()
 }
 
 pub fn doubly_generic<T, S>(
     _response: Response,
-    i1: GenericType<T>,
-    i2: GenericType<S>,
+    _i1: GenericType<T>,
+    _i2: GenericType<S>,
 ) -> Response {
     todo!()
 }
 
 pub fn triply_generic<T, S, U>(
     _response: Response,
-    i1: GenericType<T>,
-    i2: GenericType<S>,
-    i3: GenericType<U>,
+    _i1: GenericType<T>,
+    _i2: GenericType<S>,
+    _i3: GenericType<U>,
 ) -> Response {
     todo!()
 }

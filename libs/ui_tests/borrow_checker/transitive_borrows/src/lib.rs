@@ -22,7 +22,7 @@ pub struct A;
 pub struct B;
 
 pub struct C<'a> {
-    a: &'a A,
+    pub a: &'a A,
 }
 
 pub fn a() -> A {

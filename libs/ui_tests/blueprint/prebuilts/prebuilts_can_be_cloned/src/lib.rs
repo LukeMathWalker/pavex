@@ -1,4 +1,4 @@
-use pavex::blueprint::{constructor::CloningStrategy, router::GET, Blueprint};
+use pavex::blueprint::{router::GET, Blueprint};
 use pavex::response::Response;
 use pavex::{f, t};
 
@@ -8,11 +8,11 @@ pub struct A;
 #[derive(Clone)]
 pub struct B;
 
-pub fn b(a: A) -> B {
+pub fn b(_a: A) -> B {
     todo!()
 }
 
-pub fn handler(a: A, b: &B) -> Response {
+pub fn handler(_a: A, _b: &B) -> Response {
     todo!()
 }
 

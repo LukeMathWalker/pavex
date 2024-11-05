@@ -1,4 +1,4 @@
-use pavex::blueprint::{constructor::Lifecycle, Blueprint};
+use pavex::blueprint::Blueprint;
 use pavex::t;
 
 pub struct Unused;

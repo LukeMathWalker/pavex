@@ -3,7 +3,6 @@ use std::net::TcpListener;
 
 use application::{build_application_state, run};
 use pavex::http::StatusCode;
-use pavex::response::Response;
 
 async fn spawn_test_server() -> u16 {
     static TELEMETRY: std::sync::Once = std::sync::Once::new();

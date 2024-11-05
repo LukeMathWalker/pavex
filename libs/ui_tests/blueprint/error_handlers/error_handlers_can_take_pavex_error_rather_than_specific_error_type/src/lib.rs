@@ -17,11 +17,11 @@ pub fn fallible_constructor() -> Result<String, CustomError> {
     todo!()
 }
 
-pub fn error_handler(e: &pavex::Error) -> Response {
+pub fn error_handler(_e: &pavex::Error) -> Response {
     todo!()
 }
 
-pub fn error_observer(e: &pavex::Error) {
+pub fn error_observer(_e: &pavex::Error) {
     todo!()
 }
 

@@ -2,7 +2,7 @@ use pavex::blueprint::{router::GET, Blueprint};
 use pavex::f;
 use pavex::response::Response;
 
-pub fn error_handler(e: &pavex::Error) -> Result<Response, String> {
+pub fn error_handler(_e: &pavex::Error) -> Result<Response, String> {
     todo!()
 }
 

@@ -1,29 +1,29 @@
-use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
+use pavex::blueprint::{router::GET, Blueprint};
 use pavex::f;
 use pavex::middleware::Next;
 use pavex::request::RequestHead;
 use pavex::response::Response;
 
-pub fn constructor(r: &mut RequestHead) -> String {
+pub fn constructor(_r: &mut RequestHead) -> String {
     todo!()
 }
 
-pub fn error_handler(e: &pavex::Error, s: &mut String) -> Response {
+pub fn error_handler(_e: &pavex::Error, _s: &mut String) -> Response {
     todo!()
 }
 
-pub fn wrapping<C>(next: Next<C>, s: &mut String) -> Response
+pub fn wrapping<C>(_next: Next<C>, _s: &mut String) -> Response
 where
     C: std::future::IntoFuture<Output = Response>,
 {
     todo!()
 }
 
-pub fn observer(e: &pavex::Error, s: &mut String) {
+pub fn observer(_e: &pavex::Error, _s: &mut String) {
     todo!()
 }
 
-pub fn handler(s: &String) -> Result<Response, pavex::Error> {
+pub fn handler(_s: &String) -> Result<Response, pavex::Error> {
     todo!()
 }
 

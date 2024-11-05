@@ -6,17 +6,17 @@
   [31m│[0m for `T`, since it isn't used by the error type.
   [31m│[0m
   [31m│[0m     ╭─[[36;1;4mblueprint/error_handlers/generics_in_error_handlers_must_be_tied_to_the_error/src/lib.rs[0m:53:1]
-  [31m│[0m  [2m53[0m │     bp.constructor(f!(crate::constructor1), Lifecycle::RequestScoped)
+  [31m│[0m  [2m53[0m │     bp.request_scoped(f!(crate::constructor1))
   [31m│[0m  [2m54[0m │         .error_handler(f!(crate::generic_error_handler));
   [31m│[0m     · [35;1m                       ────────────────┬───────────────[0m
   [31m│[0m     ·                   [35;1mThe error handler was registered here[0m
-  [31m│[0m  [2m55[0m │     bp.constructor(f!(crate::constructor2), Lifecycle::RequestScoped)
+  [31m│[0m  [2m55[0m │     bp.request_scoped(f!(crate::constructor2))
   [31m│[0m     ╰────
   [31m│[0m     ╭─[[36;1;4mblueprint/error_handlers/generics_in_error_handlers_must_be_tied_to_the_error/src/lib.rs[0m:24:1]
   [31m│[0m  [2m24[0m │ 
-  [31m│[0m  [2m25[0m │ pub fn generic_error_handler<T>(error: &Error, generic_input: GenericType<T>) -> Response {
-  [31m│[0m     · [35;1m                             ┬[0m[33;1m  ──────┬──────[0m
-  [31m│[0m     ·                              [35;1m│[0m        [33;1m╰── ..because it is not used here[0m
+  [31m│[0m  [2m25[0m │ pub fn generic_error_handler<T>(_error: &Error, _generic_input: GenericType<T>) -> Response {
+  [31m│[0m     · [35;1m                             ┬[0m[33;1m  ───────┬──────[0m
+  [31m│[0m     ·                              [35;1m│[0m         [33;1m╰── ..because it is not used here[0m
   [31m│[0m     ·                              [35;1m╰── I can't infer this..[0m
   [31m│[0m  [2m26[0m │     todo!()
   [31m│[0m     ╰────
@@ -35,11 +35,11 @@
   [31m│[0m for `T` and `S`, since they aren't used by the error type.
   [31m│[0m
   [31m│[0m     ╭─[[36;1;4mblueprint/error_handlers/generics_in_error_handlers_must_be_tied_to_the_error/src/lib.rs[0m:55:1]
-  [31m│[0m  [2m55[0m │     bp.constructor(f!(crate::constructor2), Lifecycle::RequestScoped)
+  [31m│[0m  [2m55[0m │     bp.request_scoped(f!(crate::constructor2))
   [31m│[0m  [2m56[0m │         .error_handler(f!(crate::doubly_generic_error_handler));
   [31m│[0m     · [35;1m                       ───────────────────┬───────────────────[0m
   [31m│[0m     ·   [35;1mThe error handler was registered here ──╯[0m
-  [31m│[0m  [2m57[0m │     bp.constructor(f!(crate::constructor3), Lifecycle::Transient)
+  [31m│[0m  [2m57[0m │     bp.transient(f!(crate::constructor3))
   [31m│[0m     ╰────
   [31m│[0m     ╭─[[36;1;4mblueprint/error_handlers/generics_in_error_handlers_must_be_tied_to_the_error/src/lib.rs[0m:28:1]
   [31m│[0m  [2m28[0m │ 
@@ -47,10 +47,10 @@
   [31m│[0m     · [35;1m                                    ┬[0m[33;1m  ┬[0m
   [31m│[0m     ·                                     [35;1m│[0m  [33;1m╰── I can't infer this..[0m
   [31m│[0m     ·                                     [35;1m╰── I can't infer this..[0m
-  [31m│[0m  [2m30[0m │     error: &Error,
-  [31m│[0m     · [32;1m    ──────┬──────[0m
-  [31m│[0m     ·           [32;1m╰── ..because they are not used here[0m
-  [31m│[0m  [2m31[0m │     i1: GenericType<T>,
+  [31m│[0m  [2m30[0m │     _error: &Error,
+  [31m│[0m     · [32;1m    ───────┬──────[0m
+  [31m│[0m     ·            [32;1m╰── ..because they are not used here[0m
+  [31m│[0m  [2m31[0m │     _i1: GenericType<T>,
   [31m│[0m     ╰────
   [31m│[0m [36m  help: [0mSpecify the concrete type(s) for the problematic generic
   [31m│[0m         parameter(s) when registering the error handler against the
@@ -67,7 +67,7 @@
   [31m│[0m for `T`, `S` and `U`, since they aren't used by the error type.
   [31m│[0m
   [31m│[0m     ╭─[[36;1;4mblueprint/error_handlers/generics_in_error_handlers_must_be_tied_to_the_error/src/lib.rs[0m:57:1]
-  [31m│[0m  [2m57[0m │     bp.constructor(f!(crate::constructor3), Lifecycle::Transient)
+  [31m│[0m  [2m57[0m │     bp.transient(f!(crate::constructor3))
   [31m│[0m  [2m58[0m │         .error_handler(f!(crate::triply_generic_error_handler));
   [31m│[0m     · [35;1m                       ───────────────────┬───────────────────[0m
   [31m│[0m     ·   [35;1mThe error handler was registered here ──╯[0m
@@ -80,10 +80,10 @@
   [31m│[0m     ·                                     [35;1m│[0m  [33;1m│[0m  [32;1m╰── I can't infer this..[0m
   [31m│[0m     ·                                     [35;1m│[0m  [33;1m╰── I can't infer this..[0m
   [31m│[0m     ·                                     [35;1m╰── I can't infer this..[0m
-  [31m│[0m  [2m38[0m │     error: &Error,
-  [31m│[0m     · [35;1m    ──────┬──────[0m
-  [31m│[0m     ·           [35;1m╰── ..because they are not used here[0m
-  [31m│[0m  [2m39[0m │     i1: GenericType<T>,
+  [31m│[0m  [2m38[0m │     _error: &Error,
+  [31m│[0m     · [35;1m    ───────┬──────[0m
+  [31m│[0m     ·            [35;1m╰── ..because they are not used here[0m
+  [31m│[0m  [2m39[0m │     _i1: GenericType<T>,
   [31m│[0m     ╰────
   [31m│[0m [36m  help: [0mSpecify the concrete type(s) for the problematic generic
   [31m│[0m         parameter(s) when registering the error handler against the

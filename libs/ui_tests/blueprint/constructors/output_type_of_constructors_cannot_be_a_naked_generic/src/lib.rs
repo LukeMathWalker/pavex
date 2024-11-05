@@ -1,4 +1,4 @@
-use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
+use pavex::blueprint::{router::GET, Blueprint};
 use pavex::f;
 
 pub fn naked<T>() -> T {
@@ -11,11 +11,11 @@ pub fn fallible_naked<T>() -> Result<T, FallibleError> {
 
 pub struct FallibleError;
 
-pub fn error_handler(e: &FallibleError) -> pavex::response::Response {
+pub fn error_handler(_e: &FallibleError) -> pavex::response::Response {
     todo!()
 }
 
-pub fn handler(a: u8, b: u16) -> pavex::response::Response {
+pub fn handler(_a: u8, _b: u16) -> pavex::response::Response {
     todo!()
 }
 

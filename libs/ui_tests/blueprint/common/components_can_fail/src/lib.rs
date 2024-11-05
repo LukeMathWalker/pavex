@@ -1,7 +1,7 @@
 use std::future::IntoFuture;
 use std::path::PathBuf;
 
-use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
+use pavex::blueprint::{router::GET, Blueprint};
 use pavex::middleware::{Next, Processing};
 use pavex::{f, t};
 use pavex::{request::RequestHead, response::Response};

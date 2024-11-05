@@ -1,7 +1,13 @@
-use pavex::blueprint::{constructor::Lifecycle, Blueprint};
+use pavex::blueprint::Blueprint;
 use pavex::f;
 
 pub struct Unused;
+
+impl Default for Unused {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl Unused {
     pub fn new() -> Self {

@@ -14,9 +14,9 @@
   [31m│[0m     ╰────
   [31m│[0m    ╭─[[36;1;4mblueprint/constructors/constructors_input_parameters_cannot_be_generic/src/lib.rs[0m:5:1]
   [31m│[0m  [2m5[0m │ 
-  [31m│[0m  [2m6[0m │ pub fn generic_constructor<T>(generic_input: GenericType<T>) -> u8 {
-  [31m│[0m    · [35;1m                           ┬[0m[33;1m                                    ─┬[0m
-  [31m│[0m    ·                            [35;1m│[0m     [33;1m..because it is not used here ──╯[0m
+  [31m│[0m  [2m6[0m │ pub fn generic_constructor<T>(_generic_input: GenericType<T>) -> u8 {
+  [31m│[0m    · [35;1m                           ┬[0m[33;1m                                     ─┬[0m
+  [31m│[0m    ·                            [35;1m│[0m      [33;1m..because it is not used here ──╯[0m
   [31m│[0m    ·                            [35;1m╰── I can't infer this..[0m
   [31m│[0m  [2m7[0m │     todo!()
   [31m│[0m    ╰────
@@ -43,9 +43,9 @@
   [31m│[0m     ╰────
   [31m│[0m     ╭─[[36;1;4mblueprint/constructors/constructors_input_parameters_cannot_be_generic/src/lib.rs[0m:9:1]
   [31m│[0m  [2m 9[0m │ 
-  [31m│[0m  [2m10[0m │ pub fn doubly_generic_constructor<T, S>(i1: GenericType<T>, i2: GenericType<S>) -> u16 {
-  [31m│[0m     · [35;1m                                  ┬[0m[33;1m  ┬[0m[32;1m                                             ─┬─[0m
-  [31m│[0m     ·                                   [35;1m│[0m  [33;1m│[0m           [32;1m..because they are not used here ──╯[0m
+  [31m│[0m  [2m10[0m │ pub fn doubly_generic_constructor<T, S>(_i1: GenericType<T>, _i2: GenericType<S>) -> u16 {
+  [31m│[0m     · [35;1m                                  ┬[0m[33;1m  ┬[0m[32;1m                                               ─┬─[0m
+  [31m│[0m     ·                                   [35;1m│[0m  [33;1m│[0m             [32;1m..because they are not used here ──╯[0m
   [31m│[0m     ·                                   [35;1m│[0m  [33;1m╰── I can't infer this..[0m
   [31m│[0m     ·                                   [35;1m╰── I can't infer this..[0m
   [31m│[0m  [2m11[0m │     todo!()
@@ -78,9 +78,9 @@
   [31m│[0m     ·                                   [35;1m│[0m  [33;1m│[0m  [32;1m╰── I can't infer this..[0m
   [31m│[0m     ·                                   [35;1m│[0m  [33;1m╰── I can't infer this..[0m
   [31m│[0m     ·                                   [35;1m╰── I can't infer this..[0m
-  [31m│[0m  [2m15[0m │     i1: GenericType<T>,
-  [31m│[0m  [2m16[0m │     i2: GenericType<S>,
-  [31m│[0m  [2m17[0m │     i3: GenericType<U>,
+  [31m│[0m  [2m15[0m │     _i1: GenericType<T>,
+  [31m│[0m  [2m16[0m │     _i2: GenericType<S>,
+  [31m│[0m  [2m17[0m │     _i3: GenericType<U>,
   [31m│[0m  [2m18[0m │ ) -> u32 {
   [31m│[0m     · [35;1m     ─┬─[0m
   [31m│[0m     ·       [35;1m╰── ..because they are not used here[0m
