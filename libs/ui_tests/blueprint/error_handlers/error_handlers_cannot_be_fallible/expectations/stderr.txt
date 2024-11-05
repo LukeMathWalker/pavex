@@ -11,8 +11,8 @@
   [31m│[0m     ╰────
   [31m│[0m    ╭─[[36;1;4mblueprint/error_handlers/error_handlers_cannot_be_fallible/src/lib.rs[0m:4:1]
   [31m│[0m  [2m4[0m │ 
-  [31m│[0m  [2m5[0m │ pub fn error_handler(e: &pavex::Error) -> Result<Response, String> {
-  [31m│[0m    · [35;1m                                          ────────────┬───────────[0m
-  [31m│[0m    ·                                                       [35;1m╰── The output type[0m
+  [31m│[0m  [2m5[0m │ pub fn error_handler(_e: &pavex::Error) -> Result<Response, String> {
+  [31m│[0m    · [35;1m                                           ────────────┬───────────[0m
+  [31m│[0m    ·                                                        [35;1m╰── The output type[0m
   [31m│[0m  [2m6[0m │     todo!()
   [31m│[0m    ╰────

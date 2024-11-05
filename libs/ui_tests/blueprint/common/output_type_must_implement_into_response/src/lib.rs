@@ -1,4 +1,4 @@
-use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
+use pavex::blueprint::{router::GET, Blueprint};
 use pavex::f;
 use pavex::middleware::Next;
 use pavex::response::Response;
@@ -18,7 +18,7 @@ pub fn handler(_s: String) -> Result<MyCustomOutputType, ErrorType> {
     todo!()
 }
 
-pub fn error_handler(e: &ErrorType) -> MyCustomOutputType {
+pub fn error_handler(_e: &ErrorType) -> MyCustomOutputType {
     todo!()
 }
 

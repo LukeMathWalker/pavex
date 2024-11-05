@@ -3,12 +3,18 @@ use pavex::f;
 
 pub struct Streamer;
 
+impl Default for Streamer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Streamer {
     pub fn new() -> Self {
         todo!()
     }
 
-    pub fn stream_file(&self, logger: Logger) -> pavex::response::Response {
+    pub fn stream_file(&self, _logger: Logger) -> pavex::response::Response {
         todo!()
     }
 }
@@ -17,6 +23,12 @@ impl Streamer {
 pub struct LoggerFactory;
 
 pub struct Logger;
+
+impl Default for LoggerFactory {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl LoggerFactory {
     pub fn new() -> Self {

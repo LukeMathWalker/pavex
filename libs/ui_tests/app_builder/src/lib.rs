@@ -1,7 +1,6 @@
 use std::path::PathBuf;
 
 use pavex::blueprint::{
-    constructor::{CloningStrategy, Lifecycle},
     router::GET,
     Blueprint,
 };

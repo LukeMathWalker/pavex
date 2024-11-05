@@ -4,21 +4,27 @@ use pavex::http::StatusCode;
 
 pub struct A;
 
+impl Default for A {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl A {
     pub fn new() -> A {
         todo!()
     }
 }
 
-pub struct Generic<'a>(&'a A);
+pub struct Generic<'a>(pub &'a A);
 
 impl<'a> Generic<'a> {
-    pub fn new(config: &'a A) -> Generic<'a> {
+    pub fn new(_config: &'a A) -> Generic<'a> {
         todo!()
     }
 }
 
-pub fn handler<T>(generic: T) -> StatusCode {
+pub fn handler<T>(_generic: T) -> StatusCode {
     todo!()
 }
 

@@ -27,6 +27,12 @@ mod private {
 
     pub struct B;
 
+    impl Default for B {
+        fn default() -> Self {
+            Self::new()
+        }
+    }
+
     impl B {
         pub fn new() -> B {
             todo!()

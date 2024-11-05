@@ -1,6 +1,6 @@
 use std::future::{IntoFuture, Ready};
 
-use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
+use pavex::blueprint::{router::GET, Blueprint};
 use pavex::f;
 use pavex::middleware::Next;
 use pavex::response::Response;

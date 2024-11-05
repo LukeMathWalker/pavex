@@ -8,7 +8,7 @@ pub struct A;
 #[derive(Clone)]
 pub struct B;
 
-pub fn b(a: &A) -> B {
+pub fn b(_a: &A) -> B {
     todo!()
 }
 

@@ -1,11 +1,17 @@
-use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
+use pavex::blueprint::{router::GET, Blueprint};
 use pavex::{f, t};
-use pavex::{request::path::PathParams, response::Response};
+use pavex::response::Response;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
 #[derive(Clone, Debug)]
 pub struct Spy(Arc<Mutex<Vec<String>>>);
+
+impl Default for Spy {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl Spy {
     pub fn new() -> Self {

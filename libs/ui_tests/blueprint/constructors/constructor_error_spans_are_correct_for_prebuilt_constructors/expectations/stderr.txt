@@ -14,9 +14,9 @@
   [31m│[0m     ╰────
   [31m│[0m     ╭─[[36;1;4mblueprint/constructors/constructor_error_spans_are_correct_for_prebuilt_constructors/src/lib.rs[0m:9:1]
   [31m│[0m  [2m 9[0m │ 
-  [31m│[0m  [2m10[0m │ pub fn generic_constructor<T>(generic_input: GenericType<T>) -> u8 {
-  [31m│[0m     · [35;1m                           ┬[0m[33;1m                                    ─┬[0m
-  [31m│[0m     ·                            [35;1m│[0m     [33;1m..because it is not used here ──╯[0m
+  [31m│[0m  [2m10[0m │ pub fn generic_constructor<T>(_generic_input: GenericType<T>) -> u8 {
+  [31m│[0m     · [35;1m                           ┬[0m[33;1m                                     ─┬[0m
+  [31m│[0m     ·                            [35;1m│[0m      [33;1m..because it is not used here ──╯[0m
   [31m│[0m     ·                            [35;1m╰── I can't infer this..[0m
   [31m│[0m  [2m11[0m │     todo!()
   [31m│[0m     ╰────

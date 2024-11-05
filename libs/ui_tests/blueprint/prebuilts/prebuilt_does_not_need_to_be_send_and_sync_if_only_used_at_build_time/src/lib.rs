@@ -3,16 +3,16 @@ use pavex::response::Response;
 use pavex::{f, t};
 use std::rc::Rc;
 
-pub struct A(Rc<String>);
+pub struct A(pub Rc<String>);
 
 #[derive(Clone)]
 pub struct B;
 
-pub fn b(a: A) -> B {
+pub fn b(_a: A) -> B {
     todo!()
 }
 
-pub fn handler(b: &B) -> Response {
+pub fn handler(_b: &B) -> Response {
     todo!()
 }
 

@@ -1,10 +1,6 @@
 use std::future::IntoFuture;
 
-use pavex::blueprint::{
-    constructor::{CloningStrategy, Lifecycle},
-    router::GET,
-    Blueprint,
-};
+use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
 use pavex::f;
 use pavex::middleware::Next;
 use pavex::response::Response;
@@ -12,27 +8,33 @@ use pavex::response::Response;
 #[derive(Clone)]
 pub struct Scoped;
 
+impl Default for Scoped {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Scoped {
     pub fn new() -> Scoped {
         todo!()
     }
 }
 
-pub fn mw<C>(s: Scoped, next: Next<C>) -> Response
+pub fn mw<C>(_s: Scoped, _next: Next<C>) -> Response
 where
     C: IntoFuture<Output = Response>,
 {
     todo!()
 }
 
-pub fn mw2<C>(s: &Scoped, next: Next<C>) -> Response
+pub fn mw2<C>(_s: &Scoped, _next: Next<C>) -> Response
 where
     C: IntoFuture<Output = Response>,
 {
     todo!()
 }
 
-pub fn handler(s: Scoped) -> pavex::response::Response {
+pub fn handler(_s: Scoped) -> pavex::response::Response {
     todo!()
 }
 

@@ -3,15 +3,15 @@ use pavex::f;
 use pavex::http::StatusCode;
 use pavex::request::path::PathParams;
 
-pub fn tuple(params: PathParams<(u32, u32)>) -> StatusCode {
+pub fn tuple(_params: PathParams<(u32, u32)>) -> StatusCode {
     todo!()
 }
 
-pub fn primitive(params: PathParams<u32>) -> StatusCode {
+pub fn primitive(_params: PathParams<u32>) -> StatusCode {
     todo!()
 }
 
-pub fn slice_ref(params: PathParams<&[u32]>) -> StatusCode {
+pub fn slice_ref(_params: PathParams<&[u32]>) -> StatusCode {
     todo!()
 }
 
@@ -21,7 +21,7 @@ pub struct MyStruct {
     y: u32,
 }
 
-pub fn reference<T>(params: PathParams<&T>) -> StatusCode {
+pub fn reference<T>(_params: PathParams<&T>) -> StatusCode {
     todo!()
 }
 
@@ -32,21 +32,21 @@ pub enum MyEnum {
     C { x: u32, y: u32 },
 }
 
-pub fn enum_(params: PathParams<MyEnum>) -> StatusCode {
+pub fn enum_(_params: PathParams<MyEnum>) -> StatusCode {
     todo!()
 }
 
 #[PathParams]
 pub struct UnitStruct;
 
-pub fn unit_struct(params: PathParams<UnitStruct>) -> StatusCode {
+pub fn unit_struct(_params: PathParams<UnitStruct>) -> StatusCode {
     todo!()
 }
 
 #[PathParams]
 pub struct TupleStruct(u32, u32);
 
-pub fn tuple_struct(params: PathParams<TupleStruct>) -> StatusCode {
+pub fn tuple_struct(_params: PathParams<TupleStruct>) -> StatusCode {
     todo!()
 }
 

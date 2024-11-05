@@ -1,4 +1,4 @@
-use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
+use pavex::blueprint::{router::GET, Blueprint};
 use pavex::f;
 use pavex::response::Response;
 
@@ -17,7 +17,7 @@ pub fn fallible_constructor() -> Result<String, Error> {
     todo!()
 }
 
-pub fn error_handler(e: &Error) {
+pub fn error_handler(_e: &Error) {
     todo!()
 }
 

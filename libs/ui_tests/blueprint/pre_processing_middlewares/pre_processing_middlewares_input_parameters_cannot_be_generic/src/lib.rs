@@ -5,18 +5,18 @@ use pavex::response::Response;
 
 pub struct GenericType<V>(V);
 
-pub fn generic<T>(generic_input: GenericType<T>) -> Processing {
+pub fn generic<T>(_generic_input: GenericType<T>) -> Processing {
     todo!()
 }
 
-pub fn doubly_generic<T, S>(i1: GenericType<T>, i2: GenericType<S>) -> Processing {
+pub fn doubly_generic<T, S>(_i1: GenericType<T>, _i2: GenericType<S>) -> Processing {
     todo!()
 }
 
 pub fn triply_generic<T, S, U>(
-    i1: GenericType<T>,
-    i2: GenericType<S>,
-    i3: GenericType<U>,
+    _i1: GenericType<T>,
+    _i2: GenericType<S>,
+    _i3: GenericType<U>,
 ) -> Processing {
     todo!()
 }

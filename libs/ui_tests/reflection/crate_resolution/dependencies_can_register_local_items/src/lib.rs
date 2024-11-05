@@ -1,8 +1,8 @@
-use dep::{new_logger, Logger};
-use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
+use dep::Logger;
+use pavex::blueprint::{router::GET, Blueprint};
 use pavex::f;
 
-pub fn handler(logger: Logger) -> pavex::response::Response {
+pub fn handler(_logger: Logger) -> pavex::response::Response {
     todo!()
 }
 

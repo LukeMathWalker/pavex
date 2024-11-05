@@ -9,7 +9,7 @@ digraph "GET /home - 0" {
 }
 
 digraph "GET /home - 1" {
-    0 [ label = "5| app_dc1710a5::mw(pavex::middleware::Next<crate::route_0::Next1<'a, 'b>>, app_dc1710a5::B<'l>) -> pavex::response::Response"]
+    0 [ label = "5| app_dc1710a5::mw(pavex::middleware::Next<crate::route_0::Next1<'a, 'b>>, app_dc1710a5::B<'_>) -> pavex::response::Response"]
     1 [ label = "4| pavex::middleware::Next::new(crate::route_0::Next1<'a, 'b>) -> pavex::middleware::Next<crate::route_0::Next1<'a, 'b>>"]
     2 [ label = "2| app_dc1710a5::b(&''a app_dc1710a5::A, &''a app_dc1710a5::C) -> app_dc1710a5::B<'a>"]
     3 [ label = "1| app_dc1710a5::a() -> app_dc1710a5::A"]
@@ -49,7 +49,7 @@ digraph "* /home - 0" {
 }
 
 digraph "* /home - 1" {
-    0 [ label = "6| app_dc1710a5::mw(pavex::middleware::Next<crate::route_1::Next1<'a>>, app_dc1710a5::B<'l>) -> pavex::response::Response"]
+    0 [ label = "6| app_dc1710a5::mw(pavex::middleware::Next<crate::route_1::Next1<'a>>, app_dc1710a5::B<'_>) -> pavex::response::Response"]
     1 [ label = "5| pavex::middleware::Next::new(crate::route_1::Next1<'a>) -> pavex::middleware::Next<crate::route_1::Next1<'a>>"]
     2 [ label = "2| app_dc1710a5::b(&''a app_dc1710a5::A, &''a app_dc1710a5::C) -> app_dc1710a5::B<'a>"]
     3 [ label = "1| app_dc1710a5::a() -> app_dc1710a5::A"]

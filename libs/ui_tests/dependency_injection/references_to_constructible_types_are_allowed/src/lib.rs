@@ -1,8 +1,14 @@
-use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
+use pavex::blueprint::{router::GET, Blueprint};
 use pavex::f;
 
 #[derive(Clone)]
 pub struct Singleton;
+
+impl Default for Singleton {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl Singleton {
     pub fn new() -> Singleton {
@@ -22,15 +28,19 @@ pub fn transient() -> Transient {
     todo!()
 }
 
-pub fn stream_file(s: &Singleton, r: &RequestScoped, t: &Transient) -> pavex::response::Response {
+pub fn stream_file(
+    _s: &Singleton,
+    _r: &RequestScoped,
+    _t: &Transient,
+) -> pavex::response::Response {
     todo!()
 }
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.constructor(f!(crate::Singleton::new), Lifecycle::Singleton);
-    bp.constructor(f!(crate::request_scoped), Lifecycle::RequestScoped);
-    bp.constructor(f!(crate::transient), Lifecycle::Transient);
+    bp.singleton(f!(crate::Singleton::new));
+    bp.request_scoped(f!(crate::request_scoped));
+    bp.transient(f!(crate::transient));
     bp.route(GET, "/home", f!(crate::stream_file));
     bp
 }

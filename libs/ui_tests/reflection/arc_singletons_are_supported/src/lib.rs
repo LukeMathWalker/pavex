@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
+use pavex::blueprint::{router::GET, Blueprint};
 use pavex::f;
 use pavex::http::StatusCode;
 

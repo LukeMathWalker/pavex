@@ -12,7 +12,7 @@
   [31m│[0m     ╰────
   [31m│[0m    ╭─[[36;1;4mblueprint/pre_processing_middlewares/pre_processing_middlewares_input_parameters_cannot_be_generic/src/lib.rs[0m:7:1]
   [31m│[0m  [2m7[0m │ 
-  [31m│[0m  [2m8[0m │ pub fn generic<T>(generic_input: GenericType<T>) -> Processing {
+  [31m│[0m  [2m8[0m │ pub fn generic<T>(_generic_input: GenericType<T>) -> Processing {
   [31m│[0m    · [35;1m               ┬[0m
   [31m│[0m    ·                [35;1m╰── The generic parameter without a concrete type[0m
   [31m│[0m  [2m9[0m │     todo!()
@@ -37,7 +37,7 @@
   [31m│[0m     ╰────
   [31m│[0m     ╭─[[36;1;4mblueprint/pre_processing_middlewares/pre_processing_middlewares_input_parameters_cannot_be_generic/src/lib.rs[0m:11:1]
   [31m│[0m  [2m11[0m │ 
-  [31m│[0m  [2m12[0m │ pub fn doubly_generic<T, S>(i1: GenericType<T>, i2: GenericType<S>) -> Processing {
+  [31m│[0m  [2m12[0m │ pub fn doubly_generic<T, S>(_i1: GenericType<T>, _i2: GenericType<S>) -> Processing {
   [31m│[0m     · [35;1m                      ┬[0m[33;1m  ┬[0m
   [31m│[0m     ·                       [35;1m│[0m  [33;1m╰── The generic parameter without a concrete type[0m
   [31m│[0m     ·                       [35;1m╰── The generic parameter without a concrete type[0m
@@ -68,7 +68,7 @@
   [31m│[0m     ·                       [35;1m│[0m  [33;1m│[0m  [32;1mThe generic parameter without a concrete type[0m
   [31m│[0m     ·                       [35;1m│[0m  [33;1m╰── The generic parameter without a concrete type[0m
   [31m│[0m     ·                       [35;1m╰── The generic parameter without a concrete type[0m
-  [31m│[0m  [2m17[0m │     i1: GenericType<T>,
+  [31m│[0m  [2m17[0m │     _i1: GenericType<T>,
   [31m│[0m     ╰────
   [31m│[0m [36m  help: [0mSpecify the concrete types for `T`, `S` and `U` when registering the
   [31m│[0m         pre-processing middleware against the blueprint:

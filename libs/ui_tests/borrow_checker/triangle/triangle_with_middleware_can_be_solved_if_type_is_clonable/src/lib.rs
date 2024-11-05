@@ -25,7 +25,7 @@ pub fn a() -> A {
     todo!()
 }
 
-pub fn mw<T: std::future::IntoFuture<Output = Response>>(_a: A, next: Next<T>) -> Response {
+pub fn mw<T: std::future::IntoFuture<Output = Response>>(_a: A, _next: Next<T>) -> Response {
     todo!()
 }
 

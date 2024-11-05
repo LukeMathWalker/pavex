@@ -1,4 +1,4 @@
-use pavex::blueprint::{constructor::CloningStrategy, router::GET, Blueprint};
+use pavex::blueprint::{router::GET, Blueprint};
 use pavex::response::Response;
 use pavex::{f, t};
 
@@ -15,11 +15,11 @@ pub fn singleton() -> A {
     todo!()
 }
 
-pub fn singleton2(b: B) -> C {
+pub fn singleton2(_b: B) -> C {
     todo!()
 }
 
-pub fn handler(a: A, b: B, c: C) -> Response {
+pub fn handler(_a: A, _b: B, _c: C) -> Response {
     todo!()
 }
 

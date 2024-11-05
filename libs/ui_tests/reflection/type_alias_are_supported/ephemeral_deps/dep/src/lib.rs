@@ -18,6 +18,12 @@ impl<'a, 'b> DoubleLifetimeType<'a, 'b> {
 #[derive(Clone)]
 pub struct ActualType;
 
+impl Default for ActualType {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ActualType {
     pub fn new() -> Self {
         todo!()
@@ -28,6 +34,12 @@ impl ActualType {
 pub struct GenericType<A, B> {
     _a: A,
     _b: B,
+}
+
+impl<C, D> Default for GenericType<C, D> {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 // The naming of the generic parameters on this `impl` block is intentionally

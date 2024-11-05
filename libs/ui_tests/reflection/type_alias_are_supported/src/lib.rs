@@ -15,7 +15,7 @@ pub struct MixedGenerics<'a, T> {
     _a: &'a T,
 }
 
-pub fn mixed_generics<'a, T>(_a: &'a T) -> MixedGenericsAlias<'a, T> {
+pub fn mixed_generics<T>(_a: &T) -> MixedGenericsAlias<'_, T> {
     todo!()
 }
 

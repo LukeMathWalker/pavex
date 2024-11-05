@@ -1,6 +1,12 @@
 use pavex::blueprint::Blueprint;
 pub struct A<T>(T);
 
+impl<T> Default for A<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<T> A<T> {
     pub fn new() -> A<T> {
         todo!()
