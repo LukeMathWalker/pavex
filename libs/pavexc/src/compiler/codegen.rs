@@ -278,6 +278,7 @@ fn define_server_state(
     .unwrap()
 }
 
+#[tracing::instrument("Codegen application state initialization function", skip_all)]
 fn get_application_state_init(
     application_state_call_graph: &ApplicationStateCallGraph,
     package_id2name: &BiHashMap<PackageId, String>,
