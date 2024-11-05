@@ -1,22 +1,22 @@
 digraph "GET / - 0" {
-    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_0::Next0>) -> pavex::response::Response"]
-    1 [ label = "pavex::middleware::Next::new(crate::route_0::Next0) -> pavex::middleware::Next<crate::route_0::Next0>"]
-    2 [ label = "crate::route_0::Next0() -> crate::route_0::Next0"]
-    3 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    0 [ label = "2| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_0::Next0>) -> pavex::response::Response"]
+    1 [ label = "1| pavex::middleware::Next::new(crate::route_0::Next0) -> pavex::middleware::Next<crate::route_0::Next0>"]
+    2 [ label = "0| crate::route_0::Next0() -> crate::route_0::Next0"]
+    3 [ label = "3| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     1 -> 0 [ ]
     2 -> 1 [ ]
     0 -> 3 [ ]
 }
 
 digraph "GET / - 1" {
-    0 [ label = "app::handler(app::A, app::C, app::D, app::E, app::F) -> pavex::response::Response"]
-    1 [ label = "<app::A as app::MyTrait>::a_method_that_returns_self() -> app::A"]
-    2 [ label = "<app::B as app::AnotherTrait>::a_method_that_consumes_self(app::B) -> app::C"]
-    3 [ label = "<app::A as app::MyTrait>::a_method_with_a_generic::<std::string::String>(&app::A) -> app::D"]
-    4 [ label = "<app::C as app::GenericTrait::<std::string::String>>::a_method(&app::C) -> app::E"]
-    5 [ label = "<app::F as core::default::Default>::default() -> app::F"]
-    6 [ label = "<app::A as app::MyTrait>::a_method_that_borrows_self(&app::A) -> app::B"]
-    7 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    0 [ label = "6| app::handler(app::A, app::C, app::D, app::E, app::F) -> pavex::response::Response"]
+    1 [ label = "1| <app::A as app::MyTrait>::a_method_that_returns_self() -> app::A"]
+    2 [ label = "3| <app::B as app::AnotherTrait>::a_method_that_consumes_self(app::B) -> app::C"]
+    3 [ label = "5| <app::A as app::MyTrait>::a_method_with_a_generic::<std::string::String>(&app::A) -> app::D"]
+    4 [ label = "4| <app::C as app::GenericTrait::<std::string::String>>::a_method(&app::C) -> app::E"]
+    5 [ label = "0| <app::F as core::default::Default>::default() -> app::F"]
+    6 [ label = "2| <app::A as app::MyTrait>::a_method_that_borrows_self(&app::A) -> app::B"]
+    7 [ label = "7| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     5 -> 0 [ ]
     4 -> 0 [ ]
     2 -> 4 [ label = "&"]
@@ -30,11 +30,11 @@ digraph "GET / - 1" {
 }
 
 digraph "* / - 0" {
-    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_1::Next0<'a>>) -> pavex::response::Response"]
-    1 [ label = "pavex::middleware::Next::new(crate::route_1::Next0<'a>) -> pavex::middleware::Next<crate::route_1::Next0<'a>>"]
-    2 [ label = "crate::route_1::Next0(&'a pavex::router::AllowedMethods) -> crate::route_1::Next0<'a>"]
-    4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    5 [ label = "&pavex::router::AllowedMethods"]
+    0 [ label = "3| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_1::Next0<'a>>) -> pavex::response::Response"]
+    1 [ label = "2| pavex::middleware::Next::new(crate::route_1::Next0<'a>) -> pavex::middleware::Next<crate::route_1::Next0<'a>>"]
+    2 [ label = "1| crate::route_1::Next0(&'a pavex::router::AllowedMethods) -> crate::route_1::Next0<'a>"]
+    4 [ label = "4| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    5 [ label = "0| &pavex::router::AllowedMethods"]
     1 -> 0 [ ]
     2 -> 1 [ ]
     0 -> 4 [ ]
@@ -42,13 +42,13 @@ digraph "* / - 0" {
 }
 
 digraph "* / - 1" {
-    0 [ label = "pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
-    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    3 [ label = "&pavex::router::AllowedMethods"]
+    0 [ label = "1| pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
+    2 [ label = "2| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "0| &pavex::router::AllowedMethods"]
     0 -> 2 [ ]
     3 -> 0 [ ]
 }
 
 digraph app_state {
-    0 [ label = "crate::ApplicationState() -> crate::ApplicationState"]
+    0 [ label = "0| crate::ApplicationState() -> crate::ApplicationState"]
 }

@@ -1,12 +1,12 @@
 digraph "GET /home - 0" {
-    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_0::Next0<'a, 'b, 'c>>) -> pavex::response::Response"]
-    1 [ label = "pavex::middleware::Next::new(crate::route_0::Next0<'a, 'b, 'c>) -> pavex::middleware::Next<crate::route_0::Next0<'a, 'b, 'c>>"]
-    2 [ label = "crate::route_0::Next0((bool, char, u8), &'a dep_f8f62968::GenericType<bool, bool>, &'b alloc::string::String, &'c dep_f8f62968::ActualType) -> crate::route_0::Next0<'a, 'b, 'c>"]
-    3 [ label = "(bool, char, u8)"]
-    4 [ label = "&alloc::string::String"]
-    5 [ label = "&dep_f8f62968::ActualType"]
-    7 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    8 [ label = "&dep_f8f62968::GenericType<bool, bool>"]
+    0 [ label = "6| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_0::Next0<'a, 'b, 'c>>) -> pavex::response::Response"]
+    1 [ label = "5| pavex::middleware::Next::new(crate::route_0::Next0<'a, 'b, 'c>) -> pavex::middleware::Next<crate::route_0::Next0<'a, 'b, 'c>>"]
+    2 [ label = "4| crate::route_0::Next0((bool, char, u8), &'a dep_f8f62968::GenericType<bool, bool>, &'b alloc::string::String, &'c dep_f8f62968::ActualType) -> crate::route_0::Next0<'a, 'b, 'c>"]
+    3 [ label = "0| (bool, char, u8)"]
+    4 [ label = "2| &alloc::string::String"]
+    5 [ label = "3| &dep_f8f62968::ActualType"]
+    7 [ label = "7| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    8 [ label = "1| &dep_f8f62968::GenericType<bool, bool>"]
     1 -> 0 [ ]
     2 -> 1 [ ]
     5 -> 2 [ ]
@@ -17,14 +17,14 @@ digraph "GET /home - 0" {
 }
 
 digraph "GET /home - 1" {
-    0 [ label = "app::handler_with_input_tuple((bool, char, u8), &dep_f8f62968::ActualType, &dep_f8f62968::GenericType<bool, bool>, &dep_f8f62968::DoubleLifetimeType<'a, 'a>, app::MixedGenerics<'a, alloc::string::String>) -> pavex::response::Response"]
-    1 [ label = "(bool, char, u8)"]
-    2 [ label = "&dep_f8f62968::GenericType<bool, bool>"]
-    3 [ label = "&alloc::string::String"]
-    4 [ label = "dep_f8f62968::DoubleLifetimeType::<a, a>::new(&''a dep_f8f62968::ActualType, &''b alloc::string::String) -> dep_f8f62968::DoubleLifetimeType<'a, 'b>"]
-    5 [ label = "app::mixed_generics(&''a alloc::string::String) -> app::MixedGenerics<'a, alloc::string::String>"]
-    7 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    8 [ label = "&dep_f8f62968::ActualType"]
+    0 [ label = "6| app::handler_with_input_tuple((bool, char, u8), &dep_f8f62968::ActualType, &dep_f8f62968::GenericType<bool, bool>, &dep_f8f62968::DoubleLifetimeType<'a, 'a>, app::MixedGenerics<'a, alloc::string::String>) -> pavex::response::Response"]
+    1 [ label = "4| (bool, char, u8)"]
+    2 [ label = "5| &dep_f8f62968::GenericType<bool, bool>"]
+    3 [ label = "0| &alloc::string::String"]
+    4 [ label = "3| dep_f8f62968::DoubleLifetimeType::<a, a>::new(&''a dep_f8f62968::ActualType, &''b alloc::string::String) -> dep_f8f62968::DoubleLifetimeType<'a, 'b>"]
+    5 [ label = "1| app::mixed_generics(&''a alloc::string::String) -> app::MixedGenerics<'a, alloc::string::String>"]
+    7 [ label = "7| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    8 [ label = "2| &dep_f8f62968::ActualType"]
     5 -> 0 [ ]
     4 -> 0 [ label = "&"]
     2 -> 0 [ ]
@@ -37,11 +37,11 @@ digraph "GET /home - 1" {
 }
 
 digraph "* /home - 0" {
-    0 [ label = "pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_1::Next0<'a>>) -> pavex::response::Response"]
-    1 [ label = "pavex::middleware::Next::new(crate::route_1::Next0<'a>) -> pavex::middleware::Next<crate::route_1::Next0<'a>>"]
-    2 [ label = "crate::route_1::Next0(&'a pavex::router::AllowedMethods) -> crate::route_1::Next0<'a>"]
-    4 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    5 [ label = "&pavex::router::AllowedMethods"]
+    0 [ label = "3| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_1::Next0<'a>>) -> pavex::response::Response"]
+    1 [ label = "2| pavex::middleware::Next::new(crate::route_1::Next0<'a>) -> pavex::middleware::Next<crate::route_1::Next0<'a>>"]
+    2 [ label = "1| crate::route_1::Next0(&'a pavex::router::AllowedMethods) -> crate::route_1::Next0<'a>"]
+    4 [ label = "4| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    5 [ label = "0| &pavex::router::AllowedMethods"]
     1 -> 0 [ ]
     2 -> 1 [ ]
     0 -> 4 [ ]
@@ -49,19 +49,19 @@ digraph "* /home - 0" {
 }
 
 digraph "* /home - 1" {
-    0 [ label = "pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
-    2 [ label = "<pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    3 [ label = "&pavex::router::AllowedMethods"]
+    0 [ label = "1| pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
+    2 [ label = "2| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "0| &pavex::router::AllowedMethods"]
     0 -> 2 [ ]
     3 -> 0 [ ]
 }
 
 digraph app_state {
-    0 [ label = "crate::ApplicationState((bool, char, u8), alloc::string::String, dep_f8f62968::ActualType, dep_f8f62968::GenericType<bool, bool>) -> crate::ApplicationState"]
-    1 [ label = "app::constructor_with_output_tuple() -> (bool, char, u8)"]
-    2 [ label = "alloc::string::String"]
-    3 [ label = "dep_f8f62968::ActualType::new() -> dep_f8f62968::ActualType"]
-    4 [ label = "dep_f8f62968::GenericType::<std::primitive::bool, std::primitive::bool>::new() -> dep_f8f62968::GenericType<bool, bool>"]
+    0 [ label = "4| crate::ApplicationState((bool, char, u8), alloc::string::String, dep_f8f62968::ActualType, dep_f8f62968::GenericType<bool, bool>) -> crate::ApplicationState"]
+    1 [ label = "3| app::constructor_with_output_tuple() -> (bool, char, u8)"]
+    2 [ label = "2| alloc::string::String"]
+    3 [ label = "1| dep_f8f62968::ActualType::new() -> dep_f8f62968::ActualType"]
+    4 [ label = "0| dep_f8f62968::GenericType::<std::primitive::bool, std::primitive::bool>::new() -> dep_f8f62968::GenericType<bool, bool>"]
     4 -> 0 [ ]
     3 -> 0 [ ]
     2 -> 0 [ ]
