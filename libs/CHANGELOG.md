@@ -6,6 +6,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.51](https://github.com/LukeMathWalker/pavex/compare/0.1.50...0.1.51) - 2024-11-05
+
+### Added
+
+- The diagnostic representation of all call graphs now includes call order information—e.g. does this constructor get invoked before or after this other one?
+
+### Fixed
+
+- Respect the order identified by the borrow-checking phase when generating code
+
+### Other
+
+- Disable workspace hack before a release
+- Re-enable workspace hack after a release ([#361](https://github.com/LukeMathWalker/pavex/pull/361))
+
 ## [0.1.50](https://github.com/LukeMathWalker/pavex/compare/0.1.49...0.1.50) - 2024-11-01
 
 ### Added
