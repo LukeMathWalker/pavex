@@ -103,11 +103,12 @@ pub struct Item {
     /// By default all documented items are public, but you can tell rustdoc to output private items
     /// so this field is needed to differentiate.
     pub visibility: Visibility,
-    /// The full markdown docstring of this item. Absent if there is no documentation at all,
-    /// Some("") if there is some documentation but it is empty (EG `#[doc = ""]`).
-    pub docs: Option<String>,
-    /// This mapping resolves [intra-doc links](https://github.com/rust-lang/rfcs/blob/master/text/1946-intra-rustdoc-links.md) from the docstring to their IDs
-    pub links: HashMap<String, Id>,
+    // EXCLUDED!
+    // /// The full markdown docstring of this item. Absent if there is no documentation at all,
+    // /// Some("") if there is some documentation but it is empty (EG `#[doc = ""]`).
+    // pub docs: Option<String>,
+    // /// This mapping resolves [intra-doc links](https://github.com/rust-lang/rfcs/blob/master/text/1946-intra-rustdoc-links.md) from the docstring to their IDs
+    // pub links: HashMap<String, Id>,
     /// Stringified versions of the attributes on this item (e.g. `"#[inline]"`)
     pub attrs: Vec<String>,
     /// Information about the item’s deprecation, if present.
@@ -731,8 +732,10 @@ pub struct Function {
 pub struct Generics {
     /// A list of generic parameter definitions (e.g. `<T: Clone + Hash, U: Copy>`).
     pub params: Vec<GenericParamDef>,
-    /// A list of where predicates (e.g. `where T: Iterator, T::Item: Copy`).
-    pub where_predicates: Vec<WherePredicate>,
+    // EXCLUDED!
+    // /// A list of where predicates (e.g. `where T: Iterator, T::Item: Copy`).
+    //
+    // pub where_predicates: Vec<WherePredicate>,
 }
 
 /// One generic parameter accepted by an item.
@@ -766,14 +769,15 @@ pub enum GenericParamDefKind {
 
     /// Denotes a type parameter.
     Type {
-        /// Bounds applied directly to the type. Note that the bounds from `where` clauses
-        /// that constrain this parameter won't appear here.
-        ///
-        /// ```rust
-        /// fn default2<T: Default>() -> [T; 2] where T: Clone { todo!() }
-        /// //             ^^^^^^^
-        /// ```
-        bounds: Vec<GenericBound>,
+        // EXCLUDED!
+        // /// Bounds applied directly to the type. Note that the bounds from `where` clauses
+        // /// that constrain this parameter won't appear here.
+        // ///
+        // /// ```rust
+        // /// fn default2<T: Default>() -> [T; 2] where T: Clone { todo!() }
+        // /// //             ^^^^^^^
+        // /// ```
+        // bounds: Vec<GenericBound>,
         /// The default type for this parameter, if provided, e.g.
         ///
         /// ```rust
@@ -1103,8 +1107,9 @@ pub struct Trait {
     pub items: Vec<Id>,
     /// Information about the type parameters and `where` clauses of the trait.
     pub generics: Generics,
-    /// Constraints that must be met by the implementor of the trait.
-    pub bounds: Vec<GenericBound>,
+    // EXCLUDED!
+    // /// Constraints that must be met by the implementor of the trait.
+    // pub bounds: Vec<GenericBound>,
     /// The implementations of the trait.
     pub implementations: Vec<Id>,
 }
