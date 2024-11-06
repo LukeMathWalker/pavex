@@ -1,15 +1,17 @@
-use std::io::BufReader;
+use std::io::{BufReader, Seek, SeekFrom};
 use std::path::Path;
 use std::sync::Arc;
 
 mod cache;
 mod checksum;
+mod format;
 mod toolchain;
 
 use ahash::{HashMap, HashMapExt};
 pub(crate) use cache::{RustdocCacheKey, RustdocGlobalFsCache};
 
 use anyhow::Context;
+use format::check_format;
 use guppy::graph::PackageGraph;
 use guppy::{PackageId, Version};
 use indexmap::IndexSet;
@@ -261,19 +263,37 @@ fn load_json_docs(
     let file = fs_err::File::open(&json_path).context(
         "Failed to open the file containing the output of a `cargo rustdoc` invocation.",
     )?;
-    let reader = BufReader::new(file);
-    let mut deserializer = serde_json::Deserializer::from_reader(reader);
+    let mut reader = BufReader::new(file);
+    let mut deserializer = serde_json::Deserializer::from_reader(&mut reader);
     // The documention for some crates (e.g. typenum) causes a "recursion limit exceeded" when
     // deserializing their docs using the default recursion limit.
     deserializer.disable_recursion_limit();
     let deserializer = serde_stacker::Deserializer::new(&mut deserializer);
-    let krate = rustdoc_types::Crate::deserialize(deserializer).with_context(|| {
-        format!(
-            "Failed to deserialize the output of a `cargo rustdoc` invocation (`{}`).",
-            json_path.to_string_lossy()
-        )
-    })?;
-    drop(guard);
+    match rustdoc_types::Crate::deserialize(deserializer) {
+        Ok(krate) => {
+            drop(guard);
+            Ok(krate)
+        }
+        Err(e) => {
+            // Reset the reader to the beginning of the file.
+            if reader.seek(SeekFrom::Start(0)).is_ok() {
+                if let Err(format_err) = check_format(reader) {
+                    return Err(format_err).with_context(|| {
+                        format!(
+                            "The JSON docs at `{}` are not in the expected format. \
+                            Are you using the right version of the `nightly` toolchain, `{}`, to generate the JSON docs?",
+                            json_path.display(), crate::DEFAULT_DOCS_TOOLCHAIN
+                        )
+                    });
+                }
+            }
 
-    Ok(krate)
+            Err(e).with_context(|| {
+                format!(
+                    "Failed to deserialize the output of a `cargo rustdoc` invocation (`{}`)",
+                    json_path.display()
+                )
+            })
+        }
+    }
 }

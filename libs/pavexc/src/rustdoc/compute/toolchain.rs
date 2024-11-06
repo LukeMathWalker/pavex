@@ -3,6 +3,8 @@ use once_cell::sync::OnceCell;
 use rustdoc_types::ItemKind;
 use std::path::PathBuf;
 
+use crate::rustdoc::compute::format::check_format;
+
 #[tracing::instrument(
     skip_all,
     fields(
@@ -17,8 +19,21 @@ pub(crate) fn get_toolchain_crate_docs(
     let json_path = root_folder.join(format!("{}.json", name));
     let json = fs_err::read_to_string(json_path)
         .with_context(|| format!("Failed to retrieve the JSON docs for {}", name))?;
-    let mut krate = serde_json::from_str::<rustdoc_types::Crate>(&json)
-        .with_context(|| format!("Failed to deserialize the JSON docs for {}", name))?;
+    let mut krate = match serde_json::from_str::<rustdoc_types::Crate>(&json) {
+        Ok(krate) => krate,
+        Err(e) => {
+            return if let Err(format_err) = check_format(std::io::Cursor::new(json)) {
+                Err(format_err).with_context(|| {
+                    format!(
+                        "The JSON docs for {name} are not in the expected format. Are you using the right version of the `nightly` toolchain, `{}`, to generate the JSON docs?",
+                        crate::DEFAULT_DOCS_TOOLCHAIN
+                    )
+                })
+            } else {
+                Err(e).with_context(|| format!("Failed to deserialize the JSON docs for {}", name))
+            };
+        }
+    };
 
     // Primitives, if using their fully qualified names, must be imported as `std::primitive::*`.
     // Unfortunately, that `primitive` module doesn't exist in the JSON docs, so we have to
