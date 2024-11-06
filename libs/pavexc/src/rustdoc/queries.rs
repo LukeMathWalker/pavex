@@ -10,6 +10,7 @@ use elsa::FrozenMap;
 use guppy::graph::PackageGraph;
 use guppy::{PackageId, Version};
 use indexmap::IndexSet;
+use rustc_hash::FxHashMap;
 use rustdoc_types::{ExternalCrate, Item, ItemEnum, ItemKind, ItemSummary, Visibility};
 use tracing::Span;
 
@@ -571,11 +572,11 @@ pub(crate) struct CrateData {
     pub root_item_id: rustdoc_types::Id,
     /// A mapping from the id of an external crate to the information about it.
     #[allow(clippy::disallowed_types)]
-    pub external_crates: std::collections::HashMap<u32, ExternalCrate>,
+    pub external_crates: FxHashMap<u32, ExternalCrate>,
     /// A mapping from the id of a type to its fully qualified path.
     /// Primarily useful for foreign items that are being re-exported by this crate.
     #[allow(clippy::disallowed_types)]
-    pub paths: std::collections::HashMap<rustdoc_types::Id, ItemSummary>,
+    pub paths: FxHashMap<rustdoc_types::Id, ItemSummary>,
     /// The version of the JSON format used by rustdoc.
     pub format_version: u32,
     /// The index of all the items in the crate.
@@ -620,7 +621,7 @@ impl CrateItemIndex {
 /// See [`CrateItemIndex`] for more information.
 pub(crate) struct EagerCrateItemIndex {
     #[allow(clippy::disallowed_types)]
-    pub index: std::collections::HashMap<rustdoc_types::Id, Item>,
+    pub index: FxHashMap<rustdoc_types::Id, Item>,
 }
 
 #[derive(Debug, Clone)]
@@ -1172,7 +1173,7 @@ pub fn compute_package_id_for_crate_id(
     // The package id of the crate whose documentation we are currently processing.
     package_id: &PackageId,
     // The mapping from crate id to external crate object.
-    external_crate_index: &std::collections::HashMap<u32, ExternalCrate>,
+    external_crate_index: &FxHashMap<u32, ExternalCrate>,
     crate_id: u32,
     // There might be multiple crates in the dependency graph with the same name, causing
     // disambiguation issues.

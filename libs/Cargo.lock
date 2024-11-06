@@ -2445,6 +2445,7 @@ dependencies = [
  "pavex",
  "pavex_bp_schema",
  "pavex_matchit",
+ "pavexc_rustdoc_types",
  "persist_if_changed",
  "petgraph",
  "prettyplease",
@@ -2456,7 +2457,7 @@ dependencies = [
  "rayon",
  "relative-path",
  "rusqlite",
- "rustdoc-types",
+ "rustc-hash",
  "semver",
  "serde",
  "serde_json",
@@ -3130,15 +3131,6 @@ name = "rustc-hash"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "583034fd73374156e66797ed8e5b0d5690409c9226b22d87cb7f19821c05d152"
-
-[[package]]
-name = "rustdoc-types"
-version = "0.31.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d368a6e25f5445187e8f67a7ec1cdf38f6d361fb26f9476b8b5f0bd91d88fd60"
-dependencies = [
- "serde",
-]
 
 [[package]]
 name = "rustix"
