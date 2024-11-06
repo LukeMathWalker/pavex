@@ -3,6 +3,7 @@ members = [
     "./pavex*",
     "generate_from_path",
     "pavex_cli_deps",
+    "pavexc_rustdoc_types",
     "persist_if_changed",
     "px_workspace_hack",
 ]
@@ -89,6 +90,7 @@ reqwest-retry = "0.6.1"
 reqwest-tracing = "0.5.3"
 ring = "0.17.8"
 ron = "0.8"
+rustc-hash = "2"
 rusqlite = "0.32"
 rustdoc-types = "0.31.0"
 sanitize-filename = "0.5"

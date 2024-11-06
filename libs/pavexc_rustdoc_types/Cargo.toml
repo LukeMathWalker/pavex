@@ -1,0 +1,11 @@
+[package]
+name = "pavexc_rustdoc_types"
+edition.workspace = true
+repository.workspace = true
+homepage.workspace = true
+license.workspace = true
+version.workspace = true
+
+[dependencies]
+serde = { workspace = true, features = ["derive"] }
+rustc_hash = { workspace = true }

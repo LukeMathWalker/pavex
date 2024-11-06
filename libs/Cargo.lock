@@ -2357,6 +2357,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "pavexc_rustdoc_types"
+version = "0.1.52"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "pbkdf2"
 version = "0.12.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
