@@ -8,4 +8,4 @@ version.workspace = true
 
 [dependencies]
 serde = { workspace = true, features = ["derive"] }
-rustc_hash = { workspace = true }
+rustc-hash = { workspace = true }
