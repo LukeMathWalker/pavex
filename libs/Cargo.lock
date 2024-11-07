@@ -2520,6 +2520,7 @@ dependencies = [
 name = "pavexc_rustdoc_types"
 version = "0.1.52"
 dependencies = [
+ "px_workspace_hack",
  "rustc-hash",
  "serde",
 ]
@@ -2699,6 +2700,7 @@ dependencies = [
 name = "px_workspace_hack"
 version = "0.1.0"
 dependencies = [
+ "ahash",
  "aho-corasick",
  "byteorder",
  "cc",
@@ -2709,17 +2711,20 @@ dependencies = [
  "deranged",
  "digest",
  "fixedbitset",
+ "form_urlencoded",
  "futures-channel",
  "futures-core",
  "futures-sink",
  "futures-util",
  "getrandom",
+ "hashbrown 0.14.5",
  "hmac",
  "indexmap",
  "log",
  "memchr",
  "miette",
  "num-traits",
+ "percent-encoding",
  "petgraph",
  "proc-macro2",
  "quote",
@@ -2731,6 +2736,7 @@ dependencies = [
  "serde_json",
  "sha2",
  "smallvec",
+ "stable_deref_trait",
  "subtle",
  "syn",
  "time",
