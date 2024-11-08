@@ -216,18 +216,64 @@ pub(crate) fn get_nest_at_prefix_span(
     source: &ParsedSourceFile,
     location: &Location,
 ) -> Option<SourceSpan> {
-    let raw_source = &source.contents;
+    let arguments = get_nest_at_arguments(source, location)?;
+    Some(convert_proc_macro_span(
+        &source.contents,
+        arguments.get(0)?.span(),
+    ))
+}
+
+/// Location, obtained via `#[track_caller]` and `std::panic::Location::caller`, points at the
+/// `.` in the method invocation for `nest_at`.
+/// E.g.
+///
+/// ```rust,ignore
+/// bp.nest_at("/home", sub_bp)
+/// //^ `location` points here!
+/// ```
+///
+/// We build a `SourceSpan` that matches the blueprint argument.
+/// E.g.
+///
+/// ```rust,ignore
+/// bp.nest_at("/home", sub_bp)
+/// //                  ^^^^^^
+/// //         We want a SourceSpan that points at this for nest_at
+/// ```
+pub(crate) fn get_nest_at_blueprint_span(
+    source: &ParsedSourceFile,
+    location: &Location,
+) -> Option<SourceSpan> {
+    let arguments = get_nest_at_arguments(source, location)?;
+    Some(convert_proc_macro_span(
+        &source.contents,
+        arguments.get(1)?.span(),
+    ))
+}
+
+/// Location, obtained via `#[track_caller]` and `std::panic::Location::caller`, points at the
+/// `.` in the method invocation for `nest_at`.
+/// E.g.
+///
+/// ```rust,ignore
+/// bp.nest_at("/home", sub_bp)
+/// //^ `location` points here!
+/// ```
+///
+/// We return the arguments of the `nest_at` invocation. If `nest_at` is invoked as a static method
+/// (i.e. `Blueprint::nest_at`), we skip the first argument (the blueprint, `self`).
+fn get_nest_at_arguments(source: &ParsedSourceFile, location: &Location) -> Option<Vec<Expr>> {
     let node = find_method_call(location, &source.parsed)?;
-    let span = match node {
+    match node {
         Call::MethodCall(node) => {
-            let argument = match node.method.to_string().as_str() {
+            match node.method.to_string().as_str() {
                 "nest_at" => {
                     if node.args.len() == 2 {
                         // bp.nest_at(prefix, sub_bp)
-                        node.args.first()
+                        Some(node.args.iter().cloned().collect())
                     } else if node.args.len() == 3 {
                         // Blueprint::nest_at(bp, prefix, sub_bp)
-                        node.args.iter().nth(1)
+                        Some(node.args.iter().skip(1).cloned().collect())
                     } else {
                         tracing::trace!("Unexpected number of arguments for `nest_at` invocation");
                         return None;
@@ -240,21 +286,18 @@ pub(crate) fn get_nest_at_prefix_span(
                     );
                     return None;
                 }
-            }?;
-            argument.span()
+            }
         }
         Call::FunctionCall(node) => {
-            let argument = if node.args.len() == 3 {
+            if node.args.len() == 3 {
                 // Blueprint::nest_at(bp, prefix, sub_bp)
-                node.args.iter().nth(1)
+                Some(node.args.iter().skip(1).cloned().collect())
             } else {
                 tracing::trace!("Unexpected number of arguments for `nest_at` invocation");
                 return None;
-            };
-            argument.span()
+            }
         }
-    };
-    Some(convert_proc_macro_span(raw_source, span))
+    }
 }
 
 /// Location, obtained via `#[track_caller]` and `std::panic::Location::caller`, points at the

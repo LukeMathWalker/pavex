@@ -387,9 +387,15 @@ impl ConstructibleDb {
                     ) -> Option<HelpWithSnippet> {
                         let location = scope_graph.get_location(common_ancestor_id).unwrap();
                         let source = try_source!(location, package_graph, diagnostics)?;
-                        let label = diagnostic::get_bp_new_span(&source, &location).labeled(
-                            "Register your constructor against this blueprint".to_string(),
-                        )?;
+                        let label = if common_ancestor_id != scope_graph.root_scope_id() {
+                            diagnostic::get_nest_at_blueprint_span(&source, &location).labeled(
+                                "Register your constructor against the blueprint that's nested here".to_string(),
+                            )?
+                        } else {
+                            diagnostic::get_bp_new_span(&source, &location).labeled(
+                                "Register your constructor against the root blueprint".to_string(),
+                            )?
+                        };
                         Some(HelpWithSnippet::new(
                             format!(
                                 "If you want to share a single instance of `{type_:?}`, remove \
