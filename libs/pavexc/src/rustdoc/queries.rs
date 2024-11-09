@@ -467,7 +467,7 @@ impl CrateCollection {
         // The item might come from a transitive dependency via a re-export
         // done by a direct dependency.
         // We don't have a bulletproof way of finding the re-exporter name, but we can
-        // try to infer it (e.g. via the `name` proeprty).
+        // try to infer it (e.g. via the `name` property).
         re_exporter_crate_name: Option<&str>,
     ) -> Result<(GlobalItemId, &[String]), anyhow::Error> {
         let (definition_package_id, path) = {
@@ -988,6 +988,33 @@ fn index_local_types<'a>(
                             }
                         } else {
                             navigation_history.insert(*imported_id);
+
+                            // We keep track of the source path in our indexes.
+                            // This is useful, in particular, if we don't have
+                            // access to the source module of the imported item.
+                            // This can happen when working with `std`/`alloc`/`core`
+                            // since the JSON output doesn't include private/doc-hidden
+                            // items.
+                            {
+                                let mut normalized_source_path = vec![];
+                                let source_segments = i.source.split("::");
+                                for segment in source_segments {
+                                    if segment == "self" {
+                                        normalized_source_path
+                                            .extend(current_path.iter().map(|s| s.to_string()));
+                                    } else if segment == "crate" {
+                                        normalized_source_path.push(current_path[0].to_string())
+                                    } else {
+                                        normalized_source_path.push(segment.to_string());
+                                    }
+                                }
+                                // Assume it's private unless we find out otherwise later on
+                                private_path_index
+                                    .entry(*imported_id)
+                                    .or_default()
+                                    .insert(normalized_source_path);
+                            }
+
                             index_local_types(
                                 krate,
                                 package_id,
