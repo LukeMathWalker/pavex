@@ -2,9 +2,10 @@
 name = "pavexc_rustdoc_types"
 edition.workspace = true
 repository.workspace = true
-homepage.workspace = true
 license.workspace = true
 version.workspace = true
+description = "The slimmed down schema used by pavexc to work with rustdoc's JSON output"
+keywords = ["pavexc", "rustdoc-json"]
 
 [dependencies]
 serde = { workspace = true, features = ["derive"] }
