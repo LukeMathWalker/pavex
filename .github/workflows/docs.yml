@@ -706,6 +706,9 @@ jobs:
       uses: lycheeverse/lychee-action@v2
       with:
         fail: true
+        # Pinning since there seems to be an issue with index.html files
+        # starting in 0.17.0
+        lycheeVersion: 0.16.1
         args: |
           --base site 
           --exclude-loopback 
