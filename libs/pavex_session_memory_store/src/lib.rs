@@ -1,13 +1,13 @@
 //! An in-memory session store for `pavex_session`, geared towards testing and local development.
-use std::{collections::HashMap, sync::Arc, time::Duration};
+use std::{collections::HashMap, num::NonZeroUsize, sync::Arc, time::Duration};
 use time::OffsetDateTime;
 use tokio::sync::{Mutex, MutexGuard};
 
 use pavex_session::{
     store::{
         errors::{
-            ChangeIdError, CreateError, DeleteError, DuplicateIdError, LoadError, UnknownIdError,
-            UpdateError, UpdateTtlError,
+            ChangeIdError, CreateError, DeleteError, DeleteExpiredError, DuplicateIdError,
+            LoadError, UnknownIdError, UpdateError, UpdateTtlError,
         },
         SessionRecord, SessionRecordRef, SessionStorageBackend,
     },
@@ -22,7 +22,11 @@ use pavex_session::{
 /// This store won't persist data between server restarts.
 /// It also won't synchronize data between multiple server instances.
 /// It is primarily intended for testing and local development.
-pub struct SessionMemoryStore(Arc<Mutex<HashMap<SessionId, StoreRecord>>>);
+pub struct InMemorySessionStore(Arc<Mutex<HashMap<SessionId, StoreRecord>>>);
+
+#[doc(hidden)]
+// Here for backwards compatibility.
+pub type SessionStoreMemory = InMemorySessionStore;
 
 #[derive(Debug)]
 struct StoreRecord {
@@ -35,7 +39,7 @@ impl StoreRecord {
     }
 }
 
-impl SessionMemoryStore {
+impl InMemorySessionStore {
     /// Creates a new (empty) in-memory session store.
     pub fn new() -> Self {
         Self(Arc::new(Mutex::new(HashMap::new())))
@@ -72,7 +76,7 @@ impl SessionMemoryStore {
 }
 
 #[async_trait::async_trait(?Send)]
-impl SessionStorageBackend for SessionMemoryStore {
+impl SessionStorageBackend for InMemorySessionStore {
     /// Creates a new session record in the store using the provided ID.
     #[tracing::instrument(name = "Create server-side session record", level = tracing::Level::TRACE, skip_all)]
     async fn create(
@@ -173,5 +177,31 @@ impl SessionStorageBackend for SessionMemoryStore {
         let record = Self::_delete(&mut guard, &old_id)?;
         guard.insert(*new_id, record);
         Ok(())
+    }
+
+    /// Delete all expired records from the store.
+    #[tracing::instrument(name = "Delete expired records", level = tracing::Level::TRACE, skip_all)]
+    async fn delete_expired(
+        &self,
+        batch_size: Option<NonZeroUsize>,
+    ) -> Result<usize, DeleteExpiredError> {
+        let mut guard = self.0.lock().await;
+        let now = time::OffsetDateTime::now_utc();
+        let mut stale_ids = Vec::new();
+        for (id, record) in guard.iter() {
+            if record.deadline <= now {
+                stale_ids.push(*id);
+                if let Some(batch_size) = batch_size {
+                    if stale_ids.len() >= batch_size.get() {
+                        break;
+                    }
+                }
+            }
+        }
+        let num_deleted = stale_ids.len();
+        for id in stale_ids {
+            guard.remove(&id);
+        }
+        Ok(num_deleted)
     }
 }
