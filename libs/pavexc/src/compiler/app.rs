@@ -478,8 +478,8 @@ fn codegen_deps(package_graph: &PackageGraph) -> HashMap<String, guppy::PackageI
         .id();
     let thiserror = package_graph
         .packages()
-        .find(|p| p.name() == "thiserror" && p.version().major == 1)
-        .expect("Expected to find `thiserror@1` in the package graph, but it was not there.")
+        .find(|p| p.name() == "thiserror" && p.version().major == 2)
+        .expect("Expected to find `thiserror@2` in the package graph, but it was not there.")
         .id();
     let matchit = package_graph
         .packages()
