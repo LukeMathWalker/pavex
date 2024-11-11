@@ -1,7 +1,10 @@
 use crate::SessionId;
-use errors::{ChangeIdError, CreateError, DeleteError, LoadError, UpdateError, UpdateTtlError};
+use errors::{
+    ChangeIdError, CreateError, DeleteError, DeleteExpiredError, LoadError, UpdateError,
+    UpdateTtlError,
+};
 use serde_json::Value;
-use std::{borrow::Cow, collections::HashMap};
+use std::{borrow::Cow, collections::HashMap, num::NonZeroUsize};
 
 /// Where server-side session records are stored.
 ///
@@ -78,6 +81,14 @@ impl SessionStore {
     ) -> Result<(), ChangeIdError> {
         self.0.change_id(old_id, new_id).await
     }
+
+    /// Deletes expired session records from the store.
+    pub async fn delete_expired(
+        &self,
+        batch_size: Option<NonZeroUsize>,
+    ) -> Result<usize, DeleteExpiredError> {
+        self.0.delete_expired(batch_size).await
+    }
 }
 
 #[async_trait::async_trait(?Send)]
@@ -118,6 +129,30 @@ pub trait SessionStorageBackend: std::fmt::Debug + Send + Sync {
     ///
     /// The server-side state is left unchanged.
     async fn change_id(&self, old_id: &SessionId, new_id: &SessionId) -> Result<(), ChangeIdError>;
+
+    /// Deletes expired session records from the store.
+    ///
+    /// If `batch_size` is provided, the query will delete at most `batch_size` expired sessions.
+    /// In either case, if successful, the method returns the number of expired sessions that
+    /// have been deleted.
+    ///
+    /// # When should you delete in batches?
+    ///
+    /// If there are a lot of expired sessions in the database, deleting them all at once can
+    /// cause performance issues. By deleting in batches, you can limit the number of sessions
+    /// deleted in a single query, reducing the impact.
+    ///
+    /// # Do I need to call this method?
+    ///
+    /// It depends on the storage backend you are using. Some backends (e.g. Redis) have
+    /// built-in support for expiring keys, so you may not need to call this method at all.
+    ///
+    /// If you're adding support for a new backend that has built-in support for expiring keys,
+    /// you can simply return `Ok(0)` from this method.
+    async fn delete_expired(
+        &self,
+        batch_size: Option<NonZeroUsize>,
+    ) -> Result<usize, DeleteExpiredError>;
 }
 
 /// A server-side session record that's going to be stored in the
@@ -201,7 +236,7 @@ pub mod errors {
     pub enum LoadError {
         #[error("Failed to deserialize the session state.")]
         /// Failed to deserialize the session state.
-        DeserializationError(#[from] serde_json::Error),
+        DeserializationError(#[source] anyhow::Error),
         /// Something else went wrong when loading the session record.
         #[error("Something went wrong when loading the session record.")]
         Other(#[source] anyhow::Error),
@@ -233,6 +268,11 @@ pub mod errors {
         #[error("Something went wrong when changing the session id for a session record.")]
         Other(#[source] anyhow::Error),
     }
+
+    /// The error returned by [`SessionStorageBackend::delete_expired`][super::SessionStorageBackend::delete_expired].
+    #[derive(Debug, thiserror::Error)]
+    #[error("Something went wrong when deleting expired sessions")]
+    pub struct DeleteExpiredError(#[from] anyhow::Error);
 
     #[derive(Debug, thiserror::Error)]
     #[error("There is no session with the given id")]

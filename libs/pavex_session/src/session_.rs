@@ -1,4 +1,5 @@
 use super::state::errors::{ServerGetError, ServerSetError, SyncError, ValueDeserializationError};
+use anyhow::Context;
 use errors::{FinalizeError, ValueSerializationError};
 use pavex::cookie::{RemovalCookie, ResponseCookie};
 use serde::de::DeserializeOwned;
@@ -277,7 +278,7 @@ impl<'session> ClientSessionStateMut<'session> {
     pub fn set<T: Serialize>(
         &mut self,
         key: String,
-        value: T
+        value: T,
     ) -> Result<Option<Value>, serde_json::Error> {
         let value = serde_json::to_value(value)?;
         Ok(self.set_value(key, value))
@@ -309,7 +310,10 @@ impl<'session> ClientSessionStateMut<'session> {
     ///
     /// If the key exists, the removed value is returned.
     /// If the removed value cannot be serialized, an error is returned.
-    pub fn remove<T: DeserializeOwned>(&mut self, key: &str) -> Result<Option<T>, serde_json::Error> {
+    pub fn remove<T: DeserializeOwned>(
+        &mut self,
+        key: &str,
+    ) -> Result<Option<T>, serde_json::Error> {
         self.remove_value(key)
             .map(|value| serde_json::from_value(value))
             .transpose()
@@ -447,9 +451,11 @@ impl<'session, 'store> ServerSessionState<'session, 'store> {
     /// If the key exists, the removed value is returned.
     /// If the removed value cannot be serialized, an error is returned.
     pub async fn remove<T: DeserializeOwned>(&mut self, key: &str) -> Result<Option<T>, LoadError> {
-        self.remove_value(key).await?
+        self.remove_value(key)
+            .await?
             .map(serde_json::from_value)
             .transpose()
+            .context("Failed to deserialize the removed value.")
             .map_err(LoadError::DeserializationError)
     }
 

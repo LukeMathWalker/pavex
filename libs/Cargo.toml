@@ -2,8 +2,6 @@
 members = [
     "./pavex*",
     "generate_from_path",
-    "pavex_cli_deps",
-    "pavexc_rustdoc_types",
     "persist_if_changed",
     "px_workspace_hack",
 ]
@@ -104,6 +102,7 @@ serde_stacker = "0.1"
 sha2 = "0.10.8"
 similar = "2.6.0"
 smallvec = "1"
+sqlx = { version = "0.8" }
 socket2 = "0.5.7"
 supports-color = "3.0.1"
 supports-hyperlinks = "3.0.0"
