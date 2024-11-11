@@ -4,13 +4,10 @@ no-default-features = false
 
 [advisories]
 ignore = [
-    # `yaml` crate is unmaintained, but we depend on it transitively via `config`,
-    # so no easy way to remove it. Since it isn't vulnerable, we'll ignore the advisory
-    # for now.
-    "RUSTSEC-2024-0320",
-    # `proc-macro-error` is unmaintained, but we depend on it transitively via `vergen-lib`.
-    # There is no runtime risk, so we'll ignore the advisory for now.
-    "RUSTSEC-2024-0370",
+    # `instant` crate is unmaintained, but we depend on it transitively,
+    # so no easy way to remove it until all intermediate crates get rid of it.
+    # Since it isn't vulnerable, we'll ignore the advisory for now.
+    "RUSTSEC-2024-0384",
 ]
 
 [licenses]
