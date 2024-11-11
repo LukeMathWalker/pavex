@@ -15,34 +15,32 @@ on:
 
 jobs:
   <%- for (os, target, binary_extension) in [
-    ('ubuntu-latest', 'linux', ''), 
-    ('macos-14', 'macos', ''), 
+    ('ubuntu-latest', 'linux', ''),
+    ('macos-14', 'macos', ''),
     ('windows-2022', 'windows', '.exe')
   ] %>
-  
+
   build_clis_<<- target >>:
     name: "Build CLIs (<<- target >>)"
     runs-on: << os >>
-    <%- with job_name = "Build CLIs (<<- target >>)" -%>
-      <%- from 'build_clis_steps' import output -%>  
+      <% set job_name %>Build CLIs (<<- target >>)<% endset %>
+      <%- from 'build_clis_steps' import output -%>
       <<- output | indent(4) >>
-    <%- endwith %>
-    
+
   tests_<<- target >>:
     name: "Run tests (<<- target >>)"
     runs-on: << os >>
     needs:
       - build_clis_<<- target >>
-    <%- with job_name = 'Run tests (<< target >>)' -%>
-      <%- from 'tests_steps' import output -%>  
+      <% set job_name %>Run tests (<<- target >>)<% endset %>
+      <%- from 'tests_steps' import output -%>
       <<- output | indent(4) >>
-    <%- endwith %>
   <%- endfor %>
 
   build_tutorial_generator:
     runs-on: ubuntu-latest
     <%- with job_name = 'Build tutorial generator' -%>
-      <%- from 'build_tutorial_generator_steps' import output -%>  
+      <%- from 'build_tutorial_generator_steps' import output -%>
       <<- output | indent(4) ->>
     <%- endwith %>
 
@@ -54,13 +52,13 @@ jobs:
       - build_clis_linux
       - build_tutorial_generator
     <%- with job_name = 'Check if up to date' -%>
-      <%- from 'is_up_to_date_steps' import output -%>  
+      <%- from 'is_up_to_date_steps' import output -%>
       <<- output | indent(4) >>
     <%- endwith %>
 
   build_docs:
     runs-on: ubuntu-latest
     <%- with job_name = 'Build docs' %>
-      <%- from 'build_docs_steps' import output %>  
+      <%- from 'build_docs_steps' import output %>
       <<- output | indent(4) >>
     <%- endwith %>
