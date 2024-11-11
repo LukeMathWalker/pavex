@@ -113,14 +113,14 @@ enum Commands {
         blueprint: PathBuf,
         /// Optional. If provided, pavex will serialize diagnostic information about
         /// the application to the specified path.
-        #[clap(long, value_parser)]
+        #[clap(long, env = "PAVEXC_DIAGNOSTICS", value_parser)]
         diagnostics: Option<PathBuf>,
         /// The path to the directory that will contain the manifest and the source code for the generated application crate.
         /// If the provided path is relative, it is interpreted as relative to the root of the current workspace.
         #[clap(short, long, value_parser)]
         output: PathBuf,
         #[clap(long)]
-        /// Verify that the generated server SDK is up-to-date.  
+        /// Verify that the generated server SDK is up-to-date.
         /// If it isn't, `pavexc` will return an error without updating
         /// the server SDK code.
         check: bool,

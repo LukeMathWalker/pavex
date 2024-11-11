@@ -110,7 +110,7 @@ pub enum Command {
         /// Optional.
         /// If provided, Pavex will serialize diagnostic information about
         /// the application to the specified path.
-        #[clap(long, value_parser)]
+        #[clap(long, env = "PAVEX_DIAGNOSTICS", value_parser)]
         diagnostics: Option<PathBuf>,
         #[clap(long)]
         /// Verify that the generated server SDK is up-to-date.
