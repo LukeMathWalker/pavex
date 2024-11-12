@@ -22,7 +22,6 @@ tokio = { workspace = true, features = ["sync"] }
 tracing = { workspace = true }
 anyhow = { workspace = true }
 sqlx = { workspace = true, features = ["uuid", "time"] }
-px_workspace_hack = { version = "0.1", path = "../px_workspace_hack" }
 
 [dev-dependencies]
 pavex_session_sqlx = { path = ".", version = "0.1.53", features = ["postgres"] }
