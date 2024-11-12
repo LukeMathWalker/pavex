@@ -162,6 +162,7 @@ where
     let root_node_index = add_node_for_component(&mut call_graph, &mut node_deduplicator, root_id);
     let mut nodes_to_be_visited: IndexSet<VisitorStackElement> =
         IndexSet::from_iter([VisitorStackElement::orphan(root_node_index)]);
+    let mut processed_nodes = HashSet::new();
 
     loop {
         while let Some(node_to_be_visited) = nodes_to_be_visited.pop() {
@@ -177,6 +178,11 @@ where
                         call_graph.update_edge(current_index, child_index, edge_metadata);
                     }
                 }
+            }
+
+            // We've already processed dependencies for this node.
+            if processed_nodes.contains(&current_index) {
+                continue;
             }
 
             // We need to recursively build the input types for all our compute components;
@@ -243,6 +249,8 @@ where
                     }
                 }
             }
+
+            processed_nodes.insert(current_index);
         }
 
         let indexes = call_graph.node_indices().collect::<Vec<_>>();
