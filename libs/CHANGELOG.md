@@ -18,10 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Other
 
-- update Cargo.toml dependencies
-- Disable workspace hack before a release
-- Re-enable workspace hack after a release
-- Update thiserror in generated code
+- Update `thiserror` to `2.x.y` in generated code
 
 ## [0.1.52](https://github.com/LukeMathWalker/pavex/compare/0.1.51...0.1.52) - 2024-11-05
 
