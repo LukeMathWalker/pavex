@@ -6,6 +6,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.54](https://github.com/LukeMathWalker/pavex/compare/0.1.53...0.1.54) - 2024-11-12
+
+### Added
+
+- 'pavex' and 'pavexc' check a dedicated environment variable, in addition to invocation flags, to determine if diagnostic information should be outputted
+
+### Fixed
+
+- Avoid processing the same nodes multiple times in order to avoid duplicated transient nodes.
+
+### Other
+
+- update Cargo.toml dependencies
+- Disable workspace hack before a release
+- Re-enable workspace hack after a release
+- Update thiserror in generated code
+
 ## [0.1.52](https://github.com/LukeMathWalker/pavex/compare/0.1.51...0.1.52) - 2024-11-05
 
 ### Fixed
