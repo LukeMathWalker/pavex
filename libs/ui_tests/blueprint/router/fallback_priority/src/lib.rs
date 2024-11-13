@@ -1,7 +1,4 @@
-use pavex::blueprint::{
-    router::GET,
-    Blueprint,
-};
+use pavex::blueprint::{router::GET, Blueprint};
 use pavex::f;
 use pavex::response::Response;
 
@@ -19,7 +16,7 @@ pub fn forbidden() -> pavex::response::Response {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.nest_at("/users", {
+    bp.prefix("/users").nest({
         let mut bp = Blueprint::new();
         bp.route(GET, "/", f!(crate::handler));
         bp.nest({

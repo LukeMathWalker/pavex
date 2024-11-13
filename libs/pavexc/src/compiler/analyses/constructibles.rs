@@ -388,7 +388,7 @@ impl ConstructibleDb {
                         let location = scope_graph.get_location(common_ancestor_id).unwrap();
                         let source = try_source!(location, package_graph, diagnostics)?;
                         let label = if common_ancestor_id != scope_graph.root_scope_id() {
-                            diagnostic::get_nest_at_blueprint_span(&source, &location).labeled(
+                            diagnostic::get_nest_blueprint_span(&source, &location).labeled(
                                 "Register your constructor against the blueprint that's nested here".to_string(),
                             )?
                         } else {
@@ -479,14 +479,14 @@ impl ConstructibleDb {
         }
     }
 
-    /// Error observers must be infallible—this extends to their dependencies.  
+    /// Error observers must be infallible—this extends to their dependencies.
     /// This method checks that no error observer depends on a fallible component,
     /// either directly or transitively.
     ///
     /// # Rationale
     ///
     /// If an error observer depends on a fallible component, we'll have to invoke
-    /// that fallible constructor _before_ invoking the error observer.  
+    /// that fallible constructor _before_ invoking the error observer.
     /// If the fallible constructor fails, we'll have to invoke the error observer
     /// on the error, which will in turn invoke the fallible constructor again,
     /// resulting in an infinite loop.
@@ -1052,7 +1052,7 @@ impl ConstructiblesInScope {
                     &bindings,
                 );
                 let bound = self.get(type_);
-                assert!(bound.is_some(), "I used {} as a templated constructor to build {} but the binding process didn't succeed as expected.\nBindings:\n{}", 
+                assert!(bound.is_some(), "I used {} as a templated constructor to build {} but the binding process didn't succeed as expected.\nBindings:\n{}",
                     template.display_for_error(),
                     type_.display_for_error(),
                     bindings.into_iter().map(|(k, v)| format!("- {k} -> {}", v.display_for_error())).collect::<Vec<_>>().join("\n")

@@ -1,4 +1,4 @@
-digraph "GET /home/:home_id - 0" {
+digraph "GET /home/{home_id} - 0" {
     0 [ label = "3| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_0::Next0<'a, 'b>>) -> pavex::response::Response"]
     1 [ label = "2| pavex::middleware::Next::new(crate::route_0::Next0<'a, 'b>) -> pavex::middleware::Next<crate::route_0::Next0<'a, 'b>>"]
     2 [ label = "1| crate::route_0::Next0(pavex::request::path::RawPathParams<'a, 'b>) -> crate::route_0::Next0<'a, 'b>"]
@@ -10,7 +10,7 @@ digraph "GET /home/:home_id - 0" {
     0 -> 4 [ ]
 }
 
-digraph "GET /home/:home_id - 1" {
+digraph "GET /home/{home_id} - 1" {
     0 [ label = "7| app_c1ac8ad4::get_home(pavex::request::path::PathParams<app_c1ac8ad4::HomePathParams>) -> pavex::response::Response"]
     1 [ label = "6| core::prelude::rust_2015::Result<pavex::request::path::PathParams<app_c1ac8ad4::HomePathParams>, pavex::request::path::errors::ExtractPathParamsError> -> pavex::request::path::PathParams<app_c1ac8ad4::HomePathParams>"]
     2 [ label = "1| pavex::request::path::PathParams::extract(pavex::request::path::RawPathParams<'server, 'request>) -> core::prelude::rust_2015::Result<pavex::request::path::PathParams<app_c1ac8ad4::HomePathParams>, pavex::request::path::errors::ExtractPathParamsError>"]
@@ -30,27 +30,7 @@ digraph "GET /home/:home_id - 1" {
     2 -> 8 [ ]
 }
 
-digraph "* /home/:home_id - 0" {
-    0 [ label = "3| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_3::Next0<'a>>) -> pavex::response::Response"]
-    1 [ label = "2| pavex::middleware::Next::new(crate::route_3::Next0<'a>) -> pavex::middleware::Next<crate::route_3::Next0<'a>>"]
-    2 [ label = "1| crate::route_3::Next0(&'a pavex::router::AllowedMethods) -> crate::route_3::Next0<'a>"]
-    4 [ label = "4| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    5 [ label = "0| &pavex::router::AllowedMethods"]
-    1 -> 0 [ ]
-    2 -> 1 [ ]
-    0 -> 4 [ ]
-    5 -> 2 [ ]
-}
-
-digraph "* /home/:home_id - 1" {
-    0 [ label = "1| pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
-    2 [ label = "2| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    3 [ label = "0| &pavex::router::AllowedMethods"]
-    0 -> 2 [ ]
-    3 -> 0 [ ]
-}
-
-digraph "GET /home/:home_id/room/:room_id - 0" {
+digraph "GET /home/{home_id}/room/{room_id} - 0" {
     0 [ label = "3| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_1::Next0<'a, 'b>>) -> pavex::response::Response"]
     1 [ label = "2| pavex::middleware::Next::new(crate::route_1::Next0<'a, 'b>) -> pavex::middleware::Next<crate::route_1::Next0<'a, 'b>>"]
     2 [ label = "1| crate::route_1::Next0(pavex::request::path::RawPathParams<'a, 'b>) -> crate::route_1::Next0<'a, 'b>"]
@@ -62,7 +42,7 @@ digraph "GET /home/:home_id/room/:room_id - 0" {
     0 -> 4 [ ]
 }
 
-digraph "GET /home/:home_id/room/:room_id - 1" {
+digraph "GET /home/{home_id}/room/{room_id} - 1" {
     0 [ label = "7| app_c1ac8ad4::get_room(pavex::request::path::PathParams<app_c1ac8ad4::RoomPathParams>) -> pavex::response::Response"]
     1 [ label = "6| core::prelude::rust_2015::Result<pavex::request::path::PathParams<app_c1ac8ad4::RoomPathParams>, pavex::request::path::errors::ExtractPathParamsError> -> pavex::request::path::PathParams<app_c1ac8ad4::RoomPathParams>"]
     2 [ label = "1| pavex::request::path::PathParams::extract(pavex::request::path::RawPathParams<'server, 'request>) -> core::prelude::rust_2015::Result<pavex::request::path::PathParams<app_c1ac8ad4::RoomPathParams>, pavex::request::path::errors::ExtractPathParamsError>"]
@@ -82,27 +62,7 @@ digraph "GET /home/:home_id/room/:room_id - 1" {
     2 -> 8 [ ]
 }
 
-digraph "* /home/:home_id/room/:room_id - 0" {
-    0 [ label = "3| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_3::Next0<'a>>) -> pavex::response::Response"]
-    1 [ label = "2| pavex::middleware::Next::new(crate::route_3::Next0<'a>) -> pavex::middleware::Next<crate::route_3::Next0<'a>>"]
-    2 [ label = "1| crate::route_3::Next0(&'a pavex::router::AllowedMethods) -> crate::route_3::Next0<'a>"]
-    4 [ label = "4| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    5 [ label = "0| &pavex::router::AllowedMethods"]
-    1 -> 0 [ ]
-    2 -> 1 [ ]
-    0 -> 4 [ ]
-    5 -> 2 [ ]
-}
-
-digraph "* /home/:home_id/room/:room_id - 1" {
-    0 [ label = "1| pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
-    2 [ label = "2| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    3 [ label = "0| &pavex::router::AllowedMethods"]
-    0 -> 2 [ ]
-    3 -> 0 [ ]
-}
-
-digraph "GET /town/*town - 0" {
+digraph "GET /town/{*town} - 0" {
     0 [ label = "3| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_2::Next0<'a, 'b>>) -> pavex::response::Response"]
     1 [ label = "2| pavex::middleware::Next::new(crate::route_2::Next0<'a, 'b>) -> pavex::middleware::Next<crate::route_2::Next0<'a, 'b>>"]
     2 [ label = "1| crate::route_2::Next0(pavex::request::path::RawPathParams<'a, 'b>) -> crate::route_2::Next0<'a, 'b>"]
@@ -114,7 +74,7 @@ digraph "GET /town/*town - 0" {
     0 -> 4 [ ]
 }
 
-digraph "GET /town/*town - 1" {
+digraph "GET /town/{*town} - 1" {
     0 [ label = "7| app_c1ac8ad4::get_town(pavex::request::path::PathParams<app_c1ac8ad4::TownPathParams<'_>>) -> pavex::response::Response"]
     1 [ label = "6| core::prelude::rust_2015::Result<pavex::request::path::PathParams<app_c1ac8ad4::TownPathParams<'_>>, pavex::request::path::errors::ExtractPathParamsError> -> pavex::request::path::PathParams<app_c1ac8ad4::TownPathParams<'_>>"]
     2 [ label = "1| pavex::request::path::PathParams::extract(pavex::request::path::RawPathParams<'server, 'request>) -> core::prelude::rust_2015::Result<pavex::request::path::PathParams<app_c1ac8ad4::TownPathParams<'_>>, pavex::request::path::errors::ExtractPathParamsError>"]
@@ -134,7 +94,7 @@ digraph "GET /town/*town - 1" {
     2 -> 8 [ ]
 }
 
-digraph "* /town/*town - 0" {
+digraph "* * - 0" {
     0 [ label = "3| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_3::Next0<'a>>) -> pavex::response::Response"]
     1 [ label = "2| pavex::middleware::Next::new(crate::route_3::Next0<'a>) -> pavex::middleware::Next<crate::route_3::Next0<'a>>"]
     2 [ label = "1| crate::route_3::Next0(&'a pavex::router::AllowedMethods) -> crate::route_3::Next0<'a>"]
@@ -146,7 +106,7 @@ digraph "* /town/*town - 0" {
     5 -> 2 [ ]
 }
 
-digraph "* /town/*town - 1" {
+digraph "* * - 1" {
     0 [ label = "1| pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
     2 [ label = "2| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     3 [ label = "0| &pavex::router::AllowedMethods"]

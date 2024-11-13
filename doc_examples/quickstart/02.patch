@@ -22,5 +22,5 @@ index 0472c7d..3c53d60 100644
 
  pub fn register(bp: &mut Blueprint) {
      bp.route(GET, "/api/ping", f!(self::ping::get));
-+    bp.route(GET, "/api/greet/:name", f!(self::greet::get)); // (1)!
++    bp.route(GET, "/api/greet/{name}", f!(self::greet::get)); // (1)!
  }

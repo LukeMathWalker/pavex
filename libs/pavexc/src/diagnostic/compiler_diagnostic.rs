@@ -45,10 +45,14 @@ impl CompilerDiagnosticBuilder {
         self
     }
 
+    /// Add one more label to this diagnostic.
+    /// If there are already labels, the new label will be appended.
     pub fn label(self, label: LabeledSpan) -> Self {
         self.labels(std::iter::once(label))
     }
 
+    /// Add multiple labels to this diagnostic.
+    /// If there are already labels, the new labels will be appended.
     pub fn labels(mut self, new_labels: impl Iterator<Item = LabeledSpan>) -> Self {
         let mut labels = self.labels.unwrap_or_else(|| Vec::with_capacity(1));
         labels.extend(new_labels);

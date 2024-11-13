@@ -8,7 +8,7 @@ pub fn blueprint() -> Blueprint {
     bp.singleton(f!(
         <pavex::cookie::ProcessorConfig as std::default::Default>::default
     ));
-    bp.nest_at("/core", crate::core::blueprint());
-    bp.nest_at("/delete", crate::delete::blueprint());
+    bp.prefix("/core").nest(crate::core::blueprint());
+    bp.prefix("/delete").nest(crate::delete::blueprint());
     bp
 }

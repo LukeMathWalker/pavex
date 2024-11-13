@@ -1,4 +1,4 @@
-use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
+use pavex::blueprint::{router::GET, Blueprint};
 use pavex::f;
 use pavex::{request::path::PathParams, response::Response};
 
@@ -33,15 +33,12 @@ pub fn get_town(params: PathParams<TownPathParams<'_>>) -> Response {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.constructor(
-        f!(pavex::request::path::PathParams::extract),
-        Lifecycle::RequestScoped,
-    )
-    .error_handler(f!(
-        pavex::request::path::errors::ExtractPathParamsError::into_response
-    ));
-    bp.route(GET, "/home/:home_id", f!(crate::get_home));
-    bp.route(GET, "/home/:home_id/room/:room_id", f!(crate::get_room));
-    bp.route(GET, "/town/*town", f!(crate::get_town));
+    bp.request_scoped(f!(pavex::request::path::PathParams::extract))
+        .error_handler(f!(
+            pavex::request::path::errors::ExtractPathParamsError::into_response
+        ));
+    bp.route(GET, "/home/{home_id}", f!(crate::get_home));
+    bp.route(GET, "/home/{home_id}/room/{room_id}", f!(crate::get_room));
+    bp.route(GET, "/town/{*town}", f!(crate::get_town));
     bp
 }

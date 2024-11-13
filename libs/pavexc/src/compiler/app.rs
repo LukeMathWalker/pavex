@@ -8,7 +8,6 @@ use ahash::{HashMap, HashMapExt};
 use bimap::BiHashMap;
 use guppy::graph::PackageGraph;
 use indexmap::{IndexMap, IndexSet};
-use itertools::Itertools;
 use proc_macro2::Ident;
 use quote::format_ident;
 
@@ -32,7 +31,7 @@ use crate::compiler::analyses::unused::detect_unused;
 use crate::compiler::analyses::user_components::UserComponentDb;
 use crate::compiler::generated_app::GeneratedApp;
 use crate::compiler::resolvers::CallableResolutionError;
-use crate::compiler::{codegen, path_parameter_validation};
+use crate::compiler::{codegen, path_parameters};
 use crate::language::ResolvedType;
 use crate::rustdoc::CrateCollection;
 use crate::utils::anyhow2miette;
@@ -128,19 +127,15 @@ impl App {
         );
         exit_on_errors!(diagnostics);
         let handler_id2pipeline = {
-            let handler_ids: BTreeSet<_> = router
-                .route_path2sub_router
-                .values()
-                .flat_map(|leaf_router| leaf_router.handler_ids())
-                .chain(std::iter::once(&router.root_fallback_id))
-                .collect();
+            let handler_ids: BTreeSet<_> = router.handler_ids();
+            let route_infos = router.route_infos();
             let mut handler_pipelines = IndexMap::new();
             for (i, handler_id) in handler_ids.into_iter().enumerate() {
-                let route_info = &router.handler_id2route_info[handler_id];
+                let route_info = &route_infos[handler_id];
                 let span = tracing::info_span!("Compute request processing pipeline", route_info = %route_info);
                 let _guard = span.enter();
                 let Ok(processing_pipeline) = RequestHandlerPipeline::new(
-                    *handler_id,
+                    handler_id,
                     format!("route_{i}"),
                     &mut computation_db,
                     &mut component_db,
@@ -152,11 +147,11 @@ impl App {
                 ) else {
                     continue;
                 };
-                handler_pipelines.insert(*handler_id, processing_pipeline);
+                handler_pipelines.insert(handler_id, processing_pipeline);
             }
             handler_pipelines
         };
-        path_parameter_validation::verify_path_parameters(
+        path_parameters::verify_path_parameters(
             &router,
             &handler_id2pipeline,
             &computation_db,
@@ -282,29 +277,24 @@ impl App {
             &self.computation_db,
         );
 
-        let mut handlers = IndexMap::new();
-        for (path, method_router) in &self.router.route_path2sub_router {
-            for (handler_id, methods) in method_router
-                .handler_id2methods
-                .iter()
-                .map(|(k, v)| (*k, Some(v)))
-                .chain(std::iter::once((method_router.fallback_id, None)))
-            {
-                let method = methods
-                    .map(|m| m.iter().join(" | "))
-                    .unwrap_or_else(|| "*".into());
-                let pipeline = &self.handler_id2pipeline[&handler_id];
-                let mut handler_graphs = Vec::new();
-                for (i, graph) in pipeline.graph_iter().enumerate() {
-                    handler_graphs.push(
+        let infos = self.router.route_infos();
+        let handlers = self
+            .router
+            .handler_ids()
+            .into_iter()
+            .map(|id| {
+                let info = &infos[id];
+                self.handler_id2pipeline[&id]
+                    .graph_iter()
+                    .enumerate()
+                    .map(|(i, graph)| {
                         graph
                             .dot(&package_ids2deps, &self.component_db, &self.computation_db)
-                            .replace("digraph", &format!("digraph \"{method} {} - {i}\"", path)),
-                    );
-                }
-                handlers.insert((path.to_owned(), method), handler_graphs);
-            }
-        }
+                            .replace("digraph", &format!("digraph \"{info} - {i}\""))
+                    })
+                    .collect()
+            })
+            .collect();
         let application_state_graph = self
             .application_state_call_graph
             .call_graph
@@ -332,43 +322,12 @@ pub(crate) enum BuildError {
 pub struct AppDiagnostics {
     /// For each handler, we have a sequence of DOT graphs representing the call graph of each
     /// middleware in their pipeline and the request handler itself.
-    ///
-    /// The key is a tuple of `(path, methods)`, where `path` is the path of the route and `methods`
-    /// is the concatenation of all the HTTP methods that the handler can handle.
-    pub handlers: IndexMap<(String, String), Vec<String>>,
+    pub handlers: Vec<Vec<String>>,
     pub application_state: String,
 }
 
 impl AppDiagnostics {
-    /// Persist the diagnostic information to disk, using one file per handler within the specified
-    /// directory.
-    pub fn persist(&self, directory: &Path) -> Result<(), anyhow::Error> {
-        let handler_directory = directory.join("handlers");
-        fs_err::create_dir_all(&handler_directory)?;
-        for ((path, method), handler_graphs) in &self.handlers {
-            let path = path.trim_start_matches('/');
-            let filepath = handler_directory.join(format!("{method} {path}.dot"));
-            let mut file = fs_err::OpenOptions::new()
-                .write(true)
-                .create(true)
-                .truncate(true)
-                .open(filepath)?;
-            for handler_graph in handler_graphs {
-                file.write_all(handler_graph.as_bytes())?;
-                // Add a newline between graphs for readability
-                file.write_all("\n".as_bytes())?;
-            }
-        }
-        let mut file = fs_err::OpenOptions::new()
-            .write(true)
-            .create(true)
-            .truncate(true)
-            .open(directory.join("app_state.dot"))?;
-        file.write_all(self.application_state.as_bytes())?;
-        Ok(())
-    }
-
-    /// Save all diagnostics in a single file instead of having one file per handler.
+    /// Save all diagnostics in a single file.
     pub fn persist_flat(&self, filepath: &Path) -> Result<(), anyhow::Error> {
         let file = fs_err::OpenOptions::new()
             .create(true)
@@ -377,7 +336,7 @@ impl AppDiagnostics {
             .open(filepath)?;
         let mut file = BufWriter::new(file);
 
-        for handler_graphs in self.handlers.values() {
+        for handler_graphs in &self.handlers {
             for handler_graph in handler_graphs {
                 file.write_all(handler_graph.as_bytes())?;
                 // Add a newline between graphs for readability
@@ -483,8 +442,8 @@ fn codegen_deps(package_graph: &PackageGraph) -> HashMap<String, guppy::PackageI
         .id();
     let matchit = package_graph
         .packages()
-        .find(|p| p.name() == "pavex_matchit" && p.version().major == 0 && p.version().minor == 7)
-        .expect("Expected to find `pavex_matchit@0.7` in the package graph, but it was not there.")
+        .find(|p| p.name() == "matchit" && p.version().major == 0 && p.version().minor == 8)
+        .expect("Expected to find `matchit@0.8` in the package graph, but it was not there.")
         .id();
 
     name2id.insert("http".to_string(), http.clone());

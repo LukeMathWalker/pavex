@@ -16,6 +16,7 @@ use super::middleware::{
     RegisteredPostProcessingMiddleware, RegisteredPreProcessingMiddleware,
     RegisteredWrappingMiddleware,
 };
+use super::nesting::NestingConditions;
 use super::reflection::RawIdentifiers;
 use super::router::{MethodGuard, RegisteredRoute};
 
@@ -28,7 +29,7 @@ use super::router::{MethodGuard, RegisteredRoute};
 ///
 /// # Overview
 ///
-/// A blueprint defines the runtime behaviour of your application.  
+/// A blueprint defines the runtime behaviour of your application.
 /// It keeps track of:
 ///
 /// - route handlers, registered via [`Blueprint::route`]
@@ -37,12 +38,12 @@ use super::router::{MethodGuard, RegisteredRoute};
 /// - fallback handlers, registered via [`Blueprint::fallback`]
 ///
 /// You can also choose to decompose your overall application into smaller sub-components,
-/// taking advantage of [`Blueprint::nest`] and [`Blueprint::nest_at`].
+/// taking advantage of [`Blueprint::nest`], [`Blueprint::prefix`] and [`Blueprint::domain`].
 ///
 /// The information encoded in a blueprint can be serialized via [`Blueprint::persist`] and passed
 /// as input to Pavex's CLI to generate the application's server SDK.
 pub struct Blueprint {
-    schema: BlueprintSchema,
+    pub(super) schema: BlueprintSchema,
 }
 
 impl Default for Blueprint {
@@ -319,7 +320,7 @@ impl Blueprint {
     }
 
     #[track_caller]
-    /// Register a wrapping middleware.  
+    /// Register a wrapping middleware.
     ///
     /// # Guide
     ///
@@ -379,7 +380,7 @@ impl Blueprint {
     }
 
     #[track_caller]
-    /// Register a post-processing middleware.  
+    /// Register a post-processing middleware.
     ///
     /// # Guide
     ///
@@ -428,7 +429,7 @@ impl Blueprint {
     }
 
     #[track_caller]
-    /// Register a pre-processing middleware.  
+    /// Register a pre-processing middleware.
     ///
     /// # Guide
     ///
@@ -511,19 +512,76 @@ impl Blueprint {
         }
     }
 
-    /// Nest a [`Blueprint`] under the current [`Blueprint`] (the parent), adding a common prefix to all the new routes.
+    /// Nest a [`Blueprint`] under the current [`Blueprint`] (the parent), without adding a [common path prefix](Self::prefix)
+    /// nor a [domain restriction](Self::domain) to its routes.
     ///
-    /// # Routes
+    /// Check out [`NestingConditions::nest`](super::nesting::NestingConditions::nest) for more details on nesting.
+    #[track_caller]
+    #[doc(alias("scope"))]
+    pub fn nest(&mut self, blueprint: Blueprint) {
+        self.push_component(NestedBlueprint {
+            blueprint: blueprint.schema,
+            path_prefix: None,
+            domain: None,
+            nesting_location: Location::caller(),
+        });
+    }
+
+    #[track_caller]
+    /// A common prefix will be preprended to the path of routes nested under this condition.
     ///
-    /// `prefix` will be prepended to all the routes coming from the nested blueprint.  
-    /// `prefix` must be non-empty and it must start with a `/`.  
-    /// If you don't want to add a common prefix, check out [`Blueprint::nest`].
+    /// ```rust
+    /// use pavex::f;
+    /// use pavex::blueprint::{Blueprint, router::GET};
+    ///
+    /// fn app() -> Blueprint {
+    ///     let mut bp = Blueprint::new();
+    ///     // Adding `/api` as common prefix here
+    ///     bp.prefix("/api").nest(api_bp());
+    ///     bp
+    /// }
+    ///
+    /// fn api_bp() -> Blueprint {
+    ///     let mut bp = Blueprint::new();
+    ///     // This will match `GET` requests to `/api/path`.
+    ///     bp.route(GET, "/path", f!(crate::handler));
+    ///     bp
+    /// }
+    /// # pub fn handler() {}
+    /// ```
+    ///
+    /// You can also add a (sub)domain constraint, in addition to the common prefix:
+    ///
+    /// ```rust
+    /// use pavex::blueprint::{Blueprint, router::GET};
+    /// use pavex::f;
+    ///
+    /// fn app() -> Blueprint {
+    ///    let mut bp = Blueprint::new();
+    ///    bp.prefix("/v1").domain("api.mybusiness.com").nest(api_bp());
+    ///    bp
+    /// }
+    ///
+    /// fn api_bp() -> Blueprint {
+    ///    let mut bp = Blueprint::new();
+    ///   // This will match `GET` requests to `api.mybusiness.com/v1/path`.
+    ///   bp.route(GET, "/path", f!(crate::handler));
+    ///   bp
+    /// }
+    /// ```
+    ///
+    /// Check out [`Blueprint::domain`] for more details on domain restrictions.
+    ///
+    /// ## Restrictions
+    ///
+    /// `prefix` must be non-empty and it must start with a `/`.
+    /// If you don't want to add a common prefix, check out [`Blueprint::nest`] or [`Blueprint::domain`].
     ///
     /// ## Trailing slashes
     ///
-    /// `prefix` **can't** end with a trailing `/`.  
+    /// `prefix` **can't** end with a trailing `/`.
     /// This would result in routes with two consecutive `/` in their paths—e.g.
-    /// `/prefix//path`—which is rarely desirable.  
+    /// `/prefix//path`—which is rarely desirable.
     /// If you actually need consecutive slashes in your route, you can add them explicitly to
     /// the path of the route registered in the nested blueprint:
     ///
@@ -533,7 +591,7 @@ impl Blueprint {
     ///
     /// fn app() -> Blueprint {
     ///     let mut bp = Blueprint::new();
-    ///     bp.nest_at("/api", api_bp());
+    ///     bp.prefix("/api").nest(api_bp());
     ///     bp
     /// }
     ///
@@ -545,152 +603,67 @@ impl Blueprint {
     /// }
     /// # pub fn handler() {}
     /// ```
-    ///
-    /// # Constructors
-    ///
-    /// Constructors registered against the parent blueprint will be available to the nested
-    /// blueprint—they are **inherited**.  
-    /// Constructors registered against the nested blueprint will **not** be available to other
-    /// sibling blueprints that are nested under the same parent—they are **private**.
-    ///
-    /// Check out the example below to better understand the implications of nesting blueprints.
-    ///
-    /// ## Visibility
-    ///
-    /// ```rust
-    /// use pavex::f;
-    /// use pavex::blueprint::{Blueprint, router::GET};
-    /// use pavex::blueprint::constructor::Lifecycle;
-    ///
-    /// fn app() -> Blueprint {
-    ///     let mut bp = Blueprint::new();
-    ///     bp.constructor(f!(crate::db_connection_pool), Lifecycle::Singleton);
-    ///     bp.nest(home_bp());
-    ///     bp.nest(user_bp());
-    ///     bp
-    /// }
-    ///
-    /// /// All property-related routes and constructors.
-    /// fn home_bp() -> Blueprint {
-    ///     let mut bp = Blueprint::new();
-    ///     bp.route(GET, "/home", f!(crate::v1::get_home));
-    ///     bp
-    /// }
-    ///
-    /// /// All user-related routes and constructors.
-    /// fn user_bp() -> Blueprint {
-    ///     let mut bp = Blueprint::new();
-    ///     bp.constructor(f!(crate::user::get_session), Lifecycle::RequestScoped);
-    ///     bp.route(GET, "/user", f!(crate::user::get_user));
-    ///     bp
-    /// }
-    /// # pub fn db_connection_pool() {}
-    /// # mod home { pub fn get_home() {} }
-    /// # mod user {
-    /// #     pub fn get_user() {}
-    /// #     pub fn get_session() {}
-    /// # }
-    /// ```
-    ///
-    /// This example registers two routes:
-    /// - `GET /home`
-    /// - `GET /user`
-    ///
-    /// It also registers two constructors:
-    /// - `crate::user::get_session`, for `Session`;
-    /// - `crate::db_connection_pool`, for `ConnectionPool`.
-    ///
-    /// Since we are **nesting** the `user_bp` blueprint, the `get_session` constructor will only
-    /// be available to the routes declared in the `user_bp` blueprint.  
-    /// If a route declared in `home_bp` tries to inject a `Session`, Pavex will report an error
-    /// at compile-time, complaining that there is no registered constructor for `Session`.
-    /// In other words, all constructors declared against the `user_bp` blueprint are **private**
-    /// and **isolated** from the rest of the application.
-    ///
-    /// The `db_connection_pool` constructor, instead, is declared against the parent blueprint
-    /// and will therefore be available to all routes declared in `home_bp` and `user_bp`—i.e.
-    /// nested blueprints **inherit** all the constructors declared against their parent(s).
-    ///
-    /// ## Precedence
-    ///
-    /// If a constructor is declared against both the parent and one of its nested blueprints, the one
-    /// declared against the nested blueprint takes precedence.
-    ///
-    /// ```rust
-    /// use pavex::f;
-    /// use pavex::blueprint::{Blueprint, router::GET};
-    /// use pavex::blueprint::constructor::Lifecycle;
-    ///
-    /// fn app() -> Blueprint {
-    ///     let mut bp = Blueprint::new();
-    ///     // This constructor is registered against the root blueprint and it's visible
-    ///     // to all nested blueprints.
-    ///     bp.constructor(f!(crate::global::get_session), Lifecycle::RequestScoped);
-    ///     bp.nest(user_bp());
-    ///     // [..]
-    ///     bp
-    /// }
-    ///
-    /// fn user_bp() -> Blueprint {
-    ///     let mut bp = Blueprint::new();
-    ///     // It can be overridden by a constructor for the same type registered
-    ///     // against a nested blueprint.
-    ///     // All routes in `user_bp` will use `user::get_session` instead of `global::get_session`.
-    ///     bp.constructor(f!(crate::user::get_session), Lifecycle::RequestScoped);
-    ///     // [...]
-    ///     bp
-    /// }
-    /// # mod global { pub fn get_session() {} }
-    /// # mod user {
-    /// #     pub fn get_user() {}
-    /// #     pub fn get_session() {}
-    /// # }
-    /// ```
-    ///
-    /// ## Singletons
-    ///
-    /// There is one exception to the precedence rule: constructors for singletons (i.e.
-    /// using [`Lifecycle::Singleton`]).  
-    /// Pavex guarantees that there will be only one instance of a singleton type for the entire
-    /// lifecycle of the application. What should happen if two different constructors are registered for
-    /// the same `Singleton` type by two nested blueprints that share the same parent?  
-    /// We can't honor both constructors without ending up with two different instances of the same
-    /// type, which would violate the singleton contract.  
-    ///
-    /// It goes one step further! Even if those two constructors are identical, what is the expected
-    /// behaviour? Does the user expect the same singleton instance to be injected in both blueprints?
-    /// Or does the user expect two different singleton instances to be injected in each nested blueprint?
-    ///
-    /// To avoid this ambiguity, Pavex takes a conservative approach: a singleton constructor
-    /// must be registered **exactly once** for each type.  
-    /// If multiple nested blueprints need access to the singleton, the constructor must be
-    /// registered against a common parent blueprint—the root blueprint, if necessary.
-    #[track_caller]
-    #[doc(alias("scope"))]
-    pub fn nest_at(&mut self, prefix: &str, blueprint: Blueprint) {
-        self.push_component(NestedBlueprint {
-            blueprint: blueprint.schema,
-            path_prefix: Some(prefix.into()),
-            nesting_location: Location::caller(),
-        });
+    pub fn prefix(&mut self, prefix: &str) -> NestingConditions {
+        NestingConditions::empty(&mut self.schema).prefix(prefix)
     }
 
-    /// Nest a [`Blueprint`] under the current [`Blueprint`] (the parent), without adding a common prefix to all the new routes.
-    ///
-    /// Check out [`Blueprint::nest_at`] for more details.
     #[track_caller]
-    #[doc(alias("scope"))]
-    pub fn nest(&mut self, blueprint: Blueprint) {
-        self.push_component(NestedBlueprint {
-            blueprint: blueprint.schema,
-            path_prefix: None,
-            nesting_location: Location::caller(),
-        });
+    /// Only requests to the specified domain will be forwarded to routes nested under this condition.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use pavex::blueprint::Blueprint;
+    /// # fn api_routes() -> Blueprint { Blueprint::new() }
+    /// # fn console_routes() -> Blueprint { Blueprint::new() }
+    ///
+    /// let mut bp = Blueprint::new();
+    ///
+    /// // We split UI and API routes into separate blueprints,
+    /// // and we serve them using different subdomains.
+    /// bp.domain("api.mybusiness.com")
+    ///   .nest(api_routes());
+    /// bp.domain("console.mybusiness.com")
+    ///   .nest(console_routes());
+    /// ```
+    ///
+    /// You can also prepend a common path prefix to all registered routes, in addition to the
+    /// domain constraint:
+    ///
+    /// ```rust
+    /// use pavex::blueprint::{Blueprint, router::GET};
+    /// use pavex::f;
+    ///
+    /// fn app() -> Blueprint {
+    ///    let mut bp = Blueprint::new();
+    ///    bp.prefix("/v1").domain("api.mybusiness.com").nest(api_bp());
+    ///    bp
+    /// }
+    ///
+    /// fn api_bp() -> Blueprint {
+    ///    let mut bp = Blueprint::new();
+    ///   // This will match `GET` requests to `api.mybusiness.com/v1/path`.
+    ///   bp.route(GET, "/path", f!(crate::handler));
+    ///   bp
+    /// }
+    /// ```
+    ///
+    /// Check out [`Blueprint::prefix`] for more details on path prefixes.
+    ///
+    /// # Domain detection
+    ///
+    /// Domain detection is based on the value of [`Host` header](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Host).
+    /// If the header is not present in the request, the condition will be considered as not met.
+    ///
+    /// Keep in mind that the [`Host` header can be easily spoofed by the client](https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/07-Input_Validation_Testing/17-Testing_for_Host_Header_Injection),
+    /// so you should not rely on its value for auth or other security-sensitive operations.
+    pub fn domain(&mut self, domain: &str) -> NestingConditions {
+        NestingConditions::empty(&mut self.schema).domain(domain)
     }
 
     #[track_caller]
     /// Register a fallback handler to be invoked when an incoming request does **not** match
-    /// any of the routes you registered with [`Blueprint::route`].  
+    /// any of the routes you registered with [`Blueprint::route`].
     ///
     /// If you don't register a fallback handler, the
     /// [default framework fallback](crate::router::default_fallback) will be used instead.
@@ -728,14 +701,14 @@ impl Blueprint {
     /// (if infallible) or wrapped in a [`Result`] (if fallible).
     ///
     /// Fallback handlers can take advantage of dependency injection, like any
-    /// other component.  
+    /// other component.
     /// You list what you want to see injected as function parameters
     /// and Pavex will inject them for you in the generated code.
     ///
     /// ## Nesting
     ///
     /// You can register a single fallback handler for each blueprint.
-    /// If your application takes advantage of [nesting](Blueprint::nest_at), you can register
+    /// If your application takes advantage of [nesting](Blueprint::nest), you can register
     /// a fallback against each nested blueprint in your application as well as one for the
     /// top-level blueprint.
     ///
@@ -772,10 +745,10 @@ impl Blueprint {
     ///
     /// In the example above, `crate::fallback_handler` will be invoked for incoming `POST /route`
     /// requests: the path matches the path of a route registered against the nested blueprint
-    /// (`GET /route`), but the method guard doesn't (`POST` vs `GET`).  
+    /// (`GET /route`), but the method guard doesn't (`POST` vs `GET`).
     /// If the incoming requests don't have `/route` as their path instead (e.g. `GET /street`
     /// or `GET /route/123`), they will be handled by the fallback registered against the **parent**
-    /// blueprint—the top-level one in this case.  
+    /// blueprint—the top-level one in this case.
     /// Since no fallback has been explicitly registered against the top-level blueprint, the
     /// [default framework fallback](crate::router::default_fallback) will be used instead.
     ///
@@ -799,7 +772,7 @@ impl Blueprint {
     /// # fn main() {
     /// let mut bp = Blueprint::new();
     /// bp.route(GET, "/home", f!(crate::home_handler));
-    /// bp.nest_at("/route", {
+    /// bp.prefix("/route").nest({
     ///     let mut bp = Blueprint::new();
     ///     bp.route(GET, "/", f!(crate::route_handler));
     ///     bp.fallback(f!(crate::fallback_handler));
@@ -890,14 +863,14 @@ impl Blueprint {
     }
 
     /// Register a component and return its id (i.e. its index in the `components` vector).
-    fn push_component(&mut self, component: impl Into<pavex_bp_schema::Component>) -> usize {
+    pub fn push_component(&mut self, component: impl Into<pavex_bp_schema::Component>) -> usize {
         let id = self.schema.components.len();
         self.schema.components.push(component.into());
         id
     }
 }
 
-/// Methods to serialize and deserialize a [`Blueprint`].  
+/// Methods to serialize and deserialize a [`Blueprint`].
 /// These are used to pass the blueprint data to Pavex's CLI.
 impl Blueprint {
     /// Serialize the [`Blueprint`] to a file in RON format.

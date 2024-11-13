@@ -1,0 +1,135 @@
+digraph "* * - 0" {
+    0 [ label = "3| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_0::Next0<'a>>) -> pavex::response::Response"]
+    1 [ label = "2| pavex::middleware::Next::new(crate::route_0::Next0<'a>) -> pavex::middleware::Next<crate::route_0::Next0<'a>>"]
+    2 [ label = "1| crate::route_0::Next0(&'a pavex::request::RequestHead) -> crate::route_0::Next0<'a>"]
+    4 [ label = "4| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    5 [ label = "0| &pavex::request::RequestHead"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 4 [ ]
+    5 -> 2 [ ]
+}
+
+digraph "* * - 1" {
+    0 [ label = "1| app_6c2cfd5e::root_fallback(&pavex::request::RequestHead) -> pavex::response::Response"]
+    2 [ label = "2| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "0| &pavex::request::RequestHead"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
+}
+
+digraph "GET / [for {*any}.{sub}.company.com] - 0" {
+    0 [ label = "2| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_1::Next0>) -> pavex::response::Response"]
+    1 [ label = "1| pavex::middleware::Next::new(crate::route_1::Next0) -> pavex::middleware::Next<crate::route_1::Next0>"]
+    2 [ label = "0| crate::route_1::Next0() -> crate::route_1::Next0"]
+    3 [ label = "3| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 3 [ ]
+}
+
+digraph "GET / [for {*any}.{sub}.company.com] - 1" {
+    0 [ label = "0| app_6c2cfd5e::base_any() -> pavex::response::Response"]
+    1 [ label = "1| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    0 -> 1 [ ]
+}
+
+digraph "GET / [for {sub}.company.com] - 0" {
+    0 [ label = "2| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_2::Next0>) -> pavex::response::Response"]
+    1 [ label = "1| pavex::middleware::Next::new(crate::route_2::Next0) -> pavex::middleware::Next<crate::route_2::Next0>"]
+    2 [ label = "0| crate::route_2::Next0() -> crate::route_2::Next0"]
+    3 [ label = "3| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 3 [ ]
+}
+
+digraph "GET / [for {sub}.company.com] - 1" {
+    0 [ label = "0| app_6c2cfd5e::base_sub() -> pavex::response::Response"]
+    1 [ label = "1| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    0 -> 1 [ ]
+}
+
+digraph "* * [for ops.company.com] - 0" {
+    0 [ label = "2| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_3::Next0>) -> pavex::response::Response"]
+    1 [ label = "1| pavex::middleware::Next::new(crate::route_3::Next0) -> pavex::middleware::Next<crate::route_3::Next0>"]
+    2 [ label = "0| crate::route_3::Next0() -> crate::route_3::Next0"]
+    3 [ label = "3| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 3 [ ]
+}
+
+digraph "* * [for ops.company.com] - 1" {
+    0 [ label = "0| app_6c2cfd5e::ops_fallback() -> pavex::response::Response"]
+    1 [ label = "1| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    0 -> 1 [ ]
+}
+
+digraph "GET / [for company.com] - 0" {
+    0 [ label = "2| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_4::Next0>) -> pavex::response::Response"]
+    1 [ label = "1| pavex::middleware::Next::new(crate::route_4::Next0) -> pavex::middleware::Next<crate::route_4::Next0>"]
+    2 [ label = "0| crate::route_4::Next0() -> crate::route_4::Next0"]
+    3 [ label = "3| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 3 [ ]
+}
+
+digraph "GET / [for company.com] - 1" {
+    0 [ label = "0| app_6c2cfd5e::base_root() -> pavex::response::Response"]
+    1 [ label = "1| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    0 -> 1 [ ]
+}
+
+digraph "GET /login [for company.com] - 0" {
+    0 [ label = "2| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_5::Next0>) -> pavex::response::Response"]
+    1 [ label = "1| pavex::middleware::Next::new(crate::route_5::Next0) -> pavex::middleware::Next<crate::route_5::Next0>"]
+    2 [ label = "0| crate::route_5::Next0() -> crate::route_5::Next0"]
+    3 [ label = "3| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 3 [ ]
+}
+
+digraph "GET /login [for company.com] - 1" {
+    0 [ label = "0| app_6c2cfd5e::base_login() -> pavex::response::Response"]
+    1 [ label = "1| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    0 -> 1 [ ]
+}
+
+digraph "GET / [for admin.company.com] - 0" {
+    0 [ label = "2| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_6::Next0>) -> pavex::response::Response"]
+    1 [ label = "1| pavex::middleware::Next::new(crate::route_6::Next0) -> pavex::middleware::Next<crate::route_6::Next0>"]
+    2 [ label = "0| crate::route_6::Next0() -> crate::route_6::Next0"]
+    3 [ label = "3| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 3 [ ]
+}
+
+digraph "GET / [for admin.company.com] - 1" {
+    0 [ label = "0| app_6c2cfd5e::admin_root() -> pavex::response::Response"]
+    1 [ label = "1| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    0 -> 1 [ ]
+}
+
+digraph "* * [for admin.company.com] - 0" {
+    0 [ label = "2| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_7::Next0>) -> pavex::response::Response"]
+    1 [ label = "1| pavex::middleware::Next::new(crate::route_7::Next0) -> pavex::middleware::Next<crate::route_7::Next0>"]
+    2 [ label = "0| crate::route_7::Next0() -> crate::route_7::Next0"]
+    3 [ label = "3| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 3 [ ]
+}
+
+digraph "* * [for admin.company.com] - 1" {
+    0 [ label = "0| app_6c2cfd5e::admin_fallback() -> pavex::response::Response"]
+    1 [ label = "1| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    0 -> 1 [ ]
+}
+
+digraph app_state {
+    0 [ label = "0| crate::ApplicationState() -> crate::ApplicationState"]
+}

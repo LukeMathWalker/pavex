@@ -22,6 +22,10 @@ impl<T> Interner<T> {
     {
         self.arena.iter()
     }
+
+    pub fn values(&self) -> impl Iterator<Item = &T> + ExactSizeIterator + DoubleEndedIterator {
+        self.arena.values()
+    }
 }
 
 impl<T> Interner<T>

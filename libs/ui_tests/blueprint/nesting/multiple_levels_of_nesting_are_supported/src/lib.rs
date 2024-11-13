@@ -1,4 +1,3 @@
-
 use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
 use pavex::f;
 use pavex::http::StatusCode;
@@ -6,21 +5,21 @@ use pavex::http::StatusCode;
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.constructor(f!(crate::first), Lifecycle::RequestScoped);
-    bp.nest_at("/first", first_bp());
+    bp.prefix("/first").nest(first_bp());
     bp
 }
 
 fn first_bp() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.constructor(f!(crate::second), Lifecycle::RequestScoped);
-    bp.nest_at("/second", second_bp());
+    bp.prefix("/second").nest(second_bp());
     bp
 }
 
 fn second_bp() -> Blueprint {
     let mut bp = Blueprint::new();
     bp.constructor(f!(crate::third), Lifecycle::RequestScoped);
-    bp.nest_at("/third", third_bp());
+    bp.prefix("/third").nest(third_bp());
     bp
 }
 

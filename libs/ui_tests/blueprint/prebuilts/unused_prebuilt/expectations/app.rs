@@ -3,7 +3,7 @@
 //! All manual edits will be lost next time the code is generated.
 extern crate alloc;
 struct ServerState {
-    router: pavex_matchit::Router<u32>,
+    router: Router,
     #[allow(dead_code)]
     application_state: ApplicationState,
 }
@@ -15,42 +15,54 @@ pub fn run(
     server_builder: pavex::server::Server,
     application_state: ApplicationState,
 ) -> pavex::server::ServerHandle {
+    async fn handler(
+        request: http::Request<hyper::body::Incoming>,
+        connection_info: Option<pavex::connection::ConnectionInfo>,
+        server_state: std::sync::Arc<ServerState>,
+    ) -> pavex::response::Response {
+        let (router, state) = (&server_state.router, &server_state.application_state);
+        router.route(request, connection_info, state).await
+    }
+    let router = Router::new();
     let server_state = std::sync::Arc::new(ServerState {
-        router: build_router(),
+        router,
         application_state,
     });
-    server_builder.serve(route_request, server_state)
+    server_builder.serve(handler, server_state)
 }
-fn build_router() -> pavex_matchit::Router<u32> {
-    let mut router = pavex_matchit::Router::new();
-    router
+struct Router {
+    router: matchit::Router<u32>,
 }
-async fn route_request(
-    request: http::Request<hyper::body::Incoming>,
-    _connection_info: Option<pavex::connection::ConnectionInfo>,
-    server_state: std::sync::Arc<ServerState>,
-) -> pavex::response::Response {
-    let (request_head, request_body) = request.into_parts();
-    #[allow(unused)]
-    let request_body = pavex::request::body::RawIncomingBody::from(request_body);
-    let request_head: pavex::request::RequestHead = request_head.into();
-    let matched_route = match server_state.router.at(&request_head.target.path()) {
-        Ok(m) => m,
-        Err(_) => {
+impl Router {
+    /// Create a new router instance.
+    ///
+    /// This method is invoked once, when the server starts.
+    pub fn new() -> Self {
+        Self { router: Self::router() }
+    }
+    fn router() -> matchit::Router<u32> {
+        let router = matchit::Router::new();
+        router
+    }
+    pub async fn route(
+        &self,
+        request: http::Request<hyper::body::Incoming>,
+        _connection_info: Option<pavex::connection::ConnectionInfo>,
+        #[allow(unused)]
+        state: &ApplicationState,
+    ) -> pavex::response::Response {
+        let (request_head, _) = request.into_parts();
+        let request_head: pavex::request::RequestHead = request_head.into();
+        let Ok(matched_route) = self.router.at(&request_head.target.path()) else {
             let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter(
                     vec![],
                 )
                 .into();
             return route_0::entrypoint(&allowed_methods).await;
+        };
+        match matched_route.value {
+            i => unreachable!("Unknown route id: {}", i),
         }
-    };
-    let route_id = matched_route.value;
-    #[allow(unused)]
-    let url_params: pavex::request::path::RawPathParams<'_, '_> = matched_route
-        .params
-        .into();
-    match route_id {
-        i => unreachable!("Unknown route id: {}", i),
     }
 }
 pub mod route_0 {

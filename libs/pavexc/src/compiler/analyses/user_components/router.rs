@@ -1,5 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 
+use ahash::{HashMap, HashMapExt};
 use anyhow::anyhow;
 use bimap::BiHashMap;
 use guppy::graph::PackageGraph;
@@ -8,7 +9,8 @@ use itertools::Itertools;
 use matchit::InsertError;
 use pavex_bp_schema::MethodGuard;
 
-use crate::compiler::analyses::router::RouteInfo;
+use crate::compiler::analyses::domain::DomainGuard;
+use crate::compiler::analyses::route_path::RoutePath;
 use crate::compiler::analyses::user_components::raw_db::RawUserComponentDb;
 use crate::compiler::analyses::user_components::{
     ScopeGraph, ScopeId, UserComponent, UserComponentId,
@@ -19,14 +21,189 @@ use crate::diagnostic::{
 use crate::utils::comma_separated_list;
 use crate::{diagnostic, try_source};
 
+/// A mechanism to route incoming requests to the correct handler.
 #[derive(Debug)]
-pub(crate) struct Router {
-    pub(crate) route_path2sub_router: BTreeMap<String, LeafRouter>,
+pub(crate) enum Router {
+    DomainAgnostic(PathRouter),
+    DomainBased(DomainRouter),
+}
+
+impl Router {
+    pub(super) fn new(
+        raw_user_component_db: &RawUserComponentDb,
+        scope_graph: &ScopeGraph,
+        package_graph: &PackageGraph,
+        diagnostics: &mut Vec<miette::Error>,
+    ) -> Result<Self, ()> {
+        let Ok(is_domain_based) = Router::is_domain_based(raw_user_component_db) else {
+            Self::either_all_domain_based_or_all_agnostic(
+                raw_user_component_db,
+                package_graph,
+                diagnostics,
+            );
+            return Err(());
+        };
+
+        // A global scope<>fallback mapping.
+        let scope_based_fallback_tree = {
+            // For every scope there is at most one fallback.
+            let scope_id2fallback_id = {
+                let mut scope_id2fallback_id = BiHashMap::new();
+                for (id, component) in raw_user_component_db.iter() {
+                    let UserComponent::Fallback { scope_id, .. } = component else {
+                        continue;
+                    };
+                    let parents = scope_id.direct_parent_ids(scope_graph);
+                    assert_eq!(parents.len(), 1, "Fallbacks are always encapsulated in their own sub-scope and should only have one parent scope.");
+                    let parent_scope_id = parents.into_iter().next().unwrap();
+                    // This is the root scope, we don't need to check anything.
+                    // We'll use that fallback for routes that fail to match.
+                    scope_id2fallback_id.insert(parent_scope_id, id);
+                }
+                scope_id2fallback_id
+            };
+            ScopeBasedFallbackTree::new(&scope_id2fallback_id, scope_graph)
+        };
+
+        if is_domain_based {
+            Ok(Router::DomainBased(DomainRouter::new(
+                raw_user_component_db,
+                scope_graph,
+                &scope_based_fallback_tree,
+                package_graph,
+                diagnostics,
+            )?))
+        } else {
+            let component_ids: Vec<_> = raw_user_component_db
+                .iter()
+                .filter_map(|(id, component)| {
+                    if matches!(
+                        component,
+                        UserComponent::RequestHandler { .. } | UserComponent::Fallback { .. }
+                    ) {
+                        Some(id)
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+            Ok(Router::DomainAgnostic(PathRouter::new(
+                &component_ids,
+                raw_user_component_db,
+                scope_graph,
+                &scope_based_fallback_tree,
+                package_graph,
+                diagnostics,
+            )?))
+        }
+    }
+
+    /// Returns `true` if all handlers have a domain guard, `false` if all handlers are domain agnostic.
+    /// Returns `Err` if some handlers have a domain guard and some do not.
+    fn is_domain_based(raw_user_component_db: &RawUserComponentDb) -> Result<bool, ()> {
+        // Either all handlers have a domain guard, or none do.
+        let mut any_domain_based = false;
+        let mut any_domain_agnostic = false;
+        for component in raw_user_component_db.components() {
+            let UserComponent::RequestHandler { router_key, .. } = component else {
+                continue;
+            };
+
+            any_domain_based |= router_key.domain_guard.is_some();
+            any_domain_agnostic |= router_key.domain_guard.is_none();
+
+            if any_domain_based && any_domain_agnostic {
+                return Err(());
+            }
+        }
+        Ok(any_domain_based)
+    }
+
+    fn either_all_domain_based_or_all_agnostic(
+        raw_user_component_db: &RawUserComponentDb,
+        package_graph: &PackageGraph,
+        diagnostics: &mut Vec<miette::Error>,
+    ) {
+        let e = anyhow::anyhow!(
+            "When registering request handlers, you must make a choice: either all \
+            handlers have a domain constraint, or none do.\n\
+            Your application violates this rule: there are both domain-specific and domain-agnostic handlers."
+        );
+        let diagnostic = CompilerDiagnostic::builder(e).help(
+            "To avoid routing ambiguity, you must either:\n- Add a domain guard to all handlers that \
+                don't have one\n- Remove domain guards from all handlers that have one"
+                .into(),
+        );
+
+        let domain_based_snippet = {
+            let id = raw_user_component_db
+                .iter()
+                .find_map(|(id, component)| match component {
+                    UserComponent::RequestHandler { router_key, .. } => {
+                        if router_key.domain_guard.is_some() {
+                            Some(id)
+                        } else {
+                            None
+                        }
+                    }
+                    _ => None,
+                })
+                .unwrap();
+            let location = raw_user_component_db.get_location(id);
+            try_source!(location, package_graph, diagnostics).map(|source| {
+                let label = diagnostic::get_route_path_span(&source, location)
+                    .labeled("A handler restricted to a specific domain".to_string());
+                AnnotatedSnippet::new_optional(source, label)
+            })
+        };
+        let domain_agnostic_snippet = {
+            let id = raw_user_component_db
+                .iter()
+                .find_map(|(id, component)| match component {
+                    UserComponent::RequestHandler { router_key, .. } => {
+                        if router_key.domain_guard.is_none() {
+                            Some(id)
+                        } else {
+                            None
+                        }
+                    }
+                    _ => None,
+                })
+                .unwrap();
+            let location = raw_user_component_db.get_location(id);
+            try_source!(location, package_graph, diagnostics).map(|source| {
+                let label = diagnostic::get_route_path_span(&source, location)
+                    .labeled("A handler without a domain restriction".to_string());
+                AnnotatedSnippet::new_optional(source, label)
+            })
+        };
+
+        let diagnostic = diagnostic
+            .optional_additional_annotated_snippet(domain_based_snippet)
+            .optional_additional_annotated_snippet(domain_agnostic_snippet)
+            .build()
+            .into();
+        diagnostics.push(diagnostic);
+    }
+}
+
+/// Route requests to handlers based on their domain, path, and HTTP method.
+#[derive(Debug)]
+pub(crate) struct DomainRouter {
+    /// A map from the domain to the path router for that domain.
+    pub(crate) domain2path_router: BTreeMap<DomainGuard, PathRouter>,
+    /// The fallback to use if the domain of the incoming request doesn't match any of the domains
+    /// we are looking for.
+    pub(crate) root_fallback_id: UserComponentId,
+}
+
+/// Route requests to handlers based on their path and HTTP method.
+#[derive(Debug)]
+pub(crate) struct PathRouter {
+    /// A map from the path to the HTTP methods that it can handle.
+    pub(crate) path2method_router: BTreeMap<String, LeafRouter>,
     /// The fallback to use if no route matches the incoming request.
     pub(crate) root_fallback_id: UserComponentId,
-    /// A map from handler IDs to the route info for that handler.
-    /// Primarily used for diagnostics.
-    pub(crate) handler_id2route_info: BTreeMap<UserComponentId, RouteInfo>,
 }
 
 /// A router to dispatch a request to a handler based on its method, after having matched its path.
@@ -41,6 +218,161 @@ pub(crate) struct LeafRouter {
     pub(crate) fallback_id: UserComponentId,
 }
 
+impl DomainRouter {
+    fn new(
+        db: &RawUserComponentDb,
+        scope_graph: &ScopeGraph,
+        scope_based_fallback_tree: &ScopeBasedFallbackTree,
+        package_graph: &PackageGraph,
+        diagnostics: &mut Vec<miette::Error>,
+    ) -> Result<Self, ()> {
+        let (domain2components, root_fallback_id) = {
+            let mut domain2components: BTreeMap<_, Vec<_>> = Default::default();
+            let mut root_fallback_id = None;
+            for (id, component) in db.iter() {
+                match component {
+                    UserComponent::RequestHandler { router_key, .. } => {
+                        // Safe to unwrap because we've already checked that all handlers are domain-specific.
+                        let domain_guard = router_key.domain_guard.as_ref().unwrap();
+                        if !domain2components.contains_key(domain_guard) {
+                            domain2components.insert(domain_guard.clone(), vec![id]);
+                        } else {
+                            domain2components.get_mut(domain_guard).unwrap().push(id);
+                        }
+                    }
+                    UserComponent::Fallback { .. } => {
+                        let domain_guard = &db.fallback_id2domain_guard[&id];
+                        match domain_guard {
+                            Some(domain_guard) => {
+                                if !domain2components.contains_key(domain_guard) {
+                                    domain2components.insert(domain_guard.clone(), vec![id]);
+                                } else {
+                                    domain2components.get_mut(domain_guard).unwrap().push(id);
+                                }
+                            }
+                            None => {
+                                root_fallback_id = Some(id);
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            let root_fallback_id = root_fallback_id.expect("There must always be a top-level fallback, either user-provided or framework-provided");
+            (domain2components, root_fallback_id)
+        };
+
+        let mut domain2path_router = BTreeMap::new();
+        for (domain, components) in domain2components {
+            let path_router = PathRouter::new(
+                &components,
+                db,
+                scope_graph,
+                scope_based_fallback_tree,
+                package_graph,
+                diagnostics,
+            )?;
+            domain2path_router.insert(domain, path_router);
+        }
+
+        Self::detect_domain_conflicts(db, package_graph, diagnostics)?;
+
+        Ok(Self {
+            domain2path_router,
+            root_fallback_id,
+        })
+    }
+
+    /// Make sure that the user-registered domains don't conflict with each other.
+    /// In other words: we won't encounter any issue when creating this router.
+    ///
+    /// How do we do that?
+    ///
+    /// By trying to create the router in the compiler itself!
+    /// If it works now, it'll work at runtime too.
+    fn detect_domain_conflicts(
+        db: &RawUserComponentDb,
+        package_graph: &PackageGraph,
+        diagnostics: &mut Vec<miette::Error>,
+    ) -> Result<(), ()> {
+        let mut router = matchit::Router::new();
+        let mut has_errored = false;
+        let mut pattern2guard = HashMap::new();
+        for guard in db.domain_guard2locations.keys() {
+            let pattern = guard.matchit_pattern();
+            pattern2guard.insert(pattern.clone(), guard);
+            let Err(e) = router.insert(pattern, ()) else {
+                continue;
+            };
+            has_errored = true;
+
+            let matchit::InsertError::Conflict { with } = e else {
+                unreachable!(
+                    "All other domain guard errors should have been caught and reported by now"
+                )
+            };
+            Self::push_domain_conflict_diagnostic(
+                db,
+                guard,
+                pattern2guard[&with],
+                package_graph,
+                diagnostics,
+            );
+        }
+
+        if has_errored {
+            Err(())
+        } else {
+            Ok(())
+        }
+    }
+
+    fn push_domain_conflict_diagnostic(
+        db: &RawUserComponentDb,
+        domain_1: &DomainGuard,
+        domain_2: &DomainGuard,
+        package_graph: &PackageGraph,
+        diagnostics: &mut Vec<miette::Error>,
+    ) {
+        let error = anyhow::anyhow!(
+            "There is an overlap between two of the domain constraints you registered, `{}` and `{}`.\n\
+            I wouldn't know where to route a request that matches both of them, since there's no clear priority between them.",
+            domain_1,
+            domain_2
+        );
+
+        let snippet1 = {
+            let location = db.domain_guard2locations[domain_1].first().unwrap();
+            let source = try_source!(location, package_graph, diagnostics);
+            let label = source
+                .as_ref()
+                .map(|source| {
+                    diagnostic::get_domain_span(&source, location)
+                        .labeled("The first domain".to_string())
+                })
+                .flatten();
+            source.map(|s| AnnotatedSnippet::new_optional(s, label))
+        };
+        let snippet2 = {
+            let location = db.domain_guard2locations[domain_2].first().unwrap();
+            let source = try_source!(location, package_graph, diagnostics);
+            let label = source
+                .as_ref()
+                .map(|source| {
+                    diagnostic::get_domain_span(&source, location)
+                        .labeled("The second domain".to_string())
+                })
+                .flatten();
+            source.map(|s| AnnotatedSnippet::new_optional(s, label))
+        };
+        let diagnostic = CompilerDiagnostic::builder(error)
+            .optional_additional_annotated_snippet(snippet1)
+            .optional_additional_annotated_snippet(snippet2)
+            .help("Can you rewrite your domain constraints so that they don't overlap?".into());
+        diagnostics.push(diagnostic.build().into());
+    }
+}
+
 impl LeafRouter {
     pub fn new(fallback_id: UserComponentId) -> Self {
         Self {
@@ -50,139 +382,104 @@ impl LeafRouter {
     }
 }
 
-impl Router {
-    pub(super) fn new(
-        raw_user_component_db: &RawUserComponentDb,
+impl PathRouter {
+    fn new(
+        component_ids: &[UserComponentId],
+        db: &RawUserComponentDb,
         scope_graph: &ScopeGraph,
+        scope_based_fallback_router: &ScopeBasedFallbackTree,
         package_graph: &PackageGraph,
         diagnostics: &mut Vec<miette::Error>,
     ) -> Result<Self, ()> {
-        let root_fallback_id = raw_user_component_db
-            .iter()
-            .find_map(|(id, component)| {
-                if let UserComponent::Fallback { scope_id, .. } = component {
-                    if scope_id
-                        .direct_parent_ids(scope_graph)
-                        .contains(&scope_graph.root_scope_id())
-                    {
-                        return Some(id);
-                    }
-                }
-                None
-            })
-            .expect("No fallback registered for the root scope.");
-        Self::detect_method_conflicts(raw_user_component_db, package_graph, diagnostics)?;
+        let root_scope_id = scope_graph
+            .find_common_ancestor(component_ids.iter().map(|id| db[*id].scope_id()).collect());
+        let root_fallback_id =
+            scope_based_fallback_router.find_fallback_id(root_scope_id, scope_graph);
+
+        Self::detect_method_conflicts(db, &component_ids, package_graph, diagnostics)?;
         let runtime_router =
-            Self::detect_path_conflicts(raw_user_component_db, package_graph, diagnostics)?;
+            Self::detect_path_conflicts(db, &component_ids, package_graph, diagnostics)?;
         let (route_id2fallback_id, path_catchall2fallback_id) = Self::assign_fallbacks(
             runtime_router.clone(),
-            raw_user_component_db,
+            &scope_based_fallback_router,
+            &component_ids,
+            db,
             scope_graph,
             package_graph,
             diagnostics,
         )?;
         Self::check_method_not_allowed_fallbacks(
             &route_id2fallback_id,
-            raw_user_component_db,
+            &component_ids,
+            db,
             package_graph,
             diagnostics,
         )?;
 
-        let mut route_path2sub_router = BTreeMap::new();
-        for (id, component) in raw_user_component_db.iter() {
-            let UserComponent::RequestHandler { router_key, .. } = component else {
+        let mut path2method_router = BTreeMap::new();
+        for id in component_ids.iter() {
+            let UserComponent::RequestHandler { router_key, .. } = &db[id] else {
                 continue;
             };
             match &router_key.method_guard {
                 MethodGuard::Any => {
                     // We don't need to register a fallback for this route, since it matches
                     // all methods.
-                    route_path2sub_router.insert(router_key.path.clone(), LeafRouter::new(id));
+                    path2method_router.insert(router_key.path.clone(), LeafRouter::new(*id));
                 }
                 MethodGuard::Some(methods) => {
-                    let sub_router: &mut LeafRouter = route_path2sub_router
+                    let sub_router: &mut LeafRouter = path2method_router
                         .entry(router_key.path.clone())
-                        .or_insert_with(|| LeafRouter::new(route_id2fallback_id[&id]));
-                    sub_router.handler_id2methods.insert(id, methods.clone());
+                        .or_insert_with(|| LeafRouter::new(route_id2fallback_id[id]));
+                    sub_router.handler_id2methods.insert(*id, methods.clone());
                 }
             }
         }
         for (path, fallback_id) in path_catchall2fallback_id {
-            route_path2sub_router
+            path2method_router
                 .entry(path)
                 .or_insert_with(|| LeafRouter::new(fallback_id));
         }
 
-        let handler_id2route_info = {
-            let mut handler_id2route_info = BTreeMap::new();
-            for (path, sub_router) in route_path2sub_router.iter() {
-                for (handler_id, methods) in sub_router.handler_id2methods.iter() {
-                    let router_info = RouteInfo {
-                        methods: methods.to_owned(),
-                        path: path.to_owned(),
-                    };
-                    let previous = handler_id2route_info.insert(*handler_id, router_info);
-                    assert!(
-                        previous.is_none(),
-                        "Each handler ID is uniquely associated with a route."
-                    )
-                }
-                handler_id2route_info.insert(
-                    sub_router.fallback_id,
-                    RouteInfo {
-                        methods: Default::default(),
-                        path: path.to_owned(),
-                    },
-                );
-            }
-            handler_id2route_info.insert(
-                root_fallback_id,
-                RouteInfo {
-                    methods: Default::default(),
-                    path: "*".into(),
-                },
-            );
-            handler_id2route_info
-        };
-
         Ok(Self {
-            route_path2sub_router,
             root_fallback_id,
-            handler_id2route_info,
+            path2method_router,
         })
     }
 
     /// Examine the registered paths and methods guards to make sure that we don't
     /// have any conflicts—i.e. multiple handlers registered for the same path+method combination.
     fn detect_method_conflicts(
-        raw_user_component_db: &RawUserComponentDb,
+        db: &RawUserComponentDb,
+        component_ids: &[UserComponentId],
         package_graph: &PackageGraph,
         diagnostics: &mut Vec<miette::Error>,
     ) -> Result<(), ()> {
         let n_diagnostics = diagnostics.len();
 
         let mut path2method2component_id = IndexMap::<_, Vec<_>>::new();
-        for (id, component) in raw_user_component_db.iter() {
-            if let UserComponent::RequestHandler { router_key, .. } = component {
-                path2method2component_id
-                    .entry(&router_key.path)
-                    .or_default()
-                    .push((&router_key.method_guard, id));
-            }
+        for id in component_ids {
+            let UserComponent::RequestHandler { router_key, .. } = &db[id] else {
+                continue;
+            };
+            path2method2component_id
+                .entry(&router_key.path)
+                .or_default()
+                .push((&router_key.method_guard, id));
         }
 
         for (path, routes) in path2method2component_id.into_iter() {
             for method in METHODS {
                 let mut relevant_handler_ids = IndexSet::new();
-                for (guard, id) in &routes {
+                for (guard, &id) in &routes {
                     match guard {
                         // `None` stands for the `ANY` guard, it matches all well-known methods
                         MethodGuard::Any { .. } => {
-                            relevant_handler_ids.insert(*id);
+                            relevant_handler_ids.insert(id);
                         }
                         MethodGuard::Some(method_guards) => {
                             if method_guards.contains(method) {
-                                relevant_handler_ids.insert(*id);
+                                relevant_handler_ids.insert(id);
                             }
                         }
                     }
@@ -191,14 +488,14 @@ impl Router {
                 // as a request handler for the same path+method multiple times.
                 let unique_handlers = relevant_handler_ids
                     .iter()
-                    .unique_by(|id| raw_user_component_db[**id].raw_identifiers_id())
+                    .unique_by(|id| db[**id].raw_identifiers_id())
                     .collect::<Vec<_>>();
                 if unique_handlers.len() > 1 {
                     push_router_conflict_diagnostic(
                         path,
                         method,
                         &unique_handlers,
-                        raw_user_component_db,
+                        db,
                         package_graph,
                         diagnostics,
                     );
@@ -221,14 +518,15 @@ impl Router {
     /// By trying to create the router in the compiler itself!
     /// If it works now, it'll work at runtime too.
     fn detect_path_conflicts(
-        raw_user_component_db: &RawUserComponentDb,
+        db: &RawUserComponentDb,
+        component_ids: &[UserComponentId],
         package_graph: &PackageGraph,
         diagnostics: &mut Vec<miette::Error>,
     ) -> Result<matchit::Router<()>, ()> {
         let mut path_router = matchit::Router::new();
         let mut errored = false;
-        for (id, component) in raw_user_component_db.iter() {
-            let UserComponent::RequestHandler { router_key, .. } = component else {
+        for id in component_ids.iter() {
+            let UserComponent::RequestHandler { router_key, .. } = &db[id] else {
                 continue;
             };
             let Err(e) = path_router.insert(router_key.path.clone(), ()) else {
@@ -243,9 +541,9 @@ impl Router {
                 _ => {
                     errored = true;
                     push_matchit_diagnostic(
-                        raw_user_component_db,
+                        db,
                         &router_key.path,
-                        id,
+                        *id,
                         e,
                         package_graph,
                         diagnostics,
@@ -271,7 +569,9 @@ impl Router {
     /// This method only looks at the 2nd case and returns a mapping from request handlers to fallbacks.
     fn assign_fallbacks(
         mut validation_router: matchit::Router<()>,
-        raw_user_component_db: &RawUserComponentDb,
+        scope_based_fallback_router: &ScopeBasedFallbackTree,
+        component_ids: &[UserComponentId],
+        db: &RawUserComponentDb,
         scope_graph: &ScopeGraph,
         package_graph: &PackageGraph,
         diagnostics: &mut Vec<miette::Error>,
@@ -284,50 +584,44 @@ impl Router {
     > {
         let n_diagnostics = diagnostics.len();
 
-        // For every scope there is at most one fallback.
-        let scope_id2fallback_id = {
-            let mut scope_id2fallback_id = BiHashMap::new();
-            for (id, component) in raw_user_component_db.iter() {
-                let UserComponent::Fallback { scope_id, .. } = component else {
-                    continue;
-                };
-                let parents = scope_id.direct_parent_ids(scope_graph);
-                assert_eq!(parents.len(), 1, "Fallbacks are always encapsulated in their own sub-scope and should only have one parent scope.");
-                let parent_scope_id = parents.into_iter().next().unwrap();
-                // This is the root scope, we don't need to check anything.
-                // We'll use that fallback for routes that fail to match.
-                scope_id2fallback_id.insert(parent_scope_id, id);
-            }
-            scope_id2fallback_id
-        };
-
-        let scope_based_fallback_router = FallbackTree::new(&scope_id2fallback_id, scope_graph);
-
         let mut path_based_fallback_router = matchit::Router::new();
         let mut path_catchall2fallback_id = BTreeMap::new();
-        for (fallback_id, component) in raw_user_component_db.iter() {
-            let UserComponent::Fallback { .. } = component else {
+        for id in component_ids.iter() {
+            let UserComponent::Fallback { .. } = &db[id] else {
                 continue;
             };
-            let path_prefix = &raw_user_component_db.fallback_id2path_prefix[&fallback_id];
+            let path_prefix = &db.fallback_id2path_prefix[id];
             // If there is a nested blueprint with a path prefix, we register a path-based fallback
             // for all incoming requests that match that prefix.
             let Some(path_prefix) = path_prefix else {
                 continue;
             };
-            let trailing_capture = prefix_ends_with_capture(path_prefix);
-            let fallback_path = match trailing_capture {
-                None => {
-                    format!("{path_prefix}*catch_all")
-                }
-                Some(Capture::CatchAll) => {
-                    continue;
-                }
-                Some(Capture::Parameter(param)) => {
-                    let stripped = path_prefix.strip_suffix(&param).unwrap();
-                    format!("{stripped}*catch_all")
-                }
+            let parsed_prefix = RoutePath::parse(path_prefix.to_owned());
+
+            let fallback_path = {
+                let mut fallback_path = None;
+                if let Some(details) = parsed_prefix.parameters.values().last() {
+                    let n_chars = parsed_prefix.raw.chars().count();
+                    if n_chars - 1 == details.end {
+                        // The last params is at the end of the path
+                        if details.catch_all {
+                            // No need to register a path-based fallback if we have a trailing catch-all
+                            continue;
+                        } else {
+                            // We strip the last parameter from the path prefix and substitute it with a catch-all
+                            // to create a fallback path.
+                            let stripped: String = parsed_prefix
+                                .raw
+                                .chars()
+                                .dropping_back(details.end - details.start)
+                                .collect();
+                            fallback_path = Some(format!("{stripped}{{*catch_all}}"));
+                        }
+                    }
+                };
+                fallback_path.unwrap_or_else(|| format!("{}{{*catch_all}}", parsed_prefix.raw))
             };
+
             if let Err(e) = validation_router.insert(fallback_path.clone(), ()) {
                 if let InsertError::Conflict { .. } = e {
                     // There is already a user-registered route that serves as catch-all
@@ -339,9 +633,9 @@ impl Router {
                 }
             }
 
-            path_catchall2fallback_id.insert(fallback_path.clone(), fallback_id);
+            path_catchall2fallback_id.insert(fallback_path.clone(), *id);
             path_based_fallback_router
-                .insert(fallback_path, fallback_id)
+                .insert(fallback_path, *id)
                 .unwrap();
         }
 
@@ -350,12 +644,12 @@ impl Router {
         // fallbacks match.
         // If they don't, we emit a diagnostic: there is ambiguity in the routing logic and we
         // don't know which fallback to use.
-        for (handler_id, component) in raw_user_component_db.iter() {
+        for id in component_ids.iter() {
             let UserComponent::RequestHandler {
                 router_key,
                 scope_id,
                 ..
-            } = component
+            } = &db[id]
             else {
                 continue;
             };
@@ -371,12 +665,12 @@ impl Router {
                 None => {
                     // Good: there wasn't any path-based fallback, so it's all down to
                     // to the scope the route was registered against.
-                    handler_id2fallback_id.insert(handler_id, scope_fallback_id);
+                    handler_id2fallback_id.insert(*id, scope_fallback_id);
                 }
                 Some(path_fallback_id) => {
                     if path_fallback_id != scope_fallback_id {
                         let path_fallback_scope_id = {
-                            *raw_user_component_db[path_fallback_id]
+                            *db[path_fallback_id]
                                 .scope_id()
                                 .direct_parent_ids(scope_graph)
                                 .iter()
@@ -384,7 +678,7 @@ impl Router {
                                 .unwrap()
                         };
                         let scope_fallback_scope_id = {
-                            *raw_user_component_db[scope_fallback_id]
+                            *db[scope_fallback_id]
                                 .scope_id()
                                 .direct_parent_ids(scope_graph)
                                 .iter()
@@ -406,21 +700,21 @@ impl Router {
                             //
                             // And this is fine, since the scope-based fallback is obviously the
                             // desired one since it wraps closer to the route.
-                            handler_id2fallback_id.insert(handler_id, scope_fallback_id);
+                            handler_id2fallback_id.insert(*id, scope_fallback_id);
                             continue;
                         }
 
                         push_fallback_ambiguity_diagnostic(
-                            raw_user_component_db,
+                            db,
                             scope_fallback_id,
                             path_fallback_id,
-                            handler_id,
+                            *id,
                             package_graph,
                             diagnostics,
                         );
                     } else {
                         // Good: they both use the same fallback.
-                        handler_id2fallback_id.insert(handler_id, path_fallback_id);
+                        handler_id2fallback_id.insert(*id, path_fallback_id);
                     }
                 }
             }
@@ -442,7 +736,8 @@ impl Router {
     /// expect the same fallback when the method doesn't match?
     fn check_method_not_allowed_fallbacks(
         route_id2fallback_id: &BTreeMap<UserComponentId, UserComponentId>,
-        raw_user_component_db: &RawUserComponentDb,
+        component_ids: &[UserComponentId],
+        db: &RawUserComponentDb,
         package_graph: &PackageGraph,
         diagnostics: &mut Vec<miette::Error>,
     ) -> Result<(), ()> {
@@ -455,8 +750,8 @@ impl Router {
             BTreeMap<UserComponentId, BTreeMap<UserComponentId, BTreeSet<String>>>,
         > = BTreeMap::default();
         let mut next_route_id = 0;
-        for (handler_id, component) in raw_user_component_db.iter() {
-            let UserComponent::RequestHandler { router_key, .. } = component else {
+        for id in component_ids.iter() {
+            let UserComponent::RequestHandler { router_key, .. } = &db[id] else {
                 continue;
             };
             let method_guard = match &router_key.method_guard {
@@ -480,12 +775,12 @@ impl Router {
                     route_id
                 }
             };
-            let fallback_id = route_id2fallback_id[&handler_id];
+            let fallback_id = route_id2fallback_id[id];
             map.entry(route_id)
                 .or_default()
                 .entry(fallback_id)
                 .or_default()
-                .insert(handler_id, method_guard.clone());
+                .insert(*id, method_guard.clone());
         }
         for fallback_id2handler_id in map.values() {
             if fallback_id2handler_id.len() == 1 {
@@ -508,7 +803,7 @@ impl Router {
             push_fallback_method_ambiguity_diagnostic(
                 methods_without_handler,
                 fallback_id2handler_id,
-                raw_user_component_db,
+                db,
                 package_graph,
                 diagnostics,
             );
@@ -522,19 +817,6 @@ impl Router {
     }
 }
 
-fn prefix_ends_with_capture(path: &str) -> Option<Capture> {
-    // Prefixes, if not empty, **cannot** end with a `/`.
-    // Therefore we will always get a `Some` from `split_last` and it won't be empty.
-    let last_segment = path.split('/').last().unwrap();
-    if let Some((_, param)) = last_segment.split_once(':') {
-        Some(Capture::Parameter(param.to_owned()))
-    } else if let Some(_) = last_segment.split_once('*') {
-        Some(Capture::CatchAll)
-    } else {
-        None
-    }
-}
-
 /// A tree that contains a node for each registered fallback (as well as the default one, if needed).
 ///
 /// The tree is built by traversing the scope graph and for each scope that has a fallback, we
@@ -542,11 +824,11 @@ fn prefix_ends_with_capture(path: &str) -> Option<Capture> {
 /// A node is a child of another node if the scope it represents is a descendant of the scope of
 /// the parent node.
 #[derive(Debug)]
-struct FallbackTree {
+struct ScopeBasedFallbackTree {
     nodes: Vec<FallbackNode>,
 }
 
-impl FallbackTree {
+impl ScopeBasedFallbackTree {
     fn new(
         scope_id2fallback_id: &BiHashMap<ScopeId, UserComponentId>,
         scope_graph: &ScopeGraph,
@@ -627,13 +909,6 @@ struct FallbackNode {
     scope_id: ScopeId,
     fallback_id: UserComponentId,
     children_ids: Vec<usize>,
-}
-
-enum Capture {
-    /// E.g. `*foo`
-    CatchAll,
-    /// E.g. `:foo`
-    Parameter(String),
 }
 
 static METHODS: [&str; 9] = [
@@ -839,11 +1114,11 @@ fn push_matchit_diagnostic(
         InsertError::Conflict { with } => {
             anyhow!("This route path, `{}`, conflicts with the path of another route you already registered, `{}`.", path, with)
         }
-        InsertError::TooManyParams => {
-            anyhow!("You can only register one path parameter per each path segment.")
+        InsertError::InvalidParam => {
+            anyhow!("You can only use path parameters in the form of `{{name}}` or `{{*name}}`. You can use `{{{{` and `}}}}` if you need to escape curly braces.")
         }
-        InsertError::UnnamedParam => {
-            anyhow!("All path parameters must be named. You can't use anonymous parameters like `:` or `*`.")
+        InsertError::InvalidParamSegment => {
+            anyhow!("You can only register one path parameter for each path segment.")
         }
         InsertError::InvalidCatchAll => {
             anyhow!("You can only use catch-all parameters at the end of a route path.")

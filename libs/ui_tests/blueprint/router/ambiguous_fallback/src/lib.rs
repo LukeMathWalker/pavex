@@ -18,7 +18,7 @@ pub fn fallback2() -> pavex::response::Response {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.nest_at("/users", {
+    bp.prefix("/users").nest({
         let mut bp = Blueprint::new();
         bp.route(GET, "/id", f!(crate::handler));
         bp.fallback(f!(crate::fallback1));

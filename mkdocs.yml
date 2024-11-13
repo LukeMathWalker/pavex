@@ -86,6 +86,8 @@ nav:
               - guide/routing/method_guards.md
               - guide/routing/path_patterns.md
               - guide/routing/request_handlers.md
+              - guide/routing/path_prefixes.md
+              - guide/routing/domain_guards.md
           - "Request data":
               - guide/request_data/index.md
               - guide/request_data/wire_data.md

@@ -44,7 +44,7 @@ pavex_reflection = { path = "../pavex_reflection", version = "=0.1.54" }
 persist_if_changed = { path = "../persist_if_changed", version = "0.1.54" }
 
 # Route parameters
-matchit = { version = "0.7.5", package = "pavex_matchit" }
+matchit = { workspace = true }
 percent-encoding = { workspace = true }
 
 # Query parameters
@@ -78,6 +78,7 @@ hyper-util = { workspace = true, features = [
 ], optional = true }
 socket2 = { workspace = true, optional = true }
 smallvec = { workspace = true }
+px_workspace_hack = { version = "0.1", path = "../px_workspace_hack" }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros"] }

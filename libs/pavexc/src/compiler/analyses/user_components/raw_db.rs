@@ -1,14 +1,16 @@
 use ahash::{HashMap, HashMapExt};
 use anyhow::anyhow;
 use guppy::graph::PackageGraph;
+use indexmap::IndexMap;
 use std::collections::BTreeMap;
 
 use pavex_bp_schema::{
-    Blueprint, Callable, CloningStrategy, Component, Constructor, ErrorObserver, Fallback,
-    Lifecycle, Lint, LintSetting, Location, NestedBlueprint, PostProcessingMiddleware,
+    Blueprint, Callable, CloningStrategy, Component, Constructor, Domain, ErrorObserver, Fallback,
+    Lifecycle, Lint, LintSetting, Location, NestedBlueprint, PathPrefix, PostProcessingMiddleware,
     PreProcessingMiddleware, PrebuiltType, RawIdentifiers, RegisteredAt, Route, WrappingMiddleware,
 };
 
+use crate::compiler::analyses::domain::{DomainGuard, InvalidDomainConstraint};
 use crate::compiler::analyses::user_components::router_key::RouterKey;
 use crate::compiler::analyses::user_components::scope_graph::ScopeGraphBuilder;
 use crate::compiler::analyses::user_components::{ScopeGraph, ScopeId};
@@ -203,6 +205,17 @@ pub(super) struct RawUserComponentDb {
     ///
     /// Invariants: there is an entry for every single fallback.
     pub(super) fallback_id2path_prefix: HashMap<UserComponentId, Option<String>>,
+    /// Associate each user-registered fallback with the domain guard of the `Blueprint`
+    /// it was registered against, if any.
+    /// If it was registered against a deeply nested `Blueprint`, it contains the domain guard
+    /// of the **innermost** `Blueprint` with a non-empty domain guard that it was nested under.
+    ///
+    /// Invariants: there is an entry for every single fallback.
+    pub(super) fallback_id2domain_guard: HashMap<UserComponentId, Option<DomainGuard>>,
+    /// Associate each domain guard with the location it was registered at against the `Blueprint`.
+    ///
+    /// The same guard can be registered at multiple locations, so we use a `Vec` to store them.
+    pub(super) domain_guard2locations: IndexMap<DomainGuard, Vec<Location>>,
 }
 
 /// Used in [`RawUserComponentDb::build`] to keep track of the nested blueprints that we still
@@ -210,6 +223,7 @@ pub(super) struct RawUserComponentDb {
 struct QueueItem<'a> {
     parent_scope_id: ScopeId,
     parent_path_prefix: Option<String>,
+    parent_domain_guard: Option<DomainGuard>,
     nested_bp: &'a NestedBlueprint,
     current_middleware_chain: Vec<UserComponentId>,
     current_observer_chain: Vec<UserComponentId>,
@@ -234,6 +248,8 @@ impl RawUserComponentDb {
             handler_id2middleware_ids: HashMap::new(),
             handler_id2error_observer_ids: HashMap::new(),
             fallback_id2path_prefix: HashMap::new(),
+            fallback_id2domain_guard: HashMap::new(),
+            domain_guard2locations: IndexMap::new(),
         };
         let mut scope_graph_builder = ScopeGraph::builder(bp.creation_location.clone());
         let root_scope_id = scope_graph_builder.root_scope_id();
@@ -256,6 +272,7 @@ impl RawUserComponentDb {
             bp,
             root_scope_id,
             None,
+            None,
             &mut scope_graph_builder,
             &mut current_middleware_chain,
             &mut current_observer_chain,
@@ -270,26 +287,36 @@ impl RawUserComponentDb {
                 parent_scope_id,
                 nested_bp,
                 parent_path_prefix,
+                parent_domain_guard,
                 mut current_middleware_chain,
                 mut current_observer_chain,
             } = item;
             let nested_scope_id = scope_graph_builder
                 .add_scope(parent_scope_id, Some(nested_bp.nesting_location.clone()));
-            self_.validate_nested_bp(nested_bp, package_graph, diagnostics);
+            let Ok((current_prefix, current_domain)) =
+                self_.process_nesting_constraints(nested_bp, package_graph, diagnostics)
+            else {
+                continue;
+            };
 
             let path_prefix = match parent_path_prefix {
                 Some(prefix) => Some(format!(
                     "{}{}",
                     prefix,
-                    nested_bp.path_prefix.as_deref().unwrap_or("")
+                    current_prefix.as_deref().unwrap_or("")
                 )),
-                None => nested_bp.path_prefix.clone(),
+                None => current_prefix.clone(),
+            };
+            let domain_guard = match current_domain {
+                Some(domain) => Some(domain),
+                None => parent_domain_guard,
             };
 
             Self::process_blueprint(
                 &mut self_,
                 &nested_bp.blueprint,
                 nested_scope_id,
+                domain_guard,
                 path_prefix.as_deref(),
                 &mut scope_graph_builder,
                 &mut current_middleware_chain,
@@ -318,6 +345,7 @@ impl RawUserComponentDb {
         &mut self,
         bp: &'a Blueprint,
         current_scope_id: ScopeId,
+        domain_guard: Option<DomainGuard>,
         path_prefix: Option<&str>,
         scope_graph_builder: &mut ScopeGraphBuilder,
         mut current_middleware_chain: &mut Vec<UserComponentId>,
@@ -362,6 +390,7 @@ impl RawUserComponentDb {
                     &current_middleware_chain,
                     &current_observer_chain,
                     current_scope_id,
+                    domain_guard.clone(),
                     path_prefix,
                     scope_graph_builder,
                     package_graph,
@@ -375,6 +404,7 @@ impl RawUserComponentDb {
                         parent_scope_id: current_scope_id,
                         nested_bp: &b,
                         parent_path_prefix: path_prefix.map(|s| s.to_owned()),
+                        parent_domain_guard: domain_guard.clone(),
                         current_middleware_chain: current_middleware_chain.clone(),
                         current_observer_chain: current_observer_chain.clone(),
                     });
@@ -391,6 +421,7 @@ impl RawUserComponentDb {
             self.process_fallback(
                 fallback,
                 path_prefix,
+                domain_guard,
                 current_middleware_chain,
                 current_observer_chain,
                 current_scope_id,
@@ -420,6 +451,7 @@ impl RawUserComponentDb {
             self.process_fallback(
                 &registered_fallback,
                 path_prefix,
+                domain_guard,
                 current_middleware_chain,
                 current_observer_chain,
                 current_scope_id,
@@ -437,6 +469,7 @@ impl RawUserComponentDb {
         current_middleware_chain: &[UserComponentId],
         current_observer_chain: &[UserComponentId],
         current_scope_id: ScopeId,
+        domain_guard: Option<DomainGuard>,
         path_prefix: Option<&str>,
         scope_graph_builder: &mut ScopeGraphBuilder,
         package_graph: &PackageGraph,
@@ -455,6 +488,7 @@ impl RawUserComponentDb {
             };
             RouterKey {
                 path,
+                domain_guard,
                 method_guard: registered_route.method_guard.clone(),
             }
         };
@@ -496,6 +530,7 @@ impl RawUserComponentDb {
         &mut self,
         fallback: &Fallback,
         path_prefix: Option<&str>,
+        domain_guard: Option<DomainGuard>,
         current_middleware_chain: &[UserComponentId],
         current_observer_chain: &[UserComponentId],
         current_scope_id: ScopeId,
@@ -523,6 +558,8 @@ impl RawUserComponentDb {
             .insert(fallback_id, current_observer_chain.to_owned());
         self.fallback_id2path_prefix
             .insert(fallback_id, path_prefix.map(|s| s.to_owned()));
+        self.fallback_id2domain_guard
+            .insert(fallback_id, domain_guard);
 
         self.process_error_handler(
             &fallback.error_handler,
@@ -772,28 +809,73 @@ impl RawUserComponentDb {
         }
     }
 
-    /// Check the path prefix of the nested blueprint.
-    /// Emit diagnostics if the path prefix is invalid—i.e. empty or missing a leading slash.
-    fn validate_nested_bp(
-        &self,
+    /// Process the path prefix and the domain guard attached to this nested blueprint, if any.
+    /// Emit diagnostics if either is invalid—i.e. a prefix that's empty or missing a leading slash.
+    fn process_nesting_constraints(
+        &mut self,
         nested_bp: &NestedBlueprint,
         package_graph: &PackageGraph,
         diagnostics: &mut Vec<miette::Error>,
-    ) {
-        if let Some(path_prefix) = nested_bp.path_prefix.as_deref() {
+    ) -> Result<(Option<String>, Option<DomainGuard>), ()> {
+        let mut prefix = None;
+        if let Some(path_prefix) = &nested_bp.path_prefix {
+            let PathPrefix {
+                path_prefix,
+                location,
+            } = path_prefix;
+            let mut has_errored = false;
+
             if path_prefix.is_empty() {
-                self.path_prefix_cannot_be_empty(nested_bp, package_graph, diagnostics);
-                return;
+                self.path_prefix_cannot_be_empty(location, package_graph, diagnostics);
+                has_errored = true;
             }
 
             if !path_prefix.starts_with('/') {
-                self.path_prefix_must_start_with_a_slash(nested_bp, package_graph, diagnostics);
+                self.path_prefix_must_start_with_a_slash(
+                    path_prefix,
+                    location,
+                    package_graph,
+                    diagnostics,
+                );
+                has_errored = true;
             }
 
             if path_prefix.ends_with('/') {
-                self.path_prefix_cannot_end_with_a_slash(nested_bp, package_graph, diagnostics);
+                self.path_prefix_cannot_end_with_a_slash(
+                    path_prefix,
+                    location,
+                    package_graph,
+                    diagnostics,
+                );
+                has_errored = true;
+            }
+
+            if has_errored {
+                return Err(());
+            } else {
+                prefix = Some(path_prefix.to_owned());
             }
         }
+
+        let domain = if let Some(domain) = &nested_bp.domain {
+            let Domain { domain, location } = domain;
+            match DomainGuard::new(domain.into()) {
+                Ok(guard) => {
+                    self.domain_guard2locations
+                        .entry(guard.clone())
+                        .or_default()
+                        .push(location.clone());
+                    Some(guard)
+                }
+                Err(e) => {
+                    self.invalid_domain_guard(location, e, package_graph, diagnostics);
+                    return Err(());
+                }
+            }
+        } else {
+            None
+        };
+        Ok((prefix, domain))
     }
 
     /// Validate that all internal invariants are satisfied.
@@ -825,7 +907,7 @@ impl RawUserComponentDb {
                         id
                     );
                 }
-                UserComponent::Fallback { .. } | UserComponent::RequestHandler { .. } => {
+                UserComponent::RequestHandler { .. } => {
                     assert!(
                         self.handler_id2middleware_ids.get(&id).is_some(),
                         "The middleware chain is missing for the user-registered request handler #{:?}",
@@ -834,6 +916,28 @@ impl RawUserComponentDb {
                     assert!(
                         self.handler_id2error_observer_ids.get(&id).is_some(),
                         "The list of error observers is missing for the user-registered request handler #{:?}",
+                        id
+                    );
+                }
+                UserComponent::Fallback { .. } => {
+                    assert!(
+                        self.handler_id2middleware_ids.get(&id).is_some(),
+                        "The middleware chain is missing for the user-registered fallback #{:?}",
+                        id
+                    );
+                    assert!(
+                        self.handler_id2error_observer_ids.get(&id).is_some(),
+                        "The list of error observers is missing for the user-registered fallback #{:?}",
+                        id
+                    );
+                    assert!(
+                        self.fallback_id2path_prefix.get(&id).is_some(),
+                        "There is no path prefix associated with the user-registered fallback #{:?}",
+                        id
+                    );
+                    assert!(
+                        self.fallback_id2domain_guard.get(&id).is_some(),
+                        "There is no domain guard associated with the user-registered fallback #{:?}",
                         id
                     );
                 }
@@ -857,6 +961,10 @@ impl RawUserComponentDb {
         self.component_interner.iter()
     }
 
+    pub fn components(&self) -> impl Iterator<Item = &UserComponent> {
+        self.component_interner.values()
+    }
+
     /// Return the location where the component with the given id was registered against the
     /// application blueprint.
     pub fn get_location(&self, id: UserComponentId) -> &Location {
@@ -869,6 +977,14 @@ impl std::ops::Index<UserComponentId> for RawUserComponentDb {
 
     fn index(&self, index: UserComponentId) -> &Self::Output {
         &self.component_interner[index]
+    }
+}
+
+impl std::ops::Index<&UserComponentId> for RawUserComponentDb {
+    type Output = UserComponent;
+
+    fn index(&self, index: &UserComponentId) -> &Self::Output {
+        &self.component_interner[*index]
     }
 }
 
@@ -908,28 +1024,48 @@ impl RawUserComponentDb {
         diagnostics.push(diagnostic.build().into());
     }
 
-    fn path_prefix_cannot_be_empty(
+    fn invalid_domain_guard(
         &self,
-        nested_bp: &NestedBlueprint,
+        location: &Location,
+        e: InvalidDomainConstraint,
         package_graph: &PackageGraph,
         diagnostics: &mut Vec<miette::Error>,
     ) {
-        let location = &nested_bp.nesting_location;
         let source = try_source!(location, package_graph, diagnostics);
         let label = source
             .as_ref()
             .map(|source| {
-                diagnostic::get_nest_at_prefix_span(&source, location)
+                diagnostic::get_domain_span(&source, location)
+                    .labeled("The invalid domain".to_string())
+            })
+            .flatten();
+        let diagnostic = CompilerDiagnostic::builder(e)
+            .optional_source(source)
+            .optional_label(label);
+        diagnostics.push(diagnostic.build().into());
+    }
+
+    fn path_prefix_cannot_be_empty(
+        &self,
+        location: &Location,
+        package_graph: &PackageGraph,
+        diagnostics: &mut Vec<miette::Error>,
+    ) {
+        let source = try_source!(location, package_graph, diagnostics);
+        let label = source
+            .as_ref()
+            .map(|source| {
+                diagnostic::get_prefix_span(&source, location)
                     .labeled("The empty prefix".to_string())
             })
             .flatten();
-        let err = anyhow!("The path prefix passed to `nest_at` cannot be empty.");
+        let err = anyhow!("Path prefixes cannot be empty.");
         let diagnostic = CompilerDiagnostic::builder(err)
             .optional_source(source)
             .optional_label(label)
             .help(
                 "If you don't want to add a common prefix to all routes in the nested blueprint, \
-                use the `nest` method instead of `nest_at`."
+                use the `nest` method directly."
                     .into(),
             );
         diagnostics.push(diagnostic.build().into());
@@ -937,22 +1073,21 @@ impl RawUserComponentDb {
 
     fn path_prefix_must_start_with_a_slash(
         &self,
-        nested_bp: &NestedBlueprint,
+        prefix: &str,
+        location: &Location,
         package_graph: &PackageGraph,
         diagnostics: &mut Vec<miette::Error>,
     ) {
-        let location = &nested_bp.nesting_location;
         let source = try_source!(location, package_graph, diagnostics);
         let label = source
             .as_ref()
             .map(|source| {
-                diagnostic::get_nest_at_prefix_span(&source, location)
+                diagnostic::get_prefix_span(&source, location)
                     .labeled("The prefix missing a leading '/'".to_string())
             })
             .flatten();
-        let prefix = nested_bp.path_prefix.as_deref().unwrap();
         let err = anyhow!(
-            "The path prefix passed to `nest_at` must begin with a forward slash, `/`.\n\
+            "Path prefixes must begin with a forward slash, `/`.\n\
             `{prefix}` doesn't.",
         );
         let diagnostic = CompilerDiagnostic::builder(err)
@@ -964,22 +1099,21 @@ impl RawUserComponentDb {
 
     fn path_prefix_cannot_end_with_a_slash(
         &self,
-        nested_bp: &NestedBlueprint,
+        prefix: &str,
+        location: &Location,
         package_graph: &PackageGraph,
         diagnostics: &mut Vec<miette::Error>,
     ) {
-        let location = &nested_bp.nesting_location;
         let source = try_source!(location, package_graph, diagnostics);
         let label = source
             .as_ref()
             .map(|source| {
-                diagnostic::get_nest_at_prefix_span(&source, location)
+                diagnostic::get_prefix_span(&source, location)
                     .labeled("The prefix ending with a trailing '/'".to_string())
             })
             .flatten();
-        let prefix = nested_bp.path_prefix.as_deref().unwrap();
         let err = anyhow!(
-            "The path prefix passed to `nest_at` can't end with a trailing slash, `/`. \
+            "Path prefixes can't end with a trailing slash, `/`. \
             `{prefix}` does.\n\
             Trailing slashes in path prefixes increase the likelihood of having consecutive \
             slashes in the final route path, which is rarely desireable. If you want consecutive \

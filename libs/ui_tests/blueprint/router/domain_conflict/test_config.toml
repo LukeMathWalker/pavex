@@ -1,0 +1,4 @@
+description = "pavex should return an error if there is routing ambiguity between two or more domain constraints"
+
+[expectations]
+codegen = "fail"
