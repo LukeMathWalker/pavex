@@ -1,16 +1,16 @@
 # Path parameters
 
-In REST APIs, the [path](index.md) is often used to identify a resource.  
+In REST APIs, the [path](index.md) is often used to identify a resource.
 For example, in `https://example.com/users/123`, the path is `/users/123` and the resource is the user with ID `123`.
 
-Those dynamic path segments are called **path parameters**.  
+Those dynamic path segments are called **path parameters**.
 In Pavex, you must declare the path parameters for a given path in the route definition—see [Path parameters](../../routing/path_patterns.md#route-parameters)
 for more details.
 You then use [`PathParams<T>`][PathParams] to extract the parameters from the incoming request.
 
 ## Registration
 
-To use [`PathParams<T>`][PathParams] in your application you need to register a constructor for it.  
+To use [`PathParams<T>`][PathParams] in your application you need to register a constructor for it.
 You can use [`PathParams::register`][PathParams::register] to register its default constructor
 and error handler:
 
@@ -22,8 +22,8 @@ it's already included in the kit.
 
 ## Overview
 
-Let's keep using `https://example.com/users/123` as an example.  
-To extract `123` from the path, you register `/users/:id` as the path pattern for that route.
+Let's keep using `https://example.com/users/123` as an example.
+To extract `123` from the path, you register `/users/{id}` as the path pattern for that route.
 
 --8<-- "doc_examples/guide/request_data/route_params/project-route_params_registration.snap"
 
@@ -37,17 +37,17 @@ There are a few moving parts here. Let's break them down!
 
 ### Fields names
 
-[`PathParams<T>`][PathParams] is a generic wrapper around a struct[^why-struct] that models the path parameters for a given path.  
+[`PathParams<T>`][PathParams] is a generic wrapper around a struct[^why-struct] that models the path parameters for a given path.
 All struct fields must be named after the path parameters declared in the path pattern[^wrong-name].
 
-In our example, the path pattern is `/users/:id`.
+In our example, the path pattern is `/users/{id}`.
 Our extraction type, `GetUserParams`, must have a matching field named `id`.
 
 --8<-- "doc_examples/guide/request_data/route_params/project-route_params_struct.snap"
 
 ### Deserialization
 
-The newly defined struct must be **deserializable**—i.e. it must implement the [`serde::Deserialize`][serde::Deserialize] trait.  
+The newly defined struct must be **deserializable**—i.e. it must implement the [`serde::Deserialize`][serde::Deserialize] trait.
 The [`#[PathParams]`][PathParamsMacro] attribute macro will automatically derive [`serde::Deserialize`][serde::Deserialize] for you. Alternatively, you can derive or implement [`serde::Deserialize`][serde::Deserialize] directly.
 
 --8<-- "doc_examples/guide/request_data/route_params/project-route_params_struct_with_attr.snap"
@@ -56,12 +56,12 @@ If you rely on [`#[PathParams]`][PathParamsMacro], Pavex can perform more advanc
 
 ### Parsing
 
-From a protocol perspective, all path parameters are strings.  
+From a protocol perspective, all path parameters are strings.
 From an application perspective, you might want to enforce stricter constraints.
 
-In our example, we expect `id` parameter to be a number.  
+In our example, we expect `id` parameter to be a number.
 We could set the field type for `id` to `String` and then parse it into a number in the handler; however, that's going
-to get tedious if we need to do it every single time we want to work with a numeric path parameter.  
+to get tedious if we need to do it every single time we want to work with a numeric path parameter.
 We can skip all that boilerplate by setting the field type to `u64` directly, and let Pavex do the parsing for us:
 
 --8<-- "doc_examples/guide/request_data/route_params/project-route_params_typed_field.snap"
@@ -70,7 +70,7 @@ Everything works as expected because `u64` implements the [`serde::Deserialize`]
 
 ### Unsupported field types
 
-Path parameters are best used to encode **values**, such as numbers, strings, or dates.  
+Path parameters are best used to encode **values**, such as numbers, strings, or dates.
 There is no standard way to encode more complex types such as collections (e.g. `Vec<T>`, tuples) in a path parameter.
 As a result, Pavex doesn't support them.
 
@@ -79,15 +79,15 @@ Pavex will do its best to catch unsupported types at compile time, but it's not 
 ## Avoiding allocations
 
 If you want to squeeze out the last bit of performance from your application,
-you can try to avoid heap memory allocations when extracting string-like path parameters.  
+you can try to avoid heap memory allocations when extracting string-like path parameters.
 Pavex supports this use case—**you can borrow from the request's path**.
 
 ### Percent-encoding
 
-It is not always possible to avoid allocations when handling path parameters.  
+It is not always possible to avoid allocations when handling path parameters.
 Path parameters must comply with the restriction of the URI specification:
-you can only use [a limited set of characters](https://datatracker.ietf.org/doc/html/rfc3986#section-2).  
-If you want to use a character not allowed in a URI, you must [percent-encode it](https://developer.mozilla.org/en-US/docs/Glossary/Percent-encoding).  
+you can only use [a limited set of characters](https://datatracker.ietf.org/doc/html/rfc3986#section-2).
+If you want to use a character not allowed in a URI, you must [percent-encode it](https://developer.mozilla.org/en-US/docs/Glossary/Percent-encoding).
 For example, if you want to use a space in a path parameter, you must encode it as `%20`.
 A string like `John Doe` becomes `John%20Doe` when percent-encoded.
 
@@ -106,9 +106,9 @@ is percent-encoded, but you tried to use `&str` as its field type.
 ## Design considerations
 
 Pavex wants to enable local reasoning. It should be easy to understand what
-each extracted path parameter represents.  
+each extracted path parameter represents.
 Structs with named fields are ideal in this regard: by looking at the field name you can
-immediately understand _which_ path parameter is being extracted.  
+immediately understand _which_ path parameter is being extracted.
 The same is not true for other types, e.g. `(String, u64, u32)`, where you have to go and
 check the route's path pattern to understand what each entry represents.
 

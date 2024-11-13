@@ -50,7 +50,7 @@ once_cell = { workspace = true }
 toml_edit = { workspace = true, features = ["serde"] }
 semver = { workspace = true }
 persist_if_changed = { path = "../persist_if_changed", version = "0.1.54" }
-matchit = { version = "0.7", package = "pavex_matchit" }
+matchit = { workspace = true }
 relative-path = { workspace = true }
 camino = { workspace = true }
 xxhash-rust = { workspace = true, features = ["xxh64"] }
@@ -64,3 +64,7 @@ r2d2 = { workspace = true }
 bincode = { workspace = true }
 rayon = { workspace = true }
 num_cpus = { workspace = true }
+px_workspace_hack = { version = "0.1", path = "../px_workspace_hack" }
+
+[dev-dependencies]
+insta = { workspace = true }

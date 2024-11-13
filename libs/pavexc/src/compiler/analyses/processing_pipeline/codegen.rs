@@ -371,11 +371,11 @@ impl CodegenedRequestHandlerPipeline {
             if let Some(field_name) = server_state_bindings.get_by_right(inner_type) {
                 if is_shared_reference {
                     quote! {
-                        &#server_state_ident.application_state.#field_name
+                        &#server_state_ident.#field_name
                     }
                 } else {
                     quote! {
-                        #server_state_ident.application_state.#field_name.clone()
+                        #server_state_ident.#field_name.clone()
                     }
                 }
             } else if let Some(field_name) = request_scoped_bindings.get_by_right(type_) {
@@ -445,7 +445,7 @@ impl CodegenedRequestHandlerPipeline {
     }
 
     pub(crate) fn needs_connection_info(&self, framework_item_db: &FrameworkItemDb) -> bool {
-        self.needs_framework_item(framework_item_db, FrameworkItemDb::connection_info())
+        self.needs_framework_item(framework_item_db, FrameworkItemDb::connection_info_id())
     }
 
     pub(crate) fn needs_matched_route(&self, framework_item_db: &FrameworkItemDb) -> bool {
@@ -455,13 +455,12 @@ impl CodegenedRequestHandlerPipeline {
         )
     }
 
-    fn needs_framework_item(
+    pub(crate) fn needs_framework_item(
         &self,
         framework_item_db: &FrameworkItemDb,
         id: FrameworkItemId,
     ) -> bool {
-        let ty = framework_item_db.get_type(id).unwrap();
-        self.needs_input_type(ty)
+        self.needs_input_type(framework_item_db.get_type(id))
     }
 }
 

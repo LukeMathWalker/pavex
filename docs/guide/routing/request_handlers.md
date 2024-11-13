@@ -1,7 +1,7 @@
 # Request handlers
 
 A **request handler** is invoked when a request matches on the associated [method guard](method_guards.md) and
-[path pattern](path_patterns.md).  
+[path pattern](path_patterns.md). 
 The request handler is in charge of building the response that will be sent back to the client.
 
 ```rust hl_lines="6"

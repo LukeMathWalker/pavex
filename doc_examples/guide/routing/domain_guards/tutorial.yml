@@ -1,0 +1,29 @@
+starter_project_folder: "project"
+commands:
+  - command: "cargo px c"
+    expected_outcome: "success"
+snippets:
+  - name: "intro"
+    source_path: "src/intro/blueprint.rs"
+    ranges: [".."]
+    hl_lines: [8, 10]
+  - name: "static"
+    source_path: "src/static_/blueprint.rs"
+    ranges: [".."]
+    hl_lines: [7]
+  - name: "dynamic"
+    source_path: "src/dynamic/blueprint.rs"
+    ranges: [".."]
+    hl_lines: [7]
+  - name: "multi"
+    source_path: "src/multi/blueprint.rs"
+    ranges: [".."]
+    hl_lines: [7]
+  - name: "catch_all"
+    source_path: "src/catch_all/blueprint.rs"
+    ranges: [".."]
+    hl_lines: [7]
+  - name: "fallback"
+    source_path: "src/fallback/blueprint.rs"
+    ranges: ["0..11"]
+    hl_lines: [9]

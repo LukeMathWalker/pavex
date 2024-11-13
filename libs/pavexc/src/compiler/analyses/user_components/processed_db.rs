@@ -121,7 +121,9 @@ impl UserComponentDb {
             identifiers_interner,
             handler_id2middleware_ids,
             handler_id2error_observer_ids,
+            fallback_id2domain_guard: _,
             fallback_id2path_prefix: _,
+            domain_guard2locations: _,
         } = raw_db;
 
         Ok((

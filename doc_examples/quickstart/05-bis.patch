@@ -6,8 +6,8 @@ index 042c06f..01a843c 100644
 
  pub fn register(bp: &mut Blueprint) {
      bp.route(GET, "/api/ping", f!(self::ping::get));
--    bp.route(GET, "/api/greet/:name", f!(self::greet::get)); // (1)!
-+    bp.route(GET, "/api/greet/:name", f!(self::greet::get));
+-    bp.route(GET, "/api/greet/{name}", f!(self::greet::get)); // (1)!
++    bp.route(GET, "/api/greet/{name}", f!(self::greet::get));
  }
 diff --git a/app/src/routes/greet.rs b/app/src/routes/greet.rs
 --- a/app/src/routes/greet.rs
@@ -15,7 +15,7 @@ diff --git a/app/src/routes/greet.rs b/app/src/routes/greet.rs
 @@ -8,7 +8,7 @@ pub struct GreetParams {
      pub name: String,
  }
- 
+
 -pub fn get(params: PathParams<GreetParams>, user_agent: UserAgent /* (1)! */) -> Response {
 +pub fn get(params: PathParams<GreetParams>, user_agent: UserAgent) -> Response {
      if let UserAgent::Unknown = user_agent {

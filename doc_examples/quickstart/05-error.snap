@@ -5,9 +5,9 @@
   [31m│[0m
   [31m│[0m     ╭─[[36;1;4mapp/src/routes/mod.rs[0m:8:1]
   [31m│[0m  [2m 8[0m │     bp.route(GET, "/api/ping", f!(self::ping::get));
-  [31m│[0m  [2m 9[0m │     bp.route(GET, "/api/greet/:name", f!(self::greet::get));
-  [31m│[0m     · [35;1m                                      ──────────┬─────────[0m
-  [31m│[0m     ·       [35;1mThe request handler was registered here ──╯[0m
+  [31m│[0m  [2m 9[0m │     bp.route(GET, "/api/greet/{name}", f!(self::greet::get));
+  [31m│[0m     · [35;1m                                       ──────────┬─────────[0m
+  [31m│[0m     ·        [35;1mThe request handler was registered here ──╯[0m
   [31m│[0m  [2m10[0m │ }
   [31m│[0m     ╰────
   [31m│[0m     ╭─[[36;1;4mapp/src/routes/greet.rs[0m:10:1]

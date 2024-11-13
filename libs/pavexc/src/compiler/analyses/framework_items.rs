@@ -4,11 +4,10 @@ use guppy::graph::PackageGraph;
 use proc_macro2::Ident;
 use quote::format_ident;
 
-use pavex_bp_schema::{CloningStrategy, Lifecycle};
-
 use crate::{
     compiler::utils::process_framework_path, language::ResolvedType, rustdoc::CrateCollection,
 };
+use pavex_bp_schema::{CloningStrategy, Lifecycle};
 
 /// The id for a framework item inside [`FrameworkItemDb`].
 pub(crate) type FrameworkItemId = u8;
@@ -39,9 +38,9 @@ impl FrameworkItemDb {
             package_graph,
             krate_collection,
         );
-        items.insert(request_head, 0);
+        items.insert(request_head, Self::request_head_id());
         id2metadata.insert(
-            0,
+            Self::request_head_id(),
             FrameworkItemMetadata {
                 lifecycle: Lifecycle::RequestScoped,
                 cloning_strategy: CloningStrategy::NeverClone,
@@ -53,9 +52,9 @@ impl FrameworkItemDb {
             package_graph,
             krate_collection,
         );
-        items.insert(http_request, 1);
+        items.insert(http_request, Self::raw_incoming_body_id());
         id2metadata.insert(
-            1,
+            Self::raw_incoming_body_id(),
             FrameworkItemMetadata {
                 lifecycle: Lifecycle::RequestScoped,
                 cloning_strategy: CloningStrategy::NeverClone,
@@ -111,9 +110,9 @@ impl FrameworkItemDb {
             package_graph,
             krate_collection,
         );
-        items.insert(connection_info, Self::connection_info());
+        items.insert(connection_info, Self::connection_info_id());
         id2metadata.insert(
-            Self::connection_info(),
+            Self::connection_info_id(),
             FrameworkItemMetadata {
                 lifecycle: Lifecycle::RequestScoped,
                 cloning_strategy: CloningStrategy::CloneIfNecessary,
@@ -123,7 +122,17 @@ impl FrameworkItemDb {
         Self { items, id2metadata }
     }
 
-    /// Return the id for the `MatchedPathPattern` type.
+    /// Return the id for the `RequestHead` type.
+    pub(crate) fn request_head_id() -> FrameworkItemId {
+        0
+    }
+
+    /// Return the id for the `RawIncomingBody` type.
+    pub(crate) fn raw_incoming_body_id() -> FrameworkItemId {
+        1
+    }
+
+    /// Return the id for the `PathParams` type.
     pub(crate) fn url_params_id() -> FrameworkItemId {
         2
     }
@@ -133,12 +142,13 @@ impl FrameworkItemDb {
         3
     }
 
-    /// Return the id for the `MatchedPathPattern` type.
+    /// Return the id for the `AllowedMethods` type.
     pub(crate) fn allowed_methods_id() -> FrameworkItemId {
         4
     }
 
-    pub(crate) fn connection_info() -> FrameworkItemId {
+    /// Return the id for the `ConnectionInfo` type.
+    pub(crate) fn connection_info_id() -> FrameworkItemId {
         5
     }
 
@@ -159,8 +169,13 @@ impl FrameworkItemDb {
     }
 
     /// Return the [`ResolvedType`] attached to a given [`FrameworkItemId`].
-    pub(crate) fn get_type(&self, id: FrameworkItemId) -> Option<&ResolvedType> {
-        self.items.get_by_right(&id)
+    pub(crate) fn get_type(&self, id: FrameworkItemId) -> &ResolvedType {
+        self.items.get_by_right(&id).unwrap()
+    }
+
+    /// Return the binding associated with a given [`FrameworkItemId`].
+    pub(crate) fn get_binding(&self, id: FrameworkItemId) -> &Ident {
+        &self.id2metadata[&id].binding
     }
 
     /// Return a bijective map that associates each framework type with an identifier (i.e. a variable name).

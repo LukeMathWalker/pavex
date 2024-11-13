@@ -11,6 +11,7 @@ mod conversions;
 pub mod error_observer;
 pub mod linter;
 pub mod middleware;
+pub mod nesting;
 pub mod prebuilt;
 pub mod reflection;
 pub mod router;

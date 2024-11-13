@@ -1,10 +1,12 @@
+///! Tools to lint a [`Blueprint`] for common mistakes and antipatterns.
+
 #[derive(Debug, Clone, Copy, Eq, Ord, PartialOrd, PartialEq, Hash)]
 #[non_exhaustive]
 /// Common mistakes and antipatterns that Pavex
-/// tries to catch when analysing your [`Blueprint`].  
+/// tries to catch when analysing your [`Blueprint`].
 ///
 /// These issues aren't considered fatal: Pavex will still
-/// generate the server SDK code.  
+/// generate the server SDK code.
 ///
 /// [`Blueprint`]: crate::blueprint::Blueprint
 pub enum Lint {

@@ -2,7 +2,7 @@
 
 ## Route registration
 
-All the routes exposed by your API must be registered with its [`Blueprint`][Blueprint].  
+All the routes exposed by your API must be registered with its [`Blueprint`][Blueprint].
 In the snippet below you can see the registration of the `GET /api/ping` route, the one you targeted with your `curl`
 request.
 
@@ -20,7 +20,7 @@ The `ping` function is the handler for the `GET /api/ping` route:
 
 --8<-- "doc_examples/quickstart/demo-ping_handler.snap"
 
-It's a public function that returns a [`StatusCode`][StatusCode].  
+It's a public function that returns a [`StatusCode`][StatusCode].
 [`StatusCode`][StatusCode] is a valid response type for a Pavex handler since it implements
 the [`IntoResponse`][IntoResponse] trait:
 the framework
@@ -28,8 +28,8 @@ knows how to convert it into a "full" [`Response`][Response] object.
 
 ## Add a new route
 
-The `ping` function is fairly boring: it doesn't take any arguments, and it always returns the same response.  
-Let's spice things up with a new route: `GET /api/greet/:name`.  
+The `ping` function is fairly boring: it doesn't take any arguments, and it always returns the same response.
+Let's spice things up with a new route: `GET /api/greet/{name}`.
 It takes a dynamic **route parameter** (`name`) and we want it to return a success response with `Hello, {name}` as its
 body.
 
@@ -39,7 +39,7 @@ Create a new module, `greet.rs`, in the `app/src/routes` folder:
 
 --8<-- "doc_examples/quickstart/02-route_def.snap"
 
-The body of the `GET /api/greet/:name` handler is stubbed out with `todo!()` for now, but we'll fix that soon enough.  
+The body of the `GET /api/greet/{name}` handler is stubbed out with `todo!()` for now, but we'll fix that soon enough.
 Let's register the new route with the [`Blueprint`][Blueprint] in the meantime:
 
 --8<-- "doc_examples/quickstart/02-register_new_route.snap"
@@ -54,7 +54,7 @@ To access the `name` route parameter from your new handler you must use the [`Pa
 
 1. The name of the field must match the name of the route parameter as it appears in the path we registered with
    the [`Blueprint`][Blueprint].
-2. The [`PathParams`][PathParams] extractor is generic over the type of the path parameters.  
+2. The [`PathParams`][PathParams] extractor is generic over the type of the path parameters.
    In this case, we're using the `GreetParams` type we just defined.
 
 You can now return the expected response from the handler:
@@ -70,7 +70,7 @@ You can now return the expected response from the handler:
    the `Content-Type` header
    based on the response body type.
 
-Does it work? Only one way to find out!  
+Does it work? Only one way to find out!
 Re-launch the application and issue a new request: (1)
 { .annotate }
 

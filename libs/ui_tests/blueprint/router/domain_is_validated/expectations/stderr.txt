@@ -1,0 +1,12 @@
+[31m[1mERROR[0m[39m: 
+  [31m×[0m `s{.com` is not a valid domain. It contains an unclosed domain parameter
+  [31m│[0m in one of its DNS labels, `s{`. Domain parameters must be enclosed in
+  [31m│[0m curly braces (`{` and `}`), but `{` is missing a closing brace (`}`).
+  [31m│[0m
+  [31m│[0m     ╭─[[36;1;4mblueprint/router/domain_is_validated/src/lib.rs[0m:10:1]
+  [31m│[0m  [2m10[0m │     // Invalid domain!
+  [31m│[0m  [2m11[0m │     bp.domain("s{.com").nest({
+  [31m│[0m     · [35;1m              ────┬───[0m
+  [31m│[0m     ·                   [35;1m╰── The invalid domain[0m
+  [31m│[0m  [2m12[0m │         let mut bp = Blueprint::new();
+  [31m│[0m     ╰────

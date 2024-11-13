@@ -1,4 +1,4 @@
-use pavex::blueprint::{constructor::Lifecycle, router::GET, Blueprint};
+use pavex::blueprint::{router::GET, Blueprint};
 use pavex::f;
 use pavex::{http::StatusCode, request::path::PathParams};
 
@@ -35,15 +35,12 @@ pub fn no_path_params(_params: PathParams<NoPathParams>) -> StatusCode {
 
 pub fn blueprint() -> Blueprint {
     let mut bp = Blueprint::new();
-    bp.constructor(
-        f!(pavex::request::path::PathParams::extract),
-        Lifecycle::RequestScoped,
-    )
-    .error_handler(f!(
-        pavex::request::path::errors::ExtractPathParamsError::into_response
-    ));
-    bp.route(GET, "/a/:x", f!(crate::missing_one));
-    bp.route(GET, "/b/:x", f!(crate::missing_two));
+    bp.request_scoped(f!(pavex::request::path::PathParams::extract))
+        .error_handler(f!(
+            pavex::request::path::errors::ExtractPathParamsError::into_response
+        ));
+    bp.route(GET, "/a/{x}", f!(crate::missing_one));
+    bp.route(GET, "/b/{x}", f!(crate::missing_two));
     bp.route(GET, "/c", f!(crate::no_path_params));
     bp
 }

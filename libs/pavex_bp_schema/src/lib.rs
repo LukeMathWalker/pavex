@@ -8,6 +8,7 @@ use std::fmt;
 use std::fmt::Formatter;
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+/// The blueprint for a Pavex application.
 pub struct Blueprint {
     /// The location where the `Blueprint` was created.
     pub creation_location: Location,
@@ -193,9 +194,30 @@ pub struct NestedBlueprint {
     /// The path prefix that will prepended to all routes registered against the nested
     /// `Blueprint`.
     /// If `None`, the routes coming from the nested `Blueprint` will be registered as-they-are.
-    pub path_prefix: Option<String>,
+    pub path_prefix: Option<PathPrefix>,
+    /// If `Some`, only requests whose `Host` header matches this value will be forwarded to the
+    /// routes registered against this nested `Blueprint`.
+    pub domain: Option<Domain>,
     /// The location where the `Blueprint` was nested under its parent `Blueprint`.
     pub nesting_location: Location,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+/// A path modifier for a nested [`Blueprint`].
+pub struct PathPrefix {
+    /// The path prefix to prepend to all routes registered against the nested [`Blueprint`].
+    pub path_prefix: String,
+    /// The location where the path prefix was registered.
+    pub location: Location,
+}
+
+/// A domain routing constraint.
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+pub struct Domain {
+    /// The domain to match.
+    pub domain: String,
+    /// The location where the domain constraint was registered.
+    pub location: Location,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
@@ -238,7 +260,7 @@ pub enum MethodGuard {
 )]
 #[non_exhaustive]
 /// Common mistakes and antipatterns that Pavex
-/// tries to catch when analysing your [`Blueprint`].  
+/// tries to catch when analysing your [`Blueprint`].
 pub enum Lint {
     /// You registered a component that's never used in the generated
     /// server SDK code.
