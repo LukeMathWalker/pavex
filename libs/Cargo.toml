@@ -83,8 +83,8 @@ remove_dir_all = "0.8.4"
 reqwest = { version = "0.12", default-features = false, features = [
     "rustls-tls",
 ] }
-reqwest-middleware = "0.3.3"
-reqwest-retry = "0.6.1"
+reqwest-middleware = "0.4"
+reqwest-retry = "0.7.0"
 reqwest-tracing = "0.5.4"
 ring = "0.17.8"
 ron = "0.8"
