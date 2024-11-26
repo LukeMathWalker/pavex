@@ -20,10 +20,10 @@ vergen-gitcl = { workspace = true }
 anyhow = { workspace = true }
 
 [dependencies]
-pavexc_cli_client = { path = "../pavexc_cli_client", version = "0.1.56" }
-pavex_cli_deps = { path = "../pavex_cli_deps", version = "0.1.56" }
+pavexc_cli_client = { path = "../pavexc_cli_client", version = "0.1.57" }
+pavex_cli_deps = { path = "../pavex_cli_deps", version = "0.1.57" }
 clap = { workspace = true, features = ["derive", "env"] }
-pavex_miette = { path = "../pavex_miette", version = "0.1.56" }
+pavex_miette = { path = "../pavex_miette", version = "0.1.57" }
 miette = { workspace = true }
 fs-err = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["fmt", "env-filter"] }
