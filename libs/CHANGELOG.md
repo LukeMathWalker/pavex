@@ -8,9 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.55](https://github.com/LukeMathWalker/pavex/compare/0.1.54...0.1.55) - 2024-11-26
 
-### Other
+### Added
 
-- update Cargo.toml dependencies
+- Pavex now supports domain guards!
+  You can restrict routes to specific domains and/or serve different websites from the same Pavex application.
+  Check out [the relevant guide](https://pavex.dev/docs/guide/routing/domain_guards/) for more information.
+- There is now a [dedicated guide](https://pavex.dev/docs/guide/routing/path_prefixes/) explaining how common
+  path prefixes work.
+
+### Breaking ⚠️
+
+- `Blueprint::nest_at` has been removed. You should now use `Blueprint::prefix("/my_prefix").nest(nested_bp)`
+  as a replacement.
 
 ## [0.1.54](https://github.com/LukeMathWalker/pavex/compare/0.1.53...0.1.54) - 2024-11-12
 
