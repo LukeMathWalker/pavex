@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.55](https://github.com/LukeMathWalker/pavex/compare/0.1.54...0.1.55) - 2024-11-26
+
+### Other
+
+- update Cargo.toml dependencies
+
 ## [0.1.54](https://github.com/LukeMathWalker/pavex/compare/0.1.53...0.1.54) - 2024-11-12
 
 ### Added
