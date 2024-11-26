@@ -1,6 +1,6 @@
 # Path prefixes
 
-You can use [`Blueprint::prefix`] to group multiple routes under a common path prefix.
+You can use [`Blueprint::prefix`][Blueprint::prefix] to group multiple routes under a common path prefix.
 
 --8<-- "doc_examples/guide/routing/path_prefixes/project-intro.snap"
 
@@ -49,4 +49,4 @@ your route path if that's what you want:
 
 --8<-- "doc_examples/guide/routing/path_prefixes/project-consecutive.snap"
 
-[`Blueprint::prefix`]: ../../api_reference/pavex/blueprint/struct.Blueprint.html#method.prefix
+[Blueprint::prefix]: ../../api_reference/pavex/blueprint/struct.Blueprint.html#method.prefix

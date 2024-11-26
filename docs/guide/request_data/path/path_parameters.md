@@ -116,7 +116,8 @@ check the route's path pattern to understand what each entry represents.
 use pavex::request::path::PathParams;
 
 // This is self-documenting ✅
-// No need to check the route's path pattern to understand what each field represents.
+// No need to check the route's path pattern to understand 
+// what each field represents.
 #[PathParams]
 pub struct Room {
     home_id: u32,
