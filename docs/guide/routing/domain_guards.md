@@ -35,8 +35,8 @@ You can use the `*` character to craft a **catch-all domain parameter**. It matc
 
 --8<-- "doc_examples/guide/routing/domain_guards/project-catch_all.snap"
 
-`{*any}` matches everything **before** `pavex.dev`, even if it contains `.` separators.  
-`{*any}.pavex.dev` matches, for example, `api.pavex.dev` and `ui.pavex.dev`, but it also matches `admin.api.pavex.dev`.
+`{*any}` matches everything **before** `example.dev`, even if it contains `.` separators.  
+`{*any}.example.dev` matches, for example, `api.example.dev` and `ui.example.dev`, but it also matches `admin.api.example.dev`.
 
 To avoid ambiguity,
 you can have **at most one catch-all parameter in a domain guard** and it must be located **at the very beginning of the domain**.
