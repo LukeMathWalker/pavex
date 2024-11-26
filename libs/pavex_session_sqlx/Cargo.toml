@@ -1,6 +1,8 @@
 [package]
 name = "pavex_session_sqlx"
 edition.workspace = true
+description = "Session stores for `pavex-session` backed by `sqlx`"
+keywords = ["pavex", "sessions", "HTTP", "auth", "sqlx"]
 repository.workspace = true
 homepage.workspace = true
 license.workspace = true
@@ -24,5 +26,5 @@ anyhow = { workspace = true }
 sqlx = { workspace = true, features = ["uuid", "time"] }
 
 [dev-dependencies]
-pavex_session_sqlx = { path = ".", version = "0.1.55", features = ["postgres"] }
-pavex_tracing = { version = "0.1.55", path = "../pavex_tracing" }
+pavex_session_sqlx = { path = ".", features = ["postgres"] }
+pavex_tracing = { path = "../pavex_tracing" }
