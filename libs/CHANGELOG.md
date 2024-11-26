@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Breaking ⚠️
 
 - `Blueprint::nest_at` has been removed. Use `Blueprint::prefix("/my_prefix").nest(nested_bp)` as a replacement.
+- The syntax for path parameters has changed. Instead of `:param_name`, use `{param_name}`.
 
 ## [0.1.53](https://github.com/LukeMathWalker/pavex/compare/0.1.52...0.1.53) - 2024-11-12
 
