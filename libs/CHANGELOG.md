@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.1.55](https://github.com/LukeMathWalker/pavex/compare/0.1.54...0.1.55) - 2024-11-26
+## [0.1.54](https://github.com/LukeMathWalker/pavex/compare/0.1.53...0.1.54) - 2024-11-26
 
 ### Added
 
@@ -18,10 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Breaking ⚠️
 
-- `Blueprint::nest_at` has been removed. You should now use `Blueprint::prefix("/my_prefix").nest(nested_bp)`
-  as a replacement.
+- `Blueprint::nest_at` has been removed. Use `Blueprint::prefix("/my_prefix").nest(nested_bp)` as a replacement.
 
-## [0.1.54](https://github.com/LukeMathWalker/pavex/compare/0.1.53...0.1.54) - 2024-11-12
+## [0.1.53](https://github.com/LukeMathWalker/pavex/compare/0.1.52...0.1.53) - 2024-11-12
 
 ### Added
 
