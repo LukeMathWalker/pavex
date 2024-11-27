@@ -1226,6 +1226,28 @@ pub fn compute_package_id_for_crate_id(
         name: &str,
         version: Option<&Version>,
     ) -> Option<PackageId> {
+        match _find_transitive_dependency(package_graph, search_root, name, version) {
+            Ok(v) => v,
+            Err(e) => {
+                tracing::warn!(
+                    error.message = %e,
+                    error.details = ?e,
+                    external_crate.name = %name,
+                    external_crate.version = ?version,
+                    search_root = %search_root.repr(),
+                    "Failed to find transitive dependency"
+                );
+                None
+            }
+        }
+    }
+
+    fn _find_transitive_dependency(
+        package_graph: &PackageGraph,
+        search_root: &PackageId,
+        name: &str,
+        version: Option<&Version>,
+    ) -> Result<Option<PackageId>, anyhow::Error> {
         let transitive_dependencies = package_graph
             .query_forward([search_root])
             .with_context(|| {
@@ -1233,8 +1255,7 @@ pub fn compute_package_id_for_crate_id(
                     "`{}` doesn't appear in the package graph for the current workspace",
                     search_root.repr()
                 )
-            })
-            .unwrap()
+            })?
             .resolve();
         let expected_link_name = utils::normalize_crate_name(name);
         let package_candidates: IndexSet<_> = transitive_dependencies
@@ -1250,13 +1271,13 @@ pub fn compute_package_id_for_crate_id(
             })
             .collect();
         if package_candidates.is_empty() {
-            panic!(
+            anyhow::bail!(
                 "I could not find any crate named `{expected_link_name}` \
                 among the dependencies of {search_root}",
             )
         }
         if package_candidates.len() == 1 {
-            return Some(package_candidates.first().unwrap().id.to_owned());
+            return Ok(Some(package_candidates.first().unwrap().id.to_owned()));
         }
 
         if let Some(expected_link_version) = version {
@@ -1271,7 +1292,7 @@ pub fn compute_package_id_for_crate_id(
                     .map(|l| format!("- {}@{}", l.name, l.version))
                     .collect::<Vec<_>>()
                     .join("\n");
-                panic!("Searching for `{expected_link_name}` among the transitive dependencies \
+                anyhow::bail!("Searching for `{expected_link_name}` among the transitive dependencies \
                     of `{search_root}` led to multiple results:\n{candidates}\n\
                     When the version ({expected_link_version}) was added to the search filters, \
                     no results come up. Could the inferred version be incorrect?\n\
@@ -1280,11 +1301,11 @@ pub fn compute_package_id_for_crate_id(
                 )
             }
             if filtered_candidates.len() == 1 {
-                return Some(filtered_candidates.first().unwrap().id.to_owned());
+                return Ok(Some(filtered_candidates.first().unwrap().id.to_owned()));
             }
         }
 
-        None
+        Ok(None)
     }
 
     if crate_id == 0 {
