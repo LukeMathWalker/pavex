@@ -12,11 +12,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Pavex won't panic if it can't find a transitive dependency in the package graph. It'll log details about the failed searches.
 
-### Other
-
-- Disable workspace hack before a release
-- Re-enable workspace hack after a release
-
 ## [0.1.54](https://github.com/LukeMathWalker/pavex/compare/0.1.53...0.1.54) - 2024-11-26
 
 ### Added
