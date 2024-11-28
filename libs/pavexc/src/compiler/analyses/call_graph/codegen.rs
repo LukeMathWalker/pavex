@@ -16,9 +16,7 @@ use quote::{quote, ToTokens};
 use syn::ItemFn;
 
 use crate::compiler::analyses::call_graph::core_graph::{CallGraphEdgeMetadata, RawCallGraph};
-use crate::compiler::analyses::call_graph::{
-    CallGraphNode, NumberOfAllowedInvocations, OrderedCallGraph,
-};
+use crate::compiler::analyses::call_graph::{CallGraphNode, OrderedCallGraph};
 use crate::compiler::analyses::components::ComponentDb;
 use crate::compiler::analyses::components::HydratedComponent;
 use crate::compiler::analyses::computations::ComputationDb;
@@ -165,6 +163,7 @@ impl<'a> BasicBlockVisitor<'a> {
     pub fn move_to(&mut self, start: NodeIndex) {
         self.start = start;
         self.to_be_visited.clear();
+        self.discovered.clear();
         self.to_be_visited.push(Reverse(UnvisitedNode {
             node: start,
             position: self.node_id2position[&start],
@@ -283,7 +282,7 @@ fn _codegen_callable_closure_body(
     // no `MatchBranching` predecessors.
     // This ensures that we don't have to look-ahead when generating code for its predecessors.
     let traversal_start_index =
-        find_match_branching_ancestor(terminal_index, call_graph, &dfs.finished)
+        find_match_branching_ancestor(terminal_index, call_graph, &dfs.finished, &node_id2position)
             // If there are no `MatchBranching` nodes in the ancestors sub-graph, we start from the
             // the terminal node.
             .unwrap_or(terminal_index);
@@ -291,14 +290,10 @@ fn _codegen_callable_closure_body(
     while let Some(current_index) = dfs.next(Reversed(call_graph)) {
         let current_node = &call_graph[current_index];
         match current_node {
-            CallGraphNode::Compute {
-                component_id,
-                n_allowed_invocations,
-            } => {
-                let computation = component_db
-                    .hydrated_component(*component_id, computation_db)
-                    .computation();
-                match computation {
+            CallGraphNode::Compute { component_id, .. } => {
+                let component = component_db.hydrated_component(*component_id, computation_db);
+                let computation = component.computation();
+                match &computation {
                     Computation::Callable(callable) => {
                         let block = codegen_utils::codegen_call_block(
                             get_node_type_inputs(
@@ -317,8 +312,9 @@ fn _codegen_callable_closure_body(
                         // This is the last node!
                         // We don't need to assign its value to a variable.
                         if current_index == traversal_start_index
-                            // Or this is a single-use value, so no point in binding it to a variable.
-                            || n_allowed_invocations == &NumberOfAllowedInvocations::Multiple
+                            ||
+                            // Or if the output type is `None`, we don't need to assign its value to a variable.
+                            computation.output_type().is_none()
                         {
                             blocks.insert(current_index, block);
                         } else {
@@ -488,8 +484,10 @@ fn find_match_branching_ancestor(
     start_index: NodeIndex,
     call_graph: &RawCallGraph,
     ignore_set: &FixedBitSet,
+    node_id2position: &HashMap<NodeIndex, u16>,
 ) -> Option<NodeIndex> {
     let mut ancestors = DfsPostOrder::new(Reversed(call_graph), start_index);
+    let mut candidates = Vec::new();
     while let Some(ancestor_index) = ancestors.next(Reversed(call_graph)) {
         if ancestor_index == start_index {
             continue;
@@ -498,10 +496,16 @@ fn find_match_branching_ancestor(
             continue;
         }
         if let CallGraphNode::MatchBranching { .. } = &call_graph[ancestor_index] {
-            return Some(ancestor_index);
+            candidates.push(ancestor_index);
         }
     }
-    None
+    if candidates.is_empty() {
+        None
+    } else {
+        let (_, lowest, _) =
+            candidates.select_nth_unstable_by_key(0, |index| node_id2position[index]);
+        Some(*lowest)
+    }
 }
 
 /// Return the direct dependencies of a node in the call graph.
