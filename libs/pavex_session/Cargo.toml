@@ -8,10 +8,10 @@ repository.workspace = true
 license.workspace = true
 
 [dependencies]
-pavex = { version = "0.1.57", path = "../pavex", default-features = false, features = [
+pavex = { version = "0.1.58", path = "../pavex", default-features = false, features = [
     "cookie",
 ] }
-pavex_tracing = { version = "0.1.57", path = "../pavex_tracing" }
+pavex_tracing = { version = "0.1.58", path = "../pavex_tracing" }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 anyhow = { workspace = true }
@@ -22,4 +22,3 @@ time = { workspace = true, features = ["std"] }
 tokio = { workspace = true, features = ["rt"] }
 async-trait = { workspace = true }
 thiserror = { workspace = true }
-px_workspace_hack = { version = "0.1", path = "../px_workspace_hack" }

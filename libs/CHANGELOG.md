@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.58](https://github.com/LukeMathWalker/pavex/compare/0.1.57...0.1.58) - 2024-11-29
+
+### Fixed
+
+- Ensure the code-generation phase respects the ordering determined by the borrow-checker analysis phase
+
 ## [0.1.57](https://github.com/LukeMathWalker/pavex/compare/0.1.56...0.1.57) - 2024-11-27
 
 ### Fixed
