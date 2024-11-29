@@ -103,11 +103,9 @@ pub mod route_0 {
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
     }
     async fn handler(v0: &app::LoggerFactory) -> pavex::response::Response {
-        let v1 = app::Streamer::new();
-        let v3 = {
-            let v2 = app::LoggerFactory::logger(v0);
-            app::Streamer::stream_file(&v1, v2)
-        };
+        let v1 = app::LoggerFactory::logger(v0);
+        let v2 = app::Streamer::new();
+        let v3 = app::Streamer::stream_file(&v2, v1);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
     }
     struct Next0<'a, T>

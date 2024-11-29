@@ -121,20 +121,16 @@ pub mod route_0 {
             Ok(ok) => ok,
             Err(v3) => {
                 return {
-                    let v5 = {
-                        let v4 = app::logger();
-                        app::handle_extract_path_error(&v3, v4)
-                    };
+                    let v4 = app::logger();
+                    let v5 = app::handle_extract_path_error(&v3, v4);
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
                         v5,
                     )
                 };
             }
         };
-        let v5 = {
-            let v4 = app::logger();
-            app::stream_file(v3, v4, v0)
-        };
+        let v4 = app::logger();
+        let v5 = app::stream_file(v3, v4, v0);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v5)
     }
     struct Next0<T>

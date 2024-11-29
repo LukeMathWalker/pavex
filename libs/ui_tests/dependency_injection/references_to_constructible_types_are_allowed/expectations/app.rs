@@ -101,11 +101,9 @@ pub mod route_0 {
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
     }
     async fn handler(v0: &app::Singleton) -> pavex::response::Response {
-        let v1 = app::request_scoped();
-        let v3 = {
-            let v2 = app::transient();
-            app::stream_file(v0, &v1, &v2)
-        };
+        let v1 = app::transient();
+        let v2 = app::request_scoped();
+        let v3 = app::stream_file(v0, &v2, &v1);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
     }
     struct Next0<'a, T>

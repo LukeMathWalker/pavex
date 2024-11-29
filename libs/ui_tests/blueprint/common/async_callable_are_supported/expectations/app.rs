@@ -116,11 +116,9 @@ pub mod route_0 {
         v0: pavex::request::RequestHead,
         v1: &app::HttpClient,
     ) -> pavex::response::Response {
-        let v2 = app::extract_path(v0).await;
-        let v4 = {
-            let v3 = app::logger().await;
-            app::stream_file(v2, v3, v1).await
-        };
+        let v2 = app::logger().await;
+        let v3 = app::extract_path(v0).await;
+        let v4 = app::stream_file(v3, v2, v1).await;
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
     }
     struct Next0<'a, T>

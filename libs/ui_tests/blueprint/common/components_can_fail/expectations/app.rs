@@ -184,23 +184,13 @@ pub mod route_0 {
         v0: pavex::request::RequestHead,
         v1: &app::HttpClient,
     ) -> pavex::response::Response {
-        let v2 = match app::logger() {
+        let v2 = app::extract_path(v0);
+        let v3 = match v2 {
             Ok(ok) => ok,
-            Err(v2) => {
+            Err(v3) => {
                 return {
-                    let v3 = app::handle_logger_error(&v2);
-                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v3,
-                    )
-                };
-            }
-        };
-        let v3 = app::extract_path(v0);
-        let v4 = match v3 {
-            Ok(ok) => ok,
-            Err(v4) => {
-                return {
-                    let v5 = match app::logger() {
+                    let v4 = app::logger();
+                    let v5 = match v4 {
                         Ok(ok) => ok,
                         Err(v5) => {
                             return {
@@ -211,26 +201,38 @@ pub mod route_0 {
                             };
                         }
                     };
-                    let v6 = app::handle_extract_path_error(&v4, v5);
+                    let v6 = app::handle_extract_path_error(&v3, v5);
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
                         v6,
                     )
                 };
             }
         };
-        let v5 = app::request_handler(v4, v2, v1);
-        let v6 = match v5 {
+        let v4 = app::logger();
+        let v5 = match v4 {
             Ok(ok) => ok,
-            Err(v6) => {
+            Err(v5) => {
                 return {
-                    let v7 = app::handle_handler_error(&v6);
+                    let v6 = app::handle_logger_error(&v5);
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v7,
+                        v6,
                     )
                 };
             }
         };
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v6)
+        let v6 = app::request_handler(v3, v5, v1);
+        let v7 = match v6 {
+            Ok(ok) => ok,
+            Err(v7) => {
+                return {
+                    let v8 = app::handle_handler_error(&v7);
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v8,
+                    )
+                };
+            }
+        };
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v7)
     }
     async fn post_processing_0(
         v0: pavex::response::Response,

@@ -99,10 +99,8 @@ pub mod route_0 {
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v3)
     }
     async fn handler(v0: &app::A) -> pavex::response::Response {
-        let v2 = {
-            let v1 = app::Generic::new(v0);
-            app::handler::<app::Generic>(v1)
-        };
+        let v1 = app::Generic::new(v0);
+        let v2 = app::handler::<app::Generic>(v1);
         <http::StatusCode as pavex::response::IntoResponse>::into_response(v2)
     }
     struct Next0<'a, T>

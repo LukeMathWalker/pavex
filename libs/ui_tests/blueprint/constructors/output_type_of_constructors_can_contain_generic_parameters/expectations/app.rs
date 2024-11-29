@@ -96,15 +96,14 @@ pub mod route_0 {
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
     }
     async fn handler() -> pavex::response::Response {
-        let v0 = app::fallible_with_generic_error2();
+        let v0 = app::fallible();
         let v1 = match v0 {
             Ok(ok) => ok,
             Err(v1) => {
                 return {
-                    let v2 = app::json();
-                    let v3 = app::doubly_generic_error_handler(&v1, &v2);
+                    let v2 = app::error_handler(&v1);
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v3,
+                        v2,
                     )
                 };
             }
@@ -133,14 +132,15 @@ pub mod route_0 {
                 };
             }
         };
-        let v6 = app::fallible();
+        let v6 = app::fallible_with_generic_error2();
         let v7 = match v6 {
             Ok(ok) => ok,
             Err(v7) => {
                 return {
-                    let v8 = app::error_handler(&v7);
+                    let v8 = app::json();
+                    let v9 = app::doubly_generic_error_handler(&v7, &v8);
                     <pavex::response::Response as pavex::response::IntoResponse>::into_response(
-                        v8,
+                        v9,
                     )
                 };
             }
@@ -148,7 +148,7 @@ pub mod route_0 {
         let v8 = app::json();
         let v9 = app::json();
         let v10 = app::json();
-        let v11 = app::handler(v8, v10, &v9, v7, v5, &v3, &v1);
+        let v11 = app::handler(v8, v10, &v9, v1, v3, &v5, &v7);
         <pavex::response::Response as pavex::response::IntoResponse>::into_response(v11)
     }
     struct Next0<T>
