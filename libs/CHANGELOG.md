@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Ensure codegen respects the ordering determined to satisfy the borrow-checker
+- Ensure the code-generation phase respects the ordering determined by the borrow-checker analysis phase
 
 ### Other
 
