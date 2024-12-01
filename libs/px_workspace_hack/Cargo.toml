@@ -16,8 +16,130 @@ license.workspace = true
 # are managed by hakari.
 
 ### BEGIN HAKARI SECTION
+[dependencies]
+ahash = { version = "0.8" }
+aho-corasick = { version = "1" }
+base64 = { version = "0.22" }
+bitflags = { version = "2", default-features = false, features = ["serde"] }
+byteorder = { version = "1" }
+clap = { version = "4", features = ["derive", "env"] }
+clap_builder = { version = "4", default-features = false, features = ["color", "env", "help", "std", "suggestions", "usage"] }
+console = { version = "0.15" }
+crossbeam-utils = { version = "0.8" }
+crypto-common = { version = "0.1", default-features = false, features = ["getrandom", "std"] }
+deranged = { version = "0.3", default-features = false, features = ["powerfmt", "serde", "std"] }
+digest = { version = "0.10", features = ["mac", "std"] }
+either = { version = "1", features = ["serde"] }
+fixedbitset = { version = "0.4" }
+form_urlencoded = { version = "1" }
+futures-channel = { version = "0.3", features = ["sink"] }
+futures-core = { version = "0.3" }
+futures-io = { version = "0.3" }
+futures-sink = { version = "0.3" }
+futures-util = { version = "0.3", features = ["channel", "io", "sink"] }
+getrandom = { version = "0.2", default-features = false, features = ["std"] }
+hashbrown = { version = "0.14" }
+hmac = { version = "0.12", default-features = false, features = ["reset"] }
+idna = { version = "1", default-features = false, features = ["compiled_data", "std"] }
+indexmap = { version = "2", features = ["serde"] }
+log = { version = "0.4", default-features = false, features = ["std"] }
+memchr = { version = "2" }
+miette = { version = "7", features = ["fancy"] }
+num-traits = { version = "0.2", features = ["i128"] }
+percent-encoding = { version = "2" }
+petgraph = { version = "0.6", default-features = false, features = ["graphmap", "stable_graph"] }
+proc-macro2 = { version = "1", features = ["span-locations"] }
+quote = { version = "1" }
+rand = { version = "0.8" }
+regex = { version = "1" }
+regex-automata = { version = "0.4", default-features = false, features = ["dfa-onepass", "hybrid", "meta", "nfa", "perf", "unicode"] }
+regex-syntax = { version = "0.8" }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+serde = { version = "1", features = ["alloc", "derive", "rc"] }
+serde_json = { version = "1", features = ["raw_value", "unbounded_depth"] }
+sha2 = { version = "0.10" }
+smallvec = { version = "1", default-features = false, features = ["const_new", "serde"] }
+sqlx = { version = "0.8", features = ["postgres", "time", "uuid"] }
+sqlx-core = { version = "0.8", features = ["any", "json", "migrate", "offline", "time", "uuid"] }
+sqlx-postgres = { version = "0.8", default-features = false, features = ["any", "json", "migrate", "offline", "time", "uuid"] }
+stable_deref_trait = { version = "1" }
+subtle = { version = "2" }
+syn = { version = "2", features = ["extra-traits", "fold", "full", "visit", "visit-mut"] }
+time = { version = "0.3", features = ["formatting", "local-offset", "macros", "parsing", "serde"] }
+tokio = { version = "1", features = ["fs", "io-util", "macros", "net", "rt", "sync", "time"] }
+toml = { version = "0.8", features = ["preserve_order"] }
+toml_edit = { version = "0.22", features = ["serde"] }
+tracing = { version = "0.1", features = ["log"] }
+tracing-core = { version = "0.1" }
+tracing-log = { version = "0.2" }
+url = { version = "2" }
+uuid = { version = "1", features = ["fast-rng", "serde", "v4", "v7"] }
+zerocopy = { version = "0.7", features = ["derive", "simd"] }
+zeroize = { version = "1", features = ["zeroize_derive"] }
 
-# Disabled by running `cargo hakari disable`.
-# To re-enable, run:
-#     cargo hakari generate
+[build-dependencies]
+ahash = { version = "0.8" }
+aho-corasick = { version = "1" }
+base64 = { version = "0.22" }
+bitflags = { version = "2", default-features = false, features = ["serde"] }
+byteorder = { version = "1" }
+cc = { version = "1", default-features = false, features = ["parallel"] }
+clap = { version = "4", features = ["derive", "env"] }
+clap_builder = { version = "4", default-features = false, features = ["color", "env", "help", "std", "suggestions", "usage"] }
+console = { version = "0.15" }
+crossbeam-utils = { version = "0.8" }
+crypto-common = { version = "0.1", default-features = false, features = ["getrandom", "std"] }
+deranged = { version = "0.3", default-features = false, features = ["powerfmt", "serde", "std"] }
+digest = { version = "0.10", features = ["mac", "std"] }
+either = { version = "1", features = ["serde"] }
+fixedbitset = { version = "0.4" }
+form_urlencoded = { version = "1" }
+futures-channel = { version = "0.3", features = ["sink"] }
+futures-core = { version = "0.3" }
+futures-io = { version = "0.3" }
+futures-sink = { version = "0.3" }
+futures-util = { version = "0.3", features = ["channel", "io", "sink"] }
+getrandom = { version = "0.2", default-features = false, features = ["std"] }
+hashbrown = { version = "0.14" }
+hmac = { version = "0.12", default-features = false, features = ["reset"] }
+idna = { version = "1", default-features = false, features = ["compiled_data", "std"] }
+indexmap = { version = "2", features = ["serde"] }
+log = { version = "0.4", default-features = false, features = ["std"] }
+memchr = { version = "2" }
+miette = { version = "7", features = ["fancy"] }
+num-traits = { version = "0.2", features = ["i128"] }
+percent-encoding = { version = "2" }
+petgraph = { version = "0.6", default-features = false, features = ["graphmap", "stable_graph"] }
+proc-macro2 = { version = "1", features = ["span-locations"] }
+quote = { version = "1" }
+rand = { version = "0.8" }
+regex = { version = "1" }
+regex-automata = { version = "0.4", default-features = false, features = ["dfa-onepass", "hybrid", "meta", "nfa", "perf", "unicode"] }
+regex-syntax = { version = "0.8" }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+serde = { version = "1", features = ["alloc", "derive", "rc"] }
+serde_json = { version = "1", features = ["raw_value", "unbounded_depth"] }
+sha2 = { version = "0.10" }
+smallvec = { version = "1", default-features = false, features = ["const_new", "serde"] }
+sqlx = { version = "0.8", features = ["postgres", "time", "uuid"] }
+sqlx-core = { version = "0.8", features = ["any", "json", "migrate", "offline", "time", "uuid"] }
+sqlx-macros = { version = "0.8", features = ["derive", "json", "macros", "migrate", "postgres", "time", "uuid"] }
+sqlx-macros-core = { version = "0.8", features = ["derive", "json", "macros", "migrate", "postgres", "time", "uuid"] }
+sqlx-postgres = { version = "0.8", default-features = false, features = ["any", "json", "migrate", "offline", "time", "uuid"] }
+stable_deref_trait = { version = "1" }
+subtle = { version = "2" }
+syn = { version = "2", features = ["extra-traits", "fold", "full", "visit", "visit-mut"] }
+time = { version = "0.3", features = ["formatting", "local-offset", "macros", "parsing", "serde"] }
+time-macros = { version = "0.2", default-features = false, features = ["formatting", "parsing", "serde"] }
+tokio = { version = "1", features = ["fs", "io-util", "macros", "net", "rt", "sync", "time"] }
+toml = { version = "0.8", features = ["preserve_order"] }
+toml_edit = { version = "0.22", features = ["serde"] }
+tracing = { version = "0.1", features = ["log"] }
+tracing-core = { version = "0.1" }
+tracing-log = { version = "0.2" }
+url = { version = "2" }
+uuid = { version = "1", features = ["fast-rng", "serde", "v4", "v7"] }
+zerocopy = { version = "0.7", features = ["derive", "simd"] }
+zeroize = { version = "1", features = ["zeroize_derive"] }
+
 ### END HAKARI SECTION
