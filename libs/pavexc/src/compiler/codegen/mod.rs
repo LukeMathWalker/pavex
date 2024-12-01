@@ -336,6 +336,14 @@ where
             let version = metadata.version();
             let mut dependency_details = DependencyDetail {
                 version: Some(version.to_string()),
+                // We disable default features to avoid enabling by mistake
+                // features that were explicitly disabled in the app manifest.
+                // This is a conservative choice, but it's better to be safe than sorry.
+                // We can use a more fine-grained approach in the future if needed, e.g. by
+                // analyzing which features are actually used in the code.
+                // Until then, we rely on feature unification to ensure everything works as expected
+                // in the final binary.
+                default_features: Some(false),
                 ..DependencyDetail::default()
             };
             if needs_rename {
