@@ -11,4 +11,3 @@ license.workspace = true
 anyhow = { workspace = true }
 pavex = { path = "../pavex", version = "0.1.58" }
 thiserror = { workspace = true }
-px_workspace_hack = { version = "0.1", path = "../px_workspace_hack" }

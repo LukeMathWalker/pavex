@@ -10,4 +10,3 @@ license.workspace = true
 [dependencies]
 serde = { workspace = true, features = ["derive"] }
 pavex_reflection = { path = "../pavex_reflection", version = "=0.1.58" }
-px_workspace_hack = { version = "0.1", path = "../px_workspace_hack" }
