@@ -12,11 +12,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Disable default features for server SDK's dependencies ([#386](https://github.com/LukeMathWalker/pavex/pull/386))
 
-### Other
-
-- Disable workspace hack before a release
-- Re-enable workspace hack after a release ([#385](https://github.com/LukeMathWalker/pavex/pull/385))
-
 ## [0.1.58](https://github.com/LukeMathWalker/pavex/compare/0.1.57...0.1.58) - 2024-11-29
 
 ### Fixed
