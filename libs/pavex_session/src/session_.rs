@@ -885,6 +885,7 @@ async fn force_load(session: &Session<'_>) -> Result<(), LoadError> {
         return Ok(());
     };
     let record = session.store.load(&session_id).await?;
+    let mut must_invalidate = false;
     let server_state = match record {
         Some(r) => ServerState::Unchanged {
             state: r.state,
@@ -895,13 +896,7 @@ async fn force_load(session: &Session<'_>) -> Result<(), LoadError> {
                 // This can happen in some edge cases—e.g. the state expired between
                 // the time the server received the request and the time it tried to load
                 // the state.
-                tracing::warn!(
-                    "There is no server-side state for the current session, \
-                    even though one was expected. Invalidating the current session."
-                );
-                // Careful!
-                // We should also mark the server-side state for deletion,
-                session.invalidated.invalidate();
+                must_invalidate = true;
                 ServerState::MarkedForDeletion
             } else {
                 ServerState::DoesNotExist
@@ -913,6 +908,19 @@ async fn force_load(session: &Session<'_>) -> Result<(), LoadError> {
             "There were multiple concurrent attempts to load the server-side state for the same session.
             The state loaded by this one will be discarded."
         );
+    } else {
+        // We invalidate the session here, rather than doing above, because we want to make
+        // sure we succeeded in setting the state.
+        // If someone else beat us to it, we want to let them make a decision
+        // based on the state they loaded.
+        // Race conditions all the way down.
+        if must_invalidate {
+            tracing::warn!(
+                "There is no server-side state for the current session, \
+                even though one was expected. Invalidating the current session."
+            );
+            session.invalidated.invalidate();
+        }
     }
     Ok(())
 }
