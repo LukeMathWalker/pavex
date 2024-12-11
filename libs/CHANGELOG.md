@@ -8,12 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.60](https://github.com/LukeMathWalker/pavex/compare/0.1.59...0.1.60) - 2024-12-11
 
+### Features
+
+- Track which field failed to be deserialized when working with query parameters
+
 ### Other
 
-- Disable workspace hack before a release
-- Rework `pavex_session` ([#389](https://github.com/LukeMathWalker/pavex/pull/389))
-- Re-enable workspace hack after a release ([#388](https://github.com/LukeMathWalker/pavex/pull/388))
-- update Cargo.lock dependencies
+- [Breaking] Rework `pavex_session::Session` to avoid requiring a `&mut` reference when performing read operations ([#389](https://github.com/LukeMathWalker/pavex/pull/389))
 
 ## [0.1.59](https://github.com/LukeMathWalker/pavex/compare/0.1.58...0.1.59) - 2024-12-01
 
