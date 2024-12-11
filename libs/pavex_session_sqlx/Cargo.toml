@@ -16,7 +16,7 @@ postgres = ["sqlx/postgres"]
 all-features = true
 
 [dependencies]
-pavex_session = { version = "0.1.59", path = "../pavex_session" }
+pavex_session = { version = "0.1.60", path = "../pavex_session" }
 time = { workspace = true, features = ["std"] }
 serde_json = { workspace = true }
 async-trait = { workspace = true }
