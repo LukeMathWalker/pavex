@@ -49,6 +49,7 @@ percent-encoding = { workspace = true }
 
 # Query parameters
 serde_html_form = { workspace = true }
+form_urlencoded = { workspace = true }
 
 # Json body extractor
 serde_json = { workspace = true }

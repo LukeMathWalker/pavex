@@ -15,7 +15,7 @@ workspace = true
 
 [dependencies.http_01]
 package = "http"
-version = "0.1"
+version = "0.1.2"
 
 [dependencies.http_02]
 package = "http"

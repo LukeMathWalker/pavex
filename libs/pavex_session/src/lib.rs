@@ -59,7 +59,9 @@ pub mod store {
 pub mod state {
     //! Types to manipulate either the client-side or the server-side session state.
     pub use crate::session_::errors;
-    pub use crate::session_::{ClientSessionState, ClientSessionStateMut, ServerSessionState};
+    pub use crate::session_::{
+        ClientSessionState, ClientSessionStateMut, ServerSessionState, ServerSessionStateMut,
+    };
 }
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]

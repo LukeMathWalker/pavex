@@ -37,11 +37,11 @@ impl ExtractQueryParamsError {
 ///
 /// [`QueryParams<T>`]: crate::request::query::QueryParams
 pub struct QueryDeserializationError {
-    inner: serde_html_form::de::Error,
+    inner: serde_path_to_error::Error<serde_html_form::de::Error>,
 }
 
 impl QueryDeserializationError {
-    pub(super) fn new(e: serde_html_form::de::Error) -> Self {
+    pub(super) fn new(e: serde_path_to_error::Error<serde_html_form::de::Error>) -> Self {
         Self { inner: e }
     }
 }

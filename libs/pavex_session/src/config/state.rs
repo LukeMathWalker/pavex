@@ -154,7 +154,7 @@ impl<'de> serde::Deserialize<'de> for TtlExtensionThreshold {
 
 impl TtlExtensionThreshold {
     pub fn new(value: f32) -> Result<Self, InvalidTtlExtensionThreshold> {
-        if value < 0.0 || value > 1.0 {
+        if !(0.0..=1.0).contains(&value) {
             Err(InvalidTtlExtensionThreshold(value))
         } else {
             Ok(Self(value))
