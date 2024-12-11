@@ -105,6 +105,7 @@ similar = "2.6.0"
 smallvec = "1"
 sqlx = { version = "0.8" }
 socket2 = "0.5.7"
+static_assertions = "1.1.0"
 supports-color = "3.0.1"
 supports-hyperlinks = "3.0.0"
 supports-unicode = "3.0.0"

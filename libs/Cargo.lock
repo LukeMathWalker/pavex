@@ -2522,6 +2522,7 @@ dependencies = [
  "px_workspace_hack",
  "serde",
  "serde_json",
+ "static_assertions",
  "thiserror 2.0.3",
  "time",
  "tokio",
