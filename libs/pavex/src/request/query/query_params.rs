@@ -77,7 +77,8 @@ fn parse<'a, T>(s: &'a str) -> Result<T, ExtractQueryParamsError>
 where
     T: serde::Deserialize<'a>,
 {
-    serde_html_form::from_str(s)
+    let deserializer = serde_html_form::Deserializer::new(form_urlencoded::parse(s.as_bytes()));
+    serde_path_to_error::deserialize(deserializer)
         .map_err(QueryDeserializationError::new)
         .map_err(ExtractQueryParamsError::QueryDeserializationError)
 }
