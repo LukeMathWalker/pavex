@@ -16,9 +16,9 @@ impl IncomingSession {
     /// Extract a session cookie from the incoming request, if it exists.
     ///
     /// If the cookie is not found, or if the cookie is invalid, this method will return `None`.
-    pub fn extract<'server, 'request, 'cookie>(
-        cookies: &'request RequestCookies<'cookie>,
-        config: &'server SessionCookieConfig,
+    pub fn extract(
+        cookies: &RequestCookies<'_>,
+        config: &SessionCookieConfig,
     ) -> Option<Self> {
         let cookie = cookies.get(&config.name)?;
         match serde_json::from_str::<WireClientState>(cookie.value()) {

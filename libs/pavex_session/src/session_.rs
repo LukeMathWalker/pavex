@@ -164,12 +164,12 @@ impl<'store> Session<'store> {
     }
 
     /// Read values from the client-side state attached to this session.
-    pub fn client<'session>(&'session self) -> ClientSessionState<'session> {
+    pub fn client(&self) -> ClientSessionState<'_> {
         ClientSessionState(&self.client_state, &self.invalidated)
     }
 
     /// Read or mutate the client-side state attached to this session.
-    pub fn client_mut<'session>(&'session mut self) -> ClientSessionStateMut<'session> {
+    pub fn client_mut(&mut self) -> ClientSessionStateMut<'_> {
         ClientSessionStateMut(&mut self.client_state, &self.invalidated)
     }
 
@@ -908,7 +908,7 @@ async fn force_load(session: &Session<'_>) -> Result<(), LoadError> {
             }
         }
     };
-    if let Err(_) = session.server_state.set(server_state) {
+    if session.server_state.set(server_state).is_err() {
         tracing::warn!(
             "There were multiple concurrent attempts to load the server-side state for the same session.
             The state loaded by this one will be discarded."
