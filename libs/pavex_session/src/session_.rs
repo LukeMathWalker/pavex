@@ -878,7 +878,7 @@ fn new_cell_with<T>(value: Option<T>) -> OnceCell<T> {
 async fn force_load(session: &Session<'_>) -> Result<(), LoadError> {
     // All other cases either imply that we've already loaded the
     // server state or that we don't need to (e.g. delete).
-    if session.server_state.get().is_none() {
+    if session.server_state.get().is_some() {
         return Ok(());
     }
     let Some(session_id) = session.id.old_id() else {
