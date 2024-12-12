@@ -165,7 +165,7 @@ pr-run-mode = "plan"
 # Skip checking whether the specified configuration files are up to date
 allow-dirty = ["ci"]
 # Use faster built-in runners for macOS on ARM
-github-custom-runners = { aarch64-apple-darwin = "macos-14" }
+github-custom-runners = { aarch64-apple-darwin = "macos-14", x86_64-apple-darwin = "macos-14" }
 # Whether to install an updater program
 install-updater = false
 
