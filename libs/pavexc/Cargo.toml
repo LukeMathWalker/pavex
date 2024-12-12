@@ -64,6 +64,7 @@ r2d2 = { workspace = true }
 bincode = { workspace = true }
 rayon = { workspace = true }
 num_cpus = { workspace = true }
+px_workspace_hack = { version = "0.1", path = "../px_workspace_hack" }
 
 [dev-dependencies]
 insta = { workspace = true }
