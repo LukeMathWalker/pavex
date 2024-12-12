@@ -935,7 +935,7 @@ pub mod errors {
 
     #[derive(Debug, thiserror::Error)]
     #[non_exhaustive]
-    /// The error returned by [`ServerSessionState::sync`][super::ServerSessionState::sync].
+    /// The error returned by [`ServerSessionStateMut::sync`][super::ServerSessionStateMut::sync].
     pub enum SyncError {
         #[error("Failed to create a new session record")]
         CreateError(#[from] CreateError),
@@ -961,7 +961,7 @@ pub mod errors {
 
     #[derive(Debug, thiserror::Error)]
     #[non_exhaustive]
-    /// The error returned by [`ServerSessionState::set`][super::ServerSessionState::set].
+    /// The error returned by [`ServerSessionStateMut::set`][super::ServerSessionStateMut::set].
     pub enum ServerSetError {
         #[error("Failed to load the session record")]
         LoadError(#[from] LoadError),
@@ -984,7 +984,7 @@ pub mod errors {
     #[derive(Debug, thiserror::Error)]
     #[non_exhaustive]
     #[error("Failed to serialize the value associated with `{key}`")]
-    /// One of the errors returned by [`ServerSessionState::set`][super::ServerSessionState::set].
+    /// One of the errors returned by [`ServerSessionStateMut::set`][super::ServerSessionStateMut::set].
     pub struct ValueSerializationError {
         /// The key of the value that we failed to serialize.
         pub key: String,
