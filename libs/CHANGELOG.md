@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.63](https://github.com/LukeMathWalker/pavex/compare/0.1.62...0.1.63) - 2024-12-21
+
+### Fixed
+
+- Execute post-processing middlewares when a pre-processing middleware returns early or fails ([#398](https://github.com/LukeMathWalker/pavex/pull/398))
+
 ## [0.1.62](https://github.com/LukeMathWalker/pavex/compare/0.1.61...0.1.62) - 2024-12-11
 
 ### Fixed
