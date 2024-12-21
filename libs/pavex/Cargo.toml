@@ -79,7 +79,6 @@ hyper-util = { workspace = true, features = [
 ], optional = true }
 socket2 = { workspace = true, optional = true }
 smallvec = { workspace = true }
-px_workspace_hack = { version = "0.1", path = "../px_workspace_hack" }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros"] }
