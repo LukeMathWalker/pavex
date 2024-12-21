@@ -107,7 +107,7 @@ async fn order_is_preserved_with_nesting() {
 }
 
 #[tokio::test]
-async fn pre_processing_mw_can_early_return() {
+async fn pre_processing_mw_can_early_return_but_all_post_processing_is_invoked() {
     let state = Spy::new();
     let port = spawn_test_server(state.clone()).await;
 
@@ -120,6 +120,23 @@ async fn pre_processing_mw_can_early_return() {
     let state = state.get().await;
     assert_eq!(
         state,
-        vec!["first - start", "early_return_pre", "first - end"]
+        vec!["first - start", "early_return_pre", "first_post", "first - end"]
+    );
+}
+
+#[tokio::test]
+async fn pre_processing_mw_can_fail_but_all_post_processing_is_invoked() {
+    let state = Spy::new();
+    let port = spawn_test_server(state.clone()).await;
+
+    let response = reqwest::get(&format!("http://localhost:{}/failing_pre", port))
+        .await
+        .expect("Failed to make request");
+    assert_eq!(response.status().as_u16(), 500);
+
+    let state = state.get().await;
+    assert_eq!(
+        state,
+        vec!["first - start", "failing_pre", "first_post", "first - end"]
     );
 }

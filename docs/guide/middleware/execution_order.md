@@ -52,7 +52,7 @@ When a request arrives, the following sequence of events will occur:
 
 Let's now consider more complex scenarios: we have multiple kinds of middlewares in the same request processing pipeline.
 
-### Pre- and post-
+### Pre- and post-, no early return
 
 Let's start with a scenario where pre-processing and post-processing middlewares are present in the same request processing pipeline.
 
@@ -73,8 +73,23 @@ As a consequence, pre-processing middlewares will always be executed before post
 
 Pavex relies on registration order as a way to sort middlewares of the same kind.
 
-If `pre1` returns an early response, the rest of the request processing pipeline will be skipped—i.e.
-`pre2`, `handler`, `post1`, and `post2` will not be executed.
+### Pre- and post-, early return
+
+Let's consider the same scenario we had above:
+
+--8<-- "doc_examples/guide/middleware/order/project-pre_and_post.snap"
+
+This time we'll assume that `pre1` returns [`Processing::EarlyReturn`][Processing::EarlyReturn]
+instead of [`Processing::Continue`][Processing::Continue].
+The following sequence of events will occur:
+
+1. `pre1` is invoked and returns [`Processing::EarlyReturn`][Processing::EarlyReturn].
+2. `pre2` is **skipped**.
+3. `handler` is **skipped**.
+4. `post1` is invoked and executed to completion.
+5. `post2` is invoked and executed to completion.
+
+Post-processing middlewares are still invoked, even if the request processing pipeline is interrupted by an early return.
 
 ### Pre- and wrapping
 
@@ -147,8 +162,31 @@ If there are no errors or early returns, the following sequence of events will o
     2. `wrap1` completes.
 3. `post1` is invoked and executed to completion.
 
+### Pre-, post-, and wrapping, early return
+
+Let's consider the same scenario we had above:
+
+--8<-- "doc_examples/guide/middleware/order/project-registration.snap"
+
+This time, we'll assume that `pre1` returns [`Processing::EarlyReturn`][Processing::EarlyReturn].
+The following sequence of events will occur:
+
+1. `pre1` is invoked and returns [`Processing::EarlyReturn`][Processing::EarlyReturn].
+2. `wrap1` is **skipped**.
+    1. `next.await` is **not** called inside `wrap1`
+        1. `pre2` is **skipped**.
+        2. `handler` is **skipped**.
+        3. `post2` is **skipped**.
+3. `post1` is invoked and executed to completion.
+
+Pay attention to the fact that `post2` is not executed, even though it is a post-processing middleware.
+That's because of `wrap1`: since `post2` is part of the request processing pipeline that `wrap1` wraps around,
+it will be skipped if `wrap1` is skipped.
+
 [Blueprint]: ../../api_reference/pavex/blueprint/struct.Blueprint.html
 [nest]: ../../api_reference/pavex/blueprint/struct.Blueprint.html#method.nest
 [pre-processing]: pre_processing.md
 [post-processing]: post_processing.md
 [wrapping middlewares]: wrapping.md
+[Processing::Continue]: ../../api_reference/pavex/middleware/enum.Processing.html#variant.Continue
+[Processing::EarlyReturn]: ../../api_reference/pavex/middleware/enum.Processing.html#variant.EarlyReturn

@@ -84,10 +84,12 @@ pub mod route_0 {
         response
     }
     async fn stage_1() -> pavex::response::Response {
-        if let Some(response) = pre_processing_0().await.into_response() {
-            return response;
-        }
-        let response = handler().await;
+        let response = 'incoming: {
+            if let Some(response) = pre_processing_0().await.into_response() {
+                break 'incoming response;
+            }
+            handler().await
+        };
         response
     }
     async fn wrapping_0() -> pavex::response::Response {
@@ -134,10 +136,12 @@ pub mod route_1 {
     async fn stage_1<'a>(
         s_0: &'a pavex::router::AllowedMethods,
     ) -> pavex::response::Response {
-        if let Some(response) = pre_processing_0().await.into_response() {
-            return response;
-        }
-        let response = handler(s_0).await;
+        let response = 'incoming: {
+            if let Some(response) = pre_processing_0().await.into_response() {
+                break 'incoming response;
+            }
+            handler(s_0).await
+        };
         response
     }
     async fn wrapping_0(

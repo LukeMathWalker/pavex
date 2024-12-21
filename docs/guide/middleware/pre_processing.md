@@ -35,7 +35,11 @@ Pre-processing middlewares must return [`Processing`][Processing].
 [`Processing`][Processing] is an enum with two variants:
 
 - [`Processing::Continue`][Processing::Continue]: the middleware has finished its work and the request processing pipeline should continue as usual.
-- [`Processing::EarlyReturn(T)`][Processing::EarlyReturn]: the rest of the request processing pipeline should be skipped. `T` will be converted into a response and sent back to the client.
+- [`Processing::EarlyReturn(T)`][Processing::EarlyReturn]: the remaining pre-processing and wrapping middlewares won't be invoked, nor will the request handler. 
+  `T` will be converted into a response, fed to the [post-processing middlewares][post-processing] (if there are any) and then sent back to the client.
+  
+Check out the [execution order guide](execution_order.md#pre-and-post-early-return) for more details on how the different types of middlewares interact
+with each other.
 
 `T`, the type inside [`Processing::EarlyReturn`][Processing::EarlyReturn], must implement the
 [`IntoResponse`][IntoResponse] trait.
@@ -102,3 +106,4 @@ using Pavex's first-party extractors.
 [Processing]: ../../api_reference/pavex/middleware/enum.Processing.html
 [Processing::Continue]: ../../api_reference/pavex/middleware/enum.Processing.html#variant.Continue
 [Processing::EarlyReturn]: ../../api_reference/pavex/middleware/enum.Processing.html#variant.EarlyReturn
+[post-processing]: post_processing.md
