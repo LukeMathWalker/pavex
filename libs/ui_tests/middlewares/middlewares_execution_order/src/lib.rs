@@ -38,6 +38,7 @@ pub fn blueprint() -> Blueprint {
     bp.nest(top_level());
     bp.nest(after_handler());
     bp.nest(early_return());
+    bp.nest(failing_pre());
     bp.nest(nested());
     bp
 }
@@ -75,6 +76,18 @@ pub fn early_return() -> Blueprint {
     bp.pre_process(f!(crate::second_pre));
     bp.post_process(f!(crate::second_post));
     bp.route(GET, "/early_return", f!(crate::handler));
+    bp
+}
+
+pub fn failing_pre() -> Blueprint {
+    let mut bp = Blueprint::new();
+    bp.wrap(f!(crate::first));
+    bp.post_process(f!(crate::first_post));
+    bp.pre_process(f!(crate::failing_pre_)).error_handler(f!(crate::e500));
+    bp.wrap(f!(crate::second));
+    bp.pre_process(f!(crate::second_pre));
+    bp.post_process(f!(crate::second_post));
+    bp.route(GET, "/failing_pre", f!(crate::handler));
     bp
 }
 
@@ -137,6 +150,15 @@ spy_post!(third_post);
 pub async fn early_return_pre(spy: &Spy) -> pavex::middleware::Processing {
     spy.push("early_return_pre".to_string()).await;
     pavex::middleware::Processing::EarlyReturn(Response::ok())
+}
+
+pub async fn failing_pre_(spy: &Spy) -> Result<pavex::middleware::Processing, pavex::Error> {
+    spy.push("failing_pre".to_string()).await;
+    Err(pavex::Error::new("failing_pre"))
+}
+
+pub fn e500(_e: &pavex::Error) -> Response {
+    Response::internal_server_error()
 }
 
 macro_rules! spy_pre {

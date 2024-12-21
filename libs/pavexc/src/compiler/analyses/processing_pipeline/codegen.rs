@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use bimap::BiHashMap;
 use guppy::PackageId;
 use indexmap::{IndexMap, IndexSet};
@@ -85,7 +87,7 @@ impl RequestHandlerPipeline {
             }
 
             let invocations = {
-                let mut invocations = vec![];
+                let mut invocations = BTreeMap::new();
                 for (index, id) in ordered_by_invocation.iter().enumerate() {
                     let fn_ = &id2codegened_fn[id].fn_;
                     if component_db.is_post_processing_middleware(*id) {
@@ -129,18 +131,10 @@ impl RequestHandlerPipeline {
                             });
                     let await_ = fn_.sig.asyncness.and_then(|_| Some(quote! { .await }));
                     let fn_name = &fn_.sig.ident;
-                    let invocation = if component_db.is_pre_processing_middleware(*id) {
-                        quote! {
-                            if let Some(#response_ident) = #fn_name(#(#input_parameters),*)#await_.into_response() {
-                                return #response_ident;
-                            }
-                        }
-                    } else {
-                        quote! {
-                            let #response_ident = #fn_name(#(#input_parameters),*)#await_;
-                        }
+                    let invocation = quote! {
+                        #fn_name(#(#input_parameters),*)#await_
                     };
-                    invocations.push(invocation);
+                    invocations.insert(*id, invocation);
                     if component_db.is_post_processing_middleware(*id) {
                         // Remove the response binding from the input bindings, as it's not an input parameter
                         input_bindings.0.pop();
@@ -180,9 +174,38 @@ impl RequestHandlerPipeline {
                 } else {
                     None
                 };
+                let incoming_invocations = if stage.pre_processing_ids.is_empty() {
+                    let wrapping_invocation = &invocations[&stage.wrapping_id];
+                    quote! {
+                        let #response_ident = #wrapping_invocation;
+                    }
+                } else {
+                    let pre_invocations = stage.pre_processing_ids.iter().map(|id| {
+                        let invocation = &invocations[id];
+                        quote! {
+                            if let Some(#response_ident) = #invocation.into_response() {
+                                break 'incoming #response_ident;
+                            }
+                        }
+                    });
+                    let wrapping_invocation = &invocations[&stage.wrapping_id];
+                    quote! {
+                        let #response_ident = 'incoming: {
+                            #(#pre_invocations)*
+                            #wrapping_invocation
+                        };
+                    }
+                };
+                let post_invocations = stage.post_processing_ids.iter().map(|id| {
+                    let invocation = &invocations[id];
+                    quote! {
+                        let #response_ident = #invocation;
+                    }
+                });
                 quote! {
                     #visibility #asyncness fn #fn_name #generics(#(#input_parameters),*) -> #pavex::response::Response {
-                        #(#invocations)*
+                        #incoming_invocations
+                        #(#post_invocations)*
                         #response_ident
                     }
                 }
