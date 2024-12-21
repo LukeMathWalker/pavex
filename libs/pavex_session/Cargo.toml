@@ -8,10 +8,10 @@ repository.workspace = true
 license.workspace = true
 
 [dependencies]
-pavex = { version = "0.1.61", path = "../pavex", default-features = false, features = [
+pavex = { version = "0.1.62", path = "../pavex", default-features = false, features = [
     "cookie",
 ] }
-pavex_tracing = { version = "0.1.61", path = "../pavex_tracing" }
+pavex_tracing = { version = "0.1.62", path = "../pavex_tracing" }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 anyhow = { workspace = true }
