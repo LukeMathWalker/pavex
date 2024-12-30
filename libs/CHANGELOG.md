@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.64](https://github.com/LukeMathWalker/pavex/compare/0.1.63...0.1.64) - 2024-12-30
+
+### Fixed
+
+- Pavex no longer returns a borrow checker error when a &mut reference must be coerced to a shared reference (#401)
+
+### Other
+
+- Disable workspace hack before a release
+- Re-enable workspace hack after a release ([#400](https://github.com/LukeMathWalker/pavex/pull/400))
+
 ## [0.1.63](https://github.com/LukeMathWalker/pavex/compare/0.1.62...0.1.63) - 2024-12-21
 
 ### Fixed
