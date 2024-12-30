@@ -148,6 +148,8 @@ members = [
   "borrow_checker/diamond/diamond_can_be_solved_if_we_can_clone/generated_app",
   "borrow_checker/diamond/diamond_cannot_be_solved_if_we_cannot_clone",
   "borrow_checker/diamond/diamond_cannot_be_solved_if_we_cannot_clone/generated_app",
+  "borrow_checker/mixed_mutability",
+  "borrow_checker/mixed_mutability/generated_app",
   "borrow_checker/multiple_consumers/a_clonable_framework_type_can_be_moved_twice",
   "borrow_checker/multiple_consumers/a_clonable_framework_type_can_be_moved_twice/generated_app",
   "borrow_checker/multiple_consumers/a_clonable_input_type_can_be_moved_twice",

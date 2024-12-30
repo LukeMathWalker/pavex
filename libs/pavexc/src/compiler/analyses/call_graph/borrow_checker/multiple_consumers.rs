@@ -19,6 +19,7 @@ use crate::compiler::computation::Computation;
 use crate::diagnostic::{
     AnnotatedSnippet, CompilerDiagnostic, HelpWithSnippet, LocationExt, OptionalSourceSpanExt,
 };
+use crate::language::ResolvedType;
 use crate::rustdoc::CrateCollection;
 use crate::{diagnostic, try_source};
 
@@ -59,8 +60,13 @@ pub(super) fn multiple_consumers(
             })
             .collect();
         if consumer_ids.len() > 1 {
-            if copy_checker.is_copy(&call_graph, node_id, component_db, computation_db) {
-                // You can't have a "used after moved" error for a Copy type.
+            // You can't have a "used after moved" error for a Copy type.
+            if copy_checker.is_copy(&call_graph, node_id, component_db, computation_db)
+            // Even though `&mut` references are not `Copy`, "used after move" is not
+            // the right error message for them.
+            // They belong to the `move_while_borrowed` category. So we skip them here.
+            || is_ref(node_id, &call_graph, component_db, computation_db)
+            {
                 continue;
             }
 
@@ -162,6 +168,29 @@ pub(super) fn multiple_consumers(
         call_graph,
         root_node_index,
         root_scope_id,
+    }
+}
+
+fn is_ref(
+    node_id: NodeIndex,
+    call_graph: &RawCallGraph,
+    component_db: &ComponentDb,
+    computation_db: &ComputationDb,
+) -> bool {
+    let _is_ref = |ty_| matches!(ty_, &ResolvedType::Reference(..));
+    match &call_graph[node_id] {
+        CallGraphNode::Compute { component_id, .. } => {
+            let component = component_db.hydrated_component(*component_id, computation_db);
+            let Some(output_type) = component.output_type() else {
+                // `()` is not a reference.
+                return false;
+            };
+            _is_ref(&output_type)
+        }
+        CallGraphNode::MatchBranching => {
+            return false;
+        }
+        CallGraphNode::InputParameter { type_, .. } => _is_ref(type_),
     }
 }
 

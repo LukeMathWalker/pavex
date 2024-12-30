@@ -114,7 +114,28 @@ where
                 }
             }
         };
+
+        // We also register the reference as a shared reference
+        // since we rely on the compiler's deref coercion to convert
+        // `&mut T` to `&T` when needed.
+        if let ResolvedType::Reference(TypeReference {
+            is_mutable: true,
+            lifetime,
+            inner,
+        }) = &type_
+        {
+            dependency_bindings.insert(
+                ResolvedType::Reference(TypeReference {
+                    is_mutable: false,
+                    lifetime: lifetime.to_owned(),
+                    inner: inner.to_owned(),
+                }),
+                tokens.clone(),
+            );
+        }
+
         dependency_bindings.insert(type_, tokens);
+
         if to_be_removed {
             // It won't be needed in the future
             blocks.remove(&dependency_index);
