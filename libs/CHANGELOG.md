@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.65](https://github.com/LukeMathWalker/pavex/compare/0.1.64...0.1.65) - 2024-12-31
+
+### Other
+
+- Pavex will rely on Rust's coercion rule when a & is required but only a &mut is bound (#404)
+
 ## [0.1.64](https://github.com/LukeMathWalker/pavex/compare/0.1.63...0.1.64) - 2024-12-30
 
 ### Fixed

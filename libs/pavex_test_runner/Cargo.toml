@@ -31,7 +31,7 @@ walkdir = { workspace = true }
 serde_json = { workspace = true }
 itertools = { workspace = true }
 sha2 = { workspace = true }
-persist_if_changed = { path = "../persist_if_changed", version = "0.1.64" }
+persist_if_changed = { path = "../persist_if_changed", version = "0.1.65" }
 object-pool = { workspace = true }
 num_cpus = { workspace = true }
 globwalk = { workspace = true }
