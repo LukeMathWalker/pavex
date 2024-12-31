@@ -970,7 +970,7 @@ impl InputParameters {
     }
 }
 
-/// A binding attaches a name to an instance of a type.  
+/// A binding attaches a name to an instance of a type.
 /// We use it to represent the input parameters of a function or a method,
 /// fields of a struct, or a variable binding (e.g. `let mut foo: Foo = ...`).
 ///
@@ -993,7 +993,7 @@ pub(crate) struct Binding {
 pub(crate) struct Bindings(pub(crate) Vec<Binding>);
 
 impl Bindings {
-    /// Produce an expression that has the given type.  
+    /// Produce an expression that has the given type.
     ///
     /// This can either be achieved by referencing an existing binding, or by constructing a new
     /// one either by immutable reference or by mutable reference.
@@ -1018,19 +1018,40 @@ impl Bindings {
         let ResolvedType::Reference(ref_) = type_ else {
             return None;
         };
-        let binding = self
+
+        if let Some(binding) = self
             .0
             .iter_mut()
-            .find(|binding| ref_.inner.as_ref() == &binding.type_)?;
-        let mut_ = if ref_.is_mutable {
-            binding.mutable = true;
-            Some(quote! { mut })
-        } else {
-            None
-        };
-        let ident: syn::Expr = syn::parse_str(&binding.ident).unwrap();
-        let block = quote! { &#mut_ #ident };
-        Some(syn::parse2(block).unwrap())
+            .find(|binding| ref_.inner.as_ref() == &binding.type_)
+        {
+            let mut_ = if ref_.is_mutable {
+                binding.mutable = true;
+                Some(quote! { mut })
+            } else {
+                None
+            };
+            let ident: syn::Expr = syn::parse_str(&binding.ident).unwrap();
+            let block = quote! { &#mut_ #ident };
+            return Some(syn::parse2(block).unwrap());
+        }
+
+        // If we are loooking for a `&T` and we have a `&mut T`,
+        // we can use the latter as the former thanks to Rust's coercion rules.
+        if !ref_.is_mutable {
+            let new_ref = ResolvedType::Reference(TypeReference {
+                is_mutable: true,
+                lifetime: ref_.lifetime.clone(),
+                inner: Box::new(ref_.inner.as_ref().clone()),
+            });
+            let binding = self.0.iter().find(|binding| binding.type_ == new_ref);
+            if let Some(binding) = binding {
+                let ident: syn::Expr = syn::parse_str(&binding.ident).unwrap();
+                let block = quote! { #ident };
+                return Some(syn::parse2(block).unwrap());
+            }
+        }
+
+        None
     }
 
     /// Return the first binding with a given type.
