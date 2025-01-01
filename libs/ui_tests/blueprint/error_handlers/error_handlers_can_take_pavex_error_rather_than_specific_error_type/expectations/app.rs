@@ -122,8 +122,21 @@ pub mod route_0 {
                 };
             }
         };
-        let v2 = app::handler(v1);
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
+        let v2 = app::generic_fallible_constructor();
+        let v3 = match v2 {
+            Ok(ok) => ok,
+            Err(v3) => {
+                return {
+                    let v4 = pavex::Error::new(v3);
+                    let v5 = app::error_handler(&v4);
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v5,
+                    )
+                };
+            }
+        };
+        let v4 = app::handler(v1, v3);
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
     }
     struct Next0<T>
     where
@@ -220,8 +233,22 @@ pub mod route_2 {
                 };
             }
         };
-        let v2 = app::handler(v1);
-        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v2)
+        let v2 = app::generic_fallible_constructor();
+        let v3 = match v2 {
+            Ok(ok) => ok,
+            Err(v3) => {
+                return {
+                    let v4 = pavex::Error::new(v3);
+                    let v5 = app::error_handler(&v4);
+                    app::error_observer(&v4);
+                    <pavex::response::Response as pavex::response::IntoResponse>::into_response(
+                        v5,
+                    )
+                };
+            }
+        };
+        let v4 = app::handler(v1, v3);
+        <pavex::response::Response as pavex::response::IntoResponse>::into_response(v4)
     }
     struct Next0<T>
     where

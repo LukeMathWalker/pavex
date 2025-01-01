@@ -103,11 +103,11 @@ impl UnregisteredComponent {
             },
             UnregisteredComponent::ErrorHandler {
                 source_id,
-                error_matcher_id,
+                error_source_id,
                 ..
             } => Component::Transformer {
                 source_id: source_id.to_owned(),
-                transformed_component_id: *error_matcher_id,
+                transformed_component_id: *error_source_id,
             },
             UnregisteredComponent::ErrorObserver {
                 user_component_id, ..
