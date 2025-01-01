@@ -1807,7 +1807,13 @@ impl ComponentDb {
                 };
                 let remapping = unbound_transformed_output
                     .is_equivalent_to(transformer_input_type)
-                    .unwrap();
+                    .unwrap_or_else(||
+                        panic!(
+                            "The transformed component's output type is not equivalent to the \
+                            transformer's input type.\nTransformed component: {:?}\nTransformer: {:?}",
+                            unbound_transformed_output, transformer_input_type
+                        )
+                    );
                 let mut transformer_bindings = HashMap::new();
                 for (generic, concrete) in bindings {
                     // `bindings` contains the concrete types for all the unassigned generic
