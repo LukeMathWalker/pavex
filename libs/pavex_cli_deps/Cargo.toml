@@ -10,3 +10,4 @@ version.workspace = true
 [dependencies]
 anyhow = { workspace = true }
 cargo-like-utils = { workspace = true }
+px_workspace_hack = { version = "0.1", path = "../px_workspace_hack" }

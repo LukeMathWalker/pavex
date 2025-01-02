@@ -16,3 +16,4 @@ supports-hyperlinks = { workspace = true }
 supports-color = { workspace = true }
 supports-unicode = { workspace = true }
 terminal_size = { workspace = true }
+px_workspace_hack = { version = "0.1", path = "../px_workspace_hack" }
