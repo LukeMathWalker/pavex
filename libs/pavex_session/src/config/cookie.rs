@@ -136,7 +136,7 @@ mod same_site {
     {
         struct SameSiteVisitor;
 
-        impl<'de> de::Visitor<'de> for SameSiteVisitor {
+        impl de::Visitor<'_> for SameSiteVisitor {
             type Value = Option<SameSite>;
 
             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {

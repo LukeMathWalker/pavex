@@ -113,7 +113,7 @@ impl<'a> From<Constructor<'a>> for Computation<'a> {
     }
 }
 
-impl<'a> Constructor<'a> {
+impl Constructor<'_> {
     /// The type returned by the constructor.
     pub fn output_type(&self) -> &ResolvedType {
         self.0.output_type().unwrap()

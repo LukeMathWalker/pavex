@@ -24,7 +24,7 @@ pub enum ResolvedType {
 
 impl AsRef<ResolvedType> for ResolvedType {
     fn as_ref(&self) -> &ResolvedType {
-        &self
+        self
     }
 }
 
@@ -66,7 +66,7 @@ impl ResolvedType {
                 ResolvedType::ResolvedPath(PathType {
                     package_id: t.package_id.clone(),
                     // Should we set this to `None`?
-                    rustdoc_id: t.rustdoc_id.clone(),
+                    rustdoc_id: t.rustdoc_id,
                     base_type: t.base_type.clone(),
                     generic_arguments: bound_generics,
                 })
@@ -237,7 +237,7 @@ impl ResolvedType {
                     .into_iter()
                     .zip(other_id_gen.into_iter())
                     .map(|((self_name, _), (other_name, _))| {
-                        (self_name.as_ref(), other_name.as_ref())
+                        (self_name, other_name)
                     })
                     .collect(),
             )
@@ -743,7 +743,7 @@ impl PathType {
                     }
                 }
                 (TypeParameter(first), TypeParameter(second)) => {
-                    if !first._is_equivalent_to(&second, self_id_gen, other_id_gen) {
+                    if !first._is_equivalent_to(second, self_id_gen, other_id_gen) {
                         return false;
                     }
                 }

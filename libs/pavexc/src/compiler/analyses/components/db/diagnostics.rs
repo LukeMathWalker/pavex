@@ -37,11 +37,10 @@ impl ComponentDb {
         let source = try_source!(location, package_graph, diagnostics);
         let label = source
             .as_ref()
-            .map(|source| {
-                diagnostic::get_f_macro_invocation_span(&source, location)
+            .and_then(|source| {
+                diagnostic::get_f_macro_invocation_span(source, location)
                     .labeled("The constructor was registered here".into())
-            })
-            .flatten();
+            });
         match e {
             ConstructorValidationError::CannotTakeAMutableReferenceAsInput(inner) => {
                 inner.emit(
@@ -242,11 +241,10 @@ impl ComponentDb {
         let source = try_source!(location, package_graph, diagnostics);
         let label = source
             .as_ref()
-            .map(|source| {
-                diagnostic::get_f_macro_invocation_span(&source, location)
+            .and_then(|source| {
+                diagnostic::get_f_macro_invocation_span(source, location)
                     .labeled("The request handler was registered here".into())
-            })
-            .flatten();
+            });
         match e {
             RequestHandlerValidationError::CannotTakeAMutableReferenceAsInput(inner) => {
                 inner.emit(
@@ -380,11 +378,10 @@ impl ComponentDb {
         let source = try_source!(location, package_graph, diagnostics);
         let label = source
             .as_ref()
-            .map(|source| {
+            .and_then(|source| {
                 diagnostic::get_f_macro_invocation_span(source, location)
                     .labeled("The wrapping middleware was registered here".into())
-            })
-            .flatten();
+            });
         match e {
             CannotTakeAMutableReferenceAsInput(inner) => {
                 inner.emit(
@@ -507,11 +504,10 @@ impl ComponentDb {
         let source = try_source!(location, package_graph, diagnostics);
         let label = source
             .as_ref()
-            .map(|source| {
+            .and_then(|source| {
                 diagnostic::get_f_macro_invocation_span(source, location)
                     .labeled("The pre-processing middleware was registered here".into())
-            })
-            .flatten();
+            });
         match e {
             CannotReturnTheUnitType | CannotFalliblyReturnTheUnitType => {
                 let d = CompilerDiagnostic::builder(e)
@@ -602,11 +598,10 @@ impl ComponentDb {
         let source = try_source!(location, package_graph, diagnostics);
         let label = source
             .as_ref()
-            .map(|source| {
+            .and_then(|source| {
                 diagnostic::get_f_macro_invocation_span(source, location)
                     .labeled("The post-processing middleware was registered here".into())
-            })
-            .flatten();
+            });
         match e {
             CannotReturnTheUnitType
             | CannotFalliblyReturnTheUnitType
@@ -709,11 +704,10 @@ impl ComponentDb {
         let source = try_source!(location, package_graph, diagnostics);
         let label = source
             .as_ref()
-            .map(|source| {
+            .and_then(|source| {
                 diagnostic::get_f_macro_invocation_span(source, location)
                     .labeled(format!("The {callable_type} was registered here"))
-            })
-            .flatten();
+            });
         let error = anyhow::Error::from(e).context(format!(
             "I can't use the type returned by this {callable_type} to create an HTTP \
                 response.\n\
@@ -741,11 +735,10 @@ impl ComponentDb {
         let source = try_source!(location, package_graph, diagnostics);
         let label = source
             .as_ref()
-            .map(|source| {
-                diagnostic::get_f_macro_invocation_span(&source, location)
+            .and_then(|source| {
+                diagnostic::get_f_macro_invocation_span(source, location)
                     .labeled(format!("The {callable_type} was registered here"))
-            })
-            .flatten();
+            });
         let error = anyhow::Error::from(e).context(format!(
             "Something went wrong when I tried to analyze the implementation of \
                 `pavex::response::IntoResponse` for {output_type:?}, the type returned by \
@@ -773,11 +766,10 @@ impl ComponentDb {
         let source = try_source!(location, package_graph, diagnostics);
         let label = source
             .as_ref()
-            .map(|source| {
-                diagnostic::get_f_macro_invocation_span(&source, location)
+            .and_then(|source| {
+                diagnostic::get_f_macro_invocation_span(source, location)
                     .labeled("The error observer was registered here".into())
-            })
-            .flatten();
+            });
         match e {
             ErrorObserverValidationError::CannotTakeAMutableReferenceAsInput(inner) => {
                 inner.emit(raw_user_component_id, raw_user_component_db, computation_db, krate_collection, package_graph, CallableType::ErrorObserver, diagnostics);
@@ -853,11 +845,10 @@ impl ComponentDb {
         let source = try_source!(location, package_graph, diagnostics);
         let label = source
             .as_ref()
-            .map(|source| {
-                diagnostic::get_f_macro_invocation_span(&source, location)
+            .and_then(|source| {
+                diagnostic::get_f_macro_invocation_span(source, location)
                     .labeled("The error handler was registered here".into())
-            })
-            .flatten();
+            });
         match e {
             ErrorHandlerValidationError::CannotReturnTheUnitType(_) |
             // TODO: Perhaps add a snippet showing the signature of
@@ -997,11 +988,10 @@ impl ComponentDb {
         let source = try_source!(location, package_graph, diagnostics);
         let label = source
             .as_ref()
-            .map(|source| {
-                diagnostic::get_f_macro_invocation_span(&source, location)
+            .and_then(|source| {
+                diagnostic::get_f_macro_invocation_span(source, location)
                     .labeled("The unnecessary error handler was registered here".into())
-            })
-            .flatten();
+            });
         let error = anyhow::anyhow!(
             "You registered an error handler for a {} that doesn't return a `Result`.",
             fallible_kind
@@ -1031,11 +1021,10 @@ impl ComponentDb {
         let source = try_source!(location, package_graph, diagnostics);
         let label = source
             .as_ref()
-            .map(|source| {
-                diagnostic::get_f_macro_invocation_span(&source, location)
+            .and_then(|source| {
+                diagnostic::get_f_macro_invocation_span(source, location)
                     .labeled("The unnecessary error handler was registered here".into())
-            })
-            .flatten();
+            });
         let error = anyhow::anyhow!(
             "You can't register an error handler for a singleton constructor. \n\
                 If I fail to build a singleton, I bubble up the error - it doesn't get handled.",
@@ -1059,11 +1048,10 @@ impl ComponentDb {
         let source = try_source!(location, package_graph, diagnostics);
         let label = source
             .as_ref()
-            .map(|source| {
-                diagnostic::get_f_macro_invocation_span(&source, location)
+            .and_then(|source| {
+                diagnostic::get_f_macro_invocation_span(source, location)
                     .labeled(format!("The fallible {fallible_kind} was registered here"))
-            })
-            .flatten();
+            });
         let error = anyhow::anyhow!(
                 "You registered a {fallible_kind} that returns a `Result`, but you did not register an \
                  error handler for it. \
@@ -1089,11 +1077,10 @@ impl ComponentDb {
         let source = try_source!(location, package_graph, diagnostics);
         let label = source
             .as_ref()
-            .map(|source| {
-                diagnostic::get_f_macro_invocation_span(&source, location)
+            .and_then(|source| {
+                diagnostic::get_f_macro_invocation_span(source, location)
                     .labeled("The singleton was registered here".into())
-            })
-            .flatten();
+            });
         let error = anyhow::anyhow!(
             "`{output_type:?}` can't be a singleton because its lifetime isn't `'static`.\n\
             Singletons must be available for as long as the application is running, \
@@ -1121,11 +1108,10 @@ impl ComponentDb {
         let source = try_source!(location, package_graph, diagnostics);
         let label = source
             .as_ref()
-            .map(|source| {
-                diagnostic::get_f_macro_invocation_span(&source, location)
+            .and_then(|source| {
+                diagnostic::get_f_macro_invocation_span(source, location)
                     .labeled("The singleton was registered here".into())
-            })
-            .flatten();
+            });
         let error = anyhow::anyhow!(
             "`{output_type:?}` can't be a singleton because at least one of its lifetime parameters isn't `'static`.\n\
             Singletons must be available for as long as the application is running, \

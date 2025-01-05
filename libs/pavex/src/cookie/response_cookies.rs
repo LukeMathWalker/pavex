@@ -236,7 +236,7 @@ impl ResponseCookies {
     }
 
     /// Returns the values that should be sent to the client as `Set-Cookie` headers.
-    pub fn header_values<'a>(self, processor: &'a Processor) -> impl Iterator<Item = String> + 'a {
+    pub fn header_values(self, processor: &Processor) -> impl Iterator<Item = String> + '_ {
         self.0.header_values(processor)
     }
 }

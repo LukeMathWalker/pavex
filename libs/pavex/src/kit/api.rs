@@ -44,6 +44,12 @@ pub struct ApiKit {
     pub server_request_id: Option<Constructor>,
 }
 
+impl Default for ApiKit {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ApiKit {
     /// Create a new [`ApiKit`] with all the bundled constructors.
     pub fn new() -> Self {

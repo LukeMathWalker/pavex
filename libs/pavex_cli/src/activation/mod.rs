@@ -29,7 +29,7 @@ pub fn get_activation_key(
     locator: &PavexLocator,
     shell: &mut Shell,
 ) -> Result<Secret<String>, anyhow::Error> {
-    let state = State::new(&locator);
+    let state = State::new(locator);
     let key = state.get_activation_key(shell)?;
     let Some(key) = key else {
         return Err(PavexMustBeActivated.into());

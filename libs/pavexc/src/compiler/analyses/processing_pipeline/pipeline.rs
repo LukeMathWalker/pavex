@@ -294,10 +294,10 @@ impl RequestHandlerPipeline {
                 for (request_scoped_id, &built_at) in &request_scoped2built_at_stage_index {
                     if built_at < stage_index {
                         prebuilt_ids.insert(*request_scoped_id);
-                    } else if built_at == stage_index {
-                        if required_scope_ids.contains(request_scoped_id) {
-                            assert!(component_db.is_wrapping_middleware(middleware_id));
-                        }
+                    } else if built_at == stage_index
+                        && required_scope_ids.contains(request_scoped_id)
+                    {
+                        assert!(component_db.is_wrapping_middleware(middleware_id));
                     }
                 }
 
@@ -305,7 +305,7 @@ impl RequestHandlerPipeline {
                     if let Some(bound_middleware_id) = Self::bind_next(
                         module_name.clone(),
                         middleware_id,
-                        &next_state_parameters,
+                        next_state_parameters,
                         wrapping_id,
                         &stage_names,
                         &mut wrapping_id2next_state,
@@ -507,7 +507,7 @@ impl RequestHandlerPipeline {
                         ResolvedType::Reference(ref_) => {
                             // We recurse through multi-references (e.g. &&&T).
                             let mut inner = ref_.inner.as_ref();
-                            while let ResolvedType::Reference(ref_) = inner.as_ref() {
+                            while let ResolvedType::Reference(ref_) = inner {
                                 inner = ref_.inner.as_ref();
                             }
                             if let Some(info) = type2info.get_mut(inner.as_ref()) {
@@ -556,9 +556,7 @@ impl RequestHandlerPipeline {
                 }
 
                 let issue = indexes.iter().find_position(|info| {
-                    let cannot_clone = component_db.cloning_strategy(info.component_id)
-                        == CloningStrategy::NeverClone;
-                    cannot_clone
+                    component_db.cloning_strategy(info.component_id) == CloningStrategy::NeverClone
                 });
                 if let Some((issue_index, info)) = issue {
                     let next_ref = cloning_info
@@ -866,7 +864,7 @@ impl InputParameters {
     ///
     /// - if both `T` and `&T` are needed, only `T` should appear as a field type.
     /// - if both `T` and `&mut T` are needed, only `T` should appear as a field type marked as mutable.
-    pub(crate) fn from_iter<'a, T>(types: impl IntoIterator<Item = T>) -> Self
+    pub(crate) fn from_iter<T>(types: impl IntoIterator<Item = T>) -> Self
     where
         T: AsRef<ResolvedType>,
     {

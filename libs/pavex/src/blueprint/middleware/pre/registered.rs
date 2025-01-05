@@ -14,7 +14,7 @@ pub struct RegisteredPreProcessingMiddleware<'a> {
     pub(crate) component_id: usize,
 }
 
-impl<'a> RegisteredPreProcessingMiddleware<'a> {
+impl RegisteredPreProcessingMiddleware<'_> {
     #[track_caller]
     /// Register an error handler.
     ///

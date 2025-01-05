@@ -75,11 +75,10 @@ fn missing_trait_implementation(
     let source = try_source!(location, package_graph, diagnostics);
     let label = source
         .as_ref()
-        .map(|source| {
-            diagnostic::get_f_macro_invocation_span(&source, location)
+        .and_then(|source| {
+            diagnostic::get_f_macro_invocation_span(source, location)
                 .labeled(format!("The {component_kind} was registered here"))
-        })
-        .flatten();
+        });
     let help = if component_kind == CallableType::PrebuiltType {
         "All prebuilt types that are needed at runtime must implement the `Send` and `Sync` traits.\n\
         Pavex runs on a multi-threaded HTTP server and the application state is shared \

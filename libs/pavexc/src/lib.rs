@@ -1,3 +1,4 @@
+#![allow(clippy::too_many_arguments)]
 extern crate core;
 
 pub use compiler::App;

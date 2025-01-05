@@ -39,6 +39,12 @@ impl StoreRecord {
     }
 }
 
+impl Default for InMemorySessionStore {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl InMemorySessionStore {
     /// Creates a new (empty) in-memory session store.
     pub fn new() -> Self {
@@ -61,15 +67,15 @@ impl InMemorySessionStore {
     /// Deletes a session record from the store using the provided ID.
     ///
     /// If the session exists, it is removed from the store.
-    fn _delete<'a, 'c>(
-        guard: &'a mut MutexGuard<'c, HashMap<SessionId, StoreRecord>>,
+    fn _delete(
+        guard: &mut MutexGuard<'_, HashMap<SessionId, StoreRecord>>,
         id: &SessionId,
     ) -> Result<StoreRecord, UnknownIdError> {
         let Some(old_record) = guard.remove(id) else {
-            return Err(UnknownIdError { id: id.to_owned() }.into());
+            return Err(UnknownIdError { id: id.to_owned() });
         };
         if old_record.is_stale() {
-            return Err(UnknownIdError { id: id.to_owned() }.into());
+            return Err(UnknownIdError { id: id.to_owned() });
         }
         Ok(old_record)
     }
@@ -174,7 +180,7 @@ impl SessionStorageBackend for InMemorySessionStore {
             }
             .into());
         }
-        let record = Self::_delete(&mut guard, &old_id)?;
+        let record = Self::_delete(&mut guard, old_id)?;
         guard.insert(*new_id, record);
         Ok(())
     }

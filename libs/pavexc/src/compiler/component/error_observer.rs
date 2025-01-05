@@ -74,7 +74,7 @@ impl<'a> ErrorObserver<'a> {
     }
 }
 
-impl<'a> AsRef<Callable> for ErrorObserver<'a> {
+impl AsRef<Callable> for ErrorObserver<'_> {
     fn as_ref(&self) -> &Callable {
         self.callable.as_ref()
     }

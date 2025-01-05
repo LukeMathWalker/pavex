@@ -125,7 +125,7 @@ struct BasicBlockVisitor<'a> {
     reachability_map: HashMap<NodeIndex, HashSet<NodeIndex>>,
 }
 
-#[derive(Debug, Eq, PartialEq, Ord, Clone)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 struct UnvisitedNode {
     node: NodeIndex,
     position: u16,
@@ -134,6 +134,12 @@ struct UnvisitedNode {
 impl PartialOrd for UnvisitedNode {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(self.position.cmp(&other.position))
+    }
+}
+
+impl Ord for UnvisitedNode {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.position.cmp(&other.position)
     }
 }
 
@@ -282,7 +288,7 @@ fn _codegen_callable_closure_body(
     // no `MatchBranching` predecessors.
     // This ensures that we don't have to look-ahead when generating code for its predecessors.
     let traversal_start_index =
-        find_match_branching_ancestor(terminal_index, call_graph, &dfs.finished, &node_id2position)
+        find_match_branching_ancestor(terminal_index, call_graph, &dfs.finished, node_id2position)
             // If there are no `MatchBranching` nodes in the ancestors sub-graph, we start from the
             // the terminal node.
             .unwrap_or(terminal_index);

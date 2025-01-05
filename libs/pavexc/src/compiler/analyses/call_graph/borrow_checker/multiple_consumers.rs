@@ -185,10 +185,10 @@ fn is_ref(
                 // `()` is not a reference.
                 return false;
             };
-            _is_ref(&output_type)
+            _is_ref(output_type)
         }
         CallGraphNode::MatchBranching => {
-            return false;
+            false
         }
         CallGraphNode::InputParameter { type_, .. } => _is_ref(type_),
     }
@@ -252,7 +252,7 @@ fn emit_multiple_consumers_error(
 
         write!(&mut error_msg, "- `{}`", callable.path).unwrap();
         match user_component_id {
-            None => writeln!(&mut error_msg, ""),
+            None => writeln!(&mut error_msg),
             Some(user_component_id) => {
                 let callable_type =
                     component_db.user_component_db()[user_component_id].callable_type();

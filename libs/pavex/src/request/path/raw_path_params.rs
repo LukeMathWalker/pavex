@@ -75,7 +75,7 @@ pub struct RawPathParamsIter<'extractor, 'server, 'request>(
     ParamsIter<'extractor, 'server, 'request>,
 );
 
-impl<'extractor, 'server, 'request> Iterator for RawPathParamsIter<'extractor, 'server, 'request> {
+impl<'server, 'request> Iterator for RawPathParamsIter<'_, 'server, 'request> {
     type Item = (&'server str, EncodedParamValue<'request>);
 
     fn next(&mut self) -> Option<Self::Item> {

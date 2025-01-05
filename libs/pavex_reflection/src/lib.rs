@@ -123,8 +123,8 @@ impl RawIdentifiers {
         } else if segments[0] == "super" {
             let n_super: usize = {
                 let mut n_super = 0;
-                let mut iter = segments.iter();
-                while let Some(p) = iter.next() {
+                let iter = segments.iter();
+                for p in iter {
                     if p == "super" {
                         n_super += 1;
                     } else {
@@ -143,12 +143,12 @@ impl RawIdentifiers {
                 .map(ToOwned::to_owned)
                 .collect();
             let n_module_segments = module_segments.len();
-            let new_segments = module_segments
+            
+            module_segments
                 .into_iter()
                 .take(n_module_segments - n_super)
                 .chain(segments.into_iter().skip(n_super))
-                .collect();
-            new_segments
+                .collect()
         } else {
             segments
         }

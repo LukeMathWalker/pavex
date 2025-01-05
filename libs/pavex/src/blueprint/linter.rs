@@ -1,4 +1,4 @@
-///! Tools to lint a [`Blueprint`] for common mistakes and antipatterns.
+//! Tools to lint a [`Blueprint`] for common mistakes and antipatterns.
 
 #[derive(Debug, Clone, Copy, Eq, Ord, PartialOrd, PartialEq, Hash)]
 #[non_exhaustive]

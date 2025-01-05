@@ -145,11 +145,10 @@ fn must_be_clonable(
     let source = try_source!(location, package_graph, diagnostics);
     let label = source
         .as_ref()
-        .map(|source| {
-            diagnostic::get_f_macro_invocation_span(&source, location)
-                .labeled(format!("It was registered here"))
-        })
-        .flatten();
+        .and_then(|source| {
+            diagnostic::get_f_macro_invocation_span(source, location)
+                .labeled("It was registered here".to_string())
+        });
     let e = anyhow::anyhow!(
         "I can't generate code that will pass the borrow checker *and* match the \
         instructions in your blueprint.\n\

@@ -18,12 +18,12 @@ impl<T> Interner<T> {
 
     pub fn iter(
         &self,
-    ) -> impl Iterator<Item = (la_arena::Idx<T>, &T)> + ExactSizeIterator + DoubleEndedIterator
+    ) -> impl ExactSizeIterator<Item = (la_arena::Idx<T>, &T)> + DoubleEndedIterator
     {
         self.arena.iter()
     }
 
-    pub fn values(&self) -> impl Iterator<Item = &T> + ExactSizeIterator + DoubleEndedIterator {
+    pub fn values(&self) -> impl ExactSizeIterator<Item = &T> + DoubleEndedIterator {
         self.arena.values()
     }
 }

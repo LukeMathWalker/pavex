@@ -88,11 +88,10 @@ fn emit_unused_warning(
     let source = try_source!(location, package_graph, diagnostics);
     let label = source
         .as_ref()
-        .map(|source| {
+        .and_then(|source| {
             diagnostic::get_f_macro_invocation_span(source, location)
                 .labeled("The unused constructor was registered here".into())
-        })
-        .flatten();
+        });
     let HydratedComponent::Constructor(constructor) =
         component_db.hydrated_component(constructor_id, computation_db)
     else {

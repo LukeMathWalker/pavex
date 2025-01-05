@@ -61,7 +61,6 @@ fn router_struct(router: &Router, sdk_deps: &ServerSdkDeps) -> TokenStream {
         }
         Router::DomainBased(router) => {
             let domain_routers = (0..router.domain2path_router.len())
-                .into_iter()
                 .map(|i| format_ident!("domain_{i}"));
             quote! {
                 struct Router {
@@ -374,8 +373,7 @@ fn path_router(
         HashSet::from_iter(
             [
                 "GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS", "CONNECT", "TRACE",
-            ]
-            .into_iter(),
+            ],
         )
     });
 
@@ -607,7 +605,7 @@ fn routing_failure_fallback_block(
     let root_fallback_invocation = fallback_codegened_pipeline.entrypoint_invocation(
         singleton_bindings,
         request_scoped_bindings,
-        &server_state_ident,
+        server_state_ident,
     );
     let unmatched_route = fallback_codegened_pipeline
         .needs_matched_route(framework_items_db)

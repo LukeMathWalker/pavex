@@ -773,8 +773,8 @@ impl GraphicalReportHandler {
                 };
                 let available_centered_space =
                     max_allowed_width.saturating_sub(if label_index != 0 {
-                        let previous_vbar_offset = vbar_offsets[label_index - 1].1;
-                        previous_vbar_offset
+                        
+                        vbar_offsets[label_index - 1].1
                     } else {
                         0
                     });
@@ -794,7 +794,7 @@ impl GraphicalReportHandler {
                     }
                     LabelPosition::Center => "".to_string(),
                 };
-                let label_lines = textwrap::wrap(&label, available_space);
+                let label_lines = textwrap::wrap(label, available_space);
                 let n_label_lines = label_lines.len();
                 'outer: for (i, label_line) in label_lines.iter().enumerate() {
                     'inner: for (offset_hl, vbar_offset) in &vbar_offsets {

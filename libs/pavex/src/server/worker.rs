@@ -28,7 +28,7 @@ pub(super) struct WorkerHandle {
 thread_local! {
     /// Each worker keeps track of the number of connections it is currently handling.
     /// Since the value never crosses thread boundaries, we can use a thread-local variable.
-    static LIVE_CONNECTION_COUNTER: std::cell::RefCell<usize> = std::cell::RefCell::new(0);
+    static LIVE_CONNECTION_COUNTER: std::cell::RefCell<usize> = const { std::cell::RefCell::new(0) };
 }
 
 /// A guard to track the liveness of an incoming connection.

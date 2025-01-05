@@ -348,8 +348,8 @@ impl RawUserComponentDb {
         domain_guard: Option<DomainGuard>,
         path_prefix: Option<&str>,
         scope_graph_builder: &mut ScopeGraphBuilder,
-        mut current_middleware_chain: &mut Vec<UserComponentId>,
-        mut current_observer_chain: &mut Vec<UserComponentId>,
+        current_middleware_chain: &mut Vec<UserComponentId>,
+        current_observer_chain: &mut Vec<UserComponentId>,
         is_root: bool,
         bp_queue: &mut Vec<QueueItem<'a>>,
         package_graph: &PackageGraph,
@@ -359,36 +359,36 @@ impl RawUserComponentDb {
         for component in &bp.components {
             match component {
                 Component::Constructor(c) => {
-                    self.process_constructor(&c, current_scope_id);
+                    self.process_constructor(c, current_scope_id);
                 }
                 Component::WrappingMiddleware(w) => {
                     self.process_middleware(
-                        &w,
+                        w,
                         current_scope_id,
-                        &mut current_middleware_chain,
+                        current_middleware_chain,
                         scope_graph_builder,
                     );
                 }
                 Component::PreProcessingMiddleware(p) => {
                     self.process_pre_processing_middleware(
-                        &p,
+                        p,
                         current_scope_id,
-                        &mut current_middleware_chain,
+                        current_middleware_chain,
                         scope_graph_builder,
                     );
                 }
                 Component::PostProcessingMiddleware(p) => {
                     self.process_post_processing_middleware(
-                        &p,
+                        p,
                         current_scope_id,
-                        &mut current_middleware_chain,
+                        current_middleware_chain,
                         scope_graph_builder,
                     );
                 }
                 Component::Route(r) => self.process_route(
-                    &r,
-                    &current_middleware_chain,
-                    &current_observer_chain,
+                    r,
+                    current_middleware_chain,
+                    current_observer_chain,
                     current_scope_id,
                     domain_guard.clone(),
                     path_prefix,
@@ -402,7 +402,7 @@ impl RawUserComponentDb {
                 Component::NestedBlueprint(b) => {
                     bp_queue.push(QueueItem {
                         parent_scope_id: current_scope_id,
-                        nested_bp: &b,
+                        nested_bp: b,
                         parent_path_prefix: path_prefix.map(|s| s.to_owned()),
                         parent_domain_guard: domain_guard.clone(),
                         current_middleware_chain: current_middleware_chain.clone(),
@@ -410,10 +410,10 @@ impl RawUserComponentDb {
                     });
                 }
                 Component::ErrorObserver(eo) => {
-                    self.process_error_observer(&eo, current_scope_id, &mut current_observer_chain);
+                    self.process_error_observer(eo, current_scope_id, current_observer_chain);
                 }
                 Component::PrebuiltType(si) => {
-                    self.process_prebuilt_type(&si, current_scope_id);
+                    self.process_prebuilt_type(si, current_scope_id);
                 }
             }
         }
@@ -883,60 +883,60 @@ impl RawUserComponentDb {
     fn check_invariants(&self) {
         for (id, component) in self.iter() {
             assert!(
-                self.id2lifecycle.get(&id).is_some(),
+                self.id2lifecycle.contains_key(&id),
                 "There is no lifecycle registered for the user component #{:?}",
                 id
             );
             assert!(
-                self.id2locations.get(&id).is_some(),
+                self.id2locations.contains_key(&id),
                 "There is no location registered for the user component #{:?}",
                 id
             );
             match component {
                 UserComponent::Constructor { .. } => {
                     assert!(
-                        self.id2cloning_strategy.get(&id).is_some(),
+                        self.id2cloning_strategy.contains_key(&id),
                         "There is no cloning strategy registered for the user-registered constructor #{:?}",
                         id
                     );
                 }
                 UserComponent::PrebuiltType { .. } => {
                     assert!(
-                        self.id2cloning_strategy.get(&id).is_some(),
+                        self.id2cloning_strategy.contains_key(&id),
                         "There is no cloning strategy registered for the user-registered prebuilt type #{:?}",
                         id
                     );
                 }
                 UserComponent::RequestHandler { .. } => {
                     assert!(
-                        self.handler_id2middleware_ids.get(&id).is_some(),
+                        self.handler_id2middleware_ids.contains_key(&id),
                         "The middleware chain is missing for the user-registered request handler #{:?}",
                         id
                     );
                     assert!(
-                        self.handler_id2error_observer_ids.get(&id).is_some(),
+                        self.handler_id2error_observer_ids.contains_key(&id),
                         "The list of error observers is missing for the user-registered request handler #{:?}",
                         id
                     );
                 }
                 UserComponent::Fallback { .. } => {
                     assert!(
-                        self.handler_id2middleware_ids.get(&id).is_some(),
+                        self.handler_id2middleware_ids.contains_key(&id),
                         "The middleware chain is missing for the user-registered fallback #{:?}",
                         id
                     );
                     assert!(
-                        self.handler_id2error_observer_ids.get(&id).is_some(),
+                        self.handler_id2error_observer_ids.contains_key(&id),
                         "The list of error observers is missing for the user-registered fallback #{:?}",
                         id
                     );
                     assert!(
-                        self.fallback_id2path_prefix.get(&id).is_some(),
+                        self.fallback_id2path_prefix.contains_key(&id),
                         "There is no path prefix associated with the user-registered fallback #{:?}",
                         id
                     );
                     assert!(
-                        self.fallback_id2domain_guard.get(&id).is_some(),
+                        self.fallback_id2domain_guard.contains_key(&id),
                         "There is no domain guard associated with the user-registered fallback #{:?}",
                         id
                     );
@@ -956,7 +956,7 @@ impl RawUserComponentDb {
     /// `UserComponent`.
     pub fn iter(
         &self,
-    ) -> impl Iterator<Item = (UserComponentId, &UserComponent)> + ExactSizeIterator + DoubleEndedIterator
+    ) -> impl ExactSizeIterator<Item = (UserComponentId, &UserComponent)> + DoubleEndedIterator
     {
         self.component_interner.iter()
     }
@@ -1007,13 +1007,10 @@ impl RawUserComponentDb {
     ) {
         let location = self.get_location(route_id);
         let source = try_source!(location, package_graph, diagnostics);
-        let label = source
-            .as_ref()
-            .map(|source| {
-                diagnostic::get_route_path_span(&source, location)
-                    .labeled("The path missing a leading '/'".to_string())
-            })
-            .flatten();
+        let label = source.as_ref().and_then(|source| {
+            diagnostic::get_route_path_span(source, location)
+                .labeled("The path missing a leading '/'".to_string())
+        });
         let path = &route.path;
         let err =
             anyhow!("Route paths must either be empty or begin with a forward slash, `/`.\n`{path}` is not empty and it doesn't begin with a `/`.",);
@@ -1032,13 +1029,9 @@ impl RawUserComponentDb {
         diagnostics: &mut Vec<miette::Error>,
     ) {
         let source = try_source!(location, package_graph, diagnostics);
-        let label = source
-            .as_ref()
-            .map(|source| {
-                diagnostic::get_domain_span(&source, location)
-                    .labeled("The invalid domain".to_string())
-            })
-            .flatten();
+        let label = source.as_ref().and_then(|source| {
+            diagnostic::get_domain_span(source, location).labeled("The invalid domain".to_string())
+        });
         let diagnostic = CompilerDiagnostic::builder(e)
             .optional_source(source)
             .optional_label(label);
@@ -1052,13 +1045,9 @@ impl RawUserComponentDb {
         diagnostics: &mut Vec<miette::Error>,
     ) {
         let source = try_source!(location, package_graph, diagnostics);
-        let label = source
-            .as_ref()
-            .map(|source| {
-                diagnostic::get_prefix_span(&source, location)
-                    .labeled("The empty prefix".to_string())
-            })
-            .flatten();
+        let label = source.as_ref().and_then(|source| {
+            diagnostic::get_prefix_span(source, location).labeled("The empty prefix".to_string())
+        });
         let err = anyhow!("Path prefixes cannot be empty.");
         let diagnostic = CompilerDiagnostic::builder(err)
             .optional_source(source)
@@ -1079,13 +1068,10 @@ impl RawUserComponentDb {
         diagnostics: &mut Vec<miette::Error>,
     ) {
         let source = try_source!(location, package_graph, diagnostics);
-        let label = source
-            .as_ref()
-            .map(|source| {
-                diagnostic::get_prefix_span(&source, location)
-                    .labeled("The prefix missing a leading '/'".to_string())
-            })
-            .flatten();
+        let label = source.as_ref().and_then(|source| {
+            diagnostic::get_prefix_span(source, location)
+                .labeled("The prefix missing a leading '/'".to_string())
+        });
         let err = anyhow!(
             "Path prefixes must begin with a forward slash, `/`.\n\
             `{prefix}` doesn't.",
@@ -1105,13 +1091,10 @@ impl RawUserComponentDb {
         diagnostics: &mut Vec<miette::Error>,
     ) {
         let source = try_source!(location, package_graph, diagnostics);
-        let label = source
-            .as_ref()
-            .map(|source| {
-                diagnostic::get_prefix_span(&source, location)
-                    .labeled("The prefix ending with a trailing '/'".to_string())
-            })
-            .flatten();
+        let label = source.as_ref().and_then(|source| {
+            diagnostic::get_prefix_span(source, location)
+                .labeled("The prefix ending with a trailing '/'".to_string())
+        });
         let err = anyhow!(
             "Path prefixes can't end with a trailing slash, `/`. \
             `{prefix}` does.\n\

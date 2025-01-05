@@ -344,25 +344,19 @@ impl DomainRouter {
         let snippet1 = {
             let location = db.domain_guard2locations[domain_1].first().unwrap();
             let source = try_source!(location, package_graph, diagnostics);
-            let label = source
-                .as_ref()
-                .map(|source| {
-                    diagnostic::get_domain_span(&source, location)
-                        .labeled("The first domain".to_string())
-                })
-                .flatten();
+            let label = source.as_ref().and_then(|source| {
+                diagnostic::get_domain_span(source, location)
+                    .labeled("The first domain".to_string())
+            });
             source.map(|s| AnnotatedSnippet::new_optional(s, label))
         };
         let snippet2 = {
             let location = db.domain_guard2locations[domain_2].first().unwrap();
             let source = try_source!(location, package_graph, diagnostics);
-            let label = source
-                .as_ref()
-                .map(|source| {
-                    diagnostic::get_domain_span(&source, location)
-                        .labeled("The second domain".to_string())
-                })
-                .flatten();
+            let label = source.as_ref().and_then(|source| {
+                diagnostic::get_domain_span(source, location)
+                    .labeled("The second domain".to_string())
+            });
             source.map(|s| AnnotatedSnippet::new_optional(s, label))
         };
         let diagnostic = CompilerDiagnostic::builder(error)
@@ -396,13 +390,13 @@ impl PathRouter {
         let root_fallback_id =
             scope_based_fallback_router.find_fallback_id(root_scope_id, scope_graph);
 
-        Self::detect_method_conflicts(db, &component_ids, package_graph, diagnostics)?;
+        Self::detect_method_conflicts(db, component_ids, package_graph, diagnostics)?;
         let runtime_router =
-            Self::detect_path_conflicts(db, &component_ids, package_graph, diagnostics)?;
+            Self::detect_path_conflicts(db, component_ids, package_graph, diagnostics)?;
         let (route_id2fallback_id, path_catchall2fallback_id) = Self::assign_fallbacks(
             runtime_router.clone(),
-            &scope_based_fallback_router,
-            &component_ids,
+            scope_based_fallback_router,
+            component_ids,
             db,
             scope_graph,
             package_graph,
@@ -410,7 +404,7 @@ impl PathRouter {
         )?;
         Self::check_method_not_allowed_fallbacks(
             &route_id2fallback_id,
-            &component_ids,
+            component_ids,
             db,
             package_graph,
             diagnostics,
@@ -567,6 +561,7 @@ impl PathRouter {
     /// 2. there is no registered route that matches the incoming request path.
     ///
     /// This method only looks at the 2nd case and returns a mapping from request handlers to fallbacks.
+    #[allow(clippy::type_complexity)]
     fn assign_fallbacks(
         mut validation_router: matchit::Router<()>,
         scope_based_fallback_router: &ScopeBasedFallbackTree,
@@ -928,13 +923,10 @@ fn push_fallback_ambiguity_diagnostic(
     };
     let route_location = raw_user_component_db.get_location(route_id);
     let route_source = try_source!(route_location, package_graph, diagnostics);
-    let label = route_source
-        .as_ref()
-        .map(|source| {
-            diagnostic::get_route_path_span(&source, route_location)
-                .labeled("The route was registered here".to_string())
-        })
-        .flatten();
+    let label = route_source.as_ref().and_then(|source| {
+        diagnostic::get_route_path_span(source, route_location)
+            .labeled("The route was registered here".to_string())
+    });
     let route_repr = router_key.diagnostic_repr();
     let scope_fallback = {
         let UserComponent::Fallback {
@@ -1128,13 +1120,10 @@ fn push_matchit_diagnostic(
 
     let location = raw_user_component_db.get_location(raw_user_component_id);
     let source = try_source!(location, package_graph, diagnostics);
-    let label = source
-        .as_ref()
-        .map(|source| {
-            diagnostic::get_route_path_span(&source, location)
-                .labeled("The problematic path".to_string())
-        })
-        .flatten();
+    let label = source.as_ref().and_then(|source| {
+        diagnostic::get_route_path_span(source, location)
+            .labeled("The problematic path".to_string())
+    });
     let diagnostic = CompilerDiagnostic::builder(error)
         .optional_source(source)
         .optional_label(label);

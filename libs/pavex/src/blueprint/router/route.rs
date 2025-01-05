@@ -15,7 +15,7 @@ pub struct RegisteredRoute<'a> {
     pub(crate) component_id: usize,
 }
 
-impl<'a> RegisteredRoute<'a> {
+impl RegisteredRoute<'_> {
     #[track_caller]
     /// Register an error handler.
     ///

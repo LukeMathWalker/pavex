@@ -444,8 +444,8 @@ impl ResolvedPath {
                 // parts of the module path.
                 let n_super: usize = {
                     let mut n_super = 0;
-                    let mut iter = p.segments.iter();
-                    while let Some(p) = iter.next() {
+                    let iter = p.segments.iter();
+                    for p in iter {
                         if p.ident == "super" {
                             n_super += 1;
                         } else {

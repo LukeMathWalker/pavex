@@ -135,7 +135,7 @@ struct FieldVisitor<'a> {
     matched: bool,
 }
 
-impl<'a> Visit for FieldVisitor<'a> {
+impl Visit for FieldVisitor<'_> {
     fn record_debug(&mut self, field: &tracing::field::Field, value: &dyn std::fmt::Debug) {
         if self.matched {
             return;

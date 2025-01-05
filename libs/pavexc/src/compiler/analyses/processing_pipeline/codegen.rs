@@ -28,7 +28,7 @@ impl RequestHandlerPipeline {
             for (&id, call_graph) in self.id2call_graph.iter() {
                 let ident = &self.id2name[&id];
                 if tracing::event_enabled!(tracing::Level::TRACE) {
-                    call_graph.print_debug_dot(&ident, component_db, computation_db);
+                    call_graph.print_debug_dot(ident, component_db, computation_db);
                 }
                 let fn_ = CodegenedFn {
                     fn_: {
@@ -62,7 +62,7 @@ impl RequestHandlerPipeline {
 
             if tracing::event_enabled!(tracing::Level::DEBUG) {
                 let bindings = input_bindings.0.iter().fold(String::new(), |acc, binding| {
-                    let mutable = binding.mutable.then(|| "mut ").unwrap_or("");
+                    let mutable = if binding.mutable { "mut " } else { "" };
                     format!(
                         "{}\n- {}: {mutable}{:?}, ",
                         acc, binding.ident, binding.type_
@@ -109,7 +109,7 @@ impl RequestHandlerPipeline {
                                             .0
                                             .iter()
                                             .fold(String::new(), |acc, binding| {
-                                                let mutable = binding.mutable.then(|| "mut ").unwrap_or("");
+                                                let mutable = if binding.mutable { "mut " } else { "" };
                                                 format!("{}\n- {}: {mutable}{:?}, ", acc, binding.ident, binding.type_)
                                             });
                                         let fn_name = fn_.sig.ident.to_string();
@@ -129,7 +129,7 @@ impl RequestHandlerPipeline {
                                     },
                                 }
                             });
-                    let await_ = fn_.sig.asyncness.and_then(|_| Some(quote! { .await }));
+                    let await_ = fn_.sig.asyncness.map(|_| quote! { .await });
                     let fn_name = &fn_.sig.ident;
                     let invocation = quote! {
                         #fn_name(#(#input_parameters),*)#await_

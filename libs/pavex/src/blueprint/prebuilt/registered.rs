@@ -15,7 +15,7 @@ pub struct RegisteredPrebuiltType<'a> {
     pub(crate) component_id: usize,
 }
 
-impl<'a> RegisteredPrebuiltType<'a> {
+impl RegisteredPrebuiltType<'_> {
     /// Set the cloning strategy for the output type returned by this constructor.
     ///
     /// By default,

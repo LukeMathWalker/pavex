@@ -668,11 +668,10 @@ impl ConstructibleDb {
         let source = try_source!(location, package_graph, diagnostics);
         let label = source
             .as_ref()
-            .map(|source| {
-                diagnostic::get_f_macro_invocation_span(&source, location)
+            .and_then(|source| {
+                diagnostic::get_f_macro_invocation_span(source, location)
                     .labeled(format!("The {component_kind} was registered here"))
-            })
-            .flatten();
+            });
 
         let callable = &computation_db[user_component_id];
         let e = anyhow::anyhow!("I can't find a constructor for `{}`.\n{self:?}", unconstructible_type.display_for_error()).context(
@@ -734,11 +733,10 @@ impl ConstructibleDb {
         let source = try_source!(location, package_graph, diagnostics);
         let label = source
             .as_ref()
-            .map(|source| {
-                diagnostic::get_f_macro_invocation_span(&source, location)
+            .and_then(|source| {
+                diagnostic::get_f_macro_invocation_span(source, location)
                     .labeled(format!("The {component_kind} was registered here"))
-            })
-            .flatten();
+            });
 
         let definition_snippet = get_snippet(
             &computation_db[user_component_id],
@@ -789,11 +787,10 @@ impl ConstructibleDb {
         let source = try_source!(location, package_graph, diagnostics);
         let label = source
             .as_ref()
-            .map(|source| {
-                diagnostic::get_f_macro_invocation_span(&source, location)
+            .and_then(|source| {
+                diagnostic::get_f_macro_invocation_span(source, location)
                     .labeled(format!("The {component_kind} was registered here"))
-            })
-            .flatten();
+            });
 
         let definition_snippet = get_snippet(
             &computation_db[user_component_id],
@@ -843,11 +840,10 @@ impl ConstructibleDb {
         let source = try_source!(location, package_graph, diagnostics);
         let label = source
             .as_ref()
-            .map(|source| {
-                diagnostic::get_f_macro_invocation_span(&source, location)
+            .and_then(|source| {
+                diagnostic::get_f_macro_invocation_span(source, location)
                     .labeled(format!("The {component_kind} was registered here"))
-            })
-            .flatten();
+            });
 
         let definition_snippet = get_snippet(
             &computation_db[user_component_id],

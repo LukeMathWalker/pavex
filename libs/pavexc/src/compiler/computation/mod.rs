@@ -34,7 +34,7 @@ pub(crate) enum Computation<'a> {
     PrebuiltType(Cow<'a, ResolvedType>),
 }
 
-impl<'a> Computation<'a> {
+impl Computation<'_> {
     #[allow(unused)]
     pub fn ref_(&self) -> Computation<'_> {
         match self {
@@ -108,13 +108,13 @@ impl<'a> Computation<'a> {
     }
 }
 
-impl<'a> From<Callable> for Computation<'a> {
+impl From<Callable> for Computation<'_> {
     fn from(value: Callable) -> Self {
         Self::Callable(Cow::Owned(value))
     }
 }
 
-impl<'a> From<MatchResult> for Computation<'a> {
+impl From<MatchResult> for Computation<'_> {
     fn from(value: MatchResult) -> Self {
         Self::MatchResult(Cow::Owned(value))
     }

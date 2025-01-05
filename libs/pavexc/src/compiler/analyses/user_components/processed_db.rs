@@ -146,7 +146,7 @@ impl UserComponentDb {
     /// `UserComponent`.
     pub fn iter(
         &self,
-    ) -> impl Iterator<Item = (UserComponentId, &UserComponent)> + ExactSizeIterator + DoubleEndedIterator
+    ) -> impl ExactSizeIterator<Item = (UserComponentId, &UserComponent)> + DoubleEndedIterator
     {
         self.component_interner.iter()
     }
@@ -155,7 +155,7 @@ impl UserComponentDb {
     /// associated `UserComponent`.
     pub fn constructors(
         &self,
-    ) -> impl Iterator<Item = (UserComponentId, &UserComponent)> + DoubleEndedIterator {
+    ) -> impl DoubleEndedIterator<Item = (UserComponentId, &UserComponent)> {
         self.component_interner
             .iter()
             .filter(|(_, c)| matches!(c, UserComponent::Constructor { .. }))
@@ -163,7 +163,7 @@ impl UserComponentDb {
 
     pub fn prebuilt_types(
         &self,
-    ) -> impl Iterator<Item = (UserComponentId, &UserComponent)> + DoubleEndedIterator {
+    ) -> impl DoubleEndedIterator<Item = (UserComponentId, &UserComponent)> {
         self.component_interner
             .iter()
             .filter(|(_, c)| matches!(c, UserComponent::PrebuiltType { .. }))
@@ -176,7 +176,7 @@ impl UserComponentDb {
     /// guard) and fallback handlers.
     pub fn request_handlers(
         &self,
-    ) -> impl Iterator<Item = (UserComponentId, &UserComponent)> + DoubleEndedIterator {
+    ) -> impl DoubleEndedIterator<Item = (UserComponentId, &UserComponent)> {
         self.component_interner.iter().filter(|(_, c)| {
             matches!(
                 c,
@@ -189,7 +189,7 @@ impl UserComponentDb {
     /// associated `UserComponent`.
     pub fn wrapping_middlewares(
         &self,
-    ) -> impl Iterator<Item = (UserComponentId, &UserComponent)> + DoubleEndedIterator {
+    ) -> impl DoubleEndedIterator<Item = (UserComponentId, &UserComponent)> {
         self.component_interner
             .iter()
             .filter(|(_, c)| matches!(c, UserComponent::WrappingMiddleware { .. }))
@@ -199,7 +199,7 @@ impl UserComponentDb {
     /// associated `UserComponent`.
     pub fn post_processing_middlewares(
         &self,
-    ) -> impl Iterator<Item = (UserComponentId, &UserComponent)> + DoubleEndedIterator {
+    ) -> impl DoubleEndedIterator<Item = (UserComponentId, &UserComponent)> {
         self.component_interner
             .iter()
             .filter(|(_, c)| matches!(c, UserComponent::PostProcessingMiddleware { .. }))
@@ -209,7 +209,7 @@ impl UserComponentDb {
     /// associated `UserComponent`.
     pub fn pre_processing_middlewares(
         &self,
-    ) -> impl Iterator<Item = (UserComponentId, &UserComponent)> + DoubleEndedIterator {
+    ) -> impl DoubleEndedIterator<Item = (UserComponentId, &UserComponent)> {
         self.component_interner
             .iter()
             .filter(|(_, c)| matches!(c, UserComponent::PreProcessingMiddleware { .. }))
@@ -219,7 +219,7 @@ impl UserComponentDb {
     /// associated `UserComponent`.
     pub fn error_observers(
         &self,
-    ) -> impl Iterator<Item = (UserComponentId, &UserComponent)> + DoubleEndedIterator {
+    ) -> impl DoubleEndedIterator<Item = (UserComponentId, &UserComponent)> {
         self.component_interner
             .iter()
             .filter(|(_, c)| matches!(c, UserComponent::ErrorObserver { .. }))
@@ -338,18 +338,10 @@ impl UserComponentDb {
                         diagnostics,
                     ),
                 };
-            } else {
-                if let Err(e) =
-                    computation_db.resolve_and_intern(krate_collection, resolved_path, Some(raw_id))
-                {
-                    Self::cannot_resolve_callable_path(
-                        e,
-                        raw_id,
-                        raw_db,
-                        package_graph,
-                        diagnostics,
-                    );
-                }
+            } else if let Err(e) =
+                computation_db.resolve_and_intern(krate_collection, resolved_path, Some(raw_id))
+            {
+                Self::cannot_resolve_callable_path(e, raw_id, raw_db, package_graph, diagnostics);
             }
         }
     }
@@ -366,16 +358,12 @@ impl UserComponentDb {
 
         let location = component_db.get_location(component_id);
         let source = try_source!(location, package_graph, diagnostics);
-        let label = source
-            .as_ref()
-            .map(|source| {
-                diagnostic::get_f_macro_invocation_span(&source, location)
-                    .labeled(format!("The prebuilt type was registered here"))
-            })
-            .flatten();
+        let label = source.as_ref().and_then(|source| {
+            diagnostic::get_f_macro_invocation_span(source, location)
+                .labeled("The prebuilt type was registered here".to_string())
+        });
         let mut error_msg = e.to_string();
-        let help: String;
-        match &e {
+        let help: String = match &e {
             PrebuiltTypeValidationError::CannotHaveLifetimeParameters { ty } => {
                 if ty.has_implicit_lifetime_parameters() {
                     writeln!(
@@ -406,7 +394,7 @@ impl UserComponentDb {
                         write!(&mut error_msg, ".").unwrap();
                     }
                 };
-                help = format!("Set the lifetime parameters to `'static` when registering the type as prebuilt. E.g. `bp.prebuilt(f!(crate::MyType<'static>))` for `struct MyType<'a>(&'a str)`.")
+                "Set the lifetime parameters to `'static` when registering the type as prebuilt. E.g. `bp.prebuilt(f!(crate::MyType<'static>))` for `struct MyType<'a>(&'a str)`.".to_string()
             }
             PrebuiltTypeValidationError::CannotHaveUnassignedGenericTypeParameters { ty } => {
                 let generic_type_parameters = ty.unassigned_generic_type_parameters();
@@ -431,9 +419,9 @@ impl UserComponentDb {
                     .unwrap();
                     write!(&mut error_msg, ".").unwrap();
                 }
-                help = format!("Set the generic parameters to concrete types when registering the type as prebuilt. E.g. `bp.prebuilt(f!(crate::MyType<std::string::String>))` for `struct MyType<T>(T)`.")
+                "Set the generic parameters to concrete types when registering the type as prebuilt. E.g. `bp.prebuilt(f!(crate::MyType<std::string::String>))` for `struct MyType<T>(T)`.".to_string()
             }
-        }
+        };
         let e = anyhow::anyhow!(e).context(error_msg);
         let diagnostic = CompilerDiagnostic::builder(e)
             .optional_source(source)
@@ -452,13 +440,10 @@ impl UserComponentDb {
     ) {
         let location = component_db.get_location(component_id);
         let source = try_source!(location, package_graph, diagnostics);
-        let label = source
-            .as_ref()
-            .map(|source| {
-                diagnostic::get_f_macro_invocation_span(&source, location)
-                    .labeled(format!("The type that we can't resolve"))
-            })
-            .flatten();
+        let label = source.as_ref().and_then(|source| {
+            diagnostic::get_f_macro_invocation_span(source, location)
+                .labeled("The type that we can't resolve".to_string())
+        });
         let diagnostic = CompilerDiagnostic::builder(e)
             .optional_source(source)
             .optional_label(label)
@@ -480,13 +465,10 @@ impl UserComponentDb {
         let source = try_source!(location, package_graph, diagnostics);
         match e {
             CallableResolutionError::UnknownCallable(_) => {
-                let label = source
-                    .as_ref()
-                    .map(|source| {
-                        diagnostic::get_f_macro_invocation_span(&source, location)
-                            .labeled(format!("The {callable_type} that we can't resolve"))
-                    })
-                    .flatten();
+                let label = source.as_ref().and_then(|source| {
+                    diagnostic::get_f_macro_invocation_span(source, location)
+                        .labeled(format!("The {callable_type} that we can't resolve"))
+                });
                 let diagnostic = CompilerDiagnostic::builder(e).optional_source(source)
                     .optional_label(label)
                     .help("Check that the path is spelled correctly and that the function (or method) is public.".into())
@@ -510,13 +492,10 @@ impl UserComponentDb {
                 } else {
                     None
                 };
-                let label = source
-                    .as_ref()
-                    .map(|source| {
-                        diagnostic::get_f_macro_invocation_span(&source, location)
-                            .labeled(format!("The {callable_type} was registered here"))
-                    })
-                    .flatten();
+                let label = source.as_ref().and_then(|source| {
+                    diagnostic::get_f_macro_invocation_span(source, location)
+                        .labeled(format!("The {callable_type} was registered here"))
+                });
                 let diagnostic = CompilerDiagnostic::builder(e.clone())
                     .optional_source(source)
                     .optional_label(label)
@@ -525,13 +504,10 @@ impl UserComponentDb {
                 diagnostics.push(diagnostic.into());
             }
             CallableResolutionError::UnsupportedCallableKind(ref inner_error) => {
-                let label = source
-                    .as_ref()
-                    .map(|source| {
-                        diagnostic::get_f_macro_invocation_span(&source, location)
-                            .labeled(format!("It was registered as a {callable_type} here"))
-                    })
-                    .flatten();
+                let label = source.as_ref().and_then(|source| {
+                    diagnostic::get_f_macro_invocation_span(source, location)
+                        .labeled(format!("It was registered as a {callable_type} here"))
+                });
                 let message = format!("I can work with functions and methods, but `{}` is neither.\nIt is {} and I don't know how to use it as a {}.", inner_error.import_path, inner_error.item_kind, callable_type);
                 let error = anyhow::anyhow!(e).context(message);
                 diagnostics.push(
@@ -563,13 +539,10 @@ impl UserComponentDb {
                     }
                 };
 
-                let label = source
-                    .as_ref()
-                    .map(|source| {
-                        diagnostic::get_f_macro_invocation_span(&source, location)
-                            .labeled(format!("The {callable_type} was registered here"))
-                    })
-                    .flatten();
+                let label = source.as_ref().and_then(|source| {
+                    diagnostic::get_f_macro_invocation_span(source, location)
+                        .labeled(format!("The {callable_type} was registered here"))
+                });
                 diagnostics.push(
                     CompilerDiagnostic::builder(e.clone())
                         .optional_source(source)
@@ -583,13 +556,10 @@ impl UserComponentDb {
                 diagnostics.push(CompilerDiagnostic::builder(e).build().into());
             }
             CallableResolutionError::GenericParameterResolutionError(_) => {
-                let label = source
-                    .as_ref()
-                    .map(|source| {
-                        diagnostic::get_f_macro_invocation_span(&source, location)
-                            .labeled(format!("The {callable_type} was registered here"))
-                    })
-                    .flatten();
+                let label = source.as_ref().and_then(|source| {
+                    diagnostic::get_f_macro_invocation_span(source, location)
+                        .labeled(format!("The {callable_type} was registered here"))
+                });
                 let diagnostic = CompilerDiagnostic::builder(e)
                     .optional_source(source)
                     .optional_label(label)

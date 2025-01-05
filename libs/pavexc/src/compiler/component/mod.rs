@@ -47,8 +47,7 @@ impl CannotTakeMutReferenceError {
                     return Err(CannotTakeMutReferenceError {
                         component_path: c.path.clone(),
                         mut_ref_input_index: i,
-                    }
-                    .into());
+                    });
                 }
             }
         }
@@ -83,11 +82,10 @@ impl CannotTakeMutReferenceError {
         let source = try_source!(location, package_graph, diagnostics);
         let label = source
             .as_ref()
-            .map(|source| {
-                diagnostic::get_f_macro_invocation_span(&source, location)
+            .and_then(|source| {
+                diagnostic::get_f_macro_invocation_span(source, location)
                     .labeled(format!("The {callable_type} was registered here"))
-            })
-            .flatten();
+            });
 
         let definition_snippet = get_snippet(
             &computation_db[raw_user_component_id],

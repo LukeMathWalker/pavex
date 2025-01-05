@@ -16,7 +16,7 @@ pub struct RegisteredConstructor<'a> {
     pub(crate) component_id: usize,
 }
 
-impl<'a> RegisteredConstructor<'a> {
+impl RegisteredConstructor<'_> {
     #[track_caller]
     /// Register an error handler.
     ///

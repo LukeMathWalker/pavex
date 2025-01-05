@@ -436,16 +436,17 @@ impl ComponentDb {
                     self.error_observer_id2error_input_index
                         .insert(id, error_input_index);
                 }
-                SyntheticWrappingMiddleware { derived_from, .. } => {
-                    if let Some(derived_from) = derived_from {
-                        self.derived2user_registered.insert(
-                            id,
-                            self.derived2user_registered
-                                .get(&derived_from)
-                                .cloned()
-                                .unwrap_or(derived_from),
-                        );
-                    }
+                SyntheticWrappingMiddleware {
+                    derived_from: Some(derived_from),
+                    ..
+                } => {
+                    self.derived2user_registered.insert(
+                        id,
+                        self.derived2user_registered
+                            .get(&derived_from)
+                            .cloned()
+                            .unwrap_or(derived_from),
+                    );
                 }
                 UserPrebuiltType { user_component_id } => {
                     let user_component = &self.user_component_db[user_component_id];
@@ -498,7 +499,8 @@ impl ComponentDb {
         let ok_id = match self.hydrated_component(id, computation_db) {
             HydratedComponent::Constructor(_) => {
                 let ok_computation_id = computation_db.get_or_intern(ok);
-                let ok_id = self.get_or_intern(
+
+                self.get_or_intern(
                     UnregisteredComponent::SyntheticConstructor {
                         computation_id: ok_computation_id,
                         scope_id: self.scope_id(id),
@@ -507,13 +509,12 @@ impl ComponentDb {
                         derived_from: Some(id),
                     },
                     computation_db,
-                );
-                ok_id
+                )
             }
             _ => self.add_synthetic_transformer(
                 ok.into(),
-                id.into(),
-                self.scope_id(id.into()),
+                id,
+                self.scope_id(id),
                 InsertTransformer::Eagerly,
                 ConsumptionMode::Move,
                 0,
@@ -523,18 +524,17 @@ impl ComponentDb {
 
         let err_id = self.add_synthetic_transformer(
             err.into(),
-            id.into(),
-            self.scope_id(id.into()),
+            id,
+            self.scope_id(id),
             InsertTransformer::Eagerly,
             ConsumptionMode::Move,
             0,
             computation_db,
         );
 
-        self.fallible_id2match_ids
-            .insert(id.into(), (ok_id, err_id));
-        self.match_id2fallible_id.insert(ok_id, id.into());
-        self.match_id2fallible_id.insert(err_id, id.into());
+        self.fallible_id2match_ids.insert(id, (ok_id, err_id));
+        self.match_id2fallible_id.insert(ok_id, id);
+        self.match_id2fallible_id.insert(err_id, id);
     }
 
     /// Validate all user-registered constructors.
@@ -592,18 +592,16 @@ impl ComponentDb {
                                     diagnostics,
                                 );
                             }
-                        } else {
-                            if output_type.has_implicit_lifetime_parameters()
-                                || !output_type.named_lifetime_parameters().is_empty()
-                            {
-                                Self::non_static_lifetime_parameter_in_singleton(
-                                    output_type,
-                                    user_component_id,
-                                    &self.user_component_db,
-                                    package_graph,
-                                    diagnostics,
-                                );
-                            }
+                        } else if output_type.has_implicit_lifetime_parameters()
+                            || !output_type.named_lifetime_parameters().is_empty()
+                        {
+                            Self::non_static_lifetime_parameter_in_singleton(
+                                output_type,
+                                user_component_id,
+                                &self.user_component_db,
+                                package_graph,
+                                diagnostics,
+                            );
                         }
                     }
 
@@ -1225,7 +1223,7 @@ impl ComponentDb {
             callable,
             &self.pavex_error,
             &self.pavex_response,
-            &framework_item_db,
+            framework_item_db,
         )?;
         let constructor_component = UnregisteredComponent::SyntheticConstructor {
             lifecycle,
@@ -1272,8 +1270,8 @@ impl ComponentDb {
             scope_id,
             derived_from: Some(derived_from),
         };
-        let middleware_id = self.get_or_intern(middleware_component, computation_db);
-        middleware_id
+
+        self.get_or_intern(middleware_component, computation_db)
     }
 
     pub fn get_or_intern_transformer(
@@ -1304,9 +1302,7 @@ impl ComponentDb {
 
     /// Retrieve the lint overrides for a component.
     pub fn lints(&self, id: ComponentId) -> Option<&BTreeMap<Lint, LintSetting>> {
-        let Some(user_component_id) = self.user_component_id(id) else {
-            return None;
-        };
+        let user_component_id = self.user_component_id(id)?;
         self.user_component_db.get_lints(user_component_id)
     }
 
@@ -1318,8 +1314,7 @@ impl ComponentDb {
     /// Iterate over all the components in the database alongside their ids.
     pub fn iter(
         &self,
-    ) -> impl Iterator<Item = (ComponentId, &Component)> + ExactSizeIterator + DoubleEndedIterator
-    {
+    ) -> impl ExactSizeIterator<Item = (ComponentId, &Component)> + DoubleEndedIterator {
         self.interner.iter()
     }
 
@@ -1563,7 +1558,7 @@ impl ComponentDb {
             }
             Component::PrebuiltType { user_component_id } => {
                 let ty = &self.prebuilt_type_db[*user_component_id];
-                HydratedComponent::PrebuiltType(Cow::Borrowed(&ty))
+                HydratedComponent::PrebuiltType(Cow::Borrowed(ty))
             }
         }
     }
@@ -1615,8 +1610,7 @@ impl ComponentDb {
         let source = try_source!(location, package_graph, diagnostics);
         let source_span = source
             .as_ref()
-            .map(|source| crate::diagnostic::get_f_macro_invocation_span(&source, location))
-            .flatten();
+            .and_then(|source| crate::diagnostic::get_f_macro_invocation_span(source, location));
         (source, source_span)
     }
 }

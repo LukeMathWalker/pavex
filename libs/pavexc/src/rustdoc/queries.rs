@@ -708,7 +708,7 @@ impl Crate {
             .chain(&id2private_import_paths)
         {
             for path in paths {
-                if import_path2id.get(path).is_none() {
+                if !import_path2id.contains_key(path) {
                     import_path2id.insert(path.to_owned(), id.to_owned());
                 }
             }
@@ -1322,7 +1322,7 @@ pub fn compute_package_id_for_crate_id(
     if TOOLCHAIN_CRATES.contains(&external_crate.name.as_str()) {
         return Ok(PackageId::new(external_crate.name.clone()));
     }
-    let external_crate_version = get_external_crate_version(&external_crate);
+    let external_crate_version = get_external_crate_version(external_crate);
     if let Some(id) = find_transitive_dependency(
         package_graph,
         package_id,
@@ -1334,7 +1334,7 @@ pub fn compute_package_id_for_crate_id(
 
     // We have multiple packages with the same name.
     // We need to disambiguate among them.
-    if let Some(maybe_dependent_crate_name) = maybe_dependent_crate_name.as_deref() {
+    if let Some(maybe_dependent_crate_name) = maybe_dependent_crate_name {
         let intermediate_crates: Vec<_> = external_crate_index
             .values()
             .filter(|c| c.name == maybe_dependent_crate_name)

@@ -112,7 +112,7 @@ pub(crate) fn resolve_type(
                                         provided_arg,
                                         used_by_package_id,
                                         krate_collection,
-                                        &generic_bindings,
+                                        generic_bindings,
                                     )?
                                 } else {
                                     anyhow::bail!("Expected `{:?}` to be a generic _type_ parameter, but it wasn't!", provided_arg)
@@ -122,7 +122,7 @@ pub(crate) fn resolve_type(
                                     default,
                                     &global_type_id.package_id,
                                     krate_collection,
-                                    &generic_bindings,
+                                    generic_bindings,
                                 )?;
                                 if skip_default(krate_collection, &default) {
                                     continue;
@@ -194,10 +194,8 @@ pub(crate) fn resolve_type(
                                 let generic_argument = match &arg_def.kind {
                                     GenericParamDefKind::Lifetime { .. } => {
                                         let mut lifetime_name = arg_def.name.clone();
-                                        if let Some(arg) = args.get(i) {
-                                            if let GenericArg::Lifetime(l) = &arg {
-                                                lifetime_name = l.clone();
-                                            }
+                                        if let Some(GenericArg::Lifetime(l)) = args.get(i) {
+                                            lifetime_name = l.clone();
                                         }
                                         if lifetime_name == "'static" {
                                             GenericArgument::Lifetime(
@@ -239,10 +237,10 @@ pub(crate) fn resolve_type(
                                             }
                                         } else if let Some(default) = default {
                                             let default = resolve_type(
-                                                &default,
+                                                default,
                                                 &global_type_id.package_id,
                                                 krate_collection,
-                                                &generic_bindings,
+                                                generic_bindings,
                                             )?;
                                             if skip_default(krate_collection, &default) {
                                                 continue;
@@ -501,7 +499,7 @@ pub(crate) fn resolve_callable(
                 match krate_collection.get_canonical_path_by_global_type_id(&self_.0.item_id) {
                     Ok(canonical_segments) => {
                         let mut segments: Vec<_> = canonical_segments
-                            .into_iter()
+                            .iter()
                             .map(|s| ResolvedPathSegment {
                                 ident: s.into(),
                                 generic_arguments: vec![],
@@ -549,7 +547,7 @@ pub(crate) fn resolve_callable(
                 {
                     Ok(p) => {
                         let mut segments: Vec<_> = p
-                            .into_iter()
+                            .iter()
                             .map(|s| ResolvedPathSegment {
                                 ident: s.into(),
                                 generic_arguments: vec![],
@@ -632,7 +630,7 @@ pub(crate) fn resolve_type_path(
         krate_collection: &CrateCollection,
     ) -> Result<ResolvedType, anyhow::Error> {
         let item = path.find_rustdoc_item_type(krate_collection)?.1;
-        resolve_type_path_with_item(&path, &item, krate_collection)
+        resolve_type_path_with_item(path, &item, krate_collection)
     }
 
     _resolve_type_path(path, krate_collection).map_err(|source| TypeResolutionError {

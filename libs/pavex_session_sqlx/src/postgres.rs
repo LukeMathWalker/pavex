@@ -305,7 +305,7 @@ impl SessionStorageBackend for PostgresSessionStore {
         let query = if let Some(batch_size) = batch_size {
             let batch_size: i64 = batch_size.get().try_into().unwrap_or(i64::MAX);
             sqlx::query("DELETE FROM sessions WHERE deadline < (now() AT TIME ZONE 'UTC') LIMIT $1")
-                .bind(batch_size as i64)
+                .bind(batch_size)
         } else {
             sqlx::query("DELETE FROM sessions WHERE deadline < (now() AT TIME ZONE 'UTC')")
         };
@@ -334,7 +334,7 @@ fn as_duplicated_id_error(e: &sqlx::Error, id: &SessionId) -> Result<(), Duplica
 fn as_unknown_id_error(r: &PgQueryResult, id: &SessionId) -> Result<(), UnknownIdError> {
     // Check if the session record was changed
     if r.rows_affected() == 0 {
-        return Err(UnknownIdError { id: id.to_owned() }.into());
+        return Err(UnknownIdError { id: id.to_owned() });
     }
     // Sanity check
     assert_eq!(
