@@ -1,0 +1,4 @@
+description = """Fallback handlers can ask for all primitives to be injected"""
+
+[expectations]
+codegen = "pass"
