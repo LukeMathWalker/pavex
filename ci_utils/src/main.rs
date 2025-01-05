@@ -13,6 +13,7 @@ fn main() {
         ("steps", "steps.jinja"),
         ("permissions", "permissions.jinja"),
         ("build_docs_steps", "job_steps/build_docs.jinja"),
+        ("lint_steps", "job_steps/lint.jinja"),
         ("build_clis_steps", "job_steps/build_clis.jinja"),
         (
             "build_tutorial_generator_steps",
