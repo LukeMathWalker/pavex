@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.68](https://github.com/LukeMathWalker/pavex/compare/0.1.67...0.1.68) - 2025-01-05
+
+### Fixed
+
+- Fallbacks can now successfully inject all framework primitives.
+
+### Other
+
+- Fix intra-doc link
+- Fix clippy lints
+
 ## [0.1.67](https://github.com/LukeMathWalker/pavex/compare/0.1.66...0.1.67) - 2025-01-02
 
 ### Added
