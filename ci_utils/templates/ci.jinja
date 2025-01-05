@@ -27,6 +27,15 @@ jobs:
       <%- from 'build_clis_steps' import output -%>
       <<- output | indent(4) >>
 
+  <% if target == 'linux' %>
+  lint_<<- target >>:
+    name: "Lint (<<- target >>)"
+    runs-on: << os >>
+      <% set job_name %>Lint (<<- target >>)<% endset %>
+      <%- from 'lint_steps' import output -%>
+      <<- output | indent(4) >>
+  <%- endif %>
+
   tests_<<- target >>:
     name: "Run tests (<<- target >>)"
     runs-on: << os >>

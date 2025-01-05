@@ -81,6 +81,63 @@ jobs:
         conclusion: ${{ job.status }}
         github_token: ${{ secrets.GITHUB_TOKEN }}
 
+  
+  lint_linux:
+    name: "Lint (linux)"
+    runs-on: ubuntu-latest
+      
+    permissions:
+      pull-requests: write
+      checks: write
+    # Run if it's a PR on the official repo or a push to `main`
+    if: |
+      (github.event_name == 'repository_dispatch' &&
+      github.event.client_payload.slash_command.args.named.sha != '' &&
+      contains(
+        github.event.client_payload.pull_request.head.sha,
+        github.event.client_payload.slash_command.args.named.sha
+      )) ||
+      (github.event_name == 'push' && github.event.repository.full_name == github.repository)
+    steps:
+    - name: Checkout repository from source repo
+      if: |
+        (github.event_name == 'push' && github.event.repository.full_name == github.repository)
+      uses: actions/checkout@v4
+    - name: Checkout repository from fork
+      if: |
+        github.event_name == 'repository_dispatch' &&
+        github.event.client_payload.slash_command.args.named.sha != '' &&
+        contains(
+          github.event.client_payload.pull_request.head.sha,
+          github.event.client_payload.slash_command.args.named.sha
+        )
+      uses: actions/checkout@v4
+      with:
+        ref: "refs/pull/${{ github.event.client_payload.pull_request.number }}/merge"
+    - uses: ./.github/actions/create-check
+      if: ${{ github.event_name != 'push' }}
+      with:
+        pr_number: ${{ github.event.client_payload.pull_request.number }}
+        job: Lint (linux)
+        workflow: "Build and store docs artifacts"
+        run_id: ${{ github.run_id }}
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+    - name: Install Rust
+      uses: actions-rust-lang/setup-rust-toolchain@v1.8.0
+      with:
+        cache-workspaces: "./libs -> ./target"
+    - name: Build CLI
+      run: |
+        cd libs
+        cargo clippy
+    - uses: ./.github/actions/finalize-check
+      if: ${{ always() && github.event_name != 'push' }}
+      with:
+        pr_number: ${{ github.event.client_payload.pull_request.number }}
+        job: Lint (linux)
+        conclusion: ${{ job.status }}
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+
   tests_linux:
     name: "Run tests (linux)"
     runs-on: ubuntu-latest
@@ -238,6 +295,8 @@ jobs:
         conclusion: ${{ job.status }}
         github_token: ${{ secrets.GITHUB_TOKEN }}
 
+  
+
   tests_macos:
     name: "Run tests (macos)"
     runs-on: macos-14
@@ -394,6 +453,8 @@ jobs:
         job: Build CLIs (windows)
         conclusion: ${{ job.status }}
         github_token: ${{ secrets.GITHUB_TOKEN }}
+
+  
 
   tests_windows:
     name: "Run tests (windows)"
