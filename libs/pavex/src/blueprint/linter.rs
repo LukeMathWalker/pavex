@@ -1,4 +1,6 @@
 //! Tools to lint a [`Blueprint`] for common mistakes and antipatterns.
+//!
+//! [`Blueprint`]: crate::blueprint::Blueprint
 
 #[derive(Debug, Clone, Copy, Eq, Ord, PartialOrd, PartialEq, Hash)]
 #[non_exhaustive]
