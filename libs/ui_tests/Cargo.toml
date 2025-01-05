@@ -209,6 +209,8 @@ members = [
   "dependency_injection/downstream_code_needs_both_owned_and_ref_to_same_type/generated_app",
   "dependency_injection/elided_lifetimes_are_handled",
   "dependency_injection/elided_lifetimes_are_handled/generated_app",
+  "dependency_injection/fallbacks_can_access_all_primitives",
+  "dependency_injection/fallbacks_can_access_all_primitives/generated_app",
   "dependency_injection/lifecycles/non_static_references_cannot_be_singletons",
   "dependency_injection/lifecycles/non_static_references_cannot_be_singletons/generated_app",
   "dependency_injection/lifecycles/singletons_cannot_depend_on_request_scoped",

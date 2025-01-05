@@ -7,7 +7,7 @@ use indexmap::IndexMap;
 use once_cell::sync::Lazy;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-use syn::{Ident, ItemFn};
+use syn::{Ident, ImplItemFn, ItemFn};
 
 use crate::{
     compiler::analyses::{
@@ -18,6 +18,7 @@ use crate::{
         router::{PathRouter, Router},
     },
     language::ResolvedType,
+    utils::syn_debug_parse2,
 };
 
 use super::deps::ServerSdkDeps;
@@ -368,7 +369,7 @@ fn path_router(
     framework_item_db: &FrameworkItemDb,
     package_id2name: &BiHashMap<PackageId, String>,
     sdk_deps: &ServerSdkDeps,
-) -> ItemFn {
+) -> ImplItemFn {
     static WELL_KNOWN_METHODS: Lazy<HashSet<&'static str>> = Lazy::new(|| {
         HashSet::from_iter(
             [
@@ -381,7 +382,7 @@ fn path_router(
     let pavex = sdk_deps.pavex_ident();
     let http = sdk_deps.http_ident();
     let hyper = sdk_deps.hyper_ident();
-    let mut route_dispatch_table = quote! {};
+    let mut route_match_arms = Vec::new();
     let server_state_ident = format_ident!("state");
     let connection_info_ident =
         framework_item_db.get_binding(FrameworkItemDb::connection_info_id());
@@ -406,72 +407,85 @@ fn path_router(
     let needs_url_params = needs_framework_item(FrameworkItemDb::url_params_id());
 
     for (route_id, sub_router) in route_id2method_router {
-        let match_arm = if sub_router.methods_and_pipelines.is_empty() {
-            // We just have the catch-all handler, we can skip the `match`.
-            sub_router.catch_all_pipeline.entrypoint_invocation(
+        let allowed_methods_init = {
+            let allowed_methods = sub_router
+                .methods_and_pipelines
+                .iter()
+                .flat_map(|(methods, _)| methods)
+                .map(|m| {
+                    if WELL_KNOWN_METHODS.contains(m.as_str()) {
+                        let i = format_ident!("{}", m);
+                        quote! {
+                            #pavex::http::Method::#i
+                        }
+                    } else {
+                        let expect_msg = format!("{} is not a valid (custom) HTTP method", m);
+                        quote! {
+                            #pavex::http::Method::try_from(#m).expect(#expect_msg)
+                        }
+                    }
+                });
+            let allowed_methods_id = FrameworkItemDb::allowed_methods_id();
+            let allowed_methods_ident = framework_item_db.get_binding(allowed_methods_id);
+            let allowed_methods_ty = framework_item_db
+                .get_type(allowed_methods_id)
+                .syn_type(package_id2name);
+            quote! {
+                let #allowed_methods_ident: #allowed_methods_ty = #pavex::router::MethodAllowList::from_iter(
+                    [#(#allowed_methods),*]
+                ).into();
+            }
+        };
+
+        let connection_info_init = quote! {
+            let #connection_info_ident = #connection_info_ident.expect("Required `ConnectionInfo` is missing");
+        };
+
+        let matched_route_init = {
+            let path = route_id2path.get_by_left(route_id).unwrap();
+            let id = FrameworkItemDb::matched_route_template_id();
+            let ident = framework_item_db.get_binding(id);
+            let ty_ = framework_item_db.get_type(id).syn_type(package_id2name);
+            quote! {
+                let #ident = #ty_::new(
+                    #path
+                );
+            }
+        };
+
+        let codegen_invocation = |pipeline: &CodegenedRequestHandlerPipeline| {
+            let invocation = pipeline.entrypoint_invocation(
                 singleton_bindings,
                 request_scoped_bindings,
                 &server_state_ident,
-            )
+            );
+            let mut framework_primitives = Vec::new();
+            if pipeline.needs_allowed_methods(framework_item_db) {
+                framework_primitives.push(allowed_methods_init.clone());
+            }
+            if pipeline.needs_connection_info(framework_item_db) {
+                framework_primitives.push(connection_info_init.clone());
+            }
+            if pipeline.needs_matched_route(framework_item_db) {
+                framework_primitives.push(matched_route_init.clone());
+            }
+            quote! {
+                {
+                    #(#framework_primitives)*
+                    #invocation
+                }
+            }
+        };
+
+        let match_arm = if sub_router.methods_and_pipelines.is_empty() {
+            // We just have the catch-all handler, we can skip the `match`.
+            let request_pipeline = &sub_router.catch_all_pipeline;
+            codegen_invocation(request_pipeline)
         } else {
             let mut sub_router_dispatch_table = quote! {};
-            let allowed_methods_init = {
-                let allowed_methods = sub_router
-                    .methods_and_pipelines
-                    .iter()
-                    .flat_map(|(methods, _)| methods)
-                    .map(|m| {
-                        if WELL_KNOWN_METHODS.contains(m.as_str()) {
-                            let i = format_ident!("{}", m);
-                            quote! {
-                                #pavex::http::Method::#i
-                            }
-                        } else {
-                            let expect_msg = format!("{} is not a valid (custom) HTTP method", m);
-                            quote! {
-                                #pavex::http::Method::try_from(#m).expect(#expect_msg)
-                            }
-                        }
-                    });
-                let allowed_methods_id = FrameworkItemDb::allowed_methods_id();
-                let allowed_methods_ident = framework_item_db.get_binding(allowed_methods_id);
-                let allowed_methods_ty = framework_item_db
-                    .get_type(allowed_methods_id)
-                    .syn_type(package_id2name);
-                quote! {
-                    let #allowed_methods_ident: #allowed_methods_ty = #pavex::router::MethodAllowList::from_iter(
-                        [#(#allowed_methods),*]
-                    ).into();
-                }
-            };
 
             for (methods, request_pipeline) in &sub_router.methods_and_pipelines {
-                let invocation = request_pipeline.entrypoint_invocation(
-                    singleton_bindings,
-                    request_scoped_bindings,
-                    &server_state_ident,
-                );
-                let invocation = if request_pipeline.needs_allowed_methods(framework_item_db) {
-                    quote! {
-                        {
-                            #allowed_methods_init
-                            #invocation
-                        }
-                    }
-                } else {
-                    invocation
-                };
-
-                let invocation = if request_pipeline.needs_connection_info(framework_item_db) {
-                    quote! {
-                        {
-                            let #connection_info_ident = #connection_info_ident.expect("Required ConnectionInfo is missing");
-                            #invocation
-                        }
-                    }
-                } else {
-                    invocation
-                };
+                let invocation = codegen_invocation(request_pipeline);
 
                 let (well_known_methods, custom_methods) = methods
                     .iter()
@@ -503,45 +517,9 @@ fn path_router(
                     };
                 };
             }
-            let matched_route_template =
-                sub_router.needs_matched_route(framework_item_db).then(|| {
-                    let path = route_id2path.get_by_left(route_id).unwrap();
-                    let id = FrameworkItemDb::matched_route_template_id();
-                    let ident = framework_item_db.get_binding(id);
-                    let ty_ = framework_item_db.get_type(id).syn_type(package_id2name);
-                    quote! {
-                        let #ident = #ty_::new(
-                            #path
-                        );
-                    }
-                });
-            let mut fallback_invocation = sub_router.catch_all_pipeline.entrypoint_invocation(
-                singleton_bindings,
-                request_scoped_bindings,
-                &server_state_ident,
-            );
-            if fallback_codegened_pipeline.needs_connection_info(framework_item_db) {
-                fallback_invocation = quote! {
-                    {
-                        let #connection_info_ident = #connection_info_ident.expect("Required ConnectionInfo is missing");
-                        #fallback_invocation
-                    }
-                }
-            }
-            if sub_router
-                .catch_all_pipeline
-                .needs_allowed_methods(framework_item_db)
-            {
-                fallback_invocation = quote! {
-                    {
-                        #allowed_methods_init
-                        #fallback_invocation
-                    }
-                };
-            }
+            let fallback_invocation = codegen_invocation(&sub_router.catch_all_pipeline);
             quote! {
                 {
-                    #matched_route_template
                     match &#request_head_ident.method {
                         #sub_router_dispatch_table
                         _ => #fallback_invocation,
@@ -549,10 +527,9 @@ fn path_router(
                 }
             }
         };
-        route_dispatch_table = quote! {
-            #route_dispatch_table
+        route_match_arms.push(quote! {
             #route_id => #match_arm,
-        };
+        });
     }
 
     let root_fallback_invocation = routing_failure_fallback_block(
@@ -594,7 +571,7 @@ fn path_router(
                 .into();
         }
     });
-    syn::parse2(quote! {
+    let code = quote! {
         async fn route(
             &self,
             request: #http::Request<#hyper::body::Incoming>,
@@ -608,12 +585,12 @@ fn path_router(
             };
             #url_params
             match #matched_route_ident.value {
-                #route_dispatch_table
+                #(#route_match_arms)*
                 i => unreachable!("Unknown route id: {}", i),
             }
         }
-    })
-    .unwrap()
+    };
+    syn_debug_parse2(code)
 }
 
 fn routing_failure_fallback_block(
@@ -657,9 +634,8 @@ fn routing_failure_fallback_block(
         .then(|| {
             let id = FrameworkItemDb::url_params_id();
             let ident = framework_items_db.get_binding(id);
-            let ty_ = framework_items_db.get_type(id).syn_type(package_id2name);
             quote! {
-                let #ident = #ty_::default();
+                let #ident = #pavex::request::path::RawPathParams::default();
             }
         });
     let unwrap_connection_info = fallback_codegened_pipeline
@@ -693,23 +669,4 @@ fn routing_failure_fallback_block(
 pub(super) struct CodegenMethodRouter {
     pub(super) methods_and_pipelines: Vec<(BTreeSet<String>, CodegenedRequestHandlerPipeline)>,
     pub(super) catch_all_pipeline: CodegenedRequestHandlerPipeline,
-}
-
-impl CodegenMethodRouter {
-    /// Returns an iterator over the pipelines that may be invoked by this router.
-    pub fn pipelines(&self) -> impl Iterator<Item = &CodegenedRequestHandlerPipeline> {
-        self.methods_and_pipelines
-            .iter()
-            .map(|(_, p)| p)
-            .chain(std::iter::once(&self.catch_all_pipeline))
-    }
-
-    /// Returns `true` if any of the pipelines in this router needs `MatchedPathPattern`
-    /// as input type.
-    pub fn needs_matched_route(&self, framework_items_db: &FrameworkItemDb) -> bool {
-        let matched_route_type =
-            framework_items_db.get_type(FrameworkItemDb::matched_route_template_id());
-        self.pipelines()
-            .any(|pipeline| pipeline.needs_input_type(matched_route_type))
-    }
 }

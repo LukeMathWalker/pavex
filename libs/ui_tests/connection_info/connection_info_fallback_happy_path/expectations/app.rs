@@ -65,7 +65,7 @@ impl Router {
                     &pavex::http::Method::GET => route_0::entrypoint().await,
                     _ => {
                         let connection_info = connection_info
-                            .expect("Required ConnectionInfo is missing");
+                            .expect("Required `ConnectionInfo` is missing");
                         route_1::entrypoint(&connection_info).await
                     }
                 }
