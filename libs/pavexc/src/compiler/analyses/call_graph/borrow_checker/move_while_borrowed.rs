@@ -294,7 +294,7 @@ fn try_clone(
     diagnostics: &mut Vec<miette::Error>,
 ) {
     let dependency_index = call_graph.edge_endpoints(edge_id).unwrap().0;
-    if copy_checker.is_copy(&call_graph, dependency_index, component_db, computation_db) {
+    if copy_checker.is_copy(call_graph, dependency_index, component_db, computation_db) {
         // You can't have a "borrow after moved" error for a Copy type.
         return;
     }
@@ -314,11 +314,11 @@ fn try_clone(
         emit_ancestor_descendant_borrow_error(
             dependency_index,
             node_index,
-            &node2captured_nodes,
+            node2captured_nodes,
             computation_db,
             component_db,
             package_graph,
-            &call_graph,
+            call_graph,
             diagnostics,
         );
         return;

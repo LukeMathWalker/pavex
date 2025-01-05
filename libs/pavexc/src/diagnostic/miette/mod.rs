@@ -40,7 +40,7 @@ impl SourceSpanExt for SourceSpan {
     }
 
     fn shift(self, offset: usize) -> SourceSpan {
-        SourceSpan::new((offset + self.offset()).into(), self.len().into())
+        SourceSpan::new((offset + self.offset()).into(), self.len())
     }
 }
 

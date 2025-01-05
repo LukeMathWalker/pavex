@@ -37,13 +37,13 @@ impl Component {
     pub(crate) fn source_id(&self) -> SourceId {
         match self {
             Component::PrebuiltType { user_component_id }
-            | Component::RequestHandler { user_component_id } => user_component_id.clone().into(),
+            | Component::RequestHandler { user_component_id } => (*user_component_id).into(),
             Component::WrappingMiddleware { source_id }
             | Component::PostProcessingMiddleware { source_id }
             | Component::PreProcessingMiddleware { source_id }
             | Component::Constructor { source_id }
             | Component::Transformer { source_id, .. } => source_id.clone(),
-            Component::ErrorObserver { user_component_id } => user_component_id.clone().into(),
+            Component::ErrorObserver { user_component_id } => (*user_component_id).into(),
         }
     }
 }

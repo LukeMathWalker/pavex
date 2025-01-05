@@ -52,7 +52,7 @@ impl OrderedCallGraph {
         computation_db: &ComputationDb,
     ) -> Result<ItemFn, anyhow::Error> {
         if tracing::event_enabled!(tracing::Level::TRACE) {
-            self.print_debug_dot(&"Application state", component_db, computation_db);
+            self.print_debug_dot("Application state", component_db, computation_db);
         }
         codegen_callable_closure(self, package_id2name, component_db, computation_db)
     }

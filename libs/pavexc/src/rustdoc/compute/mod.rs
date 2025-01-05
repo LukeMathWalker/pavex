@@ -224,7 +224,7 @@ where
     for package_id_spec in &package_id_specs {
         cmd.arg("-p").arg(package_id_spec);
     }
-    tracing::Span::current().record("package_id_specs", &package_id_specs.join(", "));
+    tracing::Span::current().record("package_id_specs", package_id_specs.join(", "));
 
     cmd.env("RUSTDOCFLAGS", rustdoc_options().join(" "));
 

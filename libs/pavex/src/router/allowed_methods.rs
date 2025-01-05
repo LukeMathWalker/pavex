@@ -1,6 +1,38 @@
 use http::HeaderValue;
 use smallvec::SmallVec;
 
+pub mod method_allow_list {
+    use http::Method;
+
+    use super::MethodAllowList;
+
+    /// The type returned by [`MethodAllowList::into_iter`].
+    ///
+    /// It lets you iterate over the allowed methods.
+    pub struct IntoIter {
+        methods: smallvec::IntoIter<[Method; 5]>,
+    }
+
+    impl Iterator for IntoIter {
+        type Item = Method;
+
+        fn next(&mut self) -> Option<Self::Item> {
+            self.methods.next()
+        }
+    }
+
+    impl IntoIterator for MethodAllowList {
+        type Item = Method;
+        type IntoIter = IntoIter;
+
+        fn into_iter(self) -> Self::IntoIter {
+            IntoIter {
+                methods: self.methods.into_iter(),
+            }
+        }
+    }
+}
+
 use crate::http::Method;
 
 /// The set of HTTP methods that are allowed for a given path.
@@ -52,7 +84,7 @@ impl AllowedMethods {
     /// The value that should be set for the `Allow` header
     /// in a `405 Method Not Allowed` response for this route path.
     ///
-    /// It returns `None` if all methods are allowed.  
+    /// It returns `None` if all methods are allowed.
     /// It returns the comma-separated list of accepted HTTP methods otherwise.
     pub fn allow_header_value(&self) -> Option<HeaderValue> {
         match self {
@@ -73,23 +105,20 @@ pub struct MethodAllowList {
     methods: SmallVec<[Method; 5]>,
 }
 
-impl MethodAllowList {
+impl FromIterator<Method> for MethodAllowList {
     /// Create a new instance of [`MethodAllowList`] from an iterator
     /// that yields [`Method`]s.
-    pub fn from_iter(iter: impl IntoIterator<Item = Method>) -> Self {
+    fn from_iter<I: IntoIterator<Item = Method>>(iter: I) -> Self {
         Self {
             methods: SmallVec::from_iter(iter),
         }
     }
+}
 
+impl MethodAllowList {
     /// Iterate over the allowed methods, returned as a reference.
     pub fn iter(&self) -> impl Iterator<Item = &Method> {
         self.methods.iter()
-    }
-
-    /// Consume `self` and return an iterator over the allowed methods.
-    pub fn into_iter(self) -> impl Iterator<Item = Method> {
-        self.methods.into_iter()
     }
 
     /// Get the number of allowed methods.

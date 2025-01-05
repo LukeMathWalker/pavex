@@ -191,7 +191,7 @@ impl FrameworkItemDb {
     /// Iterate over all the items in the database alongside their ids.
     pub fn iter(
         &self,
-    ) -> impl Iterator<Item = (FrameworkItemId, &ResolvedType)> + ExactSizeIterator {
+    ) -> impl ExactSizeIterator<Item = (FrameworkItemId, &ResolvedType)> {
         self.items.iter().map(|(t, id)| (*id, t))
     }
 }

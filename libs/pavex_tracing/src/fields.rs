@@ -28,73 +28,73 @@ use tracing::Value;
 /// according to [OpenTelemetry's semantic convention](https://opentelemetry.io/docs/specs/semconv/attributes-registry/http/).
 ///
 /// Use [`http_request_method`] to populate the field.
-pub const HTTP_REQUEST_METHOD: &'static str = "http.request.method";
+pub const HTTP_REQUEST_METHOD: &str = "http.request.method";
 
 /// The field name to record the server-generated identifier for this request.  
 /// This field doesn't appear in OpenTelemetry's semantic convention specification.
 ///
 /// Use [`http_request_server_id`] to populate the field.
-pub const HTTP_REQUEST_SERVER_ID: &'static str = "http.request.server_id";
+pub const HTTP_REQUEST_SERVER_ID: &str = "http.request.server_id";
 
 /// The field name to record the `Display` representation of an error.  
 /// This field doesn't appear in OpenTelemetry's semantic convention specification.
 ///
 /// Use [`error_message`] to populate the field.
-pub const ERROR_MESSAGE: &'static str = "error.message";
+pub const ERROR_MESSAGE: &str = "error.message";
 
 /// The field name to record the `Debug` representation of an error.  
 /// This field doesn't appear in OpenTelemetry's semantic convention specification.
 ///
 /// Use [`error_message`] to populate the field.
-pub const ERROR_DETAILS: &'static str = "error.details";
+pub const ERROR_DETAILS: &str = "error.details";
 
 /// The field name to record the chain of sources for an error.  
 /// This field doesn't appear in OpenTelemetry's semantic convention specification.
 ///
 /// Use [`error_source_chain`] to populate the field.
-pub const ERROR_SOURCE_CHAIN: &'static str = "error.source_chain";
+pub const ERROR_SOURCE_CHAIN: &str = "error.source_chain";
 
 /// The field name for the HTTP status code of the outgoing response,
 /// according to [OpenTelemetry's semantic convention](https://opentelemetry.io/docs/specs/semconv/attributes-registry/http/).
 ///
 /// Use [`http_response_status_code`] to populate the field.
-pub const HTTP_RESPONSE_STATUS_CODE: &'static str = "http.response.status_code";
+pub const HTTP_RESPONSE_STATUS_CODE: &str = "http.response.status_code";
 
 /// The field name for path pattern matched by the incoming request,
 /// according to [OpenTelemetry's semantic convention](https://opentelemetry.io/docs/specs/semconv/attributes-registry/http/).
 ///
 /// Use [`http_route`] to populate the field.
-pub const HTTP_ROUTE: &'static str = "http.route";
+pub const HTTP_ROUTE: &str = "http.route";
 
 /// The name of the network protocol used by the incoming request,
 /// according to [OpenTelemetry's semantic convention](https://opentelemetry.io/docs/specs/semconv/attributes-registry/network/).
 ///
 /// Use [`network_protocol_name`] to populate the field.
-pub const NETWORK_PROTOCOL_NAME: &'static str = "network.protocol.name";
+pub const NETWORK_PROTOCOL_NAME: &str = "network.protocol.name";
 
 /// The version of the network protocol used by the incoming request,
 /// according to [OpenTelemetry's semantic convention](https://opentelemetry.io/docs/specs/semconv/attributes-registry/network/).
 ///
 /// Use [`network_protocol_version`] to populate the field.
-pub const NETWORK_PROTOCOL_VERSION: &'static str = "network.protocol.version";
+pub const NETWORK_PROTOCOL_VERSION: &str = "network.protocol.version";
 
 /// The path targeted by the incoming request,
 /// according to [OpenTelemetry's semantic convention](https://opentelemetry.io/docs/specs/semconv/attributes-registry/url/).
 ///
 /// Use [`url_path`] to populate the field.
-pub const URL_PATH: &'static str = "url.path";
+pub const URL_PATH: &str = "url.path";
 
 /// The query string of the incoming request,
 /// according to [OpenTelemetry's semantic convention](https://opentelemetry.io/docs/specs/semconv/attributes-registry/url/).
 ///
 /// Use [`url_query`] to populate the field.
-pub const URL_QUERY: &'static str = "url.query";
+pub const URL_QUERY: &str = "url.query";
 
 /// The user agent header for the incoming request,
 /// according to [OpenTelemetry's semantic convention](https://opentelemetry.io/docs/specs/semconv/attributes-registry/user-agent/).
 ///
 /// Use [`user_agent_original`] to populate the field.
-pub const USER_AGENT_ORIGINAL: &'static str = "user_agent.original";
+pub const USER_AGENT_ORIGINAL: &str = "user_agent.original";
 
 /// The canonical representation for the value in [`HTTP_REQUEST_METHOD`].
 ///

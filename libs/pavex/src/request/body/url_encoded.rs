@@ -112,7 +112,7 @@ where
 {
     serde_html_form::from_bytes(bytes)
         .map_err(|e| UrlEncodedBodyDeserializationError { source: e })
-        .map_err(|e| ExtractUrlEncodedBodyError::DeserializationError(e))
+        .map_err(ExtractUrlEncodedBodyError::DeserializationError)
 }
 
 #[cfg(test)]

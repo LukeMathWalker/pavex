@@ -33,7 +33,7 @@ pub fn get_ui_test_directories(test_folder: &Path) -> impl Iterator<Item = PathB
 }
 
 pub fn get_test_name(tests_parent_folder: &Path, test_folder: &Path) -> String {
-    let relative_path = test_folder.strip_prefix(&tests_parent_folder).unwrap();
+    let relative_path = test_folder.strip_prefix(tests_parent_folder).unwrap();
     relative_path
         .components()
         .map(|c| {
@@ -80,7 +80,7 @@ pub fn run_tests(
             // We only do this *after* we've created the test directories, so that we don't
             // change the test directory structure based on the filters, which would cause
             // cache invalidation issues for `cargo`.
-            !is_filtered_out(&arguments, &test_name) && !test_data.configuration.ignore
+            !is_filtered_out(&arguments, test_name) && !test_data.configuration.ignore
         })
         .collect::<BTreeMap<_, _>>();
 
@@ -109,9 +109,9 @@ pub fn run_tests(
             .map(|(name, data)| {
                 let mut trials = Vec::new();
                 let (codegen_output, outcome) =
-                    code_generation_test(&tests_directory, &data, &pavexc_cli, &pavex_cli);
+                    code_generation_test(&tests_directory, data, &pavexc_cli, &pavex_cli);
                 let is_success = outcome == CodegenTestOutcome::Success;
-                let trial = outcome.into_trial(&name, &data.configuration, codegen_output.as_ref());
+                let trial = outcome.into_trial(name, &data.configuration, codegen_output.as_ref());
                 trials.push(trial);
 
                 // If the code generation test failed, we skip the follow-up tests.
@@ -120,7 +120,7 @@ pub fn run_tests(
                 }
 
                 if let Some(codegen_output) = codegen_output {
-                    if let Some(trial) = code_generation_lints_test(&data, &name, &codegen_output) {
+                    if let Some(trial) = code_generation_lints_test(data, name, &codegen_output) {
                         trials.push(trial);
                     }
                 };
@@ -129,10 +129,10 @@ pub fn run_tests(
                     return (name.to_owned(), (trials, false));
                 }
 
-                let trial = code_generation_diagnostics_test(&name, &data);
+                let trial = code_generation_diagnostics_test(name, data);
                 trials.push(trial);
 
-                let trial = application_code_test(&name, &data);
+                let trial = application_code_test(name, data);
                 trials.push(trial);
                 (name.to_owned(), (trials, true))
             })
@@ -392,7 +392,7 @@ fn create_tests_dir(
 ) -> Result<(), anyhow::Error> {
     let timer = std::time::Instant::now();
     println!("Seeding the filesystem");
-    fs_err::create_dir_all(&runtime_directory)
+    fs_err::create_dir_all(runtime_directory)
         .context("Failed to create runtime directory for UI tests")?;
 
     // Create a `Cargo.toml` to define a workspace,
@@ -407,7 +407,7 @@ debug = "none""##
     writeln!(&mut cargo_toml, "\n[workspace]\nmembers = [").unwrap();
     for test_data in test_name2test_data.values() {
         for member in test_data.workspace_members() {
-            let relative_path = member.strip_prefix(&runtime_directory).unwrap();
+            let relative_path = member.strip_prefix(runtime_directory).unwrap();
             // We use the Unix path separator, since that's what `cargo` expects
             // in `Cargo.toml` files.
             let p = relative_path
@@ -775,7 +775,7 @@ fn code_generation_lints_test(
     let lints_test_name = format!("{test_name}::codegen_lints");
     let trial = if stderr_snapshot.verify(&codegen_output.stderr).is_err() {
         let msg = enrich_codegen_failure_message(
-            &codegen_output,
+            codegen_output,
             &data.configuration,
             "The warnings returned by code generation don't match what we expected",
         );

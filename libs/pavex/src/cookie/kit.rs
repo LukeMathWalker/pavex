@@ -67,6 +67,12 @@ pub struct CookieKit {
     pub response_cookie_injector: Option<PostProcessingMiddleware>,
 }
 
+impl Default for CookieKit {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CookieKit {
     /// Create a new [`CookieKit`] with all the bundled constructors and middlewares.
     pub fn new() -> Self {

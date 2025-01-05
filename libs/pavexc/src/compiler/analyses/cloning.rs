@@ -74,11 +74,10 @@ fn must_be_clonable(
     let source = try_source!(location, package_graph, diagnostics);
     let label = source
         .as_ref()
-        .map(|source| {
-            diagnostic::get_f_macro_invocation_span(&source, location)
+        .and_then(|source| {
+            diagnostic::get_f_macro_invocation_span(source, location)
                 .labeled(format!("The {callable_type} was registered here"))
-        })
-        .flatten();
+        });
     let error_msg = match callable_type {
         CallableType::Constructor => {
             let callable_path = &computation_db[user_component_id].path;

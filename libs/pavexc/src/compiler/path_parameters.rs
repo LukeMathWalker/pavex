@@ -138,7 +138,7 @@ pub(crate) fn verify_path_parameters(
             };
             for field_id in field_ids {
                 let field_item = krate_collection.get_item_by_global_type_id(&GlobalItemId {
-                    rustdoc_item_id: field_id.clone(),
+                    rustdoc_item_id: *field_id,
                     package_id: extracted_path_type.package_id.clone(),
                 });
                 struct_field_names.insert(field_item.name.clone().unwrap());
@@ -157,7 +157,7 @@ pub(crate) fn verify_path_parameters(
                 computation_db,
                 package_graph,
                 diagnostics,
-                &path,
+                path,
                 graph,
                 ok_path_params_node_id,
                 path_parameter_names,
@@ -290,7 +290,7 @@ fn must_be_a_plain_struct(
 ) -> Result<rustdoc_types::Item, ()> {
     let error_suffix = match extracted_type {
         ResolvedType::ResolvedPath(t) => {
-            let Some(item_id) = t.rustdoc_id.clone() else {
+            let Some(item_id) = t.rustdoc_id else {
                 unreachable!()
             };
             let item = krate_collection.get_item_by_global_type_id(&GlobalItemId {

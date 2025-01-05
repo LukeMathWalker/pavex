@@ -57,7 +57,7 @@ pub struct GenerateArgs {
 
 pub fn generate(args: GenerateArgs) -> Result<PathBuf, anyhow::Error> {
     let template_dir = get_source_template_into_temp(&args.template_dir)?;
-    let project_dir = expand_template(&template_dir.path(), &args)?;
+    let project_dir = expand_template(template_dir.path(), &args)?;
 
     copy_expanded_template(template_dir.path(), &project_dir, &args)
 }

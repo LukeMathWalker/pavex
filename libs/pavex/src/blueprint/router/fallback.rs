@@ -14,7 +14,7 @@ pub struct RegisteredFallback<'a> {
     pub(crate) component_id: usize,
 }
 
-impl<'a> RegisteredFallback<'a> {
+impl RegisteredFallback<'_> {
     #[track_caller]
     /// Register an error handler.
     ///

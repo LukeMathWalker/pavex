@@ -219,7 +219,7 @@ pub(crate) fn get_prefix_span(
     let arguments = get_inherent_method_arguments("prefix", source, location)?;
     Some(convert_proc_macro_span(
         &source.contents,
-        arguments.get(0)?.span(),
+        arguments.first()?.span(),
     ))
 }
 
@@ -247,7 +247,7 @@ pub(crate) fn get_domain_span(
     let arguments = get_inherent_method_arguments("domain", source, location)?;
     Some(convert_proc_macro_span(
         &source.contents,
-        arguments.get(0)?.span(),
+        arguments.first()?.span(),
     ))
 }
 
@@ -275,7 +275,7 @@ pub(crate) fn get_nest_blueprint_span(
     let arguments = get_inherent_method_arguments("nest", source, location)?;
     Some(convert_proc_macro_span(
         &source.contents,
-        arguments.get(0)?.span(),
+        arguments.first()?.span(),
     ))
 }
 
@@ -307,7 +307,7 @@ fn get_inherent_method_arguments(
                     method_name,
                     found
                 );
-                return None;
+                None
             }
         }
         Call::FunctionCall(node) => Some(node.args.iter().skip(1).cloned().collect()),

@@ -219,14 +219,12 @@ fn validate(input: &str) -> Result<(), InvalidDomainConstraint> {
                         is_catch_all,
                     });
                 }
+            } else if let Some(parameter) = &mut parameter {
+                parameter.name.push(char);
             } else {
-                if let Some(parameter) = &mut parameter {
-                    parameter.name.push(char);
-                } else {
-                    label_length += 1;
-                    if !(char.is_ascii_alphanumeric() || char == '-') {
-                        invalid_label_chars.insert(char);
-                    }
+                label_length += 1;
+                if !(char.is_ascii_alphanumeric() || char == '-') {
+                    invalid_label_chars.insert(char);
                 }
             }
         }

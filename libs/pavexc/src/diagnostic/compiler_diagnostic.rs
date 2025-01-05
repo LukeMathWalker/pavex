@@ -203,14 +203,14 @@ impl CompilerDiagnostic {
     /// You can optionally specify:
     ///
     /// - the source code the diagnostic refer to (see [`CompilerDiagnosticBuilder::source`]
-    /// and [`CompilerDiagnosticBuilder::optional_source`])
+    ///   and [`CompilerDiagnosticBuilder::optional_source`])
     /// - labels to highlight specific parts of the source code (see
-    /// [`CompilerDiagnosticBuilder::label`] and [`CompilerDiagnosticBuilder::optional_label`]);
+    ///   [`CompilerDiagnosticBuilder::label`] and [`CompilerDiagnosticBuilder::optional_label`]);
     /// - a help message to provide more information about the error (see
-    /// [`CompilerDiagnosticBuilder::help`] and [`CompilerDiagnosticBuilder::optional_help`]);
+    ///   [`CompilerDiagnosticBuilder::help`] and [`CompilerDiagnosticBuilder::optional_help`]);
     /// - related errors. This can be leveraged to point at other source files that are related
-    /// to the error (see [`CompilerDiagnosticBuilder::additional_annotated_snippet`] and
-    /// [`CompilerDiagnosticBuilder::optional_additional_annotated_snippet`]).
+    ///   to the error (see [`CompilerDiagnosticBuilder::additional_annotated_snippet`] and
+    ///   [`CompilerDiagnosticBuilder::optional_additional_annotated_snippet`]).
     pub fn builder(error: impl Into<anyhow::Error>) -> CompilerDiagnosticBuilder {
         CompilerDiagnosticBuilder::new(error)
     }

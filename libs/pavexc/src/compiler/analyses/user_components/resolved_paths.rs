@@ -58,7 +58,7 @@ impl ResolvedPathDb {
     /// `ResolvedPath`.
     pub fn iter(
         &self,
-    ) -> impl Iterator<Item = (ResolvedPathId, &ResolvedPath)> + ExactSizeIterator + DoubleEndedIterator
+    ) -> impl ExactSizeIterator<Item = (ResolvedPathId, &ResolvedPath)> + DoubleEndedIterator
     {
         self.interner.iter()
     }
@@ -81,13 +81,7 @@ impl ResolvedPathDb {
         let source_span = diagnostic::get_f_macro_invocation_span(&source, location);
         let (label, help) = match &e {
             ParseError::InvalidPath(inner) => {
-                let help = if let Some(stripped) =
-                    inner.raw_identifiers.import_path.strip_suffix("()")
-                {
-                    Some(format!("The `f!` macro expects an unambiguous path as input, not a function call. Remove the `()` at the end: `f!({stripped})`"))
-                } else {
-                    None
-                };
+                let help = inner.raw_identifiers.import_path.strip_suffix("()").map(|stripped| format!("The `f!` macro expects an unambiguous path as input, not a function call. Remove the `()` at the end: `f!({stripped})`"));
                 ("The invalid import path was registered here", help)
             }
             ParseError::PathMustBeAbsolute(_) => (

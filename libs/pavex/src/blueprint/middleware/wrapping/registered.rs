@@ -14,7 +14,7 @@ pub struct RegisteredWrappingMiddleware<'a> {
     pub(crate) component_id: usize,
 }
 
-impl<'a> crate::blueprint::middleware::RegisteredWrappingMiddleware<'a> {
+impl crate::blueprint::middleware::RegisteredWrappingMiddleware<'_> {
     #[track_caller]
     /// Register an error handler.
     ///

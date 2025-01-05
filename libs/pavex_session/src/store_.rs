@@ -165,7 +165,7 @@ pub struct SessionRecordRef<'session> {
     pub ttl: std::time::Duration,
 }
 
-impl<'session> SessionRecordRef<'session> {
+impl SessionRecordRef<'_> {
     pub(crate) fn empty(ttl: std::time::Duration) -> Self {
         Self {
             state: Cow::Owned(HashMap::new()),

@@ -160,11 +160,11 @@ to add the missing toolchain and fix the issue.",
     }
 
     fn auto_install(&self) -> Result<(), Error> {
-        install_rustup_toolchain(&self)
+        install_rustup_toolchain(self)
     }
 
     fn is_installed(&self) -> Result<(), Error> {
-        is_rustup_toolchain_installed(&self)
+        is_rustup_toolchain_installed(self)
     }
 }
 

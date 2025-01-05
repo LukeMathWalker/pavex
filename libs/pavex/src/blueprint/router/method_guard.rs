@@ -8,11 +8,11 @@ use crate::router::{AllowedMethods, MethodAllowList};
 /// Used by [`Blueprint::route`] to specify which HTTP methods the route should match.
 ///
 /// If you want to match a single HTTP method, use the dedicated constants in this
-/// module ([`GET`], [`POST`], [`PATCH`], [`DELETE`], etc.).  
+/// module ([`GET`], [`POST`], [`PATCH`], [`DELETE`], etc.).
 /// If you want to match a list of HTTP methods, use either [`MethodGuard::or`] or
-/// [`MethodGuard::from_iter`].  
-/// If you want to match all well-known HTTP methods, use [`ANY`].  
-/// If you want to match **any** HTTP method, including custom ones, use [`ANY_WITH_EXTENSIONS`].  
+/// [`MethodGuard::from_iter`].
+/// If you want to match all well-known HTTP methods, use [`ANY`].
+/// If you want to match **any** HTTP method, including custom ones, use [`ANY_WITH_EXTENSIONS`].
 ///
 /// [`Blueprint::route`]: crate::blueprint::Blueprint::route
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -20,7 +20,7 @@ pub struct MethodGuard {
     inner: inner::MethodGuard<'static>,
 }
 
-impl MethodGuard {
+impl FromIterator<Method> for MethodGuard {
     /// Build a new [`MethodGuard`] that matches incoming requests using the given HTTP methods.
     ///
     /// ```rust
@@ -37,10 +37,10 @@ impl MethodGuard {
     /// let guard = GET.or(POST);
     /// ```
     ///
-    /// If you want to match **any** HTTP method, use [`ANY`].  
+    /// If you want to match **any** HTTP method, use [`ANY`].
     /// If you want to match a single HTTP method, use the dedicated constants in this
     /// module ([`GET`], [`POST`], [`PATCH`], [`DELETE`], etc.).
-    pub fn from_iter(allowed_methods: impl IntoIterator<Item = Method>) -> Self {
+    fn from_iter<I: IntoIterator<Item = Method>>(allowed_methods: I) -> Self {
         let mut bitset = 0;
         let mut extensions = BTreeSet::new();
         for method in allowed_methods {
@@ -55,7 +55,9 @@ impl MethodGuard {
             inner: inner::MethodGuard::Some(inner::SomeMethodGuard { bitset, extensions }),
         }
     }
+}
 
+impl MethodGuard {
     /// Combine this [`MethodGuard`] with another one, returning a new [`MethodGuard`].
     ///
     /// The returned [`MethodGuard`] will match requests that match either of the two
@@ -212,7 +214,7 @@ mod inner {
     /// In order to have a const constructor for `MethodGuard`, we need to use a collection
     /// for extension methods that can be created in a const context.
     ///
-    /// There's only two options at the moment: `BTreeSet` and `Vec`.  
+    /// There's only two options at the moment: `BTreeSet` and `Vec`.
     /// `Vec` wouldn't give us deduplication, but we can't use `BTreeSet` with `http::Method` because
     /// it doesn't implement `Ord`.
     ///
@@ -234,7 +236,7 @@ mod inner {
         Custom(Cow<'a, str>),
     }
 
-    impl<'a> Method<'a> {
+    impl Method<'_> {
         pub(super) fn into_owned(self) -> Method<'static> {
             match self {
                 Method::GET => Method::GET,
@@ -274,7 +276,7 @@ mod inner {
         }
     }
 
-    impl<'a> From<Method<'a>> for http::Method {
+    impl From<Method<'_>> for http::Method {
         fn from(value: Method) -> Self {
             match value {
                 Method::GET => http::Method::GET,
@@ -316,7 +318,7 @@ mod inner {
         /// # Why so complicated?
         ///
         /// We don't use a bitset because we want to be "low overhead": `MethodGuard` is only
-        /// used when assembling a `Blueprint`, it doesn't play any role at runtime.  
+        /// used when assembling a `Blueprint`, it doesn't play any role at runtime.
         /// We use a bitset, rather than a `BTreeSet`, because we want to be able to expose
         /// a constant for each well-known HTTP method, and we can't use data structures that
         /// allocate memory at runtime (such as `BTreeSet`) in a `const` context.

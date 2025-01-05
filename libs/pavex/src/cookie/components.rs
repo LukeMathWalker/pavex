@@ -10,15 +10,15 @@ use http::HeaderValue;
 /// Parse cookies out of the incoming request.
 ///
 /// It's the default constructor for [`RequestCookies`].
-pub fn extract_request_cookies<'request, 'b>(
+pub fn extract_request_cookies<'request>(
     request_head: &'request RequestHead,
-    processor: &'b Processor,
+    processor: &Processor,
 ) -> Result<RequestCookies<'request>, ExtractRequestCookiesError> {
     let mut cookies = RequestCookies::new();
     for header in request_head.headers.get_all(COOKIE).into_iter() {
         let header = header
             .to_str()
-            .map_err(|e| ExtractRequestCookiesError::InvalidHeaderValue(e))?;
+            .map_err(ExtractRequestCookiesError::InvalidHeaderValue)?;
         cookies.extend_from_header(header, processor).map_err(|e| {
             use biscotti::errors::ParseError::*;
             match e {

@@ -70,7 +70,7 @@ pub fn walk_dir(
         pb.set_message(format!("Processing: {filename_display}"));
 
         if entry.file_type().is_file() {
-            match template_process_file(liquid_object, &liquid_engine, filename) {
+            match template_process_file(liquid_object, liquid_engine, filename) {
                 Err(e) => {
                     if verbose {
                         files_with_errors.push((filename.display().to_string(), e.clone()));
@@ -161,7 +161,7 @@ pub fn render_string_gracefully(
 }
 
 fn print_files_with_errors_warning(files_with_errors: Vec<(String, liquid_core::Error)>) {
-    let mut msg = format!("Substitution skipped, found invalid syntax in\n");
+    let mut msg = "Substitution skipped, found invalid syntax in\n".to_string();
     for file_error in files_with_errors {
         msg.push('\t');
         msg.push_str(&file_error.0);

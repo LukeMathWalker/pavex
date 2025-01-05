@@ -70,7 +70,7 @@ impl CliToken {
     }
 
     pub fn validate(&self, jwks: &JwkSet) -> Result<ValidatedClaims, anyhow::Error> {
-        let header = decode_header(&self.0.expose_secret())
+        let header = decode_header(self.0.expose_secret())
             .context("Failed to decode the JOSE header of the CLI token")?;
         let kid = header.kid.ok_or_else(|| {
             anyhow::anyhow!("The CLI token is missing the key id (`kid`) in its JOSE header")
@@ -89,7 +89,7 @@ impl CliToken {
         validation.iss = Some(HashSet::from_iter(["https://api.pavex.dev".to_string()]));
 
         let token: TokenData<ValidatedClaims> =
-            jsonwebtoken::decode(&self.0.expose_secret(), &decoding_key, &validation)
+            jsonwebtoken::decode(self.0.expose_secret(), &decoding_key, &validation)
                 .context("Failed to validate the signature of the CLI token")?;
         Ok(token.claims)
     }

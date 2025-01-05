@@ -348,22 +348,18 @@ where
                     // We want to find the `pavex::Error::new` node index for this error.
                     let pavex_error_new_node_index = match call_graph
                         .neighbors_directed(node_index, Direction::Incoming)
-                        .find_map(|parent_index| {
-                            let parent_node = &call_graph[parent_index];
+                        .find(|parent_index| {
+                            let parent_node = &call_graph[*parent_index];
                             let CallGraphNode::Compute { component_id, .. } = parent_node else {
-                                return None;
+                                return false;
                             };
                             let computation = component_db
                                 .hydrated_component(*component_id, computation_db)
                                 .computation();
                             let Computation::MatchResult(m) = computation else {
-                                return None;
+                                return false;
                             };
-                            if m.variant == MatchResultVariant::Err {
-                                Some(parent_index)
-                            } else {
-                                None
-                            }
+                            m.variant == MatchResultVariant::Err
                         }) {
                         None => call_graph
                             .neighbors_directed(node_index, Direction::Incoming)
@@ -375,10 +371,7 @@ where
                                 };
                                 let component =
                                     component_db.hydrated_component(*component_id, computation_db);
-                                let Some(output_type) = component.output_type() else {
-                                    return None;
-                                };
-                                if output_type == &component_db.pavex_error {
+                                if component.output_type()? == &component_db.pavex_error {
                                     Some(parent_index)
                                 } else {
                                     None
@@ -390,8 +383,7 @@ where
                             // the children of the error matcher.
                             let Some(pavex_error_new_node_index) = call_graph
                                 .neighbors_directed(match_error_node_index, Direction::Outgoing)
-                                .filter(|&child_index| child_index != node_index)
-                                .next()
+                                .find(|&child_index| child_index != node_index)
                             else {
                                 break 'inner;
                             };
@@ -598,7 +590,7 @@ impl CallGraph {
                         CallGraphNode::InputParameter { type_, .. } => {
                             format!("label = \"{type_:?}\"")
                         }
-                        CallGraphNode::MatchBranching => format!("label = \"`match`\""),
+                        CallGraphNode::MatchBranching => "label = \"`match`\"".to_string(),
                     }
                 },
             )

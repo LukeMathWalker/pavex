@@ -48,7 +48,7 @@ pub(crate) fn codegen_app(
     if tracing::event_enabled!(tracing::Level::TRACE) {
         eprintln!(
             "Application state definition:\n{}",
-            quote! { #application_state_def }.to_string()
+            quote! { #application_state_def }
         );
     }
     let define_application_state_error = define_application_state_error(
@@ -104,7 +104,7 @@ pub(crate) fn codegen_app(
         &sdk_deps,
         &handler_id2codegened_pipeline,
         runtime_singleton_bindings,
-        &request_scoped_framework_bindings,
+        request_scoped_framework_bindings,
         package_id2name,
         framework_item_db,
     );

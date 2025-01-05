@@ -62,7 +62,7 @@ impl<'server, 'request, 'de> PathDeserializer<'server, 'request, 'de> {
     }
 }
 
-impl<'server, 'request, 'de> Deserializer<'request> for PathDeserializer<'server, 'request, 'de>
+impl<'server, 'request> Deserializer<'request> for PathDeserializer<'server, 'request, '_>
 where
     'server: 'request,
 {
@@ -188,7 +188,7 @@ struct MapDeserializer<'de, 'request> {
     value: Option<&'de Cow<'request, str>>,
 }
 
-impl<'de, 'request> MapAccess<'request> for MapDeserializer<'de, 'request> {
+impl<'request> MapAccess<'request> for MapDeserializer<'_, 'request> {
     type Error = PathDeserializationError;
 
     fn next_key_seed<K>(&mut self, seed: K) -> Result<Option<K::Value>, Self::Error>

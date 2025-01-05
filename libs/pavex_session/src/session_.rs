@@ -328,7 +328,7 @@ impl<'session> ClientSessionState<'session> {
 /// A mutable reference to the client-side state of a session.
 pub struct ClientSessionStateMut<'session>(&'session mut ClientState, &'session InvalidationFlag);
 
-impl<'session> ClientSessionStateMut<'session> {
+impl ClientSessionStateMut<'_> {
     /// Get the value associated with `key` from the client-side state.
     ///
     /// If the value is not found, `None` is returned.
