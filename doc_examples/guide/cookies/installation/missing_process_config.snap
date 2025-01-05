@@ -4,13 +4,13 @@
   [31m│[0m invoke your constructor, `<pavex::cookie::Processor as
   [31m│[0m core::convert::From::<pavex::cookie::ProcessorConfig>>::from`.
   [31m│[0m
-  [31m│[0m     ╭─[[36;1;4m../../../../../libs/pavex/src/cookie/kit.rs[0m:80:1]
-  [31m│[0m  [2m80[0m │                     .error_handler(f!(super::errors::InjectResponseCookiesError::into_response));
-  [31m│[0m  [2m81[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m         let processor = Constructor::singleton(f!(<super::Processor as std::convert::From<
-  [31m│[0m  [2m82[0m │ [35;1m│[0m               super::ProcessorConfig,
-  [31m│[0m  [2m83[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m         >>::from))
+  [31m│[0m     ╭─[[36;1;4m../../../../../libs/pavex/src/cookie/kit.rs[0m:86:1]
+  [31m│[0m  [2m86[0m │                     .error_handler(f!(super::errors::InjectResponseCookiesError::into_response));
+  [31m│[0m  [2m87[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m         let processor = Constructor::singleton(f!(<super::Processor as std::convert::From<
+  [31m│[0m  [2m88[0m │ [35;1m│[0m               super::ProcessorConfig,
+  [31m│[0m  [2m89[0m │ [35;1m├[0m[35;1m─[0m[35;1m▶[0m         >>::from))
   [31m│[0m     · [35;1m╰[0m[35;1m───[0m[35;1m─[0m [35;1mThe constructor was registered here[0m
-  [31m│[0m  [2m84[0m │             .ignore(Lint::Unused);
+  [31m│[0m  [2m90[0m │             .ignore(Lint::Unused);
   [31m│[0m     ╰────
   [31m│[0m   [36mhelp:[0m Register a constructor for `biscotti::ProcessorConfig`.
   [31m│[0m [36m  help: [0mAlternatively, use `Blueprint::prebuilt` to add a new input
