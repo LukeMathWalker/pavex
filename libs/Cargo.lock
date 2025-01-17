@@ -4426,6 +4426,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "tracing_log_error"
+version = "0.1.68"
+dependencies = [
+ "tracing",
+]
+
+[[package]]
 name = "trim-in-place"
 version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
