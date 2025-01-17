@@ -154,8 +154,10 @@ where
     /// Spawn a thread and run the worker there, using a single-threaded executor that can
     /// handle !Send futures.
     pub(super) fn spawn(self) -> Result<thread::JoinHandle<()>, anyhow::Error> {
+        let id = self.id;
+        let name = || format!("pavex-worker-{}", id);
         thread::Builder::new()
-            .name(format!("pavex-worker-{}", self.id))
+            .name(name())
             .spawn(move || {
                 let runtime = tokio::runtime::Builder::new_current_thread()
                     .enable_all()
@@ -166,7 +168,7 @@ where
                 let local = tokio::task::LocalSet::new();
                 local.block_on(&runtime, self.run());
             })
-            .context("Failed to spawn worker thread")
+            .with_context(|| format!("Failed to spawn worker thread `{}`", name()))
     }
 
     /// Run the worker: wait for incoming connections and handle them.
