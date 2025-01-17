@@ -162,6 +162,9 @@ where
                 let runtime = tokio::runtime::Builder::new_current_thread()
                     .enable_all()
                     .build()
+                    // This can only fail if `tokio` fails to create an IO stack for the
+                    // current thread executor, which is highly unlikely to happen
+                    // and probably indicates a deeper issue that we can't recover from.
                     .expect("Failed to build single-threaded Tokio runtime for worker thread");
 
                 // Use a `LocalSet` to allow the worker to spawn !Send futures.
