@@ -1,5 +1,7 @@
 use std::num::NonZeroUsize;
 
+use tracing_log_error::log_error;
+
 #[derive(Debug, Clone)]
 /// All the available options for customizing the behaviour of a [`Server`](super::Server).
 ///
@@ -23,11 +25,12 @@ impl ServerConfiguration {
             Ok(n) => n,
             Err(e) => {
                 let fallback = NonZeroUsize::new(2).unwrap();
-                tracing::warn!(
-                    error.msg = %e,
-                    error.details = ?e,
+                log_error!(
+                    e,
+                    level: tracing::Level::WARN,
                     "Failed to determine the amount of available parallelism. \
-                    Setting the number of worker threads to a fallback value of {}", fallback);
+                    Setting the number of worker threads to a fallback value of {}",
+                    fallback);
                 fallback
             }
         };
@@ -41,7 +44,7 @@ impl ServerConfiguration {
     ///
     /// It relies on [`std::thread::available_parallelism`] to determine the available parallelism.
     /// On most platforms, this is the number of physical CPU cores available. If the available
-    /// parallelism cannot be determined, it defaults to 2.  
+    /// parallelism cannot be determined, it defaults to 2.
     ///
     /// ## Logical vs physical Cores
     ///

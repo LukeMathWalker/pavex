@@ -825,13 +825,10 @@ impl Blueprint {
     /// ```rust
     /// use pavex::f;
     /// use pavex::blueprint::Blueprint;
+    /// use tracing_log_error::log_error;
     ///
     /// pub fn error_logger(e: &pavex::Error) {
-    ///     tracing::error!(
-    ///         error.msg = %e,
-    ///         error.details = ?e,
-    ///         "An error occurred while handling a request"
-    ///     );
+    ///     log_error!(e, "An error occurred while handling a request");
     /// }
     ///
     /// # fn main() {

@@ -5,6 +5,7 @@ use cargo_like_utils::shell::Shell;
 use guppy::graph::PackageSource;
 use guppy::Version;
 use std::path::{Path, PathBuf};
+use tracing_log_error::log_error;
 
 pub enum InstallSource {
     /// Install the binary from the current workspace.
@@ -169,11 +170,7 @@ pub(super) fn install(
                 let _ = shell.warn(format!(
                     "Download failed: {e}.\nI'll try compiling from source instead."
                 ));
-                tracing::warn!(
-                    error.msg = %e,
-                    error.cause = ?e,
-                    "Failed to download prebuilt `pavexc` binary. I'll try to build it from source instead.",
-                );
+                log_error!(e, level: tracing::Level::WARN, "Failed to download prebuilt `pavexc` binary. I'll try to build it from source instead.");
             }
         }
     }

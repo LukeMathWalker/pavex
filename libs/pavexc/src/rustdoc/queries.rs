@@ -13,6 +13,7 @@ use indexmap::IndexSet;
 use rustc_hash::FxHashMap;
 use rustdoc_types::{ExternalCrate, Item, ItemEnum, ItemKind, ItemSummary, Visibility};
 use tracing::Span;
+use tracing_log_error::log_error;
 
 use crate::compiler::resolvers::{resolve_type, GenericBindings};
 use crate::language::{ResolvedPathGenericArgument, ResolvedPathType};
@@ -126,9 +127,9 @@ impl CrateCollection {
             .disk_cache
             .get_access_log(&self.project_fingerprint)
             .unwrap_or_else(|e| {
-                tracing::warn!(
-                    error.msg = tracing::field::display(&e),
-                    error.error_chain = tracing::field::debug(&e),
+                log_error!(
+                    *e,
+                    level: tracing::Level::WARN,
                     "Failed to retrieve the crate access log from the on-disk cache"
                 );
                 // This is an optimisation, therefore we should not
@@ -170,9 +171,9 @@ impl CrateCollection {
             match cache.get(&cache_key, &package_graph) {
                 Ok(o) => (package_id, o),
                 Err(e) => {
-                    tracing::warn!(
-                        error.msg = tracing::field::display(&e),
-                        error.error_chain = tracing::field::debug(&e),
+                    log_error!(
+                        *e,
+                        level: tracing::Level::WARN,
                         package_id = package_id.repr(),
                         "Failed to retrieve the documentation from the on-disk cache",
                     );
@@ -227,9 +228,9 @@ impl CrateCollection {
                 .disk_cache
                 .insert(&cache_key, &krate, &self.package_graph)
             {
-                tracing::warn!(
-                    error.msg = tracing::field::display(&e),
-                    error.error_chain = tracing::field::debug(&e),
+                log_error!(
+                    *e,
+                    level: tracing::Level::WARN,
                     package_id = package_id.repr(),
                     "Failed to store the computed JSON docs in the on-disk cache",
                 );
@@ -264,12 +265,7 @@ impl CrateCollection {
                 return Ok(self.get_crate_by_package_id(package_id).unwrap());
             }
             Err(e) => {
-                tracing::warn!(
-                    error.msg = tracing::field::display(&e),
-                    error.error_chain = tracing::field::debug(&e),
-                    package_id = package_id.repr(),
-                    "Failed to retrieve the documentation from the on-disk cache",
-                );
+                log_error!(*e, level: tracing::Level::WARN, package_id = package_id.repr(), "Failed to retrieve the documentation from the on-disk cache");
             }
             Ok(None) => {}
         }
@@ -291,9 +287,9 @@ impl CrateCollection {
             .disk_cache
             .insert(&cache_key, &krate, &self.package_graph)
         {
-            tracing::warn!(
-                error.msg = tracing::field::display(&e),
-                error.error_chain = tracing::field::debug(&e),
+            log_error!(
+                *e,
+                level: tracing::Level::WARN,
                 package_id = package_id.repr(),
                 "Failed to store the computed JSON docs in the on-disk cache",
             );
@@ -506,9 +502,9 @@ impl Drop for CrateCollection {
             .disk_cache
             .persist_access_log(&package_ids, &self.project_fingerprint)
         {
-            tracing::warn!(
-                error.msg = tracing::field::display(&e),
-                error.error_chain = tracing::field::debug(&e),
+            log_error!(
+                *e,
+                level: tracing::Level::WARN,
                 "Failed to persist the crate access log to the on-disk cache",
             );
         }
@@ -1229,9 +1225,9 @@ pub fn compute_package_id_for_crate_id(
         match _find_transitive_dependency(package_graph, search_root, name, version) {
             Ok(v) => v,
             Err(e) => {
-                tracing::warn!(
-                    error.message = %e,
-                    error.details = ?e,
+                log_error!(
+                    *e,
+                    level: tracing::Level::WARN,
                     external_crate.name = %name,
                     external_crate.version = ?version,
                     search_root = %search_root.repr(),

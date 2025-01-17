@@ -9,6 +9,7 @@ use std::thread;
 use tokio::net::TcpStream;
 use tokio::sync::mpsc::error::TrySendError;
 use tokio::task::{JoinError, JoinSet, LocalSet};
+use tracing_log_error::log_error;
 
 use crate::connection::ConnectionInfo;
 use crate::server::configuration::ServerConfiguration;
@@ -200,9 +201,9 @@ where
                     Ok((connection, remote_peer)) => return (incoming, connection, remote_peer),
                     Err(e) => {
                         if is_rt_shutdown_err(&e) {
-                            tracing::debug!(error.msg = %e, error.details = ?e, "Failed to accept connection");
+                            log_error!(e, level: tracing::Level::DEBUG, "Failed to accept connection");
                         } else {
-                            tracing::info!(error.msg = %e, error.details = ?e, "Failed to accept connection");
+                            log_error!(e, level: tracing::Level::INFO, "Failed to accept connection");
                         }
                         continue;
                     }
@@ -331,9 +332,8 @@ where
             }
         };
 
-        tracing::error!(
-            error.msg = %error,
-            error.details = ?error,
+        log_error!(
+            error,
             "Failed to accept new connections. The acceptor thread will exit now."
         );
     }

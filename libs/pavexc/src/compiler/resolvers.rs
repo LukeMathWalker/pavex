@@ -9,6 +9,7 @@ use anyhow::anyhow;
 use guppy::PackageId;
 use once_cell::sync::OnceCell;
 use rustdoc_types::{GenericArg, GenericArgs, GenericParamDefKind, ItemEnum, Type};
+use tracing_log_error::log_error;
 
 use crate::language::{
     Callable, CallableItem, Generic, GenericArgument, GenericLifetimeParameter, InvocationStyle,
@@ -375,7 +376,7 @@ pub(crate) fn resolve_callable(
                 krate_collection,
                 &mut generic_bindings,
             ) {
-                tracing::warn!(error.msg = %e, error.details = ?e, "Error getting trait generic bindings");
+                log_error!(*e, level: tracing::Level::WARN, "Error getting trait generic bindings");
             }
         }
 
@@ -384,17 +385,14 @@ pub(crate) fn resolve_callable(
             None => method_owner,
         };
 
-        let self_generic_ty = match resolve_type_path_with_item(
-            &self_.1,
-            &self_.0,
-            krate_collection,
-        ) {
-            Ok(ty) => Some(ty),
-            Err(e) => {
-                tracing::warn!(error.msg = %e, error.details = ?e, "Error resolving the `Self` type");
-                None
-            }
-        };
+        let self_generic_ty =
+            match resolve_type_path_with_item(&self_.1, &self_.0, krate_collection) {
+                Ok(ty) => Some(ty),
+                Err(e) => {
+                    log_error!(*e, level: tracing::Level::WARN, "Error resolving the `Self` type");
+                    None
+                }
+            };
         if let Some(ty) = self_generic_ty {
             generic_bindings.types.insert("Self".to_string(), ty);
         }
