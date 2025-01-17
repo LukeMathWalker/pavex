@@ -272,10 +272,13 @@ where
             //   `ServerConfiguration` object.
             let builder = hyper_util::server::conn::auto::Builder::new(LocalExec);
             let connection = TokioIo::new(connection);
-            builder
-                .serve_connection(connection, handler)
-                .await
-                .expect("Failed to handle a connection");
+            if let Err(e) = builder.serve_connection(connection, handler).await {
+                tracing::warn!(
+                    error.message = %e,
+                    error.details = ?e,
+                    "Failed to serve an incoming connection"
+                );
+            }
         });
     }
 
