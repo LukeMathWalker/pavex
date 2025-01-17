@@ -7,7 +7,7 @@ use crate::server::server_handle::ServerHandle;
 
 use super::IncomingStream;
 
-/// An HTTP server to handle incoming connections for Pavex applications.  
+/// An HTTP server to handle incoming connections for Pavex applications.
 /// It handles both HTTP1 and HTTP2 connections.
 ///
 /// # Example
@@ -40,7 +40,7 @@ use super::IncomingStream;
 ///
 /// # Configuration
 ///
-/// [`Server::new`] returns a new [`Server`] with default configuration.  
+/// [`Server::new`] returns a new [`Server`] with default configuration.
 /// You can customize the server default settings by creating your own [`ServerConfiguration`]
 /// and invoking [`Server::set_config`].
 ///
@@ -50,7 +50,7 @@ use super::IncomingStream;
 /// acceptor thread using a round-robin strategy.
 ///
 /// Each worker has its own single-threaded [`tokio`] runtime—there is no work stealing across
-/// workers.  
+/// workers.
 /// Each worker takes care to invoke your routing and request handling logic, with the help
 /// of [`hyper`].
 #[must_use = "You must call `serve` on a `Server` to start listening for incoming connections"]
@@ -92,9 +92,9 @@ impl Server {
     }
 
     /// Bind the server to the given address: the server will accept incoming connections from this
-    /// address when started.  
+    /// address when started.
     /// Binding an address may fail (e.g. if the address is already in use), therefore this method
-    /// may return an error.  
+    /// may return an error.
     ///
     /// # Related
     ///
@@ -150,7 +150,7 @@ impl Server {
         Ok(self)
     }
 
-    /// Ask the server to process incoming connections from the provided [`IncomingStream`].  
+    /// Ask the server to process incoming connections from the provided [`IncomingStream`].
     ///
     /// # [`Server::listen`] vs [`Server::bind`]
     ///
@@ -159,9 +159,9 @@ impl Server {
     /// parameters. You have no access to the [`IncomingStream`] that gets bound to the address
     /// you specified.
     ///
-    /// [`Server::listen`], instead, expects an [`IncomingStream`].  
+    /// [`Server::listen`], instead, expects an [`IncomingStream`].
     /// You are free to configure the socket as you see please and the [`Server`] will just
-    /// poll it for incoming connections.  
+    /// poll it for incoming connections.
     /// It also allows you to interact with the bound [`IncomingStream`] directly
     ///
     /// # Example: bind to a random port
@@ -242,13 +242,15 @@ impl Server {
     ///
     /// # Wait for the server to shut down
     ///
-    /// `serve` returns a [`ServerHandle`].  
+    /// `serve` returns a [`ServerHandle`].
     /// Calling `.await` on the handle lets you wait until the server shuts down.
     ///
     /// # Panics
     ///
-    /// This method will panic if the [`Server`] has no registered source of incoming connections,
+    /// This method will panic if the [`Server`] has no registered sources of incoming connections,
     /// i.e. if you did not call [`Server::bind`] or [`Server::listen`] before calling `serve`.
+    ///
+    /// If you'd rather handle the error, use [`Server::try_serve`] instead.
     pub fn serve<HandlerFuture, ApplicationState>(
         self,
         handler: fn(
@@ -262,9 +264,36 @@ impl Server {
         HandlerFuture: Future<Output = crate::response::Response> + 'static,
         ApplicationState: Clone + Send + Sync + 'static,
     {
+        self.try_serve(handler, application_state).unwrap()
+    }
+
+    /// A fallible version of [`Server::serve`].
+    ///
+    /// It will return an error, rather than panicking, if the [`Server`] has no registered sources
+    /// of incoming connections, i.e. if you did not call [`Server::bind`] or [`Server::listen`]
+    /// before calling `serve`.
+    pub fn try_serve<HandlerFuture, ApplicationState>(
+        self,
+        handler: fn(
+            http::Request<hyper::body::Incoming>,
+            Option<ConnectionInfo>,
+            ApplicationState,
+        ) -> HandlerFuture,
+        application_state: ApplicationState,
+    ) -> Result<ServerHandle, std::io::Error>
+    where
+        HandlerFuture: Future<Output = crate::response::Response> + 'static,
+        ApplicationState: Clone + Send + Sync + 'static,
+    {
         if self.incoming.is_empty() {
-            panic!("Cannot serve: there is no source of incoming connections. Please call `bind` or `listen` on the server before calling `serve`.");
+            let err_msg = "Cannot serve: there is no source of incoming connections. You must call `bind` or `listen` on the `Server` instance before invoking `serve`.";
+            return Err(std::io::Error::new(std::io::ErrorKind::Other, err_msg));
         }
-        ServerHandle::new(self.config, self.incoming, handler, application_state)
+        Ok(ServerHandle::new(
+            self.config,
+            self.incoming,
+            handler,
+            application_state,
+        ))
     }
 }
