@@ -202,7 +202,7 @@ where
                         if is_rt_shutdown_err(&e) {
                             tracing::debug!(error.msg = %e, error.details = ?e, "Failed to accept connection");
                         } else {
-                            tracing::error!(error.msg = %e, error.details = ?e, "Failed to accept connection");
+                            tracing::info!(error.msg = %e, error.details = ?e, "Failed to accept connection");
                         }
                         continue;
                     }
