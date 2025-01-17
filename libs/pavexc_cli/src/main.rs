@@ -21,6 +21,7 @@ use pavexc_cli_client::commands::new::TemplateName;
 use supports_color::Stream;
 use telemetry::Filtered;
 use tracing_chrome::{ChromeLayerBuilder, FlushGuard};
+use tracing_log_error::log_error;
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
@@ -493,7 +494,7 @@ fn scaffold_project(
         .context("Failed to scaffold the project from Pavex's default template")?;
     // We don't care if this fails, as it's just a nice-to-have.
     if let Err(e) = cargo_fmt(&destination) {
-        tracing::warn!(error.msg = %e, error.details = ?e, "Failed to format the generated project");
+        log_error!(*e, level: tracing::Level::WARN, "Failed to format the generated project");
     }
     Ok(ExitCode::SUCCESS)
 }

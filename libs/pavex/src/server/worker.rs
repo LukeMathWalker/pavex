@@ -7,6 +7,7 @@ use anyhow::Context;
 use hyper_util::rt::TokioIo;
 use tokio::net::TcpStream;
 use tokio::sync::mpsc::error::TrySendError;
+use tracing_log_error::log_error;
 
 use crate::connection::ConnectionInfo;
 use crate::server::ShutdownMode;
@@ -273,11 +274,7 @@ where
             let builder = hyper_util::server::conn::auto::Builder::new(LocalExec);
             let connection = TokioIo::new(connection);
             if let Err(e) = builder.serve_connection(connection, handler).await {
-                tracing::warn!(
-                    error.message = %e,
-                    error.details = ?e,
-                    "Failed to serve an incoming connection"
-                );
+                log_error!(*e, level: tracing::Level::WARN, "Failed to serve an incoming connection");
             }
         });
     }

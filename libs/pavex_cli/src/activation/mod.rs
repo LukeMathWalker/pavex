@@ -8,6 +8,7 @@ use jsonwebtoken::jwk::JwkSet;
 use redact::Secret;
 use time::Duration;
 use token_cache::CliTokenDiskCache;
+use tracing_log_error::log_error;
 
 mod token;
 mod token_cache;
@@ -58,7 +59,7 @@ pub fn background_token_refresh(
             .unwrap();
         rt.block_on(async {
             if let Err(e) = _token_refresh(&key_set, &locator, activation_key).await {
-                tracing::warn!(error.msg = %e, error.details = ?e, "Failed to refresh the CLI token in the background")
+                log_error!(*e, level: tracing::Level::WARN, "Failed to refresh the CLI token in the background");
             }
         });
     });
@@ -106,7 +107,7 @@ async fn _check_activation_with_key(
             None
         }
         Err(e) => {
-            tracing::error!(error.msg = %e, error.details = ?e, "Failed to retrieve a cached token from disk", );
+            log_error!(*e, "Failed to retrieve a cached token from disk");
             None
         }
     };
@@ -115,11 +116,7 @@ async fn _check_activation_with_key(
     if let Some(cached_jwt) = cached_jwt {
         match cached_jwt.validate(key_set) {
             Err(e) => {
-                tracing::warn!(
-                    error.msg = %e,
-                    error.details = ?e,
-                    "The cached CLI token is invalid. Obtaining a new one from Pavex's API.",
-                );
+                log_error!(*e, level: tracing::Level::WARN, "The cached CLI token is invalid. Obtaining a new one from Pavex's API.");
             }
             Ok(proof) => {
                 claims = Some(proof);
@@ -138,11 +135,7 @@ async fn _check_activation_with_key(
             // We have a fresh token. Let's cache it to disk to avoid hitting the API
             // the next time Pavex CLI is invoked.
             if let Err(e) = cache.upsert_token(jwt.raw().clone()).await {
-                tracing::warn!(
-                    error.msg = %e,
-                    error.details = ?e,
-                    "Failed to save the fresh CLI token to disk",
-                );
+                log_error!(*e, level: tracing::Level::WARN, "Failed to save the fresh CLI token to disk");
             }
 
             claims

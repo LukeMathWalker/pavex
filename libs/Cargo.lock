@@ -2386,6 +2386,7 @@ dependencies = [
  "time",
  "tokio",
  "tracing",
+ "tracing_log_error",
  "type-safe-id",
  "ubyte",
  "uuid",
@@ -2447,6 +2448,7 @@ dependencies = [
  "tracing",
  "tracing-chrome",
  "tracing-subscriber",
+ "tracing_log_error",
  "ureq",
  "vergen-gitcl",
  "windows-sys 0.59.0",
@@ -2649,6 +2651,7 @@ dependencies = [
  "thiserror 2.0.9",
  "toml_edit",
  "tracing",
+ "tracing_log_error",
  "vergen-gitcl",
  "xdg-home",
  "xxhash-rust",
@@ -2685,6 +2688,7 @@ dependencies = [
  "tracing-chrome",
  "tracing-log",
  "tracing-subscriber",
+ "tracing_log_error",
  "vergen-gitcl",
 ]
 

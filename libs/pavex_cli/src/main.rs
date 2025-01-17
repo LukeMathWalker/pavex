@@ -3,6 +3,7 @@ use cargo_like_utils::shell::Shell;
 use std::io::{ErrorKind, IsTerminal};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
+use tracing_log_error::log_error;
 
 use clap::Parser;
 use jsonwebtoken::jwk::JwkSet;
@@ -452,9 +453,8 @@ fn download_or_compile(
             let _ = shell.warn(format!(
                 "Download failed: {e}.\nI'll try compiling from source instead."
             ));
-            tracing::warn!(
-                error.msg = %e,
-                error.cause = ?e,
+            log_error!(
+                e, level: tracing::Level::WARN,
                 "Failed to download prebuilt `{}` binary. I'll try to build it from source instead.", kind.binary_target_name()
             );
         }
