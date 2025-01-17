@@ -2599,6 +2599,7 @@ dependencies = [
  "pavex",
  "px_workspace_hack",
  "tracing",
+ "tracing_log_error",
 ]
 
 [[package]]

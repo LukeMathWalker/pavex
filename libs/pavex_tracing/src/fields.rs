@@ -7,14 +7,14 @@
 //!   of an HTTP API
 //!
 //! For example, you have [`HTTP_REQUEST_METHOD`] and [`http_request_method`] for the
-//! `http.request.method` field.  
+//! `http.request.method` field.
 //!
 //! The naming follows [OpenTelemetry's semantic convention](https://opentelemetry.io/docs/specs/semconv/)
 //! whenever possible.
 //!
 //! # Exhaustiveness
 //!
-//! The module doesn't cover the entirety of OpenTelemetry's semantic convention specification.  
+//! The module doesn't cover the entirety of OpenTelemetry's semantic convention specification.\
 //! Feel free to open a PR if you need a **stable** field that isn't currently covered!
 
 use pavex::http::{Method, Version};
@@ -24,35 +24,20 @@ use pavex::response::Response;
 use pavex::telemetry::ServerRequestId;
 use tracing::Value;
 
+// Re-export error-related logging fields and the functions to set them.
+pub use tracing_log_error::fields::*;
+
 /// The field name for the HTTP method of the incoming request (if canonical),
 /// according to [OpenTelemetry's semantic convention](https://opentelemetry.io/docs/specs/semconv/attributes-registry/http/).
 ///
 /// Use [`http_request_method`] to populate the field.
 pub const HTTP_REQUEST_METHOD: &str = "http.request.method";
 
-/// The field name to record the server-generated identifier for this request.  
+/// The field name to record the server-generated identifier for this request.\
 /// This field doesn't appear in OpenTelemetry's semantic convention specification.
 ///
 /// Use [`http_request_server_id`] to populate the field.
 pub const HTTP_REQUEST_SERVER_ID: &str = "http.request.server_id";
-
-/// The field name to record the `Display` representation of an error.  
-/// This field doesn't appear in OpenTelemetry's semantic convention specification.
-///
-/// Use [`error_message`] to populate the field.
-pub const ERROR_MESSAGE: &str = "error.message";
-
-/// The field name to record the `Debug` representation of an error.  
-/// This field doesn't appear in OpenTelemetry's semantic convention specification.
-///
-/// Use [`error_message`] to populate the field.
-pub const ERROR_DETAILS: &str = "error.details";
-
-/// The field name to record the chain of sources for an error.  
-/// This field doesn't appear in OpenTelemetry's semantic convention specification.
-///
-/// Use [`error_source_chain`] to populate the field.
-pub const ERROR_SOURCE_CHAIN: &str = "error.source_chain";
 
 /// The field name for the HTTP status code of the outgoing response,
 /// according to [OpenTelemetry's semantic convention](https://opentelemetry.io/docs/specs/semconv/attributes-registry/http/).
@@ -163,31 +148,4 @@ pub fn user_agent_original(request_head: &RequestHead) -> impl Value + '_ {
         .get("User-Agent")
         .map(|h| h.to_str().unwrap_or_default())
         .unwrap_or_default()
-}
-
-/// The canonical representation for the value in [`ERROR_MESSAGE`].
-pub fn error_message<E: std::fmt::Display>(e: E) -> impl Value {
-    tracing::field::display(e)
-}
-
-/// The canonical representation for the value in [`ERROR_DETAILS`].
-pub fn error_details<E: std::fmt::Debug>(e: E) -> impl Value {
-    tracing::field::debug(e)
-}
-
-/// The canonical representation for the value in [`ERROR_SOURCE_CHAIN`].
-pub fn error_source_chain<E: std::error::Error>(e: E) -> impl Value {
-    _error_source_chain(e)
-}
-
-fn _error_source_chain<E: std::error::Error>(e: E) -> String {
-    use std::fmt::Write as _;
-
-    let mut chain = String::new();
-    let mut source = e.source();
-    while let Some(s) = source {
-        let _ = writeln!(chain, "- {}", s);
-        source = s.source();
-    }
-    chain
 }
