@@ -3,6 +3,9 @@ name = "integration_e628417e"
 version = "0.1.0"
 edition = "2021"
 
+[dependencies]
+workspace_hack = { version = "0.1", path = "../../../workspace_hack" }
+
 [dependencies.application]
 path = "../generated_app"
 package = "application_e628417e"

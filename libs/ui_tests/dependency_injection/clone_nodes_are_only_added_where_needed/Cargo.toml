@@ -7,11 +7,11 @@ edition = "2021"
 level = "allow"
 check-cfg = ["cfg(pavex_ide_hint)"]
 
+[dependencies]
+workspace_hack = { version = "0.1", path = "../../workspace_hack" }
+
 [dependencies.pavex]
 workspace = true
 
 [dependencies.pavex_cli_client]
-workspace = true
-
-[dependencies.workspace_hack]
 workspace = true
