@@ -370,6 +370,10 @@ fn warm_up_rustdoc_cache(
     crates.insert("ppv-lite86".into());
     crates.insert("hashbrown".into());
     crates.insert("typenum".into());
+    crates.insert("http".into());
+    crates.insert("anyhow".into());
+    crates.insert("serde".into());
+    crates.insert("pavex_macros".into());
     let package_ids = crate_collection
         .package_graph()
         .packages()
