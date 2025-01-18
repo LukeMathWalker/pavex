@@ -15,6 +15,7 @@ use format::check_format;
 use guppy::graph::PackageGraph;
 use guppy::{PackageId, Version};
 use indexmap::IndexSet;
+use itertools::Itertools as _;
 use serde::Deserialize;
 
 use crate::rustdoc::package_id_spec::PackageIdSpecification;
@@ -208,10 +209,59 @@ fn _compute_crate_docs<'a, I>(
 where
     I: Iterator<Item = &'a PackageIdSpecification>,
 {
-    let package_id_specs: Vec<_> = package_id_specs.map(|p| p.to_string()).collect();
+    let package_id_specs: Vec<_> = package_id_specs.collect();
+    tracing::Span::current().record("package_id_specs", package_id_specs.iter().join(", "));
+    if package_id_specs.len() == 1 {
+        _compute_single_crate_docs(toolchain_name, &package_id_specs[0], current_dir)
+    } else {
+        _compute_multiple_crate_docs(toolchain_name, package_id_specs, current_dir)
+    }
+}
 
-    // TODO: check that we have the nightly toolchain available beforehand in order to return
-    // a good error.
+/// `cargo rustdoc` understands the structure of the expected output, so it won't
+/// regenerate the JSON if it's already there and the crate hasn't changed.
+/// Unfortunately, that's not the case for `cargo doc`, so we can't leverage the
+/// same benefits in both the single and multi-crate case using the same command.
+fn _compute_single_crate_docs(
+    toolchain_name: &str,
+    package_id_spec: &PackageIdSpecification,
+    current_dir: &Path,
+) -> Result<(), anyhow::Error> {
+    let mut cmd = std::process::Command::new("rustup");
+    cmd.arg("run")
+        .current_dir(current_dir)
+        .arg(toolchain_name)
+        .arg("cargo")
+        .arg("rustdoc")
+        .arg("-q")
+        .arg("--lib")
+        .arg("-p")
+        .arg(package_id_spec.to_string())
+        .arg("-Zunstable-options")
+        .arg("--output-format")
+        .arg("json")
+        .arg("--")
+        .arg("--document-private-items")
+        .arg("--document-hidden-items");
+
+    let status = cmd
+        .status()
+        .with_context(|| format!("Failed to run `cargo rustdoc`.\n{cmd:?}"))?;
+
+    if !status.success() {
+        anyhow::bail!(
+            "An invocation of `cargo rustdoc` exited with non-zero status code.\n{:?}",
+            cmd
+        );
+    }
+    Ok(())
+}
+
+fn _compute_multiple_crate_docs<'a>(
+    toolchain_name: &str,
+    package_id_specs: Vec<&'a PackageIdSpecification>,
+    current_dir: &Path,
+) -> Result<(), anyhow::Error> {
     let mut cmd = std::process::Command::new("rustup");
     cmd.arg("run")
         .current_dir(current_dir)
@@ -222,19 +272,18 @@ where
         .arg("-q")
         .arg("--lib");
     for package_id_spec in &package_id_specs {
-        cmd.arg("-p").arg(package_id_spec);
+        cmd.arg("-p").arg(package_id_spec.to_string());
     }
-    tracing::Span::current().record("package_id_specs", package_id_specs.join(", "));
 
     cmd.env("RUSTDOCFLAGS", rustdoc_options().join(" "));
 
     let status = cmd
         .status()
-        .with_context(|| format!("Failed to run `cargo rustdoc`.\n{cmd:?}"))?;
+        .with_context(|| format!("Failed to run `cargo doc`.\n{cmd:?}"))?;
 
     if !status.success() {
         anyhow::bail!(
-            "An invocation of `cargo rustdoc` exited with non-zero status code.\n{:?}",
+            "An invocation of `cargo doc` exited with non-zero status code.\n{:?}",
             cmd
         );
     }
