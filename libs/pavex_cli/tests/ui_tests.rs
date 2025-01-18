@@ -3,6 +3,8 @@ use std::path::PathBuf;
 use std::str::FromStr;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    tracing_subscriber::fmt::init();
+
     let manifest_dir = PathBuf::from_str(env!("CARGO_MANIFEST_DIR")).unwrap();
     let test_runtime_folder = manifest_dir.parent().unwrap().join("ui_tests");
     let pavexc_cli_path = get_pavexc_cli_path()?;
