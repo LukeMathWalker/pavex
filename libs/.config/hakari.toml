@@ -23,3 +23,6 @@ platforms = [
 
 # Write out exact versions rather than a semver range. (Defaults to false.)
 # exact-versions = true
+
+[final-excludes]
+workspace-members = ["tracing_log_error"]
