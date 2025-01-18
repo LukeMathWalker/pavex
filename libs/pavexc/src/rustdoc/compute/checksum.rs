@@ -50,7 +50,7 @@ fn get_paths(root_path: &Utf8Path) -> Result<Vec<Utf8PathBuf>, anyhow::Error> {
 
     let mut files = Vec::new();
     for line in stdout.lines() {
-        if line == "Cargo.toml.orig" || line == ".cargo_vcs_info.json" {
+        if line == "Cargo.toml.orig" || line == ".cargo_vcs_info.json" || line == "Cargo.lock" {
             // Skip these files, they are not part of the crate
             // They are created by cargo itself when packaging
             continue;
