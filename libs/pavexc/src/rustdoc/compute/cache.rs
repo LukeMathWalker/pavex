@@ -734,7 +734,7 @@ impl<'a> ThirdPartyCrateCacheKey<'a> {
                     Err(e) => {
                         log_error!(
                             *e,
-                            "Failed to compute the hash of the package at {}.
+                            "Failed to compute the hash of the package at {}. \
                             I won't cache its JSON documentation to avoid serving stale data.",
                             package_metadata.id().repr()
                         );
