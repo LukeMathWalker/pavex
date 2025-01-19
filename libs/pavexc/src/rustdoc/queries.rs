@@ -61,16 +61,18 @@ impl std::fmt::Debug for CrateCollection {
     }
 }
 
-#[tracing::instrument]
 fn compute_package_graph(current_directory: PathBuf) -> Result<PackageGraph, anyhow::Error> {
-    // `cargo metadata` seems to be the only reliable way of retrieving the path to
-    // the root manifest of the current workspace for a Rust project.
-    guppy::MetadataCommand::new()
-        .current_dir(current_directory)
-        .exec()
-        .map_err(|e| anyhow!(e))?
-        .build_graph()
-        .map_err(|e| anyhow!(e))
+    let metadata = tracing::info_span!("Invoke 'cargo metadata'")
+        .in_scope(|| {
+            guppy::MetadataCommand::new()
+                .current_dir(current_directory)
+                .exec()
+        })
+        .context("Failed to invoke `cargo metadata`")?;
+    let graph = tracing::info_span!("Build package graph")
+        .in_scope(|| metadata.build_graph())
+        .context("Failed to build package graph")?;
+    Ok(graph)
 }
 
 impl CrateCollection {
