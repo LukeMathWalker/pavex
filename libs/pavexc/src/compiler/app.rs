@@ -63,6 +63,7 @@ impl App {
     pub fn build(
         bp: Blueprint,
         docs_toolchain_name: String,
+        cache_workpace_packages: bool,
     ) -> Result<(Self, Vec<miette::Error>), Vec<miette::Error>> {
         /// Exit early if there is at least one error.
         macro_rules! exit_on_errors {
@@ -81,6 +82,7 @@ impl App {
         let krate_collection = CrateCollection::new(
             docs_toolchain_name,
             std::env::current_dir().expect("Failed to determine the current directory"),
+            cache_workpace_packages,
         )
         .map_err(|e| vec![anyhow2miette(e)])?;
         let package_graph = krate_collection.package_graph().to_owned();

@@ -78,13 +78,14 @@ impl CrateCollection {
     pub fn new(
         toolchain_name: String,
         workspace_directory: PathBuf,
+        cache_workspace_package_docs: bool,
     ) -> Result<Self, anyhow::Error> {
         let span = Span::current();
         let thread_handle = thread::spawn(move || {
             let _guard = span.enter();
             compute_package_graph(workspace_directory)
         });
-        let cache = RustdocGlobalFsCache::new(&toolchain_name)?;
+        let cache = RustdocGlobalFsCache::new(&toolchain_name, cache_workspace_package_docs)?;
 
         let package_graph = thread_handle
             .join()

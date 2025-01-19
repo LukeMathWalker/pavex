@@ -2,6 +2,7 @@ use std::{borrow::Cow, collections::BTreeSet};
 
 use ahash::{HashMap, HashMapExt};
 use anyhow::Context;
+use camino::Utf8Path;
 use guppy::{
     graph::{feature::StandardFeatures, PackageGraph, PackageMetadata},
     PackageId,
@@ -46,12 +47,16 @@ impl<'a> RustdocCacheKey<'a> {
 impl RustdocGlobalFsCache {
     /// Initialize a new instance of the cache.
     #[tracing::instrument(name = "Initialize on-disk rustdoc cache", skip_all)]
-    pub(crate) fn new(toolchain_name: &str) -> Result<Self, anyhow::Error> {
+    pub(crate) fn new(
+        toolchain_name: &str,
+        cache_workspace_package_docs: bool,
+    ) -> Result<Self, anyhow::Error> {
         let cargo_fingerprint = cargo_fingerprint(toolchain_name)?;
         let pool = Self::setup_database()?;
 
         let connection = pool.get()?;
-        let third_party_cache = ThirdPartyCrateCache::new(&connection)?;
+        let third_party_cache =
+            ThirdPartyCrateCache::new(&connection, cache_workspace_package_docs)?;
         let toolchain_cache = ToolchainCache::new(&connection)?;
         Ok(Self {
             cargo_fingerprint,
@@ -343,12 +348,19 @@ impl ToolchainCache {
 
 #[derive(Debug, Clone)]
 #[non_exhaustive]
-struct ThirdPartyCrateCache {}
+struct ThirdPartyCrateCache {
+    cache_workspace_packages: bool,
+}
 
 impl ThirdPartyCrateCache {
-    fn new(connection: &rusqlite::Connection) -> Result<Self, anyhow::Error> {
+    fn new(
+        connection: &rusqlite::Connection,
+        cache_workspace_packages: bool,
+    ) -> Result<Self, anyhow::Error> {
         Self::setup_table(connection)?;
-        Ok(Self {})
+        Ok(Self {
+            cache_workspace_packages,
+        })
     }
 
     /// Retrieve the cached documentation for a given package, if available.
@@ -368,11 +380,15 @@ impl ThirdPartyCrateCache {
             package_metadata: &PackageMetadata,
             cargo_fingerprint: &str,
             connection: &rusqlite::Connection,
+            cache_workspace_packages: bool,
             package_graph: &PackageGraph,
         ) -> Result<Option<crate::rustdoc::Crate>, anyhow::Error> {
-            let Some(cache_key) =
-                ThirdPartyCrateCacheKey::build(package_graph, package_metadata, cargo_fingerprint)
-            else {
+            let Some(cache_key) = ThirdPartyCrateCacheKey::build(
+                package_graph,
+                package_metadata,
+                cargo_fingerprint,
+                cache_workspace_packages,
+            ) else {
                 return Ok(None);
             };
             tracing::Span::current().record("cache_key", tracing::field::debug(&cache_key));
@@ -456,6 +472,7 @@ impl ThirdPartyCrateCache {
             package_metadata,
             cargo_fingerprint,
             connection,
+            self.cache_workspace_packages,
             package_graph,
         );
         match &outcome {
@@ -485,9 +502,12 @@ impl ThirdPartyCrateCache {
         connection: &rusqlite::Connection,
         package_graph: &PackageGraph,
     ) -> Result<(), anyhow::Error> {
-        let Some(cache_key) =
-            ThirdPartyCrateCacheKey::build(package_graph, package_metadata, cargo_fingerprint)
-        else {
+        let Some(cache_key) = ThirdPartyCrateCacheKey::build(
+            package_graph,
+            package_metadata,
+            cargo_fingerprint,
+            self.cache_workspace_packages,
+        ) else {
             return Ok(());
         };
         tracing::Span::current().record("cache_key", tracing::field::debug(&cache_key));
@@ -691,7 +711,7 @@ impl<'a> CachedData<'a> {
 #[derive(Debug)]
 pub(super) struct ThirdPartyCrateCacheKey<'a> {
     pub crate_name: &'a str,
-    pub crate_source: &'a str,
+    pub crate_source: Cow<'a, str>,
     pub crate_version: String,
     /// The hash of the crate's source code, computed via BLAKE3.
     /// It is only populated for path dependencies.
@@ -708,43 +728,63 @@ impl<'a> ThirdPartyCrateCacheKey<'a> {
         package_graph: &PackageGraph,
         package_metadata: &'a PackageMetadata<'a>,
         cargo_fingerprint: &'a str,
+        cache_workspace_packages: bool,
     ) -> Option<ThirdPartyCrateCacheKey<'a>> {
-        let source = match package_metadata.source() {
-            guppy::graph::PackageSource::Workspace(_) => {
-                // We don't want to cache the docs for workspace crates.
-                return None;
+        enum PathOrId<'a> {
+            Path(Cow<'a, Utf8Path>),
+            Id(&'a str),
+        }
+
+        impl<'a> Into<Cow<'a, str>> for PathOrId<'a> {
+            fn into(self) -> Cow<'a, str> {
+                match self {
+                    PathOrId::Path(cow) => match cow {
+                        Cow::Owned(path) => Cow::Owned(path.to_string()),
+                        Cow::Borrowed(path) => Cow::Borrowed(path.as_str()),
+                    },
+                    PathOrId::Id(id) => Cow::Borrowed(id),
+                }
             }
-            guppy::graph::PackageSource::Path(p) => p.as_str(),
-            guppy::graph::PackageSource::External(e) => e,
+        }
+
+        let source = match package_metadata.source() {
+            guppy::graph::PackageSource::Workspace(p) => {
+                if !cache_workspace_packages {
+                    return None;
+                }
+                let p = package_graph.workspace().root().join(p);
+                PathOrId::Path(Cow::Owned(p))
+            }
+            guppy::graph::PackageSource::Path(p) => PathOrId::Path(Cow::Borrowed(p)),
+            guppy::graph::PackageSource::External(e) => PathOrId::Id(e),
         };
-        let crate_hash =
-            if let guppy::graph::PackageSource::Path(package_path) = package_metadata.source() {
-                let package_path = if package_path.is_relative() {
-                    package_graph.workspace().root().join(package_path)
-                } else {
-                    package_path.to_owned()
-                };
-                // We need to compute the hash of the package's contents,
-                // to invalidate the cache when the package changes.
-                // This is only relevant for path dependencies.
-                // We don't need to do this for external dependencies,
-                // since they are assumed to be immutable.
-                let hash = match checksum_crate(&package_path) {
-                    Ok(hash) => hash,
-                    Err(e) => {
-                        log_error!(
-                            *e,
-                            "Failed to compute the hash of the package at {}. \
-                            I won't cache its JSON documentation to avoid serving stale data.",
-                            package_metadata.id().repr()
-                        );
-                        return None;
-                    }
-                };
-                Some(hash.to_string())
+        let crate_hash = if let PathOrId::Path(package_path) = &source {
+            let package_path = if package_path.is_relative() {
+                package_graph.workspace().root().join(package_path)
             } else {
-                None
+                package_path.clone().into_owned()
             };
+            // We need to compute the hash of the package's contents,
+            // to invalidate the cache when the package changes.
+            // This is only relevant for path dependencies.
+            // We don't need to do this for external dependencies,
+            // since they are assumed to be immutable.
+            let hash = match checksum_crate(&package_path) {
+                Ok(hash) => hash,
+                Err(e) => {
+                    log_error!(
+                        *e,
+                        "Failed to compute the hash of the package at {}. \
+                            I won't cache its JSON documentation to avoid serving stale data.",
+                        package_metadata.id().repr()
+                    );
+                    return None;
+                }
+            };
+            Some(hash.to_string())
+        } else {
+            None
+        };
         let features = package_metadata
             .to_feature_set(StandardFeatures::Default)
             .features_for(package_metadata.id())
@@ -756,7 +796,7 @@ impl<'a> ThirdPartyCrateCacheKey<'a> {
         active_named_features.sort();
         let cache_key = ThirdPartyCrateCacheKey {
             crate_name: package_metadata.name(),
-            crate_source: source,
+            crate_source: source.into(),
             crate_version: package_metadata.version().to_string(),
             crate_hash,
             cargo_fingerprint,
