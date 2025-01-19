@@ -1,13 +1,12 @@
-use anyhow::anyhow;
+use anyhow::Context;
 use guppy::graph::PackageGraph;
 
-#[tracing::instrument]
 pub fn compute_package_graph() -> Result<PackageGraph, anyhow::Error> {
-    // `cargo metadata` seems to be the only reliable way of retrieving the path to
-    // the root manifest of the current workspace for a Rust project.
-    guppy::MetadataCommand::new()
-        .exec()
-        .map_err(|e| anyhow!(e))?
-        .build_graph()
-        .map_err(|e| anyhow!(e))
+    let metadata = tracing::info_span!("Invoke 'cargo metadata'")
+        .in_scope(|| guppy::MetadataCommand::new().exec())
+        .context("Failed to invoke `cargo metadata`")?;
+    let graph = tracing::info_span!("Build package graph")
+        .in_scope(|| metadata.build_graph())
+        .context("Failed to build package graph")?;
+    Ok(graph)
 }
