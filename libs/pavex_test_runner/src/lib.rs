@@ -1,5 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write;
+use std::io::BufWriter;
 use std::path::{Component, Path, PathBuf};
 use std::process::{Command, Output};
 
@@ -7,6 +8,7 @@ use ahash::HashSet;
 use anyhow::Context;
 use cargo_metadata::diagnostic::DiagnosticLevel;
 use console::style;
+use guppy::graph::PackageGraph;
 use itertools::Itertools;
 use libtest_mimic::{Arguments, Conclusion, Failed, Trial};
 use pavexc::rustdoc::CrateCollection;
@@ -87,12 +89,35 @@ pub fn run_tests(
     let mut trials = Vec::with_capacity(test_name2test_data.len() * 4);
     if !arguments.list {
         warm_up_target_dir(&tests_directory, &test_name2test_data)?;
+
+        let metadata = guppy::MetadataCommand::new()
+            .current_dir(&tests_directory)
+            .exec()
+            .context("Failed to invoke `cargo metadata`")?;
+
+        let metadata_path = tests_directory.join("metadata.json");
+
+        {
+            use std::io::Write as _;
+
+            let mut file = BufWriter::new(fs_err::File::create(&metadata_path)?);
+            metadata
+                .serialize(&mut file)
+                .context("Failed to serialize Cargo's metadata to disk")?;
+            file.flush()
+                .context("Failed to serialize Cargo's metadata to disk")?;
+        }
+
+        let package_graph = metadata
+            .build_graph()
+            .context("Failed to build package graph")?;
+
         // We warm up Pavex's `rustdoc` cache to avoid cross-test contention.
         // In case of a cache miss, a UI test will try to run `rustdoc` and
         // acquire the global target directory lock. If multiple tests end up
         // doing this at the same time, their execution will be serialized,
         // which would have a major impact on the overall test suite runtime.
-        warm_up_rustdoc_cache(&tests_directory, &test_name2test_data)?;
+        warm_up_rustdoc_cache(&package_graph, &test_name2test_data)?;
 
         // First battery of UI tests.
         // For each UI test, we run code generation and then generate a different
@@ -108,8 +133,13 @@ pub fn run_tests(
             .par_iter()
             .map(|(name, data)| {
                 let mut trials = Vec::new();
-                let (codegen_output, outcome) =
-                    code_generation_test(&tests_directory, data, &pavexc_cli, &pavex_cli);
+                let (codegen_output, outcome) = code_generation_test(
+                    &tests_directory,
+                    data,
+                    &pavexc_cli,
+                    &pavex_cli,
+                    &metadata_path,
+                );
                 let is_success = outcome == CodegenTestOutcome::Success;
                 let trial = outcome.into_trial(name, &data.configuration, codegen_output.as_ref());
                 trials.push(trial);
@@ -334,7 +364,7 @@ fn warm_up_target_dir(
 /// Ensure all code generators won't have to invoke `rustdoc` to generate JSON documentation
 /// by pre-computing the JSON documentation for all relevant crates.
 fn warm_up_rustdoc_cache(
-    runtime_directory: &Path,
+    package_graph: &PackageGraph,
     test_name2test_data: &BTreeMap<String, TestData>,
 ) -> Result<(), anyhow::Error> {
     let timer = std::time::Instant::now();
@@ -344,7 +374,7 @@ fn warm_up_rustdoc_cache(
     println!("Pre-computing JSON documentation for relevant crates");
     let crate_collection = CrateCollection::new(
         DEFAULT_DOCS_TOOLCHAIN.to_owned(),
-        runtime_directory.to_path_buf(),
+        package_graph.clone(),
         true,
     )?;
     let app_names = test_name2test_data
@@ -701,6 +731,7 @@ fn code_generation_test(
     test: &TestData,
     pavexc_cli: &Path,
     pavex_cli: &Path,
+    metadata: &Path,
 ) -> (Option<CommandOutput>, CodegenTestOutcome) {
     let binary_name = format!("app_{}", test.name_hash);
     let binary = runtime_directory
@@ -712,6 +743,7 @@ fn code_generation_test(
         .env("UI_TEST_DIR", &test.definition_directory)
         .env("PAVEX_PAVEXC", pavexc_cli)
         .env("PAVEXC_CACHE_WORKSPACE_PACKAGES", "true")
+        .env("PAVEXC_PRECOMPUTED_METADATA", metadata)
         .current_dir(&test.definition_directory)
         .output()
     {
