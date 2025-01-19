@@ -345,6 +345,7 @@ fn warm_up_rustdoc_cache(
     let crate_collection = CrateCollection::new(
         DEFAULT_DOCS_TOOLCHAIN.to_owned(),
         runtime_directory.to_path_buf(),
+        true,
     )?;
     let app_names = test_name2test_data
         .values()
@@ -710,6 +711,7 @@ fn code_generation_test(
         .env("PAVEX_TEST_CLI_PATH", pavex_cli)
         .env("UI_TEST_DIR", &test.definition_directory)
         .env("PAVEX_PAVEXC", pavexc_cli)
+        .env("PAVEXC_CACHE_WORKSPACE_PACKAGES", "true")
         .current_dir(&test.definition_directory)
         .output()
     {

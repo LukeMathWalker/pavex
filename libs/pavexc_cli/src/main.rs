@@ -57,7 +57,6 @@ struct Cli {
         env = "PAVEXC_LOG_FILTER",
         help_heading = Some(INTROSPECTION_HEADING),
         hide_short_help = true,
-        hide_env = true,
         long_help = "Control which logs are emitted if `--log` or `--perf-profile` are enabled.\nIf no filter is specified, Pavexc will default to `info,pavexc=trace`."
     )]
     pub log_filter: Option<String>,
@@ -129,6 +128,11 @@ enum Commands {
         /// The name of the `rustup` toolchain that `pavexc` will use to generate the JSON documentation
         /// for the crates in the dependency graph of this project.
         docs_toolchain: String,
+        #[clap(long, env = "PAVEXC_CACHE_WORKSPACE_PACKAGES")]
+        /// By default, `pavexc` won't cache the JSON documentation for workspace packages,
+        /// since they're likely to change almost every time the project is built.
+        /// You can change this behavior by setting this flag.
+        cache_workspace_packages: bool,
     },
     /// Scaffold a new Pavex project at <PATH>.
     New {
@@ -265,12 +269,14 @@ fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
             output,
             check,
             docs_toolchain,
+            cache_workspace_packages,
         } => generate(
             blueprint,
             docs_toolchain,
             diagnostics,
             output,
             cli.color,
+            cache_workspace_packages,
             check,
         ),
         Commands::New { path, template } => scaffold_project(path, template),
@@ -315,6 +321,7 @@ fn generate(
     diagnostics: Option<PathBuf>,
     output: PathBuf,
     color_profile: Color,
+    cache_workspace_packages: bool,
     check: bool,
 ) -> Result<ExitCode, Box<dyn std::error::Error>> {
     let blueprint = {
@@ -322,7 +329,7 @@ fn generate(
         ron::de::from_reader(&file)?
     };
     let mut reporter = DiagnosticReporter::new(color_profile);
-    let (app, issues) = match App::build(blueprint, docs_toolchain) {
+    let (app, issues) = match App::build(blueprint, docs_toolchain, cache_workspace_packages) {
         Ok((a, issues)) => {
             for e in &issues {
                 assert_eq!(e.severity(), Some(Severity::Warning));
