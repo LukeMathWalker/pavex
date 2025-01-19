@@ -1,8 +1,6 @@
 use std::borrow::Cow;
 use std::collections::BTreeSet;
-use std::path::PathBuf;
 use std::sync::Arc;
-use std::thread;
 
 use ahash::{HashMap, HashMapExt};
 use anyhow::{anyhow, Context};
@@ -61,45 +59,43 @@ impl std::fmt::Debug for CrateCollection {
     }
 }
 
-fn compute_package_graph(current_directory: PathBuf) -> Result<PackageGraph, anyhow::Error> {
-    let metadata = tracing::info_span!("Invoke 'cargo metadata'")
-        .in_scope(|| {
-            guppy::MetadataCommand::new()
-                .current_dir(current_directory)
-                .exec()
-        })
-        .context("Failed to invoke `cargo metadata`")?;
-    let graph = tracing::info_span!("Build package graph")
-        .in_scope(|| metadata.build_graph())
-        .context("Failed to build package graph")?;
-    Ok(graph)
-}
-
 impl CrateCollection {
-    /// Initialise the collection for a `PackageGraph`.
+    // We use the path to the root manifest as a unique identifier for the project.
+    fn project_fingerprint(package_graph: &PackageGraph) -> String {
+        package_graph.workspace().root().to_string()
+    }
+
+    /// A crate collection is specific to a workspace, as it relates to its package graph.
     pub fn new(
         toolchain_name: String,
-        workspace_directory: PathBuf,
+        package_graph: PackageGraph,
         cache_workspace_package_docs: bool,
     ) -> Result<Self, anyhow::Error> {
-        let span = Span::current();
-        let thread_handle = thread::spawn(move || {
-            let _guard = span.enter();
-            compute_package_graph(workspace_directory)
-        });
-        let cache = RustdocGlobalFsCache::new(&toolchain_name, cache_workspace_package_docs)?;
-
-        let package_graph = thread_handle
-            .join()
-            .map_err(|_| anyhow!("The thread computing the package graph panicked"))?
-            .context("Failed to compute the package graph for the current workspace")?;
-
-        // We use the path to the root manifest as a unique identifier for the project.
-        let project_fingerprint = package_graph.workspace().root().to_string();
+        let disk_cache = RustdocGlobalFsCache::new(&toolchain_name, cache_workspace_package_docs)?;
+        let project_fingerprint = Self::project_fingerprint(&package_graph);
         Ok(Self {
             package_id2krate: FrozenMap::new(),
             package_graph,
-            disk_cache: cache,
+            disk_cache,
+            project_fingerprint,
+            access_log: FrozenMap::new(),
+            toolchain_name,
+        })
+    }
+
+    /// An alternative constructor that, unlike [`CrateCollection::new`], takes a pre-computed
+    /// package graph as input.
+    pub fn from_package_graph(
+        toolchain_name: String,
+        package_graph: PackageGraph,
+        cache_workspace_package_docs: bool,
+    ) -> Result<Self, anyhow::Error> {
+        let disk_cache = RustdocGlobalFsCache::new(&toolchain_name, cache_workspace_package_docs)?;
+        let project_fingerprint = Self::project_fingerprint(&package_graph);
+        Ok(Self {
+            package_id2krate: FrozenMap::new(),
+            package_graph,
+            disk_cache,
             access_log: FrozenMap::new(),
             project_fingerprint,
             toolchain_name,

@@ -133,6 +133,11 @@ enum Commands {
         /// since they're likely to change almost every time the project is built.
         /// You can change this behavior by setting this flag.
         cache_workspace_packages: bool,
+        /// Optional. The path to a file that contains the JSON returned by `cargo metadata --format-version 1`.
+        /// If provided, `pavexc` will use this metadata to build the package graph instead of invoking `cargo metadata`
+        /// itself.
+        #[clap(long, env = "PAVEXC_PRECOMPUTED_METADATA", value_parser)]
+        precomputed_metadata: Option<PathBuf>,
     },
     /// Scaffold a new Pavex project at <PATH>.
     New {
@@ -269,6 +274,7 @@ fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
             output,
             check,
             docs_toolchain,
+            precomputed_metadata,
             cache_workspace_packages,
         } => generate(
             blueprint,
@@ -277,6 +283,7 @@ fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
             output,
             cli.color,
             cache_workspace_packages,
+            precomputed_metadata,
             check,
         ),
         Commands::New { path, template } => scaffold_project(path, template),
@@ -322,6 +329,7 @@ fn generate(
     output: PathBuf,
     color_profile: Color,
     cache_workspace_packages: bool,
+    precomputed_metadata: Option<PathBuf>,
     check: bool,
 ) -> Result<ExitCode, Box<dyn std::error::Error>> {
     let blueprint = {
@@ -329,7 +337,14 @@ fn generate(
         ron::de::from_reader(&file)?
     };
     let mut reporter = DiagnosticReporter::new(color_profile);
-    let (app, issues) = match App::build(blueprint, docs_toolchain, cache_workspace_packages) {
+
+    let package_graph = package_graph::retrieve_or_compute_package_graph(precomputed_metadata)?;
+    let (app, issues) = match App::build(
+        blueprint,
+        docs_toolchain,
+        package_graph,
+        cache_workspace_packages,
+    ) {
         Ok((a, issues)) => {
             for e in &issues {
                 assert_eq!(e.severity(), Some(Severity::Warning));
@@ -364,6 +379,45 @@ fn generate(
         return Ok(ExitCode::FAILURE);
     }
     Ok(ExitCode::SUCCESS)
+}
+
+mod package_graph {
+    use anyhow::Context;
+    use guppy::{graph::PackageGraph, CargoMetadata};
+    use std::path::PathBuf;
+    use tracing_log_error::log_error;
+
+    /// Retrieve the precomputed package graph from disk if available, or compute it using `cargo metadata`.
+    /// Then build a `PackageGraph` from the metadata.
+    pub(super) fn retrieve_or_compute_package_graph(
+        precomputed_metadata: Option<PathBuf>,
+    ) -> Result<PackageGraph, anyhow::Error> {
+        let metadata = 'outer: {
+            if let Some(path) = precomputed_metadata {
+                match load_metadata_from_disk(path) {
+                    Ok(m) => break 'outer m,
+                    Err(e) => {
+                        log_error!(*e, level: tracing::Level::WARN);
+                    }
+                }
+            }
+
+            let metadata = tracing::info_span!("Invoke 'cargo metadata'")
+                .in_scope(|| guppy::MetadataCommand::new().exec())
+                .context("Failed to invoke `cargo metadata`")?;
+            metadata
+        };
+        let graph = tracing::info_span!("Build package graph")
+            .in_scope(|| metadata.build_graph())
+            .context("Failed to build package graph")?;
+        Ok(graph)
+    }
+
+    fn load_metadata_from_disk(path: PathBuf) -> Result<CargoMetadata, anyhow::Error> {
+        let metadata = fs_err::read_to_string(&path)
+            .context("Failed to read precomputed metadata from disk")?;
+        CargoMetadata::parse_json(&metadata).context("Failed to parse precomputed metadata as JSON")
+    }
 }
 
 /// The compiler may emit the same diagnostic more than once

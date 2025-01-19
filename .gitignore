@@ -1,4 +1,5 @@
 /libs/ui_tests/target
+/libs/ui_tests/metadata.json
 /libs/ui_tests/**/generated_app/
 /libs/ui_tests/Cargo.lock
 /libs/target

@@ -63,6 +63,7 @@ impl App {
     pub fn build(
         bp: Blueprint,
         docs_toolchain_name: String,
+        package_graph: PackageGraph,
         cache_workpace_packages: bool,
     ) -> Result<(Self, Vec<miette::Error>), Vec<miette::Error>> {
         /// Exit early if there is at least one error.
@@ -81,7 +82,8 @@ impl App {
 
         let krate_collection = CrateCollection::new(
             docs_toolchain_name,
-            std::env::current_dir().expect("Failed to determine the current directory"),
+            // TODO: avoid cloning here.
+            package_graph.clone(),
             cache_workpace_packages,
         )
         .map_err(|e| vec![anyhow2miette(e)])?;
