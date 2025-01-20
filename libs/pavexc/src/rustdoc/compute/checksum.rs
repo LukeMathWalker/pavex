@@ -13,13 +13,10 @@ use camino::Utf8Path;
 /// 2. Calculate the checksum of everything that was discovered, including the file names.
 #[tracing::instrument("Checksum crate files", level = tracing::Level::DEBUG)]
 pub(super) fn checksum_crate(root_path: &Utf8Path) -> Result<u64, anyhow::Error> {
-    let paths = get_paths(root_path)?;
+    let paths = get_file_paths(root_path)?;
 
     let mut hasher = xxhash_rust::xxh64::Xxh64::new(24);
     for path in paths {
-        // Read and hash the file contents
-        // We don't check if the path is a directory because `cargo package --list`
-        // only lists files
         let contents = std::fs::read(&path)
             .with_context(|| format!("Failed to read file at `{}`", path.display()))?;
         hasher.update(&contents);
@@ -33,7 +30,7 @@ pub(super) fn checksum_crate(root_path: &Utf8Path) -> Result<u64, anyhow::Error>
 ///
 /// The "canonical" way of determining the files included in the package is to run `cargo package --list`,
 /// but it appears to be orders of magnitude slower than just doing "the work" ourselves.
-fn get_paths(root_dir: &Utf8Path) -> Result<BTreeSet<PathBuf>, anyhow::Error> {
+fn get_file_paths(root_dir: &Utf8Path) -> Result<BTreeSet<PathBuf>, anyhow::Error> {
     #[derive(serde::Deserialize)]
     struct CargoManifest {
         package: Package,
