@@ -5,6 +5,7 @@ use std::thread;
 
 use anyhow::Context;
 use hyper_util::rt::TokioIo;
+use hyper_util::server::graceful::GracefulShutdown;
 use tokio::net::TcpStream;
 use tokio::sync::mpsc::error::TrySendError;
 use tracing_log_error::log_error;
@@ -24,37 +25,6 @@ pub(super) struct WorkerHandle {
     // synchronously.
     shutdown_outbox: tokio::sync::mpsc::UnboundedSender<ShutdownWorkerCommand>,
     id: usize,
-}
-
-thread_local! {
-    /// Each worker keeps track of the number of connections it is currently handling.
-    /// Since the value never crosses thread boundaries, we can use a thread-local variable.
-    static LIVE_CONNECTION_COUNTER: std::cell::RefCell<usize> = const { std::cell::RefCell::new(0) };
-}
-
-/// A guard to track the liveness of an incoming connection.
-///
-/// It increments the connection counter when created and decrements it when dropped.
-struct ConnectionCounterGuard;
-
-impl ConnectionCounterGuard {
-    /// Create a new guard and increment the connection counter.
-    fn new() -> Self {
-        LIVE_CONNECTION_COUNTER.with(|counter| {
-            let mut counter = counter.borrow_mut();
-            *counter += 1;
-        });
-        Self
-    }
-}
-
-impl Drop for ConnectionCounterGuard {
-    fn drop(&mut self) {
-        LIVE_CONNECTION_COUNTER.with(|counter| {
-            let mut counter = counter.borrow_mut();
-            *counter -= 1;
-        });
-    }
 }
 
 impl WorkerHandle {
@@ -114,6 +84,7 @@ pub(super) struct Worker<HandlerFuture, ApplicationState> {
     ) -> HandlerFuture,
     application_state: ApplicationState,
     id: usize,
+    shutdown_coordinator: GracefulShutdown,
 }
 
 impl<HandlerFuture, ApplicationState> Worker<HandlerFuture, ApplicationState>
@@ -143,6 +114,7 @@ where
             handler,
             application_state,
             id,
+            shutdown_coordinator: GracefulShutdown::new(),
         };
         let handle = WorkerHandle {
             connection_outbox,
@@ -183,6 +155,7 @@ where
             handler,
             application_state,
             id,
+            shutdown_coordinator,
         } = self;
         'event_loop: loop {
             let message =
@@ -190,7 +163,12 @@ where
                     .await;
             match message {
                 WorkerInboxMessage::Connection(connection) => {
-                    Self::handle_connection(connection, handler, application_state.clone());
+                    Self::handle_connection(
+                        connection,
+                        handler,
+                        application_state.clone(),
+                        &shutdown_coordinator,
+                    );
                 }
                 WorkerInboxMessage::Shutdown(shutdown) => {
                     let ShutdownWorkerCommand {
@@ -208,27 +186,13 @@ where
                                     connection,
                                     handler,
                                     application_state.clone(),
+                                    &shutdown_coordinator,
                                 );
                             }
 
-                            // A future that returns once all live connections have been closed.
-                            let connections_closed = async move {
-                                let mut ticker =
-                                    tokio::time::interval(std::time::Duration::from_millis(500));
-                                loop {
-                                    ticker.tick().await;
-                                    let ready_to_shutdown =
-                                        LIVE_CONNECTION_COUNTER.with(|counter| {
-                                            let counter = counter.borrow();
-                                            *counter == 0
-                                        });
-                                    if ready_to_shutdown {
-                                        break;
-                                    }
-                                }
-                            };
                             // Wait for all live connections to be closed or for the timeout to expire.
-                            let _ = tokio::time::timeout(timeout, connections_closed).await;
+                            let _ = tokio::time::timeout(timeout, shutdown_coordinator.shutdown())
+                                .await;
                         }
                         ShutdownMode::Forced => {}
                     }
@@ -248,6 +212,7 @@ where
             ApplicationState,
         ) -> HandlerFuture,
         application_state: ApplicationState,
+        shutdown_coordinator: &GracefulShutdown,
     ) {
         let ConnectionMessage {
             connection,
@@ -264,16 +229,14 @@ where
                 Ok::<_, hyper::Error>(response)
             }
         });
-        let connection_counter_guard = ConnectionCounterGuard::new();
+        // TODO: expose all the config options for `auto::Builder` through the top-level
+        //   `ServerConfiguration` object.
+        let builder = hyper_util::server::conn::auto::Builder::new(LocalExec);
+        let connection = TokioIo::new(connection);
+        let connection_future =
+            shutdown_coordinator.watch(builder.serve_connection(connection, handler).into_owned());
         tokio::task::spawn_local(async move {
-            // Move the guard into the closure to keep the connection counter alive as
-            // long as the connection is being handled.
-            let _guard = connection_counter_guard;
-            // TODO: expose all the config options for `auto::Builder` through the top-level
-            //   `ServerConfiguration` object.
-            let builder = hyper_util::server::conn::auto::Builder::new(LocalExec);
-            let connection = TokioIo::new(connection);
-            if let Err(e) = builder.serve_connection(connection, handler).await {
+            if let Err(e) = connection_future.await {
                 log_error!(*e, level: tracing::Level::WARN, "Failed to serve an incoming connection");
             }
         });

@@ -76,6 +76,7 @@ hyper-util = { workspace = true, features = [
     "tokio",
     "server",
     "server-auto",
+    "server-graceful",
 ], optional = true }
 socket2 = { workspace = true, optional = true }
 smallvec = { workspace = true }
