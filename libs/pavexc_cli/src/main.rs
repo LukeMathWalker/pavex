@@ -1,3 +1,4 @@
+#![allow(clippy::too_many_arguments)]
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fmt::{Display, Formatter};
 use std::path::{Path, PathBuf};
@@ -402,10 +403,9 @@ mod package_graph {
                 }
             }
 
-            let metadata = tracing::info_span!("Invoke 'cargo metadata'")
+            tracing::info_span!("Invoke 'cargo metadata'")
                 .in_scope(|| guppy::MetadataCommand::new().exec())
-                .context("Failed to invoke `cargo metadata`")?;
-            metadata
+                .context("Failed to invoke `cargo metadata`")?
         };
         let graph = tracing::info_span!("Build package graph")
             .in_scope(|| metadata.build_graph())

@@ -212,7 +212,7 @@ where
     let package_id_specs: Vec<_> = package_id_specs.collect();
     tracing::Span::current().record("package_id_specs", package_id_specs.iter().join(", "));
     if package_id_specs.len() == 1 {
-        _compute_single_crate_docs(toolchain_name, &package_id_specs[0], current_dir)
+        _compute_single_crate_docs(toolchain_name, package_id_specs[0], current_dir)
     } else {
         _compute_multiple_crate_docs(toolchain_name, package_id_specs, current_dir)
     }
@@ -257,9 +257,9 @@ fn _compute_single_crate_docs(
     Ok(())
 }
 
-fn _compute_multiple_crate_docs<'a>(
+fn _compute_multiple_crate_docs(
     toolchain_name: &str,
-    package_id_specs: Vec<&'a PackageIdSpecification>,
+    package_id_specs: Vec<&PackageIdSpecification>,
     current_dir: &Path,
 ) -> Result<(), anyhow::Error> {
     let mut cmd = std::process::Command::new("rustup");

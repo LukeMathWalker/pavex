@@ -735,9 +735,9 @@ impl<'a> ThirdPartyCrateCacheKey<'a> {
             Id(&'a str),
         }
 
-        impl<'a> Into<Cow<'a, str>> for PathOrId<'a> {
-            fn into(self) -> Cow<'a, str> {
-                match self {
+        impl<'a> From<PathOrId<'a>> for Cow<'a, str> {
+            fn from(val: PathOrId<'a>) -> Self {
+                match val {
                     PathOrId::Path(cow) => match cow {
                         Cow::Owned(path) => Cow::Owned(path.to_string()),
                         Cow::Borrowed(path) => Cow::Borrowed(path.as_str()),

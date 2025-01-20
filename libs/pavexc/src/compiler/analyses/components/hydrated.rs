@@ -51,7 +51,7 @@ impl<'a> HydratedComponent<'a> {
     }
 
     pub(crate) fn is_fallible(&self) -> bool {
-        self.output_type().map_or(false, |t| t.is_result())
+        self.output_type().is_some_and(|t| t.is_result())
     }
 
     /// Returns a [`Computation`] that matches the transformation carried out by this component.

@@ -433,7 +433,7 @@ impl ClientSessionStateMut<'_> {
 /// A mutable reference to the server-side state of a session.
 pub struct ServerSessionStateMut<'session, 'store>(&'session mut Session<'store>);
 
-impl<'session, 'store> ServerSessionStateMut<'session, 'store> {
+impl ServerSessionStateMut<'_, '_> {
     /// Get the value associated with `key` from the server-side state.
     ///
     /// If the value is not found, `None` is returned.
@@ -459,7 +459,7 @@ impl<'session, 'store> ServerSessionStateMut<'session, 'store> {
     }
 
     /// Get the value associated with `key` from the server-side state.
-    pub async fn get_value<'a, 'b>(&'a self, key: &'b str) -> Result<Option<&'a Value>, LoadError> {
+    pub async fn get_value<'a>(&'a self, key: &str) -> Result<Option<&'a Value>, LoadError> {
         server_get_value(self.0, key).await
     }
 
@@ -754,7 +754,7 @@ impl<'session, 'store> ServerSessionStateMut<'session, 'store> {
 /// A read-only reference to the server-side state of a session.
 pub struct ServerSessionState<'session, 'store>(&'session Session<'store>);
 
-impl<'session, 'store> ServerSessionState<'session, 'store> {
+impl<'session> ServerSessionState<'session, '_> {
     /// Get the value associated with `key` from the server-side state.
     ///
     /// If the value is not found, `None` is returned.
@@ -818,8 +818,8 @@ fn client_get_value<'session>(
 ///
 /// If the value is not found, `None` is returned.
 /// If the value cannot be deserialized into the expected type, an error is returned.
-async fn server_get<'store, T: DeserializeOwned>(
-    session: &Session<'store>,
+async fn server_get<T: DeserializeOwned>(
+    session: &Session<'_>,
     key: &str,
 ) -> Result<Option<T>, ServerGetError> {
     server_get_value(session, key)
@@ -836,9 +836,9 @@ async fn server_get<'store, T: DeserializeOwned>(
 }
 
 /// Get the value associated with `key` from the server-side state.
-async fn server_get_value<'a, 'b, 'store>(
-    session: &'a Session<'store>,
-    key: &'b str,
+async fn server_get_value<'a>(
+    session: &'a Session<'_>,
+    key: &str,
 ) -> Result<Option<&'a Value>, LoadError> {
     use ServerState::*;
 
