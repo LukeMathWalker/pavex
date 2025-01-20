@@ -4,7 +4,6 @@ members = [
     "generate_from_path",
     "persist_if_changed",
     "px_workspace_hack",
-    "tracing_log_error",
 ]
 resolver = "2"
 
@@ -122,6 +121,7 @@ toml = "0.8.19"
 toml_edit = "0.22"
 tracing = { version = "0.1.41", default-features = false }
 tracing-log = "0.2"
+tracing_log_error = "0.1"
 tracing-chrome = "0.7"
 tracing-subscriber = "0.3"
 trybuild = "1.0"

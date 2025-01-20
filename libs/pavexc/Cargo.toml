@@ -22,7 +22,7 @@ debug_assertions = []
 pavex = { path = "../pavex", version = "0.1.68" }
 pavex_bp_schema = { path = "../pavex_bp_schema", version = "=0.1.68" }
 rustdoc_types = { path = "../pavexc_rustdoc_types", version = "=0.1.68", package = "pavexc_rustdoc_types" }
-tracing_log_error = { path = "../tracing_log_error", version = "0.1.68" }
+tracing_log_error = { workspace = true }
 syn = { workspace = true, features = ["full", "extra-traits", "visit"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true, features = ["unbounded_depth"] }
