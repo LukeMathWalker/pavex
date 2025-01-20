@@ -23,7 +23,7 @@ anyhow = { workspace = true }
 pavexc_cli_client = { path = "../pavexc_cli_client", version = "0.1.68" }
 pavex_cli_deps = { path = "../pavex_cli_deps", version = "0.1.68" }
 pavex_miette = { path = "../pavex_miette", version = "0.1.68" }
-tracing_log_error = { version = "0.1.68", path = "../tracing_log_error" }
+tracing_log_error = { workspace = true }
 clap = { workspace = true, features = ["derive", "env"] }
 miette = { workspace = true }
 fs-err = { workspace = true }

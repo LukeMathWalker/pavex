@@ -11,6 +11,6 @@ readme = "README.md"
 
 [dependencies]
 tracing = { workspace = true, features = ["std"] }
-tracing_log_error = { version = "0.1.68", path = "../tracing_log_error" }
+tracing_log_error = { workspace = true }
 pavex = { version = "0.1.68", path = "../pavex" }
 px_workspace_hack = { version = "0.1", path = "../px_workspace_hack" }
