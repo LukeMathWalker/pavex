@@ -375,6 +375,7 @@ fn warm_up_rustdoc_cache(
     let crate_collection = CrateCollection::new(
         DEFAULT_DOCS_TOOLCHAIN.to_owned(),
         package_graph.clone(),
+        package_graph.workspace().root().to_string(),
         true,
     )?;
     let app_names = test_name2test_data

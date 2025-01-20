@@ -84,6 +84,7 @@ impl App {
             docs_toolchain_name,
             // TODO: avoid cloning here.
             package_graph.clone(),
+            bp.creation_location.file.clone(),
             cache_workpace_packages,
         )
         .map_err(|e| vec![anyhow2miette(e)])?;

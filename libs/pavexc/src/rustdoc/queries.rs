@@ -60,44 +60,32 @@ impl std::fmt::Debug for CrateCollection {
 }
 
 impl CrateCollection {
-    // We use the path to the root manifest as a unique identifier for the project.
-    fn project_fingerprint(package_graph: &PackageGraph) -> String {
-        package_graph.workspace().root().to_string()
-    }
-
     /// A crate collection is specific to a workspace, as it relates to its package graph.
+    ///
+    /// # Project fingerprint
+    ///
+    /// The project fingerprint is meant to uniquely identify the current project (i.e. the current
+    /// blueprint). It is used to cache the access log, the set of crates that are accessed
+    /// while processing the blueprint of an application.
+    /// This is then used to pre-compute/eagerly retrieve from the cache the docs for these crates
+    /// the next time we process a blueprint for the same project.
+    ///
+    /// If the fingerprint ends up being the same for two different projects, the cache will be
+    /// shared between them, which may lead to unnecessary doc loads but shouldn't cause any
+    /// correctness issues.
     pub fn new(
         toolchain_name: String,
         package_graph: PackageGraph,
+        project_fingerprint: String,
         cache_workspace_package_docs: bool,
     ) -> Result<Self, anyhow::Error> {
         let disk_cache = RustdocGlobalFsCache::new(&toolchain_name, cache_workspace_package_docs)?;
-        let project_fingerprint = Self::project_fingerprint(&package_graph);
         Ok(Self {
             package_id2krate: FrozenMap::new(),
             package_graph,
             disk_cache,
             project_fingerprint,
             access_log: FrozenMap::new(),
-            toolchain_name,
-        })
-    }
-
-    /// An alternative constructor that, unlike [`CrateCollection::new`], takes a pre-computed
-    /// package graph as input.
-    pub fn from_package_graph(
-        toolchain_name: String,
-        package_graph: PackageGraph,
-        cache_workspace_package_docs: bool,
-    ) -> Result<Self, anyhow::Error> {
-        let disk_cache = RustdocGlobalFsCache::new(&toolchain_name, cache_workspace_package_docs)?;
-        let project_fingerprint = Self::project_fingerprint(&package_graph);
-        Ok(Self {
-            package_id2krate: FrozenMap::new(),
-            package_graph,
-            disk_cache,
-            access_log: FrozenMap::new(),
-            project_fingerprint,
             toolchain_name,
         })
     }
