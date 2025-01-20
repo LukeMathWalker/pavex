@@ -112,7 +112,7 @@ fn check_json_content_type(headers: &HeaderMap) -> Result<(), ExtractJsonBodyErr
     };
 
     let is_json_content_type = mime.type_() == "application"
-        && (mime.subtype() == "json" || mime.suffix().map_or(false, |name| name == "json"));
+        && (mime.subtype() == "json" || mime.suffix().is_some_and(|name| name == "json"));
     if !is_json_content_type {
         return Err(JsonContentTypeMismatch {
             actual: content_type.to_string(),
