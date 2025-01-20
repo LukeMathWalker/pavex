@@ -8,7 +8,12 @@ use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::Registry;
 
 fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
-    let _guard = init_telemetry();
+    let _guard = if std::env::var("PAVEX_TEST_LOG").is_ok_and(|s| s == "true") {
+        init_telemetry()
+    } else {
+        None
+    };
+
     let manifest_dir = PathBuf::from_str(env!("CARGO_MANIFEST_DIR")).unwrap();
     let test_runtime_folder = manifest_dir.parent().unwrap().join("ui_tests");
     let pavexc_cli_path = get_pavexc_cli_path()?;

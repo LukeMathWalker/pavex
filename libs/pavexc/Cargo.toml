@@ -48,6 +48,7 @@ ahash = { workspace = true }
 convert_case = { workspace = true }
 textwrap = { workspace = true }
 once_cell = { workspace = true }
+toml = { workspace = true }
 toml_edit = { workspace = true, features = ["serde"] }
 semver = { workspace = true }
 persist_if_changed = { path = "../persist_if_changed", version = "0.1.68" }
@@ -56,6 +57,7 @@ relative-path = { workspace = true }
 camino = { workspace = true }
 xxhash-rust = { workspace = true, features = ["xxh64"] }
 rustc-hash = { workspace = true }
+globwalk = { workspace = true }
 
 # Sqlite cache
 xdg-home = { workspace = true }
