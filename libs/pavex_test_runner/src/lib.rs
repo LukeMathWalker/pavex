@@ -395,6 +395,10 @@ fn warm_up_rustdoc_cache(
         .map(|p| p.name().to_owned())
         .collect();
     crates.remove("workspace_hack");
+    // Toolchain docs
+    crates.insert("core".into());
+    crates.insert("alloc".into());
+    crates.insert("std".into());
     // Hand-picked crates that we know we're going to build docs for.
     crates.insert("pavex".into());
     crates.insert("tracing".into());
