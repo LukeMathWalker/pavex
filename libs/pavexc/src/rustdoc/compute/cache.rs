@@ -816,8 +816,12 @@ pub fn cargo_fingerprint(toolchain_name: &str) -> Result<String, anyhow::Error> 
     let err_msg = || {
         format!(
             "Failed to run `cargo --verbose --version` on `{toolchain_name}`.\n\
-            Is the `{toolchain_name}` toolchain installed?\n\
-            If not, invoke `rustup toolchain install {toolchain_name}` to fix it.",
+Is the `{toolchain_name}` toolchain installed?\n\
+If not, invoke\n
+
+    rustup toolchain install {toolchain_name} -c rust-docs-json
+
+to fix it.",
         )
     };
     let mut cmd = std::process::Command::new("rustup");
