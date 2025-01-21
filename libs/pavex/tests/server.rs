@@ -121,7 +121,6 @@ impl SlowHandlerState {
 }
 
 #[tokio::test]
-#[cfg_attr(target_os = "windows", ignore = "Flaky on Windows")]
 async fn graceful() {
     let (incoming, addr) = test_incoming().await;
     let delay = Duration::from_millis(100);
@@ -134,7 +133,11 @@ async fn graceful() {
 
     let get_response = async move {
         let url = format!("http://localhost:{}", addr.port());
-        reqwest::get(url).await.unwrap().error_for_status().unwrap();
+        reqwest::get(url)
+            .await
+            .unwrap()
+            .error_for_status()
+            .expect("The request failed");
     };
     let get_response = tokio::task::spawn(get_response);
 
@@ -145,15 +148,11 @@ async fn graceful() {
     let shutdown_future =
         tokio::task::spawn(server_handle.shutdown(ShutdownMode::Graceful { timeout: delay * 5 }));
 
-    tokio::select! {
-        v1 = get_response => {
-            // The request must succeed!
-            v1.unwrap();
-        },
-        _ = shutdown_future => {
-            panic!("The server shutdown without waiting for an ongoing connection to complete within the allocated timeout")
-        }
-    }
+    shutdown_future
+        .await
+        .expect("Shutdown didn't succeed as expected");
+
+    get_response.await.expect("The server shutdown without waiting for an ongoing connection to complete within the allocated timeout");
 }
 
 #[tokio::test]
@@ -179,20 +178,17 @@ async fn forced() {
     // Then start a forced shutdown.
     let shutdown_future = tokio::task::spawn(server_handle.shutdown(ShutdownMode::Forced));
 
-    tokio::select! {
-        outcome = get_response => {
-            // This future might resolve first and report a broken connection, which would be fine.
-            // We don't want to see it succeed!
-            if outcome.is_ok() {
-                panic!("The server was supposed to shutdown forcefully, but it waited for the ongoing request")
-            }
-        },
-        _ = shutdown_future => {}
-    }
+    shutdown_future
+        .await
+        .expect("Shutdown didn't succeed as expected");
+
+    assert!(
+        get_response.await.unwrap_err().is_panic(),
+        "The server was supposed to shutdown forcefully, but it waited for the ongoing request"
+    );
 }
 
 #[tokio::test]
-#[cfg_attr(target_os = "windows", ignore = "Flaky on Windows")]
 async fn graceful_but_too_fast() {
     let (incoming, addr) = test_incoming().await;
     let delay = Duration::from_millis(200);
@@ -217,14 +213,13 @@ async fn graceful_but_too_fast() {
     let shutdown_future =
         tokio::task::spawn(server_handle.shutdown(ShutdownMode::Graceful { timeout: delay / 5 }));
 
-    tokio::select! {
-        outcome = get_response => {
-            // This future might resolve first and report a broken connection, which would be fine.
-            // We don't want to see it succeed!
-            if outcome.is_ok() {
-                panic!("The server was supposed to shutdown forcefully the slow request, but it waited instead")
-            }
-        },
-        _ = shutdown_future => {}
-    }
+    shutdown_future
+        .await
+        .expect("Shutdown didn't succeed as expected");
+
+    // The server should have shutdown gracefully, but the request should have failed.
+    assert!(
+        get_response.await.unwrap_err().is_panic(),
+        "The server was supposed to shutdown forcefully the slow request, but it waited instead"
+    );
 }
