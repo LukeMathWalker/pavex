@@ -8,13 +8,13 @@ Execute one of the following commands to install it:
 === "shell"
 
     ```bash
-    curl --proto '=https' --tlsv1.2 -LsSf https://pavex.dev/releases/download/latest/pavex_cli-installer.sh | sh
+    curl --proto '=https' --tlsv1.2 -LsSf https://pavex.dev/install.sh | sh
     ```
 
 === "powershell"
 
     ```powershell
-    powershell -c "irm https://pavex.dev/releases/download/latest/pavex_cli-installer.ps1 | iex"
+    powershell -c "irm https://pavex.dev/install.ps1 | iex"
     ```
 
 ## Setup
