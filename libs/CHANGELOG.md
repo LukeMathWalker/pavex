@@ -6,6 +6,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.69](https://github.com/LukeMathWalker/pavex/compare/0.1.68...0.1.69) - 2025-01-21
+
+### Added
+
+- When Pavex's Server fails to spawn a worker thread, capture that thread's name in the error message
+- Add Server::try_serve to give users a chance to handle the case where no connection sources have been registered
+- Cache accesses for path dependencies are now significantly faster, since 'cargo' is no longer in the hot path of determining the crate checksum
+- Reduce the time spent generating JSON docs by leveraging 'cargo rustdoc' built-in caching mechanism for the single-crate usecase.
+- Update Pavex's nightly to 2025-01-04. It unlocks the 2024 edition for Pavex users
+- Enable backtraces for panics in the project template, being careful not to capture backtraces for normal errors in libraries such as anyhow. Update the command to force the toolchain install to work with the latest rustup version
+
+### Fixed
+
+- Use hyper_util's GracefulShutdown utility to ensure connections are indeed shut down gracefully
+- Don't panic if we fail to serve a connection. Log the error as a warning.
+- Lower the logging level to info when reporting a failure to establish a connection. This event kind is common enough not to deserve a higher logging level.
+- Use the blueprint location as the project fingerprint rather than the workspace path, since a workspace may contain multiple blueprints, as it happens for Pavex's UI tests
+
+### Other
+
+- Migrate all tracing events that touch errors to `log_error!` to ensure consistent field naming
+- Clarify why it's fine to panic if `tokio` can't create a current-thread runtime inside a Pavex server worker thread
+- Improve suggested resolution for a missing nightly toolchain
+- Re-export error-related fields in `pavex_tracing` from `tracing_log_error`
+- Update dependency versions
+
 ## [0.1.68](https://github.com/LukeMathWalker/pavex/compare/0.1.67...0.1.68) - 2025-01-05
 
 ### Fixed

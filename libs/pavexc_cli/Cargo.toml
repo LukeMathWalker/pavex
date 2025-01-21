@@ -14,12 +14,12 @@ path = "src/main.rs"
 
 [dependencies]
 clap = { workspace = true, features = ["derive", "env"] }
-pavexc = { path = "../pavexc", version = "0.1.68" }
-pavexc_cli_client = { path = "../pavexc_cli_client", version = "0.1.68" }
-pavex_cli_deps = { path = "../pavex_cli_deps", version = "0.1.68" }
+pavexc = { path = "../pavexc", version = "0.1.69" }
+pavexc_cli_client = { path = "../pavexc_cli_client", version = "0.1.69" }
+pavex_cli_deps = { path = "../pavex_cli_deps", version = "0.1.69" }
 tracing_log_error = { workspace = true }
 cargo-like-utils = { workspace = true }
-pavex_miette = { path = "../pavex_miette", version = "0.1.68" }
+pavex_miette = { path = "../pavex_miette", version = "0.1.69" }
 liquid-core = { workspace = true }
 miette = { workspace = true }
 fs-err = { workspace = true }
@@ -35,12 +35,11 @@ supports-color = { workspace = true }
 include_dir = { workspace = true }
 path-absolutize = { workspace = true }
 ron = { workspace = true }
-generate_from_path = { path = "../generate_from_path", version = "0.1.68" }
+generate_from_path = { path = "../generate_from_path", version = "0.1.69" }
 tempfile = { workspace = true }
 better-panic = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
-px_workspace_hack = { version = "0.1", path = "../px_workspace_hack" }
 
 [build-dependencies]
 vergen-gitcl = { workspace = true }
