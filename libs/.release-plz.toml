@@ -82,6 +82,6 @@ changelog_include = [
     "pavex_miette",
     "pavex_bp_schema",
 ]
-changelog_path = "CHANGELOG.md"
+changelog_path = "../CHANGELOG.md"
 git_tag_name = "{{ version }}"
 git_tag_enable = true
