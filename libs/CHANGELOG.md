@@ -13,11 +13,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Don't install the current nightly when checking the freshness of a project. Pavex will install the specific nightly version it requires when it initializes
 - Use the new install URL in the starter project template (#425)
 
-### Other
-
-- Disable workspace hack before a release
-- Re-enable workspace hack after a release ([#423](https://github.com/LukeMathWalker/pavex/pull/423))
-
 ## [0.1.69](https://github.com/LukeMathWalker/pavex/compare/0.1.68...0.1.69) - 2025-01-21
 
 ### Added
