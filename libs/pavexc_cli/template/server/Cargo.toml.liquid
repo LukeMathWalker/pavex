@@ -5,9 +5,9 @@ edition = "2021"
 
 [dependencies]
 # Telemetry
-pavex_tracing = { {{pavex_tracing_package_spec}} }
 tracing = "0.1"
 tracing-bunyan-formatter = "0.3"
+tracing_log_error = { version = "0.1" }
 tracing-panic = "0.1"
 tracing-subscriber = { version = "0.3", default-features = false, features = ["env-filter", "registry", "smallvec", "std", "tracing-log"] }
 
