@@ -12,6 +12,7 @@ use pavex_tracing::fields::{
     URL_PATH, URL_QUERY, USER_AGENT_ORIGINAL,
 };
 use pavex_tracing::RootSpan;
+use tracing_log_error::log_error;
 
 /// Register telemetry middlewares, an error observer and the relevant constructors
 /// with the application blueprint.
@@ -70,13 +71,7 @@ pub async fn response_logger(response: Response, root_span: &RootSpan) -> Respon
 /// If multiple errors are observed for the same request, it will emit multiple error events
 /// but only the details of the last error will be attached to the root span.
 pub async fn error_logger(e: &pavex::Error, root_span: &RootSpan) {
-    tracing::event!(
-        tracing::Level::ERROR,
-        { ERROR_MESSAGE } = error_message(e),
-        { ERROR_DETAILS } = error_details(e),
-        { ERROR_SOURCE_CHAIN } = error_source_chain(e),
-        "An error occurred during request handling",
-    );
+    log_error!(e, "An error occurred during request handling");
     root_span.record(ERROR_MESSAGE, error_message(e));
     root_span.record(ERROR_DETAILS, error_details(e));
     root_span.record(ERROR_SOURCE_CHAIN, error_source_chain(e));
