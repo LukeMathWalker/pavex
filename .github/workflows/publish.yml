@@ -12,7 +12,7 @@ jobs:
   release-plz:
     name: Release-plz
     runs-on: "ubuntu-latest"
-    if: '${{ startsWith(github.event.head_commit.message, "chore: release") }}'
+    if: "${{ startsWith(github.event.head_commit.message, 'chore: release') }}"
     steps:
       - name: Generate GitHub token
         uses: actions/create-github-app-token@v1
