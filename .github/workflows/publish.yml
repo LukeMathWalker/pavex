@@ -39,4 +39,5 @@ jobs:
           config: "libs/.release-plz.toml"
         env:
           GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
+          RUST_LOG: "debug"
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
