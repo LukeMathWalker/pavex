@@ -1,4 +1,33 @@
 # Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+## [0.1.70](https://github.com/LukeMathWalker/pavex/compare/0.1.69...0.1.70) - 2025-01-24
+
+
+### 🐛 Bug Fixes
+- Don't install the current nightly when checking the freshness of a project. Pavex will install the specific nightly version it requires when it initializes (by @LukeMathWalker)
+- Use the new install URL in the starter project template (#425) (by @LukeMathWalker) - #425
+
+
+
+### 🫧 Polishing
+- Use 'tracing_log_error::log_error!' in the project template to ensure consistent error logging (by @LukeMathWalker) - #427
+
+
+
+
+### Contributors
+
+* @LukeMathWalker
+* @pavex-releaser[bot]
+* @github-actions[bot]
+# Changelog
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
