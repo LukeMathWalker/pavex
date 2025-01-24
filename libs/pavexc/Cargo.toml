@@ -19,9 +19,9 @@ anyhow = { workspace = true }
 debug_assertions = []
 
 [dependencies]
-pavex = { path = "../pavex", version = "0.1.70" }
-pavex_bp_schema = { path = "../pavex_bp_schema", version = "=0.1.70" }
-rustdoc_types = { path = "../pavexc_rustdoc_types", version = "=0.1.70", package = "pavexc_rustdoc_types" }
+pavex = { path = "../pavex", version = "0.1.69" }
+pavex_bp_schema = { path = "../pavex_bp_schema", version = "=0.1.69" }
+rustdoc_types = { path = "../pavexc_rustdoc_types", version = "=0.1.69", package = "pavexc_rustdoc_types" }
 tracing_log_error = { workspace = true }
 syn = { workspace = true, features = ["full", "extra-traits", "visit"] }
 serde = { workspace = true, features = ["derive"] }
@@ -51,7 +51,7 @@ once_cell = { workspace = true }
 toml = { workspace = true }
 toml_edit = { workspace = true, features = ["serde"] }
 semver = { workspace = true }
-persist_if_changed = { path = "../persist_if_changed", version = "0.1.70" }
+persist_if_changed = { path = "../persist_if_changed", version = "0.1.69" }
 matchit = { workspace = true }
 relative-path = { workspace = true }
 camino = { workspace = true }
@@ -67,6 +67,7 @@ r2d2 = { workspace = true }
 bincode = { workspace = true }
 rayon = { workspace = true }
 num_cpus = { workspace = true }
+px_workspace_hack = { version = "0.1", path = "../px_workspace_hack" }
 
 [dev-dependencies]
 insta = { workspace = true }
