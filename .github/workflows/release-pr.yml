@@ -1,17 +1,15 @@
-name: "Publish crates to crates.io"
+name: "Open a release PR"
 
 permissions:
+  pull-requests: write
   contents: write
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
 
 jobs:
   release-plz:
     name: Release-plz
-    if: ${{ startsWith(github.event.head_commit.message, 'chore: release') }}
     runs-on: ubuntu-latest
     steps:
       - name: Generate GitHub token
@@ -27,16 +25,26 @@ jobs:
           token: ${{ steps.generate-token.outputs.token }}
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
+      - name: Install cargo-hakari
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-hakari
       - name: Set git identity
         run: |
           git config --global user.name "pavex-releaser[bot]"
           git config --global user.email "ci@pavex.dev"
+      - name: Remove workspace hack from Cargo.toml
+        run: |
+          cd libs
+          cargo hakari disable
+          cargo hakari remove-deps -y
+          git add .
+          git commit -am "chore: Disable workspace hack before a release" || echo "No changes to commit"
       - name: Run release-plz
         uses: MarcoIeni/release-plz-action@v0.5
         with:
-          command: "release"
+          command: "release-pr"
           project_manifest: "libs/Cargo.toml"
           config: "libs/.release-plz.toml"
         env:
           GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}

@@ -7,7 +7,7 @@ permissions:
 on:
   push:
     tags:
-      - '**[0-9]+.[0-9]+.[0-9]+*'
+      - "**[0-9]+.[0-9]+.[0-9]+*"
 
 env:
   CARGO_TERM_COLOR: always
@@ -37,9 +37,9 @@ jobs:
           cargo hakari generate
           cargo hakari manage-deps --yes
           git add .
-          git commit -am "Re-enable workspace hack after a release"
+          git commit -am "release: Re-enable workspace hack after a release"
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v7
         with:
           branch-suffix: "random"
-          title: "Re-enable workspace hack after a release"
+          title: "release: Re-enable workspace hack after a release"
