@@ -7,18 +7,18 @@ struct ServerState {
     application_state: ApplicationState,
 }
 pub struct ApplicationState {
-    s0: alloc::sync::Arc<std::sync::RwLock<app::Custom>>,
-    s1: alloc::sync::Arc<app::Custom>,
-    s2: alloc::sync::Arc<std::sync::Mutex<app::Custom>>,
+    arc_custom: alloc::sync::Arc<app::Custom>,
+    arc_mutex: alloc::sync::Arc<std::sync::Mutex<app::Custom>>,
+    arc_rw_lock: alloc::sync::Arc<std::sync::RwLock<app::Custom>>,
 }
 pub async fn build_application_state() -> crate::ApplicationState {
-    let v0 = app::arc_mutex();
-    let v1 = app::arc();
-    let v2 = app::arc_rwlock();
+    let v0 = app::arc_rwlock();
+    let v1 = app::arc_mutex();
+    let v2 = app::arc();
     crate::ApplicationState {
-        s0: v2,
-        s1: v1,
-        s2: v0,
+        arc_custom: v2,
+        arc_mutex: v1,
+        arc_rw_lock: v0,
     }
 }
 pub fn run(
@@ -75,7 +75,12 @@ impl Router {
             0u32 => {
                 match &request_head.method {
                     &pavex::http::Method::GET => {
-                        route_0::entrypoint(&state.s0, &state.s1, &state.s2).await
+                        route_0::entrypoint(
+                                &state.arc_rw_lock,
+                                &state.arc_custom,
+                                &state.arc_mutex,
+                            )
+                            .await
                     }
                     _ => {
                         let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([

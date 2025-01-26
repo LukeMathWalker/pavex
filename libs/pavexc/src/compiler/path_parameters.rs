@@ -40,7 +40,6 @@ pub(crate) fn verify_path_parameters(
 ) {
     let ResolvedType::ResolvedPath(structural_deserialize) = process_framework_path(
         "pavex::serialization::StructuralDeserialize",
-        package_graph,
         krate_collection,
     ) else {
         unreachable!()

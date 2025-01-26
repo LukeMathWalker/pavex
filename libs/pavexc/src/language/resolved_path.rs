@@ -881,6 +881,7 @@ impl ResolvedPath {
 }
 
 /// There are two key callables in Rust: functions and methods.
+#[derive(Debug)]
 pub enum CallableItem<'a> {
     /// Functions are free-standing and map to a single `rustdoc` item.
     Function(ResolvedItem<'a>, ResolvedPath),

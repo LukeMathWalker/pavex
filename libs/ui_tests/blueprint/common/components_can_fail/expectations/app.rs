@@ -7,7 +7,7 @@ struct ServerState {
     application_state: ApplicationState,
 }
 pub struct ApplicationState {
-    s0: app::HttpClient,
+    http_client: app::HttpClient,
 }
 #[derive(Debug, thiserror::Error)]
 pub enum ApplicationStateError {
@@ -27,7 +27,9 @@ pub async fn build_application_state(
             };
         }
     };
-    let v3 = crate::ApplicationState { s0: v2 };
+    let v3 = crate::ApplicationState {
+        http_client: v2,
+    };
     core::result::Result::Ok(v3)
 }
 pub fn run(
@@ -84,7 +86,7 @@ impl Router {
             0u32 => {
                 match &request_head.method {
                     &pavex::http::Method::GET => {
-                        route_0::entrypoint(request_head, &state.s0).await
+                        route_0::entrypoint(request_head, &state.http_client).await
                     }
                     _ => {
                         let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([

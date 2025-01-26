@@ -34,15 +34,14 @@ pub(crate) fn runtime_singletons_can_be_cloned_if_needed<'a>(
     handler_pipelines: impl Iterator<Item = &'a RequestHandlerPipeline>,
     component_db: &ComponentDb,
     computation_db: &ComputationDb,
-    package_graph: &PackageGraph,
     krate_collection: &CrateCollection,
     diagnostics: &mut Vec<miette::Error>,
 ) {
-    let copy = process_framework_path("core::marker::Copy", package_graph, krate_collection);
+    let copy = process_framework_path("core::marker::Copy", krate_collection);
     let ResolvedType::ResolvedPath(copy) = copy else {
         unreachable!()
     };
-    let clone = process_framework_path("core::clone::Clone", package_graph, krate_collection);
+    let clone = process_framework_path("core::clone::Clone", krate_collection);
     let ResolvedType::ResolvedPath(clone) = clone else {
         unreachable!()
     };
@@ -105,7 +104,7 @@ pub(crate) fn runtime_singletons_can_be_cloned_if_needed<'a>(
                         is_clone,
                         id,
                         *consumer_id,
-                        package_graph,
+                        krate_collection.package_graph(),
                         component_db,
                         computation_db,
                         diagnostics,
@@ -143,12 +142,10 @@ fn must_be_clonable(
     let user_component_db = &component_db.user_component_db();
     let location = user_component_db.get_location(user_component_id);
     let source = try_source!(location, package_graph, diagnostics);
-    let label = source
-        .as_ref()
-        .and_then(|source| {
-            diagnostic::get_f_macro_invocation_span(source, location)
-                .labeled("It was registered here".to_string())
-        });
+    let label = source.as_ref().and_then(|source| {
+        diagnostic::get_f_macro_invocation_span(source, location)
+            .labeled("It was registered here".to_string())
+    });
     let e = anyhow::anyhow!(
         "I can't generate code that will pass the borrow checker *and* match the \
         instructions in your blueprint.\n\

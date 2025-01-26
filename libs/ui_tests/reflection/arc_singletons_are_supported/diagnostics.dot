@@ -47,10 +47,10 @@ digraph "* * - 1" {
 }
 
 digraph app_state {
-    0 [ label = "3| crate::ApplicationState(alloc::sync::Arc<std::sync::RwLock<app_933292bd::Custom>>, alloc::sync::Arc<app_933292bd::Custom>, alloc::sync::Arc<std::sync::Mutex<app_933292bd::Custom>>) -> crate::ApplicationState"]
-    1 [ label = "2| app_933292bd::arc_rwlock() -> alloc::sync::Arc<std::sync::RwLock<app_933292bd::Custom>>"]
-    2 [ label = "1| app_933292bd::arc() -> alloc::sync::Arc<app_933292bd::Custom>"]
-    3 [ label = "0| app_933292bd::arc_mutex() -> alloc::sync::Arc<std::sync::Mutex<app_933292bd::Custom>>"]
+    0 [ label = "3| crate::ApplicationState(alloc::sync::Arc<app_933292bd::Custom>, alloc::sync::Arc<std::sync::Mutex<app_933292bd::Custom>>, alloc::sync::Arc<std::sync::RwLock<app_933292bd::Custom>>) -> crate::ApplicationState"]
+    1 [ label = "2| app_933292bd::arc() -> alloc::sync::Arc<app_933292bd::Custom>"]
+    2 [ label = "1| app_933292bd::arc_mutex() -> alloc::sync::Arc<std::sync::Mutex<app_933292bd::Custom>>"]
+    3 [ label = "0| app_933292bd::arc_rwlock() -> alloc::sync::Arc<std::sync::RwLock<app_933292bd::Custom>>"]
     3 -> 0 [ ]
     2 -> 0 [ ]
     1 -> 0 [ ]

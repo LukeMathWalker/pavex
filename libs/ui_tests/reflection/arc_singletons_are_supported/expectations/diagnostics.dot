@@ -47,10 +47,10 @@ digraph "* * - 1" {
 }
 
 digraph app_state {
-    0 [ label = "3| crate::ApplicationState(alloc::sync::Arc<std::sync::RwLock<app::Custom>>, alloc::sync::Arc<app::Custom>, alloc::sync::Arc<std::sync::Mutex<app::Custom>>) -> crate::ApplicationState"]
-    1 [ label = "2| app::arc_rwlock() -> alloc::sync::Arc<std::sync::RwLock<app::Custom>>"]
-    2 [ label = "1| app::arc() -> alloc::sync::Arc<app::Custom>"]
-    3 [ label = "0| app::arc_mutex() -> alloc::sync::Arc<std::sync::Mutex<app::Custom>>"]
+    0 [ label = "3| crate::ApplicationState(alloc::sync::Arc<app::Custom>, alloc::sync::Arc<std::sync::Mutex<app::Custom>>, alloc::sync::Arc<std::sync::RwLock<app::Custom>>) -> crate::ApplicationState"]
+    1 [ label = "2| app::arc() -> alloc::sync::Arc<app::Custom>"]
+    2 [ label = "1| app::arc_mutex() -> alloc::sync::Arc<std::sync::Mutex<app::Custom>>"]
+    3 [ label = "0| app::arc_rwlock() -> alloc::sync::Arc<std::sync::RwLock<app::Custom>>"]
     3 -> 0 [ ]
     2 -> 0 [ ]
     1 -> 0 [ ]

@@ -51,11 +51,11 @@ digraph "* * - 1" {
 }
 
 digraph app_state {
-    0 [ label = "4| crate::ApplicationState(app_e4a8214b::A, app_e4a8214b::C<'static>, alloc::vec::Vec<alloc::string::String>, app_e4a8214b::B<alloc::string::String>) -> crate::ApplicationState"]
+    0 [ label = "4| crate::ApplicationState(app_e4a8214b::A, app_e4a8214b::B<alloc::string::String>, app_e4a8214b::C<'static>, alloc::vec::Vec<alloc::string::String>) -> crate::ApplicationState"]
     1 [ label = "3| app_e4a8214b::A"]
-    2 [ label = "2| app_e4a8214b::C<'static>"]
-    3 [ label = "1| alloc::vec::Vec<alloc::string::String>"]
-    4 [ label = "0| app_e4a8214b::B<alloc::string::String>"]
+    2 [ label = "2| app_e4a8214b::B<alloc::string::String>"]
+    3 [ label = "1| app_e4a8214b::C<'static>"]
+    4 [ label = "0| alloc::vec::Vec<alloc::string::String>"]
     4 -> 0 [ ]
     3 -> 0 [ ]
     2 -> 0 [ ]

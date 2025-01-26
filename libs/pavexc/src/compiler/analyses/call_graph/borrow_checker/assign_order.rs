@@ -32,7 +32,7 @@ impl OrderedCallGraph {
         krate_collection: &CrateCollection,
         diagnostics: &mut Vec<miette::Error>,
     ) -> Result<OrderedCallGraph, ()> {
-        let copy_checker = CopyChecker::new(package_graph, krate_collection);
+        let copy_checker = CopyChecker::new(krate_collection);
         let call_graph = Self::borrow_check(
             call_graph,
             &copy_checker,

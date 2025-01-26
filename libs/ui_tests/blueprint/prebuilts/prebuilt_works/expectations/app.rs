@@ -7,22 +7,22 @@ struct ServerState {
     application_state: ApplicationState,
 }
 pub struct ApplicationState {
-    s0: app::A,
-    s1: app::C<'static>,
-    s2: alloc::vec::Vec<alloc::string::String>,
-    s3: app::B<alloc::string::String>,
+    a: app::A,
+    b: app::B<alloc::string::String>,
+    c: app::C<'static>,
+    vec: alloc::vec::Vec<alloc::string::String>,
 }
 pub async fn build_application_state(
     v0: app::A,
-    v1: app::C<'static>,
-    v2: alloc::vec::Vec<alloc::string::String>,
-    v3: app::B<alloc::string::String>,
+    v1: app::B<alloc::string::String>,
+    v2: app::C<'static>,
+    v3: alloc::vec::Vec<alloc::string::String>,
 ) -> crate::ApplicationState {
     crate::ApplicationState {
-        s0: v0,
-        s1: v1,
-        s2: v2,
-        s3: v3,
+        a: v0,
+        b: v1,
+        c: v2,
+        vec: v3,
     }
 }
 pub fn run(
@@ -80,10 +80,10 @@ impl Router {
                 match &request_head.method {
                     &pavex::http::Method::GET => {
                         route_0::entrypoint(
-                                &state.s0,
-                                state.s1.clone(),
-                                state.s2.clone(),
-                                &state.s3,
+                                &state.a,
+                                state.c.clone(),
+                                state.vec.clone(),
+                                &state.b,
                             )
                             .await
                     }

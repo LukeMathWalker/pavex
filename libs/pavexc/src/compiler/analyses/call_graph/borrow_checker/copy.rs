@@ -1,4 +1,3 @@
-use guppy::graph::PackageGraph;
 use petgraph::stable_graph::NodeIndex;
 
 use crate::compiler::analyses::components::ComponentDb;
@@ -22,11 +21,8 @@ pub(super) struct CopyChecker<'a> {
 }
 
 impl<'a> CopyChecker<'a> {
-    pub(super) fn new(
-        package_graph: &'a PackageGraph,
-        krate_collection: &'a CrateCollection,
-    ) -> Self {
-        let copy_trait = get_copy_trait(package_graph, krate_collection);
+    pub(super) fn new(krate_collection: &'a CrateCollection) -> Self {
+        let copy_trait = get_copy_trait(krate_collection);
         Self {
             copy_trait,
             krate_collection,
@@ -60,8 +56,8 @@ impl<'a> CopyChecker<'a> {
 }
 
 /// Return the `PathType` object for the `Copy` marker trait.
-fn get_copy_trait(package_graph: &PackageGraph, krate_collection: &CrateCollection) -> PathType {
-    let c = process_framework_path("core::marker::Copy", package_graph, krate_collection);
+fn get_copy_trait(krate_collection: &CrateCollection) -> PathType {
+    let c = process_framework_path("core::marker::Copy", krate_collection);
     let ResolvedType::ResolvedPath(c) = c else {
         unreachable!()
     };

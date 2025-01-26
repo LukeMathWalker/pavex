@@ -24,12 +24,11 @@ pub(crate) fn runtime_singletons_are_thread_safe(
     runtime_singletons: &IndexSet<(ResolvedType, ComponentId)>,
     component_db: &ComponentDb,
     computation_db: &ComputationDb,
-    package_graph: &PackageGraph,
     krate_collection: &CrateCollection,
     diagnostics: &mut Vec<miette::Error>,
 ) {
-    let send = process_framework_path("core::marker::Send", package_graph, krate_collection);
-    let sync = process_framework_path("core::marker::Sync", package_graph, krate_collection);
+    let send = process_framework_path("core::marker::Send", krate_collection);
+    let sync = process_framework_path("core::marker::Sync", krate_collection);
     for (singleton_type, component_id) in runtime_singletons {
         for trait_ in [&send, &sync] {
             let ResolvedType::ResolvedPath(trait_) = trait_ else {
@@ -39,7 +38,7 @@ pub(crate) fn runtime_singletons_are_thread_safe(
                 missing_trait_implementation(
                     e,
                     *component_id,
-                    package_graph,
+                    krate_collection.package_graph(),
                     component_db,
                     computation_db,
                     diagnostics,
@@ -73,12 +72,10 @@ fn missing_trait_implementation(
     let component_kind = user_component.callable_type();
     let location = user_component_db.get_location(user_component_id);
     let source = try_source!(location, package_graph, diagnostics);
-    let label = source
-        .as_ref()
-        .and_then(|source| {
-            diagnostic::get_f_macro_invocation_span(source, location)
-                .labeled(format!("The {component_kind} was registered here"))
-        });
+    let label = source.as_ref().and_then(|source| {
+        diagnostic::get_f_macro_invocation_span(source, location)
+            .labeled(format!("The {component_kind} was registered here"))
+    });
     let help = if component_kind == CallableType::PrebuiltType {
         "All prebuilt types that are needed at runtime must implement the `Send` and `Sync` traits.\n\
         Pavex runs on a multi-threaded HTTP server and the application state is shared \

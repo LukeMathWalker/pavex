@@ -1,6 +1,5 @@
 use ahash::{HashMap, HashMapExt};
 use bimap::BiHashMap;
-use guppy::graph::PackageGraph;
 use proc_macro2::Ident;
 use quote::format_ident;
 
@@ -28,16 +27,12 @@ impl FrameworkItemDb {
     /// The list is currently hard-coded, but we can imagine a future where it becomes configurable
     /// (e.g. if we want to reuse the DI machinery for more than a single web framework).
     #[tracing::instrument("Build framework items database", skip_all)]
-    pub fn new(package_graph: &PackageGraph, krate_collection: &CrateCollection) -> Self {
+    pub fn new(krate_collection: &CrateCollection) -> Self {
         let capacity = 2;
         let mut items = BiHashMap::with_capacity(capacity);
         let mut id2metadata = HashMap::with_capacity(capacity);
 
-        let request_head = process_framework_path(
-            "pavex::request::RequestHead",
-            package_graph,
-            krate_collection,
-        );
+        let request_head = process_framework_path("pavex::request::RequestHead", krate_collection);
         items.insert(request_head, Self::request_head_id());
         id2metadata.insert(
             Self::request_head_id(),
@@ -47,11 +42,8 @@ impl FrameworkItemDb {
                 binding: format_ident!("request_head"),
             },
         );
-        let http_request = process_framework_path(
-            "pavex::request::body::RawIncomingBody",
-            package_graph,
-            krate_collection,
-        );
+        let http_request =
+            process_framework_path("pavex::request::body::RawIncomingBody", krate_collection);
         items.insert(http_request, Self::raw_incoming_body_id());
         id2metadata.insert(
             Self::raw_incoming_body_id(),
@@ -63,7 +55,6 @@ impl FrameworkItemDb {
         );
         let raw_path_parameters = process_framework_path(
             "pavex::request::path::RawPathParams::<'server, 'request>",
-            package_graph,
             krate_collection,
         );
         items.insert(raw_path_parameters, Self::url_params_id());
@@ -75,11 +66,8 @@ impl FrameworkItemDb {
                 binding: format_ident!("url_params"),
             },
         );
-        let matched_route_template = process_framework_path(
-            "pavex::request::path::MatchedPathPattern",
-            package_graph,
-            krate_collection,
-        );
+        let matched_route_template =
+            process_framework_path("pavex::request::path::MatchedPathPattern", krate_collection);
         items.insert(matched_route_template, Self::matched_route_template_id());
         id2metadata.insert(
             Self::matched_route_template_id(),
@@ -90,11 +78,8 @@ impl FrameworkItemDb {
             },
         );
 
-        let allowed_methods = process_framework_path(
-            "pavex::router::AllowedMethods",
-            package_graph,
-            krate_collection,
-        );
+        let allowed_methods =
+            process_framework_path("pavex::router::AllowedMethods", krate_collection);
         items.insert(allowed_methods, Self::allowed_methods_id());
         id2metadata.insert(
             Self::allowed_methods_id(),
@@ -105,11 +90,8 @@ impl FrameworkItemDb {
             },
         );
 
-        let connection_info = process_framework_path(
-            "pavex::connection::ConnectionInfo",
-            package_graph,
-            krate_collection,
-        );
+        let connection_info =
+            process_framework_path("pavex::connection::ConnectionInfo", krate_collection);
         items.insert(connection_info, Self::connection_info_id());
         id2metadata.insert(
             Self::connection_info_id(),
@@ -189,9 +171,7 @@ impl FrameworkItemDb {
     }
 
     /// Iterate over all the items in the database alongside their ids.
-    pub fn iter(
-        &self,
-    ) -> impl ExactSizeIterator<Item = (FrameworkItemId, &ResolvedType)> {
+    pub fn iter(&self) -> impl ExactSizeIterator<Item = (FrameworkItemId, &ResolvedType)> {
         self.items.iter().map(|(t, id)| (*id, t))
     }
 }

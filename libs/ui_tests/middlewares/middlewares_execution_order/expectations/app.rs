@@ -7,10 +7,10 @@ struct ServerState {
     application_state: ApplicationState,
 }
 pub struct ApplicationState {
-    s0: app::Spy,
+    spy: app::Spy,
 }
 pub async fn build_application_state(v0: app::Spy) -> crate::ApplicationState {
-    crate::ApplicationState { s0: v0 }
+    crate::ApplicationState { spy: v0 }
 }
 pub fn run(
     server_builder: pavex::server::Server,
@@ -69,7 +69,7 @@ impl Router {
         match matched_route.value {
             0u32 => {
                 match &request_head.method {
-                    &pavex::http::Method::GET => route_4::entrypoint(&state.s0).await,
+                    &pavex::http::Method::GET => route_4::entrypoint(&state.spy).await,
                     _ => {
                         let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
                                 pavex::http::Method::GET,
@@ -81,7 +81,7 @@ impl Router {
             }
             1u32 => {
                 match &request_head.method {
-                    &pavex::http::Method::GET => route_3::entrypoint(&state.s0).await,
+                    &pavex::http::Method::GET => route_3::entrypoint(&state.spy).await,
                     _ => {
                         let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
                                 pavex::http::Method::GET,
@@ -93,7 +93,7 @@ impl Router {
             }
             2u32 => {
                 match &request_head.method {
-                    &pavex::http::Method::GET => route_2::entrypoint(&state.s0).await,
+                    &pavex::http::Method::GET => route_2::entrypoint(&state.spy).await,
                     _ => {
                         let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
                                 pavex::http::Method::GET,
@@ -105,7 +105,7 @@ impl Router {
             }
             3u32 => {
                 match &request_head.method {
-                    &pavex::http::Method::GET => route_1::entrypoint(&state.s0).await,
+                    &pavex::http::Method::GET => route_1::entrypoint(&state.spy).await,
                     _ => {
                         let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
                                 pavex::http::Method::GET,
@@ -117,7 +117,7 @@ impl Router {
             }
             4u32 => {
                 match &request_head.method {
-                    &pavex::http::Method::GET => route_5::entrypoint(&state.s0).await,
+                    &pavex::http::Method::GET => route_5::entrypoint(&state.spy).await,
                     _ => {
                         let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
                                 pavex::http::Method::GET,

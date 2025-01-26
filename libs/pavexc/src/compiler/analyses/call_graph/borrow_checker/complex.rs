@@ -138,7 +138,6 @@ pub(super) fn complex_borrow_check(
                             };
                             let Some(clone_component_id) = get_clone_component_id(
                                 &component_id,
-                                package_graph,
                                 krate_collection,
                                 component_db,
                                 computation_db,

@@ -7,7 +7,7 @@ struct ServerState {
     application_state: ApplicationState,
 }
 pub struct ApplicationState {
-    s0: app::A,
+    a: app::A,
 }
 #[derive(Debug, thiserror::Error)]
 pub enum ApplicationStateError {
@@ -28,7 +28,7 @@ pub async fn build_application_state() -> Result<
             };
         }
     };
-    let v2 = crate::ApplicationState { s0: v1 };
+    let v2 = crate::ApplicationState { a: v1 };
     core::result::Result::Ok(v2)
 }
 pub fn run(
@@ -84,7 +84,7 @@ impl Router {
         match matched_route.value {
             0u32 => {
                 match &request_head.method {
-                    &pavex::http::Method::GET => route_0::entrypoint(&state.s0).await,
+                    &pavex::http::Method::GET => route_0::entrypoint(&state.a).await,
                     _ => {
                         let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
                                 pavex::http::Method::GET,

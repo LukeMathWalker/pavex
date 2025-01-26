@@ -31,6 +31,8 @@ members = [
   "blueprint/constructors/output_type_of_constructors_can_contain_generic_parameters/generated_app",
   "blueprint/constructors/output_type_of_constructors_cannot_be_a_naked_generic",
   "blueprint/constructors/output_type_of_constructors_cannot_be_a_naked_generic/generated_app",
+  "blueprint/constructors/singleton_naming",
+  "blueprint/constructors/singleton_naming/generated_app",
   "blueprint/constructors/static_references_are_valid_singletons",
   "blueprint/constructors/static_references_are_valid_singletons/generated_app",
   "blueprint/constructors/the_latest_registered_constructor_takes_precedence",

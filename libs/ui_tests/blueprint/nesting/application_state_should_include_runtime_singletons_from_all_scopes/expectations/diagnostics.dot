@@ -59,11 +59,11 @@ digraph "GET /child - 1" {
 }
 
 digraph app_state {
-    0 [ label = "3| crate::ApplicationState(u64, u32) -> crate::ApplicationState"]
-    1 [ label = "2| app::parent_singleton() -> u64"]
-    2 [ label = "1| app::nested_singleton(u16) -> u32"]
-    3 [ label = "0| app::singleton_dep() -> u16"]
+    0 [ label = "3| crate::ApplicationState(u32, u64) -> crate::ApplicationState"]
+    1 [ label = "2| app::nested_singleton(u16) -> u32"]
+    2 [ label = "0| app::parent_singleton() -> u64"]
+    3 [ label = "1| app::singleton_dep() -> u16"]
     2 -> 0 [ ]
-    3 -> 2 [ ]
     1 -> 0 [ ]
+    3 -> 1 [ ]
 }

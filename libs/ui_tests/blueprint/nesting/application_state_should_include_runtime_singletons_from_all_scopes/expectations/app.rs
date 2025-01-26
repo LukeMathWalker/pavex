@@ -7,16 +7,16 @@ struct ServerState {
     application_state: ApplicationState,
 }
 pub struct ApplicationState {
-    s0: u64,
-    s1: u32,
+    u32_: u32,
+    u64_: u64,
 }
 pub async fn build_application_state() -> crate::ApplicationState {
-    let v0 = app::singleton_dep();
-    let v1 = app::nested_singleton(v0);
-    let v2 = app::parent_singleton();
+    let v0 = app::parent_singleton();
+    let v1 = app::singleton_dep();
+    let v2 = app::nested_singleton(v1);
     crate::ApplicationState {
-        s0: v2,
-        s1: v1,
+        u32_: v2,
+        u64_: v0,
     }
 }
 pub fn run(
@@ -74,7 +74,7 @@ impl Router {
             0u32 => {
                 match &request_head.method {
                     &pavex::http::Method::GET => {
-                        route_2::entrypoint(state.s1.clone()).await
+                        route_2::entrypoint(state.u32_.clone()).await
                     }
                     _ => {
                         let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
@@ -88,7 +88,7 @@ impl Router {
             1u32 => {
                 match &request_head.method {
                     &pavex::http::Method::GET => {
-                        route_0::entrypoint(state.s0.clone()).await
+                        route_0::entrypoint(state.u64_.clone()).await
                     }
                     _ => {
                         let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([

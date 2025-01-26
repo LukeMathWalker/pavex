@@ -1,16 +1,15 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use ahash::{HashMap, HashMapExt};
-use bimap::BiHashMap;
 use convert_case::{Case, Casing};
 use guppy::graph::PackageGraph;
 use guppy::PackageId;
 use indexmap::{IndexMap, IndexSet};
 use petgraph::Direction;
-use proc_macro2::Ident;
 
 use pavex_bp_schema::{CloningStrategy, Lifecycle};
 
+use crate::compiler::analyses::application_state::ApplicationState;
 use crate::compiler::analyses::call_graph::{
     core_graph::build_call_graph, CallGraph, CallGraphNode, NumberOfAllowedInvocations,
     OrderedCallGraph,
@@ -33,7 +32,7 @@ use crate::rustdoc::{CrateCollection, CORE_PACKAGE_ID_REPR};
 /// Build an [`OrderedCallGraph`] for the application state.
 #[tracing::instrument(name = "Compute the application state graph", skip_all)]
 pub(crate) fn application_state_call_graph(
-    runtime_singleton_bindings: &BiHashMap<Ident, ResolvedType>,
+    application_state: &ApplicationState,
     computation_db: &mut ComputationDb,
     component_db: &mut ComponentDb,
     constructible_db: &mut ConstructibleDb,
@@ -57,41 +56,11 @@ pub(crate) fn application_state_call_graph(
 
     // We build a "mock" callable that has the right inputs in order to drive the machinery
     // that builds the dependency graph.
-    let package_id = PackageId::new(GENERATED_APP_PACKAGE_ID);
-    let application_state_scope_id = component_db.scope_graph().application_state_scope_id();
-    let application_state_type = PathType {
-        package_id: package_id.clone(),
-        rustdoc_id: None,
-        base_type: vec!["crate".into(), "ApplicationState".into()],
-        generic_arguments: vec![],
-    };
-    let application_state_constructor = Callable {
-        is_async: false,
-        takes_self_as_ref: false,
-        path: application_state_type.resolved_path(),
-        output: Some(application_state_type.clone().into()),
-        inputs: {
-            // Ensure that the inputs are sorted by name.
-            let b = runtime_singleton_bindings
-                .iter()
-                .collect::<BTreeMap<_, _>>();
-            b.into_values().cloned().collect()
-        },
-        invocation_style: InvocationStyle::StructLiteral {
-            field_names: runtime_singleton_bindings
-                .iter()
-                .map(|(ident, type_)| (ident.to_string(), type_.to_owned()))
-                .collect(),
-            extra_field2default_value: Default::default(),
-        },
-        source_coordinates: None,
-    };
-    let application_state_callable_id = computation_db.get_or_intern(application_state_constructor);
     let application_state_id = component_db
         .get_or_intern_constructor(
-            application_state_callable_id,
+            computation_db.get_or_intern(application_state.initializer()),
             Lifecycle::Singleton,
-            application_state_scope_id,
+            component_db.scope_graph().application_state_scope_id(),
             CloningStrategy::NeverClone,
             computation_db,
             framework_item_db,
@@ -165,7 +134,7 @@ pub(crate) fn application_state_call_graph(
         )
     } else {
         let error_enum = PathType {
-            package_id: package_id.clone(),
+            package_id: PackageId::new(GENERATED_APP_PACKAGE_ID),
             rustdoc_id: None,
             base_type: vec!["crate".into(), "ApplicationStateError".into()],
             generic_arguments: vec![],
@@ -175,7 +144,7 @@ pub(crate) fn application_state_call_graph(
             rustdoc_id: None,
             base_type: vec!["core".into(), "result".into(), "Result".into()],
             generic_arguments: vec![
-                GenericArgument::TypeParameter(application_state_type.clone().into()),
+                GenericArgument::TypeParameter(application_state.type_().into()),
                 GenericArgument::TypeParameter(error_enum.clone().into()),
             ],
         };
@@ -198,7 +167,7 @@ pub(crate) fn application_state_call_graph(
                     qualified_self: None,
                     package_id: PackageId::new(CORE_PACKAGE_ID_REPR),
                 },
-                inputs: vec![application_state_type.into()],
+                inputs: vec![application_state.type_().into()],
                 invocation_style: InvocationStyle::FunctionCall,
                 source_coordinates: None,
             }
@@ -229,7 +198,7 @@ pub(crate) fn application_state_call_graph(
         component_db.get_or_intern_transformer(
             computation_db.get_or_intern(ok_wrapper),
             application_state_id,
-            application_state_scope_id,
+            component_db.scope_graph().application_state_scope_id(),
             InsertTransformer::Eagerly,
             ConsumptionMode::Move,
             0,
@@ -304,7 +273,7 @@ pub(crate) fn application_state_call_graph(
                             },
                         ],
                         qualified_self: None,
-                        package_id: package_id.clone(),
+                        package_id: PackageId::new(GENERATED_APP_PACKAGE_ID),
                     },
                     output: Some(error_enum.clone().into()),
                     inputs: vec![error_type.to_owned()],
@@ -314,7 +283,7 @@ pub(crate) fn application_state_call_graph(
                 let transformer_id = component_db.get_or_intern_transformer(
                     computation_db.get_or_intern(error_variant_constructor.clone()),
                     *err_match_id,
-                    application_state_scope_id,
+                    component_db.scope_graph().application_state_scope_id(),
                     InsertTransformer::Eagerly,
                     ConsumptionMode::Move,
                     0,
@@ -324,7 +293,7 @@ pub(crate) fn application_state_call_graph(
                 component_db.get_or_intern_transformer(
                     computation_db.get_or_intern(err_wrapper.clone()),
                     transformer_id,
-                    application_state_scope_id,
+                    component_db.scope_graph().application_state_scope_id(),
                     InsertTransformer::Eagerly,
                     ConsumptionMode::Move,
                     0,

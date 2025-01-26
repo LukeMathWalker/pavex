@@ -8,12 +8,15 @@ use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote, ToTokens};
 use syn::{ItemFn, Token, Visibility};
 
+use crate::compiler::analyses::application_state;
 use crate::compiler::analyses::components::ComponentDb;
 use crate::compiler::analyses::computations::ComputationDb;
 use crate::compiler::analyses::framework_items::{FrameworkItemDb, FrameworkItemId};
 use crate::compiler::analyses::processing_pipeline::pipeline::Binding;
 use crate::compiler::analyses::processing_pipeline::RequestHandlerPipeline;
 use crate::language::{GenericArgument, GenericLifetimeParameter, ResolvedType};
+
+use self::application_state::ApplicationState;
 
 impl RequestHandlerPipeline {
     pub(crate) fn codegen(
@@ -359,8 +362,8 @@ impl CodegenedRequestHandlerPipeline {
     /// the request processing.
     pub(crate) fn entrypoint_invocation(
         &self,
-        // The name and type of each field of the application state struct.
-        server_state_bindings: &BiHashMap<Ident, ResolvedType>,
+        // The struct holding all long-lived state for the application.
+        application_state: &ApplicationState,
         // The name and type of each field, provided by the framework, with a
         // request-scoped lifecycle.
         request_scoped_bindings: &BiHashMap<Ident, ResolvedType>,
@@ -391,7 +394,7 @@ impl CodegenedRequestHandlerPipeline {
                     unreachable!("Generic types should have been resolved by now")
                 }
             };
-            if let Some(field_name) = server_state_bindings.get_by_right(inner_type) {
+            if let Some(field_name) = application_state.bindings().get_by_right(inner_type) {
                 if is_shared_reference {
                     quote! {
                         &#server_state_ident.#field_name
@@ -412,7 +415,7 @@ impl CodegenedRequestHandlerPipeline {
                         .fold(String::new(), |acc, (ident, type_)| {
                             format!("{}\n- {}: {:?}, ", acc, ident, type_)
                         });
-                    let st_bindings = server_state_bindings
+                    let st_bindings = application_state.bindings()
                         .iter()
                         .fold(String::new(), |acc, (ident, type_)| {
                             format!("{}\n- {}: {:?}, ", acc, ident, type_)
