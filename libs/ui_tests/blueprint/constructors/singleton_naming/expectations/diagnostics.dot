@@ -1,0 +1,69 @@
+digraph "GET / - 0" {
+    0 [ label = "7| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_0::Next0<'a, 'b, 'c, 'd, 'e>>) -> pavex::response::Response"]
+    1 [ label = "6| pavex::middleware::Next::new(crate::route_0::Next0<'a, 'b, 'c, 'd, 'e>) -> pavex::middleware::Next<crate::route_0::Next0<'a, 'b, 'c, 'd, 'e>>"]
+    2 [ label = "5| crate::route_0::Next0(&'a app::Generic<alloc::string::String>, &'b app::Generic<u64>, &'c app::Singleton, &'d app::a::Singleton, &'e app::Type) -> crate::route_0::Next0<'a, 'b, 'c, 'd, 'e>"]
+    3 [ label = "1| &app::Generic<u64>"]
+    4 [ label = "2| &app::Singleton"]
+    5 [ label = "3| &app::a::Singleton"]
+    6 [ label = "4| &app::Type"]
+    8 [ label = "8| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    9 [ label = "0| &app::Generic<alloc::string::String>"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    6 -> 2 [ ]
+    5 -> 2 [ ]
+    4 -> 2 [ ]
+    3 -> 2 [ ]
+    0 -> 8 [ ]
+    9 -> 2 [ ]
+}
+
+digraph "GET / - 1" {
+    0 [ label = "5| app::handler(&app::Type, &app::Generic<alloc::string::String>, &app::Generic<u64>, &app::Singleton, &app::a::Singleton) -> pavex::response::Response"]
+    1 [ label = "1| &app::Generic<alloc::string::String>"]
+    2 [ label = "2| &app::Generic<u64>"]
+    3 [ label = "3| &app::Singleton"]
+    4 [ label = "4| &app::a::Singleton"]
+    6 [ label = "6| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    7 [ label = "0| &app::Type"]
+    4 -> 0 [ ]
+    3 -> 0 [ ]
+    2 -> 0 [ ]
+    1 -> 0 [ ]
+    0 -> 6 [ ]
+    7 -> 0 [ ]
+}
+
+digraph "* * - 0" {
+    0 [ label = "3| pavex::middleware::wrap_noop(pavex::middleware::Next<crate::route_1::Next0<'a>>) -> pavex::response::Response"]
+    1 [ label = "2| pavex::middleware::Next::new(crate::route_1::Next0<'a>) -> pavex::middleware::Next<crate::route_1::Next0<'a>>"]
+    2 [ label = "1| crate::route_1::Next0(&'a pavex::router::AllowedMethods) -> crate::route_1::Next0<'a>"]
+    4 [ label = "4| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    5 [ label = "0| &pavex::router::AllowedMethods"]
+    1 -> 0 [ ]
+    2 -> 1 [ ]
+    0 -> 4 [ ]
+    5 -> 2 [ ]
+}
+
+digraph "* * - 1" {
+    0 [ label = "1| pavex::router::default_fallback(&pavex::router::AllowedMethods) -> pavex::response::Response"]
+    2 [ label = "2| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
+    3 [ label = "0| &pavex::router::AllowedMethods"]
+    0 -> 2 [ ]
+    3 -> 0 [ ]
+}
+
+digraph app_state {
+    0 [ label = "5| crate::ApplicationState(app::a::Singleton, app::Singleton, app::Generic<alloc::string::String>, app::Generic<u64>, app::Type) -> crate::ApplicationState"]
+    1 [ label = "4| app::a::Singleton::new() -> app::a::Singleton"]
+    2 [ label = "3| app::Singleton::new() -> app::Singleton"]
+    3 [ label = "2| app::Generic::new() -> app::Generic<alloc::string::String>"]
+    4 [ label = "1| app::Generic::new() -> app::Generic<u64>"]
+    5 [ label = "0| app::Type::new() -> app::Type"]
+    5 -> 0 [ ]
+    4 -> 0 [ ]
+    3 -> 0 [ ]
+    2 -> 0 [ ]
+    1 -> 0 [ ]
+}

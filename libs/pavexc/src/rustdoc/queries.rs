@@ -310,12 +310,16 @@ impl CrateCollection {
         Result<(crate::language::ResolvedPath, ResolvedItem<'_>), GetItemByResolvedPathError>,
         CannotGetCrateData,
     > {
-        let path_without_generics = resolved_path
+        let mut path_without_generics = resolved_path
             .segments
             .iter()
             .map(|p| p.ident.clone())
             .collect::<Vec<_>>();
         let krate = self.get_or_compute_crate_by_package_id(&resolved_path.package_id)?;
+        // The path may come from a crate that depends on the one we are re-examining
+        // but with a rename in its `Cargo.toml`. We normalize the path to the original crate name
+        // in order to get a match in the index.
+        path_without_generics[0] = krate.crate_name();
 
         let Ok(mut type_id) = krate.get_item_id_by_path(&path_without_generics, self)? else {
             return Ok(Err(UnknownItemPath {
@@ -713,6 +717,19 @@ impl Crate {
             id2private_import_paths,
             re_exports,
         })
+    }
+
+    /// The name of the crate.
+    pub fn crate_name(&self) -> String {
+        self.core
+            .krate
+            .index
+            .get(&self.core.krate.root_item_id)
+            .as_ref()
+            .expect("Can't find the crate root")
+            .name
+            .clone()
+            .expect("The crate root doesn't have a name")
     }
 
     /// Given a crate id, return the corresponding [`PackageId`].

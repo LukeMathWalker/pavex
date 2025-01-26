@@ -134,14 +134,10 @@ impl ComponentDb {
         diagnostics: &mut Vec<miette::Error>,
     ) -> ComponentDb {
         // We only need to resolve these once.
-        let pavex_error = process_framework_path("pavex::Error", package_graph, krate_collection);
-        let pavex_processing = process_framework_path(
-            "pavex::middleware::Processing",
-            package_graph,
-            krate_collection,
-        );
-        let pavex_response =
-            process_framework_path("pavex::response::Response", package_graph, krate_collection);
+        let pavex_error = process_framework_path("pavex::Error", krate_collection);
+        let pavex_processing =
+            process_framework_path("pavex::middleware::Processing", krate_collection);
+        let pavex_response = process_framework_path("pavex::response::Response", krate_collection);
         let pavex_error_ref = {
             ResolvedType::Reference(TypeReference {
                 lifetime: Lifetime::Elided,
@@ -1069,11 +1065,8 @@ impl ComponentDb {
         diagnostics: &mut Vec<miette::Error>,
     ) {
         let into_response = {
-            let into_response = process_framework_path(
-                "pavex::response::IntoResponse",
-                package_graph,
-                krate_collection,
-            );
+            let into_response =
+                process_framework_path("pavex::response::IntoResponse", krate_collection);
             let ResolvedType::ResolvedPath(into_response) = into_response else {
                 unreachable!()
             };

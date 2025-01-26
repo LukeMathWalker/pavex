@@ -805,12 +805,7 @@ pub(crate) struct OutputTypeResolutionError {
 fn skip_default(krate_collection: &CrateCollection, default: &ResolvedType) -> bool {
     static GLOBAL_ALLOCATOR: OnceCell<ResolvedType> = OnceCell::new();
 
-    let alloc = GLOBAL_ALLOCATOR.get_or_init(|| {
-        process_framework_path(
-            "alloc::alloc::Global",
-            krate_collection.package_graph(),
-            krate_collection,
-        )
-    });
+    let alloc = GLOBAL_ALLOCATOR
+        .get_or_init(|| process_framework_path("alloc::alloc::Global", krate_collection));
     alloc == default
 }

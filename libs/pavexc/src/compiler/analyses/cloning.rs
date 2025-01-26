@@ -26,7 +26,7 @@ pub(crate) fn clonables_can_be_cloned<'a>(
     krate_collection: &CrateCollection,
     diagnostics: &mut Vec<miette::Error>,
 ) {
-    let clone = process_framework_path("core::clone::Clone", package_graph, krate_collection);
+    let clone = process_framework_path("core::clone::Clone", krate_collection);
     let ResolvedType::ResolvedPath(clone) = clone else {
         unreachable!()
     };
@@ -72,12 +72,10 @@ fn must_be_clonable(
     let callable_type = user_component_db[user_component_id].callable_type();
     let location = user_component_db.get_location(user_component_id);
     let source = try_source!(location, package_graph, diagnostics);
-    let label = source
-        .as_ref()
-        .and_then(|source| {
-            diagnostic::get_f_macro_invocation_span(source, location)
-                .labeled(format!("The {callable_type} was registered here"))
-        });
+    let label = source.as_ref().and_then(|source| {
+        diagnostic::get_f_macro_invocation_span(source, location)
+            .labeled(format!("The {callable_type} was registered here"))
+    });
     let error_msg = match callable_type {
         CallableType::Constructor => {
             let callable_path = &computation_db[user_component_id].path;

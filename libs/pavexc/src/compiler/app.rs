@@ -1,20 +1,17 @@
 use std::collections::BTreeSet;
 use std::fmt::Debug;
 use std::io::{BufWriter, Write};
-use std::ops::Deref;
 use std::path::Path;
 
 use ahash::{HashMap, HashMapExt};
-use bimap::BiHashMap;
 use guppy::graph::PackageGraph;
-use indexmap::{IndexMap, IndexSet};
-use proc_macro2::Ident;
-use quote::format_ident;
+use indexmap::IndexMap;
 
-use pavex_bp_schema::{Blueprint, Lifecycle};
+use pavex_bp_schema::Blueprint;
 
+use crate::compiler::analyses::application_state::ApplicationState;
 use crate::compiler::analyses::call_graph::{
-    application_state_call_graph, ApplicationStateCallGraph, RawCallGraphExt,
+    application_state_call_graph, ApplicationStateCallGraph,
 };
 use crate::compiler::analyses::cloning::clonables_can_be_cloned;
 use crate::compiler::analyses::components::{ComponentDb, ComponentId};
@@ -24,15 +21,11 @@ use crate::compiler::analyses::framework_items::FrameworkItemDb;
 use crate::compiler::analyses::prebuilt_types::PrebuiltTypeDb;
 use crate::compiler::analyses::processing_pipeline::RequestHandlerPipeline;
 use crate::compiler::analyses::router::Router;
-use crate::compiler::analyses::singletons::{
-    runtime_singletons_are_thread_safe, runtime_singletons_can_be_cloned_if_needed,
-};
 use crate::compiler::analyses::unused::detect_unused;
 use crate::compiler::analyses::user_components::UserComponentDb;
 use crate::compiler::generated_app::GeneratedApp;
 use crate::compiler::resolvers::CallableResolutionError;
 use crate::compiler::{codegen, path_parameters};
-use crate::language::ResolvedType;
 use crate::rustdoc::CrateCollection;
 use crate::utils::anyhow2miette;
 
@@ -46,7 +39,7 @@ pub struct App {
     handler_id2pipeline: IndexMap<ComponentId, RequestHandlerPipeline>,
     application_state_call_graph: ApplicationStateCallGraph,
     framework_item_db: FrameworkItemDb,
-    runtime_singleton_bindings: BiHashMap<Ident, ResolvedType>,
+    application_state: ApplicationState,
     codegen_deps: HashMap<String, guppy::PackageId>,
     component_db: ComponentDb,
     computation_db: ComputationDb,
@@ -103,7 +96,7 @@ impl App {
             return Err(diagnostics);
         };
 
-        let framework_item_db = FrameworkItemDb::new(&package_graph, &krate_collection);
+        let framework_item_db = FrameworkItemDb::new(&krate_collection);
         let mut component_db = ComponentDb::build(
             user_component_db,
             &framework_item_db,
@@ -167,40 +160,20 @@ impl App {
         );
         exit_on_errors!(diagnostics);
 
-        let runtime_singletons: IndexSet<(ResolvedType, ComponentId)> =
-            get_required_singleton_types(
-                handler_id2pipeline.values(),
-                &framework_item_db,
-                &constructible_db,
-                &component_db,
-            );
-
-        runtime_singletons_are_thread_safe(
-            &runtime_singletons,
+        let application_state = ApplicationState::new(
+            &handler_id2pipeline,
+            &framework_item_db,
+            &constructible_db,
             &component_db,
             &computation_db,
-            &package_graph,
             &krate_collection,
             &mut diagnostics,
         );
-        runtime_singletons_can_be_cloned_if_needed(
-            handler_id2pipeline.values(),
-            &component_db,
-            &computation_db,
-            &package_graph,
-            &krate_collection,
-            &mut diagnostics,
-        );
+        exit_on_errors!(diagnostics);
 
-        let runtime_singleton_bindings = runtime_singletons
-            .iter()
-            .enumerate()
-            // Assign a unique name to each singleton
-            .map(|(i, (type_, _))| (format_ident!("s{}", i), type_.to_owned()))
-            .collect();
         let codegen_deps = codegen_deps(&package_graph);
         let Ok(application_state_call_graph) = application_state_call_graph(
-            &runtime_singleton_bindings,
+            &application_state,
             &mut computation_db,
             &mut component_db,
             &mut constructible_db,
@@ -229,7 +202,7 @@ impl App {
                 computation_db,
                 application_state_call_graph,
                 framework_item_db,
-                runtime_singleton_bindings,
+                application_state,
                 codegen_deps,
             },
             diagnostics,
@@ -257,7 +230,7 @@ impl App {
             &self.application_state_call_graph,
             &framework_bindings,
             &package_ids2deps,
-            &self.runtime_singleton_bindings,
+            &self.application_state,
             &self.codegen_deps,
             &self.component_db,
             &self.computation_db,
@@ -352,66 +325,6 @@ impl AppDiagnostics {
         file.flush()?;
         Ok(())
     }
-}
-
-/// Determine the set of singleton types that are required to execute the constructors and handlers
-/// registered by the application.
-/// These singletons will be attached to the overall application state.
-fn get_required_singleton_types<'a>(
-    handler_pipelines: impl Iterator<Item = &'a RequestHandlerPipeline>,
-    framework_item_db: &FrameworkItemDb,
-    constructibles_db: &ConstructibleDb,
-    component_db: &ComponentDb,
-) -> IndexSet<(ResolvedType, ComponentId)> {
-    let mut singletons_to_be_built = IndexSet::new();
-    for handler_pipeline in handler_pipelines {
-        for graph in handler_pipeline.graph_iter() {
-            let root_component_id = graph.root_component_id();
-            let root_component_scope_id = component_db.scope_id(root_component_id);
-            for required_input in graph.call_graph.required_input_types() {
-                let required_input = if let ResolvedType::Reference(t) = &required_input {
-                    if !t.lifetime.is_static() {
-                        // We can't store non-'static references in the application state, so we expect
-                        // to see the referenced type in there.
-                        t.inner.deref()
-                    } else {
-                        &required_input
-                    }
-                } else {
-                    &required_input
-                };
-                // If it's a framework built-in, nothing to do!
-                if framework_item_db.get_id(required_input).is_some() {
-                    continue;
-                }
-                // This can be `None` if the required input is a singleton that is used
-                // by a downstream stage of the processing pipeline.
-                // The singleton will be passed down using `Next` pass-along state from
-                // the very first stage in the pipeline all the way to the stage that needs it,
-                // but the singleton constructor might not be visible in the scope of the current
-                // stage of the processing pipeline.
-                if let Some((component_id, _)) = constructibles_db.get(
-                    root_component_scope_id,
-                    required_input,
-                    component_db.scope_graph(),
-                ) {
-                    let lifecycle = component_db.lifecycle(component_id);
-                    #[cfg(debug_assertions)]
-                    {
-                        // No scenario where this should/could happen.
-                        assert_ne!(lifecycle, Lifecycle::Transient);
-                    }
-
-                    // Some inputs are request-scoped because they come from the `Next<_>` pass-along
-                    // state. We don't care about those here.
-                    if lifecycle == Lifecycle::Singleton {
-                        singletons_to_be_built.insert((required_input.to_owned(), component_id));
-                    }
-                }
-            }
-        }
-    }
-    singletons_to_be_built
 }
 
 /// Return the set of dependencies that must be used directly by the generated code to build the

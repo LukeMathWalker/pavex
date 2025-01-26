@@ -11,6 +11,7 @@ use syn::{Ident, ImplItemFn, ItemFn};
 
 use crate::{
     compiler::analyses::{
+        application_state::ApplicationState,
         components::ComponentId,
         domain::DomainGuard,
         framework_items::FrameworkItemDb,
@@ -27,7 +28,7 @@ pub(super) fn codegen_router(
     router: &Router,
     sdk_deps: &ServerSdkDeps,
     handler_id2codegened_pipeline: &BTreeMap<ComponentId, CodegenedRequestHandlerPipeline>,
-    singleton_bindings: &BiHashMap<Ident, ResolvedType>,
+    application_state: &ApplicationState,
     request_scoped_bindings: &BiHashMap<Ident, ResolvedType>,
     package_id2name: &BiHashMap<PackageId, String>,
     framework_items_db: &FrameworkItemDb,
@@ -37,7 +38,7 @@ pub(super) fn codegen_router(
         router,
         sdk_deps,
         handler_id2codegened_pipeline,
-        singleton_bindings,
+        application_state,
         request_scoped_bindings,
         package_id2name,
         framework_items_db,
@@ -60,8 +61,8 @@ fn router_struct(router: &Router, sdk_deps: &ServerSdkDeps) -> TokenStream {
             }
         }
         Router::DomainBased(router) => {
-            let domain_routers = (0..router.domain2path_router.len())
-                .map(|i| format_ident!("domain_{i}"));
+            let domain_routers =
+                (0..router.domain2path_router.len()).map(|i| format_ident!("domain_{i}"));
             quote! {
                 struct Router {
                     domain_router: #matchit::Router<u32>,
@@ -76,7 +77,7 @@ fn router_impl(
     router: &Router,
     sdk_deps: &ServerSdkDeps,
     handler_id2codegened_pipeline: &BTreeMap<ComponentId, CodegenedRequestHandlerPipeline>,
-    singleton_bindings: &BiHashMap<Ident, ResolvedType>,
+    application_state: &ApplicationState,
     request_scoped_bindings: &BiHashMap<Ident, ResolvedType>,
     package_id2name: &BiHashMap<PackageId, String>,
     framework_items_db: &FrameworkItemDb,
@@ -96,7 +97,7 @@ fn router_impl(
                 &route_id2method_router,
                 &route_id2path,
                 &handler_id2codegened_pipeline[&router.root_fallback_id],
-                singleton_bindings,
+                application_state,
                 request_scoped_bindings,
                 framework_items_db,
                 package_id2name,
@@ -134,7 +135,7 @@ fn router_impl(
                     &route_id2method_router,
                     &route_id2path,
                     &handler_id2codegened_pipeline[&sub_router.root_fallback_id],
-                    singleton_bindings,
+                    application_state,
                     request_scoped_bindings,
                     framework_items_db,
                     package_id2name,
@@ -151,7 +152,7 @@ fn router_impl(
             let domain_route_fn = domain_router(
                 &router.domain2path_router,
                 &handler_id2codegened_pipeline[&router.root_fallback_id],
-                singleton_bindings,
+                application_state,
                 request_scoped_bindings,
                 framework_items_db,
                 package_id2name,
@@ -275,7 +276,7 @@ fn domain_router_init(
 fn domain_router(
     domain2path_router: &BTreeMap<DomainGuard, PathRouter>,
     fallback_codegened_pipeline: &CodegenedRequestHandlerPipeline,
-    singleton_bindings: &BiHashMap<Ident, ResolvedType>,
+    application_state: &ApplicationState,
     request_scoped_bindings: &BiHashMap<Ident, ResolvedType>,
     framework_items_db: &FrameworkItemDb,
     package_id2name: &BiHashMap<PackageId, String>,
@@ -298,7 +299,7 @@ fn domain_router(
 
     let root_fallback_invocation = routing_failure_fallback_block(
         fallback_codegened_pipeline,
-        singleton_bindings,
+        application_state,
         request_scoped_bindings,
         framework_items_db,
         &state,
@@ -363,18 +364,16 @@ fn path_router(
     route_id2method_router: &BTreeMap<u32, CodegenMethodRouter>,
     route_id2path: &BiBTreeMap<u32, String>,
     fallback_codegened_pipeline: &CodegenedRequestHandlerPipeline,
-    singleton_bindings: &BiHashMap<Ident, ResolvedType>,
+    application_state: &ApplicationState,
     request_scoped_bindings: &BiHashMap<Ident, ResolvedType>,
     framework_item_db: &FrameworkItemDb,
     package_id2name: &BiHashMap<PackageId, String>,
     sdk_deps: &ServerSdkDeps,
 ) -> ImplItemFn {
     static WELL_KNOWN_METHODS: Lazy<HashSet<&'static str>> = Lazy::new(|| {
-        HashSet::from_iter(
-            [
-                "GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS", "CONNECT", "TRACE",
-            ],
-        )
+        HashSet::from_iter([
+            "GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS", "CONNECT", "TRACE",
+        ])
     });
 
     let pavex = sdk_deps.pavex_ident();
@@ -453,7 +452,7 @@ fn path_router(
 
         let codegen_invocation = |pipeline: &CodegenedRequestHandlerPipeline| {
             let invocation = pipeline.entrypoint_invocation(
-                singleton_bindings,
+                application_state,
                 request_scoped_bindings,
                 &server_state_ident,
             );
@@ -532,7 +531,7 @@ fn path_router(
 
     let root_fallback_invocation = routing_failure_fallback_block(
         fallback_codegened_pipeline,
-        singleton_bindings,
+        application_state,
         request_scoped_bindings,
         framework_item_db,
         &server_state_ident,
@@ -593,7 +592,7 @@ fn path_router(
 
 fn routing_failure_fallback_block(
     fallback_codegened_pipeline: &CodegenedRequestHandlerPipeline,
-    singleton_bindings: &BiHashMap<Ident, ResolvedType>,
+    application_state: &ApplicationState,
     request_scoped_bindings: &BiHashMap<Ident, ResolvedType>,
     framework_items_db: &FrameworkItemDb,
     server_state_ident: &Ident,
@@ -603,7 +602,7 @@ fn routing_failure_fallback_block(
 ) -> TokenStream {
     let pavex = sdk_deps.pavex_ident();
     let root_fallback_invocation = fallback_codegened_pipeline.entrypoint_invocation(
-        singleton_bindings,
+        application_state,
         request_scoped_bindings,
         server_state_ident,
     );

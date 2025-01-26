@@ -33,7 +33,6 @@ pub(crate) fn get_err_variant(t: &ResolvedType) -> &ResolvedType {
 /// Resolve a type path assuming that the crate is a dependency of `pavex`.
 pub(crate) fn process_framework_path(
     raw_path: &str,
-    package_graph: &PackageGraph,
     krate_collection: &CrateCollection,
 ) -> ResolvedType {
     let identifiers = RawIdentifiers::from_raw_parts(
@@ -46,7 +45,12 @@ pub(crate) fn process_framework_path(
             module_path: "pavex".to_owned(),
         },
     );
-    let path = ResolvedPath::parse(&identifiers, package_graph, PathKind::Type).unwrap();
+    let path = ResolvedPath::parse(
+        &identifiers,
+        krate_collection.package_graph(),
+        PathKind::Type,
+    )
+    .unwrap();
     resolve_type_path(&path, krate_collection).unwrap()
 }
 

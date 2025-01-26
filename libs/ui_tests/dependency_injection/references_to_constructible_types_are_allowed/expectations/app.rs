@@ -7,11 +7,13 @@ struct ServerState {
     application_state: ApplicationState,
 }
 pub struct ApplicationState {
-    s0: app::Singleton,
+    singleton: app::Singleton,
 }
 pub async fn build_application_state() -> crate::ApplicationState {
     let v0 = app::Singleton::new();
-    crate::ApplicationState { s0: v0 }
+    crate::ApplicationState {
+        singleton: v0,
+    }
 }
 pub fn run(
     server_builder: pavex::server::Server,
@@ -66,7 +68,9 @@ impl Router {
         match matched_route.value {
             0u32 => {
                 match &request_head.method {
-                    &pavex::http::Method::GET => route_0::entrypoint(&state.s0).await,
+                    &pavex::http::Method::GET => {
+                        route_0::entrypoint(&state.singleton).await
+                    }
                     _ => {
                         let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([
                                 pavex::http::Method::GET,

@@ -302,7 +302,6 @@ fn try_clone(
     let clone_component_id = call_graph[dependency_index].component_id().and_then(|id| {
         get_clone_component_id(
             &id,
-            package_graph,
             krate_collection,
             component_db,
             computation_db,

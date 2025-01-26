@@ -25,6 +25,7 @@ use crate::compiler::computation::Computation;
 use crate::language::{Callable, GenericArgument, ResolvedType};
 use crate::rustdoc::{ALLOC_PACKAGE_ID_REPR, TOOLCHAIN_CRATES};
 
+use super::analyses::application_state::ApplicationState;
 use super::generated_app::GeneratedManifest;
 
 mod deps;
@@ -36,15 +37,14 @@ pub(crate) fn codegen_app(
     application_state_call_graph: &ApplicationStateCallGraph,
     request_scoped_framework_bindings: &BiHashMap<Ident, ResolvedType>,
     package_id2name: &BiHashMap<PackageId, String>,
-    runtime_singleton_bindings: &BiHashMap<Ident, ResolvedType>,
+    application_state: &ApplicationState,
     codegen_deps: &HashMap<String, PackageId>,
     component_db: &ComponentDb,
     computation_db: &ComputationDb,
     framework_item_db: &FrameworkItemDb,
 ) -> Result<TokenStream, anyhow::Error> {
     let sdk_deps = ServerSdkDeps::new(codegen_deps, package_id2name);
-    let application_state_def =
-        define_application_state(runtime_singleton_bindings, package_id2name);
+    let application_state_def = define_application_state(application_state, package_id2name);
     if tracing::event_enabled!(tracing::Level::TRACE) {
         eprintln!(
             "Application state definition:\n{}",
@@ -103,7 +103,7 @@ pub(crate) fn codegen_app(
         router,
         &sdk_deps,
         &handler_id2codegened_pipeline,
-        runtime_singleton_bindings,
+        application_state,
         request_scoped_framework_bindings,
         package_id2name,
         framework_item_db,
@@ -157,25 +157,24 @@ fn server_startup(sdk_deps: &ServerSdkDeps) -> ItemFn {
 }
 
 fn define_application_state(
-    runtime_singletons: &BiHashMap<Ident, ResolvedType>,
+    application_state: &ApplicationState,
     package_id2name: &BiHashMap<PackageId, String>,
 ) -> ItemStruct {
-    let mut runtime_singletons = runtime_singletons
+    let bindings = application_state
+        .bindings()
         .iter()
         .map(|(field_name, type_)| {
             let field_type = type_.syn_type(package_id2name);
             (field_name, field_type)
         })
-        .collect::<Vec<_>>();
-    // Sort the fields by name to ensure that the generated code is deterministic.
-    runtime_singletons.sort_by_key(|(field_name, _)| field_name.to_string());
+        .collect::<BTreeMap<_, _>>();
 
-    let singleton_fields = runtime_singletons.iter().map(|(field_name, type_)| {
+    let fields = bindings.iter().map(|(field_name, type_)| {
         quote! { #field_name: #type_ }
     });
     syn::parse2(quote! {
         pub struct ApplicationState {
-            #(#singleton_fields),*
+            #(#fields),*
         }
     })
     .unwrap()

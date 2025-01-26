@@ -96,7 +96,6 @@ pub(super) fn multiple_consumers(
             let clone_component_id = call_graph[node_id].component_id().and_then(|id| {
                 get_clone_component_id(
                     &id,
-                    package_graph,
                     krate_collection,
                     component_db,
                     computation_db,
@@ -187,9 +186,7 @@ fn is_ref(
             };
             _is_ref(output_type)
         }
-        CallGraphNode::MatchBranching => {
-            false
-        }
+        CallGraphNode::MatchBranching => false,
         CallGraphNode::InputParameter { type_, .. } => _is_ref(type_),
     }
 }

@@ -7,15 +7,15 @@ struct ServerState {
     application_state: ApplicationState,
 }
 pub struct ApplicationState {
-    s0: app::A,
-    s1: app::B,
+    a: app::A,
+    b: app::B,
 }
 pub async fn build_application_state(v0: app::A) -> crate::ApplicationState {
     let v1 = <app::A as core::clone::Clone>::clone(&v0);
     let v2 = app::b(v0);
     crate::ApplicationState {
-        s0: v1,
-        s1: v2,
+        a: v1,
+        b: v2,
     }
 }
 pub fn run(
@@ -72,7 +72,7 @@ impl Router {
             0u32 => {
                 match &request_head.method {
                     &pavex::http::Method::GET => {
-                        route_0::entrypoint(state.s0.clone(), &state.s1).await
+                        route_0::entrypoint(state.a.clone(), &state.b).await
                     }
                     _ => {
                         let allowed_methods: pavex::router::AllowedMethods = pavex::router::MethodAllowList::from_iter([

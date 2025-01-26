@@ -1,6 +1,5 @@
 use std::borrow::Cow;
 
-use guppy::graph::PackageGraph;
 use once_cell::sync::OnceCell;
 
 use pavex_bp_schema::CloningStrategy;
@@ -25,7 +24,6 @@ use crate::rustdoc::CrateCollection;
 /// If the component is not a constructor, it returns `None`.
 pub(super) fn get_clone_component_id(
     component_id: &ComponentId,
-    package_graph: &PackageGraph,
     krate_collection: &CrateCollection,
     component_db: &mut ComponentDb,
     computation_db: &mut ComputationDb,
@@ -34,7 +32,7 @@ pub(super) fn get_clone_component_id(
     // We only need to resolve this once.
     static CLONE_PATH_TYPE: OnceCell<PathType> = OnceCell::new();
     let clone = CLONE_PATH_TYPE.get_or_init(|| {
-        let clone = process_framework_path("std::clone::Clone", package_graph, krate_collection);
+        let clone = process_framework_path("std::clone::Clone", krate_collection);
         let ResolvedType::ResolvedPath(clone) = clone else {
             unreachable!()
         };

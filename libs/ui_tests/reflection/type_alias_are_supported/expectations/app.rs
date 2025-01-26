@@ -7,10 +7,10 @@ struct ServerState {
     application_state: ApplicationState,
 }
 pub struct ApplicationState {
-    s0: (bool, char, u8),
-    s1: alloc::string::String,
-    s2: dep_f8f62968::ActualType,
-    s3: dep_f8f62968::GenericType<bool, bool>,
+    actual_type: dep_f8f62968::ActualType,
+    bool__char__u8_: (bool, char, u8),
+    generic_type: dep_f8f62968::GenericType<bool, bool>,
+    string: alloc::string::String,
 }
 pub async fn build_application_state(
     v0: alloc::string::String,
@@ -19,13 +19,13 @@ pub async fn build_application_state(
         std::primitive::bool,
         std::primitive::bool,
     >::new();
-    let v2 = dep_f8f62968::ActualType::new();
-    let v3 = app::constructor_with_output_tuple();
+    let v2 = app::constructor_with_output_tuple();
+    let v3 = dep_f8f62968::ActualType::new();
     crate::ApplicationState {
-        s0: v3,
-        s1: v0,
-        s2: v2,
-        s3: v1,
+        actual_type: v3,
+        bool__char__u8_: v2,
+        generic_type: v1,
+        string: v0,
     }
 }
 pub fn run(
@@ -83,10 +83,10 @@ impl Router {
                 match &request_head.method {
                     &pavex::http::Method::GET => {
                         route_0::entrypoint(
-                                state.s0.clone(),
-                                &state.s1,
-                                &state.s2,
-                                &state.s3,
+                                state.bool__char__u8_.clone(),
+                                &state.string,
+                                &state.actual_type,
+                                &state.generic_type,
                             )
                             .await
                     }

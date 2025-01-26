@@ -9,9 +9,9 @@ digraph "GET /handler - 0" {
 }
 
 digraph "GET /handler - 1" {
-    0 [ label = "2| dep_a0f4586a::handler(http_0_1_21::header::HeaderName, http_0_2_12::HeaderName) -> pavex::response::Response"]
+    0 [ label = "2| dep_a0f4586a::handler(http_0_1_21::header::HeaderName, http_0_2_12::header::HeaderName) -> pavex::response::Response"]
     1 [ label = "1| dep_a0f4586a::header1() -> http_0_1_21::header::HeaderName"]
-    2 [ label = "0| dep_a0f4586a::header2() -> http_0_2_12::HeaderName"]
+    2 [ label = "0| dep_a0f4586a::header2() -> http_0_2_12::header::HeaderName"]
     3 [ label = "3| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     2 -> 0 [ ]
     1 -> 0 [ ]
