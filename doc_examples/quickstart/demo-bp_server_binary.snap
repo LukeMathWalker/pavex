@@ -1,13 +1,13 @@
 ```rust title="server/src/bin/server.rs"
 use anyhow::Context;
 use pavex::server::{Server, ServerHandle, ShutdownMode};
-use pavex_tracing::fields::{error_details, error_message, ERROR_DETAILS, ERROR_MESSAGE};
 use server::{
     configuration::Config,
     telemetry::{get_subscriber, init_telemetry},
 };
 use server_sdk::{build_application_state, run};
 use std::time::Duration;
+use tracing_log_error::log_error;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -18,12 +18,7 @@ async fn main() -> anyhow::Result<()> {
     // to have a single choke point where we make sure to log fatal errors
     // that will cause the application to exit.
     if let Err(e) = _main().await {
-        tracing::event!(
-            tracing::Level::ERROR,
-            { ERROR_MESSAGE } = error_message(&e),
-            { ERROR_DETAILS } = error_details(&e),
-            "The application is exiting due to an error"
-        )
+        log_error!(*e, "The application is exiting due to an error");
     }
 
     Ok(())
