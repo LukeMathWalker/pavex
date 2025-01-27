@@ -7,8 +7,8 @@ struct ServerState {
     application_state: ApplicationState,
 }
 pub struct ApplicationState {
-    b: app::B,
-    c: app::C,
+    pub b: app::B,
+    pub c: app::C,
 }
 #[derive(Debug, thiserror::Error)]
 pub enum ApplicationStateError {

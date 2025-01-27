@@ -7,7 +7,7 @@ struct ServerState {
     application_state: ApplicationState,
 }
 pub struct ApplicationState {
-    http_client: app::HttpClient,
+    pub http_client: app::HttpClient,
 }
 #[derive(Debug, thiserror::Error)]
 pub enum ApplicationStateError {

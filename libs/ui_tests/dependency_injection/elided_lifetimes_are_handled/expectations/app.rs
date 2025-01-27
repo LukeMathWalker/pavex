@@ -7,7 +7,7 @@ struct ServerState {
     application_state: ApplicationState,
 }
 pub struct ApplicationState {
-    a: app::A,
+    pub a: app::A,
 }
 pub async fn build_application_state() -> crate::ApplicationState {
     let v0 = app::A::new();

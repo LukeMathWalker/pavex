@@ -7,7 +7,7 @@ struct ServerState {
     application_state: ApplicationState,
 }
 pub struct ApplicationState {
-    logger_factory: app::LoggerFactory,
+    pub logger_factory: app::LoggerFactory,
 }
 pub async fn build_application_state() -> crate::ApplicationState {
     let v0 = app::LoggerFactory::new();

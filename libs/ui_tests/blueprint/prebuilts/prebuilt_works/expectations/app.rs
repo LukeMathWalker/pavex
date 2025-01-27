@@ -7,10 +7,10 @@ struct ServerState {
     application_state: ApplicationState,
 }
 pub struct ApplicationState {
-    a: app::A,
-    b: app::B<alloc::string::String>,
-    c: app::C<'static>,
-    vec: alloc::vec::Vec<alloc::string::String>,
+    pub a: app::A,
+    pub b: app::B<alloc::string::String>,
+    pub c: app::C<'static>,
+    pub vec: alloc::vec::Vec<alloc::string::String>,
 }
 pub async fn build_application_state(
     v0: app::A,

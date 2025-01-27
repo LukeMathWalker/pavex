@@ -7,8 +7,8 @@ struct ServerState {
     application_state: ApplicationState,
 }
 pub struct ApplicationState {
-    u32_: u32,
-    u64_: u64,
+    pub u32_: u32,
+    pub u64_: u64,
 }
 pub async fn build_application_state() -> crate::ApplicationState {
     let v0 = app::parent_singleton();

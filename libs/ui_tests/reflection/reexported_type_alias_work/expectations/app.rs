@@ -7,7 +7,7 @@ struct ServerState {
     application_state: ApplicationState,
 }
 pub struct ApplicationState {
-    surreal: dep_065fd341::Surreal<dep_065fd341::engine::Any>,
+    pub surreal: dep_065fd341::Surreal<dep_065fd341::engine::Any>,
 }
 pub async fn build_application_state() -> crate::ApplicationState {
     let v0 = app::constructor();
