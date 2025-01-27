@@ -57,16 +57,16 @@ impl ApplicationState {
         );
         runtime_singletons_are_thread_safe(
             &type2id,
-            &component_db,
-            &computation_db,
-            &krate_collection,
+            component_db,
+            computation_db,
+            krate_collection,
             diagnostics,
         );
         runtime_singletons_can_be_cloned_if_needed(
             handler_id2pipeline.values(),
-            &component_db,
-            &computation_db,
-            &krate_collection,
+            component_db,
+            computation_db,
+            krate_collection,
             diagnostics,
         );
         let bindings = Self::assign_field_names(&type2id);
