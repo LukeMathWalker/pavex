@@ -7,11 +7,11 @@ struct ServerState {
     application_state: ApplicationState,
 }
 pub struct ApplicationState {
-    app_255_f_0769_a_singleton: app::a::Singleton,
-    app_255_f_0769_singleton: app::Singleton,
-    generic_string: app::Generic<alloc::string::String>,
-    generic_u64_: app::Generic<u64>,
-    type_: app::Type,
+    pub app_255_f_0769_a_singleton: app::a::Singleton,
+    pub app_255_f_0769_singleton: app::Singleton,
+    pub generic_string: app::Generic<alloc::string::String>,
+    pub generic_u64_: app::Generic<u64>,
+    pub type_: app::Type,
 }
 pub async fn build_application_state() -> crate::ApplicationState {
     let v0 = app::Type::new();

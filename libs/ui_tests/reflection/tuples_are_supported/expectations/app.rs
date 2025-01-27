@@ -7,7 +7,7 @@ struct ServerState {
     application_state: ApplicationState,
 }
 pub struct ApplicationState {
-    usize__isize_: (usize, isize),
+    pub usize__isize_: (usize, isize),
 }
 pub async fn build_application_state() -> crate::ApplicationState {
     let v0 = app::constructor_with_output_tuple();

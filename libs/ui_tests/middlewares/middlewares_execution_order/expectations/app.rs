@@ -7,7 +7,7 @@ struct ServerState {
     application_state: ApplicationState,
 }
 pub struct ApplicationState {
-    spy: app::Spy,
+    pub spy: app::Spy,
 }
 pub async fn build_application_state(v0: app::Spy) -> crate::ApplicationState {
     crate::ApplicationState { spy: v0 }

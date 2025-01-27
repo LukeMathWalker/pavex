@@ -7,7 +7,7 @@ struct ServerState {
     application_state: ApplicationState,
 }
 pub struct ApplicationState {
-    http_client: app::HttpClient,
+    pub http_client: app::HttpClient,
 }
 pub async fn build_application_state(
     v0: app::Config,

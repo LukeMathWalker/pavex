@@ -170,7 +170,7 @@ fn define_application_state(
         .collect::<BTreeMap<_, _>>();
 
     let fields = bindings.iter().map(|(field_name, type_)| {
-        quote! { #field_name: #type_ }
+        quote! { pub #field_name: #type_ }
     });
     syn::parse2(quote! {
         pub struct ApplicationState {

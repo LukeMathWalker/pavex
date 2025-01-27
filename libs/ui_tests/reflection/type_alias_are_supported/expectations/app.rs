@@ -7,10 +7,10 @@ struct ServerState {
     application_state: ApplicationState,
 }
 pub struct ApplicationState {
-    actual_type: dep_f8f62968::ActualType,
-    bool__char__u8_: (bool, char, u8),
-    generic_type: dep_f8f62968::GenericType<bool, bool>,
-    string: alloc::string::String,
+    pub actual_type: dep_f8f62968::ActualType,
+    pub bool__char__u8_: (bool, char, u8),
+    pub generic_type: dep_f8f62968::GenericType<bool, bool>,
+    pub string: alloc::string::String,
 }
 pub async fn build_application_state(
     v0: alloc::string::String,

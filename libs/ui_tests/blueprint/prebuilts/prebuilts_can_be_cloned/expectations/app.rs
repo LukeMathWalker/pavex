@@ -7,8 +7,8 @@ struct ServerState {
     application_state: ApplicationState,
 }
 pub struct ApplicationState {
-    a: app::A,
-    b: app::B,
+    pub a: app::A,
+    pub b: app::B,
 }
 pub async fn build_application_state(v0: app::A) -> crate::ApplicationState {
     let v1 = <app::A as core::clone::Clone>::clone(&v0);

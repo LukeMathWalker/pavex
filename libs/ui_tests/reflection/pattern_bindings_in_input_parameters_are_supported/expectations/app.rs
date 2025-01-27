@@ -7,7 +7,7 @@ struct ServerState {
     application_state: ApplicationState,
 }
 pub struct ApplicationState {
-    streamer: app::Streamer,
+    pub streamer: app::Streamer,
 }
 pub async fn build_application_state() -> crate::ApplicationState {
     let v0 = app::streamer();

@@ -7,9 +7,9 @@ struct ServerState {
     application_state: ApplicationState,
 }
 pub struct ApplicationState {
-    arc_custom: alloc::sync::Arc<app::Custom>,
-    arc_mutex: alloc::sync::Arc<std::sync::Mutex<app::Custom>>,
-    arc_rw_lock: alloc::sync::Arc<std::sync::RwLock<app::Custom>>,
+    pub arc_custom: alloc::sync::Arc<app::Custom>,
+    pub arc_mutex: alloc::sync::Arc<std::sync::Mutex<app::Custom>>,
+    pub arc_rw_lock: alloc::sync::Arc<std::sync::RwLock<app::Custom>>,
 }
 pub async fn build_application_state() -> crate::ApplicationState {
     let v0 = app::arc_rwlock();
