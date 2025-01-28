@@ -109,7 +109,7 @@ impl Dependency for RustdocJson {
     fn installation_instructions(&self) -> Cow<'_, str> {
         format!(
             "Invoke
-        
+
     rustup component add rust-docs-json --toolchain {}
 
 to add the missing component and fix the issue.",
@@ -145,8 +145,8 @@ impl Dependency for RustupToolchain {
     fn installation_instructions(&self) -> Cow<'_, str> {
         format!(
             "Invoke
-        
-    rustup toolchain install {}
+
+    rustup toolchain install {} -c rust-docs-json
 
 to add the missing toolchain and fix the issue.",
             &self.name
