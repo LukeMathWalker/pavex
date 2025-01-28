@@ -10,11 +10,11 @@ digraph "GET /home - 0" {
 
 digraph "GET /home - 1" {
     0 [ label = "10| app_0ca8edfa::handler(&app_0ca8edfa::B) -> pavex::response::Response"]
-    1 [ label = "9| core::prelude::rust_2015::Result<app_0ca8edfa::B, app_0ca8edfa::ErrorB> -> app_0ca8edfa::B"]
-    2 [ label = "1| app_0ca8edfa::b(&app_0ca8edfa::A) -> core::prelude::rust_2015::Result<app_0ca8edfa::B, app_0ca8edfa::ErrorB>"]
+    1 [ label = "9| core::result::Result<app_0ca8edfa::B, app_0ca8edfa::ErrorB> -> app_0ca8edfa::B"]
+    2 [ label = "1| app_0ca8edfa::b(&app_0ca8edfa::A) -> core::result::Result<app_0ca8edfa::B, app_0ca8edfa::ErrorB>"]
     3 [ label = "0| app_0ca8edfa::a() -> app_0ca8edfa::A"]
     4 [ label = "11| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    5 [ label = "3| core::prelude::rust_2015::Result<app_0ca8edfa::B, app_0ca8edfa::ErrorB> -> app_0ca8edfa::ErrorB"]
+    5 [ label = "3| core::result::Result<app_0ca8edfa::B, app_0ca8edfa::ErrorB> -> app_0ca8edfa::ErrorB"]
     6 [ label = "5| pavex::Error::new(app_0ca8edfa::ErrorB) -> pavex::Error"]
     7 [ label = "4| app_0ca8edfa::error_handler(&app_0ca8edfa::A, &app_0ca8edfa::ErrorB) -> pavex::response::Response"]
     8 [ label = "8| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]

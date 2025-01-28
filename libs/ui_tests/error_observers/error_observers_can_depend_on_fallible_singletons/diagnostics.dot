@@ -12,10 +12,10 @@ digraph "GET /home - 0" {
 
 digraph "GET /home - 1" {
     0 [ label = "9| app_028e5d85::handler(&app_028e5d85::B) -> pavex::response::Response"]
-    1 [ label = "8| core::prelude::rust_2015::Result<app_028e5d85::B, app_028e5d85::AnError> -> app_028e5d85::B"]
-    2 [ label = "1| app_028e5d85::b(&app_028e5d85::A) -> core::prelude::rust_2015::Result<app_028e5d85::B, app_028e5d85::AnError>"]
+    1 [ label = "8| core::result::Result<app_028e5d85::B, app_028e5d85::AnError> -> app_028e5d85::B"]
+    2 [ label = "1| app_028e5d85::b(&app_028e5d85::A) -> core::result::Result<app_028e5d85::B, app_028e5d85::AnError>"]
     4 [ label = "10| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    5 [ label = "3| core::prelude::rust_2015::Result<app_028e5d85::B, app_028e5d85::AnError> -> app_028e5d85::AnError"]
+    5 [ label = "3| core::result::Result<app_028e5d85::B, app_028e5d85::AnError> -> app_028e5d85::AnError"]
     6 [ label = "5| pavex::Error::new(app_028e5d85::AnError) -> pavex::Error"]
     7 [ label = "4| app_028e5d85::error_handler(&app_028e5d85::A, &app_028e5d85::AnError) -> pavex::response::Response"]
     8 [ label = "7| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
@@ -59,10 +59,10 @@ digraph "* * - 1" {
 
 digraph app_state {
     0 [ label = "6| crate::ApplicationState(app_028e5d85::A) -> crate::ApplicationState"]
-    1 [ label = "5| core::prelude::rust_2015::Result<app_028e5d85::A, app_028e5d85::AnError> -> app_028e5d85::A"]
-    2 [ label = "0| app_028e5d85::a() -> core::prelude::rust_2015::Result<app_028e5d85::A, app_028e5d85::AnError>"]
+    1 [ label = "5| core::result::Result<app_028e5d85::A, app_028e5d85::AnError> -> app_028e5d85::A"]
+    2 [ label = "0| app_028e5d85::a() -> core::result::Result<app_028e5d85::A, app_028e5d85::AnError>"]
     3 [ label = "7| core::result::Result::Ok(crate::ApplicationState) -> core::result::Result<crate::ApplicationState, crate::ApplicationStateError>"]
-    4 [ label = "2| core::prelude::rust_2015::Result<app_028e5d85::A, app_028e5d85::AnError> -> app_028e5d85::AnError"]
+    4 [ label = "2| core::result::Result<app_028e5d85::A, app_028e5d85::AnError> -> app_028e5d85::AnError"]
     5 [ label = "3| crate::ApplicationStateError::A(app_028e5d85::AnError) -> crate::ApplicationStateError"]
     6 [ label = "4| core::result::Result::Err(crate::ApplicationStateError) -> core::result::Result<crate::ApplicationState, crate::ApplicationStateError>"]
     7 [ label = "1| `match`"]

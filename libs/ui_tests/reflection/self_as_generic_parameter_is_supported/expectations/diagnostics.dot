@@ -10,10 +10,10 @@ digraph "GET /home - 0" {
 
 digraph "GET /home - 1" {
     0 [ label = "6| app::handler(app::A) -> pavex::response::Response"]
-    1 [ label = "5| core::prelude::rust_2015::Result<app::A, anyhow::Error> -> app::A"]
-    2 [ label = "0| app::A::new() -> core::prelude::rust_2015::Result<app::A, anyhow::Error>"]
+    1 [ label = "5| core::result::Result<app::A, anyhow::Error> -> app::A"]
+    2 [ label = "0| app::A::new() -> core::result::Result<app::A, anyhow::Error>"]
     3 [ label = "7| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    4 [ label = "2| core::prelude::rust_2015::Result<app::A, anyhow::Error> -> anyhow::Error"]
+    4 [ label = "2| core::result::Result<app::A, anyhow::Error> -> anyhow::Error"]
     5 [ label = "3| app::error_handler(&anyhow::Error) -> pavex::response::Response"]
     6 [ label = "4| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     7 [ label = "1| `match`"]

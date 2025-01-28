@@ -12,11 +12,11 @@ digraph "GET /home/{home_id} - 0" {
 
 digraph "GET /home/{home_id} - 1" {
     0 [ label = "7| app_c1ac8ad4::get_home(pavex::request::path::PathParams<app_c1ac8ad4::HomePathParams>) -> pavex::response::Response"]
-    1 [ label = "6| core::prelude::rust_2015::Result<pavex::request::path::PathParams<app_c1ac8ad4::HomePathParams>, pavex::request::path::errors::ExtractPathParamsError> -> pavex::request::path::PathParams<app_c1ac8ad4::HomePathParams>"]
-    2 [ label = "1| pavex::request::path::PathParams::extract(pavex::request::path::RawPathParams<'server, 'request>) -> core::prelude::rust_2015::Result<pavex::request::path::PathParams<app_c1ac8ad4::HomePathParams>, pavex::request::path::errors::ExtractPathParamsError>"]
+    1 [ label = "6| core::result::Result<pavex::request::path::PathParams<app_c1ac8ad4::HomePathParams>, pavex::request::path::errors::ExtractPathParamsError> -> pavex::request::path::PathParams<app_c1ac8ad4::HomePathParams>"]
+    2 [ label = "1| pavex::request::path::PathParams::extract(pavex::request::path::RawPathParams<'server, 'request>) -> core::result::Result<pavex::request::path::PathParams<app_c1ac8ad4::HomePathParams>, pavex::request::path::errors::ExtractPathParamsError>"]
     3 [ label = "0| pavex::request::path::RawPathParams<'server, 'request>"]
     4 [ label = "8| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    5 [ label = "3| core::prelude::rust_2015::Result<pavex::request::path::PathParams<app_c1ac8ad4::HomePathParams>, pavex::request::path::errors::ExtractPathParamsError> -> pavex::request::path::errors::ExtractPathParamsError"]
+    5 [ label = "3| core::result::Result<pavex::request::path::PathParams<app_c1ac8ad4::HomePathParams>, pavex::request::path::errors::ExtractPathParamsError> -> pavex::request::path::errors::ExtractPathParamsError"]
     6 [ label = "4| pavex::request::path::errors::ExtractPathParamsError::into_response(&pavex::request::path::errors::ExtractPathParamsError) -> pavex::response::Response"]
     7 [ label = "5| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     8 [ label = "2| `match`"]
@@ -44,11 +44,11 @@ digraph "GET /home/{home_id}/room/{room_id} - 0" {
 
 digraph "GET /home/{home_id}/room/{room_id} - 1" {
     0 [ label = "7| app_c1ac8ad4::get_room(pavex::request::path::PathParams<app_c1ac8ad4::RoomPathParams>) -> pavex::response::Response"]
-    1 [ label = "6| core::prelude::rust_2015::Result<pavex::request::path::PathParams<app_c1ac8ad4::RoomPathParams>, pavex::request::path::errors::ExtractPathParamsError> -> pavex::request::path::PathParams<app_c1ac8ad4::RoomPathParams>"]
-    2 [ label = "1| pavex::request::path::PathParams::extract(pavex::request::path::RawPathParams<'server, 'request>) -> core::prelude::rust_2015::Result<pavex::request::path::PathParams<app_c1ac8ad4::RoomPathParams>, pavex::request::path::errors::ExtractPathParamsError>"]
+    1 [ label = "6| core::result::Result<pavex::request::path::PathParams<app_c1ac8ad4::RoomPathParams>, pavex::request::path::errors::ExtractPathParamsError> -> pavex::request::path::PathParams<app_c1ac8ad4::RoomPathParams>"]
+    2 [ label = "1| pavex::request::path::PathParams::extract(pavex::request::path::RawPathParams<'server, 'request>) -> core::result::Result<pavex::request::path::PathParams<app_c1ac8ad4::RoomPathParams>, pavex::request::path::errors::ExtractPathParamsError>"]
     3 [ label = "0| pavex::request::path::RawPathParams<'server, 'request>"]
     4 [ label = "8| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    5 [ label = "3| core::prelude::rust_2015::Result<pavex::request::path::PathParams<app_c1ac8ad4::RoomPathParams>, pavex::request::path::errors::ExtractPathParamsError> -> pavex::request::path::errors::ExtractPathParamsError"]
+    5 [ label = "3| core::result::Result<pavex::request::path::PathParams<app_c1ac8ad4::RoomPathParams>, pavex::request::path::errors::ExtractPathParamsError> -> pavex::request::path::errors::ExtractPathParamsError"]
     6 [ label = "4| pavex::request::path::errors::ExtractPathParamsError::into_response(&pavex::request::path::errors::ExtractPathParamsError) -> pavex::response::Response"]
     7 [ label = "5| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     8 [ label = "2| `match`"]
@@ -76,11 +76,11 @@ digraph "GET /town/{*town} - 0" {
 
 digraph "GET /town/{*town} - 1" {
     0 [ label = "7| app_c1ac8ad4::get_town(pavex::request::path::PathParams<app_c1ac8ad4::TownPathParams<'_>>) -> pavex::response::Response"]
-    1 [ label = "6| core::prelude::rust_2015::Result<pavex::request::path::PathParams<app_c1ac8ad4::TownPathParams<'_>>, pavex::request::path::errors::ExtractPathParamsError> -> pavex::request::path::PathParams<app_c1ac8ad4::TownPathParams<'_>>"]
-    2 [ label = "1| pavex::request::path::PathParams::extract(pavex::request::path::RawPathParams<'server, 'request>) -> core::prelude::rust_2015::Result<pavex::request::path::PathParams<app_c1ac8ad4::TownPathParams<'_>>, pavex::request::path::errors::ExtractPathParamsError>"]
+    1 [ label = "6| core::result::Result<pavex::request::path::PathParams<app_c1ac8ad4::TownPathParams<'_>>, pavex::request::path::errors::ExtractPathParamsError> -> pavex::request::path::PathParams<app_c1ac8ad4::TownPathParams<'_>>"]
+    2 [ label = "1| pavex::request::path::PathParams::extract(pavex::request::path::RawPathParams<'server, 'request>) -> core::result::Result<pavex::request::path::PathParams<app_c1ac8ad4::TownPathParams<'_>>, pavex::request::path::errors::ExtractPathParamsError>"]
     3 [ label = "0| pavex::request::path::RawPathParams<'server, 'request>"]
     4 [ label = "8| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    5 [ label = "3| core::prelude::rust_2015::Result<pavex::request::path::PathParams<app_c1ac8ad4::TownPathParams<'_>>, pavex::request::path::errors::ExtractPathParamsError> -> pavex::request::path::errors::ExtractPathParamsError"]
+    5 [ label = "3| core::result::Result<pavex::request::path::PathParams<app_c1ac8ad4::TownPathParams<'_>>, pavex::request::path::errors::ExtractPathParamsError> -> pavex::request::path::errors::ExtractPathParamsError"]
     6 [ label = "4| pavex::request::path::errors::ExtractPathParamsError::into_response(&pavex::request::path::errors::ExtractPathParamsError) -> pavex::response::Response"]
     7 [ label = "5| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     8 [ label = "2| `match`"]

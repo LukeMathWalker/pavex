@@ -12,10 +12,10 @@ digraph "GET /home - 0" {
 
 digraph "GET /home - 1" {
     0 [ label = "9| app::handler(&app::B) -> pavex::response::Response"]
-    1 [ label = "8| core::prelude::rust_2015::Result<app::B, app::AnError> -> app::B"]
-    2 [ label = "1| app::b(&app::A) -> core::prelude::rust_2015::Result<app::B, app::AnError>"]
+    1 [ label = "8| core::result::Result<app::B, app::AnError> -> app::B"]
+    2 [ label = "1| app::b(&app::A) -> core::result::Result<app::B, app::AnError>"]
     4 [ label = "10| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    5 [ label = "3| core::prelude::rust_2015::Result<app::B, app::AnError> -> app::AnError"]
+    5 [ label = "3| core::result::Result<app::B, app::AnError> -> app::AnError"]
     6 [ label = "5| pavex::Error::new(app::AnError) -> pavex::Error"]
     7 [ label = "4| app::error_handler(&app::A, &app::AnError) -> pavex::response::Response"]
     8 [ label = "7| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
@@ -59,10 +59,10 @@ digraph "* * - 1" {
 
 digraph app_state {
     0 [ label = "6| crate::ApplicationState(app::A) -> crate::ApplicationState"]
-    1 [ label = "5| core::prelude::rust_2015::Result<app::A, app::AnError> -> app::A"]
-    2 [ label = "0| app::a() -> core::prelude::rust_2015::Result<app::A, app::AnError>"]
+    1 [ label = "5| core::result::Result<app::A, app::AnError> -> app::A"]
+    2 [ label = "0| app::a() -> core::result::Result<app::A, app::AnError>"]
     3 [ label = "7| core::result::Result::Ok(crate::ApplicationState) -> core::result::Result<crate::ApplicationState, crate::ApplicationStateError>"]
-    4 [ label = "2| core::prelude::rust_2015::Result<app::A, app::AnError> -> app::AnError"]
+    4 [ label = "2| core::result::Result<app::A, app::AnError> -> app::AnError"]
     5 [ label = "3| crate::ApplicationStateError::A(app::AnError) -> crate::ApplicationStateError"]
     6 [ label = "4| core::result::Result::Err(crate::ApplicationStateError) -> core::result::Result<crate::ApplicationState, crate::ApplicationStateError>"]
     7 [ label = "1| `match`"]
