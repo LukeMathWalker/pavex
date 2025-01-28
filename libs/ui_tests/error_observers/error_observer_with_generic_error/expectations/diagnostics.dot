@@ -10,10 +10,10 @@ digraph "GET /home - 0" {
 
 digraph "GET /home - 1" {
     0 [ label = "8| app::handler(app::Generic<alloc::string::String>) -> pavex::response::Response"]
-    1 [ label = "7| core::prelude::rust_2015::Result<app::Generic<alloc::string::String>, app::GenericError<alloc::string::String>> -> app::Generic<alloc::string::String>"]
-    2 [ label = "0| app::constructor() -> core::prelude::rust_2015::Result<app::Generic<alloc::string::String>, app::GenericError<alloc::string::String>>"]
+    1 [ label = "7| core::result::Result<app::Generic<alloc::string::String>, app::GenericError<alloc::string::String>> -> app::Generic<alloc::string::String>"]
+    2 [ label = "0| app::constructor() -> core::result::Result<app::Generic<alloc::string::String>, app::GenericError<alloc::string::String>>"]
     3 [ label = "9| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    4 [ label = "2| core::prelude::rust_2015::Result<app::Generic<alloc::string::String>, app::GenericError<alloc::string::String>> -> app::GenericError<alloc::string::String>"]
+    4 [ label = "2| core::result::Result<app::Generic<alloc::string::String>, app::GenericError<alloc::string::String>> -> app::GenericError<alloc::string::String>"]
     5 [ label = "4| pavex::Error::new(app::GenericError<alloc::string::String>) -> pavex::Error"]
     6 [ label = "3| app::error_handler(&app::GenericError<alloc::string::String>) -> pavex::response::Response"]
     7 [ label = "6| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]

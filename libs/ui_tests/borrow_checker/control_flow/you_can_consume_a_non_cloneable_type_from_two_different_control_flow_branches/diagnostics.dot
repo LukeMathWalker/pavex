@@ -10,11 +10,11 @@ digraph "GET /home - 0" {
 
 digraph "GET /home - 1" {
     0 [ label = "7| app_9717f587::handler(app_9717f587::A, app_9717f587::B) -> pavex::response::Response"]
-    1 [ label = "6| core::prelude::rust_2015::Result<app_9717f587::A, app_9717f587::Error> -> app_9717f587::A"]
+    1 [ label = "6| core::result::Result<app_9717f587::A, app_9717f587::Error> -> app_9717f587::A"]
     2 [ label = "3| app_9717f587::b() -> app_9717f587::B"]
-    3 [ label = "0| app_9717f587::a() -> core::prelude::rust_2015::Result<app_9717f587::A, app_9717f587::Error>"]
+    3 [ label = "0| app_9717f587::a() -> core::result::Result<app_9717f587::A, app_9717f587::Error>"]
     4 [ label = "8| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
-    5 [ label = "2| core::prelude::rust_2015::Result<app_9717f587::A, app_9717f587::Error> -> app_9717f587::Error"]
+    5 [ label = "2| core::result::Result<app_9717f587::A, app_9717f587::Error> -> app_9717f587::Error"]
     6 [ label = "4| app_9717f587::error_handler(&app_9717f587::Error, app_9717f587::B) -> pavex::response::Response"]
     7 [ label = "5| <pavex::response::Response as pavex::response::IntoResponse>::into_response(pavex::response::Response) -> pavex::response::Response"]
     8 [ label = "1| `match`"]

@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::cmp::Ordering;
 use std::collections::BTreeSet;
 use std::sync::Arc;
 
@@ -537,10 +538,30 @@ pub struct Crate {
     pub(super) re_exports: HashMap<Vec<String>, (Vec<String>, u32)>,
     /// A mapping from a type id to all the public paths under which it can be imported
     /// from another crate.
-    pub(super) id2public_import_paths: HashMap<rustdoc_types::Id, BTreeSet<Vec<String>>>,
+    pub(super) id2public_import_paths: HashMap<rustdoc_types::Id, BTreeSet<SortablePath>>,
     /// A mapping from a type id to all the non-public paths under which it can be imported
     /// from within the same crate.
-    pub(super) id2private_import_paths: HashMap<rustdoc_types::Id, BTreeSet<Vec<String>>>,
+    pub(super) id2private_import_paths: HashMap<rustdoc_types::Id, BTreeSet<SortablePath>>,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(transparent)]
+pub struct SortablePath(Vec<String>);
+
+impl Ord for SortablePath {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match self.0.len().cmp(&other.0.len()) {
+            // Compare lexicographically if lengths are equal
+            Ordering::Equal => self.0.cmp(&other.0),
+            other => other,
+        }
+    }
+}
+
+impl PartialOrd for SortablePath {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -695,8 +716,8 @@ impl Crate {
             .chain(&id2private_import_paths)
         {
             for path in paths {
-                if !import_path2id.contains_key(path) {
-                    import_path2id.insert(path.to_owned(), id.to_owned());
+                if !import_path2id.contains_key(&path.0) {
+                    import_path2id.insert(path.0.clone(), id.to_owned());
                 }
             }
         }
@@ -856,10 +877,10 @@ impl Crate {
     fn get_canonical_path(&self, type_id: &GlobalItemId) -> Result<&[String], anyhow::Error> {
         if type_id.package_id == self.core.package_id {
             if let Some(paths) = self.id2public_import_paths.get(&type_id.rustdoc_item_id) {
-                return Ok(paths.first().unwrap());
+                return Ok(&paths.first().unwrap().0);
             }
             if let Some(paths) = self.id2private_import_paths.get(&type_id.rustdoc_item_id) {
-                return Ok(paths.first().unwrap());
+                return Ok(&paths.first().unwrap().0);
             }
         }
         Err(anyhow::anyhow!(
@@ -877,8 +898,8 @@ fn index_local_types<'a>(
     // It used to detect infinite loops.
     mut navigation_history: IndexSet<rustdoc_types::Id>,
     mut current_path: Vec<&'a str>,
-    public_path_index: &mut HashMap<rustdoc_types::Id, BTreeSet<Vec<String>>>,
-    private_path_index: &mut HashMap<rustdoc_types::Id, BTreeSet<Vec<String>>>,
+    public_path_index: &mut HashMap<rustdoc_types::Id, BTreeSet<SortablePath>>,
+    private_path_index: &mut HashMap<rustdoc_types::Id, BTreeSet<SortablePath>>,
     re_exports: &mut HashMap<Vec<String>, (Vec<String>, u32)>,
     current_item_id: &rustdoc_types::Id,
     is_public: bool,
@@ -1012,7 +1033,7 @@ fn index_local_types<'a>(
                                 private_path_index
                                     .entry(*imported_id)
                                     .or_default()
-                                    .insert(normalized_source_path);
+                                    .insert(SortablePath(normalized_source_path));
                             }
 
                             index_local_types(
@@ -1057,7 +1078,7 @@ fn index_local_types<'a>(
             index
                 .entry(current_item_id.to_owned())
                 .or_default()
-                .insert(path);
+                .insert(SortablePath(path));
         }
         _ => {}
     }
