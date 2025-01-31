@@ -2679,6 +2679,7 @@ dependencies = [
  "once_cell",
  "pavex",
  "pavex_bp_schema",
+ "pavex_cli_shell",
  "pavexc_rustdoc_types",
  "persist_if_changed",
  "petgraph 0.7.1",

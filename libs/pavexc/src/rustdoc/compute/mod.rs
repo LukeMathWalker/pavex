@@ -16,6 +16,7 @@ use guppy::graph::PackageGraph;
 use guppy::{PackageId, Version};
 use indexmap::IndexSet;
 use itertools::Itertools as _;
+use pavex_cli_shell::SHELL;
 use serde::Deserialize;
 
 use crate::rustdoc::package_id_spec::PackageIdSpecification;
@@ -137,11 +138,48 @@ where
             }
         }
 
-        _compute_crate_docs(
+        if let Some(shell) = SHELL.get() {
+            if let Ok(mut shell) = shell.lock() {
+                for (package_id, _) in chunk.iter() {
+                    let Ok(package_metadata) = package_graph.metadata(package_id) else {
+                        continue;
+                    };
+                    let _ = shell.status(
+                        "Documenting",
+                        format!("{}@{}", package_metadata.name(), package_metadata.version()),
+                    );
+                }
+            }
+        }
+        let timer = std::time::Instant::now();
+
+        let outcome = _compute_crate_docs(
             toolchain_name,
             chunk.iter().map(|(_, spec)| spec),
             current_dir,
-        )?;
+        );
+
+        let duration = timer.elapsed();
+        if let Some(shell) = SHELL.get() {
+            if let Ok(mut shell) = shell.lock() {
+                for (package_id, _) in chunk.iter() {
+                    let Ok(package_metadata) = package_graph.metadata(package_id) else {
+                        continue;
+                    };
+                    let _ = shell.status(
+                        "Documented",
+                        format!(
+                            "{}@{} in {} seconds",
+                            package_metadata.name(),
+                            package_metadata.version(),
+                            duration.as_secs_f32()
+                        ),
+                    );
+                }
+            }
+        }
+
+        outcome?;
 
         // It takes a while to deserialize the JSON output of `cargo rustdoc`, so we parallelize
         // that part.
