@@ -11,6 +11,3 @@
   [31m│[0m  [2m14[0m │ 
   [31m│[0m     ╰────
   [31m│[0m [36m  help: [0mAdd an error handler via `.error_handler`
-
-The invocation of `pavex [...] generate [...]` exited with a non-zero status code: 1
-error: Failed to run `bp`, the code generator for package `server_sdk`
