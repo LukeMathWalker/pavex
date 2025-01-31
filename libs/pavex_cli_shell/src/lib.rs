@@ -36,9 +36,7 @@ impl ShellExt for OnceLock<Arc<Mutex<Shell>>> {
         T: Display,
         U: Display,
     {
-        self.get().map(|s| {
-            let _ = s.lock().unwrap().status(status, message);
-        });
+        if let Some(s) = self.get() { let _ = s.lock().unwrap().status(status, message); }
     }
 
     fn status_with_color<T, U>(&self, status: T, message: U, color: &style::Style)
@@ -46,20 +44,14 @@ impl ShellExt for OnceLock<Arc<Mutex<Shell>>> {
         T: Display,
         U: Display,
     {
-        self.get().map(|s| {
-            let _ = s.lock().unwrap().status_with_color(status, message, color);
-        });
+        if let Some(s) = self.get() { let _ = s.lock().unwrap().status_with_color(status, message, color); }
     }
 
     fn note<T: Display>(&self, message: T) {
-        self.get().map(|s| {
-            let _ = s.lock().unwrap().note(message);
-        });
+        if let Some(s) = self.get() { let _ = s.lock().unwrap().note(message); }
     }
 
     fn warn<T: Display>(&self, message: T) {
-        self.get().map(|s| {
-            let _ = s.lock().unwrap().warn(message);
-        });
+        if let Some(s) = self.get() { let _ = s.lock().unwrap().warn(message); }
     }
 }

@@ -120,7 +120,7 @@ where
             // mistakenly believe that the JSON docs it generated for another version of
             // the crate can be reused.
             for (_, spec) in &chunk {
-                let _ = fs_err::remove_file(&json_doc_location(&spec, target_directory));
+                let _ = fs_err::remove_file(json_doc_location(spec, target_directory));
             }
         } else {
             // If it's the first chunk, we need to check package by package.
@@ -132,7 +132,7 @@ where
                     .count()
                     > 1
                 {
-                    let _ = fs_err::remove_file(&json_doc_location(&spec, target_directory));
+                    let _ = fs_err::remove_file(json_doc_location(spec, target_directory));
                 }
             }
         }
@@ -288,7 +288,7 @@ fn load_json_docs(
     target_directory: &Path,
     package_id_spec: &PackageIdSpecification,
 ) -> Result<rustdoc_types::Crate, anyhow::Error> {
-    let json_path = json_doc_location(&package_id_spec, target_directory);
+    let json_path = json_doc_location(package_id_spec, target_directory);
 
     let span = tracing::trace_span!("Read and deserialize JSON output");
     let guard = span.enter();
