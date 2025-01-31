@@ -1,5 +1,6 @@
 use anyhow::Context;
 use cargo_like_utils::shell::Shell;
+use pavex_cli_shell::{try_init_shell, ShellExt, SHELL};
 use std::io::{ErrorKind, IsTerminal};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -43,19 +44,18 @@ fn main() -> Result<ExitCode, miette::Error> {
     let cli = Cli::parse();
     init_miette_hook(&cli);
     let _guard = init_telemetry(cli.log_filter.clone(), cli.color, cli.log, cli.perf_profile);
+    init_shell(cli.color).map_err(utils::anyhow2miette)?;
 
     let client = pavexc_client(&cli);
     let system_home_dir = xdg_home::home_dir().ok_or_else(|| {
         miette::miette!("Failed to get the system home directory from the environment")
     })?;
     let locator = PavexLocator::new(&system_home_dir);
-    let mut shell = Shell::new();
     let key_set: JwkSet =
         serde_json::from_str(PAVEX_CACHED_KEYSET).expect("Failed to parse the cached JWKS");
 
     if let Some(activation_key) =
-        get_activation_key_if_necessary(&cli.command, &locator, &mut shell)
-            .map_err(utils::anyhow2miette)?
+        get_activation_key_if_necessary(&cli.command, &locator).map_err(utils::anyhow2miette)?
     {
         let claims = check_activation(&locator, activation_key.clone(), &key_set)
             .context("Failed to check Pavex activation")
@@ -68,36 +68,35 @@ fn main() -> Result<ExitCode, miette::Error> {
             diagnostics,
             check,
             output,
-        } => generate(
-            &mut shell,
-            client,
-            &locator,
-            blueprint,
-            diagnostics,
-            output,
-            check,
-        ),
-        Command::New { path, template } => {
-            scaffold_project(client, &locator, &mut shell, path, template)
-        }
+        } => generate(client, &locator, blueprint, diagnostics, output, check),
+        Command::New { path, template } => scaffold_project(client, &locator, path, template),
         Command::Self_ { command } => {
             // You should always be able to run `self` commands, even if Pavex has
             // not been activated yet.
             match command {
-                SelfCommands::Update => update(&mut shell),
-                SelfCommands::Uninstall { y } => uninstall(&mut shell, !y, locator),
-                SelfCommands::Activate { key } => activate(
-                    &mut shell,
-                    cli.color,
-                    &locator,
-                    key.map(|k| k.into_inner()),
-                    &key_set,
-                ),
-                SelfCommands::Setup => setup(cli.debug, &mut shell, cli.color, &locator, &key_set),
+                SelfCommands::Update => update(),
+                SelfCommands::Uninstall { y } => uninstall(!y, locator),
+                SelfCommands::Activate { key } => {
+                    activate(cli.color, &locator, key.map(|k| k.into_inner()), &key_set)
+                }
+                SelfCommands::Setup => setup(cli.debug, cli.color, &locator, &key_set),
             }
         }
     }
     .map_err(utils::anyhow2miette)
+}
+
+fn init_shell(color: Color) -> Result<(), anyhow::Error> {
+    let mut shell = Shell::new();
+    shell
+        .set_color_choice(Some(match color {
+            Color::Auto => "auto",
+            Color::Always => "always",
+            Color::Never => "never",
+        }))
+        .context("Failed to configure shell output")?;
+    try_init_shell(shell);
+    Ok(())
 }
 
 /// Propagate introspection options from `pavex` to pavexc`.
@@ -124,9 +123,8 @@ fn pavexc_client(cli: &Cli) -> Client {
     client
 }
 
-#[tracing::instrument("Generate server sdk", skip(client, locator, shell))]
+#[tracing::instrument("Generate server sdk", skip(client, locator))]
 fn generate(
-    shell: &mut Shell,
     mut client: Client,
     locator: &PavexLocator,
     blueprint: PathBuf,
@@ -141,7 +139,7 @@ fn generate(
         // crate used in the current workspace.
         let package_graph = compute_package_graph()
             .context("Failed to compute package graph for the current workspace")?;
-        get_or_install_from_graph(shell, locator, &package_graph)?
+        get_or_install_from_graph(locator, &package_graph)?
     };
     client = client.pavexc_cli_path(pavexc_cli_path);
 
@@ -161,11 +159,10 @@ fn generate(
     }
 }
 
-#[tracing::instrument("Scaffold new project", skip(client, locator, shell))]
+#[tracing::instrument("Scaffold new project", skip(client, locator))]
 fn scaffold_project(
     mut client: Client,
     locator: &PavexLocator,
-    shell: &mut Shell,
     path: PathBuf,
     template: TemplateName,
 ) -> Result<ExitCode, anyhow::Error> {
@@ -173,28 +170,28 @@ fn scaffold_project(
         pavexc_override
     } else {
         let version = State::new(locator)
-            .get_current_toolchain(shell)
+            .get_current_toolchain()
             .context("Failed to get the current toolchain")?;
-        get_or_install_from_version(shell, locator, &version)
+        get_or_install_from_version(locator, &version)
             .context("Failed to get or install the `pavexc` binary")?
     };
 
     client = client.pavexc_cli_path(pavexc_cli_path);
 
-    shell.status(
+    SHELL.status(
         "Creating",
         format!("the new project in `{}`", path.display()),
-    )?;
+    );
     match client
         .new_command(path.clone())
         .template(template)
         .execute()
     {
         Ok(()) => {
-            shell.status(
+            SHELL.status(
                 "Created",
                 format!("the new project in `{}`", path.display()),
-            )?;
+            );
             Ok(ExitCode::SUCCESS)
         }
         Err(NewError::NonZeroExitCode(e)) => Ok(ExitCode::from(e.code as u8)),
@@ -202,64 +199,60 @@ fn scaffold_project(
     }
 }
 
-#[tracing::instrument("Uninstall Pavex CLI", skip(shell, locator))]
-fn uninstall(
-    shell: &mut Shell,
-    must_prompt_user: bool,
-    locator: PavexLocator,
-) -> Result<ExitCode, anyhow::Error> {
-    shell.status("Thanks", "for hacking with Pavex!")?;
+#[tracing::instrument("Uninstall Pavex CLI", skip(locator))]
+fn uninstall(must_prompt_user: bool, locator: PavexLocator) -> Result<ExitCode, anyhow::Error> {
+    SHELL.status("Thanks", "for hacking with Pavex!");
     if must_prompt_user {
-        shell.warn(
+        SHELL.warn(
             "This process will uninstall Pavex and all its associated data from your system.",
-        )?;
+        );
         let continue_ = confirm("\nDo you wish to continue?", false)?;
         if !continue_ {
-            shell.status("Abort", "Uninstalling Pavex CLI")?;
+            SHELL.status("Abort", "Uninstalling Pavex CLI");
             return Ok(ExitCode::SUCCESS);
         }
     }
 
-    shell.status("Uninstalling", "Pavex")?;
+    SHELL.status("Uninstalling", "Pavex");
     if let Err(e) = fs_err::remove_dir_all(locator.root_dir()) {
         if ErrorKind::NotFound != e.kind() {
             Err(e).context("Failed to remove Pavex data")?;
         }
     }
     self_replace::self_delete().context("Failed to delete the current Pavex CLI binary")?;
-    shell.status("Uninstalled", "Pavex")?;
+    SHELL.status("Uninstalled", "Pavex");
 
     Ok(ExitCode::SUCCESS)
 }
 
-#[tracing::instrument("Update Pavex CLI", skip(shell))]
-fn update(shell: &mut Shell) -> Result<ExitCode, anyhow::Error> {
-    shell.status("Checking", "for updates to Pavex CLI")?;
+#[tracing::instrument("Update Pavex CLI", skip_all)]
+fn update() -> Result<ExitCode, anyhow::Error> {
+    SHELL.status("Checking", "for updates to Pavex CLI");
     let latest_version = latest_released_version()?;
     let current_version = pavex_cli::env::version();
     if latest_version <= current_version {
-        shell.status(
+        SHELL.status(
             "Up to date",
             format!("{current_version} is the most recent version"),
-        )?;
+        );
         return Ok(ExitCode::SUCCESS);
     }
 
-    shell.status(
+    SHELL.status(
         "Update available",
         format!("You're running {current_version}, but {latest_version} is available"),
-    )?;
+    );
 
     let new_cli_path = tempfile::NamedTempFile::new()
         .context("Failed to create a temporary file to download the new Pavex CLI binary")?;
-    download_or_compile(shell, CliKind::Pavex, &latest_version, new_cli_path.path())?;
+    download_or_compile(CliKind::Pavex, &latest_version, new_cli_path.path())?;
     self_replace::self_replace(new_cli_path.path())
         .context("Failed to replace the current Pavex CLI with the newly downloaded version")?;
 
-    shell.status(
+    SHELL.status(
         "Updated",
         format!("to {latest_version}, the most recent version"),
-    )?;
+    );
 
     Ok(ExitCode::SUCCESS)
 }
@@ -267,55 +260,49 @@ fn update(shell: &mut Shell) -> Result<ExitCode, anyhow::Error> {
 #[tracing::instrument("Setup Pavex", skip_all)]
 fn setup(
     debug: bool,
-    shell: &mut Shell,
     color: Color,
     locator: &PavexLocator,
     key_set: &JwkSet,
 ) -> Result<ExitCode, anyhow::Error> {
-    fn _setup(
-        shell: &mut Shell,
-        color: Color,
-        locator: &PavexLocator,
-        key_set: &JwkSet,
-    ) -> Result<(), anyhow::Error> {
+    fn _setup(color: Color, locator: &PavexLocator, key_set: &JwkSet) -> Result<(), anyhow::Error> {
         let options = IfAutoinstallable::PromptForConfirmation;
-        verify_installation(shell, Rustup, options)?;
-        verify_installation(shell, CargoPx, options)?;
+        verify_installation(Rustup, options)?;
+        verify_installation(CargoPx, options)?;
 
-        let _ = shell.status("Checking", "if Pavex has been activated");
-        let must_activate = match get_activation_key(locator, shell) {
+        SHELL.status("Checking", "if Pavex has been activated");
+        let must_activate = match get_activation_key(locator) {
             Ok(key) => check_activation(locator, key.clone(), key_set).is_err(),
             Err(_) => true,
         };
         if must_activate {
-            let _ = shell.status_with_color(
+            SHELL.status_with_color(
                 "Inactive",
                 "Pavex has not been activated yet",
                 &cargo_like_utils::shell::style::ERROR,
             );
             if std::io::stdout().is_terminal() {
-                activate(shell, color, locator, None, key_set)?;
+                activate(color, locator, None, key_set)?;
             } else {
-                let _ = shell.note(
+                SHELL.note(
                     "Invoke\n\n    \
                     pavex self activate\n\n\
                     to activate your Pavex installation.",
                 );
             }
         } else {
-            let _ = shell.status("Success", "Pavex has already been activated");
+            SHELL.status("Success", "Pavex has already been activated");
         }
 
         Ok(())
     }
 
-    match _setup(shell, color, locator, key_set) {
+    match _setup(color, locator, key_set) {
         Ok(()) => Ok(ExitCode::SUCCESS),
         Err(e) => {
             if debug {
                 Err(e)
             } else {
-                let _ = shell.note(
+                SHELL.note(
                     "Once you've installed what's missing, re-run `pavex self setup` \
                     to verify everything is working as expected.",
                 );
@@ -327,7 +314,6 @@ fn setup(
 
 #[tracing::instrument("Activate Pavex", skip_all)]
 fn activate(
-    shell: &mut Shell,
     color: Color,
     locator: &PavexLocator,
     activation_key: Option<Secret<String>>,
@@ -415,7 +401,7 @@ fn activate(
         }
     };
     state
-        .set_activation_key(shell, key)
+        .set_activation_key(key)
         .context("Failed to set the activation key")?;
 
     if use_color_on_stdout(color) {
@@ -432,25 +418,24 @@ fn activate(
 }
 
 fn download_or_compile(
-    shell: &mut Shell,
     kind: CliKind,
     version: &Version,
     destination: &Path,
 ) -> Result<(), anyhow::Error> {
-    let _ = shell.status(
+    SHELL.status(
         "Downloading",
         format!("prebuilt `{}@{version}` binary", kind.binary_target_name()),
     );
     match download_prebuilt(destination, kind, version) {
         Ok(_) => {
-            let _ = shell.status(
+            SHELL.status(
                 "Downloaded",
                 format!("prebuilt `{}@{version}` binary", kind.binary_target_name()),
             );
             return Ok(());
         }
         Err(e) => {
-            let _ = shell.warn(format!(
+            SHELL.warn(format!(
                 "Download failed: {e}.\nI'll try compiling from source instead."
             ));
             log_error!(
@@ -460,7 +445,7 @@ fn download_or_compile(
         }
     }
 
-    let _ = shell.status(
+    SHELL.status(
         "Compiling",
         format!("`{}@{version}` from source", kind.package_name()),
     );
@@ -472,7 +457,7 @@ fn download_or_compile(
         kind,
         destination,
     )?;
-    let _ = shell.status(
+    SHELL.status(
         "Compiled",
         format!("`{}@{version}` from source", kind.package_name()),
     );

@@ -384,22 +384,22 @@ dependencies = [
 
 [[package]]
 name = "cargo-like-utils"
-version = "0.1.4"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a2d3df407c7497ed58b213a5e5342bc76565ec61bbe5b7e5bc4593dd2f9c43a3"
+checksum = "81541ac714755e6e89c622f3c17312d565176f2f84e875a609312ec99088ae2b"
 dependencies = [
  "anstream",
  "anstyle",
  "anyhow",
- "fs-err 2.11.0",
+ "fs-err",
  "libc",
- "remove_dir_all 0.8.4",
+ "remove_dir_all",
  "serde",
  "serde_json",
  "supports-hyperlinks",
  "tracing",
  "url",
- "windows-sys 0.52.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -1044,18 +1044,9 @@ dependencies = [
 
 [[package]]
 name = "fs-err"
-version = "2.11.0"
+version = "3.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "88a41f105fe1d5b6b34b2055e3dc59bb79b46b48b2040b9e6c7b4b5de097aa41"
-dependencies = [
- "autocfg",
-]
-
-[[package]]
-name = "fs-err"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8bb60e7409f34ef959985bc9d9c5ee8f5db24ee46ed9775850548021710f807f"
+checksum = "1f89bda4c2a21204059a977ed3bfe746677dfd137b83c339e702b0ac91d482aa"
 dependencies = [
  "autocfg",
 ]
@@ -1179,7 +1170,7 @@ name = "generate_from_path"
 version = "0.1.70"
 dependencies = [
  "anyhow",
- "fs-err 3.0.0",
+ "fs-err",
  "heck",
  "indicatif",
  "liquid",
@@ -2381,7 +2372,7 @@ dependencies = [
  "biscotti",
  "bytes",
  "form_urlencoded",
- "fs-err 3.0.0",
+ "fs-err",
  "futures-util",
  "http",
  "http-body",
@@ -2440,7 +2431,7 @@ dependencies = [
  "clap",
  "clap-stdin",
  "config",
- "fs-err 3.0.0",
+ "fs-err",
  "guppy",
  "hex",
  "jsonwebtoken",
@@ -2448,6 +2439,8 @@ dependencies = [
  "miette",
  "owo-colors",
  "pavex_cli_deps",
+ "pavex_cli_flock",
+ "pavex_cli_shell",
  "pavex_miette",
  "pavex_test_runner",
  "pavexc",
@@ -2455,7 +2448,7 @@ dependencies = [
  "pem",
  "px_workspace_hack",
  "redact",
- "remove_dir_all 1.0.0",
+ "remove_dir_all",
  "reqwest",
  "reqwest-middleware",
  "reqwest-retry",
@@ -2501,7 +2494,28 @@ version = "0.1.70"
 dependencies = [
  "anyhow",
  "cargo-like-utils",
+ "pavex_cli_shell",
  "px_workspace_hack",
+]
+
+[[package]]
+name = "pavex_cli_flock"
+version = "0.1.70"
+dependencies = [
+ "anyhow",
+ "fs-err",
+ "libc",
+ "pavex_cli_shell",
+ "tracing",
+ "windows-sys 0.52.0",
+]
+
+[[package]]
+name = "pavex_cli_shell"
+version = "0.1.70"
+dependencies = [
+ "anyhow",
+ "cargo-like-utils",
 ]
 
 [[package]]
@@ -2598,7 +2612,7 @@ dependencies = [
  "anyhow",
  "cargo_metadata",
  "console",
- "fs-err 3.0.0",
+ "fs-err",
  "globwalk",
  "guppy",
  "itertools 0.14.0",
@@ -2641,11 +2655,12 @@ dependencies = [
  "bimap",
  "bincode",
  "camino",
+ "cargo-like-utils",
  "cargo-manifest",
  "convert_case 0.7.1",
  "elsa",
  "fixedbitset 0.5.7",
- "fs-err 3.0.0",
+ "fs-err",
  "globwalk",
  "guppy",
  "indexmap",
@@ -2695,7 +2710,7 @@ dependencies = [
  "better-panic",
  "cargo-like-utils",
  "clap",
- "fs-err 3.0.0",
+ "fs-err",
  "generate_from_path",
  "guppy",
  "include_dir",
@@ -2704,6 +2719,7 @@ dependencies = [
  "owo-colors",
  "path-absolutize",
  "pavex_cli_deps",
+ "pavex_cli_shell",
  "pavex_miette",
  "pavexc",
  "pavexc_cli_client",
@@ -2781,7 +2797,7 @@ name = "persist_if_changed"
 version = "0.1.70"
 dependencies = [
  "anyhow",
- "fs-err 3.0.0",
+ "fs-err",
  "px_workspace_hack",
  "sha2",
  "tracing",
@@ -3228,20 +3244,6 @@ checksum = "ba39f3699c378cd8970968dcbff9c43159ea4cfbd88d43c00b22f2ef10a435d2"
 
 [[package]]
 name = "remove_dir_all"
-version = "0.8.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a694f9e0eb3104451127f6cc1e5de55f59d3b1fc8c5ddfaeb6f1e716479ceb4a"
-dependencies = [
- "cfg-if",
- "cvt",
- "fs_at",
- "libc",
- "normpath",
- "windows-sys 0.59.0",
-]
-
-[[package]]
-name = "remove_dir_all"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "808cc0b475acf76adf36f08ca49429b12aad9f678cb56143d5b3cb49b9a1dd08"
@@ -3600,9 +3602,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.135"
+version = "1.0.138"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b0d7ba2887406110130a978386c4e1befb98c674b4fba677954e4db976630d9"
+checksum = "d434192e7da787e94a6ea7e9670b26a036d0ca41e0b7efb2676dd32bae872949"
 dependencies = [
  "itoa",
  "memchr",

@@ -2,7 +2,6 @@ use crate::locator::PavexLocator;
 use crate::pavexc::install::{GitReq, InstallSource};
 use crate::version::latest_released_version;
 use anyhow::Context;
-use cargo_like_utils::shell::Shell;
 use fs_err::PathExt;
 use guppy::graph::PackageGraph;
 use semver::Version;
@@ -21,7 +20,6 @@ static PAVEX_GITHUB_URL: &str = "https://github.com/LukeMathWalker/pavex";
 /// If necessary, it'll install the binary first, either by downloading
 /// a pre-built binary or by building it from source.
 pub fn get_or_install_from_graph(
-    shell: &mut Shell,
     locator: &PavexLocator,
     package_graph: &PackageGraph,
 ) -> Result<PathBuf, anyhow::Error> {
@@ -59,7 +57,6 @@ pub fn get_or_install_from_graph(
     )
     .context("Failed to determine where the `pavexc` binary should be located")??;
     _install(
-        shell,
         &pavexc_cli_path,
         pavex_lib_version,
         &package_source.try_into()?,
@@ -70,7 +67,6 @@ pub fn get_or_install_from_graph(
 
 /// Install a given version of the Pavex CLI from GitHub.
 pub fn get_or_install_from_version(
-    shell: &mut Shell,
     locator: &PavexLocator,
     version: &Version,
 ) -> Result<PathBuf, anyhow::Error> {
@@ -83,7 +79,6 @@ pub fn get_or_install_from_version(
         .toolchain_dir(guppy::graph::ExternalSource::CRATES_IO_URL, version)
         .pavexc();
     _install(
-        shell,
         &pavexc_path,
         version,
         &InstallSource::External(install::ExternalSource::Git {
@@ -96,7 +91,6 @@ pub fn get_or_install_from_version(
 }
 
 fn _install(
-    shell: &mut Shell,
     pavexc_cli_path: &Path,
     version: &Version,
     install_source: &InstallSource,
@@ -114,7 +108,7 @@ fn _install(
         fs_err::create_dir_all(parent_dir).context("Failed to create binary cache directory")?;
     }
 
-    install::install(shell, pavexc_cli_path, version, install_source)?;
+    install::install(pavexc_cli_path, version, install_source)?;
     #[cfg(unix)]
     executable::make_executable(pavexc_cli_path)?;
     setup::pavexc_setup(pavexc_cli_path)

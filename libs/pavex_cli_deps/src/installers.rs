@@ -4,7 +4,8 @@ use crate::commands::{
 };
 use crate::user_input::confirm;
 use anyhow::Error;
-use cargo_like_utils::shell::{style, Shell};
+use cargo_like_utils::shell::style;
+use pavex_cli_shell::{ShellExt, SHELL};
 use std::borrow::Cow;
 use std::io::IsTerminal;
 
@@ -43,14 +44,13 @@ pub enum IfAutoinstallable {
 /// Verify that a certain dependency is installed.
 /// It returns an error if it isn't.
 pub fn verify_installation<D: Dependency>(
-    shell: &mut Shell,
     dep: D,
     if_autoinstallable: IfAutoinstallable,
 ) -> Result<(), anyhow::Error> {
     let name = dep.name();
-    let _ = shell.status("Checking", format!("if {name} is installed"));
+    SHELL.status("Checking", format!("if {name} is installed"));
     if let Err(mut e) = dep.is_installed() {
-        let _ = shell.status_with_color(
+        SHELL.status_with_color(
             "Missing",
             format!("{name} is not installed\n"),
             &style::ERROR,
@@ -67,7 +67,7 @@ pub fn verify_installation<D: Dependency>(
                     }
                 }
                 IfAutoinstallable::Autoinstall => {
-                    let _ = shell.status("Installing", format!("{name}"));
+                    SHELL.status("Installing", format!("{name}"));
                     true
                 }
                 IfAutoinstallable::PrintInstructions => false,
@@ -75,23 +75,19 @@ pub fn verify_installation<D: Dependency>(
             if auto_install {
                 if let Err(inner) = dep.auto_install() {
                     e = inner;
-                    let _ = shell.status_with_color(
-                        "Failed",
-                        format!("to install {name}"),
-                        &style::ERROR,
-                    );
+                    SHELL.status_with_color("Failed", format!("to install {name}"), &style::ERROR);
                 } else {
                     installed = true;
                 }
             }
         }
         if !installed {
-            let _ = shell.note(dep.installation_instructions());
+            SHELL.note(dep.installation_instructions());
             return Err(e);
         }
     }
 
-    let _ = shell.status("Success", format!("{name} is installed"));
+    SHELL.status("Success", format!("{name} is installed"));
     Ok(())
 }
 
