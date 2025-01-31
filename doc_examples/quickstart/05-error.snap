@@ -21,6 +21,3 @@
   [31m│[0m [36m  help: [0mAlternatively, use `Blueprint::prebuilt` to add a new input
   [31m│[0m         parameter of type `app::user_agent::UserAgent` to the (generated)
   [31m│[0m         `build_application_state`.
-
-The invocation of `pavex [...] generate [...]` exited with a non-zero status code: 1
-error: Failed to run `bp`, the code generator for package `server_sdk`

@@ -338,7 +338,21 @@ fn generate_tutorial(
 
             let output = match command.expected_outcome {
                 StepCommandOutcome::Success => script_outcome.output,
-                StepCommandOutcome::Failure => script_outcome.error,
+                StepCommandOutcome::Failure => {
+                    // Let's strip all output until the first error message
+                    let error_beginning_sequence = "[31m[1mERROR";
+                    let output = script_outcome
+                        .error
+                        .lines()
+                        .skip_while(|line| !line.contains(error_beginning_sequence))
+                        .filter(|l| {
+                            l != &"The invocation of `pavex [...] generate [...]` exited with a non-zero status code: 1" &&
+                            !l.starts_with("error: Failed to run `bp`, the code generator for")
+                        })
+                        .collect::<Vec<_>>()
+                        .join("\n");
+                    output
+                }
             };
 
             if let Some(expected_output_at) = &command.expected_output_at {
