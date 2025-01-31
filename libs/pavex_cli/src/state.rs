@@ -1,8 +1,7 @@
 use crate::env::version;
 use crate::locator::PavexLocator;
 use anyhow::Context;
-use cargo_like_utils::flock::{FileLock, Filesystem};
-use cargo_like_utils::shell::Shell;
+use pavex_cli_flock::{FileLock, Filesystem};
 use redact::Secret;
 use std::io::{Read, Write};
 
@@ -49,11 +48,8 @@ impl State {
     /// Get the current toolchain.
     ///
     /// If the toolchain is not set, it returns the toolchain that matches the current version of the CLI.
-    pub fn get_current_toolchain(
-        &self,
-        shell: &mut Shell,
-    ) -> Result<semver::Version, StateReadError> {
-        let (_, current_state) = self.immutable_read(shell)?;
+    pub fn get_current_toolchain(&self) -> Result<semver::Version, StateReadError> {
+        let (_, current_state) = self.immutable_read()?;
         let toolchain = current_state.and_then(|s| s.toolchain);
         match toolchain {
             Some(toolchain) => Ok(toolchain),
@@ -65,21 +61,14 @@ impl State {
     }
 
     /// Get the activation key associated with this installation, if there is one.
-    pub fn get_activation_key(
-        &self,
-        shell: &mut Shell,
-    ) -> Result<Option<Secret<String>>, StateReadError> {
-        let (_, current_state) = self.immutable_read(shell)?;
+    pub fn get_activation_key(&self) -> Result<Option<Secret<String>>, StateReadError> {
+        let (_, current_state) = self.immutable_read()?;
         Ok(current_state.and_then(|s| s.activation_key))
     }
 
     /// Set the activation key associated with this installation.
-    pub fn set_activation_key(
-        &self,
-        shell: &mut Shell,
-        activation_key: Secret<String>,
-    ) -> Result<(), anyhow::Error> {
-        let (mut locked_file, state) = self.read_for_update(shell)?;
+    pub fn set_activation_key(&self, activation_key: Secret<String>) -> Result<(), anyhow::Error> {
+        let (mut locked_file, state) = self.read_for_update()?;
         let mut state = state.unwrap_or_default();
         state.activation_key = Some(activation_key);
         let state = toml::to_string_pretty(&state)
@@ -91,15 +80,11 @@ impl State {
         Ok(())
     }
 
-    /// Update the current toolchain to the specified one.  
+    /// Update the current toolchain to the specified one.
     ///
     /// It doesn't take care of installing the toolchain if it's not installed!
-    pub fn set_current_toolchain(
-        &self,
-        shell: &mut Shell,
-        toolchain: semver::Version,
-    ) -> Result<(), anyhow::Error> {
-        let (mut locked_file, state) = self.read_for_update(shell)?;
+    pub fn set_current_toolchain(&self, toolchain: semver::Version) -> Result<(), anyhow::Error> {
+        let (mut locked_file, state) = self.read_for_update()?;
         let mut state = state.unwrap_or_default();
         if state.toolchain.as_ref() == Some(&toolchain) {
             // No need to do anything.
@@ -120,13 +105,10 @@ impl State {
     /// If the state file doesn't exist, it returns `None` as the current state.
     ///
     /// Use this when you need to read the current state and update it atomically.
-    fn read_for_update(
-        &self,
-        shell: &mut Shell,
-    ) -> Result<(FileLock, Option<StateInner>), StateReadError> {
+    fn read_for_update(&self) -> Result<(FileLock, Option<StateInner>), StateReadError> {
         let locked_file = self
             .filesystem
-            .open_rw_exclusive_create(Self::STATE_FILENAME, shell, "Pavex's state file")
+            .open_rw_exclusive_create(Self::STATE_FILENAME, "Pavex's state file")
             .map_err(AcquireLockError)?;
         self._read(locked_file)
     }
@@ -135,13 +117,10 @@ impl State {
     /// If the state file doesn't exist, it returns `None` as the current state.
     ///
     /// Use this when you need to read the current state without updating it later.
-    fn immutable_read(
-        &self,
-        shell: &mut Shell,
-    ) -> Result<(FileLock, Option<StateInner>), StateReadError> {
+    fn immutable_read(&self) -> Result<(FileLock, Option<StateInner>), StateReadError> {
         let locked_file = self
             .filesystem
-            .open_ro_shared_create(Self::STATE_FILENAME, shell, "Pavex's state file")
+            .open_ro_shared_create(Self::STATE_FILENAME, "Pavex's state file")
             .map_err(AcquireLockError)?;
         self._read(locked_file)
     }

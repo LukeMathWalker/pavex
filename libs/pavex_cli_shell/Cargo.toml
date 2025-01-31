@@ -1,0 +1,11 @@
+[package]
+name = "pavex_cli_shell"
+edition.workspace = true
+repository.workspace = true
+homepage.workspace = true
+license.workspace = true
+version.workspace = true
+
+[dependencies]
+cargo-like-utils = { workspace = true }
+anyhow = { workspace = true }

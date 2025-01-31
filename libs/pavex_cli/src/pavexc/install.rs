@@ -1,9 +1,9 @@
 use crate::cargo_install::{cargo_install, GitSourceRevision, Source};
 use crate::cli_kind::CliKind;
 use crate::prebuilt::download_prebuilt;
-use cargo_like_utils::shell::Shell;
 use guppy::graph::PackageSource;
 use guppy::Version;
+use pavex_cli_shell::{ShellExt, SHELL};
 use std::path::{Path, PathBuf};
 use tracing_log_error::log_error;
 
@@ -86,7 +86,6 @@ impl<'a> TryFrom<PackageSource<'a>> for InstallSource {
 /// Given the version and source for the `pavex` library crate, install the corresponding
 /// `pavexc` binary crate at the specified path.
 pub(super) fn install(
-    shell: &mut Shell,
     pavexc_cli_path: &Path,
     version: &Version,
     install_source: &InstallSource,
@@ -160,14 +159,14 @@ pub(super) fn install(
     };
 
     if try_prebuilt {
-        let _ = shell.status("Downloading", format!("prebuilt `pavexc@{version}` binary"));
+        SHELL.status("Downloading", format!("prebuilt `pavexc@{version}` binary"));
         match download_prebuilt(pavexc_cli_path, CliKind::Pavexc, version) {
             Ok(_) => {
-                let _ = shell.status("Downloaded", format!("prebuilt `pavexc@{version}` binary"));
+                SHELL.status("Downloaded", format!("prebuilt `pavexc@{version}` binary"));
                 return Ok(());
             }
             Err(e) => {
-                let _ = shell.warn(format!(
+                SHELL.warn(format!(
                     "Download failed: {e}.\nI'll try compiling from source instead."
                 ));
                 log_error!(e, level: tracing::Level::WARN, "Failed to download prebuilt `pavexc` binary. I'll try to build it from source instead.");
@@ -175,9 +174,9 @@ pub(super) fn install(
         }
     }
 
-    let _ = shell.status("Compiling", format!("`pavexc@{version}` from source"));
+    SHELL.status("Compiling", format!("`pavexc@{version}` from source"));
     cargo_install(install_source, CliKind::Pavexc, pavexc_cli_path)?;
-    let _ = shell.status("Compiled", format!("`pavexc@{version}` from source"));
+    SHELL.status("Compiled", format!("`pavexc@{version}` from source"));
     Ok(())
 }
 

@@ -3,7 +3,6 @@ use crate::command::Command;
 use crate::locator::PavexLocator;
 use crate::state::State;
 use anyhow::Context;
-use cargo_like_utils::shell::Shell;
 use jsonwebtoken::jwk::JwkSet;
 use redact::Secret;
 use time::Duration;
@@ -17,21 +16,17 @@ mod token_cache;
 pub fn get_activation_key_if_necessary(
     command: &Command,
     locator: &PavexLocator,
-    shell: &mut Shell,
 ) -> Result<Option<Secret<String>>, anyhow::Error> {
     if !command.needs_activation_key() {
         return Ok(None);
     }
-    get_activation_key(locator, shell).map(Some)
+    get_activation_key(locator).map(Some)
 }
 
 /// Retrieve Pavex's activation key from the state.
-pub fn get_activation_key(
-    locator: &PavexLocator,
-    shell: &mut Shell,
-) -> Result<Secret<String>, anyhow::Error> {
+pub fn get_activation_key(locator: &PavexLocator) -> Result<Secret<String>, anyhow::Error> {
     let state = State::new(locator);
-    let key = state.get_activation_key(shell)?;
+    let key = state.get_activation_key()?;
     let Some(key) = key else {
         return Err(PavexMustBeActivated.into());
     };

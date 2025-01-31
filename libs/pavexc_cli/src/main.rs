@@ -17,6 +17,7 @@ use liquid_core::Value;
 use miette::Severity;
 use owo_colors::OwoColorize;
 use pavex_cli_deps::{verify_installation, IfAutoinstallable, RustdocJson, RustupToolchain};
+use pavex_cli_shell::try_init_shell;
 use pavexc::{App, AppWriter, DEFAULT_DOCS_TOOLCHAIN};
 use pavexc_cli_client::commands::new::TemplateName;
 use supports_color::Stream;
@@ -234,6 +235,19 @@ fn init_telemetry(
     chrome_guard
 }
 
+fn init_shell(color: Color) -> Result<(), anyhow::Error> {
+    let mut shell = Shell::new();
+    shell
+        .set_color_choice(Some(match color {
+            Color::Auto => "auto",
+            Color::Always => "always",
+            Color::Never => "never",
+        }))
+        .context("Failed to configure shell output")?;
+    try_init_shell(shell);
+    Ok(())
+}
+
 fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
     let cli = Cli::parse();
     miette::set_hook(Box::new(move |_| {
@@ -267,6 +281,8 @@ fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
     better_panic::install();
     let _guard = init_telemetry(cli.log_filter.clone(), cli.color, cli.log, cli.perf_profile);
 
+    init_shell(cli.color)?;
+
     tracing::trace!(cli = ?cli, "`pavexc` CLI options and flags");
     match cli.command {
         Commands::Generate {
@@ -291,16 +307,15 @@ fn main() -> Result<ExitCode, Box<dyn std::error::Error>> {
         Commands::Self_ {
             command: SelfCommands::Setup { docs_toolchain },
         } => {
-            let mut shell = Shell::new();
             let options = IfAutoinstallable::Autoinstall;
             let toolchain = RustupToolchain {
                 name: docs_toolchain.clone(),
             };
-            verify_installation(&mut shell, toolchain, options)?;
+            verify_installation(toolchain, options)?;
             let rustdoc_json = RustdocJson {
                 toolchain: docs_toolchain,
             };
-            verify_installation(&mut shell, rustdoc_json, options)?;
+            verify_installation(rustdoc_json, options)?;
             Ok(ExitCode::SUCCESS)
         }
     }
