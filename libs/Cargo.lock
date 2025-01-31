@@ -2506,6 +2506,7 @@ dependencies = [
  "fs-err",
  "libc",
  "pavex_cli_shell",
+ "px_workspace_hack",
  "tracing",
  "windows-sys 0.52.0",
 ]
@@ -2516,6 +2517,7 @@ version = "0.1.70"
 dependencies = [
  "anyhow",
  "cargo-like-utils",
+ "px_workspace_hack",
 ]
 
 [[package]]
