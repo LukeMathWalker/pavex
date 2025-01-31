@@ -245,7 +245,7 @@ impl Filesystem {
     where
         P: AsRef<Path>,
     {
-        let (path, f) = self.open(path.as_ref(), &OpenOptions::new().read(true), false)?;
+        let (path, f) = self.open(path.as_ref(), OpenOptions::new().read(true), false)?;
         acquire(msg, &path, &|| try_lock_shared(&f), &|| lock_shared(&f))?;
         Ok(FileLock { f: Some(f), path })
     }
@@ -438,7 +438,7 @@ mod sys {
     }
 
     pub(super) fn error_contended(err: &Error) -> bool {
-        err.raw_os_error().map_or(false, |x| x == libc::EWOULDBLOCK)
+        err.raw_os_error() == Some(libc::EWOULDBLOCK)
     }
 
     pub(super) fn error_unsupported(err: &Error) -> bool {
