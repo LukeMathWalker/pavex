@@ -17,10 +17,10 @@ use tracing_log_error::log_error;
 use crate::compiler::resolvers::{resolve_type, GenericBindings};
 use crate::language::{ResolvedPathGenericArgument, ResolvedPathType};
 use crate::rustdoc::version_matcher::VersionMatcher;
-use crate::rustdoc::{compute::compute_crate_docs, utils, CannotGetCrateData, TOOLCHAIN_CRATES};
+use crate::rustdoc::{utils, CannotGetCrateData, TOOLCHAIN_CRATES};
 use crate::rustdoc::{ALLOC_PACKAGE_ID, CORE_PACKAGE_ID, STD_PACKAGE_ID};
 
-use super::compute::{batch_compute_crate_docs, RustdocCacheKey, RustdocGlobalFsCache};
+use super::compute::{compute_crate_docs, RustdocCacheKey, RustdocGlobalFsCache};
 
 /// The main entrypoint for accessing the documentation of the crates
 /// in a specific `PackageGraph`.
@@ -196,7 +196,7 @@ impl CrateCollection {
         }
 
         // The ones that are still missing need to be computed.
-        let results = batch_compute_crate_docs(
+        let results = compute_crate_docs(
             &self.toolchain_name,
             &self.package_graph,
             to_be_computed.into_iter(),
@@ -262,9 +262,15 @@ impl CrateCollection {
         let krate = compute_crate_docs(
             &self.toolchain_name,
             &self.package_graph,
-            package_id,
+            std::iter::once(package_id.to_owned()),
             self.package_graph.workspace().root().as_std_path(),
-        )?;
+        )
+        .map_err(|e| CannotGetCrateData {
+            package_spec: package_id.to_string(),
+            source: Arc::new(e),
+        })?
+        .remove(package_id)
+        .unwrap();
         let krate = Crate::new(krate, package_id.to_owned()).map_err(|e| CannotGetCrateData {
             package_spec: package_id.to_string(),
             source: Arc::new(e),
