@@ -42,7 +42,7 @@ indexmap = { version = "2", features = ["serde"] }
 log = { version = "0.4", default-features = false, features = ["std"] }
 memchr = { version = "2" }
 miette = { version = "7", features = ["fancy"] }
-num-traits = { version = "0.2", features = ["i128"] }
+num-traits = { version = "0.2", default-features = false, features = ["i128", "std"] }
 percent-encoding = { version = "2" }
 proc-macro2 = { version = "1", features = ["span-locations"] }
 quote = { version = "1" }
@@ -99,7 +99,7 @@ indexmap = { version = "2", features = ["serde"] }
 log = { version = "0.4", default-features = false, features = ["std"] }
 memchr = { version = "2" }
 miette = { version = "7", features = ["fancy"] }
-num-traits = { version = "0.2", features = ["i128"] }
+num-traits = { version = "0.2", default-features = false, features = ["i128", "std"] }
 percent-encoding = { version = "2" }
 proc-macro2 = { version = "1", features = ["span-locations"] }
 quote = { version = "1" }
