@@ -169,7 +169,7 @@ where
                     let _ = shell.status(
                         "Documented",
                         format!(
-                            "{}@{} in {} seconds",
+                            "{}@{} in {:.3} seconds",
                             package_metadata.name(),
                             package_metadata.version(),
                             duration.as_secs_f32()
