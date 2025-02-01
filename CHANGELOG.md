@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.71](https://github.com/LukeMathWalker/pavex/compare/0.1.70...0.1.71) - 2025-02-01
+
+
+### ⛰️ Features
+- Inform the user when generating JSON docs for crates in the workspace (by @LukeMathWalker) - #430
+- Strive to use the path with the smallest number of segments in the generated code (by @LukeMathWalker) - #430
+- All ApplicationState fields should be public to allow manipulation of the state ahead of request serving. This is particularly important for end-to-end tests. (by @LukeMathWalker) - #430
+- Assign unique and intelligible field names to the singletons stored inside ApplicationState (by @LukeMathWalker) - #430
+
+
+
+### 🐛 Bug Fixes
+- Don't confuse the JSON docs for different versions of the same crate. Be defensive against cargo's broken caching strategy. (by @LukeMathWalker) - #430
+
+
+
+
+### Contributors
+
+* @LukeMathWalker
+
 ## [0.1.70](https://github.com/LukeMathWalker/pavex/compare/0.1.69...0.1.70) - 2025-01-24
 
 
