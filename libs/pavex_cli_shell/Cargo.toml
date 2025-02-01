@@ -1,5 +1,6 @@
 [package]
 name = "pavex_cli_shell"
+description = "An internal crate to share a global shel instance between Pavex's CLIs and their library dependencies."
 edition.workspace = true
 repository.workspace = true
 homepage.workspace = true
